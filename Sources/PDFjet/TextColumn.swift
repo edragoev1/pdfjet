@@ -42,8 +42,7 @@ public class TextColumn : Drawable {
         if rotateByDegrees != 0 &&
                 rotateByDegrees != 90 &&
                 rotateByDegrees != 270 {
-            // TODO:
-            Swift.print("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
+            fatalError("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
         }
         self.rotate = rotateByDegrees
         self.paragraphs = [Paragraph]()
@@ -227,7 +226,7 @@ public class TextColumn : Drawable {
                 if runLength < self.w {
                     list.append(text)
                 } else {
-                    if page != nil {    // TODO: Why is page == nil?
+                    if page != nil {    // getHeight draws on no page to measure
                         drawLineOfText(page!, list)
                     }
                     moveToNextLine(lineHeight)

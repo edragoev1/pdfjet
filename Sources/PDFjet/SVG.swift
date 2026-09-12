@@ -78,6 +78,9 @@ public class SVG {
                 buf.append(ch)
             }
         }
+        if token {  // The last number of a path that does not end with Z
+            op!.args.append(buf)
+        }
         return operations
     }
 
@@ -251,7 +254,22 @@ public class SVG {
                     i += 4
                 }
             } else if op.cmd == "A" || op.cmd == "a" {
-                // Elliptical Arc
+                var i: Int = 0
+                while i <= (op.args.count - 7) {
+                    let rx = Float(op.args[i])!
+                    let ry = Float(op.args[i + 1])!
+                    let rotation = Float(op.args[i + 2])!
+                    let largeArc = op.args[i + 3] != "0"
+                    let sweep = op.args[i + 4] != "0"
+                    var x = Float(op.args[i + 5])!
+                    var y = Float(op.args[i + 6])!
+                    if op.cmd == "a" {
+                        x += lastOp!.x
+                        y += lastOp!.y
+                    }
+                    lastOp = addArc(&operations, lastOp!, rx, ry, rotation, largeArc, sweep, x, y)
+                    i += 7
+                }
             } else if op.cmd == "Z" || op.cmd == "z" {
                 let pathOp = PathOp("Z")
                 pathOp.x = x0
@@ -261,5 +279,93 @@ public class SVG {
             }
         }
         return operations
+    }
+
+    /// Appends the cubic curves that draw the elliptical arc from the current
+    /// point to (x, y), as SVG 1.1 section F.6.5 describes: the arc is split
+    /// into pieces of at most a quarter turn, each approximated by one curve.
+    /// Returns the last operation appended, or lastOp when the arc is empty.
+    private static func addArc(_ operations: inout [PathOp], _ lastOp: PathOp,
+            _ rx: Float, _ ry: Float, _ rotation: Float, _ largeArc: Bool, _ sweep: Bool,
+            _ x: Float, _ y: Float) -> PathOp {
+        let x1 = lastOp.x
+        let y1 = lastOp.y
+        if x1 == x && y1 == y {
+            return lastOp
+        }
+        var rx = abs(rx)
+        var ry = abs(ry)
+        if rx == 0.0 || ry == 0.0 {
+            let line = PathOp("L", x, y)
+            operations.append(line)
+            return line
+        }
+        let phi = Double(rotation) * Double.pi / 180.0
+        let cosPhi = cos(phi)
+        let sinPhi = sin(phi)
+        let dx = Double(x1 - x) / 2.0
+        let dy = Double(y1 - y) / 2.0
+        let x1p = cosPhi * dx + sinPhi * dy
+        let y1p = -sinPhi * dx + cosPhi * dy
+        let lambda = (x1p * x1p) / (Double(rx) * Double(rx)) + (y1p * y1p) / (Double(ry) * Double(ry))
+        if lambda > 1.0 {
+            rx *= Float(lambda.squareRoot())
+            ry *= Float(lambda.squareRoot())
+        }
+        let rx2 = Double(rx) * Double(rx)
+        let ry2 = Double(ry) * Double(ry)
+        let num = rx2 * ry2 - rx2 * y1p * y1p - ry2 * x1p * x1p
+        let den = rx2 * y1p * y1p + ry2 * x1p * x1p
+        var coef = max(0.0, num / den).squareRoot()
+        if largeArc == sweep {
+            coef = -coef
+        }
+        let cxp = coef * Double(rx) * y1p / Double(ry)
+        let cyp = -coef * Double(ry) * x1p / Double(rx)
+        let cx = cosPhi * cxp - sinPhi * cyp + Double(x1 + x) / 2.0
+        let cy = sinPhi * cxp + cosPhi * cyp + Double(y1 + y) / 2.0
+        let ux = (x1p - cxp) / Double(rx)
+        let uy = (y1p - cyp) / Double(ry)
+        let vx = (-x1p - cxp) / Double(rx)
+        let vy = (-y1p - cyp) / Double(ry)
+        let theta = atan2(uy, ux)
+        var delta = atan2(ux * vy - uy * vx, ux * vx + uy * vy)
+        if !sweep && delta > 0.0 {
+            delta -= 2.0 * Double.pi
+        } else if sweep && delta < 0.0 {
+            delta += 2.0 * Double.pi
+        }
+        let segments = Int((abs(delta) / (Double.pi / 2.0)).rounded(.up))
+        if segments == 0 {
+            return lastOp
+        }
+        let step = delta / Double(segments)
+        let t = 4.0 / 3.0 * tan(step / 4.0)
+        var pathOp = lastOp
+        for i in 0..<segments {
+            let a1 = theta + Double(i) * step
+            let a2 = a1 + step
+            let p1x = cos(a1)
+            let p1y = sin(a1)
+            let p2x = cos(a2)
+            let p2y = sin(a2)
+            let c1 = onEllipse(cx, cy, Double(rx), Double(ry), cosPhi, sinPhi, p1x - t * p1y, p1y + t * p1x)
+            let c2 = onEllipse(cx, cy, Double(rx), Double(ry), cosPhi, sinPhi, p2x + t * p2y, p2y - t * p2x)
+            let p2 = (i == segments - 1) ?
+                    [x, y] : onEllipse(cx, cy, Double(rx), Double(ry), cosPhi, sinPhi, p2x, p2y)
+            pathOp = PathOp("C")
+            pathOp.setCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
+            operations.append(pathOp)
+        }
+        return pathOp
+    }
+
+    // Maps a point of the unit circle to the ellipse with the center
+    // (cx, cy), the radii rx and ry and the rotation with the given cosine and sine.
+    private static func onEllipse(_ cx: Double, _ cy: Double, _ rx: Double, _ ry: Double,
+            _ cosPhi: Double, _ sinPhi: Double, _ u: Double, _ v: Double) -> [Float] {
+        return [
+                Float(cx + rx * u * cosPhi - ry * v * sinPhi),
+                Float(cy + rx * u * sinPhi + ry * v * cosPhi)]
     }
 }

@@ -28,9 +28,14 @@ class BMPImage {
     private let m11110000: UInt8 = 0xF0
     private let m00001111: UInt8 = 0x0F
 
+    enum BMPImageError: Error {
+        case notParsed
+        case unsupportedBitDepth
+    }
+
     // Tested with images created from GIMP
     /// Reads a BMP image from the stream.
-    public init(_ stream: InputStream) {
+    public init(_ stream: InputStream) throws {
         let bm = getBytes(stream, 2)
         // From Wikipedia
         if (Unicode.Scalar(bm![0]) == "B" && Unicode.Scalar(bm![1]) == "M") ||
@@ -62,14 +67,13 @@ class BMPImage {
                 skipNBytes(stream, 4)
                 parsePalette(stream, numPalColors)
             }
-            parseData(stream)
+            try parseData(stream)
         } else {
-            // TODO:
-            Swift.print("BMP data could not be parsed!")
+            throw BMPImageError.notParsed
         }
     }
 
-    private func parseData(_ stream: InputStream) {
+    private func parseData(_ stream: InputStream) throws {
         image = [UInt8](repeating: 0, count: (3 * w * h))
         let rowsize = 4 * Int(ceil(Double(w * bpp) / 32.0)) // 4 byte alignment
         var row: [UInt8]
@@ -92,7 +96,8 @@ class BMPImage {
             } else if self.bpp == 32 {
                 row = bit32to24(row, w)
             } else {
-                Swift.print("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
+                // Only 1, 4, 8, 16, 24 and 32 bits per pixel are supported.
+                throw BMPImageError.unsupportedBitDepth
             }
 
             index = 3*w*((h - i) - 1)

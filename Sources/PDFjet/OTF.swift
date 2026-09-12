@@ -13,6 +13,10 @@ struct FontTable {
     var length: Int?
 }
 
+enum OTFError: Error {
+    case format4SubtableNotFound
+}
+
 class OTF {
     var fontName: String?
     var fontInfo: String?
@@ -89,7 +93,7 @@ class OTF {
         }
 
         // This table must be processed last
-        cmap(cmapTable!)
+        try cmap(cmapTable!)
 
         if cff {
             let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
@@ -173,7 +177,7 @@ class OTF {
         fontInfo = winFontInfo != "" ? winFontInfo : macFontInfo
     }
 
-    private func cmap(_ table: FontTable) {
+    private func cmap(_ table: FontTable) throws {
         self.index = table.offset!
         let tableOffset = index
         index += 2
@@ -192,8 +196,7 @@ class OTF {
             }
         }
         if !format4subtable {
-            // TODO:
-            Swift.print("Format 4 subtable not found in this font.")
+            throw OTFError.format4SubtableNotFound
         }
 
         self.index = tableOffset + subtableOffset

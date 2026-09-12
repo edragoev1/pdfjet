@@ -36,7 +36,7 @@ public class Cell {
     /** The composite text line drawn in this cell. */
     protected CompositeTextLine compositeTextLine;
     /** The width of this cell. */
-    protected float width = 75f;     // TODO: Rename to cellWidth
+    protected float width = 75f;
     /** The top padding. */
     protected float topPadding = 2f;
     /** The bottom padding. */
@@ -47,7 +47,7 @@ public class Cell {
     protected float rightPadding = 2f;
 
     /** The width of the cell borders. */
-    protected float lineWidth = 0f;  // TODO: Rename to borderWidth
+    protected float lineWidth = 0f;
 
     /** The background color as an RGB array, or null. */
     protected float[] backgroundColor;
@@ -954,9 +954,9 @@ public class Cell {
             page.addAnnotation(new Annotation(
                     Annotation.Link,
                     xText,
-                    (page.height - yText) - font.getAscent(), // (page.height - yText) - font.GetAscent(fontSize),
+                    yText - font.getAscent(),
                     xText + w,
-                    (page.height - yText) + font.getDescent(),
+                    yText + font.getDescent(),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency

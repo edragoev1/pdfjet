@@ -175,7 +175,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	}
 	page.drawString(
 		checkBox.font, checkBox.fontSize, checkBox.label,
-		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.ascent,
+		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscentAt(checkBox.fontSize),
 		[3]float32{0.0, 0.0, 0.0}, nil)
 	page.SetPenWidth(0.0)
 	page.SetPenColor(color.Black)
@@ -183,12 +183,13 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 
 	page.AddEMC()
 	if checkBox.uri != "" || checkBox.key != "" {
+		// The link is a structure element of its own, see Page.AddAnnotation.
 		page.AddAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             checkBox.x + 3.0*checkBox.w/2.0,
 			y1:             checkBox.y,
-			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
-			y2:             checkBox.y + checkBox.font.bodyHeight,
+			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
+			y2:             checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
 			vertices:       nil,
 			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
@@ -203,7 +204,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	}
 
 	return [2]float32{
-		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.font.size, checkBox.label),
-		checkBox.y + checkBox.font.bodyHeight,
+		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
+		checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
 	}
 }

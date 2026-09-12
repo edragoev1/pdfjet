@@ -221,20 +221,21 @@ public class CheckBox implements Drawable {
         if (uri != null) {
             page.setBrushColor(Color.blue);
         }
-        page.drawString(font, fontSize, label, x + 3f*w/2f, y + font.ascent);
+        page.drawString(font, fontSize, label, x + 3f*w/2f, y + font.getAscent(fontSize));
         page.setPenWidth(0f);
         page.setPenColor(Color.black);
         page.setBrushColor(Color.black);
 
         page.addEMC();
 
-        if (uri != null) {  // TODO: BMC and EMC here!
+        if (uri != null) {
+            // The link is a structure element of its own, see Page.addAnnotation.
             page.addAnnotation(new Annotation(
                     Annotation.Link,
                     x + 3f*w/2f,
                     y,
-                    x + 3f*w/2f + font.stringWidth(label),
-                    y + font.getBodyHeight(),       // TODO: Use fontSize
+                    x + 3f*w/2f + font.stringWidth(fontSize, label),
+                    y + font.getBodyHeight(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency
@@ -247,6 +248,6 @@ public class CheckBox implements Drawable {
                     altDescription));
         }
 
-        return new float[] { x + 3f*w + font.stringWidth(label), y + font.bodyHeight };
+        return new float[] { x + 3f*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
     }
 }   // End of CheckBox.java

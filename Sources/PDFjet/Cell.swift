@@ -809,7 +809,7 @@ public class Cell {
             if compositeTextLine == nil {
                 xText = (x + cellW) - (font!.stringWidth(text) + self.rightPadding)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil) // TODO
+                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -828,7 +828,7 @@ public class Cell {
                 xText = x + self.leftPadding +
                         (((cellW - (leftPadding + rightPadding)) - font!.stringWidth(text)) / 2)
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil) // TODO
+                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -847,7 +847,7 @@ public class Cell {
             xText = x + self.leftPadding
             if compositeTextLine == nil {
                 page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil) // TODO
+                page.drawString(font!, fallbackFont, font!.size, text!, xText!, yText!, textColor, nil)
                 page.addEMC()
                 if getUnderline() {
                     underlineText(page, font!, text!, xText!, yText!)
@@ -870,9 +870,9 @@ public class Cell {
             page.addAnnotation(Annotation(
                     Annotation.Link,
                     xText!,
-                    (page.height - yText!) - font!.ascent,
+                    yText! - font!.ascent,
                     xText! + w,
-                    (page.height - yText!) + font!.descent,
+                    yText! + font!.descent,
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency

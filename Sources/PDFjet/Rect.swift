@@ -187,16 +187,6 @@ public class Rect : Drawable {
         return self
     }
 
-//     /**
-//      * Sets the type of the structure.
-//      * - Parameter structureType: the structure type.
-//      * - Returns: this Rect.
-//      */
-//     @discardableResult
-//     public func setStructureType(_ structureType: String) -> Rect {
-//         self.structureType = structureType
-//         return self
-//     }
 
     /// Sets the dash pattern of the border.
     @discardableResult
@@ -293,18 +283,24 @@ public class Rect : Drawable {
         page!.restoreGraphicsState()
         page!.addEMC()
 
-//         if self.uri != nil || self.key != nil {
-//             page!.addAnnotation(Annotation(
-//                 self.uri,
-//                 self.key,
-//                 self.x,
-//                 self.y,
-//                 self.x + self.w,
-//                 self.y + self.h,
-//                 self.language,
-//                 self.actualText,
-//                 self.altDescription))
-//         }
+        if self.uri != nil || self.key != nil {
+            page!.addAnnotation(Annotation(
+                    Annotation.Link,
+                    self.x,
+                    self.y,
+                    self.x + self.width,
+                    self.y + self.height,
+                    nil,    // Vertices
+                    nil,    // Fill Color
+                    0.0,    // Transparency
+                    nil,    // Title
+                    nil,    // Contents
+                    self.uri,
+                    self.key,
+                    self.language,
+                    self.actualText,
+                    self.altDescription))
+        }
 
         return [self.x + self.width, self.y + self.height]
     }

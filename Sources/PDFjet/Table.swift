@@ -74,7 +74,7 @@ public class Table : Drawable {
             for field in fields {
                 if lineNumber == 0 {
                     let cell = Cell(f1, field)
-                    // cell.setTextBox(TextBox(f1, field)) // TODO
+                    // cell.setTextBlock(TextBlock(f1, field))
                     row.append(cell)
                 } else {
                     row.append(Cell(f2, field))
@@ -238,8 +238,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setTextAlignment(alignment)
-                if cell.textBlock != nil {
-                    // cell.textBlock!.setTextAlignment(alignment)         // TODO
+                if cell.textBox != nil {
+                    cell.textBox!.setTextAlignment(alignment)
                 }
             }
         }

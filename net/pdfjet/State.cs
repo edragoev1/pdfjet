@@ -22,8 +22,10 @@ class State {
             CapStyle lineCapStyle,
             JoinStyle lineJoinStyle,
             String strokeDashPattern) {
-        this.brushColor = new float[] { brushColor[0], brushColor[1], brushColor[2] }; // TODO: Is this needed?
-        this.penColor = new float[] { penColor[0], penColor[1], penColor[2] };         // Creating new objects?
+        // Copies of the colors, so the saved state does not change with the
+        // arrays of the page after it is saved.
+        this.brushColor = new float[] { brushColor[0], brushColor[1], brushColor[2] };
+        this.penColor = new float[] { penColor[0], penColor[1], penColor[2] };
         this.penWidth = penWidth;
         this.lineCapStyle = lineCapStyle;
         this.lineJoinStyle = lineJoinStyle;

@@ -108,7 +108,8 @@ public class Bookmark {
                 }
             } else {
                 if let index = bm!.prefix!.lastIndexOf(".") {
-                    // TODO: Compare to the Java code!!!
+                    // The same as the Java code: keep the prefix up to the
+                    // last dot and increment the number after it.
                     let index2 = bm!.prefix!.index(after: index)
                     prefix = String(bm!.prefix![...index]) +
                             String(Int(bm!.prefix![index2...])! + 1)

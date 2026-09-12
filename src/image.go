@@ -65,7 +65,7 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			// TODO:
+			panic("Error closing file: " + err.Error())
 		}
 	}(file)
 	return NewImage(pdf, bufio.NewReader(file), imageType)

@@ -96,7 +96,7 @@ public class Image : Drawable {
                 }
             }
         } else if imageType == ImageType.BMP {
-            let bmp = BMPImage(stream)
+            let bmp = try BMPImage(stream)
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
@@ -146,7 +146,7 @@ public class Image : Drawable {
                 }
             }
         } else if imageType == ImageType.BMP {
-            let bmp = BMPImage(stream)
+            let bmp = try BMPImage(stream)
             data = bmp.getData()
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())

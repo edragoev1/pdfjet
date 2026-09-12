@@ -11,7 +11,10 @@ import java.util.*;
 /**
  * Used to create PDF417 barcodes.
  *
- * TODO: Maintain a minimum quiet zone of 10 modules; many scanners reject symbols with insufficient margin.
+ * The bars are drawn from the location set with setLocation. ISO/IEC 15438
+ * asks for a quiet zone of at least two modules (twice the module width) on
+ * all four sides of the symbol, so leave that much space around it; scanners
+ * reject symbols with less.
  *
  * Please see Example_12.
  */

@@ -239,33 +239,12 @@ public class Rect implements Drawable {
     }
 
     /**
-     * Sets the type of the structure.
-     * @param structureType the structure type.
-     * @return this Rect.
-     */
-    public Rect setStructureType(String structureType) {
-        // this.structureType = structureType;  // TODO
-        return this;
-    }
-
-    /**
      * Sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
      * @param borderPattern the line dash pattern.
      * @return this Rect object.
      */
     public Rect setBorderPattern(String borderPattern) {
         this.borderPattern = borderPattern;
-        return this;
-    }
-
-    /**
-     * Sets the private fillShape variable.
-     * If the value of fillShape is true - the rect is filled with the current brush color.
-     * @param fillShape the value used to set the private fillShape variable.
-     * @return this Rect object.
-     */
-    public Rect setFillShape(boolean fillShape) {
-// TODO:        this.fillShape = fillShape;
         return this;
     }
 
@@ -369,23 +348,22 @@ public class Rect implements Drawable {
         page.addEMC();
 
         if (this.uri != null || this.key != null) {
-// TODO:
-//             page.addAnnotation(new Annotation(
-//                 Annotation.Link,
-//                 this.x,
-//                 this.y,
-//                 this.x + this.w,
-//                 this.y + this.h,
-//                 null,       // Vertices
-//                 null,       // Fill Color
-//                 0f,         // Transparency
-//                 null,       // Title
-//                 null,       // Contents
-//                 this.uri,
-//                 this.key,
-//                 this.language,
-//                 this.actualText,
-//                 this.altDescription));
+            page.addAnnotation(new Annotation(
+                    Annotation.Link,
+                    this.x,
+                    this.y,
+                    this.x + this.w,
+                    this.y + this.h,
+                    null,       // Vertices
+                    null,       // Fill Color
+                    0f,         // Transparency
+                    null,       // Title
+                    null,       // Contents
+                    this.uri,
+                    this.key,
+                    this.language,
+                    this.actualText,
+                    this.altDescription));
         }
 
         return new float[] { this.x + this.w, this.y + this.h };

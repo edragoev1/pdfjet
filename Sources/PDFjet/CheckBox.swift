@@ -201,19 +201,20 @@ public class CheckBox : Drawable {
         if uri != nil {
             page!.setBrushColor(Color.blue)
         }
-        page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.ascent)
+        page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.getAscent(fontSize))
         page!.setPenWidth(0.0)
         page!.setPenColor(Color.black)
         page!.setBrushColor(Color.black)
         page!.addEMC()
 
-        if uri != nil {     // TODO: BMC and EMC here!
+        if uri != nil {
+            // The link is a structure element of its own, see Page.addAnnotation.
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x + 3.0*w/2.0,
                     y,
-                    x + 3.0*w/2.0 + font.stringWidth(label),
-                    y + font.getBodyHeight(),   // TODO: Use fontSize
+                    x + 3.0*w/2.0 + font.stringWidth(fontSize, label),
+                    y + font.getBodyHeight(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -226,6 +227,6 @@ public class CheckBox : Drawable {
                     altDescription))
         }
 
-        return [x + 3.0*w + font.stringWidth(label), y + font.bodyHeight]
+        return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
     }
 }   // End of CheckBox.swift

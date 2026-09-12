@@ -67,19 +67,13 @@ public class PNGImage {
                 if (pLTE.length % 3 != 0) {
                     throw new Exception("Incorrect palette length.");
                 }
-            } else if (chunkType.equals("gAMA")) {
-                // PDF.LOG.warning("gAMA chunk found!");
             } else if (chunkType.equals("tRNS")) {
                 if (colorType == 3) {
                     tRNS = chunk.getData();
                 }
-            } else if (chunkType.equals("cHRM")) {
-                // PDF.LOG.warning("cHRM chunk found!");
-            } else if (chunkType.equals("sBIT")) {
-                // PDF.LOG.warning("sBIT chunk found!");
-            } else if (chunkType.equals("bKGD")) {
-                // PDF.LOG.warning("bKGD chunk found!");
             }
+            // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
+            // ports: the samples are embedded as they are.
         }
 
         byte[] inflatedImageData = Decompressor.inflate(iDAT);

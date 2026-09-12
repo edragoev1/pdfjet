@@ -197,8 +197,7 @@ public class Font {
             pdf.append("/Ordering (Korea1)\n")
             pdf.append("/Supplement 1\n")
         } else {
-            // TODO:
-            print("Unsupported font: " + fontName!)
+            fatalError("Unsupported font: " + fontName!)
         }
         pdf.append(">>\n")
         pdf.append(">>\n")
@@ -224,8 +223,7 @@ public class Font {
             pdf.append(fontName! + "-UniKS-UCS2-H\n")
             pdf.append("/Encoding /UniKS-UCS2-H\n")
         } else {
-            // TODO:
-            print("Unsupported font: " + fontName!)
+            fatalError("Unsupported font: " + fontName!)
         }
         pdf.append("/DescendantFonts [")
         pdf.append(pdf.getObjNumber() - 1)

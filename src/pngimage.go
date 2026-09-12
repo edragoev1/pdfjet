@@ -74,19 +74,13 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			if len(image.pLTE)%3 != 0 {
 				log.Fatal("Incorrect palette length.")
 			}
-		case "gAMA":
-			// log.Println("gAMA chunk found!")
 		case "tRNS":
 			if image.colorType == 3 {
 				image.tRNS = chunk.ChunkData
 			}
-		case "cHRM":
-			// log.Println("cHRM chunk found!")
-		case "sBIT":
-			// log.Println("sBIT chunk found!")
-		case "bKGD":
-			// log.Println("bKGD chunk found!")
 		}
+		// The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
+		// ports: the samples are embedded as they are.
 	}
 
 	// Decompress the IDAT chunk data.

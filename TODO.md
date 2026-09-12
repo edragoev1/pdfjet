@@ -88,20 +88,39 @@ Pick from the README limitations; the first three are the ones users hit.
       in the docs.
 - ⬜ S MuPDF puts spaces inside some words with moved marks; check whether one
       span per word instead of per mark cluster fixes it.
-- ⬜ Code TODOs that change output (all four ports):
-  - ⬜ `CheckBox` with a URI: wrap the link in BMC/EMC so tagged PDFs stay valid.
-  - ⬜ `CheckBox`/`RadioButton`: use the font size, not the body height, for the
-    link rectangle.
-  - ⬜ `Rect`: `structureType` and `fillShape` TODOs.
-  - ⬜ `PDF417`: keep a quiet zone of 10 modules.
-  - ⬜ C# `SVG`: elliptical arc (`A`/`a`) is not implemented; Java and Go have it,
-    so C# output differs for SVGs with arcs.
-  - ⬜ C# `PNGImage`: `gAMA`, `cHRM`, `sBIT`, `bKGD` chunks are TODO; confirm Java
-    ignores them too, then drop the markers.
-- ⬜ Internal TODOs (no output change, do if time allows): `Cell` field
-      renames, `State` brush colour copy, Go `image.go` close error, Go
-      `qrcode/qrutil.go` doc comments. 49 markers in total; leave none that
-      describe a real gap without an issue or a line here.
+- ✅ Code TODOs that change output (all four ports):
+  - ✅ `CheckBox` with a URI: the marker was stale. `Page.addAnnotation` makes
+    a Link structure element of its own, so the link needs no BMC/EMC; a
+    comment says so now.
+  - ✅ `CheckBox`: the link rectangle, the label baseline and the returned
+    corner use the check box font size; nothing changes when it is the font's
+    size, as in Example_26. `RadioButton` sets the size on the font itself, so
+    its markers were stale.
+  - ✅ `Rect`: the no-op `setStructureType` and `setFillShape` are gone from
+    Java and Go (the fill and border colours decide the painting, and a rect
+    is an artifact). Java and Swift add the link annotation for
+    `setURIAction`/`setGoToAction`, as C# and Go did. Found on the way: the
+    `Cell` link rectangle was mirrored vertically in Java, C# and Swift (the y
+    was flipped twice); fixed, and Go got the cell link it had commented out.
+  - ✅ `PDF417`: a quiet zone is blank page, so nothing is drawn; the class
+    comment in the four ports says to leave at least two modules around the
+    symbol, as ISO/IEC 15438 asks.
+  - ✅ SVG elliptical arcs: no port had them (the note that Java and Go did was
+    wrong). All four convert `A`/`a` to cubic curves (SVG 1.1 F.6.5) and
+    render a test file identically. Also found: the path tokenizer dropped the
+    last number of a path that does not end with `Z`, in all four ports;
+    fixed. Arc flags written without a separator (`0 01`) are still not
+    parsed.
+  - ✅ PNG `gAMA`, `cHRM`, `sBIT`, `bKGD`: ignored in all four ports; the
+    empty branches are gone and a comment says so.
+- ✅ Internal TODOs: 49 markers, now none. `Cell` fields keep their names (they
+      match `setWidth`/`setLineWidth`); `State` copies the colours on purpose
+      (comment); Go `image.go` panics on a close error like the other files;
+      Go `qrutil.go` documents the BCH polynomial and mask; Swift `BMPImage`
+      and `OTF` throw where Java throws, Swift `Font` (CJK) and `TextColumn`
+      use `fatalError` for invalid input like the rest of the port; the
+      Swift `Bookmark`, `Cell`, `Chart`, `Table` and `TextColumn` markers were
+      stale (the code already matched Java) and are dropped.
 
 ## Week 4 (Oct 2–11): parity audit, docs, release
 

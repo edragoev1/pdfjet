@@ -23,13 +23,13 @@ public class Cell {
     internal TextColumn textColumn;
     internal Point point;
     internal CompositeTextLine compositeTextLine;
-    internal float width = 75f;     // TODO: Rename to cellWidth
+    internal float width = 75f;
     internal float topPadding = 2f;
     internal float bottomPadding = 2f;
     internal float leftPadding = 2f;
     internal float rightPadding = 2f;
 
-    internal float lineWidth = 0f;  // TODO: Rename to borderWidth
+    internal float lineWidth = 0f;
 
     internal float[] backgroundColor;
     internal float[] textColor = new float[] {0f, 0f, 0f};
@@ -821,9 +821,9 @@ public class Cell {
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     xText,
-                    (page.height - yText) - font.GetAscent(fontSize),
+                    yText - font.GetAscent(fontSize),
                     xText + w,
-                    (page.height - yText) + font.GetDescent(fontSize),
+                    yText + font.GetDescent(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency

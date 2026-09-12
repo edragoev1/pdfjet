@@ -63,19 +63,13 @@ public class PNGImage {
                 if pLTE!.count % 3 != 0 {
                     Swift.print("Incorrect palette length: \(String(pLTE!.count))")
                 }
-            } else if chunkType == "gAMA" {
-                // TODO:
             } else if chunkType == "tRNS" {
                 if colorType == 3 {
                     tRNS = chunk.getData()
                 }
-            } else if chunkType == "cHRM" {
-                // TODO:
-            } else if chunkType == "sBIT" {
-                // TODO:
-            } else if chunkType == "bKGD" {
-                // TODO:
             }
+            // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
+            // ports: the samples are embedded as they are.
         }
 
         var inflatedImageData = [UInt8]()   // The inflated image data

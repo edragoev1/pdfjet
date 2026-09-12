@@ -81,6 +81,9 @@ namespace PDFjet.NET {
                     buf.Append(ch);
                 }
             }
+            if (token) {    // The last number of a path that does not end with Z
+                op.args.Add(buf.ToString());
+            }
             return operations;
         }
 
@@ -238,7 +241,20 @@ namespace PDFjet.NET {
                         lastOp = pathOp;
                     }
                 } else if (op.cmd == 'A' || op.cmd == 'a') {
-                    // TODO: Elliptical Arc
+                    for (int i = 0; i <= op.args.Count - 7; i += 7) {
+                        float rx = float.Parse(op.args[i]);
+                        float ry = float.Parse(op.args[i + 1]);
+                        float rotation = float.Parse(op.args[i + 2]);
+                        bool largeArc = op.args[i + 3] != "0";
+                        bool sweep = op.args[i + 4] != "0";
+                        float x = float.Parse(op.args[i + 5]);
+                        float y = float.Parse(op.args[i + 6]);
+                        if (op.cmd == 'a') {
+                            x += lastOp.x;
+                            y += lastOp.y;
+                        }
+                        lastOp = AddArc(operations, lastOp, rx, ry, rotation, largeArc, sweep, x, y);
+                    }
                 } else if (op.cmd == 'Z' || op.cmd == 'z') {
                     pathOp = new PathOp('Z');
                     pathOp.x = x0;
@@ -248,6 +264,96 @@ namespace PDFjet.NET {
                 }
             }
             return operations;
+        }
+
+        /// <summary>
+        /// Appends the cubic curves that draw the elliptical arc from the current
+        /// point to (x, y), as SVG 1.1 section F.6.5 describes: the arc is split
+        /// into pieces of at most a quarter turn, each approximated by one curve.
+        /// </summary>
+        /// <returns>the last operation appended, or lastOp when the arc is empty.</returns>
+        private static PathOp AddArc(List<PathOp> operations, PathOp lastOp,
+                float rx, float ry, float rotation, bool largeArc, bool sweep,
+                float x, float y) {
+            float x1 = lastOp.x;
+            float y1 = lastOp.y;
+            if (x1 == x && y1 == y) {
+                return lastOp;
+            }
+            rx = Math.Abs(rx);
+            ry = Math.Abs(ry);
+            if (rx == 0f || ry == 0f) {
+                PathOp line = new PathOp('L', x, y);
+                operations.Add(line);
+                return line;
+            }
+            double phi = rotation * Math.PI / 180.0;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+            double dx = (x1 - x) / 2.0;
+            double dy = (y1 - y) / 2.0;
+            double x1p = cosPhi * dx + sinPhi * dy;
+            double y1p = -sinPhi * dx + cosPhi * dy;
+            double lambda = (x1p * x1p) / ((double) rx * rx) + (y1p * y1p) / ((double) ry * ry);
+            if (lambda > 1.0) {
+                rx *= (float) Math.Sqrt(lambda);
+                ry *= (float) Math.Sqrt(lambda);
+            }
+            double rx2 = (double) rx * rx;
+            double ry2 = (double) ry * ry;
+            double num = rx2 * ry2 - rx2 * y1p * y1p - ry2 * x1p * x1p;
+            double den = rx2 * y1p * y1p + ry2 * x1p * x1p;
+            double coef = Math.Sqrt(Math.Max(0.0, num / den));
+            if (largeArc == sweep) {
+                coef = -coef;
+            }
+            double cxp = coef * rx * y1p / ry;
+            double cyp = -coef * ry * x1p / rx;
+            double cx = cosPhi * cxp - sinPhi * cyp + (x1 + x) / 2.0;
+            double cy = sinPhi * cxp + cosPhi * cyp + (y1 + y) / 2.0;
+            double ux = (x1p - cxp) / rx;
+            double uy = (y1p - cyp) / ry;
+            double vx = (-x1p - cxp) / rx;
+            double vy = (-y1p - cyp) / ry;
+            double theta = Math.Atan2(uy, ux);
+            double delta = Math.Atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+            if (!sweep && delta > 0.0) {
+                delta -= 2.0 * Math.PI;
+            } else if (sweep && delta < 0.0) {
+                delta += 2.0 * Math.PI;
+            }
+            int segments = (int) Math.Ceiling(Math.Abs(delta) / (Math.PI / 2.0));
+            if (segments == 0) {
+                return lastOp;
+            }
+            double step = delta / segments;
+            double t = 4.0 / 3.0 * Math.Tan(step / 4.0);
+            PathOp pathOp = lastOp;
+            for (int i = 0; i < segments; i++) {
+                double a1 = theta + i * step;
+                double a2 = a1 + step;
+                double p1x = Math.Cos(a1);
+                double p1y = Math.Sin(a1);
+                double p2x = Math.Cos(a2);
+                double p2y = Math.Sin(a2);
+                float[] c1 = OnEllipse(cx, cy, rx, ry, cosPhi, sinPhi, p1x - t * p1y, p1y + t * p1x);
+                float[] c2 = OnEllipse(cx, cy, rx, ry, cosPhi, sinPhi, p2x + t * p2y, p2y - t * p2x);
+                float[] p2 = (i == segments - 1) ?
+                        new float[] {x, y} : OnEllipse(cx, cy, rx, ry, cosPhi, sinPhi, p2x, p2y);
+                pathOp = new PathOp('C');
+                pathOp.SetCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1]);
+                operations.Add(pathOp);
+            }
+            return pathOp;
+        }
+
+        // Maps a point of the unit circle to the ellipse with the center
+        // (cx, cy), the radii rx and ry and the rotation with the given cosine and sine.
+        private static float[] OnEllipse(double cx, double cy, double rx, double ry,
+                double cosPhi, double sinPhi, double u, double v) {
+            return new float[] {
+                    (float) (cx + rx * u * cosPhi - ry * v * sinPhi),
+                    (float) (cy + rx * u * sinPhi + ry * v * cosPhi)};
         }
     }
 }   // End of SVG.cs

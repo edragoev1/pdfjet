@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"log"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -87,6 +88,9 @@ func (svg *SVG) GetOperations(path string) []*PathOp {
 			token = true
 			buf.WriteRune(ch)
 		}
+	}
+	if token { // The last number of a path that does not end with Z
+		op.args = append(op.args, buf.String())
 	}
 	return operations
 }
@@ -321,7 +325,20 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				lastOp = pathOp
 			}
 		case 'A', 'a':
-			// Elliptical Arc
+			for i := 0; i <= len(op.args)-7; i += 7 {
+				rx := svgFloat(op.args[i])
+				ry := svgFloat(op.args[i+1])
+				rotation := svgFloat(op.args[i+2])
+				largeArc := op.args[i+3] != "0"
+				sweep := op.args[i+4] != "0"
+				x := svgFloat(op.args[i+5])
+				y := svgFloat(op.args[i+6])
+				if op.cmd == 'a' {
+					x += lastOp.x
+					y += lastOp.y
+				}
+				lastOp = addArc(&operations, lastOp, rx, ry, rotation, largeArc, sweep, x, y)
+			}
 		case 'Z', 'z':
 			pathOp := NewPathOp('Z')
 			pathOp.x = x0
@@ -331,4 +348,100 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 		}
 	}
 	return operations
+}
+
+func svgFloat(arg string) float32 {
+	value, err := strconv.ParseFloat(arg, 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return float32(value)
+}
+
+// addArc appends the cubic curves that draw the elliptical arc from the
+// current point to (x, y), as SVG 1.1 section F.6.5 describes: the arc is
+// split into pieces of at most a quarter turn, each approximated by one curve.
+// It returns the last operation appended, or lastOp when the arc is empty.
+func addArc(operations *[]*PathOp, lastOp *PathOp,
+	rx, ry, rotation float32, largeArc, sweep bool, x, y float32) *PathOp {
+	x1 := lastOp.x
+	y1 := lastOp.y
+	if x1 == x && y1 == y {
+		return lastOp
+	}
+	rx = float32(math.Abs(float64(rx)))
+	ry = float32(math.Abs(float64(ry)))
+	if rx == 0.0 || ry == 0.0 {
+		line := NewPathOpXY('L', x, y)
+		*operations = append(*operations, line)
+		return line
+	}
+	phi := float64(rotation) * math.Pi / 180.0
+	cosPhi := math.Cos(phi)
+	sinPhi := math.Sin(phi)
+	dx := float64(x1-x) / 2.0
+	dy := float64(y1-y) / 2.0
+	x1p := cosPhi*dx + sinPhi*dy
+	y1p := -sinPhi*dx + cosPhi*dy
+	lambda := (x1p*x1p)/(float64(rx)*float64(rx)) + (y1p*y1p)/(float64(ry)*float64(ry))
+	if lambda > 1.0 {
+		rx *= float32(math.Sqrt(lambda))
+		ry *= float32(math.Sqrt(lambda))
+	}
+	rx2 := float64(rx) * float64(rx)
+	ry2 := float64(ry) * float64(ry)
+	num := rx2*ry2 - rx2*y1p*y1p - ry2*x1p*x1p
+	den := rx2*y1p*y1p + ry2*x1p*x1p
+	coef := math.Sqrt(math.Max(0.0, num/den))
+	if largeArc == sweep {
+		coef = -coef
+	}
+	cxp := coef * float64(rx) * y1p / float64(ry)
+	cyp := -coef * float64(ry) * x1p / float64(rx)
+	cx := cosPhi*cxp - sinPhi*cyp + float64(x1+x)/2.0
+	cy := sinPhi*cxp + cosPhi*cyp + float64(y1+y)/2.0
+	ux := (x1p - cxp) / float64(rx)
+	uy := (y1p - cyp) / float64(ry)
+	vx := (-x1p - cxp) / float64(rx)
+	vy := (-y1p - cyp) / float64(ry)
+	theta := math.Atan2(uy, ux)
+	delta := math.Atan2(ux*vy-uy*vx, ux*vx+uy*vy)
+	if !sweep && delta > 0.0 {
+		delta -= 2.0 * math.Pi
+	} else if sweep && delta < 0.0 {
+		delta += 2.0 * math.Pi
+	}
+	segments := int(math.Ceil(math.Abs(delta) / (math.Pi / 2.0)))
+	if segments == 0 {
+		return lastOp
+	}
+	step := delta / float64(segments)
+	t := 4.0 / 3.0 * math.Tan(step/4.0)
+	pathOp := lastOp
+	for i := 0; i < segments; i++ {
+		a1 := theta + float64(i)*step
+		a2 := a1 + step
+		p1x := math.Cos(a1)
+		p1y := math.Sin(a1)
+		p2x := math.Cos(a2)
+		p2y := math.Sin(a2)
+		c1 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p1x-t*p1y, p1y+t*p1x)
+		c2 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x+t*p2y, p2y-t*p2x)
+		p2 := [2]float32{x, y}
+		if i < segments-1 {
+			p2 = onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x, p2y)
+		}
+		pathOp = NewPathOp('C')
+		pathOp.setCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
+		*operations = append(*operations, pathOp)
+	}
+	return pathOp
+}
+
+// onEllipse maps a point of the unit circle to the ellipse with the center
+// (cx, cy), the radii rx and ry and the rotation with the given cosine and sine.
+func onEllipse(cx, cy, rx, ry, cosPhi, sinPhi, u, v float64) [2]float32 {
+	return [2]float32{
+		float32(cx + rx*u*cosPhi - ry*v*sinPhi),
+		float32(cy + rx*u*sinPhi + ry*v*cosPhi)}
 }

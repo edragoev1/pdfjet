@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/single"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // Rect is used to create rectangular shapes on a page.
@@ -24,13 +23,11 @@ type Rect struct {
 	borderColor    [3]float32
 	hasBorderColor bool
 	borderPattern  string
-	fillShape      bool
 	uri            string
 	key            string
 	language       string
 	altDescription string
 	actualText     string
-	structureType  string
 }
 
 // NewRect creates new Rect object.
@@ -50,7 +47,6 @@ func NewRect(x, y, w, h float32) *Rect {
 
 	rect.altDescription = single.Space
 	rect.actualText = single.Space
-	rect.structureType = structtype.P
 	return rect
 }
 
@@ -155,12 +151,6 @@ func (rect *Rect) SetActualText(actualText string) *Rect {
 	return rect
 }
 
-// SetStructureType sets the type of the structure.
-func (rect *Rect) SetStructureType(structureType string) *Rect {
-	rect.structureType = structureType
-	return rect
-}
-
 // SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
 // It is specified by a dash array and a dash phase.
 // The elements of the dash array are positive numbers that specify the lengths of
@@ -183,14 +173,6 @@ func (rect *Rect) SetStructureType(structureType string) *Rect {
 // @param pattern the line dash pattern.
 func (rect *Rect) SetPattern(borderPattern string) *Rect {
 	rect.borderPattern = borderPattern
-	return rect
-}
-
-// SetFillShape sets the private fillShape variable.
-// If the value of fillShape is true - the rect is filled with the current brushColor color.
-// @param fillShape the value used to set the private fillShape variable.
-func (rect *Rect) SetFillShape(fillShape bool) *Rect {
-	rect.fillShape = fillShape
 	return rect
 }
 

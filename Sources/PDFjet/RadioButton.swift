@@ -142,8 +142,8 @@ public class RadioButton : Drawable {
                     Annotation.Link,
                     x + 3*r1,
                     y,
-                    x + 3*r1 + font.stringWidth(label), // TODO:
-                    y + font.getBodyHeight(),           // y + font.getBodyHeight(fontSize),
+                    x + 3*r1 + font.stringWidth(label),
+                    y + font.getBodyHeight(),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency

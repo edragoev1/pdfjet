@@ -196,20 +196,21 @@ public class CheckBox : IDrawable {
         if (uri != null) {
             page.SetBrushColor(Color.blue);
         }
-        page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent());
+        page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent(fontSize));
         page.SetPenWidth(0f);
         page.SetPenColor(Color.black);
         page.SetBrushColor(Color.black);
 
         page.AddEMC();
 
-        if (uri != null) {  // TODO: BMC and EMC here!
+        if (uri != null) {
+            // The link is a structure element of its own, see Page.AddAnnotation.
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     x + 3f*w/2f,
                     y,
-                    x + 3f*w/2f + font.StringWidth(label),
-                    y + font.GetBodyHeight(),       // TODO: Use fontSize
+                    x + 3f*w/2f + font.StringWidth(fontSize, label),
+                    y + font.GetBodyHeight(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency
@@ -222,7 +223,7 @@ public class CheckBox : IDrawable {
                     altDescription));
         }
 
-        return new float[] { x + 3f*w + font.StringWidth(label), y + font.GetBodyHeight() };
+        return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
     }
 }   // End of CheckBox.cs
 }   // End of namespace PDFjet.NET

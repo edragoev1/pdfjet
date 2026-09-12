@@ -160,12 +160,14 @@ func getLostPoint(qrCode *QRCode) int {
 	return lostPoint
 }
 
-// g15 returns ... TODO
+// g15 returns the generator polynomial of the BCH(15, 5) code of the format
+// information: x^10 + x^8 + x^5 + x^4 + x^2 + x + 1.
 func g15() int {
 	return (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0)
 }
 
-// g15Mask returns ... TODO
+// g15Mask returns the mask pattern 101010000010010 that is XORed with the
+// format information, so it is never all zeros.
 func g15Mask() int {
 	return (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1)
 }
@@ -182,7 +184,6 @@ func getBCHDigit(data int) int {
 	digit := 0
 	for data != 0 {
 		digit++
-		// TODO:
 		data >>= 1
 	}
 	return digit

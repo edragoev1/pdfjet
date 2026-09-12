@@ -65,24 +65,13 @@ public class PNGImage {
                 if (pLTE.Length % 3 != 0) {
                     throw new Exception("Incorrect palette length.");
                 }
-            } else if (chunkType.Equals("gAMA")) {
-                // TODO:
-                // Console.WriteLine("gAMA chunk found!");
             } else if (chunkType.Equals("tRNS")) {
-                // Console.WriteLine("tRNS chunk found!");
                 if (colorType == 3) {
                     tRNS = chunk.GetData();
                 }
-            } else if (chunkType.Equals("cHRM")) {
-                // TODO:
-                // Console.WriteLine("cHRM chunk found!");
-            } else if (chunkType.Equals("sBIT")) {
-                // TODO:
-                // Console.WriteLine("sBIT chunk found!");
-            } else if (chunkType.Equals("bKGD")) {
-                // TODO:
-                // Console.WriteLine("bKGD chunk found!");
             }
+            // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
+            // ports: the samples are embedded as they are.
         }
 
         byte[] inflatedImageData = Decompressor.Inflate(iDAT);

@@ -664,24 +664,26 @@ func (cell *Cell) DrawText(page *Page, x, y, wCell, hCell float32) {
 		log.Fatal("Invalid Text Alignment!")
 	}
 
-	//if cell.uri != nil || cell.key != nil {
-	//  var w float32 = cell.font.stringWidth(cell.font.size, *cell.text)
-	//  page.AddAnnotation(&Annotation{
-	//      annotationType: AnnotationLink,     // TODO:
-	//      x1: xText,
-	//      y1: yText-cell.font.ascent,
-	//      x2: xText+w,
-	//      y2: yText+cell.font.descent,
-	//      vertices: nil,
-	//      "",
-	//      "",
-	//      "",
-	//      "",
-	//      "",
-	//      "",
-	//      "",
-	//  })
-	//}
+	if cell.uri != "" {
+		w := cell.font.StringWidth(cell.font.size, cell.text)
+		page.AddAnnotation(&Annotation{
+			annotationType: AnnotationLink,
+			x1:             xText,
+			y1:             yText - cell.font.ascent,
+			x2:             xText + w,
+			y2:             yText + cell.font.descent,
+			vertices:       nil,
+			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
+			transparency:   0.0,
+			title:          "",
+			contents:       "",
+			uri:            cell.uri,
+			key:            "",
+			language:       "",
+			actualText:     "",
+			altDescription: "",
+		})
+	}
 }
 
 // UnderlineText underlines the cell text.

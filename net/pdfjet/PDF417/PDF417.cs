@@ -11,6 +11,11 @@ namespace PDFjet.NET {
 /// <summary>
 ///  Used to create PDF417 2D barcodes.
 ///
+///  The bars are drawn from the location set with SetLocation. ISO/IEC 15438
+///  asks for a quiet zone of at least two modules (twice the module width) on
+///  all four sides of the symbol, so leave that much space around it; scanners
+///  reject symbols with less.
+///
 ///  Please see Example_12.
 /// </summary>
 public class PDF417 : IDrawable {
