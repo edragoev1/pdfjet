@@ -6,9 +6,9 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // Rect is used to create rectangular shapes on a page.

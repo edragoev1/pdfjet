@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // BigTable represents a table for handling large amounts of data in PDF

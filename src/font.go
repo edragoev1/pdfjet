@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/cjkfont"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
 
 // Font is used to create font objects.

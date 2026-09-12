@@ -41,7 +41,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/edragoev1/pdfjet/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
 // JPGImage describes JPG image object.

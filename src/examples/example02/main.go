@@ -3,13 +3,13 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansJP"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansKR"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansSC"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansTC"
-	"github.com/edragoev1/pdfjet/src/content"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
+	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example02 demonstrates creating a PDF document with Japanese and Korean text

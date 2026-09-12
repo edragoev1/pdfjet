@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example13 draws a table that spans multiple pages.

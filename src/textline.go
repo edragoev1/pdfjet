@@ -10,9 +10,9 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/effect"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/effect"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // TextLine is used to create text line objects.

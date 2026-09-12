@@ -3,11 +3,11 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compress"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compress"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example06 shows how to attach files and annotations to a page.

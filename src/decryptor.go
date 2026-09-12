@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 )
 
 var passwordPadding = []byte{

@@ -3,10 +3,10 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/JetBrainsMono"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example32 draws highlighted source code using the draw string method and a color map.

@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/compliance"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 // Example07 shows how to create a PDF/A-3B compliant document.

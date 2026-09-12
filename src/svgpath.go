@@ -5,7 +5,7 @@
 
 package pdfjet
 
-import "github.com/edragoev1/pdfjet/src/color"
+import "github.com/edragoev1/pdfjet/v9/src/color"
 
 // SVGPath holds one SVG path with its PDF operations, colors and stroke width.
 type SVGPath struct {

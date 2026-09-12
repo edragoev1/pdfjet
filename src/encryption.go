@@ -13,7 +13,7 @@ import (
 	"encoding/binary"
 	"strconv"
 
-	"github.com/edragoev1/pdfjet/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
 )
 
 // User represents user password keys

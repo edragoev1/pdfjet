@@ -8,7 +8,7 @@ package pdfjet
 import (
 	"log"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
 // Cell is used to create table cell objects.

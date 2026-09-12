@@ -6,10 +6,10 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/mark"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/mark"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // CheckBox creates a CheckBox, which can be set checked or unchecked.

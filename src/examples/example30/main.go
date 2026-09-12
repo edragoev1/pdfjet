@@ -3,11 +3,11 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/compress"
-	"github.com/edragoev1/pdfjet/src/encryption"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compress"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example30 encrypts the PDF and attaches embedded files to a page.

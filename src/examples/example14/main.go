@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
 
 // Example14 draws a table and sets the borders of the individual cells.

@@ -3,9 +3,9 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/corefont"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
 
 // Example36 shows how you can add pages to PDF in random order.

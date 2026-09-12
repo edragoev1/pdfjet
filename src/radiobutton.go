@@ -6,9 +6,9 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // RadioButton is used to create radio button, which can be set selected or unselected.

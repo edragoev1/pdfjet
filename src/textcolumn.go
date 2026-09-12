@@ -9,8 +9,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
 // TextColumn is used to create text column objects and draw them on a page.

@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // DonutChart is used to create donut chart objects and draw them on a page.

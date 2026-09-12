@@ -10,10 +10,10 @@ package pdfjet
 import (
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/border"
-	"github.com/edragoev1/pdfjet/src/direction"
-	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/direction"
+	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
 // TextBox is a box containing line-wrapped text.

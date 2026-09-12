@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/edragoev1/pdfjet/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
 // FontTable is used to construct font table objects.

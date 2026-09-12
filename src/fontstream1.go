@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/decompressor"
-	"github.com/edragoev1/pdfjet/src/encryption"
-	"github.com/edragoev1/pdfjet/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // FontStream1 is used to add stream fonts to the PDF.

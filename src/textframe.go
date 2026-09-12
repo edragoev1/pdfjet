@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
 // TextFrame Please see Example_47

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/color"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // Example18

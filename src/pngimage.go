@@ -11,9 +11,9 @@ import (
 	"log"
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/compressor"
-	"github.com/edragoev1/pdfjet/src/crc32util"
-	"github.com/edragoev1/pdfjet/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/crc32util"
+	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 )
 
 // PNGImage is used to embed PNG images in the PDF document.

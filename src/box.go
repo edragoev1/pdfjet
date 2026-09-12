@@ -6,10 +6,10 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // Box is used to create rectangular boxes on a page.

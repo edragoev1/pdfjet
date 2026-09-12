@@ -8,7 +8,7 @@ package pdfjet
 import (
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
 // Paragraph describes paragraph objects.

@@ -3,7 +3,7 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 /**

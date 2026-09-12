@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
 // Table is used to create table objects and draw them on a page.

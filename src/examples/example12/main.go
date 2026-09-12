@@ -4,11 +4,11 @@ import (
 	"strings"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/letter"
-	"github.com/edragoev1/pdfjet/src/pdf417"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/pdf417"
 )
 
 // Example12 constructs and draws PDF417 barcode.

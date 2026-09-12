@@ -8,8 +8,8 @@ package pdfjet
 import (
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/content"
-	"github.com/edragoev1/pdfjet/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/single"
 )
 
 // Text structure

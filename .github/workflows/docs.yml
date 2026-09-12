@@ -126,7 +126,7 @@ jobs:
                   <ul>
                   <li><a href="java/">Java</a> (<code>com.pdfjet</code>)</li>
                   <li><a href="net/">C#</a> (<code>PDFjet.NET</code>)</li>
-                  <li><a href="go/">Go</a> (<code>github.com/edragoev1/pdfjet/src</code>)</li>
+                  <li><a href="go/">Go</a> (<code>github.com/edragoev1/pdfjet/v9/src</code>)</li>
                   <li><a href="swift/">Swift</a> (<code>PDFjet</code>)</li>
                   </ul>
                   <h2>Examples</h2>

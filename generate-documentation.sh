@@ -23,7 +23,7 @@ docfx docfx/docfx.json
 # The example programs in src/examples are left out.
 # go run fetches and caches the pinned doc2go version, so nothing is installed.
 rm -rf docs/go
-go run go.abhg.dev/doc2go@v0.12.2 -out docs/go -home github.com/edragoev1/pdfjet/src -rel-link-style index \
+go run go.abhg.dev/doc2go@v0.12.2 -out docs/go -home github.com/edragoev1/pdfjet/v9/src -rel-link-style index \
     $(go list ./src/... | grep -v /examples/)
 
 # The Swift API reference is built by DocC, which comes with the Swift toolchain,

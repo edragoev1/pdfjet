@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/edragoev1/pdfjet/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
 // TextBlock creates block of line-wrapped text.

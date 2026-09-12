@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
 )
 
 // Example33 draws SVG images on the page.

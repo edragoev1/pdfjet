@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/cjkfont"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example04 demonstrates the creation of a PDF document with text in various CJK

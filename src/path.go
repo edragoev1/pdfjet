@@ -6,8 +6,8 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 )
 
 // Path is used to create path objects.

@@ -8,7 +8,7 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/effect"
+	"github.com/edragoev1/pdfjet/v9/src/effect"
 )
 
 // CompositeTextLine constructs composite text line objects.

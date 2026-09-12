@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
 // Chart is used to create XY chart objects and draw them on a page.

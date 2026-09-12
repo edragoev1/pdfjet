@@ -3,13 +3,13 @@ package main
 import (
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansArabic"
-	"github.com/edragoev1/pdfjet/src/IBMPlexSansHebrew"
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/content"
-	"github.com/edragoev1/pdfjet/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example27 draws Thai, Hebrew, Arabic and Persian text.

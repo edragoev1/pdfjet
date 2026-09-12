@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/fastfloat"
-	"github.com/edragoev1/pdfjet/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // Stamp struct

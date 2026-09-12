@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
-	"github.com/edragoev1/pdfjet/src/a4"
-	"github.com/edragoev1/pdfjet/src/imagetype"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 )
 
 // Example17 is a test case for PNG images.

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/decompressor"
-	"github.com/edragoev1/pdfjet/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // PDFobj is used to create Java or .NET objects that represent the objects in PDF document.

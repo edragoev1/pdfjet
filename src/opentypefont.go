@@ -12,7 +12,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
 )
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {

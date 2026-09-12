@@ -10,7 +10,7 @@ import (
 	"log"
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/compressor"
 )
 
 // BMPImage describes BMP image object.

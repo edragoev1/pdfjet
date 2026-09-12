@@ -20,7 +20,15 @@ To build the Go version and compile and run all examples:
 
 ## To use the Go library:
 ```bash
-go get github.com/edragoev1/pdfjet@latest
+go get github.com/edragoev1/pdfjet/v9@latest
+
+The module path carries the major version, as Go requires from v2 on, so
+import the packages as:
+
+import (
+    pdfjet "github.com/edragoev1/pdfjet/v9/src"
+    "github.com/edragoev1/pdfjet/v9/src/letter"
+)
 
 
 To build the Swift version and compile and run all examples:

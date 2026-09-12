@@ -16,14 +16,14 @@ import (
 	"unicode"
 	"unicode/utf16"
 
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/compliance"
-	"github.com/edragoev1/pdfjet/src/corefont"
-	"github.com/edragoev1/pdfjet/src/fastfloat"
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/shape"
-	"github.com/edragoev1/pdfjet/src/structtype"
-	"github.com/edragoev1/pdfjet/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // Page is used to create PDF page objects.

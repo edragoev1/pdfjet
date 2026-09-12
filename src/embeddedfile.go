@@ -15,8 +15,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/encryption"
-	"github.com/edragoev1/pdfjet/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // EmbeddedFile is used to embed file objects in the PDF.

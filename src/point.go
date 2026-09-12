@@ -6,9 +6,9 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/src/alignment"
-	"github.com/edragoev1/pdfjet/src/pathoperator"
-	"github.com/edragoev1/pdfjet/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
 // Point is used to create point objects with different shapes and draw them on a page.

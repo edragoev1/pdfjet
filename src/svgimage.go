@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // SVGImage is used to draw SVG images on a page.

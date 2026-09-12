@@ -14,11 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/src/device"
-	"github.com/edragoev1/pdfjet/src/encryption"
-	"github.com/edragoev1/pdfjet/src/imagetype"
-	"github.com/edragoev1/pdfjet/src/single"
-	"github.com/edragoev1/pdfjet/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/device"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/imagetype"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // Image describes an image object.

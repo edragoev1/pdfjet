@@ -8,8 +8,8 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/src/color"
-	"github.com/edragoev1/pdfjet/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 )
 
 // Container represents a drawable container that can hold other drawable elements.

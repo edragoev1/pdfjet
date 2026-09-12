@@ -10,7 +10,7 @@ import (
 	"log"
 	"strconv"
 
-	pdfjet "github.com/edragoev1/pdfjet/src"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 )
 
 // PDF417 is used to generate PDF417 2D barcodes.
