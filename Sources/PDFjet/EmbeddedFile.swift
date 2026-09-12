@@ -47,6 +47,7 @@ public class EmbeddedFile {
             FlateEncode(&buf2, buf)
             buf = buf2
         }
+        buf = pdf.encrypted(buf)
 
         pdf.newobj()
         pdf.append(Token.beginDictionary)
@@ -67,7 +68,7 @@ public class EmbeddedFile {
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Filespec\n")
         pdf.append("/F <")
-        pdf.append(Array(fileName.utf8).map { String(format: "%02x", $0) }.joined())
+        pdf.append(pdf.toHexString(fileName))
         pdf.append(">\n")
         pdf.append("/EF <</F ")
         pdf.append(pdf.getObjNumber() - 1)

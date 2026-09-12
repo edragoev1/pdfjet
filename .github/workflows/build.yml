@@ -70,15 +70,9 @@ jobs:
               run: bash -e build-${{ matrix.port }}.sh
 
             - name: Check that every example created its PDF file
-              env:
-                  PORT: ${{ matrix.port }}
               run: |
                   missing=0
                   for i in $(seq -w 1 50); do
-                      # The Swift port has no Example_30, see build-swift.sh.
-                      if [ "$PORT" = swift ] && [ "$i" = 30 ]; then
-                          continue
-                      fi
                       if [ ! -s "Example_$i.pdf" ]; then
                           echo "::error::Example_$i.pdf was not created"
                           missing=1

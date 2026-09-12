@@ -226,36 +226,10 @@ final class Decryptor {
     // Returns the hash of the empty password and the salt, which is SHA-256 in
     // revision 5, and algorithm 2.B of ISO 32000-2 in revision 6.
     private static func getHash(_ r: Int, _ salt: [UInt8]) -> [UInt8] {
-        var k = Cryptography.sha256(salt)
         if r == 5 {
-            return k
+            return Cryptography.sha256(salt)
         }
-        var round = 1
-        while true {
-            var k1 = [UInt8]()
-            k1.reserveCapacity(64 * k.count)
-            for _ in 0..<64 {
-                k1.append(contentsOf: k)
-            }
-            let e = Cryptography.aesEncryptCBC(k1, Array(k[0..<16]), Array(k[16..<32]))
-            var sum = 0
-            for i in 0..<16 {
-                sum += Int(e[i])
-            }
-            switch sum % 3 {
-            case 0:
-                k = Cryptography.sha256(e)
-            case 1:
-                k = Cryptography.sha384(e)
-            default:
-                k = Cryptography.sha512(e)
-            }
-            if round >= 64 && Int(e[e.count - 1]) <= round - 32 {
-                break
-            }
-            round += 1
-        }
-        return Array(k[0..<32])
+        return Cryptography.hash2B([], salt, [])
     }
 
     ///

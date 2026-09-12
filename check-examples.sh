@@ -49,10 +49,6 @@ for port in java dotnet go swift; do
     mkdir -p "$WORK/pdfs/$port"
     missing=0
     for i in $(seq -w 1 50); do
-        # The Swift port has no Example_30, see build-swift.sh.
-        if [ $port = swift ] && [ $i = 30 ]; then
-            continue
-        fi
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else

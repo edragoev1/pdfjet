@@ -6,11 +6,54 @@
  */
 
 ///
-/// The hash functions and ciphers that decrypting a PDF needs, as Foundation
-/// has no cryptography on Linux: MD5 (RFC 1321), SHA-256, SHA-384 and SHA-512
-/// (FIPS 180-4), AES in CBC mode without padding (FIPS 197) and RC4.
+/// The hash functions and ciphers that encrypting and decrypting a PDF need,
+/// as Foundation has no cryptography on Linux: MD5 (RFC 1321), SHA-256,
+/// SHA-384 and SHA-512 (FIPS 180-4), AES in CBC mode (FIPS 197), RC4, and the
+/// password hash of ISO 32000-2.
 ///
 enum Cryptography {
+    /// Returns random bytes from the system's cryptographic random number
+    /// generator.
+    static func randomBytes(_ count: Int) -> [UInt8] {
+        var generator = SystemRandomNumberGenerator()
+        return (0..<count).map { _ in UInt8.random(in: 0...255, using: &generator) }
+    }
+
+    /// Algorithm 2.B of ISO 32000-2: the hash of a password in revision 6 of
+    /// the standard security handler. The user key is the /U value when the
+    /// password is the owner password, and empty when it is the user password.
+    static func hash2B(_ password: [UInt8], _ salt: [UInt8], _ userKey: [UInt8]) -> [UInt8] {
+        var k = sha256(password + salt + userKey)
+        var round = 1
+        while true {
+            var k1 = [UInt8]()
+            k1.reserveCapacity(64 * (password.count + k.count + userKey.count))
+            for _ in 0..<64 {
+                k1.append(contentsOf: password)
+                k1.append(contentsOf: k)
+                k1.append(contentsOf: userKey)
+            }
+            let e = aesEncryptCBC(k1, Array(k[0..<16]), Array(k[16..<32]))
+            var sum = 0
+            for i in 0..<16 {
+                sum += Int(e[i])
+            }
+            switch sum % 3 {
+            case 0:
+                k = sha256(e)
+            case 1:
+                k = sha384(e)
+            default:
+                k = sha512(e)
+            }
+            if round >= 64 && Int(e[e.count - 1]) <= round - 32 {
+                break
+            }
+            round += 1
+        }
+        return Array(k[0..<32])
+    }
+
     static func md5(_ message: [UInt8]) -> [UInt8] {
         var h: [UInt32] = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]
         let padded = pad(message, 64, false)
@@ -238,6 +281,23 @@ enum Cryptography {
             }
         }
         return result
+    }
+
+    /// Encrypts the data with a random IV and PKCS#5 padding, the way the
+    /// AESV2 and AESV3 crypt filters of a PDF do, and returns the IV followed
+    /// by the ciphertext.
+    static func aesEncryptCBCPadded(_ data: [UInt8], _ key: [UInt8]) -> [UInt8] {
+        let iv = randomBytes(16)
+        let padding = 16 - data.count % 16
+        let padded = data + [UInt8](repeating: UInt8(padding), count: padding)
+        return iv + aesEncryptCBC(padded, key, iv)
+    }
+
+    /// Encrypts one block of 16 bytes, which is AES in ECB mode.
+    static func aesEncryptBlock(_ block: [UInt8], _ key: [UInt8]) -> [UInt8] {
+        var s = block
+        encryptBlock(&s, expandKey(key), key.count / 4 + 6)
+        return s
     }
 
     /// Decrypts the data, whose length is a multiple of 16, with a key of 16,

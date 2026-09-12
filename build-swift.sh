@@ -7,11 +7,6 @@ bin=$(swift build --configuration release --show-bin-path)
 
 for i in $(seq 1 50);
 do
-    # The Swift port has no Example_30 - it demonstrates encryption, which the
-    # Swift port does not support. See the "Port differences" section in README.md.
-    if [ $i -eq 30 ]; then
-        continue
-    fi
     if [ $i -lt 10 ]; then
         "$bin/Example_0$i"
     else

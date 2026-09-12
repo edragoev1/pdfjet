@@ -44,6 +44,7 @@ public class PDF {
     private var prevPage: Page?
     var structElements = [StructElem]()
     private var contentStreamsCompression = true
+    var encryption: Encryption?
 
     // The OCG type that will be stored in the list/array.
     struct OCG {
@@ -127,6 +128,36 @@ public class PDF {
     public func setCompliance(_ compliance: Compliance) -> PDF {
         self.compliance = compliance
         return self
+    }
+
+    ///
+    /// Sets the encryption applied to this document.
+    ///
+    /// - Parameter encryption: the encryption.
+    /// - Returns: this PDF object.
+    ///
+    @discardableResult
+    public func setEncryption(_ encryption: Encryption) -> PDF {
+        self.encryption = encryption
+        return self
+    }
+
+    /// Returns the bytes of a string or a stream, encrypted if the document is
+    /// encrypted.
+    func encrypted(_ bytes: [UInt8]) -> [UInt8] {
+        guard let encryption = encryption else {
+            return bytes
+        }
+        return Cryptography.aesEncryptCBCPadded(bytes, encryption.getKey())
+    }
+
+    /// Returns the UTF-8 bytes of the string, encrypted if the document is
+    /// encrypted, as hexadecimal digits, for a string object.
+    func toHexString(_ str: String?) -> String {
+        guard let str = str, !str.isEmpty else {
+            return ""
+        }
+        return toHex(encrypted(Array(str.utf8)))
     }
 
     func newobj() {
@@ -268,7 +299,7 @@ public class PDF {
         sb.append("</x:xmpmeta>\n")
         sb.append("<?xpacket end=\"w\"?>")
 
-        let buf = [UInt8](sb.utf8)
+        let buf = encrypted([UInt8](sb.utf8))
 
         // This is the metadata object
         newobj()
@@ -292,25 +323,37 @@ public class PDF {
         append(Token.beginDictionary)
         append("/N 3\n")
 
+        let profile = encrypted(ICCBlackScaled.profile)
         append(Token.length)
-        append(ICCBlackScaled.profile.count)
+        append(profile.count)
         append(Token.newline)
 
         append("/Filter /FlateDecode\n")
         append(Token.endDictionary)
         append(Token.stream)
-        append(ICCBlackScaled.profile, 0, ICCBlackScaled.profile.count)
+        append(profile, 0, profile.count)
         append(Token.endStream)
         endobj()
 
+        let identifier = toHexString("sRGB IEC61966-2.1")
         // OutputIntent object
         newobj()
         append(Token.beginDictionary)
         append("/Type /OutputIntent\n")
         append("/S /GTS_PDFA1\n")
-        append("/OutputCondition (sRGB IEC61966-2.1)\n")
-        append("/OutputConditionIdentifier (sRGB IEC61966-2.1)\n")
-        append("/Info (sRGB IEC61966-2.1)\n")
+
+        append("/OutputCondition <")
+        append(identifier)
+        append(">\n")
+
+        append("/OutputConditionIdentifier <")
+        append(identifier)
+        append(">\n")
+
+        append("/Info <")
+        append(identifier)
+        append(">\n")
+
         append("/DestOutputProfile ")
         append(getObjNumber() - 1)
         append(Token.objRef)
@@ -503,19 +546,19 @@ public class PDF {
 
             if !language.isEmpty {
                 append("/Lang <")
-                append(toHex(language))
+                append(toHexString(language))
                 append(">\n")
             }
 
             if !actualText.isEmpty {
                 append("/ActualText <")
-                append(toHex(actualText))
+                append(toHexString(actualText))
                 append(">\n")
             }
 
             if !altDescription.isEmpty {
                 append("/Alt <")
-                append(toHex(altDescription))
+                append(toHexString(altDescription))
                 append(">\n")
             }
 
@@ -573,9 +616,9 @@ public class PDF {
         append(Token.beginDictionary)
         append("/Type /Catalog\n")
         if compliance != Compliance.PDF_17 {
-            append("/Lang (")
-            append(language)
-            append(")\n")
+            append("/Lang <")
+            append(toHexString(language))
+            append(">\n")
 
             append("/StructTreeRoot ")
             append(structTreeRootObjNumber)
@@ -727,6 +770,7 @@ public class PDF {
             var buffer = [UInt8]()
             FlateEncode(&buffer, page.buf)
             page.buf.removeAll()   // Release the page content memory!
+            buffer = encrypted(buffer)
 
             newobj()
             append(Token.beginDictionary)
@@ -741,14 +785,17 @@ public class PDF {
             endobj()
             page.contents.append(getObjNumber())
         } else {    // No compression. Used for diagnostics
+            let buffer = encrypted(page.buf)
+            page.buf.removeAll()   // Release the page content memory!
+
             newobj()
             append(Token.beginDictionary)
             append(Token.length)
-            append(page.buf.count)
+            append(buffer.count)
             append(Token.newline)
             append(Token.endDictionary)
             append(Token.stream)
-            append(page.buf)
+            append(buffer)
             append(Token.endStream)
             endobj()
             page.contents.append(getObjNumber())
@@ -791,10 +838,10 @@ public class PDF {
 
             if annot.fileAttachment != nil {
                 append("/T <")
-                append(toHex(annot.fileAttachment!.title))
+                append(toHexString(annot.fileAttachment!.title))
                 append(">\n")
                 append("/Contents <")
-                append(toHex(annot.fileAttachment!.contents))
+                append(toHexString(annot.fileAttachment!.contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Link {
@@ -812,7 +859,7 @@ public class PDF {
             }
             if let description = description, !description.isEmpty {
                 append("/Contents <")
-                append(toHex(description))
+                append(toHexString(description))
                 append(">\n")
             }
             if let uri = annot.uri {
@@ -820,7 +867,7 @@ public class PDF {
                 append("/A <<\n")
                 append("/S /URI\n")
                 append("/URI <")
-                append(toHex(uri))
+                append(toHexString(uri))
                 append(">\n")
                 append(">>\n")
             } else if let key = annot.key,
@@ -860,13 +907,13 @@ public class PDF {
 
             if let title = annot.title {
                 append("/T <")
-                append(toHex(title))
+                append(toHexString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents {
                 append("/Contents <")
-                append(toHex(contents))
+                append(toHexString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Square ||
@@ -885,26 +932,26 @@ public class PDF {
 
             if let title = annot.title {
                 append("/T <")
-                append(toHex(title))
+                append(toHexString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents {
                 append("/Contents <")
-                append(toHex(contents))
+                append(toHexString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Text {
             append("/Name /Comment\n")
             if let title = annot.title {
                 append("/T <")
-                append(toHex(title))
+                append(toHexString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents {
                 append("/Contents <")
-                append(toHex(contents))
+                append(toHexString(contents))
                 append(">\n")
             }
         }
@@ -1073,6 +1120,12 @@ public class PDF {
         append("><")
         append(uuid)
         append(">]\n")
+
+        if let encryption = encryption {
+            append("/Encrypt ")
+            append(encryption.getObjNumber())
+            append(Token.objRef)
+        }
 
         append("/Root ")
         append(rootObjNumber)
@@ -1777,7 +1830,7 @@ public class PDF {
         newobj()
         append(Token.beginDictionary)
         append("/Title <")
-        append(toHex(bm1.getTitle()))
+        append(toHexString(bm1.getTitle()))
         append(">\n")
         append("/Parent ")
         append(parent)
@@ -2233,8 +2286,14 @@ public class PDF {
         // Java hex encodes the UTF-8 bytes of the string, so a character
         // outside ASCII must be written as its UTF-8 byte sequence - not as
         // its code point - or a PDF reader decodes it as the wrong character.
+        return toHex(Array(str.utf8))
+    }
+
+    /// Returns the bytes as uppercase hexadecimal digits.
+    func toHex(_ bytes: [UInt8]) -> String {
         var result: [UInt8] = []
-        for byte in Array(str.utf8) {
+        result.reserveCapacity(2 * bytes.count)
+        for byte in bytes {
             result.append(HEX[Int((byte >> 4) & 0xF)])
             result.append(HEX[Int(byte        & 0xF)])
         }

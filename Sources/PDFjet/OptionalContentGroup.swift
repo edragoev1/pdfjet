@@ -64,7 +64,9 @@ public class OptionalContentGroup {
             pdf.newobj()
             pdf.append(Token.beginDictionary)
             pdf.append("/Type /OCG\n")
-            pdf.append("/Name (" + name! + ")\n")
+            pdf.append("/Name <")
+            pdf.append(pdf.toHexString(name!))
+            pdf.append(">\n")
             pdf.append("/Usage <<\n")
             if visible != nil {
                 pdf.append("/View << /ViewState /ON >>\n")

@@ -66,8 +66,20 @@ class FontStream1 {
             pdf.append("/Subtype /CIDFontType0C\n")
         }
         pdf.append("/Filter /FlateDecode\n")
+
+        var compressed = [UInt8]()
+        compressed.reserveCapacity(font.compressedSize!)
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            if count > 0 {
+                compressed.append(contentsOf: buffer[0..<count])
+            }
+        }
+        compressed = pdf.encrypted(compressed)
+
         pdf.append("/Length ")
-        pdf.append(font.compressedSize!)
+        pdf.append(compressed.count)
         pdf.append(Token.newline)
 
         if !font.cff {
@@ -78,13 +90,7 @@ class FontStream1 {
 
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            if count > 0 {
-                pdf.append(buffer, 0, count)
-            }
-        }
+        pdf.append(compressed)
         pdf.append(Token.endStream)
         pdf.endobj()
 
@@ -196,14 +202,15 @@ class FontStream1 {
         sb.append("CMapName currentdict /CMap defineresource pop\n")
         sb.append("end\nend")
 
+        let cmap = pdf.encrypted(Array(sb.utf8))
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Length ")
-        pdf.append(sb.count)
+        pdf.append(cmap.count)
         pdf.append(Token.newline)
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
-        pdf.append(sb)
+        pdf.append(cmap)
         pdf.append(Token.endStream)
         pdf.endobj()
 
@@ -229,7 +236,11 @@ class FontStream1 {
         pdf.append("/BaseFont /")
         pdf.append(Array(font.name.utf8))
         pdf.append(Token.newline)
-        pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
+        pdf.append("/CIDSystemInfo <</Registry <")
+        pdf.append(pdf.toHexString("Adobe"))
+        pdf.append("> /Ordering <")
+        pdf.append(pdf.toHexString("Identity"))
+        pdf.append("> /Supplement 0>>\n")
         pdf.append("/FontDescriptor ")
         pdf.append(font.fontDescriptorObjNumber)
         pdf.append(" 0 R\n")

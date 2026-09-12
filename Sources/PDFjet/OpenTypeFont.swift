@@ -82,8 +82,9 @@ class OpenTypeFont {
         }
         pdf.append("/Filter /FlateDecode\n")
 
+        let compressed = pdf.encrypted(otf.dos)
         pdf.append("/Length ")
-        pdf.append(otf.dos.count)      // The compressed size
+        pdf.append(compressed.count)
         pdf.append(Token.newline)
 
         if !otf.cff {
@@ -94,7 +95,7 @@ class OpenTypeFont {
 
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
-        pdf.append(otf.dos)
+        pdf.append(compressed)
         pdf.append(Token.endStream)
         pdf.endobj()
 
@@ -213,14 +214,15 @@ class OpenTypeFont {
         sb.append("CMapName currentdict /CMap defineresource pop\n")
         sb.append("end\nend")
 
+        let cmap = pdf.encrypted(Array(sb.utf8))
         pdf.newobj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Length ")
-        pdf.append(sb.count)
+        pdf.append(cmap.count)
         pdf.append(Token.newline)
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
-        pdf.append(sb)
+        pdf.append(cmap)
         pdf.append(Token.endStream)
         pdf.endobj()
 
@@ -249,7 +251,11 @@ class OpenTypeFont {
         pdf.append("/BaseFont /")
         pdf.append(otf.fontName!)
         pdf.append(Token.newline)
-        pdf.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>>\n")
+        pdf.append("/CIDSystemInfo <</Registry <")
+        pdf.append(pdf.toHexString("Adobe"))
+        pdf.append("> /Ordering <")
+        pdf.append(pdf.toHexString("Identity"))
+        pdf.append("> /Supplement 0>>\n")
         pdf.append("/FontDescriptor ")
         pdf.append(font.fontDescriptorObjNumber)
         pdf.append(" 0 R\n")

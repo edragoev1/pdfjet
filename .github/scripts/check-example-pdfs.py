@@ -40,8 +40,8 @@ MAX_PAGES = 10
 RESOLUTION = 50
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
 
-# Examples a port does not have. See build-swift.sh.
-MISSING = {('swift', 30)}
+# Examples a port does not have, as (port, number) pairs.
+MISSING = set()
 
 # Examples whose pages a port is allowed to draw differently from Java, with
 # the reason, for example: ('go', 4): 'why the Go example draws differently'.

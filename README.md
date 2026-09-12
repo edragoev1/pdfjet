@@ -188,14 +188,20 @@ marked content span that has the text of the word as its ActualText, so Poppler
 extracts the word whole. MuPDF 1.27 extracts the letters and marks in order,
 but puts spaces inside some of these words.
 
-## Port differences
+## Encryption
 
-The Java, C# and Go ports all support encrypted PDF files. The Swift port does
-not: it has no `Encryption`, `Passwords`, `Permissions`, `UserAccess`, `AES128`
-or `AES256`, because Swift has no AES-CBC implementation in its standard library
-on Linux (swift-crypto only ships AES-GCM), and this library deliberately has no
-dependencies on external packages. `Example_30` demonstrates encryption, so it
-exists for Java, C# and Go but not for Swift; `build-swift.sh` skips it.
+`Encryption` encrypts a PDF with 256-bit AES, revision 6 of the standard
+security handler of ISO 32000-2, with a user password, an owner password and
+the permissions granted to the user. Example_30 shows it in all four ports. The
+Java, C# and Go ports use the ciphers and hash functions of their platforms.
+Swift has no cryptography in its standard library on Linux, and this library has
+no dependencies on external packages, so the Swift port has its own AES, SHA-2,
+MD5 and RC4 in `Sources/PDFjet/Cryptography.swift`, which its `Decryptor` uses
+as well. The four ports write the same encryption dictionary, except that the
+Swift port gives the password hashes random salts, as the standard says, while
+the other ports use zero salts.
+
+## Port differences
 
 Public setters return the object they were called on, so calls can be chained.
 In Java, C# and Swift the `Drawable` interface declares `setLocation` as well as

@@ -63,16 +63,10 @@ jobs:
             - name: Show the output and check that every example created its PDF file
               if: ${{ !cancelled() && steps.build.outcome != 'skipped' }}
               shell: bash
-              env:
-                  PORT: ${{ matrix.port }}
               run: |
                   cat build.log
                   missing=""
                   for i in $(seq -w 1 50); do
-                      # The Swift port has no Example_30, see build-swift.cmd.
-                      if [ "$PORT" = swift ] && [ "$i" = 30 ]; then
-                          continue
-                      fi
                       if [ ! -s "Example_$i.pdf" ]; then
                           missing="$missing $i"
                       fi
