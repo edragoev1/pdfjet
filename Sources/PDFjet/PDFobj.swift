@@ -7,8 +7,8 @@
 import Foundation
 
 ///
-/// Used to create Java or .NET objects that represent the objects in PDF document.
-/// See the PDF specification for more information.
+/// An object of a PDF that was read with PDF.read, which holds the tokens of
+/// its dictionary and its stream. See Example_20, Example_37 and Example_50.
 ///
 public final class PDFobj {
     var number = 0                  // The object number
@@ -47,16 +47,6 @@ public final class PDFobj {
     ///
     public final func getData() -> [UInt8] {
         return self.data
-    }
-
-    /// Sets the decompressed data.
-    final func setData(_ data: inout [UInt8]) {
-        self.data = data
-    }
-
-    /// Returns the compressed stream.
-    final func getStream() -> [UInt8]? {
-        return self.stream
     }
 
     ///
@@ -293,7 +283,7 @@ public final class PDFobj {
         return Letter.PORTRAIT
     }
 
-    final func getLength(_ objects: inout [PDFobj]) -> Int? {
+    final func getLength(_ objects: inout [PDFobj]) -> Int {
         for i in 0..<dict.count {
             if dict[i] == "/Length" {
                 let number = Int(dict[i + 1])!
@@ -305,13 +295,18 @@ public final class PDFobj {
                 }
             }
         }
-        return nil
+        return 0
     }
 
+    // Returns the length stored in the object with the number. The objects
+    // are in the order of the cross-reference, not of their numbers.
     private final func getLength(
             _ number: Int,
-            from objects: inout [PDFobj]) -> Int? {
-        return Int(objects[number - 1].dict[3])
+            from objects: inout [PDFobj]) -> Int {
+        for obj in objects where obj.number == number {
+            return Int(obj.dict[3])!
+        }
+        return 0
     }
 
     private final func getObject(
@@ -352,8 +347,11 @@ public final class PDFobj {
         }
         let content = PDFobj()
         for number in numbers {
-            content.data.append(contentsOf: objects[number - 1].data)
-            content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
+            let object = objects[number - 1]
+            if object.stream != nil {
+                content.data.append(contentsOf: object.data)
+                content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
+            }
         }
         return content
     }
@@ -389,7 +387,6 @@ public final class PDFobj {
         font.fontID = font.name.replacingOccurrences(of: "-", with: "_").uppercased()
 
         let obj = PDFobj()
-        obj.number = objects.last!.number + 1
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
@@ -402,6 +399,7 @@ public final class PDFobj {
             obj.dict.append("/WinAnsiEncoding")
         }
         obj.dict.append(">>")
+        obj.number = objects.count + 1
         objects.append(obj)
 
         var i = 0
@@ -437,16 +435,15 @@ public final class PDFobj {
             i += 1
         }
         if !fonts {
-            i = 0
-            while i < obj.dict.count {
-                if obj.dict[i] == "/Resources" {
-                    obj.dict.insert("/Font", at: i + 2)
-                    obj.dict.insert("<<", at: i + 3)
-                    obj.dict.insert(">>", at: i + 4)
-                    break
-                }
-                i += 1
+            // Direct resources follow "/Resources <<" in the page dictionary; an
+            // indirect resources object has no /Resources key, and its entries
+            // follow its first "<<".
+            if let k = obj.dict.firstIndex(of: "/Resources") {
+                i = k + 2
+            } else {
+                i = (obj.dict.firstIndex(of: "<<") ?? -1) + 1
             }
+            obj.dict.insert(contentsOf: ["/Font", "<<", ">>"], at: i)
         }
 
         i = 0
@@ -482,6 +479,9 @@ public final class PDFobj {
             _ dict: inout [String],
             _ list: inout [String],
             _ type: String) {
+        if dict.contains(list[0]) {
+            return
+        }
         for i in 0..<dict.count {
             if dict[i] == type {
                 dict.insert(contentsOf: list, at: i + 2)
@@ -583,7 +583,7 @@ public final class PDFobj {
     /// Adds a content stream to this page.
     public final func addContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()
-        obj.setNumber(objects.last!.number + 1)
+        obj.setNumber(objects.count + 1)
         obj.setStream(&content)
         objects.append(obj)
 
@@ -643,7 +643,7 @@ public final class PDFobj {
     ///
     public final func addPrefixContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()
-        obj.setNumber(objects.last!.number + 1)
+        obj.setNumber(objects.count + 1)
         obj.setStream(&content)
         objects.append(obj)
 
@@ -702,7 +702,8 @@ public final class PDFobj {
     }
 
     /// Adds the graphics state to the resources of this page.
-    public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) {
+    @discardableResult
+    public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) -> PDFobj {
         var obj: PDFobj?
         var index = -1
         var i = 0
@@ -727,47 +728,32 @@ public final class PDFobj {
             }
             i += 1
         }
-        if obj == nil || index == -1 {
-            return
+        guard var resources = obj, index != -1 else {
+            return self
         }
-        gsNumber = getMaxGSNumber(obj!)
-        if gsNumber == 0 {                              // No existing ExtGState dictionary
-            obj!.dict.insert("/ExtGState", at: index)   // Add ExtGState dictionary
-            index += 1
-            obj!.dict.insert("<<", at: index)
-        } else {
-            while index < obj!.dict.count {
-                let token = obj!.dict[index]
-                if token == "/ExtGState" {
-                    index += 1
-                    break
-                }
-                index += 1
-            }
+        // The graphics states go in the /ExtGState dictionary of the resources,
+        // which can be an object of its own. Resources without one get it.
+        var k = index
+        while k < resources.dict.count && resources.dict[k] != "/ExtGState" {
+            k += 1
         }
-        index += 1
-        obj!.dict.insert("/GS" + String(gsNumber + 1), at: index)
-        index += 1
-        obj!.dict.insert("<<", at: index)
-        index += 1
-        obj!.dict.insert("/CA", at: index)
-        index += 1
-        obj!.dict.insert(String(gs.getAlphaStroking()), at: index)
-        index += 1
-        obj!.dict.insert("/ca", at: index)
-        index += 1
-        obj!.dict.insert(String(gs.getAlphaNonStroking()), at: index)
-        index += 1
-        obj!.dict.insert(">>", at: index)
-        if gsNumber == 0 {
-            index += 1
-            obj!.dict.insert(">>", at: index)
+        if k == resources.dict.count {
+            resources.dict.insert(contentsOf: ["/ExtGState", "<<", ">>"], at: index)
+            index += 2
+        } else if resources.dict[k + 1] == "<<" {
+            index = k + 2
+        } else {                                        // "/ExtGState 12 0 R"
+            resources = objects[Int(resources.dict[k + 1])! - 1]
+            index = (resources.dict.firstIndex(of: "<<") ?? -1) + 1
         }
-
-        var buf = String()
-        buf.append("q\n")
-        buf.append("/GS" + String(gsNumber + 1) + " gs\n")
-        var array = Array(buf.utf8)
-        addPrefixContent(&array, &objects)
+        gsNumber = getMaxGSNumber(resources)
+        let name = "/GS" + String(gsNumber + 1)
+        resources.dict.insert(contentsOf: [
+                name, "<<",
+                "/CA", String(gs.getAlphaStroking()),
+                "/ca", String(gs.getAlphaNonStroking()), ">>"], at: index)
+        var content = Array("q\n\(name) gs\n".utf8)
+        addPrefixContent(&content, &objects)
+        return self
     }
 }

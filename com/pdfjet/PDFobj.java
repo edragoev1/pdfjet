@@ -10,12 +10,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Used to create Java or .NET objects that represent the objects in PDF document.
- * See the PDF specification for more information.
+ * An object of a PDF that was read with PDF.read, which holds the tokens of
+ * its dictionary and its stream. See Example_20, Example_37 and Example_50.
  */
 public class PDFobj {
     /** The object number. */
@@ -34,9 +33,7 @@ public class PDFobj {
     protected int gsNumber = -1;
 
     /**
-     * Used to create Java or .NET objects that represent the objects in PDF document.
-     * See the PDF specification for more information.
-     * Also see Example_19.
+     * Creates an object with an empty dictionary.
      */
     protected PDFobj() {
         this.dict = new ArrayList<String>();
@@ -481,14 +478,12 @@ public class PDFobj {
             }
         }
         if (!fonts) {
-            for (int i = 0; i < obj.dict.size(); i++) {
-                if (obj.dict.get(i).equals("/Resources")) {
-                    obj.dict.add(i + 2, "/Font");
-                    obj.dict.add(i + 3, "<<");
-                    obj.dict.add(i + 4, ">>");
-                    break;
-                }
-            }
+            // Direct resources follow "/Resources <<" in the page dictionary;
+            // an indirect resources object has no /Resources key, and its
+            // entries follow its first "<<".
+            int i = obj.dict.indexOf("/Resources");
+            i = (i == -1) ? obj.dict.indexOf("<<") + 1 : i + 2;
+            obj.dict.addAll(i, Arrays.asList("/Font", "<<", ">>"));
         }
 
         for (int i = 0; i < obj.dict.size(); i++) {
@@ -717,17 +712,20 @@ public class PDFobj {
         }
     }
 
+    // Returns the largest number of the /GS names in the dictionary, or 0. A
+    // name with no number after /GS, like /GSa, is skipped.
     private int getMaxGSNumber(PDFobj obj) {
-        List<Integer> numbers = new ArrayList<Integer>();
+        int maxGSNumber = 0;
         for (String token : obj.dict) {
             if (token.startsWith("/GS")) {
-                numbers.add(Integer.valueOf(token.substring(3)));
+                try {
+                    maxGSNumber = Math.max(maxGSNumber, Integer.parseInt(token.substring(3)));
+                } catch (NumberFormatException e) {
+                    // Not a /GS name with a number.
+                }
             }
         }
-        if (numbers.isEmpty()) {
-            return 0;
-        }
-        return Collections.max(numbers);
+        return maxGSNumber;
     }
 
     /**
@@ -761,35 +759,28 @@ public class PDFobj {
         if (obj == null || index == -1) {
             return this;
         }
+        // The graphics states go in the /ExtGState dictionary of the resources,
+        // which can be an object of its own. Resources without one get it.
+        int i = index;
+        while (i < obj.dict.size() && !obj.dict.get(i).equals("/ExtGState")) {
+            i++;
+        }
+        if (i == obj.dict.size()) {
+            obj.dict.addAll(index, Arrays.asList("/ExtGState", "<<", ">>"));
+            index += 2;
+        } else if (obj.dict.get(i + 1).equals("<<")) {
+            index = i + 2;
+        } else {                                // "/ExtGState 12 0 R"
+            obj = objects.get(Integer.parseInt(obj.dict.get(i + 1)) - 1);
+            index = obj.dict.indexOf("<<") + 1;
+        }
         gsNumber = getMaxGSNumber(obj);
-        if (gsNumber == 0) {                    // No existing ExtGState dictionary
-            obj.dict.add(index, "/ExtGState");  // Add ExtGState dictionary
-            obj.dict.add(++index, "<<");
-        } else {
-            while (index < obj.dict.size()) {
-                String token = obj.dict.get(index);
-                if (token.equals("/ExtGState")) {
-                    index += 1;
-                    break;
-                }
-                index += 1;
-            }
-        }
-        obj.dict.add(++index, "/GS" + String.valueOf(gsNumber + 1));
-        obj.dict.add(++index, "<<");
-        obj.dict.add(++index, "/CA");
-        obj.dict.add(++index, String.valueOf(gs.getAlphaStroking()));
-        obj.dict.add(++index, "/ca");
-        obj.dict.add(++index, String.valueOf(gs.getAlphaNonStroking()));
-        obj.dict.add(++index, ">>");
-        if (gsNumber == 0) {
-            obj.dict.add(++index, ">>");
-        }
-
-        StringBuilder buf = new StringBuilder();
-        buf.append("q\n");
-        buf.append("/GS" + String.valueOf(gsNumber + 1) + " gs\n");
-        addPrefixContent(buf.toString().getBytes(StandardCharsets.UTF_8), objects);
+        String name = "/GS" + (gsNumber + 1);
+        obj.dict.addAll(index, Arrays.asList(
+                name, "<<",
+                "/CA", String.valueOf(gs.getAlphaStroking()),
+                "/ca", String.valueOf(gs.getAlphaNonStroking()), ">>"));
+        addPrefixContent(("q\n" + name + " gs\n").getBytes(StandardCharsets.UTF_8), objects);
         return this;
     }
 }

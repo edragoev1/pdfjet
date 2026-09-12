@@ -1346,7 +1346,7 @@ public class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, obj.getLength(&objects1)!, decryptor)
+                try obj.setStreamAndData(&buffer1, obj.getLength(&objects1), decryptor)
             }
             if type == "/ObjStm" {
                 let first = Int(obj.getValue("/First"))!

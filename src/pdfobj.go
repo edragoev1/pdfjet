@@ -16,8 +16,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// PDFobj is used to create Java or .NET objects that represent the objects in PDF document.
-// See the PDF specification for more information.
+// PDFobj is an object of a PDF that was read with PDF.Read, which holds the
+// tokens of its dictionary and its stream. See Example_20, Example_37 and
+// Example_50.
 type PDFobj struct {
 	number       int      // The object number
 	offset       int      // The object offset
@@ -28,9 +29,7 @@ type PDFobj struct {
 	gsNumber     int      // Graphics State Number
 }
 
-// newPDFobj is used to create Java or .NET objects that represent the objects in PDF document.
-// See the PDF specification for more information.
-// Also see Example_19.
+// newPDFobj creates an object with an empty dictionary.
 func newPDFobj() *PDFobj {
 	obj := new(PDFobj)
 	obj.dict = make([]string, 0)
@@ -444,14 +443,16 @@ func (obj *PDFobj) addFontResource(obj2 *PDFobj, objects *[]*PDFobj, fontID stri
 		}
 	}
 	if !fonts {
-		for i := 0; i < len(obj2.dict); i++ {
-			if obj2.dict[i] == "/Resources" {
-				obj2.dict = insertStringAt(obj2.dict, "/Font", i+2)
-				obj2.dict = insertStringAt(obj2.dict, "<<", i+3)
-				obj2.dict = insertStringAt(obj2.dict, ">>", i+4)
-				break
-			}
+		// Direct resources follow "/Resources <<" in the page dictionary; an
+		// indirect resources object has no /Resources key, and its entries
+		// follow its first "<<".
+		i := slices.Index(obj2.dict, "/Resources")
+		if i == -1 {
+			i = slices.Index(obj2.dict, "<<") + 1
+		} else {
+			i += 2
 		}
+		obj2.dict = insertArrayAt(obj2.dict, []string{"/Font", "<<", ">>"}, i)
 	}
 
 	for i := 0; i < len(obj2.dict); i++ {
@@ -516,11 +517,12 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 			if token == "<<" {
 				obj.dict = insertNewObject(obj.dict, list, objType)
 			} else {
-				objNumber, err := strconv.Atoi(token)
+				n, err := strconv.Atoi(token)
 				if err != nil {
 					log.Fatal(err)
 				}
-				obj.dict = insertNewObject((*objects)[objNumber-1].dict, list, objType)
+				obj2 := (*objects)[n-1]
+				obj2.dict = insertNewObject(obj2.dict, list, objType)
 			}
 			return
 		}
@@ -634,14 +636,10 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 	}
 }
 
-/**
- * Adds new content object before the existing content objects.
- * The original code was provided by Stefan Ostermann author of ScribMaster and HandWrite Pro.
- * Additional code to handle PDFs with indirect array of stream objects was written by EDragoev.
- *
- * @param content
- * @param objects
- */
+// AddPrefixContent adds a content stream before the existing content streams
+// of this page. The original code was provided by Stefan Ostermann author of
+// ScribMaster and HandWrite Pro. Additional code to handle PDFs with indirect
+// array of stream objects was written by EDragoev.
 func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 	obj2 := newPDFobj()
 	obj2.setNumber(len(*objects) + 1)
@@ -690,29 +688,18 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 	}
 }
 
+// getMaxGSNumber returns the largest number of the /GS names in the
+// dictionary, or 0. A name with no number after /GS, like /GSa, is skipped.
 func getMaxGSNumber(obj *PDFobj) int {
-	numbers := make([]int, 0)
+	maxGSNumber := 0
 	for _, token := range obj.dict {
 		if strings.HasPrefix(token, "/GS") {
-			number, err := strconv.Atoi(token[3:])
-			if err != nil {
-				log.Fatal(err)
+			if number, err := strconv.Atoi(token[3:]); err == nil {
+				maxGSNumber = max(maxGSNumber, number)
 			}
-			numbers = append(numbers, number)
 		}
 	}
-
-	if len(numbers) == 0 {
-		return 0
-	}
-
-	maxNumber := 0
-	for _, number := range numbers {
-		if number > maxNumber {
-			maxNumber = number
-		}
-	}
-	return maxNumber
+	return maxGSNumber
 }
 
 // SetGraphicsState sets the graphics state.
@@ -744,44 +731,32 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	if resources == nil || index == -1 {
 		return obj
 	}
-	obj.gsNumber = getMaxGSNumber(resources)
-	if obj.gsNumber == 0 { // No existing ExtGState dictionary
-		resources.dict = insertStringAt(resources.dict, "/ExtGState", index) // Add ExtGState dictionary
-		index++
-		resources.dict = insertStringAt(resources.dict, "<<", index)
-	} else {
-		for index < len(resources.dict) {
-			token := resources.dict[index]
-			if token == "/ExtGState" {
-				index++
-				break
-			}
-			index++
+	// The graphics states go in the /ExtGState dictionary of the resources,
+	// which can be an object of its own. Resources without one get it.
+	i := index
+	for i < len(resources.dict) && resources.dict[i] != "/ExtGState" {
+		i++
+	}
+	if i == len(resources.dict) {
+		resources.dict = insertArrayAt(resources.dict, []string{"/ExtGState", "<<", ">>"}, index)
+		index += 2
+	} else if resources.dict[i+1] == "<<" {
+		index = i + 2
+	} else { // "/ExtGState 12 0 R"
+		number, err := strconv.Atoi(resources.dict[i+1])
+		if err != nil {
+			log.Fatal(err)
 		}
+		resources = (*objects)[number-1]
+		index = slices.Index(resources.dict, "<<") + 1
 	}
-	index++
-	resources.dict = insertStringAt(resources.dict, "/GS"+strconv.Itoa(obj.gsNumber+1), index)
-	index++
-	resources.dict = insertStringAt(resources.dict, "<<", index)
-	index++
-	resources.dict = insertStringAt(resources.dict, "/CA", index)
-	index++
-	resources.dict = insertStringAt(resources.dict, formatFloat32(gs.GetAlphaStroking()), index)
-	index++
-	resources.dict = insertStringAt(resources.dict, "/ca", index)
-	index++
-	resources.dict = insertStringAt(resources.dict, formatFloat32(gs.GetAlphaNonStroking()), index)
-	index++
-	resources.dict = insertStringAt(resources.dict, ">>", index)
-	if obj.gsNumber == 0 {
-		index++
-		resources.dict = insertStringAt(resources.dict, ">>", index)
-	}
-
-	var buf strings.Builder
-	buf.WriteString("q\n")
-	buf.WriteString("/GS" + strconv.Itoa(obj.gsNumber+1) + " gs\n")
-	obj.AddPrefixContent([]byte(buf.String()), objects)
+	obj.gsNumber = getMaxGSNumber(resources)
+	name := "/GS" + strconv.Itoa(obj.gsNumber+1)
+	resources.dict = insertArrayAt(resources.dict, []string{
+		name, "<<",
+		"/CA", formatFloat32(gs.GetAlphaStroking()),
+		"/ca", formatFloat32(gs.GetAlphaNonStroking()), ">>"}, index)
+	obj.AddPrefixContent([]byte("q\n"+name+" gs\n"), objects)
 	return obj
 }
 

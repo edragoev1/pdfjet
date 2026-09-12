@@ -6,17 +6,18 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Used to create Java or .NET objects that represent the objects in PDF document.
-/// See the PDF specification for more information.
+/// An object of a PDF that was read with PDF.Read, which holds the tokens of
+/// its dictionary and its stream. See Example_20, Example_37 and Example_50.
 /// </summary>
 public class PDFobj {
-    internal int offset;           // The object offset
     internal int number;           // The object number
+    internal int offset;           // The object offset
     internal List<String> dict;
     internal int streamOffset;
     internal byte[] stream;        // The compressed stream
@@ -24,9 +25,7 @@ public class PDFobj {
     internal int gsNumber = -1;
 
     /// <summary>
-    /// Used to create Java or .NET objects that represent the objects in PDF document.
-    /// See the PDF specification for more information.
-    /// Also see Example_19.
+    /// Creates an object with an empty dictionary.
     /// </summary>
     internal PDFobj() {
         this.dict = new List<String>();
@@ -264,38 +263,13 @@ public class PDFobj {
         return numbers;
     }
 
-    /// <summary>Adds a content stream object number to the /Contents of this page.</summary>
-    internal void AddContentObject(int number) {
-        int index = -1;
-        for (int i = 0; i < dict.Count; i++) {
-            if (dict[i].Equals("/Contents")) {
-                String str = dict[++i];
-                if (str.Equals("[")) {
-                    while (true) {
-                        str = dict[++i];
-                        if (str.Equals("]")) {
-                            index = i;
-                            break;
-                        }
-                        ++i;    // 0
-                        ++i;    // R
-                    }
-                }
-                break;
-            }
-        }
-        dict.Insert(index, "R");
-        dict.Insert(index, "0");
-        dict.Insert(index, number.ToString());
-    }
-
     /// <summary>Returns the width and height from the /MediaBox of this page.</summary>
     public float[] GetPageSize() {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/MediaBox")) {
                 return new float[] {
-                        Convert.ToSingle(dict[i + 4]),
-                        Convert.ToSingle(dict[i + 5]) };
+                        float.Parse(dict[i + 4], CultureInfo.InvariantCulture),
+                        float.Parse(dict[i + 5], CultureInfo.InvariantCulture) };
             }
         }
         return Letter.PORTRAIT;
@@ -426,14 +400,12 @@ public class PDFobj {
             }
         }
         if (!fonts) {
-            for (int i = 0; i < obj.dict.Count; i++) {
-                if (obj.dict[i].Equals("/Resources")) {
-                    obj.dict.Insert(i + 2, "/Font");
-                    obj.dict.Insert(i + 3, "<<");
-                    obj.dict.Insert(i + 4, ">>");
-                    break;
-                }
-            }
+            // Direct resources follow "/Resources <<" in the page dictionary;
+            // an indirect resources object has no /Resources key, and its
+            // entries follow its first "<<".
+            int i = obj.dict.IndexOf("/Resources");
+            i = (i == -1) ? obj.dict.IndexOf("<<") + 1 : i + 2;
+            obj.dict.InsertRange(i, new String[] {"/Font", "<<", ">>"});
         }
 
         for (int i = 0; i < obj.dict.Count; i++) {
@@ -463,6 +435,9 @@ public class PDFobj {
 
     private void InsertNewObject(
             List<String> dict, String[] list, String type) {
+        if (dict.Contains(list[0])) {
+            return;
+        }
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals(type)) {
                 dict.InsertRange(i + 2, list);
@@ -639,20 +614,14 @@ public class PDFobj {
         }
     }
 
+    // Returns the largest number of the /GS names in the dictionary, or 0. A
+    // name with no number after /GS, like /GSa, is skipped.
     private int GetMaxGSNumber(PDFobj obj) {
-        List<Int32> numbers = new List<Int32>();
+        int maxGSNumber = 0;
         foreach (String token in obj.dict) {
-            if (token.StartsWith("/GS")) {
-                numbers.Add(Int32.Parse(token.Substring(3)));
-            }
-        }
-        if (numbers.Count == 0) {
-            return 0;
-        }
-        int maxGSNumber = -1;
-        foreach (Int32 number in numbers) {
-            if (number > maxGSNumber) {
-                maxGSNumber = number;
+            if (token.StartsWith("/GS", StringComparison.Ordinal) &&
+                    Int32.TryParse(token.Substring(3), NumberStyles.Integer, CultureInfo.InvariantCulture, out int number)) {
+                maxGSNumber = Math.Max(maxGSNumber, number);
             }
         }
         return maxGSNumber;
@@ -683,35 +652,28 @@ public class PDFobj {
         if (obj == null || index == -1) {
             return this;
         }
+        // The graphics states go in the /ExtGState dictionary of the resources,
+        // which can be an object of its own. Resources without one get it.
+        int k = index;
+        while (k < obj.dict.Count && !obj.dict[k].Equals("/ExtGState")) {
+            k++;
+        }
+        if (k == obj.dict.Count) {
+            obj.dict.InsertRange(index, new String[] {"/ExtGState", "<<", ">>"});
+            index += 2;
+        } else if (obj.dict[k + 1].Equals("<<")) {
+            index = k + 2;
+        } else {                                    // "/ExtGState 12 0 R"
+            obj = objects[Int32.Parse(obj.dict[k + 1]) - 1];
+            index = obj.dict.IndexOf("<<") + 1;
+        }
         gsNumber = GetMaxGSNumber(obj);
-        if (gsNumber == 0) {                        // No existing ExtGState dictionary
-            obj.dict.Insert(index, "/ExtGState");   // Add ExtGState dictionary
-            obj.dict.Insert(++index, "<<");
-        } else {
-            while (index < obj.dict.Count) {
-                String token = obj.dict[index];
-                if (token.Equals("/ExtGState")) {
-                    index += 1;
-                    break;
-                }
-                index += 1;
-            }
-        }
-        obj.dict.Insert(++index, "/GS" + (gsNumber + 1).ToString());
-        obj.dict.Insert(++index, "<<");
-        obj.dict.Insert(++index, "/CA");
-        obj.dict.Insert(++index, gs.GetAlphaStroking().ToString());
-        obj.dict.Insert(++index, "/ca");
-        obj.dict.Insert(++index, gs.GetAlphaNonStroking().ToString());
-        obj.dict.Insert(++index, ">>");
-        if (gsNumber == 0) {
-            obj.dict.Insert(++index, ">>");
-        }
-
-        StringBuilder buf = new StringBuilder();
-        buf.Append("q\n");
-        buf.Append("/GS" + (gsNumber + 1).ToString() + " gs\n");
-        AddPrefixContent(Encoding.ASCII.GetBytes(buf.ToString()), objects);
+        String name = "/GS" + (gsNumber + 1).ToString();
+        obj.dict.InsertRange(index, new String[] {
+                name, "<<",
+                "/CA", gs.GetAlphaStroking().ToString(CultureInfo.InvariantCulture),
+                "/ca", gs.GetAlphaNonStroking().ToString(CultureInfo.InvariantCulture), ">>"});
+        AddPrefixContent(Encoding.ASCII.GetBytes("q\n" + name + " gs\n"), objects);
         return this;
     }
 }
