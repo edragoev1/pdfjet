@@ -505,7 +505,7 @@ public class TextBox : IDrawable {
         if (borders) {
             SetBorder(Border.ALL);
         } else {
-            SetBorder(Border.NONE);
+            this.properties &= 0xFFF0FFFF;
         }
         return this;
     }
@@ -713,8 +713,12 @@ public class TextBox : IDrawable {
                     StringBuilder sb = new StringBuilder();
                     float sbWidth = 0f;
                     float spaceWidth = additive ? font.StringWidth(fallbackFont, fontSize, " ") : 0f;
-                    String[] tokens = System.Text.RegularExpressions.Regex.Split(line, @"\s+");
+                    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+                    String[] tokens = System.Text.RegularExpressions.Regex.Split(line, "[ \t\n\x0B\f\r]+");
                     foreach (String token in tokens) {
+                        if (token.Length == 0) {    // Before leading or after trailing whitespace
+                            continue;
+                        }
                         float tokenWidth = additive ? font.StringWidth(fallbackFont, fontSize, token) : 0f;
                         float width;
                         if (additive) {

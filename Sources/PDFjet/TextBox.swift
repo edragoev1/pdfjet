@@ -86,11 +86,10 @@ public class TextBox : Drawable {
         self.fontSize = font.getSize()
     }
 
-    /// Sets the font and takes the font size from it.
+    /// Sets the font.
     @discardableResult
     public func setFont(_ font: Font) -> TextBox {
         self.font = font
-        self.fontSize = font.getSize()
         return self
     }
 
@@ -309,7 +308,7 @@ public class TextBox : Drawable {
         if borders {
             setBorder(Border.ALL)
         } else {
-            self.properties &= 0x00F0FFFF
+            self.properties &= 0xFFF0FFFF
         }
         return self
     }
@@ -528,7 +527,8 @@ public class TextBox : Drawable {
                     var sbWidth: Float = 0.0
                     let spaceWidth = additive ?
                             font.stringWidth(fallbackFont, fontSize, Single.space) : 0.0
-                    let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+                    // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+                    let tokens = line.split(whereSeparator: { " \t\n\u{0B}\u{0C}\r".contains($0) })
                     for token in tokens {
                         let tokenText = String(token)
                         let tokenWidth = additive ?

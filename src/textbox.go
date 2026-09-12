@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // TextBox is a box containing line-wrapped text.
@@ -83,7 +84,6 @@ func NewTextBoxWithText(font *Font, text string) *TextBox {
 // SetFont sets the font of this text box.
 func (textBox *TextBox) SetFont(font *Font) *TextBox {
 	textBox.font = font
-	textBox.fontSize = font.GetSize()
 	return textBox
 }
 
@@ -276,7 +276,7 @@ func (textBox *TextBox) SetBorders(borders bool) *TextBox {
 	if borders {
 		textBox.SetBorder(border.All)
 	} else {
-		textBox.properties &= 0x00F0FFFF
+		textBox.properties &= 0xFFF0FFFF
 	}
 	return textBox
 }
@@ -490,7 +490,11 @@ func (textBox *TextBox) getTextLines() []string {
 			if additive {
 				spaceWidth = font.StringWidthFB(fallbackFont, fontSize, single.Space)
 			}
-			for _, token := range strings.Fields(line) {
+			// The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
+			tokens := strings.FieldsFunc(line, func(r rune) bool {
+				return r == ' ' || r == '\t' || r == '\n' || r == '\v' || r == '\f' || r == '\r'
+			})
+			for _, token := range tokens {
 				var tokenWidth float32
 				if additive {
 					tokenWidth = font.StringWidthFB(fallbackFont, fontSize, token)
@@ -547,11 +551,11 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				list = append(list, line)
 			}
 			if len(list) > 0 { // At least one line must fit in the text box
-				lastLine := list[len(list)-1]
+				lastLine := []rune(list[len(list)-1])
 				if len(lastLine) > 3 {
 					lastLine = lastLine[:len(lastLine)-3]
 				}
-				list[len(list)-1] = lastLine + "..."
+				list[len(list)-1] = string(lastLine) + "..."
 				lines = list
 			}
 		}
@@ -686,7 +690,7 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 	fallbackFont := textBox.fallbackFont
 	fontSize := textBox.fontSize
 
-	page.AddBMC("P", textBox.language, text, textBox.altDescription)
+	page.AddBMC(structtype.P, textBox.language, text, textBox.altDescription)
 
 	if textBox.textDirection == direction.LeftToRight {
 		page.DrawStringUsingColorMap(

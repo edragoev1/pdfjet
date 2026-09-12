@@ -596,7 +596,7 @@ public class TextBox implements Drawable {
         if (borders) {
             setBorder(Border.ALL);
         } else {
-            setBorder(Border.NONE);
+            this.properties &= 0xFFF0FFFF;
         }
         return this;
     }
@@ -878,6 +878,9 @@ public class TextBox implements Drawable {
                     float spaceWidth = additive ? font.stringWidth(fallbackFont, fontSize, " ") : 0f;
                     String[] tokens = line.split("\\s+");
                     for (String token : tokens) {
+                        if (token.isEmpty()) {  // Before leading whitespace
+                            continue;
+                        }
                         float tokenWidth = additive ? font.stringWidth(fallbackFont, fontSize, token) : 0f;
                         float width;
                         if (additive) {
