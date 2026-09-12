@@ -45,6 +45,10 @@ public class Content {
             reader.close();
             stream.close();
         }
+        // A byte order mark at the start of the file is not part of the text.
+        if (sb.length() > 0 && sb.charAt(0) == '\uFEFF') {
+            sb.deleteCharAt(0);
+        }
         return sb.toString();
     }
 

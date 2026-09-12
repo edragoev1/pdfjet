@@ -173,7 +173,8 @@ public class Text : IDrawable {
         return new float[] {xText + font.StringWidth(fallbackFont, fontSize, buf.ToString()), yText};
     }
 
-    // Draws one wrapped line of the text line at the current text position, with the text line's attributes.
+    // Draws one wrapped line of the text line at the current text position, with the text line's attributes,
+    // including its vertical offset and its link, as TextColumn does.
     private void DrawLine(Page page, TextLine textLine, String str) {
         new TextLine(textLine.font, str)
                 .SetFallbackFont(textLine.GetFallbackFont())
@@ -183,6 +184,9 @@ public class Text : IDrawable {
                 .SetUnderline(textLine.GetUnderline())
                 .SetStrikeout(textLine.GetStrikeout())
                 .SetLanguage(textLine.GetLanguage())
+                .SetVerticalOffset(textLine.GetVerticalOffset())
+                .SetURIAction(textLine.GetURIAction())
+                .SetGoToAction(textLine.GetGoToAction())
                 .SetLocation(xText, yText)
                 .DrawOn(page);
     }

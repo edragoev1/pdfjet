@@ -6,11 +6,7 @@
  */
 package com.pdfjet;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -230,7 +226,8 @@ public class Text implements Drawable {
         return new float[] {xText + font.stringWidth(fallbackFont, fontSize, buf.toString()), yText};
     }
 
-    // Draws the string at the current text position, with the attributes of the text line.
+    // Draws the string at the current text position, with the attributes of the
+    // text line, including its vertical offset and its link, as TextColumn does.
     private void drawLine(Page page, TextLine textLine, String str) throws Exception {
         new TextLine(textLine.font, str)
                 .setFallbackFont(textLine.getFallbackFont())
@@ -240,6 +237,9 @@ public class Text implements Drawable {
                 .setUnderline(textLine.getUnderline())
                 .setStrikeout(textLine.getStrikeout())
                 .setLanguage(textLine.getLanguage())
+                .setVerticalOffset(textLine.getVerticalOffset())
+                .setURIAction(textLine.getURIAction())
+                .setGoToAction(textLine.getGoToAction())
                 .setLocation(xText, yText)
                 .drawOn(page);
     }
@@ -316,23 +316,17 @@ public class Text implements Drawable {
      */
     public static List<String> readLines(String filePath) throws IOException {
         List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
-            StringBuilder buffer = new StringBuilder();
-            int ch;
-            while ((ch = reader.read()) != -1) {
-                if (ch == '\r') {
-                    continue;
-                } else if (ch == '\n') {
-                    lines.add(buffer.toString());
-                    buffer.setLength(0);
-                } else {
-                    buffer.append((char) ch);
-                }
-            }
-            if (buffer.length() > 0) {
+        StringBuilder buffer = new StringBuilder();
+        for (char ch : Content.ofTextFile(filePath).toCharArray()) {
+            if (ch == '\n') {
                 lines.add(buffer.toString());
+                buffer.setLength(0);
+            } else {
+                buffer.append(ch);
             }
+        }
+        if (buffer.length() > 0) {
+            lines.add(buffer.toString());
         }
         return lines;
     }

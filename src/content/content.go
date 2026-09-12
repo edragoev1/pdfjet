@@ -34,6 +34,10 @@ func OfTextFile(fileName string) string {
 			runes = append(runes, ch)
 		}
 	}
+	// A byte order mark at the start of the file is not part of the text.
+	if len(runes) > 0 && runes[0] == '\uFEFF' {
+		runes = runes[1:]
+	}
 	return string(runes)
 }
 

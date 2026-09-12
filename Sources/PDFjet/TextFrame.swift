@@ -306,7 +306,7 @@ public class TextFrame : Drawable {
     }
 
     // Draws the string at the current text position, with the text line's font,
-    // colors and decorations.
+    // colors, decorations, vertical offset and link, as Text does.
     private func drawLine(_ page: Page?, _ textLine: TextLine, _ str: String) {
         TextLine(textLine.font!, str)
                 .setFallbackFont(textLine.getFallbackFont())
@@ -316,6 +316,9 @@ public class TextFrame : Drawable {
                 .setUnderline(textLine.getUnderline())
                 .setStrikeout(textLine.getStrikeout())
                 .setLanguage(textLine.getLanguage())
+                .setVerticalOffset(textLine.getVerticalOffset())
+                .setURIAction(textLine.getURIAction())
+                .setGoToAction(textLine.getGoToAction())
                 .setLocation(xText, yText)
                 .drawOn(page)
     }

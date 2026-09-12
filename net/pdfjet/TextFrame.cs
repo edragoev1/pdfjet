@@ -319,7 +319,8 @@ public class TextFrame : IDrawable {
         return token.Substring(0, end);
     }
 
-    // Draws the string at the current text position, with the attributes of the text line.
+    // Draws the string at the current text position, with the attributes of the text line,
+    // including its vertical offset and its link, as Text does.
     private void DrawLine(Page page, TextLine textLine, String str) {
         new TextLine(textLine.font, str)
                 .SetFallbackFont(textLine.GetFallbackFont())
@@ -329,6 +330,9 @@ public class TextFrame : IDrawable {
                 .SetUnderline(textLine.GetUnderline())
                 .SetStrikeout(textLine.GetStrikeout())
                 .SetLanguage(textLine.GetLanguage())
+                .SetVerticalOffset(textLine.GetVerticalOffset())
+                .SetURIAction(textLine.GetURIAction())
+                .SetGoToAction(textLine.GetGoToAction())
                 .SetLocation(xText, yText)
                 .DrawOn(page);
     }

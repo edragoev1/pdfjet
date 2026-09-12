@@ -193,6 +193,12 @@ Pick from the README limitations; the first three are the ones users hit.
       its text with `drawOn(null)`, as `Cell.getHeight` does, or drawing it
       twice no longer turns it into a text box of fixed height, which could
       cut its last line to "...".
+      `Text` and `TextFrame` keep the vertical offset, including the offset of
+      a superscript or subscript, the URI and the GoTo action of a text line
+      when they wrap it, as `TextColumn` does; Java and Go
+      `Content.ofTextFile`, and so `Text.readLines` and
+      `Text.paragraphsFromFile`, drop a byte order mark at the start of the
+      file, as C# and Swift do.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

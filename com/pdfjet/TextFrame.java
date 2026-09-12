@@ -404,7 +404,8 @@ public class TextFrame implements Drawable {
         return token.substring(0, end);
     }
 
-    // Draws the string at the current text position, with the attributes of the text line.
+    // Draws the string at the current text position, with the attributes of the
+    // text line, including its vertical offset and its link, as Text does.
     private void drawLine(Page page, TextLine textLine, String str) throws Exception {
         new TextLine(textLine.font, str)
                 .setFallbackFont(textLine.getFallbackFont())
@@ -414,6 +415,9 @@ public class TextFrame implements Drawable {
                 .setUnderline(textLine.getUnderline())
                 .setStrikeout(textLine.getStrikeout())
                 .setLanguage(textLine.getLanguage())
+                .setVerticalOffset(textLine.getVerticalOffset())
+                .setURIAction(textLine.getURIAction())
+                .setGoToAction(textLine.getGoToAction())
                 .setLocation(xText, yText)
                 .drawOn(page);
     }
