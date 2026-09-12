@@ -123,7 +123,7 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(b);
         Append(" RG\n");
-        this.fillColor = new float[] {r, g, b};
+        this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
@@ -322,12 +322,15 @@ public class Stamp : IDrawable {
     }
 
     private void DrawText(Font font, string str) {
-        foreach (char c in str) {
-            int codePoint = c;
+        int i = 0;
+        while (i < str.Length) {
+            int codePoint = char.ConvertToUtf32(str, i);   // full Unicode scalar value
+            i += char.IsHighSurrogate(str[i]) ? 2 : 1;      // advance 1 or 2 char positions
+
             if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
 
             int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                ? font.unicodeToGID[0x0020]         // Space fallback
+                ? font.unicodeToGID[0x0020]         // Use space fallback
                 : font.unicodeToGID[codePoint];
             AppendCodePointAsHex(gid);
         }
@@ -384,9 +387,8 @@ public class Stamp : IDrawable {
         buf.WriteByte(Page.HEX[codePoint & 0xF]);
     }
 
-    /// <summary>Draws this stamp on the specified page.</summary>
+    /// <summary>Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.</summary>
     public float[] DrawOn(Page page) {
-        // page.AddBMC(StructElem.Figure, language, actualText, altDescription);
         page.SaveGraphicsState();
 
         float drawX = this.x;
@@ -432,7 +434,6 @@ public class Stamp : IDrawable {
         page.Append(" Do\n");
 
         page.RestoreGraphicsState();
-        // page.AddEMC();
 
         return new float[] { this.x + width, this.y + height };
     }

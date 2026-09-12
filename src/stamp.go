@@ -2,14 +2,15 @@ package pdfjet
 
 import (
 	"bytes"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
-// Stamp struct
+// Stamp is content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.
+// Please see Example_35.
 type Stamp struct {
 	objNumber     int
 	pdf           *PDF
@@ -25,7 +26,7 @@ type Stamp struct {
 	fonts         []*Font
 }
 
-// NewStamp creates a new Stamp instance
+// NewStamp creates a stamp for the specified document.
 func NewStamp(pdf *PDF) *Stamp {
 	return &Stamp{
 		pdf:         pdf,
@@ -34,37 +35,42 @@ func NewStamp(pdf *PDF) *Stamp {
 	}
 }
 
-// WithSize sets the stamp dimensions
+// WithSize sets the size of this stamp.
 func (s *Stamp) WithSize(width, height float32) *Stamp {
 	s.width = width
 	s.height = height
 	return s
 }
 
-// WithFont adds a font to the stamp
+// WithFont adds a font used by the text on this stamp.
 func (s *Stamp) WithFont(font *Font) *Stamp {
 	s.fonts = append(s.fonts, font)
 	return s
 }
 
-// SetLocation sets the location and returns self for chaining
+// SetLocation sets the location of the top left corner of this stamp on the page.
+// It returns the stamp as a Drawable, so in a chain of setter calls
+// SetLocation goes last, right before DrawOn.
 func (s *Stamp) SetLocation(x, y float32) Drawable {
 	s.x = x
 	s.y = y
 	return s
 }
 
-// appendFloat appends a float value to the buffer
 func (s *Stamp) appendFloat(value float32) {
-	s.buf.Write(toByteArray(value))
+	s.buf.Write(fastfloat.ToByteArray(value))
 }
 
-// appendString appends a string to the buffer
+func (s *Stamp) appendInt(value int) {
+	s.buf.WriteString(strconv.Itoa(value))
+}
+
 func (s *Stamp) appendString(str string) {
-	s.buf.Write([]byte(str))
+	s.buf.WriteString(str)
 }
 
-// SetFillColorRGB sets fill color from RGB array
+// SetFillColorRGB sets the fill color for the content drawn after it,
+// from the red, green and blue components, from 0.0 to 1.0.
 func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
 	s.appendFloat(rgbColor[0])
 	s.appendString(" ")
@@ -76,7 +82,8 @@ func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
 	return s
 }
 
-// SetFillColor sets fill color from integer (RGBA format)
+// SetFillColor sets the fill color for the content drawn after it,
+// as a 0xRRGGBB value, for example color.Blue.
 func (s *Stamp) SetFillColor(color int) *Stamp {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -84,7 +91,8 @@ func (s *Stamp) SetFillColor(color int) *Stamp {
 	return s.SetFillColorRGB([]float32{r, g, b})
 }
 
-// SetStrokeColorRGB sets stroke color from RGB array
+// SetStrokeColorRGB sets the stroke color for the content drawn after it,
+// from the red, green and blue components, from 0.0 to 1.0.
 func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
 	s.appendFloat(rgbColor[0])
 	s.appendString(" ")
@@ -96,7 +104,8 @@ func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
 	return s
 }
 
-// SetStrokeColor sets stroke color from integer (RGBA format)
+// SetStrokeColor sets the stroke color for the content drawn after it,
+// as a 0xRRGGBB value, for example color.Blue.
 func (s *Stamp) SetStrokeColor(color int) *Stamp {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0
@@ -104,7 +113,7 @@ func (s *Stamp) SetStrokeColor(color int) *Stamp {
 	return s.SetStrokeColorRGB([]float32{r, g, b})
 }
 
-// SetStrokeWidth sets the stroke width
+// SetStrokeWidth sets the stroke width for the content drawn after it.
 func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
 	s.appendFloat(width)
 	s.appendString(" w\n")
@@ -112,7 +121,7 @@ func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
 	return s
 }
 
-// MoveTo adds a move-to path command
+// MoveTo begins a new path at the specified point.
 func (s *Stamp) MoveTo(x, y float32) *Stamp {
 	s.appendFloat(x)
 	s.appendString(" ")
@@ -121,7 +130,7 @@ func (s *Stamp) MoveTo(x, y float32) *Stamp {
 	return s
 }
 
-// LineTo adds a line-to path command
+// LineTo adds a straight line from the current point to the specified point.
 func (s *Stamp) LineTo(x, y float32) *Stamp {
 	s.appendFloat(x)
 	s.appendString(" ")
@@ -130,7 +139,8 @@ func (s *Stamp) LineTo(x, y float32) *Stamp {
 	return s
 }
 
-// CurveTo adds a cubic Bezier curve command
+// CurveTo adds a cubic Bézier curve from the current point to x3, y3,
+// using x1, y1 and x2, y2 as control points.
 func (s *Stamp) CurveTo(x1, y1, x2, y2, x3, y3 float32) *Stamp {
 	s.appendFloat(x1)
 	s.appendString(" ")
@@ -147,31 +157,31 @@ func (s *Stamp) CurveTo(x1, y1, x2, y2, x3, y3 float32) *Stamp {
 	return s
 }
 
-// StrokePath adds stroke operator
+// StrokePath strokes the current path.
 func (s *Stamp) StrokePath() *Stamp {
 	s.appendString("S\n")
 	return s
 }
 
-// ClosePath adds close+stroke operator
+// ClosePath closes and strokes the current path.
 func (s *Stamp) ClosePath() *Stamp {
 	s.appendString("s\n")
 	return s
 }
 
-// FillPath adds fill operator
+// FillPath fills the current path.
 func (s *Stamp) FillPath() *Stamp {
 	s.appendString("f\n")
 	return s
 }
 
-// CloseFillAndStrokePath adds close+fill+stroke operator
+// CloseFillAndStrokePath closes, fills and strokes the current path.
 func (s *Stamp) CloseFillAndStrokePath() *Stamp {
 	s.appendString("b\n")
 	return s
 }
 
-// DrawRect draws a rectangle outline
+// DrawRect draws the outline of a rectangle with its top left corner at x, y.
 func (s *Stamp) DrawRect(x, y, w, h float32) *Stamp {
 	s.MoveTo(x, y)
 	s.LineTo(x+w, y)
@@ -181,7 +191,7 @@ func (s *Stamp) DrawRect(x, y, w, h float32) *Stamp {
 	return s
 }
 
-// FillRect draws a filled rectangle
+// FillRect draws a filled rectangle with its top left corner at x, y.
 func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 	s.MoveTo(x, y)
 	s.LineTo(x+w, y)
@@ -191,16 +201,16 @@ func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 	return s
 }
 
-// DrawTextUsingParams draws text using the TextParameters data.
+// DrawTextUsingParams draws text using the font, font size, location and text in the parameters.
 func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
 	return s.DrawText(params.font, params.fontSize, params.x, params.y, params.text)
 }
 
-// DrawText draws text on the stamp
+// DrawText draws text on this stamp. Add the font with WithFont too.
 func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
 	s.appendString("BT\n")
 	s.appendString("/F")
-	s.appendFloat(float32(font.objNumber))
+	s.appendInt(font.objNumber)
 	s.appendString(" ")
 	s.appendFloat(fontSize)
 	s.appendString(" Tf\n")
@@ -215,39 +225,32 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 	return s
 }
 
-// Rotate sets the rotation angle
+// Rotate sets the rotation angle of this stamp, in degrees.
 func (s *Stamp) Rotate(degrees float64) *Stamp {
 	s.rotateDegrees = float32(degrees)
 	return s
 }
 
-// SetRotation sets the rotation angle
+// SetRotation sets the rotation angle of this stamp, in degrees.
 func (s *Stamp) SetRotation(degrees float64) *Stamp {
 	s.rotateDegrees = float32(degrees)
 	return s
 }
 
-// SetRotationClockwise sets clockwise rotation
+// SetRotationClockwise sets a clockwise rotation, in degrees.
 func (s *Stamp) SetRotationClockwise(degrees float64) *Stamp {
 	s.rotateDegrees = float32(-degrees)
 	return s
 }
 
-// SetRotationCounterClockwise sets counter-clockwise rotation
+// SetRotationCounterClockwise sets a counterclockwise rotation, in degrees.
 func (s *Stamp) SetRotationCounterClockwise(degrees float64) *Stamp {
 	s.rotateDegrees = float32(degrees)
 	return s
 }
 
-func toByteArray(value float32) []byte {
-	return fastfloat.ToByteArray(value)
-}
-
-func toString(value float32) string {
-	return string(fastfloat.ToByteArray(value))
-}
-
-// Complete finalizes the stamp object
+// Complete writes this stamp to the document as a form XObject.
+// Call it once, after drawing the content and before DrawOn.
 func (s *Stamp) Complete() {
 	s.pdf.newobj()
 	s.pdf.appendByteArray(token.BeginDictionary)
@@ -255,9 +258,9 @@ func (s *Stamp) Complete() {
 	s.pdf.appendString("/Subtype /Form\n")
 
 	s.pdf.appendString("/BBox [0 0 ")
-	s.pdf.appendString(toString(s.width))
+	s.pdf.appendFloat32(s.width)
 	s.pdf.appendString(" ")
-	s.pdf.appendString(toString(s.height))
+	s.pdf.appendFloat32(s.height)
 	s.pdf.appendString("]\n")
 
 	s.pdf.appendString("/Resources <<\n")
@@ -265,18 +268,18 @@ func (s *Stamp) Complete() {
 		s.pdf.appendString("/Font <<\n")
 		for _, font := range s.fonts {
 			s.pdf.appendString("/F")
-			s.pdf.appendString(fmt.Sprintf("%d", font.objNumber))
+			s.pdf.appendInteger(font.objNumber)
 			s.pdf.appendString(" ")
-			s.pdf.appendString(fmt.Sprintf("%d", font.objNumber))
+			s.pdf.appendInteger(font.objNumber)
 			s.pdf.appendString(" 0 R\n")
 		}
 		s.pdf.appendString(">>\n")
 	}
 	s.pdf.appendString(">>\n")
 	s.pdf.appendString("/Length ")
-	s.pdf.appendString(fmt.Sprintf("%d", s.buf.Len()))
+	s.pdf.appendInteger(s.buf.Len())
 	s.pdf.appendByte(token.Newline)
-	s.pdf.appendByteArray(token.EndDictionary)
+	s.pdf.appendByteArray(token.EndDictionary) // End of XObject dictionary
 	s.pdf.appendByteArray(token.Stream)
 	s.pdf.appendByteArray(s.buf.Bytes())
 	s.pdf.appendByteArray(token.EndStream)
@@ -285,16 +288,15 @@ func (s *Stamp) Complete() {
 	s.objNumber = s.pdf.getObjNumber()
 }
 
-// drawEncodedText appends the glyph IDs of the text as hexadecimal
+// drawEncodedText appends the glyph IDs of the text as hexadecimal.
 func (s *Stamp) drawEncodedText(font *Font, str string) {
 	for _, codePoint := range str {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue
 		}
-
 		var gid int
 		if codePoint < font.firstChar || codePoint > font.lastChar {
-			gid = font.unicodeToGID[0x0020]
+			gid = font.unicodeToGID[0x0020] // Use space fallback
 		} else {
 			gid = font.unicodeToGID[codePoint]
 		}
@@ -302,7 +304,6 @@ func (s *Stamp) drawEncodedText(font *Font, str string) {
 	}
 }
 
-// appendPoint appends a Point to the buffer
 func (s *Stamp) appendPoint(point *Point) {
 	s.appendFloat(point.x)
 	s.appendString(" ")
@@ -310,15 +311,14 @@ func (s *Stamp) appendPoint(point *Point) {
 	s.appendString(" ")
 }
 
-// DrawPath draws a path of Points
+// DrawPath draws a path through the points. Control points define Bézier curves.
+// It panics if the path has fewer than 2 points or ends with an unconsumed control point.
 func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 	if len(path) < 2 {
-		panic("Path must contain at least 2 points")
+		panic("The Path object must contain at least 2 points")
 	}
-
 	point := path[0]
 	s.MoveTo(point.x, point.y)
-
 	var controlPoint byte = 0
 	for i := 1; i < len(path); i++ {
 		point = path[i]
@@ -328,7 +328,7 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 		} else {
 			if controlPoint != 0 {
 				s.appendPoint(point)
-				s.buf.WriteByte(controlPoint) // More efficient than WriteString()
+				s.buf.WriteByte(controlPoint)
 				s.buf.WriteByte('\n')
 				controlPoint = 0
 			} else {
@@ -336,16 +336,15 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 			}
 		}
 	}
-
+	// Catch unflushed control point
 	if controlPoint != 0 {
-		panic("Path ends with unconsumed control point(s). Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
+		panic("Path ends with unconsumed control point(s). " +
+			"Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
 	}
-
-	s.buf.WriteString(pathOperator)
+	s.appendString(pathOperator)
 	s.buf.WriteByte('\n')
 }
 
-// appendCodePointAsHex appends a code point as hexadecimal
 func (s *Stamp) appendCodePointAsHex(codePoint int) {
 	s.buf.WriteByte(hexDigits[(codePoint>>12)&0xF])
 	s.buf.WriteByte(hexDigits[(codePoint>>8)&0xF])
@@ -353,28 +352,29 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 	s.buf.WriteByte(hexDigits[codePoint&0xF])
 }
 
-// DrawOn draws the stamp on a page
+// DrawOn draws this stamp on the specified page and returns the x and y
+// coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	drawX := s.x
 	drawY := (page.height - s.height) - s.y
 
-	// 5. POSITION
+	// 5. POSITION: move to desired location on page
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(drawX)
 	page.appendString(" ")
 	page.appendFloat32(drawY)
 	page.appendString(" cm\n")
 
-	// 4. MOVE BACK
+	// 4. MOVE BACK: after rotation
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(s.width / 2)
 	page.appendString(" ")
 	page.appendFloat32(s.height / 2)
 	page.appendString(" cm\n")
 
-	// 3. ROTATE
+	// 3. ROTATE: rotate around origin
 	radians := float64(s.rotateDegrees) * (math.Pi / 180)
 	cos := float32(math.Cos(radians))
 	sin := float32(math.Sin(radians))
@@ -387,16 +387,16 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.appendFloat32(cos)
 	page.appendString(" 0 0 cm\n")
 
-	// 2. MOVE
+	// 2. MOVE: move the center of the object to origin
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(-s.width / 2)
 	page.appendString(" ")
 	page.appendFloat32(-s.height / 2)
 	page.appendString(" cm\n")
 
-	// 1. DRAW
+	// 1. DRAW: draw the object
 	page.appendString("/Fm")
-	page.appendFloat32(float32(s.objNumber))
+	page.appendInteger(s.objNumber)
 	page.appendString(" Do\n")
 
 	page.RestoreGraphicsState()

@@ -347,7 +347,7 @@ public class Stamp : Drawable {
 
     ///
     /// Draws a path through the points. Control points define Bézier curves.
-    /// Throws an error if the path has fewer than 2 points.
+    /// Throws an error if the path has fewer than 2 points or ends with an unconsumed control point.
     ///
     public func drawPath(_ path: [Point], _ pathOperator: String) throws {
         guard path.count >= 2 else {
@@ -375,6 +375,12 @@ public class Stamp : Drawable {
                 }
             }
         }
+        // Catch unflushed control point
+        if !controlPoint.isEmpty {
+            throw NSError(domain: "Stamp", code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Path ends with unconsumed control point(s). " +
+                    "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint."])
+        }
 
         append(pathOperator)
         append("\n")
@@ -387,7 +393,7 @@ public class Stamp : Drawable {
         buf.append(Page.HEX[codePoint & 0xF])
     }
 
-    /// Draws this stamp on the specified page.
+    /// Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
@@ -447,10 +453,5 @@ public class Stamp : Drawable {
 
     private func append(_ str: String) {
         self.buf.append(contentsOf: str.utf8)
-    }
-
-    private func append(_ value: UInt16) {
-        // Convert UInt16 to its string representation
-        self.buf.append(contentsOf: String(value).utf8)
     }
 }

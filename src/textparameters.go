@@ -42,23 +42,3 @@ func (tp *TextParameters) SetText(text string) *TextParameters {
 	tp.text = text
 	return tp
 }
-
-// GetFont returns the current font
-func (tp *TextParameters) GetFont() *Font {
-	return tp.font
-}
-
-// GetFontSize returns the current font size
-func (tp *TextParameters) GetFontSize() float32 {
-	return tp.fontSize
-}
-
-// GetPosition returns the current X, Y position
-func (tp *TextParameters) GetPosition() (float32, float32) {
-	return tp.x, tp.y
-}
-
-// GetText returns the current text
-func (tp *TextParameters) GetText() string {
-	return tp.text
-}

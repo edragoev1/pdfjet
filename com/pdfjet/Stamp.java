@@ -63,6 +63,13 @@ public class Stamp implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the location of the top left corner of this stamp on the page.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Stamp object.
+     */
     public Stamp setLocation(float x, float y) {
         this.x = x;
         this.y = y;
@@ -160,7 +167,7 @@ public class Stamp implements Drawable {
         append(" ");
         append(b);
         append(" RG\n");
-        this.fillColor = new float[] {r, g, b};
+        this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
@@ -475,7 +482,7 @@ public class Stamp implements Drawable {
      *
      * @param path the points. Control points define Bézier curves.
      * @param pathOperator the path operator, for example PathOperator.STROKE.
-     * @throws Exception if the path has fewer than 2 points.
+     * @throws Exception if the path has fewer than 2 points or ends with an unconsumed control point.
      */
     public void drawPath(List<Point> path, String pathOperator) throws Exception {
         if (path.size() < 2) {
@@ -500,6 +507,12 @@ public class Stamp implements Drawable {
                 }
             }
         }
+        // Catch unflushed control point
+        if (controlPoint != '\0') {
+            throw new Exception(
+                "Path ends with unconsumed control point(s). " +
+                "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
+        }
         append(pathOperator);
         append('\n');
     }
@@ -511,8 +524,13 @@ public class Stamp implements Drawable {
         buf.write(Page.HEX[codePoint & 0xF]);
     }
 
+    /**
+     * Draws this stamp on the specified page.
+     *
+     * @param page the page.
+     * @return the x and y coordinates of the bottom right corner of this stamp.
+     */
     public float[] drawOn(Page page) {
-        // page.addBMC(StructElem.Figure, language, actualText, altDescription);
         page.saveGraphicsState();
 
         float drawX = this.x;
@@ -558,7 +576,6 @@ public class Stamp implements Drawable {
         page.append(" Do\n");
 
         page.restoreGraphicsState();
-        // page.addEMC();
 
         return new float[] { this.x + width, this.y + height };
     }
