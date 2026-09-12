@@ -375,8 +375,7 @@ public class Stamp : Drawable {
     ///
     public func drawPath(_ path: [Point], _ pathOperator: String) throws {
         guard path.count >= 2 else {
-            throw NSError(domain: "Stamp", code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: "The Path object must contain at least 2 points"])
+            throw PDFjetError(message: "The Path object must contain at least 2 points")
         }
 
         var point = path[0]
@@ -401,9 +400,8 @@ public class Stamp : Drawable {
         }
         // Catch unflushed control point
         if !controlPoint.isEmpty {
-            throw NSError(domain: "Stamp", code: 2,
-                    userInfo: [NSLocalizedDescriptionKey: "Path ends with unconsumed control point(s). " +
-                    "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint."])
+            throw PDFjetError(message: "Path ends with unconsumed control point(s). " +
+                    "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
         }
 
         append(pathOperator)

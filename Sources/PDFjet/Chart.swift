@@ -60,7 +60,6 @@ public class Chart : Drawable {
     private var chartBorderWidth: Float = 0.0
     private var innerBorderWidth: Float = 0.0
 
-    private var formatter = NumberFormatter()
     private var minFractionDigits = 2
     private var maxFractionDigits = 2
 
@@ -345,9 +344,6 @@ public class Chart : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        formatter.minimumFractionDigits = minFractionDigits
-        formatter.maximumFractionDigits = maxFractionDigits
-
         x2 = x1 + w
         y2 = y1
 
@@ -472,13 +468,33 @@ public class Chart : Drawable {
         return [self.x1 + self.w, self.y1 + self.h]
     }
 
+    // Formats an axis label with minFractionDigits to maxFractionDigits
+    // decimal places, rounding half to even like NumberFormat in Java.
+    private func format(_ value: Float) -> String {
+        var scale: Double = 1.0
+        for _ in 0..<maxFractionDigits {
+            scale *= 10.0
+        }
+        let scaled = (Double(value) * scale).rounded(.toNearestOrEven)
+        let units = Int64(scaled.magnitude)
+        let integer = units / Int64(scale)
+        var fraction = String(units % Int64(scale))
+        while fraction.count < maxFractionDigits {
+            fraction = "0" + fraction
+        }
+        while fraction.count > minFractionDigits && fraction.hasSuffix("0") {
+            fraction.removeLast()
+        }
+        var label = (value.sign == .minus ? "-" : "") + String(integer)
+        if !fraction.isEmpty {
+            label += "." + fraction
+        }
+        return label
+    }
+
     private func getLongestAxisYLabelWidth()-> Float {
-        let minLabelWidth =
-                // f2!.stringWidth(String(format: "%04X", yMin) + "0")
-                f2!.stringWidth(formatter.string(from: NSNumber(value: yMin))! + "0")
-        let maxLabelWidth =
-                // f2!.stringWidth(String(format: "%04X", yMax) + "0")
-                f2!.stringWidth(formatter.string(from: NSNumber(value: yMax))! + "0")
+        let minLabelWidth = f2!.stringWidth(format(yMin) + "0")
+        let maxLabelWidth = f2!.stringWidth(format(yMax) + "0")
         if maxLabelWidth > minLabelWidth {
             return maxLabelWidth
         }
@@ -590,8 +606,7 @@ public class Chart : Drawable {
         page.setBrushColor(Color.black)
         var i = 0
         while i < (xAxisGridLines + 1) {
-            let label = formatter.string(from: NSNumber(value:
-                    xMin + ((xMax - xMin) / Float(xAxisGridLines)) * Float(i)))!
+            let label = format(xMin + ((xMax - xMin) / Float(xAxisGridLines)) * Float(i))
             page.drawString(
                     f2!,
                     fontSize,
@@ -610,8 +625,7 @@ public class Chart : Drawable {
         page.setBrushColor(Color.black)
         var i = 0
         while i < (yAxisGridLines + 1) {
-            let label = formatter.string(from: NSNumber(value:
-                    yMin + ((yMax - yMin) / Float(yAxisGridLines)) * Float(i)))!
+            let label = format(yMin + ((yMax - yMin) / Float(yAxisGridLines)) * Float(i))
             page.drawString(
                     f2!,
                     fontSize,
