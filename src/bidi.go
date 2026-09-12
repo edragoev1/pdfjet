@@ -405,7 +405,7 @@ func bidiType(ch rune) int {
 // of the Unicode Bidirectional Algorithm for a right to left line without
 // explicit embeddings: W1 to W7, N0 to N2 and I2. It returns bidiL for each
 // code point in a left to right run and bidiR for the others.
-func resolveBidiTypes(input []rune) []int {
+func resolveBidiTypes(input []rune, aroundL []bool) []int {
 	n := len(input)
 	classes := make([]int, n)
 	for i, ch := range input {
@@ -487,7 +487,7 @@ func resolveBidiTypes(input []rune) []int {
 	}
 
 	// N0: both brackets of a pair take the same direction.
-	resolveBidiBrackets(input, classes, types)
+	resolveBidiBrackets(input, classes, types, aroundL)
 
 	// N1, N2: neutral characters with left to right text on both sides are
 	// left to right, and the others are right to left. Numbers count as right
@@ -523,7 +523,7 @@ func resolveBidiTypes(input []rune) []int {
 // rule BD16 and gives both brackets of a pair the direction of the text
 // between them, or of the text before them if the text between them is left
 // to right.
-func resolveBidiBrackets(input []rune, classes, types []int) {
+func resolveBidiBrackets(input []rune, classes, types []int, aroundL []bool) {
 	n := len(input)
 	closing := make([]int, n) // The position of each opening bracket's pair
 	for i := range closing {
@@ -571,6 +571,7 @@ func resolveBidiBrackets(input []rune, classes, types []int) {
 				direction = bidiL
 			}
 		}
+		onlyL := direction == bidiL
 		if direction == bidiL {
 			direction = bidiR
 			for i := open - 1; i >= 0; i-- {
@@ -584,6 +585,11 @@ func resolveBidiBrackets(input []rune, classes, types []int) {
 		if direction != bidiON {
 			setBidiBracketType(classes, types, open, direction)
 			setBidiBracketType(classes, types, close, direction)
+			// A right to left pair around left to right text only.
+			if onlyL && direction == bidiR {
+				aroundL[open] = true
+				aroundL[close] = true
+			}
 		}
 	}
 }
@@ -656,7 +662,8 @@ func ReorderVisuallyPart(str string, from, to int) string {
 			indexes = append(indexes, i)
 		}
 	}
-	types := resolveBidiTypes(input)
+	aroundL := make([]bool, len(input))
+	types := resolveBidiTypes(input, aroundL)
 
 	// buf1 gets the right to left text in logical order and each left to
 	// right run reversed, so that reversing buf1 below puts the right to left
@@ -691,6 +698,22 @@ func ReorderVisuallyPart(str string, from, to int) string {
 		// it the character it stands for as actual text. buf1 is reversed
 		// below, so the RLM goes after it here.
 		if m, ok := mirrored(ch); ok {
+			if aroundL[j] {
+				// The brackets of a right to left pair around left to right
+				// text stay with that text when it is copied, in the order
+				// they are drawn, so they are not mirrored back. A
+				// left-to-right mark (U+200E) on each side of the brackets
+				// keeps them with the text in Poppler and MuPDF; Page puts
+				// each mark in the actual text of the glyph before it, as it
+				// does with a joiner.
+				if isOpeningBracket(ch) {
+					buf1 = append(buf1, 0x200E, m)
+				} else {
+					buf1 = append(buf1, m, 0x200E)
+				}
+				from1 = append(from1, indexes[j], indexes[j])
+				continue
+			}
 			buf1 = append(buf1, m, 0x200F)
 			from1 = append(from1, indexes[j], indexes[j])
 			continue

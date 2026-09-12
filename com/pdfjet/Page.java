@@ -599,8 +599,8 @@ final public class Page {
                     }
                 }
             }
-        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0 &&
-                str.indexOf(0x200C) < 0 && str.indexOf(0x200D) < 0) {   // RLM, ZWNJ, ZWJ
+        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0 && str.indexOf(0x200E) < 0 &&
+                str.indexOf(0x200C) < 0 && str.indexOf(0x200D) < 0) {   // RLM, LRM, ZWNJ, ZWJ
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
@@ -619,6 +619,7 @@ final public class Page {
             int[] gids = new int[length];
             boolean[] mirrored = null;
             int[] joiners = null;
+            boolean[] runEdge = null;   // An LRM before the glyph at the index
             int n = 0;
             boolean hasMarks = false;
             boolean afterRLM = false;
@@ -627,6 +628,14 @@ final public class Page {
                 i += Character.charCount(cp);
                 if (cp == 0x200F) {     // RLM
                     afterRLM = true;
+                } else if (cp == 0x200E) {      // LRM
+                    // Bidi puts an LRM on each side of the brackets of a right
+                    // to left pair around left to right text; the glyphs
+                    // between the two are drawn in one span, see appendRun.
+                    if (runEdge == null) {
+                        runEdge = new boolean[length + 1];
+                    }
+                    runEdge[n] = true;
                 } else if ((cp == 0x200C || cp == 0x200D) && font.unicodeToGID[cp] == 0) {
                     // A ZWNJ or ZWJ the font has no glyph for goes with the
                     // glyph before it. One with nothing before it is left out.
@@ -653,7 +662,7 @@ final public class Page {
             int[] offsets = null;
             if (hasMarks && font.markAnchors != null) {
                 offsets = markOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null && joiners == null) {
+            } else if (mirrored == null && joiners == null && runEdge == null) {
                 for (int i = 0; i < n; i++) {
                     appendCodePointAsHex(gids[i]);
                 }
@@ -661,9 +670,19 @@ final public class Page {
             }
             int i = 0;
             while (i < n) {
+                if (runEdge != null && runEdge[i]) {
+                    int j = i + 1;
+                    while (j < n && !runEdge[j]) {
+                        j++;
+                    }
+                    appendRun(font, codePoints, gids, offsets, i, j);
+                    runEdge[j] = false;
+                    i = j;
+                    continue;
+                }
                 int end = i + 1;
                 if (codePoints[i] != 0x20) {
-                    while (end < n && codePoints[end] != 0x20) {
+                    while (end < n && codePoints[end] != 0x20 && (runEdge == null || !runEdge[end])) {
                         end++;
                     }
                 }
@@ -687,6 +706,32 @@ final public class Page {
                 i = end;
             }
         }
+    }
+
+    // Draws the glyphs of a left to right run in brackets, nested in right to
+    // left text, in a marked content span with the text of the run between
+    // two left-to-right marks as its actual text. Poppler and MuPDF then keep
+    // the brackets with the run when the text is copied; with the brackets in
+    // spans of their own, or mirrored back like the other brackets, they come
+    // out the wrong way round. No glyph stands in for the marks: MuPDF moves
+    // the first bracket to the right to left text when one does.
+    private void appendRun(Font font, int[] codePoints, int[] gids, int[] offsets, int from, int to) {
+        StringBuilder text = new StringBuilder("\u200E");
+        for (int k = from; k < to; k++) {
+            text.append(textOf(font, codePoints[k]));
+        }
+        text.append("\u200E");
+        append("> Tj\n/Span <</ActualText <");
+        append(toUTF16Hex(text.toString()));
+        append(">>> BDC\n<");
+        for (int k = from; k < to; k++) {
+            if (offsets == null || (offsets[2*k] == 0 && offsets[2*k + 1] == 0)) {
+                appendCodePointAsHex(gids[k]);
+            } else {
+                appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            }
+        }
+        append("> Tj\nEMC\n<");
     }
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,

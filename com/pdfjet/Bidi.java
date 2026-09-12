@@ -176,7 +176,8 @@ public class Bidi {
             i += Character.charCount(cp);
         }
         input = Arrays.copyOf(input, n);
-        int[] types = resolveTypes(input);
+        boolean[] aroundL = new boolean[input.length];
+        int[] types = resolveTypes(input, aroundL);
 
         // buf1 gets the right to left text in logical order and each left to
         // right run reversed, so that reversing buf1 below puts the right to
@@ -213,7 +214,22 @@ public class Bidi {
             // tells Page to give it the character it stands for as actual
             // text. buf1 is reversed below, so the RLM goes after it here.
             Integer m = mirrored(ch);
-            if (m != null) {
+            if (m != null && aroundL[j]) {
+                // The brackets of a right to left pair around left to right
+                // text stay with that text when it is copied, in the order
+                // they are drawn, so they are not mirrored back. A
+                // left-to-right mark (U+200E) on each side of the brackets
+                // keeps them with the text in Poppler and MuPDF; Page puts
+                // each mark in the actual text of the glyph before it, as it
+                // does with a joiner.
+                boolean opening = isOpeningBracket(ch);
+                buf1[n1] = opening ? 0x200E : m;
+                from1[n1] = indexes[j];
+                n1++;
+                buf1[n1] = opening ? m : 0x200E;
+                from1[n1] = indexes[j];
+                n1++;
+            } else if (m != null) {
                 buf1[n1] = m;
                 from1[n1] = indexes[j];
                 n1++;
@@ -525,7 +541,7 @@ public class Bidi {
      * @param input the code points.
      * @return L for each code point in a left to right run and R for the others.
      */
-    private static int[] resolveTypes(int[] input) {
+    private static int[] resolveTypes(int[] input, boolean[] aroundL) {
         int n = input.length;
         int[] classes = new int[n];
         for (int i = 0; i < n; i++) {
@@ -602,7 +618,7 @@ public class Bidi {
         }
 
         // N0: both brackets of a pair take the same direction.
-        resolveBrackets(input, classes, types);
+        resolveBrackets(input, classes, types, aroundL);
 
         // N1, N2: neutral characters with left to right text on both sides are
         // left to right, and the others are right to left. Numbers count as
@@ -637,7 +653,7 @@ public class Bidi {
      * both brackets of a pair the direction of the text between them, or of
      * the text before them if the text between them is left to right.
      */
-    private static void resolveBrackets(int[] input, int[] classes, int[] types) {
+    private static void resolveBrackets(int[] input, int[] classes, int[] types, boolean[] aroundL) {
         int n = input.length;
         int[] closing = new int[n];     // The position of each opening bracket's pair
         Arrays.fill(closing, -1);
@@ -684,6 +700,7 @@ public class Bidi {
                     direction = L;
                 }
             }
+            boolean onlyL = direction == L;
             if (direction == L) {
                 direction = R;
                 for (int i = open - 1; i >= 0; i--) {
@@ -697,6 +714,11 @@ public class Bidi {
             if (direction != ON) {
                 setBracketType(classes, types, open, direction);
                 setBracketType(classes, types, close, direction);
+                // A right to left pair around left to right text only.
+                if (onlyL && direction == R) {
+                    aroundL[open] = true;
+                    aroundL[close] = true;
+                }
             }
         }
     }

@@ -515,11 +515,11 @@ public class Font {
         return this;
     }
 
-    // Returns true for the right-to-left mark and the zero width non-joiner
-    // and joiner, which are not drawn: Page gives the glyph before or after
-    // them an actual text.
+    // Returns true for the right-to-left and left-to-right marks and the zero
+    // width non-joiner and joiner, which are not drawn: Page gives the glyph
+    // before or after them an actual text.
     internal static bool IsJoinerOrRLM(int ch) {
-        return ch == 0x200F || ch == 0x200C || ch == 0x200D;
+        return ch == 0x200F || ch == 0x200E || ch == 0x200C || ch == 0x200D;
     }
 
     /// <summary>

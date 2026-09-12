@@ -464,11 +464,22 @@ public class Page {
             var gids = [Int]()
             var mirrored: [Bool]? = nil
             var joiners: [Int]? = nil
+            var runEdge: [Bool]? = nil      // An LRM before the glyph at the index
             var hasMarks = false
             var afterRLM = false
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
                 if scalar.value == 0x200F {     // RLM
                     afterRLM = true
+                    continue
+                }
+                if scalar.value == 0x200E {     // LRM
+                    // Bidi puts an LRM on each side of the brackets of a right
+                    // to left pair around left to right text; the glyphs
+                    // between the two are drawn in one span, see appendRun.
+                    if runEdge == nil {
+                        runEdge = [Bool](repeating: false, count: scalars.count + 1)
+                    }
+                    runEdge![codePoints.count] = true
                     continue
                 }
                 let codePoint = Int(scalar.value)
@@ -497,7 +508,7 @@ public class Page {
             var offsets: [Int]? = nil
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)
-            } else if mirrored == nil && joiners == nil {
+            } else if mirrored == nil && joiners == nil && runEdge == nil {
                 for gid in gids {
                     Page.appendCodePointAsHex(gid, &self.buf)
                 }
@@ -506,9 +517,19 @@ public class Page {
             let n = gids.count
             var i = 0
             while i < n {
+                if runEdge != nil && runEdge![i] {
+                    var j = i + 1
+                    while j < n && !runEdge![j] {
+                        j += 1
+                    }
+                    appendRun(font, codePoints, gids, offsets, i, j)
+                    runEdge![j] = false
+                    i = j
+                    continue
+                }
                 var end = i + 1
                 if codePoints[i] != 0x20 {
-                    while end < n && codePoints[end] != 0x20 {
+                    while end < n && codePoints[end] != 0x20 && (runEdge == nil || !runEdge![end]) {
                         end += 1
                     }
                 }
@@ -532,6 +553,33 @@ public class Page {
                 i = end
             }
         }
+    }
+
+    // Draws the glyphs of a left to right run in brackets, nested in right to
+    // left text, in a marked content span with the text of the run between
+    // two left-to-right marks as its actual text. Poppler and MuPDF then keep
+    // the brackets with the run when the text is copied; with the brackets in
+    // spans of their own, or mirrored back like the other brackets, they come
+    // out the wrong way round. No glyph stands in for the marks: MuPDF moves
+    // the first bracket to the right to left text when one does.
+    private func appendRun(
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int]?, _ start: Int, _ end: Int) {
+        var text = "\u{200E}"
+        for k in start..<end {
+            text.append(textOf(font, codePoints[k]))
+        }
+        text.append("\u{200E}")
+        append("> Tj\n/Span <</ActualText <")
+        append(toUTF16Hex(text))
+        append(">>> BDC\n<")
+        for k in start..<end {
+            if let offsets = offsets, offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
+                appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1])
+            } else {
+                Page.appendCodePointAsHex(gids[k], &self.buf)
+            }
+        }
+        append("> Tj\nEMC\n<")
     }
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,

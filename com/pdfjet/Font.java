@@ -478,8 +478,8 @@ final public class Font {
         } else {
             for (int i = 0; i < str.length(); i++) {
                 int c1 = str.charAt(i);
-                if (c1 == 0x200F || c1 == 0x200C || c1 == 0x200D) {
-                    continue;   // An RLM, ZWNJ or ZWJ is not drawn
+                if (isJoinerOrRLM(c1)) {
+                    continue;   // An RLM, LRM, ZWNJ or ZWJ is not drawn
                 }
                 if (unicodeToGID[c1] < advanceWidth.length) {
                     width += advanceWidth[unicodeToGID[c1]];
@@ -705,11 +705,11 @@ final public class Font {
         return stringWidth(fallbackFont, this.size, str);
     }
 
-    // Returns true for the right-to-left mark and the zero width non-joiner
-    // and joiner, which are not drawn: Page gives the glyph after them an
-    // actual text.
+    // Returns true for the right-to-left and left-to-right marks and the zero
+    // width non-joiner and joiner, which are not drawn: Page gives the glyph
+    // before or after them an actual text.
     static boolean isJoinerOrRLM(int ch) {
-        return ch == 0x200F || ch == 0x200C || ch == 0x200D;
+        return ch == 0x200F || ch == 0x200E || ch == 0x200C || ch == 0x200D;
     }
 
     /**

@@ -154,10 +154,15 @@ to the letters they stand for, so the words come out as typed, but:
   `Bidi.reorderVisually` puts a right-to-left mark (U+200F) before each bracket
   it mirrors, and PDFjet draws the bracket in a marked content span that has
   the bracket that was typed as its ActualText, and does not draw the mark.
-  Brackets around left to right text, as in `مرحبا (hello) عالم`, still come
-  out the wrong way round. MuPDF can move a bracket at either end of a line to
-  the other end, and Poppler puts a space before a closing bracket after a word
-  whose last letter has a mark, as in `(كَتَبَ )`.
+  Brackets around left to right text, as in `مرحبا (hello) عالم`, stay with
+  that text when it is copied, so `Bidi.reorderVisually` puts a left-to-right
+  mark (U+200E) on each side of the run instead, and PDFjet draws the run,
+  brackets included, in one span whose ActualText is its text between the two
+  marks. Poppler and MuPDF then copy the brackets on the right sides of the
+  text, and the two marks, which are invisible, with it. MuPDF can move a
+  bracket at either end of a line to the other end, and Poppler puts a space
+  before a closing bracket after a word whose last letter has a mark, as in
+  `(كَتَبَ )`.
 - The zero width non-joiner and joiner, as in `می‌خواهم`, are not drawn, but
   each is put in the ActualText of the glyph before it, with a space glyph that
   takes no room standing in for it, so Poppler and MuPDF copy them. A font that
@@ -198,7 +203,8 @@ Text extraction tools take a mark that is moved up or down for text off the
 line, and break the word at it. Each word with a moved mark is drawn in a
 marked content span that has the text of the word as its ActualText, so Poppler
 extracts the word whole. MuPDF 1.27 extracts the letters and marks in order,
-but puts spaces inside some of these words.
+but puts spaces inside some of these words, after a moved mark, going by the
+positions of the glyphs rather than by the ActualText.
 
 ## Encryption
 

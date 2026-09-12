@@ -170,7 +170,8 @@ namespace PDFjet.NET {
                 i += (cp > 0xFFFF) ? 2 : 1;
             }
             Array.Resize(ref input, n);
-            int[] types = ResolveTypes(input);
+            bool[] aroundL = new bool[input.Length];
+            int[] types = ResolveTypes(input, aroundL);
 
             // buf1 gets the right to left text in logical order and each left
             // to right run reversed, so that reversing buf1 below puts the right
@@ -209,7 +210,22 @@ namespace PDFjet.NET {
                 // as actual text. buf1 is reversed below, so the RLM goes after
                 // it here.
                 int? m = Mirrored(ch);
-                if (m.HasValue) {
+                if (m.HasValue && aroundL[j]) {
+                    // The brackets of a right to left pair around left to right
+                    // text stay with that text when it is copied, in the order
+                    // they are drawn, so they are not mirrored back. A
+                    // left-to-right mark (U+200E) on each side of the brackets
+                    // keeps them with the text in Poppler and MuPDF; Page puts
+                    // each mark in the actual text of the glyph before it, as it
+                    // does with a joiner.
+                    bool opening = IsOpeningBracket(ch);
+                    buf1[n1] = opening ? 0x200E : m.Value;
+                    from1[n1] = indexes[j];
+                    n1++;
+                    buf1[n1] = opening ? m.Value : 0x200E;
+                    from1[n1] = indexes[j];
+                    n1++;
+                } else if (m.HasValue) {
                     buf1[n1] = m.Value;
                     from1[n1] = indexes[j];
                     n1++;
@@ -519,7 +535,7 @@ namespace PDFjet.NET {
         /// </summary>
         /// <param name="input">The code points.</param>
         /// <returns>L for each code point in a left to right run and R for the others.</returns>
-        private static int[] ResolveTypes(int[] input) {
+        private static int[] ResolveTypes(int[] input, bool[] aroundL) {
             int n = input.Length;
             int[] classes = new int[n];
             for (int i = 0; i < n; i++) {
@@ -596,7 +612,7 @@ namespace PDFjet.NET {
             }
 
             // N0: both brackets of a pair take the same direction.
-            ResolveBrackets(input, classes, types);
+            ResolveBrackets(input, classes, types, aroundL);
 
             // N1, N2: neutral characters with left to right text on both sides
             // are left to right, and the others are right to left. Numbers count
@@ -631,7 +647,7 @@ namespace PDFjet.NET {
         /// both brackets of a pair the direction of the text between them, or
         /// of the text before them if the text between them is left to right.
         /// </summary>
-        private static void ResolveBrackets(int[] input, int[] classes, int[] types) {
+        private static void ResolveBrackets(int[] input, int[] classes, int[] types, bool[] aroundL) {
             int n = input.Length;
             int[] closing = new int[n];     // The position of each opening bracket's pair
             Array.Fill(closing, -1);
@@ -678,6 +694,7 @@ namespace PDFjet.NET {
                         direction = L;
                     }
                 }
+                bool onlyL = direction == L;
                 if (direction == L) {
                     direction = R;
                     for (int i = open - 1; i >= 0; i--) {
@@ -691,6 +708,11 @@ namespace PDFjet.NET {
                 if (direction != ON) {
                     SetBracketType(classes, types, open, direction);
                     SetBracketType(classes, types, close, direction);
+                    // A right to left pair around left to right text only.
+                    if (onlyL && direction == R) {
+                        aroundL[open] = true;
+                        aroundL[close] = true;
+                    }
                 }
             }
         }

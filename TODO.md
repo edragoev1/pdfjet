@@ -79,15 +79,31 @@ Pick from the README limitations; the first three are the ones users hit.
       it with a zero-width stand-in glyph (MuPDF needs a glyph per character),
       or draws the font's own zero-width glyph when it has one. Poppler and
       MuPDF copy them; rendering is unchanged.
-- ⬜ Brackets around left to right text nested in a right to left line still
-      copy the wrong way round: apply the mirrored-bracket ActualText to the
-      nested run as well.
-- ⬜ S Marks in `.otf.stream`/`.ttf.stream` fonts are not positioned (no GPOS
-      data in the stream format). Either add the mark anchors to the stream
-      format and regenerate `fonts/**/*.stream`, or steer users to `.otf`/`.ttf`
-      in the docs.
-- ⬜ S MuPDF puts spaces inside some words with moved marks; check whether one
-      span per word instead of per mark cluster fixes it.
+- ✅ Brackets around left to right text nested in a right to left line
+      (`مرحبا (hello) عالم`) copied the wrong way round. Per-bracket ActualText
+      cannot fix it: Poppler keeps the bracket before the run with the run and
+      moves the one after it, whatever the ActualText says, and MuPDF moves
+      the first bracket to the right to left text. What both accept: the run,
+      brackets included, in one span whose ActualText is its text between two
+      left-to-right marks (U+200E), which end up in the copied text. `Bidi`
+      marks the pairs that rule N0 resolves as right to left around left to
+      right text only, and `Page` draws the run between the two marks as that
+      span, in all four ports; Poppler copies `مرحبا (hello) عالم`, and MuPDF
+      keeps `(hello)` together. An `abc (مرحبا) def` line is still laid out as
+      a right to left line, as the README says.
+- ✅ S Marks in `.otf.stream`/`.ttf.stream` fonts: users are steered to
+      `.otf`/`.ttf`, as the README Marks and Right to left text sections do
+      and Example_27 shows. The stream format stays as it is for 9.0.0: the
+      anchors would change `FontStream1`/`FontStream2` and the generator in
+      all four ports and every `fonts/**/*.stream` file, for fonts a user can
+      read from the `.otf`/`.ttf` file instead.
+- ✅ S MuPDF spaces inside words with moved marks: reproduced with MuPDF
+      1.27.2 on vowelled Arabic and Hebrew drawn from the `.otf` fonts
+      (`מִ יד`, `رَسُ ولُ`); Poppler extracts the words whole. A word is
+      already drawn in one span (`appendWordWithMovedMarks`), so a span per
+      word is not the fix: MuPDF adds the spaces from the positions of the
+      moved mark glyphs, which sit over the letter after them in the drawn
+      order. Left as a known MuPDF limitation in the README Marks section.
 - ✅ Code TODOs that change output (all four ports):
   - ✅ `CheckBox` with a URI: the marker was stale. `Page.addAnnotation` makes
     a Link structure element of its own, so the link needs no BMC/EMC; a

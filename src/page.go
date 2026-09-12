@@ -375,8 +375,8 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 			}
 		}
-	} else if font.markAnchors == nil && !strings.ContainsRune(text, 0x200F) &&
-		!strings.ContainsRune(text, 0x200C) && !strings.ContainsRune(text, 0x200D) { // RLM, ZWNJ, ZWJ
+	} else if font.markAnchors == nil && !strings.ContainsRune(text, 0x200F) && !strings.ContainsRune(text, 0x200E) &&
+		!strings.ContainsRune(text, 0x200C) && !strings.ContainsRune(text, 0x200D) { // RLM, LRM, ZWNJ, ZWJ
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
 				page.appendCodePointAsHex(glyphOf(font, c1))
@@ -393,11 +393,20 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		gids := make([]int, 0, len(runes))
 		var mirroredAt []bool
 		var joiners []rune
+		var runEdge []bool // An LRM before the glyph at the index
 		hasMarks := false
 		afterRLM := false
 		for _, c1 := range runes {
 			if c1 == 0x200F { // RLM
 				afterRLM = true
+			} else if c1 == 0x200E { // LRM
+				// Bidi puts an LRM on each side of the brackets of a right to
+				// left pair around left to right text; the glyphs between the
+				// two are drawn in one span, see appendRun.
+				if runEdge == nil {
+					runEdge = make([]bool, len(runes)+1)
+				}
+				runEdge[len(codePoints)] = true
 			} else if (c1 == 0x200C || c1 == 0x200D) && font.unicodeToGID[c1] == 0 {
 				// A ZWNJ or ZWJ the font has no glyph for goes with the glyph
 				// before it. One with nothing before it is left out.
@@ -423,7 +432,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		var offsets []int
 		if hasMarks && font.markAnchors != nil {
 			offsets = markOffsets(font, codePoints, gids)
-		} else if mirroredAt == nil && joiners == nil {
+		} else if mirroredAt == nil && joiners == nil && runEdge == nil {
 			for _, gid := range gids {
 				page.appendCodePointAsHex(gid)
 			}
@@ -432,9 +441,19 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		n := len(gids)
 		i := 0
 		for i < n {
+			if runEdge != nil && runEdge[i] {
+				j := i + 1
+				for j < n && !runEdge[j] {
+					j++
+				}
+				page.appendRun(font, codePoints, gids, offsets, i, j)
+				runEdge[j] = false
+				i = j
+				continue
+			}
 			end := i + 1
 			if codePoints[i] != 0x20 {
-				for end < n && codePoints[end] != 0x20 {
+				for end < n && codePoints[end] != 0x20 && (runEdge == nil || !runEdge[end]) {
 					end++
 				}
 			}
@@ -457,6 +476,33 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			i = end
 		}
 	}
+}
+
+// appendRun draws the glyphs of a left to right run in brackets, nested in
+// right to left text, in a marked content span with the text of the run
+// between two left-to-right marks as its actual text. Poppler and MuPDF then
+// keep the brackets with the run when the text is copied; with the brackets
+// in spans of their own, or mirrored back like the other brackets, they come
+// out the wrong way round. No glyph stands in for the marks: MuPDF moves the
+// first bracket to the right to left text when one does.
+func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, start, end int) {
+	var text strings.Builder
+	text.WriteRune(0x200E)
+	for k := start; k < end; k++ {
+		text.WriteString(textOf(font, codePoints[k]))
+	}
+	text.WriteRune(0x200E)
+	page.appendString("> Tj\n/Span <</ActualText <")
+	page.appendString(toUTF16Hex(text.String()))
+	page.appendString(">>> BDC\n<")
+	for k := start; k < end; k++ {
+		if offsets == nil || (offsets[2*k] == 0 && offsets[2*k+1] == 0) {
+			page.appendCodePointAsHex(gids[k])
+		} else {
+			page.appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k+1])
+		}
+	}
+	page.appendString("> Tj\nEMC\n<")
 }
 
 // appendWord draws the glyphs of a word, or of the part of a word before a

@@ -593,8 +593,8 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-        } else if (font.markAnchors == null && str.IndexOf('‏') < 0 &&
-                str.IndexOf('‌') < 0 && str.IndexOf('‍') < 0) {  // RLM, ZWNJ, ZWJ
+        } else if (font.markAnchors == null && str.IndexOf('\u200F') < 0 && str.IndexOf('\u200E') < 0 &&
+                str.IndexOf('\u200C') < 0 && str.IndexOf('\u200D') < 0) {  // RLM, LRM, ZWNJ, ZWJ
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
@@ -614,6 +614,7 @@ public class Page {
             int[] gids = new int[str.Length];
             bool[] mirrored = null;
             int[] joiners = null;
+            bool[] runEdge = null;      // An LRM before the glyph at the index
             int n = 0;
             bool hasMarks = false;
             bool afterRLM = false;
@@ -622,6 +623,14 @@ public class Page {
                 int codePoint = char.ConvertToUtf32(str, i);
                 if (codePoint == 0x200F) {                  // RLM
                     afterRLM = true;
+                } else if (codePoint == 0x200E) {           // LRM
+                    // Bidi puts an LRM on each side of the brackets of a right
+                    // to left pair around left to right text; the glyphs
+                    // between the two are drawn in one span, see AppendRun.
+                    if (runEdge == null) {
+                        runEdge = new bool[str.Length + 1];
+                    }
+                    runEdge[n] = true;
                 } else if ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
                     // A ZWNJ or ZWJ the font has no glyph for goes with the
                     // glyph before it. One with nothing before it is left out.
@@ -649,7 +658,7 @@ public class Page {
             int[] offsets = null;
             if (hasMarks && font.markAnchors != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null && joiners == null) {
+            } else if (mirrored == null && joiners == null && runEdge == null) {
                 for (int k = 0; k < n; k++) {
                     AppendCodePointAsHex(gids[k]);
                 }
@@ -657,9 +666,19 @@ public class Page {
             }
             i = 0;
             while (i < n) {
+                if (runEdge != null && runEdge[i]) {
+                    int j = i + 1;
+                    while (j < n && !runEdge[j]) {
+                        j++;
+                    }
+                    AppendRun(font, codePoints, gids, offsets, i, j);
+                    runEdge[j] = false;
+                    i = j;
+                    continue;
+                }
                 int end = i + 1;
                 if (codePoints[i] != 0x20) {
-                    while (end < n && codePoints[end] != 0x20) {
+                    while (end < n && codePoints[end] != 0x20 && (runEdge == null || !runEdge[end])) {
                         end++;
                     }
                 }
@@ -683,6 +702,32 @@ public class Page {
                 i = end;
             }
         }
+    }
+
+    // Draws the glyphs of a left to right run in brackets, nested in right to
+    // left text, in a marked content span with the text of the run between
+    // two left-to-right marks as its actual text. Poppler and MuPDF then keep
+    // the brackets with the run when the text is copied; with the brackets in
+    // spans of their own, or mirrored back like the other brackets, they come
+    // out the wrong way round. No glyph stands in for the marks: MuPDF moves
+    // the first bracket to the right to left text when one does.
+    private void AppendRun(Font font, int[] codePoints, int[] gids, int[] offsets, int start, int end) {
+        StringBuilder text = new StringBuilder("\u200E");
+        for (int k = start; k < end; k++) {
+            text.Append(TextOf(font, codePoints[k]));
+        }
+        text.Append("\u200E");
+        Append("> Tj\n/Span <</ActualText <");
+        Append(ToUTF16Hex(text.ToString()));
+        Append(">>> BDC\n<");
+        for (int k = start; k < end; k++) {
+            if (offsets == null || (offsets[2*k] == 0 && offsets[2*k + 1] == 0)) {
+                AppendCodePointAsHex(gids[k]);
+            } else {
+                AppendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
+            }
+        }
+        Append("> Tj\nEMC\n<");
     }
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,

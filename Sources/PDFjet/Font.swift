@@ -599,10 +599,10 @@ public class Font {
         return width
     }
 
-    // Returns true for the right-to-left mark and the zero width non-joiner
-    // and joiner, which are not drawn: Page gives the glyph before or after
-    // them an actual text.
+    // Returns true for the right-to-left and left-to-right marks and the zero
+    // width non-joiner and joiner, which are not drawn: Page gives the glyph
+    // before or after them an actual text.
     static func isJoinerOrRLM(_ value: UInt32) -> Bool {
-        return value == 0x200F || value == 0x200C || value == 0x200D
+        return value == 0x200F || value == 0x200E || value == 0x200C || value == 0x200D
     }
 }   // End of Font.swift

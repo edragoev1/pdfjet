@@ -228,7 +228,8 @@ public class Bidi {
             input.append(scalar.value)
             indexes.append(offset)
         }
-        let types = resolveTypes(input)
+        var aroundL = [Bool](repeating: false, count: input.count)
+        let types = resolveTypes(input, &aroundL)
 
         // buf1 gets the right to left text in logical order and each left to
         // right run reversed, so that reversing buf1 below puts the right to
@@ -259,7 +260,24 @@ public class Bidi {
             // not mirror them back, so an RLM before a mirrored character
             // tells Page to give it the character it stands for as actual
             // text. buf1 is reversed below, so the RLM goes after it here.
-            if let m = mirrored(ch) {
+            if let m = mirrored(ch), aroundL[j] {
+                // The brackets of a right to left pair around left to right
+                // text stay with that text when it is copied, in the order
+                // they are drawn, so they are not mirrored back. A
+                // left-to-right mark (U+200E) on each side of the brackets
+                // keeps them with the text in Poppler and MuPDF; Page puts
+                // each mark in the actual text of the glyph before it, as it
+                // does with a joiner.
+                if isOpeningBracket(ch) {
+                    buf1.append(0x200E)
+                    buf1.append(m)
+                } else {
+                    buf1.append(m)
+                    buf1.append(0x200E)
+                }
+                from1.append(indexes[j])
+                from1.append(indexes[j])
+            } else if let m = mirrored(ch) {
                 buf1.append(m)
                 buf1.append(0x200F)
                 from1.append(indexes[j])
@@ -545,7 +563,7 @@ public class Bidi {
     ///
     /// - Parameter input: the code points.
     /// - Returns: L for each code point in a left to right run and R for the others.
-    private static func resolveTypes(_ input: [UInt32]) -> [Int] {
+    private static func resolveTypes(_ input: [UInt32], _ aroundL: inout [Bool]) -> [Int] {
         let n = input.count
         let classes = input.map { bidiType($0) }
         var types = classes
@@ -621,7 +639,7 @@ public class Bidi {
         }
 
         // N0: both brackets of a pair take the same direction.
-        resolveBrackets(input, classes, &types)
+        resolveBrackets(input, classes, &types, &aroundL)
 
         // N1, N2: neutral characters with left to right text on both sides are
         // left to right, and the others are right to left. Numbers count as
@@ -657,7 +675,7 @@ public class Bidi {
     /// both brackets of a pair the direction of the text between them, or of
     /// the text before them if the text between them is left to right.
     private static func resolveBrackets(
-            _ input: [UInt32], _ classes: [Int], _ types: inout [Int]) {
+            _ input: [UInt32], _ classes: [Int], _ types: inout [Int], _ aroundL: inout [Bool]) {
         let n = input.count
         var closing = [Int](repeating: -1, count: n)    // The position of each opening bracket's pair
         var stack = [Int]()
@@ -703,6 +721,7 @@ public class Bidi {
                     direction = L
                 }
             }
+            let onlyL = direction == L
             if direction == L {
                 direction = R
                 for i in stride(from: open - 1, through: 0, by: -1) {
@@ -716,6 +735,11 @@ public class Bidi {
             if direction != ON {
                 setBracketType(classes, &types, open, direction)
                 setBracketType(classes, &types, close, direction)
+                // A right to left pair around left to right text only.
+                if onlyL && direction == R {
+                    aroundL[open] = true
+                    aroundL[close] = true
+                }
             }
         }
     }
