@@ -47,7 +47,7 @@ type Cell struct {
 	rightBorder  bool
 
 	textAlignment int
-	uri, key      string
+	uri           string
 	valign        int
 
 	underline bool
@@ -55,11 +55,13 @@ type Cell struct {
 }
 
 // NewCell creates a cell object and sets the font and the cell text.
+// The font is also the fallback font until SetFallbackFont changes it.
 // @param font the font.
 // @param text the text.
 func NewCell(font *Font, text string) *Cell {
 	cell := new(Cell)
 	cell.font = font
+	cell.fallbackFont = font
 	cell.fontSize = font.size
 	cell.text = text
 	cell.width = 75.0
@@ -78,7 +80,7 @@ func NewCell(font *Font, text string) *Cell {
 	return cell
 }
 
-// SetFont sets the font for this cell.
+// SetFont sets the font for this cell, and the font size to the size of the font.
 // @param font the font.
 func (cell *Cell) SetFont(font *Font) *Cell {
 	cell.font = font
@@ -123,7 +125,7 @@ func (cell *Cell) SetFontSize(fontSize float32) *Cell {
 	return cell
 }
 
-// SetImage sets the image inside this cell.
+// SetImage sets the image inside this cell and clears the cell text.
 func (cell *Cell) SetImage(image *Image) *Cell {
 	cell.image = image
 	cell.text = ""
@@ -135,7 +137,7 @@ func (cell *Cell) GetImage() *Image {
 	return cell.image
 }
 
-// SetBarcode sets the barcode for this cell.
+// SetBarcode sets the barcode inside this cell and clears the cell text.
 func (cell *Cell) SetBarcode(barcode *Barcode) *Cell {
 	cell.barcode = barcode
 	cell.text = ""
@@ -159,13 +161,13 @@ func (cell *Cell) GetPoint() *Point {
 	return cell.point
 }
 
-// SetTextBlock sets the composite text object.
+// SetTextBlock sets the text block drawn in this cell.
 func (cell *Cell) SetTextBlock(textBlock *TextBlock) *Cell {
 	cell.textBlock = textBlock
 	return cell
 }
 
-// SetTextColumn sets the text column that this cell holds.
+// SetTextColumn sets the text column drawn in this cell and widens the cell to fit it.
 func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
 	cell.textColumn = textColumn
 	cell.width = textColumn.w + cell.leftPadding + cell.rightPadding
@@ -188,9 +190,10 @@ func (cell *Cell) GetTextColumn() *TextColumn {
 	return cell.textColumn
 }
 
-// SetTextBox sets the text box that this cell holds.
+// SetTextBox sets the text box drawn in this cell and clears the cell text.
 func (cell *Cell) SetTextBox(textBox *TextBox) *Cell {
 	cell.textBox = textBox
+	cell.text = ""
 	return cell
 }
 
@@ -287,11 +290,11 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	if cell.textBox != nil {
 		cell.textBox.SetWidth(width)
 		cellHeight = (cell.textBox.DrawOn(nil)[1] - cell.textBox.y) + cell.topPadding + cell.bottomPadding
-	} else if cell.textColumn != nil {
-		cellHeight = (cell.textColumn.DrawOn(nil)[1] - cell.textColumn.y) + cell.topPadding + cell.bottomPadding
 	} else if cell.textBlock != nil {
 		cell.textBlock.SetWidth(width)
 		cellHeight = (cell.textBlock.DrawOn(nil)[1] - cell.textBlock.y) + cell.topPadding + cell.bottomPadding
+	} else if cell.textColumn != nil {
+		cellHeight = (cell.textColumn.DrawOn(nil)[1] - cell.textColumn.y) + cell.topPadding + cell.bottomPadding
 	} else if cell.image != nil {
 		cellHeight = cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
 	} else if cell.barcode != nil {
@@ -326,10 +329,7 @@ func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
 
 // SetBackgroundColor sets the background color of this cell as a 0xRRGGBB value.
 func (cell *Cell) SetBackgroundColor(color int32) *Cell {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	cell.backgroundColor = [3]float32{r, g, b}
+	cell.backgroundColor = colorToRGB(color)
 	cell.hasBackgroundColor = true
 	return cell
 }
@@ -370,7 +370,7 @@ func (cell *Cell) GetStrokeWidth() float32 {
 	return cell.strokeWidth
 }
 
-// SetTextColorRGB sets the text color.
+// SetTextColorRGB sets the text color from red, green and blue values.
 func (cell *Cell) SetTextColorRGB(textColor [3]float32) *Cell {
 	cell.textColor = textColor
 	return cell
@@ -384,19 +384,18 @@ func (cell *Cell) SetTextColor(color int32) *Cell {
 }
 
 // GetTextColor returns the text color.
-// @return the brushColor color.
 func (cell *Cell) GetTextColor() [3]float32 {
 	return cell.textColor
 }
 
-// SetColSpan sets the column span func (cell *Cell) variable.
+// SetColSpan sets the number of columns this cell spans.
 // @param colspan the specified column span value.
 func (cell *Cell) SetColSpan(colspan int) *Cell {
 	cell.colspan = colspan
 	return cell
 }
 
-// GetColSpan returns the column span func (cell *Cell) variable value.
+// GetColSpan returns the number of columns this cell spans.
 // @return the column span value.
 func (cell *Cell) GetColSpan() int {
 	return cell.colspan
@@ -481,7 +480,8 @@ func (cell *Cell) GetRightBorder() bool {
 
 // SetTextAlignment sets the cell text alignment.
 // @param alignment the alignment code.
-// Supported values: align.Left, align.Right and align.Center
+// Supported values: alignment.Left, alignment.Right, alignment.Center and
+// alignment.Justify, which draws the single line of cell text left aligned.
 func (cell *Cell) SetTextAlignment(textAlignment int) *Cell {
 	cell.textAlignment = textAlignment
 	return cell
@@ -495,7 +495,7 @@ func (cell *Cell) GetTextAlignment() int {
 
 // SetVerTextAlignment sets the cell text vertical alignment.
 // @param alignment the alignment code.
-// Supported values: align.Top, align.Center and align.Bottom
+// Supported values: alignment.Top, alignment.Center and alignment.Bottom.
 func (cell *Cell) SetVerTextAlignment(alignment int) *Cell {
 	cell.valign = alignment
 	return cell
@@ -547,43 +547,37 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 	}
 
 	if cell.text != "" {
-		// Java checks the text first, so a cell that carries both text and a
-		// text box, column or block renders its text.
 		cell.drawText(page, x, y, w, h)
 	} else if cell.textBox != nil {
 		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		cell.textBox.SetWidth(w - (cell.leftPadding + cell.rightPadding))
 		cell.textBox.DrawOn(page)
-	} else if cell.textColumn != nil {
-		cell.textColumn.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textColumn.DrawOn(page)
 	} else if cell.textBlock != nil {
 		cell.textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		cell.textBlock.SetWidth(w - (cell.leftPadding + cell.rightPadding))
 		cell.textBlock.DrawOn(page)
+	} else if cell.textColumn != nil {
+		cell.textColumn.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+		cell.textColumn.DrawOn(page)
 	} else if cell.image != nil {
-		if cell.GetTextAlignment() == alignment.Left {
-			cell.image.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-			cell.image.DrawOn(page)
-		} else if cell.GetTextAlignment() == alignment.Center {
+		if cell.textAlignment == alignment.Right {
+			cell.image.SetLocation((x+w)-(cell.image.GetWidth()+cell.rightPadding), y+cell.topPadding)
+		} else if cell.textAlignment == alignment.Center {
 			cell.image.SetLocation((x+w/2.0)-cell.image.GetWidth()/2.0, y+cell.topPadding)
-			cell.image.DrawOn(page)
-		} else if cell.GetTextAlignment() == alignment.Right {
-			cell.image.SetLocation((x+w)-(cell.image.GetWidth()+cell.leftPadding), y+cell.topPadding)
-			cell.image.DrawOn(page)
+		} else {
+			cell.image.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		}
+		cell.image.DrawOn(page)
 	} else if cell.barcode != nil {
-		if cell.GetTextAlignment() == alignment.Left {
-			cell.barcode.drawOnPageAtLocation(page, x+cell.leftPadding, y+cell.topPadding)
-		} else if cell.GetTextAlignment() == alignment.Center {
+		if cell.textAlignment == alignment.Right {
+			barcodeWidth := cell.barcode.DrawOn(nil)[0]
+			cell.barcode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.rightPadding), y+cell.topPadding)
+		} else if cell.textAlignment == alignment.Center {
 			barcodeWidth := cell.barcode.DrawOn(nil)[0]
 			cell.barcode.drawOnPageAtLocation(page, (x+w/2.0)-barcodeWidth/2.0, y+cell.topPadding)
-		} else if cell.GetTextAlignment() == alignment.Right {
-			barcodeWidth := cell.barcode.DrawOn(nil)[0]
-			cell.barcode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.leftPadding), y+cell.topPadding)
+		} else {
+			cell.barcode.drawOnPageAtLocation(page, x+cell.leftPadding, y+cell.topPadding)
 		}
-	} else {
-		cell.drawText(page, x, y, w, h)
 	}
 
 	cell.drawBorders(page, x, y, w, h)
@@ -613,10 +607,10 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 	}
 }
 
-func (cell *Cell) drawBackground(page *Page, x, y, wCell, hCell float32) {
+func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
 	page.SetBrushColorRGB(cell.backgroundColor)
-	page.FillRect(x, y+cell.lineWidth/2, wCell, hCell)
+	page.FillRect(x, y+cell.lineWidth/2, cellW, cellH)
 	page.AddEMC()
 }
 
@@ -650,18 +644,17 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.AddEMC()
 }
 
-// drawText draws the cell text.
-func (cell *Cell) drawText(page *Page, x, y, wCell, hCell float32) {
-	var xText float32
-	var yText float32
+// drawText draws the cell text, or the composite text line, and its link.
+func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	ascent := cell.font.GetAscentAt(cell.fontSize)
+	var yText float32
 	switch cell.valign {
 	case alignment.Top:
 		yText = y + ascent + cell.topPadding
 	case alignment.Center:
-		yText = y + hCell/2.0 + ascent/2.0
+		yText = y + cellH/2.0 + ascent/2.0
 	case alignment.Bottom:
-		yText = (y + hCell) - cell.bottomPadding
+		yText = (y + cellH) - cell.bottomPadding
 	default:
 		log.Fatal("Invalid vertical text alignment option.")
 	}
@@ -669,104 +662,73 @@ func (cell *Cell) drawText(page *Page, x, y, wCell, hCell float32) {
 	if cell.hasStrokeColor {
 		page.SetPenColorRGB(cell.strokeColor)
 	}
-	if cell.GetTextAlignment() == alignment.Left {
-		xText = x + cell.leftPadding
-		if cell.compositeTextLine != nil {
-			cell.compositeTextLine.SetLocation(xText, yText)
-			// The text lines of the composite mark their own text.
-			cell.compositeTextLine.DrawOn(page)
-			return
-		}
-		page.AddBMC("P", "", cell.text, cell.text)
-		page.DrawStringUsingColorMap(
-			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
-		page.AddEMC()
-		if cell.underline {
-			cell.underlineText(page, cell.font, cell.text, xText, yText)
-		}
-		if cell.strikeout {
-			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
-		}
-	} else if cell.GetTextAlignment() == alignment.Right {
-		if cell.compositeTextLine != nil {
-			xText = (x + wCell) - (cell.compositeTextLine.GetWidth() + cell.rightPadding)
-			cell.compositeTextLine.SetLocation(xText, yText)
-			// The text lines of the composite mark their own text.
-			cell.compositeTextLine.DrawOn(page)
-			return
-		}
-		xText = (x + wCell) - (cell.font.StringWidth(cell.fontSize, cell.text) + cell.rightPadding)
-		page.AddBMC("P", "", cell.text, cell.text)
-		page.DrawStringUsingColorMap(
-			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
-		page.AddEMC()
-		if cell.underline {
-			cell.underlineText(page, cell.font, cell.text, xText, yText)
-		}
-		if cell.strikeout {
-			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
-		}
-	} else if cell.GetTextAlignment() == alignment.Center {
-		if cell.compositeTextLine != nil {
-			xText = x + cell.leftPadding +
-				(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.compositeTextLine.GetWidth()) / 2)
-			cell.compositeTextLine.SetLocation(xText, yText)
-			// The text lines of the composite mark their own text.
-			cell.compositeTextLine.DrawOn(page)
-			return
-		}
+	var xText float32
+	if cell.textAlignment == alignment.Right {
+		xText = (x + cellW) - (cell.getTextWidth() + cell.rightPadding)
+	} else if cell.textAlignment == alignment.Center {
 		xText = x + cell.leftPadding +
-			(((wCell - (cell.leftPadding + cell.rightPadding)) - cell.font.StringWidth(cell.fontSize, cell.text)) / 2)
+			(((cellW - (cell.leftPadding + cell.rightPadding)) - cell.getTextWidth()) / 2)
+	} else {
+		// alignment.Left, and alignment.Justify, which a single line of text cannot use.
+		xText = x + cell.leftPadding
+	}
+	if cell.compositeTextLine == nil {
 		page.AddBMC("P", "", cell.text, cell.text)
 		page.DrawStringUsingColorMap(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {
-			cell.underlineText(page, cell.font, cell.text, xText, yText)
+			cell.underlineText(page, xText, yText)
 		}
 		if cell.strikeout {
-			cell.strikeoutText(page, cell.font, cell.text, xText, yText)
+			cell.strikeoutText(page, xText, yText)
 		}
 	} else {
-		log.Fatal("Invalid Text Alignment!")
+		cell.compositeTextLine.SetLocation(xText, yText)
+		// The text lines of the composite mark their own text.
+		cell.compositeTextLine.DrawOn(page)
 	}
 
 	if cell.uri != "" {
-		w := cell.font.StringWidth(cell.fontSize, cell.text)
 		page.addAnnotation(&Annotation{
 			annotationType: AnnotationLink,
 			x1:             xText,
 			y1:             yText - ascent,
-			x2:             xText + w,
+			x2:             xText + cell.getTextWidth(),
 			y2:             yText + cell.font.GetDescentAt(cell.fontSize),
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
-			transparency:   0.0,
-			title:          "",
-			contents:       "",
 			uri:            cell.uri,
-			key:            "",
-			language:       "",
-			actualText:     "",
-			altDescription: "",
 		})
 	}
 }
 
+// getTextWidth returns the width of the composite text line, or of the cell
+// text drawn with the font and the fallback font at the font size of this cell.
+func (cell *Cell) getTextWidth() float32 {
+	if cell.compositeTextLine != nil {
+		return cell.compositeTextLine.GetWidth()
+	}
+	return cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, cell.text)
+}
+
 // underlineText underlines the cell text.
-func (cell *Cell) underlineText(page *Page, font *Font, text string, x, y float32) {
-	descent := font.GetDescentAt(cell.fontSize)
-	page.SetPenWidth(font.GetUnderlineThicknessAt(cell.fontSize))
+func (cell *Cell) underlineText(page *Page, x, y float32) {
+	descent := cell.font.GetDescentAt(cell.fontSize)
+	page.AddBMC("P", "", "underline", "underline")
+	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
 	page.MoveTo(x, y+descent)
-	page.LineTo(x+font.StringWidth(cell.fontSize, text), y+descent)
+	page.LineTo(x+cell.getTextWidth(), y+descent)
 	page.StrokePath()
+	page.AddEMC()
 }
 
 // strikeoutText strikes out the cell text.
-func (cell *Cell) strikeoutText(page *Page, font *Font, text string, x, y float32) {
-	ascent := font.GetAscentAt(cell.fontSize)
-	page.SetPenWidth(font.GetUnderlineThicknessAt(cell.fontSize))
+func (cell *Cell) strikeoutText(page *Page, x, y float32) {
+	ascent := cell.font.GetAscentAt(cell.fontSize)
+	page.AddBMC("P", "", "strike out", "strike out")
+	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)
-	page.LineTo(x+font.StringWidth(cell.fontSize, text), y-ascent/3.0)
+	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)
 	page.StrokePath()
+	page.AddEMC()
 }

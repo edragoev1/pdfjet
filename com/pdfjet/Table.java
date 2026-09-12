@@ -331,7 +331,7 @@ public class Table implements Drawable {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
-                cell.font = font;
+                cell.setFont(font);
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -371,7 +371,7 @@ public class Table implements Drawable {
         if (index < tableData.size()) {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
-                cell.font = font;
+                cell.setFont(font);
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }

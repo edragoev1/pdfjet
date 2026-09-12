@@ -305,7 +305,7 @@ public class Table : IDrawable {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
-                cell.font = font;
+                cell.SetFont(font);
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -343,7 +343,7 @@ public class Table : IDrawable {
         if (index < tableData.Count) {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
-                cell.font = font;
+                cell.SetFont(font);
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }

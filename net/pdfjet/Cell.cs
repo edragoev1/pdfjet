@@ -35,7 +35,6 @@ public class Cell {
     internal float[] textColor = new float[] {0f, 0f, 0f};
     internal float strokeWidth;
     internal float[] strokeColor;
-    internal String strokeDashPattern = "[] 0";    // Solid
 
     internal int colspan = 1;
 
@@ -82,7 +81,7 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the font for this cell.
+    /// Sets the font for this cell, and the font size to the size of the font.
     /// </summary>
     /// <param name="font">the font.</param>
     /// <returns>this Cell object.</returns>
@@ -143,7 +142,7 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the image inside this cell.
+    /// Sets the image inside this cell and clears the cell text.
     /// </summary>
     /// <param name="image">the image.</param>
     /// <returns>this Cell object.</returns>
@@ -154,7 +153,7 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the barcode inside this cell.
+    /// Sets the barcode inside this cell and clears the cell text.
     /// </summary>
     /// <param name="barcode">the barcode.</param>
     /// <returns>this Cell object.</returns>
@@ -207,9 +206,10 @@ public class Cell {
         return this.compositeTextLine;
     }
 
-    /// <summary>Sets the text box drawn in this cell.</summary>
+    /// <summary>Sets the text box drawn in this cell and clears the cell text.</summary>
     public Cell SetTextBox(TextBox textBox) {
         this.textBox = textBox;
+        this.text = null;
         return this;
     }
 
@@ -231,7 +231,7 @@ public class Cell {
         return this.textColumn;
     }
 
-    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
+    /// <summary>Sets the background color from an array of red, green and blue values, or removes the background with null.</summary>
     public Cell SetBackgroundColor(float[] rgbColor) {
         this.backgroundColor = rgbColor;
         return this;
@@ -372,7 +372,7 @@ public class Cell {
         return this;
     }
 
-    /// <summary>Returns the background color.</summary>
+    /// <summary>Returns the background color, or null if the cell has no background.</summary>
     public float[] GetBackgroundColor() {
         return this.backgroundColor;
     }
@@ -546,7 +546,8 @@ public class Cell {
     /// Sets the cell text alignment.
     /// </summary>
     /// <param name="alignment">the alignment code.
-    /// Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.</param>
+    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY,
+    /// which draws the single line of cell text left aligned.</param>
     public Cell SetTextAlignment(uint alignment) {
         this.properties &= 0x00CFFFFF;
         this.properties |= (alignment & 0x00300000);
@@ -658,26 +659,24 @@ public class Cell {
             textColumn.SetLocation(x + leftPadding, y + topPadding);
             textColumn.DrawOn(page);
         } else if (image != null) {
-            if (GetTextAlignment() == Align.LEFT) {
-                image.SetLocation(x + leftPadding, y + topPadding);
-                image.DrawOn(page);
+            if (GetTextAlignment() == Align.RIGHT) {
+                image.SetLocation((x + w) - (image.GetWidth() + rightPadding), y + topPadding);
             } else if (GetTextAlignment() == Align.CENTER) {
                 image.SetLocation((x + w/2f) - image.GetWidth()/2f, y + topPadding);
-                image.DrawOn(page);
-            } else if (GetTextAlignment() == Align.RIGHT) {
-                image.SetLocation((x + w) - (image.GetWidth() + leftPadding), y + topPadding);
-                image.DrawOn(page);
+            } else {
+                image.SetLocation(x + leftPadding, y + topPadding);
             }
+            image.DrawOn(page);
         } else if (barcode != null) {
             try {
-                if (GetTextAlignment() == Align.LEFT) {
-                    barcode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                if (GetTextAlignment() == Align.RIGHT) {
+                    float barcodeWidth = barcode.DrawOn(null)[0];
+                    barcode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding);
                 } else if (GetTextAlignment() == Align.CENTER) {
                     float barcodeWidth = barcode.DrawOn(null)[0];
                     barcode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-                } else if (GetTextAlignment() == Align.RIGHT) {
-                    float barcodeWidth = barcode.DrawOn(null)[0];
-                    barcode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                } else {
+                    barcode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
                 }
             } catch (Exception e) {
                 Console.WriteLine(e.ToString());
@@ -766,12 +765,12 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-        float xText;
+        float ascent = font.GetAscent(fontSize);
         float yText;
         if (valign == Align.TOP) {
-            yText = y + font.GetAscent(fontSize) + this.topPadding;
+            yText = y + ascent + this.topPadding;
         } else if (valign == Align.CENTER) {
-            yText = y + cellH/2 + font.GetAscent(fontSize)/2;
+            yText = y + cellH/2 + ascent/2;
         } else if (valign == Align.BOTTOM) {
             yText = (y + cellH) - this.bottomPadding;
         } else {
@@ -779,73 +778,38 @@ public class Cell {
         }
 
         page.SetPenColor(strokeColor);
+        float xText;
         if (GetTextAlignment() == Align.RIGHT) {
-            if (compositeTextLine == null) {
-                xText = (x + cellW) - (font.StringWidth(text) + this.rightPadding);
-                page.AddBMC(StructElem.P, text, text);
-                page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.AddEMC();
-                if (GetUnderline()) {
-                    UnderlineText(page, font, text, xText, yText);
-                }
-                if (GetStrikeout()) {
-                    StrikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                xText = (x + cellW) - (compositeTextLine.GetWidth() + this.rightPadding);
-                compositeTextLine.SetLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.DrawOn(page);
-            }
+            xText = (x + cellW) - (GetTextWidth() + this.rightPadding);
         } else if (GetTextAlignment() == Align.CENTER) {
-            if (compositeTextLine == null) {
-                xText = x + this.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - font.StringWidth(text)) / 2);
-                page.AddBMC(StructElem.P, text, text);
-                page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.AddEMC();
-                if (GetUnderline()) {
-                    UnderlineText(page, font, text, xText, yText);
-                }
-                if (GetStrikeout()) {
-                    StrikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                xText = x + this.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - compositeTextLine.GetWidth()) / 2);
-                compositeTextLine.SetLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.DrawOn(page);
-            }
-        } else if (GetTextAlignment() == Align.LEFT) {
+            xText = x + this.leftPadding +
+                    (((cellW - (leftPadding + rightPadding)) - GetTextWidth()) / 2);
+        } else {
+            // Align.LEFT, and Align.JUSTIFY, which a single line of text cannot use.
             xText = x + this.leftPadding;
-            if (compositeTextLine == null) {
-                page.AddBMC(StructElem.P, text, text);
-                page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.AddEMC();
-                if (GetUnderline()) {
-                    UnderlineText(page, font, text, xText, yText);
-                }
-                if (GetStrikeout()) {
-                    StrikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                compositeTextLine.SetLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.DrawOn(page);
+        }
+        if (compositeTextLine == null) {
+            page.AddBMC(StructElem.P, text, text);
+            page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
+            page.AddEMC();
+            if (GetUnderline()) {
+                UnderlineText(page, xText, yText);
+            }
+            if (GetStrikeout()) {
+                StrikeoutText(page, xText, yText);
             }
         } else {
-            throw new Exception("Invalid Text Alignment!");
+            compositeTextLine.SetLocation(xText, yText);
+            // The text lines of the composite mark their own text.
+            compositeTextLine.DrawOn(page);
         }
 
         if (uri != null) {
-            float w = (compositeTextLine != null) ?
-                    compositeTextLine.GetWidth() : font.StringWidth(text);
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     xText,
-                    yText - font.GetAscent(fontSize),
-                    xText + w,
+                    yText - ascent,
+                    xText + GetTextWidth(),
                     yText + font.GetDescent(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
@@ -860,22 +824,31 @@ public class Cell {
         }
     }
 
-    private void UnderlineText(
-            Page page, Font font, String text, float x, float y) {
+    // Returns the width of the composite text line, or of the cell text drawn
+    // with the font and the fallback font at the font size of this cell.
+    private float GetTextWidth() {
+        if (compositeTextLine != null) {
+            return compositeTextLine.GetWidth();
+        }
+        return font.StringWidth(fallbackFont, fontSize, text);
+    }
+
+    private void UnderlineText(Page page, float x, float y) {
+        float descent = font.GetDescent(fontSize);
         page.AddBMC(StructElem.P, "underline", "underline");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
-        page.MoveTo(x, y + font.GetDescent());
-        page.LineTo(x + font.StringWidth(text), y + font.GetDescent(fontSize));
+        page.MoveTo(x, y + descent);
+        page.LineTo(x + GetTextWidth(), y + descent);
         page.StrokePath();
         page.AddEMC();
     }
 
-    private void StrikeoutText(
-            Page page, Font font, String text, float x, float y) {
+    private void StrikeoutText(Page page, float x, float y) {
+        float ascent = font.GetAscent(fontSize);
         page.AddBMC(StructElem.P, "strike out", "strike out");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
-        page.MoveTo(x, y - font.GetAscent()/3f);
-        page.LineTo(x + font.StringWidth(text), y - font.GetAscent(fontSize)/3f);
+        page.MoveTo(x, y - ascent/3f);
+        page.LineTo(x + GetTextWidth(), y - ascent/3f);
         page.StrokePath();
         page.AddEMC();
     }

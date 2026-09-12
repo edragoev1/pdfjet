@@ -29,12 +29,10 @@ public class Cell {
     var rightPadding: Float = 2.0
     var lineWidth: Float = 0.0
 
-    var backgroundColor: [Float] = [1.0, 1.0, 1.0]
-    var hasBackground: Bool = false
+    var backgroundColor: [Float]?
     var textColor: [Float] = [0.0, 0.0, 0.0]
     var strokeWidth: Float = 0.0
     var strokeColor: [Float]?
-    var strokeDashPattern: String = "[] 0"  // Solid
 
     // Cell properties
     // Colspan:
@@ -68,12 +66,14 @@ public class Cell {
 
     /**
      * Creates a cell object and sets the font and, optionally, the cell text.
+     * The font is also the fallback font until setFallbackFont changes it.
      *
      * - Parameter font: the font.
      * - Parameter text: the text.
      */
     public init(_ font: Font?, _ text: String? = nil) {
         self.font = font
+        self.fallbackFont = font
         if font != nil {
             self.fontSize = font!.size
         }
@@ -83,7 +83,7 @@ public class Cell {
     }
 
     /**
-     * Sets the font for this cell.
+     * Sets the font for this cell, and the font size to the size of the font.
      *
      * - Parameter font: the font.
      * - Returns: this Cell object.
@@ -155,7 +155,7 @@ public class Cell {
     }
 
     /**
-     * Sets the image inside this cell.
+     * Sets the image inside this cell and clears the cell text.
      *
      * - Parameter image: the image.
      * - Returns: this Cell object.
@@ -249,7 +249,7 @@ public class Cell {
     }
 
     ///
-    /// Sets the text column that this cell holds.
+    /// Sets the text column that this cell holds, and widens the cell to fit it.
     ///
     @discardableResult
     public func setTextColumn(_ textColumn: TextColumn) -> Cell {
@@ -266,11 +266,12 @@ public class Cell {
     }
 
     ///
-    /// Sets the text box that this cell holds.
+    /// Sets the text box that this cell holds and clears the cell text.
     ///
     @discardableResult
     public func setTextBox(_ textBox: TextBox) -> Cell {
         self.textBox = textBox
+        self.text = nil
         return self
     }
 
@@ -390,11 +391,11 @@ public class Cell {
         if textBox != nil {
             textBox!.setWidth(width)
             cellHeight = (textBox!.drawOn(nil)[1] - textBox!.y) + topPadding + bottomPadding
-        } else if textColumn != nil {
-            cellHeight = (textColumn!.drawOn(nil)[1] - textColumn!.y) + topPadding + bottomPadding
         } else if textBlock != nil {
             textBlock!.setWidth(width)
             cellHeight = (textBlock!.drawOn(nil)[1] - textBlock!.y) + topPadding + bottomPadding
+        } else if textColumn != nil {
+            cellHeight = (textColumn!.drawOn(nil)[1] - textColumn!.y) + topPadding + bottomPadding
         } else if image != nil {
             cellHeight = image!.getHeight() + topPadding + bottomPadding
         } else if barcode != nil {
@@ -445,7 +446,6 @@ public class Cell {
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
         self.backgroundColor = [r, g, b]
-        self.hasBackground = true
         return self
     }
 
@@ -453,20 +453,19 @@ public class Cell {
     @discardableResult
     public func setBackgroundColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.backgroundColor = [r, g, b]
-        self.hasBackground = true
         return self
     }
 
-    /// Sets the background color from an array of red, green and blue values.
+    /// Sets the background color from an array of red, green and blue values,
+    /// or removes the background with nil.
     @discardableResult
-    public func setBackgroundColor(_ backgroundColor: [Float]) -> Cell {
+    public func setBackgroundColor(_ backgroundColor: [Float]?) -> Cell {
         self.backgroundColor = backgroundColor
-        self.hasBackground = true
         return self
     }
 
-    /// Returns the background color.
-    public func getBackgroundColor() -> [Float] {
+    /// Returns the background color, or nil if the cell has no background.
+    public func getBackgroundColor() -> [Float]? {
         return self.backgroundColor
     }
 
@@ -637,7 +636,8 @@ public class Cell {
      * Sets the cell text alignment.
      *
      * - Parameter alignment: the alignment code.
-     * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY,
+     * which draws the single line of cell text left aligned.
      * - Returns: this Cell object.
      */
     @discardableResult
@@ -652,7 +652,7 @@ public class Cell {
      *
      * - Returns: the text horizontal alignment code.
      */
-    public func getTextAlignment() -> UInt32{
+    public func getTextAlignment() -> UInt32 {
         return (self.properties & 0x00300000)
     }
 
@@ -717,7 +717,7 @@ public class Cell {
      *
      * - Returns: the strikeout text parameter.
      */
-    public func getStrikeout() -> Bool{
+    public func getStrikeout() -> Bool {
         return self.strikeout
     }
 
@@ -737,7 +737,7 @@ public class Cell {
             _ y: Float,
             _ w: Float,
             _ h: Float) {
-        if hasBackground == true {
+        if backgroundColor != nil {
             drawBackground(page, x, y, w, h)
         }
 
@@ -747,33 +747,31 @@ public class Cell {
             textBox!.setLocation(x + leftPadding, y + topPadding)
             textBox!.setWidth(w - (leftPadding + rightPadding))
             textBox!.drawOn(page)
-        } else if textColumn != nil {
-            textColumn!.setLocation(x + leftPadding, y + topPadding)
-            textColumn!.drawOn(page)
         } else if textBlock != nil {
             textBlock!.setLocation(x + leftPadding, y + topPadding)
             textBlock!.setWidth(w - (leftPadding + rightPadding))
             textBlock!.drawOn(page)
+        } else if textColumn != nil {
+            textColumn!.setLocation(x + leftPadding, y + topPadding)
+            textColumn!.drawOn(page)
         } else if image != nil {
-            if (getTextAlignment() == Align.LEFT) {
-                image!.setLocation(x + leftPadding, y + topPadding)
-                image!.drawOn(page)
-            } else if (getTextAlignment() == Align.CENTER) {
+            if getTextAlignment() == Align.RIGHT {
+                image!.setLocation((x + w) - (image!.getWidth() + rightPadding), y + topPadding)
+            } else if getTextAlignment() == Align.CENTER {
                 image!.setLocation((x + w/2.0) - image!.getWidth()/2.0, y + topPadding)
-                image!.drawOn(page)
-            } else if (getTextAlignment() == Align.RIGHT) {
-                image!.setLocation((x + w) - (image!.getWidth() + leftPadding), y + topPadding)
-                image!.drawOn(page)
+            } else {
+                image!.setLocation(x + leftPadding, y + topPadding)
             }
+            image!.drawOn(page)
         } else if barcode != nil {
-            if (getTextAlignment() == Align.LEFT) {
-                barcode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
-            } else if (getTextAlignment() == Align.CENTER) {
+            if getTextAlignment() == Align.RIGHT {
+                let barcodeWidth = barcode!.drawOn(nil)[0]
+                barcode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding)
+            } else if getTextAlignment() == Align.CENTER {
                 let barcodeWidth = barcode!.drawOn(nil)[0]
                 barcode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
-            } else if (getTextAlignment() == Align.RIGHT) {
-                let barcodeWidth = barcode!.drawOn(nil)[0]
-                barcode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding)
+            } else {
+                barcode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
             }
         }
 
@@ -815,7 +813,7 @@ public class Cell {
             _ cellW: Float,
             _ cellH: Float) {
         page.addArtifactBMC()
-        page.setBrushColor(backgroundColor)
+        page.setBrushColor(backgroundColor!)
         page.fillRect(x, y + lineWidth/2, cellW, cellH)
         page.addEMC()
     }
@@ -859,10 +857,8 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
-
-        var xText: Float?
-        var yText: Float?
         let ascent = font!.getAscent(fontSize)
+        var yText: Float
         if valign == Align.TOP {
             yText = y + ascent + self.topPadding
         } else if valign == Align.CENTER {
@@ -870,78 +866,43 @@ public class Cell {
         } else if valign == Align.BOTTOM {
             yText = (y + cellH) - self.bottomPadding
         } else {
-            Swift.print("Invalid vertical text alignment option.")
+            fatalError("Invalid vertical text alignment option.")
         }
 
         page.setPenColor(strokeColor)
+        var xText: Float
         if getTextAlignment() == Align.RIGHT {
-            if compositeTextLine == nil {
-                xText = (x + cellW) - (font!.stringWidth(text) + self.rightPadding)
-                page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
-                page.addEMC()
-                if getUnderline() {
-                    underlineText(page, font!, text!, xText!, yText!)
-                }
-                if getStrikeout() {
-                    strikeoutText(page, font!, text!, xText!, yText!)
-                }
-            } else {
-                xText = (x + cellW) - (compositeTextLine!.getWidth() + self.rightPadding)
-                compositeTextLine!.setLocation(xText!, yText!)
-                // The text lines of the composite mark their own text.
-                compositeTextLine!.drawOn(page)
-            }
+            xText = (x + cellW) - (getTextWidth() + self.rightPadding)
         } else if getTextAlignment() == Align.CENTER {
-            if compositeTextLine == nil {
-                xText = x + self.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - font!.stringWidth(text)) / 2)
-                page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
-                page.addEMC()
-                if getUnderline() {
-                    underlineText(page, font!, text!, xText!, yText!)
-                }
-                if getStrikeout() {
-                    strikeoutText(page, font!, text!, xText!, yText!)
-                }
-            } else {
-                xText = x + self.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - compositeTextLine!.getWidth()) / 2)
-                compositeTextLine!.setLocation(xText!, yText!)
-                // The text lines of the composite mark their own text.
-                compositeTextLine!.drawOn(page)
-            }
-        } else if getTextAlignment() == Align.LEFT {
+            xText = x + self.leftPadding +
+                    (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2)
+        } else {
+            // Align.LEFT, and Align.JUSTIFY, which a single line of text cannot use.
             xText = x + self.leftPadding
-            if compositeTextLine == nil {
-                page.addBMC(StructElem.P, text!, text!)
-                page.drawString(font!, fallbackFont, fontSize, text!, xText!, yText!, textColor, nil)
-                page.addEMC()
-                if getUnderline() {
-                    underlineText(page, font!, text!, xText!, yText!)
-                }
-                if getStrikeout() {
-                    strikeoutText(page, font!, text!, xText!, yText!)
-                }
-            } else {
-                compositeTextLine!.setLocation(xText!, yText!)
-                // The text lines of the composite mark their own text.
-                compositeTextLine!.drawOn(page)
+        }
+        if compositeTextLine == nil {
+            page.addBMC(StructElem.P, text!, text!)
+            page.drawString(font!, fallbackFont, fontSize, text!, xText, yText, textColor, nil)
+            page.addEMC()
+            if getUnderline() {
+                underlineText(page, xText, yText)
+            }
+            if getStrikeout() {
+                strikeoutText(page, xText, yText)
             }
         } else {
-            print("Invalid Text Alignment!")
+            compositeTextLine!.setLocation(xText, yText)
+            // The text lines of the composite mark their own text.
+            compositeTextLine!.drawOn(page)
         }
 
         if uri != nil {
-            let w = (compositeTextLine != nil) ?
-                    compositeTextLine!.getWidth() : font!.stringWidth(text)
             page.addAnnotation(Annotation(
                     Annotation.Link,
-                    xText!,
-                    yText! - font!.ascent,
-                    xText! + w,
-                    yText! + font!.descent,
+                    xText,
+                    yText - ascent,
+                    xText + getTextWidth(),
+                    yText + font!.getDescent(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -955,22 +916,31 @@ public class Cell {
         }
     }
 
-    private func underlineText(
-            _ page: Page, _ font: Font, _ text: String, _ x: Float, _ y: Float) {
+    // Returns the width of the composite text line, or of the cell text drawn
+    // with the font and the fallback font at the font size of this cell.
+    private func getTextWidth() -> Float {
+        if compositeTextLine != nil {
+            return compositeTextLine!.getWidth()
+        }
+        return font!.stringWidth(fallbackFont, fontSize, text)
+    }
+
+    private func underlineText(_ page: Page, _ x: Float, _ y: Float) {
+        let descent = font!.getDescent(fontSize)
         page.addBMC(StructElem.P, "underline", "underline")
-        page.setPenWidth(font.underlineThickness)
-        page.moveTo(x, y + font.descent)
-        page.lineTo(x + font.stringWidth(text), y + font.descent)
+        page.setPenWidth(font!.getUnderlineThickness(fontSize))
+        page.moveTo(x, y + descent)
+        page.lineTo(x + getTextWidth(), y + descent)
         page.strokePath()
         page.addEMC()
     }
 
-    private func strikeoutText(
-            _ page: Page, _ font: Font, _ text: String, _ x: Float, _ y: Float) {
+    private func strikeoutText(_ page: Page, _ x: Float, _ y: Float) {
+        let ascent = font!.getAscent(fontSize)
         page.addBMC(StructElem.P, "strike out", "strike out")
-        page.setPenWidth(font.underlineThickness)
-        page.moveTo(x, y - font.getAscent()/3.0)
-        page.lineTo(x + font.stringWidth(text), y - font.getAscent()/3.0)
+        page.setPenWidth(font!.getUnderlineThickness(fontSize))
+        page.moveTo(x, y - ascent/3.0)
+        page.lineTo(x + getTextWidth(), y - ascent/3.0)
         page.strokePath()
         page.addEMC()
     }

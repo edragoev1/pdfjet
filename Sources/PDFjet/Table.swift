@@ -297,7 +297,7 @@ public class Table : Drawable {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
-                cell.font = font
+                cell.setFont(font)
                 if cell.textBox != nil {
                     cell.textBox!.font = font
                 }
@@ -337,7 +337,7 @@ public class Table : Drawable {
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
-                cell.font = font
+                cell.setFont(font)
                 if cell.textBox != nil {
                     cell.textBox!.font = font
                 }
@@ -740,11 +740,7 @@ public class Table : Drawable {
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
                     cell2.setLineWidth(cell.getLineWidth())
-                    // Java copies a null background across as null, which
-                    // leaves the new cell without one.
-                    if cell.hasBackground {
-                        cell2.setBackgroundColor(cell.getBackgroundColor())
-                    }
+                    cell2.setBackgroundColor(cell.getBackgroundColor())
                     cell2.setStrokeWidth(cell.getStrokeWidth())
                     cell2.setStrokeColor(cell.getStrokeColor())
                     cell2.setTextColor(cell.getTextColor())

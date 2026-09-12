@@ -57,11 +57,6 @@ public class Cell {
     protected float strokeWidth;
     /** The stroke color as an RGB array. */
     protected float[] strokeColor;
-    /** The stroke dash pattern. */
-    protected String strokeDashPattern = "[] 0";    // Solid
-
-    /** The number of columns this cell spans. */
-    protected int colspan = 1;
 
     // Cell properties
     // Colspan:
@@ -108,13 +103,14 @@ public class Cell {
     }
 
     /**
-     * Sets the font for this cell.
+     * Sets the font for this cell, and the font size to the size of the font.
      *
      * @param font the font.
      * @return this Cell object.
      */
     public Cell setFont(Font font) {
         this.font = font;
+        this.fontSize = font.getSize();
         return this;
     }
 
@@ -179,7 +175,7 @@ public class Cell {
     }
 
     /**
-     * Sets the image inside this cell.
+     * Sets the image inside this cell and clears the cell text.
      *
      * @param image the image.
      * @return this Cell object.
@@ -191,7 +187,7 @@ public class Cell {
     }
 
     /**
-     * Sets the barcode inside this cell.
+     * Sets the barcode inside this cell and clears the cell text.
      *
      * @param barcode the barcode.
      * @return this Cell object.
@@ -262,7 +258,7 @@ public class Cell {
     }
 
     /**
-     * Sets the text box.
+     * Sets the text box drawn inside this cell and clears the cell text.
      *
      * @param textBox the text box.
      * @return this Cell object.
@@ -587,9 +583,9 @@ public class Cell {
     }
 
     /**
-     * Sets the background color of this cell.
+     * Sets the background color of this cell, or removes the background.
      *
-     * @param color the red, green and blue components, from 0.0 to 1.0.
+     * @param color the red, green and blue components, from 0.0 to 1.0, or null.
      * @return this Cell object.
      */
     public Cell setBackgroundColor(float[] color) {
@@ -600,7 +596,7 @@ public class Cell {
     /**
      * Returns the background color.
      *
-     * @return the background color.
+     * @return the background color, or null if the cell has no background.
      */
     public float[] getBackgroundColor() {
         return this.backgroundColor;
@@ -765,7 +761,8 @@ public class Cell {
      * Sets the cell text alignment.
      *
      * @param alignment the alignment code.
-     * Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY,
+     * which draws the single line of cell text left aligned.
      * @return this Cell object.
      */
     public Cell setTextAlignment(int alignment) {
@@ -898,26 +895,24 @@ public class Cell {
             textColumn.setLocation(x + leftPadding, y + topPadding);
             textColumn.drawOn(page);
         } else if (image != null) {
-            if (getTextAlignment() == Align.LEFT) {
-                image.setLocation(x + leftPadding, y + topPadding);
-                image.drawOn(page);
+            if (getTextAlignment() == Align.RIGHT) {
+                image.setLocation((x + w) - (image.getWidth() + rightPadding), y + topPadding);
             } else if (getTextAlignment() == Align.CENTER) {
                 image.setLocation((x + w/2f) - image.getWidth()/2f, y + topPadding);
-                image.drawOn(page);
-            } else if (getTextAlignment() == Align.RIGHT) {
-                image.setLocation((x + w) - (image.getWidth() + leftPadding), y + topPadding);
-                image.drawOn(page);
+            } else {
+                image.setLocation(x + leftPadding, y + topPadding);
             }
+            image.drawOn(page);
         } else if (barcode != null) {
             try {
-                if (getTextAlignment() == Align.LEFT) {
-                    barcode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                if (getTextAlignment() == Align.RIGHT) {
+                    float barcodeWidth = barcode.drawOn(null)[0];
+                    barcode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding);
                 } else if (getTextAlignment() == Align.CENTER) {
                     float barcodeWidth = barcode.drawOn(null)[0];
                     barcode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-                } else if (getTextAlignment() == Align.RIGHT) {
-                    float barcodeWidth = barcode.drawOn(null)[0];
-                    barcode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + leftPadding), y + topPadding);
+                } else {
+                    barcode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1006,12 +1001,12 @@ public class Cell {
             float y,
             float cellW,
             float cellH) throws Exception {
-        float xText;
+        float ascent = font.getAscent(fontSize);
         float yText;
         if (valign == Align.TOP) {
-            yText = y + font.getAscent(fontSize) + this.topPadding;
+            yText = y + ascent + this.topPadding;
         } else if (valign == Align.CENTER) {
-            yText = y + cellH/2 + font.getAscent(fontSize)/2;
+            yText = y + cellH/2 + ascent/2;
         } else if (valign == Align.BOTTOM) {
             yText = (y + cellH) - this.bottomPadding;
         } else {
@@ -1019,74 +1014,39 @@ public class Cell {
         }
 
         page.setPenColor(strokeColor);
+        float xText;
         if (getTextAlignment() == Align.RIGHT) {
-            if (compositeTextLine == null) {
-                xText = (x + cellW) - (font.stringWidth(text) + this.rightPadding);
-                page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.addEMC();
-                if (getUnderline()) {
-                    underlineText(page, font, text, xText, yText);
-                }
-                if (getStrikeout()) {
-                    strikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                xText = (x + cellW) - (compositeTextLine.getWidth() + this.rightPadding);
-                compositeTextLine.setLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.drawOn(page);
-            }
+            xText = (x + cellW) - (getTextWidth() + this.rightPadding);
         } else if (getTextAlignment() == Align.CENTER) {
-            if (compositeTextLine == null) {
-                xText = x + this.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - font.stringWidth(text)) / 2);
-                page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.addEMC();
-                if (getUnderline()) {
-                    underlineText(page, font, text, xText, yText);
-                }
-                if (getStrikeout()) {
-                    strikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                xText = x + this.leftPadding +
-                        (((cellW - (leftPadding + rightPadding)) - compositeTextLine.getWidth()) / 2);
-                compositeTextLine.setLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.drawOn(page);
-            }
-        } else if (getTextAlignment() == Align.LEFT) {
+            xText = x + this.leftPadding +
+                    (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2);
+        } else {
+            // Align.LEFT, and Align.JUSTIFY, which a single line of text cannot use.
             xText = x + this.leftPadding;
-            if (compositeTextLine == null) {
-                page.addBMC(StructElem.P, text, text);
-                page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
-                page.addEMC();
-                if (getUnderline()) {
-                    underlineText(page, font, text, xText, yText);
-                }
-                if (getStrikeout()) {
-                    strikeoutText(page, font, text, xText, yText);
-                }
-            } else {
-                compositeTextLine.setLocation(xText, yText);
-                // The text lines of the composite mark their own text.
-                compositeTextLine.drawOn(page);
+        }
+        if (compositeTextLine == null) {
+            page.addBMC(StructElem.P, text, text);
+            page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
+            page.addEMC();
+            if (getUnderline()) {
+                underlineText(page, xText, yText);
+            }
+            if (getStrikeout()) {
+                strikeoutText(page, xText, yText);
             }
         } else {
-            throw new Exception("Invalid Text Alignment!");
+            compositeTextLine.setLocation(xText, yText);
+            // The text lines of the composite mark their own text.
+            compositeTextLine.drawOn(page);
         }
 
         if (uri != null) {
-            float w = (compositeTextLine != null) ?
-                    compositeTextLine.getWidth() : font.stringWidth(text);
             page.addAnnotation(new Annotation(
                     Annotation.Link,
                     xText,
-                    yText - font.getAscent(),
-                    xText + w,
-                    yText + font.getDescent(),
+                    yText - ascent,
+                    xText + getTextWidth(),
+                    yText + font.getDescent(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Transparency
@@ -1100,22 +1060,31 @@ public class Cell {
         }
     }
 
-    private void underlineText(
-            Page page, Font font, String text, float x, float y) {
+    // Returns the width of the composite text line, or of the cell text drawn
+    // with the font and the fallback font at the font size of this cell.
+    private float getTextWidth() throws Exception {
+        if (compositeTextLine != null) {
+            return compositeTextLine.getWidth();
+        }
+        return font.stringWidth(fallbackFont, fontSize, text);
+    }
+
+    private void underlineText(Page page, float x, float y) throws Exception {
+        float descent = font.getDescent(fontSize);
         page.addBMC(StructElem.P, "underline", "underline");
-        page.setPenWidth(font.underlineThickness);
-        page.moveTo(x, y + font.descent);
-        page.lineTo(x + font.stringWidth(text), y + font.descent);
+        page.setPenWidth(font.getUnderlineThickness(fontSize));
+        page.moveTo(x, y + descent);
+        page.lineTo(x + getTextWidth(), y + descent);
         page.strokePath();
         page.addEMC();
     }
 
-    private void strikeoutText(
-            Page page, Font font, String text, float x, float y) {
+    private void strikeoutText(Page page, float x, float y) throws Exception {
+        float ascent = font.getAscent(fontSize);
         page.addBMC(StructElem.P, "strike out", "strike out");
-        page.setPenWidth(font.underlineThickness);
-        page.moveTo(x, y - font.getAscent()/3f);
-        page.lineTo(x + font.stringWidth(text), y - font.getAscent()/3f);
+        page.setPenWidth(font.getUnderlineThickness(fontSize));
+        page.moveTo(x, y - ascent/3f);
+        page.lineTo(x + getTextWidth(), y - ascent/3f);
         page.strokePath();
         page.addEMC();
     }

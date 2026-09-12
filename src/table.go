@@ -258,7 +258,7 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.font = font
+			cell.SetFont(font)
 			if cell.textBox != nil {
 				cell.textBox.font = font
 			}
@@ -290,7 +290,7 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
-			cell.font = font
+			cell.SetFont(font)
 			if cell.textBox != nil {
 				cell.textBox.font = font
 			}

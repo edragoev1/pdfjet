@@ -175,6 +175,18 @@ Pick from the README limitations; the first three are the ones users hit.
       Java and C# `Cell.setBorders(true)`, and so `Table.setCellBorders(true)`,
       turn the four borders on, as in Go and Swift; the `Table(f1, f2)`
       constructor, which ignored its fonts, is removed from Java, C# and Swift.
+      `Cell`: `setTextBox` clears the cell text in the four ports, as
+      `setImage` and `setBarcode` do; Java `setFont`, and so
+      `Table.setFontInRow` and `setFontInColumn` in the four ports, set the
+      font size to the size of the font; Go and Swift use the cell font as the
+      fallback font, as Java and C# do; the text width, the underline, the
+      strikeout and the link of a cell are measured at the cell's font size
+      with the fallback font; `Align.JUSTIFY` draws the text, image or
+      barcode of a cell left aligned instead of throwing; a right aligned
+      image or barcode keeps the right padding, not the left one; Swift
+      `getBackgroundColor` returns an optional and `setBackgroundColor(nil)`
+      removes the background; the unused Java `colspan` and Java, C# and
+      Swift `strokeDashPattern` fields are removed.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
