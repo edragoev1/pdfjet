@@ -40,8 +40,8 @@ public class Example_46 {
         textBox.setLocation(10.0, 130.0)
 
         var line = Line()
-        line.setPointA(300.0, 150.0)
-        line.setPointB(500.0, 150.0)
+        line.setStartPoint(300.0, 150.0)
+        line.setEndPoint(500.0, 150.0)
         line.setStrokeWidth(2.0)
         line.setStrokeColor(Color.blue)
 
@@ -52,8 +52,8 @@ public class Example_46 {
         group.drawOn(page)
 
         line = Line()
-        line.setPointA(300.0, 160.0)
-        line.setPointB(500.0, 160.0)
+        line.setStartPoint(300.0, 160.0)
+        line.setEndPoint(500.0, 160.0)
         line.setStrokeWidth(2.0)
         line.setStrokeColor(Color.red)
 

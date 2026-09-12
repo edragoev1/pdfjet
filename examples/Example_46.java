@@ -42,8 +42,8 @@ public class Example_46 {
         textBox.setLocation(10f, 130f);
 
         Line line = new Line();
-        line.setPointA(300f, 150f);
-        line.setPointB(500f, 150f);
+        line.setStartPoint(300f, 150f);
+        line.setEndPoint(500f, 150f);
         line.setStrokeWidth(2f);
         line.setStrokeColor(Color.blue);
 
@@ -54,8 +54,8 @@ public class Example_46 {
         group.drawOn(page);
 
         line = new Line();
-        line.setPointA(300f, 160f);
-        line.setPointB(500f, 160f);
+        line.setStartPoint(300f, 160f);
+        line.setEndPoint(500f, 160f);
         line.setStrokeWidth(2f);
         line.setStrokeColor(Color.red);
 

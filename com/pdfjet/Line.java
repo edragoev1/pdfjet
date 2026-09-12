@@ -134,19 +134,6 @@ public class Line implements Drawable {
     }
 
     /**
-     *  Sets the x and y coordinates of the start point.
-     *
-     *  @param x the x coordinate of the start point.
-     *  @param y the y coordinate of the start point.
-     *  @return this Line object.
-     */
-    public Line setPointA(float x, float y) {
-        this.x1 = x;
-        this.y1 = y;
-        return this;
-    }
-
-    /**
      *  Returns the start point of this line.
      *
      *  @return Point the point.
@@ -176,19 +163,6 @@ public class Line implements Drawable {
      *  @return this Line object.
      */
     public Line setEndPoint(float x, float y) {
-        this.x2 = x;
-        this.y2 = y;
-        return this;
-    }
-
-    /**
-     *  Sets the x and y coordinates of the end point.
-     *
-     *  @param x the x coordinate of the end point.
-     *  @param y the y coordinate of the end point.
-     *  @return this Line object.
-     */
-    public Line setPointB(float x, float y) {
         this.x2 = x;
         this.y2 = y;
         return this;

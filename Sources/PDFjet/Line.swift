@@ -105,20 +105,6 @@ public class Line : Drawable {
     }
 
     ///
-    /// Sets the x and y coordinates of the start point.
-    ///
-    /// - Parameter x: the x coordinate of the start point.
-    /// - Parameter y: the y coordinate of the start point.
-    /// - Returns: this Line object.
-    ///
-    @discardableResult
-    public func setPointA(_ x: Float, _ y: Float) -> Line {
-        self.x1 = x
-        self.y1 = y
-        return self
-    }
-
-    ///
     /// Returns the start point of this line.
     ///
     /// - Returns: Point the point.
@@ -136,20 +122,6 @@ public class Line : Drawable {
     ///
     @discardableResult
     public func setEndPoint(_ x: Float, _ y: Float) -> Line {
-        self.x2 = x
-        self.y2 = y
-        return self
-    }
-
-    ///
-    /// Sets the x and y coordinates of the end point.
-    ///
-    /// - Parameter x: the x coordinate of the end point.
-    /// - Parameter y: the y coordinate of the end point.
-    /// - Returns: this Line object.
-    ///
-    @discardableResult
-    public func setPointB(_ x: Float, _ y: Float) -> Line {
         self.x2 = x
         self.y2 = y
         return self

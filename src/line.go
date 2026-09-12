@@ -95,16 +95,6 @@ func (line *Line) SetLocation(x, y float32) Drawable {
 	return line
 }
 
-// SetPointA sets the x and y coordinates of the start point.
-// @param x the x coordinate of the start point.
-// @param y the y coordinate of the start point.
-// @return this Line object.
-func (line *Line) SetPointA(x, y float32) *Line {
-	line.x1 = x
-	line.y1 = y
-	return line
-}
-
 // GetStartPoint returns the start point of this line.
 // @return Point the point.
 func (line *Line) GetStartPoint() *Point {
@@ -116,16 +106,6 @@ func (line *Line) GetStartPoint() *Point {
 // @param y the y coordinate of the end point.
 // @return this Line object.
 func (line *Line) SetEndPoint(x, y float32) *Line {
-	line.x2 = x
-	line.y2 = y
-	return line
-}
-
-// SetPointB sets the x and y coordinates of the end point.
-// @param x the x coordinate of the end point.
-// @param y the y coordinate of the end point.
-// @return this Line object.
-func (line *Line) SetPointB(x, y float32) *Line {
 	line.x2 = x
 	line.y2 = y
 	return line

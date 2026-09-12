@@ -212,6 +212,8 @@ Pick from the README limitations; the first three are the ones users hit.
       `Path.setLocation` sets the offset of the path instead of adding to it,
       so a second call no longer moves the path further, and `Path.scaleBy`
       returns the path.
+      `Line.setPointA` and `setPointB` are removed; they did what
+      `setStartPoint` and `setEndPoint` do.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

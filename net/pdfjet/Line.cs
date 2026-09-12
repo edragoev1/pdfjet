@@ -124,18 +124,6 @@ public class Line : IDrawable {
     }
 
     /// <summary>
-    /// Sets the x and y coordinates of the start point.
-    /// </summary>
-    /// <param name="x">the x coordinate of the start point.</param>
-    /// <param name="y">the y coordinate of the start point.</param>
-    /// <returns>this Line object.</returns>
-    public Line SetPointA(float x, float y) {
-        this.x1 = x;
-        this.y1 = y;
-        return this;
-    }
-
-    /// <summary>
     /// Returns the start point of this line.
     /// </summary>
     /// <returns>Point the point.</returns>
@@ -162,18 +150,6 @@ public class Line : IDrawable {
     /// <param name="y">the y coordinate of the end point.</param>
     /// <returns>this Line object.</returns>
     public Line SetEndPoint(float x, float y) {
-        this.x2 = x;
-        this.y2 = y;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the x and y coordinates of the end point.
-    /// </summary>
-    /// <param name="x">the x coordinate of the end point.</param>
-    /// <param name="y">the y coordinate of the end point.</param>
-    /// <returns>this Line object.</returns>
-    public Line SetPointB(float x, float y) {
         this.x2 = x;
         this.y2 = y;
         return this;

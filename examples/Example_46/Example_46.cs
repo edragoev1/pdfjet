@@ -44,8 +44,8 @@ public class Example_46 {
         textBox.SetLocation(10f, 130f);
 
         Line line = new Line();
-        line.SetPointA(300f, 150f);
-        line.SetPointB(500f, 150f);
+        line.SetStartPoint(300f, 150f);
+        line.SetEndPoint(500f, 150f);
         line.SetStrokeWidth(2f);
         line.SetStrokeColor(Color.blue);
 
@@ -56,8 +56,8 @@ public class Example_46 {
         group.DrawOn(page);
 
         line = new Line();
-        line.SetPointA(300f, 160f);
-        line.SetPointB(500f, 160f);
+        line.SetStartPoint(300f, 160f);
+        line.SetEndPoint(500f, 160f);
         line.SetStrokeWidth(2f);
         line.SetStrokeColor(Color.red);
 
