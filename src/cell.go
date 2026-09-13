@@ -447,50 +447,6 @@ func (cell *Cell) SetBorders(visible bool) *Cell {
 	return cell.SetBorder(border.All, visible)
 }
 
-// SetTopBorder sets whether the top border of this cell is drawn.
-func (cell *Cell) SetTopBorder(topBorder bool) *Cell {
-	cell.topBorder = topBorder
-	return cell
-}
-
-// GetTopBorder returns true if the top border of this cell is drawn.
-func (cell *Cell) GetTopBorder() bool {
-	return cell.topBorder
-}
-
-// SetBottomBorder sets whether the bottom border of this cell is drawn.
-func (cell *Cell) SetBottomBorder(bottomBorder bool) *Cell {
-	cell.bottomBorder = bottomBorder
-	return cell
-}
-
-// GetBottomBorder returns true if the bottom border of this cell is drawn.
-func (cell *Cell) GetBottomBorder() bool {
-	return cell.bottomBorder
-}
-
-// SetLeftBorder sets whether the left border of this cell is drawn.
-func (cell *Cell) SetLeftBorder(leftBorder bool) *Cell {
-	cell.leftBorder = leftBorder
-	return cell
-}
-
-// GetLeftBorder returns true if the left border of this cell is drawn.
-func (cell *Cell) GetLeftBorder() bool {
-	return cell.leftBorder
-}
-
-// SetRightBorder sets whether the right border of this cell is drawn.
-func (cell *Cell) SetRightBorder(rightBorder bool) *Cell {
-	cell.rightBorder = rightBorder
-	return cell
-}
-
-// GetRightBorder returns true if the right border of this cell is drawn.
-func (cell *Cell) GetRightBorder() bool {
-	return cell.rightBorder
-}
-
 // SetTextAlignment sets the cell text alignment.
 // @param alignment the alignment code.
 // Supported values: alignment.Left, alignment.Right, alignment.Center and

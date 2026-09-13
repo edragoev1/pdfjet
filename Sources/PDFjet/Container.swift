@@ -20,6 +20,7 @@ public class Container: Drawable {
     /// The vertical scale factor.
     public var scaleY: Float
     private var elements: [Drawable]
+    private var border: Rect?
     /// The container that holds this container, or nil.
     var parent: Container?
 
@@ -100,21 +101,15 @@ public class Container: Drawable {
         return self
     }
 
-    /// Adds a border in the specified 0xRRGGBB color around this container.
+    /// Sets the 0xRRGGBB color of the border around this container.
     @discardableResult
     public func setBorderColor(_ borderColor: Int32) -> Container {
-        let rect = Rect(0.0, 0.0, width, height)
-        rect.setBorderColor(borderColor)
-        self.add(rect)
+        if border == nil {
+            border = Rect(0.0, 0.0, width, height)
+            self.add(border!)
+        }
+        border!.setBorderColor(borderColor)
         return self
-    }
-
-    /// Adds a black border around this container.
-    @discardableResult
-    public func addBorder() -> Container {
-        let rect = Rect(0.0, 0.0, width, height)
-        rect.setBorderColor(Color.black)
-        return self.add(rect)
     }
 
     /// Adds a drawable element to this container.

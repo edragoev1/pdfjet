@@ -19,6 +19,7 @@ public class Container : IDrawable {
     /// <summary>The vertical scale factor.</summary>
     public float scaleY;
     private List<IDrawable> elements;
+    private Rect border = null;
     internal Container parent = null;
 
     /// <summary>
@@ -99,19 +100,13 @@ public class Container : IDrawable {
         return this;
     }
 
-    /// <summary>Adds a border in the specified 0xRRGGBB color around this container.</summary>
+    /// <summary>Sets the 0xRRGGBB color of the border around this container.</summary>
     public Container SetBorderColor(int borderColor) {
-        Rect rect = new Rect(0f, 0f, width, height);
-        rect.SetBorderColor(borderColor);
-        this.Add(rect);
-        return this;
-    }
-
-    /// <summary>Adds a black border around this container.</summary>
-    public Container AddBorder() {
-        Rect rect = new Rect(0f, 0f, width, height);
-        rect.SetBorderColor(Color.black);
-        this.Add(rect);
+        if (border == null) {
+            border = new Rect(0f, 0f, width, height);
+            this.Add(border);
+        }
+        border.SetBorderColor(borderColor);
         return this;
     }
 

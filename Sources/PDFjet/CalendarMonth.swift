@@ -120,7 +120,7 @@ public class CalendarMonth : Drawable {
                             page!.setPenColor(Color.blue)
                             page!.drawEllipse(
                                     x1 + Float(col)*dx + dx/2,
-                                    y1 + Float(row)*dy + f2!.getHeight()/2,
+                                    y1 + Float(row)*dy + f2!.getBodyHeight()/2,
                                     dx/2.5,
                                     dy/2.5)
                         }

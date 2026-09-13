@@ -361,15 +361,16 @@ public class TextColumn : IDrawable {
     }
 
     /// <summary>
-    /// Adds a new paragraph with Chinese text to this text column.
+    /// Adds a paragraph of Chinese, Japanese or Korean text to this text column,
+    /// wrapped at any character to the width of the column.
     /// </summary>
     /// <param name="font">the font used by this paragraph.</param>
-    /// <param name="chinese">the Chinese text.</param>
-    public TextColumn AddChineseParagraph(Font font, String chinese) {
+    /// <param name="text">the text.</param>
+    public TextColumn AddCJKParagraph(Font font, String text) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < chinese.Length; i += Util.CharCount(chinese, i)) {
-            String ch = chinese.Substring(i, Util.CharCount(chinese, i));
+        for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
+            String ch = text.Substring(i, Util.CharCount(text, i));
             if (font.StringWidth(buf.ToString() + ch) > w) {
                 paragraph = new Paragraph();
                 paragraph.Add(new TextLine(font, buf.ToString()));
@@ -381,15 +382,6 @@ public class TextColumn : IDrawable {
         paragraph = new Paragraph();
         paragraph.Add(new TextLine(font, buf.ToString()));
         return AddParagraph(paragraph);
-    }
-
-    /// <summary>
-    /// Adds a new paragraph with Japanese text to this text column.
-    /// </summary>
-    /// <param name="font">the font used by this paragraph.</param>
-    /// <param name="japanese">the Japanese text.</param>
-    public TextColumn AddJapaneseParagraph(Font font, String japanese) {
-        return AddChineseParagraph(font, japanese);
     }
 }   // End of TextColumn.cs
 }   // End of namespace PDFjet.NET

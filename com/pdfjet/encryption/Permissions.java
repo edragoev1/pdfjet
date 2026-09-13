@@ -40,8 +40,9 @@ public class Permissions {
     }
 
     /**
-     * Gets the permissions as the type-safe UserAccess enum combination.
-     * Note: Java enums don't have built-in flags support like C#, so we return the raw value.
+     * Gets the permissions as the combination of the UserAccess values. All
+     * reserved bits are zero. Encryption sets the reserved bits that ISO 32000-2
+     * requires to be one when it writes the /P key.
      *
      * @return the permissions flags.
      */
@@ -59,17 +60,6 @@ public class Permissions {
     public Permissions setAccess(int access) {
         permissionsFlags = access & VALID_BITS_MASK;
         return this;
-    }
-
-    /**
-     * Gets the raw 32-bit integer value of the permissions flags.
-     * All reserved bits are zero. Encryption sets the reserved bits that
-     * ISO 32000-2 requires to be one when it writes the /P key.
-     *
-     * @return the value of the /P key.
-     */
-    public int getRawValue() {
-        return permissionsFlags;
     }
 
     /**

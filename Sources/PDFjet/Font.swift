@@ -454,15 +454,6 @@ public class Font {
         return self.bodyHeight
     }
 
-    ///
-    /// Returns the height of this font.
-    ///
-    /// - Returns: the height of the font.
-    ///
-    public func getHeight() -> Float {
-        return self.ascent + self.descent
-    }
-
     /// Returns the ascent plus the descent at the specified font size.
     public func getBodyHeight(_ fontSize: Float) -> Float {
         return getAscent(fontSize) + getDescent(fontSize)

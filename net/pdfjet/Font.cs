@@ -437,14 +437,6 @@ public class Font {
         return bodyHeight;
     }
 
-    /// <summary>
-    /// Returns the height of this font.
-    /// </summary>
-    /// <returns>the height of the font.</returns>
-    public float GetHeight() {
-        return ascent + descent;
-    }
-
     /// <summary>Returns the underline thickness at the current font size.</summary>
     public float GetUnderlineThickness() {
         return this.underlineThickness;

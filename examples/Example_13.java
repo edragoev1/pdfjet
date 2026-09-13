@@ -54,13 +54,13 @@ final public class Example_13 {
         cell.setColSpan(2);
         cell.setTextAlignment(Alignment.CENTER);
 
-        List<Cell> column = table.getColumnAtIndex(7);
+        List<Cell> column = table.getColumn(7);
         for (int i = 0; i < column.size(); i++) {
             cell = column.get(i);
             cell.setTextAlignment(Alignment.CENTER);
         }
 
-        column = table.getColumnAtIndex(4);
+        column = table.getColumn(4);
         for (int i = 2; i < column.size(); i++) {
             cell = column.get(i);
             try {
@@ -74,7 +74,7 @@ final public class Example_13 {
             }
         }
 
-        column = table.getColumnAtIndex(2);
+        column = table.getColumn(2);
         for (int i = 2; i < column.size(); i++) {
             cell = column.get(i);
             try {
@@ -88,7 +88,7 @@ final public class Example_13 {
             }
         }
 
-        column = table.getColumnAtIndex(2);
+        column = table.getColumn(2);
         for (int i = 2; i < column.size(); i++) {
             cell = column.get(i);
             try {
@@ -120,7 +120,7 @@ final public class Example_13 {
     }
 
     public void blankOutColumn(Table table, int index) throws Exception {
-        List<Cell> column = table.getColumnAtIndex(index);
+        List<Cell> column = table.getColumn(index);
         for (Cell cell : column) {
             cell.setBackgroundColor(Color.white);
             cell.setBorder(Border.TOP, false);
@@ -129,7 +129,7 @@ final public class Example_13 {
     }
 
     public void setBgColorForRow(Table table, int index, int color) throws Exception {
-        List<Cell> row = table.getRowAtIndex(index);
+        List<Cell> row = table.getRow(index);
         for (Cell cell : row) {
             cell.setBackgroundColor(color);
         }

@@ -412,7 +412,7 @@ public class Table implements Drawable {
      * @return the width of the column.
      */
     public float getColumnWidth(int index) {
-        return getCellAtRowColumn(0, index).getWidth();
+        return getCellAt(0, index).getWidth();
     }
 
     /**
@@ -431,18 +431,6 @@ public class Table implements Drawable {
     }
 
     /**
-     * Returns the cell at the specified row and column.
-     *
-     * @param row the specified row.
-     * @param col the specified column.
-     *
-     * @return the cell at the specified row and column.
-     */
-    public Cell getCellAtRowColumn(int row, int col) {
-        return getCellAt(row, col);
-    }
-
-    /**
      * Returns a list of cells for the specified row.
      *
      * @param index the index of the specified row.
@@ -451,16 +439,6 @@ public class Table implements Drawable {
      */
     public List<Cell> getRow(int index) {
         return tableData.get(index);
-    }
-
-    /**
-     * Returns the cells in the specified row. Same as getRow.
-     *
-     * @param index the index of the row.
-     * @return the list of cells.
-     */
-    public List<Cell> getRowAtIndex(int index) {
-        return getRow(index);
     }
 
     /**
@@ -478,16 +456,6 @@ public class Table implements Drawable {
             }
         }
         return column;
-    }
-
-    /**
-     * Returns the cells in the specified column. Same as getColumn.
-     *
-     * @param index the index of the column.
-     * @return the list of cells.
-     */
-    public List<Cell> getColumnAtIndex(int index) {
-        return getColumn(index);
     }
 
     /**

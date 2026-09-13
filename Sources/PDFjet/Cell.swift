@@ -573,54 +573,6 @@ public class Cell {
         return setBorder(Border.ALL, visible)
     }
 
-    /// Sets whether the top border of this cell is drawn.
-    @discardableResult
-    public func setTopBorder(_ topBorder: Bool) -> Cell {
-        self.topBorder = topBorder
-        return self
-    }
-
-    /// Returns true if the top border of this cell is drawn.
-    public func getTopBorder() -> Bool {
-        return self.topBorder
-    }
-
-    /// Sets whether the bottom border of this cell is drawn.
-    @discardableResult
-    public func setBottomBorder(_ bottomBorder: Bool) -> Cell {
-        self.bottomBorder = bottomBorder
-        return self
-    }
-
-    /// Returns true if the bottom border of this cell is drawn.
-    public func getBottomBorder() -> Bool {
-        return self.bottomBorder
-    }
-
-    /// Sets whether the left border of this cell is drawn.
-    @discardableResult
-    public func setLeftBorder(_ leftBorder: Bool) -> Cell {
-        self.leftBorder = leftBorder
-        return self
-    }
-
-    /// Returns true if the left border of this cell is drawn.
-    public func getLeftBorder() -> Bool {
-        return self.leftBorder
-    }
-
-    /// Sets whether the right border of this cell is drawn.
-    @discardableResult
-    public func setRightBorder(_ rightBorder: Bool) -> Cell {
-        self.rightBorder = rightBorder
-        return self
-    }
-
-    /// Returns true if the right border of this cell is drawn.
-    public func getRightBorder() -> Bool {
-        return self.rightBorder
-    }
-
     /**
      * Sets the cell text alignment.
      *

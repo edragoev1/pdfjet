@@ -696,6 +696,6 @@ public class Barcode implements Drawable {
         if (font == null) {
             return m1 * barHeightFactor;
         }
-        return m1 * barHeightFactor + font.getHeight();
+        return m1 * barHeightFactor + font.getBodyHeight();
     }
 }   // End of Barcode.java

@@ -49,13 +49,13 @@ public class Example_13 {
         cell.setColSpan(2)
         cell.setTextAlignment(Alignment.CENTER)
 
-        var column = table.getColumnAtIndex(7)
+        var column = table.getColumn(7)
         for i in 0..<column.count {
             cell = column[i]
             cell.setTextAlignment(Alignment.CENTER)
         }
 
-        column = table.getColumnAtIndex(4)
+        column = table.getColumn(4)
         for i in 2..<column.count {
             cell = column[i]
             cell.setTextAlignment(Alignment.CENTER)
@@ -68,7 +68,7 @@ public class Example_13 {
             }
         }
 
-        column = table.getColumnAtIndex(2)
+        column = table.getColumn(2)
         for i in 2..<column.count {
             cell = column[i]
             if cell.getText() == "Smith" {
@@ -79,7 +79,7 @@ public class Example_13 {
             }
         }
 
-        column = table.getColumnAtIndex(2)
+        column = table.getColumn(2)
         for i in 2..<column.count {
             cell = column[i]
             if cell.getText() == "Bowden" {
@@ -108,7 +108,7 @@ public class Example_13 {
     }
 
     public func blankOutColumn(_ table: Table, _ index: Int) {
-        let column = table.getColumnAtIndex(index)
+        let column = table.getColumn(index)
         for cell in column {
             cell.setBackgroundColor(Color.white)
             cell.setBorder(Border.TOP, false)
@@ -120,7 +120,7 @@ public class Example_13 {
             _ table: Table,
             _ index: Int,
             _ color: Int32) {
-        let row = table.getRowAtIndex(index)
+        let row = table.getRow(index)
         for cell in row {
             cell.setBackgroundColor(color)
         }

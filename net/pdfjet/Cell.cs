@@ -491,46 +491,6 @@ public class Cell {
         return this;
     }
 
-    /// <summary>Sets whether the top border of this cell is drawn.</summary>
-    public Cell SetTopBorder(bool topBorder) {
-        return SetBorder(Border.TOP, topBorder);
-    }
-
-    /// <summary>Returns true if the top border of this cell is drawn.</summary>
-    public bool GetTopBorder() {
-        return GetBorder(Border.TOP);
-    }
-
-    /// <summary>Sets whether the bottom border of this cell is drawn.</summary>
-    public Cell SetBottomBorder(bool bottomBorder) {
-        return SetBorder(Border.BOTTOM, bottomBorder);
-    }
-
-    /// <summary>Returns true if the bottom border of this cell is drawn.</summary>
-    public bool GetBottomBorder() {
-        return GetBorder(Border.BOTTOM);
-    }
-
-    /// <summary>Sets whether the left border of this cell is drawn.</summary>
-    public Cell SetLeftBorder(bool leftBorder) {
-        return SetBorder(Border.LEFT, leftBorder);
-    }
-
-    /// <summary>Returns true if the left border of this cell is drawn.</summary>
-    public bool GetLeftBorder() {
-        return GetBorder(Border.LEFT);
-    }
-
-    /// <summary>Sets whether the right border of this cell is drawn.</summary>
-    public Cell SetRightBorder(bool rightBorder) {
-        return SetBorder(Border.RIGHT, rightBorder);
-    }
-
-    /// <summary>Returns true if the right border of this cell is drawn.</summary>
-    public bool GetRightBorder() {
-        return GetBorder(Border.RIGHT);
-    }
-
     /// <summary>
     /// Sets the cell text alignment.
     /// </summary>

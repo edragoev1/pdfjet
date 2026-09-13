@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 )
 
@@ -23,6 +22,7 @@ type Container struct {
 	ScaleX        float32    // The scaling factor along the X-axis.
 	ScaleY        float32    // The scaling factor along the Y-axis.
 	elements      []Drawable // The list of child drawable elements.
+	border        *Rect
 	parent        *Container
 }
 
@@ -91,19 +91,14 @@ func (c *Container) SetScaleFactorXY(sx, sy float32) *Container {
 	return c
 }
 
-// SetBorderColor adds a border in the specified 0xRRGGBB color around this container.
+// SetBorderColor sets the 0xRRGGBB color of the border around this container.
 func (c *Container) SetBorderColor(borderColor int32) *Container {
-	rect := NewRect(0.0, 0.0, c.Width, c.Height)
-	rect.SetBorderColor(borderColor)
-	c.Add(rect)
+	if c.border == nil {
+		c.border = NewRect(0.0, 0.0, c.Width, c.Height)
+		c.Add(c.border)
+	}
+	c.border.SetBorderColor(borderColor)
 	return c
-}
-
-// AddBorder adds a black border around this container.
-func (c *Container) AddBorder() *Container {
-	rect := NewRect(0.0, 0.0, c.Width, c.Height)
-	rect.SetBorderColor(color.Black)
-	return c.Add(rect)
 }
 
 // Add adds a drawable element to this container.

@@ -22,6 +22,7 @@ public class Container implements Drawable {
     /** The vertical scaling factor. */
     public float scaleY;
     private List<Drawable> elements;
+    private Rect border = null;
     Container parent = null;
 
     /**
@@ -115,27 +116,17 @@ public class Container implements Drawable {
     }
 
     /**
-     * Adds a border in the specified color around this container.
+     * Sets the color of the border around this container.
      *
      * @param borderColor the border color as a 0xRRGGBB value.
      * @return this Container object.
      */
     public Container setBorderColor(int borderColor) {
-        Rect rect = new Rect(0f, 0f, width, height);
-        rect.setBorderColor(borderColor);
-        this.add(rect);
-        return this;
-    }
-
-    /**
-     * Adds a black border around this container.
-     *
-     * @return this Container object.
-     */
-    public Container addBorder() {
-        Rect rect = new Rect(0f, 0f, width, height);
-        rect.setBorderColor(Color.black);
-        this.add(rect);
+        if (border == null) {
+            border = new Rect(0f, 0f, width, height);
+            this.add(border);
+        }
+        border.setBorderColor(borderColor);
         return this;
     }
 

@@ -238,11 +238,11 @@ public class Table : Drawable {
         while j < index2 {
             var row = tableData[j]
             for cell in row {
-                cell.setBottomBorder(false)
+                cell.setBorder(Border.BOTTOM, false)
             }
             row = tableData[j + 1]
             for cell in row {
-                cell.setTopBorder(false)
+                cell.setBorder(Border.TOP, false)
             }
             j += 1
         }
@@ -373,7 +373,7 @@ public class Table : Drawable {
     /// - Returns: the width of the column.
     ///
     public func getColumnWidth(_ index: Int) -> Float {
-        return getCellAtRowColumn(0, index).getWidth()
+        return getCellAt(0, index).getWidth()
     }
 
     ///
@@ -392,18 +392,6 @@ public class Table : Drawable {
     }
 
     ///
-    /// Returns the cell at the specified row and column.
-    ///
-    /// - Parameter row: the specified row.
-    /// - Parameter col: the specified column.
-    ///
-    /// - Returns: the cell at the specified row and column.
-    ///
-    public func getCellAtRowColumn(_ row: Int, _ col: Int) -> Cell {
-        return getCellAt(row, col)
-    }
-
-    ///
     /// Returns a list of cells for the specified row.
     ///
     /// - Parameter index: the index of the specified row.
@@ -412,11 +400,6 @@ public class Table : Drawable {
     ///
     public func getRow(_ index: Int) -> [Cell] {
         return tableData[index]
-    }
-
-    /// Returns the cells in the specified row. Same as getRow.
-    public func getRowAtIndex(_ index: Int) -> [Cell] {
-        return getRow(index)
     }
 
     ///
@@ -434,11 +417,6 @@ public class Table : Drawable {
             }
         }
         return column
-    }
-
-    /// Returns the cells in the specified column. Same as getColumn.
-    public func getColumnAtIndex(_ index: Int) -> [Cell] {
-        return getColumn(index)
     }
 
     ///
@@ -503,7 +481,7 @@ public class Table : Drawable {
                 if page != nil {
                     page!.setBrushColor(cell.getTextColor())
                     if i == (numOfHeaderRows - 1) {
-                        cell.setBottomBorder(true)
+                        cell.setBorder(Border.BOTTOM, true)
                     }
                     cell.drawOn(page!, x, y, w, h)
                 }
@@ -646,7 +624,7 @@ public class Table : Drawable {
     // Sets the right border on all cells in the last column.
     private func setRightBorderOnLastColumn() {
         for row in tableData {
-            if row[0].getLeftBorder() == false {
+            if row[0].getBorder(Border.LEFT) == false {
                 return
             }
         }
@@ -658,7 +636,7 @@ public class Table : Drawable {
                 cell = row[i]
                 i += Int(cell!.getColSpan())
             }
-            cell!.setRightBorder(true)
+            cell!.setBorder(Border.RIGHT, true)
         }
     }
 
@@ -666,14 +644,14 @@ public class Table : Drawable {
     private func setBottomBorderOnLastRow() {
         let firstRow = tableData[0]
         for cell in firstRow {
-            if cell.getTopBorder() == false {
+            if cell.getBorder(Border.TOP) == false {
                 return
             }
         }
         // Only run this code if all the cells in the first row have top border.
         let lastRow = tableData[tableData.count - 1]
         for cell in lastRow {
-            cell.setBottomBorder(true)
+            cell.setBorder(Border.BOTTOM, true)
         }
     }
 
@@ -758,15 +736,15 @@ public class Table : Drawable {
                     // The column span.
                     cell2.setProperties(cell.getProperties())
                     cell2.setTextAlignment(cell.getTextAlignment())
-                    cell2.setTopBorder(cell.getTopBorder())
-                    cell2.setBottomBorder(cell.getBottomBorder())
-                    cell2.setLeftBorder(cell.getLeftBorder())
-                    cell2.setRightBorder(cell.getRightBorder())
+                    cell2.setBorder(Border.TOP, cell.getBorder(Border.TOP))
+                    cell2.setBorder(Border.BOTTOM, cell.getBorder(Border.BOTTOM))
+                    cell2.setBorder(Border.LEFT, cell.getBorder(Border.LEFT))
+                    cell2.setBorder(Border.RIGHT, cell.getBorder(Border.RIGHT))
                     cell2.setUnderline(cell.getUnderline())
                     cell2.setStrikeout(cell.getStrikeout())
                     cell2.setVerticalAlignment(cell.getVerticalAlignment())
                     cell2.setTopPadding(0.0)
-                    cell2.setTopBorder(false)
+                    cell2.setBorder(Border.TOP, false)
                     row2.append(cell2)
                 }
                 tableData2.append(row2)

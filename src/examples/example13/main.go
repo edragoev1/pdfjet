@@ -55,12 +55,12 @@ func Example13() {
 	cell.SetColSpan(2)
 	cell.SetTextAlignment(alignment.Center)
 
-	column := table.GetColumnAtIndex(7)
+	column := table.GetColumn(7)
 	for _, cell := range column {
 		cell.SetTextAlignment(alignment.Center)
 	}
 
-	column = table.GetColumnAtIndex(4)
+	column = table.GetColumn(4)
 	for i := 2; i < len(column); i++ {
 		cell := column[i]
 		cell.SetTextAlignment(alignment.Center)
@@ -75,7 +75,7 @@ func Example13() {
 		}
 	}
 
-	column = table.GetColumnAtIndex(2)
+	column = table.GetColumn(2)
 	for i := 2; i < len(column); i++ {
 		cell := column[i]
 		if cell.GetText() == "Smith" {
@@ -86,7 +86,7 @@ func Example13() {
 		}
 	}
 
-	column = table.GetColumnAtIndex(2)
+	column = table.GetColumn(2)
 	for i := 2; i < len(column); i++ {
 		cell := column[i]
 		if cell.GetText() == "Bowden" {
@@ -115,7 +115,7 @@ func Example13() {
 }
 
 func blankOutColumn(table *pdfjet.Table, index int) {
-	for _, cell := range table.GetColumnAtIndex(index) {
+	for _, cell := range table.GetColumn(index) {
 		cell.SetBackgroundColor(color.White)
 		cell.SetBorder(border.Top, false)
 		cell.SetBorder(border.Bottom, false)
@@ -123,7 +123,7 @@ func blankOutColumn(table *pdfjet.Table, index int) {
 }
 
 func setBgColorForRow(table *pdfjet.Table, index int, color int32) {
-	for _, cell := range table.GetRowAtIndex(index) {
+	for _, cell := range table.GetRow(index) {
 		cell.SetBackgroundColor(color)
 	}
 }

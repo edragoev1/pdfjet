@@ -55,13 +55,13 @@ public class Example_13 {
         cell.SetColSpan(2);
         cell.SetTextAlignment(Alignment.CENTER);
 
-        List<Cell> column = table.GetColumnAtIndex(7);
+        List<Cell> column = table.GetColumn(7);
         for (int i = 0; i < column.Count; i++) {
             cell = column[i];
             cell.SetTextAlignment(Alignment.CENTER);
         }
 
-        column = table.GetColumnAtIndex(4);
+        column = table.GetColumn(4);
         for (int i = 2; i < column.Count; i++) {
             cell = column[i];
             try {
@@ -75,7 +75,7 @@ public class Example_13 {
             }
         }
 
-        column = table.GetColumnAtIndex(2);
+        column = table.GetColumn(2);
         for (int i = 2; i < column.Count; i++) {
             cell = column[i];
             try {
@@ -89,7 +89,7 @@ public class Example_13 {
             }
         }
 
-        column = table.GetColumnAtIndex(2);
+        column = table.GetColumn(2);
         for (int i = 2; i < column.Count; i++) {
             cell = column[i];
             try {
@@ -121,7 +121,7 @@ public class Example_13 {
     }
 
     public void BlankOutColumn(Table table, int index) {
-        List<Cell> column = table.GetColumnAtIndex(index);
+        List<Cell> column = table.GetColumn(index);
         foreach (Cell cell in column) {
             cell.SetBackgroundColor(Color.white);
             cell.SetBorder(Border.TOP, false);
@@ -130,7 +130,7 @@ public class Example_13 {
     }
 
     public void SetBgColorForRow(Table table, int index, int color) {
-        List<Cell> row = table.GetRowAtIndex(index);
+        List<Cell> row = table.GetRow(index);
         foreach (Cell cell in row) {
             cell.SetBackgroundColor(color);
         }

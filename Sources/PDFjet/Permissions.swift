@@ -36,7 +36,9 @@ public class Permissions: CustomStringConvertible {
     }
 
     ///
-    /// Gets the permissions as the combination of the UserAccess values.
+    /// Gets the permissions as the combination of the UserAccess values. All
+    /// reserved bits are zero. Encryption sets the reserved bits that
+    /// ISO 32000-2 requires to be one when it writes the /P key.
     ///
     /// - Returns: the permissions flags.
     ///
@@ -55,17 +57,6 @@ public class Permissions: CustomStringConvertible {
     public func setAccess(_ access: Int) -> Permissions {
         permissionsFlags = access & Permissions.VALID_BITS_MASK
         return self
-    }
-
-    ///
-    /// Gets the raw 32-bit integer value of the permissions flags. All
-    /// reserved bits are zero. Encryption sets the reserved bits that
-    /// ISO 32000-2 requires to be one when it writes the /P key.
-    ///
-    /// - Returns: the value of the /P key.
-    ///
-    public func getRawValue() -> Int {
-        return permissionsFlags
     }
 
     ///

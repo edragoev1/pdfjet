@@ -117,7 +117,7 @@ public class CalendarMonth : IDrawable {
                         page.SetPenColor(Color.blue);
                         page.DrawEllipse(
                                 x1 + col*dx + dx/2,
-                                y1 + row*dy + f2.GetHeight()/2,
+                                y1 + row*dy + f2.GetBodyHeight()/2,
                                 dx/2.5f,
                                 dy/2.5f);
                     }

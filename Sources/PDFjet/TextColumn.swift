@@ -343,16 +343,17 @@ public class TextColumn : Drawable {
     }
 
     ///
-    /// Adds a new paragraph with Chinese text to this text column.
+    /// Adds a paragraph of Chinese, Japanese or Korean text to this text column,
+    /// wrapped at any character to the width of the column.
     ///
     /// - Parameter font: the font used by this paragraph.
-    /// - Parameter chinese: the Chinese text.
+    /// - Parameter text: the text.
     ///
     @discardableResult
-    public func addChineseParagraph(_ font: Font, _ chinese: String) -> TextColumn {
+    public func addCJKParagraph(_ font: Font, _ text: String) -> TextColumn {
         var paragraph: Paragraph
         var buf = String()
-        for scalar in chinese.unicodeScalars {
+        for scalar in text.unicodeScalars {
             if font.stringWidth(buf + String(scalar)) > w {
                 paragraph = Paragraph()
                 paragraph.add(TextLine(font, buf))
@@ -364,16 +365,5 @@ public class TextColumn : Drawable {
         paragraph = Paragraph()
         paragraph.add(TextLine(font, buf))
         return addParagraph(paragraph)
-    }
-
-    ///
-    /// Adds a new paragraph with Japanese text to this text column.
-    ///
-    /// - Parameter font: the font used by this paragraph.
-    /// - Parameter japanese: the Japanese text.
-    ///
-    @discardableResult
-    public func addJapaneseParagraph(_ font: Font, _ japanese: String) -> TextColumn {
-        return addChineseParagraph(font, japanese)
     }
 }   // End of TextColumn.swift

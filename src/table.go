@@ -211,11 +211,11 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	for i := index1; i < index2; i++ {
 		row := table.tableData[i]
 		for _, cell := range row {
-			cell.SetBottomBorder(false)
+			cell.bottomBorder = false
 		}
 		row = table.tableData[i+1]
 		for _, cell := range row {
-			cell.SetTopBorder(false)
+			cell.topBorder = false
 		}
 	}
 	return table
@@ -319,7 +319,7 @@ func (table *Table) SetColumnWidth(index int, width float32) *Table {
 // @param index the index of the column.
 // @return the width of the column.
 func (table *Table) GetColumnWidth(index int) float32 {
-	return table.GetCellAtRowColumn(0, index).GetWidth()
+	return table.GetCellAt(0, index).GetWidth()
 }
 
 // GetCellAt returns the cell at the specified row and column.
@@ -333,24 +333,11 @@ func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
 	return table.tableData[len(table.tableData)+rowIndex][colIndex]
 }
 
-// GetCellAtRowColumn returns the cell at the specified row and column.
-// @param row the specified row.
-// @param col the specified column.
-// @return the cell at the specified row and column.
-func (table *Table) GetCellAtRowColumn(rowIndex, colIndex int) *Cell {
-	return table.GetCellAt(rowIndex, colIndex)
-}
-
 // GetRow returns a list of cells for the specified row.
 // @param index the index of the specified row.
 // @return the list of cells.
 func (table *Table) GetRow(index int) []*Cell {
 	return table.tableData[index]
-}
-
-// GetRowAtIndex returns the cells in the specified row. Same as GetRow.
-func (table *Table) GetRowAtIndex(index int) []*Cell {
-	return table.GetRow(index)
 }
 
 // GetColumn returns a list of cells for the specified column.
@@ -364,11 +351,6 @@ func (table *Table) GetColumn(index int) []*Cell {
 		}
 	}
 	return column
-}
-
-// GetColumnAtIndex returns the cells in the specified column. Same as GetColumn.
-func (table *Table) GetColumnAtIndex(index int) []*Cell {
-	return table.GetColumn(index)
 }
 
 // DrawOn draws this table on the specified page.
@@ -421,7 +403,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			if page != nil {
 				page.SetBrushColorRGB(cell.GetTextColor())
 				if i == (table.numOfHeaderRows - 1) {
-					cell.SetBottomBorder(true)
+					cell.bottomBorder = true
 				}
 				cell.drawOn(page, x, y, w, h)
 			}
@@ -547,7 +529,7 @@ func (table *Table) SetCellBorderWidth(width float32) *Table {
 // Sets the right border on all cells in the last column.
 func (table *Table) setRightBorderOnLastColumn() {
 	for _, row := range table.tableData {
-		if !row[0].GetLeftBorder() {
+		if !row[0].leftBorder {
 			return
 		}
 	}
@@ -559,7 +541,7 @@ func (table *Table) setRightBorderOnLastColumn() {
 			cell = row[i]
 			i += cell.GetColSpan()
 		}
-		cell.SetRightBorder(true)
+		cell.rightBorder = true
 	}
 }
 
@@ -567,14 +549,14 @@ func (table *Table) setRightBorderOnLastColumn() {
 func (table *Table) setBottomBorderOnLastRow() {
 	firstRow := table.tableData[0]
 	for _, cell := range firstRow {
-		if !cell.GetTopBorder() {
+		if !cell.topBorder {
 			return
 		}
 	}
 	// Only run this code if all the cells in the first row have top border.
 	lastRow := table.tableData[len(table.tableData)-1]
 	for _, cell := range lastRow {
-		cell.SetBottomBorder(true)
+		cell.bottomBorder = true
 	}
 }
 
@@ -661,16 +643,16 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetTextColorRGB(cell.GetTextColor())
 				// Java copies these across with Cell.setProperties()
 				cell2.SetColSpan(cell.GetColSpan())
-				cell2.SetTopBorder(cell.GetTopBorder())
-				cell2.SetBottomBorder(cell.GetBottomBorder())
-				cell2.SetLeftBorder(cell.GetLeftBorder())
-				cell2.SetRightBorder(cell.GetRightBorder())
+				cell2.topBorder = cell.topBorder
+				cell2.bottomBorder = cell.bottomBorder
+				cell2.leftBorder = cell.leftBorder
+				cell2.rightBorder = cell.rightBorder
 				cell2.SetTextAlignment(cell.GetTextAlignment())
 				cell2.SetUnderline(cell.GetUnderline())
 				cell2.SetStrikeout(cell.GetStrikeout())
 				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
-				cell2.SetTopBorder(false)
+				cell2.topBorder = false
 				row2 = append(row2, cell2)
 			}
 			tableData2 = append(tableData2, row2)

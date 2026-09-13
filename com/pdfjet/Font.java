@@ -587,15 +587,6 @@ final public class Font {
     }
 
     /**
-     * Returns the height of this font.
-     *
-     * @return the height of the font.
-     */
-    public float getHeight() {
-        return ascent + descent;
-    }
-
-    /**
      * Returns the height of the body of the font.
      *
      * @return float the height of the body of the font.

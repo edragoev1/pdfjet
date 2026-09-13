@@ -403,18 +403,19 @@ public class TextColumn implements Drawable {
     }
 
     /**
-     * Adds a new paragraph with Chinese text to this text column.
+     * Adds a paragraph of Chinese, Japanese or Korean text to this text column,
+     * wrapped at any character to the width of the column.
      *
      * @param font the font used by this paragraph.
-     * @param chinese the Chinese text.
+     * @param text the text.
      * @return this TextColumn object.
      */
-    public TextColumn addChineseParagraph(Font font, String chinese) {
+    public TextColumn addCJKParagraph(Font font, String text) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
         int i = 0;
-        while (i < chinese.length()) {
-            int ch = chinese.codePointAt(i);
+        while (i < text.length()) {
+            int ch = text.codePointAt(i);
             i += Character.charCount(ch);
             String str = new String(Character.toChars(ch));
             if (font.stringWidth(buf.toString() + str) > w) {
@@ -428,16 +429,5 @@ public class TextColumn implements Drawable {
         paragraph = new Paragraph();
         paragraph.add(new TextLine(font, buf.toString()));
         return addParagraph(paragraph);
-    }
-
-    /**
-     * Adds a new paragraph with Japanese text to this text column.
-     *
-     * @param font the font used by this paragraph.
-     * @param japanese the Japanese text.
-     * @return this TextColumn object.
-     */
-    public TextColumn addJapaneseParagraph(Font font, String japanese) {
-        return addChineseParagraph(font, japanese);
     }
 }   // End of TextColumn.java

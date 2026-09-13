@@ -381,7 +381,7 @@ public class Table : IDrawable {
     /// <param name="index">the index of the column.</param>
     /// <returns>the width of the column.</returns>
     public float GetColumnWidth(int index) {
-        return GetCellAtRowColumn(0, index).GetWidth();
+        return GetCellAt(0, index).GetWidth();
     }
 
     /// <summary>
@@ -398,27 +398,12 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Returns the cell at the specified row and column.
-    /// </summary>
-    /// <param name="row">the specified row.</param>
-    /// <param name="col">the specified column.</param>
-    /// <returns>the cell at the specified row and column.</returns>
-    public Cell GetCellAtRowColumn(int row, int col) {
-        return GetCellAt(row, col);
-    }
-
-    /// <summary>
     /// Returns a list of cells for the specified row.
     /// </summary>
     /// <param name="index">the index of the specified row.</param>
     /// <returns>the list of cells.</returns>
     public List<Cell> GetRow(int index) {
         return tableData[index];
-    }
-
-    /// <summary>Returns the cells in the specified row. Same as GetRow.</summary>
-    public List<Cell> GetRowAtIndex(int index) {
-        return GetRow(index);
     }
 
     /// <summary>
@@ -434,11 +419,6 @@ public class Table : IDrawable {
             }
         }
         return column;
-    }
-
-    /// <summary>Returns the cells in the specified column. Same as GetColumn.</summary>
-    public List<Cell> GetColumnAtIndex(int index) {
-        return GetColumn(index);
     }
 
     /// <summary>

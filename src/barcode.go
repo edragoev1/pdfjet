@@ -629,5 +629,5 @@ func (barcode *Barcode) GetHeight() float32 {
 	if barcode.font == nil {
 		return barcode.m1 * barcode.barHeightFactor
 	}
-	return barcode.m1*barcode.barHeightFactor + barcode.font.GetHeight()
+	return barcode.m1*barcode.barHeightFactor + barcode.font.GetBodyHeight()
 }

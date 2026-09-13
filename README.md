@@ -286,7 +286,8 @@ with `|` on `getValue()`, as Example_30 shows. Java has no flags enum, and a
 Swift `OptionSet` is a struct, not an enum, so both ports keep the enum with the
 bit values of the standard and the `int` that `Permissions` masks and checks.
 In all four ports the value is the `/P` entry of the encryption dictionary
-without its reserved bits, so `getRawValue` is the same number everywhere.
+without its reserved bits, so Java and Swift `getAccess` and C# and Go
+`GetRawValue` return the same number.
 
 `./audit-api.py` lists the public types and members of the four ports, matches
 them by name without regard to case and underscores, and prints what is not in

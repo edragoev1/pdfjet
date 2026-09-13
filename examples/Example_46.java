@@ -27,7 +27,7 @@ public class Example_46 {
 
         textLine = new TextLine(f2, "http://www.openstreetmap.org/copyright");
         textLine.setURIAction("http://www.openstreetmap.org/copyright");
-        textLine.setLocation(10f, xy[1] + f2.getHeight());
+        textLine.setLocation(10f, xy[1] + f2.getBodyHeight());
         textLine.drawOn(page);
 
         OptionalContentGroup group = new OptionalContentGroup(pdf, "Map");

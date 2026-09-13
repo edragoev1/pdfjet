@@ -29,7 +29,7 @@ public class Example_46 {
 
         textLine = new TextLine(f2, "http://www.openstreetmap.org/copyright");
         textLine.SetURIAction("http://www.openstreetmap.org/copyright");
-        textLine.SetLocation(10f, xy[1] + f2.GetHeight());
+        textLine.SetLocation(10f, xy[1] + f2.GetBodyHeight());
         textLine.DrawOn(page);
 
         OptionalContentGroup group = new OptionalContentGroup(pdf, "Map");

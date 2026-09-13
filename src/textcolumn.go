@@ -298,12 +298,13 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	}
 }
 
-// AddChineseParagraph adds a new paragraph with Chinese text, in the specified
-// font, to this text column. The text is wrapped at the width of the column.
-func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) *TextColumn {
+// AddCJKParagraph adds a paragraph of Chinese, Japanese or Korean text, in the
+// specified font, to this text column. The text is wrapped at any character to
+// the width of the column.
+func (textColumn *TextColumn) AddCJKParagraph(font *Font, text string) *TextColumn {
 	var paragraph *Paragraph
 	var buf strings.Builder
-	for _, ch := range chinese {
+	for _, ch := range text {
 		if font.StringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
 			paragraph = NewParagraph()
 			paragraph.Add(NewTextLine(font, buf.String()))
@@ -315,11 +316,4 @@ func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) *T
 	paragraph = NewParagraph()
 	paragraph.Add(NewTextLine(font, buf.String()))
 	return textColumn.AddParagraph(paragraph)
-}
-
-// AddJapaneseParagraph adds a new paragraph with Japanese text, in the
-// specified font, to this text column. The text is wrapped at the width of the
-// column.
-func (textColumn *TextColumn) AddJapaneseParagraph(font *Font, japanese string) *TextColumn {
-	return textColumn.AddChineseParagraph(font, japanese)
 }
