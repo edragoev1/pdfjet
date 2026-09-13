@@ -104,7 +104,7 @@ public class Paragraph {
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Paragraph object.
      */
-    public Paragraph setColor(int color) {
+    public Paragraph setTextColor(int color) {
         for (TextLine line : lines) {
             line.setTextColor(color);
         }

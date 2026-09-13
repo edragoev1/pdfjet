@@ -74,7 +74,7 @@ public class Form : IDrawable {
     /// </summary>
     /// <param name="lineWidth">the line width</param>
     /// <returns>this form</returns>
-    public Form SetLineWidth(float lineWidth) {
+    public Form SetStrokeWidth(float lineWidth) {
         this.lineWidth = lineWidth;
         return this;
     }

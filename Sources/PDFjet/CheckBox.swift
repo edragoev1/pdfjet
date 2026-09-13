@@ -56,7 +56,7 @@ public class CheckBox : Drawable {
     /// - Returns: this CheckBox.
     ///
     @discardableResult
-    public func setBoxColor(_ boxColor: Int32) -> CheckBox {
+    public func setBorderColor(_ boxColor: Int32) -> CheckBox {
         self.boxColor = boxColor
         return self
     }
@@ -68,7 +68,7 @@ public class CheckBox : Drawable {
     /// - Returns: this CheckBox.
     ///
     @discardableResult
-    public func setCheckmark(_ checkColor: Int32) -> CheckBox {
+    public func setCheckmarkColor(_ checkColor: Int32) -> CheckBox {
         self.checkColor = checkColor
         return self
     }

@@ -27,7 +27,7 @@ public class Example_21 {
                 ErrorCorrectLevel.L);   // Low
         qr.SetModuleLength(3f);
         qr.SetLocation(100f, 100f);
-        // qr.SetColor(Color.blue);
+        // qr.SetModuleColor(Color.blue);
         qr.DrawOn(page);
 
         qr = new QRCode(

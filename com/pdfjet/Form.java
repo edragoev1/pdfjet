@@ -74,7 +74,7 @@ public class Form implements Drawable {
      * @param lineWidth the line width
      * @return this form
      */
-    public Form setLineWidth(float lineWidth) {
+    public Form setStrokeWidth(float lineWidth) {
         this.lineWidth = lineWidth;
         return this;
     }

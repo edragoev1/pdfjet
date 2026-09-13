@@ -60,7 +60,7 @@ func Example15() {
 			} else {
 				cell.SetBackgroundColor(color.DodgerBlue)
 			}
-			cell.SetStrokeColor(color.LightGray)
+			cell.SetBorderColor(color.LightGray)
 			cell.SetTextColor(color.Black)
 			row = append(row, cell)
 		}

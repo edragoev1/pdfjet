@@ -77,7 +77,7 @@ public class Paragraph {
 
     /// Sets the text color of all lines in this paragraph as a 0xRRGGBB value.
     @discardableResult
-    public func setColor(_ color: Int32) -> Paragraph {
+    public func setTextColor(_ color: Int32) -> Paragraph {
         for line in lines {
             line.setTextColor(color)
         }

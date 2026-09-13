@@ -133,7 +133,7 @@ public class TextBlock : Drawable {
 
     /// Sets the radius of the border corners.
     @discardableResult
-    public func setBorderCornerRadius(_ radius: Float) -> TextBlock {
+    public func setCornerRadius(_ radius: Float) -> TextBlock {
         self.borderCornerRadius = radius
         return self
     }

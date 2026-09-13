@@ -145,9 +145,9 @@ func (textLine *TextLine) SetTextColorRGB(c [3]float32) *TextLine {
 	return textLine
 }
 
-// SetLineColor sets the color of the underline and strikeout lines as a 0xRRGGBB value.
+// SetDecorationColor sets the color of the underline and strikeout lines as a 0xRRGGBB value.
 // color.Transparent leaves it unchanged.
-func (textLine *TextLine) SetLineColor(c int32) *TextLine {
+func (textLine *TextLine) SetDecorationColor(c int32) *TextLine {
 	if c == color.Transparent {
 		return textLine
 	}
@@ -158,15 +158,15 @@ func (textLine *TextLine) SetLineColor(c int32) *TextLine {
 	return textLine
 }
 
-// SetLineColorRGB sets the color of the underline and strikeout lines from the
+// SetDecorationColorRGB sets the color of the underline and strikeout lines from the
 // red, green and blue components, from 0.0 to 1.0.
-func (textLine *TextLine) SetLineColorRGB(c [3]float32) *TextLine {
+func (textLine *TextLine) SetDecorationColorRGB(c [3]float32) *TextLine {
 	textLine.lineColor = c
 	return textLine
 }
 
-// GetLineColor returns the color of the underline and strikeout lines.
-func (textLine *TextLine) GetLineColor() [3]float32 {
+// GetDecorationColor returns the color of the underline and strikeout lines.
+func (textLine *TextLine) GetDecorationColor() [3]float32 {
 	return textLine.lineColor
 }
 

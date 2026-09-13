@@ -287,7 +287,7 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Sets the horizontal grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
-    public Chart SetHGridLinePattern(String pattern) {
+    public Chart SetHGridLineDashPattern(String pattern) {
         this.hGridLinePattern = pattern;
         return this;
     }
@@ -295,7 +295,7 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Sets the vertical grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
-    public Chart SetVGridLinePattern(String pattern) {
+    public Chart SetVGridLineDashPattern(String pattern) {
         this.vGridLinePattern = pattern;
         return this;
     }
@@ -439,7 +439,7 @@ public class Chart : IDrawable {
                 x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
-        page.SetDefaultLineWidth();
+        page.SetDefaultPenWidth();
         page.SetDefaultStrokeDashPattern();
         page.SetPenColor(Color.black);
 

@@ -155,8 +155,8 @@ func (dm *DataMatrix) SetModuleLength(moduleLength float32) *DataMatrix {
 	return dm
 }
 
-// SetColor sets the color of the barcode as a 0xRRGGBB value.
-func (dm *DataMatrix) SetColor(color int32) *DataMatrix {
+// SetModuleColor sets the color of the barcode as a 0xRRGGBB value.
+func (dm *DataMatrix) SetModuleColor(color int32) *DataMatrix {
 	dm.color = color
 	return dm
 }

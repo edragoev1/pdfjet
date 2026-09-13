@@ -36,7 +36,7 @@ public class Example_14 {
         barcode = new DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE);
         barcode.setLocation(50f, 250f);
         barcode.setModuleLength(4f);
-        barcode.setColor(Color.blue);
+        barcode.setModuleColor(Color.blue);
         xy = barcode.drawOn(page);
         caption = new TextLine(f1, "A rectangular symbol");
         caption.setLocation(50f, xy[1] + 20f);

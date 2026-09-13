@@ -70,7 +70,7 @@ public class Path implements Drawable {
      * @param pattern the line dash pattern.
      * @return this Path object.
      */
-    public Path setPattern(String pattern) {
+    public Path setStrokeDashPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }

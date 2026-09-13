@@ -49,8 +49,8 @@ func (form *Form) SetFormWidth(formWidth float32) *Form {
 	return form
 }
 
-// SetLineWidth sets the line width.
-func (form *Form) SetLineWidth(lineWidth float32) *Form {
+// SetStrokeWidth sets the line width.
+func (form *Form) SetStrokeWidth(lineWidth float32) *Form {
 	form.lineWidth = lineWidth
 	return form
 }

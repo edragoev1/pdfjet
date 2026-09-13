@@ -85,8 +85,8 @@ func (paragraph *Paragraph) StartsWith(token string) bool {
 	return strings.HasPrefix(paragraph.lines[0].GetText(), token)
 }
 
-// SetColor sets the text color of all lines in this paragraph.
-func (paragraph *Paragraph) SetColor(color int32) *Paragraph {
+// SetTextColor sets the text color of all lines in this paragraph.
+func (paragraph *Paragraph) SetTextColor(color int32) *Paragraph {
 	for _, line := range paragraph.lines {
 		line.SetTextColor(color)
 	}

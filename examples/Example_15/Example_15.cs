@@ -55,7 +55,7 @@ public class Example_15 {
                 } else {
                     cell.SetBackgroundColor(Color.dodgerblue);
                 }
-                cell.SetStrokeColor(Color.lightgray);
+                cell.SetBorderColor(Color.lightgray);
                 cell.SetTextColor(Color.black);
                 row.Add(cell);
             }

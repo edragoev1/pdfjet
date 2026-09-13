@@ -288,30 +288,10 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>
-    /// Sets the width of the border lines, as SetStrokeWidth does.
-    /// </summary>
-    /// <param name="lineWidth">the width of the border lines.</param>
-    /// <returns>this TextBox object.</returns>
-    public TextBox SetLineWidth(double lineWidth) {
-        this.strokeWidth = (float) lineWidth;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the width of the border lines, as SetStrokeWidth does.
-    /// </summary>
-    /// <param name="lineWidth">the width of the border lines.</param>
-    /// <returns>this TextBox object.</returns>
-    public TextBox SetLineWidth(float lineWidth) {
-        this.strokeWidth = lineWidth;
-        return this;
-    }
-
-    /// <summary>
     /// Returns the width of the border lines.
     /// </summary>
     /// <returns>the width of the border lines.</returns>
-    public float GetLineWidth() {
+    public float GetBorderWidth() {
         return strokeWidth;
     }
 
@@ -422,13 +402,13 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>Sets the width of the borders.</summary>
-    public TextBox SetStrokeWidth(float strokeWidth) {
+    public TextBox SetBorderWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
     /// <summary>Sets the color of the borders as a 0xRRGGBB value. Color.transparent clears it, so the borders are drawn in the page's current pen color.</summary>
-    public TextBox SetStrokeColor(int color) {
+    public TextBox SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.strokeColor = null;
             return this;
@@ -441,19 +421,19 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>Sets the color of the borders from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextBox SetStrokeColor(float r, float g, float b) {
+    public TextBox SetBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
     /// <summary>Sets the color of the borders from an array of red, green and blue values.</summary>
-    public TextBox SetStrokeColor(float[] rgbColor) {
+    public TextBox SetBorderColor(float[] rgbColor) {
         this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the color of the borders.</summary>
-    public float[] GetStrokeColor() {
+    public float[] GetBorderColor() {
         return Util.CopyOf(strokeColor);
     }
 

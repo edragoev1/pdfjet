@@ -21,14 +21,14 @@ public class Example_26 {
 
         new CheckBox(f1, "Hello")
                 .setLocation(x, y)
-                .setCheckmark(Color.blue)
+                .setCheckmarkColor(Color.blue)
                 .check(Mark.CHECK)
                 .drawOn(page);
 
         y += 30f;
         new CheckBox(f1, "World!")
                 .setLocation(x, y)
-                .setCheckmark(Color.blue)
+                .setCheckmarkColor(Color.blue)
                 .setURIAction("http://pdfjet.com")
                 .check(Mark.CHECK)
                 .drawOn(page);
@@ -57,13 +57,13 @@ public class Example_26 {
 
         xy = (new CheckBox(f1, "Hello"))
                 .setLocation(xy[0], 50f)
-                .setCheckmark(Color.blue)
+                .setCheckmarkColor(Color.blue)
                 .check(Mark.X)
                 .drawOn(page);
 
         xy = (new CheckBox(f1, "Yahoo")
                 .setLocation(xy[0], 50f)
-                .setCheckmark(Color.blue)
+                .setCheckmarkColor(Color.blue)
                 .check(Mark.CHECK)
                 .drawOn(page));
 

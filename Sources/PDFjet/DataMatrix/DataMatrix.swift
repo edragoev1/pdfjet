@@ -151,7 +151,7 @@ public final class DataMatrix : Drawable {
 
     /// Sets the color of the barcode as a 0xRRGGBB value.
     @discardableResult
-    public func setColor(_ color: Int32) -> DataMatrix {
+    public func setModuleColor(_ color: Int32) -> DataMatrix {
         self.color = color
         return self
     }

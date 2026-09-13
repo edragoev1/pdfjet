@@ -434,7 +434,7 @@ public class Cell {
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
      */
-    public Cell setStrokeColor(int color) {
+    public Cell setBorderColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -448,7 +448,7 @@ public class Cell {
      * @param strokeColor the red, green and blue components, from 0.0 to 1.0.
      * @return this Cell object.
      */
-    public Cell setStrokeColor(float[] strokeColor) {
+    public Cell setBorderColor(float[] strokeColor) {
         this.strokeColor = Util.copyOf(strokeColor);
         return this;
     }
@@ -458,7 +458,7 @@ public class Cell {
      *
      * @return the stroke color.
      */
-    public float[] getStrokeColor() {
+    public float[] getBorderColor() {
         return Util.copyOf(this.strokeColor);
     }
 
@@ -468,7 +468,7 @@ public class Cell {
      * @param strokeWidth the width of the cell borders.
      * @return this Cell object.
      */
-    public Cell setStrokeWidth(float strokeWidth) {
+    public Cell setBorderWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
@@ -478,7 +478,7 @@ public class Cell {
      *
      * @return the width of the cell borders.
      */
-    public float getStrokeWidth() {
+    public float getBorderWidth() {
         return this.strokeWidth;
     }
 

@@ -243,7 +243,7 @@ public class Example_38 {
         cell.setBorder(Border.BOTTOM, bottomBorder);
         cell.setTextAlignment(Alignment.CENTER);
         cell.setBackgroundColor(Color.lightblue);
-        cell.setStrokeWidth(1f);
+        cell.setBorderWidth(1f);
         return cell;
     }
 

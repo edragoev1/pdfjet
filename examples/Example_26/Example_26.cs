@@ -21,14 +21,14 @@ public class Example_26 {
 
         new CheckBox(f1, "Hello")
                 .SetLocation(x, y)
-                .SetCheckmark(Color.blue)
+                .SetCheckmarkColor(Color.blue)
                 .Check(Mark.CHECK)
                 .DrawOn(page);
 
         y += 30f;
         new CheckBox(f1, "World!")
                 .SetLocation(x, y)
-                .SetCheckmark(Color.blue)
+                .SetCheckmarkColor(Color.blue)
                 .SetURIAction("http://pdfjet.com")
                 .Check(Mark.CHECK)
                 .DrawOn(page);
@@ -57,13 +57,13 @@ public class Example_26 {
 
         xy = (new CheckBox(f1, "Hello"))
                 .SetLocation(xy[0], 50f)
-                .SetCheckmark(Color.blue)
+                .SetCheckmarkColor(Color.blue)
                 .Check(Mark.X)
                 .DrawOn(page);
 
         xy = (new CheckBox(f1, "Yahoo")
                 .SetLocation(xy[0], 50f)
-                .SetCheckmark(Color.blue)
+                .SetCheckmarkColor(Color.blue)
                 .Check(Mark.CHECK)
                 .DrawOn(page));
 

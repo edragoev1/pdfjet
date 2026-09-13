@@ -203,14 +203,14 @@ func (chart *Chart) SetVGridLineWidth(width float32) *Chart {
 	return chart
 }
 
-// SetHGridLinePattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetHGridLinePattern(pattern string) *Chart {
+// SetHGridLineDashPattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetHGridLineDashPattern(pattern string) *Chart {
 	chart.hGridLinePattern = pattern
 	return chart
 }
 
-// SetVGridLinePattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetVGridLinePattern(pattern string) *Chart {
+// SetVGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetVGridLineDashPattern(pattern string) *Chart {
 	chart.vGridLinePattern = pattern
 	return chart
 }
@@ -395,7 +395,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
-	page.SetDefaultLineWidth()
+	page.SetDefaultPenWidth()
 	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
 

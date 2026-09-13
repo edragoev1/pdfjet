@@ -172,7 +172,7 @@ public class DataMatrix : IDrawable {
     }
 
     /// <summary>Sets the color of the barcode as a 0xRRGGBB value.</summary>
-    public DataMatrix SetColor(int color) {
+    public DataMatrix SetModuleColor(int color) {
         this.color = color;
         return this;
     }

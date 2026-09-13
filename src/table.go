@@ -522,23 +522,23 @@ func (table *Table) SetCellBorders(borders bool) *Table {
 	return table
 }
 
-// SetCellBordersColor sets the color of the cell border lines.
+// SetCellBorderColor sets the color of the cell border lines.
 // @param color the color of the cell border lines.
-func (table *Table) SetCellBordersColor(color int32) *Table {
+func (table *Table) SetCellBorderColor(color int32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetStrokeColor(color)
+			cell.SetBorderColor(color)
 		}
 	}
 	return table
 }
 
-// SetCellBordersWidth sets the width of the cell border lines.
+// SetCellBorderWidth sets the width of the cell border lines.
 // @param width the width of the border lines.
-func (table *Table) SetCellBordersWidth(width float32) *Table {
+func (table *Table) SetCellBorderWidth(width float32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetStrokeWidth(width)
+			cell.SetBorderWidth(width)
 		}
 	}
 	return table
@@ -654,9 +654,9 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				if cell.hasBackgroundColor {
 					cell2.SetBackgroundColorRGB(cell.backgroundColor)
 				}
-				cell2.SetStrokeWidth(cell.GetStrokeWidth())
+				cell2.SetBorderWidth(cell.GetBorderWidth())
 				if cell.hasStrokeColor {
-					cell2.SetStrokeColorRGB(cell.strokeColor)
+					cell2.SetBorderColorRGB(cell.strokeColor)
 				}
 				cell2.SetTextColorRGB(cell.GetTextColor())
 				// Java copies these across with Cell.setProperties()

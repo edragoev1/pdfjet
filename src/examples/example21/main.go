@@ -29,7 +29,7 @@ func Example21() {
 		qrcode.ErrorCorrectLevelL) // Low
 	qr.SetModuleLength(3.0)
 	qr.SetLocation(100.0, 100.0)
-	// qr.SetColor(color.Blue)
+	// qr.SetModuleColor(color.Blue)
 	qr.DrawOn(page)
 
 	qr = qrcode.NewQRCode(

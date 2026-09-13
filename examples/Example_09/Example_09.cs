@@ -94,7 +94,7 @@ public class Example_09 {
         }
         table.SetData(tableData);
         table.SetColumnWidths();
-        table.SetCellBordersWidth(0.2f);
+        table.SetCellBorderWidth(0.2f);
         table.SetLocation(70f, 360f);
         table.SetColumnWidth(0, 9f);
         table.DrawOn(page);

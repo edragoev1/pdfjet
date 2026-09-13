@@ -46,7 +46,7 @@ func (path *Path) Add(point *Point) *Path {
 	return path
 }
 
-// SetPattern sets the line dash pattern for this path.
+// SetStrokeDashPattern sets the line dash pattern for this path.
 //
 // The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
 // It is specified by a dash array and a dash phase.
@@ -69,7 +69,7 @@ func (path *Path) Add(point *Point) *Path {
 //
 // @param pattern the line dash pattern.
 // @return this Path object.
-func (path *Path) SetPattern(pattern string) *Path {
+func (path *Path) SetStrokeDashPattern(pattern string) *Path {
 	path.pattern = pattern
 	return path
 }

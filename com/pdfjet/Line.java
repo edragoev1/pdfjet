@@ -89,7 +89,7 @@ public class Line implements Drawable {
      *  @param pattern the line dash pattern.
      *  @return this Line object.
      */
-    public Line setPattern(String pattern) {
+    public Line setStrokeDashPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }
@@ -217,7 +217,7 @@ public class Line implements Drawable {
      *  Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE
      *  @return this Line object.
      */
-    public Line setCapStyle(CapStyle style) {
+    public Line setLineCapStyle(CapStyle style) {
         this.capStyle = style;
         return this;
     }
@@ -227,7 +227,7 @@ public class Line implements Drawable {
      *
      *  @return the cap style.
      */
-    public CapStyle getCapStyle() {
+    public CapStyle getLineCapStyle() {
         return capStyle;
     }
 

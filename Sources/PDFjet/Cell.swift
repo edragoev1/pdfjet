@@ -472,7 +472,7 @@ public class Cell {
 
     /// Sets the stroke color as a 0xRRGGBB value.
     @discardableResult
-    public func setStrokeColor(_ color: Int32) -> Cell {
+    public func setBorderColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
@@ -482,32 +482,32 @@ public class Cell {
 
     /// Sets the stroke color from red, green and blue values between 0.0 and 1.0.
     @discardableResult
-    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
+    public func setBorderColor(_ r: Float, _ g: Float, _ b: Float) -> Cell {
         self.strokeColor = [r, g, b]
         return self
     }
 
     /// Sets the stroke color from an array of red, green and blue values.
     @discardableResult
-    public func setStrokeColor(_ rgbColor: [Float]?) -> Cell {
+    public func setBorderColor(_ rgbColor: [Float]?) -> Cell {
         self.strokeColor = rgbColor
         return self
     }
 
     /// Returns the stroke color.
-    public func getStrokeColor() -> [Float]? {
+    public func getBorderColor() -> [Float]? {
         return self.strokeColor
     }
 
     /// Sets the width of the cell borders.
     @discardableResult
-    public func setStrokeWidth(_ strokeWidth: Float) -> Cell {
+    public func setBorderWidth(_ strokeWidth: Float) -> Cell {
         self.strokeWidth = strokeWidth
         return self
     }
 
     /// Returns the width of the cell borders.
-    public func getStrokeWidth() -> Float {
+    public func getBorderWidth() -> Float {
         return self.strokeWidth
     }
 

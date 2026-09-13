@@ -1241,7 +1241,7 @@ final public class Page {
      *
      * @return this Page object.
      */
-    public Page setDefaultLineWidth() {
+    public Page setDefaultPenWidth() {
         this.penWidth = 0f;
         append(0f);
         append(" w\n");

@@ -68,7 +68,7 @@ func Example03() {
 			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
 			p.GetTextLines()[0].SetTextColor(color.Navy)
 		} else {
-			p.SetColor(color.Gray)
+			p.SetTextColor(color.Gray)
 			p.SetColorMap(colorMap)
 		}
 	}

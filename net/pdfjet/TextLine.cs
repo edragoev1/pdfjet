@@ -187,7 +187,7 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>Sets the color of the underline and strikeout lines as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
-    public TextLine SetLineColor(int color) {
+    public TextLine SetDecorationColor(int color) {
         if (color == Color.transparent) {
             return this;
         }
@@ -199,13 +199,13 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextLine SetLineColor(float r, float g, float b) {
+    public TextLine SetDecorationColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }
 
     /// <summary>Sets the color of the underline and strikeout lines from an array of red, green and blue values.</summary>
-    public TextLine SetLineColor(float[] rgbColor) {
+    public TextLine SetDecorationColor(float[] rgbColor) {
         if (rgbColor != null) {
             this.lineColor = (float[]) rgbColor.Clone();
         }
@@ -213,7 +213,7 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>Returns a copy of the color of the underline and strikeout lines.</summary>
-    public float[] GetLineColor() {
+    public float[] GetDecorationColor() {
         return (float[]) lineColor.Clone();
     }
 

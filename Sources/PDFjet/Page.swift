@@ -1134,7 +1134,7 @@ public class Page {
     /// The default is the finest line width.
     ///
     @discardableResult
-    public func setDefaultLineWidth() -> Page {
+    public func setDefaultPenWidth() -> Page {
         self.penWidth = 0.0
         append("0 w\n")
         return self

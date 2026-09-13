@@ -71,7 +71,7 @@ public class Example_01 {
         textBlock.setWidth(473f);
         textBlock.setTextPadding(10f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setBorderCornerRadius(10f);
+        textBlock.setCornerRadius(10f);
         textBlock.setUnderline(true);
         textBlock.drawOn(page);
 

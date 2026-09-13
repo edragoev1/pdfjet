@@ -57,7 +57,7 @@ public class Example_15 {
                 } else {
                     cell.setBackgroundColor(Color.dodgerblue);
                 }
-                cell.setStrokeColor(Color.lightgray);
+                cell.setBorderColor(Color.lightgray);
                 cell.setTextColor(Color.black);
                 row.add(cell);
             }

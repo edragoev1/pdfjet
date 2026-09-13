@@ -102,7 +102,7 @@ final public class QRCode implements Drawable {
      * @param color the color.
      * @return this QRCode object.
      */
-    public QRCode setColor(int color) {
+    public QRCode setModuleColor(int color) {
         this.color = color;
         return this;
     }

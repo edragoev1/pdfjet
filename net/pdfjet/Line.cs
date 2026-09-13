@@ -78,7 +78,7 @@ public class Line : IDrawable {
     /// </summary>
     /// <param name="pattern">the line dash pattern.</param>
     /// <returns>this Line object.</returns>
-    public Line SetPattern(String pattern) {
+    public Line SetStrokeDashPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }
@@ -214,7 +214,7 @@ public class Line : IDrawable {
     /// <param name="style">the cap style of the current line.
     /// Supported values: CapStyle.BUTT, CapStyle.ROUND and CapStyle.PROJECTING_SQUARE</param>
     /// <returns>this Line object.</returns>
-    public Line SetCapStyle(CapStyle style) {
+    public Line SetLineCapStyle(CapStyle style) {
         this.capStyle = style;
         return this;
     }
@@ -223,7 +223,7 @@ public class Line : IDrawable {
     /// Returns the line cap style.
     /// </summary>
     /// <returns>the cap style.</returns>
-    public CapStyle GetCapStyle() {
+    public CapStyle GetLineCapStyle() {
         return capStyle;
     }
 

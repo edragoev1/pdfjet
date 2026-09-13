@@ -345,23 +345,23 @@ func (cell *Cell) GetBackgroundColor() *[3]float32 {
 	return &backgroundColor
 }
 
-// SetStrokeColorRGB sets the color of the cell borders from red, green and blue values.
-func (cell *Cell) SetStrokeColorRGB(color [3]float32) *Cell {
+// SetBorderColorRGB sets the color of the cell borders from red, green and blue values.
+func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
 	cell.strokeColor = color
 	cell.hasStrokeColor = true
 	return cell
 }
 
-// SetStrokeColor sets the color of the cell borders.
+// SetBorderColor sets the color of the cell borders.
 // @param color the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetStrokeColor(color int32) *Cell {
+func (cell *Cell) SetBorderColor(color int32) *Cell {
 	cell.strokeColor = colorToRGB(color)
 	cell.hasStrokeColor = true
 	return cell
 }
 
-// GetStrokeColor returns a copy of the color of the cell borders, or nil if none was set.
-func (cell *Cell) GetStrokeColor() *[3]float32 {
+// GetBorderColor returns a copy of the color of the cell borders, or nil if none was set.
+func (cell *Cell) GetBorderColor() *[3]float32 {
 	if !cell.hasStrokeColor {
 		return nil
 	}
@@ -369,17 +369,17 @@ func (cell *Cell) GetStrokeColor() *[3]float32 {
 	return &strokeColor
 }
 
-// SetStrokeWidth sets the width of the cell borders.
+// SetBorderWidth sets the width of the cell borders.
 // @param strokeWidth the width of the cell borders.
 // @return this Cell object.
-func (cell *Cell) SetStrokeWidth(strokeWidth float32) *Cell {
+func (cell *Cell) SetBorderWidth(strokeWidth float32) *Cell {
 	cell.strokeWidth = strokeWidth
 	return cell
 }
 
-// GetStrokeWidth returns the width of the cell borders.
+// GetBorderWidth returns the width of the cell borders.
 // @return the width of the cell borders.
-func (cell *Cell) GetStrokeWidth() float32 {
+func (cell *Cell) GetBorderWidth() float32 {
 	return cell.strokeWidth
 }
 

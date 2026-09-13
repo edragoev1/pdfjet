@@ -178,15 +178,8 @@ public class TextBox : Drawable {
         return self.margin
     }
 
-    /// Sets the width of the border lines, as setStrokeWidth does.
-    @discardableResult
-    public func setLineWidth(_ lineWidth: Float) -> TextBox {
-        self.strokeWidth = lineWidth
-        return self
-    }
-
     /// Returns the width of the border lines.
-    public func getLineWidth() -> Float {
+    public func getBorderWidth() -> Float {
         return self.strokeWidth
     }
 
@@ -258,34 +251,34 @@ public class TextBox : Drawable {
 
     /// Sets the width of the borders.
     @discardableResult
-    public func setStrokeWidth(_ strokeWidth: Float) -> TextBox {
+    public func setBorderWidth(_ strokeWidth: Float) -> TextBox {
         self.strokeWidth = strokeWidth
         return self
     }
 
     /// Sets the color of the borders as a 0xRRGGBB value. Color.transparent clears it, so the borders are drawn in the page's current pen color.
     @discardableResult
-    public func setStrokeColor(_ color: Int32) -> TextBox {
+    public func setBorderColor(_ color: Int32) -> TextBox {
         self.strokeColor = color == Color.transparent ? nil : colorArray(color)
         return self
     }
 
     /// Sets the color of the borders from an array of red, green and blue values.
     @discardableResult
-    public func setStrokeColor(_ rgbColor: [Float]?) -> TextBox {
+    public func setBorderColor(_ rgbColor: [Float]?) -> TextBox {
         self.strokeColor = rgbColor
         return self
     }
 
     /// Sets the color of the borders from red, green and blue values between 0.0 and 1.0.
     @discardableResult
-    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> TextBox {
+    public func setBorderColor(_ r: Float, _ g: Float, _ b: Float) -> TextBox {
         self.strokeColor = [r, g, b]
         return self
     }
 
     /// Returns the color of the borders.
-    public func getStrokeColor() -> [Float]? {
+    public func getBorderColor() -> [Float]? {
         return self.strokeColor
     }
 

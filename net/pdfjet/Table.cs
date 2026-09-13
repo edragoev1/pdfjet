@@ -607,10 +607,10 @@ public class Table : IDrawable {
     /// </summary>
     /// <param name="color">the color of the cell border lines.</param>
     /// <returns>this Table object.</returns>
-    public Table SetCellBordersColor(int color) {
+    public Table SetCellBorderColor(int color) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
-                cell.SetStrokeColor(color);
+                cell.SetBorderColor(color);
             }
         }
         return this;
@@ -621,10 +621,10 @@ public class Table : IDrawable {
     /// </summary>
     /// <param name="width">the width of the cell border lines.</param>
     /// <returns>this Table object.</returns>
-    public Table SetCellBordersWidth(float width) {
+    public Table SetCellBorderWidth(float width) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
-                cell.SetStrokeWidth(width);
+                cell.SetBorderWidth(width);
             }
         }
         return this;
@@ -741,8 +741,8 @@ public class Table : IDrawable {
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
                     cell2.SetBackgroundColor(cell.GetBackgroundColor());
-                    cell2.SetStrokeWidth(cell.GetStrokeWidth());
-                    cell2.SetStrokeColor(cell.GetStrokeColor());
+                    cell2.SetBorderWidth(cell.GetBorderWidth());
+                    cell2.SetBorderColor(cell.GetBorderColor());
                     cell2.SetTextColor(cell.GetTextColor());
                     // The borders, underline and strikeout.
                     cell2.SetProperties(cell.GetProperties());

@@ -37,7 +37,7 @@ public class Example_14 {
         barcode = new DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE);
         barcode.SetLocation(50f, 250f);
         barcode.SetModuleLength(4f);
-        barcode.SetColor(Color.blue);
+        barcode.SetModuleColor(Color.blue);
         xy = barcode.DrawOn(page);
         caption = new TextLine(f1, "A rectangular symbol");
         caption.SetLocation(50f, xy[1] + 20f);

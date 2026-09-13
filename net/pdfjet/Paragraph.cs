@@ -75,7 +75,7 @@ public class Paragraph {
     }
 
     /// <summary>Sets the text color of all lines in this paragraph as a 0xRRGGBB value.</summary>
-    public Paragraph SetColor(int color) {
+    public Paragraph SetTextColor(int color) {
         foreach (TextLine line in lines) {
             line.SetTextColor(color);
         }

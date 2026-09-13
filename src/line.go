@@ -50,7 +50,7 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 	return line
 }
 
-// SetPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
+// SetStrokeDashPattern sets the line dash pattern that controls the pattern of dashes and gaps used to stroke paths.
 // It is specified by a dash array and a dash phase.
 // The elements of the dash array are positive numbers that specify the lengths of
 // alternating dashes and gaps.
@@ -71,7 +71,7 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 //
 // @param pattern the line dash pattern.
 // @return this Line object.
-func (line *Line) SetPattern(pattern string) *Line {
+func (line *Line) SetStrokeDashPattern(pattern string) *Line {
 	line.pattern = pattern
 	return line
 }
@@ -134,17 +134,17 @@ func (line *Line) SetStrokeColor(color int32) *Line {
 	return line
 }
 
-// SetCapStyle sets the line cap style.
+// SetLineCapStyle sets the line cap style.
 // @param style the cap style of the current line. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 // @return this Line object.
-func (line *Line) SetCapStyle(style capstyle.CapStyle) *Line {
+func (line *Line) SetLineCapStyle(style capstyle.CapStyle) *Line {
 	line.capStyle = style
 	return line
 }
 
-// GetCapStyle returns the line cap style.
+// GetLineCapStyle returns the line cap style.
 // @return the cap style.
-func (line *Line) GetCapStyle() capstyle.CapStyle {
+func (line *Line) GetLineCapStyle() capstyle.CapStyle {
 	return line.capStyle
 }
 

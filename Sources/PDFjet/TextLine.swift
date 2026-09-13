@@ -199,7 +199,7 @@ public class TextLine : Drawable {
 
     /// Sets the color of the underline and strikeout lines as a 0xRRGGBB value. Color.transparent leaves it unchanged.
     @discardableResult
-    public func setLineColor(_ color: Int32) -> TextLine {
+    public func setDecorationColor(_ color: Int32) -> TextLine {
         if color == Color.transparent {
             return self
         }
@@ -212,20 +212,20 @@ public class TextLine : Drawable {
 
     /// Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.
     @discardableResult
-    public func setLineColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
+    public func setDecorationColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
         self.lineColor = [r, g, b]
         return self
     }
 
     /// Sets the color of the underline and strikeout lines from an array of red, green and blue values.
     @discardableResult
-    public func setLineColor(_ lineColor: [Float]) -> TextLine {
+    public func setDecorationColor(_ lineColor: [Float]) -> TextLine {
         self.lineColor = lineColor
         return self
     }
 
     /// Returns the color of the underline and strikeout lines.
-    public func getLineColor() -> [Float] {
+    public func getDecorationColor() -> [Float] {
         return self.lineColor
     }
 

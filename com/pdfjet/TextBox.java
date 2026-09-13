@@ -324,33 +324,11 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the width of the border lines, as setStrokeWidth does.
-     *
-     * @param lineWidth the width of the border lines.
-     * @return this TextBox object.
-     */
-    public TextBox setLineWidth(double lineWidth) {
-        this.strokeWidth = (float) lineWidth;
-        return this;
-    }
-
-    /**
-     * Sets the width of the border lines, as setStrokeWidth does.
-     *
-     * @param lineWidth the width of the border lines.
-     * @return this TextBox object.
-     */
-    public TextBox setLineWidth(float lineWidth) {
-        this.strokeWidth = lineWidth;
-        return this;
-    }
-
-    /**
      * Returns the width of the border lines.
      *
      * @return the width of the border lines.
      */
-    public float getLineWidth() {
+    public float getBorderWidth() {
         return strokeWidth;
     }
 
@@ -496,7 +474,7 @@ public class TextBox implements Drawable {
      * @param strokeWidth the stroke width.
      * @return this TextBox object.
      */
-    public TextBox setStrokeWidth(float strokeWidth) {
+    public TextBox setBorderWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
@@ -507,7 +485,7 @@ public class TextBox implements Drawable {
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBox object.
      */
-    public TextBox setStrokeColor(int color) {
+    public TextBox setBorderColor(int color) {
         if (color == Color.transparent) {
             this.strokeColor = null;
             return this;
@@ -527,7 +505,7 @@ public class TextBox implements Drawable {
      * @param b the blue component, from 0.0 to 1.0.
      * @return this TextBox object.
      */
-    public TextBox setStrokeColor(float r, float g, float b) {
+    public TextBox setBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
@@ -538,7 +516,7 @@ public class TextBox implements Drawable {
      * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
      * @return this TextBox object.
      */
-    public TextBox setStrokeColor(float[] rgbColor) {
+    public TextBox setBorderColor(float[] rgbColor) {
         this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
@@ -548,7 +526,7 @@ public class TextBox implements Drawable {
      *
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
-    public float[] getStrokeColor() {
+    public float[] getBorderColor() {
         return Util.copyOf(strokeColor);
     }
 

@@ -72,7 +72,7 @@ public class Line : Drawable {
     /// - Returns: this Line object.
     ///
     @discardableResult
-    public func setPattern(_ pattern: String) -> Line {
+    public func setStrokeDashPattern(_ pattern: String) -> Line {
         self.pattern = pattern
         return self
     }
@@ -168,7 +168,7 @@ public class Line : Drawable {
     /// - Returns: this Line object.
     ///
     @discardableResult
-    public func setCapStyle(_ style: CapStyle) -> Line {
+    public func setLineCapStyle(_ style: CapStyle) -> Line {
         self.capStyle = style
         return self
     }
@@ -178,7 +178,7 @@ public class Line : Drawable {
     ///
     /// - Returns: the cap style.
     ///
-    public func getCapStyle() -> CapStyle {
+    public func getLineCapStyle() -> CapStyle {
         return self.capStyle
     }
 

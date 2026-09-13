@@ -44,7 +44,7 @@ public class Form : Drawable {
 
     /// Sets the width of the lines.
     @discardableResult
-    public func setLineWidth(_ lineWidth: Float) -> Form {
+    public func setStrokeWidth(_ lineWidth: Float) -> Form {
         self.lineWidth = lineWidth
         return self
     }

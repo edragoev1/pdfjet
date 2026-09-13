@@ -619,10 +619,10 @@ public class Table : Drawable {
     /// - Parameter color: the color of the cell border lines.
     ///
     @discardableResult
-    public func setCellBordersColor(_ color: Int32) -> Table {
+    public func setCellBorderColor(_ color: Int32) -> Table {
         for row in tableData {
             for cell in row {
-                cell.setStrokeColor(color)
+                cell.setBorderColor(color)
             }
         }
         return self
@@ -634,10 +634,10 @@ public class Table : Drawable {
     /// - Parameter width: the width of the border lines.
     ///
     @discardableResult
-    public func setCellBordersWidth(_ width: Float) -> Table {
+    public func setCellBorderWidth(_ width: Float) -> Table {
         for row in tableData {
             for cell in row {
-                cell.setStrokeWidth(width)
+                cell.setBorderWidth(width)
             }
         }
         return self
@@ -752,8 +752,8 @@ public class Table : Drawable {
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
                     cell2.setBackgroundColor(cell.getBackgroundColor())
-                    cell2.setStrokeWidth(cell.getStrokeWidth())
-                    cell2.setStrokeColor(cell.getStrokeColor())
+                    cell2.setBorderWidth(cell.getBorderWidth())
+                    cell2.setBorderColor(cell.getBorderColor())
                     cell2.setTextColor(cell.getTextColor())
                     // The column span.
                     cell2.setProperties(cell.getProperties())

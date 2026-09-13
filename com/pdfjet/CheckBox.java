@@ -59,7 +59,7 @@ public class CheckBox implements Drawable {
      *  @param boxColor the check box color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
-    public CheckBox setBoxColor(int boxColor) {
+    public CheckBox setBorderColor(int boxColor) {
         this.boxColor = boxColor;
         return this;
     }
@@ -70,7 +70,7 @@ public class CheckBox implements Drawable {
      *  @param checkColor the check mark color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
-    public CheckBox setCheckmark(int checkColor) {
+    public CheckBox setCheckmarkColor(int checkColor) {
         this.checkColor = checkColor;
         return this;
     }

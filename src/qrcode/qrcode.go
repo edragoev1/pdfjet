@@ -68,8 +68,8 @@ func (qrcode *QRCode) SetModuleLength(moduleLength float32) *QRCode {
 	return qrcode
 }
 
-// SetColor sets the color of the barcode.
-func (qrcode *QRCode) SetColor(color int32) *QRCode {
+// SetModuleColor sets the color of the barcode.
+func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 	qrcode.color = color
 	return qrcode
 }

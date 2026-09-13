@@ -68,7 +68,7 @@ public class Path : IDrawable {
     /// </summary>
     /// <param name="pattern">the line dash pattern.</param>
     /// <returns>this Path object.</returns>
-    public Path SetPattern(String pattern) {
+    public Path SetStrokeDashPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }

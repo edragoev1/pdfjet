@@ -55,7 +55,7 @@ public class CheckBox : IDrawable {
     /// </summary>
     /// <param name="boxColor">the check box color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
-    public CheckBox SetBoxColor(int boxColor) {
+    public CheckBox SetBorderColor(int boxColor) {
         this.boxColor = boxColor;
         return this;
     }
@@ -65,7 +65,7 @@ public class CheckBox : IDrawable {
     /// </summary>
     /// <param name="checkColor">the check mark color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
-    public CheckBox SetCheckmark(int checkColor) {
+    public CheckBox SetCheckmarkColor(int checkColor) {
         this.checkColor = checkColor;
         return this;
     }

@@ -150,8 +150,8 @@ func (textBlock *TextBlock) GetHeight() float32 {
 	return textBlock.height
 }
 
-// SetBorderCornerRadius sets the border corner radius.
-func (textBlock *TextBlock) SetBorderCornerRadius(borderCornerRadius float32) *TextBlock {
+// SetCornerRadius sets the border corner radius.
+func (textBlock *TextBlock) SetCornerRadius(borderCornerRadius float32) *TextBlock {
 	textBlock.borderCornerRadius = borderCornerRadius
 	return textBlock
 }

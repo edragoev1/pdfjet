@@ -65,7 +65,7 @@ func Example01() {
 	textBlock.SetWidth(473.0)
 	textBlock.SetTextPadding(10.0)
 	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetBorderCornerRadius(10.0)
+	textBlock.SetCornerRadius(10.0)
 	textBlock.SetUnderline(true)
 	textBlock.DrawOn(page)
 

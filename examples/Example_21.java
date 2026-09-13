@@ -27,7 +27,7 @@ public class Example_21 {
                 ErrorCorrectLevel.L);   // Low
         qr.setModuleLength(3f);
         qr.setLocation(100f, 100f);
-        // qr.setColor(Color.blue);
+        // qr.setModuleColor(Color.blue);
         qr.drawOn(page);
 
         qr = new QRCode(

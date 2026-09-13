@@ -252,7 +252,7 @@ public class TextLine implements Drawable {
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextLine object.
      */
-    public TextLine setLineColor(int color) {
+    public TextLine setDecorationColor(int color) {
         if (color == Color.transparent) {
             return this;
         }
@@ -271,7 +271,7 @@ public class TextLine implements Drawable {
      * @param b the blue component, from 0.0 to 1.0.
      * @return this TextLine object.
      */
-    public TextLine setLineColor(float r, float g, float b) {
+    public TextLine setDecorationColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }
@@ -282,7 +282,7 @@ public class TextLine implements Drawable {
      * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
      * @return this TextLine object.
      */
-    public TextLine setLineColor(float[] rgbColor) {
+    public TextLine setDecorationColor(float[] rgbColor) {
         if (rgbColor != null) {
             this.lineColor = rgbColor.clone();
         }
@@ -294,7 +294,7 @@ public class TextLine implements Drawable {
      *
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
-    public float[] getLineColor() {
+    public float[] getDecorationColor() {
         return lineColor.clone();
     }
 

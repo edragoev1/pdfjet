@@ -72,7 +72,7 @@ public class Path : Drawable {
     /// - Returns: this Path object.
     ///
     @discardableResult
-    public func setPattern(_ pattern: String) -> Path {
+    public func setStrokeDashPattern(_ pattern: String) -> Path {
         self.pattern = pattern
         return self
     }

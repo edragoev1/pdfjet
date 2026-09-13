@@ -67,7 +67,7 @@ public class Example_03 {
                 p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
                 p.GetTextLines()[0].SetTextColor(Color.navy);
             } else {
-                p.SetColor(Color.gray);
+                p.SetTextColor(Color.gray);
                 p.SetColorMap(colorMap);
             }
         }

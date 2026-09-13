@@ -1129,9 +1129,9 @@ func cmykToRGB(c, m, y, k float32) [3]float32 {
 		1.0 - min(1.0, y+k)}
 }
 
-// SetDefaultLineWidth sets the line width to the default.
+// SetDefaultPenWidth sets the line width to the default.
 // The default is the finest line width.
-func (page *Page) SetDefaultLineWidth() *Page {
+func (page *Page) SetDefaultPenWidth() *Page {
 	page.penWidth = 0.0
 	page.appendFloat32(0.0)
 	page.appendString(" w\n")

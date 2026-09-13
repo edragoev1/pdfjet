@@ -103,7 +103,7 @@ func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font
 
 	table.SetData(tableData, 0)
 	table.SetColumnWidths()
-	table.SetCellBordersWidth(0.2)
+	table.SetCellBorderWidth(0.2)
 	table.SetLocation(70.0, 360.0)
 	table.SetColumnWidth(0, 9.0)
 	table.DrawOn(page)

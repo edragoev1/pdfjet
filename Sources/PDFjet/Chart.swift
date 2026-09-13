@@ -289,14 +289,14 @@ public class Chart : Drawable {
 
     /// Sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
-    public func setHGridLinePattern(_ pattern: String) -> Chart {
+    public func setHGridLineDashPattern(_ pattern: String) -> Chart {
         self.hGridLinePattern = pattern
         return self
     }
 
     /// Sets the vertical grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
-    public func setVGridLinePattern(_ pattern: String) -> Chart {
+    public func setVGridLineDashPattern(_ pattern: String) -> Chart {
         self.vGridLinePattern = pattern
         return self
     }
@@ -475,7 +475,7 @@ public class Chart : Drawable {
                     x5 + ((x6 - x5) - f2!.stringWidth(xAxisTitle)) / 2,
                     y4 - f2!.bodyHeight / 2)
 
-            page!.setDefaultLineWidth()
+            page!.setDefaultPenWidth()
             page!.setDefaultStrokeDashPattern()
             page!.setPenColor(Color.black)
         }

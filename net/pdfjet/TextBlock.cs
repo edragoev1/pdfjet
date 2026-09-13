@@ -155,7 +155,7 @@ public class TextBlock : IDrawable {
     }
 
     /// <summary>Sets the radius of the border corners.</summary>
-    public TextBlock SetBorderCornerRadius(float borderCornerRadius) {
+    public TextBlock SetCornerRadius(float borderCornerRadius) {
         this.borderCornerRadius = borderCornerRadius;
         return this;
     }

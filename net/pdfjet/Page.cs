@@ -1279,7 +1279,7 @@ public class Page {
     /// The default is the finest line width.
     /// </summary>
     /// <returns>this Page object.</returns>
-    public Page SetDefaultLineWidth() {
+    public Page SetDefaultPenWidth() {
         this.penWidth = 0f;
         Append("0 w\n");
         return this;

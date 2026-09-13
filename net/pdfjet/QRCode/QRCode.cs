@@ -97,7 +97,7 @@ public class QRCode : IDrawable {
     }
 
     /// <summary>Sets the color of the QR code as a 0xRRGGBB value.</summary>
-    public QRCode SetColor(int color) {
+    public QRCode SetModuleColor(int color) {
         this.color = color;
         return this;
     }

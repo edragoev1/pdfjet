@@ -62,7 +62,7 @@ public class Example_01 {
         textBlock.SetWidth(473f);
         textBlock.SetTextPadding(10f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetBorderCornerRadius(10f);
+        textBlock.SetCornerRadius(10f);
         textBlock.SetUnderline(true);
         textBlock.DrawOn(page);  // Draw the Bulgarian text
 

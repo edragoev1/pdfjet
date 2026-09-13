@@ -184,14 +184,8 @@ func (textBox *TextBox) GetMargin() float32 {
 	return textBox.margin
 }
 
-// SetLineWidth sets the width of the border lines, as SetStrokeWidth does.
-func (textBox *TextBox) SetLineWidth(lineWidth float32) *TextBox {
-	textBox.strokeWidth = lineWidth
-	return textBox
-}
-
-// GetLineWidth returns the width of the border lines.
-func (textBox *TextBox) GetLineWidth() float32 {
+// GetBorderWidth returns the width of the border lines.
+func (textBox *TextBox) GetBorderWidth() float32 {
 	return textBox.strokeWidth
 }
 
@@ -261,31 +255,31 @@ func (textBox *TextBox) GetTextColor() [3]float32 {
 	return textBox.textColor
 }
 
-// SetStrokeWidth sets the width of the border lines.
-func (textBox *TextBox) SetStrokeWidth(strokeWidth float32) *TextBox {
+// SetBorderWidth sets the width of the border lines.
+func (textBox *TextBox) SetBorderWidth(strokeWidth float32) *TextBox {
 	textBox.strokeWidth = strokeWidth
 	return textBox
 }
 
-// SetStrokeColor sets the color of the border lines as a 0xRRGGBB value.
+// SetBorderColor sets the color of the border lines as a 0xRRGGBB value.
 // color.Transparent clears it, so the borders are drawn in the page's current pen color.
-func (textBox *TextBox) SetStrokeColor(c int32) *TextBox {
+func (textBox *TextBox) SetBorderColor(c int32) *TextBox {
 	if c == color.Transparent {
 		textBox.strokeColor = nil
 		return textBox
 	}
-	return textBox.SetStrokeColorRGB(colorToRGB(c))
+	return textBox.SetBorderColorRGB(colorToRGB(c))
 }
 
-// SetStrokeColorRGB sets the color of the border lines from the red, green and
+// SetBorderColorRGB sets the color of the border lines from the red, green and
 // blue components, from 0.0 to 1.0.
-func (textBox *TextBox) SetStrokeColorRGB(rgb [3]float32) *TextBox {
+func (textBox *TextBox) SetBorderColorRGB(rgb [3]float32) *TextBox {
 	textBox.strokeColor = &rgb
 	return textBox
 }
 
-// GetStrokeColor returns a copy of the color of the border lines, or nil if none was set.
-func (textBox *TextBox) GetStrokeColor() *[3]float32 {
+// GetBorderColor returns a copy of the color of the border lines, or nil if none was set.
+func (textBox *TextBox) GetBorderColor() *[3]float32 {
 	if textBox.strokeColor == nil {
 		return nil
 	}

@@ -94,7 +94,7 @@ final public class Example_09 {
         }
         table.setData(tableData);
         table.setColumnWidths();
-        table.setCellBordersWidth(0.2f);
+        table.setCellBorderWidth(0.2f);
         table.setLocation(70f, 360f);
         table.setColumnWidth(0, 9f);
         table.drawOn(page);

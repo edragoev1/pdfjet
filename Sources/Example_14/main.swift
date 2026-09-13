@@ -33,7 +33,7 @@ public class Example_14 {
         barcode = DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE)
         barcode.setLocation(50.0, 250.0)
         barcode.setModuleLength(4.0)
-        barcode.setColor(Color.blue)
+        barcode.setModuleColor(Color.blue)
         xy = barcode.drawOn(page)
         caption = TextLine(f1, "A rectangular symbol")
         caption.setLocation(50.0, xy[1] + 20.0)

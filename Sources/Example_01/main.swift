@@ -57,7 +57,7 @@ public class Example_01 {
         textBlock.setWidth(473)                 // Set width for Bulgarian text block
         textBlock.setTextPadding(10)            // Set padding around the Bulgarian text
         textBlock.setBorderColor(Color.blue)    // Blue border for the Bulgarian text
-        textBlock.setBorderCornerRadius(10)     // Set rounded corners for the border
+        textBlock.setCornerRadius(10)     // Set rounded corners for the border
         textBlock.setUnderline(true)            // Underline the Bulgarian text
         textBlock.drawOn(page)                  // Draw the Bulgarian text
 

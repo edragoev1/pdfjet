@@ -23,14 +23,14 @@ func Example26() {
 	var y float32 = 50.0
 
 	pdfjet.NewCheckBox(f1, "Hello").
-		SetCheckmark(color.Blue).
+		SetCheckmarkColor(color.Blue).
 		Check(mark.Check).
 		SetLocation(x, y).
 		DrawOn(page)
 
 	y += 30.0
 	pdfjet.NewCheckBox(f1, "World!").
-		SetCheckmark(color.Blue).
+		SetCheckmarkColor(color.Blue).
 		SetURIAction("http://pdfjet.com").
 		Check(mark.Check).
 		SetLocation(x, y).
@@ -59,13 +59,13 @@ func Example26() {
 		DrawOn(page)
 
 	xy = pdfjet.NewCheckBox(f1, "Hello").
-		SetCheckmark(color.Blue).
+		SetCheckmarkColor(color.Blue).
 		Check(mark.X).
 		SetLocation(xy[0], 50.0).
 		DrawOn(page)
 
 	xy = pdfjet.NewCheckBox(f1, "Yahoo").
-		SetCheckmark(color.Blue).
+		SetCheckmarkColor(color.Blue).
 		Check(mark.Check).
 		SetLocation(xy[0], 50.0).
 		DrawOn(page)

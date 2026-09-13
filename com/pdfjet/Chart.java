@@ -366,7 +366,7 @@ public class Chart implements Drawable {
      * @param pattern the dash pattern.
      * @return this Chart object.
      */
-    public Chart setHGridLinePattern(String pattern) {
+    public Chart setHGridLineDashPattern(String pattern) {
         this.hGridLinePattern = pattern;
         return this;
     }
@@ -377,7 +377,7 @@ public class Chart implements Drawable {
      * @param pattern the dash pattern.
      * @return this Chart object.
      */
-    public Chart setVGridLinePattern(String pattern) {
+    public Chart setVGridLineDashPattern(String pattern) {
         this.vGridLinePattern = pattern;
         return this;
     }
@@ -531,7 +531,7 @@ public class Chart implements Drawable {
                 y4 - f2.bodyHeight / 2);
 
         // Restore default pen/brush state
-        page.setDefaultLineWidth();
+        page.setDefaultPenWidth();
         page.setDefaultStrokeDashPattern();
         page.setPenColor(Color.black);
 

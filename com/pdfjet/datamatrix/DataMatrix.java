@@ -198,7 +198,7 @@ public final class DataMatrix implements Drawable {
      * @param color the color as a 0xRRGGBB value.
      * @return this DataMatrix object.
      */
-    public DataMatrix setColor(int color) {
+    public DataMatrix setModuleColor(int color) {
         this.color = color;
         return this;
     }

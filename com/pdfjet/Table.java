@@ -667,10 +667,10 @@ public class Table implements Drawable {
      * @param color the color of the cell border lines.
      * @return this Table object.
      */
-    public Table setCellBordersColor(int color) {
+    public Table setCellBorderColor(int color) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
-                cell.setStrokeColor(color);
+                cell.setBorderColor(color);
             }
         }
         return this;
@@ -682,10 +682,10 @@ public class Table implements Drawable {
      * @param width the width of the border lines.
      * @return this Table object.
      */
-    public Table setCellBordersWidth(float width) {
+    public Table setCellBorderWidth(float width) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
-                cell.setStrokeWidth(width);
+                cell.setBorderWidth(width);
             }
         }
         return this;
@@ -803,8 +803,8 @@ public class Table implements Drawable {
                     cell2.setLeftPadding(cell.leftPadding);
                     cell2.setRightPadding(cell.rightPadding);
                     cell2.setBackgroundColor(cell.getBackgroundColor());
-                    cell2.setStrokeWidth(cell.getStrokeWidth());
-                    cell2.setStrokeColor(cell.getStrokeColor());
+                    cell2.setBorderWidth(cell.getBorderWidth());
+                    cell2.setBorderColor(cell.getBorderColor());
                     cell2.setTextColor(cell.getTextColor());
                     // The column span, borders, underline and strikeout.
                     cell2.setProperties(cell.getProperties());

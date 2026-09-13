@@ -392,40 +392,40 @@ public class Cell {
     /// <summary>Sets the width of the cell borders.</summary>
     /// <param name="strokeWidth">the width of the cell borders.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetStrokeWidth(float strokeWidth) {
+    public Cell SetBorderWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
     /// <summary>Returns the width of the cell borders.</summary>
     /// <returns>the width of the cell borders.</returns>
-    public float GetStrokeWidth() {
+    public float GetBorderWidth() {
         return this.strokeWidth;
     }
 
     /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
-    public Cell SetStrokeColor(int color) {
+    public Cell SetBorderColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetStrokeColor(r, g, b);
+        SetBorderColor(r, g, b);
         return this;
     }
 
     /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Cell SetStrokeColor(float r, float g, float b) {
+    public Cell SetBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
     /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
-    public Cell SetStrokeColor(float[] rgbColor) {
+    public Cell SetBorderColor(float[] rgbColor) {
         this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the stroke color.</summary>
-    public float[] GetStrokeColor() {
+    public float[] GetBorderColor() {
         return Util.CopyOf(this.strokeColor);
     }
 

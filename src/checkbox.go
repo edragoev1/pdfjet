@@ -51,18 +51,18 @@ func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
 	return checkBox
 }
 
-// SetBoxColor sets the color of the checkbox.
+// SetBorderColor sets the color of the checkbox.
 // @param boxColor the checkbox color specified as an 0xRRGGBB integer.
 // @return the CheckBox.
-func (checkBox *CheckBox) SetBoxColor(boxColor int32) *CheckBox {
+func (checkBox *CheckBox) SetBorderColor(boxColor int32) *CheckBox {
 	checkBox.boxColor = boxColor
 	return checkBox
 }
 
-// SetCheckmark sets the color of the check mark.
+// SetCheckmarkColor sets the color of the check mark.
 // @param checkColor the check mark color specified as an 0xRRGGBB integer.
 // @return the CheckBox.
-func (checkBox *CheckBox) SetCheckmark(checkColor int32) *CheckBox {
+func (checkBox *CheckBox) SetCheckmarkColor(checkColor int32) *CheckBox {
 	checkBox.checkColor = checkColor
 	return checkBox
 }

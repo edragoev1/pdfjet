@@ -63,7 +63,7 @@ public class Example_41 {
                 p.getTextLines()[0].setFont(f2).setFontSize(24.0)
                 p.getTextLines()[0].setTextColor(Color.navy)
             } else {
-                p.setColor(Color.gray)
+                p.setTextColor(Color.gray)
                 p.setColorMap(colorMap)
             }
         }

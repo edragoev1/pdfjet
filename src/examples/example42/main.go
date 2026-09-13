@@ -43,7 +43,7 @@ func Example42() {
 		SetValueFont(f2).
 		SetValueFontSize(10.0).
 		SetFormWidth(w).
-		SetLineWidth(0.2).
+		SetStrokeWidth(0.2).
 		SetLocation(50.0, 50.0).
 		DrawOn(page)
 

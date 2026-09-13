@@ -237,7 +237,7 @@ public class TextBlock implements Drawable {
      * @param borderCornerRadius the corner radius.
      * @return this TextBlock object.
      */
-    public TextBlock setBorderCornerRadius(float borderCornerRadius) {
+    public TextBlock setCornerRadius(float borderCornerRadius) {
         this.borderCornerRadius = borderCornerRadius;
         return this;
     }
