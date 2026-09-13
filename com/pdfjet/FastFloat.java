@@ -1,5 +1,7 @@
 package com.pdfjet;
 
+import java.math.BigDecimal;
+
 class FastFloat {
     static byte[] toByteArray(float value) {
         // Handle special cases
@@ -7,40 +9,36 @@ class FastFloat {
         if (value == Float.POSITIVE_INFINITY) return new byte[]{'I','n','f','i','n','i','t','y'};
         if (value == Float.NEGATIVE_INFINITY) return new byte[]{'-','I','n','f','i','n','i','t','y'};
 
-        // Round to 2 decimal places
-        float rounded = ((float)Math.round(value * 100)) / 100.0f;
-
-        boolean negative = rounded < 0;
-        if (negative) rounded = -rounded;
-
-        int integerPart = (int)rounded;
-        float decimalPart = rounded - integerPart;
-        int decimalDigits = (int)(decimalPart * 100 + 0.5f);
-
-        // Handle carry-over from rounding
-        if (decimalDigits >= 100) {
-            decimalDigits -= 100;
-            integerPart++;
+        double magnitude = Math.abs((double) value);
+        if (magnitude >= 8388608.0) {
+            // A float of 2^23 or more is a whole number: write all its digits
+            String digits = new BigDecimal(magnitude).toBigInteger().toString();
+            return ((value < 0f ? "-" : "") + digits).getBytes();
         }
 
-        // Determine if we need decimal places
-        boolean hasDecimal = decimalDigits > 0;
-        int trailingZeros = 0;
-
-        if (hasDecimal) {
-            // Count trailing zeros
-            if (decimalDigits % 10 == 0) {
-                trailingZeros = 1;
-                if (decimalDigits / 10 % 10 == 0) {
-                    trailingZeros = 2;
-                }
-            }
-            hasDecimal = trailingZeros < 2;
+        // Round to 2 decimal places, halves away from zero. A float times 100
+        // is exact in a double, so the exact value of the float is rounded.
+        double scaled = magnitude * 100.0;
+        int hundredths = (int) scaled;
+        if (scaled - hundredths >= 0.5) {
+            hundredths++;
         }
 
-        // Calculate lengths
-        int intDigits = integerPart == 0 ? 1 : (int)Math.log10(integerPart) + 1;
-        int totalLength = (negative ? 1 : 0) + intDigits + (hasDecimal ? 1 + (2 - trailingZeros) : 0);
+        // A value that rounds to zero, like -0.001 and -0.0, is written 0
+        boolean negative = value < 0f && hundredths > 0;
+        int integerPart = hundredths / 100;
+        int decimalDigits = hundredths % 100;
+
+        // Count the digits, leaving out the trailing zeros of the decimals
+        int intDigits = 1;
+        for (int i = integerPart; i >= 10; i /= 10) {
+            intDigits++;
+        }
+        int fractionDigits = 0;
+        if (decimalDigits > 0) {
+            fractionDigits = (decimalDigits % 10 == 0) ? 1 : 2;
+        }
+        int totalLength = (negative ? 1 : 0) + intDigits + (fractionDigits > 0 ? 1 + fractionDigits : 0);
 
         byte[] result = new byte[totalLength];
         int pos = 0;
@@ -52,12 +50,10 @@ class FastFloat {
         pos = writeInt(integerPart, result, pos, intDigits);
 
         // Add decimal part if needed
-        if (hasDecimal) {
+        if (fractionDigits > 0) {
             result[pos++] = '.';
-            if (trailingZeros < 2) {
-                result[pos++] = (byte)('0' + decimalDigits / 10);
-            }
-            if (trailingZeros < 1) {
+            result[pos++] = (byte)('0' + decimalDigits / 10);
+            if (fractionDigits > 1) {
                 result[pos++] = (byte)('0' + decimalDigits % 10);
             }
         }

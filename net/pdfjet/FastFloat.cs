@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.Text;
 
 namespace PDFjet.NET {
 internal static class FastFloat {
@@ -14,45 +16,36 @@ internal static class FastFloat {
             return new byte[] { (byte)'-', (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
         }
 
-        // Round to 2 decimal places.
-        // Java's Math.round is floor(x + 0.5); System.Math.Round rounds a
-        // midpoint to the nearest even number, so it would write 172.62 where
-        // the other ports write 172.63.
-        float rounded = ((float)System.Math.Floor(value * 100 + 0.5f)) / 100f;
-
-        bool negative = rounded < 0;
-        if (negative) {
-            rounded = -rounded;
+        double magnitude = Math.Abs((double) value);
+        if (magnitude >= 8388608.0) {
+            // A float of 2^23 or more is a whole number: write all its digits
+            String digits = magnitude.ToString("F0", CultureInfo.InvariantCulture);
+            return Encoding.ASCII.GetBytes((value < 0f ? "-" : "") + digits);
         }
 
-        int integerPart = (int)rounded;
-        float decimalPart = rounded - integerPart;
-        int decimalDigits = (int)(decimalPart * 100 + 0.5f);
-
-        // Handle carry-over from rounding
-        if (decimalDigits >= 100) {
-            decimalDigits -= 100;
-            integerPart++;
+        // Round to 2 decimal places, halves away from zero. A float times 100
+        // is exact in a double, so the exact value of the float is rounded.
+        double scaled = magnitude * 100.0;
+        int hundredths = (int) scaled;
+        if (scaled - hundredths >= 0.5) {
+            hundredths++;
         }
 
-        // Determine if we need decimal places
-        bool hasDecimal = decimalDigits > 0;
-        int trailingZeros = 0;
+        // A value that rounds to zero, like -0.001 and -0.0, is written 0
+        bool negative = value < 0f && hundredths > 0;
+        int integerPart = hundredths / 100;
+        int decimalDigits = hundredths % 100;
 
-        if (hasDecimal) {
-            // Count trailing zeros
-            if (decimalDigits % 10 == 0) {
-                trailingZeros = 1;
-                if (decimalDigits / 10 % 10 == 0) {
-                    trailingZeros = 2;
-                }
-            }
-            hasDecimal = trailingZeros < 2;
+        // Count the digits, leaving out the trailing zeros of the decimals
+        int intDigits = 1;
+        for (int i = integerPart; i >= 10; i /= 10) {
+            intDigits++;
         }
-
-        // Calculate lengths
-        int intDigits = integerPart == 0 ? 1 : (int)System.Math.Log10(integerPart) + 1;
-        int totalLength = (negative ? 1 : 0) + intDigits + (hasDecimal ? 1 + (2 - trailingZeros) : 0);
+        int fractionDigits = 0;
+        if (decimalDigits > 0) {
+            fractionDigits = (decimalDigits % 10 == 0) ? 1 : 2;
+        }
+        int totalLength = (negative ? 1 : 0) + intDigits + (fractionDigits > 0 ? 1 + fractionDigits : 0);
 
         byte[] result = new byte[totalLength];
         int pos = 0;
@@ -66,12 +59,10 @@ internal static class FastFloat {
         pos = WriteInt(integerPart, result, pos, intDigits);
 
         // Add decimal part if needed
-        if (hasDecimal) {
+        if (fractionDigits > 0) {
             result[pos++] = (byte)'.';
-            if (trailingZeros < 2) {
-                result[pos++] = (byte)('0' + decimalDigits / 10);
-            }
-            if (trailingZeros < 1) {
+            result[pos++] = (byte)('0' + decimalDigits / 10);
+            if (fractionDigits > 1) {
                 result[pos++] = (byte)('0' + decimalDigits % 10);
             }
         }

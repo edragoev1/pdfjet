@@ -3,6 +3,7 @@ package fastfloat
 
 import (
 	"math"
+	"strconv"
 )
 
 // ToByteArray converts a float32 to its byte array representation
@@ -18,52 +19,47 @@ func ToByteArray(value float32) []byte {
 		return []byte("-Infinity")
 	}
 
-	// Round to 2 decimal places
-	rounded := math.Round(float64(value*100)) / 100
-
-	negative := rounded < 0
-	if negative {
-		rounded = -rounded
-	}
-
-	integerPart := int(rounded)
-	decimalPart := rounded - float64(integerPart)
-	decimalDigits := int(math.Round(decimalPart * 100))
-
-	// Handle carry-over from rounding
-	if decimalDigits >= 100 {
-		decimalDigits -= 100
-		integerPart++
-	}
-
-	// Determine if we need decimal places
-	hasDecimal := decimalDigits > 0
-	trailingZeros := 0
-
-	if hasDecimal {
-		// Count trailing zeros
-		if decimalDigits%10 == 0 {
-			trailingZeros = 1
-			if decimalDigits/10%10 == 0 {
-				trailingZeros = 2
-			}
+	magnitude := math.Abs(float64(value))
+	if magnitude >= 8388608 {
+		// A float of 2^23 or more is a whole number: write all its digits
+		digits := strconv.FormatFloat(magnitude, 'f', 0, 64)
+		if value < 0 {
+			return []byte("-" + digits)
 		}
-		hasDecimal = trailingZeros < 2
+		return []byte(digits)
 	}
 
-	// Calculate lengths
+	// Round to 2 decimal places, halves away from zero. A float times 100
+	// is exact in a float64, so the exact value of the float is rounded.
+	scaled := magnitude * 100
+	hundredths := int(scaled)
+	if scaled-float64(hundredths) >= 0.5 {
+		hundredths++
+	}
+
+	// A value that rounds to zero, like -0.001 and -0.0, is written 0
+	negative := value < 0 && hundredths > 0
+	integerPart := hundredths / 100
+	decimalDigits := hundredths % 100
+
+	// Count the digits, leaving out the trailing zeros of the decimals
 	intDigits := 1
-	if integerPart > 0 {
-		intDigits = int(math.Log10(float64(integerPart))) + 1
+	for i := integerPart; i >= 10; i /= 10 {
+		intDigits++
 	}
-	totalLength := 0
+	fractionDigits := 0
+	if decimalDigits > 0 {
+		fractionDigits = 2
+		if decimalDigits%10 == 0 {
+			fractionDigits = 1
+		}
+	}
+	totalLength := intDigits
 	if negative {
-		totalLength = 1 + intDigits
-	} else {
-		totalLength = intDigits
+		totalLength++
 	}
-	if hasDecimal {
-		totalLength += 1 + (2 - trailingZeros)
+	if fractionDigits > 0 {
+		totalLength += 1 + fractionDigits
 	}
 
 	result := make([]byte, totalLength)
@@ -79,16 +75,13 @@ func ToByteArray(value float32) []byte {
 	pos = writeInt(integerPart, result, pos, intDigits)
 
 	// Add decimal part if needed
-	if hasDecimal {
+	if fractionDigits > 0 {
 		result[pos] = '.'
 		pos++
-		if trailingZeros < 2 {
-			result[pos] = byte('0' + decimalDigits/10)
-			pos++
-		}
-		if trailingZeros < 1 {
+		result[pos] = byte('0' + decimalDigits/10)
+		pos++
+		if fractionDigits > 1 {
 			result[pos] = byte('0' + decimalDigits%10)
-			pos++
 		}
 	}
 
