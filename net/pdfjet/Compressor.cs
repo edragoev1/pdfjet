@@ -15,7 +15,6 @@ class Compressor {
     }
 
     internal static byte[] Deflate(byte[] data, int off, int len) {
-        if (data == null || data.Length == 0) return Array.Empty<byte>();
         using var ms = new MemoryStream();
         using (var zlib = new ZLibStream(ms, CompressionMode.Compress, leaveOpen: true)) {
             zlib.Write(data, off, len);
