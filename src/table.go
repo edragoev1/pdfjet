@@ -650,11 +650,11 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				// Java copies a null background and a null pen color across as
 				// null, which leaves the new cell without either.
 				if cell.hasBackgroundColor {
-					cell2.SetBackgroundColorRGB(cell.GetBackgroundColor())
+					cell2.SetBackgroundColorRGB(cell.backgroundColor)
 				}
 				cell2.SetStrokeWidth(cell.GetStrokeWidth())
 				if cell.hasStrokeColor {
-					cell2.SetStrokeColorRGB(cell.GetStrokeColor())
+					cell2.SetStrokeColorRGB(cell.strokeColor)
 				}
 				cell2.SetTextColorRGB(cell.GetTextColor())
 				// Java copies these across with Cell.setProperties()

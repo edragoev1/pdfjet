@@ -345,8 +345,12 @@ public class Cell {
         return cellHeight;
     }
 
-    /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
     public Cell SetBackgroundColor(int color) {
+        if (color == Color.transparent) {
+            backgroundColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

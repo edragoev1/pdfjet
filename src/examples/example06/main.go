@@ -63,7 +63,7 @@ func Example06() {
 	polygonAnnotation := pdfjet.NewPolygonAnnotation()
 	polygonAnnotation.SetLocation(0.0, 0.0)
 	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
-	polygonAnnotation.SetFillColorInt(color.Red)
+	polygonAnnotation.SetFillColor(color.Red)
 	polygonAnnotation.SetTransparency(0.5)
 	polygonAnnotation.SetTitle("Polygon")
 	polygonAnnotation.SetContents("Polygon Annotation")
@@ -72,7 +72,7 @@ func Example06() {
 	squareAnnotation := pdfjet.NewSquareAnnotation()
 	squareAnnotation.SetLocation(25.0, 0.0)
 	squareAnnotation.SetSize(50.0, 50.0)
-	squareAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
+	squareAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
 	squareAnnotation.SetTransparency(0.5)
 	squareAnnotation.SetTitle("Square")
 	squareAnnotation.SetContents("Square Annotation")
@@ -81,7 +81,7 @@ func Example06() {
 	circleAnnotation := pdfjet.NewCircleAnnotation()
 	circleAnnotation.SetLocation(50.0, 0.0)
 	circleAnnotation.SetSize(50.0, 50.0)
-	circleAnnotation.SetFillColor([3]float32{0.0, 0.0, 1.0}) // Blue color
+	circleAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
 	circleAnnotation.SetTransparency(0.5)
 	circleAnnotation.SetTitle("Circle")
 	circleAnnotation.SetContents("Circle Annotation")

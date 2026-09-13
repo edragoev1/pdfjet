@@ -3,7 +3,6 @@ package pdfjet
 import (
 	"bytes"
 	"math"
-	"slices"
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
@@ -22,8 +21,8 @@ type Stamp struct {
 	y              float32
 	width          float32
 	height         float32
-	fillColor      []float32
-	strokeColor    []float32
+	fillColor      [3]float32
+	strokeColor    [3]float32
 	strokeWidth    float32
 	rotateDegrees  float32
 	buf            *bytes.Buffer
@@ -98,46 +97,40 @@ func (s *Stamp) appendString(str string) {
 
 // SetFillColorRGB sets the fill color for the content drawn after it,
 // from the red, green and blue components, from 0.0 to 1.0.
-func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
+func (s *Stamp) SetFillColorRGB(rgbColor [3]float32) *Stamp {
 	s.appendFloat(rgbColor[0])
 	s.appendString(" ")
 	s.appendFloat(rgbColor[1])
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" rg\n")
-	s.fillColor = slices.Clone(rgbColor)
+	s.fillColor = rgbColor
 	return s
 }
 
 // SetFillColor sets the fill color for the content drawn after it,
 // as a 0xRRGGBB value, for example color.Blue.
-func (s *Stamp) SetFillColor(color int) *Stamp {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32(color&0xff) / 255.0
-	return s.SetFillColorRGB([]float32{r, g, b})
+func (s *Stamp) SetFillColor(color int32) *Stamp {
+	return s.SetFillColorRGB(colorToRGB(color))
 }
 
 // SetStrokeColorRGB sets the stroke color for the content drawn after it,
 // from the red, green and blue components, from 0.0 to 1.0.
-func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
+func (s *Stamp) SetStrokeColorRGB(rgbColor [3]float32) *Stamp {
 	s.appendFloat(rgbColor[0])
 	s.appendString(" ")
 	s.appendFloat(rgbColor[1])
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" RG\n")
-	s.strokeColor = slices.Clone(rgbColor)
+	s.strokeColor = rgbColor
 	return s
 }
 
 // SetStrokeColor sets the stroke color for the content drawn after it,
 // as a 0xRRGGBB value, for example color.Blue.
-func (s *Stamp) SetStrokeColor(color int) *Stamp {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32(color&0xff) / 255.0
-	return s.SetStrokeColorRGB([]float32{r, g, b})
+func (s *Stamp) SetStrokeColor(color int32) *Stamp {
+	return s.SetStrokeColorRGB(colorToRGB(color))
 }
 
 // SetStrokeWidth sets the stroke width for the content drawn after it.

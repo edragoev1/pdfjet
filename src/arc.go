@@ -109,38 +109,23 @@ func (arc *Arc) SetStrokeWidth(width float32) *Arc {
 
 // SetStrokeColor sets the stroke color as a 0xRRGGBB value, for example color.Blue.
 func (arc *Arc) SetStrokeColor(color int32) *Arc {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	arc.SetStrokeColorRGB(r, g, b)
-	return arc
+	return arc.SetStrokeColorRGB(colorToRGB(color))
 }
 
-// SetStrokeColorRGB sets the stroke color from red, green and blue values between 0.0 and 1.0.
-func (arc *Arc) SetStrokeColorRGB(r, g, b float32) *Arc {
-	arc.strokeColor = [3]float32{r, g, b}
+// SetStrokeColorRGB sets the stroke color from the red, green and blue components, from 0.0 to 1.0.
+func (arc *Arc) SetStrokeColorRGB(rgbColor [3]float32) *Arc {
+	arc.strokeColor = rgbColor
 	arc.hasStrokeColor = true
 	return arc
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value, for example color.Blue.
 func (arc *Arc) SetFillColor(color int32) *Arc {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
-	arc.SetFillColorRGB(r, g, b)
-	return arc
+	return arc.SetFillColorRGB(colorToRGB(color))
 }
 
-// SetFillColorRGB sets the fill color from red, green and blue values between 0.0 and 1.0.
-func (arc *Arc) SetFillColorRGB(r, g, b float32) *Arc {
-	arc.fillColor = [3]float32{r, g, b}
-	arc.hasFillColor = true
-	return arc
-}
-
-// SetFillColorRGBArray sets the fill color from an array of red, green and blue values.
-func (arc *Arc) SetFillColorRGBArray(rgbColor [3]float32) *Arc {
+// SetFillColorRGB sets the fill color from the red, green and blue components, from 0.0 to 1.0.
+func (arc *Arc) SetFillColorRGB(rgbColor [3]float32) *Arc {
 	arc.fillColor = rgbColor
 	arc.hasFillColor = true
 	return arc
@@ -152,21 +137,9 @@ func (arc *Arc) SetRotateDegreesCW(degrees float32) *Arc {
 	return arc
 }
 
-// SetRotateDegreesCWFloat64 is SetRotateDegreesCW for a float64 angle.
-func (arc *Arc) SetRotateDegreesCWFloat64(degrees float64) *Arc {
-	arc.rotateDegrees = float32(-degrees)
-	return arc
-}
-
 // SetRotateDegreesCCW rotates this arc counterclockwise by the specified degrees.
 func (arc *Arc) SetRotateDegreesCCW(degrees float32) *Arc {
 	arc.rotateDegrees = degrees
-	return arc
-}
-
-// SetRotateDegreesCCWFloat64 is SetRotateDegreesCCW for a float64 angle.
-func (arc *Arc) SetRotateDegreesCCWFloat64(degrees float64) *Arc {
-	arc.rotateDegrees = float32(degrees)
 	return arc
 }
 
@@ -180,11 +153,6 @@ func (arc *Arc) SetAltDescription(altDescription string) *Arc {
 func (arc *Arc) SetActualText(actualText string) *Arc {
 	arc.actualText = actualText
 	return arc
-}
-
-// SetScaleFactorFloat64 is SetScaleFactor for a float64 factor.
-func (arc *Arc) SetScaleFactorFloat64(factor float64) *Arc {
-	return arc.SetScaleFactor(float32(factor))
 }
 
 // SetScaleFactor scales both radii of this arc by the specified factor.

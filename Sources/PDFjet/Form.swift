@@ -84,11 +84,29 @@ public class Form : Drawable {
         return self
     }
 
+    /// Sets the color of the labels as a 0xRRGGBB value, for example Color.black.
+    @discardableResult
+    public func setLabelColor(_ labelColor: Int32) -> Form {
+        let r = Float((labelColor >> 16) & 0xff)/255.0
+        let g = Float((labelColor >>  8) & 0xff)/255.0
+        let b = Float((labelColor)       & 0xff)/255.0
+        return setLabelColor([r, g, b])
+    }
+
     /// Sets the color of the values from an array of red, green and blue values.
     @discardableResult
     public func setValueColor(_ valueColor: [Float]) -> Form {
         self.valueColor = valueColor
         return self
+    }
+
+    /// Sets the color of the values as a 0xRRGGBB value, for example Color.blue.
+    @discardableResult
+    public func setValueColor(_ valueColor: Int32) -> Form {
+        let r = Float((valueColor >> 16) & 0xff)/255.0
+        let g = Float((valueColor >>  8) & 0xff)/255.0
+        let b = Float((valueColor)       & 0xff)/255.0
+        return setValueColor([r, g, b])
     }
 
     /**

@@ -130,12 +130,38 @@ public class Form : IDrawable {
     }
 
     /// <summary>
+    /// Sets the label color
+    /// </summary>
+    /// <param name="labelColor">the label color as a 0xRRGGBB value, for example Color.black.</param>
+    /// <returns>the form</returns>
+    public Form SetLabelColor(int labelColor) {
+        float r = ((labelColor >> 16) & 0xff)/255f;
+        float g = ((labelColor >>  8) & 0xff)/255f;
+        float b = ((labelColor)       & 0xff)/255f;
+        this.labelColor = new float[] {r, g, b};
+        return this;
+    }
+
+    /// <summary>
     /// Sets the color for the value
     /// </summary>
     /// <param name="valueColor">the value color</param>
     /// <returns>the form</returns>
     public Form SetValueColor(float[] valueColor) {
         this.valueColor = Util.CopyOf(valueColor);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the color for the value
+    /// </summary>
+    /// <param name="valueColor">the value color as a 0xRRGGBB value, for example Color.blue.</param>
+    /// <returns>the form</returns>
+    public Form SetValueColor(int valueColor) {
+        float r = ((valueColor >> 16) & 0xff)/255f;
+        float g = ((valueColor >>  8) & 0xff)/255f;
+        float b = ((valueColor)       & 0xff)/255f;
+        this.valueColor = new float[] {r, g, b};
         return this;
     }
 

@@ -229,9 +229,13 @@ func (textBlock *TextBlock) SetBackgroundColorRGB(c [3]float32) *TextBlock {
 	return textBlock.SetFillColorRGB(c)
 }
 
-// GetBackgroundColor returns the background color, or black if none was set.
-func (textBlock *TextBlock) GetBackgroundColor() [3]float32 {
-	return textBlock.fillColor
+// GetBackgroundColor returns a copy of the background color, or nil if none was set.
+func (textBlock *TextBlock) GetBackgroundColor() *[3]float32 {
+	if !textBlock.hasFillColor {
+		return nil
+	}
+	fillColor := textBlock.fillColor
+	return &fillColor
 }
 
 // SetTextAlignment sets the horizontal alignment of the text.

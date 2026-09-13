@@ -436,9 +436,13 @@ public class Cell {
         return self.textColor
     }
 
-    /// Sets the background color as a 0xRRGGBB value.
+    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> Cell {
+        if color == Color.transparent {
+            self.backgroundColor = nil
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0

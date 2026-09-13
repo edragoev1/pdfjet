@@ -135,6 +135,20 @@ public class Form implements Drawable {
     }
 
     /**
+     * Sets the label color
+     *
+     * @param labelColor the label color as a 0xRRGGBB value, for example Color.black.
+     * @return the form
+     */
+    public Form setLabelColor(int labelColor) {
+        float r = ((labelColor >> 16) & 0xff)/255f;
+        float g = ((labelColor >>  8) & 0xff)/255f;
+        float b = ((labelColor)       & 0xff)/255f;
+        this.labelColor = new float[] {r, g, b};
+        return this;
+    }
+
+    /**
      * Sets the color for the value
      *
      * @param valueColor the value color
@@ -142,6 +156,20 @@ public class Form implements Drawable {
      */
     public Form setValueColor(float[] valueColor) {
         this.valueColor = Util.copyOf(valueColor);
+        return this;
+    }
+
+    /**
+     * Sets the color for the value
+     *
+     * @param valueColor the value color as a 0xRRGGBB value, for example Color.blue.
+     * @return the form
+     */
+    public Form setValueColor(int valueColor) {
+        float r = ((valueColor >> 16) & 0xff)/255f;
+        float g = ((valueColor >>  8) & 0xff)/255f;
+        float b = ((valueColor)       & 0xff)/255f;
+        this.valueColor = new float[] {r, g, b};
         return this;
     }
 

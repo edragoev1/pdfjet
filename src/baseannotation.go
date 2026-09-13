@@ -55,18 +55,14 @@ func (b *BaseAnnotation) SetSize(w, h float32) *BaseAnnotation {
 	return b
 }
 
-// SetFillColor sets the fill color using RGB float32 values (0.0-1.0).
-func (b *BaseAnnotation) SetFillColor(colorRGB [3]float32) *BaseAnnotation {
-	b.fillColor = colorRGB
-	return b
+// SetFillColor sets the fill color as a 0xRRGGBB value, for example color.Blue.
+func (b *BaseAnnotation) SetFillColor(color int32) *BaseAnnotation {
+	return b.SetFillColorRGB(colorToRGB(color))
 }
 
-// SetFillColorInt sets the fill color from an integer RGB value (0xRRGGBB).
-func (b *BaseAnnotation) SetFillColorInt(color int) *BaseAnnotation {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	blue := float32((color>>0)&0xff) / 255.0
-	b.SetFillColor([3]float32{r, g, blue})
+// SetFillColorRGB sets the fill color from the red, green and blue components, from 0.0 to 1.0.
+func (b *BaseAnnotation) SetFillColorRGB(fillColor [3]float32) *BaseAnnotation {
+	b.fillColor = fillColor
 	return b
 }
 

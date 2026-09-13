@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
 // Cell is used to create table cell objects.
@@ -323,15 +324,25 @@ func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
 }
 
 // SetBackgroundColor sets the background color of this cell as a 0xRRGGBB value.
-func (cell *Cell) SetBackgroundColor(color int32) *Cell {
-	cell.backgroundColor = colorToRGB(color)
+// color.Transparent removes the background.
+func (cell *Cell) SetBackgroundColor(c int32) *Cell {
+	if c == color.Transparent {
+		cell.backgroundColor = [3]float32{}
+		cell.hasBackgroundColor = false
+		return cell
+	}
+	cell.backgroundColor = colorToRGB(c)
 	cell.hasBackgroundColor = true
 	return cell
 }
 
-// GetBackgroundColor returns the background color of this cell.
-func (cell *Cell) GetBackgroundColor() [3]float32 {
-	return cell.backgroundColor
+// GetBackgroundColor returns a copy of the background color of this cell, or nil if it has none.
+func (cell *Cell) GetBackgroundColor() *[3]float32 {
+	if !cell.hasBackgroundColor {
+		return nil
+	}
+	backgroundColor := cell.backgroundColor
+	return &backgroundColor
 }
 
 // SetStrokeColorRGB sets the color of the cell borders from red, green and blue values.
@@ -349,9 +360,13 @@ func (cell *Cell) SetStrokeColor(color int32) *Cell {
 	return cell
 }
 
-// GetStrokeColor returns the color of the cell borders.
-func (cell *Cell) GetStrokeColor() [3]float32 {
-	return cell.strokeColor
+// GetStrokeColor returns a copy of the color of the cell borders, or nil if none was set.
+func (cell *Cell) GetStrokeColor() *[3]float32 {
+	if !cell.hasStrokeColor {
+		return nil
+	}
+	strokeColor := cell.strokeColor
+	return &strokeColor
 }
 
 // SetStrokeWidth sets the width of the cell borders.

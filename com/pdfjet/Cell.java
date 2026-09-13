@@ -548,12 +548,16 @@ public class Cell {
     }
 
     /**
-     * Sets the background color of this cell.
+     * Sets the background color of this cell. Color.transparent removes the background.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
      */
     public Cell setBackgroundColor(int color) {
+        if (color == Color.transparent) {
+            this.backgroundColor = null;
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

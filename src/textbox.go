@@ -274,12 +274,13 @@ func (textBox *TextBox) SetStrokeColorRGB(rgb [3]float32) *TextBox {
 	return textBox
 }
 
-// GetStrokeColor returns the color of the border lines, or black if none was set.
-func (textBox *TextBox) GetStrokeColor() [3]float32 {
+// GetStrokeColor returns a copy of the color of the border lines, or nil if none was set.
+func (textBox *TextBox) GetStrokeColor() *[3]float32 {
 	if textBox.strokeColor == nil {
-		return [3]float32{0.0, 0.0, 0.0}
+		return nil
 	}
-	return *textBox.strokeColor
+	strokeColor := *textBox.strokeColor
+	return &strokeColor
 }
 
 // SetBorder sets the border with the specified bit mask.
