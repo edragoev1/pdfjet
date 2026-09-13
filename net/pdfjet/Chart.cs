@@ -661,7 +661,7 @@ public class Chart : IDrawable {
                 page.SetPenColor(p0.strokeColor);
                 page.SetPenWidth(p0.strokeWidth);
                 page.SetStrokeDashPattern(p0.strokeDashPattern);
-                page.DrawPath(points, PathOperator.Stroke);
+                page.DrawPath(points, PathOperator.STROKE);
                 if (p0.GetText() != null) {
                     page.SetBrushColor(p0.GetTextColor());
                     page.SetTextRotation(p0.GetTextRotation());

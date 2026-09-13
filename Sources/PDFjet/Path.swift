@@ -216,7 +216,7 @@ public class Path : Drawable {
         page!.addArtifactBMC()
         if fillShape {
             page!.setBrushColor(self.color)
-            page!.drawPath(points, PathOperator.fill)
+            page!.drawPath(points, PathOperator.FILL)
         } else {
             page!.setPenWidth(self.width)
             page!.setPenColor(self.color)
@@ -224,9 +224,9 @@ public class Path : Drawable {
             page!.setLineCapStyle(self.lineCapStyle)
             page!.setLineJoinStyle(self.lineJoinStyle)
             if closePath {
-                page!.drawPath(points, PathOperator.closeAndStroke)
+                page!.drawPath(points, PathOperator.CLOSE_AND_STROKE)
             } else {
-                page!.drawPath(points, PathOperator.stroke)
+                page!.drawPath(points, PathOperator.STROKE)
             }
         }
         page!.addEMC()

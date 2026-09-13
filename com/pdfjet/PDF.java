@@ -19,7 +19,7 @@ import java.util.zip.*;
  * Used to create PDF objects that represent PDF documents.
  */
 final public class PDF {
-    Compliance compliance = Compliance.PDF_17;
+    Compliance compliance = Compliance.PDF_1_7;
     Bookmark toc = null;
     List<Font> fonts = new ArrayList<Font>();
     List<Image> images = new ArrayList<Image>();
@@ -68,7 +68,7 @@ final public class PDF {
      *  @param os the associated output stream.
      *  @throws Exception if an input or output exception occurred
      */
-    public PDF(OutputStream os) throws Exception { this(os, Compliance.PDF_17); }
+    public PDF(OutputStream os) throws Exception { this(os, Compliance.PDF_1_7); }
 
     // Here is the layout of the PDF document:
     //
@@ -491,7 +491,7 @@ final public class PDF {
         append("/Type /Pages\n");
         append("/Kids [\n");
         for (Page page : pages) {
-            if (compliance != Compliance.PDF_17) {
+            if (compliance != Compliance.PDF_1_7) {
                 page.setStructElementsPageObjNumber(page.objNumber);
             }
             append(page.objNumber);
@@ -694,7 +694,7 @@ final public class PDF {
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Catalog\n");
 
-        if (compliance != Compliance.PDF_17) {
+        if (compliance != Compliance.PDF_1_7) {
             byte[] languageBytes = this.language.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             if (encryption != null) {
                 languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
@@ -729,7 +729,7 @@ final public class PDF {
         append(pagesObjNumber);
         append(Token.OBJ_REF);
 
-        if (compliance != Compliance.PDF_17) {
+        if (compliance != Compliance.PDF_1_7) {
             append("/Metadata ");
             append(metadataObjNumber);
             append(Token.OBJ_REF);
@@ -840,7 +840,7 @@ final public class PDF {
                 append("]\n");
             }
 
-            if (compliance != Compliance.PDF_17) {
+            if (compliance != Compliance.PDF_1_7) {
                 append("/Tabs /S\n");
                 append("/StructParents ");
                 append(i);
@@ -1208,7 +1208,7 @@ final public class PDF {
         if (prevPage != null) {
             addPageContent(prevPage);
         }
-        if (compliance != Compliance.PDF_17) {
+        if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();
         }
@@ -1219,7 +1219,7 @@ final public class PDF {
         }
 
         int structTreeRootObjNumber = 0;
-        if (compliance != Compliance.PDF_17) {
+        if (compliance != Compliance.PDF_1_7) {
             addStructElementObjects();
             structTreeRootObjNumber = addStructTreeRootObject();
             addNumsParentTree();

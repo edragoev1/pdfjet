@@ -45,15 +45,15 @@ public class Point : IDrawable {
 
     // For the c operator we have both control points
     /// <summary>A control point of a curve drawn with the c operator, which uses both control points.</summary>
-    public static readonly char ControlPointC = 'c';
+    public static readonly char CONTROL_POINT_C = 'c';
 
     // For the v operator, the first control point shall coincide with initial point of the curve.
     /// <summary>A control point of a curve drawn with the v operator, where the first control point is the start point.</summary>
-    public static readonly char ControlPointV = 'v';
+    public static readonly char CONTROL_POINT_V = 'v';
 
     // For the y operator, the second control point shall coincide with final point of the curve.
     /// <summary>A control point of a curve drawn with the y operator, where the second control point is the end point.</summary>
-    public static readonly char ControlPointY = 'y';
+    public static readonly char CONTROL_POINT_Y = 'y';
 
     internal float x;
     internal float y;
@@ -64,7 +64,7 @@ public class Point : IDrawable {
     internal float strokeWidth = 1f;
     internal float[] strokeColor = null;
     internal string strokeDashPattern = "[] 0";
-    internal PathOperator pathOperator = PathOperator.CloseAndStroke;
+    internal PathOperator pathOperator = PathOperator.CLOSE_AND_STROKE;
 
     internal Alignment alignment = Alignment.RIGHT;
 
@@ -405,7 +405,7 @@ public class Point : IDrawable {
         return strokeDashPattern;
     }
 
-    /// <summary>Sets the path operator used to draw this point, for example PathOperator.Stroke.</summary>
+    /// <summary>Sets the path operator used to draw this point, for example PathOperator.STROKE.</summary>
     public Point SetPathOperator(PathOperator pathOperator) {
         this.pathOperator = pathOperator;
         return this;
@@ -544,14 +544,14 @@ public class Point : IDrawable {
             page.SetBrushColor(fillColor);
             page.SetPenColor(strokeColor);
             page.SetPenWidth(strokeWidth);
-            this.pathOperator = PathOperator.FillAndStroke;
+            this.pathOperator = PathOperator.FILL_AND_STROKE;
         } else if (fillColor != null && strokeColor == null) {
             page.SetBrushColor(fillColor);
-            this.pathOperator = PathOperator.Fill;
+            this.pathOperator = PathOperator.FILL;
         } else if (fillColor == null && strokeColor != null) {
             page.SetPenColor(strokeColor);
             page.SetPenWidth(strokeWidth);
-            this.pathOperator = PathOperator.CloseAndStroke;
+            this.pathOperator = PathOperator.CLOSE_AND_STROKE;
         }
         page.DrawPoint(this);
         page.RestoreGraphicsState();

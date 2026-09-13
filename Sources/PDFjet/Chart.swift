@@ -677,7 +677,7 @@ public class Chart : Drawable {
                     page.setPenColor(p0.strokeColor)
                     page.setPenWidth(p0.strokeWidth)
                     page.setStrokeDashPattern(p0.strokeDashPattern)
-                    page.drawPath(points, PathOperator.stroke)
+                    page.drawPath(points, PathOperator.STROKE)
                     if p0.getText() != nil {
                         page.setBrushColor(p0.getTextColor())
                         page.setTextRotation(p0.getTextRotation())

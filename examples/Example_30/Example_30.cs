@@ -18,11 +18,11 @@ public class Example_30 {
 
         var permissions = new Permissions();
         permissions.Grant(
-            UserAccess.Print |               // Set both to allow the user to print
-            UserAccess.PrintHighQuality |    // this document with high quality
-            // UserAccess.ModifyContents |
-            // UserAccess.CopyContents |
-            UserAccess.AssembleDocument);
+            UserAccess.PRINT |               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY |    // this document with high quality
+            // UserAccess.MODIFY_CONTENTS |
+            // UserAccess.COPY_CONTENTS |
+            UserAccess.ASSEMBLE_DOCUMENT);
 
         pdf.SetEncryption(new Encryption(pdf, passwords, permissions));
 

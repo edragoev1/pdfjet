@@ -14,13 +14,13 @@ public class StructElem {
 
     // Document-level structure elements
     /// The whole document.
-    public static let Document = "Document"
+    public static let DOCUMENT = "Document"
     /// A large division of the document.
-    public static let Part = "Part"
+    public static let PART = "Part"
     /// A generic block-level element.
-    public static let Div = "Div"
+    public static let DIV = "Div"
     /// A section.
-    public static let Sect = "Sect"
+    public static let SECT = "Sect"
 
     // Heading elements
     /// A level 1 heading.
@@ -40,23 +40,23 @@ public class StructElem {
     /// A paragraph.
     public static let P = "P"
     /// A title.
-    public static let Title = "Title"
+    public static let TITLE = "Title"
     /// A label, such as the bullet or number of a list item.
-    public static let Lbl = "Lbl"
+    public static let LBL = "Lbl"
 
     // Inline text
     /// A generic inline element.
-    public static let Span = "Span"
+    public static let SPAN = "Span"
     /// Emphasized text.
-    public static let Em = "Em"
+    public static let EM = "Em"
     /// Strongly emphasized text.
-    public static let Strong = "Strong"
+    public static let STRONG = "Strong"
 
     // Links and annotations
     /// A link.
-    public static let Link = "Link"
+    public static let LINK = "Link"
     /// An annotation.
-    public static let Annot = "Annot"
+    public static let ANNOT = "Annot"
 
     // List elements
     /// A list.
@@ -66,7 +66,7 @@ public class StructElem {
 
     // Table elements
     /// A table.
-    public static let Table = "Table"
+    public static let TABLE = "Table"
     /// A table row.
     public static let TR = "TR"     // Table Row
     /// A table header cell.
@@ -74,19 +74,19 @@ public class StructElem {
     /// A table data cell.
     public static let TD = "TD"     // Table Data
     /// A group of table header rows.
-    public static let THead = "THead" // Table Header group
+    public static let THEAD = "THead" // Table Header group
     /// A group of table body rows.
-    public static let TBody = "TBody" // Table Body group
+    public static let TBODY = "TBody" // Table Body group
     /// A group of table footer rows.
-    public static let TFoot = "TFoot" // Table Footer group
+    public static let TFOOT = "TFoot" // Table Footer group
     /// A table caption.
-    public static let Caption = "Caption"
+    public static let CAPTION = "Caption"
 
     // Figure and special elements
     /// A figure.
-    public static let Figure = "Figure"
+    public static let FIGURE = "Figure"
     /// Content that is not part of the document structure, such as page numbers.
-    public static let Artifact = "Artifact"
+    public static let ARTIFACT = "Artifact"
 
     var objNumber: Int?
     var structure: String?

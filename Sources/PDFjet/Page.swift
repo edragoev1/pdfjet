@@ -1323,7 +1323,7 @@ public class Page {
     /// Draws or fills the specified path using the current pen or brush.
     ///
     /// - Parameter path: the path.
-    /// - Parameter pathOperator: the path operator, for example PathOperator.stroke or PathOperator.fill.
+    /// - Parameter pathOperator: the path operator, for example PathOperator.STROKE or PathOperator.FILL.
     ///
     public func drawPath(
             _ path: [Point],
@@ -1367,7 +1367,7 @@ public class Page {
             _ x: Float,
             _ y: Float,
             _ r: Float) {
-        drawEllipse(x, y, r, r, PathOperator.stroke)
+        drawEllipse(x, y, r, r, PathOperator.STROKE)
     }
 
     ///
@@ -1376,7 +1376,7 @@ public class Page {
     /// - Parameter x: the x coordinate of the center of the circle to be drawn.
     /// - Parameter y: the y coordinate of the center of the circle to be drawn.
     /// - Parameter r: the radius of the circle to be drawn.
-    /// - Parameter pathOperator: the path operator, for example PathOperator.stroke or PathOperator.fill.
+    /// - Parameter pathOperator: the path operator, for example PathOperator.STROKE or PathOperator.FILL.
     ///
     public func drawCircle(
             _ x: Float,
@@ -1399,7 +1399,7 @@ public class Page {
             _ y: Float,
             _ r1: Float,
             _ r2: Float) {
-        drawEllipse(x, y, r1, r2, PathOperator.stroke)
+        drawEllipse(x, y, r1, r2, PathOperator.STROKE)
     }
 
     ///
@@ -1415,7 +1415,7 @@ public class Page {
             _ y: Float,
             _ r1: Float,
             _ r2: Float) {
-        drawEllipse(x, y, r1, r2, PathOperator.fill)
+        drawEllipse(x, y, r1, r2, PathOperator.FILL)
     }
 
     ///
@@ -1754,23 +1754,23 @@ public class Page {
         var list = [Point]()
         // Starting point
         list.append(Point(x + w - r1, y))
-        list.append(Point(x + w - r1 + m4*r1, y, Point.controlPointC))
-        list.append(Point(x + w, y + r2 - m4*r2, Point.controlPointC))
+        list.append(Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT_C))
+        list.append(Point(x + w, y + r2 - m4*r2, Point.CONTROL_POINT_C))
         list.append(Point(x + w, y + r2))
 
         list.append(Point(x + w, y + h - r2))
-        list.append(Point(x + w, y + h - r2 + m4*r2, Point.controlPointC))
-        list.append(Point(x + w - m4*r1, y + h, Point.controlPointC))
+        list.append(Point(x + w, y + h - r2 + m4*r2, Point.CONTROL_POINT_C))
+        list.append(Point(x + w - m4*r1, y + h, Point.CONTROL_POINT_C))
         list.append(Point(x + w - r1, y + h))
 
         list.append(Point(x + r1, y + h))
-        list.append(Point(x + r1 - m4*r1, y + h, Point.controlPointC))
-        list.append(Point(x, y + h - m4*r2, Point.controlPointC))
+        list.append(Point(x + r1 - m4*r1, y + h, Point.CONTROL_POINT_C))
+        list.append(Point(x, y + h - m4*r2, Point.CONTROL_POINT_C))
         list.append(Point(x, y + h - r2))
 
         list.append(Point(x, y + r2))
-        list.append(Point(x, y + r2 - m4*r2, Point.controlPointC))
-        list.append(Point(x + m4*r1, y, Point.controlPointC))
+        list.append(Point(x, y + r2 - m4*r2, Point.CONTROL_POINT_C))
+        list.append(Point(x + m4*r1, y, Point.CONTROL_POINT_C))
         list.append(Point(x + r1, y))
         list.append(Point(x + w - r1, y))
 
@@ -2020,7 +2020,7 @@ public class Page {
         self.annots.append(annotation)
         if pdf.compliance == Compliance.PDF_UA_1 {
             let element = StructElem()
-            element.structure = StructElem.Link
+            element.structure = StructElem.LINK
             element.language = annotation.language
             element.actualText = annotation.actualText
             element.altDescription = annotation.altDescription

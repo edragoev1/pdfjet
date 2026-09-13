@@ -283,28 +283,28 @@ public class Rect : Drawable {
             var points: [Point] = []
             points.append(Point(self.x + self.r, self.y))
             points.append(Point((self.x + self.width) - self.r, self.y))
-            points.append(Point((self.x + self.width - self.r) + self.r * k, self.y, Point.controlPointC))
-            points.append(Point(self.x + self.width, (self.y + self.r) - self.r * k, Point.controlPointC))
+            points.append(Point((self.x + self.width - self.r) + self.r * k, self.y, Point.CONTROL_POINT_C))
+            points.append(Point(self.x + self.width, (self.y + self.r) - self.r * k, Point.CONTROL_POINT_C))
             points.append(Point(self.x + self.width, self.y + self.r))
             points.append(Point(self.x + self.width, (self.y + self.height) - self.r))
-            points.append(Point(self.x + self.width, ((self.y + self.height) - self.r) + self.r * k, Point.controlPointC))
-            points.append(Point(((self.x + self.width) - self.r) + self.r * k, self.y + self.height, Point.controlPointC))
+            points.append(Point(self.x + self.width, ((self.y + self.height) - self.r) + self.r * k, Point.CONTROL_POINT_C))
+            points.append(Point(((self.x + self.width) - self.r) + self.r * k, self.y + self.height, Point.CONTROL_POINT_C))
             points.append(Point(((self.x + self.width) - self.r), self.y + self.height))
             points.append(Point(self.x + self.r, self.y + self.height))
-            points.append(Point(((self.x + self.r) - self.r * k), self.y + self.height, Point.controlPointC))
-            points.append(Point(self.x, ((self.y + self.height) - self.r) + self.r * k, Point.controlPointC))
+            points.append(Point(((self.x + self.r) - self.r * k), self.y + self.height, Point.CONTROL_POINT_C))
+            points.append(Point(self.x, ((self.y + self.height) - self.r) + self.r * k, Point.CONTROL_POINT_C))
             points.append(Point(self.x, (self.y + self.height) - self.r))
             points.append(Point(self.x, self.y + self.r))
-            points.append(Point(self.x, (self.y + self.r) - self.r * k, Point.controlPointC))
-            points.append(Point((self.x + self.r) - self.r * k, self.y, Point.controlPointC))
+            points.append(Point(self.x, (self.y + self.r) - self.r * k, Point.CONTROL_POINT_C))
+            points.append(Point((self.x + self.r) - self.r * k, self.y, Point.CONTROL_POINT_C))
             points.append(Point(self.x + self.r, self.y))
 
             if fillColor != nil && borderColor == nil {
-                page.drawPath(points, PathOperator.fill)
+                page.drawPath(points, PathOperator.FILL)
             } else if fillColor == nil && borderColor != nil {
-                page.drawPath(points, PathOperator.stroke)
+                page.drawPath(points, PathOperator.STROKE)
             } else if fillColor != nil && borderColor != nil {
-                page.drawPath(points, PathOperator.fillAndStroke)
+                page.drawPath(points, PathOperator.FILL_AND_STROKE)
             }
         }
         page.restoreGraphicsState()

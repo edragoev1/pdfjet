@@ -112,7 +112,7 @@ public class Encryption {
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
         if (pdf.GetCompliance() == Compliance.PDF_UA_1) {
-            permissions.Grant(UserAccess.ExtractContentsForAccessibility);
+            permissions.Grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
         }
 
         // The flags specifying which operations shall be permitted, with the

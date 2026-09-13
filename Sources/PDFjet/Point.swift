@@ -43,11 +43,11 @@ public class Point : Drawable {
     public static let RIGHT_ARROW: Int = 12
 
     /// A control point of a curve drawn with the c operator, which uses both control points.
-    public static let controlPointC: String = "c"
+    public static let CONTROL_POINT_C: String = "c"
     /// A control point of a curve drawn with the v operator, where the first control point is the start point.
-    public static let controlPointV: String = "v"
+    public static let CONTROL_POINT_V: String = "v"
     /// A control point of a curve drawn with the y operator, where the second control point is the end point.
-    public static let controlPointY: String = "y"
+    public static let CONTROL_POINT_Y: String = "y"
 
     var x: Float = 0.0
     var y: Float = 0.0
@@ -59,7 +59,7 @@ public class Point : Drawable {
     var strokeWidth: Float = 1.0
     var strokeColor: [Float]?
     var strokeDashPattern = "[] 0"
-    var pathOperator = PathOperator.closeAndStroke
+    var pathOperator = PathOperator.CLOSE_AND_STROKE
 
     var controlPoint: String = ""
     var drawPath = false
@@ -89,7 +89,7 @@ public class Point : Drawable {
     ///
     /// - Parameter x: the x coordinate of this point when drawn on the page.
     /// - Parameter y: the y coordinate of this point when drawn on the page.
-    /// - Parameter controlPoint: the control point type: Point.controlPointC, Point.controlPointV or Point.controlPointY.
+    /// - Parameter controlPoint: the control point type: Point.CONTROL_POINT_C, Point.CONTROL_POINT_V or Point.CONTROL_POINT_Y.
     ///
     public init(
             _ x: Float,
@@ -494,14 +494,14 @@ public class Point : Drawable {
             page.setBrushColor(fillColor)
             page.setPenColor(strokeColor)
             page.setPenWidth(strokeWidth)
-            self.pathOperator = PathOperator.fillAndStroke
+            self.pathOperator = PathOperator.FILL_AND_STROKE
         } else if fillColor != nil && strokeColor == nil {
             page.setBrushColor(fillColor)
-            self.pathOperator = PathOperator.fill
+            self.pathOperator = PathOperator.FILL
         } else if fillColor == nil && strokeColor != nil {
             page.setPenColor(strokeColor)
             page.setPenWidth(strokeWidth)
-            self.pathOperator = PathOperator.closeAndStroke
+            self.pathOperator = PathOperator.CLOSE_AND_STROKE
         }
         page.drawPoint(self)
         page.restoreGraphicsState()

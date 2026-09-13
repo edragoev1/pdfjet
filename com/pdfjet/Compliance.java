@@ -12,7 +12,7 @@ package com.pdfjet;
  */
 public enum Compliance {
     /** PDF 1.7 without a compliance profile. */
-    PDF_17,
+    PDF_1_7,
     /** PDF/UA-1, for universal accessibility. */
     PDF_UA_1,
     /** PDF/A-1a, for archiving, with the accessibility requirements of level A. */

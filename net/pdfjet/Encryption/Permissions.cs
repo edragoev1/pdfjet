@@ -98,43 +98,43 @@ namespace PDFjet.NET {
         /// Gets a value indicating whether the user can print the document
         /// (possibly at low quality, unless <see cref="CanPrintHighQuality"/> is true).
         /// </summary>
-        public bool CanPrint => Access.HasFlag(UserAccess.Print);
+        public bool CanPrint => Access.HasFlag(UserAccess.PRINT);
 
         /// <summary>
         /// Gets a value indicating whether the user can modify the document's contents.
         /// </summary>
-        public bool CanModifyContents => Access.HasFlag(UserAccess.ModifyContents);
+        public bool CanModifyContents => Access.HasFlag(UserAccess.MODIFY_CONTENTS);
 
         /// <summary>
         /// Gets a value indicating whether the user can copy or extract content.
         /// </summary>
-        public bool CanCopyContents => Access.HasFlag(UserAccess.CopyContents);
+        public bool CanCopyContents => Access.HasFlag(UserAccess.COPY_CONTENTS);
 
         /// <summary>
         /// Gets a value indicating whether the user can add or modify annotations and form fields.
         /// This is primarily for legacy PDF support.
         /// </summary>
-        public bool CanModifyAnnotations => Access.HasFlag(UserAccess.ModifyAnnotations);
+        public bool CanModifyAnnotations => Access.HasFlag(UserAccess.MODIFY_ANNOTATIONS);
 
         /// <summary>
         /// Gets a value indicating whether the user can fill interactive form fields.
         /// </summary>
-        public bool CanFillFormFields => Access.HasFlag(UserAccess.FillFormFields);
+        public bool CanFillFormFields => Access.HasFlag(UserAccess.FILL_FORM_FIELDS);
 
         /// <summary>
         /// Gets a value indicating whether the user can extract content for accessibility.
         /// </summary>
-        public bool CanExtractForAccessibility => Access.HasFlag(UserAccess.ExtractContentsForAccessibility);
+        public bool CanExtractForAccessibility => Access.HasFlag(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
 
         /// <summary>
         /// Gets a value indicating whether the user can assemble the document (manipulate pages).
         /// </summary>
-        public bool CanAssembleDocument => Access.HasFlag(UserAccess.AssembleDocument);
+        public bool CanAssembleDocument => Access.HasFlag(UserAccess.ASSEMBLE_DOCUMENT);
 
         /// <summary>
         /// Gets a value indicating whether the user can print the document at high quality.
         /// </summary>
-        public bool CanPrintHighQuality => Access.HasFlag(UserAccess.PrintHighQuality);
+        public bool CanPrintHighQuality => Access.HasFlag(UserAccess.PRINT_HIGH_QUALITY);
 
         /// <summary>
         /// Grants the specified permissions. The other permissions stay as they are.

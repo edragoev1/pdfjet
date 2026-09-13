@@ -223,28 +223,28 @@ public class Rect  : IDrawable {
             List<Point> points = new List<Point> {
                 new Point((this.x + this.r), this.y),
                 new Point((this.x + this.w) - this.r, this.y),
-                new Point((this.x + this.w - this.r) + this.r * k, this.y, Point.ControlPointC),
-                new Point((this.x + this.w), (this.y + this.r) - this.r * k, Point.ControlPointC),
+                new Point((this.x + this.w - this.r) + this.r * k, this.y, Point.CONTROL_POINT_C),
+                new Point((this.x + this.w), (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C),
                 new Point((this.x + this.w), (this.y + this.r)),
                 new Point((this.x + this.w), (this.y + this.h) - this.r),
-                new Point((this.x + this.w), ((this.y + this.h) - this.r) + this.r * k, Point.ControlPointC),
-                new Point(((this.x + this.w) - this.r) + this.r * k, (this.y + this.h), Point.ControlPointC),
+                new Point((this.x + this.w), ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C),
+                new Point(((this.x + this.w) - this.r) + this.r * k, (this.y + this.h), Point.CONTROL_POINT_C),
                 new Point(((this.x + this.w) - this.r), (this.y + this.h)),
                 new Point((this.x + this.r), (this.y + this.h)),
-                new Point(((this.x + this.r) - this.r * k), (this.y + this.h), Point.ControlPointC),
-                new Point(this.x, ((this.y + this.h) - this.r) + this.r * k, Point.ControlPointC),
+                new Point(((this.x + this.r) - this.r * k), (this.y + this.h), Point.CONTROL_POINT_C),
+                new Point(this.x, ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C),
                 new Point(this.x, (this.y + this.h) - this.r),
                 new Point(this.x, (this.y + this.r)),
-                new Point(this.x, (this.y + this.r) - this.r * k, Point.ControlPointC),
-                new Point((this.x + this.r) - this.r * k, this.y, Point.ControlPointC),
+                new Point(this.x, (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C),
+                new Point((this.x + this.r) - this.r * k, this.y, Point.CONTROL_POINT_C),
                 new Point((this.x + this.r), this.y)
             };
             if (fillColor != null && borderColor == null) {
-                page.DrawPath(points, PathOperator.Fill);
+                page.DrawPath(points, PathOperator.FILL);
             } else if (fillColor == null && borderColor != null) {
-                page.DrawPath(points, PathOperator.Stroke);
+                page.DrawPath(points, PathOperator.STROKE);
             } else if (fillColor != null && borderColor != null) {
-                page.DrawPath(points, PathOperator.FillAndStroke);
+                page.DrawPath(points, PathOperator.FILL_AND_STROKE);
             }
         }
 

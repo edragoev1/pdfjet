@@ -225,7 +225,7 @@ public class Path : IDrawable {
         page.AddArtifactBMC();
         if (fillShape) {
             page.SetBrushColor(color);
-            page.DrawPath(points, PathOperator.Fill);
+            page.DrawPath(points, PathOperator.FILL);
         } else {
             page.SetPenWidth(width);
             page.SetPenColor(color);
@@ -233,9 +233,9 @@ public class Path : IDrawable {
             page.SetLineCapStyle(lineCapStyle);
             page.SetLineJoinStyle(lineJoinStyle);
             if (closePath) {
-                page.DrawPath(points, PathOperator.CloseAndStroke);
+                page.DrawPath(points, PathOperator.CLOSE_AND_STROKE);
             } else {
-                page.DrawPath(points, PathOperator.Stroke);
+                page.DrawPath(points, PathOperator.STROKE);
             }
         }
         page.AddEMC();

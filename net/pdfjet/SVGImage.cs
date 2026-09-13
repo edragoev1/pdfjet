@@ -247,12 +247,12 @@ public class SVGImage : IDrawable {
     }
 
     /// <summary>Returns the width of this SVG image.</summary>
-    public float getWidth() {
+    public float GetWidth() {
         return this.w;
     }
 
     /// <summary>Returns the height of this SVG image.</summary>
-    public float getHeight() {
+    public float GetHeight() {
         return this.h;
     }
 

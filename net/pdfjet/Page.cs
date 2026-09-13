@@ -1484,7 +1484,7 @@ public class Page {
     /// </summary>
     /// <param name="path">The list of points defining the path. The first point sets the starting position,
     /// subsequent points define line segments or curve control points. Must contain at least 2 points.</param>
-    /// <param name="pathOperator">The path painting operator to apply, for example PathOperator.Stroke or PathOperator.Fill.</param>
+    /// <param name="pathOperator">The path painting operator to apply, for example PathOperator.STROKE or PathOperator.FILL.</param>
     /// <exception cref="System.Exception">Thrown when the path contains fewer than 2 points.</exception>
     /// <remarks>
     /// <para>
@@ -1520,18 +1520,18 @@ public class Page {
     ///     new Point(200, 200),
     ///     new Point(100, 200)
     /// };
-    /// DrawPath(rect, PathOperator.Stroke);
+    /// DrawPath(rect, PathOperator.STROKE);
     /// </code>
     ///
     /// <code>
     /// // Drawing a cubic Bézier curve
     /// List&lt;Point&gt; curve = new List&lt;Point&gt; {
     ///     new Point(100, 100),           // Start point
-    ///     new Point(150, 50, Point.ControlPointC),    // First control point
-    ///     new Point(250, 150, Point.ControlPointC),   // Second control point
+    ///     new Point(150, 50, Point.CONTROL_POINT_C),    // First control point
+    ///     new Point(250, 150, Point.CONTROL_POINT_C),   // Second control point
     ///     new Point(300, 100)            // End point
     /// };
-    /// DrawPath(curve, PathOperator.Stroke);
+    /// DrawPath(curve, PathOperator.STROKE);
     /// </code>
     /// </example>
     /// <seealso cref="Point"/>
@@ -1575,7 +1575,7 @@ public class Page {
             float y,
             float r1,
             float r2) {
-        DrawEllipse(x, y, r1, r2, PathOperator.Stroke);
+        DrawEllipse(x, y, r1, r2, PathOperator.STROKE);
     }
 
     /// <summary>
@@ -1586,7 +1586,7 @@ public class Page {
     /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
     /// <param name="r">the radius of the circle to be drawn.</param>
     public void DrawCircle(float x, float y, float r) {
-        DrawEllipse(x, y, r, r, PathOperator.Stroke);
+        DrawEllipse(x, y, r, r, PathOperator.STROKE);
     }
 
     /// <summary>
@@ -1597,7 +1597,7 @@ public class Page {
     /// <param name="r1">the horizontal radius of the ellipse to be drawn.</param>
     /// <param name="r2">the vertical radius of the ellipse to be drawn.</param>
     public void FillEllipse(float x, float y, float r1, float r2) {
-        DrawEllipse(x, y, r1, r2, PathOperator.Fill);
+        DrawEllipse(x, y, r1, r2, PathOperator.FILL);
     }
 
     /// <summary>
@@ -1608,7 +1608,7 @@ public class Page {
     /// <param name="r1">the horizontal radius of the ellipse to be drawn.</param>
     /// <param name="r2">the vertical radius of the ellipse to be drawn.</param>
     public void FillEllipse(double x, double y, double r1, double r2) {
-        DrawEllipse((float) x, (float) y, (float) r1, (float) r2, PathOperator.Fill);
+        DrawEllipse((float) x, (float) y, (float) r1, (float) r2, PathOperator.FILL);
     }
 
     /// <summary>
@@ -1617,7 +1617,7 @@ public class Page {
     /// <param name="x">the x coordinate of the center of the circle to be drawn.</param>
     /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
     /// <param name="r">the radius of the circle to be drawn.</param>
-    /// <param name="pathOperator">must be PathOperator.Stroke, PathOperator.CloseAndStroke or PathOperator.Fill.</param>
+    /// <param name="pathOperator">must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.</param>
     public void DrawCircle(float x, float y, float r, PathOperator pathOperator) {
         DrawEllipse(x, y, r, r, pathOperator);
     }
@@ -1932,7 +1932,7 @@ public class Page {
     /// <param name="h">the height.</param>
     /// <param name="r1">the horizontal radius of the corners.</param>
     /// <param name="r2">the vertical radius of the corners.</param>
-    /// <param name="pathOperator">the path operator, for example PathOperator.Stroke or PathOperator.Fill.</param>
+    /// <param name="pathOperator">the path operator, for example PathOperator.STROKE or PathOperator.FILL.</param>
     public void DrawRectRoundCorners(
             float x,
             float y,
@@ -1947,23 +1947,23 @@ public class Page {
 
         // Starting point
         points.Add(new Point(x + w - r1, y));
-        points.Add(new Point(x + w - r1 + m4*r1, y, Point.ControlPointC));
-        points.Add(new Point(x + w, y + r2 - m4*r2, Point.ControlPointC));
+        points.Add(new Point(x + w - r1 + m4*r1, y, Point.CONTROL_POINT_C));
+        points.Add(new Point(x + w, y + r2 - m4*r2, Point.CONTROL_POINT_C));
         points.Add(new Point(x + w, y + r2));
 
         points.Add(new Point(x + w, y + h - r2));
-        points.Add(new Point(x + w, y + h - r2 + m4*r2, Point.ControlPointC));
-        points.Add(new Point(x + w - m4*r1, y + h, Point.ControlPointC));
+        points.Add(new Point(x + w, y + h - r2 + m4*r2, Point.CONTROL_POINT_C));
+        points.Add(new Point(x + w - m4*r1, y + h, Point.CONTROL_POINT_C));
         points.Add(new Point(x + w - r1, y + h));
 
         points.Add(new Point(x + r1, y + h));
-        points.Add(new Point(x + r1 - m4*r1, y + h, Point.ControlPointC));
-        points.Add(new Point(x, y + h - m4*r2, Point.ControlPointC));
+        points.Add(new Point(x + r1 - m4*r1, y + h, Point.CONTROL_POINT_C));
+        points.Add(new Point(x, y + h - m4*r2, Point.CONTROL_POINT_C));
         points.Add(new Point(x, y + h - r2));
 
         points.Add(new Point(x, y + r2));
-        points.Add(new Point(x, y + r2 - m4*r2, Point.ControlPointC));
-        points.Add(new Point(x + m4*r1, y, Point.ControlPointC));
+        points.Add(new Point(x, y + r2 - m4*r2, Point.CONTROL_POINT_C));
+        points.Add(new Point(x + m4*r1, y, Point.CONTROL_POINT_C));
         points.Add(new Point(x + r1, y));
         points.Add(new Point(x + w - r1, y));
 

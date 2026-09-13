@@ -5,7 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 public enum Compliance: Int {
-    case PDF_17
+    case PDF_1_7
     case PDF_UA_1
     case PDF_A_1A
     case PDF_A_1B
