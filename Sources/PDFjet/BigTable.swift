@@ -251,13 +251,15 @@ public class BigTable {
             if fields.count < self.numberOfColumns {
                 return
             }
-            try? self.drawTextAndLine(fields: fields, font: self.f2)
+            try self.drawTextAndLine(fields: fields, font: self.f2)
         }
         drawTheVerticalLines()
     }
 }
 
-private func enumerateFileLines(_ fileName: String, _ handler: (String) -> Void) throws {
+// Calls the handler with each line of the file. Bytes that are not valid UTF-8
+// are replaced with U+FFFD, as the Java and C# readers do.
+private func enumerateFileLines(_ fileName: String, _ handler: (String) throws -> Void) throws {
     let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
     defer { file.closeFile() }
 
@@ -275,13 +277,12 @@ private func enumerateFileLines(_ fileName: String, _ handler: (String) -> Void)
                 lineData = lineData.dropLast()
             }
 
-            guard let line = String(data: lineData, encoding: .utf8) else { continue }
-            handler(line)
+            try handler(String(decoding: lineData, as: UTF8.self))
         }
     }
 
     // Last line without newline
-    if !buffer.isEmpty, let line = String(data: buffer, encoding: .utf8) {
-        handler(line)
+    if !buffer.isEmpty {
+        try handler(String(decoding: buffer, as: UTF8.self))
     }
 }
