@@ -30,6 +30,10 @@ go run go.abhg.dev/doc2go@v0.12.2 -out docs/go -home github.com/edragoev1/pdfjet
 # from the doc comments in Sources/PDFjet. The pages expect to be served from
 # /pdfjet/swift/, as on GitHub Pages.
 rm -rf docs/swift
+# dump-symbol-graph emits a graph for every module of the package, and fails on
+# the test modules, PDFjetPackageTests and PDFjetPackageDiscoveredTests, when
+# they are not built, as in a new checkout; so the tests are built first.
+swift build --build-tests
 swift package dump-symbol-graph --minimum-access-level public --skip-synthesized-members
 # The dump also has the modules of the test target, PDFjetPackageTests and
 # PDFjetPackageDiscoveredTests, so DocC gets a copy with the PDFjet module only.
