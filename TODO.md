@@ -176,9 +176,9 @@ Pick from the README limitations; the first three are the ones users hit.
       turn the four borders on, as in Go and Swift; the `Table(f1, f2)`
       constructor, which ignored its fonts, is removed from Java, C# and Swift.
       `Cell`: `setTextBox` clears the cell text in the four ports, as
-      `setImage` and `setBarcode` do; Java `setFont`, and so
-      `Table.setFontInRow` and `setFontInColumn` in the four ports, set the
-      font size to the size of the font; Go and Swift use the cell font as the
+      `setImage` and `setBarcode` do; `setFont` sets only the font, as in
+      `TextLine` and `TextBox`, and `Table.setFontInRow` and `setFontInColumn`
+      set the font and the font size of the cells; Go and Swift use the cell font as the
       fallback font, as Java and C# do; the text width, the underline, the
       strikeout and the link of a cell are measured at the cell's font size
       with the fallback font; `Align.JUSTIFY` draws the text, image or
@@ -186,7 +186,9 @@ Pick from the README limitations; the first three are the ones users hit.
       image or barcode keeps the right padding, not the left one; Swift
       `getBackgroundColor` returns an optional and `setBackgroundColor(nil)`
       removes the background; the unused Java `colspan` and Java, C# and
-      Swift `strokeDashPattern` fields are removed.
+      Swift `strokeDashPattern` fields are removed; `setStrokeWidth` sets the
+      width the borders are drawn with, and `setLineWidth` and `getLineWidth`,
+      which did that before while `setStrokeWidth` did nothing, are removed.
       `TextBox`: `setLineWidth` sets the width the borders are drawn with, as
       `setStrokeWidth` does, and `getLineWidth` returns it; before, both used
       a field that nothing drew with; measuring a text box that grows to fit

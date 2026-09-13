@@ -321,7 +321,7 @@ public class Table implements Drawable {
     }
 
     /**
-     * Sets the font for the specified column.
+     * Sets the font and the font size of the cells in the specified column.
      *
      * @param index the column index.
      * @param font  the font.
@@ -331,7 +331,7 @@ public class Table implements Drawable {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
-                cell.setFont(font);
+                cell.setFont(font).setFontSize(font.getSize());
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -361,7 +361,7 @@ public class Table implements Drawable {
     }
 
     /**
-     * Sets the font for the specified row.
+     * Sets the font and the font size of the cells in the specified row.
      *
      * @param index the row index.
      * @param font  the font.
@@ -371,7 +371,7 @@ public class Table implements Drawable {
         if (index < tableData.size()) {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
-                cell.setFont(font);
+                cell.setFont(font).setFontSize(font.getSize());
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -670,7 +670,7 @@ public class Table implements Drawable {
     public Table setCellBordersWidth(float width) {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
-                cell.setLineWidth(width);
+                cell.setStrokeWidth(width);
             }
         }
         return this;
@@ -786,7 +786,6 @@ public class Table implements Drawable {
                     cell2.setWidth(cell.getWidth());
                     cell2.setLeftPadding(cell.leftPadding);
                     cell2.setRightPadding(cell.rightPadding);
-                    cell2.setLineWidth(cell.lineWidth);
                     cell2.setBackgroundColor(cell.getBackgroundColor());
                     cell2.setStrokeWidth(cell.getStrokeWidth());
                     cell2.setStrokeColor(cell.getStrokeColor());

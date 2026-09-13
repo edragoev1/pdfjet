@@ -287,7 +287,7 @@ public class Table : Drawable {
     }
 
     ///
-    /// Sets the font for the specified column.
+    /// Sets the font and the font size of the cells in the specified column.
     ///
     /// - Parameter index: the column index.
     /// - Parameter font: the font.
@@ -297,7 +297,7 @@ public class Table : Drawable {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
-                cell.setFont(font)
+                cell.setFont(font).setFontSize(font.size)
                 if cell.textBox != nil {
                     cell.textBox!.font = font
                 }
@@ -327,7 +327,7 @@ public class Table : Drawable {
     }
 
     ///
-    /// Sets the font for the specified row.
+    /// Sets the font and the font size of the cells in the specified row.
     ///
     /// - Parameter index: the row index.
     /// - Parameter font: the font.
@@ -337,7 +337,7 @@ public class Table : Drawable {
         if index < tableData.count {
             let row = tableData[index]
             for cell in row {
-                cell.setFont(font)
+                cell.setFont(font).setFontSize(font.size)
                 if cell.textBox != nil {
                     cell.textBox!.font = font
                 }
@@ -626,7 +626,7 @@ public class Table : Drawable {
     public func setCellBordersWidth(_ width: Float) -> Table {
         for row in tableData {
             for cell in row {
-                cell.setLineWidth(width)
+                cell.setStrokeWidth(width)
             }
         }
         return self
@@ -739,7 +739,6 @@ public class Table : Drawable {
                     cell2.setWidth(cell.getWidth())
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
-                    cell2.setLineWidth(cell.getLineWidth())
                     cell2.setBackgroundColor(cell.getBackgroundColor())
                     cell2.setStrokeWidth(cell.getStrokeWidth())
                     cell2.setStrokeColor(cell.getStrokeColor())

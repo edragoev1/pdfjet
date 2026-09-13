@@ -223,7 +223,7 @@ public class Example_38 {
         cell.setBorder(Border.BOTTOM, bottomBorder)
         cell.setTextAlignment(Align.CENTER)
         cell.setBackgroundColor(Color.lightblue)
-        cell.setLineWidth(1.0)
+        cell.setStrokeWidth(1.0)
         return cell
     }
 }   // End of Example_38.swift

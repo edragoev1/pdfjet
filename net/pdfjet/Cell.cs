@@ -29,8 +29,6 @@ public class Cell {
     internal float leftPadding = 2f;
     internal float rightPadding = 2f;
 
-    internal float lineWidth = 0f;
-
     internal float[] backgroundColor;
     internal float[] textColor = new float[] {0f, 0f, 0f};
     internal float strokeWidth;
@@ -81,13 +79,12 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the font for this cell, and the font size to the size of the font.
+    /// Sets the font for this cell. The font size does not change; set it with SetFontSize.
     /// </summary>
     /// <param name="font">the font.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetFont(Font font) {
         this.font = font;
-        this.fontSize = font.GetSize();
         return this;
     }
 
@@ -346,23 +343,6 @@ public class Cell {
         return cellHeight;
     }
 
-    /// <summary>Sets the width of the cell borders.</summary>
-    public Cell SetLineWidth(Int32 width) {
-        SetLineWidth((float) width);
-        return this;
-    }
-
-    /// <summary>Sets the width of the cell borders.</summary>
-    public Cell SetLineWidth(float width) {
-        this.lineWidth = width;
-        return this;
-    }
-
-    /// <summary>Returns the width of the cell borders.</summary>
-    public float GetLineWidth() {
-        return this.lineWidth;
-    }
-
     /// <summary>Sets the background color as a 0xRRGGBB value.</summary>
     public Cell SetBackgroundColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
@@ -403,13 +383,16 @@ public class Cell {
         return this.textColor;
     }
 
-    /// <summary>Sets the stroke width.</summary>
+    /// <summary>Sets the width of the cell borders.</summary>
+    /// <param name="strokeWidth">the width of the cell borders.</param>
+    /// <returns>this Cell object.</returns>
     public Cell SetStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
     }
 
-    /// <summary>Returns the stroke width.</summary>
+    /// <summary>Returns the width of the cell borders.</summary>
+    /// <returns>the width of the cell borders.</returns>
     public float GetStrokeWidth() {
         return this.strokeWidth;
     }
@@ -722,7 +705,7 @@ public class Cell {
             float cellH) {
         page.AddArtifactBMC();
         page.SetBrushColor(backgroundColor);
-        page.FillRect(x, y + lineWidth/2, cellW, cellH);
+        page.FillRect(x, y + strokeWidth/2, cellW, cellH);
         page.AddEMC();
     }
 
@@ -734,8 +717,8 @@ public class Cell {
             float cellH) {
         page.AddArtifactBMC();
         page.SetPenColor(strokeColor);
-        page.SetPenWidth(lineWidth);
-        float qWidth = lineWidth / 4;
+        page.SetPenWidth(strokeWidth);
+        float qWidth = strokeWidth / 4;
         if (GetBorder(Border.TOP)) {
             page.MoveTo(x - qWidth, y);
             page.LineTo(x + cellW, y);

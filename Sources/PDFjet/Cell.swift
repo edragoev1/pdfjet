@@ -27,7 +27,6 @@ public class Cell {
     var bottomPadding: Float = 2.0
     var leftPadding: Float = 2.0
     var rightPadding: Float = 2.0
-    var lineWidth: Float = 0.0
 
     var backgroundColor: [Float]?
     var textColor: [Float] = [0.0, 0.0, 0.0]
@@ -83,7 +82,7 @@ public class Cell {
     }
 
     /**
-     * Sets the font for this cell, and the font size to the size of the font.
+     * Sets the font for this cell. The font size does not change; set it with setFontSize.
      *
      * - Parameter font: the font.
      * - Returns: this Cell object.
@@ -91,9 +90,6 @@ public class Cell {
     @discardableResult
     public func setFont(_ font: Font?) -> Cell {
         self.font = font
-        if font != nil {
-            self.fontSize = font!.size
-        }
         return self
     }
 
@@ -500,24 +496,12 @@ public class Cell {
 
     /// Sets the width of the cell borders.
     @discardableResult
-    public func setLineWidth(_ lineWidth: Float) -> Cell {
-        self.lineWidth = lineWidth
-        return self
-    }
-
-    /// Returns the width of the cell borders.
-    public func getLineWidth() -> Float {
-        return self.lineWidth
-    }
-
-    /// Sets the stroke width.
-    @discardableResult
     public func setStrokeWidth(_ strokeWidth: Float) -> Cell {
         self.strokeWidth = strokeWidth
         return self
     }
 
-    /// Returns the stroke width.
+    /// Returns the width of the cell borders.
     public func getStrokeWidth() -> Float {
         return self.strokeWidth
     }
@@ -814,7 +798,7 @@ public class Cell {
             _ cellH: Float) {
         page.addArtifactBMC()
         page.setBrushColor(backgroundColor!)
-        page.fillRect(x, y + lineWidth/2, cellW, cellH)
+        page.fillRect(x, y + strokeWidth/2, cellW, cellH)
         page.addEMC()
     }
 
@@ -826,8 +810,8 @@ public class Cell {
             _ cellH: Float) {
         page.addArtifactBMC()
         page.setPenColor(strokeColor)
-        page.setPenWidth(lineWidth)
-        let qWidth: Float = lineWidth / 4.0
+        page.setPenWidth(strokeWidth)
+        let qWidth: Float = strokeWidth / 4.0
         if topBorder {
             page.moveTo(x - qWidth, y)
             page.lineTo(x + cellW, y)

@@ -46,14 +46,11 @@ public class Cell {
     /** The right padding. */
     protected float rightPadding = 2f;
 
-    /** The width of the cell borders. */
-    protected float lineWidth = 0f;
-
     /** The background color as an RGB array, or null. */
     protected float[] backgroundColor;
     /** The text color as an RGB array. */
     protected float[] textColor = new float[] {0f, 0f, 0f};
-    /** The stroke width. */
+    /** The width of the cell borders. */
     protected float strokeWidth;
     /** The stroke color as an RGB array. */
     protected float[] strokeColor;
@@ -103,14 +100,13 @@ public class Cell {
     }
 
     /**
-     * Sets the font for this cell, and the font size to the size of the font.
+     * Sets the font for this cell. The font size does not change; set it with setFontSize.
      *
      * @param font the font.
      * @return this Cell object.
      */
     public Cell setFont(Font font) {
         this.font = font;
-        this.fontSize = font.getSize();
         return this;
     }
 
@@ -464,9 +460,9 @@ public class Cell {
     }
 
     /**
-     * Sets the stroke width.
+     * Sets the width of the cell borders.
      *
-     * @param strokeWidth the stroke width.
+     * @param strokeWidth the width of the cell borders.
      * @return this Cell object.
      */
     public Cell setStrokeWidth(float strokeWidth) {
@@ -475,9 +471,9 @@ public class Cell {
     }
 
     /**
-     * Returns the stroke width.
+     * Returns the width of the cell borders.
      *
-     * @return the stroke width.
+     * @return the width of the cell borders.
      */
     public float getStrokeWidth() {
         return this.strokeWidth;
@@ -512,26 +508,6 @@ public class Cell {
             cellHeight = fontHeight + topPadding + bottomPadding;
         }
         return cellHeight;
-    }
-
-    /**
-     * Sets the border line width.
-     *
-     * @param lineWidth the border line width.
-     * @return this Cell object.
-     */
-    public Cell setLineWidth(float lineWidth) {
-        this.lineWidth = lineWidth;
-        return this;
-    }
-
-    /**
-     * Returns the border line width.
-     *
-     * @return the border line width.
-     */
-    public float getLineWidth() {
-        return this.lineWidth;
     }
 
     /**
@@ -958,7 +934,7 @@ public class Cell {
             float cellH) {
         page.addArtifactBMC();
         page.setBrushColor(backgroundColor);
-        page.fillRect(x, y + lineWidth/2, cellW, cellH);
+        page.fillRect(x, y + strokeWidth/2, cellW, cellH);
         page.addEMC();
     }
 
@@ -970,8 +946,8 @@ public class Cell {
             float cellH) {
         page.addArtifactBMC();
         page.setPenColor(strokeColor);
-        page.setPenWidth(lineWidth);
-        float qWidth = lineWidth / 4;
+        page.setPenWidth(strokeWidth);
+        float qWidth = strokeWidth / 4;
         if (getBorder(Border.TOP)) {
             page.moveTo(x - qWidth, y);
             page.lineTo(x + cellW, y);

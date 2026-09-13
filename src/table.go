@@ -251,14 +251,14 @@ func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 	return table
 }
 
-// SetFontInColumn sets the font for the specified column.
+// SetFontInColumn sets the font and the font size of the cells in the specified column.
 // @param index the column index.
 // @param font the font.
 func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.SetFont(font)
+			cell.SetFont(font).SetFontSize(font.size)
 			if cell.textBox != nil {
 				cell.textBox.font = font
 			}
@@ -283,14 +283,14 @@ func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 	return table
 }
 
-// SetFontInRow sets the font for the specified row.
+// SetFontInRow sets the font and the font size of the cells in the specified row.
 // @param index the row index.
 // @param font the font.
 func (table *Table) SetFontInRow(index int, font *Font) *Table {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
 		for _, cell := range row {
-			cell.SetFont(font)
+			cell.SetFont(font).SetFontSize(font.size)
 			if cell.textBox != nil {
 				cell.textBox.font = font
 			}
@@ -524,7 +524,7 @@ func (table *Table) SetCellBordersColor(color int32) *Table {
 func (table *Table) SetCellBordersWidth(width float32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetLineWidth(width)
+			cell.SetStrokeWidth(width)
 		}
 	}
 	return table
@@ -633,7 +633,6 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetWidth(cell.GetWidth())
 				cell2.SetLeftPadding(cell.GetLeftPadding())
 				cell2.SetRightPadding(cell.GetRightPadding())
-				cell2.SetLineWidth(cell.GetLineWidth())
 				// Java copies a null background and a null pen color across as
 				// null, which leaves the new cell without either.
 				if cell.hasBackgroundColor {

@@ -31,7 +31,6 @@ type Cell struct {
 	bottomPadding     float32
 	leftPadding       float32
 	rightPadding      float32
-	lineWidth         float32
 
 	backgroundColor    [3]float32
 	hasBackgroundColor bool
@@ -70,7 +69,6 @@ func NewCell(font *Font, text string) *Cell {
 	cell.bottomPadding = 2.0
 	cell.leftPadding = 2.0
 	cell.rightPadding = 2.0
-	cell.lineWidth = 0.0
 	// Java's Cell defaults its properties to 0x00050001 - only the top and
 	// left borders are on.
 	cell.topBorder = true
@@ -80,11 +78,10 @@ func NewCell(font *Font, text string) *Cell {
 	return cell
 }
 
-// SetFont sets the font for this cell, and the font size to the size of the font.
+// SetFont sets the font for this cell. The font size does not change; set it with SetFontSize.
 // @param font the font.
 func (cell *Cell) SetFont(font *Font) *Cell {
 	cell.font = font
-	cell.fontSize = font.size
 	return cell
 }
 
@@ -309,17 +306,6 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	return cellHeight
 }
 
-// SetLineWidth sets the border width.
-func (cell *Cell) SetLineWidth(lineWidth float32) *Cell {
-	cell.lineWidth = lineWidth
-	return cell
-}
-
-// GetLineWidth returns the border width.
-func (cell *Cell) GetLineWidth() float32 {
-	return cell.lineWidth
-}
-
 // SetBackgroundColorRGB sets the background color from red, green and blue values.
 func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
 	cell.backgroundColor = color
@@ -359,13 +345,16 @@ func (cell *Cell) GetStrokeColor() [3]float32 {
 	return cell.strokeColor
 }
 
-// SetStrokeWidth sets the stroke width.
+// SetStrokeWidth sets the width of the cell borders.
+// @param strokeWidth the width of the cell borders.
+// @return this Cell object.
 func (cell *Cell) SetStrokeWidth(strokeWidth float32) *Cell {
 	cell.strokeWidth = strokeWidth
 	return cell
 }
 
-// GetStrokeWidth returns the stroke width.
+// GetStrokeWidth returns the width of the cell borders.
+// @return the width of the cell borders.
 func (cell *Cell) GetStrokeWidth() float32 {
 	return cell.strokeWidth
 }
@@ -610,7 +599,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
 	page.SetBrushColorRGB(cell.backgroundColor)
-	page.FillRect(x, y+cell.lineWidth/2, cellW, cellH)
+	page.FillRect(x, y+cell.strokeWidth/2, cellW, cellH)
 	page.AddEMC()
 }
 
@@ -619,8 +608,8 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	if cell.hasStrokeColor {
 		page.SetPenColorRGB(cell.strokeColor)
 	}
-	page.SetPenWidth(cell.lineWidth)
-	qWidth := cell.lineWidth / 4.0
+	page.SetPenWidth(cell.strokeWidth)
+	qWidth := cell.strokeWidth / 4.0
 	if cell.topBorder {
 		page.MoveTo(x-qWidth, y)
 		page.LineTo(x+cellW, y)

@@ -296,7 +296,7 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Sets the font for the specified column.
+    /// Sets the font and the font size of the cells in the specified column.
     /// </summary>
     /// <param name="index">the column index.</param>
     /// <param name="font">the font.</param>
@@ -305,7 +305,7 @@ public class Table : IDrawable {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
-                cell.SetFont(font);
+                cell.SetFont(font).SetFontSize(font.GetSize());
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -334,7 +334,7 @@ public class Table : IDrawable {
     }
 
     /// <summary>
-    /// Sets the font for the specified row.
+    /// Sets the font and the font size of the cells in the specified row.
     /// </summary>
     /// <param name="index">the row index.</param>
     /// <param name="font">the font.</param>
@@ -343,7 +343,7 @@ public class Table : IDrawable {
         if (index < tableData.Count) {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
-                cell.SetFont(font);
+                cell.SetFont(font).SetFontSize(font.GetSize());
                 if (cell.textBox != null) {
                     cell.textBox.font = font;
                 }
@@ -610,7 +610,7 @@ public class Table : IDrawable {
     public Table SetCellBordersWidth(float width) {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
-                cell.SetLineWidth(width);
+                cell.SetStrokeWidth(width);
             }
         }
         return this;
@@ -725,7 +725,6 @@ public class Table : IDrawable {
                     cell2.SetWidth(cell.GetWidth());
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
-                    cell2.SetLineWidth(cell.lineWidth);
                     cell2.SetBackgroundColor(cell.GetBackgroundColor());
                     cell2.SetStrokeWidth(cell.GetStrokeWidth());
                     cell2.SetStrokeColor(cell.GetStrokeColor());

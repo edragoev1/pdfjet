@@ -242,7 +242,7 @@ public class Example_38 {
         cell.SetBorder(Border.BOTTOM, bottomBorder);
         cell.SetTextAlignment(Align.CENTER);
         cell.SetBackgroundColor(Color.lightblue);
-        cell.SetLineWidth(1f);
+        cell.SetStrokeWidth(1f);
         return cell;
     }
 
