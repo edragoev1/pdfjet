@@ -38,6 +38,7 @@ public class RadioButton : Drawable {
     /// - Parameter fontSize: the fontSize to use.
     /// - Returns: this RadioButton.
     ///
+    @discardableResult
     public func setFontSize(_ fontSize: Float) -> RadioButton {
         self.font.setSize(fontSize)
         return self
@@ -87,6 +88,7 @@ public class RadioButton : Drawable {
     /// - Parameter altDescription: the alternate description of the radio button.
     /// - Returns: this RadioButton.
     ///
+    @discardableResult
     public func setAltDescription(_ altDescription: String) -> RadioButton {
         self.altDescription = altDescription
         return self
@@ -98,6 +100,7 @@ public class RadioButton : Drawable {
     /// - Parameter actualText: the actual text for the radio button.
     /// - Returns: this RadioButton.
     ///
+    @discardableResult
     public func setActualText(_ actualText: String) -> RadioButton {
         self.actualText = actualText
         return self

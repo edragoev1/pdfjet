@@ -1406,7 +1406,7 @@ public class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, obj.getLength(&objects1), decryptor)
+                try obj.setStreamAndData(&buffer1, obj.getLength(objects1), decryptor)
             }
             if type == "/ObjStm" {
                 let first = Int(obj.getValue("/First"))!
@@ -1992,12 +1992,12 @@ public class PDF {
     }
 
     /// - Throws: PDFError when the objects have no root /Pages object.
-    public func addObjects(_ objects: inout [PDFobj]) throws {
+    public func addObjects(_ objects: [PDFobj]) throws {
         guard let pagesObject = getPagesObject(objects) else {
             throw PDFError.noPagesObject
         }
         self.pagesObjNumber = Int(pagesObject.dict[0])!
-        addObjectsToPDF(&objects)
+        addObjectsToPDF(objects)
     }
 
     /// Returns the root pages object.
@@ -2048,8 +2048,8 @@ public class PDF {
 
     // Adds the entries of the /ExtGState dictionary of the resources, which can
     // be an object of its own, with the names that an earlier page did not add.
-    private func addExtGStates(_ resources: PDFobj, _ objects: inout [PDFobj]) {
-        let entries = getResourceEntries(resources, "/ExtGState", &objects)
+    private func addExtGStates(_ resources: PDFobj, _ objects: [PDFobj]) {
+        let entries = getResourceEntries(resources, "/ExtGState", objects)
         var i = 0
         while i < entries.count {
             // The value after the name is a dictionary, a reference or one token.
@@ -2079,12 +2079,12 @@ public class PDF {
 
     private func getFontObjects(
             _ resources: PDFobj,
-            _ objects: inout [PDFobj]) -> [PDFobj] {
+            _ objects: [PDFobj]) -> [PDFobj] {
         var fonts = [PDFobj]()
         // The /Font dictionary holds one "/Name number 0 R" entry per font, and
         // can be an object of its own. Every entry is written to the resources
         // object, so every font it names is collected here.
-        let entries = getResourceEntries(resources, "/Font", &objects)
+        let entries = getResourceEntries(resources, "/Font", objects)
         var i = 0
         while i < entries.count {
             let token = entries[i]
@@ -2110,7 +2110,7 @@ public class PDF {
 
     private func getDescendantFonts(
             _ font: PDFobj,
-            _ objects: inout [PDFobj]) -> [PDFobj] {
+            _ objects: [PDFobj]) -> [PDFobj] {
         var descendantFonts = [PDFobj]()
         let dict = font.getDict()
         for i in 0..<max(dict.count - 2, 0) {
@@ -2128,7 +2128,7 @@ public class PDF {
     private func getObject(
             _ name: String,
             _ object: PDFobj,
-            _ objects: inout [PDFobj]) -> PDFobj? {
+            _ objects: [PDFobj]) -> PDFobj? {
         let dict = object.getDict()
         for i in 0..<max(dict.count - 1, 0) {
             if dict[i] == name {
@@ -2144,14 +2144,14 @@ public class PDF {
     /// embedded font program it carries.
     private func addFontDescriptor(
             _ font: PDFobj,
-            _ objects: inout [PDFobj],
+            _ objects: [PDFobj],
             _ resources: inout [PDFobj]) {
-        guard let descriptor = getObject("/FontDescriptor", font, &objects) else {
+        guard let descriptor = getObject("/FontDescriptor", font, objects) else {
             return
         }
         resources.append(descriptor)
         for key in ["/FontFile", "/FontFile2", "/FontFile3"] {
-            if let fontFile = getObject(key, descriptor, &objects) {
+            if let fontFile = getObject(key, descriptor, objects) {
                 resources.append(fontFile)
             }
         }
@@ -2165,7 +2165,7 @@ public class PDF {
     private func getResourceEntries(
             _ resources: PDFobj,
             _ name: String,
-            _ objects: inout [PDFobj]) -> [String] {
+            _ objects: [PDFobj]) -> [String] {
         var entries = [String]()
         var dict = resources.getDict()
         guard var i = dict.firstIndex(of: name) else {
@@ -2236,7 +2236,7 @@ public class PDF {
     ///
     private func addObjectTree(
             _ number: Int,
-            _ objects: inout [PDFobj],
+            _ objects: [PDFobj],
             _ numbers: inout Set<Int>,
             _ resources: inout [PDFobj]) {
         if number <= 0 || number > objects.count || !numbers.insert(number).inserted {
@@ -2249,7 +2249,7 @@ public class PDF {
         }
         resources.append(object)
         for reference in getReferences(object.dict) {
-            addObjectTree(reference, &objects, &numbers, &resources)
+            addObjectTree(reference, objects, &numbers, &resources)
         }
     }
 
@@ -2259,10 +2259,10 @@ public class PDF {
     ///
     private func addXObjects(
             _ resObj: PDFobj,
-            _ objects: inout [PDFobj],
+            _ objects: [PDFobj],
             _ numbers: inout Set<Int>,
             _ resources: inout [PDFobj]) {
-        let entries = getResourceEntries(resObj, "/XObject", &objects)
+        let entries = getResourceEntries(resObj, "/XObject", objects)
         var i = 0
         while i < entries.count {
             let token = entries[i]
@@ -2271,7 +2271,7 @@ public class PDF {
                 if !importedXObjects.contains(token) {
                     importedXObjects.append(contentsOf: entries[i..<i + 4])
                     if let number = Int(entries[i + 1]) {
-                        addObjectTree(number, &objects, &numbers, &resources)
+                        addObjectTree(number, objects, &numbers, &resources)
                     }
                 }
                 i += 4
@@ -2282,33 +2282,33 @@ public class PDF {
     }
 
     /// Adds the fonts, images and graphics states used by the pages to this document.
-    public func addResourceObjects(_ objects: inout [PDFobj]) {
+    public func addResourceObjects(_ objects: [PDFobj]) {
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)
         for page in pages {
-            let resObj = page.getResourcesObject(&objects)!
-            let fonts = getFontObjects(resObj, &objects)
+            let resObj = page.getResourcesObject(objects)!
+            let fonts = getFontObjects(resObj, objects)
             for font in fonts {
                 resources.append(font)
-                if let obj = getObject("/ToUnicode", font, &objects) {
+                if let obj = getObject("/ToUnicode", font, objects) {
                     resources.append(obj)
                 }
                 // A simple font carries its descriptor directly; only a
                 // composite one puts it on the descendant.
-                addFontDescriptor(font, &objects, &resources)
-                let descendantFonts = getDescendantFonts(font, &objects)
+                addFontDescriptor(font, objects, &resources)
+                let descendantFonts = getDescendantFonts(font, objects)
                 for descendantFont in descendantFonts {
                     resources.append(descendantFont)
-                    addFontDescriptor(descendantFont, &objects, &resources)
+                    addFontDescriptor(descendantFont, objects, &resources)
                 }
             }
-            addXObjects(resObj, &objects, &numbers, &resources)
-            addExtGStates(resObj, &objects)
+            addXObjects(resObj, objects, &numbers, &resources)
+            addExtGStates(resObj, objects)
             // The /ExtGState entries are copied as they are, so the objects
             // that they refer to have to be copied too.
-            for number in getReferences(getResourceEntries(resObj, "/ExtGState", &objects)) {
-                addObjectTree(number, &objects, &numbers, &resources)
+            for number in getReferences(getResourceEntries(resObj, "/ExtGState", objects)) {
+                addObjectTree(number, objects, &numbers, &resources)
             }
         }
         resources.sort(by: { $0.number < $1.number })
@@ -2320,10 +2320,10 @@ public class PDF {
                 unique.append(obj)
             }
         }
-        addObjectsToPDF(&unique)
+        addObjectsToPDF(unique)
     }
 
-    private func addObjectsToPDF(_ objects: inout [PDFobj]) {
+    private func addObjectsToPDF(_ objects: [PDFobj]) {
         for obj in objects {
             if obj.offset == 0 {
                 setObjOffset(obj.number, byteCount)

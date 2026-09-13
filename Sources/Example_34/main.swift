@@ -61,7 +61,7 @@ public class Example_34 {
         table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 
@@ -133,7 +133,7 @@ public class Example_34 {
                     dataRow.append(Cell(f2, ""))
                 }
                 tableData[i] = dataRow
-                dataRow[dataRowColumns - 1].setColSpan(UInt32(numOfColumns - dataRowColumns) + 1)
+                dataRow[dataRowColumns - 1].setColSpan(numOfColumns - dataRowColumns + 1)
             }
         }
     }

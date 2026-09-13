@@ -24,11 +24,11 @@ public class DonutChart : Drawable {
     ///
     /// Creates a donut chart or a pie chart.
     ///
-    /// - Parameter f1: the font for the slice labels.
-    /// - Parameter f2: the font for the percentages drawn inside the slices.
+    /// - Parameter f1: the font for the slice labels, or nil to draw no labels.
+    /// - Parameter f2: the font for the percentages drawn inside the slices, or nil to draw no percentages.
     /// - Parameter isDonutChart: true for a donut chart, false for a pie chart.
     ///
-    public init(_ f1: Font, _ f2: Font, _ isDonutChart: Bool) {
+    public init(_ f1: Font?, _ f2: Font?, _ isDonutChart: Bool) {
         self.f1 = f1
         self.f2 = f2
         self.isDonutChart = isDonutChart

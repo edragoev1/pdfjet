@@ -81,8 +81,8 @@ public class Image : Drawable {
             }
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
-            w = Float(png.getWidth()!)
-            h = Float(png.getHeight()!)
+            w = Float(png.getWidth())
+            h = Float(png.getHeight())
             if png.getColorType() == 0 {
                 addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
             } else {
@@ -131,8 +131,8 @@ public class Image : Drawable {
             let png = try PNGImage(stream)
             data = png.getData()
             alpha = png.getAlpha()
-            w = Float(png.getWidth()!)
-            h = Float(png.getHeight()!)
+            w = Float(png.getWidth())
+            h = Float(png.getHeight())
             if png.getColorType() == 0 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", png.getBitDepth())
             } else {

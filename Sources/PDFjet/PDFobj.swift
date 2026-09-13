@@ -288,13 +288,13 @@ public final class PDFobj {
         return Letter.PORTRAIT
     }
 
-    final func getLength(_ objects: inout [PDFobj]) -> Int {
+    final func getLength(_ objects: [PDFobj]) -> Int {
         for i in 0..<dict.count {
             if dict[i] == "/Length" {
                 let number = Int(dict[i + 1])!
                 if dict[i + 2] == "0" &&
                         dict[i + 3] == "R" {
-                    return getLength(number, from: &objects)
+                    return getLength(number, from: objects)
                 } else {
                     return number
                 }
@@ -307,7 +307,7 @@ public final class PDFobj {
     // are in the order of the cross-reference, not of their numbers.
     private final func getLength(
             _ number: Int,
-            from objects: inout [PDFobj]) -> Int {
+            from objects: [PDFobj]) -> Int {
         for obj in objects where obj.number == number {
             return Int(obj.dict[3])!
         }
@@ -316,7 +316,7 @@ public final class PDFobj {
 
     private final func getObject(
             number: Int,
-            from objects: inout [PDFobj]) -> PDFobj? {
+            from objects: [PDFobj]) -> PDFobj? {
         return objects[number - 1]
     }
 
@@ -329,7 +329,7 @@ public final class PDFobj {
     ///
     /// - Returns: the content object, or nil if the page has no contents.
     ///
-    public final func getContentObject(_ objects: inout [PDFobj]) -> PDFobj? {
+    public final func getContentObject(_ objects: [PDFobj]) -> PDFobj? {
         var numbers = getObjectNumbers("/Contents")
         if numbers.count == 1 {
             let object = objects[numbers[0] - 1]
@@ -365,7 +365,7 @@ public final class PDFobj {
     ///
     /// - Parameter objects: the objects of the PDF.
     /// - Returns: the resources object, or nil if the page has none.
-    public final func getResourcesObject(_ objects: inout [PDFobj]) -> PDFobj? {
+    public final func getResourcesObject(_ objects: [PDFobj]) -> PDFobj? {
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
@@ -373,7 +373,7 @@ public final class PDFobj {
                 if token == "<<" {
                     return self
                 }
-                return getObject(number: Int(token)!, from: &objects)
+                return getObject(number: Int(token)!, from: objects)
             }
             i += 1
         }
@@ -413,10 +413,10 @@ public final class PDFobj {
                 i += 1
                 let token = dict[i]
                 if token == "<<" {                  // Direct resources object
-                    addFontResource(self, &objects, font.fontID!, obj.number)
+                    addFontResource(self, objects, font.fontID!, obj.number)
                 } else if firstCharIsDigit(token) {   // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: &objects)!
-                    addFontResource(object, &objects, font.fontID!, obj.number)
+                    let object = getObject(number: Int(token)!, from: objects)!
+                    addFontResource(object, objects, font.fontID!, obj.number)
                 }
             }
             i += 1
@@ -427,7 +427,7 @@ public final class PDFobj {
 
     private final func addFontResource(
             _ obj: PDFobj,
-            _ objects: inout [PDFobj],
+            _ objects: [PDFobj],
             _ fontID: String,
             _ number: Int) {
         var fonts: Bool = false
@@ -462,7 +462,7 @@ public final class PDFobj {
                     obj.dict.insert("R", at: i + 5)
                     return
                 } else if firstCharIsDigit(token) {
-                    let o2 = getObject(number: Int(token)!, from: &objects)!
+                    let o2 = getObject(number: Int(token)!, from: objects)!
                     var j = 0
                     while j < o2.dict.count {
                         if o2.dict[j] == "<<" {
@@ -502,7 +502,7 @@ public final class PDFobj {
     private final func addResource(
             _ type: String,
             _ obj: PDFobj,
-            _ objects: inout [PDFobj],
+            _ objects: [PDFobj],
             _ objNumber: Int) {
         let tag = (type == "/Font") ? "/F" : "/Im"
         let number = String(objNumber)
@@ -513,7 +513,7 @@ public final class PDFobj {
                 if token == "<<" {
                     insertNewObject(&obj.dict, &list, type)
                 } else {
-                    let object = getObject(number: Int(token)!, from: &objects)!
+                    let object = getObject(number: Int(token)!, from: objects)!
                     insertNewObject(&object.dict, &list, type)
                 }
                 return
@@ -542,15 +542,15 @@ public final class PDFobj {
     /// - Parameter objects: the objects of the PDF.
     public final func addResource(
             _ image: Image,
-            _ objects: inout [PDFobj]) {
+            _ objects: [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = dict[i + 1]
                 if token == "<<" {      // Direct resources object
-                    addResource("/XObject", self, &objects, image.objNumber!)
+                    addResource("/XObject", self, objects, image.objNumber!)
                 } else {                  // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: &objects)!
-                    addResource("/XObject", object, &objects, image.objNumber!)
+                    let object = getObject(number: Int(token)!, from: objects)!
+                    addResource("/XObject", object, objects, image.objNumber!)
                 }
                 return
             }
@@ -563,15 +563,15 @@ public final class PDFobj {
     /// - Parameter objects: the objects of the PDF.
     public final func addResource(
             _ font: Font,
-            _ objects: inout [PDFobj]) {
+            _ objects: [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = dict[i + 1]
                 if token == "<<" {      // Direct resources object
-                    addResource("/Font", self, &objects, font.objNumber)
+                    addResource("/Font", self, objects, font.objNumber)
                 } else {                  // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: &objects)!
-                    addResource("/Font", object, &objects, font.objNumber)
+                    let object = getObject(number: Int(token)!, from: objects)!
+                    addResource("/Font", object, objects, font.objNumber)
                 }
                 return
             }

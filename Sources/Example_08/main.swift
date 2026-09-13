@@ -49,7 +49,7 @@ public class Example_08 {
         table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            try page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 

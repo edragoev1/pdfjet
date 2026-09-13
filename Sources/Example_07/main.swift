@@ -14,7 +14,7 @@ public class Example_07 {
         var page = Page(pdf, A4.LANDSCAPE)
 
         f1.setSize(72.0)
-        try page.addWatermark(f1, "This is a Draft")
+        page.addWatermark(f1, "This is a Draft")
         f1.setSize(18.0)
 
         let xPos: Float = 20.0

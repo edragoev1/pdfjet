@@ -11,7 +11,7 @@ import Foundation
  * See the Table class for more information.
  */
 public class Cell {
-    internal var font: Font?
+    internal var font: Font
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
     var text: String?
@@ -70,12 +70,10 @@ public class Cell {
      * - Parameter font: the font.
      * - Parameter text: the text.
      */
-    public init(_ font: Font?, _ text: String? = nil) {
+    public init(_ font: Font, _ text: String? = nil) {
         self.font = font
         self.fallbackFont = font
-        if font != nil {
-            self.fontSize = font!.size
-        }
+        self.fontSize = font.size
         self.text = text
         self.underline = false
         self.strikeout = false
@@ -88,7 +86,7 @@ public class Cell {
      * - Returns: this Cell object.
      */
     @discardableResult
-    public func setFont(_ font: Font?) -> Cell {
+    public func setFont(_ font: Font) -> Cell {
         self.font = font
         return self
     }
@@ -110,7 +108,7 @@ public class Cell {
      *
      * - Returns: the font.
      */
-    public func getFont() -> Font? {
+    public func getFont() -> Font {
         return self.font
     }
 
@@ -400,7 +398,7 @@ public class Cell {
         } else if barcode != nil {
             cellHeight = barcode!.getHeight() + topPadding + bottomPadding
         } else if text != nil {
-            var fontHeight = font!.getBodyHeight(fontSize)
+            var fontHeight = font.getBodyHeight(fontSize)
             if fallbackFont != nil && fallbackFont!.getBodyHeight(fontSize) > fontHeight {
                 fontHeight = fallbackFont!.getBodyHeight(fontSize)
             }
@@ -524,9 +522,9 @@ public class Cell {
      * - Returns: this Cell object.
      */
     @discardableResult
-    public func setColSpan(_ colspan: UInt32) -> Cell {
+    public func setColSpan(_ colspan: Int) -> Cell {
         self.properties &= 0x00FF0000
-        self.properties |= (colspan & 0x0000FFFF)
+        self.properties |= (UInt32(colspan) & 0x0000FFFF)
         return self
     }
 
@@ -535,8 +533,8 @@ public class Cell {
      *
      * - Returns: the column span value.
      */
-    public func getColSpan() -> UInt32 {
-        return (self.properties & 0x0000FFFF)
+    public func getColSpan() -> Int {
+        return Int(self.properties & 0x0000FFFF)
     }
 
     /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
@@ -843,7 +841,7 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
-        let ascent = font!.getAscent(fontSize)
+        let ascent = font.getAscent(fontSize)
         var yText: Float
         if valign == Alignment.TOP {
             yText = y + ascent + self.topPadding
@@ -868,7 +866,7 @@ public class Cell {
         }
         if compositeTextLine == nil {
             page.addBMC(StructElem.P, text!, text!)
-            page.drawString(font!, fallbackFont, fontSize, text!, xText, yText, textColor, nil)
+            page.drawString(font, fallbackFont, fontSize, text!, xText, yText, textColor, nil)
             page.addEMC()
             if getUnderline() {
                 underlineText(page, xText, yText)
@@ -888,7 +886,7 @@ public class Cell {
                     xText,
                     yText - ascent,
                     xText + getTextWidth(),
-                    yText + font!.getDescent(fontSize),
+                    yText + font.getDescent(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -908,13 +906,13 @@ public class Cell {
         if compositeTextLine != nil {
             return compositeTextLine!.getWidth()
         }
-        return font!.stringWidth(fallbackFont, fontSize, text)
+        return font.stringWidth(fallbackFont, fontSize, text)
     }
 
     private func underlineText(_ page: Page, _ x: Float, _ y: Float) {
-        let descent = font!.getDescent(fontSize)
+        let descent = font.getDescent(fontSize)
         page.addBMC(StructElem.P, "underline", "underline")
-        page.setPenWidth(font!.getUnderlineThickness(fontSize))
+        page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y + descent)
         page.lineTo(x + getTextWidth(), y + descent)
         page.strokePath()
@@ -922,9 +920,9 @@ public class Cell {
     }
 
     private func strikeoutText(_ page: Page, _ x: Float, _ y: Float) {
-        let ascent = font!.getAscent(fontSize)
+        let ascent = font.getAscent(fontSize)
         page.addBMC(StructElem.P, "strike out", "strike out")
-        page.setPenWidth(font!.getUnderlineThickness(fontSize))
+        page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y - ascent/3.0)
         page.lineTo(x + getTextWidth(), y - ascent/3.0)
         page.strokePath()

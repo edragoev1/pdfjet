@@ -6,8 +6,15 @@
  */
 import Foundation
 
-struct PDFjetError: Error {
-    let message: String
+/// The error that PDFjet throws, with a message that describes the problem.
+public struct PDFjetError: Error, CustomStringConvertible {
+    /// The message that describes the problem.
+    public let message: String
+
+    /// The message.
+    public var description: String {
+        return message
+    }
 }
 
 ///
@@ -172,13 +179,13 @@ public class Page {
     }
 
     /// Adds an image to the resources of this page.
-    public func addResource(_ image: Image, _ objects: inout [PDFobj]) {
-        pageObj!.addResource(image, &objects)
+    public func addResource(_ image: Image, _ objects: [PDFobj]) {
+        pageObj!.addResource(image, objects)
     }
 
     /// Adds a font to the resources of this page.
-    public func addResource(_ font: Font, _ objects: inout [PDFobj]) {
-        pageObj!.addResource(font, &objects)
+    public func addResource(_ font: Font, _ objects: [PDFobj]) {
+        pageObj!.addResource(font, objects)
     }
 
     /// Returns the content stream of this page.
@@ -2112,7 +2119,7 @@ public class Page {
     /// Draws the text as a watermark diagonally across the page.
     public func addWatermark(
             _ font: Font,
-            _ text: String) throws {
+            _ text: String) {
         let hypotenuse = Float(sqrt(Double(self.height * self.height + self.width * self.width)))
         let stringWidth = font.stringWidth(text)
         let offset = (hypotenuse - stringWidth) / 2.0
@@ -2180,13 +2187,13 @@ public class Page {
 
     /// Draws the text line centered at the top of the page.
     @discardableResult
-    public func addHeader(_ textLine: TextLine) throws -> [Float] {
-        return try addHeader(textLine, 1.5*textLine.font!.getAscent(textLine.fontSize))
+    public func addHeader(_ textLine: TextLine) -> [Float] {
+        return addHeader(textLine, 1.5*textLine.font!.getAscent(textLine.fontSize))
     }
 
     /// Draws the text line centered at the top of the page, with its baseline at the specified offset.
     @discardableResult
-    public func addHeader(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
+    public func addHeader(_ textLine: TextLine, _ offset: Float) -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset)
         var xy = textLine.drawOn(self)
         xy[1] += textLine.font!.getDescent(textLine.fontSize)
@@ -2195,13 +2202,13 @@ public class Page {
 
     /// Draws the text line centered at the bottom of the page.
     @discardableResult
-    public func addFooter(_ textLine: TextLine) throws -> [Float] {
-        return try addFooter(textLine, textLine.font!.getAscent(textLine.fontSize))
+    public func addFooter(_ textLine: TextLine) -> [Float] {
+        return addFooter(textLine, textLine.font!.getAscent(textLine.fontSize))
     }
 
     /// Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.
     @discardableResult
-    public func addFooter(_ textLine: TextLine, _ offset: Float) throws -> [Float] {
+    public func addFooter(_ textLine: TextLine, _ offset: Float) -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset)
         return textLine.drawOn(self)
     }

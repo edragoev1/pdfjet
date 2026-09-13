@@ -211,7 +211,7 @@ public class Example_38 {
 
     private func getCell(
             _ font: Font,
-            _ colSpan: UInt32,
+            _ colSpan: Int,
             _ text: String,
             _ topBorder: Bool,
             _ bottomBorder: Bool) -> Cell {

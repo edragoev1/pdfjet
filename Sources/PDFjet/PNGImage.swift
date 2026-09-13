@@ -17,8 +17,8 @@ import Foundation
  * ```
  */
 public class PNGImage {
-    var w: Int?                         // Image width in pixels
-    var h: Int?                         // Image height in pixels
+    var w: Int = 0                      // Image width in pixels
+    var h: Int = 0                      // Image height in pixels
 
     var iDAT = [UInt8]()                // The compressed data in the IDAT chunks
     var pLTE: [UInt8]?                  // The palette data
@@ -119,12 +119,12 @@ public class PNGImage {
     }
 
     /// Returns the image width.
-    public func getWidth() -> Int? {
+    public func getWidth() -> Int {
         return self.w
     }
 
     /// Returns the image height.
-    public func getHeight() -> Int? {
+    public func getHeight() -> Int {
         return self.h
     }
 
@@ -239,9 +239,9 @@ public class PNGImage {
 
     // Truecolor Image with Bit Depth == 16
     private func getImageColorType2BitDepth16(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
         var filters = [UInt8]()
-        let bytesPerLine = 6 * self.w! + 1
+        let bytesPerLine = 6 * self.w + 1
         var j = 0
         for i in 0..<buf.count {
             if i % bytesPerLine == 0 {
@@ -251,15 +251,15 @@ public class PNGImage {
                 j += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 6)
+        applyFilters(&filters, &image, self.w, self.h, 6)
         return image
     }
 
     // Truecolor Image with Bit Depth == 8
     private func getImageColorType2BitDepth8(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
         var filters = [UInt8]()
-        let bytesPerLine = 3 * self.w! + 1
+        let bytesPerLine = 3 * self.w + 1
         var j = 0
         for i in 0..<buf.count {
             if i % bytesPerLine == 0 {
@@ -269,15 +269,15 @@ public class PNGImage {
                 j += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 3)
+        applyFilters(&filters, &image, self.w, self.h, 3)
         return image
     }
 
     // Truecolor Image with Alpha Transparency
     private func getImageColorType6BitDepth8(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: 4 * self.w! * self.h!)
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        let bytesPerLine = 4 * self.w! + 1
+        var image = [UInt8](repeating: 0, count: 4 * self.w * self.h)
+        var filters = [UInt8](repeating: 0, count: self.h)
+        let bytesPerLine = 4 * self.w + 1
         var k = 0
         var j = 0
         for i in 0..<buf.count {
@@ -289,10 +289,10 @@ public class PNGImage {
                 j += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 4)
+        applyFilters(&filters, &image, self.w, self.h, 4)
 
-        var idata = [UInt8](repeating: 0, count: (3 * self.w! * self.h!))   // Image data
-        var alpha = [UInt8](repeating: 0, count: (self.w! * self.h!))       // Alpha values
+        var idata = [UInt8](repeating: 0, count: (3 * self.w * self.h))   // Image data
+        var alpha = [UInt8](repeating: 0, count: (self.w * self.h))       // Alpha values
 
         k = 0
         j = 0
@@ -315,28 +315,28 @@ public class PNGImage {
     // The filters are undone on the packed indexes, one byte per pixel whatever
     // the bit depth, before the indexes are looked up in the palette.
     private func getImageColorType3(_ buf: [UInt8]) -> [UInt8] {
-        let bytesPerLine = (self.w! * self.bitDepth + 7) / 8
-        var indexes = [UInt8](repeating: 0, count: bytesPerLine * self.h!)
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        for row in 0..<self.h! {
+        let bytesPerLine = (self.w * self.bitDepth + 7) / 8
+        var indexes = [UInt8](repeating: 0, count: bytesPerLine * self.h)
+        var filters = [UInt8](repeating: 0, count: self.h)
+        for row in 0..<self.h {
             let offset = row * (bytesPerLine + 1)
             filters[row] = buf[offset]
             indexes.replaceSubrange(
                     row * bytesPerLine..<(row + 1) * bytesPerLine,
                     with: buf[(offset + 1)..<(offset + 1 + bytesPerLine)])
         }
-        applyFilters(&filters, &indexes, bytesPerLine, self.h!, 1)
+        applyFilters(&filters, &indexes, bytesPerLine, self.h, 1)
 
-        var image = [UInt8](repeating: 0x00, count: 3*self.w!*self.h!)
+        var image = [UInt8](repeating: 0x00, count: 3*self.w*self.h)
         var alpha: [UInt8]?
         if tRNS != nil {
-            alpha = [UInt8](repeating: 0xFF, count: self.w!*self.h!)
+            alpha = [UInt8](repeating: 0xFF, count: self.w*self.h)
         }
         let mask = (1 << self.bitDepth) - 1
         var n = 0
         var j = 0
-        for row in 0..<self.h! {
-            for col in 0..<self.w! {
+        for row in 0..<self.h {
+            for col in 0..<self.w {
                 let bit = col * self.bitDepth
                 let b = Int(indexes[row * bytesPerLine + bit / 8])
                 let k = (b >> (8 - self.bitDepth - bit % 8)) & mask
@@ -360,9 +360,9 @@ public class PNGImage {
 
     // Grayscale Image with Bit Depth == 16
     private func getImageColorType0BitDepth16(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        let bytesPerLine = 2 * self.w! + 1
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
+        var filters = [UInt8](repeating: 0, count: self.h)
+        let bytesPerLine = 2 * self.w + 1
         var k = 0
         var j = 0
         for i in 0..<buf.count {
@@ -374,15 +374,15 @@ public class PNGImage {
                 k += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 2)
+        applyFilters(&filters, &image, self.w, self.h, 2)
         return image
     }
 
     // Grayscale Image with Bit Depth == 8
     private func getImageColorType0BitDepth8(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        let bytesPerLine = self.w! + 1
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
+        var filters = [UInt8](repeating: 0, count: self.h)
+        let bytesPerLine = self.w + 1
         var k = 0
         var j = 0
         for i in 0..<buf.count {
@@ -394,16 +394,16 @@ public class PNGImage {
                 k += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 1)
+        applyFilters(&filters, &image, self.w, self.h, 1)
         return image
     }
 
     // Grayscale Image with Bit Depth == 4
     private func getImageColorType0BitDepth4(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        var bytesPerLine = self.w! / 2 + 1
-        if self.w! % 2 > 0 {
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
+        var filters = [UInt8](repeating: 0, count: self.h)
+        var bytesPerLine = self.w / 2 + 1
+        if self.w % 2 > 0 {
             bytesPerLine += 1
         }
         var k = 0
@@ -418,16 +418,16 @@ public class PNGImage {
             }
         }
         // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h, 1)
         return image
     }
 
     // Grayscale Image with Bit Depth == 2
     private func getImageColorType0BitDepth2(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        var bytesPerLine = self.w! / 4 + 1
-        if self.w! % 4 > 0 {
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
+        var filters = [UInt8](repeating: 0, count: self.h)
+        var bytesPerLine = self.w / 4 + 1
+        if self.w % 4 > 0 {
             bytesPerLine += 1
         }
         var k = 0
@@ -442,16 +442,16 @@ public class PNGImage {
             }
         }
         // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h, 1)
         return image
     }
 
     // Grayscale Image with Bit Depth == 1
     private func getImageColorType0BitDepth1(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var filters = [UInt8](repeating: 0, count: self.h!)
-        var bytesPerLine = self.w! / 8 + 1
-        if self.w! % 8 > 0 {
+        var image = [UInt8](repeating: 0, count: (buf.count - self.h))
+        var filters = [UInt8](repeating: 0, count: self.h)
+        var bytesPerLine = self.w / 8 + 1
+        if self.w % 8 > 0 {
             bytesPerLine += 1
         }
         var k = 0
@@ -466,7 +466,7 @@ public class PNGImage {
             }
         }
         // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h, 1)
         return image
     }
 

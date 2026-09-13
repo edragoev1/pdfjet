@@ -24,7 +24,7 @@ public class TextParameters {
 
     /// Sets the font.
     @discardableResult
-    public func setFont(_ font: Font?) -> TextParameters {
+    public func setFont(_ font: Font) -> TextParameters {
         self.font = font
         return self
     }
@@ -46,7 +46,7 @@ public class TextParameters {
 
     /// Sets the text.
     @discardableResult
-    public func setText(_ text: String?) -> TextParameters {
+    public func setText(_ text: String) -> TextParameters {
         self.text = text
         return self
     }

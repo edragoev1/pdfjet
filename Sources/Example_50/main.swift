@@ -30,9 +30,9 @@ public class Example_50 {
         let page = Page(pdf, pages[0])
         // page.invertYAxis()
 
-        page.addResource(image, &objects)
-        page.addResource(f1, &objects)
-        page.addResource(f2, &objects)
+        page.addResource(image, objects)
+        page.addResource(f1, objects)
+        page.addResource(f2, objects)
         let f3 = page.addResource(CoreFont.HELVETICA, &objects).setSize(12.0)
 
         image.drawOn(page)
@@ -152,7 +152,7 @@ public class Example_50 {
         // Male Checkbox 2
         // CheckBox.xMark(page, 535.5, 536.5, 7.0)
         page.complete(&objects)
-        try pdf.addObjects(&objects)
+        try pdf.addObjects(objects)
 
         try pdf.complete()
     }

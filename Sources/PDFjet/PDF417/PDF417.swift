@@ -6,11 +6,6 @@
  */
 import Foundation
 
-enum EncodingError: Error {
-    case unencodable
-    case tooLong
-}
-
 /**
  *  Used to create PDF417 2D barcodes.
  *
@@ -58,7 +53,7 @@ public class PDF417 : Drawable {
         let scalars = str.unicodeScalars
         for scalar in scalars {
             if scalar.value > 126 {
-                throw EncodingError.unencodable
+                throw PDFjetError(message: "The string contains unencodable characters.")
             }
         }
 
@@ -70,7 +65,7 @@ public class PDF417 : Drawable {
             rows = 3
         }
         if rows * cols > 928 {
-            throw EncodingError.tooLong
+            throw PDFjetError(message: "The string is too long for a PDF417 barcode.")
         }
         self.codewords = [Int](repeating: 0, count: rows * (cols + 2))
 
