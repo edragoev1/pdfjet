@@ -703,7 +703,7 @@ public class Table : Drawable {
                             maxColWidths[i] = barcodeWidth
                         }
                     } else if cell.text != nil {
-                        var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.text)
+                        var textWidth = cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, cell.text)
                         textWidth += cell.leftPadding + cell.rightPadding
                         if textWidth > maxColWidths[i] {
                             maxColWidths[i] = textWidth
@@ -742,6 +742,7 @@ public class Table : Drawable {
                 for cell in row {
                     let cell2 = Cell(cell.getFont())
                     cell2.setFallbackFont(cell.getFallbackFont())
+                    cell2.setFontSize(cell.fontSize)
                     cell2.setWidth(cell.getWidth())
                     cell2.setLeftPadding(cell.getLeftPadding())
                     cell2.setRightPadding(cell.getRightPadding())
@@ -801,12 +802,12 @@ public class Table : Drawable {
                     var n = 0
                     var buf = String()
                     for token in tokens {
-                        if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
+                        if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
                             if !buf.isEmpty {
                                 buf.append(" ")
                             }
                             for scalar in token.unicodeScalars {
-                                if cell.font!.stringWidth(cell.fallbackFont, buf + String(scalar)) > cellWidth {
+                                if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, buf + String(scalar)) > cellWidth {
                                     tableData2[i + n][j].setText(buf)
                                     buf = ""
                                     n += 1
@@ -814,7 +815,7 @@ public class Table : Drawable {
                                 buf.append(String(scalar))
                             }
                         } else {
-                            if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + token).trim()) > cellWidth {
+                            if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, (buf + " " + token).trim()) > cellWidth {
                                 tableData2[i + n][j].setText(buf.trim())
                                 buf = ""
                                 buf.append(token)
@@ -849,19 +850,19 @@ public class Table : Drawable {
         let tokens = cell.text!.splitOnWhitespace()
         var buf = String()
         for token in tokens {
-            if cell.font!.stringWidth(cell.fallbackFont, token) > cellWidth {
+            if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
                 if !buf.isEmpty {
                     buf.append(" ")
                 }
                 for scalar in token.unicodeScalars {
-                    if cell.font!.stringWidth(cell.fallbackFont, buf + String(scalar)) > cellWidth {
+                    if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, buf + String(scalar)) > cellWidth {
                         numOfVerCells += 1
                         buf = ""
                     }
                     buf.append(String(scalar))
                 }
             } else {
-                if cell.font!.stringWidth(cell.fallbackFont, (buf + " " + token).trim()) > cellWidth {
+                if cell.font!.stringWidth(cell.fallbackFont, cell.fontSize, (buf + " " + token).trim()) > cellWidth {
                     numOfVerCells += 1
                     buf = ""
                     buf.append(token)

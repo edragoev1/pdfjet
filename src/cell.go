@@ -158,16 +158,19 @@ func (cell *Cell) GetPoint() *Point {
 	return cell.point
 }
 
-// SetTextBlock sets the text block drawn in this cell.
+// SetTextBlock sets the text block drawn in this cell and clears the cell text.
 func (cell *Cell) SetTextBlock(textBlock *TextBlock) *Cell {
 	cell.textBlock = textBlock
+	cell.text = ""
 	return cell
 }
 
-// SetTextColumn sets the text column drawn in this cell and widens the cell to fit it.
+// SetTextColumn sets the text column drawn in this cell, widens the cell to fit it
+// and clears the cell text.
 func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
 	cell.textColumn = textColumn
 	cell.width = textColumn.w + cell.leftPadding + cell.rightPadding
+	cell.text = ""
 	return cell
 }
 
@@ -297,9 +300,9 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	} else if cell.barcode != nil {
 		cellHeight = cell.barcode.GetHeight() + cell.topPadding + cell.bottomPadding
 	} else {
-		fontHeight := cell.font.GetHeight()
-		if cell.fallbackFont != nil && cell.fallbackFont.GetHeight() > fontHeight {
-			fontHeight = cell.fallbackFont.GetHeight()
+		fontHeight := cell.font.GetBodyHeightAt(cell.fontSize)
+		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeightAt(cell.fontSize) > fontHeight {
+			fontHeight = cell.fallbackFont.GetBodyHeightAt(cell.fontSize)
 		}
 		cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
 	}

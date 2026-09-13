@@ -266,13 +266,14 @@ public class Cell {
     }
 
     /**
-     * Sets the text block drawn inside this cell.
+     * Sets the text block drawn inside this cell and clears the cell text.
      *
      * @param textBlock the text block.
      * @return this Cell object.
      */
     public Cell setTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
+        this.text = null;
         return this;
     }
 
@@ -286,7 +287,8 @@ public class Cell {
     }
 
     /**
-     * Sets the text column drawn inside this cell, and widens the cell to fit it.
+     * Sets the text column drawn inside this cell, widens the cell to fit it
+     * and clears the cell text.
      *
      * @param textColumn the text column.
      * @return this Cell object.
@@ -294,6 +296,7 @@ public class Cell {
     public Cell setTextColumn(TextColumn textColumn) {
         this.textColumn = textColumn;
         this.width = textColumn.getWidth() + this.leftPadding + this.rightPadding;
+        this.text = null;
         return this;
     }
 
@@ -501,9 +504,9 @@ public class Cell {
         } else if (barcode != null) {
             cellHeight = barcode.getHeight() + topPadding + bottomPadding;
         } else if (text != null) {
-            float fontHeight = font.getHeight();
-            if (fallbackFont != null && fallbackFont.getHeight() > fontHeight) {
-                fontHeight = fallbackFont.getHeight();
+            float fontHeight = font.getBodyHeight(fontSize);
+            if (fallbackFont != null && fallbackFont.getBodyHeight(fontSize) > fontHeight) {
+                fontHeight = fallbackFont.getBodyHeight(fontSize);
             }
             cellHeight = fontHeight + topPadding + bottomPadding;
         }

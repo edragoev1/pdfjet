@@ -751,7 +751,7 @@ public class Table implements Drawable {
                         } catch (Exception e) {
                         }
                     } else if (cell.text != null) {
-                        float textWidth = cell.font.stringWidth(cell.fallbackFont, cell.text);
+                        float textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text);
                         textWidth += cell.leftPadding + cell.rightPadding;
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
@@ -789,6 +789,7 @@ public class Table implements Drawable {
                 for (Cell cell : row) {
                     Cell cell2 = new Cell(cell.getFont());
                     cell2.setFallbackFont(cell.getFallbackFont());
+                    cell2.setFontSize(cell.fontSize);
                     cell2.setWidth(cell.getWidth());
                     cell2.setLeftPadding(cell.leftPadding);
                     cell2.setRightPadding(cell.rightPadding);
@@ -844,12 +845,12 @@ public class Table implements Drawable {
                     int n = 0;
                     StringBuilder buf = new StringBuilder();
                     for (String token : tokens) {
-                        if (cell.font.stringWidth(cell.fallbackFont, token) > cellWidth) {
+                        if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
                             if (buf.length() > 0) {
                                 buf.append(" ");
                             }
                             for (int k = 0; k < token.length(); k++) {
-                                if (cell.font.stringWidth(cell.fallbackFont, buf.toString() + token.charAt(k)) > cellWidth) {
+                                if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf.toString() + token.charAt(k)) > cellWidth) {
                                     tableData2.get(i + n).get(j).setText(buf.toString());
                                     buf.setLength(0);
                                     n++;
@@ -857,7 +858,7 @@ public class Table implements Drawable {
                                 buf.append(token.charAt(k));
                             }
                         } else {
-                            if (cell.font.stringWidth(cell.fallbackFont, (buf.toString() + " " + token).trim()) > cellWidth) {
+                            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf.toString() + " " + token).trim()) > cellWidth) {
                                 tableData2.get(i + n).get(j).setText(buf.toString().trim());
                                 buf.setLength(0);
                                 buf.append(token);
@@ -894,19 +895,19 @@ public class Table implements Drawable {
         String[] tokens = Util.splitOnWhitespace(cell.text);
         StringBuilder buf = new StringBuilder();
         for (String token : tokens) {
-            if (cell.font.stringWidth(cell.fallbackFont, token) > cellWidth) {
+            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
                 if (buf.length() > 0) {
                     buf.append(" ");
                 }
                 for (int k = 0; k < token.length(); k++) {
-                    if (cell.font.stringWidth(cell.fallbackFont, buf.toString() + token.charAt(k)) > cellWidth) {
+                    if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf.toString() + token.charAt(k)) > cellWidth) {
                         numOfVerCells++;
                         buf.setLength(0);
                     }
                     buf.append(token.charAt(k));
                 }
             } else {
-                if (cell.font.stringWidth(cell.fallbackFont, (buf.toString() + " " + token).trim()) > cellWidth) {
+                if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf.toString() + " " + token).trim()) > cellWidth) {
                     numOfVerCells++;
                     buf.setLength(0);
                     buf.append(token);

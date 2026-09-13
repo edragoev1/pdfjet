@@ -603,7 +603,7 @@ func (table *Table) SetColumnWidths() *Table {
 						maxColWidths[i] = barcodeWidth
 					}
 				} else {
-					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, cell.text)
+					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, cell.text)
 					textWidth += cell.leftPadding + cell.rightPadding
 					if textWidth > maxColWidths[i] {
 						maxColWidths[i] = textWidth
@@ -640,6 +640,7 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 			for _, cell := range row {
 				cell2 := NewCell(cell.GetFont(), "")
 				cell2.SetFallbackFont(cell.GetFallbackFont())
+				cell2.SetFontSize(cell.fontSize)
 				cell2.SetWidth(cell.GetWidth())
 				cell2.SetLeftPadding(cell.GetLeftPadding())
 				cell2.SetRightPadding(cell.GetRightPadding())
@@ -704,13 +705,13 @@ func (table *Table) wrapAroundCellText() {
 			var n = 0
 			var buf strings.Builder
 			for _, token := range tokens {
-				if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
+				if cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, token) > cellWidth {
 					if buf.Len() > 0 {
 						buf.WriteString(" ")
 					}
 					for _, ch := range token {
 						if cell.font.StringWidthFB(cell.fallbackFont,
-							cell.font.size, buf.String()+string(ch)) > cellWidth {
+							cell.fontSize, buf.String()+string(ch)) > cellWidth {
 							tableData2[i+n][j].SetText(buf.String())
 							buf.Reset()
 							n++
@@ -719,7 +720,7 @@ func (table *Table) wrapAroundCellText() {
 					}
 				} else {
 					if cell.font.StringWidthFB(cell.fallbackFont,
-						cell.font.size, trimSpace(buf.String()+" "+token)) > cellWidth {
+						cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
 						tableData2[i+n][j].SetText(trimSpace(buf.String()))
 						buf.Reset()
 						buf.WriteString(token)
@@ -747,13 +748,13 @@ func getNumVerCells(row []*Cell, index int) int {
 	tokens := splitOnWhitespace(cell.text)
 	var buf strings.Builder
 	for _, token := range tokens {
-		if cell.font.StringWidthFB(cell.fallbackFont, cell.font.size, token) > cellWidth {
+		if cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, token) > cellWidth {
 			if buf.Len() > 0 {
 				buf.WriteString(" ")
 			}
 			for _, ch := range token {
 				if cell.font.StringWidthFB(cell.fallbackFont,
-					cell.font.size, buf.String()+string(ch)) > cellWidth {
+					cell.fontSize, buf.String()+string(ch)) > cellWidth {
 					numOfVerCells++
 					buf.Reset()
 				}
@@ -761,7 +762,7 @@ func getNumVerCells(row []*Cell, index int) int {
 			}
 		} else {
 			if cell.font.StringWidthFB(cell.fallbackFont,
-				cell.font.size, trimSpace(buf.String()+" "+token)) > cellWidth {
+				cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
 				numOfVerCells++
 				buf.Reset()
 				buf.WriteString(token)

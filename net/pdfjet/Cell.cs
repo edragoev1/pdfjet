@@ -210,16 +210,18 @@ public class Cell {
         return this;
     }
 
-    /// <summary>Sets the text block drawn in this cell.</summary>
+    /// <summary>Sets the text block drawn in this cell and clears the cell text.</summary>
     public Cell SetTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
+        this.text = null;
         return this;
     }
 
-    /// <summary>Sets the text column drawn in this cell and widens the cell to fit it.</summary>
+    /// <summary>Sets the text column drawn in this cell, widens the cell to fit it and clears the cell text.</summary>
     public Cell SetTextColumn(TextColumn textColumn) {
         this.textColumn = textColumn;
         this.width = textColumn.GetWidth() + this.leftPadding + this.rightPadding;
+        this.text = null;
         return this;
     }
 
@@ -334,9 +336,9 @@ public class Cell {
         } else if (barcode != null) {
             cellHeight = barcode.GetHeight() + topPadding + bottomPadding;
         } else if (text != null) {
-            float fontHeight = font.GetHeight();
-            if (fallbackFont != null && fallbackFont.GetHeight() > fontHeight) {
-                fontHeight = fallbackFont.GetHeight();
+            float fontHeight = font.GetBodyHeight(fontSize);
+            if (fallbackFont != null && fallbackFont.GetBodyHeight(fontSize) > fontHeight) {
+                fontHeight = fallbackFont.GetBodyHeight(fontSize);
             }
             cellHeight = fontHeight + topPadding + bottomPadding;
         }

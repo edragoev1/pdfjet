@@ -690,7 +690,7 @@ public class Table : IDrawable {
                         } catch (Exception) {
                         }
                     } else if (cell.text != null) {
-                        float textWidth = cell.font.StringWidth(cell.fallbackFont, cell.text);
+                        float textWidth = cell.font.StringWidth(cell.fallbackFont, cell.fontSize, cell.text);
                         textWidth += cell.leftPadding + cell.rightPadding;
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
@@ -728,6 +728,7 @@ public class Table : IDrawable {
                 foreach (Cell cell in row) {
                     Cell cell2 = new Cell(cell.GetFont());
                     cell2.SetFallbackFont(cell.GetFallbackFont());
+                    cell2.SetFontSize(cell.fontSize);
                     cell2.SetWidth(cell.GetWidth());
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
@@ -783,12 +784,12 @@ public class Table : IDrawable {
                     int n = 0;
                     StringBuilder buf = new StringBuilder();
                     foreach (String token in tokens) {
-                        if (cell.font.StringWidth(cell.fallbackFont, token) > cellWidth) {
+                        if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
                             if (buf.Length > 0) {
                                 buf.Append(" ");
                             }
                             foreach (char ch in token) {
-                                if (cell.font.StringWidth(cell.fallbackFont, buf.ToString() + ch) > cellWidth) {
+                                if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, buf.ToString() + ch) > cellWidth) {
                                     tableData2[i + n][j].SetText(buf.ToString());
                                     buf.Length = 0;
                                     n++;
@@ -796,7 +797,7 @@ public class Table : IDrawable {
                                 buf.Append(ch);
                             }
                         } else {
-                            if (cell.font.StringWidth(cell.fallbackFont, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
+                            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
                                 tableData2[i + n][j].SetText(Util.Trim(buf.ToString()));
                                 buf.Length = 0;
                                 buf.Append(token);
@@ -830,19 +831,19 @@ public class Table : IDrawable {
         String[] tokens = Util.SplitOnWhitespace(cell.text);
         StringBuilder buf = new StringBuilder();
         foreach (String token in tokens) {
-            if (cell.font.StringWidth(cell.fallbackFont, token) > cellWidth) {
+            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
                 if (buf.Length > 0) {
                     buf.Append(" ");
                 }
                 foreach (char ch in token) {
-                    if (cell.font.StringWidth(cell.fallbackFont, buf.ToString() + ch) > cellWidth) {
+                    if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, buf.ToString() + ch) > cellWidth) {
                         numOfVerCells++;
                         buf.Length = 0;
                     }
                     buf.Append(ch);
                 }
             } else {
-                if (cell.font.StringWidth(cell.fallbackFont, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
+                if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
                     numOfVerCells++;
                     buf.Length = 0;
                     buf.Append(token);

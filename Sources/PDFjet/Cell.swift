@@ -245,12 +245,14 @@ public class Cell {
     }
 
     ///
-    /// Sets the text column that this cell holds, and widens the cell to fit it.
+    /// Sets the text column that this cell holds, widens the cell to fit it
+    /// and clears the cell text.
     ///
     @discardableResult
     public func setTextColumn(_ textColumn: TextColumn) -> Cell {
         self.textColumn = textColumn
         self.width = textColumn.getWidth() + self.leftPadding + self.rightPadding
+        self.text = nil
         return self
     }
 
@@ -278,10 +280,11 @@ public class Cell {
         return self.textBox
     }
 
-    /// Sets the text block drawn in this cell.
+    /// Sets the text block drawn in this cell and clears the cell text.
     @discardableResult
     public func setTextBlock(_ textBlock: TextBlock) -> Cell {
         self.textBlock = textBlock
+        self.text = nil
         return self
     }
 
@@ -397,9 +400,9 @@ public class Cell {
         } else if barcode != nil {
             cellHeight = barcode!.getHeight() + topPadding + bottomPadding
         } else if text != nil {
-            var fontHeight = font!.getHeight()
-            if fallbackFont != nil && fallbackFont!.getHeight() > fontHeight {
-                fontHeight = fallbackFont!.getHeight()
+            var fontHeight = font!.getBodyHeight(fontSize)
+            if fallbackFont != nil && fallbackFont!.getBodyHeight(fontSize) > fontHeight {
+                fontHeight = fallbackFont!.getBodyHeight(fontSize)
             }
             cellHeight = fontHeight + topPadding + bottomPadding
         }
