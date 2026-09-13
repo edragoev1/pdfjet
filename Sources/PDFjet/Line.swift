@@ -78,7 +78,7 @@ public class Line : Drawable {
     }
 
     ///
-    /// Sets the start point of this line. The end point does not move.
+    /// Moves this line so that it starts at the specified point. The end point moves with it.
     ///
     /// - Parameter x: the x coordinate of the start point.
     /// - Parameter y: the y coordinate of the start point.
@@ -86,7 +86,10 @@ public class Line : Drawable {
     ///
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
-        setStartPoint(x, y)
+        self.x2 += x - self.x1
+        self.y2 += y - self.y1
+        self.x1 = x
+        self.y1 = y
         return self
     }
 

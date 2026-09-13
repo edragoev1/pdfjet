@@ -41,20 +41,14 @@ func NewArc() *Arc {
 
 // SetLocation sets the center of this arc.
 func (arc *Arc) SetLocation(cx, cy float32) Drawable {
-	arc.SetCenterXY(cx, cy)
+	arc.cx = cx
+	arc.cy = cy
 	return arc
 }
 
 // SetStartPointToEndOf starts this arc at the end point of the specified line.
 func (arc *Arc) SetStartPointToEndOf(line *Line) *Arc {
 	arc.line = line
-	return arc
-}
-
-// SetCenterXY sets the center of this arc.
-func (arc *Arc) SetCenterXY(cx, cy float32) *Arc {
-	arc.cx = cx
-	arc.cy = cy
 	return arc
 }
 
@@ -155,8 +149,8 @@ func (arc *Arc) SetActualText(actualText string) *Arc {
 	return arc
 }
 
-// SetScaleFactor scales both radii of this arc by the specified factor.
-func (arc *Arc) SetScaleFactor(factor float32) *Arc {
+// ScaleBy scales both radii of this arc by the specified factor.
+func (arc *Arc) ScaleBy(factor float32) *Arc {
 	arc.rx *= factor
 	arc.ry *= factor
 	return arc

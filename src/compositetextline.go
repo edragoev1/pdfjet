@@ -176,8 +176,8 @@ func (composite *CompositeTextLine) SetLocation(x, y float32) Drawable {
 	return composite
 }
 
-// GetPosition return the position of this composite text line.
-func (composite *CompositeTextLine) GetPosition() [2]float32 {
+// GetLocation return the position of this composite text line.
+func (composite *CompositeTextLine) GetLocation() [2]float32 {
 	return composite.position
 }
 
@@ -198,10 +198,10 @@ func (composite *CompositeTextLine) GetNumberOfTextLines() int {
 	return len(composite.textLines)
 }
 
-// GetMinMax returns the vertical coordinates of the top left and bottom right corners
+// GetMinMaxY returns the vertical coordinates of the top left and bottom right corners
 // of the bounding box of this composite text line.
 // @return the array containing the vertical coordinates.
-func (composite *CompositeTextLine) GetMinMax() []float32 {
+func (composite *CompositeTextLine) GetMinMaxY() []float32 {
 	minValue := composite.position[composite.y]
 	maxValue := composite.position[composite.y]
 	var cur float32
@@ -234,7 +234,7 @@ func (composite *CompositeTextLine) GetMinMax() []float32 {
 
 // GetHeight returns the height of this CompositeTextLine.
 func (composite *CompositeTextLine) GetHeight() float32 {
-	yy := composite.GetMinMax()
+	yy := composite.GetMinMaxY()
 	return yy[1] - yy[0]
 }
 

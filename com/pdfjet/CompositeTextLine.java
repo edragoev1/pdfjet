@@ -237,7 +237,7 @@ public class CompositeTextLine implements Drawable {
      *
      *  @return the position of this composite text line.
      */
-    public float[] getPosition() {
+    public float[] getLocation() {
         return position;
     }
 
@@ -272,7 +272,7 @@ public class CompositeTextLine implements Drawable {
      *
      *  @return the an array containing the vertical coordinates.
      */
-    public float[] getMinMax() {
+    public float[] getMinMaxY() {
         float min = position[Y];
         float max = position[Y];
         float cur;
@@ -305,7 +305,7 @@ public class CompositeTextLine implements Drawable {
      *  @return the height.
      */
     public float getHeight() {
-        float[] yy = getMinMax();
+        float[] yy = getMinMaxY();
         return yy[1] - yy[0];
     }
 

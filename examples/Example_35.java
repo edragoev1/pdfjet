@@ -55,12 +55,12 @@ public class Example_35 {
         TextParameters parameters = new TextParameters()
             .setFont(f1)
             .setFontSize(14f)
-            .setTextLocation(25f, 25f)
+            .setLocation(25f, 25f)
             .setText("Hello, World!");
         stamp.drawText(parameters);
 
         // Change some parameters and draw the text again
-        parameters.setFont(f2).setTextLocation(25f, 50f);
+        parameters.setFont(f2).setLocation(25f, 50f);
         stamp.setFillColor(Color.darkgreen).drawText(parameters);
 
         stamp.complete();   // The stamp is complete!

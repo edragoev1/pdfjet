@@ -60,13 +60,13 @@ public class Example_05 {
         point.drawOn(page);
 
         float[] arcPoints = (new Arc())
-            .setCenterXY(300f, 600f)
+            .setLocation(300f, 600f)
             .setRadiusX(75f)
             .setRadiusY(75f)
             .setStartAngle(0f)
             .setSweepDegreesCW(270f)
             // .setSweepDegreesCCW(270f)
-            // .setScaleFactor(2f)
+            // .scaleBy(2f)
             // .setRotationClockwise(90f)
             // .setRotation(90f)
             .setStrokeWidth(5f)
@@ -74,13 +74,13 @@ public class Example_05 {
             .drawOn(page);
 
         (new Ellipse())
-            .setCenterXY(300f, 720f)
+            .setLocation(300f, 720f)
             .setRadiusX(100f)
             .setRadiusY(50f)
             .setFillColor(Color.azure)
             .setStrokeWidth(1.5f)
             .setStrokeColor(Color.blue)
-            .setScaleFactor(0.5f)
+            .scaleBy(0.5f)
             .setRotationClockwise(45f)
             // .setRotation(45f)
             .drawOn(page);

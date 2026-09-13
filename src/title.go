@@ -10,6 +10,7 @@ package pdfjet
 type Title struct {
 	prefix   *TextLine
 	textLine *TextLine
+	offset   float32
 }
 
 // NewTitle is the constructor.
@@ -38,19 +39,22 @@ func (title *Title) GetTextLine() *TextLine {
 	return title.textLine
 }
 
-// SetOffset sets the offset of the title text.
+// SetOffset sets the distance from the start of the prefix to the start of the
+// title text, to make room for the prefix.
 func (title *Title) SetOffset(offset float32) *Title {
-	title.textLine.SetLocation(title.textLine.x+offset, title.textLine.y)
+	title.offset = offset
+	title.textLine.SetLocation(title.prefix.x+offset, title.prefix.y)
 	return title
 }
 
-// SetLocation sets the location of the title on the page.
+// SetLocation sets the location of the prefix; the title text keeps its offset
+// from it.
 // @param x the x coordinate.
 // @param y the y coordinate.
 // @return this Title.
 func (title *Title) SetLocation(x, y float32) Drawable {
 	title.prefix.SetLocation(x, y)
-	title.textLine.SetLocation(x, y)
+	title.textLine.SetLocation(x+title.offset, y)
 	return title
 }
 

@@ -14,6 +14,8 @@ public class Title : Drawable {
     /// The title text.
     public var textLine: TextLine
 
+    private var offset: Float = 0.0
+
     /// Creates a title at the specified location.
     public init(_ font: Font, _ title: String, _ x: Float, _ y: Float) {
         self.prefix = TextLine(font)
@@ -28,17 +30,19 @@ public class Title : Drawable {
         return self
     }
 
-    /// Moves the title text right by the offset, to make room for the prefix.
+    /// Sets the distance from the start of the prefix to the start of the title text, to make room for the prefix.
+    @discardableResult
     public func setOffset(_ offset: Float) -> Title {
-        self.textLine.setLocation(textLine.x + offset, textLine.y)
+        self.offset = offset
+        self.textLine.setLocation(prefix.x + offset, prefix.y)
         return self
     }
 
-    /// Sets the location of this title.
+    /// Sets the location of the prefix; the title text keeps its offset from it.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.prefix.setLocation(x, y)
-        self.textLine.setLocation(x, y)
+        self.textLine.setLocation(x + offset, y)
         return self
     }
 

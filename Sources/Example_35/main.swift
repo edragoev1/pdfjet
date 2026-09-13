@@ -49,12 +49,12 @@ public class Example_35 {
         let parameters = TextParameters()
             .setFont(f1)
             .setFontSize(14.0)
-            .setTextLocation(25.0, 25.0)
+            .setLocation(25.0, 25.0)
             .setText("Hello, World!")
         stamp.drawText(parameters)
 
         // Change some parameters and draw the text again
-        parameters.setFont(f2).setTextLocation(25.0, 50.0)
+        parameters.setFont(f2).setLocation(25.0, 50.0)
         stamp.setFillColor(Color.darkgreen).drawText(parameters)
 
         try stamp.complete()    // The stamp is complete!

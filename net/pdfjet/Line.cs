@@ -100,12 +100,14 @@ public class Line : IDrawable {
     }
 
     /// <summary>
-    /// Sets the start point of this line. The end point does not move.
+    /// Moves this line so that it starts at the specified point. The end point moves with it.
     /// </summary>
     /// <param name="x">the x coordinate of the start point.</param>
     /// <param name="y">the y coordinate of the start point.</param>
     /// <returns>this Line object.</returns>
     public Line SetLocation(float x, float y) {
+        this.x2 += x - this.x1;
+        this.y2 += y - this.y1;
         this.x1 = x;
         this.y1 = y;
         return this;

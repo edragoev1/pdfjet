@@ -60,13 +60,13 @@ public class Example_05 {
         point.DrawOn(page);
 
         float[] arcPoints = (new Arc())
-            .SetCenterXY(300f, 600f)
+            .SetLocation(300f, 600f)
             .SetRadiusX(75f)
             .SetRadiusY(75f)
             .SetStartAngle(0f)
             .SetSweepDegreesCW(270f)
             // .SetSweepDegreesCCW(270f)
-            // .SetScaleFactor(2f)
+            // .ScaleBy(2f)
             // .SetRotationClockwise(90f)
             // .SetRotation(90f)
             .SetStrokeWidth(5f)
@@ -74,13 +74,13 @@ public class Example_05 {
             .DrawOn(page);
 
         (new Ellipse())
-            .SetCenterXY(300f, 720f)
+            .SetLocation(300f, 720f)
             .SetRadiusX(100f)
             .SetRadiusY(50f)
             .SetFillColor(Color.azure)
             .SetStrokeWidth(1.5f)
             .SetStrokeColor(Color.blue)
-            .SetScaleFactor(0.5f)
+            .ScaleBy(0.5f)
             .SetRotationClockwise(45f)
             // .SetRotation(45f)
             .DrawOn(page);

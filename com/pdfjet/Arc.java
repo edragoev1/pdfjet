@@ -35,8 +35,16 @@ public class Arc implements Drawable {
     public Arc() {
     }
 
+    /**
+     * Sets the center of this arc.
+     *
+     * @param cx the x coordinate of the center.
+     * @param cy the y coordinate of the center.
+     * @return this Arc object.
+     */
     public Arc setLocation(float cx, float cy) {
-        setCenterXY(cx, cy);
+        this.cx = cx;
+        this.cy = cy;
         return this;
     }
 
@@ -48,19 +56,6 @@ public class Arc implements Drawable {
      */
     public Arc setStartPointToEndOf(Line line) {
         this.line = line;
-        return this;
-    }
-
-    /**
-     * Sets the center of this arc.
-     *
-     * @param cx the x coordinate of the center.
-     * @param cy the y coordinate of the center.
-     * @return this Arc object.
-     */
-    public Arc setCenterXY(float cx, float cy) {
-        this.cx = cx;
-        this.cy = cy;
         return this;
     }
 
@@ -329,8 +324,8 @@ public class Arc implements Drawable {
      * @param factor the factor used to scale the line.
      * @return this Arc object.
      */
-    public Arc setScaleFactor(double factor) {
-        return setScaleFactor((float) factor);
+    public Arc scaleBy(double factor) {
+        return scaleBy((float) factor);
     }
 
     /**
@@ -339,7 +334,7 @@ public class Arc implements Drawable {
      * @param factor the factor used to scale the line.
      * @return this Arc object.
      */
-    public Arc setScaleFactor(float factor) {
+    public Arc scaleBy(float factor) {
         this.rx *= factor;
         this.ry *= factor;
         return this;

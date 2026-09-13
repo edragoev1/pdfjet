@@ -86,11 +86,14 @@ func (line *Line) SetStartPoint(x, y float32) *Line {
 	return line
 }
 
-// SetLocation sets the start point of this line. The end point does not move.
+// SetLocation moves this line so that it starts at the specified point. The end
+// point moves with it.
 // @param x the x coordinate of the start point.
 // @param y the y coordinate of the start point.
 // @return this Line object.
 func (line *Line) SetLocation(x, y float32) Drawable {
+	line.x2 += x - line.x1
+	line.y2 += y - line.y1
 	line.x1 = x
 	line.y1 = y
 	return line

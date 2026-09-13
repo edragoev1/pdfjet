@@ -58,12 +58,12 @@ func Example35() {
 	params := pdfjet.NewTextParameters().
 		SetFont(f1).
 		SetFontSize(14.0).
-		SetTextLocation(25.0, 25.0).
+		SetLocation(25.0, 25.0).
 		SetText("Hello, World!")
 	stamp.DrawTextUsingParams(params)
 
 	// Change some parameters and draw the text again
-	params.SetFont(f2).SetTextLocation(25.0, 50.0)
+	params.SetFont(f2).SetLocation(25.0, 50.0)
 	stamp.SetFillColor(color.DarkGreen).DrawTextUsingParams(params)
 
 	stamp.Complete() // The stamp is complete!

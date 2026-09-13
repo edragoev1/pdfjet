@@ -237,7 +237,7 @@ public class CompositeTextLine : IDrawable {
     /// Returns the position of this composite text line.
     /// </summary>
     /// <returns>the x and y coordinates of this composite text line.</returns>
-    public float[] GetPosition() {
+    public float[] GetLocation() {
         return position;
     }
 
@@ -254,7 +254,7 @@ public class CompositeTextLine : IDrawable {
     /// of the bounding box of this composite text line.
     /// </summary>
     /// <returns>the an array containing the vertical coordinates.</returns>
-    public float[] GetMinMax() {
+    public float[] GetMinMaxY() {
         float min = position[Y];
         float max = position[Y];
         float cur;
@@ -286,7 +286,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the height.</returns>
     public float GetHeight() {
-        float[] minMax = GetMinMax();
+        float[] minMax = GetMinMaxY();
         return minMax[1] - minMax[0];
     }
 

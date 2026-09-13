@@ -38,7 +38,8 @@ public class Arc : Drawable {
     /// Sets the center of this arc.
     @discardableResult
     public func setLocation(_ cx: Float, _ cy: Float) -> Self {
-        _ = setCenterXY(cx, cy)
+        self.cx = cx
+        self.cy = cy
         return self
     }
 
@@ -46,14 +47,6 @@ public class Arc : Drawable {
     @discardableResult
     public func setStartPointToEndOf(_ line: Line) -> Arc {
         self.line = line
-        return self
-    }
-
-    /// Sets the center of this arc.
-    @discardableResult
-    public func setCenterXY(_ cx: Float, _ cy: Float) -> Arc {
-        self.cx = cx
-        self.cy = cy
         return self
     }
 
@@ -236,7 +229,7 @@ public class Arc : Drawable {
     /// - Returns: this Arc object.
     ///
     @discardableResult
-    public func setScaleFactor(_ factor: Float) -> Arc {
+    public func scaleBy(_ factor: Float) -> Arc {
         self.rx *= factor
         self.ry *= factor
         return self

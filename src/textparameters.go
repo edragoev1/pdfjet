@@ -30,8 +30,8 @@ func (tp *TextParameters) SetFontSize(fontSize float32) *TextParameters {
 	return tp
 }
 
-// SetTextLocation sets the X, Y location and returns the receiver for chaining
-func (tp *TextParameters) SetTextLocation(x, y float32) *TextParameters {
+// SetLocation sets the X, Y location and returns the receiver for chaining
+func (tp *TextParameters) SetLocation(x, y float32) *TextParameters {
 	tp.x = x
 	tp.y = y
 	return tp

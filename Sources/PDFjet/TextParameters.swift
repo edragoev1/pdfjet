@@ -38,7 +38,7 @@ public class TextParameters {
 
     /// Sets the location of the text.
     @discardableResult
-    public func setTextLocation(_ x: Float, _ y: Float) -> TextParameters {
+    public func setLocation(_ x: Float, _ y: Float) -> TextParameters {
         self.x = x
         self.y = y
         return self

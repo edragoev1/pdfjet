@@ -267,13 +267,15 @@ public class Rect implements Drawable {
     }
 
     /**
-     * Scales this rect by the specified factor.
+     * Scales the width, height and corner radius of this rect by the specified
+     * factor. The location does not change.
      * @param factor the factor used to scale the rect.
      * @return this Rect object.
      */
     public Rect scaleBy(float factor) {
-        this.x *= factor;
-        this.y *= factor;
+        this.w *= factor;
+        this.h *= factor;
+        this.r *= factor;
         return this;
     }
 

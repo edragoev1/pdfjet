@@ -215,12 +215,17 @@ public class Rect : Drawable {
     }
 
     /**
-     * Scales this rect by the specified factor.
+     * Scales the width, height and corner radius of this rect by the specified
+     * factor. The location does not change.
      * - Parameter factor: the factor used to scale the rect.
+     * - Returns: this Rect object.
      */
-    public func scaleBy(_ factor: Float) {
-        self.x *= factor
-        self.y *= factor
+    @discardableResult
+    public func scaleBy(_ factor: Float) -> Rect {
+        self.width *= factor
+        self.height *= factor
+        self.r *= factor
+        return self
     }
 
     /**

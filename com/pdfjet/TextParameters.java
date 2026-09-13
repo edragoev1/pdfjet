@@ -50,7 +50,7 @@ public class TextParameters {
      * @param y the y coordinate.
      * @return this TextParameters object.
      */
-    public TextParameters setTextLocation(float x, float y) {
+    public TextParameters setLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;

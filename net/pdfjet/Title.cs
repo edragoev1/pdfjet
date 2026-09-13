@@ -16,6 +16,8 @@ public class Title : IDrawable {
     /// <summary>The title text.</summary>
     public TextLine textLine = null;
 
+    private float offset = 0f;
+
     /// <summary>Creates a title at the specified location.</summary>
     public Title(Font font, String title, float x, float y) {
         this.prefix = new TextLine(font);
@@ -30,16 +32,17 @@ public class Title : IDrawable {
         return this;
     }
 
-    /// <summary>Moves the title text right by the offset, to make room for the prefix.</summary>
+    /// <summary>Sets the distance from the start of the prefix to the start of the title text, to make room for the prefix.</summary>
     public Title SetOffset(float offset) {
-        textLine.SetLocation(textLine.x + offset, textLine.y);
+        this.offset = offset;
+        textLine.SetLocation(prefix.x + offset, prefix.y);
         return this;
     }
 
-    /// <summary>Sets the location of this title.</summary>
+    /// <summary>Sets the location of the prefix; the title text keeps its offset from it.</summary>
     public Title SetLocation(float x, float y) {
         prefix.SetLocation(x, y);
-        textLine.SetLocation(x, y);
+        textLine.SetLocation(x + offset, y);
         return this;
     }
 

@@ -34,7 +34,7 @@ public class TextParameters {
 
     // Method to set the location (X, Y)
     /// <summary>Sets the location of the text.</summary>
-    public TextParameters SetTextLocation(float x, float y) {
+    public TextParameters SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;

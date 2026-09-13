@@ -38,7 +38,8 @@ public class Arc : IDrawable {
 
     /// <summary>Sets the center of this arc.</summary>
     public Arc SetLocation(float cx, float cy) {
-        SetCenterXY(cx, cy);
+        this.cx = cx;
+        this.cy = cy;
         return this;
     }
 
@@ -52,12 +53,6 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the center of this arc.</summary>
-    public Arc SetCenterXY(float cx, float cy) {
-        this.cx = cx;
-        this.cy = cy;
-        return this;
-    }
 
     /// <summary>Sets the horizontal radius of this arc.</summary>
     public Arc SetRadiusX(float rx) {
@@ -238,8 +233,8 @@ public class Arc : IDrawable {
     /// </summary>
     /// <param name="factor">the factor used to scale the line.</param>
     /// <returns>this Arc object.</returns>
-    public Arc SetScaleFactor(double factor) {
-        return SetScaleFactor((float) factor);
+    public Arc ScaleBy(double factor) {
+        return ScaleBy((float) factor);
     }
 
     /// <summary>
@@ -247,7 +242,7 @@ public class Arc : IDrawable {
     /// </summary>
     /// <param name="factor">the factor used to scale the line.</param>
     /// <returns>this Arc object.</returns>
-    public Arc SetScaleFactor(float factor) {
+    public Arc ScaleBy(float factor) {
         this.rx *= factor;
         this.ry *= factor;
         return this;

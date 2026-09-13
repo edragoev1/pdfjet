@@ -15,6 +15,8 @@ public class Title implements Drawable {
     /** The title text. */
     public TextLine textLine;
 
+    private float offset = 0f;
+
     /**
      * Creates a title.
      *
@@ -42,19 +44,28 @@ public class Title implements Drawable {
     }
 
     /**
-     * Moves the title text to the right by the specified offset, to make room for the prefix.
+     * Sets the distance from the start of the prefix to the start of the title
+     * text, to make room for the prefix.
      *
      * @param offset the offset.
      * @return this Title object.
      */
     public Title setOffset(float offset) {
-        textLine.setLocation(textLine.x + offset, textLine.y);
+        this.offset = offset;
+        textLine.setLocation(prefix.x + offset, prefix.y);
         return this;
     }
 
+    /**
+     * Sets the location of the prefix; the title text keeps its offset from it.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this Title object.
+     */
     public Title setLocation(float x, float y) {
         prefix.setLocation(x, y);
-        textLine.setLocation(x, y);
+        textLine.setLocation(x + offset, y);
         return this;
     }
 

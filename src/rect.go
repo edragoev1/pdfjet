@@ -157,11 +157,13 @@ func (rect *Rect) SetActualText(actualText string) *Rect {
 	return rect
 }
 
-// ScaleBy scales this rect by the specified factor.
+// ScaleBy scales the width, height and corner radius of this rect by the
+// specified factor. The location does not change.
 // @param factor the factor used to scale the rect.
 func (rect *Rect) ScaleBy(factor float32) *Rect {
-	rect.x *= factor
-	rect.y *= factor
+	rect.width *= factor
+	rect.height *= factor
+	rect.cornerRadius *= factor
 	return rect
 }
 

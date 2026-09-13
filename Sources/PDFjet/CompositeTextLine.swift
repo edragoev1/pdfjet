@@ -217,7 +217,7 @@ public class CompositeTextLine : Drawable {
      *
      * - Returns: the position of this composite text line.
      */
-    public func getPosition()-> [Float] {
+    public func getLocation()-> [Float] {
         return self.position
     }
 
@@ -253,7 +253,7 @@ public class CompositeTextLine : Drawable {
      *
      * - Returns: the an array containing the vertical coordinates.
      */
-    public func getMinMax()-> [Float] {
+    public func getMinMaxY()-> [Float] {
         var min: Float = position[Y]
         var max: Float = position[Y]
         var cur: Float
@@ -290,7 +290,7 @@ public class CompositeTextLine : Drawable {
      * - Returns: the height.
      */
     public func getHeight()-> Float {
-        let yy = getMinMax()
+        let yy = getMinMaxY()
         return yy[1] - yy[0]
     }
 

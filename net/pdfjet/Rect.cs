@@ -166,10 +166,11 @@ public class Rect  : IDrawable {
         return this;
     }
 
-    /// <summary>Multiplies the x and y coordinates of this rectangle by the specified factor.</summary>
+    /// <summary>Scales the width, height and corner radius of this rectangle by the specified factor. The location does not change.</summary>
     public Rect ScaleBy(float factor) {
-        this.x *= factor;
-        this.y *= factor;
+        this.w *= factor;
+        this.h *= factor;
+        this.r *= factor;
         return this;
     }
 
