@@ -9,6 +9,7 @@ namespace PDFjet.NET {
         private readonly Font f1;
         private readonly Font f2;
         private float[] pageSize;
+        private float x;
         private float y;
         private float yText;
         private List<Page> pages;
@@ -45,10 +46,11 @@ namespace PDFjet.NET {
 
         /// <summary>Sets the location of the top left corner of this table.</summary>
         public BigTable SetLocation(float x, float y) {
-            for (int i = 0; i <= this.numberOfColumns; i++) {
-                this.vertLines[i] += x;
-            }
+            this.x = x;
             this.y = y;
+            if (this.vertLines != null) {
+                SetVertLines();
+            }
             return this;
         }
 
@@ -231,13 +233,18 @@ namespace PDFjet.NET {
                 }
             }
 
-            this.vertLines[0] = 0.0f;
-            float vertLineX = 0.0f;
+            SetVertLines();
+            return this;
+        }
+
+        // Sets the x coordinates of the vertical lines from the location and the column widths.
+        private void SetVertLines() {
+            float vertLineX = this.x;
+            this.vertLines[0] = vertLineX;
             for (int i = 0; i < widths.Length; i++) {
                 vertLineX += this.widths[i];
                 this.vertLines[i + 1] = vertLineX;
             }
-            return this;
         }
 
         /// <summary>Draws the rows read from the data file, then the vertical lines.</summary>

@@ -12,6 +12,7 @@ public class BigTable {
     private let f1: Font
     private let f2: Font
     private var pageSize: [Float]
+    private var x: Float = 0.0
     private var y: Float = 0.0
     private var yText: Float = 0.0
     private var pages: [Page] = []
@@ -50,10 +51,11 @@ public class BigTable {
     /// Sets the location of the top left corner of this table.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> BigTable {
-        for i in 0...self.numberOfColumns {
-            self.vertLines[i] += x
-        }
+        self.x = x
         self.y = y
+        if !vertLines.isEmpty {
+            setVertLines()
+        }
         return self
     }
 
@@ -236,13 +238,18 @@ public class BigTable {
             rowNumber += 1
         }
 
-        vertLines[0] = 0.0
-        var vertLineX: Float = 0.0
+        setVertLines()
+        return self
+    }
+
+    // Sets the x coordinates of the vertical lines from the location and the column widths.
+    private func setVertLines() {
+        var vertLineX = self.x
+        vertLines[0] = vertLineX
         for i in 0..<widths.count {
             vertLineX += widths[i]
             vertLines[i + 1] = vertLineX
         }
-        return self
     }
 
     /// Draws the rows read from the data file, then the vertical lines.

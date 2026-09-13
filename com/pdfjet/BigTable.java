@@ -15,6 +15,7 @@ public class BigTable {
     private final Font f1;
     private final Font f2;
     private float[] pageSize;
+    private float x;
     private float y;
     private float yText;
     private List<Page> pages;
@@ -58,11 +59,11 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setLocation(float x, float y) {
-        // Adjust all vertical line positions relative to new X
-        for (int i = 0; i <= this.numberOfColumns; i++) {
-            this.vertLines[i] += x;
-        }
+        this.x = x;
         this.y = y;
+        if (this.vertLines != null) {
+            setVertLines();
+        }
         return this;
     }
 
@@ -225,6 +226,23 @@ public class BigTable {
         return Alignment.LEFT;      // Align Left
     }
 
+    // Splits the line at the delimiter, which is not a regular expression,
+    // and keeps the empty fields at the end of the line, as the other ports do.
+    private String[] split(String line) {
+        if (delimiter.isEmpty()) {
+            return new String[] {line};
+        }
+        List<String> fields = new ArrayList<String>();
+        int start = 0;
+        int end;
+        while ((end = line.indexOf(delimiter, start)) != -1) {
+            fields.add(line.substring(start, end));
+            start = end + delimiter.length();
+        }
+        fields.add(line.substring(start));
+        return fields.toArray(new String[0]);
+    }
+
     /**
      * Sets the column widths, the column alignment and header fields.
      *
@@ -246,7 +264,7 @@ public class BigTable {
                 new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(this.delimiter);
+                String[] fields = split(line);
                 if (fields.length < this.numberOfColumns) {
                     continue;
                 }
@@ -272,14 +290,18 @@ public class BigTable {
             }
         }
 
-        // Precompute vertical line positions
-        this.vertLines[0] = 0.0f;
-        float vertLineX = 0.0f;
+        setVertLines();
+        return this;
+    }
+
+    // Sets the x coordinates of the vertical lines from the location and the column widths.
+    private void setVertLines() {
+        float vertLineX = this.x;
+        this.vertLines[0] = vertLineX;
         for (int i = 0; i < widths.length; i++) {
             vertLineX += this.widths[i];
             this.vertLines[i + 1] = vertLineX;
         }
-        return this;
     }
 
     /**
@@ -292,7 +314,7 @@ public class BigTable {
                 new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(this.delimiter);
+                String[] fields = split(line);
                 if (fields.length < this.numberOfColumns) {
                     continue;
                 }

@@ -23,6 +23,7 @@ type BigTable struct {
 	f1              *Font
 	f2              *Font
 	pageSize        [2]float32
+	x               float32
 	y               float32
 	yText           float32
 	pages           []*Page
@@ -64,10 +65,11 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize [2]float32) *BigTable {
 
 // SetLocation sets the table location
 func (bt *BigTable) SetLocation(x, y float32) *BigTable {
-	for i := 0; i <= bt.numberOfColumns; i++ {
-		bt.vertLines[i] += x
-	}
+	bt.x = x
 	bt.y = y
+	if bt.vertLines != nil {
+		bt.setVertLines()
+	}
 	return bt
 }
 
@@ -256,14 +258,19 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 		return err
 	}
 
-	bt.vertLines[0] = 0.0
-	vertLineX := float32(0.0)
+	bt.setVertLines()
+	return nil
+}
+
+// setVertLines sets the x coordinates of the vertical lines from the location
+// and the column widths.
+func (bt *BigTable) setVertLines() {
+	vertLineX := bt.x
+	bt.vertLines[0] = vertLineX
 	for i := 0; i < len(bt.widths); i++ {
 		vertLineX += bt.widths[i]
 		bt.vertLines[i+1] = vertLineX
 	}
-
-	return nil
 }
 
 // Complete finishes the table and writes all data
