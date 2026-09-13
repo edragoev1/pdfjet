@@ -61,108 +61,226 @@ public class SVGImage : Drawable {
      */
     public init(stream: InputStream) {
         paths = [SVGPath]()
-        var path: SVGPath?
         // The caller retains ownership of the stream — we read from it
         // but do not close it, consistent with the Java and .NET editions.
         stream.open()
-        var scalars = [UnicodeScalar]()
-        var buffer = [UInt8](repeating: 0, count: 1)
+        var bytes = [UInt8]()
+        var buffer = [UInt8](repeating: 0, count: 4096)
         while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: 1)
-            if (read == 0) {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            if read <= 0 {
                 break
             }
-            scalars.append(UnicodeScalar(buffer[0]))
+            bytes.append(contentsOf: buffer[0..<read])
         }
 
-        var buf = String()
-        var token = false
-        var param: String?
-        var header: Bool = false
-        for scalar in scalars {
-            if buf.hasSuffix("<svg") {
-                header = true
-                buf = ""
-            } else if header && scalar == ">" {
-                header = false
-                buf = ""
-            } else if !token && buf.hasSuffix(" width=") {
-                token = true
-                param = "width"
-                buf = ""
-            } else if !token && buf.hasSuffix(" height=") {
-                token = true
-                param = "height"
-                buf = ""
-            } else if !token && buf.hasSuffix(" viewBox=") {
-                token = true
-                param = "viewBox"
-                buf = ""
-            } else if !token && buf.hasSuffix(" d=") {
-                token = true
-                if let pending = path {
-                    paths?.append(pending)
-                }
-                path = SVGPath()
-                param = "data"
-                buf = ""
-            } else if !token && buf.hasSuffix(" fill=") {
-                token = true
-                param = "fill"
-                buf = ""
-            } else if !token && buf.hasSuffix(" stroke=") {
-                token = true
-                param = "stroke"
-                buf = ""
-            } else if !token && buf.hasSuffix(" stroke-width=") {
-                token = true
-                param = "stroke-width"
-                buf = ""
-            } else if token && scalar == UnicodeScalar("\"") {
-                token = false
-                if param == "width" {
-                    if let value = Float(buf) {
-                        w = value
-                    }
-                } else if param == "height" {
-                    if let value = Float(buf) {
-                        h = value
-                    }
-                } else if param == "viewBox" {
-                    viewBox = buf
-                } else if param == "data" {
-                    path?.data = buf
-                } else if param == "fill" {
-                    let fillColor = getColor(buf)
-                    if header {
-                        self.fill = fillColor
-                    } else {
-                        path?.fill = fillColor
-                    }
-                } else if param == "stroke" {
-                    let strokeColor = getColor(buf)
-                    if header {
-                        self.stroke = strokeColor
-                    } else {
-                        path?.stroke = strokeColor
-                    }
-                } else if param == "stroke-width" {
-                    let strokeWidth = Float(buf) ?? 0.0
-                    if (header) {
-                        self.strokeWidth = strokeWidth
-                    } else {
-                        path?.strokeWidth = strokeWidth
-                    }
-                }
-                buf = ""
-            } else {
-                buf.append(String(scalar))
+        let xml = Array(String(decoding: bytes, as: UTF8.self).unicodeScalars)
+        for (name, attributes) in SVGImage.getStartTags(xml) {
+            if name == "svg" {
+                readSVGAttributes(attributes)
+            } else if name == "path" {
+                readPathAttributes(attributes)
             }
         }
-        if let last = path {
-            paths?.append(last)
-        }
         processPaths(paths ?? [])
+    }
+
+    private func readSVGAttributes(_ attributes: [(String, String)]) {
+        for (name, value) in attributes {
+            if name == "width" {
+                self.w = Float(value.trim()) ?? 0.0
+            } else if name == "height" {
+                self.h = Float(value.trim()) ?? 0.0
+            } else if name == "viewBox" {
+                self.viewBox = value
+            } else if name == "fill" {
+                self.fill = getColor(value)
+            } else if name == "stroke" {
+                self.stroke = getColor(value)
+            } else if name == "stroke-width" {
+                self.strokeWidth = Float(value.trim()) ?? 0.0
+            }
+        }
+    }
+
+    private func readPathAttributes(_ attributes: [(String, String)]) {
+        let path = SVGPath()
+        for (name, value) in attributes {
+            if name == "d" {
+                path.data = value
+            } else if name == "fill" {
+                path.fill = getColor(value)
+            } else if name == "stroke" {
+                path.stroke = getColor(value)
+            } else if name == "stroke-width" {
+                path.strokeWidth = Float(value.trim()) ?? 0.0
+            }
+        }
+        paths?.append(path)
+    }
+
+    // Returns the local names of the elements and the local names and values
+    // of their attributes, in document order, as an XML parser reports them:
+    // the attribute values may be in single or double quotes and span lines,
+    // and comments, CDATA sections, processing instructions, the document
+    // type declaration and end tags are skipped.
+    private static func getStartTags(
+            _ xml: [Unicode.Scalar]) -> [(String, [(String, String)])] {
+        var tags = [(String, [(String, String)])]()
+        var i = 0
+        while i < xml.count {
+            if xml[i] != "<" {
+                i += 1
+            } else if startsWith(xml, i, "<!--") {
+                i = indexAfter(xml, i + 4, "-->")
+            } else if startsWith(xml, i, "<![CDATA[") {
+                i = indexAfter(xml, i + 9, "]]>")
+            } else if startsWith(xml, i, "<?") {
+                i = indexAfter(xml, i + 2, "?>")
+            } else if startsWith(xml, i, "<!") {
+                // The document type declaration may have an internal subset in brackets.
+                var depth = 0
+                i += 2
+                while i < xml.count && (xml[i] != ">" || depth > 0) {
+                    if xml[i] == "[" {
+                        depth += 1
+                    } else if xml[i] == "]" {
+                        depth -= 1
+                    }
+                    i += 1
+                }
+                i += 1
+            } else if startsWith(xml, i, "</") {
+                i = indexAfter(xml, i + 2, ">")
+            } else {
+                i += 1
+                let name = getName(xml, &i)
+                var attributes = [(String, String)]()
+                while true {
+                    skipSpaces(xml, &i)
+                    if i >= xml.count || xml[i] == ">" || xml[i] == "/" {
+                        break
+                    }
+                    let attributeName = getName(xml, &i)
+                    skipSpaces(xml, &i)
+                    if i >= xml.count || xml[i] != "=" {
+                        break
+                    }
+                    i += 1
+                    skipSpaces(xml, &i)
+                    if i >= xml.count || (xml[i] != "\"" && xml[i] != "'") {
+                        break
+                    }
+                    let quote = xml[i]
+                    i += 1
+                    let start = i
+                    while i < xml.count && xml[i] != quote {
+                        i += 1
+                    }
+                    attributes.append((attributeName, getAttributeValue(xml[start..<i])))
+                    i += 1
+                }
+                tags.append((name, attributes))
+                i = indexAfter(xml, i, ">")
+            }
+        }
+        return tags
+    }
+
+    private static func startsWith(
+            _ xml: [Unicode.Scalar], _ i: Int, _ prefix: String) -> Bool {
+        var j = i
+        for scalar in prefix.unicodeScalars {
+            if j >= xml.count || xml[j] != scalar {
+                return false
+            }
+            j += 1
+        }
+        return true
+    }
+
+    // Returns the index after the first occurrence of the text at or after i.
+    private static func indexAfter(
+            _ xml: [Unicode.Scalar], _ i: Int, _ text: String) -> Int {
+        var j = i
+        while j < xml.count {
+            if startsWith(xml, j, text) {
+                return j + text.unicodeScalars.count
+            }
+            j += 1
+        }
+        return xml.count
+    }
+
+    private static func skipSpaces(_ xml: [Unicode.Scalar], _ i: inout Int) {
+        while i < xml.count &&
+                (xml[i] == " " || xml[i] == "\t" || xml[i] == "\n" || xml[i] == "\r") {
+            i += 1
+        }
+    }
+
+    // Reads a name and returns its local part, without the namespace prefix.
+    private static func getName(_ xml: [Unicode.Scalar], _ i: inout Int) -> String {
+        var name = String.UnicodeScalarView()
+        while i < xml.count {
+            let ch = xml[i]
+            if ch == " " || ch == "\t" || ch == "\n" || ch == "\r" ||
+                    ch == "=" || ch == ">" || ch == "/" {
+                break
+            }
+            if ch == ":" {
+                name.removeAll()
+            } else {
+                name.append(ch)
+            }
+            i += 1
+        }
+        return String(name)
+    }
+
+    // Normalizes the attribute value as an XML parser does: every line end,
+    // tab and newline becomes a space, and the references are replaced.
+    private static func getAttributeValue(_ value: ArraySlice<Unicode.Scalar>) -> String {
+        var buf = String.UnicodeScalarView()
+        var i = value.startIndex
+        while i < value.endIndex {
+            let ch = value[i]
+            if ch == "\r" {
+                buf.append(" ")
+                if i + 1 < value.endIndex && value[i + 1] == "\n" {
+                    i += 1
+                }
+            } else if ch == "\n" || ch == "\t" {
+                buf.append(" ")
+            } else if ch == "&",
+                    let end = value[i...].firstIndex(of: ";"),
+                    let scalar = getReference(String(String.UnicodeScalarView(value[(i + 1)..<end]))) {
+                buf.append(scalar)
+                i = end
+            } else {
+                buf.append(ch)
+            }
+            i += 1
+        }
+        return String(buf)
+    }
+
+    private static func getReference(_ name: String) -> Unicode.Scalar? {
+        switch name {
+        case "amp": return "&"
+        case "lt": return "<"
+        case "gt": return ">"
+        case "quot": return "\""
+        case "apos": return "'"
+        default:
+            var code: UInt32?
+            if name.hasPrefix("#x") {
+                code = UInt32(name.dropFirst(2), radix: 16)
+            } else if name.hasPrefix("#") {
+                code = UInt32(name.dropFirst())
+            }
+            return code.flatMap { Unicode.Scalar($0) }
+        }
     }
 
     func processPaths(_ paths: [SVGPath]) {

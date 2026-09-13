@@ -50,7 +50,9 @@ public class SVGImage implements Drawable {
      * @throws Exception if exception occurred.
      */
     public SVGImage(String filePath) throws Exception {
-        this(new BufferedInputStream(new FileInputStream(filePath)));
+        try (InputStream stream = new BufferedInputStream(new FileInputStream(filePath))) {
+            read(stream);
+        }
     }
 
     /**
@@ -60,6 +62,10 @@ public class SVGImage implements Drawable {
      * @throws Exception if exception occurred.
      */
     public SVGImage(InputStream stream) throws Exception {
+        read(stream);
+    }
+
+    private void read(InputStream stream) throws Exception {
         colorMap = new ColorMap();
         paths = new ArrayList<SVGPath>();
 

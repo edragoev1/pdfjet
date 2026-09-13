@@ -37,8 +37,10 @@ public class SVGImage : IDrawable {
     /// Used to embed SVG images in the PDF document.
     /// </summary>
     /// <param name="svgPath">the path to the SVG file.</param>
-    public SVGImage(String svgPath) : this(
-        new FileStream(svgPath, FileMode.Open, FileAccess.Read)) {
+    public SVGImage(String svgPath) {
+        using (FileStream stream = new FileStream(svgPath, FileMode.Open, FileAccess.Read)) {
+            Read(stream);
+        }
     }
 
     /// <summary>
@@ -46,6 +48,10 @@ public class SVGImage : IDrawable {
     /// </summary>
     /// <param name="stream">the input stream.</param>
     public SVGImage(Stream stream) {
+        Read(stream);
+    }
+
+    private void Read(Stream stream) {
         paths = new List<SVGPath>();
 
         XmlReaderSettings settings = new XmlReaderSettings();

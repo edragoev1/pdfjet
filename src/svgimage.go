@@ -15,6 +15,8 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 
 // SVGImage is used to draw SVG images on a page.
@@ -30,7 +32,6 @@ type SVGImage struct {
 	language       string
 	altDescription string
 	actualText     string
-	structureType  string
 }
 
 // NewSVGImageFromFile reads and parses an SVG image from a file.
@@ -52,6 +53,8 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image.fill = color.Transparent
 	image.stroke = color.Transparent
 	image.paths = make([]*SVGPath, 0)
+	image.altDescription = single.Space
+	image.actualText = single.Space
 
 	decoder := xml.NewDecoder(reader)
 	for {
@@ -323,7 +326,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 
 // DrawOn draws this SVG image on the specified page.
 func (image *SVGImage) DrawOn(page *Page) [2]float32 {
-	page.AddBMC(image.structureType, image.language, image.actualText, image.altDescription)
+	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}
