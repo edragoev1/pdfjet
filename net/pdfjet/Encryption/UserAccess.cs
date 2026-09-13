@@ -21,15 +21,15 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Permission to print the document (possibly not at the highest quality level,
-        /// depending on whether <see cref="PrintHighQuality"/> is also set).
+        /// depending on whether <see cref="PRINT_HIGH_QUALITY"/> is also set).
         /// (Bit position: 3)
         /// </summary>
         PRINT = 1 << 2, // Decimal: 4
 
         /// <summary>
         /// Permission to modify the contents of the document by operations other than
-        /// those controlled by <see cref="ModifyAnnotations"/>, <see cref="FillFormFields"/>,
-        /// and <see cref="AssembleDocument"/>.
+        /// those controlled by <see cref="MODIFY_ANNOTATIONS"/>, <see cref="FILL_FORM_FIELDS"/>,
+        /// and <see cref="ASSEMBLE_DOCUMENT"/>.
         /// (Bit position: 4)
         /// </summary>
         MODIFY_CONTENTS = 1 << 3, // Decimal: 8
@@ -50,7 +50,7 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Permission to fill existing interactive form fields (including signature fields),
-        /// even if <see cref="ModifyContents"/> is not set.
+        /// even if <see cref="MODIFY_CONTENTS"/> is not set.
         /// (Bit position: 9)
         /// </summary>
         FILL_FORM_FIELDS = 1 << 8, // Decimal: 256
@@ -72,7 +72,7 @@ namespace PDFjet.NET {
         /// <summary>
         /// Permission to print the document to a representation from which a faithful
         /// digital copy of the PDF content could be generated. When this bit is clear
-        /// (and <see cref="Print"/> is set), printing is limited to a low-level
+        /// (and <see cref="PRINT"/> is set), printing is limited to a low-level
         /// representation of the appearance, possibly of degraded quality.
         /// (Bit position: 12)
         /// </summary>
