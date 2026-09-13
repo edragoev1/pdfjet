@@ -24,7 +24,10 @@ public class Content {
 
     /// Returns the contents of the specified file as bytes.
     public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
-        return try getFromStream(InputStream(fileAtPath: fileName)!)
+        guard let stream = InputStream(fileAtPath: fileName) else {
+            throw PDFjetError(message: "Cannot open file: " + fileName)
+        }
+        return try getFromStream(stream)
     }
 
     /// Returns all the bytes read from the stream, reading bufferSize bytes at a time.
@@ -32,14 +35,19 @@ public class Content {
         var contents = [UInt8]()
         var buffer = [UInt8](repeating: 0, count: bufferSize)
         stream.open()
+        defer { stream.close() }
+        // A stream that cannot be opened, like one of a missing file, is in
+        // the error state, and so is one that fails while it is read.
         while stream.hasBytesAvailable {
             let read = stream.read(&buffer, maxLength: bufferSize)
-            if (read == 0) {
+            if read <= 0 {
                 break
             }
             contents.append(contentsOf: buffer[0..<read])
         }
-        stream.close()
+        if stream.streamStatus == .error {
+            throw stream.streamError ?? PDFjetError(message: "Cannot read the stream.")
+        }
         return contents
     }
 

@@ -61,16 +61,12 @@ public class Content {
      */
     public static byte[] ofBinaryFile(String fileName) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        InputStream stream = null;
-        try {
-            stream = new BufferedInputStream(new FileInputStream(fileName));
+        try (InputStream stream = new BufferedInputStream(new FileInputStream(fileName))) {
             byte[] buffer = new byte[4096];
             int read = 0;
             while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
                 baos.write(buffer, 0, read);
             }
-        } finally {
-            stream.close();
         }
         return baos.toByteArray();
     }

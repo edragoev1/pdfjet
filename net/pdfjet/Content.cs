@@ -42,16 +42,13 @@ public class Content {
     /// <summary>Returns the contents of the specified file as bytes.</summary>
     public static byte[] OfBinaryFile(String fileName) {
         MemoryStream ms = new MemoryStream();
-        BufferedStream stream = null;
-        try {
-            stream = new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read));
+        using (BufferedStream stream = new BufferedStream(
+                new FileStream(fileName, FileMode.Open, FileAccess.Read))) {
             byte[] buffer = new byte[4096];
             int count = 0;
             while ((count = stream.Read(buffer, 0, buffer.Length)) > 0) {
                 ms.Write(buffer, 0, count);
             }
-        } finally {
-            stream.Close();
         }
         return ms.ToArray();
     }
