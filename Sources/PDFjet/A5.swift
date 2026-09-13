@@ -12,7 +12,7 @@
 ///
 public class A5 {
     /// The A5 page size in portrait orientation.
-    public static let PORTRAIT: [Float] = [420.0, 595.0]
+    public static let PORTRAIT = PageSize(420.0, 595.0)
     /// The A5 page size in landscape orientation.
-    public static let LANDSCAPE: [Float] = [595.0, 420.0]
+    public static let LANDSCAPE = PageSize(595.0, 420.0)
 }

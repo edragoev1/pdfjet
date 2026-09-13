@@ -510,7 +510,7 @@ public class Table implements Drawable {
      * @return the x and y coordinates below the table on the last page.
      * @throws Exception if an input or output exception occurred.
      */
-    public float[] drawOn(PDF pdf, List<Page> pages, float[] pageSize) throws Exception {
+    public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
         wrapAroundCellText();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();

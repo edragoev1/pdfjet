@@ -315,15 +315,15 @@ public class PDFobj {
      *
      * @return the PDF page size.
      */
-    public float[] getPageSize() {
+    public PageSize getPageSize() {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/MediaBox")) {
-                return new float[] {
+                return new PageSize(
                         Float.parseFloat(dict.get(i + 4)),
-                        Float.parseFloat(dict.get(i + 5)) };
+                        Float.parseFloat(dict.get(i + 5)));
             }
         }
-        return new float[] {Letter.PORTRAIT[0], Letter.PORTRAIT[1]};
+        return Letter.PORTRAIT;
     }
 
     /**

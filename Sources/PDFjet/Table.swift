@@ -463,7 +463,7 @@ public class Table : Drawable {
     ///   or nil when the table was already drawn and no page was added.
     ///
     @discardableResult
-    public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float]? {
+    public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
         wrapAroundCellText()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()

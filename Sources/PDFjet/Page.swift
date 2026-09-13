@@ -88,13 +88,13 @@ public class Page {
     ///
     public init(
             _ pdf: PDF,
-            _ pageSize: [Float],
+            _ pageSize: PageSize,
             _ addPageToPDF: Bool) {
         self.pdf = pdf
         self.annots = [Annotation]()
         self.destinations = [Destination]()
-        self.width = pageSize[0]
-        self.height = pageSize[1]
+        self.width = pageSize.getWidth()
+        self.height = pageSize.getHeight()
         self.tm0 = FastFloat.toByteArray(tmx[0])
         self.tm1 = FastFloat.toByteArray(tmx[1])
         self.tm2 = FastFloat.toByteArray(tmx[2])
@@ -108,8 +108,9 @@ public class Page {
     public init(_ pdf: PDF, _ pageObj: PDFobj) {
         self.pdf = pdf
         self.pageObj = pageObj
-        self.width = pageObj.getPageSize()[0]
-        self.height = pageObj.getPageSize()[1]
+        let pageSize = pageObj.getPageSize()
+        self.width = pageSize.getWidth()
+        self.height = pageSize.getHeight()
         self.tm0 = FastFloat.toByteArray(tmx[0])
         self.tm1 = FastFloat.toByteArray(tmx[1])
         self.tm2 = FastFloat.toByteArray(tmx[2])
@@ -161,7 +162,7 @@ public class Page {
     /// - Parameter pdf: the pdf object.
     /// - Parameter pageSize: the page size of this page.
     ///
-    public convenience init(_ pdf: PDF, _ pageSize: [Float]) {
+    public convenience init(_ pdf: PDF, _ pageSize: PageSize) {
         self.init(pdf, pageSize, true)
     }
 

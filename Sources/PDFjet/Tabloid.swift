@@ -13,7 +13,7 @@
 ///
 public class Tabloid {
     /// The tabloid page size in portrait orientation.
-    public static let PORTRAIT: [Float] = [792.0, 1224.0]
+    public static let PORTRAIT = PageSize(792.0, 1224.0)
     /// The tabloid page size in landscape orientation.
-    public static let LANDSCAPE: [Float] = [1224.0, 792.0]
+    public static let LANDSCAPE = PageSize(1224.0, 792.0)
 }

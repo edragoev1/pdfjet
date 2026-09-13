@@ -459,7 +459,7 @@ public class Table : IDrawable {
     /// <param name="pages">the list that receives the new pages.</param>
     /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
     /// <returns>the x and y coordinates below the table on the last page.</returns>
-    public float[] DrawOn(PDF pdf, List<Page> pages, float[] pageSize) {
+    public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();

@@ -113,7 +113,7 @@ final public class Page {
      *  @throws Exception  If an input or output
      *                     exception occurred
      */
-    public Page(PDF pdf, float[] pageSize) throws Exception {
+    public Page(PDF pdf, PageSize pageSize) throws Exception {
         this(pdf, pageSize, true);
     }
 
@@ -132,10 +132,10 @@ final public class Page {
      *  @param addPageToPDF boolean flag.
      *  @throws Exception  If an input or output exception occurred
      */
-    public Page(PDF pdf, float[] pageSize, boolean addPageToPDF) throws Exception {
+    public Page(PDF pdf, PageSize pageSize, boolean addPageToPDF) throws Exception {
         this.pdf = pdf;
-        width = pageSize[0];
-        height = pageSize[1];
+        width = pageSize.getWidth();
+        height = pageSize.getHeight();
         buf = new ByteArrayOutputStream(8192);
         tm0 = FastFloat.toByteArray(tmx[0]);
         tm1 = FastFloat.toByteArray(tmx[1]);
@@ -155,8 +155,9 @@ final public class Page {
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
         this.pageObj = removeComments(pageObj);
-        width = pageObj.getPageSize()[0];
-        height = pageObj.getPageSize()[1];
+        PageSize pageSize = pageObj.getPageSize();
+        width = pageSize.getWidth();
+        height = pageSize.getHeight();
         buf = new ByteArrayOutputStream(8192);
         tm0 = FastFloat.toByteArray(tmx[0]);
         tm1 = FastFloat.toByteArray(tmx[1]);

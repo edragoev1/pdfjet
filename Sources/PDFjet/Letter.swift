@@ -13,7 +13,7 @@
 ///
 public class Letter {
     /// The letter page size in portrait orientation.
-    public static let PORTRAIT: [Float] = [612.0, 792.0]
+    public static let PORTRAIT = PageSize(612.0, 792.0)
     /// The letter page size in landscape orientation.
-    public static let LANDSCAPE: [Float] = [792.0, 612.0]
+    public static let LANDSCAPE = PageSize(792.0, 612.0)
 }

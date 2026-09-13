@@ -13,7 +13,7 @@
 ///
 public class Legal {
     /// The legal page size in portrait orientation.
-    public static let PORTRAIT: [Float] = [612.0, 1008.0]
+    public static let PORTRAIT = PageSize(612.0, 1008.0)
     /// The legal page size in landscape orientation.
-    public static let LANDSCAPE: [Float] = [1008.0, 612.0]
+    public static let LANDSCAPE = PageSize(1008.0, 612.0)
 }

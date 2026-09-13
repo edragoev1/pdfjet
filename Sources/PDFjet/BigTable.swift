@@ -11,7 +11,7 @@ public class BigTable {
     private let pdf: PDF
     private let f1: Font
     private let f2: Font
-    private var pageSize: [Float]
+    private let pageSize: PageSize
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var yText: Float = 0.0
@@ -39,7 +39,7 @@ public class BigTable {
     /// - Parameter f2: the body font.
     /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
     ///
-    public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: [Float]) {
+    public init(_ pdf: PDF, _ f1: Font, _ f2: Font, _ pageSize: PageSize) {
         self.pdf = pdf
         self.f1 = f1
         self.f2 = f2

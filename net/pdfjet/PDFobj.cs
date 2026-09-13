@@ -264,12 +264,12 @@ public class PDFobj {
     }
 
     /// <summary>Returns the width and height from the /MediaBox of this page.</summary>
-    public float[] GetPageSize() {
+    public PageSize GetPageSize() {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/MediaBox")) {
-                return new float[] {
+                return new PageSize(
                         float.Parse(dict[i + 4], CultureInfo.InvariantCulture),
-                        float.Parse(dict[i + 5], CultureInfo.InvariantCulture) };
+                        float.Parse(dict[i + 5], CultureInfo.InvariantCulture));
             }
         }
         return Letter.PORTRAIT;

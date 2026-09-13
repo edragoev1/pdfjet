@@ -12,8 +12,8 @@ namespace PDFjet.NET {
 /// </summary>
 public class Tabloid {
     /// <summary>The tabloid page size in portrait orientation.</summary>
-    public static float[] PORTRAIT => new float[] {792.0f, 1224.0f};
+    public static readonly PageSize PORTRAIT = new PageSize(792.0f, 1224.0f);
     /// <summary>The tabloid page size in landscape orientation.</summary>
-    public static float[] LANDSCAPE => new float[] {1224.0f, 792.0f};
+    public static readonly PageSize LANDSCAPE = new PageSize(1224.0f, 792.0f);
 }
 }   // End of namespace PDFjet.NET

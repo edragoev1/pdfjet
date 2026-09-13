@@ -16,7 +16,7 @@ public class Legal {
     }
 
     /** Portrait orientation */
-    public static final float[] PORTRAIT = new float[] {612.0f, 1008.0f};
+    public static final PageSize PORTRAIT = new PageSize(612.0f, 1008.0f);
     /** Landscape orientation */
-    public static final float[] LANDSCAPE = new float[] {1008.0f, 612.0f};
+    public static final PageSize LANDSCAPE = new PageSize(1008.0f, 612.0f);
 }

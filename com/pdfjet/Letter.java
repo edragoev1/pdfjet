@@ -16,7 +16,7 @@ public class Letter {
     }
 
     /** Portrait orientation */
-    public static final float[] PORTRAIT = new float[] {612.0f, 792.0f};
+    public static final PageSize PORTRAIT = new PageSize(612.0f, 792.0f);
     /** Landscape orientation */
-    public static final float[] LANDSCAPE = new float[] {792.0f, 612.0f};
+    public static final PageSize LANDSCAPE = new PageSize(792.0f, 612.0f);
 }

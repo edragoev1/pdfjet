@@ -16,7 +16,7 @@ public class Tabloid {
     }
 
     /** Portrait orientation */
-    public static final float[] PORTRAIT = new float[] {792.0f, 1224.0f};
+    public static final PageSize PORTRAIT = new PageSize(792.0f, 1224.0f);
     /** Landscape orientation */
-    public static final float[] LANDSCAPE = new float[] {1224.0f, 792.0f};
+    public static final PageSize LANDSCAPE = new PageSize(1224.0f, 792.0f);
 }

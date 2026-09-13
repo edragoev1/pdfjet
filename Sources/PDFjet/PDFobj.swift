@@ -279,10 +279,10 @@ public final class PDFobj {
     /// Returns the width and height from the /MediaBox of this page.
     ///
     /// - Returns: the page size.
-    public final func getPageSize() -> [Float] {
+    public final func getPageSize() -> PageSize {
         for i in 0..<dict.count {
             if dict[i] == "/MediaBox" {
-                return [Float(dict[i + 4])!, Float(dict[i + 5])!]
+                return PageSize(Float(dict[i + 4])!, Float(dict[i + 5])!)
             }
         }
         return Letter.PORTRAIT

@@ -92,7 +92,7 @@ public class Page {
     /// </summary>
     /// <param name="pdf">the pdf object.</param>
     /// <param name="pageSize">the page size of this page.</param>
-    public Page(PDF pdf, float[] pageSize) : this(pdf, pageSize, true) {
+    public Page(PDF pdf, PageSize pageSize) : this(pdf, pageSize, true) {
     }
 
     /// <summary>
@@ -108,10 +108,10 @@ public class Page {
     /// <param name="pdf">the pdf object.</param>
     /// <param name="pageSize">the page size of this page.</param>
     /// <param name="addPageToPDF">bool flag.</param>
-    public Page(PDF pdf, float[] pageSize, bool addPageToPDF) {
+    public Page(PDF pdf, PageSize pageSize, bool addPageToPDF) {
         this.pdf = pdf;
-        this.width = pageSize[0];
-        this.height = pageSize[1];
+        this.width = pageSize.GetWidth();
+        this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
         this.tm0 = FastFloat.ToByteArray(tmx[0]);
         this.tm1 = FastFloat.ToByteArray(tmx[1]);
@@ -126,8 +126,9 @@ public class Page {
     public Page(PDF pdf, PDFobj pageObj) {
         this.pdf = pdf;
         this.pageObj = RemoveComments(pageObj);
-        this.width = pageObj.GetPageSize()[0];
-        this.height = pageObj.GetPageSize()[1];
+        PageSize pageSize = pageObj.GetPageSize();
+        this.width = pageSize.GetWidth();
+        this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
         this.tm0 = FastFloat.ToByteArray(tmx[0]);
         this.tm1 = FastFloat.ToByteArray(tmx[1]);

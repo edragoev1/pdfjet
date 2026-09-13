@@ -17,9 +17,9 @@ public class B5 {
     /**
      * This is a public static variable that specifies that page size in portrait orientation.
      */
-    public static final float[] PORTRAIT = new float[] {516.0f, 729.0f};
+    public static final PageSize PORTRAIT = new PageSize(516.0f, 729.0f);
     /**
      * This is a public static variable that specifies that page size in landscape orientation.
      */
-    public static final float[] LANDSCAPE = new float[] {729.0f, 516.0f};
+    public static final PageSize LANDSCAPE = new PageSize(729.0f, 516.0f);
 }

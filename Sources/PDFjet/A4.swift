@@ -12,7 +12,7 @@
 ///
 public class A4 {
     /// The A4 page size in portrait orientation.
-    public static let PORTRAIT: [Float] = [595.0, 842.0]
+    public static let PORTRAIT = PageSize(595.0, 842.0)
     /// The A4 page size in landscape orientation.
-    public static let LANDSCAPE: [Float] = [842.0, 595.0]
+    public static let LANDSCAPE = PageSize(842.0, 595.0)
 }

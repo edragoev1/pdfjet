@@ -9,7 +9,7 @@ namespace PDFjet.NET {
         private readonly PDF pdf;
         private readonly Font f1;
         private readonly Font f2;
-        private float[] pageSize;
+        private readonly PageSize pageSize;
         private float x;
         private float y;
         private float yText;
@@ -36,11 +36,11 @@ namespace PDFjet.NET {
         /// <param name="f1">the header font.</param>
         /// <param name="f2">the body font.</param>
         /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
-        public BigTable(PDF pdf, Font f1, Font f2, float[] pageSize) {
+        public BigTable(PDF pdf, Font f1, Font f2, PageSize pageSize) {
             this.pdf = pdf;
             this.f1 = f1;
             this.f2 = f2;
-            this.pageSize = new float[] {pageSize[0], pageSize[1]};
+            this.pageSize = pageSize;
             this.pages = new List<Page>();
         }
 

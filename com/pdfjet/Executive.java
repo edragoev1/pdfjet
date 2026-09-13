@@ -16,8 +16,8 @@ public class Executive {
     }
 
     /** PORTRAIT orientation */
-    public static final float[] PORTRAIT = new float[] {522.0f, 756.0f};
+    public static final PageSize PORTRAIT = new PageSize(522.0f, 756.0f);
 
     /** LANDSCAPE orientation */
-    public static final float[] LANDSCAPE = new float[] {756.0f, 522.0f};
+    public static final PageSize LANDSCAPE = new PageSize(756.0f, 522.0f);
 }

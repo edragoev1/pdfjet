@@ -14,7 +14,7 @@ public class BigTable {
     private final PDF pdf;
     private final Font f1;
     private final Font f2;
-    private float[] pageSize;
+    private final PageSize pageSize;
     private float x;
     private float y;
     private float yText;
@@ -42,11 +42,11 @@ public class BigTable {
      * @param f2 the body font.
      * @param pageSize specifies the page size.
      */
-    public BigTable(PDF pdf, Font f1, Font f2, float[] pageSize) {
+    public BigTable(PDF pdf, Font f1, Font f2, PageSize pageSize) {
         this.pdf = pdf;
         this.f1 = f1;
         this.f2 = f2;
-        this.pageSize = new float[] {pageSize[0], pageSize[1]};
+        this.pageSize = pageSize;
         this.pages = new ArrayList<Page>();
     }
 
