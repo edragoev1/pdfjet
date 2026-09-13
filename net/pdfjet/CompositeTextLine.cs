@@ -14,10 +14,13 @@ namespace PDFjet.NET {
 /// Used to create composite text line objects.
 /// </summary>
 public class CompositeTextLine : IDrawable {
-    private float x = 0f;
-    private float y = 0f;
+    private const int X = 0;
+    private const int Y = 1;
 
     private List<TextLine> textLines = new List<TextLine>();
+
+    private float[] position = new float[2];
+    private float[] current  = new float[2];
 
     // Subscript and Superscript size factors
     private float subscriptSizeFactor   = 0.583f;
@@ -31,8 +34,10 @@ public class CompositeTextLine : IDrawable {
 
     /// <summary>Creates a composite text line at the specified location.</summary>
     public CompositeTextLine(float x, float y) {
-        this.x = x;
-        this.y = y;
+        position[X] = x;
+        position[Y] = y;
+        current[X]  = x;
+        current[Y]  = y;
     }
 
     /// <summary>
@@ -136,6 +141,29 @@ public class CompositeTextLine : IDrawable {
     /// <param name="component">the component.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine AddComponent(TextLine component) {
+        if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+            if (fontSize > 0f) {
+                // Set it on the TextLine: DrawOn uses the line's own font size,
+                // so resizing the shared Font here would have no effect.
+                component.SetFontSize(fontSize * superscriptSizeFactor);
+            }
+            component.SetLocation(
+                    current[X],
+                    current[Y] - fontSize * superscriptPosition);
+        } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+            if (fontSize > 0f) {
+                component.SetFontSize(fontSize * subscriptSizeFactor);
+            }
+            component.SetLocation(
+                    current[X],
+                    current[Y] + fontSize * subscriptPosition);
+        } else {
+            if (fontSize > 0f) {
+                component.SetFontSize(fontSize);
+            }
+            component.SetLocation(current[X], current[Y]);
+        }
+        current[X] += component.GetWidth();
         textLines.Add(component);
         return this;
     }
@@ -164,8 +192,29 @@ public class CompositeTextLine : IDrawable {
     /// <param name="y">the y coordinate.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetLocation(float x, float y) {
-        this.x = x;
-        this.y = y;
+        position[X] = x;
+        position[Y] = y;
+        current[X]  = x;
+        current[Y]  = y;
+
+        if (textLines == null || textLines.Count == 0) {
+            return this;
+        }
+
+        foreach (TextLine component in textLines) {
+            if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+                component.SetLocation(
+                        current[X],
+                        current[Y] - fontSize * superscriptPosition);
+            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+                component.SetLocation(
+                        current[X],
+                        current[Y] + fontSize * subscriptPosition);
+            } else {
+                component.SetLocation(current[X], current[Y]);
+            }
+            current[X] += component.GetWidth();
+        }
         return this;
     }
 
@@ -189,7 +238,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the x and y coordinates of this composite text line.</returns>
     public float[] GetPosition() {
-        return new float[] {this.x, this.y};
+        return position;
     }
 
     /// <summary>
@@ -206,27 +255,24 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the an array containing the vertical coordinates.</returns>
     public float[] GetMinMax() {
-        float min = this.y;
-        float max = this.y;
+        float min = position[Y];
+        float max = position[Y];
         float cur;
 
-        foreach (TextLine textLine in textLines) {
-            textLine.SetFontSize(fontSize);
-            if (textLine.GetTextEffect() == Effect.SUPERSCRIPT) {
-                cur = this.y - (textLine.font.GetSize() + textLine.font.GetAscent(fontSize*superscriptSizeFactor));
+        foreach (TextLine component in textLines) {
+            if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+                cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
                 if (cur < min)
                     min = cur;
-                textLine.SetFontSize(fontSize*superscriptSizeFactor);
-            } else if (textLine.GetTextEffect() == Effect.SUBSCRIPT) {
-                cur = this.y + (textLine.font.GetDescent() + textLine.font.GetDescent(fontSize*subscriptSizeFactor));
+            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+                cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
                 if (cur > max)
                     max = cur;
-                textLine.SetFontSize(fontSize*subscriptSizeFactor);
             } else {
-                cur = this.y - textLine.font.GetAscent();
+                cur = position[Y] - component.font.ascent;
                 if (cur < min)
                     min = cur;
-                cur = this.y + textLine.font.GetDescent();
+                cur = position[Y] + component.font.descent;
                 if (cur > max)
                     max = cur;
             }
@@ -249,20 +295,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the width.</returns>
     public float GetWidth() {
-        float width = 0f;
-
-        foreach (TextLine textLine in textLines) {
-            if (textLine.GetTextEffect() == Effect.SUPERSCRIPT) {
-                textLine.SetFontSize(fontSize*superscriptSizeFactor);
-            } else if (textLine.GetTextEffect() == Effect.SUBSCRIPT) {
-                textLine.SetFontSize(fontSize*subscriptSizeFactor);
-            } else {
-                textLine.SetFontSize(fontSize);
-            }
-            width += textLine.GetWidth();
-        }
-
-        return width;
+        return (current[X] - position[X]);
     }
 
     /// <summary>
@@ -273,35 +306,12 @@ public class CompositeTextLine : IDrawable {
     public float[] DrawOn(Page page) {
         float xMax = 0f;
         float yMax = 0f;
-
-        if (textLines == null || textLines.Count == 0) {
-            return new float[] {xMax, yMax};
-        }
-
-        float textLineX = this.x;
-        float textLineY = this.y;
+        // Loop through all the text lines and draw them on the page
         foreach (TextLine textLine in textLines) {
-            textLine.SetFontSize(fontSize);
-            if (textLine.GetTextEffect() == Effect.SUPERSCRIPT) {
-                textLine.SetLocation(
-                        textLineX,
-                        textLineY - fontSize*superscriptPosition);
-                textLine.SetFontSize(fontSize*superscriptSizeFactor);
-            } else if (textLine.GetTextEffect() == Effect.SUBSCRIPT) {
-                textLine.SetLocation(
-                        textLineX,
-                        textLineY + fontSize*subscriptPosition);
-                textLine.SetFontSize(fontSize*subscriptSizeFactor);
-            } else {
-                textLine.SetLocation(textLineX, textLineY);
-            }
-            textLineX += textLine.GetWidth();
-
             float[] xy = textLine.DrawOn(page);
             xMax = Math.Max(xMax, xy[0]);
             yMax = Math.Max(yMax, xy[1]);
         }
-
         return new float[] {xMax, yMax};
     }
 }   // End of CompositeTextLine.cs
