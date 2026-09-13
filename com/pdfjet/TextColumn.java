@@ -154,7 +154,7 @@ public class TextColumn implements Drawable {
     }
 
     /**
-     * Sets the text alignment.
+     * Sets the text alignment of the paragraphs that do not set their own.
      *
      * @param alignment the specified alignment code.
      *                  Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
@@ -230,18 +230,24 @@ public class TextColumn implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         float[] xy = new float[] {x, y};
         for (Paragraph paragraph : paragraphs) {
-            this.alignment = paragraph.alignment;
             xy = drawParagraphOn(page, paragraph);
         }
         // Restore the original location
         setLocation(this.x, this.y);
-        if (this.getHeight() > xy[1]) {
-            xy[1] = this.getHeight();
+        // A column with a height reaches at least that far from its location, in
+        // the direction its lines advance: down, or right or left when rotated.
+        if (rotate == 0 && y + h > xy[1]) {
+            xy[1] = y + h;
+        } else if (rotate == 90 && x + h > xy[0]) {
+            xy[0] = x + h;
+        } else if (rotate == 270 && x - h < xy[0]) {
+            xy[0] = x - h;
         }
         return xy;
     }
 
     private float[] drawParagraphOn(Page page, Paragraph paragraph) throws Exception {
+        int alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new ArrayList<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
@@ -272,7 +278,7 @@ public class TextColumn implements Drawable {
                 if (runLength < this.w) {
                     list.add(textLine);
                 } else {
-                    drawLineOfText(page, list);
+                    drawLineOfText(page, list, alignment);
                     moveToNextLine(lineHeight);
                     list.clear();
                     list.add(textLine);
@@ -283,7 +289,7 @@ public class TextColumn implements Drawable {
                 textLine.isLastToken = true;
             }
         }
-        drawNonJustifiedLine(page, list);
+        drawNonJustifiedLine(page, list, alignment);
 
         if (lineBetweenParagraphs) {
             moveToNextLine(lineHeight);
@@ -320,7 +326,7 @@ public class TextColumn implements Drawable {
         return new float[] {x1, y1};
     }
 
-    private void drawLineOfText(Page page, List<TextLine> list) throws Exception {
+    private void drawLineOfText(Page page, List<TextLine> list, int alignment) throws Exception {
         if (alignment == Align.JUSTIFY) {
             float sumOfWordWidths = 0f;
             for (TextLine textLine : list) {
@@ -346,11 +352,11 @@ public class TextColumn implements Drawable {
                 }
             }
         } else {
-            drawNonJustifiedLine(page, list);
+            drawNonJustifiedLine(page, list, alignment);
         }
     }
 
-    private void drawNonJustifiedLine(Page page, List<TextLine> list) throws Exception {
+    private void drawNonJustifiedLine(Page page, List<TextLine> list, int alignment) throws Exception {
         float runLength = 0f;
         for (TextLine textLine : list) {
             runLength += textLine.getWidth();

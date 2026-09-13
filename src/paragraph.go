@@ -17,6 +17,8 @@ type Paragraph struct {
 	xText, yText, x1, y1, x2, y2 float32
 	lines                        []*TextLine
 	alignment                    int
+	// True after SetTextAlignment. Otherwise the alignment of the text column applies.
+	explicitAlignment bool
 }
 
 // NewParagraph creates a paragraph.
@@ -65,8 +67,11 @@ func (paragraph *Paragraph) Add(text *TextLine) *Paragraph {
 
 // SetTextAlignment sets the alignment of the text in this paragraph:
 // alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
+// A paragraph with no alignment set takes the alignment of the text column it
+// is drawn in.
 func (paragraph *Paragraph) SetTextAlignment(alignment int) *Paragraph {
 	paragraph.alignment = alignment
+	paragraph.explicitAlignment = true
 	return paragraph
 }
 

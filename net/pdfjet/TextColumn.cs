@@ -191,18 +191,24 @@ public class TextColumn : IDrawable {
     public float[] DrawOn(Page page) {
         float[] xy = new float[] {x, y};
         foreach (Paragraph paragraph in paragraphs) {
-            this.alignment = paragraph.alignment;
             xy = DrawParagraphOn(page, paragraph);
         }
         // Restore the original location
         SetLocation(this.x, this.y);
-        if (this.GetHeight() > xy[1]) {
-            xy[1] = this.GetHeight();
+        // A column with a height reaches at least that far from its location, in
+        // the direction its lines advance: down, or right or left when rotated.
+        if (rotate == 0 && y + h > xy[1]) {
+            xy[1] = y + h;
+        } else if (rotate == 90 && x + h > xy[0]) {
+            xy[0] = x + h;
+        } else if (rotate == 270 && x - h < xy[0]) {
+            xy[0] = x - h;
         }
         return xy;
     }
 
     private float[] DrawParagraphOn(Page page, Paragraph paragraph) {
+        uint alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new List<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
@@ -232,7 +238,7 @@ public class TextColumn : IDrawable {
                 if (runLength < this.w) {
                     list.Add(text);
                 } else {
-                    DrawLineOfText(page, list);
+                    DrawLineOfText(page, list, alignment);
                     MoveToNextLine(lineHeight);
                     list.Clear();
                     list.Add(text);
@@ -243,7 +249,7 @@ public class TextColumn : IDrawable {
                 text.isLastToken = true;
             }
         }
-        DrawNonJustifiedLine(page, list);
+        DrawNonJustifiedLine(page, list, alignment);
 
         if (lineBetweenParagraphs) {
             MoveToNextLine(lineHeight);
@@ -280,7 +286,7 @@ public class TextColumn : IDrawable {
         return new float[] {x1, y1};
     }
 
-    private void DrawLineOfText(Page page, List<TextLine> list) {
+    private void DrawLineOfText(Page page, List<TextLine> list, uint alignment) {
         if (alignment == Align.JUSTIFY) {
             float sumOfWordWidths = 0f;
             foreach (TextLine textLine in list) {
@@ -306,11 +312,11 @@ public class TextColumn : IDrawable {
                 }
             }
         } else {
-            DrawNonJustifiedLine(page, list);
+            DrawNonJustifiedLine(page, list, alignment);
         }
     }
 
-    private void DrawNonJustifiedLine(Page page, List<TextLine> list) {
+    private void DrawNonJustifiedLine(Page page, List<TextLine> list, uint alignment) {
         float runLength = 0f;
         foreach (TextLine textLine in list) {
             runLength += textLine.GetWidth();

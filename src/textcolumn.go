@@ -129,18 +129,27 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	xy := [2]float32{textColumn.x, textColumn.y}
 	for _, paragraph := range textColumn.paragraphs {
-		textColumn.alignment = paragraph.alignment
 		xy = textColumn.drawParagraphOn(page, paragraph)
 	}
 	// Restore the original location
 	textColumn.SetLocation(textColumn.x, textColumn.y)
-	if textColumn.GetHeight() > xy[1] {
-		xy[1] = textColumn.GetHeight()
+	// A column with a height reaches at least that far from its location, in
+	// the direction its lines advance: down, or right or left when rotated.
+	if textColumn.rotate == 0 && textColumn.y+textColumn.h > xy[1] {
+		xy[1] = textColumn.y + textColumn.h
+	} else if textColumn.rotate == 90 && textColumn.x+textColumn.h > xy[0] {
+		xy[0] = textColumn.x + textColumn.h
+	} else if textColumn.rotate == 270 && textColumn.x-textColumn.h < xy[0] {
+		xy[0] = textColumn.x - textColumn.h
 	}
 	return xy
 }
 
 func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) [2]float32 {
+	textAlignment := textColumn.alignment
+	if paragraph.explicitAlignment {
+		textAlignment = paragraph.alignment
+	}
 	list := make([]*TextLine, 0)
 	var lineHeight = float32(0.0)
 	var maxAscent = float32(0.0)
@@ -169,7 +178,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 			if runLength < textColumn.w {
 				list = append(list, text)
 			} else {
-				textColumn.drawLineOfText(page, list)
+				textColumn.drawLineOfText(page, list, textAlignment)
 				textColumn.moveToNextLine(lineHeight)
 				list = make([]*TextLine, 0)
 				list = append(list, text)
@@ -180,7 +189,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 			text.isLastToken = true
 		}
 	}
-	textColumn.drawNonJustifiedLine(page, list)
+	textColumn.drawNonJustifiedLine(page, list, textAlignment)
 
 	if textColumn.lineBetweenParagraphs {
 		textColumn.moveToNextLine(lineHeight)
@@ -217,8 +226,8 @@ func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) [2]f
 	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
-func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) {
-	if textColumn.alignment == alignment.Justify {
+func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, textAlignment int) {
+	if textAlignment == alignment.Justify {
 		var sumOfWordWidths float32
 		for _, textLine := range textLines {
 			sumOfWordWidths += textLine.GetWidth()
@@ -242,17 +251,17 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine) 
 			}
 		}
 	} else {
-		textColumn.drawNonJustifiedLine(page, textLines)
+		textColumn.drawNonJustifiedLine(page, textLines, textAlignment)
 	}
 }
 
-func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*TextLine) {
+func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*TextLine, textAlignment int) {
 	var runLength float32
 	for _, textLine := range textLines {
 		runLength += textLine.GetWidth()
 	}
 
-	if textColumn.alignment == alignment.Center {
+	if textAlignment == alignment.Center {
 		if textColumn.rotate == 0 {
 			textColumn.x1 = textColumn.x + ((textColumn.w - runLength) / 2)
 		} else if textColumn.rotate == 90 {
@@ -260,7 +269,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 		} else if textColumn.rotate == 270 {
 			textColumn.y1 = textColumn.y + ((textColumn.w - runLength) / 2)
 		}
-	} else if textColumn.alignment == alignment.Right {
+	} else if textAlignment == alignment.Right {
 		if textColumn.rotate == 0 {
 			textColumn.x1 = textColumn.x + (textColumn.w - runLength)
 		} else if textColumn.rotate == 90 {

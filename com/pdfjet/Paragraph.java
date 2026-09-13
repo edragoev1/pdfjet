@@ -35,6 +35,8 @@ public class Paragraph {
     protected List<TextLine> lines = null;
     /** The alignment of this paragraph. */
     protected int alignment = Align.LEFT;
+    // True after setTextAlignment. Otherwise the alignment of the text column applies.
+    boolean explicitAlignment = false;
 
     /**
      * Constructor for creating paragraph objects.
@@ -65,13 +67,15 @@ public class Paragraph {
     }
 
     /**
-     * Sets the alignment of the text in this paragraph.
+     * Sets the alignment of the text in this paragraph. A paragraph with no
+     * alignment set takes the alignment of the text column it is drawn in.
      *
      * @param alignment the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
      * @return this paragraph.
      */
     public Paragraph setTextAlignment(int alignment) {
         this.alignment = alignment;
+        this.explicitAlignment = true;
         return this;
     }
 

@@ -179,18 +179,24 @@ public class TextColumn : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         var xy: [Float] = [x, y]
         for paragraph in paragraphs {
-            self.alignment = paragraph.alignment
             xy = drawParagraphOn(page, paragraph)
         }
         // Restore the original location
         setLocation(self.x, self.y)
-        if self.getHeight() > xy[1] {
-            xy[1] = self.getHeight()
+        // A column with a height reaches at least that far from its location, in
+        // the direction its lines advance: down, or right or left when rotated.
+        if rotate == 0 && y + h > xy[1] {
+            xy[1] = y + h
+        } else if rotate == 90 && x + h > xy[0] {
+            xy[0] = x + h
+        } else if rotate == 270 && x - h < xy[0] {
+            xy[0] = x - h
         }
         return xy
     }
 
     private func drawParagraphOn(_ page: Page?, _ paragraph: Paragraph) -> [Float] {
+        let alignment = paragraph.explicitAlignment ? paragraph.alignment : self.alignment
         var list = [TextLine]()
         var lineHeight: Float = 0.0
         var maxAscent: Float = 0.0
@@ -220,7 +226,7 @@ public class TextColumn : Drawable {
                 if runLength < self.w {
                     list.append(textLine)
                 } else {
-                    drawLineOfText(page, list)
+                    drawLineOfText(page, list, alignment)
                     moveToNextLine(lineHeight)
                     list.removeAll()
                     list.append(textLine)
@@ -229,7 +235,7 @@ public class TextColumn : Drawable {
             }
             text?.isLastToken = true
         }
-        drawNonJustifiedLine(page, list)
+        drawNonJustifiedLine(page, list, alignment)
 
         if lineBetweenParagraphs {
             moveToNextLine(lineHeight)
@@ -267,7 +273,7 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-    private func drawLineOfText(_ page: Page?, _ list: [TextLine]) {
+    private func drawLineOfText(_ page: Page?, _ list: [TextLine], _ alignment: UInt32) {
         if alignment == Align.JUSTIFY {
             var sumOfWordWidths: Float = 0.0
             for textLine in list {
@@ -290,11 +296,11 @@ public class TextColumn : Drawable {
                 }
             }
         } else {
-            drawNonJustifiedLine(page, list)
+            drawNonJustifiedLine(page, list, alignment)
         }
     }
 
-    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine]) {
+    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine], _ alignment: UInt32) {
         var runLength: Float = 0.0
         for textLine in list {
             runLength += textLine.getWidth()

@@ -25,6 +25,8 @@ public class Paragraph {
     public var y2: Float = 0.0
     var lines = [TextLine]()
     var alignment: UInt32 = Align.LEFT
+    // True after setTextAlignment. Otherwise the alignment of the text column applies.
+    var explicitAlignment = false
 
     ///
     /// Constructor for creating paragraph objects.
@@ -50,7 +52,8 @@ public class Paragraph {
     }
 
     ///
-    /// Sets the alignment of the text in this paragraph.
+    /// Sets the alignment of the text in this paragraph. A paragraph with no
+    /// alignment set takes the alignment of the text column it is drawn in.
     ///
     /// - Parameter alignment: the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
     /// - Returns: this paragraph.
@@ -58,6 +61,7 @@ public class Paragraph {
     @discardableResult
     public func setTextAlignment(_ alignment: UInt32) -> Paragraph {
         self.alignment = alignment
+        self.explicitAlignment = true
         return self
     }
 
