@@ -94,7 +94,7 @@ class Example_20 {
 
         QRCode qr = new QRCode(
                 "https://kazuhikoarase.github.io",
-                ErrorCorrectLevel.L);   // Low
+                ErrorCorrectionLevel.L);   // Low
         qr.SetModuleLength(3f);
         qr.SetLocation(50f, 200f);
         qr.DrawOn(page);

@@ -34,8 +34,8 @@ class RSBlock {
     }
 
     static func getRSBlocks(
-            _ errorCorrectLevel: Int) -> [RSBlock] {
-        let rsBlock = getRsBlockTable(errorCorrectLevel)
+            _ errorCorrectionLevel: ErrorCorrectionLevel) -> [RSBlock] {
+        let rsBlock = getRsBlockTable(errorCorrectionLevel)
         let length = rsBlock.count / 3
         var list = [RSBlock]()
         for i in 0..<length {
@@ -50,14 +50,14 @@ class RSBlock {
     }
 
     static func getRsBlockTable(
-            _ errorCorrectLevel: Int) -> [Int] {
-        if errorCorrectLevel == ErrorCorrectLevel.L {
+            _ errorCorrectionLevel: ErrorCorrectionLevel) -> [Int] {
+        if errorCorrectionLevel == ErrorCorrectionLevel.L {
             return [1, 100, 80]
-        } else if errorCorrectLevel == ErrorCorrectLevel.M {
+        } else if errorCorrectionLevel == ErrorCorrectionLevel.M {
             return [2, 50, 32]
-        } else if errorCorrectLevel == ErrorCorrectLevel.Q {
+        } else if errorCorrectionLevel == ErrorCorrectionLevel.Q {
             return [2, 50, 24]
-        } else if errorCorrectLevel == ErrorCorrectLevel.H {
+        } else if errorCorrectionLevel == ErrorCorrectionLevel.H {
             return [4, 25, 9]
         }
         return []

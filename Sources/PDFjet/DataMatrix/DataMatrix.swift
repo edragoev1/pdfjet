@@ -157,7 +157,7 @@ public final class DataMatrix : Drawable {
     }
 
     /// Returns the modules of this barcode, by row and column; true is dark.
-    public func getData() -> [[Bool]] {
+    public func getModules() -> [[Bool]] {
         return modules
     }
 

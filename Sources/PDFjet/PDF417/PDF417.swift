@@ -132,17 +132,17 @@ public class PDF417 : Drawable {
     }
 
     /**
-     *  Sets the module width for this barcode.
+     *  Sets the module length of this barcode, the width of its narrowest bar.
      *  This changes the barcode size while preserving the aspect.
      *  Use value between 0.5f and 0.75f.
      *  If the value is too small some scanners may have difficulty reading the barcode.
      *
-     *  - Parameter width: the module width of the barcode.
+     *  - Parameter moduleLength: the module length of the barcode.
      *  - Returns: this PDF417 object.
      */
     @discardableResult
-    public func setModuleWidth(_ width: Float) -> PDF417 {
-        self.w1 = width
+    public func setModuleLength(_ moduleLength: Float) -> PDF417 {
+        self.w1 = moduleLength
         self.h1 = 3 * w1
         return self
     }

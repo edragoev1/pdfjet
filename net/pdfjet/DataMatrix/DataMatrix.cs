@@ -178,7 +178,7 @@ public class DataMatrix : IDrawable {
     }
 
     /// <summary>Returns the modules of this barcode, by row and column; true is dark.</summary>
-    public bool[][] GetData() {
+    public bool[][] GetModules() {
         return modules;
     }
 

@@ -32,20 +32,13 @@ public class Barcode : IDrawable {
     /// </summary>
     public static readonly int CODE_39 = 3;
 
-    /// <summary>Draws the barcode from left to right.</summary>
-    public static readonly int LEFT_TO_RIGHT = 0;
-    /// <summary>Draws the barcode from top to bottom.</summary>
-    public static readonly int TOP_TO_BOTTOM = 1;
-    /// <summary>Draws the barcode from bottom to top.</summary>
-    public static readonly int BOTTOM_TO_TOP = 2;
-
     private int barcodeType = 0;
     private String text = null;
     private float x1 = 0.0f;
     private float y1 = 0.0f;
     private float m1 = 0.75f;   // Module length
     private float barHeightFactor = 50.0f;
-    private int direction = LEFT_TO_RIGHT;
+    private Direction direction = Direction.LEFT_TO_RIGHT;
     private Font font = null;
 
     private String[] lCode = {
@@ -196,11 +189,11 @@ public class Barcode : IDrawable {
     }
 
     /// <summary>
-    /// Sets the drawing direction for this font.
+    /// Sets the direction in which this barcode is drawn.
     /// </summary>
     /// <param name="direction">the specified direction.</param>
     /// <returns>this Barcode object.</returns>
-    public Barcode SetDirection(int direction) {
+    public Barcode SetDirection(Direction direction) {
         this.direction = direction;
         return this;
     }
@@ -279,7 +272,7 @@ public class Barcode : IDrawable {
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + checkDigit.ToString();
 
-        x = DrawEGuard(page, x, y, m1, h + 8);
+        x = DrawEGuard(page, x1, y1, x, h + 8);
         float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText[i] - '0';
@@ -287,7 +280,7 @@ public class Barcode : IDrawable {
             for (int j = 0; j < 4; j++) {
                 int n = str[j] - '0';
                 if (j%2 != 0) {
-                    DrawVertBar(page, x, y, n*m1, h);
+                    DrawDigitBar(page, x1, y1, x, n*m1, h);
                 }
                 x += n*m1;
             }
@@ -296,7 +289,7 @@ public class Barcode : IDrawable {
             }
         }
         float xLeftGroupEnd = x;
-        x = DrawMGuard(page, x, y, m1, h + 8);
+        x = DrawMGuard(page, x1, y1, x, h + 8);
         float xRightGroupStart = x;
         float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
@@ -308,12 +301,12 @@ public class Barcode : IDrawable {
             for (int j = 0; j < 4; j++) {
                 int n = str[j] - '0';
                 if (j%2 == 0) {
-                    DrawVertBar(page, x, y, n*m1, h);
+                    DrawDigitBar(page, x1, y1, x, n*m1, h);
                 }
                 x += n*m1;
             }
         }
-        x = DrawEGuard(page, x, y, m1, h + 8);
+        x = DrawEGuard(page, x1, y1, x, h + 8);
 
         float[] xy = new float[] {x, y};
         if (font != null) {
@@ -332,80 +325,110 @@ public class Barcode : IDrawable {
             float yText = y1 + h + font.GetBodyHeight(font.GetSize());
             float gap = font.StringWidth(" ");
 
-            TextLine firstDigitLine = new TextLine(font, firstDigit);
-            firstDigitLine.SetLocation(x1 - gap - font.StringWidth(firstDigit), yText);
-            firstDigitLine.DrawOn(page);
-
-            TextLine group1Line = new TextLine(font, group1);
-            group1Line.SetLocation(
+            float left = x1 - gap - font.StringWidth(firstDigit);
+            DrawDigits(page, x1, y1, firstDigit, left, yText);
+            DrawDigits(page, x1, y1, group1,
                     xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font.StringWidth(group1))/2,
                     yText);
-            group1Line.DrawOn(page);
-
-            TextLine group2Line = new TextLine(font, group2);
-            group2Line.SetLocation(
+            DrawDigits(page, x1, y1, group2,
                     xRightGroupStart + ((xGroup2End - xRightGroupStart) - font.StringWidth(group2))/2,
                     yText);
-            group2Line.DrawOn(page);
-
-            TextLine lastDigitLine = new TextLine(font, lastDigit);
-            lastDigitLine.SetLocation(x + gap, yText);
-            float[] xyLast = lastDigitLine.DrawOn(page);
+            float[] xyLast = DrawDigits(page, x1, y1, lastDigit, x + gap, yText);
 
             xy[0] = Math.Max(x, xyLast[0]);
             xy[1] = Math.Max(y, xyLast[1]);
 
             font.SetSize(fontSize);
-            return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
+            return TurnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())});
         }
 
-        return new float[] {xy[0], xy[1]};
+        return TurnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
     }
 
-    private float DrawEGuard(
-            Page page,
-            float x,
-            float y,
-            float m1,
-            float h) {
+    private float DrawEGuard(Page page, float x1, float y1, float x, float h) {
         if (page != null) {
             // 101
             page.AddArtifactBMC();
-            DrawBar(page, x + (0.5f * m1), y, m1, h);
-            DrawBar(page, x + (2.5f * m1), y, m1, h);
+            DrawBar(page, x1, y1, x + (0.5f * m1), m1, h);
+            DrawBar(page, x1, y1, x + (2.5f * m1), m1, h);
             page.AddEMC();
         }
         return (x + (3.0f * m1));
     }
 
-    private float DrawMGuard(
-            Page page,
-            float x,
-            float y,
-            float m1,
-            float h) {
+    private float DrawMGuard(Page page, float x1, float y1, float x, float h) {
         if (page != null) {
             // 01010
             page.AddArtifactBMC();
-            DrawBar(page, x + (1.5f * m1), y, m1, h);
-            DrawBar(page, x + (3.5f * m1), y, m1, h);
+            DrawBar(page, x1, y1, x + (1.5f * m1), m1, h);
+            DrawBar(page, x1, y1, x + (3.5f * m1), m1, h);
             page.AddEMC();
         }
         return (x + (5.0f * m1));
     }
 
-    private void DrawBar(
-            Page page,
-            float x,
-            float y,
-            float m1,   // Single bar width
-            float h) {
+    // Strokes the bar of width w and height h centered on x of an EAN-13 or UPC-A
+    // barcode drawn left to right from (x1, y1), turned to the direction of the barcode.
+    private void DrawBar(Page page, float x1, float y1, float x, float w, float h) {
         if (page != null) {
-            page.SetPenWidth(m1);
-            page.MoveTo(x, y);
-            page.LineTo(x, y + h);
+            float[] top = Turn(x1, y1, x, y1);
+            float[] bottom = Turn(x1, y1, x, y1 + h);
+            page.SetPenWidth(w);
+            page.MoveTo(top[0], top[1]);
+            page.LineTo(bottom[0], bottom[1]);
             page.StrokePath();
         }
+    }
+
+    private void DrawDigitBar(Page page, float x1, float y1, float x, float w, float h) {
+        if (page != null) {
+            page.AddArtifactBMC();
+            DrawBar(page, x1, y1, x + w/2, w, h);
+            page.AddEMC();
+        }
+    }
+
+    // Draws the digits at (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode. Returns the bottom right
+    // corner of the digits before the turn.
+    private float[] DrawDigits(Page page, float x1, float y1, String digits, float x, float y) {
+        TextLine textLine = new TextLine(font, digits);
+        if (direction == Direction.LEFT_TO_RIGHT) {
+            textLine.SetLocation(x, y);
+            return textLine.DrawOn(page);
+        }
+        float[] xy = Turn(x1, y1, x, y);
+        textLine.SetLocation(xy[0], xy[1]);
+        textLine.SetTextRotation(direction == Direction.TOP_TO_BOTTOM ? 270 : 90);
+        textLine.DrawOn(page);
+        return new float[] {x + font.StringWidth(digits), y};
+    }
+
+    // Returns the point (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode: top to bottom turns it
+    // a quarter turn clockwise, bottom to top counter-clockwise, and the bars stay
+    // right of x1 and below y1.
+    private float[] Turn(float x1, float y1, float x, float y) {
+        float h = m1 * barHeightFactor + 8f;    // The height of the guard bars
+        if (direction == Direction.TOP_TO_BOTTOM) {
+            return new float[] {x1 + h - (y - y1), y1 + (x - x1)};
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
+            return new float[] {x1 + (y - y1), y1 + 95f * m1 - (x - x1)};  // 95 modules
+        }
+        return new float[] {x, y};
+    }
+
+    // Returns the bottom right corner of an EAN-13 or UPC-A barcode drawn left to
+    // right from (x1, y1), turned to the direction of the barcode, where xy is the
+    // bottom right corner and left the left edge before the turn.
+    private float[] TurnCorner(float x1, float y1, float left, float[] xy) {
+        float h = m1 * barHeightFactor + 8f;
+        if (direction == Direction.TOP_TO_BOTTOM) {
+            return new float[] {x1 + h, y1 + (xy[0] - x1)};
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
+            return new float[] {x1 + Math.Max(xy[1] - y1, h), y1 + 95f * m1 + (x1 - left)};
+        }
+        return xy;
     }
 
     private float[] DrawCode128(Page page, float x1, float y1) {
@@ -415,9 +438,9 @@ public class Barcode : IDrawable {
         float w = m1;
         float h = m1;
 
-        if (direction == TOP_TO_BOTTOM) {
+        if (direction == Direction.TOP_TO_BOTTOM) {
             w *= barHeightFactor;
-        } else if (direction == LEFT_TO_RIGHT) {
+        } else if (direction == Direction.LEFT_TO_RIGHT) {
             h *= barHeightFactor;
         }
 
@@ -464,15 +487,15 @@ public class Barcode : IDrawable {
             for (int j = 0; j < symbol.Length; j++) {
                 int n = symbol[j] - 0x30;
                 if (j%2 == 0) {
-                    if (direction == LEFT_TO_RIGHT) {
+                    if (direction == Direction.LEFT_TO_RIGHT) {
                         DrawVertBar(page, x, y, m1 * n, h);
-                    } else if (direction == TOP_TO_BOTTOM) {
+                    } else if (direction == Direction.TOP_TO_BOTTOM) {
                         DrawHorzBar(page, x, y, m1 * n, w);
                     }
                 }
-                if (direction == LEFT_TO_RIGHT) {
+                if (direction == Direction.LEFT_TO_RIGHT) {
                     x += n * m1;
-                } else if (direction == TOP_TO_BOTTOM) {
+                } else if (direction == Direction.TOP_TO_BOTTOM) {
                     y += n * m1;
                 }
             }
@@ -480,7 +503,7 @@ public class Barcode : IDrawable {
 
         float[] xy = new float[] {x, y};
         if (font != null) {
-            if (direction == LEFT_TO_RIGHT) {
+            if (direction == Direction.LEFT_TO_RIGHT) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.SetLocation(
                         x1 + ((x - x1) - font.StringWidth(text))/2,
@@ -488,7 +511,7 @@ public class Barcode : IDrawable {
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]);
                 return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
-            } else if (direction == TOP_TO_BOTTOM) {
+            } else if (direction == Direction.TOP_TO_BOTTOM) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.SetLocation(
                         x + w + font.GetBodyHeight(font.GetSize()),
@@ -515,7 +538,7 @@ public class Barcode : IDrawable {
 
         float[] xy = new float[] {0f, 0f};
 
-        if (direction == LEFT_TO_RIGHT) {
+        if (direction == Direction.LEFT_TO_RIGHT) {
             foreach (char symbol in fullText) {
                 if (!tableB.TryGetValue(symbol, out String code)) {
                     throw new Exception("The input string '" + fullText +
@@ -548,7 +571,7 @@ public class Barcode : IDrawable {
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]);
             }
-        } else if (direction == TOP_TO_BOTTOM) {
+        } else if (direction == Direction.TOP_TO_BOTTOM) {
             foreach (char symbol in fullText) {
                 if (!tableB.TryGetValue(symbol, out String code)) {
                     throw new Exception("The input string '" + fullText +
@@ -583,7 +606,7 @@ public class Barcode : IDrawable {
                 xy[1] = Math.Max(y, xy[1]);
             }
 
-        } else if (direction == BOTTOM_TO_TOP) {
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
             float height = 0.0f;
 
             foreach (char symbol in fullText) {
@@ -664,7 +687,7 @@ public class Barcode : IDrawable {
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + checkDigit.ToString();
 
-        x = DrawEGuard(page, x, y, m1, h + 8);
+        x = DrawEGuard(page, x1, y1, x, h + 8);
         float xLeftGroupStart = x;
         String group1 = lgMap[fullText[0] - '0'];
         for (int i = 1; i < 7; i++) {
@@ -676,33 +699,33 @@ public class Barcode : IDrawable {
             int n = str[0] - '0';
             x += n*m1;
             n = str[1] - '0';
-            DrawVertBar(page, x, y, n*m1, h);
+            DrawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str[2] - '0';
             x += n*m1;
             n = str[3] - '0';
-            DrawVertBar(page, x, y, n*m1, h);
+            DrawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
         }
         float xLeftGroupEnd = x;
-        x = DrawMGuard(page, x, y, m1, h + 8);
+        x = DrawMGuard(page, x1, y1, x, h + 8);
         float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText[i] - '0';
             String str = lCode[digit];
             int n = str[0] - '0';
-            DrawVertBar(page, x, y, n*m1, h);
+            DrawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str[1] - '0';
             x += n*m1;
             n = str[2] - '0';
-            DrawVertBar(page, x, y, n*m1, h);
+            DrawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str[3] - '0';
             x += n*m1;
         }
         float xRightGroupEnd = x;
-        x = DrawEGuard(page, x, y, m1, h + 8);
+        x = DrawEGuard(page, x1, y1, x, h + 8);
 
         float[] xy = new float[] {x, y};
 
@@ -722,31 +745,24 @@ public class Barcode : IDrawable {
             float yText = y1 + h + font.GetBodyHeight(font.GetSize());
             float gap = font.StringWidth(" ");
 
-            TextLine firstDigitLine = new TextLine(font, firstDigit);
-            firstDigitLine.SetLocation(x1 - gap - font.StringWidth(firstDigit), yText);
-            firstDigitLine.DrawOn(page);
-
-            TextLine leftGroupLine = new TextLine(font, leftGroup);
-            leftGroupLine.SetLocation(
+            float left = x1 - gap - font.StringWidth(firstDigit);
+            DrawDigits(page, x1, y1, firstDigit, left, yText);
+            DrawDigits(page, x1, y1, leftGroup,
                     xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font.StringWidth(leftGroup))/2,
                     yText);
-            leftGroupLine.DrawOn(page);
-
-            TextLine rightGroupLine = new TextLine(font, rightGroup);
-            rightGroupLine.SetLocation(
+            float[] xyRight = DrawDigits(page, x1, y1, rightGroup,
                     xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font.StringWidth(rightGroup))/2,
                     yText);
-            float[] xyRight = rightGroupLine.DrawOn(page);
 
             xy[0] = Math.Max(x, xyRight[0]);
             xy[1] = Math.Max(y, xyRight[1]);
 
             font.SetSize(fontSize);
 
-            return new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())};
+            return TurnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.GetDescent(font.GetSize())});
         }
 
-        return new float[] {xy[0], xy[1]};
+        return TurnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
     }
 
     private void DrawVertBar(

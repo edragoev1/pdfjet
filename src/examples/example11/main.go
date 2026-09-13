@@ -5,6 +5,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -25,7 +26,7 @@ func Example11() {
 	code = pdfjet.NewBarcode(pdfjet.CODE_128, "G86513JVW0C")
 	code.SetLocation(170.0, 170.0)
 	code.SetModuleLength(0.75)
-	code.SetDirection(pdfjet.TopToBottom)
+	code.SetDirection(direction.TopToBottom)
 	code.SetFont(f1)
 	code.DrawOn(page)
 
@@ -38,28 +39,28 @@ func Example11() {
 	code = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
 	code.SetLocation(400.0, 70.0)
 	code.SetModuleLength(0.75)
-	code.SetDirection(pdfjet.TopToBottom)
+	code.SetDirection(direction.TopToBottom)
 	code.SetFont(f1)
 	code.DrawOn(page)
 
 	code = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
 	code.SetLocation(450.0, 70.0)
 	code.SetModuleLength(0.75)
-	code.SetDirection(pdfjet.BottomToTop)
+	code.SetDirection(direction.BottomToTop)
 	code.SetFont(f1)
 	code.DrawOn(page)
 
 	code = pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890") // UPC-A without the check digit which we calculate!!
 	code.SetLocation(450.0, 250.0)
 	code.SetModuleLength(1.0)
-	code.SetDirection(pdfjet.BottomToTop)
+	code.SetDirection(direction.BottomToTop)
 	code.SetFont(f1)
 	code.DrawOn(page)
 
 	code = pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890") // EAN-13 without the check digit which we calculate!!
 	code.SetLocation(450.0, 450.0)
 	code.SetModuleLength(1.0)
-	code.SetDirection(pdfjet.BottomToTop)
+	code.SetDirection(direction.BottomToTop)
 	code.SetFont(f1)
 	code.DrawOn(page)
 

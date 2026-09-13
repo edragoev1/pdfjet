@@ -147,17 +147,17 @@ public class PDF417 implements Drawable {
     }
 
     /**
-     * Sets the module width for this barcode.
+     * Sets the module length of this barcode, the width of its narrowest bar.
      * This changes the barcode size while preserving the aspect.
      * Use value between 0.5f and 0.75f.
      * If the value is too small some scanners may have difficulty reading the
      * barcode.
      *
-     * @param width the module width of the barcode.
+     * @param moduleLength the module length of the barcode.
      * @return this PDF417 object.
      */
-    public PDF417 setModuleWidth(float width) {
-        this.w1 = width;
+    public PDF417 setModuleLength(float moduleLength) {
+        this.w1 = moduleLength;
         this.h1 = 3 * w1;
         return this;
     }

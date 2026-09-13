@@ -24,7 +24,7 @@ public class Example_21 {
         // The higher the error correction level - the shorter the string that you can encode.
         QRCode qr = new QRCode(
                 "https://kazuhikoarase.github.io/qrcode-generator/js/demo",
-                ErrorCorrectLevel.L);   // Low
+                ErrorCorrectionLevel.L);   // Low
         qr.SetModuleLength(3f);
         qr.SetLocation(100f, 100f);
         // qr.SetModuleColor(Color.blue);
@@ -32,21 +32,21 @@ public class Example_21 {
 
         qr = new QRCode(
                 "https://github.com/kazuhikoarase/qrcode-generator",
-                ErrorCorrectLevel.M);   // Medium
+                ErrorCorrectionLevel.M);   // Medium
         qr.SetLocation(400f, 100f);
         qr.SetModuleLength(3f);
         qr.DrawOn(page);
 
         qr = new QRCode(
                 "https://github.com/kazuhikoarase/jaconv",
-                ErrorCorrectLevel.Q);   // High
+                ErrorCorrectionLevel.Q);   // High
         qr.SetLocation(100f, 400f);
         qr.SetModuleLength(3f);
         qr.DrawOn(page);
 
         qr = new QRCode(
                 "https://github.com/kazuhikoarase",
-                ErrorCorrectLevel.H);   // Very High
+                ErrorCorrectionLevel.H);   // Very High
         qr.SetLocation(400f, 400f);
         qr.SetModuleLength(3f);
         qr.DrawOn(page);

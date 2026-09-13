@@ -1,5 +1,5 @@
-/*
- * Polynomial.java
+/**
+ * ErrorCorrectionLevel.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -14,25 +14,19 @@
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
-package com.pdfjet;
+import Foundation
 
 /**
  * Used to specify the error correction level for QR Codes.
+ * The raw values are the bits of the level in the format information.
  */
-public class ErrorCorrectLevel {
-    /** The default constructor */
-    public ErrorCorrectLevel() {
-    }
-
-    /** Low */
-    public static final int L = 1;
-
-    /** Medium */
-    public static final int M = 0;
-
-    /** Quartile */
-    public static final int Q = 3;
-
-    /** High */
-    public static final int H = 2;
+public enum ErrorCorrectionLevel: Int {
+    /// Recovers about 7% of the data.
+    case L = 1
+    /// Recovers about 15% of the data.
+    case M = 0
+    /// Recovers about 25% of the data.
+    case Q = 3
+    /// Recovers about 30% of the data.
+    case H = 2
 }

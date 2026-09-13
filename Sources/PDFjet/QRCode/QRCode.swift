@@ -24,7 +24,7 @@ public class QRCode : Drawable {
     private let PAD1: UInt32 = 0x11
     private var modules: [[Bool?]]?
     private var moduleCount = 33            // Magic Number
-    private var errorCorrectLevel = ErrorCorrectLevel.M
+    private var errorCorrectionLevel = ErrorCorrectionLevel.M
 
     private var x: Float = 0.0
     private var y: Float = 0.0
@@ -39,13 +39,13 @@ public class QRCode : Drawable {
     /// Used to create 2D QR Code barcodes.
     ///
     /// - Parameter str: the string to encode.
-    /// - Parameter errorCorrectLevel: the desired error correction level.
+    /// - Parameter errorCorrectionLevel: the desired error correction level.
     ///
     public init(
             _ str: String,
-            _ errorCorrectLevel: Int) {
+            _ errorCorrectionLevel: ErrorCorrectionLevel) {
         self.qrData = Array(str.utf8)
-        self.errorCorrectLevel = errorCorrectLevel
+        self.errorCorrectionLevel = errorCorrectionLevel
         self.make(false, getBestMaskPattern())
     }
 
@@ -103,7 +103,7 @@ public class QRCode : Drawable {
     }
 
     /// Returns the modules of the QR code: true for dark and false for light modules.
-    public func getData() -> [[Bool?]]? {
+    public func getModules() -> [[Bool?]]? {
         return self.modules
     }
 
@@ -151,7 +151,7 @@ public class QRCode : Drawable {
         setupPositionAdjustPattern()
         setupTimingPattern()
         setupTypeInfo(test, maskPattern)
-        mapData(createData(errorCorrectLevel), maskPattern)
+        mapData(createData(errorCorrectionLevel), maskPattern)
     }
 
     private func mapData(
@@ -263,7 +263,7 @@ public class QRCode : Drawable {
     private func setupTypeInfo(
             _ test: Bool,
             _ maskPattern: Int) {
-        let data = (errorCorrectLevel << 3) | maskPattern
+        let data = (errorCorrectionLevel.rawValue << 3) | maskPattern
         let bits = qrutil.getBCHTypeInfo(data)
 
         for i in 0..<15 {
@@ -291,8 +291,8 @@ public class QRCode : Drawable {
         modules![moduleCount - 8][8] = !test
     }
 
-    private func createData(_ errorCorrectLevel: Int) -> [UInt8] {
-        let rsBlocks = RSBlock.getRSBlocks(errorCorrectLevel)
+    private func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) -> [UInt8] {
+        let rsBlocks = RSBlock.getRSBlocks(errorCorrectionLevel)
         let buffer = BitBuffer()
         buffer.put(UInt32(4), 4)
         buffer.put(UInt32(qrData!.count), 8)

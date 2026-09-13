@@ -208,7 +208,7 @@ public final class DataMatrix implements Drawable {
      *
      * @return the modules.
      */
-    public boolean[][] getData() {
+    public boolean[][] getModules() {
         return modules;
     }
 

@@ -26,7 +26,7 @@ public class Example_12 {
         }
 
         PDF417 barcode = new PDF417(buf.toString());
-        barcode.setModuleWidth(0.5f);
+        barcode.setModuleLength(0.5f);
         barcode.setLocation(100f, 60f);
         barcode.drawOn(page);
 

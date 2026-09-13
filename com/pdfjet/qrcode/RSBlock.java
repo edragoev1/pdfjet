@@ -36,8 +36,8 @@ class RSBlock {
         return totalCount;
     }
 
-    public static RSBlock[] getRSBlocks(int errorCorrectLevel) {
-        int[] rsBlock = getRsBlockTable(errorCorrectLevel);
+    public static RSBlock[] getRSBlocks(ErrorCorrectionLevel errorCorrectionLevel) {
+        int[] rsBlock = getRsBlockTable(errorCorrectionLevel);
         int length = rsBlock.length / 3;
         List<RSBlock> list = new ArrayList<RSBlock>();
         for (int i = 0; i < length; i++) {
@@ -52,15 +52,15 @@ class RSBlock {
         return list.toArray(new RSBlock[list.size()]);
     }
 
-    private static int[] getRsBlockTable(int errorCorrectLevel) {
-        switch(errorCorrectLevel) {
-        case ErrorCorrectLevel.L :
+    private static int[] getRsBlockTable(ErrorCorrectionLevel errorCorrectionLevel) {
+        switch(errorCorrectionLevel) {
+        case L:
             return new int[] {1, 100, 80};
-        case ErrorCorrectLevel.M :
+        case M:
             return new int[] {2, 50, 32};
-        case ErrorCorrectLevel.Q :
+        case Q:
             return new int[] {2, 50, 24};
-        case ErrorCorrectLevel.H :
+        case H:
             return new int[] {4, 25, 9};
         }
         return null;

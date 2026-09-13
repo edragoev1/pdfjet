@@ -25,7 +25,7 @@ public class Example_12 {
         }
 
         PDF417 barcode = new PDF417(buf.ToString());
-        barcode.SetModuleWidth(0.5f);
+        barcode.SetModuleLength(0.5f);
         barcode.SetLocation(100f, 60f);
         barcode.DrawOn(page);
 

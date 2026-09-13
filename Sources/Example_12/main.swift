@@ -20,7 +20,7 @@ public class Example_12 {
         }
 
         let barcode = try PDF417(buf)
-        barcode.setModuleWidth(0.5)
+        barcode.setModuleLength(0.5)
         barcode.setLocation(100.0, 60.0)
         barcode.drawOn(page)
 

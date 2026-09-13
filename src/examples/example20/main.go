@@ -102,7 +102,7 @@ func Example20() {
 
 	qr := qrcode.NewQRCode(
 		"https://kazuhikoarase.github.io",
-		qrcode.ErrorCorrectLevelL) // Low
+		qrcode.ErrorCorrectionLevelL) // Low
 	qr.SetModuleLength(3.0)
 	qr.SetLocation(50.0, 200.0)
 	qr.DrawOn(page)

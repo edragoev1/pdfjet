@@ -28,7 +28,7 @@ func Example12() {
 	}
 
 	barcode := pdf417.NewPDF417(buf.String())
-	barcode.SetModuleWidth(0.5)
+	barcode.SetModuleLength(0.5)
 	barcode.SetLocation(100.0, 60.0)
 	barcode.DrawOn(page)
 

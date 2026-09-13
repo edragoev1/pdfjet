@@ -1,5 +1,5 @@
-/**
- * ErrorCorrectLevel.swift
+/*
+ * ErrorCorrectionLevel.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -14,18 +14,24 @@
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
-import Foundation
+package com.pdfjet;
 
 /**
  * Used to specify the error correction level for QR Codes.
  */
-public class ErrorCorrectLevel {
-    /// Recovers about 7% of the data.
-    public static let L = 1
-    /// Recovers about 15% of the data.
-    public static let M = 0
-    /// Recovers about 25% of the data.
-    public static let Q = 3
-    /// Recovers about 30% of the data.
-    public static let H = 2
+public enum ErrorCorrectionLevel {
+    /** Recovers about 7% of the data. */
+    L(1),
+    /** Recovers about 15% of the data. */
+    M(0),
+    /** Recovers about 25% of the data. */
+    Q(3),
+    /** Recovers about 30% of the data. */
+    H(2);
+
+    final int value;    // The bits of the level in the format information
+
+    ErrorCorrectionLevel(int value) {
+        this.value = value;
+    }
 }

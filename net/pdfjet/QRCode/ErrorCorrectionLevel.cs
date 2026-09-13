@@ -1,5 +1,5 @@
 /*
- * RSBlock.cs
+ * ErrorCorrectionLevel.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -14,20 +14,19 @@
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
-using System;
-
 namespace PDFjet.NET {
 /// <summary>
 /// Used to specify the error correction level for QR Codes.
+/// The values are the bits of the level in the format information.
 /// </summary>
-public class ErrorCorrectLevel {
+public enum ErrorCorrectionLevel {
     /// <summary>Recovers about 7% of the data.</summary>
-    public const int L = 1;
+    L = 1,
     /// <summary>Recovers about 15% of the data.</summary>
-    public const int M = 0;
+    M = 0,
     /// <summary>Recovers about 25% of the data.</summary>
-    public const int Q = 3;
+    Q = 3,
     /// <summary>Recovers about 30% of the data.</summary>
-    public const int H = 2;
+    H = 2,
 }
 }   // End of namespace PDFjet.NET

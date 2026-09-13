@@ -89,7 +89,7 @@ public class Example_20 {
 
         let qr = QRCode(
                 "https://kazuhikoarase.github.io",
-                ErrorCorrectLevel.L)    // Low
+                ErrorCorrectionLevel.L)    // Low
         qr.setModuleLength(3.0)
         qr.setLocation(50.0, 200.0)
         qr.drawOn(page)

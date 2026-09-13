@@ -161,8 +161,8 @@ func (dm *DataMatrix) SetModuleColor(color int32) *DataMatrix {
 	return dm
 }
 
-// GetData returns the modules of this barcode, by row and column; true is dark.
-func (dm *DataMatrix) GetData() [][]bool {
+// GetModules returns the modules of this barcode, by row and column; true is dark.
+func (dm *DataMatrix) GetModules() [][]bool {
 	return dm.modules
 }
 

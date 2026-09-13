@@ -143,15 +143,15 @@ public class PDF417 : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the module width for this barcode.
+    ///  Sets the module length of this barcode, the width of its narrowest bar.
     ///  This changes the barcode size while preserving the aspect.
     ///  Use value between 0.5f and 0.75f.
     ///  If the value is too small some scanners may have difficulty reading the barcode.
     /// </summary>
-    /// <param name="width">the module width of the barcode.</param>
+    /// <param name="moduleLength">the module length of the barcode.</param>
     /// <returns>this PDF417 object.</returns>
-    public PDF417 SetModuleWidth(float width) {
-        this.w1 = width;
+    public PDF417 SetModuleLength(float moduleLength) {
+        this.w1 = moduleLength;
         this.h1 = 3 * w1;
         return this;
     }

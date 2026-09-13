@@ -26,7 +26,7 @@ public class Example_11 {
         code = new Barcode(Barcode.CODE_128, "G86513JVW0C");
         code.setLocation(170f, 170f);
         code.setModuleLength(0.75f);
-        code.setDirection(Barcode.TOP_TO_BOTTOM);
+        code.setDirection(Direction.TOP_TO_BOTTOM);
         code.setFont(f1);
         code.drawOn(page);
 
@@ -39,28 +39,28 @@ public class Example_11 {
         code = new Barcode(Barcode.CODE_39, "CODE39");
         code.setLocation(400f, 70f);
         code.setModuleLength(0.75f);
-        code.setDirection(Barcode.TOP_TO_BOTTOM);
+        code.setDirection(Direction.TOP_TO_BOTTOM);
         code.setFont(f1);
         code.drawOn(page);
 
         code = new Barcode(Barcode.CODE_39, "CODE39");
         code.setLocation(450f, 70f);
         code.setModuleLength(0.75f);
-        code.setDirection(Barcode.BOTTOM_TO_TOP);
+        code.setDirection(Direction.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 
         code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
         code.setLocation(450f, 250f);
         code.setModuleLength(1.0);
-        code.setDirection(Barcode.BOTTOM_TO_TOP);
+        code.setDirection(Direction.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 
         code = new Barcode(Barcode.EAN_13, "051234567890");   // EAN-13 without the check digit which we calculate!!
         code.setLocation(450f, 450f);
         code.setModuleLength(1.0);
-        code.setDirection(Barcode.BOTTOM_TO_TOP);
+        code.setDirection(Direction.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 

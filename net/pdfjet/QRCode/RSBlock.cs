@@ -34,8 +34,8 @@ class RSBlock {
         return totalCount;
     }
 
-    public static RSBlock[] GetRSBlocks(int errorCorrectLevel) {
-        int[] rsBlock = GetRsBlockTable(errorCorrectLevel);
+    public static RSBlock[] GetRSBlocks(ErrorCorrectionLevel errorCorrectionLevel) {
+        int[] rsBlock = GetRsBlockTable(errorCorrectionLevel);
         int length = rsBlock.Length / 3;
 
         List<RSBlock> list = new List<RSBlock>();
@@ -52,15 +52,15 @@ class RSBlock {
         return list.ToArray();
     }
 
-    private static int[] GetRsBlockTable(int errorCorrectLevel) {
-        switch(errorCorrectLevel) {
-        case ErrorCorrectLevel.L :
+    private static int[] GetRsBlockTable(ErrorCorrectionLevel errorCorrectionLevel) {
+        switch(errorCorrectionLevel) {
+        case ErrorCorrectionLevel.L:
             return new int[] {1, 100, 80};
-        case ErrorCorrectLevel.M :
+        case ErrorCorrectionLevel.M:
             return new int[] {2, 50, 32};
-        case ErrorCorrectLevel.Q :
+        case ErrorCorrectionLevel.Q:
             return new int[] {2, 50, 24};
-        case ErrorCorrectLevel.H :
+        case ErrorCorrectionLevel.H:
             return new int[] {4, 25, 9};
         }
         return null;

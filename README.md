@@ -345,7 +345,7 @@ with the metrics. The page sizes are functions too, `letter.Portrait()` for
 four ports a page size is a `PageSize` that cannot be changed, with `getWidth`
 and `getHeight`; Go's is `pagesize.PageSize`, made with `pagesize.NewPageSize`
 for a size that has no package. The QR code error correction levels are
-`qrcode.ErrorCorrectLevelL` and so on, and `Table.WITH_2_HEADER_ROWS` is
+`qrcode.ErrorCorrectionLevelL` and so on, and `Table.WITH_2_HEADER_ROWS` is
 `pdfjet.TableWith2HeaderRows`. Where Java, C# and Swift have public fields
 (`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
 (`GetX1`). `Permissions` prints through `String()` in Go and `description`

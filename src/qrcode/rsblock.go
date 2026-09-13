@@ -37,8 +37,8 @@ func (rsblock *RSBlock) getTotalCount() int {
 	return rsblock.totalCount
 }
 
-func (rsblock *RSBlock) getRSBlocks(errorCorrectLevel int) []*RSBlock {
-	rsBlock := rsblock.getRsBlockTable(errorCorrectLevel)
+func (rsblock *RSBlock) getRSBlocks(errorCorrectionLevel ErrorCorrectionLevel) []*RSBlock {
+	rsBlock := rsblock.getRsBlockTable(errorCorrectionLevel)
 	length := len(rsBlock) / 3
 	list := make([]*RSBlock, 0)
 	for i := 0; i < length; i++ {
@@ -52,24 +52,24 @@ func (rsblock *RSBlock) getRSBlocks(errorCorrectLevel int) []*RSBlock {
 	return list
 }
 
-func (rsblock *RSBlock) getRsBlockTable(errorCorrectLevel int) []int {
+func (rsblock *RSBlock) getRsBlockTable(errorCorrectionLevel ErrorCorrectionLevel) []int {
 	buf := make([]int, 0)
-	if errorCorrectLevel == ErrorCorrectLevelL {
+	if errorCorrectionLevel == ErrorCorrectionLevelL {
 		buf = append(buf, 1)
 		buf = append(buf, 100)
 		buf = append(buf, 80)
 		return buf
-	} else if errorCorrectLevel == ErrorCorrectLevelM {
+	} else if errorCorrectionLevel == ErrorCorrectionLevelM {
 		buf = append(buf, 2)
 		buf = append(buf, 50)
 		buf = append(buf, 32)
 		return buf
-	} else if errorCorrectLevel == ErrorCorrectLevelQ {
+	} else if errorCorrectionLevel == ErrorCorrectionLevelQ {
 		buf = append(buf, 2)
 		buf = append(buf, 50)
 		buf = append(buf, 24)
 		return buf
-	} else if errorCorrectLevel == ErrorCorrectLevelH {
+	} else if errorCorrectionLevel == ErrorCorrectionLevelH {
 		buf = append(buf, 4)
 		buf = append(buf, 25)
 		buf = append(buf, 9)

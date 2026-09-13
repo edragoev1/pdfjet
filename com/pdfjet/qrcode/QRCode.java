@@ -28,7 +28,7 @@ final public class QRCode implements Drawable {
     private static final int PAD1 = 0x11;
     private Boolean[][] modules;
     private final int moduleCount = 33;   // Magic Number
-    private int errorCorrectLevel = ErrorCorrectLevel.M;
+    private ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M;
     private float x;
     private float y;
     private final byte[] qrData;
@@ -39,12 +39,12 @@ final public class QRCode implements Drawable {
      * Used to create 2D QR Code barcodes.
      *
      * @param str the string to encode.
-     * @param errorCorrectLevel the desired error correction level.
+     * @param errorCorrectionLevel the desired error correction level.
      * @throws UnsupportedEncodingException If an input or output exception occurred
      */
-    public QRCode(String str, int errorCorrectLevel) throws UnsupportedEncodingException {
+    public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) throws UnsupportedEncodingException {
         this.qrData = str.getBytes(StandardCharsets.UTF_8);
-        this.errorCorrectLevel = errorCorrectLevel;
+        this.errorCorrectionLevel = errorCorrectionLevel;
         this.make(false, getBestMaskPattern());
     }
 
@@ -129,11 +129,11 @@ final public class QRCode implements Drawable {
     }
 
     /**
-     * Returns the QR code data.
+     * Returns the modules of the QR code: true for dark and false for light modules.
      *
-     * @return the QR code data.
+     * @return the modules.
      */
-    public Boolean[][] getData() {
+    public Boolean[][] getModules() {
         return modules;
     }
 
@@ -194,7 +194,7 @@ final public class QRCode implements Drawable {
         setupPositionAdjustPattern();
         setupTimingPattern();
         setupTypeInfo(test, maskPattern);
-        mapData(createData(errorCorrectLevel), maskPattern);
+        mapData(createData(errorCorrectionLevel), maskPattern);
     }
 
     private void mapData(byte[] data, int maskPattern) {
@@ -282,7 +282,7 @@ final public class QRCode implements Drawable {
     }
 
     private void setupTypeInfo(boolean test, int maskPattern) {
-        int data = (errorCorrectLevel << 3) | maskPattern;
+        int data = (errorCorrectionLevel.value << 3) | maskPattern;
         int bits = QRUtil.getBCHTypeInfo(data);
 
         for (int i = 0; i < 15; i++) {
@@ -310,8 +310,8 @@ final public class QRCode implements Drawable {
         modules[moduleCount - 8][8] = !test;
     }
 
-    private byte[] createData(int errorCorrectLevel) {
-        RSBlock[] rsBlocks = RSBlock.getRSBlocks(errorCorrectLevel);
+    private byte[] createData(ErrorCorrectionLevel errorCorrectionLevel) {
+        RSBlock[] rsBlocks = RSBlock.getRSBlocks(errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
         buffer.put(4, 4);

@@ -21,20 +21,13 @@ public class Barcode : Drawable {
     /// Code 39 barcode.
     public static let CODE_39 = 3
 
-    /// Draws the barcode from left to right.
-    public static let LEFT_TO_RIGHT = 0
-    /// Draws the barcode from top to bottom.
-    public static let TOP_TO_BOTTOM = 1
-    /// Draws the barcode from bottom to top.
-    public static let BOTTOM_TO_TOP = 2
-
     private var barcodeType = 0
     private var text: String
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var m1: Float = 0.75    // Module length
     private var barHeightFactor: Float = 50.0
-    private var direction = LEFT_TO_RIGHT
+    private var direction = Direction.LEFT_TO_RIGHT
     private var font: Font?
 
     private let lCode = [
@@ -179,12 +172,12 @@ public class Barcode : Drawable {
     }
 
     ///
-    /// Sets the drawing direction for this font.
+    /// Sets the direction in which this barcode is drawn.
     ///
     /// - Parameter direction: the specified direction.
     ///
     @discardableResult
-    public func setDirection(_ direction: Int) -> Barcode {
+    public func setDirection(_ direction: Direction) -> Barcode {
         self.direction = direction
         return self
     }
@@ -282,7 +275,7 @@ public class Barcode : Drawable {
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(checkDigit + 0x30)!)
 
-        x = drawEGuard(page, x, y, m1, h + 8)
+        x = drawEGuard(page, x1, y1, x, h + 8)
         var xGroup1Start = x
 
         i = 0
@@ -292,7 +285,7 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 != 0 {
-                    drawVertBar(page, x, y, Float(n)*m1, h)
+                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
@@ -302,7 +295,7 @@ public class Barcode : Drawable {
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, x, y, m1, h + 8)
+        x = drawMGuard(page, x1, y1, x, h + 8)
         let xRightGroupStart = x
         var xGroup2End: Float = 0.0
 
@@ -316,13 +309,13 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 == 0 {
-                    drawVertBar(page, x, y, Float(n)*m1, h)
+                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
-        x = drawEGuard(page, x, y, m1, h + 8)
+        x = drawEGuard(page, x1, y1, x, h + 8)
 
         var xy = [x, y]
         if font != nil {
@@ -347,47 +340,37 @@ public class Barcode : Drawable {
             let yText = y1 + h + font!.getBodyHeight(font!.getSize())
             let gap = font!.stringWidth(font!.getSize(), " ")
 
-            let firstDigitLine = TextLine(font!, firstDigit)
-                    .setLocation(x1 - gap - font!.stringWidth(font!.getSize(), firstDigit), yText)
-            firstDigitLine.drawOn(page)
-
-            let group1Line = TextLine(font!, group1)
-                    .setLocation(
-                            xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font!.stringWidth(font!.getSize(), group1))/2,
-                            yText)
-            group1Line.drawOn(page)
-
-            let group2Line = TextLine(font!, group2)
-                    .setLocation(
-                            xRightGroupStart + ((xGroup2End - xRightGroupStart) - font!.stringWidth(font!.getSize(), group2))/2,
-                            yText)
-            group2Line.drawOn(page)
-
-            let lastDigitLine = TextLine(font!, lastDigit)
-                    .setLocation(x + gap, yText)
-            let xyLast = lastDigitLine.drawOn(page)
+            let left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
+            drawDigits(page, x1, y1, firstDigit, left, yText)
+            drawDigits(page, x1, y1, group1,
+                    xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font!.stringWidth(font!.getSize(), group1))/2,
+                    yText)
+            drawDigits(page, x1, y1, group2,
+                    xRightGroupStart + ((xGroup2End - xRightGroupStart) - font!.stringWidth(font!.getSize(), group2))/2,
+                    yText)
+            let xyLast = drawDigits(page, x1, y1, lastDigit, x + gap, yText)
 
             xy[0] = max(x, xyLast[0])
             xy[1] = max(y, xyLast[1])
 
             font!.setSize(fontSize)
-            return [xy[0], xy[1] + font!.getDescent(font!.getSize())]
+            return turnCorner(x1, y1, left, [xy[0], xy[1] + font!.getDescent(font!.getSize())])
         }
 
-        return [xy[0], xy[1]]
+        return turnCorner(x1, y1, x1, [xy[0], xy[1]])
     }
 
     private func drawEGuard(
             _ page: Page?,
+            _ x1: Float,
+            _ y1: Float,
             _ x: Float,
-            _ y: Float,
-            _ m1: Float,
             _ h: Float) -> Float {
         if page != nil {
             // 101
             page!.addArtifactBMC()
-            drawBar(page, x + (0.5 * m1), y, m1, h)
-            drawBar(page, x + (2.5 * m1), y, m1, h)
+            drawBar(page, x1, y1, x + (0.5 * m1), m1, h)
+            drawBar(page, x1, y1, x + (2.5 * m1), m1, h)
             page!.addEMC()
         }
         return (x + (3.0 * m1))
@@ -395,32 +378,101 @@ public class Barcode : Drawable {
 
     private func drawMGuard(
             _ page: Page?,
+            _ x1: Float,
+            _ y1: Float,
             _ x: Float,
-            _ y: Float,
-            _ m1: Float,
             _ h: Float) -> Float {
         if page != nil {
             // 01010
             page!.addArtifactBMC()
-            drawBar(page, x + (1.5 * m1), y, m1, h)
-            drawBar(page, x + (3.5 * m1), y, m1, h)
+            drawBar(page, x1, y1, x + (1.5 * m1), m1, h)
+            drawBar(page, x1, y1, x + (3.5 * m1), m1, h)
             page!.addEMC()
         }
         return (x + (5.0 * m1))
     }
 
+    // Strokes the bar of width w and height h centered on x of an EAN-13 or UPC-A
+    // barcode drawn left to right from (x1, y1), turned to the direction of the barcode.
     private func drawBar(
             _ page: Page?,
+            _ x1: Float,
+            _ y1: Float,
             _ x: Float,
-            _ y: Float,
-            _ m1: Float,  // Single bar width
+            _ w: Float,
             _ h: Float) {
         if page != nil {
-            page!.setPenWidth(m1)
-            page!.moveTo(x, y)
-            page!.lineTo(x, y + h)
+            let top = turn(x1, y1, x, y1)
+            let bottom = turn(x1, y1, x, y1 + h)
+            page!.setPenWidth(w)
+            page!.moveTo(top[0], top[1])
+            page!.lineTo(bottom[0], bottom[1])
             page!.strokePath()
         }
+    }
+
+    private func drawDigitBar(
+            _ page: Page?,
+            _ x1: Float,
+            _ y1: Float,
+            _ x: Float,
+            _ w: Float,
+            _ h: Float) {
+        if page != nil {
+            page!.addArtifactBMC()
+            drawBar(page, x1, y1, x + w/2, w, h)
+            page!.addEMC()
+        }
+    }
+
+    // Draws the digits at (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode. Returns the bottom right
+    // corner of the digits before the turn.
+    @discardableResult
+    private func drawDigits(
+            _ page: Page?,
+            _ x1: Float,
+            _ y1: Float,
+            _ digits: String,
+            _ x: Float,
+            _ y: Float) -> [Float] {
+        let textLine = TextLine(font!, digits)
+        if direction == Direction.LEFT_TO_RIGHT {
+            textLine.setLocation(x, y)
+            return textLine.drawOn(page)
+        }
+        let xy = turn(x1, y1, x, y)
+        textLine.setLocation(xy[0], xy[1])
+        textLine.setTextRotation(direction == Direction.TOP_TO_BOTTOM ? 270 : 90)
+        textLine.drawOn(page)
+        return [x + font!.stringWidth(font!.getSize(), digits), y]
+    }
+
+    // Returns the point (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode: top to bottom turns it
+    // a quarter turn clockwise, bottom to top counter-clockwise, and the bars stay
+    // right of x1 and below y1.
+    private func turn(_ x1: Float, _ y1: Float, _ x: Float, _ y: Float) -> [Float] {
+        let h = m1 * barHeightFactor + 8.0      // The height of the guard bars
+        if direction == Direction.TOP_TO_BOTTOM {
+            return [x1 + h - (y - y1), y1 + (x - x1)]
+        } else if direction == Direction.BOTTOM_TO_TOP {
+            return [x1 + (y - y1), y1 + 95.0 * m1 - (x - x1)]   // 95 modules
+        }
+        return [x, y]
+    }
+
+    // Returns the bottom right corner of an EAN-13 or UPC-A barcode drawn left to
+    // right from (x1, y1), turned to the direction of the barcode, where xy is the
+    // bottom right corner and left the left edge before the turn.
+    private func turnCorner(_ x1: Float, _ y1: Float, _ left: Float, _ xy: [Float]) -> [Float] {
+        let h = m1 * barHeightFactor + 8.0
+        if direction == Direction.TOP_TO_BOTTOM {
+            return [x1 + h, y1 + (xy[0] - x1)]
+        } else if direction == Direction.BOTTOM_TO_TOP {
+            return [x1 + max(xy[1] - y1, h), y1 + 95.0 * m1 + (x1 - left)]
+        }
+        return xy
     }
 
     private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
@@ -430,9 +482,9 @@ public class Barcode : Drawable {
         var w: Float = m1
         var h: Float = m1
 
-        if direction == Barcode.TOP_TO_BOTTOM {
+        if direction == Direction.TOP_TO_BOTTOM {
             w *= barHeightFactor
-        } else if direction == Barcode.LEFT_TO_RIGHT {
+        } else if direction == Direction.LEFT_TO_RIGHT {
             h *= barHeightFactor
         }
 
@@ -480,15 +532,15 @@ public class Barcode : Drawable {
             for scalar in symbol.unicodeScalars {
                 let n = Int(scalar.value) - 0x30
                 if j%2 == 0 {
-                    if direction == Barcode.LEFT_TO_RIGHT {
+                    if direction == Direction.LEFT_TO_RIGHT {
                         drawVertBar(page, x, y, m1 * Float(n), h)
-                    } else if direction == Barcode.TOP_TO_BOTTOM {
+                    } else if direction == Direction.TOP_TO_BOTTOM {
                         drawHorzBar(page, x, y, m1 * Float(n), w)
                     }
                 }
-                if direction == Barcode.LEFT_TO_RIGHT {
+                if direction == Direction.LEFT_TO_RIGHT {
                     x += Float(n) * m1
-                } else if direction == Barcode.TOP_TO_BOTTOM {
+                } else if direction == Direction.TOP_TO_BOTTOM {
                     y += Float(n) * m1
                 }
                 j += 1
@@ -497,13 +549,13 @@ public class Barcode : Drawable {
 
         var xy = [x, y]
         if font != nil {
-            if direction == Barcode.LEFT_TO_RIGHT {
+            if direction == Direction.LEFT_TO_RIGHT {
                 let textLine = TextLine(font!, text)
                         .setLocation(x1 + ((x - x1) - font!.stringWidth(text))/2, y1 + h + font!.bodyHeight)
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
                 return [xy[0], xy[1] + font!.descent]
-            } else if direction == Barcode.TOP_TO_BOTTOM {
+            } else if direction == Direction.TOP_TO_BOTTOM {
                 let textLine = TextLine(font!, text)
                         .setLocation(
                                 x + w + font!.bodyHeight,
@@ -530,7 +582,7 @@ public class Barcode : Drawable {
 
         var xy: [Float] = [0.0, 0.0]
 
-        if direction == Barcode.LEFT_TO_RIGHT {
+        if direction == Direction.LEFT_TO_RIGHT {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
@@ -564,7 +616,7 @@ public class Barcode : Drawable {
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0])
             }
-        } else if direction == Barcode.TOP_TO_BOTTOM {
+        } else if direction == Direction.TOP_TO_BOTTOM {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
@@ -600,7 +652,7 @@ public class Barcode : Drawable {
                 xy[0] = max(x, xy[0]) + w
                 xy[1] = max(y, xy[1])
             }
-        } else if direction == Barcode.BOTTOM_TO_TOP {
+        } else if direction == Direction.BOTTOM_TO_TOP {
             var height: Float = 0.0
 
             for symchar in fullText.unicodeScalars {
@@ -698,7 +750,7 @@ public class Barcode : Drawable {
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(UInt16(checkDigit) + 0x30)!)
 
-        x = drawEGuard(page, x, y, m1, h + 8)
+        x = drawEGuard(page, x1, y1, x, h + 8)
         let xLeftGroupStart = x
         let group1 = Array(lgMap[Int(fullScalars[0].value) - 0x30].unicodeScalars)
 
@@ -713,14 +765,14 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 != 0 {
-                    drawVertBar(page, x, y, Float(n)*m1, h)
+                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, x, y, m1, h + 8)
+        x = drawMGuard(page, x1, y1, x, h + 8)
         let xRightGroupStart = x
 
         i = 7
@@ -730,14 +782,14 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 == 0 {
-                    drawVertBar(page, x, y, Float(n)*m1, h)
+                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
         let xRightGroupEnd = x
-        x = drawEGuard(page, x, y, m1, h + 8)
+        x = drawEGuard(page, x1, y1, x, h + 8)
 
         var xy = [x, y]
         if font != nil {
@@ -762,30 +814,23 @@ public class Barcode : Drawable {
             let yText = y1 + h + font!.getBodyHeight(font!.getSize())
             let gap = font!.stringWidth(font!.getSize(), " ")
 
-            let firstDigitLine = TextLine(font!, firstDigit)
-                    .setLocation(x1 - gap - font!.stringWidth(font!.getSize(), firstDigit), yText)
-            firstDigitLine.drawOn(page)
-
-            let leftGroupLine = TextLine(font!, leftGroup)
-                    .setLocation(
-                            xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font!.stringWidth(font!.getSize(), leftGroup))/2,
-                            yText)
-            leftGroupLine.drawOn(page)
-
-            let rightGroupLine = TextLine(font!, rightGroup)
-                    .setLocation(
-                            xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font!.stringWidth(font!.getSize(), rightGroup))/2,
-                            yText)
-            let xyRight = rightGroupLine.drawOn(page)
+            let left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
+            drawDigits(page, x1, y1, firstDigit, left, yText)
+            drawDigits(page, x1, y1, leftGroup,
+                    xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font!.stringWidth(font!.getSize(), leftGroup))/2,
+                    yText)
+            let xyRight = drawDigits(page, x1, y1, rightGroup,
+                    xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font!.stringWidth(font!.getSize(), rightGroup))/2,
+                    yText)
 
             xy[0] = max(x, xyRight[0])
             xy[1] = max(y, xyRight[1])
 
             font!.setSize(fontSize)
-            return [xy[0], xy[1] + font!.getDescent(font!.getSize())]
+            return turnCorner(x1, y1, left, [xy[0], xy[1] + font!.getDescent(font!.getSize())])
         }
 
-        return [xy[0], xy[1]]
+        return turnCorner(x1, y1, x1, [xy[0], xy[1]])
     }
 
     private func drawVertBar(

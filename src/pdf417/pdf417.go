@@ -134,12 +134,12 @@ func (barcode *PDF417) SetLocation(x, y float32) pdfjet.Drawable {
 	return barcode
 }
 
-// SetModuleWidth sets the module width for this barcode.
+// SetModuleLength sets the module length of this barcode, the width of its narrowest bar.
 // This changes the barcode size while preserving the aspect.
 // Use value between 0.5 and 0.75
 // If the value is too small some scanners may have difficulty reading the barcode.
-func (barcode *PDF417) SetModuleWidth(width float32) *PDF417 {
-	barcode.w1 = width
+func (barcode *PDF417) SetModuleLength(moduleLength float32) *PDF417 {
+	barcode.w1 = moduleLength
 	barcode.h1 = 3 * barcode.w1
 	return barcode
 }

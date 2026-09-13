@@ -24,20 +24,13 @@ public class Barcode implements Drawable {
     /** Specifies CODE39 barcode */
     public static final int CODE_39 = 3;
 
-    /** Specifies left to right writing direction */
-    public static final int LEFT_TO_RIGHT = 0;
-    /** Specifies top to bottom writing direction */
-    public static final int TOP_TO_BOTTOM = 1;
-    /** Specifies bottom to top writing direction */
-    public static final int BOTTOM_TO_TOP = 2;
-
     private int barcodeType = 0;
     private String text = null;
     private float x1 = 0.0f;
     private float y1 = 0.0f;
     private float m1 = 0.75f;   // Module length
     private float barHeightFactor = 50.0f;
-    private int direction = LEFT_TO_RIGHT;
+    private Direction direction = Direction.LEFT_TO_RIGHT;
     private Font font = null;
 
     private String[] lCode = {
@@ -194,12 +187,12 @@ public class Barcode implements Drawable {
     }
 
     /**
-     * Sets the drawing direction for this font.
+     * Sets the direction in which this barcode is drawn.
      *
      * @param direction the specified direction.
      * @return this Barcode object.
      */
-    public Barcode setDirection(int direction) {
+    public Barcode setDirection(Direction direction) {
         this.direction = direction;
         return this;
     }
@@ -291,7 +284,7 @@ public class Barcode implements Drawable {
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + Integer.toString(checkDigit);
 
-        x = drawEGuard(page, x, y, m1, h + 8);
+        x = drawEGuard(page, x1, y1, x, h + 8);
         float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText.charAt(i) - '0';
@@ -299,7 +292,7 @@ public class Barcode implements Drawable {
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
                 if (j%2 != 0) {
-                    drawVertBar(page, x, y, n*m1, h);
+                    drawDigitBar(page, x1, y1, x, n*m1, h);
                 }
                 x += n*m1;
             }
@@ -308,7 +301,7 @@ public class Barcode implements Drawable {
             }
         }
         float xLeftGroupEnd = x;
-        x = drawMGuard(page, x, y, m1, h + 8);
+        x = drawMGuard(page, x1, y1, x, h + 8);
         float xRightGroupStart = x;
         float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
@@ -320,12 +313,12 @@ public class Barcode implements Drawable {
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
                 if (j%2 == 0) {
-                    drawVertBar(page, x, y, n*m1, h);
+                    drawDigitBar(page, x1, y1, x, n*m1, h);
                 }
                 x += n*m1;
             }
         }
-        x = drawEGuard(page, x, y, m1, h + 8);
+        x = drawEGuard(page, x1, y1, x, h + 8);
 
         float[] xy = new float[] {x, y};
         if (font != null) {
@@ -344,80 +337,111 @@ public class Barcode implements Drawable {
             float yText = y1 + h + font.getBodyHeight();
             float gap = font.stringWidth(" ");
 
-            TextLine firstDigitLine = new TextLine(font, firstDigit);
-            firstDigitLine.setLocation(x1 - gap - font.stringWidth(firstDigit), yText);
-            firstDigitLine.drawOn(page);
-
-            TextLine group1Line = new TextLine(font, group1);
-            group1Line.setLocation(
+            float left = x1 - gap - font.stringWidth(firstDigit);
+            drawDigits(page, x1, y1, firstDigit, left, yText);
+            drawDigits(page, x1, y1, group1,
                     xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font.stringWidth(group1))/2,
                     yText);
-            group1Line.drawOn(page);
-
-            TextLine group2Line = new TextLine(font, group2);
-            group2Line.setLocation(
+            drawDigits(page, x1, y1, group2,
                     xRightGroupStart + ((xGroup2End - xRightGroupStart) - font.stringWidth(group2))/2,
                     yText);
-            group2Line.drawOn(page);
-
-            TextLine lastDigitLine = new TextLine(font, lastDigit);
-            lastDigitLine.setLocation(x + gap, yText);
-            float[] xyLast = lastDigitLine.drawOn(page);
+            float[] xyLast = drawDigits(page, x1, y1, lastDigit, x + gap, yText);
 
             xy[0] = Math.max(x, xyLast[0]);
             xy[1] = Math.max(y, xyLast[1]);
 
             font.setSize(fontSize);
-            return new float[] {xy[0], xy[1] + font.getDescent()};
+            return turnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.getDescent()});
         }
 
-        return new float[] {xy[0], xy[1]};
+        return turnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
     }
 
-    private float drawEGuard(
-            Page page,
-            float x,
-            float y,
-            float m1,
-            float h) {
+    private float drawEGuard(Page page, float x1, float y1, float x, float h) {
         if (page != null) {
             // 101
             page.addArtifactBMC();
-            drawBar(page, x + (0.5f * m1), y, m1, h);
-            drawBar(page, x + (2.5f * m1), y, m1, h);
+            drawBar(page, x1, y1, x + (0.5f * m1), m1, h);
+            drawBar(page, x1, y1, x + (2.5f * m1), m1, h);
             page.addEMC();
         }
         return (x + (3.0f * m1));
     }
 
-    private float drawMGuard(
-            Page page,
-            float x,
-            float y,
-            float m1,
-            float h) {
+    private float drawMGuard(Page page, float x1, float y1, float x, float h) {
         if (page != null) {
             // 01010
             page.addArtifactBMC();
-            drawBar(page, x + (1.5f * m1), y, m1, h);
-            drawBar(page, x + (3.5f * m1), y, m1, h);
+            drawBar(page, x1, y1, x + (1.5f * m1), m1, h);
+            drawBar(page, x1, y1, x + (3.5f * m1), m1, h);
             page.addEMC();
         }
         return (x + (5.0f * m1));
     }
 
-    private void drawBar(
-            Page page,
-            float x,
-            float y,
-            float m1,  // Single bar width
-            float h) {
+    // Strokes the bar of width w and height h centered on x of an EAN-13 or UPC-A
+    // barcode drawn left to right from (x1, y1), turned to the direction of the barcode.
+    private void drawBar(Page page, float x1, float y1, float x, float w, float h) {
         if (page != null) {
-            page.setPenWidth(m1);
-            page.moveTo(x, y);
-            page.lineTo(x, y + h);
+            float[] top = turn(x1, y1, x, y1);
+            float[] bottom = turn(x1, y1, x, y1 + h);
+            page.setPenWidth(w);
+            page.moveTo(top[0], top[1]);
+            page.lineTo(bottom[0], bottom[1]);
             page.strokePath();
         }
+    }
+
+    private void drawDigitBar(Page page, float x1, float y1, float x, float w, float h) {
+        if (page != null) {
+            page.addArtifactBMC();
+            drawBar(page, x1, y1, x + w / 2, w, h);
+            page.addEMC();
+        }
+    }
+
+    // Draws the digits at (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode. Returns the bottom right
+    // corner of the digits before the turn.
+    private float[] drawDigits(
+            Page page, float x1, float y1, String digits, float x, float y) throws Exception {
+        TextLine textLine = new TextLine(font, digits);
+        if (direction == Direction.LEFT_TO_RIGHT) {
+            textLine.setLocation(x, y);
+            return textLine.drawOn(page);
+        }
+        float[] xy = turn(x1, y1, x, y);
+        textLine.setLocation(xy[0], xy[1]);
+        textLine.setTextRotation(direction == Direction.TOP_TO_BOTTOM ? 270 : 90);
+        textLine.drawOn(page);
+        return new float[] {x + font.stringWidth(digits), y};
+    }
+
+    // Returns the point (x, y) of an EAN-13 or UPC-A barcode drawn left to right
+    // from (x1, y1), turned to the direction of the barcode: top to bottom turns it
+    // a quarter turn clockwise, bottom to top counter-clockwise, and the bars stay
+    // right of x1 and below y1.
+    private float[] turn(float x1, float y1, float x, float y) {
+        float h = m1 * barHeightFactor + 8f;    // The height of the guard bars
+        if (direction == Direction.TOP_TO_BOTTOM) {
+            return new float[] {x1 + h - (y - y1), y1 + (x - x1)};
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
+            return new float[] {x1 + (y - y1), y1 + 95f * m1 - (x - x1)};  // 95 modules
+        }
+        return new float[] {x, y};
+    }
+
+    // Returns the bottom right corner of an EAN-13 or UPC-A barcode drawn left to
+    // right from (x1, y1), turned to the direction of the barcode, where xy is the
+    // bottom right corner and left the left edge before the turn.
+    private float[] turnCorner(float x1, float y1, float left, float[] xy) {
+        float h = m1 * barHeightFactor + 8f;
+        if (direction == Direction.TOP_TO_BOTTOM) {
+            return new float[] {x1 + h, y1 + (xy[0] - x1)};
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
+            return new float[] {x1 + Math.max(xy[1] - y1, h), y1 + 95f * m1 + (x1 - left)};
+        }
+        return xy;
     }
 
     private float[] drawCode128(Page page, float x1, float y1) throws Exception {
@@ -427,9 +451,9 @@ public class Barcode implements Drawable {
         float w = m1;
         float h = m1;
 
-        if (direction == TOP_TO_BOTTOM) {
+        if (direction == Direction.TOP_TO_BOTTOM) {
             w *= barHeightFactor;
-        } else if (direction == LEFT_TO_RIGHT) {
+        } else if (direction == Direction.LEFT_TO_RIGHT) {
             h *= barHeightFactor;
         }
 
@@ -477,15 +501,15 @@ public class Barcode implements Drawable {
             for (int j = 0; j < symbol.length(); j++) {
                 int n = symbol.charAt(j) - 0x30;
                 if (j%2 == 0) {
-                    if (direction == LEFT_TO_RIGHT) {
+                    if (direction == Direction.LEFT_TO_RIGHT) {
                         drawVertBar(page, x, y, n * m1, h);
-                    } else if (direction == TOP_TO_BOTTOM) {
+                    } else if (direction == Direction.TOP_TO_BOTTOM) {
                         drawHorzBar(page, x, y, n * m1, w);
                     }
                 }
-                if (direction == LEFT_TO_RIGHT) {
+                if (direction == Direction.LEFT_TO_RIGHT) {
                     x += n * m1;
-                } else if (direction == TOP_TO_BOTTOM) {
+                } else if (direction == Direction.TOP_TO_BOTTOM) {
                     y += n * m1;
                 }
             }
@@ -493,7 +517,7 @@ public class Barcode implements Drawable {
 
         float[] xy = new float[] {x, y};
         if (font != null) {
-            if (direction == LEFT_TO_RIGHT) {
+            if (direction == Direction.LEFT_TO_RIGHT) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x1 + ((x - x1) - font.stringWidth(text))/2,
@@ -501,7 +525,7 @@ public class Barcode implements Drawable {
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
                 return new float[] {xy[0], xy[1] + font.getDescent()};
-            } else if (direction == TOP_TO_BOTTOM) {
+            } else if (direction == Direction.TOP_TO_BOTTOM) {
                 TextLine textLine = new TextLine(font, text);
                 textLine.setLocation(
                         x + w + font.getBodyHeight(),
@@ -526,7 +550,7 @@ public class Barcode implements Drawable {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         float[] xy = new float[] {0f, 0f};
-        if (direction == LEFT_TO_RIGHT) {
+        if (direction == Direction.LEFT_TO_RIGHT) {
             for (int i = 0; i < fullText.length(); i++) {
                 String code = tableB.get(fullText.charAt(i));
                 if (code == null) {
@@ -558,7 +582,7 @@ public class Barcode implements Drawable {
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]);
             }
-        } else if (direction == TOP_TO_BOTTOM) {
+        } else if (direction == Direction.TOP_TO_BOTTOM) {
             for (int i = 0; i < fullText.length(); i++) {
                 String code = tableB.get(fullText.charAt(i));
                 if (code == null) {
@@ -592,7 +616,7 @@ public class Barcode implements Drawable {
                 xy[0] = Math.max(x, xy[0]) + w;
                 xy[1] = Math.max(y, xy[1]);
             }
-        } else if (direction == BOTTOM_TO_TOP) {
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
             float height = 0.0f;
 
             for (int i = 0; i < fullText.length(); i++) {
@@ -670,7 +694,7 @@ public class Barcode implements Drawable {
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + Integer.toString(checkDigit);
 
-        x = drawEGuard(page, x, y, m1, h + 8);
+        x = drawEGuard(page, x1, y1, x, h + 8);
         float xLeftGroupStart = x;
         String group1 = lgMap[fullText.charAt(0) - '0'];
         for (int i = 1; i < 7; i++) {
@@ -682,33 +706,33 @@ public class Barcode implements Drawable {
             int n = str.charAt(0) - '0';
             x += n*m1;
             n = str.charAt(1) - '0';
-            drawVertBar(page, x, y, n*m1, h);
+            drawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str.charAt(2) - '0';
             x += n*m1;
             n = str.charAt(3) - '0';
-            drawVertBar(page, x, y, n*m1, h);
+            drawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
         }
         float xLeftGroupEnd = x;
-        x = drawMGuard(page, x, y, m1, h + 8);
+        x = drawMGuard(page, x1, y1, x, h + 8);
         float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             int n = str.charAt(0) - '0';
-            drawVertBar(page, x, y, n*m1, h);
+            drawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str.charAt(1) - '0';
             x += n*m1;
             n = str.charAt(2) - '0';
-            drawVertBar(page, x, y, n*m1, h);
+            drawDigitBar(page, x1, y1, x, n*m1, h);
             x += n*m1;
             n = str.charAt(3) - '0';
             x += n*m1;
         }
         float xRightGroupEnd = x;
-        x = drawEGuard(page, x, y, m1, h + 8);
+        x = drawEGuard(page, x1, y1, x, h + 8);
 
         float[] xy = new float[] {x, y};
 
@@ -728,31 +752,24 @@ public class Barcode implements Drawable {
             float yText = y1 + h + font.getBodyHeight();
             float gap = font.stringWidth(" ");
 
-            TextLine firstDigitLine = new TextLine(font, firstDigit);
-            firstDigitLine.setLocation(x1 - gap - font.stringWidth(firstDigit), yText);
-            firstDigitLine.drawOn(page);
-
-            TextLine leftGroupLine = new TextLine(font, leftGroup);
-            leftGroupLine.setLocation(
+            float left = x1 - gap - font.stringWidth(firstDigit);
+            drawDigits(page, x1, y1, firstDigit, left, yText);
+            drawDigits(page, x1, y1, leftGroup,
                     xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font.stringWidth(leftGroup))/2,
                     yText);
-            leftGroupLine.drawOn(page);
-
-            TextLine rightGroupLine = new TextLine(font, rightGroup);
-            rightGroupLine.setLocation(
+            float[] xyRight = drawDigits(page, x1, y1, rightGroup,
                     xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font.stringWidth(rightGroup))/2,
                     yText);
-            float[] xyRight = rightGroupLine.drawOn(page);
 
             xy[0] = Math.max(x, xyRight[0]);
             xy[1] = Math.max(y, xyRight[1]);
 
             font.setSize(fontSize);
 
-            return new float[] {xy[0], xy[1] + font.getDescent()};
+            return turnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.getDescent()});
         }
 
-        return new float[] {xy[0], xy[1]};
+        return turnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
     }
 
     private void drawVertBar(

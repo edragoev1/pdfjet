@@ -26,7 +26,7 @@ public class QRCode : IDrawable {
     private const int PAD1 = 0x11;
     private Boolean?[][] modules;
     private int moduleCount = 33;    // Magic Number
-    private int errorCorrectLevel = ErrorCorrectLevel.M;
+    private ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M;
 
     private float x;
     private float y;
@@ -40,10 +40,10 @@ public class QRCode : IDrawable {
     /// Used to create 2D QR Code barcodes.
     /// </summary>
     /// <param name="str">the string to encode.</param>
-    /// <param name="errorCorrectLevel">the desired error correction level.</param>
-    public QRCode(String str, int errorCorrectLevel) {
+    /// <param name="errorCorrectionLevel">the desired error correction level.</param>
+    public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) {
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
-        this.errorCorrectLevel = errorCorrectLevel;
+        this.errorCorrectionLevel = errorCorrectionLevel;
         this.Make(false, GetBestMaskPattern());
     }
 
@@ -125,8 +125,8 @@ public class QRCode : IDrawable {
     /// <summary>
     /// Returns the modules of the QR code: true for dark and false for light modules.
     /// </summary>
-    /// <returns>the QR code data.</returns>
-    public Boolean?[][] GetData() {
+    /// <returns>the modules.</returns>
+    public Boolean?[][] GetModules() {
         return modules;
     }
 
@@ -173,7 +173,7 @@ public class QRCode : IDrawable {
         SetupTimingPattern();
         SetupTypeInfo(test, maskPattern);
 
-        MapData(CreateData(errorCorrectLevel), maskPattern);
+        MapData(CreateData(errorCorrectionLevel), maskPattern);
     }
 
     private void MapData(byte[] data, int maskPattern) {
@@ -268,7 +268,7 @@ public class QRCode : IDrawable {
     }
 
     private void SetupTypeInfo(bool test, int maskPattern) {
-        int data = (errorCorrectLevel << 3) | maskPattern;
+        int data = ((int) errorCorrectionLevel << 3) | maskPattern;
         int bits = QRUtil.GetBCHTypeInfo(data);
 
         for (int i = 0; i < 15; i++) {
@@ -296,8 +296,8 @@ public class QRCode : IDrawable {
         modules[moduleCount - 8][8] = !test;
     }
 
-    private byte[] CreateData(int errorCorrectLevel) {
-        RSBlock[] rsBlocks = RSBlock.GetRSBlocks(errorCorrectLevel);
+    private byte[] CreateData(ErrorCorrectionLevel errorCorrectionLevel) {
+        RSBlock[] rsBlocks = RSBlock.GetRSBlocks(errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
         buffer.Put(4, 4);

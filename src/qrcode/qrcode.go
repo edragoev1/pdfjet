@@ -24,29 +24,29 @@ import (
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
 type QRCode struct {
-	pad0              int
-	pad1              int
-	modules           [][]*bool
-	moduleCount       int
-	errorCorrectLevel int
-	x                 float32
-	y                 float32
-	qrData            []byte
-	m1                float32 // Module length
-	color             int32
+	pad0                 int
+	pad1                 int
+	modules              [][]*bool
+	moduleCount          int
+	errorCorrectionLevel ErrorCorrectionLevel
+	x                    float32
+	y                    float32
+	qrData               []byte
+	m1                   float32 // Module length
+	color                int32
 }
 
 // NewQRCode is used to create 2D QR Code barcodes.
 // @param str the string to encode.
-// @param errorCorrectLevel the desired error correction level.
-func NewQRCode(str string, errorCorrectLevel int) *QRCode {
+// @param errorCorrectionLevel the desired error correction level.
+func NewQRCode(str string, errorCorrectionLevel ErrorCorrectionLevel) *QRCode {
 	qrcode := new(QRCode)
 	qrcode.pad0 = 0xEC
 	qrcode.pad1 = 0x11
 	qrcode.qrData = []byte(str)
 	qrcode.moduleCount = 33 // Magic Number
 	qrcode.m1 = 2.0
-	qrcode.errorCorrectLevel = errorCorrectLevel
+	qrcode.errorCorrectionLevel = errorCorrectionLevel
 	qrcode.make(false, qrcode.getBestMaskPattern())
 	return qrcode
 }
@@ -95,8 +95,8 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 	return [2]float32{qrcode.x + w, qrcode.y + h}
 }
 
-// GetData returns the modules of the QR code: true for dark and false for light modules.
-func (qrcode *QRCode) GetData() [][]*bool {
+// GetModules returns the modules of the QR code: true for dark and false for light modules.
+func (qrcode *QRCode) GetModules() [][]*bool {
 	return qrcode.modules
 }
 
@@ -139,7 +139,7 @@ func (qrcode *QRCode) make(test bool, maskPattern int) {
 	qrcode.setupTimingPattern()
 	qrcode.setupTypeInfo(test, maskPattern)
 
-	qrcode.mapData(qrcode.createData(qrcode.errorCorrectLevel), maskPattern)
+	qrcode.mapData(qrcode.createData(qrcode.errorCorrectionLevel), maskPattern)
 }
 
 func (qrcode *QRCode) mapData(data []byte, maskPattern int) {
@@ -233,7 +233,7 @@ func (qrcode *QRCode) setupTimingPattern() {
 }
 
 func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
-	data := qrcode.errorCorrectLevel<<3 | maskPattern
+	data := int(qrcode.errorCorrectionLevel)<<3 | maskPattern
 	bits := getBCHTypeInfo(data)
 
 	for i := 0; i < 15; i++ {
@@ -262,9 +262,9 @@ func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
 	qrcode.modules[qrcode.moduleCount-8][8] = &value
 }
 
-func (qrcode *QRCode) createData(errorCorrectLevel int) []byte {
+func (qrcode *QRCode) createData(errorCorrectionLevel ErrorCorrectionLevel) []byte {
 	rsblock := new(RSBlock)
-	rsBlocks := rsblock.getRSBlocks(errorCorrectLevel)
+	rsBlocks := rsblock.getRSBlocks(errorCorrectionLevel)
 
 	var buffer = NewBitBuffer()
 	buffer.put(4, 4)
