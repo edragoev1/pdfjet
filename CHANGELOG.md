@@ -212,7 +212,7 @@ the unused `Embed` enum are removed. Highlights below; see
 
 ### Documentation
 - The C# API reference is built with DocFX (configuration in `docfx/`) into
-  `docs/_net`. It replaces the copy of the Javadoc HTML that
+  `docs/dotnet`. It replaces the copy of the Javadoc HTML that
   `util/Translate.java` rewrote with Java-to-C# word substitutions;
   `Translate.java`, `translate-words.txt` and `capitalize-words.txt` are
   removed. `./generate-documentation.sh` builds both references; install
@@ -236,7 +236,7 @@ the unused `Embed` enum are removed. Highlights below; see
 - `docs/` is no longer tracked in git. The `Documentation` GitHub Actions
   workflow (`.github/workflows/docs.yml`) builds the Java and C# references on
   every push to `master` and publishes them to GitHub Pages at
-  <https://edragoev1.github.io/pdfjet/>, under `java/` and `net/`.
+  <https://edragoev1.github.io/pdfjet/>, under `java/` and `dotnet/`.
 - The published site also serves `examples-java.html`, `examples-dotnet.html`
   and the example sources they link to, which GitHub Pages used to publish
   straight from `master`, and its home page links to all of them. The Pages
@@ -268,7 +268,7 @@ the unused `Embed` enum are removed. Highlights below; see
   DocFX left it out of the reference.
 - The Go API reference is built with doc2go into `docs/go` by
   `./generate-documentation.sh` and published under `go/`, next to `java/` and
-  `net/`; the site's home page links to it. It covers the 56 packages in `src`
+  `dotnet/`; the site's home page links to it. It covers the 56 packages in `src`
   and leaves out the example programs in `src/examples`. Install doc2go once
   with `go install go.abhg.dev/doc2go@v0.12.2`.
 - The Swift API reference is built with DocC, which comes with the Swift

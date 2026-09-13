@@ -22,7 +22,7 @@
                 "dest": "api"
             }
         ],
-        "output": "../docs/_net",
+        "output": "../docs/dotnet",
         "template": [ "default", "modern" ],
         "globalMetadata": {
             "_appName": "PDFjet",

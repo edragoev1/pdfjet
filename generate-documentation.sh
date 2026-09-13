@@ -17,7 +17,7 @@ javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
 
 # The C# API reference is built by DocFX from the XML doc comments in net/pdfjet.
 # Install it once with: dotnet tool install -g docfx
-rm -rf docs/_net docfx/api
+rm -rf docs/dotnet docfx/api
 docfx docfx/docfx.json
 
 # The Go API reference is built by doc2go from the doc comments in src.
