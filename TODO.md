@@ -16,7 +16,8 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 - ✅ **B** Go `Drawable` declares `SetLocation`; `SetLocation` returns `Drawable`
       and goes last in a chain. Commit 95ea973d.
 - ✅ **B** Go `DrawOn` returns `[2]float32` everywhere; `Arc.drawOn` returns the
-      bottom right corner in all four ports. Commit 3fbafe4c.
+      bottom right corner in all four ports. Commit 3fbafe4c. It missed Go
+      `QRCode` and `PDF417`, which are not `Drawable` yet; see the API audit.
 - ✅ **B** Go module path for a major version: `go get github.com/edragoev1/pdfjet@v8.7.0`
       failed with *module path must match major version*, so nobody could
       fetch a tagged Go release. The module is now
@@ -35,6 +36,9 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
       no flags enum and a Swift `OptionSet` is not an enum, so both keep the
       enum with the bit values of the standard, combined with `|` on
       `getValue()`. Documented in the README Port differences section.
+- ⬜ **B** Decide which renames from the API audit below go into 9.0.0; the
+      rest move to a 10.0.0 list. Each is a breaking change, so the chosen
+      ones land before the CHANGELOG entry is written.
 
 ## Week 2 (Sep 18–24): encryption and PDF reading
 
@@ -131,6 +135,346 @@ Pick from the README limitations; the first three are the ones users hit.
       Swift `Bookmark`, `Cell`, `Chart`, `Table` and `TextColumn` markers were
       stale (the code already matched Java) and are dropped.
 
+## API audit fixes (Sep 14–Oct 1): bad names and drift between the ports
+
+Found with `./audit-api.py --dump` and by reading each public class in the
+four ports side by side; every item was checked in the code. The script
+matches names and parameter counts only, so none of this is in its report.
+Paths are Java unless a port is named. Bugs are **B**; renames are S, because
+a rename breaks user code and must land in 9.0.0 or wait for 10.0.0, which
+the Week 1 decision settles.
+
+### Bugs found by comparing the ports
+
+- ⬜ **B** Go gives every PDF the same `/ID` and XMP DocumentID:
+      `djb.Salsa20()` hashes a fixed test vector and never reads the clock
+      (`src/djb/salsa20.go:19`, `pdf.go:112`). Java, C# and Swift seed from
+      the time.
+- ⬜ **B** `PDF.setTitle`, `setAuthor`, `setSubject`, `setKeywords` and
+      `setCreator` do nothing for `PDF_17`, the default compliance: they only
+      feed the XMP stream, which is written for PDF/A and PDF/UA only, and the
+      trailer has no `/Info` (`PDF.java:1171`, `:1220`). All four ports.
+- ⬜ **B** Java `RadioButton.setLocation(double, double)` calls itself and
+      throws `StackOverflowError` (`RadioButton.java:69`).
+- ⬜ **B** Go `NewCircleAnnotation`, `NewSquareAnnotation`,
+      `NewPolygonAnnotation` and `NewTextAnnotation` skip `NewBaseAnnotation`:
+      the fill is black and the transparency 0, and `/CA 0` makes the
+      annotation invisible (`circleannotation.go:10`). Go `Container.DrawOn`
+      offsets only these four types, Java any `BaseAnnotation`.
+- ⬜ **B** Go `QRCode` and `PDF417` are not `Drawable`, despite the Week 1
+      item: `SetLocation` returns the concrete type and `DrawOn` returns
+      `[]float32` (`qrcode.go:58,81`, `pdf417.go:132,240`). Go `DataMatrix`
+      is right.
+- ⬜ **B** Swift `OptionalContentGroup` keeps `visible`, `printable` and
+      `exportable` as `Bool?` and tests `!= nil`, so `setVisible(false)`
+      writes `/ON` (`OptionalContentGroup.swift:24,88`).
+- ⬜ **B** C# `CompositeTextLine` is another algorithm: it lays the lines out
+      at draw time and always calls `SetFontSize(fontSize)`, so a line with no
+      font size draws at size 0; `GetMinMax` changes the font sizes and
+      `GetWidth` adds up the line widths (`CompositeTextLine.cs:138,205-273`).
+- ⬜ **B** Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Double]`, so
+      `Page(pdf, Executive.PORTRAIT)` does not compile (`Executive.swift:16`).
+- ⬜ **B** C# `Compressor.Deflate` returns no bytes for empty input, which is
+      not a zlib stream, so an empty page gets a broken `/FlateDecode` stream
+      (`Compressor.cs:18`).
+- ⬜ **B** C# `SVG` parses path numbers with `float.Parse` in the current
+      culture, so SVG images break on a German or French system
+      (`SVG.cs:100`).
+- ⬜ **B** 8-bit indexed PNG: Java, C# and Swift undo the row filters on the
+      RGB bytes after the palette lookup, 3 bytes per pixel, instead of on the
+      indexes; Go never undoes them (`PNGImage.java:342`, `pngimage.go:313`).
+- ⬜ **B** `Chart`: Java and Swift start the automatic maximums at the
+      smallest positive float (`Float.MIN_VALUE`, `leastNonzeroMagnitude`),
+      so all-negative data gets a maximum of 0 (`Chart.java:40`); C# rounds
+      axis limits the user set (`Chart.cs:501`); Go never uses the automatic
+      colours (`chart.go:548`); Swift `drawOn` crashes on empty data and
+      divides by zero on flat data.
+- ⬜ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
+      starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
+      calendar out differently and places the header with `x1` as the y
+      (`calendarmonth.go:89`); the default location, cell size and circle
+      pen width differ in all four ports.
+- ⬜ **B** Go `Barcode` draws the UPC, EAN-13 and Code 39 text at the
+      barcode's own `x1`, `y1` instead of the location it is drawn at, so the
+      text of a barcode in a table cell is misplaced (`barcode.go:296,494`).
+- ⬜ **B** Go `NewForm` leaves the label and value font sizes and the form
+      width at 0 (`form.go:28`); Swift defaults to 8 and 10 where Java has 9
+      and 9 (`Form.swift:17`).
+- ⬜ **B** `BigTable`: Java splits lines with a regex and drops the empty
+      fields at the end of a line (`BigTable.java:249,295`), as `Table` did;
+      in all four ports `setLocation` adds to x, so a second call moves the
+      table again, and `setLanguage` stores a field nothing reads.
+- ⬜ **B** `TextColumn.setTextAlignment` has no effect: `drawOn` replaces it
+      with each paragraph's alignment. `drawOn` also compares the column
+      height with a y coordinate (`TextColumn.java:233,238`). All four ports.
+- ⬜ **B** Wrapping drops text line settings: `Text` and `TextFrame` lose the
+      line colour, structure type, text direction, alt description and the
+      URI language, alt and actual text (`Text.java:231`,
+      `TextFrame.java:410`); `TextColumn` loses the colour map and language
+      (`TextColumn.java:270`). All four ports.
+- ⬜ **B** `Table.drawOn(null)` renders every row and sets `rendered = -1`,
+      so a later `drawOn(page)` draws only the header rows
+      (`Table.java:583`). All four ports.
+- ⬜ `PDF417.drawOn` overwrites `x1`, so a second draw shifts the symbol
+      right (`PDF417.java:275`). All four ports.
+- ⬜ `CheckBox` and `RadioButton` set a blue brush for a linked label, and the
+      five-argument `drawString` resets it to black (`CheckBox.java:222`,
+      `Page.java:464`). All four ports.
+- ⬜ `TextBox` draws underline and strikeout in the border colour, not the
+      text colour (`TextBox.java:937`). All four ports.
+- ⬜ `TextBlock` measures with the fallback font and draws with the main font
+      only (`Page.java:2664`); `setFallbackFontSize` resizes the shared
+      `Font`. All four ports.
+- ⬜ `Cell.setTextBlock` and `setTextColumn` keep the cell text, unlike
+      `setTextBox`, and `drawOn` draws the text while `getHeight` measures
+      the block (`Cell.java:274,294,860`); `getHeight` and column fitting
+      ignore `setFontSize`. All four ports.
+- ⬜ `Page.getPenWidth` is 0.5 on a new page but no `w` is written, so readers
+      draw 1.0 (`Page.java:60`); the CMYK setters do not update `getPenColor`
+      and `getBrushColor`. All four ports.
+- ⬜ Java and Swift `FontStream1` read the font with one `read()` and no loop,
+      so a short read corrupts it (`FontStream1.java:367`).
+- ⬜ `SVGImage`: Go passes a `structureType` nothing sets to `AddBMC`, an
+      empty tag in PDF/UA (`svgimage.go:326`); Java and C# never close the
+      file (`SVGImage.java:53`); Swift scans for `" d="` and `" fill="`
+      instead of parsing XML, losing single-quoted attributes and attributes
+      after a newline (`SVGImage.swift:82`).
+- ⬜ `Container`: Swift `add` never sets `parent`, so annotations in a nested
+      container miss the offset (`Container.swift:139`); C# compares
+      `GetType() == typeof(Container)`, which misses a subclass.
+- ⬜ Swift `Bookmark` collapses only spaces in a title, not tabs and newlines
+      (`Bookmark.swift:63`); `getDestKey` and `getTitle` crash on the root.
+
+### Drift between the ports
+
+- ⬜ Defaults: C# `CheckBox` check mark is blue, black elsewhere
+      (`CheckBox.cs:22`); Go `FileAttachment` description ends "the attached
+      attachment" (`fileattachment.go:27`); Java `new PDF()` has a null
+      compliance, `PDF_17` elsewhere (`PDF.java:62`); a fill-only `Arc` gets a
+      black hairline stroke (`B`) in Java, C# and Swift and is only filled
+      (`f`) in Go (`Arc.java:22`, `arc.go:243`); Go `NewImage2` and
+      `SVGImage` use empty alt and actual text, `" "` elsewhere; Java and C#
+      `FileAttachment` write an empty `/T <>`, Go and Swift skip it.
+- ⬜ Numbers written: `FastFloat` rounds `-1.125` to `-1.12` in Java and C#
+      and `-1.13` in Go and Swift, and overflows `int` above 21.5 million in
+      Java and C# (`FastFloat.java:11`); Swift `OpenTypeFont` scales
+      `/FontBBox`, `/Ascent`, `/Descent` and `/CapHeight` to 1/1000 em where
+      the others write font units (`OpenTypeFont.swift:116`); Swift
+      `FontStream2` writes `/W` widths as `600.0`.
+- ⬜ `Chart` axis labels use the locale in Java and C# and `.` in Go and
+      Swift; Go ignores `SetMinimumFractionDigits` (`chart.go:402`); C#
+      places the Y labels with the ascent at the chart font size. Go
+      `DonutChart` computes percentages in float64 and rounds some slices
+      differently (`donutchart.go:249`).
+- ⬜ Text input: Java `TextBlock` splits `"\n"` into no lines, the others into
+      one (`TextBlock.java:456`); Java and Go `Table` keep a BOM in the first
+      header cell (`Table.java:71`); C# `Content.ofTextFile` also reads
+      UTF-16 and UTF-32 BOMs; Go `Cell` measures an empty cell one line tall,
+      the others 0 (`cell.go:299`).
+- ⬜ Copies and live references: Swift `PDFobj.getDict()` returns a copy, so
+      a read object cannot be edited (`PDFobj.swift:39`); Java and C# `Page`
+      and `TextLine` colour getters return the internal array; Go
+      `Page.GetContent` returns the live buffer; C# `Encryption.GetKey`
+      returns the key, Java a clone (`Encryption.cs:150`).
+- ⬜ Mutable constants: the page sizes and the `Token` byte arrays can be
+      changed by callers in Java, C# and Go (`A4.PORTRAIT[0] = 100` changes
+      every later page); Swift `let` is safe.
+- ⬜ Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
+      on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
+      `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
+      an invalid Code 39 character. Go ignores errors from `Inflate`
+      (`pdfobj.go:96`, `pngimage.go:81`) and `NewJPGImage` (`image.go:83`,
+      then a nil pointer), and `AddObjects` without `/Pages` writes nothing.
+      Swift prints and carries on: PNG errors (`PNGImage.swift:55`), QR data
+      that does not fit (a truncated code, `QRCode.swift:308`), an invalid
+      Code 39 character (skipped), an unknown barcode type (`[]`, which
+      crashes `Cell`), `Stamp.drawText` without font or text, a bad SVG
+      colour (transparent), a missing file in `Content.ofBinaryFile` (`[]`),
+      `Form.drawOn(nil)`; `BigTable.complete` hides errors with `try?`;
+      `Table.drawOn(pdf, pages, size)` crashes on `xy!` after a completed draw
+      (`Table.swift:477`). Go and Swift crash on a truncated BMP where Java
+      throws. C# Code 39 throws `KeyNotFoundException` before its own message.
+
+### Types and signatures
+
+- ⬜ Go constants are untyped ints in `compliance`, `alignment`, `capstyle`,
+      `joinstyle`, `effect`, `mark` and `imagetype`; `type Compliance int`
+      exists but `SetCompliance` takes `int`. Go `direction` has
+      `BottomToTop` = 2, the others `BOTTOM_TO_TOP` = 1. Go `compress.Yes` is
+      a `bool`.
+- ⬜ Swift takes a `PathOperator` enum in `Page.drawPath`, `drawCircle`,
+      `drawRectRoundCorners` and `Point.setPathOperator`, and an `ImageType`
+      enum in `Image.init`; Java, C# and Go take any `String` and `int`, so a
+      typo writes a broken content stream. `PDF.setPageLayout` and
+      `setPageMode` take a `String` in all ports though `PageLayout` and
+      `PageMode` exist.
+- ⬜ `Point.setAlignment` takes an `int` in Java, an `Alignment` in C# and a
+      `UInt32` in Swift; `Point.getTextColor` returns `int` in Java and C#,
+      `[3]float32` in Go, `[Float]` in Swift. `TextBlock.setTextAlignment`
+      takes an `Alignment`, `TextBox` and `Cell` an `Align` int.
+- ⬜ Swift: `Dimension.getWidth`/`getHeight` return `Float?`;
+      `PNGImage.getWidth` is `Int?` (Java `int`, Go `float32`); `Cell.init`,
+      `Cell.setFont`, `TextParameters.setFont` and `setText` take optionals
+      and force-unwrap; `DonutChart.init` requires fonts Java allows to be
+      null; `Title.prefix` and `textLine` are optional; `Cell.setColSpan`
+      takes `UInt32`; `PDF.addObjects`, `addResourceObjects` and four
+      `PDFobj` methods are `inout` and write nothing back; `RadioButton`
+      setters lack `@discardableResult`; `PDF417.init` throws an internal
+      `EncodingError`; `Page.addWatermark`, `addHeader` and `addFooter` are
+      `throws` and never throw.
+- ⬜ Go colour setters: `BaseAnnotation.SetFillColor` takes `[3]float32` and
+      `SetFillColorInt` an int, the reverse of every other type;
+      `Arc.SetFillColorRGB` takes `r, g, b` (plus `SetFillColorRGBArray`),
+      `Rect.SetFillColorRGB` the array; `Stamp` colours are `int`, the rest
+      `int32`; `Form.SetLabelColor`/`SetValueColor` take `int32`, which Java,
+      C# and Swift lack; only `Arc` has `Float64` variants. Go `Cell`,
+      `TextBlock` and `TextBox` colour getters return black when unset, and a
+      Go cell background cannot be removed.
+- ⬜ Overloads: Go `Page.DrawString(font1, font2, text, x, y)` has no font
+      size, and Go and Swift lack Java's `(font, fallback, size, str, x, y,
+      color, colorMap)`; Java `drawString` takes a boxed `Integer` colour. Go
+      has no `NewTextBox(font, text, width, height)` and no `Title` text line
+      getter; Swift `Rect` and `TextBox` lack the `r, g, b` colour setters;
+      only Java has a public `SVGImage()`, which leaves the path list null;
+      Go `BigTable.SetTableData` returns only `error`; Go `PDF.Read` takes
+      `[]byte`, not in the README.
+- ⬜ Mutators that return void: `Rect.scaleBy`, `SVGImage.scaleBy`,
+      `Image.rotateClockwise` (Swift returns the image), `Container.rotate`
+      and `addBorder`, `Table.removeLineBetweenRows` and `rightAlignNumbers`,
+      `TextColumn.addChineseParagraph`, `addJapaneseParagraph` and
+      `removeLastParagraph`, `OptionalContentGroup.clear` and `drawOn` (not a
+      `Drawable`), `BaseAnnotation.rotate`.
+- ⬜ `Bidi.reorderVisually(str, from, to)` counts UTF-16 units in Java and C#,
+      bytes in Go and scalars in Swift: document it in Port differences or
+      use one unit.
+
+### Names: one concept, several names
+
+- ⬜ S Strokes. `Line`, `Path`, `Arc`, `Point` and `Rect` use
+      `setStrokeColor`, `setStrokeWidth` and `setFillColor`; what is left:
+      - dash pattern: `Line`/`Path.setPattern`,
+        `Rect`/`Text`/`TextFrame.setBorderPattern`,
+        `Chart.setHGridLinePattern`/`setVGridLinePattern`, against
+        `setStrokeDashPattern` in `Page`, `Arc` and `Point`;
+      - cap style: `Line.setCapStyle`, `setLineCapStyle` in `Path` and `Page`;
+      - width: `Page.setPenWidth` and `setDefaultLineWidth` (the pen width),
+        `Form.setLineWidth`, `TextBox.setLineWidth`/`getLineWidth` next to
+        `setStrokeWidth` (no getter), `Chart.setChartBorderWidth`,
+        `setInnerBorderWidth`, `setHGridLineWidth`;
+      - colour: `Page.setPenColor`/`setBrushColor`, `CheckBox.setBoxColor`
+        and `setCheckmark` (a colour), `Paragraph.setColor` (the text colour),
+        `QRCode`/`DataMatrix.setColor`, `TextLine.setLineColor` (underline and
+        strikeout);
+      - borders: `TextBox.setStrokeColor`/`setStrokeWidth` against
+        `TextBlock.setBorderColor`/`setBorderWidth`;
+        `Table.setCellBordersColor`/`setCellBordersWidth`;
+        `Rect.setCornerRadius` against `TextBlock.setBorderCornerRadius`.
+- ⬜ S Rotation: `Arc.setRotateDegreesCW`/`CCW`; `Container` and `Stamp` have
+      `rotate`, `setRotation` and `setRotationCounterClockwise` for one angle,
+      plus `setRotationClockwise`; `Image.rotateClockwise` sets the angle;
+      `Page.rotateBy` sets an absolute `/Rotate`; `BaseAnnotation.rotate` is a
+      public `Container` helper.
+- ⬜ S Scaling and moving: `Arc.setScaleFactor` multiplies the radii, so it
+      is a `scaleBy`; `Container.setScaleFactor`/`setScaleFactorXY` set an
+      absolute scale; `Rect.scaleBy` scales x and y only. `Line.setLocation`
+      moves only the start point (`setStartPoint` does that too);
+      `Arc.setCenterXY` duplicates `setLocation`; `Title.setOffset` adds to x
+      on every call; `TextParameters.setTextLocation`;
+      `CompositeTextLine.getPosition`, and `getMinMax` returns y values only.
+- ⬜ S Alignment: `Align` (int codes with `JUSTIFY`, `TOP`, `BOTTOM`) and
+      `Alignment` (enum with `LEFT`, `RIGHT`, `CENTER`) for one concept;
+      `Cell.setVerTextAlignment` against `TextBox.setVerticalAlignment`;
+      `Table.setTextAlignInColumn` against `setTextAlignment`;
+      `Point.setAlignment`.
+- ⬜ S Text boxes: `TextBox` and `TextBlock` name one setting differently:
+      `setMargin`/`setTextPadding` (`Cell.setPadding`), `setSpacing` in
+      points/`setLineSpacing` as a multiplier,
+      `setTextColors`/`setKeywordHighlightColors` (`setColorMap` in `TextLine`
+      and `Paragraph`), `setTextDirection(Direction)`/`setRightToLeft`;
+      `TextLine.setTextDirection(int)` is a rotation in degrees.
+      `setFillColor` and `setBackgroundColor` do the same in both.
+      `getHeight` is the set height in `TextBlock`, the measured one in
+      `TextBox`. `TextBox.setBorder(int)` only adds bits, so `Border.NONE`
+      does nothing; `Cell` has `setBorder(int, boolean)`, `TextFrame`
+      `setBorder(boolean)` with a blue default. `TextColumn.setParagraphSpacing`
+      is a multiplier, `Text`/`TextFrame.setParagraphLeading` points.
+- ⬜ S Barcodes: `PDF417.setModuleWidth`, `setModuleLength` in `Barcode`,
+      `QRCode` and `DataMatrix`; `QRCode.getData` returns the modules;
+      `ErrorCorrectLevel` for error correction level;
+      `Barcode.LEFT_TO_RIGHT`, `TOP_TO_BOTTOM` and `BOTTOM_TO_TOP` duplicate
+      `Direction`, and EAN-13 and UPC-A ignore the direction.
+
+### Names: misleading, redundant or dead
+
+- ⬜ S Duplicates: `Table.getCellAt`/`getCellAtRowColumn`,
+      `getRow`/`getRowAtIndex`, `getColumn`/`getColumnAtIndex`;
+      `Font.getHeight`/`getBodyHeight`; Java and Swift
+      `Permissions.getAccess`/`getRawValue`;
+      `TextColumn.addChineseParagraph`/`addJapaneseParagraph`;
+      `Container.addBorder()` is `setBorderColor(Color.black)`, and
+      `setBorderColor` adds another `Rect` on each call; `Cell.getBorder(int)`
+      next to `getTopBorder` and the other sides.
+- ⬜ S Misleading: `BaseAnnotation.setTransparency` writes `/CA`, an opacity;
+      `FileAttachment.setDescription` writes `/Contents`, which
+      `BaseAnnotation` calls `setContents`; `DonutChart.setR1AndR2`;
+      `Bookmark.getDestKey` returns the name given to `Page.addDestination`;
+      `Table.setColumnWidths()` fits the columns; `Image.flipUpsideDown` takes
+      a flag; `Point.setDrawPath()` cannot be turned off; `Cell.setPoint` sets
+      a marker, not a location; `Page.addBMC` writes `BDC`; `Page.drawArc`
+      and `drawCircularArc` only append path segments;
+      `FileAttachment.setIconPushPin` against `setIconPaperclip`;
+      `Chart.setDrawXAxisLines` against `setHGridLineWidth` for the same
+      lines; `Effect` means superscript and subscript; `ColorMap` (CSS names)
+      against `TextLine.setColorMap` (word colours); `Color` constants are
+      lower case, unlike every other constant class, and `oldgloryred` and
+      `oldgloryblue` are not CSS names; `B5` is JIS B5 (516×729), not ISO;
+      `Table.WITH_2_HEADER_ROWS` is the number 2; `Page.transform` documents
+      9 values and reads 6 (`Page.java:2479`);
+      `Permissions.setPermissions(flags, grant)` also revokes.
+- ⬜ S Ignored or dead: the `Font(pdf, stream, Font.STREAM)` flag
+      (`Font.java:303`); the `pdf` the `FileAttachment` constructor stores;
+      `Slice.tooltip`; `BigTable.setLanguage`; `Image` has no `setLanguage`
+      though `drawOn` reads the field; the `SVGImage.drawOn` link branch that
+      no setter reaches; `TextLine.setURILanguage`, `setURIAltDescription` and
+      `setURIActualText` have no getters; the public `BaseAnnotation()` makes
+      an annotation with no subtype, which crashes Java and Swift `PDF` and
+      writes `/Subtype /` in Go; the `Destination` constructors are public
+      and nothing public takes a `Destination`.
+- ⬜ S Public by accident: `Token` (mutable byte arrays), `Single` (one
+      `space` constant; in C# it hides `System.Single`),
+      `TextUtils.printDuration` (an examples helper; C# formats it in the
+      current culture), the core font metrics classes (`Courier_Bold`, ...),
+      the Java `PDFobj` protected fields and `setStream`, `setNumber` and
+      `getLength`, the public no-argument constructors of the Java constant
+      classes (`new A4()`, `new Color()`), and `Encryption.getKey`, which only
+      Java needs public.
+
+### Names in one port
+
+- ⬜ S C#: `SVGImage.getWidth` and `getHeight` are lower case
+      (`SVGImage.cs:213`); `Compliance.PDF_1_7` is `PDF_17` in the other
+      ports (`PDF_1_7` reads better next to `PDF_UA_1`); `PathOperator`,
+      `Token`, `UserAccess` and `Point.ControlPointC`/`V`/`Y` are PascalCase
+      where the other C# constant classes copy Java's `UPPER_SNAKE`.
+- ⬜ S Swift: `PathOperator`, `Token` and `Point.controlPointC`/`V`/`Y` are
+      camelCase and `StructElem` is PascalCase (`Document`, `THead`) where the
+      other Swift constant classes copy Java's `UPPER_SNAKE`.
+- ⬜ S Go: `RadioButton.SelectButton` and `CheckBox.XMarkCheckBox`, whose
+      suffixes no overload explains; `NewImage2`; `Page.GetPenColorRGB` and
+      `GetBrushColorRGB` with no plain `GetPenColor` and `GetBrushColor`;
+      `mark.UnCheck`; `tabloid.PORTRAIT` and `LANDSCAPE` where the other page
+      size packages have `Portrait` and `Landscape`; the `djb` package, whose
+      `Salsa20()` returns a document ID; the `Courier` … `ZapfDingbats`
+      constants in `src/corefont.go`, numbered from 0 and named like the
+      `corefont.Courier()` functions; `ValidBitsMask`.
+- ⬜ S Go exports helpers that Week 4 meant to hide and the README does not
+      list: `BitBuffer`, `RSBlock`, `Polynomial`, `TextCompact`, `L5ECC`,
+      `Round` and the `src/round` package, `JPGImage`, `BMPImage`,
+      `FontStream1`, `FontStream2`, `NewCoreFontForPDFobj`.
+- ⬜ S Java: the sources in `com/pdfjet/fonts`, `qrcode`, `pdf417` and
+      `datamatrix` declare `package com.pdfjet`, while `barcodes`,
+      `corefonts` and `encryption` have their own packages.
+
 ## Week 4 (Oct 2–11): parity audit, docs, release
 
 - ✅ **B** Public API audit across the four ports: `audit-api.py` lists the
@@ -148,7 +492,8 @@ Pick from the README limitations; the first three are the ones users hit.
       named files that do not ship (C# and Swift JetBrainsMono) or missed
       shipped ones (NotoSans Black and Thin, SourceSerif4 Black). The rest are
       conventions, documented in the README Port differences section; the
-      script's report now shows only those.
+      script's report now shows only those. Go still exports some helpers
+      (`BitBuffer`, `RSBlock`, `JPGImage`, ...); see the API audit.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
 - ⬜ **B** Manual viewer pass: Acrobat Reader on Windows opens Example_30 with
@@ -219,7 +564,7 @@ Pick from the README limitations; the first three are the ones users hit.
       `Paragraph.setAlignment` and `TextColumn.setAlignment` are renamed
       `setTextAlignment`, as in `Cell`, `TextBox` and `TextBlock`.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
-      left fixes, TODO cleanups.
+      left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
       `PDF.cs`, `pdf.go`, `PDF.swift`; `package-java.sh` and
       `package-dotnet.sh` archive names; README where 8.7.0 is mentioned.
