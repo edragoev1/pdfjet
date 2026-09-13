@@ -15,15 +15,12 @@ public class Slice {
     public int color = 0;
     /// <summary>The label drawn next to the slice.</summary>
     public String text = "";
-    /// <summary>The tooltip of the slice.</summary>
-    public String tooltip = "";
 
-    /// <summary>Creates a slice with the angle in degrees, the 0xRRGGBB color, the label and the tooltip.</summary>
-    public Slice(float angle, int color, String text, String tooltip) {
+    /// <summary>Creates a slice with the angle in degrees, the 0xRRGGBB color and the label.</summary>
+    public Slice(float angle, int color, String text) {
         this.angle = angle;
         this.color = color;
         this.text = text;
-        this.tooltip = tooltip;
     }
 }
 }

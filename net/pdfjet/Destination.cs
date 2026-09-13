@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Used to create PDF destination objects.
+/// A destination on a page, made by Page.AddDestination.
 /// </summary>
 public class Destination {
     /// <summary>The name of this destination.</summary>
@@ -26,7 +26,7 @@ public class Destination {
     /// <param name="name">the name of this destination object.</param>
     /// <param name="xPosition">the x coordinate of the top left corner.</param>
     /// <param name="yPosition">the y coordinate of the top left corner.</param>
-    public Destination(String name, float xPosition, float yPosition) {
+    internal Destination(String name, float xPosition, float yPosition) {
         this.name = name;
         this.xPosition = xPosition;
         this.yPosition = yPosition;
@@ -36,34 +36,11 @@ public class Destination {
     /// This constructor is used to create destination objects.
     /// </summary>
     /// <param name="name">the name of this destination object.</param>
-    /// <param name="xPosition">the x coordinate of the top left corner.</param>
     /// <param name="yPosition">the y coordinate of the top left corner.</param>
-    public Destination(String name, double xPosition, double yPosition) {
-        this.name = name;
-        this.xPosition = (float) xPosition;
-        this.yPosition = (float) yPosition;
-    }
-
-    /// <summary>
-    /// This constructor is used to create destination objects.
-    /// </summary>
-    /// <param name="name">the name of this destination object.</param>
-    /// <param name="yPosition">the y coordinate of the top left corner.</param>
-    public Destination(String name, float yPosition) {
+    internal Destination(String name, float yPosition) {
         this.name = name;
         this.xPosition = 0f;
         this.yPosition = yPosition;
-    }
-
-    /// <summary>
-    /// This constructor is used to create destination objects.
-    /// </summary>
-    /// <param name="name">the name of this destination object.</param>
-    /// <param name="yPosition">the y coordinate of the top left corner.</param>
-    public Destination(String name, double yPosition) {
-        this.name = name;
-        this.xPosition = 0f;
-        this.yPosition = (float) yPosition;
     }
 
     internal void SetPageObjNumber(int pageObjNumber) {

@@ -11,7 +11,6 @@ namespace PDFjet.NET {
 /// Used to attach file objects.
 /// </summary>
 public class FileAttachment : IDrawable {
-    internal PDF pdf = null;
     internal EmbeddedFile embeddedFile = null;
     internal String icon = "PushPin";
     internal String title = "";
@@ -21,8 +20,7 @@ public class FileAttachment : IDrawable {
     internal float h = 24f;
 
     /// <summary>Creates an attachment for the embedded file.</summary>
-    public FileAttachment(PDF pdf, EmbeddedFile file) {
-        this.pdf = pdf;
+    public FileAttachment(EmbeddedFile file) {
         this.embeddedFile = file;
     }
 

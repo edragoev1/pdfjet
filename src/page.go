@@ -207,7 +207,7 @@ func (page *Page) AddDestination(name string, yPosition float32) *Destination {
 // @param xPosition The horizontal position of the destination on this page.
 // @param yPosition The vertical position of the destination on this page.
 func (page *Page) AddDestinationAt(name string, xPosition, yPosition float32) *Destination {
-	dest := NewDestination(name, xPosition, page.height-yPosition)
+	dest := newDestination(name, xPosition, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
 	return dest
 }

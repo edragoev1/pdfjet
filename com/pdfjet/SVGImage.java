@@ -211,6 +211,61 @@ public class SVGImage implements Drawable {
     }
 
     /**
+     * Sets the URI for the "click box" action.
+     *
+     * @param uri the URI.
+     * @return this SVGImage object.
+     */
+    public SVGImage setURIAction(String uri) {
+        this.uri = uri;
+        return this;
+    }
+
+    /**
+     * Sets the destination key for the action.
+     *
+     * @param key the destination name.
+     * @return this SVGImage object.
+     */
+    public SVGImage setGoToAction(String key) {
+        this.key = key;
+        return this;
+    }
+
+    /**
+     * Sets the alternate description of this image.
+     *
+     * @param altDescription the alternate description.
+     * @return this SVGImage object.
+     */
+    public SVGImage setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
+     * Sets the actual text of this image.
+     *
+     * @param actualText the actual text.
+     * @return this SVGImage object.
+     */
+    public SVGImage setActualText(String actualText) {
+        this.actualText = actualText;
+        return this;
+    }
+
+    /**
+     * Sets the language of this image.
+     *
+     * @param language the language, for example "en-US".
+     * @return this SVGImage object.
+     */
+    public SVGImage setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
      * Returns the width of the SVG image.
      *
      * @return the width of the SVG image.

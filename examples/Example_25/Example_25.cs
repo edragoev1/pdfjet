@@ -22,11 +22,11 @@ public class Example_25 {
         chart.SetLocation(300.0f, 400.0f);
         chart.SetRadii(200.0f, 120.0f);
 
-        chart.AddSlice(new Slice(90.0f,  0xC1121F, "Apples",   ""));    // deep red
-        chart.AddSlice(new Slice(72.0f,  0x1D3557, "Oranges",  ""));    // navy blue
-        chart.AddSlice(new Slice(108.0f, 0x1A7468, "Bananas",  ""));    // dark teal
-        chart.AddSlice(new Slice(54.0f,  0xD97706, "Grapes",   ""));    // burnt orange
-        chart.AddSlice(new Slice(36.0f,  0xCAAA2F, "Lemons",   ""));    // dark gold
+        chart.AddSlice(new Slice(90.0f,  0xC1121F, "Apples"));    // deep red
+        chart.AddSlice(new Slice(72.0f,  0x1D3557, "Oranges"));    // navy blue
+        chart.AddSlice(new Slice(108.0f, 0x1A7468, "Bananas"));    // dark teal
+        chart.AddSlice(new Slice(54.0f,  0xD97706, "Grapes"));    // burnt orange
+        chart.AddSlice(new Slice(36.0f,  0xCAAA2F, "Lemons"));    // dark gold
         chart.DrawOn(page);
 
         pdf.Complete();

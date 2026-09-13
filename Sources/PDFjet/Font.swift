@@ -11,9 +11,6 @@ import Foundation
 /// The font objects must be added to the PDF before they can be used to draw text.
 ///
 public class Font {
-    /// Passed to the stream font constructors to mark the font as a stream font.
-    public static let STREAM: Bool = true
-
     var name: String = ""
     var info: String = ""
     var objNumber = 0
@@ -238,29 +235,39 @@ public class Font {
         pdf.fonts.append(self)
     }
 
-    // Constructor for .ttf.stream fonts:
-    /// Creates a font from a .ttf.stream or .otf.stream font and adds it to the PDF.
-    public init(_ pdf: PDF, _ stream: InputStream, _ flag: Bool) throws {
-        try FontStream1.register(pdf, self, stream)
-        setSize(size)
-    }
-
-    // Constructor for .ttf.stream fonts:
     /// Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.
-    public init(_ objects: inout [PDFobj], _ stream: InputStream, _ flag: Bool) throws {
+    public init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
         try FontStream2.register(&objects, self, stream)
         setSize(size)
     }
 
     ///
-    /// Constructor for OpenType and TrueType fonts.
+    /// Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
+    /// format is told from the first bytes of the stream.
     ///
     /// - Parameter pdf: the PDF object that requires this font.
     /// - Parameter stream: the input stream to read this font from.
     ///
     public init(_ pdf: PDF, _ stream: InputStream) throws {
-        try OpenTypeFont.register(pdf, self, stream)
+        let bytes = try Content.getFromStream(stream)
+        if Font.isOpenTypeFont(bytes) {
+            try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
+        } else {
+            try FontStream1.register(pdf, self, InputStream(data: Data(bytes)))
+        }
         setSize(size)
+    }
+
+    // Returns true if the bytes start with the version of an OpenType or TrueType font.
+    private static func isOpenTypeFont(_ bytes: [UInt8]) -> Bool {
+        if bytes.count < 4 {
+            return false
+        }
+        var version: UInt32 = 0
+        for i in 0..<4 {
+            version = (version << 8) | UInt32(bytes[i])
+        }
+        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F
     }
 
     ///

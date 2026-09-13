@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>The base class of the circle, square, polygon and text annotations.</summary>
-public class BaseAnnotation : IDrawable {
+public abstract class BaseAnnotation : IDrawable {
     internal String annotationType = null;
     internal float[] point1 = new float[] {0f, 0f};
     internal float[] point2 = new float[] {0f, 0f};
@@ -24,8 +24,8 @@ public class BaseAnnotation : IDrawable {
     internal String altDescription = null;
     internal Container container = null;
 
-    /// <summary>Creates an annotation.</summary>
-    public BaseAnnotation() {
+    /// <summary>Creates an annotation. The circle, square, polygon and text annotations call it.</summary>
+    protected BaseAnnotation() {
     }
 
     /// <summary>Sets the location of this annotation.</summary>

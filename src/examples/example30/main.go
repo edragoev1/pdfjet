@@ -53,7 +53,7 @@ func Example30() {
 	image.DrawOn(page)
 
 	// File attachment functionality
-	attachment := pdfjet.NewFileAttachment(pdf, file1)
+	attachment := pdfjet.NewFileAttachment(file1)
 	attachment.SetLocation(100.0, 550.0)
 	attachment.SetIconPushpin()
 	attachment.SetIconSize(24.0)

@@ -6,7 +6,7 @@
  */
 
 ///
-/// Used to create PDF destination objects.
+/// A destination on a page, made by Page.addDestination.
 ///
 public class Destination {
     var name: String?
@@ -21,7 +21,7 @@ public class Destination {
     /// - Parameter xPosition: the x coordinate of the top left corner.
     /// - Parameter yPosition: the y coordinate of the top left corner.
     ///
-    public init(_ name: String, _ xPosition: Float, _ yPosition: Float) {
+    init(_ name: String, _ xPosition: Float, _ yPosition: Float) {
         self.name = name
         self.xPosition = xPosition
         self.yPosition = yPosition
@@ -33,7 +33,7 @@ public class Destination {
     /// - Parameter name: the name of this destination object.
     /// - Parameter yPosition: the y coordinate of the top left corner.
     ///
-    public init(_ name: String, _ yPosition: Float) {
+    init(_ name: String, _ yPosition: Float) {
         self.name = name
         self.xPosition = 0.0
         self.yPosition = yPosition

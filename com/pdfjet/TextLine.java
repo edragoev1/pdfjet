@@ -599,6 +599,33 @@ public class TextLine implements Drawable {
     }
 
     /**
+     * Returns the language of the link annotation.
+     *
+     * @return the language.
+     */
+    public String getURILanguage() {
+        return uriLanguage;
+    }
+
+    /**
+     * Returns the alternate description of the link annotation.
+     *
+     * @return the alternate description.
+     */
+    public String getURIAltDescription() {
+        return uriAltDescription;
+    }
+
+    /**
+     * Returns the actual text of the link annotation.
+     *
+     * @return the actual text.
+     */
+    public String getURIActualText() {
+        return uriActualText;
+    }
+
+    /**
      * Sets the structure element type of this text line, for example StructElem.P or StructElem.H1.
      *
      * @param structureType the structure element type.

@@ -10,7 +10,6 @@ import Foundation
  * Used to attach file objects.
  */
 public class FileAttachment : Drawable {
-    var pdf: PDF?
     var embeddedFile: EmbeddedFile?
     var icon: String = "PushPin"
     var title: String = ""
@@ -20,8 +19,7 @@ public class FileAttachment : Drawable {
     var h: Float = 24.0
 
     /// Creates an attachment for the embedded file.
-    public init(_ pdf: PDF, _ file: EmbeddedFile) {
-        self.pdf = pdf
+    public init(_ file: EmbeddedFile) {
         self.embeddedFile = file
     }
 

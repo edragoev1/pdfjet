@@ -19,7 +19,7 @@ public class Example_06 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // File attachment functionality
-        FileAttachment attachment = new FileAttachment(pdf, file1);
+        FileAttachment attachment = new FileAttachment(file1);
         attachment.SetLocation(100f, 600f);
         attachment.SetIconPushpin();
         attachment.SetTitle("Attached File: " + file1.GetFileName());
@@ -27,7 +27,7 @@ public class Example_06 {
                 "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
-        attachment = new FileAttachment(pdf, file2);
+        attachment = new FileAttachment(file2);
         attachment.SetLocation(200f, 600f);
         attachment.SetIconPaperclip();
         attachment.SetTitle("Attached File: " + file2.GetFileName());

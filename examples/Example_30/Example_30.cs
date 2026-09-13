@@ -45,7 +45,7 @@ public class Example_30 {
         image.DrawOn(page);
 
         // File attachment functionality
-        FileAttachment attachment = new FileAttachment(pdf, file1);
+        FileAttachment attachment = new FileAttachment(file1);
         attachment.SetLocation(100f, 550f);
         attachment.SetIconPushpin();
         attachment.SetIconSize(24f);

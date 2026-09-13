@@ -7,18 +7,16 @@ package pdfjet
 
 // Slice is a single slice of a donut or pie chart.
 type Slice struct {
-	Angle   float32 // The angle of the slice in degrees
-	Color   int32   // The 0xRRGGBB color of the slice
-	Text    string  // The label of the slice
-	Tooltip string  // The tooltip of the slice
+	Angle float32 // The angle of the slice in degrees
+	Color int32   // The 0xRRGGBB color of the slice
+	Text  string  // The label of the slice
 }
 
-// NewSlice creates a slice with the angle in degrees, the 0xRRGGBB color, the label and the tooltip.
-func NewSlice(angle float32, color int32, text string, tooltip string) *Slice {
+// NewSlice creates a slice with the angle in degrees, the 0xRRGGBB color and the label.
+func NewSlice(angle float32, color int32, text string) *Slice {
 	slice := new(Slice)
 	slice.Angle = angle
 	slice.Color = color
 	slice.Text = text
-	slice.Tooltip = tooltip
 	return slice
 }

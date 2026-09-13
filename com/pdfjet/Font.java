@@ -6,7 +6,9 @@
  */
 package com.pdfjet;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -15,9 +17,6 @@ import java.util.List;
  * The font objects must be added to the PDF before they can be used to draw text.
  */
 final public class Font {
-    /** Is this a stream font? */
-    public static final boolean STREAM = true;
-
     /** The name of the font. */
     protected String name;
     /** The usage terms of the font, written to the font metadata. */
@@ -293,41 +292,46 @@ final public class Font {
     }
 
     /**
-     * Constructor for .ttf.stream fonts
-     *
-     * @param pdf         the PDF
-     * @param inputStream the input stream
-     * @param flag        the flag ...
-     * @throws Exception if the font is not found
-     */
-    public Font(PDF pdf, InputStream inputStream, boolean flag) throws Exception {
-        FontStream1.register(pdf, this, inputStream);
-        this.setSize(size);
-    }
-
-    /**
-     * Constructor for .ttf.stream fonts
+     * Constructor for .otf.stream and .ttf.stream fonts added to the objects of an
+     * existing PDF.
      *
      * @param objects     the list of objects
      * @param inputStream the input stream
-     * @param flag        the flag ...
      * @throws Exception is the font is not found
      */
-    public Font(List<PDFobj> objects, InputStream inputStream, boolean flag) throws Exception {
+    public Font(List<PDFobj> objects, InputStream inputStream) throws Exception {
         FontStream2.register(objects, this, inputStream);
         setSize(size);
     }
 
     /**
-     * Constructor for OpenType and TrueType fonts.
+     * Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
+     * format is told from the first bytes of the stream.
      *
      * @param pdf         the PDF object that requires this font.
      * @param inputStream the input stream to read this font from.
      * @throws Exception If an input or output exception occurred
      */
     public Font(PDF pdf, InputStream inputStream) throws Exception {
-        OpenTypeFont.register(pdf, this, inputStream);
+        InputStream stream = new BufferedInputStream(inputStream);
+        if (isOpenTypeFont(stream)) {
+            OpenTypeFont.register(pdf, this, stream);
+        } else {
+            FontStream1.register(pdf, this, stream);
+        }
         setSize(size);
+    }
+
+    // Returns true if the stream starts with the version of an OpenType or
+    // TrueType font, and moves back to the start of the stream.
+    private static boolean isOpenTypeFont(InputStream stream) throws IOException {
+        stream.mark(4);
+        int version = 0;
+        for (int i = 0; i < 4; i++) {
+            version = (version << 8) | (stream.read() & 0xFF);
+        }
+        stream.reset();
+        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F;
     }
 
     /**

@@ -16,7 +16,7 @@ public class Example_06 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         // File attachment functionality
-        var attachment = FileAttachment(pdf, file1)
+        var attachment = FileAttachment(file1)
         attachment.setLocation(100.0, 600.0)
         attachment.setIconPushpin()
         attachment.setTitle("Attached File: " + file1.getFileName())
@@ -24,7 +24,7 @@ public class Example_06 {
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
 
-        attachment = FileAttachment(pdf, file2)
+        attachment = FileAttachment(file2)
         attachment.setLocation(200.0, 600.0)
         attachment.setIconPaperclip()
         attachment.setTitle("Attached File: " + file2.getFileName())

@@ -17,8 +17,8 @@ public class BaseAnnotation: Drawable {
     var altDescription: String?
     weak var container: Container?
 
-    /// Creates an annotation.
-    public init() {
+    /// Creates an annotation. The circle, square, polygon and text annotations call it.
+    init() {
     }
 
     /// Sets the location of this annotation.

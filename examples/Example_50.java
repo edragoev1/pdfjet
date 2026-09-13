@@ -21,11 +21,11 @@ class Example_50 {
         image.scaleBy(0.40f);
 
         stream = new FileInputStream(IBMPlexSans.Regular);
-        Font f1 = new Font(objects, stream, Font.STREAM);
+        Font f1 = new Font(objects, stream);
         f1.setSize(12f);
 
         stream = new FileInputStream(IBMPlexSans.Bold);
-        Font f2 = new Font(objects, stream, Font.STREAM);
+        Font f2 = new Font(objects, stream);
         f2.setSize(12f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);

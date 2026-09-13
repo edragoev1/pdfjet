@@ -261,6 +261,36 @@ func (image *SVGImage) SetLocation(x, y float32) Drawable {
 	return image
 }
 
+// SetURIAction sets the URI for the "click box" action.
+func (image *SVGImage) SetURIAction(uri string) *SVGImage {
+	image.uri = uri
+	return image
+}
+
+// SetGoToAction sets the destination key for the action.
+func (image *SVGImage) SetGoToAction(key string) *SVGImage {
+	image.key = key
+	return image
+}
+
+// SetAltDescription sets the alternate description of this image.
+func (image *SVGImage) SetAltDescription(altDescription string) *SVGImage {
+	image.altDescription = altDescription
+	return image
+}
+
+// SetActualText sets the actual text of this image.
+func (image *SVGImage) SetActualText(actualText string) *SVGImage {
+	image.actualText = actualText
+	return image
+}
+
+// SetLanguage sets the language of this image, for example "en-US".
+func (image *SVGImage) SetLanguage(language string) *SVGImage {
+	image.language = language
+	return image
+}
+
 // GetWidth returns the width of this SVG image.
 func (image *SVGImage) GetWidth() float32 {
 	return image.w

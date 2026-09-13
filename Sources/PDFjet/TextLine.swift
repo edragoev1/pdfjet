@@ -486,6 +486,21 @@ public class TextLine : Drawable {
         return self
     }
 
+    /// Returns the language of the link annotation.
+    public func getURILanguage() -> String? {
+        return self.uriLanguage
+    }
+
+    /// Returns the alternate description of the link annotation.
+    public func getURIAltDescription() -> String? {
+        return self.uriAltDescription
+    }
+
+    /// Returns the actual text of the link annotation.
+    public func getURIActualText() -> String? {
+        return self.uriActualText
+    }
+
     /// Sets the structure element type, for example StructElem.P or StructElem.H1.
     @discardableResult
     public func setStructureType(_ structureType: String) -> TextLine {

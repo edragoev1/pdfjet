@@ -344,6 +344,17 @@ final public class Image implements Drawable {
     }
 
     /**
+     * Sets the language of this image.
+     *
+     * @param language the language, for example "en-US".
+     * @return this Image.
+     */
+    public Image setLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /**
      * Draws this image on the specified page.
      *
      * @param page the page to draw this image on.

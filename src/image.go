@@ -315,6 +315,12 @@ func (image *Image) SetActualText(actualText string) *Image {
 	return image
 }
 
+// SetLanguage sets the language of this image, for example "en-US".
+func (image *Image) SetLanguage(language string) *Image {
+	image.language = language
+	return image
+}
+
 // DrawOn draws this image on the specified page.
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.

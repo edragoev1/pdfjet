@@ -216,6 +216,36 @@ public class SVGImage : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the URI for the "click box" action.</summary>
+    public SVGImage SetURIAction(String uri) {
+        this.uri = uri;
+        return this;
+    }
+
+    /// <summary>Sets the destination key for the action.</summary>
+    public SVGImage SetGoToAction(String key) {
+        this.key = key;
+        return this;
+    }
+
+    /// <summary>Sets the alternate description of this image.</summary>
+    public SVGImage SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>Sets the actual text of this image.</summary>
+    public SVGImage SetActualText(String actualText) {
+        this.actualText = actualText;
+        return this;
+    }
+
+    /// <summary>Sets the language of this image, for example "en-US".</summary>
+    public SVGImage SetLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
     /// <summary>Returns the width of this SVG image.</summary>
     public float getWidth() {
         return this.w;

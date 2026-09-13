@@ -14,14 +14,11 @@ public class Slice {
     public var color: Int32 = 0
     /// The label drawn next to the slice.
     public var text: String = ""
-    /// The tooltip of the slice.
-    public var tooltip: String = ""
 
-    /// Creates a slice with the angle in degrees, the 0xRRGGBB color, the label and the tooltip.
-    public init(_ angle: Float, _ color: Int32, _ text: String, _ tooltip: String) {
+    /// Creates a slice with the angle in degrees, the 0xRRGGBB color and the label.
+    public init(_ angle: Float, _ color: Int32, _ text: String) {
         self.angle = angle
         self.color = color
         self.text = text
-        self.tooltip = tooltip
     }
 }

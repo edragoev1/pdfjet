@@ -261,12 +261,30 @@ func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
 	return font
 }
 
-// NewFont constructs font object from OpenType and TrueType font.
+// NewFont constructs a font from an OpenType, TrueType, .otf.stream or
+// .ttf.stream font and adds it to the PDF. The format is told from the first
+// bytes the reader returns.
 func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
-	registerOpenTypeFont(pdf, font, reader)
+	buffered := bufio.NewReader(reader)
+	if isOpenTypeFont(buffered) {
+		registerOpenTypeFont(pdf, font, buffered)
+	} else {
+		FontStream1(pdf, font, buffered)
+	}
 	font.SetSize(defaultFontSize)
 	return font
+}
+
+// isOpenTypeFont returns true if the reader starts with the version of an
+// OpenType or TrueType font.
+func isOpenTypeFont(reader *bufio.Reader) bool {
+	b, err := reader.Peek(4)
+	if err != nil {
+		return false
+	}
+	version := uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
+	return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F
 }
 
 // NewFontFromFile creates a font from the file at the specified path and adds it to the PDF.

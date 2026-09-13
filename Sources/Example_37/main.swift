@@ -11,8 +11,7 @@ public class Example_37 {
 
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Regular)!,
-                Font.STREAM)
+                InputStream(fileAtPath: IBMPlexSans.Regular)!)
         f1.setSize(72.0)
 
         let text = TextLine(f1, "This is a test!")

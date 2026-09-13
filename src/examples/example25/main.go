@@ -23,11 +23,11 @@ func Example25() {
 	chart.SetLocation(300.0, 400.0)
 	chart.SetRadii(200.0, 120.0)
 
-	chart.AddSlice(pdfjet.NewSlice(90.0, 0xC1121F, "Apples", ""))   // deep red
-	chart.AddSlice(pdfjet.NewSlice(72.0, 0x1D3557, "Oranges", ""))  // navy blue
-	chart.AddSlice(pdfjet.NewSlice(108.0, 0x1A7468, "Bananas", "")) // dark teal
-	chart.AddSlice(pdfjet.NewSlice(54.0, 0xD97706, "Grapes", ""))   // burnt orange
-	chart.AddSlice(pdfjet.NewSlice(36.0, 0xCAAA2F, "Lemons", ""))   // dark gold
+	chart.AddSlice(pdfjet.NewSlice(90.0, 0xC1121F, "Apples"))   // deep red
+	chart.AddSlice(pdfjet.NewSlice(72.0, 0x1D3557, "Oranges"))  // navy blue
+	chart.AddSlice(pdfjet.NewSlice(108.0, 0x1A7468, "Bananas")) // dark teal
+	chart.AddSlice(pdfjet.NewSlice(54.0, 0xD97706, "Grapes"))   // burnt orange
+	chart.AddSlice(pdfjet.NewSlice(36.0, 0xCAAA2F, "Lemons"))   // dark gold
 	chart.DrawOn(page)
 
 	pdf.Complete()

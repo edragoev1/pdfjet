@@ -386,6 +386,41 @@ public class SVGImage : Drawable {
         return self
     }
 
+    /// Sets the URI for the "click box" action.
+    @discardableResult
+    public func setURIAction(_ uri: String) -> SVGImage {
+        self.uri = uri
+        return self
+    }
+
+    /// Sets the destination key for the action.
+    @discardableResult
+    public func setGoToAction(_ key: String) -> SVGImage {
+        self.key = key
+        return self
+    }
+
+    /// Sets the alternate description of this image.
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> SVGImage {
+        self.altDescription = altDescription
+        return self
+    }
+
+    /// Sets the actual text of this image.
+    @discardableResult
+    public func setActualText(_ actualText: String) -> SVGImage {
+        self.actualText = actualText
+        return self
+    }
+
+    /// Sets the language of this image, for example "en-US".
+    @discardableResult
+    public func setLanguage(_ language: String) -> SVGImage {
+        self.language = language
+        return self
+    }
+
     /// Returns the width of this SVG image.
     public func getWidth() -> Float {
         return self.w

@@ -18,7 +18,7 @@ public class Example_06 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // File attachment functionality
-        FileAttachment attachment = new FileAttachment(pdf, file1);
+        FileAttachment attachment = new FileAttachment(file1);
         attachment.setLocation(100f, 600f);
         attachment.setIconPushpin();
         attachment.setTitle("Attached File: " + file1.getFileName());
@@ -26,7 +26,7 @@ public class Example_06 {
                 "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 
-        attachment = new FileAttachment(pdf, file2);
+        attachment = new FileAttachment(file2);
         attachment.setLocation(200f, 600f);
         attachment.setIconPaperclip();
         attachment.setTitle("Attached File: " + file2.getFileName());

@@ -313,6 +313,18 @@ public class Image : Drawable {
     }
 
     ///
+    /// Sets the language of this image.
+    ///
+    /// - Parameter language: the language, for example "en-US".
+    /// - Returns: this Image.
+    ///
+    @discardableResult
+    public func setLanguage(_ language: String) -> Image {
+        self.language = language
+        return self
+    }
+
+    ///
     /// Draws this image on the specified page.
     ///
     /// - Parameter page: the page to draw this image on.

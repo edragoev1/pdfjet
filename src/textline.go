@@ -356,6 +356,21 @@ func (textLine *TextLine) SetURIActualText(uriActualText string) *TextLine {
 	return textLine
 }
 
+// GetURILanguage returns the language of the link annotation.
+func (textLine *TextLine) GetURILanguage() string {
+	return textLine.uriLanguage
+}
+
+// GetURIAltDescription returns the alternate description of the link annotation.
+func (textLine *TextLine) GetURIAltDescription() string {
+	return textLine.uriAltDescription
+}
+
+// GetURIActualText returns the actual text of the link annotation.
+func (textLine *TextLine) GetURIActualText() string {
+	return textLine.uriActualText
+}
+
 // SetStructureType sets the structure element type of this text line, for
 // example structtype.P or structtype.H1.
 func (textLine *TextLine) SetStructureType(structureType string) *TextLine {

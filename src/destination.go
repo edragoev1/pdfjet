@@ -5,7 +5,7 @@
 
 package pdfjet
 
-// Destination is used to create PDF destination objects.
+// Destination is a destination on a page, made by Page.AddDestination.
 type Destination struct {
 	name          string
 	xPosition     float32
@@ -13,12 +13,12 @@ type Destination struct {
 	pageObjNumber int
 }
 
-// NewDestination creates new destination objects.
+// newDestination creates a destination on a page for Page.AddDestination.
 //
 // @param name the name of this destination object.
 // @param xPosition the x coordinate of the top left corner.
 // @param yPosition the y coordinate of the top left corner.
-func NewDestination(name string, xPosition float32, yPosition float32) *Destination {
+func newDestination(name string, xPosition float32, yPosition float32) *Destination {
 	destination := new(Destination)
 	destination.name = name
 	destination.xPosition = xPosition

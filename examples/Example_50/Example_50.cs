@@ -26,13 +26,13 @@ public class Example_50 {
         Font f1 = new Font(objects,
                 new FileStream(IBMPlexSans.Regular,
                         FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
+                        FileAccess.Read));
         f1.SetSize(12f);
 
         Font f2 = new Font(objects,
                 new FileStream(IBMPlexSans.Bold,
                         FileMode.Open,
-                        FileAccess.Read), Font.STREAM);
+                        FileAccess.Read));
         f2.SetSize(12f);
 
         List<PDFobj> pages = pdf.GetPageObjects(objects);

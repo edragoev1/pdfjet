@@ -22,8 +22,9 @@ type BaseAnnotation struct {
 	container      *Container
 }
 
-// NewBaseAnnotation creates a new BaseAnnotation instance.
-func NewBaseAnnotation() *BaseAnnotation {
+// newBaseAnnotation creates the BaseAnnotation that the circle, square, polygon
+// and text annotations embed.
+func newBaseAnnotation() *BaseAnnotation {
 	return &BaseAnnotation{
 		fillColor:    [3]float32{0.5, 0.5, 0.5},
 		transparency: 1.0,

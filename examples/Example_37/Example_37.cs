@@ -16,7 +16,7 @@ class Example_37 {
         Font f1 = new Font(objects,
                 new FileStream(IBMPlexSans.Regular,
                 FileMode.Open,
-                FileAccess.Read), Font.STREAM);
+                FileAccess.Read));
         f1.SetSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");

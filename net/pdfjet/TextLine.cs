@@ -459,6 +459,21 @@ public class TextLine : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the language of the link annotation.</summary>
+    public String GetURILanguage() {
+        return uriLanguage;
+    }
+
+    /// <summary>Returns the alternate description of the link annotation.</summary>
+    public String GetURIAltDescription() {
+        return uriAltDescription;
+    }
+
+    /// <summary>Returns the actual text of the link annotation.</summary>
+    public String GetURIActualText() {
+        return uriActualText;
+    }
+
     /// <summary>Sets the structure element type, for example StructElem.P or StructElem.H1.</summary>
     public TextLine SetStructureType(String structureType) {
         this.structureType = structureType;

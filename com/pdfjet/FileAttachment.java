@@ -10,8 +10,6 @@ package com.pdfjet;
  * Used to attach file objects.
  */
 public class FileAttachment implements Drawable {
-    /** The PDF this attachment belongs to. */
-    protected PDF pdf;
     /** The attached file. */
     protected EmbeddedFile embeddedFile;
     /** The name of the icon: "PushPin" or "Paperclip". */
@@ -30,11 +28,9 @@ public class FileAttachment implements Drawable {
     /**
      * Create file attachment object
      *
-     * @param pdf the PDF that the object is attached to
      * @param file the embedded file object
      */
-    public FileAttachment(PDF pdf, EmbeddedFile file) {
-        this.pdf = pdf;
+    public FileAttachment(EmbeddedFile file) {
         this.embeddedFile = file;
     }
 

@@ -46,7 +46,7 @@ public class Example_30 {
         image.drawOn(page);
 
         // File attachment functionality
-        FileAttachment attachment = new FileAttachment(pdf, file1);
+        FileAttachment attachment = new FileAttachment(file1);
         attachment.setLocation(100f, 550f);
         attachment.setIconPushpin();
         attachment.setIconSize(24f);

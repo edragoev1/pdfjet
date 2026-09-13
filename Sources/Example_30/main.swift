@@ -42,7 +42,7 @@ public class Example_30 {
         image.drawOn(page)
 
         // File attachment functionality
-        let attachment = FileAttachment(pdf, file1)
+        let attachment = FileAttachment(file1)
         attachment.setLocation(100.0, 550.0)
         attachment.setIconPushpin()
         attachment.setIconSize(24.0)

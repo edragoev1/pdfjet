@@ -9,7 +9,7 @@ package com.pdfjet;
 /**
  * The base class of the annotations: circles, squares, polygons and text notes.
  */
-public class BaseAnnotation implements Drawable {
+public abstract class BaseAnnotation implements Drawable {
     String annotationType = null;
     float[] point1 = new float[] {0f, 0f};
     float[] point2 = new float[] {0f, 0f};
@@ -26,9 +26,9 @@ public class BaseAnnotation implements Drawable {
     Container container = null;
 
     /**
-     * Creates an annotation.
+     * Creates an annotation. The circle, square, polygon and text annotations call it.
      */
-    public BaseAnnotation() {
+    protected BaseAnnotation() {
     }
 
     public BaseAnnotation setLocation(float x, float y) {

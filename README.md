@@ -316,10 +316,9 @@ Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewPageDetached` for
 `Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, `NewTextBoxWithSize`, and `NewFont`,
 `NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
-`NewFontStream2` where the other ports pass `Font.STREAM` or a `CoreFont` to
-the `Font` constructor. Where the other ports have an overload with fewer
+`NewFontStream2` for the overloads of the `Font` constructor. Where the other ports have an overload with fewer
 arguments, Go has the full form only: `NewCell(font, text)`,
-`NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
+`NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBDC` with the language.
 `content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and

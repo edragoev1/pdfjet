@@ -7,7 +7,6 @@ package pdfjet
 
 // FileAttachment describes file attachment object.
 type FileAttachment struct {
-	pdf          *PDF
 	embeddedFile *EmbeddedFile
 	icon         string
 	title        string
@@ -18,9 +17,8 @@ type FileAttachment struct {
 }
 
 // NewFileAttachment constructs file attachment objects.
-func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
+func NewFileAttachment(embeddedFile *EmbeddedFile) *FileAttachment {
 	attachment := new(FileAttachment)
-	attachment.pdf = pdf
 	attachment.embeddedFile = embeddedFile
 	icon := "PushPin"
 	attachment.icon = icon

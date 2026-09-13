@@ -18,13 +18,11 @@ public class Example_50 {
 
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Regular)!,
-                Font.STREAM).setSize(12.0)
+                InputStream(fileAtPath: IBMPlexSans.Regular)!).setSize(12.0)
 
         let f2 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Bold)!,
-                Font.STREAM).setSize(12.0)
+                InputStream(fileAtPath: IBMPlexSans.Bold)!).setSize(12.0)
 
         let pages = pdf.getPageObjects(from: objects)
         let page = Page(pdf, pages[0])

@@ -22,7 +22,7 @@ func Example06() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	// File attachment functionality
-	attachment := pdfjet.NewFileAttachment(pdf, file1)
+	attachment := pdfjet.NewFileAttachment(file1)
 	attachment.SetLocation(100.0, 600.0)
 	attachment.SetIconPushpin()
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
@@ -30,7 +30,7 @@ func Example06() {
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 
-	attachment = pdfjet.NewFileAttachment(pdf, file2)
+	attachment = pdfjet.NewFileAttachment(file2)
 	attachment.SetLocation(200.0, 600.0)
 	attachment.SetIconPaperclip()
 	attachment.SetTitle("Attached File: " + file2.GetFileName())

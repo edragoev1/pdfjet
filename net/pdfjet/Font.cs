@@ -16,10 +16,6 @@ namespace PDFjet.NET {
 /// The font objects must be added to the PDF before they can be used to draw text.
 /// </summary>
 public class Font {
-    /// <summary>
-    ///  Is this a stream font?
-    /// </summary>
-    public const bool STREAM = true;
 
     internal String name;
     internal String info;
@@ -239,28 +235,39 @@ public class Font {
         pdf.fonts.Add(this);
     }
 
-    // Constructor for .ttf.stream fonts:
-    /// <summary>Creates a font from a .ttf.stream or .otf.stream font and adds it to the PDF.</summary>
-    public Font(PDF pdf, Stream inputStream, bool flag) {
-        FontStream1.Register(pdf, this, inputStream);
-        SetSize(size);
-    }
-
-    // Constructor for .ttf.stream fonts:
     /// <summary>Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.</summary>
-    public Font(List<PDFobj> objects, Stream inputStream, bool flag) {
+    public Font(List<PDFobj> objects, Stream inputStream) {
         FontStream2.Register(objects, this, inputStream);
         SetSize(size);
     }
 
     /// <summary>
-    /// Constructor for OpenType and TrueType fonts.
+    /// Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
+    /// format is told from the first bytes of the stream.
     /// </summary>
     /// <param name="pdf">the PDF object that requires this font.</param>
     /// <param name="inputStream">the input stream to read this font from.</param>
     public Font(PDF pdf, System.IO.Stream inputStream) {
-        OpenTypeFont.Register(pdf, this, inputStream);
+        MemoryStream stream = new MemoryStream();
+        inputStream.CopyTo(stream);
+        stream.Position = 0;
+        if (IsOpenTypeFont(stream)) {
+            OpenTypeFont.Register(pdf, this, stream);
+        } else {
+            FontStream1.Register(pdf, this, stream);
+        }
         SetSize(size);
+    }
+
+    // Returns true if the stream starts with the version of an OpenType or TrueType
+    // font, and moves back to the start of the stream.
+    private static bool IsOpenTypeFont(Stream stream) {
+        uint version = 0;
+        for (int i = 0; i < 4; i++) {
+            version = (version << 8) | (uint) (stream.ReadByte() & 0xFF);
+        }
+        stream.Position = 0;
+        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F;
     }
 
     /// <summary>

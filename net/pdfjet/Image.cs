@@ -319,6 +319,16 @@ public class Image : IDrawable {
     }
 
     /// <summary>
+    /// Sets the language of this image.
+    /// </summary>
+    /// <param name="language">the language, for example "en-US".</param>
+    /// <returns>this Image.</returns>
+    public Image SetLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+    /// <summary>
     /// Draws this image on the specified page.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
