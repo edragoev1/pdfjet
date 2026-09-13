@@ -8,20 +8,35 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Used to specify the PDF page layout.
+/// Used to specify the PDF page mode.
 /// </summary>
-public class PageMode {
+public enum PageMode {
     /// <summary>Neither the document outline nor the thumbnails are visible.</summary>
-    public const String USE_NONE = "UseNone";            // Neither document outline nor thumbnail images visible
+    USE_NONE,
     /// <summary>The document outline is visible.</summary>
-    public const String USE_OUTLINES = "UseOutlines";    // Document outline visible
+    USE_OUTLINES,
     /// <summary>The thumbnails are visible.</summary>
-    public const String USE_THUMBS = "UseThumbs";        // Thumbnail images visible
+    USE_THUMBS,
     /// <summary>Full-screen mode.</summary>
-    public const String FULL_SCREEN = "FullScreen";      // Full-screen mode
+    FULL_SCREEN,
     /// <summary>The optional content group panel is visible.</summary>
-    public const String USE_OC = "UseOC";                // (PDF 1.5) Optional content group panel visible
+    USE_OC,
     /// <summary>The attachments panel is visible.</summary>
-    public const String USE_ATTACHMENTS = "UseAttachments";
+    USE_ATTACHMENTS
+}
+
+internal static class PageModeExtensions {
+    // The name written to the /PageMode entry.
+    internal static String ToPDFName(this PageMode pageMode) {
+        switch (pageMode) {
+            case PageMode.USE_NONE: return "UseNone";
+            case PageMode.USE_OUTLINES: return "UseOutlines";
+            case PageMode.USE_THUMBS: return "UseThumbs";
+            case PageMode.FULL_SCREEN: return "FullScreen";
+            case PageMode.USE_OC: return "UseOC";
+            case PageMode.USE_ATTACHMENTS: return "UseAttachments";
+            default: throw new ArgumentException("Invalid page mode: " + pageMode);
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

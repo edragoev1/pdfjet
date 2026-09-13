@@ -1267,11 +1267,11 @@ func (page *Page) FillRect(x, y, w, h float32) {
 // The path can include both straight lines and Bézier curves defined by control points.
 //
 // path: A slice of Points that defines the path. Must contain at least 2 points.
-// pathOperator: The PDF path painting operator to apply (e.g., "S" for stroke, "f" for fill).
+// pathOperator: The PDF path painting operator to apply, for example pathoperator.Stroke or pathoperator.Fill.
 //
 // The method starts at the first point and processes subsequent points as either
 // line segments or curve control points based on their controlPoint field.
-func (page *Page) DrawPath(path []*Point, pathOperator string) {
+func (page *Page) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
 		panic("The Path object must contain at least 2 points.")
 	}
@@ -1294,7 +1294,7 @@ func (page *Page) DrawPath(path []*Point, pathOperator string) {
 			}
 		}
 	}
-	page.appendString(pathOperator)
+	page.appendString(string(pathOperator))
 	page.appendString("\n")
 }
 
@@ -1315,7 +1315,7 @@ func (page *Page) DrawCircle(x, y, r float32) {
 // @param y the y coordinate of the center of the circle to be drawn.
 // @param r the radius of the circle to be drawn.
 // @param pathOperator the path operator, for example pathoperator.Stroke or pathoperator.Fill.
-func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator string) {
+func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator pathoperator.PathOperator) {
 	page.drawEllipse(x, y, r, r, pathOperator)
 }
 
@@ -1343,7 +1343,7 @@ func (page *Page) FillEllipse(x, y, r1, r2 float32) {
 // @param r1 the horizontal radius of the ellipse to be drawn.
 // @param r2 the vertical radius of the ellipse to be drawn.
 // @param pathOperator the path operator.
-func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator string) {
+func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator pathoperator.PathOperator) {
 	// The best 4-spline magic number
 	var m4 float32 = 0.55228
 
@@ -1370,7 +1370,7 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator string) {
 	page.appendPointXY(x, y-r2)
 	page.appendString("c\n")
 
-	page.appendString(pathOperator)
+	page.appendString(string(pathOperator))
 	page.appendString("\n")
 }
 
@@ -1611,7 +1611,7 @@ func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 // DrawRectRoundCorners draws rectangle with rounded corners.
 // Code provided by:
 // Dominique Andre Gunia <contact@dgunia.de>
-func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation string) {
+func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation pathoperator.PathOperator) {
 	// The best 4-spline magic number
 	var m4 float32 = 0.55228
 

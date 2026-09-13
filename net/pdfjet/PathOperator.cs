@@ -1,17 +1,32 @@
 namespace PDFjet.NET {
 /// <summary>The operators that paint a path, for example in Page.DrawPath.</summary>
-public static class PathOperator {
+public enum PathOperator {
     /// <summary>Strokes the path.</summary>
-    public static readonly string Stroke = "S";                         // Stroke the path
+    Stroke,
     /// <summary>Closes and strokes the path.</summary>
-    public static readonly string CloseAndStroke = "s";                 // Close and then stroke the path
+    CloseAndStroke,
     /// <summary>Closes and fills the path.</summary>
-    public static readonly string Fill = "f";                           // Close and fill the path
+    Fill,
     /// <summary>Closes, fills and strokes the path.</summary>
-    public static readonly string FillAndStroke = "b";                  // Close, fill and then stroke the path
+    FillAndStroke,
     /// <summary>Fills the path using the even-odd rule.</summary>
-    public static readonly string FillUsingEvenOddRule = "f*";          // Like 'f' but using even odd rule
+    FillUsingEvenOddRule,
     /// <summary>Closes, fills using the even-odd rule and strokes the path.</summary>
-    public static readonly string FillUsingEvenOddRuleAndStroke = "b*"; // Like 'b' but using even odd rule
+    FillUsingEvenOddRuleAndStroke
+}
+
+internal static class PathOperatorExtensions {
+    // The operator written to the content stream.
+    internal static string ToOperator(this PathOperator pathOperator) {
+        switch (pathOperator) {
+            case PathOperator.Stroke: return "S";
+            case PathOperator.CloseAndStroke: return "s";
+            case PathOperator.Fill: return "f";
+            case PathOperator.FillAndStroke: return "b";
+            case PathOperator.FillUsingEvenOddRule: return "f*";
+            case PathOperator.FillUsingEvenOddRuleAndStroke: return "b*";
+            default: throw new System.ArgumentException("Invalid path operator: " + pathOperator);
+        }
+    }
 }
 }

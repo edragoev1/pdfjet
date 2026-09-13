@@ -1484,8 +1484,7 @@ public class Page {
     /// </summary>
     /// <param name="path">The list of points defining the path. The first point sets the starting position,
     /// subsequent points define line segments or curve control points. Must contain at least 2 points.</param>
-    /// <param name="pathOperator">The path painting operator to apply (e.g., "S" for stroke, "f" for fill).
-    /// Use constants from the PathOperator class for standard operators.</param>
+    /// <param name="pathOperator">The path painting operator to apply, for example PathOperator.Stroke or PathOperator.Fill.</param>
     /// <exception cref="System.Exception">Thrown when the path contains fewer than 2 points.</exception>
     /// <remarks>
     /// <para>
@@ -1537,7 +1536,7 @@ public class Page {
     /// </example>
     /// <seealso cref="Point"/>
     /// <seealso cref="PathOperator"/>
-    public void DrawPath(List<Point> path, string pathOperator) {
+    public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
             throw new Exception("The Path object must contain at least 2 points");
         }
@@ -1560,7 +1559,7 @@ public class Page {
                 }
             }
         }
-        Append(pathOperator);
+        Append(pathOperator.ToOperator());
         Append('\n');
     }
 
@@ -1619,7 +1618,7 @@ public class Page {
     /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
     /// <param name="r">the radius of the circle to be drawn.</param>
     /// <param name="pathOperator">must be PathOperator.Stroke, PathOperator.CloseAndStroke or PathOperator.Fill.</param>
-    public void DrawCircle(float x, float y, float r, string pathOperator) {
+    public void DrawCircle(float x, float y, float r, PathOperator pathOperator) {
         DrawEllipse(x, y, r, r, pathOperator);
     }
 
@@ -1636,7 +1635,7 @@ public class Page {
             float y,
             float r1,
             float r2,
-            string pathOperator) {
+            PathOperator pathOperator) {
         // The best 4-spline magic number
         float m4 = 0.55228f;
         // Starting point
@@ -1662,7 +1661,7 @@ public class Page {
         AppendPointXY(x, y - r2);
         Append("c\n");
 
-        Append(pathOperator);
+        Append(pathOperator.ToOperator());
         Append('\n');
     }
 
@@ -1941,7 +1940,7 @@ public class Page {
             float h,
             float r1,
             float r2,
-            string pathOperator) {
+            PathOperator pathOperator) {
         // The best 4-spline magic number
         float m4 = 0.55228f;
         List<Point> points = new List<Point>();

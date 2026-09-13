@@ -8,6 +8,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
@@ -339,7 +340,7 @@ func (s *Stamp) appendPoint(point *Point) {
 
 // DrawPath draws a path through the points. Control points define Bézier curves.
 // It panics if the path has fewer than 2 points or ends with an unconsumed control point.
-func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
+func (s *Stamp) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
 		panic("The Path object must contain at least 2 points")
 	}
@@ -367,7 +368,7 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator string) {
 		panic("Path ends with unconsumed control point(s). " +
 			"Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
 	}
-	s.appendString(pathOperator)
+	s.appendString(string(pathOperator))
 	s.buf.WriteByte('\n')
 }
 

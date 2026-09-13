@@ -6,12 +6,15 @@
 // Package pathoperator defines the path painting operators, such as stroke and fill.
 package pathoperator
 
+// PathOperator specifies the operator that paints a path.
+type PathOperator string
+
 // Constants used to specify the 'Stroke', 'CloseAndStroke', 'Fill' and more operators.
 const (
-	Stroke                        = "S"  // Stroke the path
-	CloseAndStroke                = "s"  // Close and then stroke the path
-	Fill                          = "f"  // Close and fill the path
-	FillAndStroke                 = "b"  // Close, fill and then stroke the path
-	FillUsingEvenOddRule          = "f*" // Like 'f' but using even odd rule
-	FillUsingEvenOddRuleAndStroke = "b*" // Like 'b' but using even odd rule
+	Stroke                        PathOperator = "S"  // Stroke the path
+	CloseAndStroke                PathOperator = "s"  // Close and then stroke the path
+	Fill                          PathOperator = "f"  // Close and fill the path
+	FillAndStroke                 PathOperator = "b"  // Close, fill and then stroke the path
+	FillUsingEvenOddRule          PathOperator = "f*" // Like 'f' but using even odd rule
+	FillUsingEvenOddRuleAndStroke PathOperator = "b*" // Like 'b' but using even odd rule
 )

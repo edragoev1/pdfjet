@@ -8,17 +8,17 @@
 /**
  * Used to specify the PDF page mode.
  */
-public class PageMode {
+public enum PageMode: String {
     /// Neither the document outline nor the thumbnails are visible.
-    public static let USE_NONE = "UseNone"             // Neither document outline nor thumbnail images visible
+    case USE_NONE = "UseNone"
     /// The document outline is visible.
-    public static let USE_OUTLINES = "UseOutlines"     // Document outline visible
+    case USE_OUTLINES = "UseOutlines"
     /// The thumbnails are visible.
-    public static let USE_THUMBS = "UseThumbs"         // Thumbnail images visible
+    case USE_THUMBS = "UseThumbs"
     /// Full-screen mode.
-    public static let FULL_SCREEN = "FullScreen"       // Full-screen mode
+    case FULL_SCREEN = "FullScreen"
     /// The optional content group panel is visible.
-    public static let USE_OC = "UseOC"                 // (PDF 1.5) Optional content group panel visible
+    case USE_OC = "UseOC"
     /// The attachments panel is visible.
-    public static let USE_ATTACHMENTS = "UseAttachments"
+    case USE_ATTACHMENTS = "UseAttachments"
 }

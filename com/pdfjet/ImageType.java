@@ -11,17 +11,11 @@ package com.pdfjet;
  * Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
  * See the Image class for more information.
  */
-public class ImageType {
-    /** Default Constructor */
-    public ImageType() {
-    }
-
+public enum ImageType {
     /** JPEG image */
-    public static final int JPG = 0;
-
+    JPG,
     /** PNG image */
-    public static final int PNG = 1;
-
+    PNG,
     /** Bitmap image */
-    public static final int BMP = 2;
+    BMP
 }

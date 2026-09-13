@@ -9,15 +9,15 @@ using System;
 namespace PDFjet.NET {
 /// <summary>
 /// Used to specify the image type of an image.
-/// Supported types: ImageType.JPEG, ImageType.PNG and ImageType.BMP
+/// Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
 /// See the Image class for more information.
 /// </summary>
-public class ImageType {
+public enum ImageType {
     /// <summary>JPEG image.</summary>
-    public static readonly int JPG = 0;
+    JPG,
     /// <summary>PNG image.</summary>
-    public static readonly int PNG = 1;
+    PNG,
     /// <summary>BMP image.</summary>
-    public static readonly int BMP = 2;
+    BMP
 }
 }   // End of namespace PDFjet.NET

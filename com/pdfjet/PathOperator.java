@@ -3,21 +3,24 @@ package com.pdfjet;
 /**
  * The operators that paint a path, for example in Page.drawPath.
  */
-public class PathOperator {
-    /** The default constructor */
-    public PathOperator() {
-    }
-
+public enum PathOperator {
     /** Strokes the path. */
-    public static final String STROKE = "S";
+    STROKE("S"),
     /** Closes and then strokes the path. */
-    public static final String CLOSE_AND_STROKE = "s";
+    CLOSE_AND_STROKE("s"),
     /** Closes and fills the path. */
-    public static final String FILL = "f";
+    FILL("f"),
     /** Closes, fills and then strokes the path. */
-    public static final String FILL_AND_STROKE = "b";
+    FILL_AND_STROKE("b"),
     /** Like FILL, but uses the even-odd rule. */
-    public static final String FILL_USING_EVEN_ODD_RULE = "f*";
+    FILL_USING_EVEN_ODD_RULE("f*"),
     /** Like FILL_AND_STROKE, but uses the even-odd rule. */
-    public static final String FILL_USING_EVEN_ODD_RULE_AND_STROKE = "b*";
+    FILL_USING_EVEN_ODD_RULE_AND_STROKE("b*");
+
+    /** The operator written to the content stream. */
+    final String operator;
+
+    PathOperator(String operator) {
+        this.operator = operator;
+    }
 }

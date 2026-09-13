@@ -84,7 +84,7 @@ public class Point implements Drawable {
     /** The stroke dash pattern. */
     protected String strokeDashPattern = "[] 0";
     /** The operator used to paint the shape. */
-    protected String pathOperator = PathOperator.CLOSE_AND_STROKE;
+    protected PathOperator pathOperator = PathOperator.CLOSE_AND_STROKE;
 
     /** The control point type when this point is part of a path, or 0 if it is not a control point. */
     protected char controlPoint = '\0';
@@ -499,7 +499,7 @@ public class Point implements Drawable {
      * @param pathOperator the path operator, for example PathOperator.STROKE.
      * @return this Point object.
      */
-    public Point setPathOperator(String pathOperator) {
+    public Point setPathOperator(PathOperator pathOperator) {
         this.pathOperator = pathOperator;
         return this;
     }
@@ -509,7 +509,7 @@ public class Point implements Drawable {
      *
      * @return the path operator.
      */
-    public String getPathOperator() {
+    public PathOperator getPathOperator() {
         return this.pathOperator;
     }
 

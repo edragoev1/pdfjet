@@ -64,7 +64,7 @@ public class Point : IDrawable {
     internal float strokeWidth = 1f;
     internal float[] strokeColor = null;
     internal string strokeDashPattern = "[] 0";
-    internal string pathOperator = PathOperator.CloseAndStroke;
+    internal PathOperator pathOperator = PathOperator.CloseAndStroke;
 
     internal Alignment alignment = Alignment.RIGHT;
 
@@ -406,13 +406,13 @@ public class Point : IDrawable {
     }
 
     /// <summary>Sets the path operator used to draw this point, for example PathOperator.Stroke.</summary>
-    public Point SetPathOperator(string pathOperator) {
+    public Point SetPathOperator(PathOperator pathOperator) {
         this.pathOperator = pathOperator;
         return this;
     }
 
     /// <summary>Returns the path operator used to draw this point.</summary>
-    public string GetPathOperator() {
+    public PathOperator GetPathOperator() {
         return this.pathOperator;
     }
 

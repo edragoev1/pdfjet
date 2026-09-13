@@ -368,7 +368,7 @@ public class Stamp : IDrawable {
     /// Draws a path through the points. Control points define Bézier curves.
     /// Throws an exception if the path has fewer than 2 points.
     /// </summary>
-    public void DrawPath(List<Point> path, string pathOperator) {
+    public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
             throw new Exception("The Path object must contain at least 2 points");
         }
@@ -397,7 +397,7 @@ public class Stamp : IDrawable {
                 "Path ends with unconsumed control point(s). " +
                 "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
         }
-        Append(pathOperator);
+        Append(pathOperator.ToOperator());
         Append('\n');
     }
 

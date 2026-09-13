@@ -23,6 +23,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/djb"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
+	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
+	"github.com/edragoev1/pdfjet/v9/src/pagemode"
 )
 
 // PDF is used to create PDF objects.
@@ -49,8 +51,8 @@ type PDF struct {
 	creator                   string
 	createDate                string
 	pagesObjNumber            int
-	pageLayout                string
-	pageMode                  string
+	pageLayout                pagelayout.PageLayout
+	pageMode                  pagemode.PageMode
 	language                  string
 	toc                       *Bookmark
 	importedFonts             []string
@@ -694,13 +696,13 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 
 	if pdf.pageLayout != "" {
 		pdf.appendString("/PageLayout /")
-		pdf.appendString(pdf.pageLayout)
+		pdf.appendString(string(pdf.pageLayout))
 		pdf.appendString("\n")
 	}
 
 	if pdf.pageMode != "" {
 		pdf.appendString("/PageMode /")
-		pdf.appendString(pdf.pageMode)
+		pdf.appendString(string(pdf.pageMode))
 		pdf.appendString("\n")
 	}
 
@@ -1301,13 +1303,13 @@ func (pdf *PDF) SetCreator(creator string) *PDF {
 }
 
 // SetPageLayout sets the page layout.
-func (pdf *PDF) SetPageLayout(pageLayout string) *PDF {
+func (pdf *PDF) SetPageLayout(pageLayout pagelayout.PageLayout) *PDF {
 	pdf.pageLayout = pageLayout
 	return pdf
 }
 
 // SetPageMode sets the page mode.
-func (pdf *PDF) SetPageMode(pageMode string) *PDF {
+func (pdf *PDF) SetPageMode(pageMode pagemode.PageMode) *PDF {
 	pdf.pageMode = pageMode
 	return pdf
 }

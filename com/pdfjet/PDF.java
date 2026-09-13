@@ -44,8 +44,8 @@ final public class PDF {
     private String createDate;      // XMP metadata
     private int byteCount = 0;
     private int pagesObjNumber = 0;
-    private String pageLayout = null;
-    private String pageMode = null;
+    private PageLayout pageLayout = null;
+    private PageMode pageMode = null;
     private String language = "en-US";
     private String uuid = (new Salsa20()).getID();
     private final List<String> importedFonts = new ArrayList<String>();
@@ -713,13 +713,13 @@ final public class PDF {
 
         if (pageLayout != null) {
             append("/PageLayout /");
-            append(pageLayout);
+            append(pageLayout.value);
             append(Token.NEWLINE);
         }
 
         if (pageMode != null) {
             append("/PageMode /");
-            append(pageMode);
+            append(pageMode.value);
             append(Token.NEWLINE);
         }
 
@@ -1361,7 +1361,7 @@ final public class PDF {
      * @param pageLayout the page layout.
      * @return this PDF object.
      */
-    public PDF setPageLayout(String pageLayout) {
+    public PDF setPageLayout(PageLayout pageLayout) {
         this.pageLayout = pageLayout;
         return this;
     }
@@ -1372,7 +1372,7 @@ final public class PDF {
      * @param pageMode the page mode.
      * @return this PDF object.
      */
-    public PDF setPageMode(String pageMode) {
+    public PDF setPageMode(PageMode pageMode) {
         this.pageMode = pageMode;
         return this;
     }

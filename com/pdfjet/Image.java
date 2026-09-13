@@ -63,7 +63,7 @@ final public class Image implements Drawable {
      * @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
      * @throws Exception  If an input or output exception occurred
      */
-    public Image(PDF pdf, InputStream inputStream, int imageType) throws Exception {
+    public Image(PDF pdf, InputStream inputStream, ImageType imageType) throws Exception {
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -110,7 +110,7 @@ final public class Image implements Drawable {
      * @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
      * @throws Exception  If an input or output exception occurred
      */
-    public Image(List<PDFobj> objects, InputStream inputStream, int imageType) throws Exception {
+    public Image(List<PDFobj> objects, InputStream inputStream, ImageType imageType) throws Exception {
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -505,7 +505,7 @@ final public class Image implements Drawable {
             PDF pdf,
             byte[] data,
             byte[] alpha,
-            int imageType,
+            ImageType imageType,
             String colorSpace,
             int bitsPerComponent) throws Exception {
         if (alpha != null) {
@@ -592,7 +592,7 @@ final public class Image implements Drawable {
             List<PDFobj> objects,
             byte[] data,
             byte[] alpha,
-            int imageType,
+            ImageType imageType,
             String colorSpace,
             int bitsPerComponent) {
         if (alpha != null) {

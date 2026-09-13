@@ -520,7 +520,7 @@ public class Stamp implements Drawable {
      * @param pathOperator the path operator, for example PathOperator.STROKE.
      * @throws Exception if the path has fewer than 2 points or ends with an unconsumed control point.
      */
-    public void drawPath(List<Point> path, String pathOperator) throws Exception {
+    public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
             throw new Exception("The Path object must contain at least 2 points");
         }
@@ -549,7 +549,7 @@ public class Stamp implements Drawable {
                 "Path ends with unconsumed control point(s). " +
                 "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
         }
-        append(pathOperator);
+        append(pathOperator.operator);
         append('\n');
     }
 

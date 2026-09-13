@@ -36,8 +36,8 @@ public class PDF {
     private var createDate: String?
     private var byteCount = 0
     private var pagesObjNumber = 0
-    private var pageLayout: String?
-    private var pageMode: String?
+    private var pageLayout: PageLayout?
+    private var pageMode: PageMode?
     private var language: String = "en-US"
     private var uuid: String = Salsa20().getID()
     private var prevPage: Page?
@@ -694,13 +694,13 @@ public class PDF {
 
         if pageLayout != nil {
             append("/PageLayout /")
-            append(pageLayout!)
+            append(pageLayout!.rawValue)
             append(Token.newline)
         }
 
         if pageMode != nil {
             append("/PageMode /")
-            append(pageMode!)
+            append(pageMode!.rawValue)
             append(Token.newline)
         }
 
@@ -1279,14 +1279,14 @@ public class PDF {
 
     /// Sets the page layout used when the document is opened. See PageLayout.
     @discardableResult
-    public func setPageLayout(_ pageLayout: String) -> PDF {
+    public func setPageLayout(_ pageLayout: PageLayout) -> PDF {
         self.pageLayout = pageLayout
         return self
     }
 
     /// Sets the page mode used when the document is opened. See PageMode.
     @discardableResult
-    public func setPageMode(_ pageMode: String) -> PDF {
+    public func setPageMode(_ pageMode: PageMode) -> PDF {
         self.pageMode = pageMode
         return self
     }

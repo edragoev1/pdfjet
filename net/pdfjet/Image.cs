@@ -47,7 +47,7 @@ public class Image : IDrawable {
     /// <param name="pdf">the page to draw this image on.</param>
     /// <param name="inputStream">the input stream to read the image from.</param>
     /// <param name="imageType">ImageType.JPG, ImageType.PNG or ImageType.BMP.</param>
-    public Image(PDF pdf, Stream inputStream, int imageType) {
+    public Image(PDF pdf, Stream inputStream, ImageType imageType) {
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -88,7 +88,7 @@ public class Image : IDrawable {
 
     // Method for creating images from byte[] image data
     /// <summary>Creates an image of the specified type from a byte array.</summary>
-    internal static Image CreateImage(PDF pdf, byte[] imageBytes, int imageType) {
+    internal static Image CreateImage(PDF pdf, byte[] imageBytes, ImageType imageType) {
         MemoryStream ms = new MemoryStream(imageBytes);
         Image image = new Image(pdf, ms, imageType);
         ms.Dispose();
@@ -107,7 +107,7 @@ public class Image : IDrawable {
     /// <param name="objects">the objects of the existing PDF.</param>
     /// <param name="inputStream">the input stream to read the image from.</param>
     /// <param name="imageType">ImageType.JPG, ImageType.PNG and ImageType.BMP.</param>
-    public Image(List<PDFobj> objects, Stream inputStream, int imageType) {
+    public Image(List<PDFobj> objects, Stream inputStream, ImageType imageType) {
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -497,7 +497,7 @@ public class Image : IDrawable {
             PDF pdf,
             byte[] data,
             byte[] alpha,
-            int imageType,
+            ImageType imageType,
             String colorSpace,
             int bitsPerComponent) {
         if (alpha != null) {
@@ -584,7 +584,7 @@ public class Image : IDrawable {
             List<PDFobj> objects,
             byte[] data,
             byte[] alpha,
-            int imageType,
+            ImageType imageType,
             String colorSpace,
             int bitsPerComponent) {
         if (alpha != null) {

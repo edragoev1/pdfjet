@@ -41,8 +41,8 @@ public class PDF {
     private String createDate;      // XMP metadata
     private int byteCount = 0;
     private int pagesObjNumber = 0;
-    private String pageLayout = null;
-    private String pageMode = null;
+    private PageLayout? pageLayout = null;
+    private PageMode? pageMode = null;
     private String language = "en-US";
     private List<String> importedFonts = new List<String>();
     private List<String> importedXObjects = new List<String>();
@@ -673,13 +673,13 @@ public class PDF {
 
         if (pageLayout != null) {
             Append("/PageLayout /");
-            Append(pageLayout);
+            Append(pageLayout.Value.ToPDFName());
             Append(Token.Newline);
         }
 
         if (pageMode != null) {
             Append("/PageMode /");
-            Append(pageMode);
+            Append(pageMode.Value.ToPDFName());
             Append(Token.Newline);
         }
 
@@ -1288,13 +1288,13 @@ public class PDF {
     }
 
     /// <summary>Sets the page layout used when the document is opened. See PageLayout.</summary>
-    public PDF SetPageLayout(String pageLayout) {
+    public PDF SetPageLayout(PageLayout pageLayout) {
         this.pageLayout = pageLayout;
         return this;
     }
 
     /// <summary>Sets the page mode used when the document is opened. See PageMode.</summary>
-    public PDF SetPageMode(String pageMode) {
+    public PDF SetPageMode(PageMode pageMode) {
         this.pageMode = pageMode;
         return this;
     }

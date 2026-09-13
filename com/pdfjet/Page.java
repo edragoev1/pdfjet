@@ -1514,7 +1514,7 @@ final public class Page {
      * @see Point
      * @see PathOperator
      */
-    public void drawPath(List<Point> path, String pathOperator) throws Exception {
+    public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
             throw new Exception("The Path object must contain at least 2 points");
         }
@@ -1537,7 +1537,7 @@ final public class Page {
                 }
             }
         }
-        append(pathOperator);
+        append(pathOperator.operator);
         append('\n');
     }
 
@@ -1583,7 +1583,7 @@ final public class Page {
             double x,
             double y,
             double r,
-            String pathOperator) {
+            PathOperator pathOperator) {
         drawEllipse((float) x, (float) y, (float) r, (float) r, pathOperator);
     }
 
@@ -1599,7 +1599,7 @@ final public class Page {
             float x,
             float y,
             float r,
-            String pathOperator) {
+            PathOperator pathOperator) {
         drawEllipse(x, y, r, r, pathOperator);
     }
 
@@ -1681,7 +1681,7 @@ final public class Page {
             float y,
             float r1,
             float r2,
-            String pathOperator) {
+            PathOperator pathOperator) {
         // The best 4-spline magic number
         float m4 = 0.55228f;
         // Starting point
@@ -1707,7 +1707,7 @@ final public class Page {
         appendPointXY(x, y - r2);
         append("c\n");
 
-        append(pathOperator);
+        append(pathOperator.operator);
         append('\n');
     }
 
@@ -1997,7 +1997,7 @@ final public class Page {
      * @throws Exception if the path cannot be drawn.
      */
     public void drawRectRoundCorners(
-            float x, float y, float w, float h, float r1, float r2, String pathOperator)
+            float x, float y, float w, float h, float r1, float r2, PathOperator pathOperator)
         throws Exception {
         // The best 4-spline magic number
         float m4 = 0.55228f;

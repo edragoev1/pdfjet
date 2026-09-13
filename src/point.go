@@ -26,7 +26,7 @@ type Point struct {
 	strokeColor       [3]float32
 	hasStrokeColor    bool
 	strokeDashPattern string
-	pathOperator      string
+	pathOperator      pathoperator.PathOperator
 	controlPoint      byte
 	drawPath          bool
 	text              string
@@ -333,13 +333,13 @@ func (point *Point) GetStrokeDashPattern() string {
 
 // SetPathOperator sets the path operator used to draw this point.
 // @param pathOperator the path operator, for example pathoperator.Stroke.
-func (point *Point) SetPathOperator(pathOperator string) *Point {
+func (point *Point) SetPathOperator(pathOperator pathoperator.PathOperator) *Point {
 	point.pathOperator = pathOperator
 	return point
 }
 
 // GetPathOperator returns the path operator used to draw this point.
 // @return the path operator.
-func (point *Point) GetPathOperator() string {
+func (point *Point) GetPathOperator() pathoperator.PathOperator {
 	return point.pathOperator
 }

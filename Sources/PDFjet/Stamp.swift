@@ -373,7 +373,7 @@ public class Stamp : Drawable {
     /// Draws a path through the points. Control points define Bézier curves.
     /// Throws an error if the path has fewer than 2 points or ends with an unconsumed control point.
     ///
-    public func drawPath(_ path: [Point], _ pathOperator: String) throws {
+    public func drawPath(_ path: [Point], _ pathOperator: PathOperator) throws {
         guard path.count >= 2 else {
             throw PDFjetError(message: "The Path object must contain at least 2 points")
         }
@@ -404,7 +404,7 @@ public class Stamp : Drawable {
                     "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
         }
 
-        append(pathOperator)
+        append(pathOperator.rawValue)
         append("\n")
     }
 

@@ -9,28 +9,24 @@ package com.pdfjet;
 /**
  * Used to specify the PDF page layout.
  */
-public class PageLayout {
-    /**
-     * Creates page layout object.
-     */
-    public PageLayout() {
-    }
-
+public enum PageLayout {
     /** Display one page at a time */
-    public static final String SINGLE_PAGE = "SinglePage";
-
+    SINGLE_PAGE("SinglePage"),
     /** Display the pages in one column */
-    public static final String ONE_COLUMN = "OneColumn";
-
+    ONE_COLUMN("OneColumn"),
     /** Odd-numbered pages on the left */
-    public static final String TWO_COLUMN_LEFT = "TwoColumnLeft";
-
+    TWO_COLUMN_LEFT("TwoColumnLeft"),
     /** Odd-numbered pages on the right */
-    public static final String TWO_COLUMN_RIGHT = "TwoColumnRight";
-
+    TWO_COLUMN_RIGHT("TwoColumnRight"),
     /** Odd-numbered pages on the left */
-    public static final String TWO_PAGE_LEFT = "TwoPageLeft";
-
+    TWO_PAGE_LEFT("TwoPageLeft"),
     /** Odd-numbered pages on the right */
-    public static final String TWO_PAGE_RIGHT = "TwoPageRight";
+    TWO_PAGE_RIGHT("TwoPageRight");
+
+    /** The name written to the /PageLayout entry. */
+    final String value;
+
+    PageLayout(String value) {
+        this.value = value;
+    }
 }
