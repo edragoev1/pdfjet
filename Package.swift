@@ -3,6 +3,12 @@ import PackageDescription
 
 let package = Package(
     name: "PDFjet",
+    // Other packages depend on the library with
+    // .product(name: "PDFjet", package: "pdfjet"); the examples are
+    // executable targets that only this package builds.
+    products: [
+        .library(name: "PDFjet", targets: ["PDFjet"]),
+    ],
     targets: [
         .target(name: "PDFjet"),
         .executableTarget(name: "Example_01", dependencies: ["PDFjet"]),

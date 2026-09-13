@@ -170,7 +170,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 ### PDF, pages and drawing
 - Every PDF gets an `/Info` dictionary with its producer, creation date and
   the properties set with `setTitle`, `setAuthor`, `setSubject`, `setKeywords`
-  and `setCreator`, and Go PDFs get their own ID.
+  and `setCreator`, and every PDF gets its own ID: 16 random bytes from the
+  system's secure random number generator, where Java, Go and Swift hashed the
+  time in milliseconds, so documents made in the same millisecond had the
+  same ID.
 - Numbers in content streams are rounded the same way in every port, the font
   descriptor metrics are in 1/1000 em, and the output does not depend on the
   platform charset or locale.
@@ -261,6 +264,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   TODO markers are gone from the four ports.
 - Example_14 is the Data Matrix example, and the example pages describe what
   each example does.
+- `go get github.com/edragoev1/pdfjet/v9` works: `fonts/`, `data/` and
+  `images/` have their own `go.mod`, which keeps them out of the Go module, as
+  the fonts made it larger than the 500 MiB Go allows.
+- The Swift package declares the `PDFjet` library product, so other Swift
+  packages can depend on it.
 
 ### Documentation
 - The C# API reference is built by DocFX and published under `dotnet/`, next

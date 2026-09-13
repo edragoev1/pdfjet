@@ -29,7 +29,10 @@ public class PDF {
     private int outputIntentObjNumber = 0;
     private List<Page> pages = new List<Page>();
     private Dictionary<String, Destination> destinations = new Dictionary<String, Destination>();
-    private String uuid = (new Salsa20()).GetID();
+    // The document ID for the trailer and the XMP metadata: 16 random bytes as
+    // 32 hexadecimal digits, so documents made at the same time get different IDs.
+    private String uuid = Convert.ToHexString(
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
     private Stream os = null;
     private readonly List<Int32> objOffset = new List<Int32>(); // Required by the xref section
     private String producer = "PDFjet v9.0.0";

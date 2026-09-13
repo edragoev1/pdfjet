@@ -30,10 +30,30 @@ import (
     "github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
+The Go module has the source of the library and the examples only. The fonts,
+the data files and the images are not in it: with the fonts the module is
+larger than the 500 MiB Go allows, so fonts/, data/ and images/ each have a
+go.mod that keeps them out. The font constants, such as IBMPlexSans.Regular,
+are paths relative to the working directory, so copy the fonts/ directory of
+this repository next to the program. The core fonts need no files.
+
 
 To build the Swift version and compile and run all examples:
 
 ./build-swift.sh
+
+
+To use the Swift library in another Swift package, add PDFjet to its
+Package.swift:
+
+dependencies: [
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.0.0"),
+],
+targets: [
+    .executableTarget(name: "App", dependencies: [
+        .product(name: "PDFjet", package: "pdfjet"),
+    ]),
+]
 
 
 To compile and run specific Java example use the following command:

@@ -8,6 +8,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -21,7 +22,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
-	"github.com/edragoev1/pdfjet/v9/src/internal/salsa20"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
 	"github.com/edragoev1/pdfjet/v9/src/pagemode"
@@ -112,7 +112,13 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
-	pdf.uuid = salsa20.DocumentID()
+	// The document ID for the trailer and the XMP metadata: 16 random bytes as
+	// 32 hexadecimal digits, so documents made at the same time get different IDs.
+	id := make([]byte, 16)
+	if _, err := rand.Read(id); err != nil {
+		panic(err)
+	}
+	pdf.uuid = hex.EncodeToString(id)
 
 	// The creation date is in UTC, so the XMP metadata says so with a Z.
 	pdf.createDate = time.Now().UTC().Format("2006-01-02T15:04:05") + "Z"

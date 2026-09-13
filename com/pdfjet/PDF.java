@@ -10,6 +10,7 @@ import com.pdfjet.encryption.*;
 import com.pdfjet.barcodes.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.text.*;
 import java.util.*;
 import java.util.logging.Logger;
@@ -47,7 +48,7 @@ final public class PDF {
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
     private String language = "en-US";
-    private String uuid = (new Salsa20()).getID();
+    private String uuid = newDocumentID();
     private final List<String> importedFonts = new ArrayList<String>();
     private final List<String> importedXObjects = new ArrayList<String>();
     private final List<String> importedExtGStates = new ArrayList<String>();
@@ -55,6 +56,18 @@ final public class PDF {
     private boolean contentStreamsCompression = true;
 
     static final Logger LOG = Logger.getLogger(PDF.class.getName());
+
+    // SecureRandom is safe to share between threads.
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    // Returns a new document ID for the trailer and the XMP metadata: 16 random
+    // bytes as 32 hexadecimal digits, so documents made at the same time, even
+    // in the same millisecond, get different IDs.
+    private static String newDocumentID() {
+        byte[] bytes = new byte[16];
+        RANDOM.nextBytes(bytes);
+        return Util.toHexString(bytes);
+    }
 
     /**
      * The default constructor - use when reading PDF files.

@@ -39,7 +39,11 @@ public class PDF {
     private var pageLayout: PageLayout?
     private var pageMode: PageMode?
     private var language: String = "en-US"
-    private var uuid: String = Salsa20().getID()
+    // The document ID for the trailer and the XMP metadata: 16 random bytes as
+    // 32 hexadecimal digits, so documents made at the same time get different IDs.
+    private var uuid: String = Cryptography.randomBytes(16).map {
+        ($0 < 16 ? "0" : "") + String($0, radix: 16)
+    }.joined()
     private var prevPage: Page?
     var structElements = [StructElem]()
     private var contentStreamsCompression = true

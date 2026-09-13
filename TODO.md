@@ -798,6 +798,24 @@ renames included (the Week 1 decision), so every item is a blocker.
       conventions, documented in the README Port differences section; the
       script's report now shows only those. Go still exports some helpers
       (`BitBuffer`, `RSBlock`, `JPGImage`, ...); see the API audit.
+- ✅ **B** Release blockers found by the code review of Sep 13:
+      - `go get` could not fetch the module: the repository is 637 MiB, 596
+        MiB of it fonts, and Go rejects a module over 500 MiB ("module source
+        tree too large", `golang.org/x/mod/zip.CreateFromVCS` on HEAD).
+        Fixed: `fonts/`, `data/` and `images/` have a `go.mod` of their own,
+        which Go leaves out of the module; the module zip is the library and
+        example source, and a scratch module fetches it from a local proxy,
+        builds and writes a PDF. The README says the fonts are not in the
+        module. Still to do after tagging: the `go list -m` check above.
+      - Swift packages could not depend on PDFjet: `Package.swift` declared no
+        products. Fixed: it declares the `PDFjet` library product, and a
+        scratch package that depends on it by path builds and writes PDFs.
+      - Documents made in the same millisecond got the same `/ID` and XMP
+        DocumentID: Java, Go and Swift hashed the time in milliseconds with
+        Salsa20, C# the ticks. 200 PDFs made in a loop in Java had 59 IDs.
+        Fixed: the ID is 16 bytes from `SecureRandom`,
+        `RandomNumberGenerator`, `crypto/rand` and
+        `SystemRandomNumberGenerator`, and the Salsa20 classes are gone.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
       Done on Sep 13: `check-examples.sh` is clean with the version bump,
