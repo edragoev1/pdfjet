@@ -403,17 +403,6 @@ public class Stamp implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Stamp object.
      */
-    public Stamp rotate(double degrees) {
-        this.rotateDegrees = (float)degrees;
-        return this;
-    }
-
-    /**
-     * Sets the rotation angle of this stamp.
-     *
-     * @param degrees the rotation angle in degrees.
-     * @return this Stamp object.
-     */
     public Stamp setRotation(double degrees) {
         this.rotateDegrees = (float)degrees;
         return this;
@@ -427,17 +416,6 @@ public class Stamp implements Drawable {
      */
     public Stamp setRotationClockwise(double degrees) {
         this.rotateDegrees = (float)-degrees;
-        return this;
-    }
-
-    /**
-     * Sets a counterclockwise rotation.
-     *
-     * @param degrees the rotation angle in degrees, counterclockwise.
-     * @return this Stamp object.
-     */
-    public Stamp setRotationCounterClockwise(double degrees) {
-        this.rotateDegrees = (float)degrees;
         return this;
     }
 

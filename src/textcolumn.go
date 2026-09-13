@@ -237,15 +237,15 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			if textColumn.rotate == 0 {
-				textLine.SetTextDirection(0)
+				textLine.SetTextRotation(0)
 				textLine.DrawOn(page)
 				textColumn.x1 += textLine.GetWidth() + dx
 			} else if textColumn.rotate == 90 {
-				textLine.SetTextDirection(90)
+				textLine.SetTextRotation(90)
 				textLine.DrawOn(page)
 				textColumn.y1 -= textLine.GetWidth() + dx
 			} else if textColumn.rotate == 270 {
-				textLine.SetTextDirection(270)
+				textLine.SetTextRotation(270)
 				textLine.DrawOn(page)
 				textColumn.y1 += textLine.GetWidth() + dx
 			}
@@ -283,15 +283,15 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 		if textColumn.rotate == 0 {
-			textLine.SetTextDirection(0)
+			textLine.SetTextRotation(0)
 			textLine.DrawOn(page)
 			textColumn.x1 += textLine.GetWidth()
 		} else if textColumn.rotate == 90 {
-			textLine.SetTextDirection(90)
+			textLine.SetTextRotation(90)
 			textLine.DrawOn(page)
 			textColumn.y1 -= textLine.GetWidth()
 		} else if textColumn.rotate == 270 {
-			textLine.SetTextDirection(270)
+			textLine.SetTextRotation(270)
 			textLine.DrawOn(page)
 			textColumn.y1 += textLine.GetWidth()
 		}

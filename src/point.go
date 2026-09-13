@@ -239,16 +239,16 @@ func (point *Point) GetTextColor() [3]float32 {
 	return point.textColor
 }
 
-// SetTextDirection sets the point's text direction.
+// SetTextRotation sets the point's text direction.
 // @param textDirection the text direction.
-func (point *Point) SetTextDirection(textDirection int) *Point {
+func (point *Point) SetTextRotation(textDirection int) *Point {
 	point.textDirection = textDirection
 	return point
 }
 
-// GetTextDirection returns the point's text direction.
+// GetTextRotation returns the point's text direction.
 // @return the text direction.
-func (point *Point) GetTextDirection() int {
+func (point *Point) GetTextRotation() int {
 	return point.textDirection
 }
 

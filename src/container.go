@@ -52,14 +52,6 @@ func (c *Container) SetLocation(x, y float32) Drawable {
 	return c
 }
 
-// Rotate sets the rotation angle of this container.
-//
-// degrees specifies the rotation angle in degrees.
-func (c *Container) Rotate(degrees float64) *Container {
-	c.RotateDegrees = float32(degrees)
-	return c
-}
-
 // SetRotation sets the rotation angle of the container in degrees.
 //
 // degrees specifies the angle to rotate counter-clockwise.
@@ -79,14 +71,6 @@ func (c *Container) SetRotationClockwise(degrees float64) *Container {
 // GetRotationCenter returns the center of this container, which it rotates around.
 func (c *Container) GetRotationCenter() [2]float32 {
 	return [2]float32{c.X + c.Width/2.0, c.Y + c.Height/2.0}
-}
-
-// SetRotationCounterClockwise sets the counter-clockwise rotation angle of the container in degrees.
-//
-// degrees specifies the angle to rotate counter-clockwise.
-func (c *Container) SetRotationCounterClockwise(degrees float64) *Container {
-	c.RotateDegrees = float32(degrees)
-	return c
 }
 
 // SetScaleFactor sets a uniform scaling factor for both X and Y axes.
@@ -205,7 +189,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 				annot.point2[0] += c.parent.X
 				annot.point2[1] += c.parent.Y
 			}
-			annot.Rotate(float64(-c.RotateDegrees))
+			annot.rotate(float64(-c.RotateDegrees))
 		}
 		element.DrawOn(page)
 	}

@@ -62,10 +62,10 @@ public class Example_35 {
         stamp.setLocation(50.0, 50.0).drawOn(page)
 
         // Rotate the stamp counter clockwise and draw it again
-        stamp.rotate(15).drawOn(page)
+        stamp.setRotation(15).drawOn(page)
 
         // Rotate the stamp clockwise and draw it again
-        stamp.rotate(-15).drawOn(page)
+        stamp.setRotation(-15).drawOn(page)
 
         // Add a text line to container
         let title = TextLine(f1, "Container")
@@ -75,7 +75,7 @@ public class Example_35 {
         // Nested container #1
         let nested1 = Container(200.0, 200.0)
         nested1.setLocation(0.0, 0.0)
-        nested1.setRotationCounterClockwise(30)
+        nested1.setRotation(30)
         nested1.setScaleFactor(0.8)
 
         let innerRect = Rect(0.0, 0.0, 200.0, 200.0)
@@ -91,7 +91,7 @@ public class Example_35 {
         // Nested container #2
         let nested2 = Container(100.0, 100.0)
         nested2.setLocation(250.0, 250.0)
-        nested2.setRotationCounterClockwise(45)
+        nested2.setRotation(45)
 
         let smallRect = Rect(0.0, 0.0, 100.0, 100.0)
         smallRect.setFillColor(Color.red)

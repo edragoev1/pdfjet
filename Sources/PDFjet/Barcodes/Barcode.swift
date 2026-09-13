@@ -508,7 +508,7 @@ public class Barcode : Drawable {
                         .setLocation(
                                 x + w + font!.bodyHeight,
                                 y - ((y - y1) - font!.stringWidth(text))/2)
-                        .setTextDirection(90)
+                        .setTextRotation(90)
                 xy = textLine.drawOn(page)
                 xy[1] = max(y, xy[1])
             }
@@ -595,7 +595,7 @@ public class Barcode : Drawable {
                         .setLocation(
                                 x - font!.bodyHeight,
                                 y1 + ((y - y1) - font!.stringWidth(fullText))/2)
-                        .setTextDirection(270)
+                        .setTextRotation(270)
                 xy = textLine.drawOn(page)
                 xy[0] = max(x, xy[0]) + w
                 xy[1] = max(y, xy[1])
@@ -656,7 +656,7 @@ public class Barcode : Drawable {
                         .setLocation(
                                 x + w + font!.bodyHeight,
                                 y - ((y - y1) - font!.stringWidth(fullText))/2)
-                        .setTextDirection(90)
+                        .setTextRotation(90)
                 xy = textLine.drawOn(page)
                 xy[1] = max(y, xy[1])
                 return [xy[0], xy[1] + font!.descent]

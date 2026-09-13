@@ -65,27 +65,12 @@ public class Container : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the rotation angle of this container in degrees.</summary>
-    public Container Rotate(double degrees) {
-        this.rotateDegrees = (float)degrees;
-        return this;
-    }
-
     /// <summary>
     /// Sets clockwise rotation.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
     public Container SetRotationClockwise(double degrees) {
         this.rotateDegrees = (float)-degrees;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets counter-clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (counter-clockwise).</param>
-    public Container SetRotationCounterClockwise(double degrees) {
-        this.rotateDegrees = (float)degrees;
         return this;
     }
 

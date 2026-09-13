@@ -306,18 +306,16 @@ public class Page {
         watermark.SetLocation(
                 (float) (offset * Math.Cos(angle)),
                 (this.height - (float) (offset * Math.Sin(angle))));
-        watermark.SetTextDirection((int) (angle * (180.0 / Math.PI)));
+        watermark.SetTextRotation((int) (angle * (180.0 / Math.PI)));
         watermark.DrawOn(this);
     }
 
-    /// <summary>Sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.</summary>
-    public void RotateBy(double rotateDegrees) {
-        if (rotateDegrees == 0 ||
-            rotateDegrees == 90 ||
-            rotateDegrees == 180 ||
-            rotateDegrees == 270) {
-            this.rotateDegrees = (float) rotateDegrees;
+    /// <summary>Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.</summary>
+    public Page SetRotationClockwise(int degrees) {
+        if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
+            this.rotateDegrees = degrees;
         }
+        return this;
     }
 
     /// <summary>Flips the y axis, so the origin is the top left corner of the page and y grows downward.</summary>
@@ -1764,7 +1762,7 @@ public class Page {
     /// </summary>
     /// <param name="degrees">the angle.</param>
     /// <returns>this Page object.</returns>
-    public Page SetTextDirection(int degrees) {
+    public Page SetTextRotation(int degrees) {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tmx = new float[] {1f,  0f,  0f,  1f};

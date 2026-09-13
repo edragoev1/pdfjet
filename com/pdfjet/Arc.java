@@ -263,7 +263,7 @@ public class Arc implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Arc object.
      */
-    public Arc setRotateDegreesCW(float degrees) {
+    public Arc setRotationClockwise(float degrees) {
         this.rotateDegrees = -degrees;
         return this;
     }
@@ -274,7 +274,7 @@ public class Arc implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Arc object.
      */
-    public Arc setRotateDegreesCW(double degrees) {
+    public Arc setRotationClockwise(double degrees) {
         this.rotateDegrees = (float) -degrees;
         return this;
     }
@@ -285,7 +285,7 @@ public class Arc implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Arc object.
      */
-    public Arc setRotateDegreesCCW(float degrees) {
+    public Arc setRotation(float degrees) {
         this.rotateDegrees = degrees;
         return this;
     }
@@ -296,7 +296,7 @@ public class Arc implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Arc object.
      */
-    public Arc setRotateDegreesCCW(double degrees) {
+    public Arc setRotation(double degrees) {
         this.rotateDegrees = (float) degrees;
         return this;
     }

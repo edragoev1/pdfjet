@@ -19,7 +19,7 @@ public class Example_05 {
         TextLine text = new TextLine(f1);
         text.setLocation(300f, 300f);
         for (int i = 0; i < 360; i += 15) {
-            text.setTextDirection(i);
+            text.setTextRotation(i);
             text.setUnderline(true);
             // text.setStrikeLine(true);
             text.setText("             Hello, World -- " + i + " degrees.");
@@ -67,8 +67,8 @@ public class Example_05 {
             .setSweepDegreesCW(270f)
             // .setSweepDegreesCCW(270f)
             // .setScaleFactor(2f)
-            // .setRotateDegreesCW(90f)
-            // .setRotateDegreesCCW(90f)
+            // .setRotationClockwise(90f)
+            // .setRotation(90f)
             .setStrokeWidth(5f)
             .setStrokeColor(Color.blue)
             .drawOn(page);
@@ -81,8 +81,8 @@ public class Example_05 {
             .setStrokeWidth(1.5f)
             .setStrokeColor(Color.blue)
             .setScaleFactor(0.5f)
-            .setRotateDegreesCW(45f)
-            // .setRotateDegreesCCW(45f)
+            .setRotationClockwise(45f)
+            // .setRotation(45f)
             .drawOn(page);
 
         pdf.complete();

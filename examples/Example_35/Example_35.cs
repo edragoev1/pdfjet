@@ -66,10 +66,10 @@ public class Example_35 {
         stamp.SetLocation(50f, 50f).DrawOn(page);
 
         // Rotate the stamp counter clockwise and draw it again
-        stamp.Rotate(15).DrawOn(page);
+        stamp.SetRotation(15).DrawOn(page);
 
         // Rotate the stamp clockwise and draw it again
-        stamp.Rotate(-15).DrawOn(page);
+        stamp.SetRotation(-15).DrawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");
@@ -79,7 +79,7 @@ public class Example_35 {
         // Nested container #1
         Container nested1 = new Container(200f, 200f);
         nested1.SetLocation(0f, 0f);
-        nested1.SetRotationCounterClockwise(30);
+        nested1.SetRotation(30);
         nested1.SetScaleFactor(0.8f);
 
         Rect innerRect = new Rect(0f, 0f, 200f, 200f);
@@ -95,7 +95,7 @@ public class Example_35 {
         // Nested container #2
         Container nested2 = new Container(100f, 100f);
         nested2.SetLocation(250f, 250f);
-        nested2.SetRotationCounterClockwise(45);
+        nested2.SetRotation(45);
 
         Rect smallRect = new Rect(0f, 0f, 100f, 100f);
         smallRect.SetFillColor(Color.red);

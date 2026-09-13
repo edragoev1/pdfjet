@@ -15,20 +15,20 @@ public class Example_24 {
 
         var page = Page(pdf, Letter.PORTRAIT)
         let textLine1 = TextLine(font, "This is a JPEG image.")
-        textLine1.setTextDirection(0)
+        textLine1.setTextRotation(0)
         textLine1.setLocation(50.0, 50.0)
         var point = textLine1.drawOn(page)
         image1.setLocation(50.0, point[1] + 5.0).scaleBy(0.25).drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
         let textLine2 = TextLine(font, "This is a PNG image.")
-        textLine2.setTextDirection(0)
+        textLine2.setTextRotation(0)
         textLine2.setLocation(50.0, 50.0)
         point = textLine2.drawOn(page)
         image2.setLocation(50.0, point[1] + 5.0).scaleBy(0.75).drawOn(page)
 
         let textLine3 = TextLine(font, "This is a BMP image.")
-        textLine3.setTextDirection(0)
+        textLine3.setTextRotation(0)
         textLine3.setLocation(50.0, 620.0)
         point = textLine3.drawOn(page)
         image3.setLocation(50.0, point[1] + 5.0).scaleBy(0.75).drawOn(page)

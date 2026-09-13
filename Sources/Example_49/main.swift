@@ -54,7 +54,7 @@ public class Example_49 {
 
         let textLine = TextLine(f1, "Hello, World!")
         textLine.setLocation(100.0, 300.0)
-        textLine.setTextDirection(30)
+        textLine.setTextRotation(30)
         textLine.setVerticalOffset(50.0)
         textLine.setUnderline(true)
         textLine.drawOn(page)

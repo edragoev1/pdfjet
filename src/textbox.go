@@ -688,7 +688,7 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 				uri:            textBox.uri,
 			})
 		}
-		page.SetTextDirection(0)
+		page.SetTextRotation(0)
 	}
 	return [2]float32{textBox.x + textBox.width, textBox.y + textBox.height}
 }
@@ -704,12 +704,12 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 		page.DrawStringUsingColorMap(
 			font, fallbackFont, fontSize, text, xText, yText, textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.BottomToTop {
-		page.SetTextDirection(90)
+		page.SetTextRotation(90)
 		page.DrawStringUsingColorMap(
 			font, fallbackFont, fontSize, text, yText, xText+textBox.height,
 			textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.TopToBottom {
-		page.SetTextDirection(270)
+		page.SetTextRotation(270)
 		page.DrawStringUsingColorMap(
 			font, fallbackFont, fontSize, text,
 			(yText+textBox.width)-(textBox.margin+2*font.GetAscentAt(fontSize)), xText,

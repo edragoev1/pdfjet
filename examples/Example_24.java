@@ -19,20 +19,20 @@ public class Example_24 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine textLine1 = new TextLine(font, "This is a JPEG image.");
-        textLine1.setTextDirection(0);
+        textLine1.setTextRotation(0);
         textLine1.setLocation(50f, 50f);
         float[] point = textLine1.drawOn(page);
         image1.setLocation(50f, point[1] + 5f).scaleBy(0.25f).drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         TextLine textLine2 = new TextLine(font, "This is a PNG image.");
-        textLine2.setTextDirection(0);
+        textLine2.setTextRotation(0);
         textLine2.setLocation(50f, 50f);
         point = textLine2.drawOn(page);
         image2.setLocation(50f, point[1] + 5f).scaleBy(0.75f).drawOn(page);
 
         TextLine textLine3 = new TextLine(font, "This is a BMP image.");
-        textLine3.setTextDirection(0);
+        textLine3.setTextRotation(0);
         textLine3.setLocation(50f, 620f);
         point = textLine3.drawOn(page);
         image3.setLocation(50f, point[1] + 5f).scaleBy(0.75f).drawOn(page);

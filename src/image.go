@@ -289,9 +289,9 @@ func (image *Image) SetGoToAction(key string) *Image {
 	return image
 }
 
-// RotateClockwise sets the image rotation to the specified number of degrees.
+// SetRotationClockwise sets the image rotation to the specified number of degrees.
 // @param degrees the number of degrees.
-func (image *Image) RotateClockwise(degrees int) *Image {
+func (image *Image) SetRotationClockwise(degrees int) *Image {
 	if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
 		panic("The rotation angle must be 0, 90, 180 or 270")
 	}

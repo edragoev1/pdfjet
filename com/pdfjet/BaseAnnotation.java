@@ -112,7 +112,7 @@ public class BaseAnnotation implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this BaseAnnotation object.
      */
-    public BaseAnnotation rotate(double degrees) {
+    BaseAnnotation rotate(double degrees) {
         if (container == null) { return this; }
         float[] center = container.getRotationCenter();
         if (container.parent != null) {

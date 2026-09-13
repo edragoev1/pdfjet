@@ -280,7 +280,7 @@ public class Image : Drawable {
     /// - Parameter degrees: the number of degrees.
     ///
     @discardableResult
-    public func rotateClockwise(_ degrees: Int) throws -> Image {
+    public func setRotationClockwise(_ degrees: Int) throws -> Image {
         if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
             throw ImageError.rotation("The rotation angle must be 0, 90, 180 or 270")
         }

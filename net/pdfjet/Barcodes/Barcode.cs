@@ -493,7 +493,7 @@ public class Barcode : IDrawable {
                 textLine.SetLocation(
                         x + w + font.GetBodyHeight(font.GetSize()),
                         y - ((y - y1) - font.StringWidth(text))/2);
-                textLine.SetTextDirection(90);
+                textLine.SetTextRotation(90);
                 xy = textLine.DrawOn(page);
                 xy[1] = Math.Max(y, xy[1]);
             }
@@ -577,7 +577,7 @@ public class Barcode : IDrawable {
                 textLine.SetLocation(
                         x - font.GetBodyHeight(font.GetSize()),
                         y1 + ((y - y1) - font.StringWidth(fullText))/2);
-                textLine.SetTextDirection(270);
+                textLine.SetTextRotation(270);
                 xy = textLine.DrawOn(page);
                 xy[0] = Math.Max(x, xy[0]) + w;
                 xy[1] = Math.Max(y, xy[1]);
@@ -632,7 +632,7 @@ public class Barcode : IDrawable {
                 textLine.SetLocation(
                         x + w + font.GetBodyHeight(font.GetSize()),
                         y - ((y - y1) - font.StringWidth(fullText))/2);
-                textLine.SetTextDirection(90);
+                textLine.SetTextRotation(90);
                 xy = textLine.DrawOn(page);
                 xy[1] = Math.Max(y, xy[1]);
                 return new float[] {xy[0], xy[1] + font.GetDescent()};

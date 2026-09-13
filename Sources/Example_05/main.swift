@@ -17,7 +17,7 @@ public class Example_05 {
         text.setLocation(300.0, 300.0)
         var i = 0
         while i < 360 {
-            text.setTextDirection(i)
+            text.setTextRotation(i)
             text.setUnderline(true)
             // text.setStrikeLine(true)
             text.setText("             Hello, World -- \(i) degrees.")
@@ -66,8 +66,8 @@ public class Example_05 {
                 .setSweepDegreesCW(270.0)
                 // .setSweepDegreesCCW(270.0)
                 // .setScaleFactor(2.0)
-                // .setRotateDegreesCW(90.0)
-                // .setRotateDegreesCCW(90.0)
+                // .setRotationClockwise(90.0)
+                // .setRotation(90.0)
                 .setStrokeWidth(5.0)
                 .setStrokeColor(Color.blue)
                 .drawOn(page)
@@ -80,8 +80,8 @@ public class Example_05 {
                 .setStrokeWidth(1.5)
                 .setStrokeColor(Color.blue)
                 .setScaleFactor(0.5)
-                .setRotateDegreesCW(45.0)
-                // .setRotateDegreesCCW(45.0)
+                .setRotationClockwise(45.0)
+                // .setRotation(45.0)
                 .drawOn(page)
 
         try pdf.complete()

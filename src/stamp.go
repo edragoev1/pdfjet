@@ -245,12 +245,6 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 	return s
 }
 
-// Rotate sets the rotation angle of this stamp, in degrees.
-func (s *Stamp) Rotate(degrees float64) *Stamp {
-	s.rotateDegrees = float32(degrees)
-	return s
-}
-
 // SetRotation sets the rotation angle of this stamp, in degrees.
 func (s *Stamp) SetRotation(degrees float64) *Stamp {
 	s.rotateDegrees = float32(degrees)
@@ -260,12 +254,6 @@ func (s *Stamp) SetRotation(degrees float64) *Stamp {
 // SetRotationClockwise sets a clockwise rotation, in degrees.
 func (s *Stamp) SetRotationClockwise(degrees float64) *Stamp {
 	s.rotateDegrees = float32(-degrees)
-	return s
-}
-
-// SetRotationCounterClockwise sets a counterclockwise rotation, in degrees.
-func (s *Stamp) SetRotationCounterClockwise(degrees float64) *Stamp {
-	s.rotateDegrees = float32(degrees)
 	return s
 }
 

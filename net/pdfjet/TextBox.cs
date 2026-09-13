@@ -845,7 +845,7 @@ public class TextBox : IDrawable {
                         null,   // Actual text
                         null)); // Alt description
             }
-            page.SetTextDirection(0);
+            page.SetTextRotation(0);
         }
         return new float[] {x + width, y + height};
     }
@@ -864,10 +864,10 @@ public class TextBox : IDrawable {
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);
         } else if (textDirection == Direction.BOTTOM_TO_TOP) {
-            page.SetTextDirection(90);
+            page.SetTextRotation(90);
             page.DrawString(font, fallbackFont, fontSize, text, yText, xText + height, color, colors);
         } else if (textDirection == Direction.TOP_TO_BOTTOM) {
-            page.SetTextDirection(270);
+            page.SetTextRotation(270);
             page.DrawString(font, fallbackFont, fontSize, text,
                     (yText + width) - (margin + 2*font.GetAscent(fontSize)), xText, color, colors);
         }

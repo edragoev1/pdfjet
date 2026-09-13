@@ -442,7 +442,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
 				y-((y-y1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0)
-			text.SetTextDirection(90)
+			text.SetTextRotation(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))
 		}
@@ -522,7 +522,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 			text.SetLocation(
 				x-barcode.font.bodyHeight,
 				y1+((y-y1)-barcode.font.StringWidth(barcode.font.size, fullText))/2)
-			text.SetTextDirection(270)
+			text.SetTextRotation(270)
 			xy = text.DrawOn(page)
 			xy[0] = float32(math.Max(float64(x), float64(xy[0]))) + w
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))
@@ -570,7 +570,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 			text.SetLocation(
 				x+w+barcode.font.bodyHeight,
 				y-((y-y1)-barcode.font.StringWidth(barcode.font.size, fullText))/2)
-			text.SetTextDirection(90)
+			text.SetTextRotation(90)
 			xy = text.DrawOn(page)
 			xy[1] = float32(math.Max(float64(y), float64(xy[1])))
 			return [2]float32{xy[0], xy[1] + barcode.font.descent}

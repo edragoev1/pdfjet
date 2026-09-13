@@ -56,15 +56,6 @@ public class Container: Drawable {
         return self
     }
 
-    /// Sets the rotation angle of this container.
-    ///
-    /// - Parameter degrees: The rotation angle in degrees.
-    @discardableResult
-    public func rotate(_ degrees: Double) -> Container {
-        self.rotateDegrees = Float(degrees)
-        return self
-    }
-
     /// Sets the rotation angle.
     ///
     /// - Parameter degrees: The rotation angle in degrees.
@@ -80,15 +71,6 @@ public class Container: Drawable {
     @discardableResult
     public func setRotationClockwise(_ degrees: Double) -> Container {
         self.rotateDegrees = Float(-degrees)
-        return self
-    }
-
-    /// Sets counter-clockwise rotation.
-    ///
-    /// - Parameter degrees: The rotation angle in degrees (counter-clockwise).
-    @discardableResult
-    public func setRotationCounterClockwise(_ degrees: Double) -> Container {
-        self.rotateDegrees = Float(degrees)
         return self
     }
 

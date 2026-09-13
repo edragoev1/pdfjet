@@ -423,7 +423,7 @@ public class Point : Drawable {
     /// - Parameter textDirection: the text direction.
     ///
     @discardableResult
-    public func setTextDirection(_ textDirection: Int) -> Point {
+    public func setTextRotation(_ textDirection: Int) -> Point {
         self.textDirection = textDirection
         return self
     }
@@ -433,7 +433,7 @@ public class Point : Drawable {
     ///
     /// - Returns: the text direction.
     ///
-    public func getTextDirection() -> Int {
+    public func getTextRotation() -> Int {
         return self.textDirection
     }
 

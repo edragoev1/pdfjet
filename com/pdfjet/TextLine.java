@@ -458,7 +458,7 @@ public class TextLine implements Drawable {
      * @param degrees the number of degrees.
      * @return this TextLine.
      */
-    public TextLine setTextDirection(int degrees) {
+    public TextLine setTextRotation(int degrees) {
         this.degrees = degrees;
         return this;
     }
@@ -468,7 +468,7 @@ public class TextLine implements Drawable {
      *
      * @return the text direction.
      */
-    public int getTextDirection() {
+    public int getTextRotation() {
         return degrees;
     }
 
@@ -651,7 +651,7 @@ public class TextLine implements Drawable {
         }
 
         float verticalOffset = getVerticalOffset();
-        page.setTextDirection(degrees);
+        page.setTextRotation(degrees);
         page.setBrushColor(textColor);
         // The text is drawn, so it is not given again as actual text, or as its
         // own alternate description: right to left text is drawn in visual
@@ -716,7 +716,7 @@ public class TextLine implements Drawable {
                     uriActualText,
                     uriAltDescription));
         }
-        page.setTextDirection(0);
+        page.setTextRotation(0);
 
         float len = font.stringWidth(fallbackFont, fontSize, text);
         double xMax = Math.max(x, x + len*Math.cos(radians));

@@ -1567,7 +1567,7 @@ public class Page {
     /// - Parameter angleInDegrees: the angle in degrees.
     ///
     @discardableResult
-    public func setTextDirection(_ angleInDegrees: Int) -> Page {
+    public func setTextRotation(_ angleInDegrees: Int) -> Page {
         var degrees: Int = angleInDegrees
         if degrees > 360 {
             degrees %= 360
@@ -2147,20 +2147,19 @@ public class Page {
         watermark.setLocation(
                 Float(Double(offset) * cos(angle)),
                 self.height - Float(Double(offset) * sin(angle)))
-        watermark.setTextDirection(Int(angle * (180.0 / Double.pi)))
+        watermark.setTextRotation(Int(angle * (180.0 / Double.pi)))
         watermark.drawOn(self)
     }
 
-    /// Sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
+    /// Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
     ///
-    /// - Parameter rotateDegrees: the rotation angle in degrees.
-    public func rotateBy(_ rotateDegrees: Double) {
-        if rotateDegrees == 0 ||
-                rotateDegrees == 90 ||
-                rotateDegrees == 180 ||
-                rotateDegrees == 270 {
-            self.rotateDegrees = Float(rotateDegrees)
+    /// - Parameter degrees: the rotation angle in degrees, clockwise.
+    @discardableResult
+    public func setRotationClockwise(_ degrees: Int) -> Page {
+        if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
+            self.rotateDegrees = Float(degrees)
         }
+        return self
     }
 
     /// Flips the y axis, so the origin is the top left corner of the page and y grows downward.

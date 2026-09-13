@@ -341,15 +341,15 @@ public class TextColumn implements Drawable {
             for (TextLine textLine : list) {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
                 if (rotate == 0) {
-                    textLine.setTextDirection(0);
+                    textLine.setTextRotation(0);
                     textLine.drawOn(page);
                     x1 += textLine.getWidth() + dx;
                 } else if (rotate == 90) {
-                    textLine.setTextDirection(90);
+                    textLine.setTextRotation(90);
                     textLine.drawOn(page);
                     y1 -= textLine.getWidth() + dx;
                 } else if (rotate == 270) {
-                    textLine.setTextDirection(270);
+                    textLine.setTextRotation(270);
                     textLine.drawOn(page);
                     y1 += textLine.getWidth() + dx;
                 }
@@ -387,15 +387,15 @@ public class TextColumn implements Drawable {
         for (TextLine textLine : list) {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
             if (rotate == 0) {
-                textLine.setTextDirection(0);
+                textLine.setTextRotation(0);
                 textLine.drawOn(page);
                 x1 += textLine.getWidth();
             } else if (rotate == 90) {
-                textLine.setTextDirection(90);
+                textLine.setTextRotation(90);
                 textLine.drawOn(page);
                 y1 -= textLine.getWidth();
             } else if (rotate == 270) {
-                textLine.setTextDirection(270);
+                textLine.setTextRotation(270);
                 textLine.drawOn(page);
                 y1 += textLine.getWidth();
             }

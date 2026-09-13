@@ -373,7 +373,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 
 	// Draw the Y axis title
 	page.SetBrushColor(color.Black)
-	page.SetTextDirection(90)
+	page.SetTextRotation(90)
 	page.drawString(
 		chart.f2,
 		chart.fontSize,
@@ -384,7 +384,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		nil)
 
 	// Draw the X axis title
-	page.SetTextDirection(0)
+	page.SetTextRotation(0)
 	page.SetBrushColor(color.Black)
 	page.drawString(
 		chart.f2,
@@ -603,7 +603,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			page.DrawPath(points, pathoperator.Stroke)
 			if p0.GetText() != "" {
 				page.SetBrushColorRGB(p0.GetTextColor())
-				page.SetTextDirection(p0.GetTextDirection())
+				page.SetTextRotation(p0.GetTextRotation())
 				page.drawString(
 					chart.f2,
 					chart.fontSize,

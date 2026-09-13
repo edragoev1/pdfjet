@@ -84,8 +84,8 @@ func (b *BaseAnnotation) SetContents(contents string) *BaseAnnotation {
 	return b
 }
 
-// Rotate rotates the annotation around its center by the given degrees.
-func (b *BaseAnnotation) Rotate(degrees float64) *BaseAnnotation {
+// rotate rotates the annotation around its center by the given degrees.
+func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 	if b.container == nil {
 		return b
 	}

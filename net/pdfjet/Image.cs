@@ -239,7 +239,7 @@ public class Image : IDrawable {
     /// </summary>
     /// <param name="degrees">the number of degrees.</param>
     /// <returns>this Image object.</returns>
-    public Image RotateClockwise(int degrees) {
+    public Image SetRotationClockwise(int degrees) {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
         }

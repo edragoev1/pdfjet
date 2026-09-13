@@ -19,7 +19,7 @@ public class Example_05 {
         TextLine text = new TextLine(f1);
         text.SetLocation(300f, 300f);
         for (int i = 0; i < 360; i += 15) {
-            text.SetTextDirection(i);
+            text.SetTextRotation(i);
             text.SetUnderline(true);
             // text.SetStrikeLine(true);
             text.SetText("             Hello, World -- " + i + " degrees.");
@@ -67,8 +67,8 @@ public class Example_05 {
             .SetSweepDegreesCW(270f)
             // .SetSweepDegreesCCW(270f)
             // .SetScaleFactor(2f)
-            // .SetRotateDegreesCW(90f)
-            // .SetRotateDegreesCCW(90f)
+            // .SetRotationClockwise(90f)
+            // .SetRotation(90f)
             .SetStrokeWidth(5f)
             .SetStrokeColor(Color.blue)
             .DrawOn(page);
@@ -81,8 +81,8 @@ public class Example_05 {
             .SetStrokeWidth(1.5f)
             .SetStrokeColor(Color.blue)
             .SetScaleFactor(0.5f)
-            .SetRotateDegreesCW(45f)
-            // .SetRotateDegreesCCW(45f)
+            .SetRotationClockwise(45f)
+            // .SetRotation(45f)
             .DrawOn(page);
 
         pdf.Complete();

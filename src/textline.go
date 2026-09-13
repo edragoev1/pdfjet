@@ -262,17 +262,17 @@ func (textLine *TextLine) GetStrikeout() bool {
 	return textLine.strikeout
 }
 
-// SetTextDirection sets the direction in which to draw the text.
+// SetTextRotation sets the direction in which to draw the text.
 // @param degrees the number of degrees.
 // @return this TextLine.
-func (textLine *TextLine) SetTextDirection(degrees int) *TextLine {
+func (textLine *TextLine) SetTextRotation(degrees int) *TextLine {
 	textLine.degrees = degrees
 	return textLine
 }
 
-// GetTextDirection returns the text direction.
+// GetTextRotation returns the text direction.
 // @return the text direction.
-func (textLine *TextLine) GetTextDirection() int {
+func (textLine *TextLine) GetTextRotation() int {
 	return textLine.degrees
 }
 
@@ -412,7 +412,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	verticalOffset := textLine.GetVerticalOffset()
-	page.SetTextDirection(textLine.degrees)
+	page.SetTextRotation(textLine.degrees)
 	page.SetBrushColorRGB(textLine.textColor)
 	// The text is drawn, so it is not given again as actual text, or as its own
 	// alternate description: right to left text is drawn in visual order, and
@@ -491,7 +491,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		})
 	}
 
-	page.SetTextDirection(0)
+	page.SetTextRotation(0)
 
 	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))

@@ -284,13 +284,6 @@ public class Stamp : Drawable {
 
     /// Sets the rotation angle of this stamp in degrees.
     @discardableResult
-    public func rotate(_ degrees: Float) -> Stamp {
-        self.rotateDegrees = degrees
-        return self
-    }
-
-    /// Sets the rotation angle of this stamp in degrees.
-    @discardableResult
     public func setRotation(_ degrees: Float) -> Stamp {
         self.rotateDegrees = degrees
         return self
@@ -300,13 +293,6 @@ public class Stamp : Drawable {
     @discardableResult
     public func setRotationClockwise(_ degrees: Float) -> Stamp {
         self.rotateDegrees = -degrees
-        return self
-    }
-
-    /// Sets a counterclockwise rotation in degrees.
-    @discardableResult
-    public func setRotationCounterClockwise(_ degrees: Float) -> Stamp {
-        self.rotateDegrees = degrees
         return self
     }
 

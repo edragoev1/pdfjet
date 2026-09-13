@@ -299,15 +299,15 @@ public class TextColumn : IDrawable {
             foreach (TextLine textLine in list) {
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
                 if (rotate == 0) {
-                    textLine.SetTextDirection(0);
+                    textLine.SetTextRotation(0);
                     textLine.DrawOn(page);
                     x1 += textLine.GetWidth() + dx;
                 } else if (rotate == 90) {
-                    textLine.SetTextDirection(90);
+                    textLine.SetTextRotation(90);
                     textLine.DrawOn(page);
                     y1 -= textLine.GetWidth() + dx;
                 } else if (rotate == 270) {
-                    textLine.SetTextDirection(270);
+                    textLine.SetTextRotation(270);
                     textLine.DrawOn(page);
                     y1 += textLine.GetWidth() + dx;
                 }
@@ -345,15 +345,15 @@ public class TextColumn : IDrawable {
         foreach (TextLine textLine in list) {
             textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
             if (rotate == 0) {
-                textLine.SetTextDirection(0);
+                textLine.SetTextRotation(0);
                 textLine.DrawOn(page);
                 x1 += textLine.GetWidth();
             } else if (rotate == 90) {
-                textLine.SetTextDirection(90);
+                textLine.SetTextRotation(90);
                 textLine.DrawOn(page);
                 y1 -= textLine.GetWidth();
             } else if (rotate == 270) {
-                textLine.SetTextDirection(270);
+                textLine.SetTextRotation(270);
                 textLine.DrawOn(page);
                 y1 += textLine.GetWidth();
             }

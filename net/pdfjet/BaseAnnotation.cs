@@ -78,7 +78,7 @@ public class BaseAnnotation : IDrawable {
     }
 
     /// <summary>Rotates this annotation together with the container it is in.</summary>
-    public BaseAnnotation Rotate(double degrees) {
+    internal BaseAnnotation Rotate(double degrees) {
         if (container == null) { return this; }
         float[] center = container.GetRotationCenter();
         if (container.parent != null) {

@@ -71,10 +71,10 @@ func Example35() {
 	stamp.SetLocation(50.0, 50.0).DrawOn(page)
 
 	// Rotate the stamp counter clockwise and draw it again
-	stamp.Rotate(15).DrawOn(page)
+	stamp.SetRotation(15).DrawOn(page)
 
 	// Rotate the stamp clockwise and draw it again
-	stamp.Rotate(-15).DrawOn(page)
+	stamp.SetRotation(-15).DrawOn(page)
 
 	// Add a text line to container
 	title := pdfjet.NewTextLine(f1, "Container")
@@ -84,7 +84,7 @@ func Example35() {
 	// Nested container #1
 	nested1 := pdfjet.NewContainer(200.0, 200.0)
 	nested1.SetLocation(0.0, 0.0)
-	nested1.SetRotationCounterClockwise(30)
+	nested1.SetRotation(30)
 	nested1.SetScaleFactor(0.8)
 
 	innerRect := pdfjet.NewRect(0.0, 0.0, 200.0, 200.0)
@@ -100,7 +100,7 @@ func Example35() {
 	// Nested container #2
 	nested2 := pdfjet.NewContainer(100.0, 100.0)
 	nested2.SetLocation(250.0, 250.0)
-	nested2.SetRotationCounterClockwise(45)
+	nested2.SetRotation(45)
 
 	smallRect := pdfjet.NewRect(0.0, 0.0, 100.0, 100.0)
 	smallRect.SetFillColor(color.Red)

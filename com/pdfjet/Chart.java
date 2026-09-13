@@ -512,7 +512,7 @@ public class Chart implements Drawable {
 
         // Draw Y axis title (rotated 90 degrees)
         page.setBrushColor(Color.black);
-        page.setTextDirection(90);
+        page.setTextRotation(90);
         page.drawString(
                 f2,
                 fontSize,
@@ -521,7 +521,7 @@ public class Chart implements Drawable {
                 y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2);
 
         // Draw X axis title
-        page.setTextDirection(0);
+        page.setTextRotation(0);
         page.setBrushColor(Color.black);
         page.drawString(
                 f2,
@@ -749,7 +749,7 @@ public class Chart implements Drawable {
                 page.drawPath(points, PathOperator.STROKE);
                 if (p0.getText() != null) {
                     page.setBrushColor(p0.getTextColor());
-                    page.setTextDirection(p0.getTextDirection());
+                    page.setTextRotation(p0.getTextRotation());
                     page.drawString(
                             f2,
                             null,

@@ -421,7 +421,7 @@ public class Chart : IDrawable {
 
         // Draw Y axis title (rotated 90 degrees)
         page.SetBrushColor(Color.black);
-        page.SetTextDirection(90);
+        page.SetTextRotation(90);
         page.DrawString(
                 f2,
                 fontSize,
@@ -430,7 +430,7 @@ public class Chart : IDrawable {
                 y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2);
 
         // Draw X axis title
-        page.SetTextDirection(0);
+        page.SetTextRotation(0);
         page.SetBrushColor(Color.black);
         page.DrawString(
                 f2,
@@ -664,7 +664,7 @@ public class Chart : IDrawable {
                 page.DrawPath(points, PathOperator.Stroke);
                 if (p0.GetText() != null) {
                     page.SetBrushColor(p0.GetTextColor());
-                    page.SetTextDirection(p0.GetTextDirection());
+                    page.SetTextRotation(p0.GetTextRotation());
                     page.DrawString(
                             f2,
                             null,

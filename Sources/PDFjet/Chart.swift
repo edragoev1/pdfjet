@@ -457,7 +457,7 @@ public class Chart : Drawable {
 
             // Draw the Y axis title
             page!.setBrushColor(Color.black)
-            page!.setTextDirection(90)
+            page!.setTextRotation(90)
             page!.drawString(
                     f2!,
                     fontSize,
@@ -466,7 +466,7 @@ public class Chart : Drawable {
                     y8 - ((y8 - y5) - f2!.stringWidth(yAxisTitle)) / 2)
 
             // Draw the X axis title
-            page!.setTextDirection(0)
+            page!.setTextRotation(0)
             page!.setBrushColor(Color.black)
             page!.drawString(
                     f2!,
@@ -680,7 +680,7 @@ public class Chart : Drawable {
                     page.drawPath(points, PathOperator.stroke)
                     if p0.getText() != nil {
                         page.setBrushColor(p0.getTextColor())
-                        page.setTextDirection(p0.getTextDirection())
+                        page.setTextRotation(p0.getTextRotation())
                         page.drawString(
                             f2!,
                             fontSize,

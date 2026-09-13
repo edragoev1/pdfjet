@@ -1815,7 +1815,7 @@ final public class Page {
      *  @param degrees the angle.
      *  @return this Page object.
      */
-    public Page setTextDirection(int degrees) {
+    public Page setTextRotation(int degrees) {
         if (degrees > 360) degrees %= 360;
         if (degrees == 0) {
             tmx = new float[] { 1f,  0f,  0f,  1f};
@@ -2473,22 +2473,21 @@ final public class Page {
         watermark.setLocation(
                 (float) (offset * Math.cos(angle)),
                 (this.height - (float) (offset * Math.sin(angle))));
-        watermark.setTextDirection((int) (angle * (180.0 / Math.PI)));
+        watermark.setTextRotation((int) (angle * (180.0 / Math.PI)));
         watermark.drawOn(this);
     }
 
     /**
-     * Sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
+     * Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
      *
-     * @param rotateDegrees the rotation angle in degrees.
+     * @param degrees the rotation angle in degrees, clockwise.
+     * @return this Page object.
      */
-    public void rotateBy(double rotateDegrees) {
-        if (rotateDegrees == 0 ||
-            rotateDegrees == 90 ||
-            rotateDegrees == 180 ||
-            rotateDegrees == 270) {
-            this.rotateDegrees = (float) rotateDegrees;
+    public Page setRotationClockwise(int degrees) {
+        if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
+            this.rotateDegrees = degrees;
         }
+        return this;
     }
 
     /**

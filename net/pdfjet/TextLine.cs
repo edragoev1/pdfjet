@@ -353,7 +353,7 @@ public class TextLine : IDrawable {
     /// </summary>
     /// <param name="degrees">the number of degrees.</param>
     /// <returns>this TextLine.</returns>
-    public TextLine SetTextDirection(int degrees) {
+    public TextLine SetTextRotation(int degrees) {
         this.degrees = degrees;
         return this;
     }
@@ -362,7 +362,7 @@ public class TextLine : IDrawable {
     /// Returns the text direction.
     /// </summary>
     /// <returns>the text direction.</returns>
-    public int GetTextDirection() {
+    public int GetTextRotation() {
         return degrees;
     }
 
@@ -511,7 +511,7 @@ public class TextLine : IDrawable {
         }
 
         float verticalOffset = GetVerticalOffset();
-        page.SetTextDirection(degrees);
+        page.SetTextRotation(degrees);
         page.SetBrushColor(textColor);
         // The text is drawn, so it is not given again as actual text, or as its
         // own alternate description: right to left text is drawn in visual
@@ -576,7 +576,7 @@ public class TextLine : IDrawable {
                     uriActualText,
                     uriAltDescription));
         }
-        page.SetTextDirection(0);
+        page.SetTextRotation(0);
 
         float len = font.StringWidth(fallbackFont, fontSize, text);
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));

@@ -269,15 +269,6 @@ public class Stamp : IDrawable {
     /// Sets the rotation angle.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees.</param>
-    public Stamp Rotate(double degrees) {
-        this.rotateDegrees = (float)degrees;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the rotation angle.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees.</param>
     public Stamp SetRotation(double degrees) {
         this.rotateDegrees = (float)degrees;
         return this;
@@ -289,15 +280,6 @@ public class Stamp : IDrawable {
     /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
     public Stamp SetRotationClockwise(double degrees) {
         this.rotateDegrees = (float)-degrees;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets counter-clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (counter-clockwise).</param>
-    public Stamp SetRotationCounterClockwise(double degrees) {
-        this.rotateDegrees = (float)degrees;
         return this;
     }
 

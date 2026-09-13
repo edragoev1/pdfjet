@@ -68,10 +68,10 @@ public class Example_35 {
         stamp.setLocation(50f, 50f).drawOn(page);
 
         // Rotate the stamp counter clockwise and draw it again
-        stamp.rotate(15).drawOn(page);
+        stamp.setRotation(15).drawOn(page);
 
         // Rotate the stamp clockwise and draw it again
-        stamp.rotate(-15).drawOn(page);
+        stamp.setRotation(-15).drawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");
@@ -81,7 +81,7 @@ public class Example_35 {
         // Nested container #1
         Container nested1 = new Container(200f, 200f);
         nested1.setLocation(0f, 0f);
-        nested1.setRotationCounterClockwise(30);
+        nested1.setRotation(30);
         nested1.setScaleFactor(0.8f);
 
         Rect innerRect = new Rect(0f, 0f, 200f, 200f);
@@ -97,7 +97,7 @@ public class Example_35 {
         // Nested container #2
         Container nested2 = new Container(100f, 100f);
         nested2.setLocation(250f, 250f);
-        nested2.setRotationCounterClockwise(45);
+        nested2.setRotation(45);
 
         Rect smallRect = new Rect(0f, 0f, 100f, 100f);
         smallRect.setFillColor(Color.red);

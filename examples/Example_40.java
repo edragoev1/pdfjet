@@ -114,7 +114,7 @@ final public class Example_40 {
         point.setStrokeColor(color);
         point.setText(text);
         point.setTextColor(textColor);
-        point.setTextDirection(90);
+        point.setTextRotation(90);
         path1.add(point);
 
         point = new Point();

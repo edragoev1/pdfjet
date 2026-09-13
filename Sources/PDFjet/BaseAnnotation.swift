@@ -75,7 +75,7 @@ public class BaseAnnotation: Drawable {
 
     /// Rotates this annotation together with the container it is in.
     @discardableResult
-    public func rotate(_ degrees: Double) -> BaseAnnotation {
+    func rotate(_ degrees: Double) -> BaseAnnotation {
         if container == nil { return self }
         var center = container!.getRotationCenter()
         if container!.parent != nil {

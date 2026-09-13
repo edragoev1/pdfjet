@@ -190,25 +190,25 @@ public class Arc : IDrawable {
     }
 
     /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
-    public Arc SetRotateDegreesCW(float degrees) {
+    public Arc SetRotationClockwise(float degrees) {
         this.rotateDegrees = -degrees;
         return this;
     }
 
     /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
-    public Arc SetRotateDegreesCW(double degrees) {
+    public Arc SetRotationClockwise(double degrees) {
         this.rotateDegrees = (float) -degrees;
         return this;
     }
 
     /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
-    public Arc SetRotateDegreesCCW(float degrees) {
+    public Arc SetRotation(float degrees) {
         this.rotateDegrees = degrees;
         return this;
     }
 
     /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
-    public Arc SetRotateDegreesCCW(double degrees) {
+    public Arc SetRotation(double degrees) {
         this.rotateDegrees = (float) degrees;
         return this;
     }

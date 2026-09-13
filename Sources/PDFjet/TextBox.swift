@@ -690,7 +690,7 @@ public class TextBox : Drawable {
                         nil,
                         nil))
             }
-            page!.setTextDirection(0)
+            page!.setTextRotation(0)
         }
         return [x + width, y + height]
     }
@@ -709,11 +709,11 @@ public class TextBox : Drawable {
         if textDirection == Direction.LEFT_TO_RIGHT {
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors)
         } else if textDirection == Direction.BOTTOM_TO_TOP {
-            page.setTextDirection(90)
+            page.setTextRotation(90)
             page.drawString(
                     font, fallbackFont, fontSize, text, yText, xText + height, color, colors)
         } else if textDirection == Direction.TOP_TO_BOTTOM {
-            page.setTextDirection(270)
+            page.setTextRotation(270)
             page.drawString(font, fallbackFont, fontSize, text,
                     (yText + width) - (margin + 2*font.getAscent(fontSize)),
                     xText, color, colors)

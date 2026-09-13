@@ -506,7 +506,7 @@ public class Barcode implements Drawable {
                 textLine.setLocation(
                         x + w + font.getBodyHeight(),
                         y - ((y - y1) - font.stringWidth(text))/2);
-                textLine.setTextDirection(90);
+                textLine.setTextRotation(90);
                 xy = textLine.drawOn(page);
                 xy[1] = Math.max(y, xy[1]);
             }
@@ -587,7 +587,7 @@ public class Barcode implements Drawable {
                 textLine.setLocation(
                         x - font.getBodyHeight(),
                         y1 + ((y - y1) - font.stringWidth(fullText))/2);
-                textLine.setTextDirection(270);
+                textLine.setTextRotation(270);
                 xy = textLine.drawOn(page);
                 xy[0] = Math.max(x, xy[0]) + w;
                 xy[1] = Math.max(y, xy[1]);
@@ -638,7 +638,7 @@ public class Barcode implements Drawable {
                 textLine.setLocation(
                         x + w + font.getBodyHeight(),
                         y - ((y - y1) - font.stringWidth(fullText))/2);
-                textLine.setTextDirection(90);
+                textLine.setTextRotation(90);
                 xy = textLine.drawOn(page);
                 xy[1] = Math.max(y, xy[1]);
                 return new float[] {xy[0], xy[1] + font.getDescent()};

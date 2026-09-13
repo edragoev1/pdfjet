@@ -367,7 +367,7 @@ public class TextLine : Drawable {
     /// - Returns: the TextLine.
     ///
     @discardableResult
-    public func setTextDirection(_ degrees: Int) -> TextLine {
+    public func setTextRotation(_ degrees: Int) -> TextLine {
         self.degrees = degrees
         return self
     }
@@ -377,7 +377,7 @@ public class TextLine : Drawable {
     ///
     /// - Returns: the text direction.
     ///
-    public func getTextDirection() -> Int {
+    public func getTextRotation() -> Int {
         return degrees
     }
 
@@ -553,7 +553,7 @@ public class TextLine : Drawable {
         }
 
         let verticalOffset = getVerticalOffset()
-        page!.setTextDirection(degrees)
+        page!.setTextRotation(degrees)
         page!.setBrushColor(textColor)
         // The text is drawn, so it is not given again as actual text, or as its
         // own alternate description: right to left text is drawn in visual
@@ -619,7 +619,7 @@ public class TextLine : Drawable {
                     uriActualText,
                     uriAltDescription))
         }
-        page!.setTextDirection(0)
+        page!.setTextRotation(0)
 
         let len = Double(font!.stringWidth(fallbackFont, fontSize, text!))
         let xMax = max(Double(x), Double(x) + len*cos(radians))

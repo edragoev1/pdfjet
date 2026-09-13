@@ -1477,7 +1477,7 @@ func (page *Page) SetTextRenderingMode(mode int) *Page {
 	return page
 }
 
-// SetTextDirection sets the text direction for rendering text on the page.
+// SetTextRotation sets the rotation, in degrees, of the text drawn on the page.
 // The direction is specified as an angle in degrees (0-360).
 // If the degree value is greater than 360, it will be normalized to the range [0, 360).
 //
@@ -1487,8 +1487,8 @@ func (page *Page) SetTextRenderingMode(mode int) *Page {
 //
 // Example usage:
 //
-//	page.SetTextDirection(90)
-func (page *Page) SetTextDirection(degrees int) *Page {
+//	page.SetTextRotation(90)
+func (page *Page) SetTextRotation(degrees int) *Page {
 	if degrees > 360 {
 		degrees %= 360
 	}
@@ -1884,7 +1884,7 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	watermark.SetLocation(
 		float32(float64(offset)*math.Cos(angle)),
 		page.height-float32(float64(offset)*math.Sin(angle)))
-	watermark.SetTextDirection((int)(angle * (180.0 / math.Pi)))
+	watermark.SetTextRotation((int)(angle * (180.0 / math.Pi)))
 	watermark.DrawOn(page)
 }
 
@@ -1893,11 +1893,13 @@ func (page *Page) GetContent() []byte {
 	return slices.Clone(page.buf)
 }
 
-// RotateBy sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
-func (page *Page) RotateBy(rotateDegrees float64) {
-	if rotateDegrees == 0 || rotateDegrees == 90 || rotateDegrees == 180 || rotateDegrees == 270 {
-		page.rotateDegrees = float32(rotateDegrees)
+// SetRotationClockwise sets the clockwise rotation of this page in degrees.
+// Only 0, 90, 180 and 270 are accepted; other values are ignored.
+func (page *Page) SetRotationClockwise(degrees int) *Page {
+	if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
+		page.rotateDegrees = float32(degrees)
 	}
+	return page
 }
 
 // InvertYAxis inverts the Y axis.

@@ -287,13 +287,13 @@ public class TextColumn : Drawable {
             for textLine in list {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
                 if rotate == 0 {
-                    textLine.setTextDirection(0).drawOn(page)
+                    textLine.setTextRotation(0).drawOn(page)
                     x1 += textLine.getWidth() + dx
                 } else if rotate == 90 {
-                    textLine.setTextDirection(90).drawOn(page)
+                    textLine.setTextRotation(90).drawOn(page)
                     y1 -= textLine.getWidth() + dx
                 } else if rotate == 270 {
-                    textLine.setTextDirection(270).drawOn(page)
+                    textLine.setTextRotation(270).drawOn(page)
                     y1 += textLine.getWidth() + dx
                 }
             }
@@ -330,13 +330,13 @@ public class TextColumn : Drawable {
         for textLine in list {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
             if rotate == 0 {
-                textLine.setTextDirection(0).drawOn(page)
+                textLine.setTextRotation(0).drawOn(page)
                 x1 += textLine.getWidth()
             } else if rotate == 90 {
-                textLine.setTextDirection(90).drawOn(page)
+                textLine.setTextRotation(90).drawOn(page)
                 y1 -= textLine.getWidth()
             } else if rotate == 270 {
-                textLine.setTextDirection(270).drawOn(page)
+                textLine.setTextRotation(270).drawOn(page)
                 y1 += textLine.getWidth()
             }
         }

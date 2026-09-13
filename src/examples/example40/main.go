@@ -115,7 +115,7 @@ func AddVerticalBar(
 	point.SetStrokeColor(color)
 	point.SetText(text)
 	point.SetTextColor(textColor)
-	point.SetTextDirection(90)
+	point.SetTextRotation(90)
 	path1 = append(path1, point)
 
 	point = pdfjet.NewPoint(x, h)

@@ -497,7 +497,7 @@ public class Point : IDrawable {
     /// </summary>
     /// <param name="textDirection">the text direction.</param>
     /// <returns>this Point object.</returns>
-    public Point SetTextDirection(int textDirection) {
+    public Point SetTextRotation(int textDirection) {
         this.textDirection = textDirection;
         return this;
     }
@@ -506,7 +506,7 @@ public class Point : IDrawable {
     /// Returns the point's text direction.
     /// </summary>
     /// <returns>the text direction.</returns>
-    public int GetTextDirection() {
+    public int GetTextRotation() {
         return this.textDirection;
     }
 

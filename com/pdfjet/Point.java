@@ -603,7 +603,7 @@ public class Point implements Drawable {
      *  @param textDirection the text direction.
      *  @return this Point object.
      */
-    public Point setTextDirection(int textDirection) {
+    public Point setTextRotation(int textDirection) {
         this.textDirection = textDirection;
         return this;
     }
@@ -613,7 +613,7 @@ public class Point implements Drawable {
      *
      *  @return the text direction.
      */
-    public int getTextDirection() {
+    public int getTextRotation() {
         return this.textDirection;
     }
 

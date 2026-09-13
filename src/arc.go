@@ -131,14 +131,14 @@ func (arc *Arc) SetFillColorRGB(rgbColor [3]float32) *Arc {
 	return arc
 }
 
-// SetRotateDegreesCW rotates this arc clockwise by the specified degrees.
-func (arc *Arc) SetRotateDegreesCW(degrees float32) *Arc {
+// SetRotationClockwise rotates this arc clockwise by the specified degrees.
+func (arc *Arc) SetRotationClockwise(degrees float32) *Arc {
 	arc.rotateDegrees = -degrees
 	return arc
 }
 
-// SetRotateDegreesCCW rotates this arc counterclockwise by the specified degrees.
-func (arc *Arc) SetRotateDegreesCCW(degrees float32) *Arc {
+// SetRotation rotates this arc counterclockwise by the specified degrees.
+func (arc *Arc) SetRotation(degrees float32) *Arc {
 	arc.rotateDegrees = degrees
 	return arc
 }

@@ -313,7 +313,7 @@ final public class Image implements Drawable {
      * @return this Image object.
      * @throws Exception if there is an issue.
      */
-    public Image rotateClockwise(int degrees) throws Exception {
+    public Image setRotationClockwise(int degrees) throws Exception {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
         }
