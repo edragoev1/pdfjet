@@ -60,6 +60,21 @@ class BMPImage {
             try skipNBytes(stream, 2)
             self.bpp = try read2BytesLE(stream)
             let compression = try readSignedInt(stream)
+            // The size and the bit depth come from the file, so they are
+            // checked, without overflow, before any buffer is allocated.
+            if w <= 0 || h <= 0 || h > Int(Int32.max) {    // -Int32.min is not an Int32
+                throw PDFjetError(message: "Invalid BMP image size.")
+            }
+            if ![1, 4, 8, 16, 24, 32].contains(bpp) {
+                throw PDFjetError(message: "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
+            }
+            let rowSize = 4 * ((bpp * w + 31) / 32)     // w is an Int32 and bpp at most 32
+            let (samples, samplesOverflow) = (3 * w).multipliedReportingOverflow(by: h)
+            let (rows, rowsOverflow) = rowSize.multipliedReportingOverflow(by: h)
+            if samplesOverflow || rowsOverflow ||
+                    samples > MAX_DECODED_LENGTH || rows > MAX_DECODED_LENGTH {
+                throw PDFjetError(message: "The BMP image is larger than \(MAX_DECODED_LENGTH) bytes.")
+            }
             if bpp > 8 {
                 r5g6b5 = (compression == 3)
                 try skipNBytes(stream, 20)
@@ -71,6 +86,9 @@ class BMPImage {
                 var numPalColors = try readSignedInt(stream)
                 if numPalColors == 0 {
                     numPalColors = Int(pow(2.0, Double(bpp)))
+                }
+                if numPalColors < 0 || numPalColors > 256 {
+                    throw PDFjetError(message: "Invalid BMP palette size \(numPalColors).")
                 }
                 try skipNBytes(stream, 4)
                 try parsePalette(stream, numPalColors)
@@ -86,7 +104,7 @@ class BMPImage {
             throw BMPImageError.invalidImageData
         }
         image = [UInt8](repeating: 0, count: (3 * w * h))
-        let rowsize = 4 * Int(ceil(Double(w * bpp) / 32.0)) // 4 byte alignment
+        let rowsize = 4 * ((bpp * w + 31) / 32)         // 4 byte alignment
         var row: [UInt8]
         var index = 0
         for i in 0..<self.h {
@@ -235,8 +253,15 @@ class BMPImage {
         }
     }
 
+    // Skips in pieces, so that a count that the file does not have fails at the
+    // end of the stream instead of allocating the count.
     private func skipNBytes(_ stream: InputStream, _ n: Int) throws {
-        _ = try getBytes(stream, n)
+        var remaining = n
+        while remaining > 0 {
+            let count = min(remaining, 65536)
+            _ = try getBytes(stream, count)
+            remaining -= count
+        }
     }
 
     // Reads length bytes: a single read may return fewer bytes than asked for.

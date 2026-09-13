@@ -105,6 +105,14 @@ import Testing
         #expect(TestSupport.pageObjects(try TestSupport.read(bytes)).count == 2)
     }
 
+    @Test func crossReferenceOffsetsAreTenDigits() throws {
+        #expect(try PDF.xrefOffset(17) == "0000000017")
+        #expect(try PDF.xrefOffset(9999999999) == "9999999999")
+        let error = #expect(throws: (any Error).self) { _ = try PDF.xrefOffset(10000000000) }
+        #expect(TestSupport.message(error)
+                == "The PDF is too large for a cross-reference table: an object starts at byte 10000000000.")
+    }
+
     @Test func completeClosesTheStream() throws {
         let stream = ClosingStream(toMemory: ())
         let pdf = PDF(stream)

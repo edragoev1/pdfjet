@@ -201,6 +201,17 @@ public class PDF {
         objOffset[number - 1] = offset
     }
 
+    // Returns the offset as the 10 digits of an entry of the cross-reference
+    // table, which cannot hold an offset of more than 10 digits.
+    static func xrefOffset(_ offset: Int) throws -> String {
+        let digits = String(offset)
+        if digits.count > 10 {
+            throw PDFjetError(message: "The PDF is too large for a cross-reference table: "
+                    + "an object starts at byte \(offset).")
+        }
+        return String(repeating: "0", count: 10 - digits.count) + digits
+    }
+
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
@@ -1178,11 +1189,7 @@ public class PDF {
                 buffer.append("0000000000 65535 f \n")
                 continue
             }
-            let str = String(offset)
-            for _ in 0..<(10 - str.count) {
-                buffer.append("0")
-            }
-            buffer.append(str)
+            buffer.append(try PDF.xrefOffset(offset))
             buffer.append(" 00000 n \n")
         }
         append(buffer)

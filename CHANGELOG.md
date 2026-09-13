@@ -192,6 +192,14 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - SVG images: `fill="none"` without a stroke draws nothing instead of a black
   shape, `none` on a path overrides the colors of the svg element, and an open
   path with a stroke is stroked.
+- Untrusted input is limited: a stream, a font stream or the samples of a PNG
+  or BMP image decode to at most 256 MiB, and the size, bit depth, color type
+  and palette of an image are checked before any buffer is allocated for it,
+  so a decompression bomb or a lying header fails with an error instead of
+  exhausting the memory. PNG chunks are read in pieces, which also reads
+  streams that return few bytes at a time, and a truecolor PNG with a
+  suggested palette is decoded as truecolor. Java and C# write PDFs larger
+  than 2 GiB with correct offsets.
 - Java reads a PDF that has a blank page. A truncated Flate stream fails with
   an error in the four ports: Swift crashed and C# returned the bytes decoded
   so far. C# no longer hangs on a truncated BMP image.

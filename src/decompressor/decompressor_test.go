@@ -25,7 +25,11 @@ func testEqual(t *testing.T, name string, want, got []byte) {
 func TestDecompressorLzwDecodesTheExampleOfTheStandard(t *testing.T) {
 	// ISO 32000-1, 7.4.4.2: the encoding of "-----A---B".
 	encoded := []byte{0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01}
-	testEqual(t, "lzw", []byte("-----A---B"), LZWDecode(encoded))
+	decoded, err := LZWDecode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEqual(t, "lzw", []byte("-----A---B"), decoded)
 }
 
 func TestDecompressorAsciiHexDecodeSkipsWhitespaceAndStopsAtTheEndMarker(t *testing.T) {
@@ -48,7 +52,11 @@ func TestDecompressorAscii85DecodesZAsFourZeroBytesAndAPartialLastGroup(t *testi
 }
 
 func TestDecompressorRunLengthDecodeCopiesLiteralsAndRepeatsRuns(t *testing.T) {
-	testEqual(t, "run length", []byte("abcxxx"), RunLengthDecode([]byte{2, 'a', 'b', 'c', 254, 'x', 128}))
+	decoded, err := RunLengthDecode([]byte{2, 'a', 'b', 'c', 254, 'x', 128})
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEqual(t, "run length", []byte("abcxxx"), decoded)
 }
 
 func TestDecompressorPngPredictorsUndoEachRowFilter(t *testing.T) {
@@ -114,6 +122,63 @@ func TestDecompressorInflateRejectsEveryTruncationOfAStream(t *testing.T) {
 		if _, err := Inflate(deflated[:length]); err == nil {
 			t.Errorf("length %d: no error", length)
 		}
+	}
+}
+
+func TestDecompressorTheDecodedLengthLimitIs256MiB(t *testing.T) {
+	if MaxDecodedLength != 256*1024*1024 {
+		t.Errorf("MaxDecodedLength %d", MaxDecodedLength)
+	}
+}
+
+func TestDecompressorInflateRejectsDataThatDecodesToMoreThanTheLimit(t *testing.T) {
+	deflated := compressor.Deflate(make([]byte, 1000))
+	if data, err := InflateWithMaxLength(deflated, 1000); err != nil || len(data) != 1000 {
+		t.Errorf("decoded %d bytes, error %v", len(data), err)
+	}
+	_, err := InflateWithMaxLength(deflated, 999)
+	if err == nil || err.Error() != "Flate data decodes to more than 999 bytes" {
+		t.Errorf("error %v", err)
+	}
+}
+
+func TestDecompressorInflatePrefixReturnsTheFirstBytesAndIgnoresTheRest(t *testing.T) {
+	data := []byte("hello hello hello hello")
+	deflated := compressor.Deflate(data)
+	prefix, err := InflatePrefix(deflated, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEqual(t, "prefix", data[:5], prefix)
+	all, err := InflatePrefix(deflated, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEqual(t, "all", data, all)
+	if _, err := InflatePrefix(deflated[:6], 20); err == nil {
+		t.Error("no error for a truncated stream")
+	}
+}
+
+func TestDecompressorLzwDecodeRejectsDataThatDecodesToMoreThanTheLimit(t *testing.T) {
+	encoded := []byte{0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01}
+	if data, err := LZWDecodeWithMaxLength(encoded, 10); err != nil || len(data) != 10 {
+		t.Errorf("decoded %d bytes, error %v", len(data), err)
+	}
+	_, err := LZWDecodeWithMaxLength(encoded, 9)
+	if err == nil || err.Error() != "LZW data decodes to more than 9 bytes" {
+		t.Errorf("error %v", err)
+	}
+}
+
+func TestDecompressorRunLengthDecodeRejectsDataThatDecodesToMoreThanTheLimit(t *testing.T) {
+	encoded := []byte{2, 'a', 'b', 'c', 254, 'x', 128}
+	if data, err := RunLengthDecodeWithMaxLength(encoded, 6); err != nil || len(data) != 6 {
+		t.Errorf("decoded %d bytes, error %v", len(data), err)
+	}
+	_, err := RunLengthDecodeWithMaxLength(encoded, 5)
+	if err == nil || err.Error() != "RunLength data decodes to more than 5 bytes" {
+		t.Errorf("error %v", err)
 	}
 }
 

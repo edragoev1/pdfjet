@@ -395,10 +395,8 @@ class FontStream1 {
         font.info = String(bytes: fontInfo, encoding: .utf8)!
 
         let deflatedLength = Int(try getInt32(stream))
-        var deflated = try readFully(stream, deflatedLength)
-
-        var inflated = [UInt8]()
-        _ = try Puff(output: &inflated, input: &deflated)
+        let deflated = try readFully(stream, deflatedLength)
+        let inflated = try inflate(deflated)
 
         var offset = 0
         font.unitsPerEm = Int(getInt32(inflated, &offset))

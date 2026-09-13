@@ -15,10 +15,10 @@ import Testing
         return Array(text.utf8)
     }
 
-    @Test func lzwDecodesTheExampleOfTheStandard() {
+    @Test func lzwDecodesTheExampleOfTheStandard() throws {
         // ISO 32000-1, 7.4.4.2: the encoding of "-----A---B".
         let encoded: [UInt8] = [0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01]
-        #expect(TestSupport.latin1(lzwDecode(encoded)) == "-----A---B")
+        #expect(try TestSupport.latin1(lzwDecode(encoded)) == "-----A---B")
     }
 
     @Test func asciiHexDecodeSkipsWhitespaceAndStopsAtTheEndMarker() {
@@ -40,9 +40,9 @@ import Testing
         #expect(ascii85Decode(ascii("z@:B~>")) == [0, 0, 0, 0, 97, 98])
     }
 
-    @Test func runLengthDecodeCopiesLiteralsAndRepeatsRuns() {
+    @Test func runLengthDecodeCopiesLiteralsAndRepeatsRuns() throws {
         let encoded: [UInt8] = [2, 97, 98, 99, 254, 120, 128]
-        #expect(TestSupport.latin1(runLengthDecode(encoded)) == "abcxxx")
+        #expect(try TestSupport.latin1(runLengthDecode(encoded)) == "abcxxx")
     }
 
     @Test func pngPredictorsUndoEachRowFilter() {
@@ -96,6 +96,39 @@ import Testing
                 _ = try TestSupport.inflate(Array(deflated.prefix(length)))
             }
         }
+    }
+
+    @Test func theDecodedLengthLimitIs256MiB() {
+        #expect(MAX_DECODED_LENGTH == 256 * 1024 * 1024)
+    }
+
+    @Test func inflateRejectsDataThatDecodesToMoreThanTheLimit() throws {
+        let deflated = TestSupport.deflate([UInt8](repeating: 0, count: 1000))
+        #expect(try inflate(deflated, 1000).count == 1000)
+        let error = #expect(throws: (any Error).self) { _ = try inflate(deflated, 999) }
+        #expect(TestSupport.message(error) == "Flate data decodes to more than 999 bytes")
+    }
+
+    @Test func inflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() throws {
+        let data = ascii("hello hello hello hello")
+        let deflated = TestSupport.deflate(data)
+        #expect(try inflatePrefix(deflated, 5) == Array(data.prefix(5)))
+        #expect(try inflatePrefix(deflated, 100) == data)
+        #expect(throws: (any Error).self) { _ = try inflatePrefix(Array(deflated.prefix(6)), 20) }
+    }
+
+    @Test func lzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws {
+        let encoded: [UInt8] = [0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01]
+        #expect(try lzwDecode(encoded, 10).count == 10)
+        let error = #expect(throws: (any Error).self) { _ = try lzwDecode(encoded, 9) }
+        #expect(TestSupport.message(error) == "LZW data decodes to more than 9 bytes")
+    }
+
+    @Test func runLengthDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws {
+        let encoded: [UInt8] = [2, 97, 98, 99, 254, 120, 128]
+        #expect(try runLengthDecode(encoded, 6).count == 6)
+        let error = #expect(throws: (any Error).self) { _ = try runLengthDecode(encoded, 5) }
+        #expect(TestSupport.message(error) == "RunLength data decodes to more than 5 bytes")
     }
 
     @Test func deflateOfNoBytesIsAnEmptyZlibStream() {

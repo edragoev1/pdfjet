@@ -91,18 +91,15 @@ public final class PDFobj {
         for (i, filter) in getValues("/Filter").enumerated() {
             switch filter {
             case "/FlateDecode", "/Fl":
-                var input = decoded
-                var output = [UInt8]()
-                _ = try Puff(output: &output, input: &input)
-                decoded = applyDecodeParms(output, i)
+                decoded = applyDecodeParms(try inflate(decoded), i)
             case "/LZWDecode", "/LZW":
-                decoded = applyDecodeParms(lzwDecode(decoded), i)
+                decoded = applyDecodeParms(try lzwDecode(decoded), i)
             case "/ASCIIHexDecode", "/AHx":
                 decoded = asciiHexDecode(decoded)
             case "/ASCII85Decode", "/A85":
                 decoded = ascii85Decode(decoded)
             case "/RunLengthDecode", "/RL":
-                decoded = runLengthDecode(decoded)
+                decoded = try runLengthDecode(decoded)
             default:
                 return decoded
             }

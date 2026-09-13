@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -14,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 import org.junit.jupiter.api.Test;
 
@@ -118,6 +123,122 @@ class PNGImageTest {
         } finally {
             in.close();
         }
+    }
+
+    // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
+    // chunk when there is a palette, and one IDAT chunk.
+    private static byte[] png(int width, int height, int bitDepth, int colorType, byte[] palette, byte[] idat) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
+        ByteBuffer ihdr = ByteBuffer.allocate(13);
+        ihdr.putInt(width).putInt(height).put((byte) bitDepth).put((byte) colorType);
+        chunk(bos, "IHDR", ihdr.array());
+        if (palette != null) {
+            chunk(bos, "PLTE", palette);
+        }
+        if (idat != null) {
+            chunk(bos, "IDAT", idat);
+        }
+        chunk(bos, "IEND", new byte[0]);
+        return bos.toByteArray();
+    }
+
+    private static void chunk(ByteArrayOutputStream bos, String type, byte[] data) {
+        byte[] name = type.getBytes(StandardCharsets.US_ASCII);
+        CRC32 crc = new CRC32();
+        crc.update(name);
+        crc.update(data);
+        bos.write(ByteBuffer.allocate(4).putInt(data.length).array(), 0, 4);
+        bos.write(name, 0, 4);
+        bos.write(data, 0, data.length);
+        bos.write(ByteBuffer.allocate(4).putInt((int) crc.getValue()).array(), 0, 4);
+    }
+
+    private static String decodeError(byte[] png) {
+        return assertThrows(Exception.class, () -> new PNGImage(new ByteArrayInputStream(png))).getMessage();
+    }
+
+    @Test
+    void decodesTheRowsOfTheImageAndIgnoresDataAfterThem() throws Exception {
+        byte[] rgb = {1, 2, 3, 4, 5, 6};
+        byte[] rows = {0, 1, 2, 3, 4, 5, 6};
+        byte[] longer = {0, 1, 2, 3, 4, 5, 6, 9, 9, 9};
+        for (byte[] data : new byte[][] {rows, longer}) {
+            PNGImage png = new PNGImage(new ByteArrayInputStream(png(2, 1, 8, 2, null, Compressor.deflate(data))));
+            assertArrayEquals(rgb, Decompressor.inflate(png.getData()));
+        }
+    }
+
+    @Test
+    void rejectsImageDataShorterThanTheImage() {
+        byte[] rows = {0, 1, 2, 3};
+        assertEquals("The PNG image data is shorter than the image.",
+                decodeError(png(2, 1, 8, 2, null, Compressor.deflate(rows))));
+    }
+
+    @Test
+    void rejectsAnImageLargerThanTheLimitBeforeDecodingIt() {
+        // 20000 x 20000 RGB samples are 1.2 GB.
+        assertEquals("The PNG image is larger than 268435456 bytes.",
+                decodeError(png(20000, 20000, 8, 2, null, Compressor.deflate(new byte[1]))));
+        // 10000 x 10000 palette indexes of 1 bit are 12.5 MB, but 400 MB of RGB and alpha.
+        assertEquals("The PNG image is larger than 268435456 bytes.",
+                decodeError(png(10000, 10000, 1, 3, new byte[6], Compressor.deflate(new byte[1]))));
+        // The largest size, where the sizes multiplied overflow a long.
+        int max = Integer.MAX_VALUE;
+        assertEquals("The PNG image is larger than 268435456 bytes.",
+                decodeError(png(max, max, 16, 6, null, Compressor.deflate(new byte[1]))));
+        assertEquals("The PNG image is larger than 268435456 bytes.",
+                decodeError(png(max, max, 1, 3, new byte[6], Compressor.deflate(new byte[1]))));
+        assertEquals("The PNG image is larger than 268435456 bytes.",
+                decodeError(png(max, 1, 16, 6, null, Compressor.deflate(new byte[1]))));
+    }
+
+    @Test
+    void rejectsAnInvalidSizeBitDepthColorTypeOrPalette() {
+        byte[] idat = Compressor.deflate(new byte[] {0, 0, 0, 0});
+        assertEquals("Invalid PNG image size.", decodeError(png(0, 1, 8, 2, null, idat)));
+        assertEquals("Invalid PNG image size.", decodeError(png(-1, 1, 8, 2, null, idat)));
+        assertEquals("Invalid PNG bit depth 4 for color type 2.", decodeError(png(1, 1, 4, 2, null, idat)));
+        assertEquals("Invalid PNG color type 5.", decodeError(png(1, 1, 8, 5, null, idat)));
+        assertEquals("Invalid PNG color type 200.", decodeError(png(1, 1, 8, 200, null, idat)));
+        assertEquals("Invalid PNG bit depth 200 for color type 2.", decodeError(png(1, 1, 200, 2, null, idat)));
+        assertEquals("The PNG palette image has no PLTE chunk.", decodeError(png(1, 1, 8, 3, null, idat)));
+        assertEquals("The PNG image has no image data.", decodeError(png(1, 1, 8, 2, null, null)));
+    }
+
+    @Test
+    void rejectsAChunkLengthThatTheFileDoesNotHave() {
+        byte[] valid = png(1, 1, 8, 2, null, Compressor.deflate(new byte[] {0, 0, 0, 0}));
+        // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.
+        byte[] lying = java.util.Arrays.copyOf(valid, 33 + 18);
+        lying[33] = 0x7F;
+        lying[34] = (byte) 0xFF;
+        lying[35] = (byte) 0xFF;
+        lying[36] = (byte) 0xF0;
+        assertEquals("Unexpected end of the PNG stream.", decodeError(lying));
+    }
+
+    @Test
+    void readsAStreamThatReturnsFewBytesAtATime() throws Exception {
+        InputStream in = new FilterInputStream(TestSupport.open("PngSuite/BASN2C08.PNG")) {
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                return super.read(b, off, Math.min(len, 3));
+            }
+        };
+        try {
+            assertEquals("7855b9bf", crc(Decompressor.inflate(new PNGImage(in).getData())));
+        } finally {
+            in.close();
+        }
+    }
+
+    @Test
+    void aTruecolorImageWithASuggestedPaletteIsDecodedAsTruecolor() throws Exception {
+        PNGImage png = decode("PS1N2C16");
+        assertEquals(2, png.getColorType());
+        assertEquals(6144, Decompressor.inflate(png.getData()).length);
     }
 
     @Test

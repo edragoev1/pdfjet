@@ -41,6 +41,30 @@ enum PuffError: Error {
     case read(error: Int)
 }
 
+/// The largest number of bytes that a stream, or the samples of an image, may
+/// decode to: 256 MiB. A few kilobytes of Flate, LZW or RunLength data can
+/// decode to gigabytes, so a decoder that would go past it throws.
+let MAX_DECODED_LENGTH = 256 * 1024 * 1024
+
+/// Decodes a zlib stream, which must end and decode to at most maxLength
+/// bytes. Bytes after the end of the stream are ignored.
+func inflate(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [UInt8] {
+    var input = data
+    var output = [UInt8]()
+    _ = try Puff(output: &output, input: &input, maxLength: maxLength, prefix: false)
+    return output
+}
+
+/// Returns the first length bytes that a zlib stream decodes to, or all of them
+/// when there are fewer, and ignores the rest of the stream. A stream that ends
+/// in the middle, before those bytes, throws.
+func inflatePrefix(_ data: [UInt8], _ length: Int) throws -> [UInt8] {
+    var input = data
+    var output = [UInt8]()
+    _ = try Puff(output: &output, input: &input, maxLength: length, prefix: true)
+    return output
+}
+
 /// Decompresses Deflate data. A Swift port of puff.c by Mark Adler.
 final class Puff {
     // Maximums for allocations and loops.
@@ -50,6 +74,10 @@ final class Puff {
     let MAXDCODES: Int = 30     // maximum number of distance codes
     var MAXCODES: Int = 316     // maximum codes lengths to read
     let FIXLCODES: Int = 288    // number of fixed literal/length codes
+
+    // output limit
+    let maxLength: Int          // the most bytes the output may have
+    let prefix: Bool            // stop at maxLength bytes instead of throwing
 
     // input state
     var incnt = 0               // bytes read so far from the input
@@ -127,7 +155,13 @@ final class Puff {
      *   block (if it was a fixed or dynamic block) are undefined and have no
      *   expected values to check.
      */
-    public init(output: inout [UInt8], input: inout [UInt8]) throws {
+    public init(
+            output: inout [UInt8],
+            input: inout [UInt8],
+            maxLength: Int = MAX_DECODED_LENGTH,
+            prefix: Bool = false) throws {
+        self.maxLength = maxLength
+        self.prefix = prefix
         var last: Int?                              // block information
         var type: Int?
         var error = 0                               // return value
@@ -139,7 +173,7 @@ final class Puff {
             last = try bits(1, &input)              // one if last block
             type = try bits(2, &input)              // block type 0..3
             if type == 0 {
-                error = stored(&output, &input)
+                error = try stored(&output, &input)
             } else if type == 1 {
                 error = try fixed(&output, &input)
             } else if type == 2 {
@@ -147,10 +181,22 @@ final class Puff {
             } else {
                 error = -1                          // type == 3, invalid
             }
+            if error == 1 && prefix {
+                return                              // the output has its length
+            }
             if error != 0 {
                 throw PuffError.read(error: error)  // return with error
             }
         } while last != 1
+    }
+
+    // Called when the output has maxLength bytes and needs another one: a
+    // prefix stops there, with the return value 1, and any other stream throws.
+    private final func stopAtFullOutput() throws -> Int {
+        if prefix {
+            return 1
+        }
+        throw PDFjetError(message: "Flate data decodes to more than \(maxLength) bytes")
     }
 
     /*
@@ -330,7 +376,7 @@ final class Puff {
         return Int(buffer & ((1 << need) - 1))
     }
 
-    private final func stored(_ output: inout [UInt8], _ input: inout [UInt8]) -> Int {
+    private final func stored(_ output: inout [UInt8], _ input: inout [UInt8]) throws -> Int {
         // discard leftover bits from current byte (assumes self.bitcnt < 8)
         self.bitbuf = 0
         self.bitcnt = 0
@@ -359,6 +405,9 @@ final class Puff {
             return 2                                // not enough input
         }
         while len > 0 {
+            if output.count >= maxLength {
+                return try stopAtFullOutput()
+            }
             output.append(input[self.incnt])
             self.incnt += 1
             len -= 1
@@ -440,6 +489,9 @@ final class Puff {
             }
             if symbol < 256 {               // literal: symbol is the byte
                 // write out the literal
+                if output.count >= maxLength {
+                    return try stopAtFullOutput()
+                }
                 output.append(UInt8(symbol))
             } else if symbol > 256 {        // length
                 // get and compute length
@@ -462,6 +514,9 @@ final class Puff {
 
                 // copy length bytes from distance bytes back
                 while len > 0 {
+                    if output.count >= maxLength {
+                        return try stopAtFullOutput()
+                    }
                     output.append(output[output.count - dist])
                     len -= 1
                 }

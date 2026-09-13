@@ -852,6 +852,32 @@ renames included (the Week 1 decision), so every item is a blocker.
       In the four ports every truncation of a stream fails with an error and a
       stream followed by other bytes decodes. Java example PDFs render the
       same before and after the fixes.
+- ✅ **B** Untrusted input limits (Sep 13), in the four ports:
+      - A stream, a font stream or the samples of an image may decode to at
+        most 256 MiB; the Flate, LZW and RunLength decoders fail past it with
+        "... data decodes to more than N bytes", so a few kilobytes of a
+        decompression bomb no longer take gigabytes. ASCII85 is not capped,
+        as it decodes to at most 4 times its input.
+      - PNG: the IHDR chunk, the size, the bit depth for the color type and
+        the palette are checked, and the decoded size (with the RGB and alpha
+        of a palette image) against the limit, before any buffer is allocated;
+        chunks are read in pieces, so a length that the file does not have
+        fails at its end, and a stream that returns few bytes at a time is
+        read correctly (Java read a chunk with one `read`); the rows are
+        decoded up to the size of the image, data after them is ignored and
+        missing data fails. A truecolor image with a suggested palette was
+        decoded as a palette image; it is decoded as truecolor.
+      - BMP: the size, the bit depth, the palette size and the decoded size
+        are checked before any buffer is allocated.
+      - The size checks reject a height above the limit before multiplying
+        the width and the height, as a PNG row has a filter byte and a BMP
+        pixel 3 bytes: with a width and a height near 2^31 the products
+        overflowed a 64-bit integer in Java, C# and Go and could pass the
+        check. Swift multiplies with overflow checks. Found by the Swift port.
+      - Java and C# counted the bytes written in an `int`, so the offsets of
+        a PDF past 2 GiB were wrong; they are 64-bit, and an offset past the
+        10 digits of a cross-reference entry fails with an error.
+      Java example PDFs render the same before and after.
 - ⬜ S Port differences the tests found and left as they are: Swift
       `BMPImage` needs an opened stream where `PNGImage` opens its own; Swift
       stops with `fatalError` on invalid Code 39, UPC-A and EAN-13 input and

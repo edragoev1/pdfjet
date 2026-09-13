@@ -6,10 +6,12 @@
 package pdfjet
 
 import (
+	"fmt"
 	"io"
 	"math"
 
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 )
 
 // bmpImage describes BMP image object.
@@ -61,6 +63,23 @@ func newBMPImage(reader io.Reader) *bmpImage {
 		skipNBytes(reader, 2)
 		image.bpp = read2BytesLE(reader)
 		compression := readSignedInt(reader)
+		// The size and the bit depth come from the file, so they are checked
+		// before any buffer is allocated for the image.
+		if image.w <= 0 || image.h <= 0 || image.h > math.MaxInt32 { // -math.MinInt32
+			panic("Invalid BMP image size.")
+		}
+		switch image.bpp {
+		case 1, 4, 8, 16, 24, 32:
+		default:
+			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
+		}
+		rowSize := 4 * ((int64(image.bpp)*int64(image.w) + 31) / 32)
+		// A height of at most the limit keeps the products in an int64.
+		if int64(image.h) > decompressor.MaxDecodedLength ||
+			3*int64(image.w)*int64(image.h) > decompressor.MaxDecodedLength ||
+			rowSize*int64(image.h) > decompressor.MaxDecodedLength {
+			panic(fmt.Sprintf("The BMP image is larger than %d bytes.", decompressor.MaxDecodedLength))
+		}
 		if image.bpp > 8 {
 			image.r5g6b5 = compression == 3
 			skipNBytes(reader, 20)
@@ -72,6 +91,9 @@ func newBMPImage(reader io.Reader) *bmpImage {
 			numpalcol := readSignedInt(reader)
 			if numpalcol == 0 {
 				numpalcol = int(math.Pow(2, float64(image.bpp)))
+			}
+			if numpalcol < 0 || numpalcol > 256 {
+				panic(fmt.Sprintf("Invalid BMP palette size %d.", numpalcol))
 			}
 			skipNBytes(reader, 4)
 			image.parsePalette(reader, numpalcol)
@@ -87,7 +109,7 @@ func newBMPImage(reader io.Reader) *bmpImage {
 func (image *bmpImage) parseData(reader io.Reader) []byte {
 	// rowsize is 4 * ceil (bpp*width/32.0)
 	bmpImage := make([]byte, 3*image.w*image.h)
-	rowsize := 4 * int(math.Ceil(float64(image.bpp)*float64(image.w)/float64(32.0))) // 4 byte alignment
+	rowsize := int(4 * ((int64(image.bpp)*int64(image.w) + 31) / 32)) // 4 byte alignment
 	index := 0
 	for i := 0; i < image.h; i++ {
 		row := getNBytes(reader, rowsize)
@@ -108,7 +130,7 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 		case 32:
 			row = image.bit32to24(row, image.w)
 		default:
-			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
+			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
 		}
 
 		if image.topDown {

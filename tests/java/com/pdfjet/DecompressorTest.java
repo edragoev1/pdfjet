@@ -30,7 +30,7 @@ class DecompressorTest {
     }
 
     @Test
-    void lzwDecodesTheExampleOfTheStandard() {
+    void lzwDecodesTheExampleOfTheStandard() throws Exception {
         // ISO 32000-1, 7.4.4.2: the encoding of "-----A---B".
         byte[] encoded = bytes(0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01);
         assertEquals("-----A---B", TestSupport.latin1(Decompressor.lzwDecode(encoded)));
@@ -60,7 +60,7 @@ class DecompressorTest {
     }
 
     @Test
-    void runLengthDecodeCopiesLiteralsAndRepeatsRuns() {
+    void runLengthDecodeCopiesLiteralsAndRepeatsRuns() throws Exception {
         byte[] encoded = bytes(2, 'a', 'b', 'c', 254, 'x', 128);
         assertEquals("abcxxx", TestSupport.latin1(Decompressor.runLengthDecode(encoded)));
     }
@@ -123,6 +123,44 @@ class DecompressorTest {
             final byte[] truncated = Arrays.copyOf(deflated, length);
             assertThrows(Exception.class, () -> Decompressor.inflate(truncated), "length " + length);
         }
+    }
+
+    @Test
+    void theDecodedLengthLimitIs256MiB() {
+        assertEquals(256 * 1024 * 1024, Decompressor.MAX_DECODED_LENGTH);
+    }
+
+    @Test
+    void inflateRejectsDataThatDecodesToMoreThanTheLimit() throws Exception {
+        final byte[] deflated = Compressor.deflate(new byte[1000]);
+        assertEquals(1000, Decompressor.inflate(deflated, 1000).length);
+        Exception e = assertThrows(Exception.class, () -> Decompressor.inflate(deflated, 999));
+        assertEquals("Flate data decodes to more than 999 bytes", e.getMessage());
+    }
+
+    @Test
+    void inflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() throws Exception {
+        byte[] data = ascii("hello hello hello hello");
+        final byte[] deflated = Compressor.deflate(data);
+        assertArrayEquals(Arrays.copyOf(data, 5), Decompressor.inflatePrefix(deflated, 5));
+        assertArrayEquals(data, Decompressor.inflatePrefix(deflated, 100));
+        assertThrows(Exception.class, () -> Decompressor.inflatePrefix(Arrays.copyOf(deflated, 6), 20));
+    }
+
+    @Test
+    void lzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws Exception {
+        final byte[] encoded = bytes(0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01);
+        assertEquals(10, Decompressor.lzwDecode(encoded, 10).length);
+        Exception e = assertThrows(Exception.class, () -> Decompressor.lzwDecode(encoded, 9));
+        assertEquals("LZW data decodes to more than 9 bytes", e.getMessage());
+    }
+
+    @Test
+    void runLengthDecodeRejectsDataThatDecodesToMoreThanTheLimit() throws Exception {
+        final byte[] encoded = bytes(2, 'a', 'b', 'c', 254, 'x', 128);
+        assertEquals(6, Decompressor.runLengthDecode(encoded, 6).length);
+        Exception e = assertThrows(Exception.class, () -> Decompressor.runLengthDecode(encoded, 5));
+        assertEquals("RunLength data decodes to more than 5 bytes", e.getMessage());
     }
 
     @Test

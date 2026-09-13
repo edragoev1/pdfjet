@@ -64,6 +64,52 @@ import Testing
         #expect(try TestSupport.inflate(bmp.getData()) == BMPImageTests.rgb)
     }
 
+    // The 54 byte header of a BMP file of the size, bits per pixel and palette colors.
+    private func header(_ width: Int32, _ height: Int32, _ bitsPerPixel: UInt16, _ colors: Int32) -> [UInt8] {
+        var bytes: [UInt8] = [0x42, 0x4D]
+        littleEndian32(54, &bytes)
+        littleEndian32(0, &bytes)
+        littleEndian32(54, &bytes)
+        littleEndian32(40, &bytes)
+        littleEndian32(width, &bytes)
+        littleEndian32(height, &bytes)
+        bytes.append(contentsOf: [1, 0, UInt8(bitsPerPixel & 0xFF), UInt8(bitsPerPixel >> 8)])
+        littleEndian32(0, &bytes)
+        littleEndian32(0, &bytes)
+        littleEndian32(2835, &bytes)
+        littleEndian32(2835, &bytes)
+        littleEndian32(colors, &bytes)
+        littleEndian32(0, &bytes)
+        return bytes
+    }
+
+    private func decodeError(_ bmp: [UInt8], sourceLocation: SourceLocation = #_sourceLocation) -> String {
+        let error = #expect(throws: (any Error).self, sourceLocation: sourceLocation) {
+            _ = try BMPImage(stream(bmp))
+        }
+        return TestSupport.message(error)
+    }
+
+    @Test func rejectsAnInvalidSize() {
+        #expect(decodeError(header(0, 2, 24, 0)) == "Invalid BMP image size.")
+        #expect(decodeError(header(2, 0, 24, 0)) == "Invalid BMP image size.")
+        #expect(decodeError(header(-2, 2, 24, 0)) == "Invalid BMP image size.")
+        #expect(decodeError(header(2, Int32.min, 24, 0)) == "Invalid BMP image size.")
+    }
+
+    @Test func rejectsAnImageLargerThanTheLimitBeforeReadingIt() {
+        // 20000 x 20000 pixels are 1.2 GB of RGB; the file has only the header.
+        #expect(decodeError(header(20000, 20000, 24, 0)) == "The BMP image is larger than 268435456 bytes.")
+        // The largest size, where the sizes multiplied overflow a 64-bit integer.
+        #expect(decodeError(header(Int32.max, Int32.max, 32, 0)) == "The BMP image is larger than 268435456 bytes.")
+        #expect(decodeError(header(Int32.max, 1, 32, 0)) == "The BMP image is larger than 268435456 bytes.")
+    }
+
+    @Test func rejectsAnUnsupportedBitDepthOrALargePalette() {
+        #expect(decodeError(header(2, 2, 2, 0)) == "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
+        #expect(decodeError(header(2, 2, 8, 0x7FFFFFFF)) == "Invalid BMP palette size 2147483647.")
+    }
+
     @Test func aTruncatedFileThrows() {
         let truncated = Array(bmp24(false).prefix(60))
         #expect(throws: (any Error).self) { _ = try BMPImage(stream(truncated)) }

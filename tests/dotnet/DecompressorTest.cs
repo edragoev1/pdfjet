@@ -122,6 +122,45 @@ public class DecompressorTest {
     }
 
     [Fact]
+    public void TheDecodedLengthLimitIs256MiB() {
+        Assert.Equal(256 * 1024 * 1024, Decompressor.MAX_DECODED_LENGTH);
+    }
+
+    [Fact]
+    public void InflateRejectsDataThatDecodesToMoreThanTheLimit() {
+        byte[] deflated = Compressor.Deflate(new byte[1000]);
+        Assert.Equal(1000, Decompressor.Inflate(deflated, 1000).Length);
+        Exception e = Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(deflated, 999));
+        Assert.Equal("Flate data decodes to more than 999 bytes", e.Message);
+    }
+
+    [Fact]
+    public void InflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() {
+        byte[] data = Ascii("hello hello hello hello");
+        byte[] deflated = Compressor.Deflate(data);
+        Assert.Equal(data[..5], Decompressor.InflatePrefix(deflated, 5));
+        Assert.Equal(data, Decompressor.InflatePrefix(deflated, 100));
+        byte[] truncated = deflated[..6];
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflatePrefix(truncated, 20));
+    }
+
+    [Fact]
+    public void LzwDecodeRejectsDataThatDecodesToMoreThanTheLimit() {
+        byte[] encoded = Bytes(0x80, 0x0B, 0x60, 0x50, 0x22, 0x0C, 0x0C, 0x85, 0x01);
+        Assert.Equal(10, Decompressor.LZWDecode(encoded, 10).Length);
+        Exception e = Assert.ThrowsAny<Exception>(() => Decompressor.LZWDecode(encoded, 9));
+        Assert.Equal("LZW data decodes to more than 9 bytes", e.Message);
+    }
+
+    [Fact]
+    public void RunLengthDecodeRejectsDataThatDecodesToMoreThanTheLimit() {
+        byte[] encoded = Bytes(2, 'a', 'b', 'c', 254, 'x', 128);
+        Assert.Equal(6, Decompressor.RunLengthDecode(encoded, 6).Length);
+        Exception e = Assert.ThrowsAny<Exception>(() => Decompressor.RunLengthDecode(encoded, 5));
+        Assert.Equal("RunLength data decodes to more than 5 bytes", e.Message);
+    }
+
+    [Fact]
     public void DeflateOfNoBytesIsAnEmptyZlibStream() {
         byte[] deflated = Compressor.Deflate(new byte[0]);
         Assert.Equal(8, deflated.Length);

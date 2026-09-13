@@ -9,11 +9,12 @@
 /// Decodes the data of an LZWDecode stream, with the default EarlyChange of 1:
 /// the codes get one bit longer one code before the table needs it. Data that
 /// ends without the end code, or with an invalid code, returns what was decoded
-/// up to there, as a missing end is common in real files.
+/// up to there, as a missing end is common in real files. Data that decodes to
+/// more than maxLength bytes throws.
 ///
-func lzwDecode(_ data: [UInt8]) -> [UInt8] {
+func lzwDecode(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [UInt8] {
     var decoded = [UInt8]()
-    decoded.reserveCapacity(data.count * 2)
+    decoded.reserveCapacity(min(data.count * 2, maxLength))
     var table = [[UInt8]](repeating: [], count: 4096)
     for i in 0..<256 {
         table[i] = [UInt8(i)]
@@ -44,6 +45,9 @@ func lzwDecode(_ data: [UInt8]) -> [UInt8] {
                 return decoded      // The end code or an invalid one.
             }
             decoded.append(contentsOf: entry)
+            if decoded.count > maxLength {
+                throw PDFjetError(message: "LZW data decodes to more than \(maxLength) bytes")
+            }
             if let previous = previous, next < 4096 {
                 table[next] = previous + [entry[0]]
                 next += 1

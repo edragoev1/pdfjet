@@ -6,12 +6,16 @@
 package pdfjet
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"hash/crc32"
+	"math"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 )
@@ -182,5 +186,131 @@ func TestPNGImageRejectsInterlacedImagesWithAClearError(t *testing.T) {
 		"Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png"
 	if !panicked || message != want {
 		t.Errorf("panicked %v with %q", panicked, message)
+	}
+}
+
+// testPNG returns a PNG file with the IHDR of the size, bit depth and color
+// type, a PLTE chunk when there is a palette, and one IDAT chunk when there is
+// image data.
+func testPNG(width, height int32, bitDepth, colorType byte, palette, idat []byte) []byte {
+	var buf bytes.Buffer
+	buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], uint32(width))
+	binary.BigEndian.PutUint32(ihdr[4:], uint32(height))
+	ihdr[8] = bitDepth
+	ihdr[9] = colorType
+	testPNGChunk(&buf, "IHDR", ihdr)
+	if palette != nil {
+		testPNGChunk(&buf, "PLTE", palette)
+	}
+	if idat != nil {
+		testPNGChunk(&buf, "IDAT", idat)
+	}
+	testPNGChunk(&buf, "IEND", []byte{})
+	return buf.Bytes()
+}
+
+func testPNGChunk(buf *bytes.Buffer, name string, data []byte) {
+	crc := crc32.NewIEEE()
+	crc.Write([]byte(name))
+	crc.Write(data)
+	_ = binary.Write(buf, binary.BigEndian, uint32(len(data)))
+	buf.WriteString(name)
+	buf.Write(data)
+	_ = binary.Write(buf, binary.BigEndian, crc.Sum32())
+}
+
+// testPanicMessage returns the message that the function panics with.
+func testPanicMessage(fn func()) string {
+	message, panicked := testPanic(fn)
+	if !panicked {
+		return "(no panic)"
+	}
+	return message
+}
+
+func testPNGError(png []byte) string {
+	return testPanicMessage(func() { NewPNGImage(bytes.NewReader(png)) })
+}
+
+func testWant(t *testing.T, want, got string) {
+	t.Helper()
+	if got != want {
+		t.Errorf("want %q, got %q", want, got)
+	}
+}
+
+func TestPNGImageDecodesTheRowsOfTheImageAndIgnoresDataAfterThem(t *testing.T) {
+	rgb := []byte{1, 2, 3, 4, 5, 6}
+	for _, rows := range [][]byte{{0, 1, 2, 3, 4, 5, 6}, {0, 1, 2, 3, 4, 5, 6, 9, 9, 9}} {
+		png := NewPNGImage(bytes.NewReader(testPNG(2, 1, 8, 2, nil, compressor.Deflate(rows))))
+		if got := testInflate(t, png.GetData()); !bytes.Equal(got, rgb) {
+			t.Errorf("samples %v", got)
+		}
+	}
+}
+
+func TestPNGImageRejectsImageDataShorterThanTheImage(t *testing.T) {
+	testWant(t, "The PNG image data is shorter than the image.",
+		testPNGError(testPNG(2, 1, 8, 2, nil, compressor.Deflate([]byte{0, 1, 2, 3}))))
+}
+
+func TestPNGImageRejectsAnImageLargerThanTheLimitBeforeDecodingIt(t *testing.T) {
+	// 20000 x 20000 RGB samples are 1.2 GB.
+	testWant(t, "The PNG image is larger than 268435456 bytes.",
+		testPNGError(testPNG(20000, 20000, 8, 2, nil, compressor.Deflate([]byte{0}))))
+	// 10000 x 10000 palette indexes of 1 bit are 12.5 MB, but 400 MB of RGB and alpha.
+	testWant(t, "The PNG image is larger than 268435456 bytes.",
+		testPNGError(testPNG(10000, 10000, 1, 3, make([]byte, 6), compressor.Deflate([]byte{0}))))
+	// The largest size, where the sizes multiplied overflow an int64.
+	const max = math.MaxInt32
+	testWant(t, "The PNG image is larger than 268435456 bytes.",
+		testPNGError(testPNG(max, max, 16, 6, nil, compressor.Deflate([]byte{0}))))
+	testWant(t, "The PNG image is larger than 268435456 bytes.",
+		testPNGError(testPNG(max, max, 1, 3, make([]byte, 6), compressor.Deflate([]byte{0}))))
+	testWant(t, "The PNG image is larger than 268435456 bytes.",
+		testPNGError(testPNG(max, 1, 16, 6, nil, compressor.Deflate([]byte{0}))))
+}
+
+func TestPNGImageRejectsAnInvalidSizeBitDepthColorTypeOrPalette(t *testing.T) {
+	idat := compressor.Deflate([]byte{0, 0, 0, 0})
+	testWant(t, "Invalid PNG image size.", testPNGError(testPNG(0, 1, 8, 2, nil, idat)))
+	testWant(t, "Invalid PNG image size.", testPNGError(testPNG(-1, 1, 8, 2, nil, idat)))
+	testWant(t, "Invalid PNG bit depth 4 for color type 2.", testPNGError(testPNG(1, 1, 4, 2, nil, idat)))
+	testWant(t, "Invalid PNG color type 5.", testPNGError(testPNG(1, 1, 8, 5, nil, idat)))
+	testWant(t, "Invalid PNG color type 200.", testPNGError(testPNG(1, 1, 8, 200, nil, idat)))
+	testWant(t, "Invalid PNG bit depth 200 for color type 2.", testPNGError(testPNG(1, 1, 200, 2, nil, idat)))
+	testWant(t, "The PNG palette image has no PLTE chunk.", testPNGError(testPNG(1, 1, 8, 3, nil, idat)))
+	testWant(t, "The PNG image has no image data.", testPNGError(testPNG(1, 1, 8, 2, nil, nil)))
+}
+
+func TestPNGImageRejectsAChunkLengthThatTheFileDoesNotHave(t *testing.T) {
+	valid := testPNG(1, 1, 8, 2, nil, compressor.Deflate([]byte{0, 0, 0, 0}))
+	// The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.
+	lying := append([]byte{}, valid[:33+18]...)
+	lying[33], lying[34], lying[35], lying[36] = 0x7F, 0xFF, 0xFF, 0xF0
+	testWant(t, "Unexpected end of the PNG stream.", testPNGError(lying))
+}
+
+func TestPNGImageReadsAStreamThatReturnsFewBytesAtATime(t *testing.T) {
+	file, err := os.Open(testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	png := NewPNGImage(testSlowReader{file})
+	if got := testCRC(testInflate(t, png.GetData())); got != "7855b9bf" {
+		t.Errorf("samples %s", got)
+	}
+}
+
+func TestPNGImageATruecolorImageWithASuggestedPaletteIsDecodedAsTruecolor(t *testing.T) {
+	png := testDecodePNG(t, "PS1N2C16")
+	if png.GetColorType() != 2 {
+		t.Errorf("color type %d", png.GetColorType())
+	}
+	if got := len(testInflate(t, png.GetData())); got != 6144 {
+		t.Errorf("samples %d", got)
 	}
 }

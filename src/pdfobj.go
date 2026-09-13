@@ -88,7 +88,8 @@ func (obj *PDFobj) setLength(length int) {
 // decode decodes the stream with each filter of its /Filter entry in turn. A
 // filter that is not supported, like DCTDecode, ends the decoding, and the
 // data is what the filters before it decoded. It panics if a Flate stream
-// cannot be inflated.
+// cannot be inflated, or a stream decodes to more than
+// decompressor.MaxDecodedLength bytes.
 func (obj *PDFobj) decode(stream []byte) []byte {
 	decoded := stream
 	for i, filter := range obj.getValues("/Filter") {
@@ -100,13 +101,21 @@ func (obj *PDFobj) decode(stream []byte) []byte {
 			}
 			decoded = obj.applyDecodeParms(data, i)
 		case "/LZWDecode", "/LZW":
-			decoded = obj.applyDecodeParms(decompressor.LZWDecode(decoded), i)
+			data, err := decompressor.LZWDecode(decoded)
+			if err != nil {
+				panic(err)
+			}
+			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":
 			decoded = decompressor.ASCIIHexDecode(decoded)
 		case "/ASCII85Decode", "/A85":
 			decoded = decompressor.ASCII85Decode(decoded)
 		case "/RunLengthDecode", "/RL":
-			decoded = decompressor.RunLengthDecode(decoded)
+			data, err := decompressor.RunLengthDecode(decoded)
+			if err != nil {
+				panic(err)
+			}
+			decoded = data
 		default:
 			return decoded
 		}

@@ -30,8 +30,8 @@ import (
 // PDF is used to create PDF objects.
 type PDF struct {
 	writer                    *bufio.Writer
-	byteCount                 int
-	objOffsets                []int
+	byteCount                 int64
+	objOffsets                []int64
 	fonts                     []*Font
 	images                    []*Image
 	pages                     []*Page
@@ -182,7 +182,7 @@ func (pdf *PDF) getObjNumber() int {
 
 // setObjOffset records the offset of an object that carries its own number,
 // growing the table with placeholders for any number that has no object yet.
-func (pdf *PDF) setObjOffset(number, offset int) {
+func (pdf *PDF) setObjOffset(number int, offset int64) {
 	if number <= 0 { // No number of its own - just append.
 		pdf.objOffsets = append(pdf.objOffsets, offset)
 		return
@@ -191,6 +191,16 @@ func (pdf *PDF) setObjOffset(number, offset int) {
 		pdf.objOffsets = append(pdf.objOffsets, 0)
 	}
 	pdf.objOffsets[number-1] = offset
+}
+
+// xrefOffset returns the offset as the 10 digits of an entry of the
+// cross-reference table, which cannot hold an offset of more than 10 digits.
+func xrefOffset(offset int64) string {
+	digits := strconv.FormatInt(offset, 10)
+	if len(digits) > 10 {
+		panic(fmt.Sprintf("The PDF is too large for a cross-reference table: an object starts at byte %d.", offset))
+	}
+	return "0000000000"[len(digits):] + digits
 }
 
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
@@ -1221,11 +1231,7 @@ func (pdf *PDF) Complete() {
 			pdf.appendString("0000000000 65535 f \n")
 			continue
 		}
-		str := strconv.Itoa(offset)
-		for i := 0; i < 10-len(str); i++ {
-			pdf.appendString("0")
-		}
-		pdf.appendString(str)
+		pdf.appendString(xrefOffset(offset))
 		pdf.appendString(" 00000 n \n")
 	}
 	pdf.appendString("trailer\n")
@@ -1256,7 +1262,7 @@ func (pdf *PDF) Complete() {
 
 	pdf.appendString(">>\n")
 	pdf.appendString("startxref\n")
-	pdf.appendInteger(startxref)
+	pdf.appendString(strconv.FormatInt(startxref, 10))
 	pdf.appendString("\n")
 	pdf.appendString("%%EOF\n")
 
@@ -2352,7 +2358,7 @@ func (pdf *PDF) appendString(s string) {
 	if err != nil {
 		panic(err)
 	}
-	pdf.byteCount += len(buf)
+	pdf.byteCount += int64(len(buf))
 }
 
 func (pdf *PDF) appendByte(b byte) {
@@ -2368,5 +2374,5 @@ func (pdf *PDF) appendByteArray(buf []byte) {
 	if err != nil {
 		panic(err)
 	}
-	pdf.byteCount += len(buf)
+	pdf.byteCount += int64(len(buf))
 }

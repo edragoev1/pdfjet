@@ -11,13 +11,32 @@ using System.IO.Compression;
 namespace PDFjet.NET {
 class Decompressor {
     /// <summary>
+    /// The largest number of bytes that a stream, or the samples of an image,
+    /// may decode to: 256 MiB. A few kilobytes of Flate, LZW or RunLength data
+    /// can decode to gigabytes, so a decoder that would go past it throws.
+    /// </summary>
+    internal const int MAX_DECODED_LENGTH = 256 * 1024 * 1024;
+
+    // Throws when the data decoded so far is longer than the limit.
+    private static void CheckLength(long length, int maxLength, String filter) {
+        if (length > maxLength) {
+            throw new InvalidDataException(
+                    filter + " data decodes to more than " + maxLength + " bytes");
+        }
+    }
+
+    /// <summary>
     /// Decodes the data of an LZWDecode stream, with the default EarlyChange
     /// of 1: the codes get one bit longer one code before the table needs it.
     /// Data that ends without the end code, or with an invalid code, returns
     /// what was decoded up to there, as a missing end is common in real files.
     /// </summary>
     internal static byte[] LZWDecode(byte[] data) {
-        using var bos = new MemoryStream(data.Length * 2);
+        return LZWDecode(data, MAX_DECODED_LENGTH);
+    }
+
+    internal static byte[] LZWDecode(byte[] data, int maxLength) {
+        using var bos = new MemoryStream((int) Math.Min(data.Length * 2L, maxLength));
         byte[][] table = new byte[4096][];
         for (int i = 0; i < 256; i++) {
             table[i] = new byte[] {(byte) i};
@@ -50,6 +69,7 @@ class Decompressor {
                     return bos.ToArray();       // The end code or an invalid one.
                 }
                 bos.Write(entry, 0, entry.Length);
+                CheckLength(bos.Length, maxLength, "LZW");
                 if (previous != null && next < 4096) {
                     byte[] added = new byte[previous.Length + 1];
                     Array.Copy(previous, added, previous.Length);
@@ -269,7 +289,11 @@ class Decompressor {
     /// 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
     /// </summary>
     internal static byte[] RunLengthDecode(byte[] data) {
-        using var bos = new MemoryStream(data.Length * 2);
+        return RunLengthDecode(data, MAX_DECODED_LENGTH);
+    }
+
+    internal static byte[] RunLengthDecode(byte[] data, int maxLength) {
+        using var bos = new MemoryStream((int) Math.Min(data.Length * 2L, maxLength));
         int i = 0;
         while (i < data.Length) {
             int length = data[i++];
@@ -285,6 +309,7 @@ class Decompressor {
             } else {
                 break;
             }
+            CheckLength(bos.Length, maxLength, "RunLength");
         }
         return bos.ToArray();
     }
@@ -295,21 +320,53 @@ class Decompressor {
     /// ignored, as in the other ports.
     /// </summary>
     internal static byte[] Inflate(byte[] data) {
+        return Inflate(data, MAX_DECODED_LENGTH, false);
+    }
+
+    /// <summary>Decodes a zlib stream, which must end and decode to at most maxLength bytes.</summary>
+    internal static byte[] Inflate(byte[] data, int maxLength) {
+        return Inflate(data, maxLength, false);
+    }
+
+    /// <summary>
+    /// Returns the first length bytes that a zlib stream decodes to, or all of
+    /// them when there are fewer, and ignores the rest of the stream. A stream
+    /// that ends in the middle, before those bytes, throws.
+    /// </summary>
+    internal static byte[] InflatePrefix(byte[] data, int length) {
+        return Inflate(data, length, true);
+    }
+
+    private static byte[] Inflate(byte[] data, int maxLength, bool prefix) {
         using var outStream = new MemoryStream();
         var inStream = new EndOfInputStream(data);
         using (var zlib = new ZLibStream(inStream, CompressionMode.Decompress)) {
             // Not CopyTo: ZLibStream.CopyTo reads all of its input, whether the
             // stream ends before it or not.
             byte[] buffer = new byte[65536];
-            int count;
-            while ((count = zlib.Read(buffer, 0, buffer.Length)) > 0) {
+            while (!(prefix && outStream.Length == maxLength)) {
+                // At most one byte more than the limit, which tells that the
+                // stream decodes to more.
+                int count = zlib.Read(
+                        buffer, 0, (int) Math.Min(buffer.Length, (long) maxLength - outStream.Length + 1));
+                if (count <= 0) {
+                    break;
+                }
+                if (outStream.Length + count > maxLength) {
+                    if (prefix) {
+                        outStream.Write(buffer, 0, (int) (maxLength - outStream.Length));
+                        break;
+                    }
+                    CheckLength(outStream.Length + count, maxLength, "Flate");
+                }
                 outStream.Write(buffer, 0, count);
             }
         }
         // ZLibStream returns the bytes decoded so far, without an error, when
         // its input ends first. Its Read reads the input only until the stream
-        // ends, so a read at the end of the input means the stream was cut short.
-        if (inStream.ReadAtEnd) {
+        // ends, so a read at the end of the input means the stream was cut short;
+        // a prefix that got all of its bytes does not need the rest.
+        if (inStream.ReadAtEnd && !(prefix && outStream.Length == maxLength)) {
             throw new InvalidDataException("Truncated or invalid Flate stream");
         }
         return outStream.ToArray();

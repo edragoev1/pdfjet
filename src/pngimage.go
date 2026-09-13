@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -41,7 +42,6 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 	image := new(PNGImage)
 	image.bitDepth = 8
 	image.colorType = 0
-	image.iDAT = make([]byte, 0)
 
 	image.validatePNG(reader)
 
@@ -51,6 +51,9 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		chunkType := string(chunk.ChunkType)
 		switch chunkType {
 		case "IHDR":
+			if len(chunk.ChunkData) != 13 {
+				panic("Invalid PNG IHDR chunk.")
+			}
 			image.w = int(toUint32(chunk.ChunkData, 0)) // Width
 			image.h = int(toUint32(chunk.ChunkData, 4)) // Height
 			image.bitDepth = int(chunk.ChunkData[8])    // BitDepth
@@ -76,10 +79,17 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		// ports: the samples are embedded as they are.
 	}
 
-	// Decompress the IDAT chunk data.
-	inflatedIDAT, err := decompressor.Inflate(image.iDAT)
+	imageDataLength := image.getImageDataLength()
+	if image.iDAT == nil {
+		panic("The PNG image has no image data.")
+	}
+	// The rows of the image; data after the last row is ignored.
+	inflatedIDAT, err := decompressor.InflatePrefix(image.iDAT, imageDataLength)
 	if err != nil {
 		panic(err)
+	}
+	if len(inflatedIDAT) < imageDataLength {
+		panic("The PNG image data is shorter than the image.")
 	}
 
 	var imageData []byte
@@ -113,24 +123,16 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		} else {
 			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
-	default:
-		// Color Image
-		if image.pLTE == nil {
-			// Trucolor Image
-			if image.bitDepth == 16 {
-				imageData = image.getImageColorType2BitDepth16(inflatedIDAT)
-			} else {
-				imageData = image.getImageColorType2BitDepth8(inflatedIDAT)
-			}
+	case 2:
+		// True color image; a PLTE chunk in it is only a suggested palette
+		if image.bitDepth == 16 {
+			imageData = image.getImageColorType2BitDepth16(inflatedIDAT)
 		} else {
-			// Indexed Image
-			switch image.bitDepth {
-			case 8, 4, 2, 1:
-				imageData = image.getImageColorType3(inflatedIDAT)
-			default:
-				panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
-			}
+			imageData = image.getImageColorType2BitDepth8(inflatedIDAT)
 		}
+	default:
+		// Indexed image
+		imageData = image.getImageColorType3(inflatedIDAT)
 	}
 
 	// Compress the reconstructed image data.
@@ -181,11 +183,62 @@ func (image *PNGImage) processPNG(reader io.Reader) []*Chunk {
 	return chunks
 }
 
-func (image *PNGImage) validatePNG(reader io.Reader) {
-	buf := make([]byte, 8)
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		panic("File is too short!")
+// getImageDataLength checks the size, the bit depth and the color type of the
+// IHDR chunk, and returns the length of the decompressed image data: each row
+// is a filter type byte and the packed samples. The size comes from the file,
+// so it is checked before any buffer is allocated for the image.
+func (image *PNGImage) getImageDataLength() int {
+	if image.w <= 0 || image.h <= 0 || image.w > math.MaxInt32 || image.h > math.MaxInt32 {
+		panic("Invalid PNG image size.")
 	}
+	// Each row has a filter type byte, so a taller image is too large; a height
+	// of at most the limit also keeps the products below in an int64.
+	if image.h > decompressor.MaxDecodedLength {
+		panic(fmt.Sprintf("The PNG image is larger than %d bytes.", decompressor.MaxDecodedLength))
+	}
+	depth := image.bitDepth
+	var channels int
+	var validBitDepth bool
+	switch image.colorType {
+	case 0:
+		channels = 1
+		validBitDepth = depth == 1 || depth == 2 || depth == 4 || depth == 8 || depth == 16
+	case 2:
+		channels = 3
+		validBitDepth = depth == 8 || depth == 16
+	case 3:
+		channels = 1
+		validBitDepth = depth == 1 || depth == 2 || depth == 4 || depth == 8
+	case 4:
+		channels = 2
+		validBitDepth = depth == 8 || depth == 16
+	case 6:
+		channels = 4
+		validBitDepth = depth == 8 || depth == 16
+	default:
+		panic(fmt.Sprintf("Invalid PNG color type %d.", image.colorType))
+	}
+	if !validBitDepth {
+		panic(fmt.Sprintf("Invalid PNG bit depth %d for color type %d.", depth, image.colorType))
+	}
+	if image.colorType == 3 && image.pLTE == nil {
+		panic("The PNG palette image has no PLTE chunk.")
+	}
+	bytesPerRow := (int64(image.w)*int64(channels)*int64(depth) + 7) / 8
+	length := int64(image.h) * (1 + bytesPerRow)
+	// A palette image becomes 3 bytes of RGB and 1 byte of alpha per pixel.
+	decodedLength := length
+	if image.colorType == 3 {
+		decodedLength = 4 * int64(image.w) * int64(image.h)
+	}
+	if length > decompressor.MaxDecodedLength || decodedLength > decompressor.MaxDecodedLength {
+		panic(fmt.Sprintf("The PNG image is larger than %d bytes.", decompressor.MaxDecodedLength))
+	}
+	return int(length)
+}
+
+func (image *PNGImage) validatePNG(reader io.Reader) {
+	buf := getPNGBytes(reader, 8)
 	if ((buf[0] & 0xFF) == 0x89) &&
 		buf[1] == 0x50 &&
 		buf[2] == 0x4E &&
@@ -202,10 +255,13 @@ func (image *PNGImage) validatePNG(reader io.Reader) {
 
 func (image *PNGImage) getChunk(reader io.Reader) *Chunk {
 	chunk := NewChunk()
-	chunk.ChunkLength = getUint32(reader)                       // The length of the data chunk.
-	chunk.ChunkType = getNBytes(reader, 4)                      // The chunk type.
-	chunk.ChunkData = getNBytes(reader, int(chunk.ChunkLength)) // The chunk data.
-	chunk.ChunkCRC = getUint32(reader)                          // CRC of the type and data chunks.
+	chunk.ChunkLength = getPNGUint32(reader) // The length of the data chunk.
+	if chunk.ChunkLength > math.MaxInt32 {
+		panic(fmt.Sprintf("Invalid PNG chunk length %d.", chunk.ChunkLength))
+	}
+	chunk.ChunkType = getPNGBytes(reader, 4)                      // The chunk type.
+	chunk.ChunkData = getPNGBytes(reader, int(chunk.ChunkLength)) // The chunk data.
+	chunk.ChunkCRC = getPNGUint32(reader)                         // CRC of the type and data chunks.
 
 	crc32 := crc32util.NewCRC32()
 	crc32.Update(chunk.ChunkType)
@@ -214,6 +270,20 @@ func (image *PNGImage) getChunk(reader io.Reader) *Chunk {
 		panic("PNGImage chunk has bad CRC.")
 	}
 	return chunk
+}
+
+// getPNGBytes reads the bytes in pieces, so that a chunk length that the file
+// does not have fails at the end of the stream instead of allocating the length.
+func getPNGBytes(reader io.Reader, length int) []byte {
+	var buf bytes.Buffer
+	if n, err := io.CopyN(&buf, reader, int64(length)); err != nil || n != int64(length) {
+		panic("Unexpected end of the PNG stream.")
+	}
+	return buf.Bytes()
+}
+
+func getPNGUint32(reader io.Reader) uint32 {
+	return toUint32(getPNGBytes(reader, 4), 0)
 }
 
 func toUint32(buf []byte, off int) uint32 {

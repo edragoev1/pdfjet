@@ -12,13 +12,33 @@ import java.util.zip.*;
 
 class Decompressor {
     /**
+     * The largest number of bytes that a stream, or the samples of an image,
+     * may decode to: 256 MiB. A few kilobytes of Flate, LZW or RunLength data
+     * can decode to gigabytes, so a decoder that would go past it throws.
+     */
+    static final int MAX_DECODED_LENGTH = 256 * 1024 * 1024;
+
+    // Throws when the data decoded so far is longer than the limit.
+    private static void checkLength(int length, int maxLength, String filter)
+            throws DataFormatException {
+        if (length > maxLength) {
+            throw new DataFormatException(
+                    filter + " data decodes to more than " + maxLength + " bytes");
+        }
+    }
+
+    /**
      * Decodes the data of an LZWDecode stream, with the default EarlyChange
      * of 1: the codes get one bit longer one code before the table needs it.
      * Data that ends without the end code, or with an invalid code, returns
      * what was decoded up to there, as a missing end is common in real files.
      */
-    static byte[] lzwDecode(byte[] data) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length * 2);
+    static byte[] lzwDecode(byte[] data) throws DataFormatException {
+        return lzwDecode(data, MAX_DECODED_LENGTH);
+    }
+
+    static byte[] lzwDecode(byte[] data, int maxLength) throws DataFormatException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream((int) Math.min(data.length * 2L, maxLength));
         byte[][] table = new byte[4096][];
         for (int i = 0; i < 256; i++) {
             table[i] = new byte[] {(byte) i};
@@ -50,6 +70,7 @@ class Decompressor {
                     return bos.toByteArray();   // The end code or an invalid one.
                 }
                 bos.write(entry, 0, entry.length);
+                checkLength(bos.size(), maxLength, "LZW");
                 if (previous != null && next < 4096) {
                     byte[] added = Arrays.copyOf(previous, previous.length + 1);
                     added[previous.length] = entry[0];
@@ -267,8 +288,12 @@ class Decompressor {
      * 127 is followed by that many plus one bytes to copy, one from 129 to
      * 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
      */
-    static byte[] runLengthDecode(byte[] data) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length * 2);
+    static byte[] runLengthDecode(byte[] data) throws DataFormatException {
+        return runLengthDecode(data, MAX_DECODED_LENGTH);
+    }
+
+    static byte[] runLengthDecode(byte[] data, int maxLength) throws DataFormatException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream((int) Math.min(data.length * 2L, maxLength));
         int i = 0;
         while (i < data.length) {
             int length = data[i++] & 0xff;
@@ -284,24 +309,57 @@ class Decompressor {
             } else {
                 break;
             }
+            checkLength(bos.size(), maxLength, "RunLength");
         }
         return bos.toByteArray();
     }
 
+    /**
+     * Decodes a zlib stream, which must end and decode to at most
+     * MAX_DECODED_LENGTH bytes. Bytes after the end of the stream are ignored.
+     */
     static byte[] inflate(byte[] data) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
+        return inflate(data, MAX_DECODED_LENGTH, false);
+    }
+
+    /** Decodes a zlib stream, which must end and decode to at most maxLength bytes. */
+    static byte[] inflate(byte[] data, int maxLength) throws Exception {
+        return inflate(data, maxLength, false);
+    }
+
+    /**
+     * Returns the first length bytes that a zlib stream decodes to, or all of
+     * them when there are fewer, and ignores the rest of the stream. A stream
+     * that ends in the middle, before those bytes, throws.
+     */
+    static byte[] inflatePrefix(byte[] data, int length) throws Exception {
+        return inflate(data, length, true);
+    }
+
+    private static byte[] inflate(byte[] data, int maxLength, boolean prefix) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, maxLength));
         Inflater inflater = new Inflater();
         try {
             inflater.setInput(data);
             byte[] buf = new byte[4096];
-            while (!inflater.finished()) {
-                int count = inflater.inflate(buf);
+            while (!inflater.finished() && !(prefix && bos.size() == maxLength)) {
+                // At most one byte more than the limit, which tells that the
+                // stream decodes to more.
+                int count = inflater.inflate(
+                        buf, 0, (int) Math.min(buf.length, (long) maxLength - bos.size() + 1));
                 // An empty stream is finished after an inflate that returns no
                 // bytes. A stream that is not finished and needs more input or
                 // a preset dictionary is truncated or invalid.
                 if (count == 0 && !inflater.finished() &&
                         (inflater.needsInput() || inflater.needsDictionary())) {
                     throw new DataFormatException("Truncated or invalid Flate stream");
+                }
+                if (bos.size() + count > maxLength) {
+                    if (prefix) {
+                        bos.write(buf, 0, maxLength - bos.size());
+                        break;
+                    }
+                    checkLength(bos.size() + count, maxLength, "Flate");
                 }
                 bos.write(buf, 0, count);
             }

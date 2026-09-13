@@ -302,6 +302,21 @@ those files, and so does `PDF.read`. The Swift AES in `Cryptography.swift`
 encrypts about 40 MB per second in a release build and 1 MB per second in a
 debug build.
 
+## Untrusted input
+
+The libraries read PDFs, images and fonts that can come from anywhere, so the
+sizes in them are checked before they are used, in the four ports. A stream of
+a PDF, a font stream, or the samples of a PNG or BMP image may decode to at
+most 256 MiB, and a larger one fails with an error instead of taking the
+memory: a few kilobytes of Flate, LZW or RunLength data can decode to
+gigabytes. The size, bit depth, color type and palette of a PNG or BMP image
+are checked before any buffer is allocated for the image, a PNG chunk is read
+as far as the file has it, so a length that the file does not have fails at
+its end, and the rows of a PNG image are decoded up to the size of the image.
+A PDF that the libraries write can be up to 9,999,999,999 bytes long, the
+largest offset that an entry of a cross-reference table holds; a larger one
+fails with an error.
+
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.

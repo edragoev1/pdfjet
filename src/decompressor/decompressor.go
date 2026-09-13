@@ -13,13 +13,30 @@ import (
 	"io"
 )
 
+// MaxDecodedLength is the largest number of bytes that a stream, or the
+// samples of an image, may decode to: 256 MiB. A few kilobytes of Flate, LZW
+// or RunLength data can decode to gigabytes, so a decoder that would go past
+// it fails.
+const MaxDecodedLength = 256 * 1024 * 1024
+
+// errTooLong returns the error of data that decodes to more than the limit.
+func errTooLong(filter string, maxLength int) error {
+	return fmt.Errorf("%s data decodes to more than %d bytes", filter, maxLength)
+}
+
 // LZWDecode decodes the data of an LZWDecode stream, with the default
 // EarlyChange of 1: the codes get one bit longer one code before the table
 // needs it. Data that ends without the end code, or with an invalid code,
 // returns what was decoded up to there, as a missing end is common in real
 // files.
-func LZWDecode(buf []byte) []byte {
-	decoded := make([]byte, 0, len(buf)*2)
+func LZWDecode(buf []byte) ([]byte, error) {
+	return LZWDecodeWithMaxLength(buf, MaxDecodedLength)
+}
+
+// LZWDecodeWithMaxLength decodes the data of an LZWDecode stream like
+// LZWDecode, and fails when it decodes to more than maxLength bytes.
+func LZWDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+	decoded := make([]byte, 0, min(len(buf)*2, maxLength))
 	table := make([][]byte, 4096)
 	for i := 0; i < 256; i++ {
 		table[i] = []byte{byte(i)}
@@ -47,9 +64,12 @@ func LZWDecode(buf []byte) []byte {
 			} else if code == next && previous != nil {
 				entry = append(append([]byte{}, previous...), previous[0])
 			} else {
-				return decoded // The end code or an invalid one.
+				return decoded, nil // The end code or an invalid one.
 			}
 			decoded = append(decoded, entry...)
+			if len(decoded) > maxLength {
+				return nil, errTooLong("LZW", maxLength)
+			}
 			if previous != nil && next < 4096 {
 				table[next] = append(append([]byte{}, previous...), entry[0])
 				next++
@@ -60,7 +80,7 @@ func LZWDecode(buf []byte) []byte {
 			}
 		}
 	}
-	return decoded
+	return decoded, nil
 }
 
 // ApplyPredictor undoes the predictor of the /DecodeParms of a stream: 2 is
@@ -267,8 +287,14 @@ func ASCII85Decode(buf []byte) []byte {
 // RunLengthDecode decodes the data of a RunLengthDecode stream. A length byte
 // from 0 to 127 is followed by that many plus one bytes to copy, one from 129
 // to 255 by a byte to repeat 257 minus that many times, and 128 ends the data.
-func RunLengthDecode(buf []byte) []byte {
-	decoded := make([]byte, 0, len(buf)*2)
+func RunLengthDecode(buf []byte) ([]byte, error) {
+	return RunLengthDecodeWithMaxLength(buf, MaxDecodedLength)
+}
+
+// RunLengthDecodeWithMaxLength decodes the data of a RunLengthDecode stream
+// like RunLengthDecode, and fails when it decodes to more than maxLength bytes.
+func RunLengthDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+	decoded := make([]byte, 0, min(len(buf)*2, maxLength))
 	i := 0
 	for i < len(buf) {
 		length := int(buf[i])
@@ -289,13 +315,33 @@ func RunLengthDecode(buf []byte) []byte {
 		} else {
 			break
 		}
+		if len(decoded) > maxLength {
+			return nil, errTooLong("RunLength", maxLength)
+		}
 	}
-	return decoded
+	return decoded, nil
 }
 
-// Inflate decompresses zlib-compressed data (RFC 1950).
-// Returns an error if the data is not valid zlib format.
-func Inflate(buf []byte) (result []byte, err error) {
+// Inflate decodes a zlib stream, which must end and decode to at most
+// MaxDecodedLength bytes. Bytes after the end of the stream are ignored.
+func Inflate(buf []byte) ([]byte, error) {
+	return inflate(buf, MaxDecodedLength, false)
+}
+
+// InflateWithMaxLength decodes a zlib stream, which must end and decode to at
+// most maxLength bytes.
+func InflateWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+	return inflate(buf, maxLength, false)
+}
+
+// InflatePrefix returns the first length bytes that a zlib stream decodes to,
+// or all of them when there are fewer, and ignores the rest of the stream. A
+// stream that ends in the middle, before those bytes, fails.
+func InflatePrefix(buf []byte, length int) ([]byte, error) {
+	return inflate(buf, length, true)
+}
+
+func inflate(buf []byte, maxLength int, prefix bool) (result []byte, err error) {
 	reader, err := zlib.NewReader(bytes.NewReader(buf))
 	if err != nil {
 		return nil, fmt.Errorf("invalid zlib data: %w", err)
@@ -307,9 +353,19 @@ func Inflate(buf []byte) (result []byte, err error) {
 	}()
 
 	var inflated bytes.Buffer
-	inflated.Grow(len(buf))
-	if _, err := io.Copy(&inflated, reader); err != nil {
+	inflated.Grow(min(len(buf), maxLength))
+	// A prefix reads no further than its length; otherwise one byte more than
+	// the limit tells that the stream decodes to more.
+	limit := int64(maxLength) + 1
+	if prefix {
+		limit = int64(maxLength)
+	}
+	n, err := io.Copy(&inflated, io.LimitReader(reader, limit))
+	if err != nil {
 		return nil, fmt.Errorf("decompression failed: %w", err)
+	}
+	if n > int64(maxLength) {
+		return nil, errTooLong("Flate", maxLength)
 	}
 
 	return inflated.Bytes(), nil

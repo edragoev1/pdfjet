@@ -99,6 +99,142 @@ public class PNGImageTest {
         }
     }
 
+    // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
+    // chunk when there is a palette, and one IDAT chunk.
+    private static byte[] Png(int width, int height, int bitDepth, int colorType, byte[] palette, byte[] idat) {
+        MemoryStream ms = new MemoryStream();
+        ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
+        byte[] ihdr = new byte[13];
+        PutInt(ihdr, 0, width);
+        PutInt(ihdr, 4, height);
+        ihdr[8] = (byte) bitDepth;
+        ihdr[9] = (byte) colorType;
+        WriteChunk(ms, "IHDR", ihdr);
+        if (palette != null) {
+            WriteChunk(ms, "PLTE", palette);
+        }
+        if (idat != null) {
+            WriteChunk(ms, "IDAT", idat);
+        }
+        WriteChunk(ms, "IEND", new byte[0]);
+        return ms.ToArray();
+    }
+
+    private static void PutInt(byte[] buf, int offset, int value) {
+        buf[offset] = (byte) (value >> 24);
+        buf[offset + 1] = (byte) (value >> 16);
+        buf[offset + 2] = (byte) (value >> 8);
+        buf[offset + 3] = (byte) value;
+    }
+
+    private static void WriteChunk(MemoryStream ms, string type, byte[] data) {
+        byte[] name = Encoding.ASCII.GetBytes(type);
+        CRC32 crc = new CRC32();
+        crc.Update(name, 0, 4);
+        crc.Update(data, 0, data.Length);
+        byte[] length = new byte[4];
+        PutInt(length, 0, data.Length);
+        ms.Write(length);
+        ms.Write(name);
+        ms.Write(data);
+        byte[] checksum = new byte[4];
+        PutInt(checksum, 0, unchecked((int) crc.GetValue()));
+        ms.Write(checksum);
+    }
+
+    private static string DecodeError(byte[] png) {
+        return Assert.ThrowsAny<Exception>(() => new PNGImage(new MemoryStream(png))).Message;
+    }
+
+    /// <summary>A stream that returns at most 3 bytes from each read.</summary>
+    private sealed class FewBytesStream : MemoryStream {
+        internal FewBytesStream(byte[] data) : base(data) {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) {
+            return base.Read(buffer, offset, Math.Min(count, 3));
+        }
+
+        public override int Read(Span<byte> buffer) {
+            return base.Read(buffer[..Math.Min(buffer.Length, 3)]);
+        }
+    }
+
+    [Fact]
+    public void DecodesTheRowsOfTheImageAndIgnoresDataAfterThem() {
+        byte[] rgb = {1, 2, 3, 4, 5, 6};
+        byte[] rows = {0, 1, 2, 3, 4, 5, 6};
+        byte[] longer = {0, 1, 2, 3, 4, 5, 6, 9, 9, 9};
+        foreach (byte[] data in new[] {rows, longer}) {
+            PNGImage png = new PNGImage(new MemoryStream(Png(2, 1, 8, 2, null, Compressor.Deflate(data))));
+            Assert.Equal(rgb, Decompressor.Inflate(png.GetData()));
+        }
+    }
+
+    [Fact]
+    public void RejectsImageDataShorterThanTheImage() {
+        byte[] rows = {0, 1, 2, 3};
+        Assert.Equal("The PNG image data is shorter than the image.",
+                DecodeError(Png(2, 1, 8, 2, null, Compressor.Deflate(rows))));
+    }
+
+    [Fact]
+    public void RejectsAnImageLargerThanTheLimitBeforeDecodingIt() {
+        // 20000 x 20000 RGB samples are 1.2 GB.
+        Assert.Equal("The PNG image is larger than 268435456 bytes.",
+                DecodeError(Png(20000, 20000, 8, 2, null, Compressor.Deflate(new byte[1]))));
+        // 10000 x 10000 palette indexes of 1 bit are 12.5 MB, but 400 MB of RGB and alpha.
+        Assert.Equal("The PNG image is larger than 268435456 bytes.",
+                DecodeError(Png(10000, 10000, 1, 3, new byte[6], Compressor.Deflate(new byte[1]))));
+        // The largest size, where the sizes multiplied overflow a long.
+        int max = int.MaxValue;
+        Assert.Equal("The PNG image is larger than 268435456 bytes.",
+                DecodeError(Png(max, max, 16, 6, null, Compressor.Deflate(new byte[1]))));
+        Assert.Equal("The PNG image is larger than 268435456 bytes.",
+                DecodeError(Png(max, max, 1, 3, new byte[6], Compressor.Deflate(new byte[1]))));
+        Assert.Equal("The PNG image is larger than 268435456 bytes.",
+                DecodeError(Png(max, 1, 16, 6, null, Compressor.Deflate(new byte[1]))));
+    }
+
+    [Fact]
+    public void RejectsAnInvalidSizeBitDepthColorTypeOrPalette() {
+        byte[] idat = Compressor.Deflate(new byte[] {0, 0, 0, 0});
+        Assert.Equal("Invalid PNG image size.", DecodeError(Png(0, 1, 8, 2, null, idat)));
+        Assert.Equal("Invalid PNG image size.", DecodeError(Png(-1, 1, 8, 2, null, idat)));
+        Assert.Equal("Invalid PNG bit depth 4 for color type 2.", DecodeError(Png(1, 1, 4, 2, null, idat)));
+        Assert.Equal("Invalid PNG color type 5.", DecodeError(Png(1, 1, 8, 5, null, idat)));
+        Assert.Equal("Invalid PNG color type 200.", DecodeError(Png(1, 1, 8, 200, null, idat)));
+        Assert.Equal("Invalid PNG bit depth 200 for color type 2.", DecodeError(Png(1, 1, 200, 2, null, idat)));
+        Assert.Equal("The PNG palette image has no PLTE chunk.", DecodeError(Png(1, 1, 8, 3, null, idat)));
+        Assert.Equal("The PNG image has no image data.", DecodeError(Png(1, 1, 8, 2, null, null)));
+    }
+
+    [Fact]
+    public void RejectsAChunkLengthThatTheFileDoesNotHave() {
+        byte[] valid = Png(1, 1, 8, 2, null, Compressor.Deflate(new byte[] {0, 0, 0, 0}));
+        // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.
+        byte[] lying = valid[..(33 + 18)];
+        lying[33] = 0x7F;
+        lying[34] = 0xFF;
+        lying[35] = 0xFF;
+        lying[36] = 0xF0;
+        Assert.Equal("Unexpected end of the PNG stream.", DecodeError(lying));
+    }
+
+    [Fact]
+    public void ReadsAStreamThatReturnsFewBytesAtATime() {
+        byte[] file = File.ReadAllBytes(TestSupport.RepoPath("PngSuite/BASN2C08.PNG"));
+        PNGImage png = new PNGImage(new FewBytesStream(file));
+        Assert.Equal("7855b9bf", TestSupport.Crc32(Decompressor.Inflate(png.GetData())));
+    }
+
+    [Fact]
+    public void ATruecolorImageWithASuggestedPaletteIsDecodedAsTruecolor() {
+        PNGImage png = Decode("PS1N2C16");
+        Assert.Equal(2, png.GetColorType());
+        Assert.Equal(6144, Decompressor.Inflate(png.GetData()).Length);
+    }
+
     [Fact]
     public void DecodesGrayscaleWithAlpha() {
         PNGImage png = Decode("BASN4A08");

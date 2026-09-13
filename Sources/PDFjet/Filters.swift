@@ -95,11 +95,12 @@ func ascii85Decode(_ data: [UInt8]) -> [UInt8] {
 ///
 /// Decodes the data of a RunLengthDecode stream. A length byte from 0 to 127 is
 /// followed by that many plus one bytes to copy, one from 129 to 255 by a byte
-/// to repeat 257 minus that many times, and 128 ends the data.
+/// to repeat 257 minus that many times, and 128 ends the data. Data that
+/// decodes to more than maxLength bytes throws.
 ///
-func runLengthDecode(_ data: [UInt8]) -> [UInt8] {
+func runLengthDecode(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [UInt8] {
     var decoded = [UInt8]()
-    decoded.reserveCapacity(data.count * 2)
+    decoded.reserveCapacity(min(data.count * 2, maxLength))
     var i = 0
     while i < data.count {
         let length = Int(data[i])
@@ -113,6 +114,9 @@ func runLengthDecode(_ data: [UInt8]) -> [UInt8] {
             i += 1
         } else {
             break
+        }
+        if decoded.count > maxLength {
+            throw PDFjetError(message: "RunLength data decodes to more than \(maxLength) bytes")
         }
     }
     return decoded

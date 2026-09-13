@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -115,6 +116,15 @@ class PDFTest {
         String damaged = raw.replaceFirst("startxref\n\\d+\n", "startxref\n12\n");
         List<PDFobj> objects = TestSupport.read(damaged.getBytes("ISO-8859-1"));
         assertEquals(2, new PDF().getPageObjects(objects).size());
+    }
+
+    @Test
+    void crossReferenceOffsetsAreTenDigits() throws Exception {
+        assertEquals("0000000017", PDF.xrefOffset(17));
+        assertEquals("9999999999", PDF.xrefOffset(9999999999L));
+        IOException e = assertThrows(IOException.class, () -> PDF.xrefOffset(10000000000L));
+        assertEquals("The PDF is too large for a cross-reference table: an object starts at byte 10000000000.",
+                e.getMessage());
     }
 
     @Test

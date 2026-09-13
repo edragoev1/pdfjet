@@ -35,7 +35,7 @@ final public class PDF {
     private final List<Page> pages = new ArrayList<Page>();
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
     private OutputStream os = null;
-    private final List<Integer> objOffset = new ArrayList<Integer>();
+    private final List<Long> objOffset = new ArrayList<Long>();
     private final String producer = "PDFjet v9.0.0";
     private String title;
     private String author;
@@ -43,7 +43,7 @@ final public class PDF {
     private String keywords;
     private String creator;
     private String createDate;      // XMP metadata
-    private int byteCount = 0;
+    private long byteCount = 0;
     private int pagesObjNumber = 0;
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
@@ -204,15 +204,26 @@ final public class PDF {
      * Records the offset of an object that carries its own number, growing the
      * table with placeholders for any number that has no object yet.
      */
-    private void setObjOffset(int number, int offset) {
+    private void setObjOffset(int number, long offset) {
         if (number <= 0) {          // No number of its own - just append.
             objOffset.add(offset);
             return;
         }
         while (objOffset.size() < number) {
-            objOffset.add(0);
+            objOffset.add(0L);
         }
         objOffset.set(number - 1, offset);
+    }
+
+    // Returns the offset as the 10 digits of an entry of the cross-reference
+    // table, which cannot hold an offset of more than 10 digits.
+    static String xrefOffset(long offset) throws IOException {
+        String digits = Long.toString(offset);
+        if (digits.length() > 10) {
+            throw new IOException("The PDF is too large for a cross-reference table: "
+                    + "an object starts at byte " + offset + ".");
+        }
+        return "0000000000".substring(digits.length()) + digits;
     }
 
     int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
@@ -1251,7 +1262,7 @@ final public class PDF {
 
         int infoObjNumber = addInfoObject();
         int rootObjNumber = addRootObject(structTreeRootObjNumber, outlineDictNum);
-        int startxref = byteCount;
+        long startxref = byteCount;
 
         // Create the xref table
         append("xref\n");
@@ -1259,16 +1270,12 @@ final public class PDF {
         append(rootObjNumber + 1);
         append('\n');
         append("0000000000 65535 f \n");
-        for (int offset : objOffset) {
+        for (long offset : objOffset) {
             if (offset == 0) {      // A number that no object was written for.
                 append("0000000000 65535 f \n");
                 continue;
             }
-            String str = Integer.toString(offset);
-            for (int i = 0; i < 10 - str.length(); i++) {
-                append('0');
-            }
-            append(str);
+            append(xrefOffset(offset));
             append(" 00000 n \n");
         }
         append("trailer\n");
@@ -1299,7 +1306,7 @@ final public class PDF {
 
         append(Token.END_DICTIONARY);
         append("startxref\n");
-        append(startxref);
+        append(Long.toString(startxref));
         append('\n');
         append("%%EOF\n");
 

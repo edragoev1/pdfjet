@@ -55,6 +55,23 @@ class BMPImage {
             SkipNBytes(stream, 2);
             bpp = Read2BytesLE(stream);
             int compression = ReadSignedInt(stream);
+            // The size and the bit depth come from the file, so they are
+            // checked before any buffer is allocated for the image.
+            if (w <= 0 || h <= 0) {         // -int.MinValue is negative
+                throw new Exception("Invalid BMP image size.");
+            }
+            if (bpp != 1 && bpp != 4 && bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32) {
+                throw new Exception(
+                        "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
+            }
+            long rowSize = 4 * ((bpp * (long) w + 31) / 32);
+            // A height of at most the limit keeps the products in a long.
+            if (h > Decompressor.MAX_DECODED_LENGTH ||
+                    3L * w * h > Decompressor.MAX_DECODED_LENGTH ||
+                    rowSize * h > Decompressor.MAX_DECODED_LENGTH) {
+                throw new Exception(
+                        "The BMP image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
+            }
             if (bpp > 8) {
                 r5g6b5 = (compression == 3);
                 SkipNBytes(stream, 20);
@@ -66,6 +83,9 @@ class BMPImage {
                 int numpalcol = ReadSignedInt(stream);
                 if (numpalcol == 0) {
                     numpalcol = (int) Math.Pow(2, bpp);
+                }
+                if (numpalcol < 0 || numpalcol > 256) {
+                    throw new Exception("Invalid BMP palette size " + numpalcol + ".");
                 }
                 SkipNBytes(stream, 4);
                 ParsePalette(stream, numpalcol);
@@ -80,7 +100,7 @@ class BMPImage {
         // rowsize is 4 * ceil (bpp*width/32.0)
         image = new byte[w * h * 3];
 
-        int rowsize = 4 * (int)Math.Ceiling(bpp*w/32.0);   // 4 byte alignment
+        int rowsize = (int) (4 * ((bpp * (long) w + 31) / 32));   // 4 byte alignment
         byte[] row;
         int index;
         try {

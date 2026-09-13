@@ -34,7 +34,7 @@ public class PDF {
     private String uuid = Convert.ToHexString(
             System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
     private Stream os = null;
-    private readonly List<Int32> objOffset = new List<Int32>(); // Required by the xref section
+    private readonly List<long> objOffset = new List<long>(); // Required by the xref section
     private String producer = "PDFjet v9.0.0";
     private String title;
     private String author;
@@ -42,7 +42,7 @@ public class PDF {
     private String keywords;
     private String creator;
     private String createDate;      // XMP metadata
-    private int byteCount = 0;
+    private long byteCount = 0;
     private int pagesObjNumber = 0;
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
@@ -149,7 +149,7 @@ public class PDF {
     /// Records the offset of an object that carries its own number, growing the
     /// table with placeholders for any number that has no object yet.
     /// </summary>
-    private void SetObjOffset(int number, int offset) {
+    private void SetObjOffset(int number, long offset) {
         if (number <= 0) {          // No number of its own - just append.
             objOffset.Add(offset);
             return;
@@ -158,6 +158,19 @@ public class PDF {
             objOffset.Add(0);
         }
         objOffset[number - 1] = offset;
+    }
+
+    /// <summary>
+    /// Returns the offset as the 10 digits of an entry of the cross-reference
+    /// table, which cannot hold an offset of more than 10 digits.
+    /// </summary>
+    internal static String XrefOffset(long offset) {
+        String digits = offset.ToString(CultureInfo.InvariantCulture);
+        if (digits.Length > 10) {
+            throw new IOException("The PDF is too large for a cross-reference table: "
+                    + "an object starts at byte " + digits + ".");
+        }
+        return new String('0', 10 - digits.Length) + digits;
     }
 
     internal int AddMetadataObject(String notice, bool fontMetadataObject) {
@@ -1182,7 +1195,7 @@ public class PDF {
 
         int infoObjNumber = AddInfoObject();
         int rootObjNumber = AddRootObject(structTreeRootObjNumber, outlineDictNum);
-        int startxref = byteCount;
+        long startxref = byteCount;
 
         // Create the xref table
         Append("xref\n");
@@ -1191,16 +1204,12 @@ public class PDF {
         Append('\n');
 
         Append("0000000000 65535 f \n");
-        foreach (int offset in objOffset) {
+        foreach (long offset in objOffset) {
             if (offset == 0) {      // A number that no object was written for.
                 Append("0000000000 65535 f \n");
                 continue;
             }
-            String str = offset.ToString();
-            for (int i = 0; i < 10 - str.Length; i++) {
-                Append('0');
-            }
-            Append(str);
+            Append(XrefOffset(offset));
             Append(" 00000 n \n");
         }
         Append("trailer\n");
@@ -1231,7 +1240,7 @@ public class PDF {
 
         Append(">>\n");
         Append("startxref\n");
-        Append(startxref);
+        Append(startxref.ToString(CultureInfo.InvariantCulture));
         Append('\n');
         Append("%%EOF\n");
 
@@ -1337,7 +1346,7 @@ public class PDF {
 
     internal void Append(MemoryStream baos) {
         baos.WriteTo(os);
-        byteCount += (int) baos.Length;
+        byteCount += baos.Length;
     }
 
     internal List<PDFobj> GetSortedObjects(List<PDFobj> objects) {

@@ -37,9 +37,13 @@ public class PNGImage {
     public init(_ stream: InputStream) throws {
         var buffer = try readPNG(stream)
         let chunks = try processPNG(&buffer)
+        var hasImageData = false
         for chunk in chunks {
-            let chunkType = String(bytes: chunk.type!, encoding: .utf8)!
+            let chunkType = String(decoding: chunk.type!, as: UTF8.self)
             if chunkType == "IHDR" {
+                if chunk.getData()!.count != 13 {
+                    throw PDFjetError(message: "Invalid PNG IHDR chunk.")
+                }
                 self.w = Int(getUInt32(chunk.getData()!, 0))    // Width
                 self.h = Int(getUInt32(chunk.getData()!, 4))    // Height
                 self.bitDepth = Int(chunk.getData()![8])        // Bit Depth
@@ -57,6 +61,7 @@ public class PNGImage {
                 }
             } else if chunkType == "IDAT" {
                 iDAT.append(contentsOf: chunk.getData()!)
+                hasImageData = true
             } else if chunkType == "PLTE" {
                 pLTE = chunk.getData()!
                 if pLTE!.count % 3 != 0 {
@@ -71,8 +76,15 @@ public class PNGImage {
             // ports: the samples are embedded as they are.
         }
 
-        var inflatedImageData = [UInt8]()   // The inflated image data
-        _ = try Puff(output: &inflatedImageData, input: &iDAT)
+        let imageDataLength = try getImageDataLength()
+        if !hasImageData {
+            throw PDFjetError(message: "The PNG image has no image data.")
+        }
+        // The rows of the image; data after the last row is ignored.
+        let inflatedImageData = try inflatePrefix(iDAT, imageDataLength)
+        if inflatedImageData.count < imageDataLength {
+            throw PDFjetError(message: "The PNG image data is shorter than the image.")
+        }
 
         let image: [UInt8]                  // The image data
         if colorType == 0 {
@@ -103,23 +115,16 @@ public class PNGImage {
             } else {
                 throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
             }
-        } else {
-            // Color Image
-            if pLTE == nil {
-                // Trucolor Image
-                if bitDepth == 16 {
-                    image = getImageColorType2BitDepth16(inflatedImageData)
-                } else {
-                    image = getImageColorType2BitDepth8(inflatedImageData)
-                }
+        } else if colorType == 2 {
+            // True color image; a PLTE chunk in it is only a suggested palette
+            if bitDepth == 16 {
+                image = getImageColorType2BitDepth16(inflatedImageData)
             } else {
-                // Indexed Image
-                if bitDepth == 8 || bitDepth == 4 || bitDepth == 2 || bitDepth == 1 {
-                    image = getImageColorType3(inflatedImageData)
-                } else {
-                    throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
-                }
+                image = getImageColorType2BitDepth8(inflatedImageData)
             }
+        } else {
+            // Indexed image
+            image = getImageColorType3(inflatedImageData)
         }
 
         FlateEncode(&deflatedImageData, image)
@@ -155,10 +160,65 @@ public class PNGImage {
         return self.deflatedAlphaData
     }
 
+    // Checks the size, the bit depth and the color type of the IHDR chunk, and
+    // returns the length of the decompressed image data: each row is a filter
+    // type byte and the packed samples. The size comes from the file, so it is
+    // checked, without overflow, before any buffer is allocated for the image.
+    private func getImageDataLength() throws -> Int {
+        if w <= 0 || h <= 0 || w > Int(Int32.max) || h > Int(Int32.max) {
+            throw PDFjetError(message: "Invalid PNG image size.")
+        }
+        let channels: Int
+        let validBitDepths: [Int]
+        switch colorType {
+        case 0:
+            channels = 1
+            validBitDepths = [1, 2, 4, 8, 16]
+        case 2:
+            channels = 3
+            validBitDepths = [8, 16]
+        case 3:
+            channels = 1
+            validBitDepths = [1, 2, 4, 8]
+        case 4:
+            channels = 2
+            validBitDepths = [8, 16]
+        case 6:
+            channels = 4
+            validBitDepths = [8, 16]
+        default:
+            throw PDFjetError(message: "Invalid PNG color type \(colorType).")
+        }
+        if !validBitDepths.contains(bitDepth) {
+            throw PDFjetError(message: "Invalid PNG bit depth \(bitDepth) for color type \(colorType).")
+        }
+        if colorType == 3 && pLTE == nil {
+            throw PDFjetError(message: "The PNG palette image has no PLTE chunk.")
+        }
+        let tooLarge = PDFjetError(message: "The PNG image is larger than \(MAX_DECODED_LENGTH) bytes.")
+        let (bits, bitsOverflow) = w.multipliedReportingOverflow(by: channels * bitDepth)
+        if bitsOverflow {
+            throw tooLarge
+        }
+        let bytesPerRow = bits / 8 + (bits % 8 == 0 ? 0 : 1)
+        let (length, lengthOverflow) = h.multipliedReportingOverflow(by: 1 + bytesPerRow)
+        if lengthOverflow || length > MAX_DECODED_LENGTH {
+            throw tooLarge
+        }
+        if colorType == 3 {
+            // A palette image becomes 3 bytes of RGB and 1 byte of alpha per pixel.
+            let (pixels, pixelsOverflow) = w.multipliedReportingOverflow(by: h)
+            if pixelsOverflow || pixels > MAX_DECODED_LENGTH / 4 {
+                throw tooLarge
+            }
+        }
+        return length
+    }
+
     private func readPNG(_ stream: InputStream) throws -> [UInt8] {
         let contents = try Content.getFromStream(stream)
         if contents.count < 8 {
-            throw PDFjetError(message: "File is too short!")
+            throw PDFjetError(message: "Unexpected end of the PNG stream.")
         }
         if contents[0] == 0x89 &&
                 contents[1] == 0x50 &&
@@ -181,7 +241,7 @@ public class PNGImage {
         var offset = 8      // Skip the header!
         while true {
             let chunk = try getChunk(&buffer, &offset)
-            let chunkType = String(bytes: chunk.type!, encoding: .utf8)!
+            let chunkType = String(decoding: chunk.type!, as: UTF8.self)
             if chunkType == "IEND" {
                 break
             }
@@ -197,6 +257,9 @@ public class PNGImage {
 
         // The length of the data chunk.
         chunk.length = getUInt32(try getBytes(&buffer, &offset, 4), 0)
+        if chunk.length! > UInt32(Int32.max) {
+            throw PDFjetError(message: "Invalid PNG chunk length \(chunk.length!).")
+        }
 
         // The chunk type.
         chunk.type = try getBytes(&buffer, &offset, 4)
@@ -221,15 +284,12 @@ public class PNGImage {
             _ buffer: inout [UInt8],
             _ offset: inout Int,
             _ length: Int) throws -> [UInt8] {
-        if offset + length > buffer.count {
-            throw PDFjetError(message: "Error reading input stream!")
+        // The file is in memory, so a length that it does not have fails here,
+        // before anything is allocated for it.
+        if length > buffer.count - offset {
+            throw PDFjetError(message: "Unexpected end of the PNG stream.")
         }
-        var bytes = [UInt8]()
-        var i = 0
-        while i < length {
-            bytes.append(buffer[offset + i])
-            i += 1
-        }
+        let bytes = Array(buffer[offset..<(offset + length)])
         offset += length
         return bytes
     }

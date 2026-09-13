@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bytes"
 	"encoding/binary"
+	"math"
 	"testing"
 )
 
@@ -71,4 +72,44 @@ func TestBMPImageATruncatedFileThrows(t *testing.T) {
 	if _, panicked := testPanic(func() { newBMPImage(bytes.NewReader(truncated)) }); !panicked {
 		t.Error("did not panic")
 	}
+}
+
+// testBMPHeader returns the 54 byte header of a BMP file of the size, bits per
+// pixel and palette colors.
+func testBMPHeader(width, height int32, bitsPerPixel uint16, colors int32) []byte {
+	var buf bytes.Buffer
+	le := binary.LittleEndian
+	buf.WriteString("BM")
+	_ = binary.Write(&buf, le, []uint32{54, 0, 54, 40})
+	_ = binary.Write(&buf, le, []int32{width, height})
+	_ = binary.Write(&buf, le, []uint16{1, bitsPerPixel})
+	_ = binary.Write(&buf, le, []uint32{0, 0, 2835, 2835})
+	_ = binary.Write(&buf, le, []int32{colors, 0})
+	return buf.Bytes()
+}
+
+func testBMPError(bmp []byte) string {
+	return testPanicMessage(func() { newBMPImage(bytes.NewReader(bmp)) })
+}
+
+func TestBMPImageRejectsAnInvalidSize(t *testing.T) {
+	testWant(t, "Invalid BMP image size.", testBMPError(testBMPHeader(0, 2, 24, 0)))
+	testWant(t, "Invalid BMP image size.", testBMPError(testBMPHeader(2, 0, 24, 0)))
+	testWant(t, "Invalid BMP image size.", testBMPError(testBMPHeader(-2, 2, 24, 0)))
+	testWant(t, "Invalid BMP image size.", testBMPError(testBMPHeader(2, math.MinInt32, 24, 0)))
+}
+
+func TestBMPImageRejectsAnImageLargerThanTheLimitBeforeReadingIt(t *testing.T) {
+	// 20000 x 20000 pixels are 1.2 GB of RGB; the file has only the header.
+	testWant(t, "The BMP image is larger than 268435456 bytes.", testBMPError(testBMPHeader(20000, 20000, 24, 0)))
+	// The largest size, where the sizes multiplied overflow an int64.
+	const max = math.MaxInt32
+	testWant(t, "The BMP image is larger than 268435456 bytes.", testBMPError(testBMPHeader(max, max, 32, 0)))
+	testWant(t, "The BMP image is larger than 268435456 bytes.", testBMPError(testBMPHeader(max, 1, 32, 0)))
+}
+
+func TestBMPImageRejectsAnUnsupportedBitDepthOrALargePalette(t *testing.T) {
+	testWant(t, "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images",
+		testBMPError(testBMPHeader(2, 2, 2, 0)))
+	testWant(t, "Invalid BMP palette size 2147483647.", testBMPError(testBMPHeader(2, 2, 8, 0x7FFFFFFF)))
 }

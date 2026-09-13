@@ -61,6 +61,44 @@ class BMPImageTest {
         assertArrayEquals(RGB, Decompressor.inflate(new BMPImage(new ByteArrayInputStream(bmp24(true))).getData()));
     }
 
+    // The 54 byte header of a BMP file of the size, bits per pixel and palette colors.
+    private static byte[] header(int width, int height, int bitsPerPixel, int colors) {
+        ByteBuffer header = ByteBuffer.allocate(54).order(ByteOrder.LITTLE_ENDIAN);
+        header.put((byte) 'B').put((byte) 'M').putInt(54).putInt(0).putInt(54);
+        header.putInt(40).putInt(width).putInt(height).putShort((short) 1).putShort((short) bitsPerPixel);
+        header.putInt(0).putInt(0).putInt(2835).putInt(2835).putInt(colors).putInt(0);
+        return header.array();
+    }
+
+    private static String decodeError(byte[] bmp) {
+        return assertThrows(Exception.class, () -> new BMPImage(new ByteArrayInputStream(bmp))).getMessage();
+    }
+
+    @Test
+    void rejectsAnInvalidSize() {
+        assertEquals("Invalid BMP image size.", decodeError(header(0, 2, 24, 0)));
+        assertEquals("Invalid BMP image size.", decodeError(header(2, 0, 24, 0)));
+        assertEquals("Invalid BMP image size.", decodeError(header(-2, 2, 24, 0)));
+        assertEquals("Invalid BMP image size.", decodeError(header(2, Integer.MIN_VALUE, 24, 0)));
+    }
+
+    @Test
+    void rejectsAnImageLargerThanTheLimitBeforeReadingIt() {
+        // 20000 x 20000 pixels are 1.2 GB of RGB; the file has only the header.
+        assertEquals("The BMP image is larger than 268435456 bytes.", decodeError(header(20000, 20000, 24, 0)));
+        // The largest size, where the sizes multiplied overflow a long.
+        int max = Integer.MAX_VALUE;
+        assertEquals("The BMP image is larger than 268435456 bytes.", decodeError(header(max, max, 32, 0)));
+        assertEquals("The BMP image is larger than 268435456 bytes.", decodeError(header(max, 1, 32, 0)));
+    }
+
+    @Test
+    void rejectsAnUnsupportedBitDepthOrALargePalette() {
+        assertEquals("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images",
+                decodeError(header(2, 2, 2, 0)));
+        assertEquals("Invalid BMP palette size 2147483647.", decodeError(header(2, 2, 8, 0x7FFFFFFF)));
+    }
+
     @Test
     void aTruncatedFileThrows() {
         byte[] truncated = Arrays.copyOf(bmp24(false), 60);

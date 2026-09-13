@@ -152,3 +152,10 @@ func TestPDFCompleteFlushesTheWriter(t *testing.T) {
 		t.Error("the writer was not flushed")
 	}
 }
+
+func TestPDFCrossReferenceOffsetsAreTenDigits(t *testing.T) {
+	testWant(t, "0000000017", xrefOffset(17))
+	testWant(t, "9999999999", xrefOffset(9999999999))
+	testWant(t, "The PDF is too large for a cross-reference table: an object starts at byte 10000000000.",
+		testPanicMessage(func() { xrefOffset(10000000000) }))
+}

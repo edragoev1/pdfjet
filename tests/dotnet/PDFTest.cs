@@ -121,6 +121,15 @@ public class PDFTest {
     }
 
     [Fact]
+    public void CrossReferenceOffsetsAreTenDigits() {
+        Assert.Equal("0000000017", PDF.XrefOffset(17));
+        Assert.Equal("9999999999", PDF.XrefOffset(9999999999L));
+        IOException e = Assert.Throws<IOException>(() => PDF.XrefOffset(10000000000L));
+        Assert.Equal("The PDF is too large for a cross-reference table: an object starts at byte 10000000000.",
+                e.Message);
+    }
+
+    [Fact]
     public void CompleteClosesTheStream() {
         ClosingStream stream = new ClosingStream();
         PDF pdf = new PDF(stream);

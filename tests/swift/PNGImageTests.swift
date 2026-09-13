@@ -88,6 +88,121 @@ import Testing
         #expect(image.getHeight() == 32)
     }
 
+    private static func bigEndian32(_ value: UInt32, _ bytes: inout [UInt8]) {
+        bytes.append(contentsOf: [
+            UInt8(value >> 24), UInt8((value >> 16) & 0xFF), UInt8((value >> 8) & 0xFF), UInt8(value & 0xFF)])
+    }
+
+    // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
+    // chunk when there is a palette, and one IDAT chunk.
+    private func png(
+            _ width: Int32, _ height: Int32, _ bitDepth: UInt8, _ colorType: UInt8,
+            _ palette: [UInt8]?, _ idat: [UInt8]?) -> [UInt8] {
+        var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        var ihdr = [UInt8]()
+        PNGImageTests.bigEndian32(UInt32(bitPattern: width), &ihdr)
+        PNGImageTests.bigEndian32(UInt32(bitPattern: height), &ihdr)
+        ihdr.append(contentsOf: [bitDepth, colorType, 0, 0, 0])
+        chunk(&bytes, "IHDR", ihdr)
+        if let palette = palette {
+            chunk(&bytes, "PLTE", palette)
+        }
+        if let idat = idat {
+            chunk(&bytes, "IDAT", idat)
+        }
+        chunk(&bytes, "IEND", [])
+        return bytes
+    }
+
+    private func chunk(_ bytes: inout [UInt8], _ type: String, _ data: [UInt8]) {
+        let name = Array(type.utf8)
+        PNGImageTests.bigEndian32(UInt32(data.count), &bytes)
+        bytes.append(contentsOf: name)
+        bytes.append(contentsOf: data)
+        PNGImageTests.bigEndian32(UInt32(TestSupport.crc32(name + data), radix: 16)!, &bytes)
+    }
+
+    private func decodeError(_ png: [UInt8], sourceLocation: SourceLocation = #_sourceLocation) -> String {
+        let error = #expect(throws: (any Error).self, sourceLocation: sourceLocation) {
+            _ = try PNGImage(InputStream(data: Data(png)))
+        }
+        return TestSupport.message(error)
+    }
+
+    /// An input stream that returns at most 3 bytes per read.
+    private final class SlowStream: InputStream {
+        override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
+            return super.read(buffer, maxLength: min(len, 3))
+        }
+    }
+
+    @Test func decodesTheRowsOfTheImageAndIgnoresDataAfterThem() throws {
+        let rgb: [UInt8] = [1, 2, 3, 4, 5, 6]
+        let rows: [UInt8] = [0, 1, 2, 3, 4, 5, 6]
+        let longer: [UInt8] = [0, 1, 2, 3, 4, 5, 6, 9, 9, 9]
+        for data in [rows, longer] {
+            let image = try PNGImage(InputStream(data: Data(png(2, 1, 8, 2, nil, TestSupport.deflate(data)))))
+            #expect(try TestSupport.inflate(image.getData()) == rgb)
+        }
+    }
+
+    @Test func rejectsImageDataShorterThanTheImage() {
+        let rows: [UInt8] = [0, 1, 2, 3]
+        #expect(decodeError(png(2, 1, 8, 2, nil, TestSupport.deflate(rows)))
+                == "The PNG image data is shorter than the image.")
+    }
+
+    @Test func rejectsAnImageLargerThanTheLimitBeforeDecodingIt() {
+        // 20000 x 20000 RGB samples are 1.2 GB.
+        #expect(decodeError(png(20000, 20000, 8, 2, nil, TestSupport.deflate([0])))
+                == "The PNG image is larger than 268435456 bytes.")
+        // 10000 x 10000 palette indexes of 1 bit are 12.5 MB, but 400 MB of RGB and alpha.
+        #expect(decodeError(png(10000, 10000, 1, 3, [UInt8](repeating: 0, count: 6), TestSupport.deflate([0])))
+                == "The PNG image is larger than 268435456 bytes.")
+        // The largest size, where the sizes multiplied overflow a 64-bit integer.
+        #expect(decodeError(png(2147483647, 2147483647, 16, 6, nil, TestSupport.deflate([0])))
+                == "The PNG image is larger than 268435456 bytes.")
+        #expect(decodeError(png(2147483647, 2147483647, 1, 3, [UInt8](repeating: 0, count: 6), TestSupport.deflate([0])))
+                == "The PNG image is larger than 268435456 bytes.")
+        #expect(decodeError(png(2147483647, 1, 16, 6, nil, TestSupport.deflate([0])))
+                == "The PNG image is larger than 268435456 bytes.")
+    }
+
+    @Test func rejectsAnInvalidSizeBitDepthColorTypeOrPalette() {
+        let idat = TestSupport.deflate([0, 0, 0, 0])
+        #expect(decodeError(png(0, 1, 8, 2, nil, idat)) == "Invalid PNG image size.")
+        #expect(decodeError(png(-1, 1, 8, 2, nil, idat)) == "Invalid PNG image size.")
+        #expect(decodeError(png(1, 1, 4, 2, nil, idat)) == "Invalid PNG bit depth 4 for color type 2.")
+        #expect(decodeError(png(1, 1, 8, 5, nil, idat)) == "Invalid PNG color type 5.")
+        #expect(decodeError(png(1, 1, 8, 200, nil, idat)) == "Invalid PNG color type 200.")
+        #expect(decodeError(png(1, 1, 200, 2, nil, idat)) == "Invalid PNG bit depth 200 for color type 2.")
+        #expect(decodeError(png(1, 1, 8, 3, nil, idat)) == "The PNG palette image has no PLTE chunk.")
+        #expect(decodeError(png(1, 1, 8, 2, nil, nil)) == "The PNG image has no image data.")
+    }
+
+    @Test func rejectsAChunkLengthThatTheFileDoesNotHave() {
+        let valid = png(1, 1, 8, 2, nil, TestSupport.deflate([0, 0, 0, 0]))
+        // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.
+        var lying = Array(valid.prefix(33 + 18))
+        lying[33] = 0x7F
+        lying[34] = 0xFF
+        lying[35] = 0xFF
+        lying[36] = 0xF0
+        #expect(decodeError(lying) == "Unexpected end of the PNG stream.")
+    }
+
+    @Test func readsAStreamThatReturnsFewBytesAtATime() throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("PngSuite/BASN2C08.PNG")))
+        let image = try PNGImage(SlowStream(data: data))
+        #expect(TestSupport.crc32(try TestSupport.inflate(image.getData())) == "7855b9bf")
+    }
+
+    @Test func aTruecolorImageWithASuggestedPaletteIsDecodedAsTruecolor() throws {
+        let image = try decode("PS1N2C16")
+        #expect(image.getColorType() == 2)
+        #expect(try TestSupport.inflate(image.getData()).count == 6144)
+    }
+
     @Test func decodesGrayscaleWithAlpha() throws {
         let png = try decode("BASN4A08")
         #expect(png.getWidth() == 32)

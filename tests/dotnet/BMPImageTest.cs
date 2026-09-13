@@ -68,6 +68,59 @@ public class BMPImageTest {
         Assert.Equal(RGB, Decompressor.Inflate(new BMPImage(new MemoryStream(Bmp24(true))).GetData()));
     }
 
+    // The 54 byte header of a BMP file of the size, bits per pixel and palette colors.
+    private static byte[] Header(int width, int height, int bitsPerPixel, int colors) {
+        MemoryStream ms = new MemoryStream();
+        BinaryWriter w = new BinaryWriter(ms);     // little endian
+        w.Write((byte) 'B');
+        w.Write((byte) 'M');
+        w.Write(54);
+        w.Write(0);
+        w.Write(54);
+        w.Write(40);
+        w.Write(width);
+        w.Write(height);
+        w.Write((short) 1);
+        w.Write((short) bitsPerPixel);
+        w.Write(0);
+        w.Write(0);
+        w.Write(2835);
+        w.Write(2835);
+        w.Write(colors);
+        w.Write(0);
+        w.Flush();
+        return ms.ToArray();
+    }
+
+    private static string DecodeError(byte[] bmp) {
+        return Assert.ThrowsAny<Exception>(() => new BMPImage(new MemoryStream(bmp))).Message;
+    }
+
+    [Fact]
+    public void RejectsAnInvalidSize() {
+        Assert.Equal("Invalid BMP image size.", DecodeError(Header(0, 2, 24, 0)));
+        Assert.Equal("Invalid BMP image size.", DecodeError(Header(2, 0, 24, 0)));
+        Assert.Equal("Invalid BMP image size.", DecodeError(Header(-2, 2, 24, 0)));
+        Assert.Equal("Invalid BMP image size.", DecodeError(Header(2, int.MinValue, 24, 0)));
+    }
+
+    [Fact]
+    public void RejectsAnImageLargerThanTheLimitBeforeReadingIt() {
+        // 20000 x 20000 pixels are 1.2 GB of RGB; the file has only the header.
+        Assert.Equal("The BMP image is larger than 268435456 bytes.", DecodeError(Header(20000, 20000, 24, 0)));
+        // The largest size, where the sizes multiplied overflow a long.
+        int max = int.MaxValue;
+        Assert.Equal("The BMP image is larger than 268435456 bytes.", DecodeError(Header(max, max, 32, 0)));
+        Assert.Equal("The BMP image is larger than 268435456 bytes.", DecodeError(Header(max, 1, 32, 0)));
+    }
+
+    [Fact]
+    public void RejectsAnUnsupportedBitDepthOrALargePalette() {
+        Assert.Equal("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images",
+                DecodeError(Header(2, 2, 2, 0)));
+        Assert.Equal("Invalid BMP palette size 2147483647.", DecodeError(Header(2, 2, 8, 0x7FFFFFFF)));
+    }
+
     [Fact]
     public void ATruncatedFileThrows() {
         byte[] truncated = Bmp24(false)[..60];

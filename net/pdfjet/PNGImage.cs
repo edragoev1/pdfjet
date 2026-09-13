@@ -41,6 +41,9 @@ public class PNGImage {
         foreach (Chunk chunk in chunks) {
             String chunkType = System.Text.Encoding.UTF8.GetString(chunk.type);
             if (chunkType.Equals("IHDR")) {
+                if (chunk.GetData().Length != 13) {
+                    throw new Exception("Invalid PNG IHDR chunk.");
+                }
                 this.w = (int) ToUInt32(chunk.GetData(), 0);    // Width
                 this.h = (int) ToUInt32(chunk.GetData(), 4);    // Height
                 this.bitDepth = chunk.GetData()[8];             // Bit Depth
@@ -66,7 +69,15 @@ public class PNGImage {
             // ports: the samples are embedded as they are.
         }
 
-        byte[] inflatedImageData = Decompressor.Inflate(iDAT);
+        long imageDataLength = GetImageDataLength();
+        if (iDAT == null) {
+            throw new Exception("The PNG image has no image data.");
+        }
+        // The rows of the image; data after the last row is ignored.
+        byte[] inflatedImageData = Decompressor.InflatePrefix(iDAT, (int) imageDataLength);
+        if (inflatedImageData.Length < imageDataLength) {
+            throw new Exception("The PNG image data is shorter than the image.");
+        }
         byte[] imageData;
         if (colorType == 0) {
             // Grayscale Image
@@ -96,23 +107,16 @@ public class PNGImage {
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
-        } else {
-            // Color Image
-            if (pLTE == null) {
-                // Trucolor Image
-                if (bitDepth == 16) {
-                    imageData = GetImageColorType2BitDepth16(inflatedImageData);
-                } else {
-                    imageData = GetImageColorType2BitDepth8(inflatedImageData);
-                }
+        } else if (colorType == 2) {
+            // True color image; a PLTE chunk in it is only a suggested palette
+            if (bitDepth == 16) {
+                imageData = GetImageColorType2BitDepth16(inflatedImageData);
             } else {
-                // Indexed Image
-                if (bitDepth == 8 || bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
-                    imageData = GetImageColorType3(inflatedImageData);
-                } else {
-                    throw new Exception("Image with unsupported bit depth == " + bitDepth);
-                }
+                imageData = GetImageColorType2BitDepth8(inflatedImageData);
             }
+        } else {
+            // Indexed image
+            imageData = GetImageColorType3(inflatedImageData);
         }
 
         deflatedImageData = Compressor.Deflate(imageData);
@@ -161,11 +165,57 @@ public class PNGImage {
         return chunks;
     }
 
-    private void ValidatePNG(Stream inputStream) {
-        byte[] buf = new byte[8];
-        if (inputStream.Read(buf, 0, buf.Length) == -1) {
-            throw new Exception("File is too short!");
+    // Checks the size, the bit depth and the color type of the IHDR chunk, and
+    // returns the length of the decompressed image data: each row is a filter
+    // type byte and the packed samples. The size comes from the file, so it is
+    // checked before any buffer is allocated for the image.
+    private long GetImageDataLength() {
+        if (w <= 0 || h <= 0) {
+            throw new Exception("Invalid PNG image size.");
         }
+        // Each row has a filter type byte, so a taller image is too large; a
+        // height of at most the limit also keeps the products below in a long.
+        if (h > Decompressor.MAX_DECODED_LENGTH) {
+            throw new Exception("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
+        }
+        int channels;
+        bool validBitDepth;
+        if (colorType == 0) {
+            channels = 1;
+            validBitDepth = bitDepth == 1 || bitDepth == 2 || bitDepth == 4 || bitDepth == 8 || bitDepth == 16;
+        } else if (colorType == 2) {
+            channels = 3;
+            validBitDepth = bitDepth == 8 || bitDepth == 16;
+        } else if (colorType == 3) {
+            channels = 1;
+            validBitDepth = bitDepth == 1 || bitDepth == 2 || bitDepth == 4 || bitDepth == 8;
+        } else if (colorType == 4) {
+            channels = 2;
+            validBitDepth = bitDepth == 8 || bitDepth == 16;
+        } else if (colorType == 6) {
+            channels = 4;
+            validBitDepth = bitDepth == 8 || bitDepth == 16;
+        } else {
+            throw new Exception("Invalid PNG color type " + colorType + ".");
+        }
+        if (!validBitDepth) {
+            throw new Exception("Invalid PNG bit depth " + bitDepth + " for color type " + colorType + ".");
+        }
+        if (colorType == 3 && pLTE == null) {
+            throw new Exception("The PNG palette image has no PLTE chunk.");
+        }
+        long bytesPerRow = ((long) w * channels * bitDepth + 7) / 8;
+        long length = h * (1 + bytesPerRow);
+        // A palette image becomes 3 bytes of RGB and 1 byte of alpha per pixel.
+        long decodedLength = (colorType == 3) ? 4L * w * h : length;
+        if (length > Decompressor.MAX_DECODED_LENGTH || decodedLength > Decompressor.MAX_DECODED_LENGTH) {
+            throw new Exception("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
+        }
+        return length;
+    }
+
+    private void ValidatePNG(Stream inputStream) {
+        byte[] buf = GetNBytes(inputStream, 8);
         if ((buf[0] & 0xFF) == 0x89 &&
                 buf[1] == 0x50 &&
                 buf[2] == 0x4E &&
@@ -202,12 +252,25 @@ public class PNGImage {
         return ToUInt32(buf, 0);
     }
 
+    // Reads the bytes in pieces, so that a chunk length that the file does not
+    // have fails at the end of the stream instead of allocating the length.
     private byte[] GetNBytes(System.IO.Stream inputStream, UInt32 n) {
-        byte[] buf = new byte[(int) n];
-        if (inputStream.Read(buf, 0, buf.Length) == -1) {
-            throw new Exception("Error reading input stream!");
+        if (n > int.MaxValue) {
+            throw new Exception("Invalid PNG chunk length " + n + ".");
         }
-        return buf;
+        using var bos = new MemoryStream((int) Math.Min(n, 65536));
+        byte[] buf = new byte[(int) Math.Min(n, 65536)];
+        long remaining = n;
+        while (remaining > 0) {
+            // Stream.Read returns 0 at the end of the stream.
+            int count = inputStream.Read(buf, 0, (int) Math.Min(buf.Length, remaining));
+            if (count <= 0) {
+                throw new Exception("Unexpected end of the PNG stream.");
+            }
+            bos.Write(buf, 0, count);
+            remaining -= count;
+        }
+        return bos.ToArray();
     }
 
     private UInt32 ToUInt32(byte[] buf, int off) {
