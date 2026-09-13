@@ -6,9 +6,12 @@
 // Package effect defines the text effects: normal, subscript and superscript.
 package effect
 
+// Effect specifies the text effect.
+type Effect int
+
 // Used to specify the text effects.
 const (
-	Normal = iota
+	Normal Effect = iota
 	Subscript
 	Superscript
 )

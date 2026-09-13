@@ -17,11 +17,13 @@ import (
 	"unicode"
 	"unicode/utf16"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
@@ -61,8 +63,8 @@ type Page struct {
 	textRise     float32
 
 	penWidth          float32
-	lineCapStyle      int
-	lineJoinStyle     int
+	lineCapStyle      capstyle.CapStyle
+	lineJoinStyle     joinstyle.JoinStyle
 	strokeDashPattern string
 	savedStates       []*State // The states that SaveGraphicsState saved
 
@@ -1177,18 +1179,18 @@ func (page *Page) GetPenWidth() float32 {
 
 // SetLineCapStyle sets the current line cap style.
 // Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
-func (page *Page) SetLineCapStyle(style int) *Page {
+func (page *Page) SetLineCapStyle(style capstyle.CapStyle) *Page {
 	page.lineCapStyle = style
-	page.appendInteger(page.lineCapStyle)
+	page.appendInteger(int(page.lineCapStyle))
 	page.appendString(" J\n")
 	return page
 }
 
 // SetLineJoinStyle sets the line join style.
 // Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
-func (page *Page) SetLineJoinStyle(style int) *Page {
+func (page *Page) SetLineJoinStyle(style joinstyle.JoinStyle) *Page {
 	page.lineJoinStyle = style
-	page.appendInteger(page.lineJoinStyle)
+	page.appendInteger(int(page.lineJoinStyle))
 	page.appendString(" j\n")
 	return page
 }

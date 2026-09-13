@@ -39,7 +39,7 @@ type PDF struct {
 	stamps                    []*Stamp
 	metadataObjNumber         int
 	outputIntentObjNumber     int
-	compliance                int
+	compliance                compliance.Compliance
 	encryption                *Encryption
 	title                     string
 	author                    string
@@ -131,13 +131,13 @@ func NewPDF(w *bufio.Writer) *PDF {
 }
 
 // SetCompliance sets the PDF/UA or PDF/A compliance of this document. See the compliance package.
-func (pdf *PDF) SetCompliance(compliance int) *PDF {
-	pdf.compliance = compliance
+func (pdf *PDF) SetCompliance(level compliance.Compliance) *PDF {
+	pdf.compliance = level
 	return pdf
 }
 
 // GetCompliance returns the PDF/UA or PDF/A compliance of this document. See the compliance package.
-func (pdf *PDF) GetCompliance() int {
+func (pdf *PDF) GetCompliance() compliance.Compliance {
 	return pdf.compliance
 }
 

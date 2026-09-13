@@ -5,13 +5,18 @@
 
 package pdfjet
 
+import (
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
+)
+
 // State describes the collection of drawing parameters.
 type State struct {
 	pen               [3]float32
 	brush             [3]float32
 	penWidth          float32
-	lineCapStyle      int
-	lineJoinStyle     int
+	lineCapStyle      capstyle.CapStyle
+	lineJoinStyle     joinstyle.JoinStyle
 	strokeDashPattern string
 }
 
@@ -20,8 +25,8 @@ func NewState(
 	pen [3]float32,
 	brush [3]float32,
 	penWidth float32,
-	lineCapStyle int,
-	lineJoinStyle int,
+	lineCapStyle capstyle.CapStyle,
+	lineJoinStyle joinstyle.JoinStyle,
 	strokeDashPattern string) *State {
 	state := new(State)
 	state.pen = [3]float32{pen[0], pen[1], pen[2]}
@@ -49,12 +54,12 @@ func (state *State) GetPenWidth() float32 {
 }
 
 // GetLineCapStyle returns the line cap style.
-func (state *State) GetLineCapStyle() int {
+func (state *State) GetLineCapStyle() capstyle.CapStyle {
 	return state.lineCapStyle
 }
 
 // GetLineJoinStyle returns the line join style.
-func (state *State) GetLineJoinStyle() int {
+func (state *State) GetLineJoinStyle() joinstyle.JoinStyle {
 	return state.lineJoinStyle
 }
 

@@ -3,18 +3,19 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package alignment defines the text alignment constants.
+// Package alignment defines the horizontal and vertical alignments.
 package alignment
 
-// Alignment specifies the text alignment.
+// Alignment specifies the horizontal or vertical alignment.
 type Alignment int
 
-// Used to specify the text alignment in textblock.go
+// Left, Right, Center and Justify align horizontally; Top, Center and Bottom
+// align vertically.
 const (
-	Top = iota
-	Bottom
-	Left
+	Left Alignment = iota
 	Right
 	Center
 	Justify
+	Top
+	Bottom
 )

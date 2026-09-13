@@ -9,9 +9,9 @@ package direction
 // Direction specifies the text writing direction.
 type Direction int
 
-// Used to specify the text writing direction in textblock.go
+// Used to specify the text writing direction in textbox.go
 const (
 	LeftToRight Direction = iota
-	TopToBottom
 	BottomToTop
+	TopToBottom
 )

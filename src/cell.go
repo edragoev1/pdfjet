@@ -44,9 +44,9 @@ type Cell struct {
 	leftBorder   bool
 	rightBorder  bool
 
-	textAlignment int
+	textAlignment alignment.Alignment
 	uri           string
-	valign        int
+	valign        alignment.Alignment
 
 	underline bool
 	strikeout bool
@@ -480,28 +480,28 @@ func (cell *Cell) GetRightBorder() bool {
 // @param alignment the alignment code.
 // Supported values: alignment.Left, alignment.Right, alignment.Center and
 // alignment.Justify, which draws the single line of cell text left aligned.
-func (cell *Cell) SetTextAlignment(textAlignment int) *Cell {
+func (cell *Cell) SetTextAlignment(textAlignment alignment.Alignment) *Cell {
 	cell.textAlignment = textAlignment
 	return cell
 }
 
 // GetTextAlignment returns the text alignment.
 // @return the text horizontal alignment code.
-func (cell *Cell) GetTextAlignment() int {
+func (cell *Cell) GetTextAlignment() alignment.Alignment {
 	return cell.textAlignment
 }
 
 // SetVerTextAlignment sets the cell text vertical alignment.
 // @param alignment the alignment code.
 // Supported values: alignment.Top, alignment.Center and alignment.Bottom.
-func (cell *Cell) SetVerTextAlignment(alignment int) *Cell {
-	cell.valign = alignment
+func (cell *Cell) SetVerTextAlignment(valign alignment.Alignment) *Cell {
+	cell.valign = valign
 	return cell
 }
 
 // GetVerTextAlignment returns the cell text vertical alignment.
 // @return the vertical alignment code.
-func (cell *Cell) GetVerTextAlignment() int {
+func (cell *Cell) GetVerTextAlignment() alignment.Alignment {
 	return cell.valign
 }
 

@@ -30,7 +30,7 @@ type TextLine struct {
 	textColor          [3]float32
 	lineColor          [3]float32
 	colorMap           map[string]int32
-	textEffect         int
+	textEffect         effect.Effect
 	verticalOffset     float32
 	explicitOffset     bool // True after SetVerticalOffset
 	uri, key           string
@@ -279,7 +279,7 @@ func (textLine *TextLine) GetTextDirection() int {
 // SetTextEffect sets the text effect: effect.Normal, effect.Subscript or
 // effect.Superscript. The offset of a superscript or subscript follows the font
 // and font size of this text line when it is drawn.
-func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
+func (textLine *TextLine) SetTextEffect(textEffect effect.Effect) *TextLine {
 	textLine.textEffect = textEffect
 	textLine.explicitOffset = false
 	return textLine
@@ -287,7 +287,7 @@ func (textLine *TextLine) SetTextEffect(textEffect int) *TextLine {
 
 // GetTextEffect returns the text effect.
 // @return the text effect.
-func (textLine *TextLine) GetTextEffect() int {
+func (textLine *TextLine) GetTextEffect() effect.Effect {
 	return textLine.textEffect
 }
 

@@ -6,10 +6,13 @@
 // Package joinstyle defines the line join styles.
 package joinstyle
 
+// JoinStyle specifies the join style of two lines.
+type JoinStyle int
+
 // Used to specify the join style when joining two lines.
 // See the Page and Line classes for more details.
 const (
-	Miter = iota
+	Miter JoinStyle = iota
 	Round
 	Bevel
 )

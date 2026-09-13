@@ -5,9 +5,9 @@ package compliance
 type Compliance int
 
 // Used to set PDF/UA and PDF/A compliance.
-// See the constructors in the PDF class.
+// See PDF.SetCompliance.
 const (
-	PDF_17 = iota // Do not remove the PDF_17!
+	PDF_17 Compliance = iota // Do not remove the PDF_17!
 	PDF_UA_1
 	PDF_A_1A
 	PDF_A_1B

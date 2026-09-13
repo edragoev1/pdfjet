@@ -43,7 +43,7 @@ type Image struct {
 // NewImageFromFile creates an image from the PNG, BMP or JPEG file at the specified path.
 // It panics if the extension is not supported or the file cannot be opened.
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
-	var imageType int
+	var imageType imagetype.ImageType
 	if strings.HasSuffix(strings.ToLower(filePath), ".png") {
 		imageType = imagetype.PNG
 	} else if strings.HasSuffix(strings.ToLower(filePath), ".bmp") {
@@ -71,7 +71,7 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 // @param pdf the PDF to which we add this image.
 // @param inputStream the input stream to read the image from.
 // @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
-func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
+func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image {
 	image := new(Image)
 	image.altDescription = single.Space
 	image.actualText = single.Space
@@ -120,8 +120,8 @@ func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
 // NewImage2 adds this image to the existing PDF objects.
 // @param objects the map to which we add this image.
 // @param inputStream the input stream to read the image from.
-// @param imageType could be ImageType.JPG, ImageType.PNG or ImageType.BMP
-func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType int) *Image {
+// @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
+func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType imagetype.ImageType) *Image {
 	image := new(Image)
 	image.altDescription = single.Space
 	image.actualText = single.Space
@@ -466,7 +466,7 @@ func (image *Image) addImageToPDF(
 	pdf *PDF,
 	data []byte,
 	alpha []byte,
-	imageType int,
+	imageType imagetype.ImageType,
 	colorSpace string,
 	bitsPerComponent int) {
 	if alpha != nil {
@@ -554,7 +554,7 @@ func (image *Image) addImageToObjects(
 	objects *[]*PDFobj,
 	data []byte,
 	alpha []byte,
-	imageType int,
+	imageType imagetype.ImageType,
 	colorSpace string,
 	bitsPerComponent int) {
 	if alpha != nil {

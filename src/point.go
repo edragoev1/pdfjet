@@ -19,7 +19,7 @@ type Point struct {
 	x, y              float32
 	r                 float32
 	shape             int
-	align             int
+	align             alignment.Alignment
 	fillColor         [3]float32
 	hasFillColor      bool
 	strokeWidth       float32
@@ -248,14 +248,14 @@ func (point *Point) GetTextDirection() int {
 
 // SetAlignment sets the point alignment inside table cell.
 // @param align the alignment value.
-func (point *Point) SetAlignment(align int) *Point {
+func (point *Point) SetAlignment(align alignment.Alignment) *Point {
 	point.align = align
 	return point
 }
 
 // GetAlignment returns the point alignment.
 // @return align the alignment value.
-func (point *Point) GetAlignment() int {
+func (point *Point) GetAlignment() alignment.Alignment {
 	return point.align
 }
 

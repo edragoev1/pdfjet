@@ -6,9 +6,12 @@
 // Package mark defines the check marks of a CheckBox.
 package mark
 
+// Mark specifies the check mark of a CheckBox.
+type Mark int
+
 // Constants used to specify the check mark in CheckBox.
 const (
-	UnCheck = 0
-	Check   = 1
-	X       = 2
+	UnCheck Mark = iota
+	Check
+	X
 )

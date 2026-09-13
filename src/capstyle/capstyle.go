@@ -6,10 +6,13 @@
 // Package capstyle defines the line cap styles.
 package capstyle
 
+// CapStyle specifies the cap style of a line.
+type CapStyle int
+
 // Constants used to specify the cap style of a line.
 // See the Line class for more information.
 const (
-	Butt = iota
+	Butt CapStyle = iota
 	Round
 	ProjectingSquare
 )

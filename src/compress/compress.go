@@ -6,8 +6,11 @@
 // Package compress defines the options for compressing embedded files.
 package compress
 
+// Compress specifies whether an embedded file is compressed.
+type Compress int
+
 // Yes compresses the embedded file and No stores it uncompressed.
 const (
-	Yes = true
-	No  = false
+	Yes Compress = iota
+	No
 )

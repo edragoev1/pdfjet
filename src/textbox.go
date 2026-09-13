@@ -38,8 +38,8 @@ type TextBox struct {
 	textColor     [3]float32
 	strokeWidth   float32
 	strokeColor   *[3]float32
-	valign        int
-	textAlignment int
+	valign        alignment.Alignment
+	textAlignment alignment.Alignment
 	colors        map[string]int32
 	// Border:
 	// bit 16 - top
@@ -318,24 +318,24 @@ func (textBox *TextBox) SetBorders(borders bool) *TextBox {
 }
 
 // SetTextAlignment sets the text alignment.
-func (textBox *TextBox) SetTextAlignment(textAlignment int) *TextBox {
+func (textBox *TextBox) SetTextAlignment(textAlignment alignment.Alignment) *TextBox {
 	textBox.textAlignment = textAlignment
 	return textBox
 }
 
 // GetTextAlignment returns the text alignment.
-func (textBox *TextBox) GetTextAlignment() int {
+func (textBox *TextBox) GetTextAlignment() alignment.Alignment {
 	return textBox.textAlignment
 }
 
 // SetVerticalAlignment sets the vertical alignment of the text.
-func (textBox *TextBox) SetVerticalAlignment(valign int) *TextBox {
+func (textBox *TextBox) SetVerticalAlignment(valign alignment.Alignment) *TextBox {
 	textBox.valign = valign
 	return textBox
 }
 
 // GetVerticalAlignment returns the vertical alignment of the text.
-func (textBox *TextBox) GetVerticalAlignment() int {
+func (textBox *TextBox) GetVerticalAlignment() alignment.Alignment {
 	return textBox.valign
 }
 

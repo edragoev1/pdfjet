@@ -224,13 +224,13 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) {
 // @param index the index of the specified column.
 // @param alignment the specified alignment.
 // Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
-func (table *Table) SetTextAlignInColumn(index, alignment int) *Table {
+func (table *Table) SetTextAlignInColumn(index int, textAlignment alignment.Alignment) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
-			cell.SetTextAlignment(alignment)
+			cell.SetTextAlignment(textAlignment)
 			if cell.textBox != nil {
-				cell.textBox.SetTextAlignment(alignment)
+				cell.textBox.SetTextAlignment(textAlignment)
 			}
 		}
 	}

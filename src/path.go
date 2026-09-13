@@ -6,7 +6,9 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 )
 
@@ -22,8 +24,8 @@ type Path struct {
 	closePath     bool
 	xBox          float32
 	yBox          float32
-	lineCapStyle  int
-	lineJoinStyle int
+	lineCapStyle  capstyle.CapStyle
+	lineJoinStyle joinstyle.JoinStyle
 }
 
 // NewPath creates an empty path.
@@ -107,28 +109,28 @@ func (path *Path) SetFillShape(fillShape bool) *Path {
 // SetLineCapStyle sets the line cap style.
 // @param style the cap style of this path. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 // @return this Path object.
-func (path *Path) SetLineCapStyle(style int) *Path {
+func (path *Path) SetLineCapStyle(style capstyle.CapStyle) *Path {
 	path.lineCapStyle = style
 	return path
 }
 
 // GetLineCapStyle returns the line cap style for this path.
 // @return the line cap style for this path.
-func (path *Path) GetLineCapStyle() int {
+func (path *Path) GetLineCapStyle() capstyle.CapStyle {
 	return path.lineCapStyle
 }
 
 // SetLineJoinStyle sets the line join style.
 // @param style the line join style. Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
 // @return this Path object.
-func (path *Path) SetLineJoinStyle(style int) *Path {
+func (path *Path) SetLineJoinStyle(style joinstyle.JoinStyle) *Path {
 	path.lineJoinStyle = style
 	return path
 }
 
 // GetLineJoinStyle returns the line join style.
 // @return the line join style.
-func (path *Path) GetLineJoinStyle() int {
+func (path *Path) GetLineJoinStyle() joinstyle.JoinStyle {
 	return path.lineJoinStyle
 }
 

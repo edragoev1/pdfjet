@@ -40,7 +40,7 @@ type TextBlock struct {
 
 	language               string
 	uri                    string
-	textAlignment          int
+	textAlignment          alignment.Alignment
 	underline              bool
 	keywordHighlightColors map[string]int32
 	rightToLeft            bool
@@ -235,7 +235,7 @@ func (textBlock *TextBlock) GetBackgroundColor() [3]float32 {
 }
 
 // SetTextAlignment sets the horizontal alignment of the text.
-func (textBlock *TextBlock) SetTextAlignment(textAlignment int) *TextBlock {
+func (textBlock *TextBlock) SetTextAlignment(textAlignment alignment.Alignment) *TextBlock {
 	textBlock.textAlignment = textAlignment
 	return textBlock
 }

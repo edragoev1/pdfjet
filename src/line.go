@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"math"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
@@ -23,7 +24,7 @@ type Line struct {
 	color          int32
 	width          float32
 	pattern        string
-	capStyle       int
+	capStyle       capstyle.CapStyle
 	language       string
 	altDescription string
 	actualText     string
@@ -136,14 +137,14 @@ func (line *Line) SetStrokeColor(color int32) *Line {
 // SetCapStyle sets the line cap style.
 // @param style the cap style of the current line. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 // @return this Line object.
-func (line *Line) SetCapStyle(style int) *Line {
+func (line *Line) SetCapStyle(style capstyle.CapStyle) *Line {
 	line.capStyle = style
 	return line
 }
 
 // GetCapStyle returns the line cap style.
 // @return the cap style.
-func (line *Line) GetCapStyle() int {
+func (line *Line) GetCapStyle() capstyle.CapStyle {
 	return line.capStyle
 }
 

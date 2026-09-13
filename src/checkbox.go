@@ -20,7 +20,7 @@ type CheckBox struct {
 	checkColor     int32
 	penWidth       float32
 	checkWidth     float32
-	mark           int
+	mark           mark.Mark
 	font           *Font
 	fontSize       float32
 	label          string
@@ -88,8 +88,8 @@ func (checkBox *CheckBox) GetWidth() float32 {
 }
 
 // Check checks or unchecks this check box. See the mark package for the options.
-func (checkBox *CheckBox) Check(mark int) *CheckBox {
-	checkBox.mark = mark
+func (checkBox *CheckBox) Check(checkMark mark.Mark) *CheckBox {
+	checkBox.mark = checkMark
 	return checkBox
 }
 

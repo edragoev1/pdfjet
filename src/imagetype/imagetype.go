@@ -6,11 +6,14 @@
 // Package imagetype defines the supported image types.
 package imagetype
 
+// ImageType specifies the type of an image.
+type ImageType int
+
 // Used to specify the image type.
 // Supported types: imagetype.JPG, imagetype.PNG and imagetype.BMP
 // See the Image class for more information.
 const (
-	JPG = iota
+	JPG ImageType = iota
 	PNG
 	BMP
 )

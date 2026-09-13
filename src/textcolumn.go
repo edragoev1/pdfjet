@@ -16,7 +16,7 @@ import (
 //
 // Please see Example_10, Example_29, Example_44 and Example_49.
 type TextColumn struct {
-	alignment             int // alignment.Left
+	alignment             alignment.Alignment
 	rotate                int
 	x                     float32 // This variable is set in the beginning and only reset after the DrawOn
 	y                     float32 // This variable is set in the beginning and only reset after the DrawOn
@@ -98,8 +98,8 @@ func (textColumn *TextColumn) GetHeight() float32 {
 
 // SetTextAlignment sets the text alignment:
 // alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
-func (textColumn *TextColumn) SetTextAlignment(alignment int) *TextColumn {
-	textColumn.alignment = alignment
+func (textColumn *TextColumn) SetTextAlignment(textAlignment alignment.Alignment) *TextColumn {
+	textColumn.alignment = textAlignment
 	return textColumn
 }
 
@@ -225,7 +225,7 @@ func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) [2]f
 	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
-func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, textAlignment int) {
+func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, textAlignment alignment.Alignment) {
 	if textAlignment == alignment.Justify {
 		var sumOfWordWidths float32
 		for _, textLine := range textLines {
@@ -254,7 +254,7 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 	}
 }
 
-func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*TextLine, textAlignment int) {
+func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*TextLine, textAlignment alignment.Alignment) {
 	var runLength float32
 	for _, textLine := range textLines {
 		runLength += textLine.GetWidth()
