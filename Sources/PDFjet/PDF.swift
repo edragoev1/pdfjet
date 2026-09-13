@@ -91,6 +91,7 @@ public class PDF {
     /// ...
     /// StructElemN
     /// StructTreeRoot
+    /// Info
     /// Root
     /// xref table
     /// Trailer

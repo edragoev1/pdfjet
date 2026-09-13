@@ -96,6 +96,7 @@ type OCG struct {
 // ...
 // StructElemN
 // StructTreeRoot
+// Info
 // Root
 // xref table
 // Trailer
