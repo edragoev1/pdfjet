@@ -42,11 +42,11 @@ public class Example_16 {
         // textBox.setTextDirection(Direction.BOTTOM_TO_TOP)
         // textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
 
-        textBox.setVerticalAlignment(Align.TOP)
-        // textBox.setVerticalAlignment(Align.BOTTOM)
-        // textBox.setVerticalAlignment(Align.CENTER)
+        textBox.setVerticalAlignment(Alignment.TOP)
+        // textBox.setVerticalAlignment(Alignment.BOTTOM)
+        // textBox.setVerticalAlignment(Alignment.CENTER)
 
-        // textBox.setTextAlignment(Align.CENTER)
+        // textBox.setTextAlignment(Alignment.CENTER)
         // textBox.setHeight(400.0)
 
         textBox.setBackgroundColor(Color.whitesmoke)

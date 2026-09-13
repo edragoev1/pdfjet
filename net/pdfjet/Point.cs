@@ -72,7 +72,7 @@ public class Point : IDrawable {
     internal bool drawPath = false;
 
     private String text;
-    private int textColor;
+    private float[] textColor = new float[] {0f, 0f, 0f};
     private int textDirection;
     private String uri;
 
@@ -144,7 +144,7 @@ public class Point : IDrawable {
         this.controlPoint = point.controlPoint;
         this.drawPath = point.drawPath;
         this.text = point.text;
-        this.textColor = point.textColor;
+        this.textColor = Util.CopyOf(point.textColor);
         this.textDirection = point.textDirection;
         this.uri = point.uri;
     }
@@ -467,16 +467,29 @@ public class Point : IDrawable {
     /// <param name="textColor">the text color.</param>
     /// <returns>this Point object.</returns>
     public Point SetTextColor(int textColor) {
-        this.textColor = textColor;
+        float r = ((textColor >> 16) & 0xff)/255f;
+        float g = ((textColor >>  8) & 0xff)/255f;
+        float b = ((textColor)       & 0xff)/255f;
+        this.textColor = new float[] {r, g, b};
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the point's text color.
+    /// </summary>
+    /// <param name="textColor">the red, green and blue components of the text color, from 0.0 to 1.0.</param>
+    /// <returns>this Point object.</returns>
+    public Point SetTextColor(float[] textColor) {
+        this.textColor = Util.CopyOf(textColor);
         return this;
     }
 
     /// <summary>
     /// Returns the point's text color.
     /// </summary>
-    /// <returns>the text color.</returns>
-    public int GetTextColor() {
-        return this.textColor;
+    /// <returns>the red, green and blue components of the text color.</returns>
+    public float[] GetTextColor() {
+        return Util.CopyOf(this.textColor);
     }
 
     /// <summary>

@@ -73,7 +73,7 @@ public class Point implements Drawable {
     /** The shape, one of the shape constants in this class. */
     protected int shape = Point.CIRCLE;
     /** The alignment of the text relative to this point. */
-    protected int align = Align.RIGHT;
+    protected Alignment align = Alignment.RIGHT;
 
     /** The fill color as an RGB array, or null. */
     protected float[] fillColor = null;
@@ -92,7 +92,7 @@ public class Point implements Drawable {
     protected boolean drawPath = false;
 
     private String text;
-    private int textColor;
+    private float[] textColor = new float[] {0f, 0f, 0f};
     private int textDirection;
     private String uri;
 
@@ -126,7 +126,7 @@ public class Point implements Drawable {
         this.controlPoint = point.controlPoint;
         this.drawPath = point.drawPath;
         this.text = point.text;
-        this.textColor = point.textColor;
+        this.textColor = Util.copyOf(point.textColor);
         this.textDirection = point.textDirection;
         this.uri = point.uri;
     }
@@ -570,17 +570,31 @@ public class Point implements Drawable {
      *  @return this Point object.
      */
     public Point setTextColor(int textColor) {
-        this.textColor = textColor;
+        float r = ((textColor >> 16) & 0xff)/255f;
+        float g = ((textColor >>  8) & 0xff)/255f;
+        float b = ((textColor)       & 0xff)/255f;
+        this.textColor = new float[] {r, g, b};
+        return this;
+    }
+
+    /**
+     *  Sets the point's text color.
+     *
+     *  @param textColor the red, green and blue components of the text color, from 0.0 to 1.0.
+     *  @return this Point object.
+     */
+    public Point setTextColor(float[] textColor) {
+        this.textColor = Util.copyOf(textColor);
         return this;
     }
 
     /**
      *  Returns the point's text color.
      *
-     *  @return the text color.
+     *  @return the red, green and blue components of the text color.
      */
-    public int getTextColor() {
-        return this.textColor;
+    public float[] getTextColor() {
+        return Util.copyOf(this.textColor);
     }
 
     /**
@@ -609,7 +623,7 @@ public class Point implements Drawable {
      *  @param align the alignment value.
      *  @return this Point object.
      */
-    public Point setAlignment(int align) {
+    public Point setAlignment(Alignment align) {
         this.align = align;
         return this;
     }
@@ -619,7 +633,7 @@ public class Point implements Drawable {
      *
      *  @return align the alignment value.
      */
-    public int getAlignment() {
+    public Alignment getAlignment() {
         return this.align;
     }
 

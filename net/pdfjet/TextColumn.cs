@@ -15,7 +15,7 @@ namespace PDFjet.NET {
 ///  Please see Example_10, Example_29, Example_44 and Example_49.
 /// </summary>
 public class TextColumn : IDrawable {
-    internal uint alignment = Align.LEFT;
+    internal Alignment alignment = Alignment.LEFT;
     internal int rotate;
     internal float x;   // This variable is set in the beginning and only reset after the DrawOn
     internal float y;   // This variable is set in the beginning and only reset after the DrawOn
@@ -146,9 +146,9 @@ public class TextColumn : IDrawable {
     /// Sets the text alignment.
     /// </summary>
     /// <param name="alignment">the specified alignment code.
-    ///      Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY</param>
+    ///      Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY</param>
     /// <returns>this TextColumn object.</returns>
-    public TextColumn SetTextAlignment(uint alignment) {
+    public TextColumn SetTextAlignment(Alignment alignment) {
         this.alignment = alignment;
         return this;
     }
@@ -208,7 +208,7 @@ public class TextColumn : IDrawable {
     }
 
     private float[] DrawParagraphOn(Page page, Paragraph paragraph) {
-        uint alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
+        Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new List<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
@@ -286,8 +286,8 @@ public class TextColumn : IDrawable {
         return new float[] {x1, y1};
     }
 
-    private void DrawLineOfText(Page page, List<TextLine> list, uint alignment) {
-        if (alignment == Align.JUSTIFY) {
+    private void DrawLineOfText(Page page, List<TextLine> list, Alignment alignment) {
+        if (alignment == Alignment.JUSTIFY) {
             float sumOfWordWidths = 0f;
             foreach (TextLine textLine in list) {
                 sumOfWordWidths += textLine.GetWidth();
@@ -316,13 +316,13 @@ public class TextColumn : IDrawable {
         }
     }
 
-    private void DrawNonJustifiedLine(Page page, List<TextLine> list, uint alignment) {
+    private void DrawNonJustifiedLine(Page page, List<TextLine> list, Alignment alignment) {
         float runLength = 0f;
         foreach (TextLine textLine in list) {
             runLength += textLine.GetWidth();
         }
 
-        if (alignment == Align.CENTER) {
+        if (alignment == Alignment.CENTER) {
             if (rotate == 0) {
                 x1 = x + ((w - runLength) / 2);
             } else if (rotate == 90) {
@@ -330,7 +330,7 @@ public class TextColumn : IDrawable {
             } else if (rotate == 270) {
                 y1 = y + ((w - runLength) / 2);
             }
-        } else if (alignment == Align.RIGHT) {
+        } else if (alignment == Alignment.RIGHT) {
             if (rotate == 0) {
                 x1 = x + (w - runLength);
             } else if (rotate == 90) {

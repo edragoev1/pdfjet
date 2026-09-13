@@ -78,7 +78,7 @@ public class Example_09 {
                 var tableRow = [Cell]()
 
                 point.setRadius(2.0)
-                point.setAlignment(Align.LEFT)
+                point.setAlignment(Alignment.LEFT)
 
                 var cell = Cell(f2, "")
                 cell.setPoint(point)

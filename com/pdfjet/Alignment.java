@@ -7,13 +7,20 @@
 package com.pdfjet;
 
 /**
- * Used to specify the text alignment in TextBlock.
+ * Used to specify the horizontal and vertical alignment, for example of the
+ * text in a Cell, TextBox, TextBlock, Paragraph or TextColumn.
  */
 public enum Alignment {
-    /** Aligns the text to the left. */
+    /** Aligns to the left. */
     LEFT,
-    /** Aligns the text to the right. */
+    /** Aligns to the right. */
     RIGHT,
-    /** Centers the text. */
-    CENTER;
+    /** Centers horizontally or vertically. */
+    CENTER,
+    /** Justifies the text. */
+    JUSTIFY,
+    /** Aligns to the top. */
+    TOP,
+    /** Aligns to the bottom. */
+    BOTTOM;
 }

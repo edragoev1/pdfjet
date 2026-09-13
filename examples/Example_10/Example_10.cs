@@ -40,7 +40,7 @@ public class Example_10 {
         column.SetParagraphSpacing(1.0f);   // 1.0 x line spacing
 
         Paragraph p1 = new Paragraph();
-        p1.SetTextAlignment(Align.CENTER);
+        p1.SetTextAlignment(Alignment.CENTER);
         p1.Add(new TextLine(f2, "Switzerland"));
 
         Paragraph p2 = new Paragraph();
@@ -62,9 +62,9 @@ public class Example_10 {
         buf.Append("until 2002.");
 
         Paragraph p3 = new Paragraph();
-        // p3.SetTextAlignment(Align.LEFT);
-        // p3.SetTextAlignment(Align.RIGHT);
-        p3.SetTextAlignment(Align.JUSTIFY);
+        // p3.SetTextAlignment(Alignment.LEFT);
+        // p3.SetTextAlignment(Alignment.RIGHT);
+        p3.SetTextAlignment(Alignment.JUSTIFY);
         TextLine text = new TextLine(f1, buf.ToString());
         p3.Add(text);
 
@@ -94,7 +94,7 @@ public class Example_10 {
         buf.Append("2004-05 to 1.8% annually and to 2.9% in 2006.");
 
         Paragraph p5 = new Paragraph();
-        p5.SetTextAlignment(Align.JUSTIFY);
+        p5.SetTextAlignment(Alignment.JUSTIFY);
         text = new TextLine(f1, buf.ToString());
         p5.Add(text);
 

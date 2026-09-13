@@ -53,19 +53,19 @@ public class Example_13 {
 
         cell = table.GetCellAt(0, 1);
         cell.SetColSpan(2);
-        cell.SetTextAlignment(Align.CENTER);
+        cell.SetTextAlignment(Alignment.CENTER);
 
         List<Cell> column = table.GetColumnAtIndex(7);
         for (int i = 0; i < column.Count; i++) {
             cell = column[i];
-            cell.SetTextAlignment(Align.CENTER);
+            cell.SetTextAlignment(Alignment.CENTER);
         }
 
         column = table.GetColumnAtIndex(4);
         for (int i = 2; i < column.Count; i++) {
             cell = column[i];
             try {
-                cell.SetTextAlignment(Align.CENTER);
+                cell.SetTextAlignment(Alignment.CENTER);
                 if (Int32.Parse(cell.GetText()) > 40) {
                     cell.SetBackgroundColor(Color.darkseagreen);
                 } else {

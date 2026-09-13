@@ -53,7 +53,7 @@ public class Point : Drawable {
     var y: Float = 0.0
     var r: Float = 2.0
     var shape = Point.CIRCLE
-    var align = Align.RIGHT
+    var align = Alignment.RIGHT
 
     var fillColor: [Float]?
     var strokeWidth: Float = 1.0
@@ -443,7 +443,7 @@ public class Point : Drawable {
     /// - Parameter align: the alignment value.
     ///
     @discardableResult
-    public func setAlignment(_ align: UInt32) -> Point {
+    public func setAlignment(_ align: Alignment) -> Point {
         self.align = align
         return self
     }
@@ -453,7 +453,7 @@ public class Point : Drawable {
     ///
     /// - Returns: align the alignment value.
     ///
-    public func getAlignment() -> UInt32 {
+    public func getAlignment() -> Alignment {
         return self.align
     }
 

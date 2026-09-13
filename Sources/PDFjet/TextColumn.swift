@@ -12,7 +12,7 @@ import Foundation
 /// Please see Example_10, Example_29, Example_44 and Example_49.
 ///
 public class TextColumn : Drawable {
-    var alignment = Align.LEFT
+    var alignment = Alignment.LEFT
     var rotate = 0
 
     private var x: Float = 0.0      // This variable is set in the beginning and only reset after the drawOn
@@ -129,10 +129,10 @@ public class TextColumn : Drawable {
     /// Sets the text alignment.
     ///
     /// - Parameter alignment: the specified alignment code.
-    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
+    /// Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY
     ///
     @discardableResult
-    public func setTextAlignment(_ alignment: UInt32) -> TextColumn {
+    public func setTextAlignment(_ alignment: Alignment) -> TextColumn {
         self.alignment = alignment
         return self
     }
@@ -273,8 +273,8 @@ public class TextColumn : Drawable {
         return [x1, y1]
     }
 
-    private func drawLineOfText(_ page: Page?, _ list: [TextLine], _ alignment: UInt32) {
-        if alignment == Align.JUSTIFY {
+    private func drawLineOfText(_ page: Page?, _ list: [TextLine], _ alignment: Alignment) {
+        if alignment == Alignment.JUSTIFY {
             var sumOfWordWidths: Float = 0.0
             for textLine in list {
                 sumOfWordWidths += textLine.getWidth()
@@ -300,13 +300,13 @@ public class TextColumn : Drawable {
         }
     }
 
-    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine], _ alignment: UInt32) {
+    private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine], _ alignment: Alignment) {
         var runLength: Float = 0.0
         for textLine in list {
             runLength += textLine.getWidth()
         }
 
-        if alignment == Align.CENTER {
+        if alignment == Alignment.CENTER {
             if rotate == 0 {
                 x1 = x + ((w - runLength) / 2)
             } else if rotate == 90 {
@@ -314,7 +314,7 @@ public class TextColumn : Drawable {
             } else if rotate == 270 {
                 y1 = y + ((w - runLength) / 2)
             }
-        } else if alignment == Align.RIGHT {
+        } else if alignment == Alignment.RIGHT {
             if rotate == 0 {
                 x1 = x + (w - runLength)
             } else if rotate == 90 {

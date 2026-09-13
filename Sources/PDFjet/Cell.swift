@@ -41,9 +41,8 @@ public class Cell {
     // bit 17 - bottom
     // bit 18 - left
     // bit 19 - right
-    // Text Alignment:
-    // bit 20
-    // bit 21
+    // Not used:
+    // bits 20 and 21
     // Text Decoration:
     // bit 22 - underline
     // bit 23 - strikeout
@@ -51,7 +50,8 @@ public class Cell {
     // bits 24 to 31
     private var properties: UInt32 = 0x00050001 // Set only left and top borders!
     private var uri: String?
-    private var valign = Align.TOP
+    private var textAlignment = Alignment.LEFT
+    private var valign = Alignment.TOP
 
     // Java's Cell defaults its properties to 0x00050001 - only the top and
     // left borders are on.
@@ -622,36 +622,35 @@ public class Cell {
     /**
      * Sets the cell text alignment.
      *
-     * - Parameter alignment: the alignment code.
-     * Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY,
+     * - Parameter alignment: the alignment.
+     * Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY,
      * which draws the single line of cell text left aligned.
      * - Returns: this Cell object.
      */
     @discardableResult
-    public func setTextAlignment(_ alignment: UInt32) -> Cell {
-        self.properties &= 0x00CFFFFF
-        self.properties |= (alignment & 0x00300000)
+    public func setTextAlignment(_ alignment: Alignment) -> Cell {
+        self.textAlignment = alignment
         return self
     }
 
     /**
      * Returns the text alignment.
      *
-     * - Returns: the text horizontal alignment code.
+     * - Returns: the horizontal text alignment.
      */
-    public func getTextAlignment() -> UInt32 {
-        return (self.properties & 0x00300000)
+    public func getTextAlignment() -> Alignment {
+        return self.textAlignment
     }
 
     /**
      * Sets the cell text vertical alignment.
      *
-     * - Parameter alignment: the alignment code.
-     * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
+     * - Parameter alignment: the alignment.
+     * Supported values: Alignment.TOP, Alignment.CENTER and Alignment.BOTTOM.
      * - Returns: this Cell object.
      */
     @discardableResult
-    public func setVerTextAlignment(_ alignment: UInt32) -> Cell {
+    public func setVerTextAlignment(_ alignment: Alignment) -> Cell {
         self.valign = alignment
         return self
     }
@@ -659,9 +658,9 @@ public class Cell {
     /**
      * Returns the cell text vertical alignment.
      *
-     * - Returns: the vertical alignment code.
+     * - Returns: the vertical alignment.
      */
-    public func getVerTextAlignment() -> UInt32 {
+    public func getVerTextAlignment() -> Alignment {
         return self.valign
     }
 
@@ -742,19 +741,19 @@ public class Cell {
             textColumn!.setLocation(x + leftPadding, y + topPadding)
             textColumn!.drawOn(page)
         } else if image != nil {
-            if getTextAlignment() == Align.RIGHT {
+            if getTextAlignment() == Alignment.RIGHT {
                 image!.setLocation((x + w) - (image!.getWidth() + rightPadding), y + topPadding)
-            } else if getTextAlignment() == Align.CENTER {
+            } else if getTextAlignment() == Alignment.CENTER {
                 image!.setLocation((x + w/2.0) - image!.getWidth()/2.0, y + topPadding)
             } else {
                 image!.setLocation(x + leftPadding, y + topPadding)
             }
             image!.drawOn(page)
         } else if barcode != nil {
-            if getTextAlignment() == Align.RIGHT {
+            if getTextAlignment() == Alignment.RIGHT {
                 let barcodeWidth = barcode!.drawOn(nil)[0]
                 barcode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding)
-            } else if getTextAlignment() == Align.CENTER {
+            } else if getTextAlignment() == Alignment.CENTER {
                 let barcodeWidth = barcode!.drawOn(nil)[0]
                 barcode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
             } else {
@@ -764,9 +763,9 @@ public class Cell {
 
         drawBorders(page, x, y, w, h)
         if point != nil {
-            if point!.align == Align.LEFT {
+            if point!.align == Alignment.LEFT {
                 point!.x = x + 2*point!.r
-            } else if point!.align == Align.RIGHT {
+            } else if point!.align == Alignment.RIGHT {
                 point!.x = (x + w) - self.rightPadding/2
             }
             point!.y = y + h/2
@@ -846,11 +845,11 @@ public class Cell {
             _ cellH: Float) {
         let ascent = font!.getAscent(fontSize)
         var yText: Float
-        if valign == Align.TOP {
+        if valign == Alignment.TOP {
             yText = y + ascent + self.topPadding
-        } else if valign == Align.CENTER {
+        } else if valign == Alignment.CENTER {
             yText = y + cellH/2 + ascent/2
-        } else if valign == Align.BOTTOM {
+        } else if valign == Alignment.BOTTOM {
             yText = (y + cellH) - self.bottomPadding
         } else {
             fatalError("Invalid vertical text alignment option.")
@@ -858,13 +857,13 @@ public class Cell {
 
         page.setPenColor(strokeColor)
         var xText: Float
-        if getTextAlignment() == Align.RIGHT {
+        if getTextAlignment() == Alignment.RIGHT {
             xText = (x + cellW) - (getTextWidth() + self.rightPadding)
-        } else if getTextAlignment() == Align.CENTER {
+        } else if getTextAlignment() == Alignment.CENTER {
             xText = x + self.leftPadding +
                     (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2)
         } else {
-            // Align.LEFT, and Align.JUSTIFY, which a single line of text cannot use.
+            // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
             xText = x + self.leftPadding
         }
         if compositeTextLine == nil {

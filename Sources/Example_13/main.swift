@@ -47,18 +47,18 @@ public class Example_13 {
 
         cell = table.getCellAt(0, 1)
         cell.setColSpan(2)
-        cell.setTextAlignment(Align.CENTER)
+        cell.setTextAlignment(Alignment.CENTER)
 
         var column = table.getColumnAtIndex(7)
         for i in 0..<column.count {
             cell = column[i]
-            cell.setTextAlignment(Align.CENTER)
+            cell.setTextAlignment(Alignment.CENTER)
         }
 
         column = table.getColumnAtIndex(4)
         for i in 2..<column.count {
             cell = column[i]
-            cell.setTextAlignment(Align.CENTER)
+            cell.setTextAlignment(Alignment.CENTER)
             if let value = Int(cell.getText()!) {
                 if value > 40 {
                     cell.setBackgroundColor(Color.darkseagreen)

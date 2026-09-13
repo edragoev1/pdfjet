@@ -199,7 +199,7 @@ public class Table : IDrawable {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 if (cell.text != null && IsNumber(cell.text)) {
-                    cell.SetTextAlignment(Align.RIGHT);
+                    cell.SetTextAlignment(Alignment.RIGHT);
                 }
             }
         }
@@ -267,9 +267,9 @@ public class Table : IDrawable {
     /// Sets the text alignment in the specified column.
     /// </summary>
     /// <param name="index">the index of the specified column.</param>
-    /// <param name="alignment">the specified alignment. Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.</param>
+    /// <param name="alignment">the specified alignment. Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY.</param>
     /// <returns>this Table object.</returns>
-    public Table SetTextAlignInColumn(int index, uint alignment) {
+    public Table SetTextAlignInColumn(int index, Alignment alignment) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -742,9 +742,10 @@ public class Table : IDrawable {
                     cell2.SetStrokeWidth(cell.GetStrokeWidth());
                     cell2.SetStrokeColor(cell.GetStrokeColor());
                     cell2.SetTextColor(cell.GetTextColor());
-                    // The borders, text alignment, underline and strikeout.
+                    // The borders, underline and strikeout.
                     cell2.SetProperties(cell.GetProperties());
                     cell2.SetColSpan(cell.GetColSpan());
+                    cell2.SetTextAlignment(cell.GetTextAlignment());
                     cell2.SetVerTextAlignment(cell.GetVerTextAlignment());
                     cell2.SetTopPadding(0f);
                     cell2.SetBorder(Border.TOP, false);

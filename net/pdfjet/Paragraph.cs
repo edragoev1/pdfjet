@@ -25,7 +25,7 @@ public class Paragraph {
     /// <summary>The y coordinate of the bottom of the last line of this paragraph.</summary>
     public float y2;
     internal List<TextLine> lines = null;
-    internal uint alignment = Align.LEFT;
+    internal Alignment alignment = Alignment.LEFT;
     // True after SetTextAlignment. Otherwise the alignment of the text column applies.
     internal bool explicitAlignment = false;
 
@@ -56,9 +56,9 @@ public class Paragraph {
     /// Sets the alignment of the text in this paragraph. A paragraph with no
     /// alignment set takes the alignment of the text column it is drawn in.
     /// </summary>
-    /// <param name="alignment">the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.</param>
+    /// <param name="alignment">the alignment code: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER or Alignment.JUSTIFY.</param>
     /// <returns>this paragraph.</returns>
-    public Paragraph SetTextAlignment(uint alignment) {
+    public Paragraph SetTextAlignment(Alignment alignment) {
         this.alignment = alignment;
         this.explicitAlignment = true;
         return this;

@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class TextColumn implements Drawable {
     /** The text alignment. */
-    protected int alignment = Align.LEFT;
+    protected Alignment alignment = Alignment.LEFT;
     /** The rotation in degrees: 0, 90 or 270. */
     protected int rotate;
     /** The x coordinate of the top left corner. */
@@ -157,10 +157,10 @@ public class TextColumn implements Drawable {
      * Sets the text alignment of the paragraphs that do not set their own.
      *
      * @param alignment the specified alignment code.
-     *                  Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
+     *                  Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY
      * @return this TextColumn object.
      */
-    public TextColumn setTextAlignment(int alignment) {
+    public TextColumn setTextAlignment(Alignment alignment) {
         this.alignment = alignment;
         return this;
     }
@@ -247,7 +247,7 @@ public class TextColumn implements Drawable {
     }
 
     private float[] drawParagraphOn(Page page, Paragraph paragraph) throws Exception {
-        int alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
+        Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new ArrayList<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
@@ -326,8 +326,8 @@ public class TextColumn implements Drawable {
         return new float[] {x1, y1};
     }
 
-    private void drawLineOfText(Page page, List<TextLine> list, int alignment) throws Exception {
-        if (alignment == Align.JUSTIFY) {
+    private void drawLineOfText(Page page, List<TextLine> list, Alignment alignment) throws Exception {
+        if (alignment == Alignment.JUSTIFY) {
             float sumOfWordWidths = 0f;
             for (TextLine textLine : list) {
                 sumOfWordWidths += textLine.getWidth();
@@ -356,13 +356,13 @@ public class TextColumn implements Drawable {
         }
     }
 
-    private void drawNonJustifiedLine(Page page, List<TextLine> list, int alignment) throws Exception {
+    private void drawNonJustifiedLine(Page page, List<TextLine> list, Alignment alignment) throws Exception {
         float runLength = 0f;
         for (TextLine textLine : list) {
             runLength += textLine.getWidth();
         }
 
-        if (alignment == Align.CENTER) {
+        if (alignment == Alignment.CENTER) {
             if (rotate == 0) {
                 x1 = x + ((w - runLength) / 2);
             } else if (rotate == 90) {
@@ -370,7 +370,7 @@ public class TextColumn implements Drawable {
             } else if (rotate == 270) {
                 y1 = y + ((w - runLength) / 2);
             }
-        } else if (alignment == Align.RIGHT) {
+        } else if (alignment == Alignment.RIGHT) {
             if (rotate == 0) {
                 x1 = x + (w - runLength);
             } else if (rotate == 90) {

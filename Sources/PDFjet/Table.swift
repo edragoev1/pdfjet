@@ -179,7 +179,7 @@ public class Table : Drawable {
         for row in tableData {
             for cell in row {
                 if cell.text != nil && Table.isNumber(cell.text!) {
-                    cell.setTextAlignment(Align.RIGHT)
+                    cell.setTextAlignment(Alignment.RIGHT)
                 }
             }
         }
@@ -247,13 +247,13 @@ public class Table : Drawable {
 
     ///
     /// Sets the text alignment in the specified column.
-    /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY.
+    /// Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY.
     ///
     /// - Parameter index: the index of the specified column.
     /// - Parameter alignment: the specified alignment.
     ///
     @discardableResult
-    public func setTextAlignInColumn(_ index: Int, _ alignment: UInt32) -> Table {
+    public func setTextAlignInColumn(_ index: Int, _ alignment: Alignment) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -751,8 +751,9 @@ public class Table : Drawable {
                     cell2.setStrokeWidth(cell.getStrokeWidth())
                     cell2.setStrokeColor(cell.getStrokeColor())
                     cell2.setTextColor(cell.getTextColor())
-                    // The column span and text alignment.
+                    // The column span.
                     cell2.setProperties(cell.getProperties())
+                    cell2.setTextAlignment(cell.getTextAlignment())
                     cell2.setTopBorder(cell.getTopBorder())
                     cell2.setBottomBorder(cell.getBottomBorder())
                     cell2.setLeftBorder(cell.getLeftBorder())

@@ -46,11 +46,11 @@ public class Example_16 {
         // textBox.SetTextDirection(Direction.BOTTOM_TO_TOP);
         // textBox.SetTextDirection(Direction.TOP_TO_BOTTOM);
 
-        textBox.SetVerticalAlignment(Align.TOP);
-        // textBox.SetVerticalAlignment(Align.BOTTOM);
-        // textBox.SetVerticalAlignment(Align.CENTER);
+        textBox.SetVerticalAlignment(Alignment.TOP);
+        // textBox.SetVerticalAlignment(Alignment.BOTTOM);
+        // textBox.SetVerticalAlignment(Alignment.CENTER);
 
-        // textBox.SetTextAlignment(Align.CENTER);
+        // textBox.SetTextAlignment(Alignment.CENTER);
         // textBox.SetHeight(400f);
 
         textBox.SetBackgroundColor(Color.whitesmoke);

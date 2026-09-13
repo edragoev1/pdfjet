@@ -17,8 +17,8 @@ import java.util.*;
  * y = 0f
  * width = 300f
  * height = 0f
- * alignment = Align.LEFT
- * valign = Align.TOP
+ * alignment = Alignment.LEFT
+ * valign = Alignment.TOP
  * spacing = 0f
  * margin = 0f
  * </p>
@@ -56,7 +56,8 @@ public class TextBox implements Drawable {
     private float strokeWidth = 0.5f;
     private float[] strokeColor;
 
-    private int valign = Align.TOP;
+    private Alignment textAlignment = Alignment.LEFT;
+    private Alignment valign = Alignment.TOP;
     private Map<String, Integer> colors = null;
     // TextBox properties
     // Future use:
@@ -66,9 +67,8 @@ public class TextBox implements Drawable {
     // bit 17 - bottom
     // bit 18 - left
     // bit 19 - right
-    // Text Alignment:
-    // bit 20
-    // bit 21
+    // Not used:
+    // bits 20 and 21
     // Text Decoration:
     // bit 22 - underline
     // bit 23 - strikeout
@@ -616,24 +616,23 @@ public class TextBox implements Drawable {
     /**
      * Sets the cell text alignment.
      *
-     * @param alignment the alignment code.
-     *                  Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.
+     * @param alignment the alignment.
+     *                  Supported values: Alignment.LEFT, Alignment.RIGHT and Alignment.CENTER.
      * @return this TextBox object.
      */
-    public TextBox setTextAlignment(int alignment) {
-        this.properties &= 0x00CFFFFF;
-        this.properties |= (alignment & 0x00300000);
+    public TextBox setTextAlignment(Alignment alignment) {
+        this.textAlignment = alignment;
         return this;
     }
 
     /**
      * Returns the text alignment.
      *
-     * @return alignment the alignment code. Supported values: Align.LEFT,
-     *         Align.RIGHT and Align.CENTER.
+     * @return the alignment. Supported values: Alignment.LEFT,
+     *         Alignment.RIGHT and Alignment.CENTER.
      */
-    public int getTextAlignment() {
-        return (this.properties & 0x00300000);
+    public Alignment getTextAlignment() {
+        return this.textAlignment;
     }
 
     /**
@@ -709,10 +708,10 @@ public class TextBox implements Drawable {
     /**
      * Sets the vertical alignment of the text in this TextBox.
      *
-     * @param valign - valid values are Align.TOP, Align.BOTTOM and Align.CENTER
+     * @param valign - valid values are Alignment.TOP, Alignment.BOTTOM and Alignment.CENTER
      * @return this TextBox object.
      */
-    public TextBox setVerticalAlignment(int valign) {
+    public TextBox setVerticalAlignment(Alignment valign) {
         this.valign = valign;
         return this;
     }
@@ -722,7 +721,7 @@ public class TextBox implements Drawable {
      *
      * @return the vertical alignment.
      */
-    public int getVerticalAlignment() {
+    public Alignment getVerticalAlignment() {
         return this.valign;
     }
 
@@ -941,12 +940,12 @@ public class TextBox implements Drawable {
             float xText = x + margin;
             float yText = y + margin + font.getAscent(fontSize);
             if (textDirection == Direction.LEFT_TO_RIGHT) {
-                if (valign == Align.TOP) {
+                if (valign == Alignment.TOP) {
                     yText = y + margin + font.getAscent(fontSize);
-                } else if (valign == Align.BOTTOM) {
+                } else if (valign == Alignment.BOTTOM) {
                     yText = (y + height) - (Float.valueOf(lines.length)*leading + margin);
                     yText += font.getAscent(fontSize);
-                } else if (valign == Align.CENTER) {
+                } else if (valign == Alignment.CENTER) {
                     yText = y + (height - Float.valueOf(lines.length)*leading)/2;
                     yText += font.getAscent(fontSize);
                 }
@@ -955,11 +954,11 @@ public class TextBox implements Drawable {
             }
             for (String line : lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
-                    if (getTextAlignment() == Align.LEFT) {
+                    if (getTextAlignment() == Alignment.LEFT) {
                         xText = x + margin;
-                    } else if (getTextAlignment() == Align.RIGHT) {
+                    } else if (getTextAlignment() == Alignment.RIGHT) {
                         xText = (x + width) - (font.stringWidth(fallbackFont, fontSize, line) + margin);
-                    } else if (getTextAlignment() == Align.CENTER) {
+                    } else if (getTextAlignment() == Alignment.CENTER) {
                         xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
@@ -991,11 +990,11 @@ public class TextBox implements Drawable {
             float yText = y + margin + font.getAscent(fontSize);
             for (String line : lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
-                    if (getTextAlignment() == Align.LEFT) {
+                    if (getTextAlignment() == Alignment.LEFT) {
                         xText = x + margin;
-                    } else if (getTextAlignment() == Align.RIGHT) {
+                    } else if (getTextAlignment() == Alignment.RIGHT) {
                         xText = (x + width) - (font.stringWidth(fallbackFont, fontSize, line) + margin);
-                    } else if (getTextAlignment() == Align.CENTER) {
+                    } else if (getTextAlignment() == Alignment.CENTER) {
                         xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {

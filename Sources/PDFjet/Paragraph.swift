@@ -24,7 +24,7 @@ public class Paragraph {
     /// The y coordinate of the bottom of the last line of this paragraph.
     public var y2: Float = 0.0
     var lines = [TextLine]()
-    var alignment: UInt32 = Align.LEFT
+    var alignment = Alignment.LEFT
     // True after setTextAlignment. Otherwise the alignment of the text column applies.
     var explicitAlignment = false
 
@@ -55,11 +55,11 @@ public class Paragraph {
     /// Sets the alignment of the text in this paragraph. A paragraph with no
     /// alignment set takes the alignment of the text column it is drawn in.
     ///
-    /// - Parameter alignment: the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
+    /// - Parameter alignment: the alignment code: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER or Alignment.JUSTIFY.
     /// - Returns: this paragraph.
     ///
     @discardableResult
-    public func setTextAlignment(_ alignment: UInt32) -> Paragraph {
+    public func setTextAlignment(_ alignment: Alignment) -> Paragraph {
         self.alignment = alignment
         self.explicitAlignment = true
         return self

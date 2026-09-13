@@ -228,6 +228,12 @@ func (point *Point) SetTextColor(textColor int32) *Point {
 	return point
 }
 
+// SetTextColorRGB sets the point's text color from the red, green and blue components, from 0.0 to 1.0.
+func (point *Point) SetTextColorRGB(textColor [3]float32) *Point {
+	point.textColor = textColor
+	return point
+}
+
 // GetTextColor returns the point's text color as red, green and blue values.
 func (point *Point) GetTextColor() [3]float32 {
 	return point.textColor

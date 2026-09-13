@@ -7,14 +7,21 @@
 
 namespace PDFjet.NET {
     /// <summary>
-    /// Used to specify the text alignment in TextBlock.
+    /// Used to specify the horizontal and vertical alignment, for example of the
+    /// text in a Cell, TextBox, TextBlock, Paragraph or TextColumn.
     /// </summary>
     public enum Alignment {
-        /// <summary>Aligns the text to the left.</summary>
+        /// <summary>Aligns to the left.</summary>
         LEFT,
-        /// <summary>Aligns the text to the right.</summary>
+        /// <summary>Aligns to the right.</summary>
         RIGHT,
-        /// <summary>Centers the text.</summary>
-        CENTER
+        /// <summary>Centers horizontally or vertically.</summary>
+        CENTER,
+        /// <summary>Justifies the text.</summary>
+        JUSTIFY,
+        /// <summary>Aligns to the top.</summary>
+        TOP,
+        /// <summary>Aligns to the bottom.</summary>
+        BOTTOM
     }
 }

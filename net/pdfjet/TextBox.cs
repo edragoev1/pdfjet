@@ -17,8 +17,8 @@ namespace PDFjet.NET {
 /// y = 0f<br/>
 /// width = 300f<br/>
 /// height = 0f<br/>
-/// alignment = Align.LEFT<br/>
-/// valign = Align.TOP<br/>
+/// alignment = Alignment.LEFT<br/>
+/// valign = Alignment.TOP<br/>
 /// spacing = 0f<br/>
 /// margin = 0f<br/>
 /// </para>
@@ -46,7 +46,8 @@ public class TextBox : IDrawable {
     private float strokeWidth = 0.5f;
     private float[] strokeColor;
 
-    private uint valign = Align.TOP;
+    private Alignment textAlignment = Alignment.LEFT;
+    private Alignment valign = Alignment.TOP;
     private Dictionary<String, Int32> colors = null;
     // TextBox properties
     // Future use:
@@ -56,9 +57,8 @@ public class TextBox : IDrawable {
     // bit 17 - bottom
     // bit 18 - left
     // bit 19 - right
-    // Text Alignment:
-    // bit 20
-    // bit 21
+    // Not used:
+    // bits 20 and 21
     // Text Decoration:
     // bit 22 - underline
     // bit 23 - strikeout
@@ -518,20 +518,19 @@ public class TextBox : IDrawable {
     /// <summary>
     /// Sets the cell text alignment.
     /// </summary>
-    /// <param name="alignment">the alignment code.
-    /// Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.</param>
-    public TextBox SetTextAlignment(uint alignment) {
-        this.properties &= 0x00CFFFFF;
-        this.properties |= (alignment & 0x00300000);
+    /// <param name="alignment">the alignment.
+    /// Supported values: Alignment.LEFT, Alignment.RIGHT and Alignment.CENTER.</param>
+    public TextBox SetTextAlignment(Alignment alignment) {
+        this.textAlignment = alignment;
         return this;
     }
 
     /// <summary>
     /// Returns the text alignment.
     /// </summary>
-    /// <returns>alignment the alignment code. Supported values: Align.LEFT, Align.RIGHT and Align.CENTER.</returns>
-    public uint GetTextAlignment() {
-        return (this.properties & 0x00300000);
+    /// <returns>the alignment. Supported values: Alignment.LEFT, Alignment.RIGHT and Alignment.CENTER.</returns>
+    public Alignment GetTextAlignment() {
+        return this.textAlignment;
     }
 
     /// <summary>
@@ -594,15 +593,15 @@ public class TextBox : IDrawable {
     /// <summary>
     /// Sets the vertical alignment of the text in this TextBox.
     /// </summary>
-    /// <param name="valign">- valid values are Align.TOP, Align.BOTTOM and Align.CENTER</param>
+    /// <param name="valign">- valid values are Alignment.TOP, Alignment.BOTTOM and Alignment.CENTER</param>
     /// <returns>this TextBox object.</returns>
-    public TextBox SetVerticalAlignment(uint valign) {
+    public TextBox SetVerticalAlignment(Alignment valign) {
         this.valign = valign;
         return this;
     }
 
     /// <summary>Returns the vertical alignment of the text.</summary>
-    public uint GetVerticalAlignment() {
+    public Alignment GetVerticalAlignment() {
         return this.valign;
     }
 
@@ -774,12 +773,12 @@ public class TextBox : IDrawable {
             float xText = x + margin;
             float yText = y + margin + font.GetAscent(fontSize);
             if (textDirection == Direction.LEFT_TO_RIGHT) {
-                if (valign == Align.TOP) {
+                if (valign == Alignment.TOP) {
                     yText = y + margin + font.GetAscent(fontSize);
-                } else if (valign == Align.BOTTOM) {
+                } else if (valign == Alignment.BOTTOM) {
                     yText = (y + height) - (((float) lines.Length)*leading + margin);
                     yText += font.GetAscent(fontSize);
-                } else if (valign == Align.CENTER) {
+                } else if (valign == Alignment.CENTER) {
                     yText = y + (height - ((float) lines.Length)*leading)/2;
                     yText += font.GetAscent(fontSize);
                 }
@@ -788,11 +787,11 @@ public class TextBox : IDrawable {
             }
             foreach (String line in lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
-                    if (GetTextAlignment() == Align.LEFT) {
+                    if (GetTextAlignment() == Alignment.LEFT) {
                         xText = x + margin;
-                    } else if (GetTextAlignment() == Align.RIGHT) {
+                    } else if (GetTextAlignment() == Alignment.RIGHT) {
                         xText = (x + width) - (font.StringWidth(fallbackFont, fontSize, line) + margin);
-                    } else if (GetTextAlignment() == Align.CENTER) {
+                    } else if (GetTextAlignment() == Alignment.CENTER) {
                         xText = x + (width - font.StringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {
@@ -824,11 +823,11 @@ public class TextBox : IDrawable {
             float yText = y + margin + font.GetAscent(fontSize);
             foreach (String line in lines) {
                 if (textDirection == Direction.LEFT_TO_RIGHT) {
-                    if (GetTextAlignment() == Align.LEFT) {
+                    if (GetTextAlignment() == Alignment.LEFT) {
                         xText = x + margin;
-                    } else if (GetTextAlignment() == Align.RIGHT) {
+                    } else if (GetTextAlignment() == Alignment.RIGHT) {
                         xText = (x + width) - (font.StringWidth(fallbackFont, fontSize, line) + margin);
-                    } else if (GetTextAlignment() == Align.CENTER) {
+                    } else if (GetTextAlignment() == Alignment.CENTER) {
                         xText = x + (width - font.StringWidth(fallbackFont, fontSize, line))/2;
                     }
                 } else {

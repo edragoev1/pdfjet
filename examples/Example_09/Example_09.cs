@@ -73,7 +73,7 @@ public class Example_09 {
                 List<Cell> tableRow = new List<Cell>();
 
                 point.SetRadius(2f);
-                point.SetAlignment(Align.LEFT);
+                point.SetAlignment(Alignment.LEFT);
 
                 Cell cell = new Cell(f2);
                 cell.SetPoint(point);

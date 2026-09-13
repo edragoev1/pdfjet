@@ -25,7 +25,7 @@ public class Example_34 {
         p1.setShape(Point.CIRCLE)
         p1.setRadius(2.0)
         p1.setStrokeColor(Color.darkolivegreen)
-        p1.setAlignment(Align.RIGHT)
+        p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/India")
         tableData[4][3].setPoint(p1)
 
@@ -33,7 +33,7 @@ public class Example_34 {
         p1.setShape(Point.DIAMOND)
         p1.setRadius(2.5)
         p1.setStrokeColor(Color.blue)
-        p1.setAlignment(Align.RIGHT)
+        p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
         tableData[5][3].setPoint(p1)
 
@@ -41,7 +41,7 @@ public class Example_34 {
         p1.setShape(Point.STAR)
         p1.setRadius(3.0)
         p1.setStrokeColor(Color.red)
-        p1.setAlignment(Align.RIGHT)
+        p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
         tableData[6][3].setPoint(p1)
 

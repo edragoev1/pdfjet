@@ -52,19 +52,19 @@ final public class Example_13 {
 
         cell = table.getCellAt(0, 1);
         cell.setColSpan(2);
-        cell.setTextAlignment(Align.CENTER);
+        cell.setTextAlignment(Alignment.CENTER);
 
         List<Cell> column = table.getColumnAtIndex(7);
         for (int i = 0; i < column.size(); i++) {
             cell = column.get(i);
-            cell.setTextAlignment(Align.CENTER);
+            cell.setTextAlignment(Alignment.CENTER);
         }
 
         column = table.getColumnAtIndex(4);
         for (int i = 2; i < column.size(); i++) {
             cell = column.get(i);
             try {
-                cell.setTextAlignment(Align.CENTER);
+                cell.setTextAlignment(Alignment.CENTER);
                 if (Integer.valueOf(cell.getText()) > 40) {
                     cell.setBackgroundColor(Color.darkseagreen);
                 } else {

@@ -8,8 +8,8 @@ import Foundation
 
 ///
 /// A box containing line-wrapped text.
-/// Defaults: x = 0, y = 0, width = 300, height = 0, alignment Align.LEFT,
-/// vertical alignment Align.TOP, spacing 0, margin 0.
+/// Defaults: x = 0, y = 0, width = 300, height = 0, alignment Alignment.LEFT,
+/// vertical alignment Alignment.TOP, spacing 0, margin 0.
 ///
 /// Please see Example_16 and Example_19.
 ///
@@ -33,7 +33,8 @@ public class TextBox : Drawable {
     private var strokeWidth: Float = 0.5
     private var strokeColor: [Float]?
 
-    private var valign = Align.TOP
+    private var textAlignment = Alignment.LEFT
+    private var valign = Alignment.TOP
     private var colors: [String : Int32]?
     // TextBox properties
     // Border:
@@ -41,9 +42,8 @@ public class TextBox : Drawable {
     // bit 17 - bottom
     // bit 18 - left
     // bit 19 - right
-    // Text Alignment:
-    // bit 20
-    // bit 21
+    // Not used:
+    // bits 20 and 21
     // Text Decoration:
     // bit 22 - underline
     // bit 23 - strikeout
@@ -318,17 +318,17 @@ public class TextBox : Drawable {
     }
 
     ///
-    /// Sets the text alignment: Align.LEFT, Align.RIGHT or Align.CENTER.
+    /// Sets the text alignment: Alignment.LEFT, Alignment.RIGHT or Alignment.CENTER.
     ///
     @discardableResult
-    public func setTextAlignment(_ alignment: UInt32) -> TextBox {
-        self.properties = (self.properties & 0x00CFFFFF) | (alignment & 0x00300000)
+    public func setTextAlignment(_ alignment: Alignment) -> TextBox {
+        self.textAlignment = alignment
         return self
     }
 
-    /// Returns the horizontal text alignment, for example Align.LEFT.
-    public func getTextAlignment() -> UInt32 {
-        return (self.properties & 0x00300000)
+    /// Returns the horizontal text alignment, for example Alignment.LEFT.
+    public func getTextAlignment() -> Alignment {
+        return self.textAlignment
     }
 
     /// Sets whether the text is underlined.
@@ -375,15 +375,15 @@ public class TextBox : Drawable {
         return self.fallbackFont
     }
 
-    /// Sets the vertical alignment of the text: Align.TOP, Align.CENTER or Align.BOTTOM.
+    /// Sets the vertical alignment of the text: Alignment.TOP, Alignment.CENTER or Alignment.BOTTOM.
     @discardableResult
-    public func setVerticalAlignment(_ valign: UInt32) -> TextBox {
+    public func setVerticalAlignment(_ valign: Alignment) -> TextBox {
         self.valign = valign
         return self
     }
 
     /// Returns the vertical alignment of the text.
-    public func getVerticalAlignment() -> UInt32 {
+    public func getVerticalAlignment() -> Alignment {
         return self.valign
     }
 
@@ -588,12 +588,12 @@ public class TextBox : Drawable {
             var xText = x + margin
             var yText = y + margin + font.getAscent(fontSize)
             if textDirection == Direction.LEFT_TO_RIGHT {
-                if valign == Align.TOP {
+                if valign == Alignment.TOP {
                     yText = y + margin + font.getAscent(fontSize)
-                } else if valign == Align.BOTTOM {
+                } else if valign == Alignment.BOTTOM {
                     yText = (y + height) - (Float(lines.count)*leading + margin)
                     yText += font.getAscent(fontSize)
-                } else if valign == Align.CENTER {
+                } else if valign == Alignment.CENTER {
                     yText = y + (height - Float(lines.count)*leading)/2
                     yText += font.getAscent(fontSize)
                 }
@@ -602,12 +602,12 @@ public class TextBox : Drawable {
             }
             for line in lines {
                 if textDirection == Direction.LEFT_TO_RIGHT {
-                    if getTextAlignment() == Align.LEFT {
+                    if getTextAlignment() == Alignment.LEFT {
                         xText = x + margin
-                    } else if getTextAlignment() == Align.RIGHT {
+                    } else if getTextAlignment() == Alignment.RIGHT {
                         xText = (x + width) -
                                 (font.stringWidth(fallbackFont, fontSize, line) + margin)
-                    } else if getTextAlignment() == Align.CENTER {
+                    } else if getTextAlignment() == Alignment.CENTER {
                         xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2
                     }
                 } else {
@@ -640,12 +640,12 @@ public class TextBox : Drawable {
             var yText = y + margin + font.getAscent(fontSize)
             for line in lines {
                 if textDirection == Direction.LEFT_TO_RIGHT {
-                    if getTextAlignment() == Align.LEFT {
+                    if getTextAlignment() == Alignment.LEFT {
                         xText = x + margin
-                    } else if getTextAlignment() == Align.RIGHT {
+                    } else if getTextAlignment() == Alignment.RIGHT {
                         xText = (x + width) -
                                 (font.stringWidth(fallbackFont, fontSize, line) + margin)
-                    } else if getTextAlignment() == Align.CENTER {
+                    } else if getTextAlignment() == Alignment.CENTER {
                         xText = x + (width - font.stringWidth(fallbackFont, fontSize, line))/2
                     }
                 } else {

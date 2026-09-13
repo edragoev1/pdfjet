@@ -73,7 +73,7 @@ final public class Example_09 {
                 List<Cell> tableRow = new ArrayList<Cell>();
 
                 point.setRadius(2f);
-                point.setAlignment(Align.LEFT);
+                point.setAlignment(Alignment.LEFT);
 
                 Cell cell = new Cell(f2);
                 cell.setPoint(point);

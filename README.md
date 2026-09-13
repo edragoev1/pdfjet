@@ -323,8 +323,9 @@ Java, C# and Swift keep constants in classes; Go keeps them in packages:
 `structtype.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
 `direction`, `effect`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
 `pathoperator`, `imagetype`, `mark` and the font families
-(`IBMPlexSans.Regular`). The `alignment` package serves for both `Align` and
-`Alignment`, so it also has `Top`, `Bottom` and `Justify`. The core fonts are
+(`IBMPlexSans.Regular`). The constants of a package have its type, as
+`alignment.Alignment` and `pathoperator.PathOperator`, so a plain `int` or
+`string` variable does not compile where one is expected. The core fonts are
 functions, `corefont.Courier()`, where the other ports have a `Courier` class
 with the metrics. The page sizes are functions too, `letter.Portrait()` for
 `Letter.PORTRAIT`, because a caller can assign to a Go package variable. In all

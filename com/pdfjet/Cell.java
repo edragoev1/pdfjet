@@ -63,9 +63,8 @@ public class Cell {
     // bit 17 - bottom
     // bit 18 - left
     // bit 19 - right
-    // Text Alignment:
-    // bit 20
-    // bit 21
+    // Not used:
+    // bits 20 and 21
     // Text Decoration:
     // bit 22 - underline
     // bit 23 - strikeout
@@ -73,7 +72,8 @@ public class Cell {
     // bits 24 to 31
     private int properties = 0x00050001;    // Set only left and top borders!
     private String uri;
-    private int valign = Align.TOP;
+    private Alignment textAlignment = Alignment.LEFT;
+    private Alignment valign = Alignment.TOP;
 
     /**
      * Creates a cell object and sets the font.
@@ -582,7 +582,7 @@ public class Cell {
     }
 
     /**
-     * Sets the properties bit field: colspan, borders, text alignment and decoration.
+     * Sets the properties bit field: colspan, borders and text decoration.
      *
      * @param properties the properties.
      */
@@ -591,7 +591,7 @@ public class Cell {
     }
 
     /**
-     * Returns the properties bit field: colspan, borders, text alignment and decoration.
+     * Returns the properties bit field: colspan, borders and text decoration.
      *
      * @return the properties.
      */
@@ -739,34 +739,33 @@ public class Cell {
     /**
      * Sets the cell text alignment.
      *
-     * @param alignment the alignment code.
-     * Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY,
+     * @param alignment the alignment.
+     * Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY,
      * which draws the single line of cell text left aligned.
      * @return this Cell object.
      */
-    public Cell setTextAlignment(int alignment) {
-        this.properties &= 0x00CFFFFF;
-        this.properties |= (alignment & 0x00300000);
+    public Cell setTextAlignment(Alignment alignment) {
+        this.textAlignment = alignment;
         return this;
     }
 
     /**
      * Returns the text alignment.
      *
-     * @return the text horizontal alignment code.
+     * @return the horizontal text alignment.
      */
-    public int getTextAlignment() {
-        return (this.properties & 0x00300000);
+    public Alignment getTextAlignment() {
+        return this.textAlignment;
     }
 
     /**
      * Sets the cell text vertical alignment.
      *
-     * @param alignment the alignment code.
-     * Supported values: Align.TOP, Align.CENTER and Align.BOTTOM.
+     * @param alignment the alignment.
+     * Supported values: Alignment.TOP, Alignment.CENTER and Alignment.BOTTOM.
      * @return this Cell object.
      */
-    public Cell setVerTextAlignment(int alignment) {
+    public Cell setVerTextAlignment(Alignment alignment) {
         this.valign = alignment;
         return this;
     }
@@ -774,9 +773,9 @@ public class Cell {
     /**
      * Returns the cell text vertical alignment.
      *
-     * @return the vertical alignment code.
+     * @return the vertical alignment.
      */
-    public int getVerTextAlignment() {
+    public Alignment getVerTextAlignment() {
         return this.valign;
     }
 
@@ -874,9 +873,9 @@ public class Cell {
             textColumn.setLocation(x + leftPadding, y + topPadding);
             textColumn.drawOn(page);
         } else if (image != null) {
-            if (getTextAlignment() == Align.RIGHT) {
+            if (getTextAlignment() == Alignment.RIGHT) {
                 image.setLocation((x + w) - (image.getWidth() + rightPadding), y + topPadding);
-            } else if (getTextAlignment() == Align.CENTER) {
+            } else if (getTextAlignment() == Alignment.CENTER) {
                 image.setLocation((x + w/2f) - image.getWidth()/2f, y + topPadding);
             } else {
                 image.setLocation(x + leftPadding, y + topPadding);
@@ -884,10 +883,10 @@ public class Cell {
             image.drawOn(page);
         } else if (barcode != null) {
             try {
-                if (getTextAlignment() == Align.RIGHT) {
+                if (getTextAlignment() == Alignment.RIGHT) {
                     float barcodeWidth = barcode.drawOn(null)[0];
                     barcode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding);
-                } else if (getTextAlignment() == Align.CENTER) {
+                } else if (getTextAlignment() == Alignment.CENTER) {
                     float barcodeWidth = barcode.drawOn(null)[0];
                     barcode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
                 } else {
@@ -900,9 +899,9 @@ public class Cell {
 
         drawBorders(page, x, y, w, h);
         if (point != null) {
-            if (point.align == Align.LEFT) {
+            if (point.align == Alignment.LEFT) {
                 point.x = x + 2*point.r;
-            } else if (point.align == Align.RIGHT) {
+            } else if (point.align == Alignment.RIGHT) {
                 point.x = (x + w) - this.rightPadding/2;
             }
             point.y = y + h/2;
@@ -982,11 +981,11 @@ public class Cell {
             float cellH) throws Exception {
         float ascent = font.getAscent(fontSize);
         float yText;
-        if (valign == Align.TOP) {
+        if (valign == Alignment.TOP) {
             yText = y + ascent + this.topPadding;
-        } else if (valign == Align.CENTER) {
+        } else if (valign == Alignment.CENTER) {
             yText = y + cellH/2 + ascent/2;
-        } else if (valign == Align.BOTTOM) {
+        } else if (valign == Alignment.BOTTOM) {
             yText = (y + cellH) - this.bottomPadding;
         } else {
             throw new Exception("Invalid vertical text alignment option.");
@@ -994,13 +993,13 @@ public class Cell {
 
         page.setPenColor(strokeColor);
         float xText;
-        if (getTextAlignment() == Align.RIGHT) {
+        if (getTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (getTextWidth() + this.rightPadding);
-        } else if (getTextAlignment() == Align.CENTER) {
+        } else if (getTextAlignment() == Alignment.CENTER) {
             xText = x + this.leftPadding +
                     (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2);
         } else {
-            // Align.LEFT, and Align.JUSTIFY, which a single line of text cannot use.
+            // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
             xText = x + this.leftPadding;
         }
         if (compositeTextLine == null) {

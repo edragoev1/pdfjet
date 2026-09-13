@@ -215,7 +215,7 @@ public class Table implements Drawable {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 if (cell.text != null && isNumber(cell.text)) {
-                    cell.setTextAlignment(Align.RIGHT);
+                    cell.setTextAlignment(Alignment.RIGHT);
                 }
             }
         }
@@ -287,11 +287,11 @@ public class Table implements Drawable {
      * Sets the text alignment in the specified column.
      *
      * @param index     the index of the specified column.
-     * @param alignment the specified alignment. Supported values: Align.LEFT,
-     *                  Align.RIGHT, Align.CENTER and Align.JUSTIFY.
+     * @param alignment the specified alignment. Supported values: Alignment.LEFT,
+     *                  Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY.
      * @return this Table object.
      */
-    public Table setTextAlignInColumn(int index, int alignment) {
+    public Table setTextAlignInColumn(int index, Alignment alignment) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -801,8 +801,9 @@ public class Table implements Drawable {
                     cell2.setStrokeWidth(cell.getStrokeWidth());
                     cell2.setStrokeColor(cell.getStrokeColor());
                     cell2.setTextColor(cell.getTextColor());
-                    // The column span, borders, text alignment, underline and strikeout.
+                    // The column span, borders, underline and strikeout.
                     cell2.setProperties(cell.getProperties());
+                    cell2.setTextAlignment(cell.getTextAlignment());
                     cell2.setVerTextAlignment(cell.getVerTextAlignment());
                     cell2.setTopPadding(0f);
                     cell2.setBorder(Border.TOP, false);
