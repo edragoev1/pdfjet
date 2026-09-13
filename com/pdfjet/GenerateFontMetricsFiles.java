@@ -14,8 +14,7 @@ import java.nio.charset.StandardCharsets;
  * These font metrics files are used by the TypeScript pdfjet-builder.
  */
 public class GenerateFontMetricsFiles {
-    /** The default constructor */
-    public GenerateFontMetricsFiles() {
+    private GenerateFontMetricsFiles() {
     }
 
     /**

@@ -17,8 +17,7 @@ import java.security.GeneralSecurityException;
  * AES-256 encryption of the file encryption key and of the strings and streams in an encrypted PDF.
  */
 public class AES256 {
-    /** The default constructor */
-    public AES256() {
+    private AES256() {
     }
 
     /**

@@ -5,8 +5,7 @@ package com.pdfjet;
  * .otf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class IBMPlexMono {
-    /** The default constructor */
-    public IBMPlexMono() {
+    private IBMPlexMono() {
     }
 
     /** IBM Plex Mono Bold Italic */

@@ -1,22 +1,21 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
- * The metrics of Helvetica-BoldOblique, one of the 14 standard PDF fonts.
+ * The metrics of Helvetica-Bold, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Helvetica_BoldOblique {
-    /** The default constructor */
-    public Helvetica_BoldOblique() {
+final class Helvetica_Bold {
+    private Helvetica_Bold() {
     }
 
     /** The PostScript name of the font */
-    public static final String name = "Helvetica-BoldOblique";
+    public static final String name = "Helvetica-Bold";
     /** The x coordinate of the lower left corner of the font bounding box */
-    public static final int bBoxLLx = -174;
+    public static final int bBoxLLx = -170;
     /** The y coordinate of the lower left corner of the font bounding box */
     public static final int bBoxLLy = -228;
     /** The x coordinate of the upper right corner of the font bounding box */
-    public static final int bBoxURx = 1114;
+    public static final int bBoxURx = 1003;
     /** The y coordinate of the upper right corner of the font bounding box */
     public static final int bBoxURy = 962;
     /** The position of the underline relative to the baseline */

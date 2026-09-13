@@ -10,8 +10,7 @@ package com.pdfjet;
  * Used to specify the check mark in CheckBox.
  */
 public class Mark {
-    /** Default Constructor */
-    public Mark() {
+    private Mark() {
     }
 
     /** Mark UNCHECK */

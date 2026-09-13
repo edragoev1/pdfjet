@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Times-Bold, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Times_Bold {
-    /** The default constructor */
-    public Times_Bold() {
+final class Times_Bold {
+    private Times_Bold() {
     }
 
     /** The PostScript name of the font */

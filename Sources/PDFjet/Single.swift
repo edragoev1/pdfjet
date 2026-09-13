@@ -5,10 +5,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-///
-/// Please see Example_45
-///
-public class Single {
+/// Strings made of a single character.
+class Single {
     /// A single space.
-    public static let space: String = " "
+    static let space: String = " "
 }

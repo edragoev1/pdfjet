@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of ZapfDingbats, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class ZapfDingbats {
-    /** The default constructor */
-    public ZapfDingbats() {
+final class ZapfDingbats {
+    private ZapfDingbats() {
     }
 
     /** The PostScript name of the font */

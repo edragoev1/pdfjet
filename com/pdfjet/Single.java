@@ -9,11 +9,10 @@ package com.pdfjet;
 /**
  * Strings made of a single character.
  */
-public class Single {
-    /** The default constructor */
-    public Single() {
+final class Single {
+    private Single() {
     }
 
     /** Single space */
-    public static final String space = " ";
+    static final String space = " ";
 }

@@ -147,7 +147,7 @@ public class Encryption {
     }
 
     /// <summary>Returns a copy of the randomly generated file encryption key.</summary>
-    public byte[] GetKey() {
+    internal byte[] GetKey() {
         return (byte[]) fileEncryptionKey.Clone();
     }
 

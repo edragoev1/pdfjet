@@ -11,8 +11,7 @@ package com.pdfjet;
  * See the Cell class for more information.
  */
 public class Border {
-    /** The default constructor */
-    public Border() {
+    private Border() {
     }
 
     /** Specifies no borders. */

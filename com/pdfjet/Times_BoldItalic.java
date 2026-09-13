@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Times-BoldItalic, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Times_BoldItalic {
-    /** The default constructor */
-    public Times_BoldItalic() {
+final class Times_BoldItalic {
+    private Times_BoldItalic() {
     }
 
     /** The PostScript name of the font */

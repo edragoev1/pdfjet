@@ -2,7 +2,7 @@
 /// The metrics of Courier-BoldOblique, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 ///
-public enum Courier_BoldOblique {
+enum Courier_BoldOblique {
     /// The PostScript name of the font
     public static let name = "Courier-BoldOblique"
     /// The x coordinate of the lower left corner of the font bounding box

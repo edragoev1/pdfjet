@@ -5,8 +5,7 @@ package com.pdfjet;
  * .ttf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class NotoSans {
-    /** The default constructor */
-    public NotoSans() {
+    private NotoSans() {
     }
 
     /** Noto Sans Black */

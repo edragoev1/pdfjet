@@ -5,8 +5,7 @@ package com.pdfjet;
  * .ttf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class JetBrainsMono {
-    /** The default constructor */
-    public JetBrainsMono() {
+    private JetBrainsMono() {
     }
 
     /** JetBrains Mono Bold */

@@ -1,7 +1,5 @@
 package com.pdfjet;
 
-import com.pdfjet.corefonts.*;
-
 /**
  * The metrics of the 14 standard PDF fonts.
  */

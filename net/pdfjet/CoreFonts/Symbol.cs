@@ -5,7 +5,7 @@ namespace PDFjet.NET.CoreFonts {
 /// The metrics of Symbol, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 /// </summary>
-public static class Symbol {
+internal static class Symbol {
     /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Symbol";
     /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>

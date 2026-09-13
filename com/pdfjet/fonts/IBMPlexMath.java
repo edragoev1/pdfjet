@@ -5,8 +5,7 @@ package com.pdfjet;
  * .otf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class IBMPlexMath {
-    /** The default constructor */
-    public IBMPlexMath() {
+    private IBMPlexMath() {
     }
 
     /** IBM Plex Math Regular */

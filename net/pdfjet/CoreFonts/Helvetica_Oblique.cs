@@ -5,7 +5,7 @@ namespace PDFjet.NET.CoreFonts {
 /// The metrics of Helvetica-Oblique, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 /// </summary>
-public static class Helvetica_Oblique {
+internal static class Helvetica_Oblique {
     /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Helvetica-Oblique";
     /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>

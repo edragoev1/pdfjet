@@ -5,7 +5,7 @@ namespace PDFjet.NET.CoreFonts {
 /// The metrics of Times-Italic, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 /// </summary>
-public static class Times_Italic {
+internal static class Times_Italic {
     /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Times-Italic";
     /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>

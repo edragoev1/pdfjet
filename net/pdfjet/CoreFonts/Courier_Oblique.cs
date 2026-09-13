@@ -5,7 +5,7 @@ namespace PDFjet.NET.CoreFonts {
 /// The metrics of Courier-Oblique, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 /// </summary>
-public static class Courier_Oblique {
+internal static class Courier_Oblique {
     /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Courier-Oblique";
     /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>

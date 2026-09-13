@@ -11,8 +11,7 @@ package com.pdfjet;
  * For more information about the page size classes - A3, A4, A5, B5, JISB5, Executive, Letter, Legal and Tabloid - see the Page class.
  */
 public class Tabloid {
-    /** The default constructor */
-    public Tabloid() {
+    private Tabloid() {
     }
 
     /** Portrait orientation */

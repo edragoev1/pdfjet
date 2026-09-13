@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Symbol, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Symbol {
-    /** The default constructor */
-    public Symbol() {
+final class Symbol {
+    private Symbol() {
     }
 
     /** The PostScript name of the font */

@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Times-Italic, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Times_Italic {
-    /** The default constructor */
-    public Times_Italic() {
+final class Times_Italic {
+    private Times_Italic() {
     }
 
     /** The PostScript name of the font */

@@ -2,7 +2,7 @@
 /// The metrics of Courier-Bold, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 ///
-public enum Courier_Bold {
+enum Courier_Bold {
     /// The PostScript name of the font
     public static let name = "Courier-Bold"
     /// The x coordinate of the lower left corner of the font bounding box

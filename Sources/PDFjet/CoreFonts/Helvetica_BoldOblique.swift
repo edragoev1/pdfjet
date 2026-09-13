@@ -2,7 +2,7 @@
 /// The metrics of Helvetica-BoldOblique, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 ///
-public enum Helvetica_BoldOblique {
+enum Helvetica_BoldOblique {
     /// The PostScript name of the font
     public static let name = "Helvetica-BoldOblique"
     /// The x coordinate of the lower left corner of the font bounding box

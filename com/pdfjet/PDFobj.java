@@ -18,24 +18,24 @@ import java.util.List;
  */
 public class PDFobj {
     /** The object number. */
-    protected int number;           // The object number
+    int number;           // The object number
     /** The byte offset of the object. */
-    protected int offset;           // The object offset
+    int offset;           // The object offset
     /** The tokens of the object dictionary. */
-    protected List<String> dict;
+    List<String> dict;
     /** The byte offset of the stream. */
-    protected int streamOffset;
+    int streamOffset;
     /** The compressed stream. */
-    protected byte[] stream;        // The compressed stream
+    byte[] stream;        // The compressed stream
     /** The decompressed data. */
-    protected byte[] data;          // The decompressed data
+    byte[] data;          // The decompressed data
     /** The number of the graphics state resource, or -1. */
-    protected int gsNumber = -1;
+    int gsNumber = -1;
 
     /**
      * Creates an object with an empty dictionary.
      */
-    protected PDFobj() {
+    PDFobj() {
         this.dict = new ArrayList<String>();
     }
 
@@ -74,7 +74,7 @@ public class PDFobj {
      * @param length the length of the stream.
      * @throws Exception if the stream cannot be decoded.
      */
-    protected void setStreamAndData(byte[] buf, int length) throws Exception {
+    void setStreamAndData(byte[] buf, int length) throws Exception {
         setStreamAndData(buf, length, null);
     }
 
@@ -226,7 +226,7 @@ public class PDFobj {
      *
      * @param stream the stream.
      */
-    protected void setStream(byte[] stream) {
+    void setStream(byte[] stream) {
         this.stream = stream;
     }
 
@@ -235,7 +235,7 @@ public class PDFobj {
      *
      * @param number the object number.
      */
-    protected void setNumber(int number) {
+    void setNumber(int number) {
         this.number = number;
     }
 
@@ -285,7 +285,7 @@ public class PDFobj {
      * @param key the key, for example "/Contents".
      * @return the object numbers.
      */
-    protected List<Integer> getObjectNumbers(String key) {
+    List<Integer> getObjectNumbers(String key) {
         List<Integer> numbers = new ArrayList<Integer>();
         for (int i = 0; i < dict.size(); i++) {
             String token = dict.get(i);
@@ -332,7 +332,7 @@ public class PDFobj {
      * @param objects the objects in the PDF.
      * @return the length of the stream.
      */
-    protected int getLength(List<PDFobj> objects) {
+    int getLength(List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             String token = dict.get(i);
             if (token.equals("/Length")) {
@@ -355,7 +355,7 @@ public class PDFobj {
      * @param number the object number.
      * @return the length.
      */
-    protected int getLength(List<PDFobj> objects, int number) {
+    int getLength(List<PDFobj> objects, int number) {
         for (PDFobj obj : objects) {
             if (obj.number == number) {
                 return Integer.parseInt(obj.dict.get(3));

@@ -11,8 +11,7 @@ package com.pdfjet;
  * For more information about the page size classes - A3, A4, A5, JISB5, Executive, Letter, Legal and Tabloid - see the Page class.
  */
 public class JISB5 {
-    /** The default constructor */
-    public JISB5() {
+    private JISB5() {
     }
     /**
      * This is a public static variable that specifies that page size in portrait orientation.

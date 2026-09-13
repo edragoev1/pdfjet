@@ -10,7 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 

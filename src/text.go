@@ -10,7 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/content"
-	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 )
 
 // Text is paragraphs of text lines, wrapped at a width, with an optional border.

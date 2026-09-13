@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Helvetica, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Helvetica {
-    /** The default constructor */
-    public Helvetica() {
+final class Helvetica {
+    private Helvetica() {
     }
 
     /** The PostScript name of the font */

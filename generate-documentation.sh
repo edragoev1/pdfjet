@@ -7,7 +7,6 @@ rm -rf docs/java
 javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
     com/pdfjet/*.java \
     com/pdfjet/barcodes/*.java \
-    com/pdfjet/corefonts/*.java \
     com/pdfjet/encryption/*.java \
     com/pdfjet/fonts/*.java \
     com/pdfjet/pdf417/*.java \

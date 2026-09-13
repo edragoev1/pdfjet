@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Times-Roman, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Times_Roman {
-    /** The default constructor */
-    public Times_Roman() {
+final class Times_Roman {
+    private Times_Roman() {
     }
 
     /** The PostScript name of the font */

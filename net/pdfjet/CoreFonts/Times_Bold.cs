@@ -5,7 +5,7 @@ namespace PDFjet.NET.CoreFonts {
 /// The metrics of Times-Bold, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.
 /// </summary>
-public static class Times_Bold {
+internal static class Times_Bold {
     /// <summary>The PostScript name of the font</summary>
     public static readonly String name = "Times-Bold";
     /// <summary>The x coordinate of the lower left corner of the font bounding box</summary>

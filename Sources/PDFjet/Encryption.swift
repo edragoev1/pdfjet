@@ -121,7 +121,7 @@ public class Encryption {
     ///
     /// - Returns: the 32-byte file encryption key.
     ///
-    public func getKey() -> [UInt8] {
+    func getKey() -> [UInt8] {
         return fileEncryptionKey
     }
 

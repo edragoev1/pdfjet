@@ -15,7 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/device"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
-	"github.com/edragoev1/pdfjet/v9/src/single"
+	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
 

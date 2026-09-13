@@ -5,13 +5,14 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 
 namespace PDFjet.NET {
-/// <summary>Text helper methods.</summary>
+/// <summary>The helper that the examples use to print how long each one took.</summary>
 public class TextUtils {
     /// <summary>Prints the name of an example and how long it took.</summary>
     public static void PrintDuration(String example, long time0, long time1) {
-        String duration = String.Format("{0:N1}", (time1 - time0)/1.0).Replace(",", "");
+        String duration = ((time1 - time0)/1.0).ToString("F1", CultureInfo.InvariantCulture);
         if (duration.Length == 3) {
             duration = "    " + duration;
         } else if (duration.Length == 4) {

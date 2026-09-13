@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Courier-Oblique, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Courier_Oblique {
-    /** The default constructor */
-    public Courier_Oblique() {
+final class Courier_Oblique {
+    private Courier_Oblique() {
     }
 
     /** The PostScript name of the font */

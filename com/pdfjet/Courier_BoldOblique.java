@@ -1,12 +1,11 @@
-package com.pdfjet.corefonts;
+package com.pdfjet;
 
 /**
  * The metrics of Courier-BoldOblique, one of the 14 standard PDF fonts.
  * The values are in thousandths of the font size.
  */
-public final class Courier_BoldOblique {
-    /** The default constructor */
-    public Courier_BoldOblique() {
+final class Courier_BoldOblique {
+    private Courier_BoldOblique() {
     }
 
     /** The PostScript name of the font */

@@ -151,13 +151,6 @@ func NewEncryption(pdf *PDF,
 	return enc, nil
 }
 
-// GetKey returns the file encryption key
-func (enc *Encryption) GetKey() []byte {
-	key := make([]byte, len(enc.fileEncryptionKey))
-	copy(key, enc.fileEncryptionKey)
-	return key
-}
-
 // encrypt encrypts the data with the file encryption key. It panics if the
 // data cannot be encrypted.
 func (enc *Encryption) encrypt(data []byte) []byte {

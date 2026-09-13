@@ -5,8 +5,7 @@ package com.pdfjet;
  * .otf.stream format; pass it to the Font constructor that takes a font path.
  */
 public class IBMPlexSansThai {
-    /** The default constructor */
-    public IBMPlexSansThai() {
+    private IBMPlexSansThai() {
     }
 
     /** IBM Plex Sans Thai Bold */
