@@ -58,9 +58,8 @@ class QRUtil {
             case MaskPattern.PATTERN110 : return ((i * j) % 2 + (i * j) % 3) % 2 == 0
             case MaskPattern.PATTERN111 : return ((i * j) % 3 + (i + j) % 2) % 2 == 0
             default :
-                Swift.print("mask: " + String(describing: maskPattern))
+                fatalError("mask: " + String(describing: maskPattern))
         }
-        return false
     }
 
     func getLostPoint(_ qrCode: QRCode) -> Int {

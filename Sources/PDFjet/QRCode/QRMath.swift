@@ -39,7 +39,7 @@ class QRMath {
     /// Returns the logarithm of n in GF(256).
     public func glog(_ n: Int) -> Int {
         if n < 1 {
-            Swift.print("log(" + String(describing: n) + ")")
+            fatalError("log(" + String(describing: n) + ")")
         }
         return self.LOG_TABLE[n]
     }

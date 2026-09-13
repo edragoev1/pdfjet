@@ -100,8 +100,7 @@ public class Form : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         if page == nil {
-            print("[ERROR] drawOn called with nil page")
-            return []
+            fatalError("Page cannot be nil")
         }
 
         var yField: Float = 0.0

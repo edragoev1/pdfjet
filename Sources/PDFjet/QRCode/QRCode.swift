@@ -306,9 +306,9 @@ public class QRCode : Drawable {
         }
 
         if buffer.getLengthInBits() > totalDataCount * 8 {
-            Swift.print("code length overflow. ( " +
-                    String(describing: buffer.getLengthInBits()) + " > " +
-                    String(describing: (totalDataCount * 8)) + " )")
+            fatalError("String length overflow. (" +
+                    String(describing: buffer.getLengthInBits()) + ">" +
+                    String(describing: (totalDataCount * 8)) + ")")
         }
 
         if buffer.getLengthInBits() + 4 <= totalDataCount * 8 {
