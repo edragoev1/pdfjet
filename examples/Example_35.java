@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.time.Instant;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_35.java

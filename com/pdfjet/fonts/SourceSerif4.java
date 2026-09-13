@@ -1,4 +1,4 @@
-package com.pdfjet;
+package com.pdfjet.fonts;
 
 /**
  * The Source Serif 4 fonts. Each constant is the path of a font file in the

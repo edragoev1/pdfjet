@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_01.java

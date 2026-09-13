@@ -3,6 +3,8 @@ package examples;
 import java.io.*;
 import java.util.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
+import com.pdfjet.qrcode.*;
 
 /**
  * Example_20.java

@@ -14,7 +14,9 @@
  *
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
-package com.pdfjet;
+package com.pdfjet.qrcode;
+
+import com.pdfjet.*;
 
 /**
  * Used to specify the error correction level for QR Codes.

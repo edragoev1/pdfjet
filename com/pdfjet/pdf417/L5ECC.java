@@ -4,7 +4,9 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet;
+package com.pdfjet.pdf417;
+
+import com.pdfjet.*;
 
 class L5ECC {
 public static final int[] table = {

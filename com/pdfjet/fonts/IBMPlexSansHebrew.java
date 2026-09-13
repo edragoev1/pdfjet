@@ -1,4 +1,4 @@
-package com.pdfjet;
+package com.pdfjet.fonts;
 
 /**
  * The IBM Plex Sans Hebrew fonts. Each constant is the path of a font file in the
