@@ -32,6 +32,17 @@ func NewBaseAnnotation() *BaseAnnotation {
 	}
 }
 
+// annotation is implemented by BaseAnnotation and by the types that embed it,
+// so Container can offset and rotate any of them.
+type annotation interface {
+	baseAnnotation() *BaseAnnotation
+}
+
+// baseAnnotation returns this BaseAnnotation.
+func (b *BaseAnnotation) baseAnnotation() *BaseAnnotation {
+	return b
+}
+
 // SetLocation sets the first point of the annotation.
 func (b *BaseAnnotation) SetLocation(x, y float32) Drawable {
 	b.point1 = [2]float32{x, y}

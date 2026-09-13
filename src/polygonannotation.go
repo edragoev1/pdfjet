@@ -10,7 +10,7 @@ type PolygonAnnotation struct {
 
 // NewPolygonAnnotation acts as the constructor.
 func NewPolygonAnnotation() *PolygonAnnotation {
-	p := &PolygonAnnotation{}
+	p := &PolygonAnnotation{BaseAnnotation: *NewBaseAnnotation()}
 	p.BaseAnnotation.annotationType = AnnotationPolygon
 	return p
 }

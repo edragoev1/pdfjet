@@ -7,7 +7,7 @@ type SquareAnnotation struct {
 
 // NewSquareAnnotation acts as the constructor.
 func NewSquareAnnotation() *SquareAnnotation {
-	s := &SquareAnnotation{}
+	s := &SquareAnnotation{BaseAnnotation: *NewBaseAnnotation()}
 	s.BaseAnnotation.annotationType = AnnotationSquare
 	return s
 }

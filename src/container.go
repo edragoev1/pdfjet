@@ -191,18 +191,8 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 
 	// 6) Draw children elements
 	for _, element := range c.elements {
-		var annot *BaseAnnotation
-		// Check if element is a known annotation type and cast it
-		if sq, ok := element.(*SquareAnnotation); ok {
-			annot = &sq.BaseAnnotation
-		} else if circ, ok := element.(*CircleAnnotation); ok {
-			annot = &circ.BaseAnnotation
-		} else if poly, ok := element.(*PolygonAnnotation); ok {
-			annot = &poly.BaseAnnotation
-		} else if txt, ok := element.(*TextAnnotation); ok {
-			annot = &txt.BaseAnnotation
-		}
-		if annot != nil {
+		if a, ok := element.(annotation); ok {
+			annot := a.baseAnnotation()
 			annot.point1[0] += c.X
 			annot.point1[1] += c.Y
 			annot.point2[0] += c.X

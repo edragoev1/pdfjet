@@ -7,7 +7,7 @@ type CircleAnnotation struct {
 
 // NewCircleAnnotation acts as the constructor.
 func NewCircleAnnotation() *CircleAnnotation {
-	c := &CircleAnnotation{}
+	c := &CircleAnnotation{BaseAnnotation: *NewBaseAnnotation()}
 	c.BaseAnnotation.annotationType = AnnotationCircle
 	return c
 }
