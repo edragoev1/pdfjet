@@ -28,7 +28,7 @@ public class Example_23 {
         textBlock.setLocation(x1, y1)
         textBlock.setWidth(500.0)
         textBlock.setBorderColor(Color.lightgreen)
-        textBlock.setFillColor(Color.lightgreen)
+        textBlock.setBackgroundColor(Color.lightgreen)
         textBlock.setTextColor(Color.black)
         let xy = textBlock.drawOn(page)
 

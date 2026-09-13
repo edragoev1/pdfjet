@@ -36,7 +36,7 @@ public class Example_27 {
         textBlock.SetLocation(30f, 30f);
         textBlock.SetWidth(430f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetLanguage("th");
         float[] xy = textBlock.DrawOn(page);
 
@@ -121,7 +121,7 @@ public class Example_27 {
         textBlock.SetLocation(180f, 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetRightToLeft(true);
         textBlock.SetLanguage("he");
         xy = textBlock.DrawOn(page);
@@ -130,7 +130,7 @@ public class Example_27 {
         textBlock.SetLocation(180f, xy[1] + 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetRightToLeft(true);
         textBlock.SetLanguage("ar");
         xy = textBlock.DrawOn(page);
@@ -139,7 +139,7 @@ public class Example_27 {
         textBlock.SetLocation(180f, xy[1] + 30f);
         textBlock.SetWidth(400f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetRightToLeft(true);
         textBlock.SetLanguage("fa");
         textBlock.DrawOn(page);

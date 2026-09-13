@@ -149,9 +149,13 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-    /// <summary>Returns the height of this text block.</summary>
+    /// <summary>
+    /// Returns the height of this text block as it is drawn: the height set with SetHeight or SetSize,
+    /// or the height of the text and padding when that is taller.
+    /// </summary>
     public float GetHeight() {
-        return this.height;
+        float leading = (this.font.GetAscent(fontSize) + this.font.GetDescent(fontSize)) * this.lineSpacing;
+        return MathF.Max(this.height, GetTextLines().Length * leading + 2 * this.textPadding);
     }
 
     /// <summary>Sets the radius of the border corners.</summary>
@@ -161,7 +165,7 @@ public class TextBlock : IDrawable {
     }
 
     /// <summary>Sets the space between the text and the border.</summary>
-    public TextBlock SetTextPadding(float padding) {
+    public TextBlock SetPadding(float padding) {
         this.textPadding = padding;
         return this;
     }
@@ -173,7 +177,7 @@ public class TextBlock : IDrawable {
     }
 
     /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
-    public TextBlock SetFillColor(int color) {
+    public TextBlock SetBackgroundColor(int color) {
         if (color == Color.transparent) {
             this.fillColor = null;
             return this;
@@ -183,17 +187,6 @@ public class TextBlock : IDrawable {
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
         return this;
-    }
-
-    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
-    public TextBlock SetFillColor(float[] rgbColor) {
-        this.fillColor = Util.CopyOf(rgbColor);
-        return this;
-    }
-
-    /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
-    public TextBlock SetBackgroundColor(int color) {
-        return SetFillColor(color);
     }
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
@@ -260,7 +253,7 @@ public class TextBlock : IDrawable {
     }
 
     /// <summary>Sets the colors used to highlight keywords. The keywords are matched ignoring case.</summary>
-    public TextBlock SetKeywordHighlightColors(Dictionary<string, int> map) {
+    public TextBlock SetHighlightColors(Dictionary<string, int> map) {
         this.keywordHighlightColors = new Dictionary<string, int>();
         foreach (var key in map.Keys) {
             this.keywordHighlightColors[key.ToLower()] = map[key];

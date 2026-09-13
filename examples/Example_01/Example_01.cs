@@ -38,9 +38,9 @@ public class Example_01 {
                 Content.OfTextFile("data/languages/english.txt"));
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(473f);   // Why 473f? To match the Google Fonts samples.
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetBorderColor(Color.blue);
-        textBlock.SetKeywordHighlightColors(map);
+        textBlock.SetHighlightColors(map);
         float[] xy = textBlock.DrawOn(page);  // Draw the text and get coordinates
 
         // Draw a small blue rectangle for testing ...
@@ -53,14 +53,14 @@ public class Example_01 {
                 Content.OfTextFile("data/languages/greek.txt"));
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         xy = textBlock.DrawOn(page);  // Draw the Greek text and update coordinates
 
         // Add Bulgarian text from a file with a blue border and rounded corners
         textBlock = new TextBlock(font, Content.OfTextFile("data/languages/bulgarian.txt"));
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);
-        textBlock.SetTextPadding(10f);
+        textBlock.SetPadding(10f);
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetCornerRadius(10f);
         textBlock.SetUnderline(true);

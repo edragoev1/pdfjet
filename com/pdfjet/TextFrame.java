@@ -22,7 +22,7 @@ public class TextFrame implements Drawable {
     private float h;
     private float paragraphLeading = 24f;
     private boolean border = false;
-    private float[] borderColor = {0f, 0f, 1f};
+    private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
     private String borderPattern = "[] 0";
 
@@ -44,7 +44,7 @@ public class TextFrame implements Drawable {
 
     /**
      * Creates a text frame from paragraphs of text lines. The paragraphs are 24
-     * points apart unless setParagraphLeading says otherwise.
+     * points apart unless setParagraphGap says otherwise.
      *
      * @param paragraphs the paragraphs.
      */
@@ -160,7 +160,7 @@ public class TextFrame implements Drawable {
      * @param paragraphLeading the distance between paragraphs.
      * @return this TextFrame object.
      */
-    public TextFrame setParagraphLeading(float paragraphLeading) {
+    public TextFrame setParagraphGap(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
@@ -171,7 +171,7 @@ public class TextFrame implements Drawable {
      * @param border true to draw a border.
      * @return this TextFrame object.
      */
-    public TextFrame setBorder(boolean border) {
+    public TextFrame setBorders(boolean border) {
         this.border = border;
         return this;
     }

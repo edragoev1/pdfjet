@@ -48,9 +48,9 @@ public class Example_01 {
             font, Content.ofTextFile("data/languages/english.txt"));
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(473f);   // Why 473f? To match the Google Fonts samples.
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setKeywordHighlightColors(map);
+        textBlock.setHighlightColors(map);
         float[] xy = textBlock.drawOn(page);
 
         // Draw a small blue rectangle for testing ...
@@ -62,14 +62,14 @@ public class Example_01 {
         textBlock = new TextBlock(font, Content.ofTextFile("data/languages/greek.txt"));
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         xy = textBlock.drawOn(page);
 
         // Add Bulgarian text from a file with a blue border and rounded corners
         textBlock = new TextBlock(font, Content.ofTextFile("data/languages/bulgarian.txt"));
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setBorderColor(Color.blue);
         textBlock.setCornerRadius(10f);
         textBlock.setUnderline(true);

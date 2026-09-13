@@ -36,7 +36,7 @@ public class Example_27 {
         textBlock.setLocation(30f, 30f);
         textBlock.setWidth(430f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setLanguage("th");
         float[] xy = textBlock.drawOn(page);
 
@@ -121,7 +121,7 @@ public class Example_27 {
         textBlock.setLocation(180f, 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setRightToLeft(true);
         textBlock.setLanguage("he");
         xy = textBlock.drawOn(page);
@@ -130,7 +130,7 @@ public class Example_27 {
         textBlock.setLocation(180f, xy[1] + 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setRightToLeft(true);
         textBlock.setLanguage("ar");
         xy = textBlock.drawOn(page);
@@ -139,7 +139,7 @@ public class Example_27 {
         textBlock.setLocation(180f, xy[1] + 30f);
         textBlock.setWidth(400f);
         textBlock.setBorderColor(Color.blue);
-        textBlock.setTextPadding(10f);
+        textBlock.setPadding(10f);
         textBlock.setRightToLeft(true);
         textBlock.setLanguage("fa");
         textBlock.drawOn(page);

@@ -31,7 +31,7 @@ public class Example_23 {
         textBlock.SetLocation(x1, y1);
         textBlock.SetWidth(500f);
         textBlock.SetBorderColor(Color.lightgreen);
-        textBlock.SetFillColor(Color.lightgreen);
+        textBlock.SetBackgroundColor(Color.lightgreen);
         textBlock.SetTextColor(Color.black);
         float[] xy = textBlock.DrawOn(page);
 

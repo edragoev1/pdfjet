@@ -218,13 +218,13 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>Sets the colors used to highlight words in the text.</summary>
-    public TextLine SetColorMap(Dictionary<String, int> colorMap) {
+    public TextLine SetHighlightColors(Dictionary<String, int> colorMap) {
         this.colorMap = colorMap;
         return this;
     }
 
     /// <summary>Returns the colors used to highlight words in the text.</summary>
-    public Dictionary<String, int> GetColorMap() {
+    public Dictionary<String, int> GetHighlightColors() {
         return this.colorMap;
     }
 

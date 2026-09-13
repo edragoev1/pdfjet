@@ -30,7 +30,7 @@ public class Example_23 {
         textBlock.setLocation(x1, y1);
         textBlock.setWidth(500f);
         textBlock.setBorderColor(Color.lightgreen);
-        textBlock.setFillColor(Color.lightgreen);
+        textBlock.setBackgroundColor(Color.lightgreen);
         textBlock.setTextColor(Color.black);
         float[] xy = textBlock.drawOn(page);
 

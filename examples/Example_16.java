@@ -54,7 +54,7 @@ public class Example_16 {
         // textBox.setHeight(400f);
 
         textBox.setBackgroundColor(Color.whitesmoke);
-        textBox.setTextColors(colors);
+        textBox.setHighlightColors(colors);
         textBox.setBorders(true);
         float[] xy = textBox.drawOn(page);
 

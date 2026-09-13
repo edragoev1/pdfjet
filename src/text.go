@@ -49,8 +49,8 @@ func (text *Text) SetWidth(width float32) *Text {
 	return text
 }
 
-// SetParagraphLeading sets the vertical distance between paragraphs.
-func (text *Text) SetParagraphLeading(paragraphLeading float32) *Text {
+// SetParagraphGap sets the vertical distance between paragraphs.
+func (text *Text) SetParagraphGap(paragraphLeading float32) *Text {
 	text.paragraphLeading = paragraphLeading
 	return text
 }

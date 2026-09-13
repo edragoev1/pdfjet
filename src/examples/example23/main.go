@@ -34,7 +34,7 @@ func Example23() {
 	textBlock.SetLocation(x1, y1)
 	textBlock.SetWidth(500.0)
 	textBlock.SetBorderColor(color.LightGreen)
-	textBlock.SetFillColor(color.LightGreen)
+	textBlock.SetBackgroundColor(color.LightGreen)
 	textBlock.SetTextColor(color.Black)
 	xy := textBlock.DrawOn(page)
 

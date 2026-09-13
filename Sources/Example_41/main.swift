@@ -64,7 +64,7 @@ public class Example_41 {
                 p.getTextLines()[0].setTextColor(Color.navy)
             } else {
                 p.setTextColor(Color.gray)
-                p.setColorMap(colorMap)
+                p.setHighlightColors(colorMap)
             }
         }
 

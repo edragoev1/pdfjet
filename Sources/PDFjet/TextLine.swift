@@ -501,13 +501,13 @@ public class TextLine : Drawable {
 
     /// Sets the colors used to highlight words in the text.
     @discardableResult
-    public func setColorMap(_ colorMap: [String: Int32]?) -> TextLine {
+    public func setHighlightColors(_ colorMap: [String: Int32]?) -> TextLine {
         self.colorMap = colorMap
         return self
     }
 
     /// Returns the colors used to highlight words in the text.
-    public func getColorMap() -> [String: Int32]? {
+    public func getHighlightColors() -> [String: Int32]? {
         return self.colorMap
     }
 

@@ -54,7 +54,7 @@ public class Text : IDrawable {
     }
 
     /// <summary>Sets the vertical distance between paragraphs.</summary>
-    public Text SetParagraphLeading(float paragraphLeading) {
+    public Text SetParagraphGap(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }

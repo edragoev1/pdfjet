@@ -69,7 +69,7 @@ func Example41() {
 			p.GetTextLines()[0].SetTextColor(color.Navy)
 		} else {
 			p.SetTextColor(color.Gray)
-			p.SetColorMap(colorMap)
+			p.SetHighlightColors(colorMap)
 		}
 	}
 

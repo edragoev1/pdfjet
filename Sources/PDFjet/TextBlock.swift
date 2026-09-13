@@ -126,9 +126,11 @@ public class TextBlock : Drawable {
         return self.width
     }
 
-    /// Returns the height of this text block.
+    /// Returns the height of this text block as it is drawn: the height set with setHeight or setSize,
+    /// or the height of the text and padding when that is taller.
     public func getHeight() -> Float {
-        return self.height
+        let leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing
+        return max(height, Float(getTextLines().count) * leading + 2 * textPadding)
     }
 
     /// Sets the radius of the border corners.
@@ -140,7 +142,7 @@ public class TextBlock : Drawable {
 
     /// Sets the space between the text and the border.
     @discardableResult
-    public func setTextPadding(_ padding: Float) -> TextBlock {
+    public func setPadding(_ padding: Float) -> TextBlock {
         self.textPadding = padding
         return self
     }
@@ -178,7 +180,7 @@ public class TextBlock : Drawable {
 
     /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
-    public func setFillColor(_ color: Int32) -> TextBlock {
+    public func setBackgroundColor(_ color: Int32) -> TextBlock {
         if color == Color.transparent {
             self.fillColor = nil
             return self
@@ -192,21 +194,9 @@ public class TextBlock : Drawable {
 
     /// Sets the background color from an array of red, green and blue values, or nil for no background.
     @discardableResult
-    public func setFillColor(_ fillColor: [Float]?) -> TextBlock {
-        self.fillColor = fillColor
-        return self
-    }
-
-    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
-    @discardableResult
-    public func setBackgroundColor(_ color: Int32) -> TextBlock {
-        return setFillColor(color)
-    }
-
-    /// Sets the background color from an array of red, green and blue values, or nil for no background.
-    @discardableResult
     public func setBackgroundColor(_ backgroundColor: [Float]?) -> TextBlock {
-        return setFillColor(backgroundColor)
+        self.fillColor = backgroundColor
+        return self
     }
 
     /// Returns the background color, or nil if there is none.
@@ -242,7 +232,7 @@ public class TextBlock : Drawable {
     /// - Parameter map: the keyword to color map.
     ///
     @discardableResult
-    public func setKeywordHighlightColors(_ map: [String: Int32]) -> TextBlock {
+    public func setHighlightColors(_ map: [String: Int32]) -> TextBlock {
         var colors = [String: Int32]()
         for (key, value) in map {
             colors[key.lowercased()] = value

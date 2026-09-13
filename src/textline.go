@@ -363,14 +363,14 @@ func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
 	return textLine
 }
 
-// SetColorMap sets the colors used to highlight words in the text.
-func (textLine *TextLine) SetColorMap(colorMap map[string]int32) *TextLine {
+// SetHighlightColors sets the colors used to highlight words in the text.
+func (textLine *TextLine) SetHighlightColors(colorMap map[string]int32) *TextLine {
 	textLine.colorMap = colorMap
 	return textLine
 }
 
-// GetColorMap returns the colors used to highlight words in the text.
-func (textLine *TextLine) GetColorMap() map[string]int32 {
+// GetHighlightColors returns the colors used to highlight words in the text.
+func (textLine *TextLine) GetHighlightColors() map[string]int32 {
 	return textLine.colorMap
 }
 

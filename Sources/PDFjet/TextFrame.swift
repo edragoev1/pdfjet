@@ -20,7 +20,7 @@ public class TextFrame : Drawable {
     private var h: Float = 0.0
     private var paragraphLeading: Float = 24.0
     private var border = false
-    private var borderColor: [Float] = [0.0, 0.0, 1.0]
+    private var borderColor: [Float] = [0.0, 0.0, 0.0]
     private var borderWidth: Float = 0.5
     private var borderPattern = "[] 0"
 
@@ -41,7 +41,7 @@ public class TextFrame : Drawable {
     private var nextBaseline: Float = 0.0
 
     /// Creates a text frame from paragraphs of text lines. The paragraphs are 24
-    /// points apart unless setParagraphLeading says otherwise.
+    /// points apart unless setParagraphGap says otherwise.
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
     }
@@ -89,14 +89,14 @@ public class TextFrame : Drawable {
     /// Sets the vertical distance between paragraphs, from the baseline of the
     /// last line of a paragraph to the baseline of the first line of the next.
     @discardableResult
-    public func setParagraphLeading(_ paragraphLeading: Float) -> TextFrame {
+    public func setParagraphGap(_ paragraphLeading: Float) -> TextFrame {
         self.paragraphLeading = paragraphLeading
         return self
     }
 
     /// Sets whether a border is drawn around this text frame.
     @discardableResult
-    public func setBorder(_ border: Bool) -> TextFrame {
+    public func setBorders(_ border: Bool) -> TextFrame {
         self.border = border
         return self
     }

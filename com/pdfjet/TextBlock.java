@@ -223,12 +223,15 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Returns the height of this text block.
+     * Returns the height of this text block as it is drawn: the height set with
+     * setHeight or setSize, or the height of the text and padding when that is
+     * taller.
      *
      * @return the height.
      */
     public float getHeight() {
-        return this.height;
+        float leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing;
+        return Math.max(this.height, getTextLines().length * leading + 2 * this.textPadding);
     }
 
     /**
@@ -248,7 +251,7 @@ public class TextBlock implements Drawable {
      * @param padding the padding.
      * @return this TextBlock object.
      */
-    public TextBlock setTextPadding(float padding) {
+    public TextBlock setPadding(float padding) {
         this.textPadding = padding;
         return this;
     }
@@ -336,16 +339,6 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setBackgroundColor(int color) {
-        return setFillColor(color);
-    }
-
-    /**
-     * Sets the background color. Color.transparent removes the background.
-     *
-     * @param color the color as a 0xRRGGBB value, for example Color.blue.
-     * @return this TextBlock object.
-     */
-    public TextBlock setFillColor(int color) {
         if (color == Color.transparent) {
             this.fillColor = null;
             return this;
@@ -354,17 +347,6 @@ public class TextBlock implements Drawable {
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the background color.
-     *
-     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
-     * @return this TextBlock object.
-     */
-    public TextBlock setFillColor(float[] rgbColor) {
-        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -416,7 +398,7 @@ public class TextBlock implements Drawable {
      * @param map the keywords and their 0xRRGGBB colors.
      * @return this TextBlock object.
      */
-    public TextBlock setKeywordHighlightColors(Map<String, Integer> map) {
+    public TextBlock setHighlightColors(Map<String, Integer> map) {
         this.keywordHighlightColors = new HashMap<>();
         for (String key : map.keySet()) {
             this.keywordHighlightColors.put(key.toLowerCase(), map.get(key));

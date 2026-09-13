@@ -117,9 +117,9 @@ public class Paragraph {
      * @param colorMap the words and their 0xRRGGBB colors.
      * @return this Paragraph object.
      */
-    public Paragraph setColorMap(Map<String, Integer> colorMap) {
+    public Paragraph setHighlightColors(Map<String, Integer> colorMap) {
         for (TextLine line : lines) {
-            line.setColorMap(colorMap);
+            line.setHighlightColors(colorMap);
         }
         return this;
     }

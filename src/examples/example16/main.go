@@ -58,7 +58,7 @@ func Example16() {
 	// textBox.SetHeight(400.0)
 
 	textBox.SetBackgroundColor(color.WhiteSmoke)
-	textBox.SetTextColors(colors)
+	textBox.SetHighlightColors(colors)
 	textBox.SetBorders(true)
 	xy := textBox.DrawOn(page)
 

@@ -298,7 +298,7 @@ public class TextBox implements Drawable {
      * @param margin the margin between the text and the box
      * @return this TextBox object.
      */
-    public TextBox setMargin(double margin) {
+    public TextBox setPadding(double margin) {
         this.margin = (float) margin;
         return this;
     }
@@ -309,7 +309,7 @@ public class TextBox implements Drawable {
      * @param margin the margin between the text and the box
      * @return this TextBox object.
      */
-    public TextBox setMargin(float margin) {
+    public TextBox setPadding(float margin) {
         this.margin = margin;
         return this;
     }
@@ -319,7 +319,7 @@ public class TextBox implements Drawable {
      *
      * @return the margin between the text and the box
      */
-    public float getMargin() {
+    public float getPadding() {
         return margin;
     }
 
@@ -338,7 +338,7 @@ public class TextBox implements Drawable {
      * @param spacing the spacing
      * @return this TextBox object.
      */
-    public TextBox setSpacing(double spacing) {
+    public TextBox setLineGap(double spacing) {
         this.spacing = (float) spacing;
         return this;
     }
@@ -349,7 +349,7 @@ public class TextBox implements Drawable {
      * @param spacing the spacing
      * @return this TextBox object.
      */
-    public TextBox setSpacing(float spacing) {
+    public TextBox setLineGap(float spacing) {
         this.spacing = spacing;
         return this;
     }
@@ -359,37 +359,8 @@ public class TextBox implements Drawable {
      *
      * @return float the spacing.
      */
-    public float getSpacing() {
+    public float getLineGap() {
         return spacing;
-    }
-
-    /**
-     * Sets the background color. Color.transparent removes the background.
-     *
-     * @param color the color as a 0xRRGGBB value, for example Color.blue.
-     * @return this TextBox object.
-     */
-    public TextBox setFillColor(int color) {
-        if (color == Color.transparent) {
-            this.fillColor = null;
-            return this;
-        }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.fillColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the background color.
-     *
-     * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
-     * @return this TextBox object.
-     */
-    public TextBox setFillColor(float[] rgbColor) {
-        this.fillColor = Util.copyOf(rgbColor);
-        return this;
     }
 
     /**
@@ -531,13 +502,18 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the TextBox border properties.
+     * Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
      *
-     * @param border the border properties.
+     * @param border the borders.
+     * @param visible true to draw the borders, false not to.
      * @return this TextBox object.
      */
-    public TextBox setBorder(int border) {
-        this.properties |= border;
+    public TextBox setBorder(int border, boolean visible) {
+        if (visible) {
+            this.properties |= border;
+        } else {
+            this.properties &= ~border;
+        }
         return this;
     }
 
@@ -584,7 +560,7 @@ public class TextBox implements Drawable {
      */
     public TextBox setBorders(boolean borders) {
         if (borders) {
-            setBorder(Border.ALL);
+            setBorder(Border.ALL, true);
         } else {
             this.properties &= 0xFFF0FFFF;
         }
@@ -709,7 +685,7 @@ public class TextBox implements Drawable {
      * @param colors the words and their 0xRRGGBB colors.
      * @return this TextBox object.
      */
-    public TextBox setTextColors(Map<String, Integer> colors) {
+    public TextBox setHighlightColors(Map<String, Integer> colors) {
         this.colors = colors;
         return this;
     }
@@ -719,7 +695,7 @@ public class TextBox implements Drawable {
      *
      * @return the words and their colors.
      */
-    public Map<String, Integer> getTextColors() {
+    public Map<String, Integer> getHighlightColors() {
         return this.colors;
     }
 

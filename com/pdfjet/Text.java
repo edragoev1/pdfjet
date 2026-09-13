@@ -75,7 +75,7 @@ public class Text implements Drawable {
      * @param paragraphLeading the distance between paragraphs.
      * @return this Text object.
      */
-    public Text setParagraphLeading(float paragraphLeading) {
+    public Text setParagraphGap(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }

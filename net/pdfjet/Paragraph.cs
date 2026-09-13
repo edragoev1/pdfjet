@@ -83,9 +83,9 @@ public class Paragraph {
     }
 
     /// <summary>Sets the word highlight colors of all lines in this paragraph.</summary>
-    public Paragraph SetColorMap(Dictionary<string, int> colorMap) {
+    public Paragraph SetHighlightColors(Dictionary<string, int> colorMap) {
         foreach (TextLine line in lines) {
-            line.SetColorMap(colorMap);
+            line.SetHighlightColors(colorMap);
         }
         return this;
     }

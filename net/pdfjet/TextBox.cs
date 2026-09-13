@@ -265,7 +265,7 @@ public class TextBox : IDrawable {
     /// Sets the margin of this text box.
     /// </summary>
     /// <param name="margin">the margin between the text and the box</param>
-    public TextBox SetMargin(double margin) {
+    public TextBox SetPadding(double margin) {
         this.margin = (float) margin;
         return this;
     }
@@ -274,7 +274,7 @@ public class TextBox : IDrawable {
     /// Sets the margin of this text box.
     /// </summary>
     /// <param name="margin">the margin between the text and the box</param>
-    public TextBox SetMargin(float margin) {
+    public TextBox SetPadding(float margin) {
         this.margin = margin;
         return this;
     }
@@ -283,7 +283,7 @@ public class TextBox : IDrawable {
     /// Returns the text box margin.
     /// </summary>
     /// <returns>the margin between the text and the box</returns>
-    public float GetMargin() {
+    public float GetPadding() {
         return margin;
     }
 
@@ -300,7 +300,7 @@ public class TextBox : IDrawable {
     /// </summary>
     /// <param name="spacing">the spacing</param>
     /// <returns>this TextBox object.</returns>
-    public TextBox SetSpacing(double spacing) {
+    public TextBox SetLineGap(double spacing) {
         this.spacing = (float) spacing;
         return this;
     }
@@ -310,7 +310,7 @@ public class TextBox : IDrawable {
     /// </summary>
     /// <param name="spacing">the spacing</param>
     /// <returns>this TextBox object.</returns>
-    public TextBox SetSpacing(float spacing) {
+    public TextBox SetLineGap(float spacing) {
         this.spacing = spacing;
         return this;
     }
@@ -319,12 +319,12 @@ public class TextBox : IDrawable {
     /// Returns the spacing between lines of text.
     /// </summary>
     /// <returns>the spacing.</returns>
-    public float GetSpacing() {
+    public float GetLineGap() {
         return spacing;
     }
 
     /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
-    public TextBox SetFillColor(int color) {
+    public TextBox SetBackgroundColor(int color) {
         if (color == Color.transparent) {
             this.fillColor = null;
             return this;
@@ -334,17 +334,6 @@ public class TextBox : IDrawable {
         float b = ((color)       & 0xff)/255f;
         this.fillColor = new float[] {r, g, b};
         return this;
-    }
-
-    /// <summary>Sets the background color from an array of red, green and blue values.</summary>
-    public TextBox SetFillColor(float[] rgbColor) {
-        this.fillColor = Util.CopyOf(rgbColor);
-        return this;
-    }
-
-    /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
-    public TextBox SetBackgroundColor(int color) {
-        return SetFillColor(color);
     }
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
@@ -438,12 +427,17 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>
-    /// Sets the TextBox border properties.
+    /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
     /// </summary>
-    /// <param name="border">the border properties.</param>
+    /// <param name="border">the borders.</param>
+    /// <param name="visible">true to draw the borders, false not to.</param>
     /// <returns>this TextBox object.</returns>
-    public TextBox SetBorder(uint border) {
-        this.properties |= border;
+    public TextBox SetBorder(uint border, bool visible) {
+        if (visible) {
+            this.properties |= border;
+        } else {
+            this.properties &= ~border;
+        }
         return this;
     }
 
@@ -488,7 +482,7 @@ public class TextBox : IDrawable {
     /// <returns>this TextBox object.</returns>
     public TextBox SetBorders(bool borders) {
         if (borders) {
-            SetBorder(Border.ALL);
+            SetBorder(Border.ALL, true);
         } else {
             this.properties &= 0xFFF0FFFF;
         }
@@ -586,13 +580,13 @@ public class TextBox : IDrawable {
     }
 
     /// <summary>Sets the colors used to highlight words in the text.</summary>
-    public TextBox SetTextColors(Dictionary<String, Int32> colors) {
+    public TextBox SetHighlightColors(Dictionary<String, Int32> colors) {
         this.colors = colors;
         return this;
     }
 
     /// <summary>Returns the colors used to highlight words in the text.</summary>
-    public Dictionary<String, Int32> GetTextColors() {
+    public Dictionary<String, Int32> GetHighlightColors() {
         return this.colors;
     }
 

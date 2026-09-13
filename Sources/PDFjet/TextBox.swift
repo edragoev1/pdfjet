@@ -168,13 +168,13 @@ public class TextBox : Drawable {
 
     /// Sets the margin between the text and the border.
     @discardableResult
-    public func setMargin(_ margin: Float) -> TextBox {
+    public func setPadding(_ margin: Float) -> TextBox {
         self.margin = margin
         return self
     }
 
     /// Returns the margin between the text and the border.
-    public func getMargin() -> Float {
+    public func getPadding() -> Float {
         return self.margin
     }
 
@@ -185,28 +185,14 @@ public class TextBox : Drawable {
 
     /// Sets the spacing between lines of text.
     @discardableResult
-    public func setSpacing(_ spacing: Float) -> TextBox {
+    public func setLineGap(_ spacing: Float) -> TextBox {
         self.spacing = spacing
         return self
     }
 
     /// Returns the spacing between lines of text.
-    public func getSpacing() -> Float {
+    public func getLineGap() -> Float {
         return self.spacing
-    }
-
-    /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
-    @discardableResult
-    public func setFillColor(_ color: Int32) -> TextBox {
-        self.fillColor = color == Color.transparent ? nil : colorArray(color)
-        return self
-    }
-
-    /// Sets the background color from an array of red, green and blue values, or nil for no background.
-    @discardableResult
-    public func setFillColor(_ rgbColor: [Float]?) -> TextBox {
-        self.fillColor = rgbColor
-        return self
     }
 
     /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
@@ -283,11 +269,15 @@ public class TextBox : Drawable {
     }
 
     ///
-    /// Sets the border with the specified bit mask.
+    /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
     ///
     @discardableResult
-    public func setBorder(_ border: UInt32) -> TextBox {
-        self.properties |= border
+    public func setBorder(_ border: UInt32, _ visible: Bool) -> TextBox {
+        if visible {
+            self.properties |= border
+        } else {
+            self.properties &= ~border
+        }
         return self
     }
 
@@ -317,7 +307,7 @@ public class TextBox : Drawable {
     @discardableResult
     public func setBorders(_ borders: Bool) -> TextBox {
         if borders {
-            setBorder(Border.ALL)
+            setBorder(Border.ALL, true)
         } else {
             self.properties &= 0xFFF0FFFF
         }
@@ -396,13 +386,13 @@ public class TextBox : Drawable {
 
     /// Sets the colors used to highlight words in the text.
     @discardableResult
-    public func setTextColors(_ colors: [String : Int32]?) -> TextBox {
+    public func setHighlightColors(_ colors: [String : Int32]?) -> TextBox {
         self.colors = colors
         return self
     }
 
     /// Returns the colors used to highlight words in the text.
-    public func getTextColors() -> [String : Int32]? {
+    public func getHighlightColors() -> [String : Int32]? {
         return self.colors
     }
 

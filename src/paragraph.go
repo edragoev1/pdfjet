@@ -93,10 +93,10 @@ func (paragraph *Paragraph) SetTextColor(color int32) *Paragraph {
 	return paragraph
 }
 
-// SetColorMap sets the word highlight colors of all lines in this paragraph.
-func (paragraph *Paragraph) SetColorMap(colorMap map[string]int32) *Paragraph {
+// SetHighlightColors sets the word highlight colors of all lines in this paragraph.
+func (paragraph *Paragraph) SetHighlightColors(colorMap map[string]int32) *Paragraph {
 	for _, line := range paragraph.lines {
-		line.SetColorMap(colorMap)
+		line.SetHighlightColors(colorMap)
 	}
 	return paragraph
 }

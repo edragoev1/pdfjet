@@ -23,7 +23,7 @@ public class TextFrame : IDrawable {
     private float h;
     private float paragraphLeading = 24f;
     private bool border = false;
-    private float[] borderColor = {0f, 0f, 1f};
+    private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
     private String borderPattern = "[] 0";
 
@@ -45,7 +45,7 @@ public class TextFrame : IDrawable {
 
     /// <summary>
     /// Creates a text frame from paragraphs of text lines. The paragraphs are 24
-    /// points apart unless SetParagraphLeading says otherwise.
+    /// points apart unless SetParagraphGap says otherwise.
     /// </summary>
     public TextFrame(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -115,13 +115,13 @@ public class TextFrame : IDrawable {
     /// Sets the vertical distance between paragraphs, from the baseline of the
     /// last line of a paragraph to the baseline of the first line of the next.
     /// </summary>
-    public TextFrame SetParagraphLeading(float paragraphLeading) {
+    public TextFrame SetParagraphGap(float paragraphLeading) {
         this.paragraphLeading = paragraphLeading;
         return this;
     }
 
     /// <summary>Sets whether a border is drawn around this text frame.</summary>
-    public TextFrame SetBorder(bool border) {
+    public TextFrame SetBorders(bool border) {
         this.border = border;
         return this;
     }

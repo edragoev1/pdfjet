@@ -44,7 +44,7 @@ public class Text : Drawable {
 
     /// Sets the vertical distance between paragraphs.
     @discardableResult
-    public func setParagraphLeading(_ paragraphLeading: Float) -> Text {
+    public func setParagraphGap(_ paragraphLeading: Float) -> Text {
         self.paragraphLeading = paragraphLeading
         return self
     }

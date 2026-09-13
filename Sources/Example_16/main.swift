@@ -50,7 +50,7 @@ public class Example_16 {
         // textBox.setHeight(400.0)
 
         textBox.setBackgroundColor(Color.whitesmoke)
-        textBox.setTextColors(colors)
+        textBox.setHighlightColors(colors)
         textBox.setBorders(true)
         let xy = textBox.drawOn(page)
 

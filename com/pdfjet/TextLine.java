@@ -304,7 +304,7 @@ public class TextLine implements Drawable {
      * @param colorMap the words and their 0xRRGGBB colors.
      * @return this TextLine object.
      */
-    public TextLine setColorMap(Map<String, Integer> colorMap) {
+    public TextLine setHighlightColors(Map<String, Integer> colorMap) {
         this.colorMap = colorMap;
         return this;
     }
@@ -314,7 +314,7 @@ public class TextLine implements Drawable {
      *
      * @return the words and their colors.
      */
-    public Map<String, Integer> getColorMap() {
+    public Map<String, Integer> getHighlightColors() {
         return this.colorMap;
     }
 

@@ -40,9 +40,9 @@ func Example01() {
 		content.OfTextFile("data/languages/english.txt"))
 	textBlock.SetLocation(50, 50)
 	textBlock.SetWidth(473) // Why 473f? To match the Google Fonts samples.
-	textBlock.SetTextPadding(10)
+	textBlock.SetPadding(10)
 	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetKeywordHighlightColors(colorMap)
+	textBlock.SetHighlightColors(colorMap)
 	xy := textBlock.DrawOn(page)
 
 	// Draw a small blue rectangle for testing ...
@@ -55,7 +55,7 @@ func Example01() {
 		content.OfTextFile("data/languages/greek.txt"))
 	textBlock.SetLocation(50.0, xy[1]+30.0)
 	textBlock.SetWidth(473.0)
-	textBlock.SetTextPadding(10.0)
+	textBlock.SetPadding(10.0)
 	xy = textBlock.DrawOn(page)
 
 	// Bulgarian text block with blue border and rounded corners
@@ -63,7 +63,7 @@ func Example01() {
 		content.OfTextFile("data/languages/bulgarian.txt"))
 	textBlock.SetLocation(50.0, xy[1]+30.0)
 	textBlock.SetWidth(473.0)
-	textBlock.SetTextPadding(10.0)
+	textBlock.SetPadding(10.0)
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetCornerRadius(10.0)
 	textBlock.SetUnderline(true)

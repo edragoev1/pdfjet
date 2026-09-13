@@ -57,13 +57,13 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 }
 
 // NewTextFrameFromParagraphs creates a text frame from paragraphs of text
-// lines. The paragraphs are 24 points apart unless SetParagraphLeading says
+// lines. The paragraphs are 24 points apart unless SetParagraphGap says
 // otherwise.
 func NewTextFrameFromParagraphs(paragraphs []*Paragraph) *TextFrame {
 	return &TextFrame{
 		paragraphs:       paragraphs,
 		paragraphLeading: 24.0,
-		borderColor:      [3]float32{0.0, 0.0, 1.0},
+		borderColor:      [3]float32{0.0, 0.0, 0.0},
 		borderWidth:      0.5,
 		borderPattern:    "[] 0",
 	}
@@ -99,16 +99,16 @@ func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
 }
 
-// SetParagraphLeading sets the vertical distance between paragraphs, from the
+// SetParagraphGap sets the vertical distance between paragraphs, from the
 // baseline of the last line of a paragraph to the baseline of the first line
 // of the next.
-func (tf *TextFrame) SetParagraphLeading(paragraphLeading float32) *TextFrame {
+func (tf *TextFrame) SetParagraphGap(paragraphLeading float32) *TextFrame {
 	tf.paragraphLeading = paragraphLeading
 	return tf
 }
 
-// SetBorder sets whether a border is drawn around this text frame.
-func (tf *TextFrame) SetBorder(border bool) *TextFrame {
+// SetBorders sets whether a border is drawn around this text frame.
+func (tf *TextFrame) SetBorders(border bool) *TextFrame {
 	tf.border = border
 	return tf
 }

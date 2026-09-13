@@ -54,7 +54,7 @@ public class Example_16 {
         // textBox.SetHeight(400f);
 
         textBox.SetBackgroundColor(Color.whitesmoke);
-        textBox.SetTextColors(colors);
+        textBox.SetHighlightColors(colors);
         textBox.SetBorders(true);
         float[] xy = textBox.DrawOn(page);
 

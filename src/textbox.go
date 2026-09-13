@@ -173,14 +173,14 @@ func (textBox *TextBox) GetHeight() float32 {
 	return textBox.height
 }
 
-// SetMargin sets the margin of this text box.
-func (textBox *TextBox) SetMargin(margin float32) *TextBox {
+// SetPadding sets the margin of this text box.
+func (textBox *TextBox) SetPadding(margin float32) *TextBox {
 	textBox.margin = margin
 	return textBox
 }
 
-// GetMargin returns the margin of this text box.
-func (textBox *TextBox) GetMargin() float32 {
+// GetPadding returns the margin of this text box.
+func (textBox *TextBox) GetPadding() float32 {
 	return textBox.margin
 }
 
@@ -189,14 +189,14 @@ func (textBox *TextBox) GetBorderWidth() float32 {
 	return textBox.strokeWidth
 }
 
-// SetSpacing sets the spacing between the lines of text.
-func (textBox *TextBox) SetSpacing(spacing float32) *TextBox {
+// SetLineGap sets the spacing between the lines of text.
+func (textBox *TextBox) SetLineGap(spacing float32) *TextBox {
 	textBox.spacing = spacing
 	return textBox
 }
 
-// GetSpacing returns the spacing between the lines of text.
-func (textBox *TextBox) GetSpacing() float32 {
+// GetLineGap returns the spacing between the lines of text.
+func (textBox *TextBox) GetLineGap() float32 {
 	return textBox.spacing
 }
 
@@ -224,18 +224,6 @@ func (textBox *TextBox) SetBackgroundColor(c int32) *TextBox {
 func (textBox *TextBox) SetBackgroundColorRGB(rgb [3]float32) *TextBox {
 	textBox.fillColor = &rgb
 	return textBox
-}
-
-// SetFillColor sets the background color of this text box as a 0xRRGGBB
-// value. color.Transparent removes the background.
-func (textBox *TextBox) SetFillColor(c int32) *TextBox {
-	return textBox.SetBackgroundColor(c)
-}
-
-// SetFillColorRGB sets the background color of this text box from the red,
-// green and blue components, from 0.0 to 1.0.
-func (textBox *TextBox) SetFillColorRGB(rgb [3]float32) *TextBox {
-	return textBox.SetBackgroundColorRGB(rgb)
 }
 
 // SetTextColor sets the text color of this text box as a 0xRRGGBB value.
@@ -287,9 +275,14 @@ func (textBox *TextBox) GetBorderColor() *[3]float32 {
 	return &strokeColor
 }
 
-// SetBorder sets the border with the specified bit mask.
-func (textBox *TextBox) SetBorder(b uint32) *TextBox {
-	textBox.properties |= b
+// SetBorder sets whether the specified borders, for example border.Top |
+// border.Bottom, are drawn.
+func (textBox *TextBox) SetBorder(b uint32, visible bool) *TextBox {
+	if visible {
+		textBox.properties |= b
+	} else {
+		textBox.properties &^= b
+	}
 	return textBox
 }
 
@@ -315,7 +308,7 @@ func (textBox *TextBox) GetBorder(b uint32) bool {
 // SetBorders sets all the borders on or off.
 func (textBox *TextBox) SetBorders(borders bool) *TextBox {
 	if borders {
-		textBox.SetBorder(border.All)
+		textBox.SetBorder(border.All, true)
 	} else {
 		textBox.properties &= 0xFFF0FFFF
 	}
@@ -374,14 +367,14 @@ func (textBox *TextBox) GetStrikeout() bool {
 	return (textBox.properties & 0x00800000) != 0x00000000
 }
 
-// SetTextColors sets the highlight colors of the keywords.
-func (textBox *TextBox) SetTextColors(colors map[string]int32) *TextBox {
+// SetHighlightColors sets the highlight colors of the keywords.
+func (textBox *TextBox) SetHighlightColors(colors map[string]int32) *TextBox {
 	textBox.colors = colors
 	return textBox
 }
 
-// GetTextColors returns the highlight colors of the keywords.
-func (textBox *TextBox) GetTextColors() map[string]int32 {
+// GetHighlightColors returns the highlight colors of the keywords.
+func (textBox *TextBox) GetHighlightColors() map[string]int32 {
 	return textBox.colors
 }
 

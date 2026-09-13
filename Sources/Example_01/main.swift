@@ -34,9 +34,9 @@ public class Example_01 {
                 font, try Content.ofTextFile("data/languages/english.txt"))
         textBlock.setLocation(50, 50)   // Set the position for the English text
         textBlock.setWidth(473)         // Why 473f? To match the Google Fonts samples.
-        textBlock.setTextPadding(10)    // Set padding around the text
+        textBlock.setPadding(10)    // Set padding around the text
         textBlock.setBorderColor(Color.blue)
-        textBlock.setKeywordHighlightColors(map)
+        textBlock.setHighlightColors(map)
         var xy = textBlock.drawOn(page) // Draw the English text on the page and get coordinates
 
         // Draw a small blue rectangle for testing ...
@@ -48,14 +48,14 @@ public class Example_01 {
         textBlock = TextBlock(font, try Content.ofTextFile("data/languages/greek.txt"))
         textBlock.setLocation(50, xy[1] + 30)   // Set location below the previous text
         textBlock.setWidth(473)                 // Set width for Greek text block
-        textBlock.setTextPadding(10)            // Set padding around the Greek text
+        textBlock.setPadding(10)            // Set padding around the Greek text
         xy = textBlock.drawOn(page)             // Draw Greek text and update coordinates
 
         // Read Bulgarian text from a file and draw it with a blue border and rounded corners
         textBlock = TextBlock(font, try Content.ofTextFile("data/languages/bulgarian.txt"))
         textBlock.setLocation(50, xy[1] + 30)   // Set location below Greek text
         textBlock.setWidth(473)                 // Set width for Bulgarian text block
-        textBlock.setTextPadding(10)            // Set padding around the Bulgarian text
+        textBlock.setPadding(10)            // Set padding around the Bulgarian text
         textBlock.setBorderColor(Color.blue)    // Blue border for the Bulgarian text
         textBlock.setCornerRadius(10)     // Set rounded corners for the border
         textBlock.setUnderline(true)            // Underline the Bulgarian text

@@ -145,9 +145,14 @@ func (textBlock *TextBlock) GetWidth() float32 {
 	return textBlock.width
 }
 
-// GetHeight returns the height of this text block.
+// GetHeight returns the height of this text block as it is drawn: the height
+// set with SetHeight or SetSize, or the height of the text and padding when that
+// is taller.
 func (textBlock *TextBlock) GetHeight() float32 {
-	return textBlock.height
+	ascent := textBlock.font.GetAscentAt(textBlock.fontSize)
+	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
+	leading := (ascent + descent) * textBlock.lineSpacing
+	return max(textBlock.height, float32(len(textBlock.getTextLines()))*leading+2*textBlock.textPadding)
 }
 
 // SetCornerRadius sets the border corner radius.
@@ -156,8 +161,8 @@ func (textBlock *TextBlock) SetCornerRadius(borderCornerRadius float32) *TextBlo
 	return textBlock
 }
 
-// SetTextPadding sets the padding between the text and the border.
-func (textBlock *TextBlock) SetTextPadding(padding float32) *TextBlock {
+// SetPadding sets the padding between the text and the border.
+func (textBlock *TextBlock) SetPadding(padding float32) *TextBlock {
 	textBlock.textPadding = padding
 	return textBlock
 }
@@ -202,31 +207,21 @@ func (textBlock *TextBlock) SetTextColor(c int32) *TextBlock {
 	return textBlock.SetTextColorRGB(colorToRGB(c))
 }
 
-// SetFillColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
-func (textBlock *TextBlock) SetFillColor(c int32) *TextBlock {
+// SetBackgroundColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
+func (textBlock *TextBlock) SetBackgroundColor(c int32) *TextBlock {
 	if c == color.Transparent {
 		textBlock.fillColor = [3]float32{}
 		textBlock.hasFillColor = false
 		return textBlock
 	}
-	return textBlock.SetFillColorRGB(colorToRGB(c))
-}
-
-// SetFillColorRGB sets the background color from the red, green and blue components, from 0.0 to 1.0.
-func (textBlock *TextBlock) SetFillColorRGB(fillColor [3]float32) *TextBlock {
-	textBlock.fillColor = fillColor
-	textBlock.hasFillColor = true
-	return textBlock
-}
-
-// SetBackgroundColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
-func (textBlock *TextBlock) SetBackgroundColor(c int32) *TextBlock {
-	return textBlock.SetFillColor(c)
+	return textBlock.SetBackgroundColorRGB(colorToRGB(c))
 }
 
 // SetBackgroundColorRGB sets the background color from the red, green and blue components, from 0.0 to 1.0.
-func (textBlock *TextBlock) SetBackgroundColorRGB(c [3]float32) *TextBlock {
-	return textBlock.SetFillColorRGB(c)
+func (textBlock *TextBlock) SetBackgroundColorRGB(fillColor [3]float32) *TextBlock {
+	textBlock.fillColor = fillColor
+	textBlock.hasFillColor = true
+	return textBlock
 }
 
 // GetBackgroundColor returns a copy of the background color, or nil if none was set.
@@ -268,8 +263,8 @@ func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
 	return textBlock
 }
 
-// SetKeywordHighlightColors sets the colors used to highlight keywords, matched ignoring case.
-func (textBlock *TextBlock) SetKeywordHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
+// SetHighlightColors sets the colors used to highlight keywords, matched ignoring case.
+func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
 	textBlock.keywordHighlightColors = make(map[string]int32)
 	for key, value := range keywordHighlightColors {
 		textBlock.keywordHighlightColors[strings.ToLower(key)] = value

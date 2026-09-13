@@ -86,9 +86,9 @@ public class Paragraph {
 
     /// Sets the word highlight colors of all lines in this paragraph.
     @discardableResult
-    public func setColorMap(_ colorMap: [String: Int32]) -> Paragraph {
+    public func setHighlightColors(_ colorMap: [String: Int32]) -> Paragraph {
         for line in lines {
-            line.setColorMap(colorMap)
+            line.setHighlightColors(colorMap)
         }
         return self
     }
