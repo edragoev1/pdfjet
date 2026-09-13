@@ -323,7 +323,7 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ### Drift between the ports
 
-- ⬜ **B** Defaults: C# `CheckBox` check mark is blue, black elsewhere
+- ✅ **B** Defaults: C# `CheckBox` check mark is blue, black elsewhere
       (`CheckBox.cs:22`); Go `FileAttachment` description ends "the attached
       attachment" (`fileattachment.go:27`); Java `new PDF()` has a null
       compliance, `PDF_17` elsewhere (`PDF.java:62`); a fill-only `Arc` gets a
@@ -331,6 +331,11 @@ renames included (the Week 1 decision), so every item is a blocker.
       (`f`) in Go (`Arc.java:22`, `arc.go:243`); Go `NewImage2` and
       `SVGImage` use empty alt and actual text, `" "` elsewhere; Java and C#
       `FileAttachment` write an empty `/T <>`, Go and Swift skip it.
+      Fixed: all four use Java's defaults, and Java's `new PDF()` is
+      `PDF_17`. `Arc` has no stroke colour by default, so a fill-only arc is
+      only filled in the four ports, as `Point` and `Rect` do; with no colour
+      at all it still gets a black hairline. Java and C# also skip an empty
+      `/Contents`. No example PDF changes.
 - ⬜ **B** Numbers written: `FastFloat` rounds `-1.125` to `-1.12` in Java and C#
       and `-1.13` in Go and Swift, and overflows `int` above 21.5 million in
       Java and C# (`FastFloat.java:11`); Swift `OpenTypeFont` scales
@@ -352,9 +357,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       and `TextLine` colour getters return the internal array; Go
       `Page.GetContent` returns the live buffer; C# `Encryption.GetKey`
       returns the key, Java a clone (`Encryption.cs:150`).
-- ⬜ **B** Mutable constants: the page sizes and the `Token` byte arrays can be
-      changed by callers in Java, C# and Go (`A4.PORTRAIT[0] = 100` changes
-      every later page); Swift `let` is safe.
+- ⬜ **B** Mutable constants: the Java and Go page sizes can be changed by
+      callers (`A4.PORTRAIT[0] = 100f`, `a4.Portrait[0] = 100`), which changes
+      every page made later from that constant; pages already made keep
+      their size. `Token` is no longer public in any port (Go:
+      `src/internal/token`), C# page sizes are properties that return a new
+      array, and Java and C# `BigTable` and Java `PDFobj.getPageSize` copy
+      the array. What is left needs a breaking change: an immutable
+      `PageSize` type with `Page` and `BigTable` overloads, or functions
+      instead of arrays, in Java and Go.
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
@@ -709,6 +720,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       border colour; `TextBlock` draws the characters its font lacks in the
       fallback font, and `setFallbackFontSize` sets their size without
       resizing the shared `Font`.
+      Drift fixes: the C# `CheckBox` check mark is black by default, as in
+      the other ports; a filled `Arc` or `Ellipse` with no stroke colour is
+      only filled, without a black hairline, in Java, C# and Swift; Java
+      `new PDF()` reports `PDF_17` instead of null; Java and C# no longer
+      write an empty title or description for a `FileAttachment`; the default
+      description of a Go `FileAttachment` ends "the attached file."; Go
+      `NewImage2` gives an image a space as alt and actual text, as
+      `NewImage` does; `Token` is no longer public in any port, and Go's
+      `token` package is internal; the C# page sizes are static properties
+      that return a new array (source compatible, not binary compatible), so
+      changing `A4.PORTRAIT[0]` no longer changes later pages.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
