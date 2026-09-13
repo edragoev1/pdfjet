@@ -1064,6 +1064,10 @@ public class TextBox implements Drawable {
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.stringWidth(fallbackFont, fontSize, text);
+            if (getUnderline() || getStrikeout()) {
+                // The lines are drawn in the text color, as TextLine draws them.
+                page.setPenColor(color);
+            }
             if (getUnderline()) {
                 page.addArtifactBMC();
                 page.moveTo(xText, yText + font.getUnderlinePosition(fontSize));

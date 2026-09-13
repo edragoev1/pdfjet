@@ -715,6 +715,10 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 
 	if textBox.textDirection == direction.LeftToRight {
 		lineLength := font.StringWidthFB(fallbackFont, fontSize, text)
+		if textBox.GetUnderline() || textBox.GetStrikeout() {
+			// The lines are drawn in the text color, as TextLine draws them.
+			page.SetPenColorRGB(textBox.textColor)
+		}
 		if textBox.GetUnderline() {
 			page.AddArtifactBMC()
 			page.MoveTo(xText, yText+font.GetUnderlinePositionAt(fontSize))

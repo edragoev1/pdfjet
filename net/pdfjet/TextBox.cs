@@ -897,6 +897,10 @@ public class TextBox : IDrawable {
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             float lineLength = font.StringWidth(fallbackFont, fontSize, text);
+            if (GetUnderline() || GetStrikeout()) {
+                // The lines are drawn in the text color, as TextLine draws them.
+                page.SetPenColor(color);
+            }
             if (GetUnderline()) {
                 page.AddArtifactBMC();
                 page.MoveTo(xText, yText + font.GetUnderlinePosition(fontSize));
