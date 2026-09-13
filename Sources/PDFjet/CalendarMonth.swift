@@ -11,10 +11,10 @@ public class CalendarMonth : Drawable {
     var f1: Font?
     var f2: Font?
 
-    var x1: Float = 75.0
-    var y1: Float = 75.0
-    var dx: Float = 23.0
-    var dy: Float = 20.0
+    var x1: Float = 0.0
+    var y1: Float = 0.0
+    var dx: Float = 0.0
+    var dy: Float = 0.0
     var f1Ascent: Float = 0.0
     var f2Ascent: Float = 0.0
 
@@ -35,9 +35,11 @@ public class CalendarMonth : Drawable {
         self.f1 = f1
         self.f2 = f2
         daysInMonth = getDaysInMonth(year, month - 1)
-        let calendar = Calendar.current
+        // The day of the week of the first day of the month, from 1 (Sunday) to 7
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
         let components = DateComponents(
-                calendar: calendar, year: year, month: month, day: 0)
+                calendar: calendar, year: year, month: month, day: 1)
         dayOfWeek = calendar.component(.weekday, from: components.date!)
 
         var w: Float = 0.0
@@ -106,7 +108,7 @@ public class CalendarMonth : Drawable {
                         line.drawOn(page!)
                     }
                 } else {
-                    let dayOfMonth = ((7*row + col) - 6) - dayOfWeek!
+                    let dayOfMonth = ((7*row + col) - 6) - (dayOfWeek! - 1)
                     if dayOfMonth > 0 && dayOfMonth <= daysInMonth! {
                         let s1 = String(dayOfMonth)
                         let offset = (dx - f2!.stringWidth(s1)) / 2
@@ -118,7 +120,7 @@ public class CalendarMonth : Drawable {
                             page!.setPenColor(Color.blue)
                             page!.drawEllipse(
                                     x1 + Float(col)*dx + dx/2,
-                                    y1 + Float(row)*dy + f2!.getBodyHeight()/2,
+                                    y1 + Float(row)*dy + f2!.getHeight()/2,
                                     dx/2.5,
                                     dy/2.5)
                         }

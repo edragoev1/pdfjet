@@ -40,10 +40,9 @@ public class CalendarMonth implements Drawable {
         this.f1 = f1;
         this.f2 = f2;
         daysInMonth = getDaysInMonth(year, month - 1);
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.MONTH, month - 1);
-        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        // Gregorian whatever the default locale, where getInstance() can
+        // return a Buddhist or Japanese calendar
+        Calendar calendar = new GregorianCalendar(year, month - 1, 1);
         dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
         for (String day : days) {
             float w = 2*f1.stringWidth(day);

@@ -33,15 +33,18 @@ func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
 	calendarMonth := new(CalendarMonth)
 	calendarMonth.f1 = f1
 	calendarMonth.f2 = f2
-	calendarMonth.x1 = 75.0
-	calendarMonth.y1 = 75.0
-	calendarMonth.dx = 23.0
-	calendarMonth.dy = 20.0
 	calendarMonth.days = []string{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
 	calendarMonth.daysInMonth = calendarMonth.getDaysInMonth(year, month-1)
 	// The day of the week of the first day of the month, from 1 (Sunday) to 7.
 	firstDay := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	calendarMonth.dayOfWeek = int(firstDay.Weekday()) + 1
+	for _, day := range calendarMonth.days {
+		w := 2 * f1.StringWidth(f1.size, day)
+		if w > calendarMonth.dx {
+			calendarMonth.dx = w
+		}
+	}
+	calendarMonth.dy = calendarMonth.dx
 	return calendarMonth
 }
 
@@ -86,15 +89,14 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 				text := NewTextLine(calendarMonth.f1, calendarMonth.days[col])
 				text.SetLocation(
 					calendarMonth.x1+float32(col)*calendarMonth.dx+offset,
-					calendarMonth.x1+float32(row)*calendarMonth.dy)
+					calendarMonth.y1+(calendarMonth.dy/2)-calendarMonth.f1.descent)
 				text.DrawOn(page)
 				// Draw the line separating the title from the dates.
 				line := NewLine(
 					calendarMonth.x1,
-					calendarMonth.y1+calendarMonth.dx/4,
+					calendarMonth.y1+calendarMonth.dy/2+calendarMonth.f1.descent,
 					calendarMonth.x1+7*calendarMonth.dx,
-					calendarMonth.y1+calendarMonth.dx/4)
-				line.SetStrokeWidth(0.5)
+					calendarMonth.y1+calendarMonth.dy/2+calendarMonth.f1.descent)
 				line.DrawOn(page)
 			} else {
 				dayOfMonth := ((7*row + col) - 6) - (calendarMonth.dayOfWeek - 1)
@@ -102,14 +104,18 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 					s1 := strconv.Itoa(dayOfMonth)
 					offset := (calendarMonth.dx - calendarMonth.f2.StringWidth(calendarMonth.f2.size, s1)) / 2
 					text := NewTextLine(calendarMonth.f2, s1)
-					text.SetLocation(calendarMonth.x1+float32(col)*calendarMonth.dx+offset, calendarMonth.y1+float32(row)*calendarMonth.dy)
+					text.SetLocation(
+						calendarMonth.x1+float32(col)*calendarMonth.dx+offset,
+						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.ascent)
 					text.DrawOn(page)
 
-					page.SetPenWidth(1.5)
+					page.SetPenWidth(1.25)
 					page.SetPenColor(color.Blue)
 					page.DrawEllipse(
 						calendarMonth.x1+float32(col)*calendarMonth.dx+calendarMonth.dx/2,
-						calendarMonth.y1+float32(row)*calendarMonth.dy-calendarMonth.dy/5, 8.0, 8.0)
+						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.GetHeight()/2,
+						calendarMonth.dx/2.5,
+						calendarMonth.dy/2.5)
 				}
 			}
 		}

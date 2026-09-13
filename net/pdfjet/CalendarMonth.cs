@@ -13,10 +13,10 @@ public class CalendarMonth : IDrawable {
     Font f1 = null;
     Font f2 = null;
 
-    float x1 = 75f;
-    float y1 = 75f;
-    float dx = 23f;
-    float dy = 20f;
+    float x1;
+    float y1;
+    float dx;
+    float dy;
 
     String[] days = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
     // DAY_OF_WEEK     1     2     3     4     5     6     7
@@ -113,11 +113,11 @@ public class CalendarMonth : IDrawable {
                         text.SetLocation(x1 + col*dx + offset, y1 + row*dy + f2.GetAscent());
                         text.DrawOn(page);
 
-                        page.SetPenWidth(1.5f);
+                        page.SetPenWidth(1.25f);
                         page.SetPenColor(Color.blue);
                         page.DrawEllipse(
                                 x1 + col*dx + dx/2,
-                                y1 + row*dy + f2.GetBodyHeight()/2,
+                                y1 + row*dy + f2.GetHeight()/2,
                                 dx/2.5f,
                                 dy/2.5f);
                     }
