@@ -160,14 +160,14 @@ public class SVGImage : IDrawable {
     private int getColor(String colorName) {
         if (colorName.StartsWith("#")) {
             if (colorName.Length == 7) {
-                return Int32.Parse(colorName.Substring(1), NumberStyles.HexNumber);
+                return Int32.Parse(colorName.Substring(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             } else if (colorName.Length == 4) {
                 String str = new String(new char[] {
                         colorName[1], colorName[1],
                         colorName[2], colorName[2],
                         colorName[3], colorName[3]
                 });
-                return Int32.Parse(str, NumberStyles.HexNumber);
+                return Int32.Parse(str, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             } else {
                 return Color.transparent;
             }
