@@ -347,16 +347,26 @@ renames included (the Week 1 decision), so every item is a blocker.
       places the Y labels with the ascent at the chart font size. Go
       `DonutChart` computes percentages in float64 and rounds some slices
       differently (`donutchart.go:249`).
-- ⬜ **B** Text input: Java `TextBlock` splits `"\n"` into no lines, the others into
+- ✅ **B** Text input: Java `TextBlock` splits `"\n"` into no lines, the others into
       one (`TextBlock.java:456`); Java and Go `Table` keep a BOM in the first
       header cell (`Table.java:71`); C# `Content.ofTextFile` also reads
       UTF-16 and UTF-32 BOMs; Go `Cell` measures an empty cell one line tall,
       the others 0 (`cell.go:299`).
-- ⬜ **B** Copies and live references: Swift `PDFobj.getDict()` returns a copy, so
+      Fixed: Java `TextBlock` gives one empty line; Java and Go `Table` drop a
+      BOM from the first line; C# `Content.ofTextFile` and the `Table` file
+      constructor read UTF-8 only and drop a BOM, and C# has
+      `getFromStream(stream, bufferSize)`; a Go cell without text (a nil
+      text in Java) is 0 tall, and wrapping skips it, while a `""` cell is
+      one line tall, as in Java.
+- ✅ **B** Copies and live references: Swift `PDFobj.getDict()` returns a copy, so
       a read object cannot be edited (`PDFobj.swift:39`); Java and C# `Page`
       and `TextLine` colour getters return the internal array; Go
       `Page.GetContent` returns the live buffer; C# `Encryption.GetKey`
       returns the key, Java a clone (`Encryption.cs:150`).
+      Fixed: Swift `PDFobj.dict` is public and can be edited in place
+      (`getDict()` still returns a copy); Java and C# `Page` and `TextLine`
+      colour getters return copies and their array setters copy; Go
+      `Page.GetContent` and C# `Encryption.getKey` return copies.
 - ⬜ **B** Mutable constants: the Java and Go page sizes can be changed by
       callers (`A4.PORTRAIT[0] = 100f`, `a4.Portrait[0] = 100`), which changes
       every page made later from that constant; pages already made keep
@@ -366,6 +376,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       the array. What is left needs a breaking change: an immutable
       `PageSize` type with `Page` and `BigTable` overloads, or functions
       instead of arrays, in Java and Go.
+- ⬜ **B** Found while fixing the drift above: Java and C# `Cell`, `TextBox`,
+      `Point`, `TextBlock` and `State` colour getters return the internal
+      array; C# `BigTable` reads files with a reader that detects UTF-16 and
+      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; Swift
+      `Content.ofTextFile` throws on bytes that are not UTF-8, where the
+      other ports read U+FFFD.
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
@@ -731,6 +747,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       `token` package is internal; the C# page sizes are static properties
       that return a new array (source compatible, not binary compatible), so
       changing `A4.PORTRAIT[0]` no longer changes later pages.
+      Java `TextBlock` draws a text of only line breaks as one empty line;
+      Java and Go `Table` from a file drop a UTF-8 byte order mark from the
+      first header cell; C# `Content.ofTextFile` and the `Table` file
+      constructor read UTF-8 only, and C# has `Content.getFromStream(stream,
+      bufferSize)`; Go tables no longer make the rows of wrapped cell text
+      too tall when a cell without text has a larger font; Swift
+      `PDFobj.dict` is public, so a read object's dictionary can be edited,
+      as in the other ports; Java and C# `Page` and `TextLine` colour getters
+      return copies, and their array setters copy the caller's array; Go
+      `Page.GetContent` and C# `Encryption.GetKey` return copies.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
