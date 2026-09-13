@@ -246,7 +246,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 
 		// Percent label inside the slice
 		if dc.f2 != nil && slice.Angle >= 15.0 {
-			pct := int(float64(slice.Angle) / 360.0 * 100.0)
+			pct := int(slice.Angle / 360.0 * 100.0)
 			pctStr := fmt.Sprintf("%d%%", pct)
 			label := NewTextLine(dc.f2, pctStr)
 			label.SetTextColor(color.White)
