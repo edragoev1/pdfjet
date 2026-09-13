@@ -64,11 +64,13 @@ public class Page {
     private var penColor: [Float] = [0.0, 0.0, 0.0]
     private var brushColor: [Float] = [0.0, 0.0, 0.0]
 
-    private var penWidth: Float = 0.5
+    private var penWidth: Float = 1.0   // The PDF default, as no w is written first
 
     private var lineCapStyle = CapStyle.BUTT
     private var lineJoinStyle = JoinStyle.MITER
     private var strokeDashPattern: String = "[] 0"
+    // The states that saveGraphicsState saved and restoreGraphicsState restores.
+    private var savedStates = [State]()
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
@@ -918,6 +920,8 @@ public class Page {
 
     /// Saves the current graphics state. Please see Example_31.
     public func saveGraphicsState() {
+        savedStates.append(State(
+                penColor, brushColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern))
         append("q\n")
     }
 
@@ -948,6 +952,14 @@ public class Page {
 
     /// Restores the last saved graphics state. Please see Example_31.
     public func restoreGraphicsState() {
+        if let state = savedStates.popLast() {
+            penColor = state.getPen()
+            brushColor = state.getBrush()
+            penWidth = state.getPenWidth()
+            lineCapStyle = state.getLineCapStyle()
+            lineJoinStyle = state.getLineJoinStyle()
+            strokeDashPattern = state.getLinePattern()
+        }
         append("Q\n")
     }
 
@@ -1055,6 +1067,7 @@ public class Page {
         append(Token.space)
         append(k)
         append(" K\n")
+        penColor = Page.cmykToRGB(c, m, y, k)
         return self
     }
 
@@ -1078,7 +1091,17 @@ public class Page {
         append(Token.space)
         append(k)
         append(" k\n")
+        brushColor = Page.cmykToRGB(c, m, y, k)
         return self
+    }
+
+    /// Returns a CMYK color converted to RGB the way the PDF specification
+    /// converts DeviceCMYK to DeviceRGB, for getPenColor and getBrushColor.
+    private static func cmykToRGB(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> [Float] {
+        return [
+            1.0 - min(1.0, c + k),
+            1.0 - min(1.0, m + k),
+            1.0 - min(1.0, y + k)]
     }
 
     ///

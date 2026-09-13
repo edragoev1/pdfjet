@@ -57,11 +57,13 @@ final public class Page {
     private byte[] tm2;
     private byte[] tm3;
 
-    private float penWidth = 0.5f;
+    private float penWidth = 1f;    // The PDF default, as no w is written first
 
     private CapStyle lineCapStyle = CapStyle.BUTT;
     private JoinStyle lineJoinStyle = JoinStyle.MITER;
     private String strokeDashPattern = "[] 0";
+    // The states that saveGraphicsState saved and restoreGraphicsState restores.
+    private final List<State> savedStates = new ArrayList<State>();
 
     /** The rotation of this page in degrees: 0, 90, 180 or 270. */
     protected float rotateDegrees = 0f;
@@ -1196,6 +1198,7 @@ final public class Page {
         append(' ');
         append(k);
         append(" k\n");
+        brushColor = cmykToRGB(c, m, y, k);
         return this;
     }
 
@@ -1218,7 +1221,17 @@ final public class Page {
         append(' ');
         append(k);
         append(" K\n");
+        penColor = cmykToRGB(c, m, y, k);
         return this;
+    }
+
+    // Returns a CMYK color converted to RGB the way the PDF specification
+    // converts DeviceCMYK to DeviceRGB, for getPenColor and getBrushColor.
+    private static float[] cmykToRGB(float c, float m, float y, float k) {
+        return new float[] {
+                1f - Math.min(1f, c + k),
+                1f - Math.min(1f, m + k),
+                1f - Math.min(1f, y + k)};
     }
 
     /**
@@ -2042,6 +2055,8 @@ final public class Page {
      * Saves the graphics state. Please see Example_31.
      */
     public void saveGraphicsState() {
+        savedStates.add(new State(
+                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern));
         append("q\n");
     }
 
@@ -2075,6 +2090,15 @@ final public class Page {
      * Restores the graphics state. Please see Example_31.
      */
     public void restoreGraphicsState() {
+        if (!savedStates.isEmpty()) {
+            State state = savedStates.remove(savedStates.size() - 1);
+            brushColor = state.getBrushColor();
+            penColor = state.getPenColor();
+            penWidth = state.getPenWidth();
+            lineCapStyle = state.getLineCapStyle();
+            lineJoinStyle = state.getLineJoinStyle();
+            strokeDashPattern = state.getStrokeDashPattern();
+        }
         append("Q\n");
     }
 

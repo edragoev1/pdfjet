@@ -62,6 +62,7 @@ type Page struct {
 	lineCapStyle      int
 	lineJoinStyle     int
 	strokeDashPattern string
+	savedStates       []*State // The states that SaveGraphicsState saved
 
 	contents     []int
 	annots       []*Annotation
@@ -107,7 +108,7 @@ func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
 	page.width = pageSize[0]
 	page.height = pageSize[1]
 	page.strokeDashPattern = "[] 0"
-	page.penWidth = 0.5
+	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
@@ -127,7 +128,7 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.width = pageObj.GetPageSize()[0]
 	page.height = pageObj.GetPageSize()[1]
 	page.strokeDashPattern = "[] 0"
-	page.penWidth = 0.5
+	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
@@ -878,6 +879,9 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 
 // SaveGraphicsState saves the current graphics state. Please see Example_31.
 func (page *Page) SaveGraphicsState() {
+	page.savedStates = append(page.savedStates, NewState(
+		page.penColor, page.brushColor, page.penWidth,
+		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern))
 	page.appendString("q\n")
 }
 
@@ -901,6 +905,16 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 
 // RestoreGraphicsState restores the last saved graphics state. Please see Example_31.
 func (page *Page) RestoreGraphicsState() {
+	if n := len(page.savedStates); n > 0 {
+		state := page.savedStates[n-1]
+		page.savedStates = page.savedStates[:n-1]
+		page.penColor = state.pen
+		page.brushColor = state.brush
+		page.penWidth = state.penWidth
+		page.lineCapStyle = state.lineCapStyle
+		page.lineJoinStyle = state.lineJoinStyle
+		page.strokeDashPattern = state.strokeDashPattern
+	}
 	page.appendString("Q\n")
 }
 
@@ -1068,6 +1082,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	page.appendString(" ")
 	page.appendFloat32(k)
 	page.appendString(" K\n")
+	page.penColor = cmykToRGB(c, m, y, k)
 	return page
 }
 
@@ -1086,7 +1101,18 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.appendString(" ")
 	page.appendFloat32(k)
 	page.appendString(" k\n")
+	page.brushColor = cmykToRGB(c, m, y, k)
 	return page
+}
+
+// cmykToRGB returns a CMYK color converted to RGB the way the PDF
+// specification converts DeviceCMYK to DeviceRGB, for GetPenColorRGB and
+// GetBrushColorRGB.
+func cmykToRGB(c, m, y, k float32) [3]float32 {
+	return [3]float32{
+		1.0 - min(1.0, c+k),
+		1.0 - min(1.0, m+k),
+		1.0 - min(1.0, y+k)}
 }
 
 // SetDefaultLineWidth sets the line width to the default.

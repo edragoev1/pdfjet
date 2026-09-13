@@ -63,11 +63,13 @@ public class Page {
     private byte[] tm2;
     private byte[] tm3;
 
-    internal float penWidth = 0.5f;
+    internal float penWidth = 1f;   // The PDF default, as no w is written first
 
     internal CapStyle lineCapStyle = CapStyle.BUTT;
     internal JoinStyle lineJoinStyle = JoinStyle.MITER;
     internal String strokeDashPattern = "[] 0";
+    // The states that SaveGraphicsState saved and RestoreGraphicsState restores.
+    private readonly List<State> savedStates = new List<State>();
 
     internal float rotateDegrees = 0f;
 
@@ -1236,6 +1238,7 @@ public class Page {
         Append(' ');
         Append(k);
         Append(" k\n");
+        brushColor = CmykToRGB(c, m, y, k);
         return this;
     }
 
@@ -1257,7 +1260,17 @@ public class Page {
         Append(' ');
         Append(k);
         Append(" K\n");
+        penColor = CmykToRGB(c, m, y, k);
         return this;
+    }
+
+    // Returns a CMYK color converted to RGB the way the PDF specification
+    // converts DeviceCMYK to DeviceRGB, for GetPenColor and GetBrushColor.
+    private static float[] CmykToRGB(float c, float m, float y, float k) {
+        return new float[] {
+                1f - Math.Min(1f, c + k),
+                1f - Math.Min(1f, m + k),
+                1f - Math.Min(1f, y + k)};
     }
 
     /// <summary>
@@ -1978,6 +1991,8 @@ public class Page {
     /// Saves the graphics state. Please see Example_31.
     /// </summary>
     public void SaveGraphicsState() {
+        savedStates.Add(new State(
+                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern));
         Append("q\n");
     }
 
@@ -2010,6 +2025,16 @@ public class Page {
     /// Restores the graphics state. Please see Example_31.
     /// </summary>
     public void RestoreGraphicsState() {
+        if (savedStates.Count > 0) {
+            State state = savedStates[savedStates.Count - 1];
+            savedStates.RemoveAt(savedStates.Count - 1);
+            brushColor = state.GetBrushColor();
+            penColor = state.GetPenColor();
+            penWidth = state.GetPenWidth();
+            lineCapStyle = state.GetLineCapStyle();
+            lineJoinStyle = state.GetLineJoinStyle();
+            strokeDashPattern = state.GetStrokeDashPattern();
+        }
         Append("Q\n");
     }
 
