@@ -26,7 +26,6 @@ public class BigTable {
     private float[] vertLines;
     private float bottomMargin = 20.0f;
     private float padding = 2.0f;
-    private String language = "en-US";
     private boolean highlightRow = true;
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
@@ -98,17 +97,6 @@ public class BigTable {
      */
     public BigTable setBottomMargin(float bottomMargin) {
         this.bottomMargin = bottomMargin;
-        return this;
-    }
-
-    /**
-     * Sets the language.
-     *
-     * @param language the language.
-     * @return this BigTable object.
-     */
-    public BigTable setLanguage(String language) {
-        this.language = language;
         return this;
     }
 

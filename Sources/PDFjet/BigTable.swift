@@ -23,7 +23,6 @@ public class BigTable {
     private var vertLines: [Float] = []
     private var bottomMargin: Float = 20.0
     private var padding: Float = 2.0
-    private var language: String = "en-US"
     private var highlightRow: Bool = true
     private var highlightColor: Int32 = 0xF0F0F0
     private var penColor: Int32 = 0xB0B0B0
@@ -77,13 +76,6 @@ public class BigTable {
     @discardableResult
     public func setBottomMargin(_ bottomMargin: Float) -> BigTable {
         self.bottomMargin = bottomMargin
-        return self
-    }
-
-    /// Sets the language of the table content.
-    @discardableResult
-    public func setLanguage(_ language: String) -> BigTable {
-        self.language = language
         return self
     }
 

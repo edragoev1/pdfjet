@@ -20,7 +20,6 @@ namespace PDFjet.NET {
         private float[] vertLines;
         private float bottomMargin = 20.0f;
         private float padding = 2.0f;
-        private string language = "en-US";
         private bool highlightRow = true;
         private int highlightColor = 0xF0F0F0;
         private int penColor = 0xB0B0B0;
@@ -69,12 +68,6 @@ namespace PDFjet.NET {
         /// <summary>Sets the bottom margin.</summary>
         public BigTable SetBottomMargin(float bottomMargin) {
             this.bottomMargin = bottomMargin;
-            return this;
-        }
-
-        /// <summary>Sets the language of the table content.</summary>
-        public BigTable SetLanguage(string language) {
-            this.language = language;
             return this;
         }
 

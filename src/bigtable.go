@@ -34,7 +34,6 @@ type BigTable struct {
 	vertLines       []float32
 	bottomMargin    float32
 	padding         float32
-	language        string
 	highlight       bool
 	highlightColor  int32
 	penColor        int32
@@ -54,7 +53,6 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize [2]float32) *BigTable {
 		pages:          make([]*Page, 0),
 		bottomMargin:   20.0,
 		padding:        2.0,
-		language:       "en-US",
 		highlight:      true,
 		highlightColor: 0xF0F0F0,
 		penColor:       0xB0B0B0,
@@ -88,12 +86,6 @@ func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) 
 // SetBottomMargin sets the bottom margin
 func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 	bt.bottomMargin = bottomMargin
-	return bt
-}
-
-// SetLanguage sets the language
-func (bt *BigTable) SetLanguage(language string) *BigTable {
-	bt.language = language
 	return bt
 }
 

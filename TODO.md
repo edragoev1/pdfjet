@@ -231,8 +231,8 @@ the Week 1 decision settles.
       table again, and `setLanguage` stores a field nothing reads.
       Fixed: Java splits at the delimiter with `indexOf` and keeps the empty
       fields; `setLocation` stores x and recomputes the vertical lines, also
-      before `setTableData`. `setLanguage` is still unread: BigTable output
-      is not tagged at all, see the Ignored or dead item.
+      before `setTableData`. `setLanguage` is removed: BigTable writes no
+      marked content for a language to go to.
 - ⬜ **B** `TextColumn.setTextAlignment` has no effect: `drawOn` replaces it
       with each paragraph's alignment. `drawOn` also compares the column
       height with a y coordinate (`TextColumn.java:233,238`). All four ports.
@@ -480,9 +480,7 @@ the Week 1 decision settles.
       `Permissions.setPermissions(flags, grant)` also revokes.
 - ⬜ S Ignored or dead: the `Font(pdf, stream, Font.STREAM)` flag
       (`Font.java:303`); the `pdf` the `FileAttachment` constructor stores;
-      `Slice.tooltip`; `BigTable.setLanguage` (BigTable writes no
-      marked content, so a PDF/UA BigTable fails veraPDF 7.1-3: tag its
-      output or remove the setter); `Image` has no `setLanguage`
+      `Slice.tooltip`; `Image` has no `setLanguage`
       though `drawOn` reads the field; the `SVGImage.drawOn` link branch that
       no setter reaches; `TextLine.setURILanguage`, `setURIAltDescription` and
       `setURIActualText` have no getters; the public `BaseAnnotation()` makes
@@ -656,7 +654,8 @@ the Week 1 decision settles.
       Java `BigTable` splits lines at the delimiter literally and keeps the
       empty fields at the end of a line, as the other ports do;
       `BigTable.setLocation` sets the location instead of adding to x, and
-      can be called before `setTableData`.
+      can be called before `setTableData`; `BigTable.setLanguage`, which did
+      nothing, is removed.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
