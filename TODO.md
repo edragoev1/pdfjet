@@ -146,14 +146,20 @@ the Week 1 decision settles.
 
 ### Bugs found by comparing the ports
 
-- ⬜ **B** Go gives every PDF the same `/ID` and XMP DocumentID:
+- ✅ **B** Go gives every PDF the same `/ID` and XMP DocumentID:
       `djb.Salsa20()` hashes a fixed test vector and never reads the clock
       (`src/djb/salsa20.go:19`, `pdf.go:112`). Java, C# and Swift seed from
       the time.
-- ⬜ **B** `PDF.setTitle`, `setAuthor`, `setSubject`, `setKeywords` and
+      Fixed: Go hashes the time in milliseconds, as Java does; two runs of
+      Example_01 get different IDs.
+- ✅ **B** `PDF.setTitle`, `setAuthor`, `setSubject`, `setKeywords` and
       `setCreator` do nothing for `PDF_17`, the default compliance: they only
       feed the XMP stream, which is written for PDF/A and PDF/UA only, and the
       trailer has no `/Info` (`PDF.java:1171`, `:1220`). All four ports.
+      Fixed: every PDF gets an `/Info` object with the properties that are
+      set, `/Producer` and `/CreationDate` (from the XMP date), in UTF-16BE
+      and encrypted with the document; pdfinfo shows them for a PDF 1.7 and
+      an encrypted file, and the PDF/A and PDF/UA examples pass veraPDF.
 - ✅ **B** Java `RadioButton.setLocation(double, double)` calls itself and
       throws `StackOverflowError` (`RadioButton.java:69`).
       Fixed: it casts to float, as C# does.
@@ -177,8 +183,9 @@ the Week 1 decision settles.
       at draw time and always calls `SetFontSize(fontSize)`, so a line with no
       font size draws at size 0; `GetMinMax` changes the font sizes and
       `GetWidth` adds up the line widths (`CompositeTextLine.cs:138,205-273`).
-- ⬜ **B** Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Double]`, so
+- ✅ **B** Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Double]`, so
       `Page(pdf, Executive.PORTRAIT)` does not compile (`Executive.swift:16`).
+      Fixed: typed `[Float]`; the other page sizes already were.
 - ⬜ **B** C# `Compressor.Deflate` returns no bytes for empty input, which is
       not a zlib stream, so an empty page gets a broken `/FlateDecode` stream
       (`Compressor.cs:18`).
@@ -250,9 +257,14 @@ the Week 1 decision settles.
       `setTextBox`, and `drawOn` draws the text while `getHeight` measures
       the block (`Cell.java:274,294,860`); `getHeight` and column fitting
       ignore `setFontSize`. All four ports.
-- ⬜ `Page.getPenWidth` is 0.5 on a new page but no `w` is written, so readers
+- ✅ `Page.getPenWidth` is 0.5 on a new page but no `w` is written, so readers
       draw 1.0 (`Page.java:60`); the CMYK setters do not update `getPenColor`
       and `getBrushColor`. All four ports.
+      Fixed: no port skips writing `w`, `RG` or `rg` any more, so only the
+      getters were wrong: a new page tracks a width of 1, the CMYK setters
+      track the RGB the specification converts them to, and
+      `restoreGraphicsState` restores the tracked state with `State`. No
+      content stream changes.
 - ⬜ Java and Swift `FontStream1` read the font with one `read()` and no loop,
       so a short read corrupts it (`FontStream1.java:367`).
 - ⬜ `SVGImage`: Go passes a `structureType` nothing sets to `AddBMC`, an
@@ -614,6 +626,15 @@ the Week 1 decision settles.
       (75, 75) and fixed sizes; Go lays it out as Java does; Swift draws a
       month that starts on a Sunday in the right row; Java uses the
       Gregorian calendar whatever the default locale.
+      Every PDF gets an `/Info` dictionary with `/Producer`, `/CreationDate`
+      and the properties set with `setTitle`, `setAuthor`, `setSubject`,
+      `setKeywords` and `setCreator`, which did nothing in a PDF 1.7 file;
+      Go PDFs get their own `/ID` and XMP DocumentID, where all had the
+      same; Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Float]`, so
+      `Page` takes them; `Page.getPenWidth` returns 1 on a new page, what
+      readers draw with, `getPenColor` and `getBrushColor` return the RGB
+      of a CMYK colour, and `restoreGraphicsState` restores what they
+      return.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
