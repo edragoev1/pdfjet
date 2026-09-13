@@ -643,7 +643,7 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ### Names: misleading, redundant or dead
 
-- ⬜ **B** Duplicates: `Table.getCellAt`/`getCellAtRowColumn`,
+- ✅ **B** Duplicates: `Table.getCellAt`/`getCellAtRowColumn`,
       `getRow`/`getRowAtIndex`, `getColumn`/`getColumnAtIndex`;
       `Font.getHeight`/`getBodyHeight`; Java and Swift
       `Permissions.getAccess`/`getRawValue`;
@@ -651,7 +651,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Container.addBorder()` is `setBorderColor(Color.black)`, and
       `setBorderColor` adds another `Rect` on each call; `Cell.getBorder(int)`
       next to `getTopBorder` and the other sides.
-- ⬜ **B** Misleading: `BaseAnnotation.setTransparency` writes `/CA`, an opacity;
+      Fixed: `Table` keeps `getCellAt`, `getRow` and `getColumn`; `Font`
+      keeps `getBodyHeight`; Java and Swift `Permissions` keep `getAccess`,
+      and C# and Go keep `GetRawValue`, which returns the flags as an
+      unsigned number where `GetAccess` returns `UserAccess`; `addCJKParagraph`
+      replaces the Chinese and Japanese methods; `Container.addBorder` is
+      removed and `setBorderColor` colors one border; `Cell` keeps `setBorder`
+      and `getBorder` with the `Border` bits, as `TextBox` does.
+- ✅ **B** Misleading: `BaseAnnotation.setTransparency` writes `/CA`, an opacity;
       `FileAttachment.setDescription` writes `/Contents`, which
       `BaseAnnotation` calls `setContents`; `DonutChart.setR1AndR2`;
       `Bookmark.getDestKey` returns the name given to `Page.addDestination`;
@@ -668,7 +675,23 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Table.WITH_2_HEADER_ROWS` is the number 2; `Page.transform` documents
       9 values and reads 6 (`Page.java:2479`);
       `Permissions.setPermissions(flags, grant)` also revokes.
-- ⬜ **B** Ignored or dead: the `Font(pdf, stream, Font.STREAM)` flag
+      Fixed: `BaseAnnotation.setOpacity`, `FileAttachment.setContents`,
+      `setIconPushpin`, `DonutChart.setRadii`, `Bookmark.getDestinationName`,
+      `Table.autoAdjustColumnWidths`, `Image.setFlipUpsideDown`, which
+      returns the image and flips it in place instead of one image height
+      lower, `Point.setDrawPath(boolean)`, `Cell.setMarker`, `Page.addBDC`,
+      `Page.addArcToPath` and `addCircularArcToPath`,
+      `Chart.setDrawHGridLines` and `setDrawVGridLines`, with a grid line
+      width of 0 documented as the thinnest line, the `ScriptPosition` enum
+      with `TextLine.setScriptPosition`, and `Permissions.grant` and `revoke`.
+      `B5` is the ISO 216 B5 (499 by 709) and `JISB5` the Japanese B5 it was.
+      The `WITH_n_HEADER_ROWS` constants are removed, and `Page.transform`
+      documents the six values it reads. `TextLine.setColorMap` was already
+      `setHighlightColors`, and Go `DrawStringUsingColorMap` is
+      `DrawStringUsingHighlightColors`. The `Color` constants stay in lower
+      case, as the CSS color keywords are and as C# SVG parsing looks them up;
+      `Color` documents that, and the two Old Glory colors.
+- ✅ **B** Ignored or dead: the `Font(pdf, stream, Font.STREAM)` flag
       (`Font.java:303`); the `pdf` the `FileAttachment` constructor stores;
       `Slice.tooltip`; `Image` has no `setLanguage`
       though `drawOn` reads the field; the `SVGImage.drawOn` link branch that
@@ -677,7 +700,18 @@ renames included (the Week 1 decision), so every item is a blocker.
       an annotation with no subtype, which crashes Java and Swift `PDF` and
       writes `/Subtype /` in Go; the `Destination` constructors are public
       and nothing public takes a `Destination`.
-- ⬜ **B** Public by accident: `Token` (mutable byte arrays), `Single` (one
+      Fixed: `Font(pdf, stream)` tells a stream font from an OpenType or
+      TrueType font by its first four bytes, as Go `NewFont` now does, so the
+      flag constructors and `Font.STREAM` are removed and
+      `Font(objects, stream)` takes no flag; `FileAttachment` no longer takes
+      the `PDF`; `Slice.tooltip` is removed; `Image.setLanguage`;
+      `SVGImage.setURIAction`, `setGoToAction`, `setAltDescription`,
+      `setActualText` and `setLanguage`; `TextLine.getURILanguage`,
+      `getURIAltDescription` and `getURIActualText`; `BaseAnnotation` is
+      abstract with a protected constructor, Go `newBaseAnnotation`; the
+      `Destination` constructors are internal, Go `newDestination`, and the
+      Java and C# `double` ones are removed.
+- ✅ **B** Public by accident: `Token` (mutable byte arrays), `Single` (one
       `space` constant; in C# it hides `System.Single`),
       `TextUtils.printDuration` (an examples helper; C# formats it in the
       current culture), the core font metrics classes (`Courier_Bold`, ...),
@@ -685,6 +719,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       `getLength`, the public no-argument constructors of the Java constant
       classes (`new A4()`, `new Color()`), and `Encryption.getKey`, which only
       Java needs public.
+      Fixed: `Token` already was. `Single` is internal, in Go under
+      `src/internal/single`. `TextUtils.printDuration` stays public, as the
+      examples of every port use it, and C# formats it in the invariant
+      culture. The core font metrics classes are package-private in
+      `com.pdfjet` in Java and internal in C# and Swift, and Go's unused
+      `Courier` to `ZapfDingbats` constants are removed; `corefont.Courier()`
+      stays Go's way to choose a core font. The Java `PDFobj` members are
+      package-private, the Java constant classes have private constructors,
+      and `Encryption.getKey` is internal in C# and Swift and removed from Go,
+      which never called it; Java keeps it public for the `com.pdfjet`
+      package.
 
 ### Names in one port
 
@@ -1006,6 +1051,29 @@ renames included (the Week 1 decision), so every item is a blocker.
       `ErrorCorrectionLevel` enum, `Barcode.setDirection(Direction)`, and
       EAN-13 and UPC-A drawn in that direction; Code 128 is drawn bottom to
       top, and top to bottom its text is on the left, as Code 39's is.
+      Breaking, misleading, redundant or dead names: `Table.getCellAtRowColumn`,
+      `getRowAtIndex` and `getColumnAtIndex`, `Font.getHeight`, Java and Swift
+      `Permissions.getRawValue`, `Container.addBorder` and the `Cell` side
+      border methods are removed, and `TextColumn.addCJKParagraph` replaces
+      the Chinese and Japanese methods. `setOpacity`,
+      `FileAttachment.setContents`, `setIconPushpin`, `DonutChart.setRadii`,
+      `Bookmark.getDestinationName`, `Table.autoAdjustColumnWidths`,
+      `Image.setFlipUpsideDown`, `Point.setDrawPath(boolean)`,
+      `Cell.setMarker`, `Page.addBDC`, `addArcToPath` and
+      `addCircularArcToPath`, `Chart.setDrawHGridLines` and
+      `setDrawVGridLines`, the `ScriptPosition` enum and
+      `TextLine.setScriptPosition`, `Permissions.grant` and `revoke`, and Go
+      `DrawStringUsingHighlightColors` replace the old names. `B5` is ISO B5
+      and `JISB5` the size `B5` was; there are no `Table.WITH_n_HEADER_ROWS`
+      constants, no `Font.STREAM` or stream font flag, and
+      `FileAttachment(file)` and `Slice(angle, color, text)` take no `PDF` and
+      no tooltip. `BaseAnnotation` is abstract, the `Destination`
+      constructors, `Single`, the core font metrics classes, the Java
+      `PDFobj` members and C# and Swift `Encryption.getKey` are internal, Go
+      `GetKey` and the Go core font constants are removed, and the Java
+      constant classes cannot be constructed. New: `Font(pdf, stream)` reads
+      stream fonts, `Image.setLanguage`, the `SVGImage` link and marked
+      content setters, and the `TextLine` URI getters.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

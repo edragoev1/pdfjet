@@ -170,7 +170,7 @@ def read_c_like(api, path, port):
     # A class that declares no constructor has a public no-arg one.
     if kind == "class" and "<init>" not in members and not re.search(
             r"(?:abstract|static)\s+(?:\w+\s+)*class\s+" + cls + r"\b", text) and not re.search(
-            r"(?:protected|private|internal)\s+" + cls + r"\s*\(", body):
+            r"(?m)^\s*(?:(?:protected|private|internal)\s+)?" + cls + r"\s*\(", body):
         members.setdefault("<init>", Member("ctor")).add(cls, 0)
 
 
