@@ -14,9 +14,9 @@ public class Form : Drawable {
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var f1: Font?
-    private var labelFontSize: Float = 8.0
+    private var labelFontSize: Float = 9.0
     private var f2: Font?
-    private var valueFontSize: Float = 10.0
+    private var valueFontSize: Float = 9.0
     private var formWidth: Float = 500.0
     private var lineWidth: Float = 0.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]

@@ -28,6 +28,9 @@ type Form struct {
 func NewForm(fields []*Field) *Form {
 	form := new(Form)
 	form.fields = fields
+	form.labelFontSize = 9.0
+	form.valueFontSize = 9.0
+	form.formWidth = 500.0
 	form.labelColor = [3]float32{0.0, 0.0, 0.0}
 	form.valueColor = [3]float32{0.33, 0.33, 0.66}
 	return form
