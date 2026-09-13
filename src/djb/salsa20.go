@@ -4,28 +4,50 @@
 // http://cr.yp.to/salsa20.html
 // http://cr.yp.to/snuffle/ip.pdf
 //
-// The following Java implementation encrypts the system time and returns
-// the first 32 characters of the hash.
+// The following implementation hashes the system time and returns the first
+// 32 characters of the hash.
+//
+// Test input:
+//
+//	a_in := [16]uint32{
+//		0x61707865, 0x04030201, 0x08070605, 0x0c0b0a09,
+//		0x100f0e0d, 0x3320646e, 0x01040103, 0x06020905,
+//		0x00000007, 0x00000000, 0x79622d32, 0x14131211,
+//		0x18171615, 0x1c1b1a19, 0x201f1e1d, 0x6b206574}
+//
+// The expected output:
+//
+//	0xb9a205a3 0x0695e150 0xaa94881a 0xadb7b12c
+//	0x798942d4 0x26107016 0x64edb1a4 0x2d27173f
+//	0xb1c7f1fa 0x62066edc 0xe035fa23 0xc4496f04
+//	0x2131e6b3 0x810bde28 0xf62cb407 0x6bdede3d
 
 // Package djb implements the Salsa20 hash function by Daniel J. Bernstein.
 package djb
 
 import (
+	"strconv"
 	"strings"
+	"time"
 )
 
-// Salsa20 computes a Salsa20 hash and returns its first 32 hexadecimal characters.
+// Salsa20 hashes the system time and returns the first 32 hexadecimal
+// characters of the hash.
 func Salsa20() string {
-	a_in := [16]uint32{
-		0x61707865, 0x04030201, 0x08070605, 0x0c0b0a09,
-		0x100f0e0d, 0x3320646e, 0x01040103, 0x06020905,
-		0x00000007, 0x00000000, 0x79622d32, 0x14131211,
-		0x18171615, 0x1c1b1a19, 0x201f1e1d, 0x6b206574}
+	var a_in [16]uint32
 
+	// The time in milliseconds in hexadecimal, padded with zeros to 128
+	// characters, is read as 16 words of 8 hexadecimal digits.
 	var buf strings.Builder
-	length := 128 - len(buf.String())
+	buf.WriteString(strconv.FormatInt(time.Now().UnixMilli(), 16))
+	length := 128 - buf.Len()
 	for i := 0; i < length; i++ {
 		buf.WriteByte('0')
+	}
+	str := buf.String()
+	for i := 0; i < 128; i += 8 {
+		word, _ := strconv.ParseUint(str[i:i+8], 16, 32)
+		a_in[i/8] = uint32(word)
 	}
 
 	return bin2hex(salsa20WordSpecification(a_in))
