@@ -39,7 +39,7 @@ public class Example_10 {
         column.setParagraphSpacing(1.0f);   // 1.0 x line spacing
 
         Paragraph p1 = new Paragraph();
-        p1.setAlignment(Align.CENTER);
+        p1.setTextAlignment(Align.CENTER);
         p1.add(new TextLine(f2, "Switzerland"));
 
         Paragraph p2 = new Paragraph();
@@ -61,9 +61,9 @@ public class Example_10 {
         buf.append("until 2002.");
 
         Paragraph p3 = new Paragraph();
-        // p3.setAlignment(Align.LEFT);
-        // p3.setAlignment(Align.RIGHT);
-        p3.setAlignment(Align.JUSTIFY);
+        // p3.setTextAlignment(Align.LEFT);
+        // p3.setTextAlignment(Align.RIGHT);
+        p3.setTextAlignment(Align.JUSTIFY);
         TextLine text = new TextLine(f1, buf.toString());
         p3.add(text);
 
@@ -93,7 +93,7 @@ public class Example_10 {
         buf.append("2004-05 to 1.8% annually and to 2.9% in 2006.");
 
         Paragraph p5 = new Paragraph();
-        p5.setAlignment(Align.JUSTIFY);
+        p5.setTextAlignment(Align.JUSTIFY);
         text = new TextLine(f1, buf.toString());
         p5.add(text);
 

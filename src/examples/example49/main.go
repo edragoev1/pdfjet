@@ -34,14 +34,14 @@ func Example49() {
 		Add(pdfjet.NewTextLine(f1, "d").SetTextColor(color.Black)).
 		Add(pdfjet.NewTextLine(f1, "$").SetVerticalOffset(1.0)).
 		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
-		SetAlignment(alignment.Right)
+		SetTextAlignment(alignment.Right)
 
 	paragraph2 := pdfjet.NewParagraph().
 		Add(pdfjet.NewTextLine(f1, "Hello")).
 		Add(pdfjet.NewTextLine(f1, "World")).
 		Add(pdfjet.NewTextLine(f1, "$")).
 		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
-		SetAlignment(alignment.Right)
+		SetTextAlignment(alignment.Right)
 
 	column := pdfjet.NewTextColumn(0)
 	column.AddParagraph(paragraph1)

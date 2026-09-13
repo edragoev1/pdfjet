@@ -97,9 +97,9 @@ func (textColumn *TextColumn) GetHeight() float32 {
 	return textColumn.h
 }
 
-// SetAlignment sets the text alignment:
+// SetTextAlignment sets the text alignment:
 // alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
-func (textColumn *TextColumn) SetAlignment(alignment int) *TextColumn {
+func (textColumn *TextColumn) SetTextAlignment(alignment int) *TextColumn {
 	textColumn.alignment = alignment
 	return textColumn
 }

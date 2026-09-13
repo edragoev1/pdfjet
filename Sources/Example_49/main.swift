@@ -27,14 +27,14 @@ public class Example_49 {
                 .add(TextLine(f1, "d").setTextColor(Color.black))
                 .add(TextLine(f1, "$").setVerticalOffset(1.0))
                 .add(TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setAlignment(Align.RIGHT)
+                .setTextAlignment(Align.RIGHT)
 
         let paragraph2 = Paragraph()
                 .add(TextLine(f1, "Hello"))
                 .add(TextLine(f1, "World"))
                 .add(TextLine(f1, "$"))
                 .add(TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setAlignment(Align.RIGHT)
+                .setTextAlignment(Align.RIGHT)
 
         let column = TextColumn()
         column.addParagraph(paragraph1)

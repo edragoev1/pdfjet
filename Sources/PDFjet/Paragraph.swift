@@ -56,7 +56,7 @@ public class Paragraph {
     /// - Returns: this paragraph.
     ///
     @discardableResult
-    public func setAlignment(_ alignment: UInt32) -> Paragraph {
+    public func setTextAlignment(_ alignment: UInt32) -> Paragraph {
         self.alignment = alignment
         return self
     }

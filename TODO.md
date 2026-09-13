@@ -216,6 +216,8 @@ Pick from the README limitations; the first three are the ones users hit.
       returns the path.
       `Line.setPointA` and `setPointB` are removed; they did what
       `setStartPoint` and `setEndPoint` do.
+      `Paragraph.setAlignment` and `TextColumn.setAlignment` are renamed
+      `setTextAlignment`, as in `Cell`, `TextBox` and `TextBlock`.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,

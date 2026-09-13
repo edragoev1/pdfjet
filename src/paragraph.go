@@ -63,9 +63,9 @@ func (paragraph *Paragraph) Add(text *TextLine) *Paragraph {
 	return paragraph
 }
 
-// SetAlignment sets the alignment of the text in this paragraph:
+// SetTextAlignment sets the alignment of the text in this paragraph:
 // alignment.Left, alignment.Right, alignment.Center or alignment.Justify.
-func (paragraph *Paragraph) SetAlignment(alignment int) *Paragraph {
+func (paragraph *Paragraph) SetTextAlignment(alignment int) *Paragraph {
 	paragraph.alignment = alignment
 	return paragraph
 }

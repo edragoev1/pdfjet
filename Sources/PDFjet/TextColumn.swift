@@ -132,7 +132,7 @@ public class TextColumn : Drawable {
     /// Supported values: Align.LEFT, Align.RIGHT, Align.CENTER and Align.JUSTIFY
     ///
     @discardableResult
-    public func setAlignment(_ alignment: UInt32) -> TextColumn {
+    public func setTextAlignment(_ alignment: UInt32) -> TextColumn {
         self.alignment = alignment
         return self
     }

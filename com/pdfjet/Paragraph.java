@@ -70,7 +70,7 @@ public class Paragraph {
      * @param alignment the alignment code: Align.LEFT, Align.RIGHT, Align.CENTER or Align.JUSTIFY.
      * @return this paragraph.
      */
-    public Paragraph setAlignment(int alignment) {
+    public Paragraph setTextAlignment(int alignment) {
         this.alignment = alignment;
         return this;
     }

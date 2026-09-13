@@ -36,7 +36,7 @@ public class Example_10 {
         column.setParagraphSpacing(1.0) // 1.0 x line spacing
 
         let p1 = Paragraph()
-        p1.setAlignment(Align.CENTER)
+        p1.setTextAlignment(Align.CENTER)
         p1.add(TextLine(f2, "Switzerland"))
 
         let p2 = Paragraph()
@@ -58,9 +58,9 @@ public class Example_10 {
         buf.append("until 2002.")
 
         let p3 = Paragraph()
-        // p3.setAlignment(Align.LEFT)
-        // p3.setAlignment(Align.RIGHT)
-        p3.setAlignment(Align.JUSTIFY)
+        // p3.setTextAlignment(Align.LEFT)
+        // p3.setTextAlignment(Align.RIGHT)
+        p3.setTextAlignment(Align.JUSTIFY)
         var text = TextLine(f1, buf)
         p3.add(text)
 
@@ -90,7 +90,7 @@ public class Example_10 {
         buf.append("2004-05 to 1.8% annually and to 2.9% in 2006.")
 
         let p5 = Paragraph()
-        p5.setAlignment(Align.JUSTIFY)
+        p5.setTextAlignment(Align.JUSTIFY)
         text = TextLine(f1, buf)
         p5.add(text)
 

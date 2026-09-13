@@ -31,14 +31,14 @@ public class Example_49 {
                 .add(new TextLine(f1, "d").setTextColor(Color.black))
                 .add(new TextLine(f1, "$").setVerticalOffset(1f))
                 .add(new TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setAlignment(Align.RIGHT);
+                .setTextAlignment(Align.RIGHT);
 
         Paragraph paragraph2 = new Paragraph()
                 .add(new TextLine(f1, "Hello"))
                 .add(new TextLine(f1, "World"))
                 .add(new TextLine(f1, "$"))
                 .add(new TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setAlignment(Align.RIGHT);
+                .setTextAlignment(Align.RIGHT);
 
         TextColumn column = new TextColumn();
         column.addParagraph(paragraph1);

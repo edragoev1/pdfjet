@@ -31,14 +31,14 @@ public class Example_49 {
                 .Add(new TextLine(f1, "d").SetTextColor(Color.black))
                 .Add(new TextLine(f1, "$").SetVerticalOffset(1f))
                 .Add(new TextLine(f2, "29.95").SetTextColor(Color.blue))
-                .SetAlignment(Align.RIGHT);
+                .SetTextAlignment(Align.RIGHT);
 
         Paragraph paragraph2 = new Paragraph()
                 .Add(new TextLine(f1, "Hello"))
                 .Add(new TextLine(f1, "World"))
                 .Add(new TextLine(f1, "$"))
                 .Add(new TextLine(f2, "29.95").SetTextColor(Color.blue))
-                .SetAlignment(Align.RIGHT);
+                .SetTextAlignment(Align.RIGHT);
 
         TextColumn column = new TextColumn();
         column.AddParagraph(paragraph1);

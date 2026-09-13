@@ -43,7 +43,7 @@ func Example10() {
 	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
 
 	p1 := pdfjet.NewParagraph()
-	p1.SetAlignment(alignment.Center)
+	p1.SetTextAlignment(alignment.Center)
 	p1.Add(pdfjet.NewTextLine(f2, "Switzerland"))
 
 	p2 := pdfjet.NewParagraph()
@@ -65,9 +65,9 @@ func Example10() {
 	buf.WriteString("until 2002.")
 
 	p3 := pdfjet.NewParagraph()
-	// p3.SetAlignment(alignment.Left)
-	// p3.SetAlignment(alignment.Right)
-	p3.SetAlignment(alignment.Justify)
+	// p3.SetTextAlignment(alignment.Left)
+	// p3.SetTextAlignment(alignment.Right)
+	p3.SetTextAlignment(alignment.Justify)
 	text := pdfjet.NewTextLine(f1, buf.String())
 	p3.Add(text)
 
@@ -97,7 +97,7 @@ func Example10() {
 	buf.WriteString("2004-05 to 1.8% annually and to 2.9% in 2006.")
 
 	p5 := pdfjet.NewParagraph()
-	p5.SetAlignment(alignment.Justify)
+	p5.SetTextAlignment(alignment.Justify)
 	text = pdfjet.NewTextLine(f1, buf.String())
 	p5.Add(text)
 
