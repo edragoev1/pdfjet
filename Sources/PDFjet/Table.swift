@@ -459,10 +459,11 @@ public class Table : Drawable {
     /// - Parameter pdf: the PDF document.
     /// - Parameter pages: the list that receives the new pages.
     /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
-    /// - Returns: the x and y coordinates below the table on the last page.
+    /// - Returns: the x and y coordinates below the table on the last page,
+    ///   or nil when the table was already drawn and no page was added.
     ///
     @discardableResult
-    public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float] {
+    public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: [Float]) -> [Float]? {
         wrapAroundCellText()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
@@ -474,7 +475,7 @@ public class Table : Drawable {
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
             pageNumber += 1
         }
-        return xy!
+        return xy
     }
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
