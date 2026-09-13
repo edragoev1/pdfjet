@@ -225,10 +225,14 @@ the Week 1 decision settles.
       width at 0 (`form.go:28`); Swift defaults to 8 and 10 where Java has 9
       and 9 (`Form.swift:17`).
       Fixed: 9 and 9 points and a width of 500 in Go, 9 and 9 in Swift.
-- ⬜ **B** `BigTable`: Java splits lines with a regex and drops the empty
+- ✅ **B** `BigTable`: Java splits lines with a regex and drops the empty
       fields at the end of a line (`BigTable.java:249,295`), as `Table` did;
       in all four ports `setLocation` adds to x, so a second call moves the
       table again, and `setLanguage` stores a field nothing reads.
+      Fixed: Java splits at the delimiter with `indexOf` and keeps the empty
+      fields; `setLocation` stores x and recomputes the vertical lines, also
+      before `setTableData`. `setLanguage` is still unread: BigTable output
+      is not tagged at all, see the Ignored or dead item.
 - ⬜ **B** `TextColumn.setTextAlignment` has no effect: `drawOn` replaces it
       with each paragraph's alignment. `drawOn` also compares the column
       height with a y coordinate (`TextColumn.java:233,238`). All four ports.
@@ -237,9 +241,12 @@ the Week 1 decision settles.
       URI language, alt and actual text (`Text.java:231`,
       `TextFrame.java:410`); `TextColumn` loses the colour map and language
       (`TextColumn.java:270`). All four ports.
-- ⬜ **B** `Table.drawOn(null)` renders every row and sets `rendered = -1`,
+- ✅ **B** `Table.drawOn(null)` renders every row and sets `rendered = -1`,
       so a later `drawOn(page)` draws only the header rows
       (`Table.java:583`). All four ports.
+      Fixed: measuring walks a local row index and only a page moves the
+      next row to draw. It was worse than listed: the later `drawOn(page)`
+      crashed on index -1, and so did measuring between two pages.
 - ✅ `PDF417.drawOn` overwrites `x1`, so a second draw shifts the symbol
       right (`PDF417.java:275`). All four ports.
       Fixed: each row of codewords starts at a local `x0`.
@@ -253,10 +260,14 @@ the Week 1 decision settles.
 - ⬜ `TextBlock` measures with the fallback font and draws with the main font
       only (`Page.java:2664`); `setFallbackFontSize` resizes the shared
       `Font`. All four ports.
-- ⬜ `Cell.setTextBlock` and `setTextColumn` keep the cell text, unlike
+- ✅ `Cell.setTextBlock` and `setTextColumn` keep the cell text, unlike
       `setTextBox`, and `drawOn` draws the text while `getHeight` measures
       the block (`Cell.java:274,294,860`); `getHeight` and column fitting
       ignore `setFontSize`. All four ports.
+      Fixed: both clear the text; `getHeight`, `Table.setColumnWidths()`
+      and the wrapping of cell text, with its continuation cells, measure
+      at the cell font size. Example_29 shows its text column instead of
+      the word "World".
 - ✅ `Page.getPenWidth` is 0.5 on a new page but no `w` is written, so readers
       draw 1.0 (`Page.java:60`); the CMYK setters do not update `getPenColor`
       and `getBrushColor`. All four ports.
@@ -469,7 +480,9 @@ the Week 1 decision settles.
       `Permissions.setPermissions(flags, grant)` also revokes.
 - ⬜ S Ignored or dead: the `Font(pdf, stream, Font.STREAM)` flag
       (`Font.java:303`); the `pdf` the `FileAttachment` constructor stores;
-      `Slice.tooltip`; `BigTable.setLanguage`; `Image` has no `setLanguage`
+      `Slice.tooltip`; `BigTable.setLanguage` (BigTable writes no
+      marked content, so a PDF/UA BigTable fails veraPDF 7.1-3: tag its
+      output or remove the setter); `Image` has no `setLanguage`
       though `drawOn` reads the field; the `SVGImage.drawOn` link branch that
       no setter reaches; `TextLine.setURILanguage`, `setURIAltDescription` and
       `setURIActualText` have no getters; the public `BaseAnnotation()` makes
@@ -635,6 +648,15 @@ the Week 1 decision settles.
       readers draw with, `getPenColor` and `getBrushColor` return the RGB
       of a CMYK colour, and `restoreGraphicsState` restores what they
       return.
+      `Table.drawOn(null)` measures a table without changing what a later
+      `drawOn` draws, where that draw crashed; `Cell.setTextBlock` and
+      `setTextColumn` clear the cell text, as `setTextBox` does, so the block
+      or column is drawn; `Cell.getHeight`, `Table.setColumnWidths()` and the
+      wrapping of cell text measure at the size set with `Cell.setFontSize`;
+      Java `BigTable` splits lines at the delimiter literally and keeps the
+      empty fields at the end of a line, as the other ports do;
+      `BigTable.setLocation` sets the location instead of adding to x, and
+      can be called before `setTableData`.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
