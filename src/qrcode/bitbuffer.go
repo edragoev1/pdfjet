@@ -15,37 +15,37 @@
 
 package qrcode
 
-// BitBuffer describes the BitBuffer structure.
-type BitBuffer struct {
+// bitBuffer describes the bitBuffer structure.
+type bitBuffer struct {
 	buffer     []byte
 	length     int
 	increments int
 }
 
-// NewBitBuffer constructs BitBuffer object.
-func NewBitBuffer() *BitBuffer {
-	bitBuffer := new(BitBuffer)
+// newBitBuffer constructs bitBuffer object.
+func newBitBuffer() *bitBuffer {
+	bitBuffer := new(bitBuffer)
 	bitBuffer.length = 0
 	bitBuffer.increments = 32
 	bitBuffer.buffer = make([]byte, bitBuffer.increments)
 	return bitBuffer
 }
 
-func (bitBuffer *BitBuffer) getBuffer() []byte {
+func (bitBuffer *bitBuffer) getBuffer() []byte {
 	return bitBuffer.buffer
 }
 
-func (bitBuffer *BitBuffer) getLengthInBits() int {
+func (bitBuffer *bitBuffer) getLengthInBits() int {
 	return bitBuffer.length
 }
 
-func (bitBuffer *BitBuffer) put(num, length int) {
+func (bitBuffer *bitBuffer) put(num, length int) {
 	for i := 0; i < length; i++ {
 		bitBuffer.putBit(((num >> (length - i - 1)) & 1) == 1)
 	}
 }
 
-func (bitBuffer *BitBuffer) putBit(bit bool) {
+func (bitBuffer *bitBuffer) putBit(bit bool) {
 	if bitBuffer.length == len(bitBuffer.buffer)*8 {
 		newBuffer := make([]byte, len(bitBuffer.buffer)+bitBuffer.increments)
 		for i := 0; i < len(bitBuffer.buffer); i++ {

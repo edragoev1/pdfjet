@@ -117,9 +117,9 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	return font
 }
 
-// NewCoreFontForPDFobj creates a core font that is not added to a PDF, for
+// newCoreFontForPDFobj creates a core font that is not added to a PDF, for
 // PDFobj.AddCoreFontResource.
-func NewCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
+func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true
 	font.name = coreFont.Name
@@ -248,7 +248,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 // NewFontStream1 constructs font object from .ttf.stream and add it to the PDF
 func NewFontStream1(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
-	FontStream1(pdf, font, reader)
+	fontStream1(pdf, font, reader)
 	font.SetSize(defaultFontSize)
 	return font
 }
@@ -256,7 +256,7 @@ func NewFontStream1(pdf *PDF, reader io.Reader) *Font {
 // NewFontStream2 constructs font object from .ttf.stream and add it to the array of PDFobj
 func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
 	font := new(Font)
-	FontStream2(objects, font, reader)
+	fontStream2(objects, font, reader)
 	font.SetSize(defaultFontSize)
 	return font
 }
@@ -270,7 +270,7 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 	if isOpenTypeFont(buffered) {
 		registerOpenTypeFont(pdf, font, buffered)
 	} else {
-		FontStream1(pdf, font, buffered)
+		fontStream1(pdf, font, buffered)
 	}
 	font.SetSize(defaultFontSize)
 	return font

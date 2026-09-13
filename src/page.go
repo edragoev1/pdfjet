@@ -993,7 +993,7 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 	return page
 }
 
-// GetPenColorRGB returns the current pen color as an RGB float32 array.
+// GetPenColor returns the current pen color as an RGB float32 array.
 // The returned array contains three float32 values representing the
 // red, green, and blue components of the pen color, each in the range
 // [0.0, 1.0].
@@ -1002,7 +1002,7 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 //
 //	The array contains values in the range [0.0, 1.0] corresponding to
 //	the red, green, and blue color components.
-func (page *Page) GetPenColorRGB() [3]float32 {
+func (page *Page) GetPenColor() [3]float32 {
 	return page.penColor
 }
 
@@ -1067,7 +1067,7 @@ func (page *Page) SetBrushColorRGB(rgbColor [3]float32) *Page {
 	return page
 }
 
-// GetBrushColorRGB returns the current brush color as an RGB float32 array.
+// GetBrushColor returns the current brush color as an RGB float32 array.
 // The returned array contains three float32 values representing the
 // red, green, and blue components of the brush color, each in the range
 // [0.0, 1.0].
@@ -1076,7 +1076,7 @@ func (page *Page) SetBrushColorRGB(rgbColor [3]float32) *Page {
 //
 //	The array contains values in the range [0.0, 1.0] corresponding to
 //	the red, green, and blue color components.
-func (page *Page) GetBrushColorRGB() [3]float32 {
+func (page *Page) GetBrushColor() [3]float32 {
 	return page.brushColor
 }
 
@@ -1120,8 +1120,8 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 }
 
 // cmykToRGB returns a CMYK color converted to RGB the way the PDF
-// specification converts DeviceCMYK to DeviceRGB, for GetPenColorRGB and
-// GetBrushColorRGB.
+// specification converts DeviceCMYK to DeviceRGB, for GetPenColor and
+// GetBrushColor.
 func cmykToRGB(c, m, y, k float32) [3]float32 {
 	return [3]float32{
 		1.0 - min(1.0, c+k),

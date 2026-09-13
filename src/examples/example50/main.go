@@ -33,7 +33,7 @@ func Example50(fileName string) {
 	}
 	defer file1.Close()
 	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImage2(&objects, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageForObjects(&objects, reader, imagetype.PNG)
 	image1.SetLocation(495.0, 65.0)
 	image1.ScaleBy(0.40)
 

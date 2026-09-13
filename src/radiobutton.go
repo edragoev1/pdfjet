@@ -61,10 +61,10 @@ func (radioButton *RadioButton) SetURIAction(uri string) *RadioButton {
 	return radioButton
 }
 
-// SelectButton selects or deselects this radio button.
+// Select selects or deselects this radio button.
 // @param selected the selection flag.
 // @return this RadioButton.
-func (radioButton *RadioButton) SelectButton(selected bool) *RadioButton {
+func (radioButton *RadioButton) Select(selected bool) *RadioButton {
 	radioButton.selected = selected
 	return radioButton
 }

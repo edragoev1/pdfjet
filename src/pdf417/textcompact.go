@@ -144,11 +144,11 @@ var textCompact = [][3]int{
 	{126, 9, 0x01},  // ~
 }
 
-// TextCompact
+// textCompactWrapper
 // ---------------------------------------------------------------------
 // Public wrapper type
 // ---------------------------------------------------------------------
-type TextCompact struct {
+type textCompactWrapper struct {
 	Table [][3]int // exported field – callers can read it
 }
 
@@ -156,4 +156,4 @@ type TextCompact struct {
 // ---------------------------------------------------------------------
 // Exported singleton instance
 // ---------------------------------------------------------------------
-var textCompactInstance = TextCompact{Table: textCompact}
+var textCompactInstance = textCompactWrapper{Table: textCompact}

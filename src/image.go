@@ -78,7 +78,7 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, err := NewJPGImage(reader)
+		jpg, err := newJPGImage(reader)
 		if err != nil {
 			panic(err)
 		}
@@ -107,7 +107,7 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
 	case imagetype.BMP:
-		bmp := NewBMPImage(reader)
+		bmp := newBMPImage(reader)
 		data := bmp.GetData()
 		image.w = bmp.GetWidth()
 		image.h = bmp.GetHeight()
@@ -117,18 +117,18 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 	return image
 }
 
-// NewImage2 adds this image to the existing PDF objects.
+// NewImageForObjects adds this image to the existing PDF objects.
 // @param objects the map to which we add this image.
 // @param inputStream the input stream to read the image from.
 // @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
-func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType imagetype.ImageType) *Image {
+func NewImageForObjects(objects *[]*PDFobj, reader io.Reader, imageType imagetype.ImageType) *Image {
 	image := new(Image)
 	image.altDescription = single.Space
 	image.actualText = single.Space
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, err := NewJPGImage(reader)
+		jpg, err := newJPGImage(reader)
 		if err != nil {
 			panic(err)
 		}
@@ -157,7 +157,7 @@ func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType imagetype.ImageTy
 			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
 	case imagetype.BMP:
-		bmp := NewBMPImage(reader)
+		bmp := newBMPImage(reader)
 		data := bmp.GetData()
 		image.w = bmp.GetWidth()
 		image.h = bmp.GetHeight()

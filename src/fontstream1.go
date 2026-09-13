@@ -16,8 +16,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
-// FontStream1 is used to add stream fonts to the PDF.
-func FontStream1(pdf *PDF, font *Font, reader io.Reader) {
+// fontStream1 is used to add stream fonts to the PDF.
+func fontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	getFontData(font, reader)
 	embedFontFile(pdf, font, reader)
 	addFontDescriptorObject(pdf, font)

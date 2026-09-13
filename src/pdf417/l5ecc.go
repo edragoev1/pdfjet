@@ -15,11 +15,11 @@ var l5ECCTable = []int{
 	648, 733, 717, 83, 404, 97, 280, 771, 840, 629, 4, 381, 843, 623, 264, 543,
 }
 
-// L5ECC
+// l5ECCWrapper
 // ---------------------------------------------------------------------
 // Public wrapper type
 // ---------------------------------------------------------------------
-type L5ECC struct {
+type l5ECCWrapper struct {
 	Table []int // exported field – callers can read it
 }
 
@@ -27,4 +27,4 @@ type L5ECC struct {
 // ---------------------------------------------------------------------
 // Exported singleton instance
 // ---------------------------------------------------------------------
-var l5ECCInstance = L5ECC{Table: l5ECCTable}
+var l5ECCInstance = l5ECCWrapper{Table: l5ECCTable}

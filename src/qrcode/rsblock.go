@@ -15,44 +15,44 @@
 
 package qrcode
 
-// RSBlock describes the RSBlock object.
-type RSBlock struct {
+// qrRSBlock describes the qrRSBlock object.
+type qrRSBlock struct {
 	totalCount int
 	dataCount  int
 }
 
-// NewRSBlock constructs RSBlock objects.
-func NewRSBlock(totalCount, dataCount int) *RSBlock {
-	rsblock := new(RSBlock)
+// newQRRSBlock constructs qrRSBlock objects.
+func newQRRSBlock(totalCount, dataCount int) *qrRSBlock {
+	rsblock := new(qrRSBlock)
 	rsblock.totalCount = totalCount
 	rsblock.dataCount = dataCount
 	return rsblock
 }
 
-func (rsblock *RSBlock) getDataCount() int {
+func (rsblock *qrRSBlock) getDataCount() int {
 	return rsblock.dataCount
 }
 
-func (rsblock *RSBlock) getTotalCount() int {
+func (rsblock *qrRSBlock) getTotalCount() int {
 	return rsblock.totalCount
 }
 
-func (rsblock *RSBlock) getRSBlocks(errorCorrectionLevel ErrorCorrectionLevel) []*RSBlock {
+func (rsblock *qrRSBlock) getRSBlocks(errorCorrectionLevel ErrorCorrectionLevel) []*qrRSBlock {
 	rsBlock := rsblock.getRsBlockTable(errorCorrectionLevel)
 	length := len(rsBlock) / 3
-	list := make([]*RSBlock, 0)
+	list := make([]*qrRSBlock, 0)
 	for i := 0; i < length; i++ {
 		count := rsBlock[3*i]
 		totalCount := rsBlock[3*i+1]
 		dataCount := rsBlock[3*i+2]
 		for j := 0; j < count; j++ {
-			list = append(list, NewRSBlock(totalCount, dataCount))
+			list = append(list, newQRRSBlock(totalCount, dataCount))
 		}
 	}
 	return list
 }
 
-func (rsblock *RSBlock) getRsBlockTable(errorCorrectionLevel ErrorCorrectionLevel) []int {
+func (rsblock *qrRSBlock) getRsBlockTable(errorCorrectionLevel ErrorCorrectionLevel) []int {
 	buf := make([]int, 0)
 	if errorCorrectionLevel == ErrorCorrectionLevelL {
 		buf = append(buf, 1)

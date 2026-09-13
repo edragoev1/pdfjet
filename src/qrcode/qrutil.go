@@ -20,15 +20,15 @@ import (
 	"strconv"
 )
 
-func getErrorCorrectPolynomial(errorCorrectLength int) *Polynomial {
+func getErrorCorrectPolynomial(errorCorrectLength int) *qrPolynomial {
 	buf1 := make([]int, 1)
 	buf1[0] = 1
-	polynomial := NewPolynomial(buf1, 0)
+	polynomial := newQRPolynomial(buf1, 0)
 	for i := 0; i < errorCorrectLength; i++ {
 		buf2 := make([]int, 2)
 		buf2[0] = 1
 		buf2[1] = gexp(i)
-		polynomial = polynomial.multiply(NewPolynomial(buf2, 0))
+		polynomial = polynomial.multiply(newQRPolynomial(buf2, 0))
 	}
 	return polynomial
 }

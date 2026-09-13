@@ -313,7 +313,7 @@ floats next to the `int` color in some ports only; the `int` form is in every
 port.
 
 Constructors are `New<Type>` functions in Go, again with a suffix for an
-overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewPageDetached` for
+overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPageDetached` for
 `Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, `NewTextBoxWithSize`, and `NewFont`,
 `NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
 `NewFontStream2` for the overloads of the `Font` constructor. Where the other ports have an overload with fewer
@@ -361,7 +361,6 @@ by `com.pdfjet.encryption`, `Encryption.getObjNumber`, used by `PDF`,
 and the `AES128`, `AES256` and `OTF` classes. In Go: the exported functions of
 the `encryption` package (`Encrypt`, `EncryptECB`, `EncryptK1`,
 `EncryptWithZeroIV`), the `CoreFont` fields, and the types of the helper files
-in the root package (`Annotation`, `BMPImage`, `JPGImage`, `OCG`, `State`,
-`Round`, `OTF`, `SVG`, `SVGPath`). The Java `GenerateFontMetricsFiles` and
+in the root package (`Annotation`, `OCG`, `State`, `OTF`, `SVG`, `SVGPath`). The Java `GenerateFontMetricsFiles` and
 `GenerateStreamFontsFiles` classes are the command line tools that make the
 font files, not library classes.

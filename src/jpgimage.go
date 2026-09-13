@@ -44,8 +44,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
-// JPGImage describes JPG image object.
-type JPGImage struct {
+// jpgImage describes JPG image object.
+type jpgImage struct {
 	width           uint16
 	height          uint16
 	colorComponents uint8
@@ -70,39 +70,39 @@ const (
 	mSOF15 = uint8(0xCF)
 )
 
-// NewJPGImage is the constructor.
-func NewJPGImage(reader io.Reader) (*JPGImage, error) {
-	image := new(JPGImage)
+// newJPGImage is the constructor.
+func newJPGImage(reader io.Reader) (*jpgImage, error) {
+	image := new(jpgImage)
 	image.data = content.GetFromReader(reader)
 	return image.readJPGImage(image.data)
 }
 
 // GetWidth returns the width of the image.
-func (image *JPGImage) GetWidth() float32 {
+func (image *jpgImage) GetWidth() float32 {
 	return float32(image.width)
 }
 
 // GetHeight returns the height of the image.
-func (image *JPGImage) GetHeight() float32 {
+func (image *jpgImage) GetHeight() float32 {
 	return float32(image.height)
 }
 
 // GetFileSize returns the file size of the image.
-func (image *JPGImage) GetFileSize() uint64 {
+func (image *jpgImage) GetFileSize() uint64 {
 	return uint64(len(image.data))
 }
 
 // GetColorComponents returns the color components of the image.
-func (image *JPGImage) GetColorComponents() uint8 {
+func (image *jpgImage) GetColorComponents() uint8 {
 	return image.colorComponents
 }
 
 // GetData returns the image data.
-func (image *JPGImage) GetData() []byte {
+func (image *jpgImage) GetData() []byte {
 	return image.data
 }
 
-func (image *JPGImage) readJPGImage(buffer []byte) (*JPGImage, error) {
+func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 	if len(buffer) < 2 || buffer[0] != 0xFF || buffer[1] != 0xD8 {
 		return nil, errors.New("Error: Invalid JPEG header.")
 	}
@@ -167,7 +167,7 @@ func (image *JPGImage) readJPGImage(buffer []byte) (*JPGImage, error) {
 
 // getByte reads one byte, advancing the index.
 // It returns io.ErrUnexpectedEOF if the buffer is exhausted.
-func (image *JPGImage) getByte(buffer []byte) (uint8, error) {
+func (image *jpgImage) getByte(buffer []byte) (uint8, error) {
 	if image.index >= len(buffer) {
 		return 0, io.ErrUnexpectedEOF
 	}
@@ -178,7 +178,7 @@ func (image *JPGImage) getByte(buffer []byte) (uint8, error) {
 
 // getUint16 reads two bytes as a big-endian unsigned integer,
 // advancing the index by two.
-func (image *JPGImage) getUint16(buffer []byte) (uint16, error) {
+func (image *jpgImage) getUint16(buffer []byte) (uint16, error) {
 	b1, err := image.getByte(buffer)
 	if err != nil {
 		return 0, err
@@ -195,7 +195,7 @@ func (image *JPGImage) getUint16(buffer []byte) (uint16, error) {
 // are legal padding and are swallowed.
 // NB: this routine must not be used after the SOS marker, since it
 // does not deal correctly with FF/00 sequences in compressed data.
-func (image *JPGImage) nextMarker(buffer []byte) (uint8, error) {
+func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
 	// Find 0xFF byte; skip any non-FF garbage.
 	ch, err := image.getByte(buffer)
 	if err != nil {
@@ -221,7 +221,7 @@ func (image *JPGImage) nextMarker(buffer []byte) (uint8, error) {
 // Note that we MUST skip the parameter segment explicitly in order
 // not to be fooled by 0xFF bytes that might appear within the
 // parameter segment - such bytes do NOT introduce new markers.
-func (image *JPGImage) skipVariable(buffer []byte) error {
+func (image *jpgImage) skipVariable(buffer []byte) error {
 	// Get the marker parameter length count
 	length, err := image.getUint16(buffer)
 	if err != nil {

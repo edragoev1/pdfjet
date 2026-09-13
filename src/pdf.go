@@ -20,8 +20,8 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/djb"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/salsa20"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
 	"github.com/edragoev1/pdfjet/v9/src/pagemode"
@@ -112,7 +112,7 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
-	pdf.uuid = djb.Salsa20()
+	pdf.uuid = salsa20.DocumentID()
 
 	// The creation date is in UTC, so the XMP metadata says so with a Z.
 	pdf.createDate = time.Now().UTC().Format("2006-01-02T15:04:05") + "Z"
@@ -471,7 +471,7 @@ func (pdf *PDF) addPagesObject() {
 	pdf.appendString("/Type /Pages\n")
 	pdf.appendString("/Kids [\n")
 	for _, page := range pdf.pages {
-		if pdf.compliance != compliance.PDF_17 {
+		if pdf.compliance != compliance.PDF_1_7 {
 			page.setStructElementsPageObjNumber(page.objNumber)
 		}
 		pdf.appendInteger(page.objNumber)
@@ -676,7 +676,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Catalog\n")
 
-	if pdf.compliance != compliance.PDF_17 {
+	if pdf.compliance != compliance.PDF_1_7 {
 		languageBytes := []byte(pdf.language)
 		if pdf.encryption != nil {
 			languageBytes = pdf.encryption.encrypt(languageBytes)
@@ -712,7 +712,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendInteger(pdf.pagesObjNumber)
 	pdf.appendString(" 0 R\n")
 
-	if pdf.compliance != compliance.PDF_17 {
+	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.appendString("/Metadata ")
 		pdf.appendInteger(pdf.metadataObjNumber)
 		pdf.appendString(" 0 R\n")
@@ -822,7 +822,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 			pdf.appendString("]\n")
 		}
 
-		if pdf.compliance != compliance.PDF_17 {
+		if pdf.compliance != compliance.PDF_1_7 {
 			pdf.appendString("/Tabs /S\n")
 			pdf.appendString("/StructParents ")
 			pdf.appendInteger(i)
@@ -1173,7 +1173,7 @@ func (pdf *PDF) Complete() {
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
 	}
-	if pdf.compliance != compliance.PDF_17 {
+	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
 	}
@@ -1184,7 +1184,7 @@ func (pdf *PDF) Complete() {
 	}
 
 	structTreeRootObjNumber := 0
-	if pdf.compliance != compliance.PDF_17 {
+	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.addStructElementObjects()
 		structTreeRootObjNumber = pdf.addStructTreeRootObject()
 		pdf.addNumsParentTree()

@@ -5,15 +5,15 @@
 
 package pdfjet
 
-// Round is used in the Chart module.
-type Round struct {
+// roundedRange is used in the Chart module.
+type roundedRange struct {
 	minValue       float32
 	maxValue       float32
 	numOfGridLines int
 }
 
-// NewRound constructor.
-func NewRound() *Round {
-	round := new(Round)
+// newRoundedRange constructor.
+func newRoundedRange() *roundedRange {
+	round := new(roundedRange)
 	return round
 }

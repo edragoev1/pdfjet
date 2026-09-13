@@ -101,9 +101,9 @@ type Permissions struct {
 	permissionsFlags uint32
 }
 
-// ValidBitsMask defines the valid bits (3-12) that can be set in the permissions flag.
+// validBitsMask defines the valid bits (3-12) that can be set in the permissions flag.
 // Bits outside this range are reserved and must be zero.
-const ValidBitsMask uint32 = 0b1111_1111_1100 // Hex: 0xFFC
+const validBitsMask uint32 = 0b1111_1111_1100 // Hex: 0xFFC
 
 // NewPermissions creates a new instance of Permissions with no permissions granted.
 func NewPermissions() *Permissions {
@@ -119,7 +119,7 @@ func NewPermissionsFromInt(rawFlags int) *Permissions {
 // NewPermissionsFromUint32 creates a new instance of Permissions from the raw 32-bit integer value
 // found in the PDF encryption dictionary's /P key. Invalid bits (outside positions 3-12) are masked out.
 func NewPermissionsFromUint32(rawFlags uint32) *Permissions {
-	return &Permissions{permissionsFlags: rawFlags & ValidBitsMask}
+	return &Permissions{permissionsFlags: rawFlags & validBitsMask}
 }
 
 // GetAccess returns the permissions as UserAccess flags
@@ -129,7 +129,7 @@ func (p *Permissions) GetAccess() UserAccess {
 
 // SetAccess sets the permissions using UserAccess flags
 func (p *Permissions) SetAccess(access UserAccess) *Permissions {
-	p.permissionsFlags = uint32(access) & ValidBitsMask
+	p.permissionsFlags = uint32(access) & validBitsMask
 	return p
 }
 
@@ -186,14 +186,14 @@ func (p *Permissions) CanPrintHighQuality() bool {
 func (p *Permissions) Grant(permissions UserAccess) *Permissions {
 	p.permissionsFlags |= uint32(permissions)
 	// Re-apply mask to ensure no invalid bits were set
-	p.permissionsFlags &= ValidBitsMask
+	p.permissionsFlags &= validBitsMask
 	return p
 }
 
 // Revoke revokes the specified permissions. The other permissions stay as they are.
 func (p *Permissions) Revoke(permissions UserAccess) *Permissions {
 	p.permissionsFlags &^= uint32(permissions)
-	p.permissionsFlags &= ValidBitsMask
+	p.permissionsFlags &= validBitsMask
 	return p
 }
 

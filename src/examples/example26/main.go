@@ -44,13 +44,13 @@ func Example26() {
 
 	y += 30.0
 	pdfjet.NewRadioButton(f1, "Hello, World!").
-		SelectButton(true).
+		Select(true).
 		SetLocation(x, y).
 		DrawOn(page)
 
 	xy := pdfjet.NewRadioButton(f1, "Yes").
 		SetURIAction("http://pdfjet.com").
-		SelectButton(true).
+		Select(true).
 		SetLocation(x+100.0, 50.0).
 		DrawOn(page)
 

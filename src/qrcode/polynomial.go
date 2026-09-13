@@ -15,14 +15,14 @@
 
 package qrcode
 
-// Polynomial describes polynomial structure.
-type Polynomial struct {
+// qrPolynomial describes polynomial structure.
+type qrPolynomial struct {
 	num []int
 }
 
-// NewPolynomial constructs polynomial object.
-func NewPolynomial(num []int, shift int) *Polynomial {
-	polynomial := new(Polynomial)
+// newQRPolynomial constructs polynomial object.
+func newQRPolynomial(num []int, shift int) *qrPolynomial {
+	polynomial := new(qrPolynomial)
 	offset := 0
 	for offset < len(num) && num[offset] == 0 {
 		offset++
@@ -34,26 +34,26 @@ func NewPolynomial(num []int, shift int) *Polynomial {
 	return polynomial
 }
 
-func (polynomial *Polynomial) get(index int) int {
+func (polynomial *qrPolynomial) get(index int) int {
 	return polynomial.num[index]
 }
 
 // getLength returns the length.
-func (polynomial *Polynomial) getLength() int {
+func (polynomial *qrPolynomial) getLength() int {
 	return len(polynomial.num)
 }
 
-func (polynomial *Polynomial) multiply(e *Polynomial) *Polynomial {
+func (polynomial *qrPolynomial) multiply(e *qrPolynomial) *qrPolynomial {
 	num := make([]int, polynomial.getLength()+e.getLength()-1)
 	for i := 0; i < polynomial.getLength(); i++ {
 		for j := 0; j < e.getLength(); j++ {
 			num[i+j] ^= gexp(glog(polynomial.get(i)) + glog(e.get(j)))
 		}
 	}
-	return NewPolynomial(num, 0)
+	return newQRPolynomial(num, 0)
 }
 
-func (polynomial *Polynomial) mod(e *Polynomial) *Polynomial {
+func (polynomial *qrPolynomial) mod(e *qrPolynomial) *qrPolynomial {
 	if polynomial.getLength()-e.getLength() < 0 {
 		return polynomial
 	}
@@ -65,5 +65,5 @@ func (polynomial *Polynomial) mod(e *Polynomial) *Polynomial {
 	for i := 0; i < e.getLength(); i++ {
 		num[i] ^= gexp(glog(e.get(i)) + ratio)
 	}
-	return NewPolynomial(num, 0).mod(e)
+	return newQRPolynomial(num, 0).mod(e)
 }

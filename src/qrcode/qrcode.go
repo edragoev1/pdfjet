@@ -263,10 +263,10 @@ func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
 }
 
 func (qrcode *QRCode) createData(errorCorrectionLevel ErrorCorrectionLevel) []byte {
-	rsblock := new(RSBlock)
+	rsblock := new(qrRSBlock)
 	rsBlocks := rsblock.getRSBlocks(errorCorrectionLevel)
 
-	var buffer = NewBitBuffer()
+	var buffer = newBitBuffer()
 	buffer.put(4, 4)
 	buffer.put(len(qrcode.qrData), 8)
 	for i := 0; i < len(qrcode.qrData); i++ {
@@ -315,7 +315,7 @@ func maxOfIntegers(a, b int) int {
 	return b
 }
 
-func (qrcode *QRCode) createBytes(buffer *BitBuffer, rsBlocks []*RSBlock) []byte {
+func (qrcode *QRCode) createBytes(buffer *bitBuffer, rsBlocks []*qrRSBlock) []byte {
 	offset := 0
 	maxDcCount := 0
 	maxEcCount := 0
@@ -336,7 +336,7 @@ func (qrcode *QRCode) createBytes(buffer *BitBuffer, rsBlocks []*RSBlock) []byte
 		offset += dcCount
 
 		rsPoly := getErrorCorrectPolynomial(ecCount)
-		rawPoly := NewPolynomial(dcdata[r], rsPoly.getLength()-1)
+		rawPoly := newQRPolynomial(dcdata[r], rsPoly.getLength()-1)
 		modPoly := rawPoly.mod(rsPoly)
 		ecdata[r] = make([]int, rsPoly.getLength()-1)
 		for i := 0; i < len(ecdata[r]); i++ {

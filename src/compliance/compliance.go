@@ -7,7 +7,7 @@ type Compliance int
 // Used to set PDF/UA and PDF/A compliance.
 // See PDF.SetCompliance.
 const (
-	PDF_17 Compliance = iota // Do not remove the PDF_17!
+	PDF_1_7 Compliance = iota // Do not remove PDF_1_7!
 	PDF_UA_1
 	PDF_A_1A
 	PDF_A_1B

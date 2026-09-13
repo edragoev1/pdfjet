@@ -638,7 +638,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 // Uses the span (max - min) to support negative values and zero crossings.
 // Rounds max up and min down to step multiples, then recomputes grid lines
 // to ensure they match the final rounded range.
-func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
+func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	span := maxValue - minValue
 	if span <= 0 {
 		span = 1.0 // Guard against flat data
@@ -701,7 +701,7 @@ func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *Round {
 	// Scale back to original magnitude and compute step
 	step := niceSpan * float32(math.Pow(10, float64(exponent))) / float32(numOfGridLines)
 
-	round := NewRound()
+	round := newRoundedRange()
 
 	// Round max up, min down to nearest step multiple
 	round.maxValue = float32(math.Ceil(float64(maxValue/step))) * step

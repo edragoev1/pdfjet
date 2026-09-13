@@ -401,7 +401,7 @@ func (obj *PDFobj) GetResourcesObject(objects []*PDFobj) *PDFobj {
 
 // AddCoreFontResource adds a core font to the resources of this page and returns it.
 func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
-	font := NewCoreFontForPDFobj(coreFont)
+	font := newCoreFontForPDFobj(coreFont)
 	font.fontID = strings.ToUpper(strings.ReplaceAll(font.name, "-", "_"))
 	obj2 := newPDFobj()
 	obj2.dict = append(obj2.dict, "<<")

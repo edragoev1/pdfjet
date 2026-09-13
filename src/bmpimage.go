@@ -12,8 +12,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
 )
 
-// BMPImage describes BMP image object.
-type BMPImage struct {
+// bmpImage describes BMP image object.
+type bmpImage struct {
 	w        int    // Image width in pixels
 	h        int    // Image height in pixels
 	deflated []byte // The deflated reconstructed image data
@@ -36,9 +36,9 @@ const (
 	m00001111 = 0x0F
 )
 
-// NewBMPImage constructs bitmap image objects.
-func NewBMPImage(reader io.Reader) *BMPImage {
-	image := new(BMPImage)
+// newBMPImage constructs bitmap image objects.
+func newBMPImage(reader io.Reader) *bmpImage {
+	image := new(bmpImage)
 
 	bm := getNBytes(reader, 2)
 	// From Wikipedia
@@ -84,7 +84,7 @@ func NewBMPImage(reader io.Reader) *BMPImage {
 	return image
 }
 
-func (image *BMPImage) parseData(reader io.Reader) []byte {
+func (image *bmpImage) parseData(reader io.Reader) []byte {
 	// rowsize is 4 * ceil (bpp*width/32.0)
 	bmpImage := make([]byte, 3*image.w*image.h)
 	rowsize := 4 * int(math.Ceil(float64(image.bpp)*float64(image.w)/float64(32.0))) // 4 byte alignment
@@ -145,7 +145,7 @@ func (image *BMPImage) parseData(reader io.Reader) []byte {
 }
 
 // 5 + 6 + 5 in B G R format 2 bytes to 3 bytes
-func (image *BMPImage) bit16to24(row []byte, width int) []byte {
+func (image *bmpImage) bit16to24(row []byte, width int) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < 2*width; i += 2 {
@@ -160,7 +160,7 @@ func (image *BMPImage) bit16to24(row []byte, width int) []byte {
 }
 
 // 5 + 5 + 5 in B G R format 2 bytes to 3 bytes
-func (image *BMPImage) bit16to24b(row []byte, width int) []byte {
+func (image *bmpImage) bit16to24b(row []byte, width int) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < 2*width; i += 2 {
@@ -175,7 +175,7 @@ func (image *BMPImage) bit16to24b(row []byte, width int) []byte {
 }
 
 /* alpha first? */
-func (image *BMPImage) bit32to24(row []byte, width int) []byte {
+func (image *bmpImage) bit32to24(row []byte, width int) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < width*4; i += 4 {
@@ -189,7 +189,7 @@ func (image *BMPImage) bit32to24(row []byte, width int) []byte {
 	return ret
 }
 
-func (image *BMPImage) bit4to8(row []byte, width int) []byte {
+func (image *bmpImage) bit4to8(row []byte, width int) []byte {
 	ret := make([]byte, width)
 	for i := 0; i < width; i++ {
 		if i%2 == 0 {
@@ -201,7 +201,7 @@ func (image *BMPImage) bit4to8(row []byte, width int) []byte {
 	return ret
 }
 
-func (image *BMPImage) bit1to8(row []byte, width int) []byte {
+func (image *bmpImage) bit1to8(row []byte, width int) []byte {
 	ret := make([]byte, width)
 	for i := 0; i < width; i++ {
 		switch i % 8 {
@@ -226,7 +226,7 @@ func (image *BMPImage) bit1to8(row []byte, width int) []byte {
 	return ret
 }
 
-func (image *BMPImage) parsePalette(reader io.Reader, size int) {
+func (image *bmpImage) parsePalette(reader io.Reader, size int) {
 	image.palette = make([][]byte, size)
 	for i := 0; i < size; i++ {
 		image.palette[i] = getNBytes(reader, 4)
@@ -256,16 +256,16 @@ func readSignedInt(reader io.Reader) int {
 }
 
 // GetWidth returns the image width.
-func (image *BMPImage) GetWidth() float32 {
+func (image *bmpImage) GetWidth() float32 {
 	return float32(image.w)
 }
 
 // GetHeight returns the image height.
-func (image *BMPImage) GetHeight() float32 {
+func (image *bmpImage) GetHeight() float32 {
 	return float32(image.h)
 }
 
 // GetData returns the compressed image data.
-func (image *BMPImage) GetData() []byte {
+func (image *bmpImage) GetData() []byte {
 	return image.deflated
 }

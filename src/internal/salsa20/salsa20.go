@@ -22,8 +22,9 @@
 //	0xb1c7f1fa 0x62066edc 0xe035fa23 0xc4496f04
 //	0x2131e6b3 0x810bde28 0xf62cb407 0x6bdede3d
 
-// Package djb implements the Salsa20 hash function by Daniel J. Bernstein.
-package djb
+// Package salsa20 makes document IDs with the Salsa20 hash function by Daniel J.
+// Bernstein.
+package salsa20
 
 import (
 	"strconv"
@@ -31,9 +32,9 @@ import (
 	"time"
 )
 
-// Salsa20 hashes the system time and returns the first 32 hexadecimal
+// DocumentID hashes the system time and returns the first 32 hexadecimal
 // characters of the hash.
-func Salsa20() string {
+func DocumentID() string {
 	var a_in [16]uint32
 
 	// The time in milliseconds in hexadecimal, padded with zeros to 128

@@ -11,7 +11,7 @@ type Mark int
 
 // Constants used to specify the check mark in CheckBox.
 const (
-	UnCheck Mark = iota
+	Uncheck Mark = iota
 	Check
 	X
 )

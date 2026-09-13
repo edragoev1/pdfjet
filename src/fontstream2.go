@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-// FontStream2 constructs font object and adds it to the PDF objects slice.
-func FontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
+// fontStream2 constructs font object and adds it to the PDF objects slice.
+func fontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	getFontData(font, reader)
 	embedFontFile2(objects, font, reader)
 	addFontDescriptorObject2(objects, font)
