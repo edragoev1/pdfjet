@@ -116,14 +116,8 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		} else {
 			// Indexed Image
 			switch image.bitDepth {
-			case 8:
-				imageData = image.getImageColorType3BitDepth8(inflatedIDAT)
-			case 4:
-				imageData = image.getImageColorType3BitDepth4(inflatedIDAT)
-			case 2:
-				imageData = image.getImageColorType3BitDepth2(inflatedIDAT)
-			case 1:
-				imageData = image.getImageColorType3BitDepth1(inflatedIDAT)
+			case 8, 4, 2, 1:
+				imageData = image.getImageColorType3(inflatedIDAT)
 			default:
 				log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 			}
@@ -305,12 +299,22 @@ func (image *PNGImage) getImageColorType6BitDepth8(buf []byte) []byte {
 	return idata
 }
 
-// getImageColorType3BitDepth8 indexed image with bit depth == 8
+// getImageColorType3 indexed-color image with bit depth == 1, 2, 4 or 8
 // Each value is a palette index; a PLTE chunk shall appear.
-func (image *PNGImage) getImageColorType3BitDepth8(buf []byte) []byte {
-	image2 := make([]byte, 3*(image.w*image.h))
-
+// The filters are undone on the packed indexes, one byte per pixel whatever
+// the bit depth, before the indexes are looked up in the palette.
+func (image *PNGImage) getImageColorType3(buf []byte) []byte {
+	bytesPerLine := (image.w*image.bitDepth + 7) / 8
+	indexes := make([]byte, bytesPerLine*image.h)
 	filters := make([]byte, image.h)
+	for row := 0; row < image.h; row++ {
+		offset := row * (bytesPerLine + 1)
+		filters[row] = buf[offset]
+		copy(indexes[row*bytesPerLine:], buf[offset+1:offset+1+bytesPerLine])
+	}
+	applyFilters(filters, indexes, bytesPerLine, image.h, 1)
+
+	image2 := make([]byte, 3*(image.w*image.h))
 	var alpha []byte
 	if image.tRNS != nil {
 		alpha = make([]byte, image.w*image.h)
@@ -318,15 +322,14 @@ func (image *PNGImage) getImageColorType3BitDepth8(buf []byte) []byte {
 			alpha[i] = 0xff
 		}
 	}
-
-	bytesPerLine := image.w + 1
+	mask := (1 << image.bitDepth) - 1
 	n := 0
 	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters = append(filters, buf[i])
-		} else {
-			k := int(buf[i] & 0xff)
+	for row := 0; row < image.h; row++ {
+		for col := 0; col < image.w; col++ {
+			bit := col * image.bitDepth
+			b := int(indexes[row*bytesPerLine+bit/8])
+			k := (b >> (8 - image.bitDepth - bit%8)) & mask
 			if image.tRNS != nil && k < len(image.tRNS) {
 				alpha[n] = image.tRNS[k]
 			}
@@ -339,235 +342,9 @@ func (image *PNGImage) getImageColorType3BitDepth8(buf []byte) []byte {
 			j++
 		}
 	}
-	applyFilters(filters, image2, image.w, image.h, 3)
 
 	if image.tRNS != nil {
 		image.deflatedAlphaData = compressor.Deflate(alpha)
-	}
-
-	return image2
-}
-
-// Indexed Image with Bit Depth == 4
-func (image *PNGImage) getImageColorType3BitDepth4(buf []byte) []byte {
-	image2 := make([]byte, 6*(len(buf)-image.h))
-
-	bytesPerLine := image.w/2 + 1
-	if image.w%2 > 0 {
-		bytesPerLine++
-	}
-
-	j := 0
-	k := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			// Skip the filter byte.
-			continue
-		}
-
-		l := int(buf[i])
-
-		k = 3 * ((l >> 4) & 0x0000000f)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if (j % (3 * image.w)) == 0 {
-			continue
-		}
-
-		k = 3 * (l & 0x0000000f)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-	}
-
-	return image2
-}
-
-// Indexed Image with Bit Depth == 2
-func (image *PNGImage) getImageColorType3BitDepth2(buf []byte) []byte {
-	image2 := make([]byte, 12*(len(buf)-image.h))
-
-	bytesPerLine := image.w/4 + 1
-	if image.w%4 > 0 {
-		bytesPerLine++
-	}
-
-	j := 0
-	k := 0
-	for i := 0; i < len(buf); i++ {
-		if (i % bytesPerLine) == 0 {
-			// Skip the filter byte.
-			continue
-		}
-
-		l := int(buf[i])
-
-		k = 3 * ((l >> 6) & 0x00000003)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 4) & 0x00000003)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 2) & 0x00000003)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * (l & 0x00000003)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-	}
-
-	return image2
-}
-
-// Indexed Image with Bit Depth == 1
-func (image *PNGImage) getImageColorType3BitDepth1(buf []byte) []byte {
-	image2 := make([]byte, 24*(len(buf)-image.h))
-
-	bytesPerLine := image.w/8 + 1
-	if image.w%8 > 0 {
-		bytesPerLine++
-	}
-
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			// Skip the filter byte.
-			continue
-		}
-
-		l := int(buf[i])
-
-		k = 3 * ((l >> 7) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 6) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 5) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 4) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 3) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 2) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * ((l >> 1) & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
-
-		if j%(3*image.w) == 0 {
-			continue
-		}
-
-		k = 3 * (l & 0x00000001)
-		image2[j] = image.pLTE[k]
-		j++
-		image2[j] = image.pLTE[k+1]
-		j++
-		image2[j] = image.pLTE[k+2]
-		j++
 	}
 
 	return image2
@@ -621,19 +398,25 @@ func (image *PNGImage) getImageColorType0BitDepth8(buf []byte) []byte {
 func (image *PNGImage) getImageColorType0BitDepth4(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
+	filters := make([]byte, image.h)
 	bytesPerLine := image.w/2 + 1
 	if image.w%2 > 0 {
 		bytesPerLine++
 	}
 
+	k := 0
 	j := 0
 	for i := 0; i < len(buf); i++ {
 		if i%bytesPerLine == 0 {
-			continue
+			filters[k] = buf[i]
+			k++
+		} else {
+			image2[j] = buf[i]
+			j++
 		}
-		image2[j] = buf[i]
-		j++
 	}
+	// The filters work on bytes, one byte per pixel whatever the bit depth.
+	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
 
 	return image2
 }
@@ -642,19 +425,25 @@ func (image *PNGImage) getImageColorType0BitDepth4(buf []byte) []byte {
 func (image *PNGImage) getImageColorType0BitDepth2(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
+	filters := make([]byte, image.h)
 	bytesPerLine := image.w/4 + 1
 	if image.w%4 > 0 {
 		bytesPerLine++
 	}
 
+	k := 0
 	j := 0
 	for i := 0; i < len(buf); i++ {
 		if i%bytesPerLine == 0 {
-			continue
+			filters[k] = buf[i]
+			k++
+		} else {
+			image2[j] = buf[i]
+			j++
 		}
-		image2[j] = buf[i]
-		j++
 	}
+	// The filters work on bytes, one byte per pixel whatever the bit depth.
+	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
 
 	return image2
 }
@@ -663,18 +452,25 @@ func (image *PNGImage) getImageColorType0BitDepth2(buf []byte) []byte {
 func (image *PNGImage) getImageColorType0BitDepth1(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
+	filters := make([]byte, image.h)
 	bytesPerLine := image.w/8 + 1
 	if image.w%8 > 0 {
 		bytesPerLine++
 	}
 
+	k := 0
 	j := 0
 	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine != 0 {
+		if i%bytesPerLine == 0 {
+			filters[k] = buf[i]
+			k++
+		} else {
 			image2[j] = buf[i]
 			j++
 		}
 	}
+	// The filters work on bytes, one byte per pixel whatever the bit depth.
+	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
 
 	return image2
 }

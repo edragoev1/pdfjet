@@ -107,14 +107,8 @@ public class PNGImage {
                 }
             } else {
                 // Indexed Image
-                if bitDepth == 8 {
-                    image = try getImageColorType3BitDepth8(inflatedImageData)
-                } else if bitDepth == 4 {
-                    image = getImageColorType3BitDepth4(inflatedImageData)
-                } else if bitDepth == 2 {
-                    image = getImageColorType3BitDepth2(inflatedImageData)
-                } else if bitDepth == 1 {
-                    image = getImageColorType3BitDepth1(inflatedImageData)
+                if bitDepth == 8 || bitDepth == 4 || bitDepth == 2 || bitDepth == 1 {
+                    image = getImageColorType3(inflatedImageData)
                 } else {
                     Swift.print("Image with unsupported bit depth == \(String(bitDepth))")
                 }
@@ -310,24 +304,36 @@ public class PNGImage {
         return idata
     }
 
-    // Indexed-color image with bit depth == 8
+    // Indexed-color image with bit depth == 1, 2, 4 or 8
     // Each value is a palette index; a PLTE chunk shall appear.
-    private func getImageColorType3BitDepth8(_ buf: [UInt8]) throws -> [UInt8] {
-        var image = [UInt8](repeating: 0x00, count: 3*self.w!*self.h!)
+    // The filters are undone on the packed indexes, one byte per pixel whatever
+    // the bit depth, before the indexes are looked up in the palette.
+    private func getImageColorType3(_ buf: [UInt8]) -> [UInt8] {
+        let bytesPerLine = (self.w! * self.bitDepth + 7) / 8
+        var indexes = [UInt8](repeating: 0, count: bytesPerLine * self.h!)
+        var filters = [UInt8](repeating: 0, count: self.h!)
+        for row in 0..<self.h! {
+            let offset = row * (bytesPerLine + 1)
+            filters[row] = buf[offset]
+            indexes.replaceSubrange(
+                    row * bytesPerLine..<(row + 1) * bytesPerLine,
+                    with: buf[(offset + 1)..<(offset + 1 + bytesPerLine)])
+        }
+        applyFilters(&filters, &indexes, bytesPerLine, self.h!, 1)
 
-        var filters = [UInt8]()
+        var image = [UInt8](repeating: 0x00, count: 3*self.w!*self.h!)
         var alpha: [UInt8]?
         if tRNS != nil {
             alpha = [UInt8](repeating: 0xFF, count: self.w!*self.h!)
         }
-        let bytesPerLine = self.w! + 1
+        let mask = (1 << self.bitDepth) - 1
         var n = 0
         var j = 0
-        for i in 0..<buf.count {
-            if i % bytesPerLine == 0 {
-                filters.append(buf[i])
-            } else {
-                let k = Int(buf[i]) & Int(0xff)
+        for row in 0..<self.h! {
+            for col in 0..<self.w! {
+                let bit = col * self.bitDepth
+                let b = Int(indexes[row * bytesPerLine + bit / 8])
+                let k = (b >> (8 - self.bitDepth - bit % 8)) & mask
                 if tRNS != nil && k < tRNS!.count {
                     alpha![n] = tRNS![k]
                 }
@@ -340,230 +346,8 @@ public class PNGImage {
                 j += 1
             }
         }
-        applyFilters(&filters, &image, self.w!, self.h!, 3)
         if tRNS != nil {
             FlateEncode(&deflatedAlphaData, alpha!)
-        }
-        return image
-    }
-
-    // Indexed Image with Bit Depth == 4
-    private func getImageColorType3BitDepth4(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: 6*(buf.count - self.h!))
-        var bytesPerLine = self.w! / 2 + 1
-        if self.w! % 2 > 0 {
-            bytesPerLine += 1
-        }
-
-        var j = 0
-        for i in 0..<buf.count {
-            if i % bytesPerLine == 0 {
-                // Skip the filter byte.
-                continue
-            }
-
-            let l = buf[i]
-
-            var k = Int(3 * ((l >> 4) & 0x0000000f))
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = Int(3 * (l & 0x0000000f))
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-        }
-        return image
-    }
-
-    // Indexed Image with Bit Depth == 2
-    private func getImageColorType3BitDepth2(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (12 * (buf.count - self.h!)))
-
-        var bytesPerLine = self.w! / 4 + 1
-        if self.w! % 4 > 0 {
-            bytesPerLine += 1
-        }
-
-        var j = 0
-        for i in 0..<buf.count {
-            if i % bytesPerLine == 0 {
-                // Skip the filter byte.
-                continue
-            }
-
-            let l = Int(buf[i])
-
-            var k = 3 * ((l >> 6) & 0x00000003)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 4) & 0x00000003)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 2) & 0x00000003)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * (l & 0x00000003)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-        }
-
-        return image
-    }
-
-    // Indexed Image with Bit Depth == 1
-    private func getImageColorType3BitDepth1(_ buf: [UInt8]) -> [UInt8] {
-        var image = [UInt8](repeating: 0, count: (24 * (buf.count - self.h!)))
-
-        var bytesPerLine = self.w! / 8 + 1
-        if self.w! % 8 > 0 {
-            bytesPerLine += 1
-        }
-
-        var j = 0
-        for i in 0..<buf.count {
-
-            if i % bytesPerLine == 0 {
-                // Skip the filter byte.
-                continue
-            }
-
-            let l = Int(buf[i])
-
-            var k = 3 * ((l >> 7) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 6) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 5) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 4) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 3) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 2) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * ((l >> 1) & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
-            if j % (3 * self.w!) == 0 {
-                continue
-            }
-
-            k = 3 * (l & 0x00000001)
-            image[j] = pLTE![k]
-            j += 1
-            image[j] = pLTE![k + 1]
-            j += 1
-            image[j] = pLTE![k + 2]
-            j += 1
-
         }
         return image
     }
@@ -611,51 +395,72 @@ public class PNGImage {
     // Grayscale Image with Bit Depth == 4
     private func getImageColorType0BitDepth4(_ buf: [UInt8]) -> [UInt8] {
         var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
+        var filters = [UInt8](repeating: 0, count: self.h!)
         var bytesPerLine = self.w! / 2 + 1
         if self.w! % 2 > 0 {
             bytesPerLine += 1
         }
+        var k = 0
         var j = 0
         for i in 0..<buf.count {
-            if i % bytesPerLine != 0 {
+            if i % bytesPerLine == 0 {
+                filters[k] = buf[i]
+                k += 1
+            } else {
                 image[j] = buf[i]
                 j += 1
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
         return image
     }
 
     // Grayscale Image with Bit Depth == 2
     private func getImageColorType0BitDepth2(_ buf: [UInt8]) -> [UInt8] {
         var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
+        var filters = [UInt8](repeating: 0, count: self.h!)
         var bytesPerLine = self.w! / 4 + 1
         if self.w! % 4 > 0 {
             bytesPerLine += 1
         }
+        var k = 0
         var j = 0
         for i in 0..<buf.count {
-            if i % bytesPerLine != 0 {
+            if i % bytesPerLine == 0 {
+                filters[k] = buf[i]
+                k += 1
+            } else {
                 image[j] = buf[i]
                 j += 1
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
         return image
     }
 
     // Grayscale Image with Bit Depth == 1
     private func getImageColorType0BitDepth1(_ buf: [UInt8]) -> [UInt8] {
         var image = [UInt8](repeating: 0, count: (buf.count - self.h!))
-        var bytesPerLine: Int = self.w! / 8 + 1
+        var filters = [UInt8](repeating: 0, count: self.h!)
+        var bytesPerLine = self.w! / 8 + 1
         if self.w! % 8 > 0 {
             bytesPerLine += 1
         }
+        var k = 0
         var j = 0
         for i in 0..<buf.count {
-            if i % bytesPerLine != 0 {
+            if i % bytesPerLine == 0 {
+                filters[k] = buf[i]
+                k += 1
+            } else {
                 image[j] = buf[i]
                 j += 1
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        applyFilters(&filters, &image, bytesPerLine - 1, self.h!, 1)
         return image
     }
 

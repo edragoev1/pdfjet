@@ -100,14 +100,8 @@ public class PNGImage {
                 }
             } else {
                 // Indexed Image
-                if (bitDepth == 8) {
-                    imageData = GetImageColorType3BitDepth8(inflatedImageData);
-                } else if (bitDepth == 4) {
-                    imageData = GetImageColorType3BitDepth4(inflatedImageData);
-                } else if (bitDepth == 2) {
-                    imageData = GetImageColorType3BitDepth2(inflatedImageData);
-                } else if (bitDepth == 1) {
-                    imageData = GetImageColorType3BitDepth1(inflatedImageData);
+                if (bitDepth == 8 || bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
+                    imageData = GetImageColorType3(inflatedImageData);
                 } else {
                     throw new Exception("Image with unsupported bit depth == " + bitDepth);
                 }
@@ -286,11 +280,22 @@ public class PNGImage {
         return idata;
     }
 
-    // Indexed Image with Bit Depth == 8
-    private byte[] GetImageColorType3BitDepth8(byte[] buf) {
-        byte[] image = new byte[3 * (this.w * this.h)];
-
+    // Indexed-color image with bit depth == 1, 2, 4 or 8
+    // Each value is a palette index; a PLTE chunk shall appear.
+    // The filters are undone on the packed indexes, one byte per pixel whatever
+    // the bit depth, before the indexes are looked up in the palette.
+    private byte[] GetImageColorType3(byte[] buf) {
+        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
+        byte[] indexes = new byte[bytesPerLine * this.h];
         byte[] filters = new byte[this.h];
+        for (int row = 0; row < this.h; row++) {
+            int offset = row * (bytesPerLine + 1);
+            filters[row] = buf[offset];
+            Array.Copy(buf, offset + 1, indexes, row * bytesPerLine, bytesPerLine);
+        }
+        ApplyFilters(filters, indexes, bytesPerLine, this.h, 1);
+
+        byte[] image = new byte[3 * (this.w * this.h)];
         byte[] alpha = null;
         if (tRNS != null) {
             alpha = new byte[this.w * this.h];
@@ -298,16 +303,14 @@ public class PNGImage {
                 alpha[i] = (byte) 0xff;
             }
         }
-
-        int bytesPerLine = this.w + 1;
-        int m = 0;
+        int mask = (1 << this.bitDepth) - 1;
         int n = 0;
         int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[m++] = buf[i];
-            } else {
-                int k = ((int) buf[i]) & 0xff;
+        for (int row = 0; row < this.h; row++) {
+            for (int col = 0; col < this.w; col++) {
+                int bit = col * this.bitDepth;
+                int b = indexes[row * bytesPerLine + bit / 8];
+                int k = (b >> (8 - this.bitDepth - bit % 8)) & mask;
                 if (tRNS != null && k < tRNS.Length) {
                     alpha[n] = tRNS[k];
                 }
@@ -317,171 +320,8 @@ public class PNGImage {
                 image[j++] = pLTE[3*k + 2];
             }
         }
-        ApplyFilters(filters, image, this.w, this.h, 3);
-
         if (tRNS != null) {
             deflatedAlphaData = Compressor.Deflate(alpha);
-        }
-
-        return image;
-    }
-
-    // Indexed Image with Bit Depth == 4
-    private byte[] GetImageColorType3BitDepth4(byte[] buf) {
-        byte[] image = new byte[6 * (buf.Length - this.h)];
-
-        int bytesPerLine = this.w / 2 + 1;
-        if (this.w % 2 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                // Skip the filter byte.
-                continue;
-            }
-
-            int l = (int) buf[i];
-
-            k = 3 * ((l >> 4) & 0x0000000f);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 0) & 0x0000000f);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-        }
-
-        return image;
-    }
-
-    // Indexed Image with Bit Depth == 2
-    private byte[] GetImageColorType3BitDepth2(byte[] buf) {
-        byte[] image = new byte[12 * (buf.Length - this.h)];
-
-        int bytesPerLine = this.w / 4 + 1;
-        if (this.w % 4 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int j = 0;
-        int k = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                // Skip the filter byte.
-                continue;
-            }
-
-            int l = (int) buf[i];
-
-            k = 3 * ((l >> 6) & 0x00000003);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 4) & 0x00000003);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 2) & 0x00000003);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 0) & 0x00000003);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-        }
-
-        return image;
-    }
-
-    // Indexed Image with Bit Depth == 1
-    private byte[] GetImageColorType3BitDepth1(byte[] buf) {
-        byte[] image = new byte[24 * (buf.Length - this.h)];
-
-        int bytesPerLine = this.w / 8 + 1;
-        if (this.w % 8 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int j = 0;
-        int k = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                // Skip the filter byte.
-                continue;
-            }
-
-            int l = (int) buf[i];
-
-            k = 3 * ((l >> 7) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 6) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 5) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 4) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 3) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 2) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 1) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
-
-            if (j % (3 * this.w) == 0) continue;
-
-            k = 3 * ((l >> 0) & 0x00000001);
-            image[j++] = pLTE[k];
-            image[j++] = pLTE[k + 1];
-            image[j++] = pLTE[k + 2];
         }
 
         return image;
@@ -533,17 +373,23 @@ public class PNGImage {
     private byte[] GetImageColorType0BitDepth4(byte[] buf) {
         byte[] image = new byte[buf.Length - this.h];
 
+        byte[] filters = new byte[this.h];
         int bytesPerLine = this.w / 2 + 1;
         if (this.w % 2 > 0) {
             bytesPerLine += 1;
         }
 
+        int k = 0;
         int j = 0;
         for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine != 0) {
+            if (i % bytesPerLine == 0) {
+                filters[k++] = buf[i];
+            } else {
                 image[j++] = buf[i];
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
 
         return image;
     }
@@ -552,17 +398,23 @@ public class PNGImage {
     private byte[] GetImageColorType0BitDepth2(byte[] buf) {
         byte[] image = new byte[buf.Length - this.h];
 
+        byte[] filters = new byte[this.h];
         int bytesPerLine = this.w / 4 + 1;
         if (this.w % 4 > 0) {
             bytesPerLine += 1;
         }
 
+        int k = 0;
         int j = 0;
         for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine != 0) {
+            if (i % bytesPerLine == 0) {
+                filters[k++] = buf[i];
+            } else {
                 image[j++] = buf[i];
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
 
         return image;
     }
@@ -571,17 +423,23 @@ public class PNGImage {
     private byte[] GetImageColorType0BitDepth1(byte[] buf) {
         byte[] image = new byte[buf.Length - this.h];
 
+        byte[] filters = new byte[this.h];
         int bytesPerLine = this.w / 8 + 1;
         if (this.w % 8 > 0) {
             bytesPerLine += 1;
         }
 
+        int k = 0;
         int j = 0;
         for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine != 0) {
+            if (i % bytesPerLine == 0) {
+                filters[k++] = buf[i];
+            } else {
                 image[j++] = buf[i];
             }
         }
+        // The filters work on bytes, one byte per pixel whatever the bit depth.
+        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
 
         return image;
     }
