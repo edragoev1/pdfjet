@@ -34,7 +34,7 @@ public class Example_37 {
 
             page.complete(&objects) // The graphics stack is unwinded automatically
         }
-        pdf.addObjects(&objects)
+        try pdf.addObjects(&objects)
 
         try pdf.complete()
     }

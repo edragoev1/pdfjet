@@ -1979,9 +1979,22 @@ public class PDF {
     }
 
     /// Adds objects read from an existing PDF to this document.
-    public func addObjects(_ objects: inout [PDFobj]) {
+    /// The error when objects read from a PDF cannot be added to this document.
+    enum PDFError: Error, CustomStringConvertible {
+        case noPagesObject
+
+        var description: String {
+            switch self {
+            case .noPagesObject:
+                return "The objects have no root /Pages object."
+            }
+        }
+    }
+
+    /// - Throws: PDFError when the objects have no root /Pages object.
+    public func addObjects(_ objects: inout [PDFobj]) throws {
         guard let pagesObject = getPagesObject(objects) else {
-            fatalError("The objects have no root /Pages object.")
+            throw PDFError.noPagesObject
         }
         self.pagesObjNumber = Int(pagesObject.dict[0])!
         addObjectsToPDF(&objects)

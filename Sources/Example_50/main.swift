@@ -152,7 +152,7 @@ public class Example_50 {
         // Male Checkbox 2
         // CheckBox.xMark(page, 535.5, 536.5, 7.0)
         page.complete(&objects)
-        pdf.addObjects(&objects)
+        try pdf.addObjects(&objects)
 
         try pdf.complete()
     }
