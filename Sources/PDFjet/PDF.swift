@@ -1980,7 +1980,10 @@ public class PDF {
 
     /// Adds objects read from an existing PDF to this document.
     public func addObjects(_ objects: inout [PDFobj]) {
-        self.pagesObjNumber = Int(getPagesObject(objects)!.dict[0])!
+        guard let pagesObject = getPagesObject(objects) else {
+            fatalError("The objects have no root /Pages object.")
+        }
+        self.pagesObjNumber = Int(pagesObject.dict[0])!
         addObjectsToPDF(&objects)
     }
 

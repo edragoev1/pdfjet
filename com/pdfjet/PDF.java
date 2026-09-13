@@ -2073,7 +2073,11 @@ final public class PDF {
      * @throws Exception if there is an issue.
      */
     public void addObjects(List<PDFobj> objects) throws Exception {
-        this.pagesObjNumber = Integer.parseInt(getPagesObject(objects).dict.get(0));
+        PDFobj pagesObject = getPagesObject(objects);
+        if (pagesObject == null) {
+            throw new Exception("The objects have no root /Pages object.");
+        }
+        this.pagesObjNumber = Integer.parseInt(pagesObject.dict.get(0));
         addObjectsToPDF(objects);
     }
 

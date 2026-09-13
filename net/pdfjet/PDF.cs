@@ -1922,7 +1922,11 @@ public class PDF {
 
     /// <summary>Adds objects read from an existing PDF to this document.</summary>
     public void AddObjects(List<PDFobj> objects) {
-        this.pagesObjNumber = Int32.Parse(GetPagesObject(objects).dict[0]);
+        PDFobj pagesObject = GetPagesObject(objects);
+        if (pagesObject == null) {
+            throw new Exception("The objects have no root /Pages object.");
+        }
+        this.pagesObjNumber = Int32.Parse(pagesObject.dict[0]);
         AddObjectsToPDF(objects);
     }
 

@@ -1940,19 +1940,19 @@ func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {
 	return numOfChildren
 }
 
-// AddObjects adds the specified objects to the PDF.
+// AddObjects adds the specified objects to the PDF. It panics if they have no
+// root /Pages object.
 func (pdf *PDF) AddObjects(objects *[]*PDFobj) {
 	pagesObject := pdf.getPagesObject(*objects)
-	if pagesObject != nil {
-		var number = pagesObject.dict[0]
-		objNumber, err := strconv.Atoi(number)
-		if err != nil {
-			panic(err)
-		} else {
-			pdf.pagesObjNumber = objNumber
-			pdf.addObjectsToPDF(objects)
-		}
+	if pagesObject == nil {
+		panic("The objects have no root /Pages object.")
 	}
+	objNumber, err := strconv.Atoi(pagesObject.dict[0])
+	if err != nil {
+		panic(err)
+	}
+	pdf.pagesObjNumber = objNumber
+	pdf.addObjectsToPDF(objects)
 }
 
 func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
