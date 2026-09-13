@@ -17,7 +17,7 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
       and goes last in a chain. Commit 95ea973d.
 - ✅ **B** Go `DrawOn` returns `[2]float32` everywhere; `Arc.drawOn` returns the
       bottom right corner in all four ports. Commit 3fbafe4c. It missed Go
-      `QRCode` and `PDF417`, which are not `Drawable` yet; see the API audit.
+      `QRCode` and `PDF417`, which implement `Drawable` since the API audit.
 - ✅ **B** Go module path for a major version: `go get github.com/edragoev1/pdfjet@v8.7.0`
       failed with *module path must match major version*, so nobody could
       fetch a tagged Go release. The module is now
@@ -154,20 +154,25 @@ the Week 1 decision settles.
       `setCreator` do nothing for `PDF_17`, the default compliance: they only
       feed the XMP stream, which is written for PDF/A and PDF/UA only, and the
       trailer has no `/Info` (`PDF.java:1171`, `:1220`). All four ports.
-- ⬜ **B** Java `RadioButton.setLocation(double, double)` calls itself and
+- ✅ **B** Java `RadioButton.setLocation(double, double)` calls itself and
       throws `StackOverflowError` (`RadioButton.java:69`).
-- ⬜ **B** Go `NewCircleAnnotation`, `NewSquareAnnotation`,
+      Fixed: it casts to float, as C# does.
+- ✅ **B** Go `NewCircleAnnotation`, `NewSquareAnnotation`,
       `NewPolygonAnnotation` and `NewTextAnnotation` skip `NewBaseAnnotation`:
       the fill is black and the transparency 0, and `/CA 0` makes the
       annotation invisible (`circleannotation.go:10`). Go `Container.DrawOn`
       offsets only these four types, Java any `BaseAnnotation`.
-- ⬜ **B** Go `QRCode` and `PDF417` are not `Drawable`, despite the Week 1
+      Fixed: the four constructors start from `NewBaseAnnotation`, and
+      `Container.DrawOn` offsets any type that embeds `BaseAnnotation`.
+- ✅ **B** Go `QRCode` and `PDF417` are not `Drawable`, despite the Week 1
       item: `SetLocation` returns the concrete type and `DrawOn` returns
       `[]float32` (`qrcode.go:58,81`, `pdf417.go:132,240`). Go `DataMatrix`
       is right.
-- ⬜ **B** Swift `OptionalContentGroup` keeps `visible`, `printable` and
+      Fixed: both follow `DataMatrix`; no caller had to change.
+- ✅ **B** Swift `OptionalContentGroup` keeps `visible`, `printable` and
       `exportable` as `Bool?` and tests `!= nil`, so `setVisible(false)`
       writes `/ON` (`OptionalContentGroup.swift:24,88`).
+      Fixed: plain `Bool`s, false by default, as in Java.
 - ⬜ **B** C# `CompositeTextLine` is another algorithm: it lays the lines out
       at draw time and always calls `SetFontSize(fontSize)`, so a line with no
       font size draws at size 0; `GetMinMax` changes the font sizes and
@@ -194,12 +199,14 @@ the Week 1 decision settles.
       calendar out differently and places the header with `x1` as the y
       (`calendarmonth.go:89`); the default location, cell size and circle
       pen width differ in all four ports.
-- ⬜ **B** Go `Barcode` draws the UPC, EAN-13 and Code 39 text at the
+- ✅ **B** Go `Barcode` draws the UPC, EAN-13 and Code 39 text at the
       barcode's own `x1`, `y1` instead of the location it is drawn at, so the
       text of a barcode in a table cell is misplaced (`barcode.go:296,494`).
-- ⬜ **B** Go `NewForm` leaves the label and value font sizes and the form
+      Fixed: the text uses the location arguments, as in Java.
+- ✅ **B** Go `NewForm` leaves the label and value font sizes and the form
       width at 0 (`form.go:28`); Swift defaults to 8 and 10 where Java has 9
       and 9 (`Form.swift:17`).
+      Fixed: 9 and 9 points and a width of 500 in Go, 9 and 9 in Swift.
 - ⬜ **B** `BigTable`: Java splits lines with a regex and drops the empty
       fields at the end of a line (`BigTable.java:249,295`), as `Table` did;
       in all four ports `setLocation` adds to x, so a second call moves the
@@ -215,11 +222,14 @@ the Week 1 decision settles.
 - ⬜ **B** `Table.drawOn(null)` renders every row and sets `rendered = -1`,
       so a later `drawOn(page)` draws only the header rows
       (`Table.java:583`). All four ports.
-- ⬜ `PDF417.drawOn` overwrites `x1`, so a second draw shifts the symbol
+- ✅ `PDF417.drawOn` overwrites `x1`, so a second draw shifts the symbol
       right (`PDF417.java:275`). All four ports.
-- ⬜ `CheckBox` and `RadioButton` set a blue brush for a linked label, and the
+      Fixed: each row of codewords starts at a local `x0`.
+- ✅ `CheckBox` and `RadioButton` set a blue brush for a linked label, and the
       five-argument `drawString` resets it to black (`CheckBox.java:222`,
       `Page.java:464`). All four ports.
+      Fixed: the label goes to the `drawString` form that takes a colour;
+      the linked labels of Example_26 are blue in the four ports.
 - ⬜ `TextBox` draws underline and strikeout in the border colour, not the
       text colour (`TextBox.java:937`). All four ports.
 - ⬜ `TextBlock` measures with the fallback font and draws with the main font
@@ -239,11 +249,14 @@ the Week 1 decision settles.
       file (`SVGImage.java:53`); Swift scans for `" d="` and `" fill="`
       instead of parsing XML, losing single-quoted attributes and attributes
       after a newline (`SVGImage.swift:82`).
-- ⬜ `Container`: Swift `add` never sets `parent`, so annotations in a nested
+- ✅ `Container`: Swift `add` never sets `parent`, so annotations in a nested
       container miss the offset (`Container.swift:139`); C# compares
       `GetType() == typeof(Container)`, which misses a subclass.
-- ⬜ Swift `Bookmark` collapses only spaces in a title, not tabs and newlines
+      Fixed: Swift sets `parent`, C# tests `element is Container`.
+- ✅ Swift `Bookmark` collapses only spaces in a title, not tabs and newlines
       (`Bookmark.swift:63`); `getDestKey` and `getTitle` crash on the root.
+      Fixed: Swift collapses what Java's `\s` matches, and both getters
+      return `String?`, nil for the root.
 
 ### Drift between the ports
 
@@ -563,6 +576,21 @@ the Week 1 decision settles.
       `setStartPoint` and `setEndPoint` do.
       `Paragraph.setAlignment` and `TextColumn.setAlignment` are renamed
       `setTextAlignment`, as in `Cell`, `TextBox` and `TextBlock`.
+      API audit fixes: Java `RadioButton.setLocation(double, double)` no
+      longer overflows the stack; Go circle, square, polygon and text
+      annotations have a gray fill and full opacity by default instead of
+      being invisible, and a Go `Container` offsets any annotation; Swift
+      `OptionalContentGroup.setVisible(false)`, `setPrintable(false)` and
+      `setExportable(false)` write `/OFF`; Go `Form` defaults to 9 point
+      label and value fonts and a width of 500, Swift to 9 point fonts; the
+      label of a `CheckBox` or `RadioButton` with a URI is blue in the four
+      ports; annotations in a nested `Container` get its offset in Swift, and
+      in C# for a subclass of `Container`; Swift `Bookmark` collapses tabs
+      and newlines in a title, and `getDestKey` and `getTitle` return nil for
+      the root. Go `QRCode` and `PDF417` implement `Drawable`: `SetLocation`
+      returns `Drawable` and `DrawOn` returns `[2]float32`; Go draws the text
+      of a UPC-A, EAN-13 or Code 39 barcode in a table cell under the barcode;
+      a `PDF417` drawn twice no longer moves to the right.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
