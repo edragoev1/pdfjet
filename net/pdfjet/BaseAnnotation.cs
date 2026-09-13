@@ -78,8 +78,8 @@ public class BaseAnnotation : IDrawable {
     }
 
     /// <summary>Rotates this annotation together with the container it is in.</summary>
-    public void Rotate(double degrees) {
-        if (container == null) { return; }
+    public BaseAnnotation Rotate(double degrees) {
+        if (container == null) { return this; }
         float[] center = container.GetRotationCenter();
         if (container.parent != null) {
             center[0] += container.parent.x;
@@ -95,6 +95,7 @@ public class BaseAnnotation : IDrawable {
                 vertices[i + 1] = point[1];
             }
         }
+        return this;
     }
 
     /// <summary>Adds this annotation to the specified page.</summary>

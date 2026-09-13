@@ -110,10 +110,11 @@ func (textColumn *TextColumn) AddParagraph(paragraph *Paragraph) *TextColumn {
 }
 
 // RemoveLastParagraph removes the last paragraph added to this text column.
-func (textColumn *TextColumn) RemoveLastParagraph() {
+func (textColumn *TextColumn) RemoveLastParagraph() *TextColumn {
 	if len(textColumn.paragraphs) >= 1 {
 		textColumn.paragraphs = textColumn.paragraphs[0 : len(textColumn.paragraphs)-1]
 	}
+	return textColumn
 }
 
 // GetSize returns dimension object containing the width and height of this component.
@@ -299,7 +300,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 
 // AddChineseParagraph adds a new paragraph with Chinese text, in the specified
 // font, to this text column. The text is wrapped at the width of the column.
-func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) {
+func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) *TextColumn {
 	var paragraph *Paragraph
 	var buf strings.Builder
 	for _, ch := range chinese {
@@ -313,12 +314,12 @@ func (textColumn *TextColumn) AddChineseParagraph(font *Font, chinese string) {
 	}
 	paragraph = NewParagraph()
 	paragraph.Add(NewTextLine(font, buf.String()))
-	textColumn.AddParagraph(paragraph)
+	return textColumn.AddParagraph(paragraph)
 }
 
 // AddJapaneseParagraph adds a new paragraph with Japanese text, in the
 // specified font, to this text column. The text is wrapped at the width of the
 // column.
-func (textColumn *TextColumn) AddJapaneseParagraph(font *Font, japanese string) {
-	textColumn.AddChineseParagraph(font, japanese)
+func (textColumn *TextColumn) AddJapaneseParagraph(font *Font, japanese string) *TextColumn {
+	return textColumn.AddChineseParagraph(font, japanese)
 }

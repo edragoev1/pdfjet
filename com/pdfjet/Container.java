@@ -63,9 +63,11 @@ public class Container implements Drawable {
      * Sets the rotation angle of this container.
      *
      * @param degrees the rotation angle in degrees.
+     * @return this Container object.
      */
-    public void rotate(double degrees) {
+    public Container rotate(double degrees) {
         this.rotateDegrees = (float) degrees;
+        return this;
     }
 
     /**
@@ -149,11 +151,14 @@ public class Container implements Drawable {
 
     /**
      * Adds a black border around this container.
+     *
+     * @return this Container object.
      */
-    public void addBorder() {
+    public Container addBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.setBorderColor(Color.black);
         this.add(rect);
+        return this;
     }
 
     /**

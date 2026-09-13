@@ -66,8 +66,9 @@ public class Container : IDrawable {
     }
 
     /// <summary>Sets the rotation angle of this container in degrees.</summary>
-    public void Rotate(double degrees) {
+    public Container Rotate(double degrees) {
         this.rotateDegrees = (float)degrees;
+        return this;
     }
 
     /// <summary>
@@ -122,10 +123,11 @@ public class Container : IDrawable {
     }
 
     /// <summary>Adds a black border around this container.</summary>
-    public void AddBorder() {
+    public Container AddBorder() {
         Rect rect = new Rect(0f, 0f, width, height);
         rect.SetBorderColor(Color.black);
         this.Add(rect);
+        return this;
     }
 
     /// <summary>Returns the elements in this container.</summary>

@@ -194,8 +194,9 @@ public class SVGImage implements Drawable {
      * Scales the SVG image.
      *
      * @param factor the scale factor.
+     * @return this SVGImage object.
      */
-    public void scaleBy(float factor) {
+    public SVGImage scaleBy(float factor) {
         for (SVGPath path : paths) {
             for (PathOp op : path.operations) {
                 op.x1 *= factor;
@@ -206,6 +207,7 @@ public class SVGImage implements Drawable {
                 op.y *= factor;
             }
         }
+        return this;
     }
 
     /**

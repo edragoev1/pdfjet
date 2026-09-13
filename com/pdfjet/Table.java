@@ -210,8 +210,10 @@ public class Table implements Drawable {
      * Aligns to the right the cells whose text is a number, such as 1,234.50,
      * (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
      * and the number can be in parentheses.
+     *
+     * @return this Table object.
      */
-    public void rightAlignNumbers() {
+    public Table rightAlignNumbers() {
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 if (cell.text != null && isNumber(cell.text)) {
@@ -219,6 +221,7 @@ public class Table implements Drawable {
                 }
             }
         }
+        return this;
     }
 
     // Returns true if the text, without its periods, commas and apostrophes and
@@ -269,8 +272,9 @@ public class Table implements Drawable {
      *
      * @param index1 the index of the first specified row.
      * @param index2 the index of the second specified row.
+     * @return this Table object.
      */
-    public void removeLineBetweenRows(int index1, int index2) {
+    public Table removeLineBetweenRows(int index1, int index2) {
         for (int i = index1; i < index2; i++) {
             List<Cell> row = tableData.get(i);
             for (Cell cell : row) {
@@ -281,6 +285,7 @@ public class Table implements Drawable {
                 cell.setBorder(Border.TOP, false);
             }
         }
+        return this;
     }
 
     /**

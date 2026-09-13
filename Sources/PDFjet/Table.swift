@@ -175,7 +175,8 @@ public class Table : Drawable {
     /// (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
     /// and the number can be in parentheses.
     ///
-    public func rightAlignNumbers() {
+    @discardableResult
+    public func rightAlignNumbers() -> Table {
         for row in tableData {
             for cell in row {
                 if cell.text != nil && Table.isNumber(cell.text!) {
@@ -183,6 +184,7 @@ public class Table : Drawable {
                 }
             }
         }
+        return self
     }
 
     // Returns true if the text, without its periods, commas and apostrophes and
@@ -230,7 +232,8 @@ public class Table : Drawable {
     ///
     /// Removes the horizontal lines between the rows from index1 to index2.
     ///
-    public func removeLineBetweenRows(_ index1: Int, _ index2: Int) {
+    @discardableResult
+    public func removeLineBetweenRows(_ index1: Int, _ index2: Int) -> Table {
         var j = index1
         while j < index2 {
             var row = tableData[j]
@@ -243,6 +246,7 @@ public class Table : Drawable {
             }
             j += 1
         }
+        return self
     }
 
     ///

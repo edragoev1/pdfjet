@@ -51,8 +51,9 @@ func (ocg *OptionalContentGroup) Add(drawable Drawable) *OptionalContentGroup {
 }
 
 // Clear removes all drawable components from this optional content group.
-func (ocg *OptionalContentGroup) Clear() {
+func (ocg *OptionalContentGroup) Clear() *OptionalContentGroup {
 	ocg.components = ocg.components[:0]
+	return ocg
 }
 
 // GetComponents returns the drawable components in this optional content group.
@@ -78,8 +79,10 @@ func (ocg *OptionalContentGroup) SetExportable(exportable bool) *OptionalContent
 	return ocg
 }
 
-// DrawOn draws the components in the optional content group on the page.
-func (ocg *OptionalContentGroup) DrawOn(page *Page) {
+// DrawOn draws the components in the optional content group on the page and
+// returns the largest x and y coordinates of their bottom right corners.
+func (ocg *OptionalContentGroup) DrawOn(page *Page) [2]float32 {
+	xy := [2]float32{0.0, 0.0}
 	if ocg.ocgNumber == -1 {
 		ocg.pdf.newObj()
 		ocg.pdf.appendByteArray(token.BeginDictionary)
@@ -124,8 +127,11 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) {
 		page.appendInteger(ocg.ocgNumber)
 		page.appendString(" BDC\n")
 		for _, component := range ocg.components {
-			component.DrawOn(page)
+			corner := component.DrawOn(page)
+			xy[0] = max(xy[0], corner[0])
+			xy[1] = max(xy[1], corner[1])
 		}
 		page.appendString("\nEMC\n")
 	}
+	return xy
 }

@@ -85,9 +85,9 @@ func (b *BaseAnnotation) SetContents(contents string) *BaseAnnotation {
 }
 
 // Rotate rotates the annotation around its center by the given degrees.
-func (b *BaseAnnotation) Rotate(degrees float64) {
+func (b *BaseAnnotation) Rotate(degrees float64) *BaseAnnotation {
 	if b.container == nil {
-		return
+		return b
 	}
 	center := b.container.GetRotationCenter()
 	if b.container.parent != nil {
@@ -107,6 +107,7 @@ func (b *BaseAnnotation) Rotate(degrees float64) {
 			b.vertices[i+1] = point[1]
 		}
 	}
+	return b
 }
 
 // rotateAroundCenter is a helper function to rotate a point around a center.

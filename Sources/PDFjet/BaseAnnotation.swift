@@ -74,8 +74,9 @@ public class BaseAnnotation: Drawable {
     }
 
     /// Rotates this annotation together with the container it is in.
-    public func rotate(_ degrees: Double) {
-        if container == nil { return }
+    @discardableResult
+    public func rotate(_ degrees: Double) -> BaseAnnotation {
+        if container == nil { return self }
         var center = container!.getRotationCenter()
         if container!.parent != nil {
             center[0] += container!.parent!.x
@@ -93,6 +94,7 @@ public class BaseAnnotation: Drawable {
                 i += 2
             }
         }
+        return self
     }
 
     /// Adds this annotation to the specified page.

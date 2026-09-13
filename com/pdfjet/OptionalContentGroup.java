@@ -66,9 +66,12 @@ public class OptionalContentGroup {
 
     /**
      * Removes all drawable objects from the group.
+     *
+     * @return this OptionalContentGroup object.
      */
-    public void clear() {
+    public OptionalContentGroup clear() {
         components.clear();
+        return this;
     }
 
     /**
@@ -117,9 +120,11 @@ public class OptionalContentGroup {
      * Draws this content group on a page
      *
      * @param page the page to draw on
+     * @return the largest x and y coordinates of the bottom right corners of the drawables in this group.
      * @throws Exception if there is a problem
      */
-    public void drawOn(Page page) throws Exception {
+    public float[] drawOn(Page page) throws Exception {
+        float[] xy = new float[] {0f, 0f};
         if (this.ocgNumber == -1) {
             pdf.newObj();
             pdf.append("<<\n");
@@ -164,9 +169,12 @@ public class OptionalContentGroup {
             page.append(ocgNumber);
             page.append(" BDC\n");
             for (Drawable component : components) {
-                component.drawOn(page);
+                float[] corner = component.drawOn(page);
+                xy[0] = Math.max(xy[0], corner[0]);
+                xy[1] = Math.max(xy[1], corner[1]);
             }
             page.append("\nEMC\n");
         }
+        return xy;
     }
 }   // End of OptionalContentGroup.java

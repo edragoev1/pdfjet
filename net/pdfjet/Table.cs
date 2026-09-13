@@ -195,7 +195,7 @@ public class Table : IDrawable {
     /// (1,234.50), -5 or 1.5E+3. The periods, commas and apostrophes are ignored,
     /// and the number can be in parentheses.
     /// </summary>
-    public void RightAlignNumbers() {
+    public Table RightAlignNumbers() {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 if (cell.text != null && IsNumber(cell.text)) {
@@ -203,6 +203,7 @@ public class Table : IDrawable {
                 }
             }
         }
+        return this;
     }
 
     // Returns true if the text, without its periods, commas and apostrophes and
@@ -250,7 +251,7 @@ public class Table : IDrawable {
     /// <summary>
     /// Removes the horizontal lines between the rows from index1 to index2.
     /// </summary>
-    public void RemoveLineBetweenRows(int index1, int index2) {
+    public Table RemoveLineBetweenRows(int index1, int index2) {
         for (int i = index1; i < index2; i++) {
             List<Cell> row = tableData[i];
             foreach (Cell cell in row) {
@@ -261,6 +262,7 @@ public class Table : IDrawable {
                 cell.SetBorder(Border.TOP, false);
             }
         }
+        return this;
     }
 
     /// <summary>

@@ -45,8 +45,10 @@ public class OptionalContentGroup {
     }
 
     /// Removes all drawables from this group.
-    public func clear() {
+    @discardableResult
+    public func clear() -> OptionalContentGroup {
         components.removeAll()
+        return self
     }
 
     /// Returns the drawables in this group.
@@ -76,7 +78,11 @@ public class OptionalContentGroup {
     }
 
     /// Draws this group and its drawables on the specified page.
-    public func drawOn(_ page: Page) {
+    ///
+    /// - Returns: the largest x and y coordinates of the bottom right corners of the drawables in this group.
+    @discardableResult
+    public func drawOn(_ page: Page) -> [Float] {
+        var xy: [Float] = [0.0, 0.0]
         if ocgNumber == -1 {
             pdf.newObj()
             pdf.append(Token.beginDictionary)
@@ -115,9 +121,12 @@ public class OptionalContentGroup {
             page.append(ocgNumber)
             page.append(" BDC\n")
             for component in components {
-                component.drawOn(page)
+                let corner = component.drawOn(page)
+                xy[0] = max(xy[0], corner[0])
+                xy[1] = max(xy[1], corner[1])
             }
             page.append("\nEMC\n")
         }
+        return xy
     }
 }   // End of OptionalContentGroup.swift

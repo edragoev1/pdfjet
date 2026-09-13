@@ -151,10 +151,12 @@ public class TextColumn : Drawable {
     ///
     /// Removes the last paragraph added to this text column.
     ///
-    public func removeLastParagraph() {
+    @discardableResult
+    public func removeLastParagraph() -> TextColumn {
         if self.paragraphs.count >= 1 {
             self.paragraphs.removeLast()
         }
+        return self
     }
 
     ///
@@ -346,7 +348,8 @@ public class TextColumn : Drawable {
     /// - Parameter font: the font used by this paragraph.
     /// - Parameter chinese: the Chinese text.
     ///
-    public func addChineseParagraph(_ font: Font, _ chinese: String) {
+    @discardableResult
+    public func addChineseParagraph(_ font: Font, _ chinese: String) -> TextColumn {
         var paragraph: Paragraph
         var buf = String()
         for scalar in chinese.unicodeScalars {
@@ -360,7 +363,7 @@ public class TextColumn : Drawable {
         }
         paragraph = Paragraph()
         paragraph.add(TextLine(font, buf))
-        addParagraph(paragraph)
+        return addParagraph(paragraph)
     }
 
     ///
@@ -369,7 +372,8 @@ public class TextColumn : Drawable {
     /// - Parameter font: the font used by this paragraph.
     /// - Parameter japanese: the Japanese text.
     ///
-    public func addJapaneseParagraph(_ font: Font, _ japanese: String) {
-        addChineseParagraph(font, japanese)
+    @discardableResult
+    public func addJapaneseParagraph(_ font: Font, _ japanese: String) -> TextColumn {
+        return addChineseParagraph(font, japanese)
     }
 }   // End of TextColumn.swift

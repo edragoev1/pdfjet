@@ -200,11 +200,14 @@ public class TextColumn implements Drawable {
 
     /**
      * Removes the last paragraph added to this text column.
+     *
+     * @return this TextColumn object.
      */
-    public void removeLastParagraph() {
+    public TextColumn removeLastParagraph() {
         if (this.paragraphs.size() >= 1) {
             this.paragraphs.remove(this.paragraphs.size() - 1);
         }
+        return this;
     }
 
     /**
@@ -404,8 +407,9 @@ public class TextColumn implements Drawable {
      *
      * @param font the font used by this paragraph.
      * @param chinese the Chinese text.
+     * @return this TextColumn object.
      */
-    public void addChineseParagraph(Font font, String chinese) {
+    public TextColumn addChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
         int i = 0;
@@ -423,7 +427,7 @@ public class TextColumn implements Drawable {
         }
         paragraph = new Paragraph();
         paragraph.add(new TextLine(font, buf.toString()));
-        addParagraph(paragraph);
+        return addParagraph(paragraph);
     }
 
     /**
@@ -431,8 +435,9 @@ public class TextColumn implements Drawable {
      *
      * @param font the font used by this paragraph.
      * @param japanese the Japanese text.
+     * @return this TextColumn object.
      */
-    public void addJapaneseParagraph(Font font, String japanese) {
-        addChineseParagraph(font, japanese);
+    public TextColumn addJapaneseParagraph(Font font, String japanese) {
+        return addChineseParagraph(font, japanese);
     }
 }   // End of TextColumn.java

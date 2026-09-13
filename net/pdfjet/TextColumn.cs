@@ -166,10 +166,11 @@ public class TextColumn : IDrawable {
     /// <summary>
     /// Removes the last paragraph added to this text column.
     /// </summary>
-    public void RemoveLastParagraph() {
+    public TextColumn RemoveLastParagraph() {
         if (this.paragraphs.Count >= 1) {
             this.paragraphs.RemoveAt(this.paragraphs.Count - 1);
         }
+        return this;
     }
 
     /// <summary>
@@ -364,7 +365,7 @@ public class TextColumn : IDrawable {
     /// </summary>
     /// <param name="font">the font used by this paragraph.</param>
     /// <param name="chinese">the Chinese text.</param>
-    public void AddChineseParagraph(Font font, String chinese) {
+    public TextColumn AddChineseParagraph(Font font, String chinese) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < chinese.Length; i += Util.CharCount(chinese, i)) {
@@ -379,7 +380,7 @@ public class TextColumn : IDrawable {
         }
         paragraph = new Paragraph();
         paragraph.Add(new TextLine(font, buf.ToString()));
-        AddParagraph(paragraph);
+        return AddParagraph(paragraph);
     }
 
     /// <summary>
@@ -387,8 +388,8 @@ public class TextColumn : IDrawable {
     /// </summary>
     /// <param name="font">the font used by this paragraph.</param>
     /// <param name="japanese">the Japanese text.</param>
-    public void AddJapaneseParagraph(Font font, String japanese) {
-        AddChineseParagraph(font, japanese);
+    public TextColumn AddJapaneseParagraph(Font font, String japanese) {
+        return AddChineseParagraph(font, japanese);
     }
 }   // End of TextColumn.cs
 }   // End of namespace PDFjet.NET

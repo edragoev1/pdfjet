@@ -167,9 +167,10 @@ public class Rect  : IDrawable {
     }
 
     /// <summary>Multiplies the x and y coordinates of this rectangle by the specified factor.</summary>
-    public void ScaleBy(float factor) {
+    public Rect ScaleBy(float factor) {
         this.x *= factor;
         this.y *= factor;
+        return this;
     }
 
     /// <summary>Draws this rectangle on the specified page.</summary>

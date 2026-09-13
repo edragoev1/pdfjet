@@ -159,9 +159,10 @@ func (rect *Rect) SetActualText(actualText string) *Rect {
 
 // ScaleBy scales this rect by the specified factor.
 // @param factor the factor used to scale the rect.
-func (rect *Rect) ScaleBy(factor float32) {
+func (rect *Rect) ScaleBy(factor float32) *Rect {
 	rect.x *= factor
 	rect.y *= factor
+	return rect
 }
 
 // DrawOn draws this rect on the specified page.

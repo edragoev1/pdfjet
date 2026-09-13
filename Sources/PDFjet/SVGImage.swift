@@ -365,9 +365,10 @@ public class SVGImage : Drawable {
     }
 
     /// Scales this SVG image by the specified factor.
-    public func scaleBy(_ factor: Float) {
+    @discardableResult
+    public func scaleBy(_ factor: Float) -> SVGImage {
         guard let paths = paths else {
-            return
+            return self
         }
         for path in paths {
             guard let operations = path.operations else {
@@ -382,6 +383,7 @@ public class SVGImage : Drawable {
                 op.y *= factor
             }
         }
+        return self
     }
 
     /// Returns the width of this SVG image.

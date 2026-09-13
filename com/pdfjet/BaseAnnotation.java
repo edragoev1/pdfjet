@@ -110,9 +110,10 @@ public class BaseAnnotation implements Drawable {
      * Rotates this annotation together with the container it is in.
      *
      * @param degrees the rotation angle in degrees.
+     * @return this BaseAnnotation object.
      */
-    public void rotate(double degrees) {
-        if (container == null) { return; }
+    public BaseAnnotation rotate(double degrees) {
+        if (container == null) { return this; }
         float[] center = container.getRotationCenter();
         if (container.parent != null) {
             center[0] += container.parent.x;
@@ -128,6 +129,7 @@ public class BaseAnnotation implements Drawable {
                 vertices[i + 1] = point[1];
             }
         }
+        return this;
     }
 
     public float[] drawOn(Page page) {

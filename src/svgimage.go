@@ -240,7 +240,7 @@ func getColor(colorMap map[string]int32, colorName string) (int32, error) {
 }
 
 // ScaleBy scales this SVG image by the specified factor.
-func (image *SVGImage) ScaleBy(factor float32) {
+func (image *SVGImage) ScaleBy(factor float32) *SVGImage {
 	for _, path := range image.paths {
 		for _, op := range path.operations {
 			op.x1 *= factor
@@ -251,6 +251,7 @@ func (image *SVGImage) ScaleBy(factor float32) {
 			op.y *= factor
 		}
 	}
+	return image
 }
 
 // SetLocation sets the location of the top left corner of this image on the page.

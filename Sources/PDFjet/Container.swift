@@ -59,8 +59,10 @@ public class Container: Drawable {
     /// Sets the rotation angle of this container.
     ///
     /// - Parameter degrees: The rotation angle in degrees.
-    public func rotate(_ degrees: Double) {
+    @discardableResult
+    public func rotate(_ degrees: Double) -> Container {
         self.rotateDegrees = Float(degrees)
+        return self
     }
 
     /// Sets the rotation angle.
@@ -126,10 +128,11 @@ public class Container: Drawable {
     }
 
     /// Adds a black border around this container.
-    public func addBorder() {
+    @discardableResult
+    public func addBorder() -> Container {
         let rect = Rect(0.0, 0.0, width, height)
         rect.setBorderColor(Color.black)
-        self.add(rect)
+        return self.add(rect)
     }
 
     /// Adds a drawable element to this container.

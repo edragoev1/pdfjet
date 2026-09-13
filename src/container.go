@@ -55,8 +55,9 @@ func (c *Container) SetLocation(x, y float32) Drawable {
 // Rotate sets the rotation angle of this container.
 //
 // degrees specifies the rotation angle in degrees.
-func (c *Container) Rotate(degrees float64) {
+func (c *Container) Rotate(degrees float64) *Container {
 	c.RotateDegrees = float32(degrees)
+	return c
 }
 
 // SetRotation sets the rotation angle of the container in degrees.
@@ -115,10 +116,10 @@ func (c *Container) SetBorderColor(borderColor int32) *Container {
 }
 
 // AddBorder adds a black border around this container.
-func (c *Container) AddBorder() {
+func (c *Container) AddBorder() *Container {
 	rect := NewRect(0.0, 0.0, c.Width, c.Height)
 	rect.SetBorderColor(color.Black)
-	c.Add(rect)
+	return c.Add(rect)
 }
 
 // Add adds a drawable element to this container.

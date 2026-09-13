@@ -202,7 +202,7 @@ public class SVGImage : IDrawable {
     }
 
     /// <summary>Scales this SVG image by the specified factor.</summary>
-    public void ScaleBy(float factor) {
+    public SVGImage ScaleBy(float factor) {
         foreach (SVGPath path in paths) {
             foreach (PathOp op in path.operations) {
                 op.x1 *= factor;
@@ -213,6 +213,7 @@ public class SVGImage : IDrawable {
                 op.y *= factor;
             }
         }
+        return this;
     }
 
     /// <summary>Returns the width of this SVG image.</summary>

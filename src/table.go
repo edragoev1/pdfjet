@@ -153,7 +153,7 @@ func (table *Table) addCellsToCompleteTheGrid() {
 // RightAlignNumbers aligns to the right the cells whose text is a number,
 // such as 1,234.50, (1,234.50), -5 or 1.5E+3. The periods, commas and
 // apostrophes are ignored, and the number can be in parentheses.
-func (table *Table) RightAlignNumbers() {
+func (table *Table) RightAlignNumbers() *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
 			if isNumber(cell.text) {
@@ -161,6 +161,7 @@ func (table *Table) RightAlignNumbers() {
 			}
 		}
 	}
+	return table
 }
 
 // isNumber returns true if the text, without its periods, commas and
@@ -206,7 +207,7 @@ func isNumber(text string) bool {
 }
 
 // RemoveLineBetweenRows removes the horizontal lines between the rows from index1 to index2.
-func (table *Table) RemoveLineBetweenRows(index1, index2 int) {
+func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	for i := index1; i < index2; i++ {
 		row := table.tableData[i]
 		for _, cell := range row {
@@ -217,6 +218,7 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) {
 			cell.SetTopBorder(false)
 		}
 	}
+	return table
 }
 
 // SetTextAlignInColumn sets the text alignment in the specified column.

@@ -66,8 +66,9 @@ public class OptionalContentGroup {
 
     // Added by request from Planet Associates
     /// <summary>Removes all drawables from this group.</summary>
-    public void Clear() {
+    public OptionalContentGroup Clear() {
         this.components.Clear();
+        return this;
     }
 
     /// <summary>Returns the drawables in this group.</summary>
@@ -76,7 +77,9 @@ public class OptionalContentGroup {
     }
 
     /// <summary>Draws this group and its drawables on the specified page.</summary>
-    public void DrawOn(Page page) {
+    /// <returns>the largest x and y coordinates of the bottom right corners of the drawables in this group.</returns>
+    public float[] DrawOn(Page page) {
+        float[] xy = new float[] {0f, 0f};
         if (this.ocgNumber == -1) {
             pdf.NewObj();
             pdf.Append(Token.BeginDictionary);
@@ -121,10 +124,13 @@ public class OptionalContentGroup {
             page.Append(ocgNumber);
             page.Append(" BDC\n");
             foreach (IDrawable component in components) {
-                component.DrawOn(page);
+                float[] corner = component.DrawOn(page);
+                xy[0] = Math.Max(xy[0], corner[0]);
+                xy[1] = Math.Max(xy[1], corner[1]);
             }
             page.Append("\nEMC\n");
         }
+        return xy;
     }
 }   // End of OptionalContentGroup.cs
 }   // End of namespace PDFjet.NET
