@@ -13,8 +13,8 @@ namespace PDFjet.NET {
 /// </summary>
 public class Executive {
     /// <summary>The executive page size in portrait orientation.</summary>
-    public static readonly float[] PORTRAIT = new float[] {522.0f, 756.0f};
+    public static float[] PORTRAIT => new float[] {522.0f, 756.0f};
     /// <summary>The executive page size in landscape orientation.</summary>
-    public static readonly float[] LANDSCAPE = new float[] {756.0f, 522.0f};
+    public static float[] LANDSCAPE => new float[] {756.0f, 522.0f};
 }
 }   // End of namespace PDFjet.NET

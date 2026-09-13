@@ -323,7 +323,7 @@ public class PDFobj {
                         Float.parseFloat(dict.get(i + 5)) };
             }
         }
-        return Letter.PORTRAIT;
+        return new float[] {Letter.PORTRAIT[0], Letter.PORTRAIT[1]};
     }
 
     /**

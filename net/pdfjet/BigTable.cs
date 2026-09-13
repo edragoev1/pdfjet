@@ -39,7 +39,7 @@ namespace PDFjet.NET {
             this.pdf = pdf;
             this.f1 = f1;
             this.f2 = f2;
-            this.pageSize = pageSize;
+            this.pageSize = new float[] {pageSize[0], pageSize[1]};
             this.pages = new List<Page>();
         }
 

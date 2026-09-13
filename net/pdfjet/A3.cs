@@ -13,8 +13,8 @@ namespace PDFjet.NET {
 /// </summary>
 public class A3 {
     /// <summary>The A3 page size in portrait orientation.</summary>
-    public static readonly float[] PORTRAIT = new float[] {842.0f, 1191.0f};
+    public static float[] PORTRAIT => new float[] {842.0f, 1191.0f};
     /// <summary>The A3 page size in landscape orientation.</summary>
-    public static readonly float[] LANDSCAPE = new float[] {1191.0f, 842.0f};
+    public static float[] LANDSCAPE => new float[] {1191.0f, 842.0f};
 }
 }   // End of namespace PDFjet.NET

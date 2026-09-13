@@ -162,7 +162,7 @@ def read_c_like(api, path, port):
         if rtype in ("class", "enum", "interface", "struct"):
             continue
         if end in ("=>", "{"):
-            members.setdefault(key_of(name), Member("property")).add(name)
+            members.setdefault(key_of(name), Member("property", "static" in m.group(0))).add(name)
         elif "static" in m.group(0) or "const" in m.group(0):
             members.setdefault(key_of(name), Member("const")).add(name)
         else:
