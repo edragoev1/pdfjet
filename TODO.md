@@ -178,10 +178,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       `exportable` as `Bool?` and tests `!= nil`, so `setVisible(false)`
       writes `/ON` (`OptionalContentGroup.swift:24,88`).
       Fixed: plain `Bool`s, false by default, as in Java.
-- ⬜ **B** C# `CompositeTextLine` is another algorithm: it lays the lines out
+- ✅ **B** C# `CompositeTextLine` is another algorithm: it lays the lines out
       at draw time and always calls `SetFontSize(fontSize)`, so a line with no
       font size draws at size 0; `GetMinMax` changes the font sizes and
       `GetWidth` adds up the line widths (`CompositeTextLine.cs:138,205-273`).
+      Fixed: Java's code ported as it is; a line with no font size keeps the
+      sizes of its lines, and the width is Java's.
 - ✅ **B** Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Double]`, so
       `Page(pdf, Executive.PORTRAIT)` does not compile (`Executive.swift:16`).
       Fixed: typed `[Float]`; the other page sizes already were.
@@ -241,14 +243,21 @@ renames included (the Week 1 decision), so every item is a blocker.
       fields; `setLocation` stores x and recomputes the vertical lines, also
       before `setTableData`. `setLanguage` is removed: BigTable writes no
       marked content for a language to go to.
-- ⬜ **B** `TextColumn.setTextAlignment` has no effect: `drawOn` replaces it
+- ✅ **B** `TextColumn.setTextAlignment` has no effect: `drawOn` replaces it
       with each paragraph's alignment. `drawOn` also compares the column
       height with a y coordinate (`TextColumn.java:233,238`). All four ports.
-- ⬜ **B** Wrapping drops text line settings: `Text` and `TextFrame` lose the
+      Fixed: a paragraph remembers whether `setTextAlignment` was called, and
+      the column's alignment applies to the paragraphs that did not set one;
+      the returned corner reaches at least the location plus the height, in
+      the direction the lines advance when the column is rotated.
+- ✅ **B** Wrapping drops text line settings: `Text` and `TextFrame` lose the
       line colour, structure type, text direction, alt description and the
       URI language, alt and actual text (`Text.java:231`,
       `TextFrame.java:410`); `TextColumn` loses the colour map and language
       (`TextColumn.java:270`). All four ports.
+      Fixed: `TextLine.copyWithText` copies every setting, and `Text`,
+      `TextFrame` and `TextColumn` use it; an alt description is kept only
+      if it was set, otherwise each piece's text is its own.
 - ✅ **B** `Table.drawOn(null)` renders every row and sets `rendered = -1`,
       so a later `drawOn(page)` draws only the header rows
       (`Table.java:583`). All four ports.
@@ -263,11 +272,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Page.java:464`). All four ports.
       Fixed: the label goes to the `drawString` form that takes a colour;
       the linked labels of Example_26 are blue in the four ports.
-- ⬜ **B** `TextBox` draws underline and strikeout in the border colour, not the
+- ✅ **B** `TextBox` draws underline and strikeout in the border colour, not the
       text colour (`TextBox.java:937`). All four ports.
-- ⬜ **B** `TextBlock` measures with the fallback font and draws with the main font
+      Fixed: the pen takes the text colour before the lines are drawn.
+- ✅ **B** `TextBlock` measures with the fallback font and draws with the main font
       only (`Page.java:2664`); `setFallbackFontSize` resizes the shared
       `Font`. All four ports.
+      Fixed: `Page.drawTextBlock` (internal) takes the fallback font and its
+      size and switches fonts as `drawString` does; `setFallbackFontSize`
+      stores a size in the text block, the font size by default, and a null
+      fallback font works. Text blocks without a fallback font write the
+      same content stream as before.
 - ✅ `Cell.setTextBlock` and `setTextColumn` keep the cell text, unlike
       `setTextBox`, and `drawOn` draws the text while `getHeight` measures
       the block (`Cell.java:274,294,860`); `getHeight` and column fitting
@@ -682,6 +697,18 @@ renames included (the Week 1 decision), so every item is a blocker.
       a valid compressed content stream; Java and Swift read `.ttf.stream`
       and `.otf.stream` fonts from streams that return fewer bytes than
       asked for, and fail on a truncated one.
+      C# `CompositeTextLine` lays its lines out as Java does, so a composite
+      line with no font size keeps the sizes of its lines instead of drawing
+      them at size 0; `TextColumn.setTextAlignment` applies to the paragraphs
+      that do not set their own alignment, and `TextColumn.drawOn` returns a
+      corner at least as far as the location plus the height; `Text`,
+      `TextFrame` and `TextColumn` keep every setting of a line they wrap:
+      line colour, colour map, language, structure type, text direction, alt
+      description and the language, alt and actual text of its link;
+      `TextBox` draws underline and strikeout in the text colour, not the
+      border colour; `TextBlock` draws the characters its font lacks in the
+      fallback font, and `setFallbackFontSize` sets their size without
+      resizing the shared `Font`.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
