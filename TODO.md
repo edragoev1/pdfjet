@@ -800,11 +800,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       (`BitBuffer`, `RSBlock`, `JPGImage`, ...); see the API audit.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
+      Done on Sep 13: `check-examples.sh` is clean with the version bump,
+      `go vet ./src/...` is clean, `build-swift.sh` builds with
+      `-warnings-as-errors`, and the Build and Documentation workflows passed
+      on 017d197b. Left: the Windows workflow last ran on Sep 11 (4c626820),
+      before the API audit fixes; run it again from the Actions tab.
 - ⬜ **B** Manual viewer pass: Acrobat Reader on Windows opens Example_30 with
       `hello` and `world`, shows print allowed and copy denied, and opens the
       PDF/UA and PDF/A examples without warnings. Same files in Preview,
       Chrome and Firefox.
-- ⬜ **B** CHANGELOG `## v9.0.0` entry. Breaking changes first: Go `Drawable`
+- ✅ **B** CHANGELOG `## v9.0.0` entry. Breaking changes first: Go `Drawable`
       and `[2]float32`, `Arc.drawOn`, `UserAccess` values (any code that used
       raw ints must change), negative `/P`, Go module path `/v9`, `Box`
       removed in favor of `Rect` (`setColor` becomes `setBorderColor`, or
@@ -1109,12 +1114,24 @@ renames included (the Week 1 decision), so every item is a blocker.
       `com.pdfjet.datamatrix` for the font names and the 2D barcodes.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
-- ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
+      Fixed: the `## v9.0.0` entry in CHANGELOG.md, dated Sep 13, with the
+      breaking changes first and then encryption, reading, right to left
+      text, barcodes, tables, text, charts, pages, names, errors, parity,
+      build and documentation.
+- ✅ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
       `PDF.cs`, `pdf.go`, `PDF.swift`; `package-java.sh` and
       `package-dotnet.sh` archive names; README where 8.7.0 is mentioned.
-- ⬜ **B** Regenerate the docs (`generate-documentation.sh`), check the four
+      Fixed: the four producer strings and the two archive names; the README
+      does not mention 8.7.0.
+- ✅ **B** Regenerate the docs (`generate-documentation.sh`), check the four
       references on GitHub Pages after the push, and that the examples pages
       link the new Swift Example_30.
+      Fixed: `generate-documentation.sh` builds the four references without
+      errors, and DocFX without warnings once the C# `UserAccess` doc comments
+      name the renamed members. The Java, .NET, Go and Swift references and
+      the examples pages are up on GitHub Pages for 017d197b, with
+      `scriptposition` and `com.pdfjet.qrcode`. The examples pages are for
+      Java and .NET and both link Example_30; there is no Swift examples page.
 - ⬜ Release: tag `v9.0.0`, build the Java and .NET archives, confirm
       `go get github.com/edragoev1/pdfjet/v9@v9.0.0` works from a clean module,
       and confirm the Swift package resolves from the tag.

@@ -7,6 +7,270 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.0 — 2026-09-13
+
+Producer string bumped from `PDFjet v8.7.0` to `PDFjet v9.0.0` in all four
+ports (Java, C#, Go, Swift), and `package-java.sh` and `package-dotnet.sh` name
+their archives v9.0.0. This major release makes the four ports behave the same
+class by class, after a public API audit of all four; gives each concept one
+name in every class and port; reads encrypted and damaged PDFs; adds encryption
+to the Swift port, right to left text shaped and ordered by the Unicode
+Bidirectional Algorithm, and Data Matrix barcodes; and makes the Build workflow
+run and compare the examples of every port. The public API changes in many
+places, so code written for v8.7.0 needs changes, and the Go module path is now
+`github.com/edragoev1/pdfjet/v9`. Highlights below; see
+`git log v8.7.0..v9.0.0` for the complete history.
+
+### Breaking changes
+- The Go module path is `github.com/edragoev1/pdfjet/v9`, as Go requires for a
+  major version, so the Go imports change.
+- Go `Drawable` declares `SetLocation`, which returns `Drawable` and so goes
+  last in a chain, and every Go `DrawOn` returns `[2]float32`. `Arc.drawOn`
+  returns the bottom right corner in all four ports. `Table`, `TextBlock`,
+  `SVGImage` and `DonutChart` implement `Drawable`, and `DonutChart.drawOn`
+  returns the bottom right corner of the outer circle.
+- `Box` is removed in favor of `Rect`: `setColor` becomes `setBorderColor`, or
+  `setFillColor` with `setFillShape(true)`, and `setLineWidth` and `setPattern`
+  become `setBorderWidth` and `setBorderPattern`.
+- A page size is an immutable `PageSize` with `getWidth` and `getHeight`. The
+  `Page` and `BigTable` constructors and `Table.drawOn(pdf, pages, pageSize)`
+  take one, and the Go page sizes are functions such as `letter.Portrait()`.
+  `B5` is the ISO 216 B5 of 499 by 709 points; the Japanese B5 it was is
+  `JISB5`.
+- Many methods and constants are renamed or removed so that one concept has
+  one name in every class and port. See "Names".
+- Constants have types. The Go constant packages are typed, `PathOperator`,
+  `ImageType`, `PageLayout`, `PageMode`, `ScriptPosition` and
+  `ErrorCorrectionLevel` are enums in Java, C# and Swift, and `Align` is gone:
+  every alignment is an `Alignment`.
+- Errors are reported. Swift `PDF.complete()` and `PDF.addObjects` throw, Go
+  `PDF.Read` and `ReadWithPassword` return an error, and the Go port panics or
+  returns an error where it called `log.Fatal` or ignored the error. See
+  "Errors".
+- The `UserAccess` values are the permission bits of the standard, so code
+  that passed raw integers must use them, `/P` is written with its reserved
+  bits set, and `Permissions.grant` and `revoke` replace
+  `setPermissions(flags, grant)`.
+- Java: the font name classes and the QR code, PDF417 and Data Matrix classes
+  are in `com.pdfjet.fonts`, `com.pdfjet.qrcode`, `com.pdfjet.pdf417` and
+  `com.pdfjet.datamatrix`; import them.
+- Java and C# code compiled against v8.7.0 must be recompiled.
+
+### Encryption
+- The Swift port encrypts PDFs, as the other ports do (Example_30).
+- Encrypted PDFs are read with their user or owner password in all four ports,
+  and passwords are used the same way in all of them.
+- The permission bits of encrypted PDFs are fixed: `/P` has the reserved bits
+  of ISO 32000-2 set, which makes it negative, and the encrypted metadata is
+  declared with `EncryptMetadata true`.
+- The last four bytes of `/Perms` are random in all ports, and the Java
+  password hashes use random salts.
+- An encrypted PDF/UA file grants the permission to extract its contents for
+  accessibility.
+- `Permissions.grant` and `revoke` replace `setPermissions(flags, grant)`.
+  Java and Swift `Permissions` keep `getAccess` and lose `getRawValue`; C# and
+  Go keep `GetRawValue`, which returns the flags as an unsigned number. C# and
+  Swift `Encryption.getKey` is internal, and Go `GetKey` is removed.
+
+### Reading existing PDFs
+- Filter chains, encrypted PDFs, hybrid reference files and broken
+  cross-reference tables are read.
+- The `/DecodeParms` predictor is applied to FlateDecode and LZWDecode streams,
+  and skipped for the image XObjects that were read.
+- The bytes of strings and names are copied unchanged, and the images and the
+  joined content streams of a read PDF are copied.
+- The C#, Go and Swift ports read PDFs as Java does, and Swift numbers the
+  `/GS` graphics states of `setGraphicsState` correctly.
+- `PDF.addObjects` raises a clear error when the objects have no root `/Pages`
+  object.
+
+### Right to left text
+- Bidi directions are resolved with the Unicode Bidirectional Algorithm, and
+  the Bidi embedding controls are left out of the drawn text.
+- Arabic, Persian and Urdu letters are shaped, the lam-alef ligature is put in,
+  letters join around a zero width joiner, and the joined forms of a word
+  broken over two lines are kept.
+- `TextBlock` wraps right to left text, breaks lines at zero width spaces and
+  breaks a word too wide for a line. `TextBlock.setLanguage` is new.
+- Marks are placed on letters, ligatures and other marks from the GPOS table
+  of .otf and .ttf fonts.
+- Copied text reads right: each glyph maps to one character in the ToUnicode
+  CMaps, shaped letters map back to Unicode, shared CJK glyphs map to the
+  ideographs instead of the radicals, mirrored brackets carry the typed
+  brackets as ActualText, brackets around left to right text are copied
+  right, the zero width non-joiner and joiner are kept, and the drawn text of
+  a `TextLine` is left out of its ActualText and Alt.
+- The README documents right to left text, how it comes out when copied and
+  its limits, and Example_27 is PDF/UA compliant in all ports.
+
+### Barcodes
+- Data Matrix barcodes are new in the four ports (Example_14).
+- A PDF417 symbol is sized to its data instead of truncating it, and keeps its
+  location when it is drawn again. Go `QRCode` and `PDF417` implement
+  `Drawable`.
+- EAN-13, UPC-A, Code 128 and Code 39 barcodes are drawn left to right and
+  turned to the direction of the barcode, so EAN-13 and UPC-A honor the
+  direction, Code 128 is drawn bottom to top, and top to bottom the text of
+  Code 128 is on the left, as that of Code 39 is. `drawOn` returns the bottom
+  right corner of the bars and the text in every direction.
+- An invalid Code 39 character or barcode type fails in the four ports, and Go
+  draws the text of a barcode in a table cell under the barcode.
+- `Barcode.setDirection` takes a `Direction`, and the barcode constants of
+  `Barcode` are gone; `PDF417.setModuleLength`, `QRCode` and
+  `DataMatrix.getModules` and `setModuleColor`, and the
+  `ErrorCorrectionLevel` enum.
+
+### Tables and cells
+- A table no longer skips as many data rows as it has header rows on the first
+  page and at every page break, and the lines of a wrapped header cell repeat
+  on every page.
+- `Table.drawOn(null)` measures a table without changing what a later `drawOn`
+  draws, where that draw crashed.
+- `rightAlignNumbers` right-aligns the same texts in the four ports, the
+  column setters change the `TextBox` of a cell, as in Java, and
+  `Cell.setBorders(true)` and `Table.setCellBorders(true)` turn the four
+  borders on in every port.
+- `Cell.setTextBox`, `setTextBlock` and `setTextColumn` clear the cell text;
+  `Cell.setFont` sets only the font, while `Table.setFontInRow` and
+  `setFontInColumn` set the font and its size; the text of a cell is measured
+  at the cell's font size with the fallback font; a justified cell draws its
+  content left aligned instead of throwing; and a right aligned image or
+  barcode keeps the right padding.
+- The Java file constructor of `Table` throws `IOException`. Tables and
+  `BigTable` read their files as UTF-8, drop a byte order mark and keep the
+  empty fields at the end of a line. `BigTable` splits lines at the delimiter
+  literally, `setLocation` sets the location, and `setLanguage`, which did
+  nothing, is removed.
+- The `Table(f1, f2)` constructor, which ignored its fonts, and the
+  `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
+
+### Text
+- `TextBox`: measuring a text box that grows to fit its text, as
+  `Cell.getHeight` does, no longer fixes its height; underline and strikeout
+  are drawn in the text color; `setBorder` takes a flag, so a border can be
+  removed.
+- `TextBlock` draws the characters its font lacks in the fallback font, draws
+  a text of only line breaks as one empty line, and `getHeight` returns the
+  drawn height when the text is taller than the set height.
+- `Text`, `TextFrame` and `TextColumn` keep every setting of a line they wrap,
+  including its vertical offset and its link. `TextFrame` does everything
+  `Text` does and always finishes flowing, and its border is black by default.
+- `TextColumn.setTextAlignment` applies to the paragraphs without an alignment
+  of their own.
+- C# `CompositeTextLine` lays out its lines as Java does.
+- `Content.ofTextFile`, and so `Util.readLines`, drops a byte order mark, and
+  `Text.readLines` moves to `Util.readLines` (Go `util.ReadLines`).
+
+### Charts and calendars
+- `Chart` handles negative, empty and flat data and its colors the same way in
+  the four ports, and writes the same axis labels whatever the locale.
+- `DonutChart` computes the same percentages in every port.
+- `CalendarMonth` lays out the calendar as Java does in the four ports.
+
+### PDF, pages and drawing
+- Every PDF gets an `/Info` dictionary with its producer, creation date and
+  the properties set with `setTitle`, `setAuthor`, `setSubject`, `setKeywords`
+  and `setCreator`, and Go PDFs get their own ID.
+- Numbers in content streams are rounded the same way in every port, the font
+  descriptor metrics are in 1/1000 em, and the output does not depend on the
+  platform charset or locale.
+- The pen width, colors and graphics state getters of `Page` return what
+  readers draw with.
+- `Font` measures what `Page` draws. `Font(pdf, stream)` reads OpenType,
+  TrueType and `.otf.stream` and `.ttf.stream` fonts, told apart by their
+  first bytes, so the `Font.STREAM` flag is gone.
+- `Stamp` behaves the same in the four ports and tags the content it draws.
+- PNG images with row filters and palette transparency, top-down BMP images and
+  SVG files are read correctly, and `Image.setFlipUpsideDown` flips an image in
+  place.
+- `Rect`, `Point`, `Page`, `PDF` and `PDFobj` behave the same in the four
+  ports. `Line.setLocation` moves the whole line, `Rect.scaleBy` keeps the
+  location, and `Path.setLocation` sets the offset instead of adding to it.
+
+### Names
+- Box outlines are borders (`TextBox`, `Cell` and `CheckBox.setBorderColor`
+  and `setBorderWidth`, `Table.setCellBorderColor`,
+  `TextBlock.setCornerRadius`), and lines have strokes (`Line` and `Path`
+  `setStrokeWidth`, `setStrokeColor` and `setStrokeDashPattern`,
+  `Line.setLineCapStyle`, `Form.setStrokeWidth`). `Page` keeps pen and brush,
+  with `setDefaultPenWidth`.
+- An angle is set with `setRotation`, counter-clockwise, or
+  `setRotationClockwise`, and a text rotation in degrees with
+  `setTextRotation`.
+- Scaling and moving: `Arc.scaleBy`, `TextParameters.setLocation`,
+  `CompositeTextLine.getLocation` and `getMinMaxY`, and `Title.setOffset` sets
+  the offset.
+- Alignment: `Cell.setVerticalAlignment`, `Table.setTextAlignmentInColumn`,
+  and `Paragraph` and `TextColumn.setTextAlignment`.
+- Text boxes: a gap is in points and a spacing a multiplier, so `setPadding`,
+  `setLineGap`, `setParagraphGap` and `setHighlightColors`;
+  `Paragraph.setTextColor`, `TextLine.setDecorationColor` and
+  `CheckBox.setCheckmarkColor`.
+- Duplicates are removed: `Table.getCellAtRowColumn`, `getRowAtIndex` and
+  `getColumnAtIndex`, `Font.getHeight`, `Container.addBorder`, the `Cell`
+  side border methods, and `TextColumn.addChineseParagraph` and
+  `addJapaneseParagraph`, which are one `addCJKParagraph`.
+- Misleading names are renamed: `BaseAnnotation.setOpacity`,
+  `FileAttachment.setContents` and `setIconPushpin`, `DonutChart.setRadii`,
+  `Bookmark.getDestinationName`, `Table.autoAdjustColumnWidths`,
+  `Point.setDrawPath(boolean)`, `Cell.setMarker`, `Page.addBDC`,
+  `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHGridLines` and
+  `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
+  enum instead of `Effect`, and Go `DrawStringUsingHighlightColors`.
+- Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
+  `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
+  constructors are internal, and `Image.setLanguage`, the `SVGImage` link and
+  marked content setters and the `TextLine` URI getters are new.
+- Members that were public by accident are internal: `Token`, `Single`, the
+  core font metrics classes and the Java `PDFobj` members, and the Java
+  constant classes cannot be constructed.
+- Names in one port: `Compliance.PDF_1_7` in every port; the C# and Swift
+  constants use Java's `UPPER_SNAKE` names (`PathOperator.STROKE`,
+  `UserAccess.PRINT`, `Point.CONTROL_POINT_C`, Swift `StructElem.DOCUMENT`);
+  C# `SVGImage.GetWidth` and `GetHeight`; Go `RadioButton.Select`,
+  `NewImageForObjects`, `Page.GetPenColor` and `GetBrushColor` and
+  `mark.Uncheck`, and the Go helpers are no longer exported.
+
+### Errors
+- Swift `PDF.complete()` throws when the PDF cannot be written, and Swift
+  throws on invalid PNG, BMP, OTF and SVG data and stops with an error on QR
+  data that does not fit, `Stamp` text without a font and `Form.drawOn(nil)`.
+- The Go port panics, or returns an error where the function returns one,
+  where it exited the program with `log.Fatal`, and no longer ignores errors
+  writing, compressing or encrypting a PDF or reading an image, font or
+  embedded file.
+- `Content.ofBinaryFile` and `Content.ofTextFile` report a missing file, and C#
+  throws on a truncated font stream.
+
+### Port parity
+- `audit-api.py` lists the public types and members of the four ports and what
+  is not in every port; the first run found some 60 types and 400 members, and
+  the report now shows the port differences the README documents.
+- The defaults, the copies that colour getters return and setters keep, and
+  the errors are the same in the four ports, and the C#, Go and Swift examples
+  read like the Java ones.
+
+### Build, checks and examples
+- The Build workflow builds and runs the examples of all four ports, compares
+  their PDFs and content streams with Java's, checks the PDF/UA and PDF/A
+  examples with veraPDF, and fails on compiler warnings and `go vet` problems.
+  `check-examples.sh` runs the same checks locally.
+- A Windows workflow tests the `.cmd` build scripts, the Java port builds and
+  runs on JDK 8 too, and the Swift port handles Windows line endings.
+- The Swift port uses no NS classes, and the commented-out code and the 49
+  TODO markers are gone from the four ports.
+- Example_14 is the Data Matrix example, and the example pages describe what
+  each example does.
+
+### Documentation
+- The C# API reference is built by DocFX and published under `dotnet/`, next
+  to the Java, Go and Swift references, and the Swift reference is published
+  again.
+- `generate-documentation.sh` stops on the first error and runs doc2go with
+  `go run`, so it needs no install.
+- The README documents the port differences, `PageSize` and right to left
+  text.
+
 ## v8.7.0 — 2026-09-10
 
 Producer string bumped from `PDFjet v8.6.0` to `PDFjet v8.7.0` in all four
