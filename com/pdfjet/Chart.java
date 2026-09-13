@@ -6,8 +6,8 @@
  */
 package com.pdfjet;
 
+import java.math.*;
 import java.util.*;
-import java.text.*;
 
 /**
  * XY chart renderer for PDF pages. See Example_09.
@@ -66,7 +66,6 @@ public class Chart implements Drawable {
     private float innerBorderWidth = 0f;
 
     // Label number formatting
-    private NumberFormat nf = null;
     private int minFractionDigits = 2;
     private int maxFractionDigits = 2;
 
@@ -98,7 +97,6 @@ public class Chart implements Drawable {
     public Chart(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
-        nf = NumberFormat.getInstance();
     }
 
     /**
@@ -407,9 +405,6 @@ public class Chart implements Drawable {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 
-        nf.setMinimumFractionDigits(minFractionDigits);
-        nf.setMaximumFractionDigits(maxFractionDigits);
-
         // Compute outer rectangle corners
         x2 = x1 + w;
         y2 = y1;
@@ -555,10 +550,32 @@ public class Chart implements Drawable {
         return false;
     }
 
+    /**
+     * Formats an axis label with minFractionDigits to maxFractionDigits
+     * decimal places, rounding the exact value half to even. The label has a
+     * "." decimal separator and no grouping whatever the default locale, and
+     * a value that rounds to zero has no minus sign.
+     */
+    private String format(float value) {
+        if (Float.isNaN(value) || Float.isInfinite(value)) {
+            return String.valueOf(value);
+        }
+        // A minimum above the maximum is lowered to it, as in NumberFormat
+        int maxDigits = Math.max(maxFractionDigits, 0);
+        int minDigits = Math.min(Math.max(minFractionDigits, 0), maxDigits);
+        BigDecimal label = new BigDecimal(value)
+                .setScale(maxDigits, RoundingMode.HALF_EVEN)
+                .stripTrailingZeros();
+        if (label.scale() < minDigits) {
+            label = label.setScale(minDigits);
+        }
+        return label.toPlainString();
+    }
+
     /** Returns the width of the widest Y axis label (for left margin). */
     private float getLongestAxisYLabelWidth() {
-        float minLabelWidth = f2.stringWidth(nf.format(yMin) + "0");
-        float maxLabelWidth = f2.stringWidth(nf.format(yMax) + "0");
+        float minLabelWidth = f2.stringWidth(format(yMin) + "0");
+        float maxLabelWidth = f2.stringWidth(format(yMax) + "0");
         if (maxLabelWidth > minLabelWidth) {
             return maxLabelWidth;
         }
@@ -678,7 +695,7 @@ public class Chart implements Drawable {
         float step = (x6 - x5) / xAxisGridLines;
         page.setBrushColor(Color.black);
         for (int i = 0; i < (xAxisGridLines + 1); i++) {
-            String label = nf.format(xMin + ((xMax - xMin) / xAxisGridLines) * i);
+            String label = format(xMin + ((xMax - xMin) / xAxisGridLines) * i);
             page.drawString(f2, fontSize, label, x - (f2.stringWidth(label) / 2), y);
             x += step;
         }
@@ -691,7 +708,7 @@ public class Chart implements Drawable {
         float step = (y8 - y5) / yAxisGridLines;
         page.setBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {
-            String label = nf.format(yMin + ((yMax - yMin) / yAxisGridLines) * i);
+            String label = format(yMin + ((yMax - yMin) / yAxisGridLines) * i);
             page.drawString(f2, fontSize, label, x, y);
             y -= step;
         }

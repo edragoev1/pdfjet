@@ -489,25 +489,31 @@ public class Chart : Drawable {
     }
 
     // Formats an axis label with minFractionDigits to maxFractionDigits
-    // decimal places, rounding half to even like NumberFormat in Java.
+    // decimal places, rounding the exact value half to even. The label has a
+    // "." decimal separator and no grouping whatever the locale, and a value
+    // that rounds to zero has no minus sign.
     private func format(_ value: Float) -> String {
-        var scale: Double = 1.0
-        for _ in 0..<maxFractionDigits {
-            scale *= 10.0
+        if value.isNaN {
+            return "NaN"
         }
-        let scaled = (Double(value) * scale).rounded(.toNearestOrEven)
-        let units = Int64(scaled.magnitude)
-        let integer = units / Int64(scale)
-        var fraction = String(units % Int64(scale))
-        while fraction.count < maxFractionDigits {
-            fraction = "0" + fraction
+        if value.isInfinite {
+            return (value < 0) ? "-Infinity" : "Infinity"
         }
-        while fraction.count > minFractionDigits && fraction.hasSuffix("0") {
-            fraction.removeLast()
+        // A minimum above the maximum is lowered to it, as in Java's NumberFormat
+        let maxDigits = max(maxFractionDigits, 0)
+        let minDigits = min(max(minFractionDigits, 0), maxDigits)
+        // String(format:) without a locale writes the exact digits with a "."
+        var label = String(format: "%.\(maxDigits)f", Double(value))
+        if let point = label.firstIndex(of: ".") {
+            while label.distance(from: point, to: label.endIndex) - 1 > minDigits && label.hasSuffix("0") {
+                label.removeLast()
+            }
+            if label.hasSuffix(".") {
+                label.removeLast()
+            }
         }
-        var label = (value.sign == .minus ? "-" : "") + String(integer)
-        if !fraction.isEmpty {
-            label += "." + fraction
+        if label.hasPrefix("-") && label.allSatisfy({ $0 == "-" || $0 == "0" || $0 == "." }) {
+            label.removeFirst()
         }
         return label
     }

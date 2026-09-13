@@ -616,7 +616,7 @@ public class Chart : IDrawable {
     /// </summary>
     private void DrawYAxisLabels(Page page) {
         float x = x5 - GetLongestAxisYLabelWidth();
-        float y = y8 + f2.GetAscent(fontSize) / 3;
+        float y = y8 + f2.GetAscent() / 3;
         float step = (y8 - y5) / yAxisGridLines;
         page.SetBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {

@@ -6,8 +6,9 @@
 package pdfjet
 
 import (
-	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
@@ -411,14 +412,43 @@ func (chart *Chart) hasPoints() bool {
 	return false
 }
 
-func (chart *Chart) formatString() string {
-	return fmt.Sprintf("%%.%df", chart.maxFractionDigits)
+// format formats an axis label with minFractionDigits to maxFractionDigits
+// decimal places, rounding the exact value half to even. The label has a "."
+// decimal separator and no grouping, and a value that rounds to zero has no
+// minus sign.
+func (chart *Chart) format(value float32) string {
+	if math.IsNaN(float64(value)) {
+		return "NaN"
+	}
+	if math.IsInf(float64(value), 0) {
+		if value < 0 {
+			return "-Infinity"
+		}
+		return "Infinity"
+	}
+	// A minimum above the maximum is lowered to it, as in Java's NumberFormat
+	maxDigits := max(chart.maxFractionDigits, 0)
+	minDigits := min(max(chart.minFractionDigits, 0), maxDigits)
+	label := strconv.FormatFloat(float64(value), 'f', maxDigits, 64)
+	if point := strings.IndexByte(label, '.'); point != -1 {
+		end := len(label)
+		for end-point-1 > minDigits && label[end-1] == '0' {
+			end--
+		}
+		if end-point-1 == 0 {
+			end = point
+		}
+		label = label[:end]
+	}
+	if strings.Trim(label, "-0.") == "" {
+		label = strings.TrimPrefix(label, "-")
+	}
+	return label
 }
 
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
-	format := chart.formatString()
-	minLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf(format, chart.yMin)+"0")
-	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, fmt.Sprintf(format, chart.yMax)+"0")
+	minLabelWidth := chart.f2.StringWidth(chart.f2.size, chart.format(chart.yMin)+"0")
+	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, chart.format(chart.yMax)+"0")
 	if maxLabelWidth > minLabelWidth {
 		return maxLabelWidth
 	}
@@ -525,13 +555,12 @@ func (chart *Chart) drawVerticalGridLines(page *Page) {
 
 // drawXAxisLabelsOn draws the X axis labels.
 func (chart *Chart) drawXAxisLabelsOn(page *Page) {
-	format := chart.formatString()
 	x := chart.x5
 	y := chart.y8 + chart.f2.GetBodyHeight()
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
-		label := fmt.Sprintf(format, chart.xMin+((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
+		label := chart.format(chart.xMin + ((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
 		page.drawString(
 			chart.f2, chart.fontSize, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
@@ -540,13 +569,12 @@ func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 
 // drawYAxisLabelsOn draws the Y axis labels.
 func (chart *Chart) drawYAxisLabelsOn(page *Page) {
-	format := chart.formatString()
 	x := chart.x5 - chart.getLongestAxisYLabelWidth()
 	y := chart.y8 + chart.f2.ascent/3
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
-		label := fmt.Sprintf(format, chart.yMin+((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
+		label := chart.format(chart.yMin + ((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
 		page.drawString(chart.f2, chart.fontSize, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
