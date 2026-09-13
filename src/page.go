@@ -20,10 +20,10 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
-	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // Page is used to create PDF page objects.

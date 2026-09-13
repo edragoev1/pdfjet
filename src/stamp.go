@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
-	"github.com/edragoev1/pdfjet/v9/src/token"
 )
 
 // Stamp is content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.

@@ -2,8 +2,11 @@ using System;
 using System.Text;
 
 namespace PDFjet.NET {
-/// <summary>Byte sequences of the PDF syntax.</summary>
-public class Token {
+/// <summary>
+/// Byte sequences of the PDF syntax. The arrays are shared by every PDF being
+/// written, so the class is internal.
+/// </summary>
+internal class Token {
     // Fundamental structural tokens
     /// <summary>A space.</summary>
     public static readonly byte Space = (byte) ' ';

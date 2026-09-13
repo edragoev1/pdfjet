@@ -90,7 +90,7 @@ public class Encryption {
 
         // === Encryption Dictionary ===
         pdf.newObj();
-        pdf.append(Token.BEGIN_DICTIONARY);
+        pdf.append("<<\n");
         pdf.append("/Filter /Standard\n");
         pdf.append("/V 5\n");           // Algorithm 2.A / 2.B
         pdf.append("/R 6\n");           // Security revision 6 (strong password hashing)
@@ -155,7 +155,7 @@ public class Encryption {
         pdf.append(toHex(encryptedPermsBlock));
         pdf.append(">\n");
 
-        pdf.append(Token.END_DICTIONARY);
+        pdf.append(">>\n");
         pdf.endObj();
 
         objNumber = pdf.getObjNumber();

@@ -23,7 +23,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/djb"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
-	"github.com/edragoev1/pdfjet/v9/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
 // PDF is used to create PDF objects.

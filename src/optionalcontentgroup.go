@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
-	"github.com/edragoev1/pdfjet/v9/src/token"
+	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
 // OptionalContentGroup is container for drawable objects that can be drawn on a page as part of Optional Content Group.

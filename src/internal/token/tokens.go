@@ -3,12 +3,14 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package token defines PDF syntax tokens as byte slices.
+// Package token defines PDF syntax tokens as byte slices. It is internal,
+// as Token is in the other ports, because every PDF being written shares the
+// slices.
 package token
 
 // PDF structure tokens as byte arrays.
 // WARNING: These are shared, mutable byte slices. Treat as READ-ONLY - DO NOT MODIFY!
-// Any modification will corrupt PDF generation for all users.
+// Any modification will corrupt PDF generation.
 var (
 	Space           = byte(' ')
 	Newline         = byte('\n')
