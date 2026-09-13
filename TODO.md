@@ -336,17 +336,28 @@ renames included (the Week 1 decision), so every item is a blocker.
       only filled in the four ports, as `Point` and `Rect` do; with no colour
       at all it still gets a black hairline. Java and C# also skip an empty
       `/Contents`. No example PDF changes.
-- ⬜ **B** Numbers written: `FastFloat` rounds `-1.125` to `-1.12` in Java and C#
+- ✅ **B** Numbers written: `FastFloat` rounds `-1.125` to `-1.12` in Java and C#
       and `-1.13` in Go and Swift, and overflows `int` above 21.5 million in
       Java and C# (`FastFloat.java:11`); Swift `OpenTypeFont` scales
       `/FontBBox`, `/Ascent`, `/Descent` and `/CapHeight` to 1/1000 em where
       the others write font units (`OpenTypeFont.swift:116`); Swift
       `FontStream2` writes `/W` widths as `600.0`.
-- ⬜ **B** `Chart` axis labels use the locale in Java and C# and `.` in Go and
+      Fixed: `FastFloat` widens the float to a double, rounds hundredths
+      halves away from zero and writes whole numbers of 2^23 or more with all
+      their digits; 100,064 float bit patterns give the same bytes in the
+      four ports. Some numbers in 10 example PDFs change by 0.01, the same
+      way in every port. The font descriptor metrics are in 1/1000 em in the
+      four ports through `OpenTypeFont.toGlyphSpace`, Swift writes integer
+      widths, and C# rounds half widths away from zero like the others.
+- ✅ **B** `Chart` axis labels use the locale in Java and C# and `.` in Go and
       Swift; Go ignores `SetMinimumFractionDigits` (`chart.go:402`); C#
       places the Y labels with the ascent at the chart font size. Go
       `DonutChart` computes percentages in float64 and rounds some slices
       differently (`donutchart.go:249`).
+      Fixed: the labels round the exact value half to even and use `.`, no
+      grouping and no `-0` in the four ports, whatever the locale; Go honours
+      `SetMinimumFractionDigits`; C# places the Y labels with the font's
+      ascent; Go `DonutChart` computes percentages in float32.
 - ✅ **B** Text input: Java `TextBlock` splits `"\n"` into no lines, the others into
       one (`TextBlock.java:456`); Java and Go `Table` keep a BOM in the first
       header cell (`Table.java:71`); C# `Content.ofTextFile` also reads
@@ -375,20 +386,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       and Go's page sizes are functions (`a4.Portrait()`) returning
       `pagesize.PageSize`. Assigning to or indexing a constant no longer
       compiles, and all 200 example PDFs are unchanged.
-- ⬜ **B** Found while fixing the drift above: decided Sep 13 that Go
-      `PDF.Read` and `ReadWithPassword` return `([]*PDFobj, error)` for a wrong
-      password or a malformed file, and Swift `PDF.addObjects` throws when the
-      objects have no root `/Pages`, as Java's does. A UTF-8 encoded surrogate
-      (ED A0 80) reads as one U+FFFD in Java and three in Swift, which is what
-      Unicode recommends; left as it is.
-      Fixed: the colour setters and getters of `Cell`, `TextBox`, `TextBlock`,
-      `Point`, `Arc`, `Rect`, `Stamp`, `Text`, `TextFrame`, `Form` and
-      `BaseAnnotation` copy the array in Java and C#; `BigTable` reads its file
-      as UTF-8 and drops a BOM in the four ports; Java and C#
-      `Content.ofTextFile` report a missing file; Swift `BufferedOutputStream`
-      keeps the first write error instead of printing it, and
-      `PDF.complete()` throws it (decided Sep 13).
-- ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
+- ✅ **B** Found while fixing the drift above: the Java and C# colour setters
+      and getters of `Cell`, `TextBox`, `TextBlock`, `Point`, `Arc`, `Rect`,
+      `Stamp`, `Text`, `TextFrame`, `Form` and `BaseAnnotation` kept the
+      caller's array; `BigTable` read its file differently in each port; Java
+      and C# `Content.ofTextFile` hid a missing file; Swift
+      `BufferedOutputStream` printed write errors. All fixed, with the
+      decisions of Sep 13: Swift `PDF.complete()` and `PDF.addObjects` throw,
+      and Go `PDF.Read` and `ReadWithPassword` return an error. Left as it is:
+      a UTF-8 encoded surrogate (ED A0 80) reads as one U+FFFD in Java and
+      three in Swift, which is what Unicode recommends.
+- ✅ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
       an invalid Code 39 character. Go ignores errors from `Inflate`
@@ -405,6 +413,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       throws. C# Code 39 throws `KeyNotFoundException` before its own message.
       C# `FontStream1` stops without an error on a truncated font stream,
       where Java and Swift throw.
+      Fixed: Go panics, or returns the error where the function returns one,
+      instead of `log.Fatal` or ignoring errors, and `PDF.Read` and
+      `ReadWithPassword` return `([]*PDFobj, error)`; Swift throws where Java
+      throws, or stops with `fatalError` for invalid input, instead of
+      printing and carrying on; C# throws its own Code 39 message and on a
+      truncated font stream; `addObjects` without a root `/Pages` fails
+      clearly in the four ports (Swift throws); the four ports read top-down
+      BMP images. Go `GetPageObjects` still dereferences nil without a
+      `/Pages` root, as Java does.
 
 ### Types and signatures
 
@@ -802,6 +819,27 @@ renames included (the Week 1 decision), so every item is a blocker.
       Breaking: Swift `PDF.complete()` throws when the PDF cannot be
       written, as Java's does, where a failed write printed a message and
       `complete()` returned as if it had succeeded.
+      Numbers in content streams are rounded to hundredths from the exact
+      value of the float, halves away from zero, so negative halves and
+      values above 21.5 million are written correctly and the same in every
+      port; font descriptor bounding box, ascent, descent and cap height are
+      in 1/1000 em, as the PDF specification requires; Swift writes the CID
+      font widths as integers, and C# rounds half widths like the other
+      ports; `Chart` axis labels do not depend on the locale (`.` as the
+      decimal separator, no grouping, no `-0`), Go `Chart` honours
+      `SetMinimumFractionDigits`, and C# places the Y axis labels like the
+      other ports; Go `DonutChart` percentages match the other ports.
+      Breaking: Go `PDF.Read` and `ReadWithPassword` return `([]*PDFobj,
+      error)`, with an error for a wrong or missing password, a malformed PDF
+      or a Flate stream that cannot be inflated; Swift `PDF.addObjects`
+      throws. The Go port panics, or returns an error where the function
+      returns one, where it exited the program with `log.Fatal`, and no
+      longer ignores errors writing, compressing or encrypting a PDF or
+      reading a JPEG, PNG, font stream or embedded file; Go `NewSVGImage`
+      returns an error for a bad number in a path; `PDF.addObjects` raises a
+      clear error in the four ports when the objects have no root `/Pages`;
+      the four ports read top-down BMP images, and Go reports a truncated BMP
+      or a bad palette index instead of crashing.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
