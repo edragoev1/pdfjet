@@ -134,29 +134,39 @@ class OpenTypeFont {
         pdf.append(" 0 R\n");
         pdf.append("/Flags 32\n");
         pdf.append("/FontBBox [");
-        pdf.append(otf.bBoxLLx);
+        pdf.append(toGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
         pdf.append(' ');
-        pdf.append(otf.bBoxLLy);
+        pdf.append(toGlyphSpace(otf.bBoxLLy, otf.unitsPerEm));
         pdf.append(' ');
-        pdf.append(otf.bBoxURx);
+        pdf.append(toGlyphSpace(otf.bBoxURx, otf.unitsPerEm));
         pdf.append(' ');
-        pdf.append(otf.bBoxURy);
+        pdf.append(toGlyphSpace(otf.bBoxURy, otf.unitsPerEm));
         pdf.append("]\n");
         pdf.append("/Ascent ");
-        pdf.append(otf.ascent);
+        pdf.append(toGlyphSpace(otf.ascent, otf.unitsPerEm));
         pdf.append('\n');
         pdf.append("/Descent ");
-        pdf.append(otf.descent);
+        pdf.append(toGlyphSpace(otf.descent, otf.unitsPerEm));
         pdf.append('\n');
         pdf.append("/ItalicAngle 0\n");
         pdf.append("/CapHeight ");
-        pdf.append(otf.capHeight);
+        pdf.append(toGlyphSpace(otf.capHeight, otf.unitsPerEm));
         pdf.append('\n');
         pdf.append("/StemV 79\n");
         pdf.append(">>\n");
         pdf.endObj();
 
         font.fontDescriptorObjNumber = pdf.getObjNumber();
+    }
+
+    /**
+     * Converts a value in font units to the glyph space units of the font
+     * descriptor, 1/1000 em, rounded to the nearest integer with halves away
+     * from zero. The integer arithmetic gives the same value in every port.
+     */
+    static int toGlyphSpace(int value, int unitsPerEm) {
+        int rounded = (2000 * Math.abs(value) + unitsPerEm) / (2 * unitsPerEm);
+        return (value < 0) ? -rounded : rounded;
     }
 
     private static void addToUnicodeCMapObject(

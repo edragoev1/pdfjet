@@ -135,29 +135,44 @@ func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *OTF) {
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("/Flags 32\n")
 	pdf.appendString("/FontBBox [")
-	pdf.appendInteger(int(otf.bBoxLLx))
+	pdf.appendInteger(toGlyphSpace(otf.bBoxLLx, otf.unitsPerEm))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(otf.bBoxLLy))
+	pdf.appendInteger(toGlyphSpace(otf.bBoxLLy, otf.unitsPerEm))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(otf.bBoxURx))
+	pdf.appendInteger(toGlyphSpace(otf.bBoxURx, otf.unitsPerEm))
 	pdf.appendString(" ")
-	pdf.appendInteger(int(otf.bBoxURy))
+	pdf.appendInteger(toGlyphSpace(otf.bBoxURy, otf.unitsPerEm))
 	pdf.appendString("]\n")
 	pdf.appendString("/Ascent ")
-	pdf.appendInteger(int(otf.ascent))
+	pdf.appendInteger(toGlyphSpace(otf.ascent, otf.unitsPerEm))
 	pdf.appendString("\n")
 	pdf.appendString("/Descent ")
-	pdf.appendInteger(int(otf.descent))
+	pdf.appendInteger(toGlyphSpace(otf.descent, otf.unitsPerEm))
 	pdf.appendString("\n")
 	pdf.appendString("/ItalicAngle 0\n")
 	pdf.appendString("/CapHeight ")
-	pdf.appendInteger(int(otf.capHeight))
+	pdf.appendInteger(toGlyphSpace(otf.capHeight, otf.unitsPerEm))
 	pdf.appendString("\n")
 	pdf.appendString("/StemV 79\n")
 	pdf.appendString(">>\n")
 	pdf.endObj()
 
 	font.fontDescriptorObjNumber = pdf.getObjNumber()
+}
+
+// toGlyphSpace converts a value in font units to the glyph space units of the
+// font descriptor, 1/1000 em, rounded to the nearest integer with halves away
+// from zero. The integer arithmetic gives the same value in every port.
+func toGlyphSpace(value int16, unitsPerEm int) int {
+	magnitude := int(value)
+	if magnitude < 0 {
+		magnitude = -magnitude
+	}
+	rounded := (2000*magnitude + unitsPerEm) / (2 * unitsPerEm)
+	if value < 0 {
+		return -rounded
+	}
+	return rounded
 }
 
 func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {

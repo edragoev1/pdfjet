@@ -113,7 +113,7 @@ class OpenTypeFont {
             }
         }
 
-        let factor = Float(1000.0) / Float(otf.unitsPerEm!)
+        let unitsPerEm = otf.unitsPerEm!
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /FontDescriptor\n")
@@ -129,29 +129,37 @@ class OpenTypeFont {
         pdf.append(" 0 R\n")
         pdf.append("/Flags 32\n")
         pdf.append("/FontBBox [")
-        pdf.append(Int32(Float(otf.bBoxLLx!) * factor))
+        pdf.append(toGlyphSpace(otf.bBoxLLx!, unitsPerEm))
         pdf.append(Token.space)
-        pdf.append(Int32(Float(otf.bBoxLLy!) * factor))
+        pdf.append(toGlyphSpace(otf.bBoxLLy!, unitsPerEm))
         pdf.append(Token.space)
-        pdf.append(Int32(Float(otf.bBoxURx!) * factor))
+        pdf.append(toGlyphSpace(otf.bBoxURx!, unitsPerEm))
         pdf.append(Token.space)
-        pdf.append(Int32(Float(otf.bBoxURy!) * factor))
+        pdf.append(toGlyphSpace(otf.bBoxURy!, unitsPerEm))
         pdf.append("]\n")
         pdf.append("/Ascent ")
-        pdf.append(Int32(Float(otf.ascent!) * factor))
+        pdf.append(toGlyphSpace(otf.ascent!, unitsPerEm))
         pdf.append(Token.newline)
         pdf.append("/Descent ")
-        pdf.append(Int32(Float(otf.descent!) * factor))
+        pdf.append(toGlyphSpace(otf.descent!, unitsPerEm))
         pdf.append(Token.newline)
         pdf.append("/ItalicAngle 0\n")
         pdf.append("/CapHeight ")
-        pdf.append(Int32(Float(otf.capHeight!) * factor))
+        pdf.append(toGlyphSpace(otf.capHeight!, unitsPerEm))
         pdf.append(Token.newline)
         pdf.append("/StemV 79\n")
         pdf.append(Token.endDictionary)
         pdf.endObj()
 
         font.fontDescriptorObjNumber = pdf.getObjNumber()
+    }
+
+    /// Converts a value in font units to the glyph space units of the font
+    /// descriptor, 1/1000 em, rounded to the nearest integer with halves away
+    /// from zero. The integer arithmetic gives the same value in every port.
+    static func toGlyphSpace(_ value: Int16, _ unitsPerEm: Int) -> Int32 {
+        let rounded = (2000 * abs(Int(value)) + unitsPerEm) / (2 * unitsPerEm)
+        return Int32((value < 0) ? -rounded : rounded)
     }
 
     private static func addToUnicodeCMapObject(

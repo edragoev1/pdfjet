@@ -123,23 +123,23 @@ class FontStream1 {
         pdf.Append(" 0 R\n");
         pdf.Append("/Flags 32\n");
         pdf.Append("/FontBBox [");
-        pdf.Append(font.bBoxLLx);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(font.bBoxLLy);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.bBoxLLy, font.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(font.bBoxURx);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.bBoxURx, font.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(font.bBoxURy);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.bBoxURy, font.unitsPerEm));
         pdf.Append("]\n");
         pdf.Append("/Ascent ");
-        pdf.Append(font.fontAscent);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.fontAscent, font.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/Descent ");
-        pdf.Append(font.fontDescent);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/ItalicAngle 0\n");
         pdf.Append("/CapHeight ");
-        pdf.Append(font.capHeight);
+        pdf.Append(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/StemV 79\n");
         pdf.Append(Token.EndDictionary);
@@ -264,12 +264,12 @@ class FontStream1 {
 
         float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
         pdf.Append("/DW ");
-        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0])));
+        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0]), MidpointRounding.AwayFromZero));
         pdf.Append('\n');
 
         pdf.Append("/W [0[\n");
         foreach (int width in font.advanceWidth) {
-            pdf.Append((int) Math.Round(k * Convert.ToSingle(width)));
+            pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
             pdf.Append(' ');
         }
         pdf.Append("]]\n");

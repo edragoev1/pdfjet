@@ -136,19 +136,19 @@ class FontStream2 {
         obj.dict.Add("32");
         obj.dict.Add("/FontBBox");
         obj.dict.Add("[");
-        obj.dict.Add(font.bBoxLLx.ToString());
-        obj.dict.Add(font.bBoxLLy.ToString());
-        obj.dict.Add(font.bBoxURx.ToString());
-        obj.dict.Add(font.bBoxURy.ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLy, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURx, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURy, font.unitsPerEm).ToString());
         obj.dict.Add("]");
         obj.dict.Add("/Ascent");
-        obj.dict.Add(font.fontAscent.ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontAscent, font.unitsPerEm).ToString());
         obj.dict.Add("/Descent");
-        obj.dict.Add(font.fontDescent.ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm).ToString());
         obj.dict.Add("/ItalicAngle");
         obj.dict.Add("0");
         obj.dict.Add("/CapHeight");
-        obj.dict.Add(font.capHeight.ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm).ToString());
         obj.dict.Add("/StemV");
         obj.dict.Add("79");
         obj.dict.Add(">>");
@@ -244,13 +244,13 @@ class FontStream2 {
 
         float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
         obj.dict.Add("/DW");
-        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[0])).ToString());
+        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[0], MidpointRounding.AwayFromZero)).ToString());
         obj.dict.Add("/W");
         obj.dict.Add("[");
         obj.dict.Add("0");
         obj.dict.Add("[");
         foreach (int width in font.advanceWidth) {
-            obj.dict.Add(((int) Math.Round(k * width)).ToString());
+            obj.dict.Add(((int) Math.Round(k * width, MidpointRounding.AwayFromZero)).ToString());
         }
         obj.dict.Add("]");
         obj.dict.Add("]");

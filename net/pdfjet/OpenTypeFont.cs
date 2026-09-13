@@ -132,29 +132,39 @@ class OpenTypeFont {
         pdf.Append(" 0 R\n");
         pdf.Append("/Flags 32\n");
         pdf.Append("/FontBBox [");
-        pdf.Append(otf.bBoxLLx);
+        pdf.Append(ToGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(otf.bBoxLLy);
+        pdf.Append(ToGlyphSpace(otf.bBoxLLy, otf.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(otf.bBoxURx);
+        pdf.Append(ToGlyphSpace(otf.bBoxURx, otf.unitsPerEm));
         pdf.Append(' ');
-        pdf.Append(otf.bBoxURy);
+        pdf.Append(ToGlyphSpace(otf.bBoxURy, otf.unitsPerEm));
         pdf.Append("]\n");
         pdf.Append("/Ascent ");
-        pdf.Append(otf.ascent);
+        pdf.Append(ToGlyphSpace(otf.ascent, otf.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/Descent ");
-        pdf.Append(otf.descent);
+        pdf.Append(ToGlyphSpace(otf.descent, otf.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/ItalicAngle 0\n");
         pdf.Append("/CapHeight ");
-        pdf.Append(otf.capHeight);
+        pdf.Append(ToGlyphSpace(otf.capHeight, otf.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/StemV 79\n");
         pdf.Append(">>\n");
         pdf.EndObj();
 
         font.fontDescriptorObjNumber = pdf.GetObjNumber();
+    }
+
+    /// <summary>
+    /// Converts a value in font units to the glyph space units of the font
+    /// descriptor, 1/1000 em, rounded to the nearest integer with halves away
+    /// from zero. The integer arithmetic gives the same value in every port.
+    /// </summary>
+    internal static int ToGlyphSpace(int value, int unitsPerEm) {
+        int rounded = (2000 * Math.Abs(value) + unitsPerEm) / (2 * unitsPerEm);
+        return (value < 0) ? -rounded : rounded;
     }
 
     private static void AddToUnicodeCMapObject(
@@ -280,12 +290,12 @@ class OpenTypeFont {
 
         float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
         pdf.Append("/DW ");
-        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0])));
+        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0]), MidpointRounding.AwayFromZero));
         pdf.Append('\n');
 
         pdf.Append("/W [0[\n");
         foreach (int width in font.advanceWidth) {
-            pdf.Append((int) Math.Round(k * Convert.ToSingle(width)));
+            pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
             pdf.Append(' ');
         }
         pdf.Append("]]\n");
