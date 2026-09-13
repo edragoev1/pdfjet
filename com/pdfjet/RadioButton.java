@@ -67,7 +67,7 @@ public class RadioButton implements Drawable {
      *  @return this RadioButton.
      */
     public RadioButton setLocation(double x, double y) {
-        return setLocation(x, y);
+        return setLocation((float) x, (float) y);
     }
 
     /**
