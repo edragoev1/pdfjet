@@ -364,19 +364,31 @@ class FontStream1 {
                 stream.read() << 8 | stream.read();
     }
 
+    // Fills the buffer: a single read may return fewer bytes than asked for.
+    private static void readFully(InputStream stream, byte[] buffer) throws Exception {
+        int off = 0;
+        while (off < buffer.length) {
+            int n = stream.read(buffer, off, buffer.length - off);
+            if (n == -1) {
+                throw new EOFException("Unexpected end of the font stream.");
+            }
+            off += n;
+        }
+    }
+
     protected static void getFontData(Font font, InputStream inputStream) throws Exception {
         int len = inputStream.read();
         byte[] fontName = new byte[len];
-        inputStream.read(fontName, 0, len);
+        readFully(inputStream, fontName);
         font.name = new String(fontName, StandardCharsets.UTF_8);
 
         len = getInt24(inputStream);
         byte[] fontInfo = new byte[len];
-        inputStream.read(fontInfo, 0, len);
+        readFully(inputStream, fontInfo);
         font.info = new String(fontInfo, StandardCharsets.UTF_8);
 
         byte[] buf = new byte[getInt32(inputStream)];
-        inputStream.read(buf, 0, buf.length);
+        readFully(inputStream, buf);
         ByteArrayInputStream stream =
                 new ByteArrayInputStream(Decompressor.inflate(buf));
 

@@ -326,37 +326,41 @@ class FontStream1 {
         list.removeAll()
     }
 
-    private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
-        var buffer = [UInt8](repeating: 0, count: 2)
-        if stream.read(&buffer, maxLength: 2) == 2 {
-            return (UInt16(buffer[0]) << 8) | UInt16(buffer[1])
+    // Reads count bytes: a single read may return fewer bytes than asked for.
+    private static func readFully(_ stream: InputStream, _ count: Int) throws -> [UInt8] {
+        var buffer = [UInt8](repeating: 0, count: count)
+        var offset = 0
+        while offset < count {
+            let read = buffer.withUnsafeMutableBufferPointer {
+                stream.read($0.baseAddress! + offset, maxLength: count - offset)
+            }
+            if read <= 0 {
+                throw StreamError.read
+            }
+            offset += read
         }
-        throw StreamError.read
+        return buffer
+    }
+
+    private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
+        let buffer = try readFully(stream, 2)
+        return (UInt16(buffer[0]) << 8) | UInt16(buffer[1])
     }
 
     private static func getInt8(_ stream: InputStream) throws -> Int {
-        var buffer = [UInt8](repeating: 0, count: 1)
-        if stream.read(&buffer, maxLength: 1) == 1 {
-            return Int(buffer[0])
-        }
-        throw StreamError.read
+        let buffer = try readFully(stream, 1)
+        return Int(buffer[0])
     }
 
     private static func getInt24(_ stream: InputStream) throws -> Int {
-        var buffer = [UInt8](repeating: 0, count: 3)
-        if stream.read(&buffer, maxLength: 3) == 3 {
-            return (Int(buffer[0]) << 16) | (Int(buffer[1]) << 8) | Int(buffer[2])
-        }
-        throw StreamError.read
+        let buffer = try readFully(stream, 3)
+        return (Int(buffer[0]) << 16) | (Int(buffer[1]) << 8) | Int(buffer[2])
     }
 
     private static func getInt32(_ stream: InputStream) throws -> Int32 {
-        var buffer = [UInt8](repeating: 0, count: 4)
-        if stream.read(&buffer, maxLength: 4) == 4 {
-            return (Int32(buffer[0]) << 24) | (Int32(buffer[1]) << 16) |
-                    (Int32(buffer[2]) << 8) | Int32(buffer[3])
-        }
-        throw StreamError.read
+        let buffer = try readFully(stream, 4)
+        return (Int32(buffer[0]) << 24) | (Int32(buffer[1]) << 16) |
+                (Int32(buffer[2]) << 8) | Int32(buffer[3])
     }
 
     private static func getUInt16(
@@ -383,21 +387,15 @@ class FontStream1 {
 
     static func getFontData(_ font: Font, _ stream: InputStream) throws {
         var len = try getInt8(stream)
-        var fontName = [UInt8](repeating: 0, count: len)
-        if stream.read(&fontName, maxLength: len) == len {
-            font.name = String(bytes: fontName, encoding: .utf8)!
-        }
+        let fontName = try readFully(stream, len)
+        font.name = String(bytes: fontName, encoding: .utf8)!
 
         len = try getInt24(stream)
-        var fontInfo = [UInt8](repeating: 0, count: len)
-        if stream.read(&fontInfo, maxLength: len) == len {
-            font.info = String(bytes: fontInfo, encoding: .utf8)!
-        }
+        let fontInfo = try readFully(stream, len)
+        font.info = String(bytes: fontInfo, encoding: .utf8)!
 
         let deflatedLength = Int(try getInt32(stream))
-        var deflated = [UInt8](repeating: 0, count: deflatedLength)
-        if stream.read(&deflated, maxLength: deflatedLength) == deflatedLength {
-        }
+        var deflated = try readFully(stream, deflatedLength)
 
         var inflated = [UInt8]()
         _ = try Puff(output: &inflated, input: &deflated)
