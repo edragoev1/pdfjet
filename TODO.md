@@ -384,7 +384,10 @@ renames included (the Week 1 decision), so every item is a blocker.
       80) reads as one U+FFFD in Java and three in Swift, which is what
       Unicode recommends. Swift `BufferedOutputStream.flush` prints a write
       error and carries on: decided Sep 13 that Swift `PDF.complete()`
-      throws, as Java's does.
+      throws, as Java's does. Also decided Sep 13: Go `PDF.Read` and
+      `ReadWithPassword` return `([]*PDFobj, error)` for a wrong password or
+      a malformed file, and Swift `PDF.addObjects` throws when the objects
+      have no root `/Pages`, as Java's does.
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
