@@ -198,10 +198,9 @@ public class CheckBox : Drawable {
             }
         }
 
-        if uri != nil {
-            page!.setBrushColor(Color.blue)
-        }
-        page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.getAscent(fontSize))
+        // A linked label is blue.
+        let textColor: [Float] = (uri != nil) ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.getAscent(fontSize), textColor, nil)
         page!.setPenWidth(0.0)
         page!.setPenColor(Color.black)
         page!.setBrushColor(Color.black)

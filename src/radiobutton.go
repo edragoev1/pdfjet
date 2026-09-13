@@ -110,13 +110,15 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2, pathoperator.Fill)
 	}
 
+	// A linked label is blue.
+	textColor := [3]float32{0.0, 0.0, 0.0}
 	if radioButton.uri != "" {
-		page.SetBrushColor(color.Blue)
+		textColor = [3]float32{0.0, 0.0, 1.0}
 	}
 	page.drawString(
 		radioButton.font, radioButton.font.GetSize(), radioButton.label,
 		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.ascent,
-		[3]float32{0.0, 0.0, 0.0}, nil)
+		textColor, nil)
 	page.SetPenWidth(0.0)
 	page.SetBrushColor(color.Black)
 

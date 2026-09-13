@@ -126,10 +126,9 @@ public class RadioButton : IDrawable {
             page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.Fill);
         }
 
-        if (uri != null) {
-            page.SetBrushColor(Color.blue);
-        }
-        page.DrawString(font, font.GetSize(), label, x + 3*r1, y + font.GetAscent());
+        // A linked label is blue.
+        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        page.DrawString(font, font.GetSize(), label, x + 3*r1, y + font.GetAscent(), textColor, null);
         page.SetPenWidth(0f);
         page.SetBrushColor(Color.black);
 

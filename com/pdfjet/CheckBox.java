@@ -218,10 +218,9 @@ public class CheckBox implements Drawable {
             }
         }
 
-        if (uri != null) {
-            page.setBrushColor(Color.blue);
-        }
-        page.drawString(font, fontSize, label, x + 3f*w/2f, y + font.getAscent(fontSize));
+        // A linked label is blue.
+        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        page.drawString(font, fontSize, label, x + 3f*w/2f, y + font.getAscent(fontSize), textColor, null);
         page.setPenWidth(0f);
         page.setPenColor(Color.black);
         page.setBrushColor(Color.black);

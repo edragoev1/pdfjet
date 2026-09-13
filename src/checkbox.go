@@ -170,13 +170,15 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 		}
 	}
 
+	// A linked label is blue.
+	textColor := [3]float32{0.0, 0.0, 0.0}
 	if checkBox.uri != "" {
-		page.SetBrushColor(color.Blue)
+		textColor = [3]float32{0.0, 0.0, 1.0}
 	}
 	page.drawString(
 		checkBox.font, checkBox.fontSize, checkBox.label,
 		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscentAt(checkBox.fontSize),
-		[3]float32{0.0, 0.0, 0.0}, nil)
+		textColor, nil)
 	page.SetPenWidth(0.0)
 	page.SetPenColor(color.Black)
 	page.SetBrushColor(color.Black)

@@ -193,10 +193,9 @@ public class CheckBox : IDrawable {
             }
         }
 
-        if (uri != null) {
-            page.SetBrushColor(Color.blue);
-        }
-        page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent(fontSize));
+        // A linked label is blue.
+        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent(fontSize), textColor, null);
         page.SetPenWidth(0f);
         page.SetPenColor(Color.black);
         page.SetBrushColor(Color.black);

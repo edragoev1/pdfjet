@@ -139,10 +139,9 @@ public class RadioButton implements Drawable {
             page.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.FILL);
         }
 
-        if (uri != null) {
-            page.setBrushColor(Color.blue);
-        }
-        page.drawString(font, font.getSize(), label, x + 3*r1, y + font.getAscent());
+        // A linked label is blue.
+        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        page.drawString(font, font.getSize(), label, x + 3*r1, y + font.getAscent(), textColor, null);
         page.setPenWidth(0f);
         page.setBrushColor(Color.black);
 

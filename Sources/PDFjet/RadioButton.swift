@@ -128,10 +128,9 @@ public class RadioButton : Drawable {
             page!.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.fill)
         }
 
-        if self.uri != nil {
-            page!.setBrushColor(Color.blue)
-        }
-        page!.drawString(font, font.getSize(), label, x + 3*r1, y + font.ascent)
+        // A linked label is blue.
+        let textColor: [Float] = (uri != nil) ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        page!.drawString(font, font.getSize(), label, x + 3*r1, y + font.ascent, textColor, nil)
         page!.setPenWidth(0.0)
         page!.setBrushColor(Color.black)
 
