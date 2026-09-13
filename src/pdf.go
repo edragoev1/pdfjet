@@ -9,6 +9,7 @@ package pdfjet
 import (
 	"bufio"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"slices"
 	"sort"
@@ -1344,23 +1345,35 @@ func contains(slice []string, text string) bool {
 }
 
 // Read returns a list of objects of type PDFobj read from input stream.
-// An encrypted PDF is decrypted when it opens without a password. It panics
-// if the PDF needs a password or cannot be read.
+// An encrypted PDF is decrypted when it opens without a password. It returns
+// an error if the PDF needs a password or cannot be read.
 // @param inputStream the PDF input stream.
 // @return List<PDFobj> the list of PDF objects.
-func (pdf *PDF) Read(buf []byte) []*PDFobj {
+func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 	return pdf.ReadWithPassword(buf, "")
 }
 
 // ReadWithPassword returns a list of objects of type PDFobj read from the
 // bytes of a PDF that is encrypted with the standard security handler. The
 // PDF is decrypted with the password, which is its user or its owner
-// password. It panics if the password is not correct or the PDF cannot be
-// read.
+// password. It returns an error if the password is not correct or the PDF
+// cannot be read.
 // @param buf the bytes of the PDF.
 // @param password the user or owner password of the PDF.
 // @return List<PDFobj> the list of PDF objects.
-func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
+func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj, err error) {
+	// The code that reads a malformed PDF panics where the Java port throws,
+	// like a Flate stream that cannot be inflated; the panic is the error.
+	defer func() {
+		if r := recover(); r != nil {
+			objects = nil
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("%v", r)
+			}
+		}
+	}()
 	objects1 := make([]*PDFobj, 0)
 	trailer := func() (trailer *PDFobj) {
 		defer func() {
@@ -1378,7 +1391,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 	}
 	dec, err := getDecryptor(trailer, objects1, password)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	objects2 := make([]*PDFobj, 0)
@@ -1401,24 +1414,24 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 		if objType == "/ObjStm" {
 			first, err := strconv.Atoi(obj.GetValue("/First"))
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			o2 := getObject(obj.GetData(), 0, first)
 			count := len(o2.dict)
 			for i := 0; i < count; i += 2 {
 				num, err := strconv.Atoi(o2.dict[i])
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				off, err := strconv.Atoi(o2.dict[i+1])
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				end := len(obj.GetData())
 				if i <= count-4 {
 					tmp, err := strconv.Atoi(o2.dict[i+3])
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 					end = first + tmp
 				}
@@ -1434,7 +1447,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 		}
 	}
 
-	return pdf.getSortedObjects(objects2)
+	return pdf.getSortedObjects(objects2), nil
 }
 
 func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {

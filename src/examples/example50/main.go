@@ -22,7 +22,10 @@ func Example50(fileName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects := pdf.Read(buf)
+	objects, err := pdf.Read(buf)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	file1, err := os.Open("images/qrcode.png")
 	if err != nil {

@@ -234,7 +234,8 @@ RC4 and AES-128 (revisions 2 to 4 of the standard security handler) and AES-256
 plain `read`. For one that needs a password, pass its user or owner password to
 `read(inputStream, password)` in Java and C#, `ReadWithPassword(buf, password)`
 in Go, or `read(from:password:)` in Swift. A wrong password raises an error
-that says so, and so does a missing one.
+that says so, and so does a missing one; in Go, `Read` and `ReadWithPassword`
+return it.
 
 A PDF/UA file may be encrypted; a PDF/A file may not. ISO 14289-1 requires an
 encrypted PDF/UA file to grant the permission to extract content for

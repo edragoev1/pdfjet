@@ -15,7 +15,10 @@ import (
 // Example37 opens an existing PDF, adds a font resource and writes on every page.
 func Example37(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_37.pdf")
-	objects := pdf.Read(content.OfBinaryFile(fileName))
+	objects, err := pdf.Read(content.OfBinaryFile(fileName))
+	if err != nil {
+		log.Fatal(err)
+	}
 	file1, err := os.Open(IBMPlexSans.Regular)
 	if err != nil {
 		log.Fatal(err)

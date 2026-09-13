@@ -20,7 +20,10 @@ func Example20() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	objects := pdf.Read(buf)
+	objects, err := pdf.Read(buf)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	pdf.AddResourceObjects(objects)
 
