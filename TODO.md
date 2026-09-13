@@ -425,22 +425,42 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ### Types and signatures
 
-- ⬜ **B** Go constants are untyped ints in `compliance`, `alignment`, `capstyle`,
+- ✅ **B** Go constants are untyped ints in `compliance`, `alignment`, `capstyle`,
       `joinstyle`, `effect`, `mark` and `imagetype`; `type Compliance int`
       exists but `SetCompliance` takes `int`. Go `direction` has
       `BottomToTop` = 2, the others `BOTTOM_TO_TOP` = 1. Go `compress.Yes` is
       a `bool`.
-- ⬜ **B** Swift takes a `PathOperator` enum in `Page.drawPath`, `drawCircle`,
+      Fixed: the constants of `compliance`, `alignment`, `capstyle`,
+      `joinstyle`, `effect`, `mark`, `imagetype`, `pathoperator`,
+      `pagelayout` and `pagemode` have the type of their package, and the
+      setters and getters take and return it; `direction` is in the order of
+      the other ports; `compress.Compress` is an int type with `Yes` and `No`.
+- ✅ **B** Swift takes a `PathOperator` enum in `Page.drawPath`, `drawCircle`,
       `drawRectRoundCorners` and `Point.setPathOperator`, and an `ImageType`
       enum in `Image.init`; Java, C# and Go take any `String` and `int`, so a
       typo writes a broken content stream. `PDF.setPageLayout` and
       `setPageMode` take a `String` in all ports though `PageLayout` and
       `PageMode` exist.
-- ⬜ **B** `Point.setAlignment` takes an `int` in Java, an `Alignment` in C# and a
+      Fixed: `PathOperator`, `ImageType`, `PageLayout` and `PageMode` are
+      enums in Java, C# and Swift, with their names unchanged (C# keeps
+      `PathOperator.Stroke`, see Names in one port), and typed constants in
+      Go; `drawPath`, `drawCircle`, `drawRectRoundCorners`,
+      `Stamp.drawPath`, `Point.setPathOperator`, the `Image` constructors,
+      `setPageLayout` and `setPageMode` take them in the four ports.
+- ✅ **B** `Point.setAlignment` takes an `int` in Java, an `Alignment` in C# and a
       `UInt32` in Swift; `Point.getTextColor` returns `int` in Java and C#,
       `[3]float32` in Go, `[Float]` in Swift. `TextBlock.setTextAlignment`
       takes an `Alignment`, `TextBox` and `Cell` an `Align` int.
-- ⬜ **B** Swift: `Dimension.getWidth`/`getHeight` return `Float?`;
+      Fixed, as decided on Sep 13: `Align` is removed, and `Alignment` is one
+      enum with `LEFT`, `RIGHT`, `CENTER`, `JUSTIFY`, `TOP` and `BOTTOM` that
+      every alignment setter and getter takes or returns in the four ports,
+      as Go's `alignment` package already had. `Cell` and `TextBox` keep the
+      alignment in a field instead of two bits of `properties`, and `Table`
+      copies it to the cells of a wrapped row. `Point.getTextColor` returns
+      the red, green and blue components in the four ports, next to
+      `setTextColor(float[])` in Java and C# and `SetTextColorRGB` in Go. The
+      Java example PDFs are the same as before.
+- ✅ **B** Swift: `Dimension.getWidth`/`getHeight` return `Float?`;
       `PNGImage.getWidth` is `Int?` (Java `int`, Go `float32`); `Cell.init`,
       `Cell.setFont`, `TextParameters.setFont` and `setText` take optionals
       and force-unwrap; `DonutChart.init` requires fonts Java allows to be
@@ -450,7 +470,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       setters lack `@discardableResult`; `PDF417.init` throws an internal
       `EncodingError`; `Page.addWatermark`, `addHeader` and `addFooter` are
       `throws` and never throw.
-- ⬜ **B** Go colour setters: `BaseAnnotation.SetFillColor` takes `[3]float32` and
+      Fixed: all of these. `PDFjetError` is public, with a description, and
+      is what `PDF417.init` throws; `Cell.getColSpan` returns an `Int` too.
+      The `PDFobj` methods that keep `inout` add objects to the list:
+      `addResource` for a core font, `addContent`, `addPrefixContent` and
+      `setGraphicsState`.
+- ✅ **B** Go colour setters: `BaseAnnotation.SetFillColor` takes `[3]float32` and
       `SetFillColorInt` an int, the reverse of every other type;
       `Arc.SetFillColorRGB` takes `r, g, b` (plus `SetFillColorRGBArray`),
       `Rect.SetFillColorRGB` the array; `Stamp` colours are `int`, the rest
@@ -458,7 +483,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       C# and Swift lack; only `Arc` has `Float64` variants. Go `Cell`,
       `TextBlock` and `TextBox` colour getters return black when unset, and a
       Go cell background cannot be removed.
-- ⬜ **B** Overloads: Go `Page.DrawString(font1, font2, text, x, y)` has no font
+      Fixed: every Go type has `SetXxxColor(int32)` and
+      `SetXxxColorRGB([3]float32)`; the `r, g, b` form of `Arc`,
+      `SetFillColorRGBArray` and the `Float64` variants of `Arc` are removed,
+      and `Stamp` takes `int32` and `[3]float32`. Java, C# and Swift `Form`
+      take an `int` label and value colour too. Go `Cell.GetBackgroundColor`
+      and `GetStrokeColor`, `TextBlock.GetBackgroundColor` and
+      `TextBox.GetStrokeColor` return nil when the colour is not set, as Java
+      returns null, and `Color.transparent` removes a cell background in the
+      four ports, as it does for `TextBox` and `TextBlock`.
+- ✅ **B** Overloads: Go `Page.DrawString(font1, font2, text, x, y)` has no font
       size, and Go and Swift lack Java's `(font, fallback, size, str, x, y,
       color, colorMap)`; Java `drawString` takes a boxed `Integer` colour. Go
       has no `NewTextBox(font, text, width, height)` and no `Title` text line
@@ -466,15 +500,27 @@ renames included (the Week 1 decision), so every item is a blocker.
       only Java has a public `SVGImage()`, which leaves the path list null;
       Go `BigTable.SetTableData` returns only `error`; Go `PDF.Read` takes
       `[]byte`, not in the README.
-- ⬜ **B** Mutators that return void: `Rect.scaleBy`, `SVGImage.scaleBy`,
+      Fixed: Go `DrawString(font, fallbackFont, fontSize, text, x, y)`, and
+      `DrawStringUsingColor` for the `int32` colour; Java takes an `int`
+      colour and Swift has the `Int32` form; Go `NewTextBoxWithSize` and
+      `Title.GetTextLine`; Swift `Rect` and `TextBox` `r, g, b` setters; the
+      Java `SVGImage()` is removed; Go `SetTableData` returns `(*BigTable,
+      error)`; the README says that Go reads a `[]byte`.
+- ✅ **B** Mutators that return void: `Rect.scaleBy`, `SVGImage.scaleBy`,
       `Image.rotateClockwise` (Swift returns the image), `Container.rotate`
       and `addBorder`, `Table.removeLineBetweenRows` and `rightAlignNumbers`,
       `TextColumn.addChineseParagraph`, `addJapaneseParagraph` and
       `removeLastParagraph`, `OptionalContentGroup.clear` and `drawOn` (not a
       `Drawable`), `BaseAnnotation.rotate`.
-- ⬜ **B** `Bidi.reorderVisually(str, from, to)` counts UTF-16 units in Java and C#,
+      Fixed: they return the object they are called on in the four ports, and
+      `OptionalContentGroup.drawOn` returns the largest x and y of the
+      corners of its drawables; it stays out of `Drawable`, since a group has
+      no location of its own.
+- ✅ **B** `Bidi.reorderVisually(str, from, to)` counts UTF-16 units in Java and C#,
       bytes in Go and scalars in Swift: document it in Port differences or
       use one unit.
+      Fixed: documented in Port differences, as each language indexes its
+      strings; the Java and C# comments say UTF-16 code units.
 
 ### Names: one concept, several names
 
@@ -509,8 +555,8 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Arc.setCenterXY` duplicates `setLocation`; `Title.setOffset` adds to x
       on every call; `TextParameters.setTextLocation`;
       `CompositeTextLine.getPosition`, and `getMinMax` returns y values only.
-- ⬜ **B** Alignment: `Align` (int codes with `JUSTIFY`, `TOP`, `BOTTOM`) and
-      `Alignment` (enum with `LEFT`, `RIGHT`, `CENTER`) for one concept;
+- ⬜ **B** Alignment: `Align` and `Alignment` are one `Alignment` enum since the
+      types and signatures fixes; what is left:
       `Cell.setVerTextAlignment` against `TextBox.setVerticalAlignment`;
       `Table.setTextAlignInColumn` against `setTextAlignment`;
       `Point.setAlignment`.
@@ -840,6 +886,37 @@ renames included (the Week 1 decision), so every item is a blocker.
       clear error in the four ports when the objects have no root `/Pages`;
       the four ports read top-down BMP images, and Go reports a truncated BMP
       or a bad palette index instead of crashing.
+      Breaking, types and signatures: the Go constants of `compliance`,
+      `alignment`, `capstyle`, `joinstyle`, `effect`, `mark`, `imagetype`,
+      `pathoperator`, `pagelayout` and `pagemode` are typed, Go
+      `direction.BottomToTop` is 1 and `TopToBottom` 2, and the
+      `compress.Compress` type replaces a `bool`; `PathOperator`, `ImageType`,
+      `PageLayout` and `PageMode` are enums in Java, C# and Swift; `Align` is
+      removed and every alignment is an `Alignment`, which has `JUSTIFY`,
+      `TOP` and `BOTTOM`; `Point.getTextColor` returns a color array in Java
+      and C#. Swift: the `Dimension` and `PNGImage` sizes, `Title.prefix` and
+      `textLine` are not optional, `Cell` and `TextParameters` take a
+      non-optional font and text, `DonutChart` takes optional fonts,
+      `Cell.setColSpan` and `getColSpan` use `Int`, `PDF.addObjects`,
+      `addResourceObjects`, `PDFobj.getContentObject`, `getResourcesObject`
+      and the image and font `addResource` take the objects without `&`,
+      `PDFjetError` is public and `PDF417` throws it, and `addWatermark`,
+      `addHeader` and `addFooter` do not throw. Go: `BaseAnnotation`
+      `SetFillColor` takes an `int32` and `SetFillColorRGB` the array, the
+      `Arc` RGB setters take an array and the `Float64` variants are gone,
+      `Stamp` colors are `int32` and `[3]float32`, the `Cell`, `TextBlock` and
+      `TextBox` color getters return nil when the color is not set,
+      `DrawString` takes a font size and `SetTableData` returns the table.
+      Java: `drawString` takes an `int` color and `SVGImage()` is removed.
+      `Rect.scaleBy`, `SVGImage.scaleBy`, `Image.rotateClockwise`,
+      `Container.rotate` and `addBorder`, `Table.removeLineBetweenRows` and
+      `rightAlignNumbers`, the `TextColumn` paragraph methods,
+      `OptionalContentGroup.clear` and `BaseAnnotation.rotate` return the
+      object, and `OptionalContentGroup.drawOn` returns a corner.
+      New: `Color.transparent` removes a cell background; Java, C# and Swift
+      `Form` take `int` colors; Go `NewTextBoxWithSize`, `Title.GetTextLine`,
+      `Page.DrawStringUsingColor` and `Point.SetTextColorRGB`; Swift `Rect` and
+      `TextBox` `r, g, b` setters and `drawString` with an `Int32` color.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
