@@ -226,9 +226,8 @@ public class Barcode : Drawable {
         } else if barcodeType == Barcode.CODE_39 {
             return drawCode39(page, x1, y1)
         } else {
-            Swift.print("Unsupported Barcode Type.")
+            fatalError("Unsupported Barcode Type.")
         }
-        return [Float]()
     }
 
     @discardableResult
@@ -242,9 +241,8 @@ public class Barcode : Drawable {
         } else if (barcodeType == Barcode.CODE_39) {
             return drawCode39(page, x1, y1)
         } else {
-            Swift.print("Unsupported Barcode Type.")
+            fatalError("Unsupported Barcode Type.")
         }
-        return [Float]()
     }
 
     private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
@@ -536,7 +534,7 @@ public class Barcode : Drawable {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
-                    Swift.print("The input string '" + fullText +
+                    fatalError("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.")
                 } else {
                     let scalars = Array(code!.unicodeScalars)
@@ -570,7 +568,7 @@ public class Barcode : Drawable {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
-                    Swift.print("The input string '" + fullText +
+                    fatalError("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.")
                 } else {
                     let scalars = Array(code!.unicodeScalars)
@@ -608,7 +606,7 @@ public class Barcode : Drawable {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
-                    Swift.print("The input string '" + fullText +
+                    fatalError("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.")
                 } else {
                     let scalar = Array(code!.unicodeScalars)
@@ -629,7 +627,7 @@ public class Barcode : Drawable {
             for symchar in fullText.unicodeScalars {
                 let code = tableB[String(symchar)]
                 if code == nil {
-                    Swift.print("The input string '" + fullText +
+                    fatalError("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.")
                 } else {
                     let scalars = Array(code!.unicodeScalars)

@@ -517,8 +517,7 @@ public class Barcode : IDrawable {
 
         if (direction == LEFT_TO_RIGHT) {
             foreach (char symbol in fullText) {
-                String code = tableB[symbol];
-                if ( code == null ) {
+                if (!tableB.TryGetValue(symbol, out String code)) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
@@ -551,8 +550,7 @@ public class Barcode : IDrawable {
             }
         } else if (direction == TOP_TO_BOTTOM) {
             foreach (char symbol in fullText) {
-                String code = tableB[symbol];
-                if ( code == null ) {
+                if (!tableB.TryGetValue(symbol, out String code)) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }
@@ -589,8 +587,7 @@ public class Barcode : IDrawable {
             float height = 0.0f;
 
             foreach (char symbol in fullText) {
-                String code = tableB[symbol];
-                if ( code == null ) {
+                if (!tableB.TryGetValue(symbol, out String code)) {
                     throw new Exception("The input string '" + fullText +
                             "' contains characters that are invalid in a Code39 barcode.");
                 }

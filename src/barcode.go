@@ -194,7 +194,7 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	case CODE_39:
 		xy = barcode.drawCode39(page, barcode.x1, barcode.y1)
 	default:
-		log.Println("Unsupported Barcode Type.")
+		panic("Unsupported Barcode Type.")
 	}
 	return xy
 }
@@ -211,9 +211,8 @@ func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) [2]floa
 	case CODE_39:
 		return barcode.drawCode39(page, x1, y1)
 	default:
-		log.Println("Unsupported Barcode Type.")
+		panic("Unsupported Barcode Type.")
 	}
-	return [2]float32{0.0, 0.0}
 }
 
 func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
