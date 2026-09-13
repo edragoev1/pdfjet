@@ -37,9 +37,9 @@ public class Chart implements Drawable {
     private float y8;
 
     // Data axis ranges (auto-computed if grid lines == 0)
-    private float xMax = Float.MIN_VALUE;
+    private float xMax = -Float.MAX_VALUE;
     private float xMin = Float.MAX_VALUE;
-    private float yMax = Float.MIN_VALUE;
+    private float yMax = -Float.MAX_VALUE;
     private float yMin = Float.MAX_VALUE;
 
     private int xAxisGridLines = 0;
@@ -403,7 +403,7 @@ public class Chart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         // Guard against null or empty data
-        if (chartData == null || chartData.isEmpty()) {
+        if (!hasPoints()) {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 
@@ -418,15 +418,18 @@ public class Chart implements Drawable {
         x4 = x1;
         y4 = y3;
 
-        // Compute and round axis ranges
+        // Compute axis ranges
         setXAxisMinAndMaxChartValues();
         setYAxisMinAndMaxChartValues();
-        roundXAxisMinAndMaxValues();
-        roundYAxisMinAndMaxValues();
 
-        // Guard against flat data (all same X or Y)
+        // Guard against flat data (all same X or Y) before rounding,
+        // so the rounded ranges have grid lines
         if (xMax == xMin) { xMax = xMin + 1f; }
         if (yMax == yMin) { yMax = yMin + 1f; }
+
+        // Round axis ranges
+        roundXAxisMinAndMaxValues();
+        roundYAxisMinAndMaxValues();
 
         // Draw chart title (centered, top)
         page.drawString(
@@ -538,6 +541,18 @@ public class Chart implements Drawable {
         page.setPenColor(Color.black);
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
+    }
+
+    /** Returns true if at least one series has points. */
+    private boolean hasPoints() {
+        if (chartData != null) {
+            for (List<Point> points : chartData) {
+                if (!points.isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Returns the width of the widest Y axis label (for left margin). */
@@ -700,6 +715,11 @@ public class Chart implements Drawable {
             Page page, List<List<Point>> chartData) throws Exception {
         int seriesIndex = 0;
         for (List<Point> points : chartData) {
+            // Skip a series with no points; the next series keeps its color
+            if (points.isEmpty()) {
+                seriesIndex++;
+                continue;
+            }
             Point p0 = points.get(0);
             if (p0.drawPath) {
                 if (autoColors && p0.strokeColor == null) {

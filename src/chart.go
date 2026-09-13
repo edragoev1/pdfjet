@@ -250,7 +250,7 @@ func (chart *Chart) SetXYChart(xyChart bool) *Chart {
 // @param page the page to draw chart on.
 func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Guard against null or empty data
-	if chart.chartData == nil || len(chart.chartData) == 0 {
+	if !chart.hasPoints() {
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 
@@ -265,16 +265,18 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 
 	chart.setXAxisMinAndMaxChartValues()
 	chart.setYAxisMinAndMaxChartValues()
-	chart.roundXAxisMinAndMaxValues()
-	chart.roundYAxisMinAndMaxValues()
 
-	// Guard against flat data (all same X or Y)
+	// Guard against flat data (all same X or Y) before rounding,
+	// so the rounded ranges have grid lines
 	if chart.xMax == chart.xMin {
 		chart.xMax = chart.xMin + 1.0
 	}
 	if chart.yMax == chart.yMin {
 		chart.yMax = chart.yMin + 1.0
 	}
+
+	chart.roundXAxisMinAndMaxValues()
+	chart.roundYAxisMinAndMaxValues()
 
 	// Draw chart title
 	page.drawString(
@@ -397,6 +399,16 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SetPenColor(color.Black)
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+}
+
+// hasPoints returns true if at least one series has points.
+func (chart *Chart) hasPoints() bool {
+	for _, points := range chart.chartData {
+		if len(points) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (chart *Chart) formatString() string {
@@ -543,11 +555,17 @@ func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 	seriesIndex := 0
 	for _, points := range chartData {
+		// Skip a series with no points; the next series keeps its color
+		if len(points) == 0 {
+			seriesIndex++
+			continue
+		}
 		p0 := points[0]
 		if p0.drawPath {
-			if chart.autoColors && p0.strokeColor == [3]float32{} {
+			if chart.autoColors && !p0.hasStrokeColor {
 				index := seriesIndex % len(defaultPalette)
 				p0.strokeColor = chart.toFloatArray(defaultPalette[index])
+				p0.hasStrokeColor = true
 			}
 			if p0.hasStrokeColor {
 				page.SetPenColorRGB(p0.strokeColor)

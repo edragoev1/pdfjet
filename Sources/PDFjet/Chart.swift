@@ -32,9 +32,9 @@ public class Chart : Drawable {
     private var x8: Float = 0.0
     private var y8: Float = 0.0
 
-    private var xMax = Float.leastNonzeroMagnitude
+    private var xMax = -Float.greatestFiniteMagnitude
     private var xMin = Float.greatestFiniteMagnitude
-    private var yMax = Float.leastNonzeroMagnitude
+    private var yMax = -Float.greatestFiniteMagnitude
     private var yMin = Float.greatestFiniteMagnitude
 
     private var xAxisGridLines = 0
@@ -344,6 +344,11 @@ public class Chart : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        // Guard against nil or empty data
+        if !hasPoints() {
+            return [self.x1 + self.w, self.y1 + self.h]
+        }
+
         x2 = x1 + w
         y2 = y1
 
@@ -355,6 +360,12 @@ public class Chart : Drawable {
 
         setXAxisMinAndMaxChartValues()
         setYAxisMinAndMaxChartValues()
+
+        // Guard against flat data (all same X or Y) before rounding,
+        // so the rounded ranges have grid lines
+        if xMax == xMin { xMax = xMin + 1.0 }
+        if yMax == yMin { yMax = yMin + 1.0 }
+
         roundXAxisMinAndMaxValues()
         roundYAxisMinAndMaxValues()
 
@@ -470,6 +481,11 @@ public class Chart : Drawable {
         }
 
         return [self.x1 + self.w, self.y1 + self.h]
+    }
+
+    // Returns true if at least one series has points.
+    private func hasPoints() -> Bool {
+        return chartData?.contains(where: { !$0.isEmpty }) ?? false
     }
 
     // Formats an axis label with minFractionDigits to maxFractionDigits

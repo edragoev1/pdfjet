@@ -307,7 +307,7 @@ public class Chart : IDrawable {
     /// <returns>the bottom-right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
         // Guard against null or empty data
-        if (chartData == null || chartData.Count == 0) {
+        if (!HasPoints()) {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 
@@ -322,15 +322,18 @@ public class Chart : IDrawable {
         x4 = x1;
         y4 = y3;
 
-        // Compute and round axis ranges
+        // Compute axis ranges
         SetXAxisMinAndMaxChartValues();
         SetYAxisMinAndMaxChartValues();
-        RoundXAxisMinAndMaxValues();
-        RoundYAxisMinAndMaxValues();
 
-        // Guard against flat data (all same X or Y)
+        // Guard against flat data (all same X or Y) before rounding,
+        // so the rounded ranges have grid lines
         if (xMax == xMin) { xMax = xMin + 1f; }
         if (yMax == yMin) { yMax = yMin + 1f; }
+
+        // Round axis ranges
+        RoundXAxisMinAndMaxValues();
+        RoundYAxisMinAndMaxValues();
 
         // Draw chart title (centered, top)
         page.DrawString(
@@ -444,6 +447,20 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
+    ///  Returns true if at least one series has points.
+    /// </summary>
+    private bool HasPoints() {
+        if (chartData != null) {
+            foreach (List<Point> points in chartData) {
+                if (points.Count > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
     ///  Returns the width of the widest Y axis label (for left margin).
     /// </summary>
     private float GetLongestAxisYLabelWidth() {
@@ -499,6 +516,9 @@ public class Chart : IDrawable {
     ///  Rounds X axis range to "nice" values and sets grid line count.
     /// </summary>
     private void RoundXAxisMinAndMaxValues() {
+        if (xAxisGridLines != 0) {
+            return;
+        }
         Round round = RoundMaxAndMinValues(xMax, xMin);
         xMax = round.maxValue;
         xMin = round.minValue;
@@ -509,6 +529,9 @@ public class Chart : IDrawable {
     ///  Rounds Y axis range to "nice" values and sets grid line count.
     /// </summary>
     private void RoundYAxisMinAndMaxValues() {
+        if (yAxisGridLines != 0) {
+            return;
+        }
         Round round = RoundMaxAndMinValues(yMax, yMin);
         yMax = round.maxValue;
         yMin = round.minValue;
@@ -624,6 +647,11 @@ public class Chart : IDrawable {
             Page page, List<List<Point>> chartData) {
         int seriesIndex = 0;
         foreach (List<Point> points in chartData) {
+            // Skip a series with no points; the next series keeps its color
+            if (points.Count == 0) {
+                seriesIndex++;
+                continue;
+            }
             Point p0 = points[0];
             if (p0.drawPath) {
                 if (autoColors && p0.strokeColor == null) {
