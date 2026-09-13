@@ -248,8 +248,7 @@ public class BigTable {
         this.alignment = new Alignment[this.numberOfColumns];
 
         int rowNumber = 0;
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = openDataFile()) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = split(line);
@@ -282,6 +281,23 @@ public class BigTable {
         return this;
     }
 
+    // Opens the data file, which is read as UTF-8, after the byte order mark
+    // at its start, if there is one.
+    private BufferedReader openDataFile() throws IOException {
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8));
+        try {
+            reader.mark(1);
+            if (reader.read() != '\uFEFF') {
+                reader.reset();
+            }
+        } catch (IOException e) {
+            reader.close();
+            throw e;
+        }
+        return reader;
+    }
+
     // Sets the x coordinates of the vertical lines from the location and the column widths.
     private void setVertLines() {
         float vertLineX = this.x;
@@ -298,8 +314,7 @@ public class BigTable {
      * @throws Exception if the data file cannot be read or drawing fails.
      */
     public void complete() throws Exception {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = openDataFile()) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = split(line);

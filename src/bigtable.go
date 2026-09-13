@@ -198,6 +198,16 @@ func (bt *BigTable) getAlignment(str string) alignment.Alignment {
 	return alignment.Left
 }
 
+// newDataScanner returns a scanner of the lines of the data file, which is
+// read as UTF-8, after the byte order mark at its start, if there is one.
+func newDataScanner(file *os.File) *bufio.Scanner {
+	reader := bufio.NewReader(file)
+	if bom, err := reader.Peek(3); err == nil && string(bom) == "\uFEFF" {
+		_, _ = reader.Discard(3)
+	}
+	return bufio.NewScanner(reader)
+}
+
 // SetTableData sets the table data from file
 func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 	bt.fileName = fileName
@@ -218,7 +228,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 		}
 	}(file)
 
-	scanner := bufio.NewScanner(file)
+	scanner := newDataScanner(file)
 	rowNumber := 0
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -278,7 +288,7 @@ func (bt *BigTable) Complete() error {
 		}
 	}(file)
 
-	scanner := bufio.NewScanner(file)
+	scanner := newDataScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Split(line, bt.delimiter)

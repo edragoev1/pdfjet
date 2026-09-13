@@ -264,11 +264,19 @@ private func enumerateFileLines(_ fileName: String, _ handler: (String) throws -
     defer { file.closeFile() }
 
     var buffer = Data()
+    var atStart = true
 
     while true {
         let chunk = file.readData(ofLength: 8192)
         if chunk.isEmpty { break }
         buffer.append(chunk)
+        if atStart {
+            // A byte order mark at the start of the file is not part of the text.
+            if buffer.starts(with: [0xEF, 0xBB, 0xBF]) {
+                buffer.removeSubrange(0..<3)
+            }
+            atStart = false
+        }
 
         while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
             var lineData = buffer.prefix(upTo: nl)
@@ -277,6 +285,9 @@ private func enumerateFileLines(_ fileName: String, _ handler: (String) throws -
                 lineData = lineData.dropLast()
             }
 
+            // Decoded as the other ports do: String(data:encoding:) would drop
+            // a byte order mark at the start of every line, and skip a line
+            // that is not valid UTF-8 where the others draw U+FFFD.
             try handler(String(decoding: lineData, as: UTF8.self))
         }
     }

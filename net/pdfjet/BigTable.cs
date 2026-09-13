@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace PDFjet.NET {
     /// <summary>A table for large amounts of data, read row by row from a delimited text file.</summary>
@@ -194,7 +195,7 @@ namespace PDFjet.NET {
             this.alignment = new Alignment[this.numberOfColumns];
 
             int rowNumber = 0;
-            using (StreamReader reader = new StreamReader(fileName)) {
+            using (StreamReader reader = OpenDataFile()) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
                     // Split(string, StringSplitOptions) takes the single-separator
@@ -240,9 +241,19 @@ namespace PDFjet.NET {
             }
         }
 
+        // Opens the data file, which is read as UTF-8 only, as in the other ports,
+        // after the byte order mark at its start, if there is one.
+        private StreamReader OpenDataFile() {
+            StreamReader reader = new StreamReader(this.fileName, new UTF8Encoding(false), false);
+            if (reader.Peek() == '\uFEFF') {
+                reader.Read();
+            }
+            return reader;
+        }
+
         /// <summary>Draws the rows read from the data file, then the vertical lines.</summary>
         public void Complete() {
-            using (StreamReader reader = new StreamReader(this.fileName)) {
+            using (StreamReader reader = OpenDataFile()) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
                     string[] fields = line.Split(this.delimiter, StringSplitOptions.None);
