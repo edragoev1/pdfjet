@@ -139,7 +139,7 @@ public class Container : IDrawable {
     /// <param name="element">The element to add.</param>
     /// <returns>this Container object.</returns>
     public Container Add(IDrawable element) {
-        if (element.GetType() == typeof(Container)) {
+        if (element is Container) {
             ((Container) element).parent = this;
         }
         this.elements.Add(element);

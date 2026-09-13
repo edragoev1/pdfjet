@@ -137,6 +137,9 @@ public class Container: Drawable {
     /// - Parameter element: The element to add.
     @discardableResult
     public func add(_ element: Drawable) -> Container {
+        if let container = element as? Container {
+            container.parent = self
+        }
         self.elements.append(element)
         return self
     }
