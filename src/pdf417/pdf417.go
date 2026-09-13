@@ -129,7 +129,7 @@ func NewPDF417(str string) *PDF417 {
 // SetLocation sets the location of this barcode on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.
-func (barcode *PDF417) SetLocation(x, y float32) *PDF417 {
+func (barcode *PDF417) SetLocation(x, y float32) pdfjet.Drawable {
 	barcode.x1 = x
 	barcode.y1 = y
 	return barcode
@@ -237,7 +237,7 @@ func (barcode *PDF417) addECC(buf []int) {
 
 // DrawOn draws this barcode on the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
-func (barcode *PDF417) DrawOn(page *pdfjet.Page) []float32 {
+func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 	x := barcode.x1
 	y := barcode.y1
 
@@ -286,7 +286,7 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) []float32 {
 		x += n * barcode.w1
 	}
 
-	return []float32{x, y + barcode.h1*float32(barcode.rows)}
+	return [2]float32{x, y + barcode.h1*float32(barcode.rows)}
 }
 
 func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {

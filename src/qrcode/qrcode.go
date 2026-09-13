@@ -55,7 +55,7 @@ func NewQRCode(str string, errorCorrectLevel int) *QRCode {
 // SetLocation sets the location where this barcode will be drawn on the page.
 // @param x the x coordinate of the top left corner of the barcode.
 // @param y the y coordinate of the top left corner of the barcode.
-func (qrcode *QRCode) SetLocation(x, y float32) *QRCode {
+func (qrcode *QRCode) SetLocation(x, y float32) pdfjet.Drawable {
 	qrcode.x = x
 	qrcode.y = y
 	return qrcode
@@ -78,7 +78,7 @@ func (qrcode *QRCode) SetColor(color int32) *QRCode {
 // DrawOn draws this barcode on the specified page.
 // @param page the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
-func (qrcode *QRCode) DrawOn(page *pdfjet.Page) []float32 {
+func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 	page.SetBrushColor(qrcode.color)
 	for row := 0; row < len(qrcode.modules); row++ {
 		for col := 0; col < len(qrcode.modules); col++ {
@@ -93,7 +93,7 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) []float32 {
 	}
 	w := qrcode.m1 * float32(len(qrcode.modules))
 	h := qrcode.m1 * float32(len(qrcode.modules))
-	return []float32{qrcode.x + w, qrcode.y + h}
+	return [2]float32{qrcode.x + w, qrcode.y + h}
 }
 
 // GetData returns the modules of the QR code: true for dark and false for light modules.
