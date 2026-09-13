@@ -13,7 +13,7 @@
 ///
 public class Executive {
     /// The executive page size in portrait orientation.
-    public static let PORTRAIT = [522.0, 756.0]
+    public static let PORTRAIT: [Float] = [522.0, 756.0]
     /// The executive page size in landscape orientation.
-    public static let LANDSCAPE = [756.0, 522.0]
+    public static let LANDSCAPE: [Float] = [756.0, 522.0]
 }
