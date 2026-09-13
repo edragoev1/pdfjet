@@ -13,7 +13,7 @@ import (
 )
 
 // ReadLines reads the lines of a UTF-8 text file, without carriage returns.
-// It exits the program if the file cannot be read.
+// It panics if the file cannot be read.
 func ReadLines(filePath string) []string {
 	lines := make([]string, 0)
 	var buffer strings.Builder

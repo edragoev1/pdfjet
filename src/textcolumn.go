@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -32,7 +31,7 @@ type TextColumn struct {
 }
 
 // NewTextColumn creates a text column object with the specified rotation angle
-// in degrees: 0, 90 or 270. It exits the program for any other angle.
+// in degrees: 0, 90 or 270. It panics for any other angle.
 func NewTextColumn(rotateByDegrees int) *TextColumn {
 	textColumn := new(TextColumn)
 	textColumn.alignment = alignment.Left
@@ -41,7 +40,7 @@ func NewTextColumn(rotateByDegrees int) *TextColumn {
 	textColumn.rotate = rotateByDegrees
 	textColumn.lineBetweenParagraphs = false
 	if rotateByDegrees != 0 && rotateByDegrees != 90 && rotateByDegrees != 270 {
-		log.Fatal("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
+		panic("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
 	}
 	textColumn.paragraphs = make([]*Paragraph, 0)
 	return textColumn

@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"bufio"
-	"log"
 	"math"
 	"os"
 	"strings"
@@ -61,12 +60,12 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	lineNumber := 0
 	f, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer func(f *os.File) {
 		err := f.Close()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}(f)
 	scanner := bufio.NewScanner(f)
@@ -107,7 +106,7 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		lineNumber++
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return table
 }

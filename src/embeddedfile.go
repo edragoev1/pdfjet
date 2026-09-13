@@ -11,11 +11,9 @@ import (
 	"compress/zlib"
 	"encoding/hex"
 	"io"
-	"log"
 	"os"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
@@ -28,15 +26,18 @@ type EmbeddedFile struct {
 }
 
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
-// compressing it when compress is true. It exits the program if the file cannot be opened.
+// compressing it when compress is true. It panics if the file cannot be opened.
 func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
 	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer func(file *os.File) {
-		_ = file.Close()
+		err := file.Close()
+		if err != nil {
+			panic("Error closing file: " + err.Error())
+		}
 	}(file)
 	return NewEmbeddedFile(pdf, fileName, bufio.NewReader(file), compress)
 }
@@ -48,7 +49,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 
 	buf, err := io.ReadAll(reader)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	if compress {
@@ -56,11 +57,11 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 		writer := zlib.NewWriter(&compressed)
 		_, err := writer.Write(buf)
 		if err != nil {
-			return nil
+			panic(err)
 		}
 		err = writer.Close()
 		if err != nil {
-			return nil
+			panic(err)
 		}
 		file.content = compressed.Bytes()
 	} else {
@@ -68,7 +69,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	}
 
 	if pdf.encryption != nil {
-		file.content, _ = encryption.Encrypt(file.content, pdf.encryption.GetKey())
+		file.content = pdf.encryption.encrypt(file.content)
 	}
 
 	pdf.newObj()
@@ -92,7 +93,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 
 	fileNameBytes := []byte(fileName)
 	if pdf.encryption != nil {
-		fileNameBytes, _ = encryption.Encrypt(fileNameBytes, pdf.encryption.GetKey())
+		fileNameBytes = pdf.encryption.encrypt(fileNameBytes)
 	}
 	pdf.appendString("/F <")
 	pdf.appendString(hex.EncodeToString(fileNameBytes))

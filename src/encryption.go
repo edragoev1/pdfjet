@@ -158,6 +158,16 @@ func (enc *Encryption) GetKey() []byte {
 	return key
 }
 
+// encrypt encrypts the data with the file encryption key. It panics if the
+// data cannot be encrypted.
+func (enc *Encryption) encrypt(data []byte) []byte {
+	encrypted, err := encryption.Encrypt(data, enc.fileEncryptionKey)
+	if err != nil {
+		panic(err)
+	}
+	return encrypted
+}
+
 // getObjNumber returns the object number of the encryption dictionary.
 func (enc *Encryption) getObjNumber() int {
 	return enc.objNumber

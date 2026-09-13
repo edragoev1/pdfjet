@@ -16,9 +16,8 @@
 package qrcode
 
 import (
-	"log"
 	"math"
-	"os"
+	"strconv"
 )
 
 func getErrorCorrectPolynomial(errorCorrectLength int) *Polynomial {
@@ -55,11 +54,8 @@ func getMask(maskPattern, i, j int) bool {
 		return ((i*j)%3+(i+j)%2)%2 == 0
 
 	default:
-		log.Println("Illegal mask pattern.")
-		os.Exit(1)
+		panic("Illegal mask pattern: " + strconv.Itoa(maskPattern))
 	}
-
-	return false
 }
 
 func getLostPoint(qrCode *QRCode) int {

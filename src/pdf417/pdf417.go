@@ -7,7 +7,6 @@
 package pdf417
 
 import (
-	"log"
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -48,7 +47,7 @@ const (
 // The symbol has 18 columns and as many rows as the string needs, up to the
 // 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
 // characters of mixed text, with the error correction level 5 used here.
-// It exits if there are unencodable characters or the string does not fit in a symbol.
+// It panics if there are unencodable characters or the string does not fit in a symbol.
 // @param str the specified string.
 func NewPDF417(str string) *PDF417 {
 	barcode := new(PDF417)
@@ -59,7 +58,7 @@ func NewPDF417(str string) *PDF417 {
 
 	for _, ch := range str {
 		if ch > 126 {
-			log.Fatal("The string contains unencodable characters.")
+			panic("The string contains unencodable characters.")
 		}
 	}
 
@@ -71,7 +70,7 @@ func NewPDF417(str string) *PDF417 {
 		barcode.rows = 3
 	}
 	if barcode.rows*barcode.cols > 928 {
-		log.Fatal("The string is too long for a PDF417 barcode.")
+		panic("The string is too long for a PDF417 barcode.")
 	}
 	barcode.codewords = make([]int, barcode.rows*(barcode.cols+2))
 

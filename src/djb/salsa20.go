@@ -46,7 +46,10 @@ func Salsa20() string {
 	}
 	str := buf.String()
 	for i := 0; i < 128; i += 8 {
-		word, _ := strconv.ParseUint(str[i:i+8], 16, 32)
+		word, err := strconv.ParseUint(str[i:i+8], 16, 32)
+		if err != nil {
+			panic(err)
+		}
 		a_in[i/8] = uint32(word)
 	}
 

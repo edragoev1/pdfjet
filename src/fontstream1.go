@@ -7,14 +7,12 @@ package pdfjet
 
 import (
 	"encoding/hex"
-	"fmt"
 	"io"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/decompressor"
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
@@ -79,15 +77,10 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 	var encrypted []byte
 	compressed, err := io.ReadAll(reader)
 	if err != nil {
-		fmt.Println("failed to read input:", err)
-		return
+		panic(err)
 	}
 	if pdf.encryption != nil {
-		encrypted, err = encryption.Encrypt(compressed, pdf.encryption.GetKey())
-		if err != nil {
-			fmt.Println("encryption failed:", err)
-			return
-		}
+		encrypted = pdf.encryption.encrypt(compressed)
 	}
 
 	pdf.appendString("/Length ")
@@ -219,7 +212,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 
 	buf2 := []byte(sb.String())
 	if pdf.encryption != nil {
-		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
+		buf2 = pdf.encryption.encrypt(buf2)
 	}
 
 	pdf.newObj()
@@ -259,8 +252,8 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	registry := []byte("Adobe")
 	ordering := []byte("Identity")
 	if pdf.encryption != nil {
-		registry, _ = encryption.Encrypt(registry, pdf.encryption.GetKey())
-		ordering, _ = encryption.Encrypt(ordering, pdf.encryption.GetKey())
+		registry = pdf.encryption.encrypt(registry)
+		ordering = pdf.encryption.encrypt(ordering)
 	}
 	pdf.appendString("/CIDSystemInfo <</Registry <")
 	pdf.appendString(hex.EncodeToString(registry))
@@ -342,19 +335,22 @@ func writeListTo(sb *strings.Builder, list []string) {
 func getFontData(font *Font, reader io.Reader) {
 	length := int(getUint8(reader))
 	fontName := make([]byte, length)
-	io.ReadFull(reader, fontName)
+	readFully(reader, fontName)
 	font.name = string(fontName)
 
 	length = int(getUint24(reader))
 	fontInfo := make([]byte, length)
-	io.ReadFull(reader, fontInfo)
+	readFully(reader, fontInfo)
 	font.info = string(fontInfo)
 
 	length = int(getUint32(reader))
 	buf := make([]byte, length)
-	io.ReadFull(reader, buf)
+	readFully(reader, buf)
 
-	inflated, _ := decompressor.Inflate(buf)
+	inflated, err := decompressor.Inflate(buf)
+	if err != nil {
+		panic(err)
+	}
 
 	// unicodeToGID and advanceWidth can each hold up to 0xFFFF entries for
 	// a large CJK font, so reading them one uint16 at a time through a

@@ -9,7 +9,6 @@ package pdfjet
 import (
 	"bufio"
 	"encoding/hex"
-	"log"
 	"os"
 	"slices"
 	"sort"
@@ -21,7 +20,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/djb"
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
@@ -152,7 +150,7 @@ func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
 func NewPDFFile(filePath string) *PDF {
 	file, err := os.Create(filePath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	pdf := NewPDF(bufio.NewWriter(file))
 	pdf.file = file
@@ -299,7 +297,7 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	// not agree on which metadata streams to leave alone when it is false.
 	xml := []byte(sb.String())
 	if pdf.encryption != nil {
-		xml, _ = encryption.Encrypt(xml, pdf.encryption.GetKey())
+		xml = pdf.encryption.encrypt(xml)
 	}
 
 	// This is the metadata object
@@ -328,7 +326,7 @@ func escapeXML(text string) string {
 func (pdf *PDF) addOutputIntentObject() int {
 	profile := ICCBlackScaledProfile
 	if pdf.encryption != nil {
-		profile, _ = encryption.Encrypt(profile, pdf.encryption.GetKey())
+		profile = pdf.encryption.encrypt(profile)
 	}
 
 	pdf.newObj()
@@ -348,7 +346,7 @@ func (pdf *PDF) addOutputIntentObject() int {
 
 	identifierBytes := []byte("sRGB IEC61966-2.1")
 	if pdf.encryption != nil {
-		identifierBytes, _ = encryption.Encrypt(identifierBytes, pdf.encryption.GetKey())
+		identifierBytes = pdf.encryption.encrypt(identifierBytes)
 	}
 	// OutputIntent object
 	pdf.newObj()
@@ -556,7 +554,7 @@ func (pdf *PDF) addStructElementObjects() {
 		if language != "" {
 			languageBytes := []byte(language)
 			if pdf.encryption != nil {
-				languageBytes, _ = encryption.Encrypt(languageBytes, pdf.encryption.GetKey())
+				languageBytes = pdf.encryption.encrypt(languageBytes)
 			}
 			pdf.appendString("/Lang <")
 			pdf.appendString(hex.EncodeToString(languageBytes))
@@ -566,7 +564,7 @@ func (pdf *PDF) addStructElementObjects() {
 		if hasActualText {
 			actualTextBytes := []byte(element.actualText)
 			if pdf.encryption != nil {
-				actualTextBytes, _ = encryption.Encrypt(actualTextBytes, pdf.encryption.GetKey())
+				actualTextBytes = pdf.encryption.encrypt(actualTextBytes)
 			}
 			pdf.appendString("/ActualText <")
 			pdf.appendString(hex.EncodeToString(actualTextBytes))
@@ -576,7 +574,7 @@ func (pdf *PDF) addStructElementObjects() {
 		if hasAltDescription {
 			altDescriptionBytes := []byte(element.altDescription)
 			if pdf.encryption != nil {
-				altDescriptionBytes, _ = encryption.Encrypt(altDescriptionBytes, pdf.encryption.GetKey())
+				altDescriptionBytes = pdf.encryption.encrypt(altDescriptionBytes)
 			}
 			pdf.appendString("/Alt <")
 			pdf.appendString(hex.EncodeToString(altDescriptionBytes))
@@ -661,7 +659,7 @@ func (pdf *PDF) appendInfoText(key, text string) {
 // bytes of a string, encrypted if the document is encrypted.
 func (pdf *PDF) appendInfoString(key string, bytes []byte) {
 	if pdf.encryption != nil {
-		bytes, _ = encryption.Encrypt(bytes, pdf.encryption.GetKey())
+		bytes = pdf.encryption.encrypt(bytes)
 	}
 	pdf.appendString(key)
 	pdf.appendString(" <")
@@ -678,7 +676,7 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	if pdf.compliance != compliance.PDF_17 {
 		languageBytes := []byte(pdf.language)
 		if pdf.encryption != nil {
-			languageBytes, _ = encryption.Encrypt(languageBytes, pdf.encryption.GetKey())
+			languageBytes = pdf.encryption.encrypt(languageBytes)
 		}
 
 		pdf.appendString("/Lang <")
@@ -837,7 +835,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 	if pdf.contentStreamsCompression {
 		compressed := compressor.Deflate(page.buf)
 		if pdf.encryption != nil {
-			compressed, _ = encryption.Encrypt(compressed, pdf.encryption.GetKey())
+			compressed = pdf.encryption.encrypt(compressed)
 		}
 		page.buf = nil // Release the page content memory!
 
@@ -856,7 +854,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 	} else { // No compression. Used for diagnostics
 		buf := page.buf
 		if pdf.encryption != nil {
-			buf, _ = encryption.Encrypt(buf, pdf.encryption.GetKey())
+			buf = pdf.encryption.encrypt(buf)
 		}
 		page.buf = nil // Release the page content memory!
 
@@ -905,7 +903,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.fileAttachment.title != "" {
 			title := []byte(annot.fileAttachment.title)
 			if pdf.encryption != nil {
-				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+				title = pdf.encryption.encrypt(title)
 			}
 			pdf.appendString("/T <")
 			pdf.appendString(hex.EncodeToString(title))
@@ -915,7 +913,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.fileAttachment.contents != "" {
 			contents := []byte(annot.fileAttachment.contents)
 			if pdf.encryption != nil {
-				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
+				contents = pdf.encryption.encrypt(contents)
 			}
 			pdf.appendString("/Contents <")
 			pdf.appendString(hex.EncodeToString(contents))
@@ -937,7 +935,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if description != "" {
 			bytes := []byte(description)
 			if pdf.encryption != nil {
-				bytes, _ = encryption.Encrypt(bytes, pdf.encryption.GetKey())
+				bytes = pdf.encryption.encrypt(bytes)
 			}
 			pdf.appendString("/Contents <")
 			pdf.appendString(hex.EncodeToString(bytes))
@@ -949,7 +947,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString("/S /URI\n")
 			uri := []byte(annot.uri)
 			if pdf.encryption != nil {
-				uri, _ = encryption.Encrypt(uri, pdf.encryption.GetKey())
+				uri = pdf.encryption.encrypt(uri)
 			}
 			pdf.appendString("/URI <")
 			pdf.appendString(hex.EncodeToString(uri))
@@ -993,7 +991,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.title != "" {
 			title := []byte(annot.title)
 			if pdf.encryption != nil {
-				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+				title = pdf.encryption.encrypt(title)
 			}
 			pdf.appendString("/T <")
 			pdf.appendString(hex.EncodeToString(title))
@@ -1003,7 +1001,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.contents != "" {
 			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
-				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
+				contents = pdf.encryption.encrypt(contents)
 			}
 			pdf.appendString("/Contents <")
 			pdf.appendString(hex.EncodeToString(contents))
@@ -1026,7 +1024,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.title != "" {
 			title := []byte(annot.title)
 			if pdf.encryption != nil {
-				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+				title = pdf.encryption.encrypt(title)
 			}
 			pdf.appendString("/T <")
 			pdf.appendString(hex.EncodeToString(title))
@@ -1036,7 +1034,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.contents != "" {
 			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
-				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
+				contents = pdf.encryption.encrypt(contents)
 			}
 			pdf.appendString("/Contents <")
 			pdf.appendString(hex.EncodeToString(contents))
@@ -1048,7 +1046,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.title != "" {
 			title := []byte(annot.title)
 			if pdf.encryption != nil {
-				title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+				title = pdf.encryption.encrypt(title)
 			}
 			pdf.appendString("/T <")
 			pdf.appendString(hex.EncodeToString(title))
@@ -1058,7 +1056,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 		if annot.contents != "" {
 			contents := []byte(annot.contents)
 			if pdf.encryption != nil {
-				contents, _ = encryption.Encrypt(contents, pdf.encryption.GetKey())
+				contents = pdf.encryption.encrypt(contents)
 			}
 			pdf.appendString("/Contents <")
 			pdf.appendString(hex.EncodeToString(contents))
@@ -1254,13 +1252,13 @@ func (pdf *PDF) Complete() {
 	pdf.appendString("%%EOF\n")
 
 	if err := pdf.writer.Flush(); err != nil {
-		log.Printf("failed to flush PDF writer: %v\n", err)
+		panic(err)
 	}
 	// The file that NewPDFFile created is closed, as the other ports close
 	// their output stream.
 	if pdf.file != nil {
 		if err := pdf.file.Close(); err != nil {
-			log.Printf("failed to close PDF file: %v\n", err)
+			panic(err)
 		}
 	}
 }
@@ -1346,7 +1344,8 @@ func contains(slice []string, text string) bool {
 }
 
 // Read returns a list of objects of type PDFobj read from input stream.
-// An encrypted PDF is decrypted when it opens without a password.
+// An encrypted PDF is decrypted when it opens without a password. It panics
+// if the PDF needs a password or cannot be read.
 // @param inputStream the PDF input stream.
 // @return List<PDFobj> the list of PDF objects.
 func (pdf *PDF) Read(buf []byte) []*PDFobj {
@@ -1356,13 +1355,21 @@ func (pdf *PDF) Read(buf []byte) []*PDFobj {
 // ReadWithPassword returns a list of objects of type PDFobj read from the
 // bytes of a PDF that is encrypted with the standard security handler. The
 // PDF is decrypted with the password, which is its user or its owner
-// password.
+// password. It panics if the password is not correct or the PDF cannot be
+// read.
 // @param buf the bytes of the PDF.
 // @param password the user or owner password of the PDF.
 // @return List<PDFobj> the list of PDF objects.
 func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 	objects1 := make([]*PDFobj, 0)
-	trailer := getObjects(buf, pdf.getStartXRef(buf), &objects1, 0)
+	trailer := func() (trailer *PDFobj) {
+		defer func() {
+			if recover() != nil {
+				trailer = nil // A cross-reference stream that cannot be decoded.
+			}
+		}()
+		return getObjects(buf, pdf.getStartXRef(buf), &objects1, 0)
+	}()
 	if trailer == nil || len(objects1) == 0 {
 		// The cross-reference table is missing or wrong, like in a PDF
 		// that was changed without updating it.
@@ -1371,7 +1378,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 	}
 	dec, err := getDecryptor(trailer, objects1, password)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	objects2 := make([]*PDFobj, 0)
@@ -1394,24 +1401,24 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) []*PDFobj {
 		if objType == "/ObjStm" {
 			first, err := strconv.Atoi(obj.GetValue("/First"))
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			o2 := getObject(obj.GetData(), 0, first)
 			count := len(o2.dict)
 			for i := 0; i < count; i += 2 {
 				num, err := strconv.Atoi(o2.dict[i])
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				off, err := strconv.Atoi(o2.dict[i+1])
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				end := len(obj.GetData())
 				if i <= count-4 {
 					tmp, err := strconv.Atoi(o2.dict[i+3])
 					if err != nil {
-						log.Fatal(err)
+						panic(err)
 					}
 					end = first + tmp
 				}
@@ -1876,7 +1883,7 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 
 	title := []byte(bm1.GetTitle())
 	if pdf.encryption != nil {
-		title, _ = encryption.Encrypt(title, pdf.encryption.GetKey())
+		title = pdf.encryption.encrypt(title)
 	}
 
 	pdf.newObj()
@@ -1940,7 +1947,7 @@ func (pdf *PDF) AddObjects(objects *[]*PDFobj) {
 		var number = pagesObject.dict[0]
 		objNumber, err := strconv.Atoi(number)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		} else {
 			pdf.pagesObjNumber = objNumber
 			pdf.addObjectsToPDF(objects)
@@ -2061,7 +2068,7 @@ func (pdf *PDF) getDescendantFonts(font *PDFobj, objects []*PDFobj) []*PDFobj {
 			if token1 != "]" {
 				objNumber, err := strconv.Atoi(token1)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				} else {
 					descendantFonts = append(descendantFonts, objects[objNumber-1])
 				}
@@ -2322,7 +2329,7 @@ func (pdf *PDF) appendString(s string) {
 	buf := []byte(s)
 	_, err := pdf.writer.Write(buf)
 	if err != nil {
-		return
+		panic(err)
 	}
 	pdf.byteCount += len(buf)
 }
@@ -2330,7 +2337,7 @@ func (pdf *PDF) appendString(s string) {
 func (pdf *PDF) appendByte(b byte) {
 	err := pdf.writer.WriteByte(b)
 	if err != nil {
-		return
+		panic(err)
 	}
 	pdf.byteCount++
 }
@@ -2338,7 +2345,7 @@ func (pdf *PDF) appendByte(b byte) {
 func (pdf *PDF) appendByteArray(buf []byte) {
 	_, err := pdf.writer.Write(buf)
 	if err != nil {
-		return
+		panic(err)
 	}
 	pdf.byteCount += len(buf)
 }

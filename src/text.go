@@ -192,8 +192,7 @@ func (text *Text) tokenizeCJK(textLine *TextLine, textWidth float32) []string {
 }
 
 // ParagraphsFromFile reads a text file and returns its paragraphs. An empty
-// line separates the paragraphs. It exits the program if the file cannot be
-// read.
+// line separates the paragraphs. It panics if the file cannot be read.
 func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 	paragraphs := make([]*Paragraph, 0)
 	paragraph := NewParagraph()

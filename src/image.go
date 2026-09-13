@@ -8,14 +8,12 @@ package pdfjet
 import (
 	"bufio"
 	"io"
-	"log"
 	"math"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/device"
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
@@ -43,7 +41,7 @@ type Image struct {
 }
 
 // NewImageFromFile creates an image from the PNG, BMP or JPEG file at the specified path.
-// It exits the program if the extension is not supported or the file cannot be opened.
+// It panics if the extension is not supported or the file cannot be opened.
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
 	var imageType int
 	if strings.HasSuffix(strings.ToLower(filePath), ".png") {
@@ -54,11 +52,11 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 		strings.HasSuffix(strings.ToLower(filePath), ".jpeg") {
 		imageType = imagetype.JPG
 	} else {
-		log.Fatal("Invalid image file extension.")
+		panic("Invalid image file extension.")
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -80,7 +78,10 @@ func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, _ := NewJPGImage(reader)
+		jpg, err := NewJPGImage(reader)
+		if err != nil {
+			panic(err)
+		}
 		data := jpg.GetData()
 		image.w = jpg.GetWidth()
 		image.h = jpg.GetHeight()
@@ -127,7 +128,10 @@ func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType int) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, _ := NewJPGImage(reader)
+		jpg, err := NewJPGImage(reader)
+		if err != nil {
+			panic(err)
+		}
 		data := jpg.GetData()
 		image.w = jpg.GetWidth()
 		image.h = jpg.GetHeight()
@@ -171,13 +175,13 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 
 	val, err := strconv.ParseFloat(obj.GetValue("/Width"), 32)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	image.w = float32(val)
 
 	val, err = strconv.ParseFloat(obj.GetValue("/Height"), 32)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	image.h = float32(val)
 
@@ -289,7 +293,7 @@ func (image *Image) SetGoToAction(key string) *Image {
 // @param degrees the number of degrees.
 func (image *Image) RotateClockwise(degrees int) {
 	if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
-		log.Fatal("The rotation angle must be 0, 90, 180 or 270")
+		panic("The rotation angle must be 0, 90, 180 or 270")
 	}
 	image.degrees = degrees
 }
@@ -445,7 +449,7 @@ func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPe
 
 	buf := data
 	if pdf.encryption != nil {
-		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+		buf = pdf.encryption.encrypt(data)
 	}
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(buf))
@@ -502,7 +506,7 @@ func (image *Image) addImageToPDF(
 
 	buf := data
 	if pdf.encryption != nil {
-		buf, _ = encryption.Encrypt(data, pdf.encryption.GetKey())
+		buf = pdf.encryption.encrypt(data)
 	}
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(buf))

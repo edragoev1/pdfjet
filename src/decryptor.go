@@ -326,7 +326,10 @@ func getHash(r int, password, salt, udata []byte) []byte {
 	}
 	for round := 1; ; round++ {
 		k1 := bytes.Repeat(slices.Concat(password, k, udata), 64)
-		block, _ := aes.NewCipher(k[:16])
+		block, err := aes.NewCipher(k[:16])
+		if err != nil {
+			panic(err)
+		}
 		e := make([]byte, len(k1))
 		cipher.NewCBCEncrypter(block, k[16:32]).CryptBlocks(e, k1)
 		total := 0

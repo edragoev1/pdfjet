@@ -15,8 +15,6 @@
 
 package qrcode
 
-import "log"
-
 // expTable and logTable are built once, when the package is loaded,
 // and shared by every glog/gexp call. They used to be recomputed by
 // NewQRMath() on every single invocation, which made encoding a QR
@@ -42,7 +40,7 @@ func init() {
 // glog returns the log value.
 func glog(index int) int {
 	if index < 1 {
-		log.Fatal("The index value must be between 0 and 255.")
+		panic("The index value must be between 0 and 255.")
 	}
 	return logTable[index]
 }

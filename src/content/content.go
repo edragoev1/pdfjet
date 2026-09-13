@@ -8,25 +8,24 @@ package content
 
 import (
 	"io"
-	"log"
 	"os"
 )
 
 // OfTextFile returns the contents of the specified text file.
-// It exits the program if the file cannot be read.
+// It panics if the file cannot be read.
 func OfTextFile(fileName string) string {
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer func() {
 		if err = file.Close(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}()
 	contents, err := io.ReadAll(file)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	runes := make([]rune, 0)
 	for _, ch := range string(contents) {
@@ -42,21 +41,21 @@ func OfTextFile(fileName string) string {
 }
 
 // OfBinaryFile returns the contents of the specified file as bytes.
-// It exits the program if the file cannot be read.
+// It panics if the file cannot be read.
 func OfBinaryFile(fileName string) []uint8 {
 	contents, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return contents
 }
 
 // GetFromReader returns all the bytes read from the reader.
-// It exits the program if the reader fails.
+// It panics if the reader fails.
 func GetFromReader(reader io.Reader) []uint8 {
 	contents, err := io.ReadAll(reader)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return contents
 }

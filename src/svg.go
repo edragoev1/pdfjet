@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -95,8 +94,19 @@ func (svg *SVG) GetOperations(path string) []*PathOp {
 	return operations
 }
 
-// ToPDF converts SVG path operations to PDF path operations.
+// ToPDF converts SVG path operations to PDF path operations. It panics if an
+// argument of an operation is not a number.
 func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
+	operations, err := toPDF(list)
+	if err != nil {
+		panic(err)
+	}
+	return operations
+}
+
+// toPDF converts SVG path operations to PDF path operations, and returns an
+// error if an argument of an operation is not a number.
+func toPDF(list []*PathOp) ([]*PathOp, error) {
 	operations := make([]*PathOp, 0)
 	var lastOp = NewPathOp(' ')
 	var x0 float32 = 0.0 // Start of subpath
@@ -108,11 +118,11 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'm' && lastOp != nil {
 					x += float64(lastOp.x)
@@ -133,11 +143,11 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'l' && lastOp != nil {
 					x += float64(lastOp.x)
@@ -152,7 +162,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				var pathOp *PathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'h' && lastOp != nil {
 					x += float64(lastOp.x)
@@ -166,7 +176,7 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				var pathOp *PathOp
 				y, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'v' && lastOp != nil {
 					y += float64(lastOp.y)
@@ -180,19 +190,19 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				pathOp := NewPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y1, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				x, err := strconv.ParseFloat(op.args[i+2], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+3], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'q' {
 					x1 += float64(lastOp.x)
@@ -224,11 +234,11 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				}
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 't' {
 					x += float64(lastOp.x)
@@ -248,27 +258,27 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				pathOp := NewPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y1, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				x2, err := strconv.ParseFloat(op.args[i+2], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y2, err := strconv.ParseFloat(op.args[i+3], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				x, err := strconv.ParseFloat(op.args[i+4], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+5], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 'c' {
 					x1 += float64(lastOp.x)
@@ -297,19 +307,19 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 				}
 				x2, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y2, err := strconv.ParseFloat(op.args[i+1], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				x, err := strconv.ParseFloat(op.args[i+2], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				y, err := strconv.ParseFloat(op.args[i+3], 32)
 				if err != nil {
-					log.Fatal(err)
+					return nil, err
 				}
 				if op.cmd == 's' {
 					x2 += float64(lastOp.x)
@@ -326,13 +336,28 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 			}
 		case 'A', 'a':
 			for i := 0; i <= len(op.args)-7; i += 7 {
-				rx := svgFloat(op.args[i])
-				ry := svgFloat(op.args[i+1])
-				rotation := svgFloat(op.args[i+2])
+				rx, err := svgFloat(op.args[i])
+				if err != nil {
+					return nil, err
+				}
+				ry, err := svgFloat(op.args[i+1])
+				if err != nil {
+					return nil, err
+				}
+				rotation, err := svgFloat(op.args[i+2])
+				if err != nil {
+					return nil, err
+				}
 				largeArc := op.args[i+3] != "0"
 				sweep := op.args[i+4] != "0"
-				x := svgFloat(op.args[i+5])
-				y := svgFloat(op.args[i+6])
+				x, err := svgFloat(op.args[i+5])
+				if err != nil {
+					return nil, err
+				}
+				y, err := svgFloat(op.args[i+6])
+				if err != nil {
+					return nil, err
+				}
 				if op.cmd == 'a' {
 					x += lastOp.x
 					y += lastOp.y
@@ -347,15 +372,12 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 			lastOp = pathOp
 		}
 	}
-	return operations
+	return operations, nil
 }
 
-func svgFloat(arg string) float32 {
+func svgFloat(arg string) (float32, error) {
 	value, err := strconv.ParseFloat(arg, 32)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return float32(value)
+	return float32(value), err
 }
 
 // addArc appends the cubic curves that draw the elliptical arc from the

@@ -6,8 +6,6 @@
 package pdfjet
 
 import (
-	"log"
-
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 )
@@ -656,7 +654,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Bottom:
 		yText = (y + cellH) - cell.bottomPadding
 	default:
-		log.Fatal("Invalid vertical text alignment option.")
+		panic("Invalid vertical text alignment option.")
 	}
 
 	if cell.hasStrokeColor {

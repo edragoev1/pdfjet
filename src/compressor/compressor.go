@@ -31,8 +31,12 @@ func Deflate(buf []byte) []byte {
 	var deflated bytes.Buffer
 	writer := writerPool.Get().(*zlib.Writer)
 	writer.Reset(&deflated)
-	_, _ = writer.Write(buf)
-	_ = writer.Close()
+	if _, err := writer.Write(buf); err != nil {
+		panic(err)
+	}
+	if err := writer.Close(); err != nil {
+		panic(err)
+	}
 	writerPool.Put(writer)
 	return deflated.Bytes()
 }

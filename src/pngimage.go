@@ -66,7 +66,7 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		case "PLTE":
 			image.pLTE = chunk.ChunkData
 			if len(image.pLTE)%3 != 0 {
-				log.Fatal("Incorrect palette length.")
+				panic("Incorrect palette length.")
 			}
 		case "tRNS":
 			if image.colorType == 3 {
@@ -78,7 +78,10 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 	}
 
 	// Decompress the IDAT chunk data.
-	inflatedIDAT, _ := decompressor.Inflate(image.iDAT)
+	inflatedIDAT, err := decompressor.Inflate(image.iDAT)
+	if err != nil {
+		panic(err)
+	}
 
 	var imageData []byte
 	switch image.colorType {
@@ -96,13 +99,13 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		case 1:
 			imageData = image.getImageColorType0BitDepth1(inflatedIDAT)
 		default:
-			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
 	case 6:
 		if image.bitDepth == 8 {
 			imageData = image.getImageColorType6BitDepth8(inflatedIDAT)
 		} else {
-			log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
 	default:
 		// Color Image
@@ -119,7 +122,7 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			case 8, 4, 2, 1:
 				imageData = image.getImageColorType3(inflatedIDAT)
 			default:
-				log.Fatal("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+				panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 			}
 		}
 	}
@@ -175,7 +178,7 @@ func (image *PNGImage) processPNG(reader io.Reader) []*Chunk {
 func (image *PNGImage) validatePNG(reader io.Reader) {
 	buf := make([]byte, 8)
 	if _, err := io.ReadFull(reader, buf); err != nil {
-		log.Fatal("File is too short!")
+		panic("File is too short!")
 	}
 	if ((buf[0] & 0xFF) == 0x89) &&
 		buf[1] == 0x50 &&
@@ -187,7 +190,7 @@ func (image *PNGImage) validatePNG(reader io.Reader) {
 		buf[7] == 0x0A {
 		// The PNG signature is correct.
 	} else {
-		log.Fatal("Wrong PNG signature.")
+		panic("Wrong PNG signature.")
 	}
 }
 
@@ -202,7 +205,7 @@ func (image *PNGImage) getChunk(reader io.Reader) *Chunk {
 	crc32.Update(chunk.ChunkType)
 	crc32.Update(chunk.ChunkData)
 	if crc32.GetValue() != chunk.ChunkCRC {
-		log.Fatal("PNGImage chunk has bad CRC.")
+		panic("PNGImage chunk has bad CRC.")
 	}
 	return chunk
 }

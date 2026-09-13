@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"io"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -29,33 +30,44 @@ func insertArrayAt(a1, a2 []string, index int) []string {
 	return a3
 }
 
+// readFully fills the buffer from the reader. It panics if the reader ends
+// before the buffer is full, or cannot be read.
+func readFully(r io.Reader, buf []byte) {
+	_, err := io.ReadFull(r, buf)
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
+		panic("Unexpected end of stream: expected " + strconv.Itoa(len(buf)) + " bytes")
+	} else if err != nil {
+		panic(err)
+	}
+}
+
 func getUint8(r io.Reader) uint8 {
 	buf := make([]byte, 1)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return buf[0]
 }
 
 func getUint16(r io.Reader) uint16 {
 	buf := make([]byte, 2)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return uint16(buf[0])<<8 | uint16(buf[1])
 }
 
 func getUint24(r io.Reader) uint32 {
 	buf := make([]byte, 3)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return uint32(buf[0])<<16 | uint32(buf[1])<<8 | uint32(buf[2])
 }
 
 func getUint32(r io.Reader) uint32 {
 	buf := make([]byte, 4)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
 }
 
 func getInt32(r io.Reader) int32 {
 	buf := make([]byte, 4)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
 }
 
@@ -88,7 +100,7 @@ func skipNBytes(reader io.Reader, n int) {
 
 func getNBytes(r io.Reader, n int) []byte {
 	buf := make([]byte, n)
-	io.ReadFull(r, buf)
+	readFully(r, buf)
 	return buf
 }
 

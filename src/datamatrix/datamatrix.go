@@ -7,7 +7,6 @@
 package datamatrix
 
 import (
-	"log"
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -100,15 +99,14 @@ type DataMatrix struct {
 	dark, placed [][]bool
 }
 
-// NewDataMatrix creates a square Data Matrix barcode. It exits the program if
-// the text does not fit in the largest symbol.
+// NewDataMatrix creates a square Data Matrix barcode. It panics if the text
+// does not fit in the largest symbol.
 func NewDataMatrix(str string) *DataMatrix {
 	return NewDataMatrixWithShape(str, Square)
 }
 
 // NewDataMatrixWithShape creates a Data Matrix barcode with the shape Square or
-// Rectangle. It exits the program if the text does not fit in the largest
-// symbol.
+// Rectangle. It panics if the text does not fit in the largest symbol.
 func NewDataMatrixWithShape(str string, shape int) *DataMatrix {
 	dm := &DataMatrix{m1: 2.0, color: color.Black}
 	data := encode([]byte(str))
@@ -296,9 +294,8 @@ func selectSymbol(length, shape int) [7]int {
 			return symbol
 		}
 	}
-	log.Fatal("The text takes " + strconv.Itoa(length) +
+	panic("The text takes " + strconv.Itoa(length) +
 		" codewords; a Data Matrix symbol holds 1558 at most.")
-	return squares[len(squares)-1]
 }
 
 // pad fills the rest of the symbol's data capacity with pad codewords: the

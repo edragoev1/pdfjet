@@ -10,7 +10,6 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"unicode/utf16"
 
@@ -72,7 +71,7 @@ func NewOTF(reader io.Reader) *OTF {
 		version == 0x4F54544F { // CFF OTF
 		// We should be able to read this font.
 	} else {
-		log.Println("OTF version == " + fmt.Sprint(version) + " is not supported.")
+		panic("OTF version == " + fmt.Sprint(version) + " is not supported.")
 	}
 
 	numOfTables := int(readUint16(otf))
@@ -119,15 +118,17 @@ func NewOTF(reader io.Reader) *OTF {
 	if otf.cff {
 		_, err := writer.Write(otf.buf[otf.cffOff : otf.cffOff+otf.cffLen])
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	} else {
 		_, err := writer.Write(otf.buf)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}
-	_ = writer.Close()
+	if err := writer.Close(); err != nil {
+		panic(err)
+	}
 
 	return otf
 }
@@ -229,7 +230,7 @@ func getCmapTable(otf *OTF, table *FontTable) {
 		}
 	}
 	if !format4subtable {
-		log.Fatal("Format 4 subtable not found in this font.")
+		panic("Format 4 subtable not found in this font.")
 	}
 
 	otf.index = tableOffset + subtableOffset

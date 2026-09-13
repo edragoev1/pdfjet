@@ -7,12 +7,9 @@ package pdfjet
 
 import (
 	"encoding/hex"
-	"fmt"
 	"io"
 	"math"
 	"strings"
-
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 )
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
@@ -96,7 +93,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 
 	buf := otf.compressed.Bytes()
 	if pdf.encryption != nil {
-		buf, _ = encryption.Encrypt(buf, pdf.encryption.GetKey())
+		buf = pdf.encryption.encrypt(buf)
 	}
 
 	pdf.appendString("/Length ")
@@ -236,7 +233,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 
 	buf2 := []byte(sb.String())
 	if pdf.encryption != nil {
-		buf2, _ = encryption.Encrypt(buf2, pdf.encryption.GetKey())
+		buf2 = pdf.encryption.encrypt(buf2)
 	}
 
 	pdf.newObj()
@@ -276,17 +273,8 @@ func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
 	registry := []byte("Adobe")
 	ordering := []byte("Identity")
 	if pdf.encryption != nil {
-		var err error
-		registry, err = encryption.Encrypt(registry, pdf.encryption.GetKey())
-		if err != nil {
-			fmt.Println("encryption failed:", err)
-			return
-		}
-		ordering, err = encryption.Encrypt(ordering, pdf.encryption.GetKey())
-		if err != nil {
-			fmt.Println("encryption failed:", err)
-			return
-		}
+		registry = pdf.encryption.encrypt(registry)
+		ordering = pdf.encryption.encrypt(ordering)
 	}
 	pdf.appendString("/CIDSystemInfo <</Registry <")
 	pdf.appendString(hex.EncodeToString(registry))

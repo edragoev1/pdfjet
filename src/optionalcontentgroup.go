@@ -10,9 +10,7 @@ package pdfjet
 
 import (
 	"encoding/hex"
-	"fmt"
 
-	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
@@ -89,12 +87,7 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) {
 
 		nameBytes := []byte(ocg.name)
 		if ocg.pdf.encryption != nil {
-			var err error
-			nameBytes, err = encryption.Encrypt(nameBytes, ocg.pdf.encryption.GetKey())
-			if err != nil {
-				fmt.Println("encryption failed:", err)
-				return
-			}
+			nameBytes = ocg.pdf.encryption.encrypt(nameBytes)
 		}
 		ocg.pdf.appendString("/Name <")
 		ocg.pdf.appendString(hex.EncodeToString(nameBytes))

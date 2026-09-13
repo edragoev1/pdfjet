@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -60,9 +59,9 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode.direction = LeftToRight
 
 	if barcodeType == UPC_A && (len(text) != 11 || !hasOnlyDigits(text)) {
-		log.Fatal("UPC-A barcodes must have exactly 11 digits!")
+		panic("UPC-A barcodes must have exactly 11 digits!")
 	} else if barcodeType == EAN_13 && (len(text) != 12 || !hasOnlyDigits(text)) {
-		log.Fatal("EAN-13 barcodes must have exactly 12 digits!")
+		panic("EAN-13 barcodes must have exactly 12 digits!")
 	}
 
 	barcode.lCode = []string{
@@ -468,7 +467,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		for i := 0; i < len(fullText); i++ {
 			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + fullText +
+				panic("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {
@@ -499,7 +498,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		for i := 0; i < len(fullText); i++ {
 			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + fullText +
+				panic("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {
@@ -533,7 +532,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		for i := 0; i < len(fullText); i++ {
 			code := barcode.tableB[fullText[i]]
 			if code == "" {
-				log.Fatal("The input string '" + fullText +
+				panic("The input string '" + fullText +
 					"' contains characters that are invalid in a Code39 barcode.")
 			}
 			for _, ch := range code {

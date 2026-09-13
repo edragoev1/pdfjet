@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"bufio"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -208,7 +207,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 		pdf.appendString("/Ordering (Korea1)\n")
 		pdf.appendString("/Supplement 1\n")
 	} else {
-		log.Fatal("Unsupported font: " + fontName)
+		panic("Unsupported font: " + fontName)
 	}
 	pdf.appendString(">>\n")
 	pdf.appendString(">>\n")
@@ -233,7 +232,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 		pdf.appendString(fontName + "-UniKS-UCS2-H\n")
 		pdf.appendString("/Encoding /UniKS-UCS2-H\n")
 	} else {
-		log.Fatal("Unsupported font: " + fontName)
+		panic("Unsupported font: " + fontName)
 	}
 	pdf.appendString("/DescendantFonts [")
 	pdf.appendInteger(pdf.getObjNumber() - 1)
@@ -271,12 +270,12 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 }
 
 // NewFontFromFile creates a font from the file at the specified path and adds it to the PDF.
-// Files ending in .stream are read as stream fonts. It exits the program if the file cannot be opened.
+// Files ending in .stream are read as stream fonts. It panics if the file cannot be opened.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	var font *Font
 	f, err := os.Open(filePath)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer func(f *os.File) {
 		err := f.Close()

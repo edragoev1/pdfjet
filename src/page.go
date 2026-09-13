@@ -1271,7 +1271,7 @@ func (page *Page) FillRect(x, y, w, h float32) {
 // line segments or curve control points based on their controlPoint field.
 func (page *Page) DrawPath(path []*Point, pathOperator string) {
 	if len(path) < 2 {
-		log.Fatal("The Path object must contain at least 2 points.")
+		panic("The Path object must contain at least 2 points.")
 	}
 	point := path[0]
 	page.MoveTo(point.x, point.y)
@@ -1461,7 +1461,7 @@ func (page *Page) SetTextRenderingMode(mode int) *Page {
 	if mode >= 0 && mode <= 7 {
 		page.renderingMode = mode
 	} else {
-		log.Fatal("Invalid text rendering mode: " + fmt.Sprint(mode))
+		panic("Invalid text rendering mode: " + fmt.Sprint(mode))
 	}
 	return page
 }

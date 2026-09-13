@@ -17,7 +17,6 @@
 package qrcode
 
 import (
-	"log"
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -280,7 +279,7 @@ func (qrcode *QRCode) createData(errorCorrectLevel int) []byte {
 	}
 
 	if buffer.getLengthInBits() > totalDataCount*8 {
-		log.Fatal("String length overflow. (" +
+		panic("String length overflow. (" +
 			strconv.Itoa(buffer.getLengthInBits()) + ">" +
 			strconv.Itoa(totalDataCount*8) + ")")
 	}

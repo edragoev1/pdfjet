@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -88,13 +87,17 @@ func (obj *PDFobj) setLength(length int) {
 
 // decode decodes the stream with each filter of its /Filter entry in turn. A
 // filter that is not supported, like DCTDecode, ends the decoding, and the
-// data is what the filters before it decoded.
+// data is what the filters before it decoded. It panics if a Flate stream
+// cannot be inflated.
 func (obj *PDFobj) decode(stream []byte) []byte {
 	decoded := stream
 	for i, filter := range obj.getValues("/Filter") {
 		switch filter {
 		case "/FlateDecode", "/Fl":
-			data, _ := decompressor.Inflate(decoded)
+			data, err := decompressor.Inflate(decoded)
+			if err != nil {
+				panic(err)
+			}
 			decoded = obj.applyDecodeParms(data, i)
 		case "/LZWDecode", "/LZW":
 			decoded = obj.applyDecodeParms(decompressor.LZWDecode(decoded), i)
@@ -267,7 +270,7 @@ func (obj *PDFobj) getObjectNumbers(key string) []int {
 					}
 					objNumber, err := strconv.Atoi(str)
 					if err != nil {
-						log.Fatal(err)
+						panic(err)
 					}
 					numbers = append(numbers, objNumber)
 					i++ // 0
@@ -276,7 +279,7 @@ func (obj *PDFobj) getObjectNumbers(key string) []int {
 			} else {
 				objNumber, err := strconv.Atoi(str)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				numbers = append(numbers, objNumber)
 			}
@@ -292,11 +295,11 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 		if obj.dict[i] == "/MediaBox" {
 			f1, err1 := strconv.ParseFloat(obj.dict[i+4], 32)
 			if err1 != nil {
-				log.Fatal(err1)
+				panic(err1)
 			}
 			f2, err2 := strconv.ParseFloat(obj.dict[i+5], 32)
 			if err2 != nil {
-				log.Fatal(err2)
+				panic(err2)
 			}
 			return pagesize.NewPageSize(float32(f1), float32(f2))
 		}
@@ -311,7 +314,7 @@ func (obj *PDFobj) getLength(objects []*PDFobj) int {
 		if token == "/Length" {
 			number, err := strconv.Atoi(obj.dict[i+1])
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			if obj.dict[i+2] == "0" &&
 				obj.dict[i+3] == "R" {
@@ -329,7 +332,7 @@ func (obj *PDFobj) getLengthFromObject(objects []*PDFobj, number int) int {
 		if obj.number == number {
 			length, err := strconv.Atoi(obj.dict[3])
 			if err != nil {
-				log.Fatal(obj.dict[3])
+				panic(err)
 			}
 			return length
 		}
@@ -355,7 +358,7 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 		for i != -1 && i+3 < len(contents.dict) && contents.dict[i+3] == "R" {
 			number, err := strconv.Atoi(contents.dict[i+1])
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			numbers = append(numbers, number)
 			i += 3
@@ -388,7 +391,7 @@ func (obj *PDFobj) GetResourcesObject(objects []*PDFobj) *PDFobj {
 			}
 			objNumber, err := strconv.Atoi(token)
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			return objects[objNumber-1]
 		}
@@ -425,7 +428,7 @@ func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*
 			} else if token[0] >= '0' && token[0] <= '9' { // Indirect resources object
 				objNumber, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				obj.addFontResource((*objects)[objNumber-1], objects, font.fontID, obj2.number)
 			}
@@ -469,7 +472,7 @@ func (obj *PDFobj) addFontResource(obj2 *PDFobj, objects *[]*PDFobj, fontID stri
 			} else if token[0] >= '0' && token[0] <= '9' {
 				index, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				obj3 := (*objects)[index-1]
 				for j := 0; j < len(obj3.dict); j++ {
@@ -521,7 +524,7 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 			} else {
 				n, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				obj2 := (*objects)[n-1]
 				obj2.dict = insertNewObject(obj2.dict, list, objType)
@@ -556,7 +559,7 @@ func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
 			} else { // Indirect resources object
 				objNumber, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				addResource("/XObject", (*objects)[objNumber-1], objects, image.objNumber)
 			}
@@ -575,7 +578,7 @@ func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
 			} else { // Indirect resources object
 				objNumber, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				addResource("/Font", (*objects)[objNumber-1], objects, font.objNumber)
 			}
@@ -613,7 +616,7 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 				// Single content object
 				index, err := strconv.Atoi(token)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				obj3 := (*objects)[index-1]
 				if obj3.data == nil && obj3.stream == nil {
@@ -664,7 +667,7 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 			// Single content object
 			index, err := strconv.Atoi(token)
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			obj3 := (*objects)[index-1]
 			if obj3.data == nil && obj3.stream == nil {
@@ -717,7 +720,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 			} else {
 				index2, err := strconv.Atoi(token2)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				resources = (*objects)[index2-1]
 				for j := 0; j < len(resources.dict); j++ {
@@ -747,7 +750,7 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	} else { // "/ExtGState 12 0 R"
 		number, err := strconv.Atoi(resources.dict[i+1])
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		resources = (*objects)[number-1]
 		index = slices.Index(resources.dict, "<<") + 1

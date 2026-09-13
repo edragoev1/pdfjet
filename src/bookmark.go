@@ -6,7 +6,6 @@
 package pdfjet
 
 import (
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -111,7 +110,7 @@ func (bookmark *Bookmark) AutoNumber(textLine *TextLine) *Bookmark {
 			if index == -1 {
 				temp, err := strconv.Atoi(bm.prefix)
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				value := strconv.Itoa(temp + 1)
 				bookmark.prefix = value
@@ -119,7 +118,7 @@ func (bookmark *Bookmark) AutoNumber(textLine *TextLine) *Bookmark {
 				value := (bm.prefix)[:index] + "."
 				temp, err := strconv.Atoi((bm.prefix)[index+1:])
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
 				value += strconv.Itoa(temp + 1)
 				bookmark.prefix = value

@@ -190,8 +190,11 @@ func (image *SVGImage) processPaths(paths []*SVGPath) error {
 
 	svg := NewSVG()
 	for _, path := range paths {
-		path.operations = svg.GetOperations(path.data)
-		path.operations = svg.ToPDF(path.operations)
+		operations, err := toPDF(svg.GetOperations(path.data))
+		if err != nil {
+			return fmt.Errorf("invalid path data %q: %w", path.data, err)
+		}
+		path.operations = operations
 		if image.viewBox != "" {
 			for _, op := range path.operations {
 				op.x = (op.x - box[0]) * image.w / box[2]
