@@ -1,51 +1,153 @@
-# PDF library for Java, C#, Swift and Go developers
+<p align="center">
+  <img src="images/readme/pdfjet-logo.png" alt="PDFjet" width="320">
+</p>
 
-This high performance library have no dependencies on external packages and should be usable on the widest variety of plaforms supported by the Java, C#, Swift and Go languages.
+<h3 align="center">Fast, dependency-free PDF generation for Java, C#, Go and Swift</h3>
 
+<p align="center">
+  <a href="https://github.com/edragoev1/pdfjet/actions/workflows/build.yml"><img src="https://github.com/edragoev1/pdfjet/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/edragoev1/pdfjet/actions/workflows/docs.yml"><img src="https://github.com/edragoev1/pdfjet/actions/workflows/docs.yml/badge.svg" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/Java-8%2B-b07219.svg" alt="Java 8+">
+  <img src="https://img.shields.io/badge/.NET-8-512bd4.svg" alt=".NET 8">
+  <img src="https://img.shields.io/badge/Go-1.27-00add8.svg" alt="Go 1.27">
+  <img src="https://img.shields.io/badge/Swift-6.2%2B-f05138.svg" alt="Swift 6.2+">
+</p>
 
+<p align="center">
+  <a href="https://edragoev1.github.io/pdfjet/">Documentation</a> ·
+  <a href="examples">Examples</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+PDFjet creates PDF documents: text in any script, tables, charts, barcodes and
+images, accessible and archival when you need it to be. The same API and the
+same output come in four languages, and none of them needs a single dependency.
+
+## Why PDFjet
+
+- **Accessible and archival PDFs in one setting.** PDF/UA-1 and PDF/A-1a, 1b,
+  2a, 2b, 3a and 3b are built in, and the examples are checked with
+  [veraPDF](https://verapdf.org/) on every push.
+- **One API, four languages, the same PDF.** Java, C#, Go and Swift share the
+  API, and CI compares the PDFs of every port with Java's, page by page.
+- **Fast and light.** Every port writes a 500-page document with an embedded
+  font in under 100 ms, and each page is written out and freed as soon as the
+  next one starts.
+- **No dependencies.** The Java library is a single 0.39 MB jar.
+- **Layout built in.** Tables that break across pages and repeat their header
+  rows, text blocks, columns, charts and calendars.
+- **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
+  PDF417.
+- **Fonts ready to use.** 272 font files from the IBM Plex, Noto and other
+  families, compressed once ahead of time, with Unicode text in Latin, Greek,
+  Cyrillic, CJK and right to left scripts.
+- **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics.
+- **Security.** AES-256 encryption with passwords and permissions, reading
+  existing and encrypted PDFs, and limits that keep untrusted input from
+  exhausting memory.
+
+<table>
+  <tr>
+    <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in any script</td>
+    <td align="center"><a href="examples/Example_34.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
+    <td align="center"><a href="examples/Example_25.java"><img src="images/readme/example-chart.png" alt="A donut chart" width="200"></a><br>Charts</td>
+    <td align="center"><a href="examples/Example_14.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
+  </tr>
+</table>
+
+## Quick start
+
+Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
+The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
+working directory, so run the program in a folder that has this repository's
+`fonts` directory.
+
+<details open>
+<summary><b>Java</b></summary>
+
+Build `PDFjet.jar` with `./build-java.sh`, which also runs the examples, and
+put it on the class path.
+
+```java
+import com.pdfjet.*;
+import com.pdfjet.fonts.*;
+import java.io.*;
+
+public class Hello {
+    public static void main(String[] args) throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("hello.pdf")));
+        Font font = new Font(pdf, IBMPlexSans.Regular).setSize(18f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").setLocation(50f, 100f).drawOn(page);
+        pdf.complete();
+    }
+}
 ```
-To build the Java version and compile and run all examples:
 
-./build-java.sh
+</details>
 
+<details>
+<summary><b>C#</b></summary>
 
-To build the C# version using .NET and compile and run all examples:
+Build `bin/release/net8.0/PDFjet.dll` with `./build-dotnet.sh` and reference it.
 
-./build-dotnet.sh
+```csharp
+using System.IO;
+using PDFjet.NET;
 
+public class Hello {
+    public static void Main() {
+        var pdf = new PDF(new BufferedStream(new FileStream("hello.pdf", FileMode.Create)));
+        var font = new Font(pdf, IBMPlexSans.Regular).SetSize(18f);
+        var page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").SetLocation(50f, 100f).DrawOn(page);
+        pdf.Complete();
+    }
+}
+```
 
-To build the Go version and compile and run all examples:
+</details>
 
-./build-go.sh
+<details>
+<summary><b>Go</b></summary>
 
-## To use the Go library:
 ```bash
 go get github.com/edragoev1/pdfjet/v9@latest
+```
 
-The module path carries the major version, as Go requires from v2 on, so
-import the packages as:
+```go
+package main
 
 import (
-    pdfjet "github.com/edragoev1/pdfjet/v9/src"
-    "github.com/edragoev1/pdfjet/v9/src/letter"
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-The Go module has the source of the library and the examples only. The fonts,
-the data files and the images are not in it: with the fonts the module is
-larger than the 500 MiB Go allows, so fonts/, data/ and images/ each have a
-go.mod that keeps them out. The font constants, such as IBMPlexSans.Regular,
-are paths relative to the working directory, so copy the fonts/ directory of
-this repository next to the program. The core fonts need no files.
+func main() {
+	pdf := pdfjet.NewPDFFile("hello.pdf")
+	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(18)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewTextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").SetLocation(50, 100).DrawOn(page)
+	pdf.Complete()
+}
+```
 
+The module path carries the major version, as Go requires from v2 on. The Go
+module has the source of the library and the examples only: the fonts, the
+data files and the images would make it larger than the 500 MiB Go allows, so
+`fonts/`, `data/` and `images/` each have a `go.mod` that keeps them out. Copy
+the `fonts/` directory of this repository next to your program; the core fonts
+need no files.
+</details>
 
-To build the Swift version and compile and run all examples:
+<details>
+<summary><b>Swift</b></summary>
 
-./build-swift.sh
+Add PDFjet to the `Package.swift` of your package:
 
-
-To use the Swift library in another Swift package, add PDFjet to its
-Package.swift:
-
+```swift
 dependencies: [
     .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.0.0"),
 ],
@@ -54,31 +156,53 @@ targets: [
         .product(name: "PDFjet", package: "pdfjet"),
     ]),
 ]
-
-
-To compile and run specific Java example use the following command:
-
-./run-java.sh 01
-
-
-To compile and run specific C# example use one of the following:
-
-./run-dotnet.sh 01
-
-
-To compile and run specific Go example:
-
-./run-go.sh 01
-
-
-To compile and run specific Swift example:
-
-./run-swift.sh 01
-
-Make sure you install these first:
-sudo apt install libc6-dev
-sudo apt install gcc
 ```
+
+```swift
+import Foundation
+import PDFjet
+
+let pdf = PDF(OutputStream(toFileAtPath: "hello.pdf", append: false)!)
+let font = try Font(pdf, IBMPlexSans.Regular).setSize(18.0)
+let page = Page(pdf, Letter.PORTRAIT)
+TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").setLocation(50.0, 100.0).drawOn(page)
+try pdf.complete()
+```
+
+</details>
+
+## Performance
+
+Each port writing a document with 60 lines of Latin, Greek and Cyrillic text per
+page in IBM Plex Sans, the median of 7 runs on an AMD Ryzen 5 5600G. Peak memory
+is that of the whole process writing the 500-page document, runtime included.
+
+| Port | 100 pages | 500 pages | Peak memory |
+|---|---|---|---|
+| Java | 15 ms | 73 ms | 96 MB |
+| C# | 22 ms | 70 ms | 57 MB |
+| Go | 10 ms | 51 ms | 10 MB |
+| Swift | 22 ms | 94 ms | 29 MB |
+
+## Examples
+
+The [examples](examples) folder has 50 examples, the same in every port. Build
+a port and run all of its examples, or run one example by its number:
+
+| Port | All examples | One example |
+|---|---|---|
+| Java | `./build-java.sh` | `./run-java.sh 01` |
+| C# | `./build-dotnet.sh` | `./run-dotnet.sh 01` |
+| Go | `./build-go.sh` | `./run-go.sh 01` |
+| Swift | `./build-swift.sh` | `./run-swift.sh 01` |
+
+On Linux, install these first:
+
+```bash
+sudo apt install libc6-dev gcc
+```
+
+On Windows, use the `.cmd` scripts of the same names.
 
 ## Builds
 
