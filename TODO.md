@@ -524,7 +524,7 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ### Names: one concept, several names
 
-- ⬜ **B** Strokes. `Line`, `Path`, `Arc`, `Point` and `Rect` use
+- ✅ **B** Strokes. `Line`, `Path`, `Arc`, `Point` and `Rect` use
       `setStrokeColor`, `setStrokeWidth` and `setFillColor`; what is left:
       - dash pattern: `Line`/`Path.setPattern`,
         `Rect`/`Text`/`TextFrame.setBorderPattern`,
@@ -543,24 +543,57 @@ renames included (the Week 1 decision), so every item is a blocker.
         `TextBlock.setBorderColor`/`setBorderWidth`;
         `Table.setCellBordersColor`/`setCellBordersWidth`;
         `Rect.setCornerRadius` against `TextBlock.setBorderCornerRadius`.
-- ⬜ **B** Rotation: `Arc.setRotateDegreesCW`/`CCW`; `Container` and `Stamp` have
+      Fixed, as decided on Sep 13: the outline of a box is a border and a
+      line has a stroke. `Line`/`Path.setPattern` is `setStrokeDashPattern`
+      and the `Chart` grid line patterns are `setHGridLineDashPattern` and
+      `setVGridLineDashPattern`; `Line.setCapStyle` is `setLineCapStyle`;
+      `Page` keeps pen and brush, and `setDefaultLineWidth` is
+      `setDefaultPenWidth`; `Form.setLineWidth` is `setStrokeWidth`;
+      `TextBox` and `Cell` have `setBorderColor`, `setBorderWidth` and
+      `getBorderWidth`, and `TextBox.setLineWidth` is removed;
+      `CheckBox.setBoxColor` and `setCheckmark` are `setBorderColor` and
+      `setCheckmarkColor`; `Paragraph.setColor` is `setTextColor`,
+      `QRCode`/`DataMatrix.setColor` `setModuleColor` and
+      `TextLine.setLineColor` `setDecorationColor`;
+      `Table.setCellBordersColor`/`Width` are `setCellBorderColor`/`Width`,
+      and `TextBlock.setBorderCornerRadius` is `setCornerRadius`.
+- ✅ **B** Rotation: `Arc.setRotateDegreesCW`/`CCW`; `Container` and `Stamp` have
       `rotate`, `setRotation` and `setRotationCounterClockwise` for one angle,
       plus `setRotationClockwise`; `Image.rotateClockwise` sets the angle;
       `Page.rotateBy` sets an absolute `/Rotate`; `BaseAnnotation.rotate` is a
       public `Container` helper.
-- ⬜ **B** Scaling and moving: `Arc.setScaleFactor` multiplies the radii, so it
+      Fixed, as decided on Sep 13: an angle is set with `setRotation`,
+      counter-clockwise, or `setRotationClockwise`.
+      `Arc.setRotateDegreesCCW` and `CW` are `setRotation` and
+      `setRotationClockwise`; `Container` and `Stamp` lose `rotate` and
+      `setRotationCounterClockwise`; `Image.rotateClockwise` and
+      `Page.rotateBy` are `setRotationClockwise`; `BaseAnnotation.rotate` is
+      internal; and the text rotation in degrees of `Page`, `TextLine` and
+      `Point`, `setTextDirection(int)`, is `setTextRotation`.
+- ✅ **B** Scaling and moving: `Arc.setScaleFactor` multiplies the radii, so it
       is a `scaleBy`; `Container.setScaleFactor`/`setScaleFactorXY` set an
       absolute scale; `Rect.scaleBy` scales x and y only. `Line.setLocation`
       moves only the start point (`setStartPoint` does that too);
       `Arc.setCenterXY` duplicates `setLocation`; `Title.setOffset` adds to x
       on every call; `TextParameters.setTextLocation`;
       `CompositeTextLine.getPosition`, and `getMinMax` returns y values only.
-- ⬜ **B** Alignment: `Align` and `Alignment` are one `Alignment` enum since the
+      Fixed: `Arc.setScaleFactor` is `scaleBy`; `Rect.scaleBy` scales the
+      width, the height and the corner radius, not the location;
+      `Line.setLocation` moves the whole line; `Arc.setCenterXY` is removed
+      and `setLocation` sets the center; `Title.setOffset` sets the offset of
+      the text line from the prefix; `TextParameters.setTextLocation` is
+      `setLocation`; `CompositeTextLine.getPosition` is `getLocation` and
+      `getMinMax` `getMinMaxY`. `Container.setScaleFactor` stays, as it sets
+      the scale.
+- ✅ **B** Alignment: `Align` and `Alignment` are one `Alignment` enum since the
       types and signatures fixes; what is left:
       `Cell.setVerTextAlignment` against `TextBox.setVerticalAlignment`;
       `Table.setTextAlignInColumn` against `setTextAlignment`;
       `Point.setAlignment`.
-- ⬜ **B** Text boxes: `TextBox` and `TextBlock` name one setting differently:
+      Fixed: `Cell.setVerTextAlignment` is `setVerticalAlignment` and
+      `Table.setTextAlignInColumn` `setTextAlignmentInColumn`.
+      `Point.setAlignment` stays, as a point has one alignment.
+- ✅ **B** Text boxes: `TextBox` and `TextBlock` name one setting differently:
       `setMargin`/`setTextPadding` (`Cell.setPadding`), `setSpacing` in
       points/`setLineSpacing` as a multiplier,
       `setTextColors`/`setKeywordHighlightColors` (`setColorMap` in `TextLine`
@@ -572,11 +605,34 @@ renames included (the Week 1 decision), so every item is a blocker.
       does nothing; `Cell` has `setBorder(int, boolean)`, `TextFrame`
       `setBorder(boolean)` with a blue default. `TextColumn.setParagraphSpacing`
       is a multiplier, `Text`/`TextFrame.setParagraphLeading` points.
-- ⬜ **B** Barcodes: `PDF417.setModuleWidth`, `setModuleLength` in `Barcode`,
+      Fixed, as decided on Sep 13, with a gap in points and a spacing as a
+      multiplier: `TextBox.setMargin` and `TextBlock.setTextPadding` are
+      `setPadding`; `TextBox.setSpacing` is `setLineGap` and
+      `Text`/`TextFrame.setParagraphLeading` `setParagraphGap`;
+      `setTextColors`, `setKeywordHighlightColors` and `setColorMap` are
+      `setHighlightColors`; the `setFillColor` duplicates are removed;
+      `TextBox.setBorder(int, boolean)` removes a border, as `Cell`'s does;
+      `TextFrame.setBorder(boolean)` is `setBorders`, black by default; and
+      `TextBlock.getHeight` returns the drawn height when the text is taller
+      than the set height. `TextBox.setTextDirection` stays: it turns the
+      text, where `TextBlock.setRightToLeft` sets the reading order. The
+      Java example PDFs are the same as before.
+- ✅ **B** Barcodes: `PDF417.setModuleWidth`, `setModuleLength` in `Barcode`,
       `QRCode` and `DataMatrix`; `QRCode.getData` returns the modules;
       `ErrorCorrectLevel` for error correction level;
       `Barcode.LEFT_TO_RIGHT`, `TOP_TO_BOTTOM` and `BOTTOM_TO_TOP` duplicate
       `Direction`, and EAN-13 and UPC-A ignore the direction.
+      Fixed: `PDF417.setModuleWidth` is `setModuleLength`;
+      `QRCode`/`DataMatrix.getData` are `getModules`; `ErrorCorrectLevel` is
+      an `ErrorCorrectionLevel` enum (Go `qrcode.ErrorCorrectionLevel`, with
+      `ErrorCorrectionLevelL` and so on); the `Barcode` direction constants
+      are removed and `setDirection` takes a `Direction`; EAN-13 and UPC-A
+      are drawn top to bottom a quarter turn clockwise and bottom to top a
+      quarter turn counter-clockwise, as Code 39 is, so Example_11 draws its
+      UPC-A and EAN-13 bottom to top, as it asks.
+- ⬜ S Code 128 draws nothing bottom to top in the four ports, and top to
+      bottom its text reads up on the right, where Code 39's reads down on
+      the left.
 
 ### Names: misleading, redundant or dead
 
@@ -917,6 +973,31 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Form` take `int` colors; Go `NewTextBoxWithSize`, `Title.GetTextLine`,
       `Page.DrawStringUsingColor` and `Point.SetTextColorRGB`; Swift `Rect` and
       `TextBox` `r, g, b` setters and `drawString` with an `Int32` color.
+      Breaking, names: box outlines are borders (`TextBox`, `Cell` and
+      `CheckBox.setBorderColor`, `setBorderWidth`,
+      `Table.setCellBorderColor` and `setCellBorderWidth`,
+      `TextBlock.setCornerRadius`) and lines have strokes
+      (`Line`/`Path.setStrokeDashPattern`, `Line.setLineCapStyle`,
+      `Form.setStrokeWidth`, the `Chart` grid line dash patterns);
+      `Page.setDefaultPenWidth`; `CheckBox.setCheckmarkColor`,
+      `Paragraph.setTextColor`, `QRCode`/`DataMatrix.setModuleColor` and
+      `TextLine.setDecorationColor`. `setRotation` and `setRotationClockwise`
+      replace `Arc.setRotateDegreesCW`/`CCW`, `Container` and `Stamp`
+      `rotate` and `setRotationCounterClockwise`, `Image.rotateClockwise` and
+      `Page.rotateBy`; `BaseAnnotation.rotate` is internal; `setTextRotation`
+      replaces the `setTextDirection(int)` of `Page`, `TextLine` and `Point`.
+      `Arc.scaleBy`, no `Arc.setCenterXY`, `TextParameters.setLocation`,
+      `CompositeTextLine.getLocation` and `getMinMaxY`; `Rect.scaleBy` keeps
+      the location, `Line.setLocation` moves the whole line and
+      `Title.setOffset` sets the offset. `Cell.setVerticalAlignment` and
+      `Table.setTextAlignmentInColumn`. `setPadding`, `setLineGap`,
+      `setParagraphGap` and `setHighlightColors` in the text classes, no
+      `setFillColor` in `TextBox` and `TextBlock`,
+      `TextBox.setBorder(int, boolean)`, `TextFrame.setBorders` with a black
+      border, and `TextBlock.getHeight` returns the drawn height.
+      `PDF417.setModuleLength`, `QRCode`/`DataMatrix.getModules`, the
+      `ErrorCorrectionLevel` enum, `Barcode.setDirection(Direction)`, and
+      EAN-13 and UPC-A drawn in that direction.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
