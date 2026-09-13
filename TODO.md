@@ -188,17 +188,28 @@ the Week 1 decision settles.
 - ⬜ **B** 8-bit indexed PNG: Java, C# and Swift undo the row filters on the
       RGB bytes after the palette lookup, 3 bytes per pixel, instead of on the
       indexes; Go never undoes them (`PNGImage.java:342`, `pngimage.go:313`).
-- ⬜ **B** `Chart`: Java and Swift start the automatic maximums at the
+- ✅ **B** `Chart`: Java and Swift start the automatic maximums at the
       smallest positive float (`Float.MIN_VALUE`, `leastNonzeroMagnitude`),
       so all-negative data gets a maximum of 0 (`Chart.java:40`); C# rounds
       axis limits the user set (`Chart.cs:501`); Go never uses the automatic
       colours (`chart.go:548`); Swift `drawOn` crashes on empty data and
       divides by zero on flat data.
-- ⬜ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
+      Fixed: the maximums start at minus the largest float; C# rounds only
+      the ranges it computes; Go colours a series with no stroke colour
+      from the palette and keeps an explicit black; with no points
+      `drawOn` draws nothing and an empty series is skipped; flat data gets
+      a range of the value to the value plus 1 before rounding. Example_09,
+      Example_39 and Example_40 are unchanged.
+- ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y
       (`calendarmonth.go:89`); the default location, cell size and circle
       pen width differ in all four ports.
+      Fixed: C#, Go and Swift lay the calendar out as Java does, with its
+      defaults: location (0, 0), a cell width twice the widest day name,
+      square cells, a 1.25 point circle; Swift takes the weekday of day 1;
+      Java takes a `GregorianCalendar`, as a Thai default locale put the
+      days in the wrong columns.
 - ✅ **B** Go `Barcode` draws the UPC, EAN-13 and Code 39 text at the
       barcode's own `x1`, `y1` instead of the location it is drawn at, so the
       text of a barcode in a table cell is misplaced (`barcode.go:296,494`).
@@ -591,6 +602,18 @@ the Week 1 decision settles.
       returns `Drawable` and `DrawOn` returns `[2]float32`; Go draws the text
       of a UPC-A, EAN-13 or Code 39 barcode in a table cell under the barcode;
       a `PDF417` drawn twice no longer moves to the right.
+      `Chart`: all-negative data no longer gets an automatic maximum of 0
+      in Java and Swift; C# no longer rounds the axis ranges set with
+      `setXAxisMinMax` and `setYAxisMinMax`; Go gives a series with no
+      stroke colour the automatic colours and keeps an explicit black; a
+      chart with no points draws nothing instead of crashing, an empty
+      series is skipped, and flat data is drawn on a range of the value to
+      the value plus 1 instead of NaN labels or a crash. `CalendarMonth`
+      defaults to the location (0, 0), a cell size from the day name font
+      and a 1.25 point circle in the four ports, where C#, Go and Swift had
+      (75, 75) and fixed sizes; Go lays it out as Java does; Swift draws a
+      month that starts on a Sunday in the right row; Java uses the
+      Gregorian calendar whatever the default locale.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
