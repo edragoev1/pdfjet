@@ -367,15 +367,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       (`getDict()` still returns a copy); Java and C# `Page` and `TextLine`
       colour getters return copies and their array setters copy; Go
       `Page.GetContent` and C# `Encryption.getKey` return copies.
-- ⬜ **B** Mutable constants: the Java and Go page sizes can be changed by
-      callers (`A4.PORTRAIT[0] = 100f`, `a4.Portrait[0] = 100`), which changes
-      every page made later from that constant; pages already made keep
-      their size. `Token` is no longer public in any port (Go:
-      `src/internal/token`), C# page sizes are properties that return a new
-      array, and Java and C# `BigTable` and Java `PDFobj.getPageSize` copy
-      the array. What is left needs a breaking change: an immutable
-      `PageSize` type with `Page` and `BigTable` overloads, or functions
-      instead of arrays, in Java and Go.
+- ✅ **B** Mutable constants: the page sizes and the `Token` byte arrays could be
+      changed by callers in Java, C# and Go (`A4.PORTRAIT[0] = 100` changed
+      every later page). Fixed: `Token` is not public in any port (Go:
+      `src/internal/token`); a page size is an immutable `PageSize` in the four
+      ports (decided Sep 13), with a constructor and `getWidth`/`getHeight`,
+      and Go's page sizes are functions (`a4.Portrait()`) returning
+      `pagesize.PageSize`. Assigning to or indexing a constant no longer
+      compiles, and all 200 example PDFs are unchanged.
 - ⬜ **B** Found while fixing the drift above: Swift `BufferedOutputStream.flush`
       prints a write error and carries on; decided Sep 13 that Swift
       `PDF.complete()` throws, as Java's does. Also decided Sep 13: Go
@@ -788,6 +787,18 @@ renames included (the Week 1 decision), so every item is a blocker.
       and drops a byte order mark at its start in the four ports, and Swift
       `BigTable` draws a line that is not UTF-8 with U+FFFD instead of
       skipping it.
+      Breaking: a page size is an immutable `PageSize` in the four ports
+      (Java `final class`, C# `sealed class`, Swift `struct`, Go
+      `pagesize.PageSize`) with `PageSize(width, height)`, `getWidth()` and
+      `getHeight()`; `A3`, `A4`, `A5`, `B5`, `Executive`, `Legal`, `Letter` and
+      `Tabloid` `PORTRAIT` and `LANDSCAPE` are `PageSize` values, and in Go
+      the functions `Portrait()` and `Landscape()` (Tabloid's `PORTRAIT` and
+      `LANDSCAPE` renamed to match); the `Page` constructors, the `BigTable`
+      constructor and `Table.drawOn(pdf, pages, pageSize)` take a `PageSize`
+      instead of a `float[]`, `[Float]` or `[2]float32`, and
+      `PDFobj.getPageSize()` returns one; Go `NewPage`, `NewPageDetached`,
+      `NewBigTable` and `Table.DrawOnPages` take one. `Token` is no longer
+      public in Java, C# and Swift.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
