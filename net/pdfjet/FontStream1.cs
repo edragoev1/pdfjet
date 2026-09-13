@@ -408,8 +408,7 @@ class FontStream1 {
             // Read the remaining bytes into the buffer
             int bytesRead = stream.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead);
             if (bytesRead == 0) {
-                // End of stream reached
-                break;
+                throw new EndOfStreamException("Unexpected end of the font stream.");
             }
             totalBytesRead += bytesRead;
         }
