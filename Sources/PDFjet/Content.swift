@@ -12,14 +12,20 @@ import Foundation
 public class Content {
     /// Returns the contents of the specified text file, without carriage returns.
     public static func ofTextFile( _ fileName: String) throws -> String {
-        let contents = try String(contentsOfFile: fileName, encoding: String.Encoding.utf8)
-        var buffer = String()
+        // Bytes that are not valid UTF-8 are replaced with U+FFFD, as the
+        // Java, C# and Go readers do.
+        let contents = String(decoding: try ofBinaryFile(fileName), as: UTF8.self)
+        var buffer = String.UnicodeScalarView()
         for scalar in contents.unicodeScalars {
             if scalar != "\r" {
-                buffer.append(String(scalar))
+                buffer.append(scalar)
             }
         }
-        return buffer
+        // A byte order mark at the start of the file is not part of the text.
+        if buffer.first == "\u{FEFF}" {
+            buffer.removeFirst()
+        }
+        return String(buffer)
     }
 
     /// Returns the contents of the specified file as bytes.
