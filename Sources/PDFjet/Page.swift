@@ -2307,7 +2307,9 @@ public class Page {
 
     func drawTextBlock(
             _ font: Font,
+            _ fallbackFont: Font?,
             _ fontSize: Float,
+            _ fallbackFontSize: Float,
             _ textLines: [TextLine],
             _ x: Float,
             _ y: Float,
@@ -2318,6 +2320,9 @@ public class Page {
         if textLines.count == 0 {
             return
         }
+        // The fallback font is used as drawString uses it.
+        let hasFallbackFont = fallbackFont != nil && fallbackFont! !== font &&
+                !font.isCoreFont && !font.isCJK && !fallbackFont!.isCoreFont && !fallbackFont!.isCJK
 
         // A span gives the language of the text, for screen readers and text extraction.
         let hasLanguage = language != nil && !language!.isEmpty
@@ -2336,7 +2341,9 @@ public class Page {
             append(" ")
             append(height - (yText + font.getAscent(fontSize)))
             append(" Tm\n")
-            if highlightColors == nil {
+            if hasFallbackFont {
+                drawTextBlockLine(font, fallbackFont!, fontSize, fallbackFontSize, textLine.text!, color, highlightColors)
+            } else if highlightColors == nil {
                 if font.isCoreFont {
                     append("[<")
                     drawASCIIString(font, textLine.text!)
@@ -2359,11 +2366,60 @@ public class Page {
         var yLine = y + font.getBodyHeight(fontSize)
         for textLine in textLines {
             if textLine.underline {
+                let width = hasFallbackFont ?
+                        font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
+                        font.stringWidth(fontSize, textLine.text)
                 moveTo(x + textLine.xOffset, yLine)
-                lineTo(x + textLine.xOffset + font.stringWidth(fontSize, textLine.text), yLine)
+                lineTo(x + textLine.xOffset + width, yLine)
                 strokePath()
             }
             yLine += leading
+        }
+    }
+
+    // Draws a line of a text block at the text position, with the characters the
+    // font has no glyph for in the fallback font, as drawString draws them.
+    private func drawTextBlockLine(
+            _ font: Font,
+            _ fallbackFont: Font,
+            _ fontSize: Float,
+            _ fallbackFontSize: Float,
+            _ str: String,
+            _ color: [Float],
+            _ highlightColors: [String: Int32]?) {
+        var activeFont = font
+        var buf = String()
+        let scalars = Array(str.unicodeScalars)
+        for (i, scalar) in scalars.enumerated() {
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+            if !activeFont.hasGlyph(Int(next.value)) {
+                drawTextBlockRun(activeFont, buf, color, highlightColors)
+                buf = ""
+                // Switch the active font
+                activeFont = (activeFont === font) ? fallbackFont : font
+                setTextFont(activeFont, (activeFont === font) ? fontSize : fallbackFontSize)
+            }
+            buf.append(String(scalar))
+        }
+        drawTextBlockRun(activeFont, buf, color, highlightColors)
+        if activeFont !== font {
+            setTextFont(font, fontSize)     // The next line starts in the font
+        }
+    }
+
+    // Draws the string at the text position in the font set last.
+    private func drawTextBlockRun(
+            _ font: Font, _ str: String, _ color: [Float], _ highlightColors: [String: Int32]?) {
+        if str.isEmpty {
+            return
+        }
+        if highlightColors == nil {
+            append("<")
+            drawUnicodeString(font, str)
+            append("> Tj\n")
+        } else {
+            drawColoredString(font, str, color, highlightColors!)
         }
     }
 

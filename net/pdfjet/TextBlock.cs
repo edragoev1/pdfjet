@@ -19,6 +19,7 @@ public class TextBlock : IDrawable {
     private Font font;
     private Font fallbackFont;
     private float fontSize = 12f;
+    private float fallbackFontSize = 0f;    // 0 is the font size
     private string textContent;
     private float lineSpacing = 1.0f;
     private Dictionary<string, int> keywordHighlightColors;
@@ -83,9 +84,9 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the size of the fallback font.</summary>
+    /// <summary>Sets the size of the characters drawn in the fallback font. By default they are drawn at the font size.</summary>
     public TextBlock SetFallbackFontSize(float fontSize) {
-        this.fallbackFont.SetSize(fontSize);
+        this.fallbackFontSize = fontSize;
         return this;
     }
 
@@ -307,14 +308,14 @@ public class TextBlock : IDrawable {
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
             String text = line.Replace("\u200B", "");
-            if (this.font.StringWidth(fallbackFont, fontSize, text) <= textAreaWidth) {
+            if (this.StringWidth(text) <= textAreaWidth) {
                 textLines.Add(new TextLine(font, text));
             } else {
                 if (Util.IsCJK(text)) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
                         String ch = text.Substring(i, Util.CharCount(text, i));
-                        if (font.StringWidth(fallbackFont, fontSize, sb.ToString() + ch) <= textAreaWidth) {
+                        if (StringWidth(sb.ToString() + ch) <= textAreaWidth) {
                             sb.Append(ch);
                         } else {
                             if (sb.Length > 0) {    // Don't emit an empty line
@@ -338,7 +339,7 @@ public class TextBlock : IDrawable {
                         for (int i = 0; i < words.Length; i++) {
                             String word = words[i];
                             String separator = (i == words.Length - 1) ? " " : "";
-                            if (this.font.StringWidth(fallbackFont, fontSize, sb.ToString() + word) <= textAreaWidth) {
+                            if (this.StringWidth(sb.ToString() + word) <= textAreaWidth) {
                                 sb.Append(word).Append(separator);
                             } else {
                                 if (sb.Length > 0) {
@@ -396,7 +397,7 @@ public class TextBlock : IDrawable {
     // Returns the width of a line of text, measured after the line is
     // reordered if the text is right to left.
     private float LineWidth(String text, int from) {
-        return font.StringWidth(fallbackFont, fontSize, Part(text, from, text.Length));
+        return StringWidth(Part(text, from, text.Length));
     }
 
     // Returns a line of text, reordered if the text is right to left.
@@ -406,6 +407,17 @@ public class TextBlock : IDrawable {
             to--;
         }
         return new TextLine(font, Part(text, from, to));
+    }
+
+    // Returns the size the characters in the fallback font are drawn at.
+    private float GetFallbackFontSize() {
+        return (fallbackFontSize > 0f) ? fallbackFontSize : fontSize;
+    }
+
+    // Returns the width of the text as it is drawn, with the characters the
+    // font has no glyph for in the fallback font.
+    private float StringWidth(String text) {
+        return font.StringWidth(fallbackFont, fontSize, GetFallbackFontSize(), text);
     }
 
     private static int NextCharacterBreak(String word, int i) {
@@ -494,7 +506,7 @@ public class TextBlock : IDrawable {
         float textAreaWidth = this.width - 2 * this.textPadding;
         foreach (TextLine textLine in textLines) {
             textLine.xOffset =
-                textAreaWidth - font.StringWidth(fallbackFont, fontSize, textLine.text);
+                textAreaWidth - StringWidth(textLine.text);
         }
     }
 
@@ -502,7 +514,7 @@ public class TextBlock : IDrawable {
         float textAreaWidth = this.width - 2 * this.textPadding;
         foreach (TextLine textLine in textLines) {
             textLine.xOffset =
-                (textAreaWidth - font.StringWidth(fallbackFont, fontSize, textLine.text)) / 2f;
+                (textAreaWidth - StringWidth(textLine.text)) / 2f;
         }
     }
 
@@ -550,7 +562,9 @@ public class TextBlock : IDrawable {
         page.AddBMC(StructElem.P, this.language, this.textContent, null);
         page.DrawTextBlock(
             this.font,
+            this.fallbackFont,
             this.fontSize,
+            GetFallbackFontSize(),
             textLines,
             this.x + this.textPadding,
             this.y + this.textPadding,

@@ -739,6 +739,12 @@ final public class Font {
      * @return the width.
      */
     public float stringWidth(Font fallbackFont, float fontSize, String str) {
+        return stringWidth(fallbackFont, fontSize, fontSize, str);
+    }
+
+    // Returns the width of a string drawn using two fonts, with the characters
+    // in the fallback font at the fallback font size.
+    float stringWidth(Font fallbackFont, float fontSize, float fallbackFontSize, String str) {
         float width = 0f;
 
         if (str == null || this.isCoreFont || this.isCJK ||
@@ -754,7 +760,7 @@ final public class Font {
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             int next = (isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
             if (!activeFont.hasGlyph(next)) {
-                width += activeFont.stringWidth(fontSize, buf.toString());
+                width += activeFont.stringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.toString());
                 buf.setLength(0);
                 // Switch the active font
                 if (activeFont == this) {
@@ -766,7 +772,7 @@ final public class Font {
             buf.append(str, i, i + count);
             i += count;
         }
-        width += activeFont.stringWidth(fontSize, buf.toString());
+        width += activeFont.stringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.toString());
 
         return width;
     }

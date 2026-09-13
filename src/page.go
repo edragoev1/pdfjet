@@ -2069,7 +2069,9 @@ func toUTF16Hex(str string) string {
 
 func (page *Page) drawTextBlock(
 	font *Font,
+	fallbackFont *Font,
 	fontSize float32,
+	fallbackFontSize float32,
 	textLines []*TextLine,
 	x float32,
 	y float32,
@@ -2081,6 +2083,9 @@ func (page *Page) drawTextBlock(
 	if len(textLines) == 0 {
 		return
 	}
+	// The fallback font is used as DrawStringUsingColorMap uses it.
+	hasFallbackFont := fallbackFont != nil && fallbackFont != font &&
+		!font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK
 
 	// A span gives the language of the text, for screen readers and text extraction.
 	hasLanguage := language != ""
@@ -2099,7 +2104,9 @@ func (page *Page) drawTextBlock(
 		page.appendString(" ")
 		page.appendFloat32(page.height - (yText + font.GetAscentAt(fontSize)))
 		page.appendString(" Tm\n")
-		if highlightColors == nil {
+		if hasFallbackFont {
+			page.drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, textColor, highlightColors)
+		} else if highlightColors == nil {
 			if font.isCoreFont {
 				page.appendString("[<")
 				page.drawASCIIString(font, textLine.text)
@@ -2122,10 +2129,64 @@ func (page *Page) drawTextBlock(
 	yLine := y + font.GetBodyHeightAt(fontSize)
 	for _, textLine := range textLines {
 		if textLine.underline {
+			width := font.StringWidth(fontSize, textLine.text)
+			if hasFallbackFont {
+				width = font.stringWidthFBSizes(fallbackFont, fontSize, fallbackFontSize, textLine.text)
+			}
 			page.MoveTo(x+textLine.xOffset, yLine)
-			page.LineTo(x+textLine.xOffset+font.StringWidth(fontSize, textLine.text), yLine)
+			page.LineTo(x+textLine.xOffset+width, yLine)
 			page.StrokePath()
 		}
 		yLine += leading
+	}
+}
+
+// drawTextBlockLine draws a line of a text block at the text position, with the
+// characters the font has no glyph for in the fallback font, as
+// DrawStringUsingColorMap draws them.
+func (page *Page) drawTextBlockLine(
+	font, fallbackFont *Font, fontSize, fallbackFontSize float32,
+	text string, textColor [3]float32, highlightColors map[string]int32) {
+	activeFont := font
+	var buf strings.Builder
+	runes := []rune(text)
+	for i, ch := range runes {
+		// An RLM, ZWNJ or ZWJ goes with the character after it.
+		next := ch
+		if isJoinerOrRLM(ch) && i+1 < len(runes) {
+			next = runes[i+1]
+		}
+		if !activeFont.hasGlyph(next) {
+			page.drawTextBlockRun(activeFont, buf.String(), textColor, highlightColors)
+			buf.Reset()
+			// Switch the active font
+			if activeFont == font {
+				activeFont = fallbackFont
+				page.setTextFont(activeFont, fallbackFontSize)
+			} else {
+				activeFont = font
+				page.setTextFont(activeFont, fontSize)
+			}
+		}
+		buf.WriteRune(ch)
+	}
+	page.drawTextBlockRun(activeFont, buf.String(), textColor, highlightColors)
+	if activeFont != font {
+		page.setTextFont(font, fontSize) // The next line starts in the font
+	}
+}
+
+// drawTextBlockRun draws the text at the text position in the font set last.
+func (page *Page) drawTextBlockRun(
+	font *Font, text string, textColor [3]float32, highlightColors map[string]int32) {
+	if text == "" {
+		return
+	}
+	if highlightColors == nil {
+		page.appendString("<")
+		page.drawUnicodeString(font, text)
+		page.appendString("> Tj\n")
+	} else {
+		page.drawColoredString(font, text, textColor, highlightColors)
 	}
 }

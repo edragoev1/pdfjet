@@ -22,6 +22,7 @@ public class TextBlock implements Drawable {
     private Font font;
     private Font fallbackFont;
     private float fontSize = 12f;
+    private float fallbackFontSize = 0f;    // 0 is the font size
     private String textContent;
     private float lineSpacing = 1.0f;
     private float[] textColor;
@@ -103,13 +104,14 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the size of the fallback font.
+     * Sets the size of the characters drawn in the fallback font. By default
+     * they are drawn at the font size.
      *
      * @param fontSize the fallback font size.
      * @return this TextBlock object.
      */
     public TextBlock setFallbackFontSize(float fontSize) {
-        this.fallbackFont.setSize(fontSize);
+        this.fallbackFontSize = fontSize;
         return this;
     }
 
@@ -462,7 +464,7 @@ public class TextBlock implements Drawable {
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
             String text = line.replace("\u200B", "");
-            if (font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth) {
+            if (stringWidth(text) <= textAreaWidth) {
                 textLines.add(new TextLine(font, text));
             } else {
                 if (Util.isCJK(text)) {
@@ -472,7 +474,7 @@ public class TextBlock implements Drawable {
                         int ch = text.codePointAt(i);
                         i += Character.charCount(ch);
                         String str = new String(Character.toChars(ch));
-                        if (font.stringWidth(fallbackFont, fontSize, sb.toString() + str) <= textAreaWidth) {
+                        if (stringWidth(sb.toString() + str) <= textAreaWidth) {
                             sb.appendCodePoint(ch);
                         } else {
                             if (sb.length() > 0) {  // Don't emit an empty line
@@ -495,7 +497,7 @@ public class TextBlock implements Drawable {
                         for (int i = 0; i < words.length; i++) {
                             String word = words[i];
                             String separator = (i == words.length - 1) ? " " : "";
-                            if (font.stringWidth(fallbackFont, fontSize, sb.toString() + word) <= textAreaWidth) {
+                            if (stringWidth(sb.toString() + word) <= textAreaWidth) {
                                 sb.append(word);
                                 sb.append(separator);
                             } else {
@@ -554,7 +556,7 @@ public class TextBlock implements Drawable {
 
     // Returns the width of a line of text from the index on.
     private float lineWidth(String text, int from) {
-        return font.stringWidth(fallbackFont, fontSize, part(text, from, text.length()));
+        return stringWidth(part(text, from, text.length()));
     }
 
     // Returns a line of the text from the index on, without its trailing spaces.
@@ -564,6 +566,17 @@ public class TextBlock implements Drawable {
             to--;
         }
         return new TextLine(font, part(text, from, to));
+    }
+
+    // Returns the size the characters in the fallback font are drawn at.
+    private float getFallbackFontSize() {
+        return (fallbackFontSize > 0f) ? fallbackFontSize : fontSize;
+    }
+
+    // Returns the width of the text as it is drawn, with the characters the
+    // font has no glyph for in the fallback font.
+    private float stringWidth(String text) {
+        return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text);
     }
 
     private static int nextCharacterBreak(String word, int i) {
@@ -658,14 +671,14 @@ public class TextBlock implements Drawable {
     private void rightAlignText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text);
+            textLine.xOffset = textAreaWidth - stringWidth(textLine.text);
         }
     }
 
     private void centerText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
         for (TextLine textLine : textLines) {
-            textLine.xOffset = (textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)) / 2f;
+            textLine.xOffset = (textAreaWidth - stringWidth(textLine.text)) / 2f;
         }
     }
 
@@ -719,7 +732,9 @@ public class TextBlock implements Drawable {
         page.addBMC(StructElem.P, this.language, this.textContent, null);
         page.drawTextBlock(
             this.font,
+            this.fallbackFont,
             this.fontSize,
+            getFallbackFontSize(),
             textLines,
             this.x + this.textPadding,
             this.y + this.textPadding,

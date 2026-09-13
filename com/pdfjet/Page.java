@@ -2674,9 +2674,12 @@ final public class Page {
 
     /**
      * Draws lines of text, one below the other, highlighting the specified words.
+     * The characters the font has no glyph for are drawn in the fallback font.
      *
      * @param font the font.
+     * @param fallbackFont the fallback font, or null.
      * @param fontSize the font size.
+     * @param fallbackFontSize the font size of the fallback font.
      * @param textLines the lines of text.
      * @param x the x coordinate.
      * @param y the y coordinate of the first line.
@@ -2687,7 +2690,9 @@ final public class Page {
      */
     protected void drawTextBlock(
             Font font,
+            Font fallbackFont,
             float fontSize,
+            float fallbackFontSize,
             TextLine[] textLines,
             float x,
             float y,
@@ -2698,6 +2703,9 @@ final public class Page {
         if (textLines == null || textLines.length == 0) {
             return;
         }
+        // The fallback font is used as drawString uses it.
+        boolean hasFallbackFont = fallbackFont != null && fallbackFont != font &&
+                !font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK;
 
         // A span gives the language of the text, for screen readers and text extraction.
         boolean hasLanguage = language != null && !language.isEmpty();
@@ -2716,7 +2724,9 @@ final public class Page {
             append(' ');
             append(height - (yText + font.getAscent(fontSize)));
             append(" Tm\n");
-            if (highlightColors == null) {
+            if (hasFallbackFont) {
+                drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, color, highlightColors);
+            } else if (highlightColors == null) {
                 if (font.isCoreFont) {
                     append("[<");
                     drawASCIIString(font, textLine.text);
@@ -2739,11 +2749,62 @@ final public class Page {
         float yLine = y + font.getBodyHeight(fontSize);
         for (TextLine textLine : textLines) {
             if (textLine.underline) {
+                float width = hasFallbackFont ?
+                        font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
+                        font.stringWidth(fontSize, textLine.text);
                 moveTo(x + textLine.xOffset, yLine);
-                lineTo(x + textLine.xOffset + font.stringWidth(fontSize, textLine.text), yLine);
+                lineTo(x + textLine.xOffset + width, yLine);
                 strokePath();
             }
             yLine += leading;
+        }
+    }
+
+    // Draws a line of a text block at the text position, with the characters the
+    // font has no glyph for in the fallback font, as drawString draws them.
+    private void drawTextBlockLine(
+            Font font,
+            Font fallbackFont,
+            float fontSize,
+            float fallbackFontSize,
+            String str,
+            float[] color,
+            Map<String, Integer> highlightColors) {
+        Font activeFont = font;
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < str.length(); ) {
+            int cp = str.codePointAt(i);
+            int count = Character.charCount(cp);
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            int next = (Font.isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
+            if (!activeFont.hasGlyph(next)) {
+                drawTextBlockRun(activeFont, buf.toString(), color, highlightColors);
+                buf.setLength(0);
+                // Switch the active font
+                activeFont = (activeFont == font) ? fallbackFont : font;
+                setTextFont(activeFont, (activeFont == font) ? fontSize : fallbackFontSize);
+            }
+            buf.append(str, i, i + count);
+            i += count;
+        }
+        drawTextBlockRun(activeFont, buf.toString(), color, highlightColors);
+        if (activeFont != font) {
+            setTextFont(font, fontSize);    // The next line starts in the font
+        }
+    }
+
+    // Draws the string at the text position in the font set last.
+    private void drawTextBlockRun(
+            Font font, String str, float[] color, Map<String, Integer> highlightColors) {
+        if (str.isEmpty()) {
+            return;
+        }
+        if (highlightColors == null) {
+            append("<");
+            drawUnicodeString(font, str);
+            append("> Tj\n");
+        } else {
+            drawColoredString(font, str, color, highlightColors);
         }
     }
 

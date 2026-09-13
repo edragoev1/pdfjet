@@ -23,9 +23,11 @@ type TextBlock struct {
 	font         *Font
 	fallbackFont *Font
 	fontSize     float32
-	textContent  string
-	lineSpacing  float32
-	textPadding  float32
+	// The size of the characters in the fallback font; 0 is the font size.
+	fallbackFontSize float32
+	textContent      string
+	lineSpacing      float32
+	textPadding      float32
 
 	fillColor          [3]float32
 	hasFillColor       bool
@@ -87,9 +89,10 @@ func (textBlock *TextBlock) SetFontSize(size float32) *TextBlock {
 	return textBlock
 }
 
-// SetFallbackFontSize sets the size of the fallback font.
+// SetFallbackFontSize sets the size of the characters drawn in the fallback
+// font. By default they are drawn at the font size.
 func (textBlock *TextBlock) SetFallbackFontSize(size float32) *TextBlock {
-	textBlock.fallbackFont.SetSize(size)
+	textBlock.fallbackFontSize = size
 	return textBlock
 }
 
@@ -288,7 +291,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 		// A zero width space marks a place where the line may break in text
 		// without spaces between its words, like Thai text. It is not drawn.
 		text := strings.ReplaceAll(line, "\u200B", "")
-		if textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, text) <= textAreaWidth {
+		if textBlock.stringWidth(text) <= textAreaWidth {
 			textLines = append(
 				textLines,
 				NewTextLine(textBlock.font, text))
@@ -296,8 +299,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 			if isCJK(text) {
 				var sb strings.Builder
 				for _, ch := range text {
-					if textBlock.font.StringWidthFB(textBlock.fallbackFont,
-						textBlock.fontSize, sb.String()+string(ch)) <= textAreaWidth {
+					if textBlock.stringWidth(sb.String()+string(ch)) <= textAreaWidth {
 						sb.WriteRune(ch)
 					} else {
 						if sb.Len() > 0 { // Don't emit an empty line
@@ -323,8 +325,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 						if i < len(words)-1 {
 							separator = ""
 						}
-						if textBlock.font.StringWidthFB(textBlock.fallbackFont,
-							textBlock.fontSize, sb.String()+word) <= textAreaWidth {
+						if textBlock.stringWidth(sb.String()+word) <= textAreaWidth {
 							sb.WriteString(word + separator)
 						} else {
 							if sb.Len() > 0 {
@@ -396,8 +397,23 @@ func (textBlock *TextBlock) part(text string, from, to int) string {
 // lineWidth returns the width of a line of text, measured after the line is
 // reordered if the text is right to left.
 func (textBlock *TextBlock) lineWidth(text string, from int) float32 {
-	return textBlock.font.StringWidthFB(
-		textBlock.fallbackFont, textBlock.fontSize, textBlock.part(text, from, len(text)))
+	return textBlock.stringWidth(textBlock.part(text, from, len(text)))
+}
+
+// getFallbackFontSize returns the size the characters in the fallback font are
+// drawn at.
+func (textBlock *TextBlock) getFallbackFontSize() float32 {
+	if textBlock.fallbackFontSize > 0.0 {
+		return textBlock.fallbackFontSize
+	}
+	return textBlock.fontSize
+}
+
+// stringWidth returns the width of the text as it is drawn, with the characters
+// the font has no glyph for in the fallback font.
+func (textBlock *TextBlock) stringWidth(text string) float32 {
+	return textBlock.font.stringWidthFBSizes(
+		textBlock.fallbackFont, textBlock.fontSize, textBlock.getFallbackFontSize(), text)
 }
 
 // newTextLine returns a line of text, reordered if the text is right to left.
@@ -503,7 +519,7 @@ func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
 		textLine.xOffset = textAreaWidth -
-			textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, textLine.text)
+			textBlock.stringWidth(textLine.text)
 	}
 }
 
@@ -513,7 +529,7 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	textAreaWidth := textBlock.width - 2*textBlock.textPadding
 	for _, textLine := range textLines {
 		textLine.xOffset = (textAreaWidth -
-			textBlock.font.StringWidthFB(textBlock.fallbackFont, textBlock.fontSize, textLine.text)) / 2.0
+			textBlock.stringWidth(textLine.text)) / 2.0
 	}
 }
 
@@ -558,7 +574,9 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	page.AddBMC(structtype.P, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
+		textBlock.fallbackFont,
 		textBlock.fontSize,
+		textBlock.getFallbackFontSize(),
 		textLines,
 		textBlock.x+textBlock.textPadding,
 		textBlock.y+textBlock.textPadding,

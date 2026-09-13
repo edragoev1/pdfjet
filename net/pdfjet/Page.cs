@@ -2379,7 +2379,9 @@ public class Page {
 
     internal void DrawTextBlock(
             Font font,
+            Font fallbackFont,
             float fontSize,
+            float fallbackFontSize,
             TextLine[] textLines,
             float x,
             float y,
@@ -2390,6 +2392,9 @@ public class Page {
         if (textLines == null || textLines.Length == 0) {
             return;
         }
+        // The fallback font is used as DrawString uses it.
+        bool hasFallbackFont = fallbackFont != null && fallbackFont != font &&
+                !font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK;
 
         // A span gives the language of the text, for screen readers and text extraction.
         bool hasLanguage = !String.IsNullOrEmpty(language);
@@ -2408,7 +2413,9 @@ public class Page {
             Append(' ');
             Append(height - (yText + font.GetAscent(fontSize)));
             Append(" Tm\n");
-            if (highlightColors == null) {
+            if (hasFallbackFont) {
+                DrawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, color, highlightColors);
+            } else if (highlightColors == null) {
                 if (font.isCoreFont) {
                     Append("[<");
                     DrawASCIIString(font, textLine.text);
@@ -2431,11 +2438,62 @@ public class Page {
         float yLine = y + font.GetBodyHeight(fontSize);
         foreach (TextLine textLine in textLines) {
             if (textLine.underline) {
+                float width = hasFallbackFont ?
+                        font.StringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
+                        font.StringWidth(fontSize, textLine.text);
                 MoveTo(x + textLine.xOffset, yLine);
-                LineTo(x + textLine.xOffset + font.StringWidth(fontSize, textLine.text), yLine);
+                LineTo(x + textLine.xOffset + width, yLine);
                 StrokePath();
             }
             yLine += leading;
+        }
+    }
+
+    // Draws a line of a text block at the text position, with the characters the
+    // font has no glyph for in the fallback font, as DrawString draws them.
+    private void DrawTextBlockLine(
+            Font font,
+            Font fallbackFont,
+            float fontSize,
+            float fallbackFontSize,
+            String str,
+            float[] color,
+            Dictionary<String, Int32> highlightColors) {
+        Font activeFont = font;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.Length; ) {
+            int ch = Util.CodePointAt(str, i);
+            int count = (ch > 0xFFFF) ? 2 : 1;
+            // An RLM, ZWNJ or ZWJ goes with the character after it.
+            int next = (Font.IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
+            if (!activeFont.HasGlyph(next)) {
+                DrawTextBlockRun(activeFont, sb.ToString(), color, highlightColors);
+                sb.Length = 0;
+                // Switch the active font
+                activeFont = (activeFont == font) ? fallbackFont : font;
+                SetTextFont(activeFont, (activeFont == font) ? fontSize : fallbackFontSize);
+            }
+            sb.Append(str, i, count);
+            i += count;
+        }
+        DrawTextBlockRun(activeFont, sb.ToString(), color, highlightColors);
+        if (activeFont != font) {
+            SetTextFont(font, fontSize);    // The next line starts in the font
+        }
+    }
+
+    // Draws the string at the text position in the font set last.
+    private void DrawTextBlockRun(
+            Font font, String str, float[] color, Dictionary<String, Int32> highlightColors) {
+        if (str.Length == 0) {
+            return;
+        }
+        if (highlightColors == null) {
+            Append("<");
+            DrawUnicodeString(font, str);
+            Append("> Tj\n");
+        } else {
+            DrawColoredString(font, str, color, highlightColors);
         }
     }
 

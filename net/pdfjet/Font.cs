@@ -574,6 +574,12 @@ public class Font {
     /// <param name="str">the string.</param>
     /// <returns>the width.</returns>
     public float StringWidth(Font fallbackFont, float fontSize, String str) {
+        return StringWidth(fallbackFont, fontSize, fontSize, str);
+    }
+
+    // Returns the width of a string drawn using two fonts, with the characters
+    // in the fallback font at the fallback font size.
+    internal float StringWidth(Font fallbackFont, float fontSize, float fallbackFontSize, String str) {
         float width = 0f;
 
         if (str == null || this.isCoreFont || this.isCJK ||
@@ -589,7 +595,7 @@ public class Font {
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             int next = (IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
             if (!activeFont.HasGlyph(next)) {
-                width += activeFont.StringWidth(fontSize, buf.ToString());
+                width += activeFont.StringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.ToString());
                 buf.Length = 0;
                 // Switch the active font
                 if (activeFont == this) {
@@ -601,7 +607,7 @@ public class Font {
             buf.Append(str, i, count);
             i += count;
         }
-        width += activeFont.StringWidth(fontSize, buf.ToString());
+        width += activeFont.StringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.ToString());
 
         return width;
     }

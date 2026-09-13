@@ -590,6 +590,12 @@ public class Font {
     /// - Returns: the width.
     ///
     public func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ str: String?) -> Float {
+        return stringWidth(fallbackFont, fontSize, fontSize, str)
+    }
+
+    // Returns the width of a string drawn using two fonts, with the characters
+    // in the fallback font at the fallback font size.
+    func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ fallbackFontSize: Float, _ str: String?) -> Float {
         var width: Float = 0.0
         if str == nil || self.isCoreFont || self.isCJK ||
                 fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK {
@@ -602,7 +608,7 @@ public class Font {
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
             if !activeFont.hasGlyph(Int(next.value)) {
-                width += activeFont.stringWidth(fontSize, buf)
+                width += activeFont.stringWidth((activeFont === self) ? fontSize : fallbackFontSize, buf)
                 buf = ""
                 // Switch the active font
                 if activeFont === self {
@@ -613,7 +619,7 @@ public class Font {
             }
             buf.append(String(scalar))
         }
-        width += activeFont.stringWidth(fontSize, buf)
+        width += activeFont.stringWidth((activeFont === self) ? fontSize : fallbackFontSize, buf)
         return width
     }
 

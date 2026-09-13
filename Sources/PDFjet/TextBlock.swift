@@ -15,6 +15,7 @@ public class TextBlock : Drawable {
     internal var font: Font
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
+    private var fallbackFontSize: Float = 0.0   // 0 is the font size
     internal var textContent: String
     internal var textPadding: Float = 0.0
 
@@ -64,10 +65,11 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the size of the fallback font.
+    /// Sets the size of the characters drawn in the fallback font. By default
+    /// they are drawn at the font size.
     @discardableResult
     public func setFallbackFontSize(_ size: Float) -> TextBlock {
-        fallbackFont?.setSize(size)
+        self.fallbackFontSize = size
         return self
     }
 
@@ -302,13 +304,13 @@ public class TextBlock : Drawable {
             // A zero width space marks a place where the line may break in text
             // without spaces between its words, like Thai text. It is not drawn.
             let text = line.replacingOccurrences(of: "\u{200B}", with: "")
-            if font.stringWidth(fallbackFont, fontSize, text) <= textAreaWidth {
+            if stringWidth(text) <= textAreaWidth {
                 textLines.append(TextLine(font, text))
             } else {
                 if text.isCJK() {
                     var sb = ""
                     for scalar in text.unicodeScalars {
-                        if font.stringWidth(fallbackFont, fontSize, sb + String(scalar)) <= textAreaWidth {
+                        if stringWidth(sb + String(scalar)) <= textAreaWidth {
                             sb.unicodeScalars.append(scalar)
                         } else {
                             if !sb.isEmpty {    // Don't emit an empty line
@@ -328,7 +330,7 @@ public class TextBlock : Drawable {
                         let words = token.components(separatedBy: "\u{200B}")
                         for (i, word) in words.enumerated() {
                             let separator = (i == words.count - 1) ? " " : ""
-                            if font.stringWidth(fallbackFont, fontSize, sb + word) <= textAreaWidth {
+                            if stringWidth(sb + word) <= textAreaWidth {
                                 sb.append(word)
                                 sb.append(separator)
                             } else {
@@ -390,7 +392,7 @@ public class TextBlock : Drawable {
     // Returns the width of a line of text, measured after the line is reordered
     // if the text is right to left.
     private func lineWidth(_ text: String, _ from: Int) -> Float {
-        return font.stringWidth(fallbackFont, fontSize, part(text, from, text.unicodeScalars.count))
+        return stringWidth(part(text, from, text.unicodeScalars.count))
     }
 
     // Returns a line of text, reordered if the text is right to left.
@@ -401,6 +403,17 @@ public class TextBlock : Drawable {
             to -= 1
         }
         return TextLine(font, part(text, from, to))
+    }
+
+    // Returns the size the characters in the fallback font are drawn at.
+    private func getFallbackFontSize() -> Float {
+        return (fallbackFontSize > 0.0) ? fallbackFontSize : fontSize
+    }
+
+    // Returns the width of the text as it is drawn, with the characters the
+    // font has no glyph for in the fallback font.
+    private func stringWidth(_ text: String?) -> Float {
+        return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text)
     }
 
     private static func nextCharacterBreak(_ scalars: [Unicode.Scalar], _ start: Int) -> Int {
@@ -507,14 +520,14 @@ public class TextBlock : Drawable {
     private func rightAlignText(_ textLines: [TextLine]) {
         let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)
+            textLine.xOffset = textAreaWidth - stringWidth(textLine.text)
         }
     }
 
     private func centerText(_ textLines: [TextLine]) {
         let textAreaWidth = self.width - 2 * self.textPadding
         for textLine in textLines {
-            textLine.xOffset = (textAreaWidth - font.stringWidth(fallbackFont, fontSize, textLine.text)) / 2.0
+            textLine.xOffset = (textAreaWidth - stringWidth(textLine.text)) / 2.0
         }
     }
 
@@ -564,7 +577,9 @@ public class TextBlock : Drawable {
         page!.addBMC(StructElem.P, language, textContent, "")
         page!.drawTextBlock(
             font,
+            fallbackFont,
             fontSize,
+            getFallbackFontSize(),
             textLines,
             x + textPadding,
             y + textPadding,

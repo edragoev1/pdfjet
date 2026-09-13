@@ -539,6 +539,12 @@ func (font *Font) hasGlyph(c rune) bool {
 
 // StringWidthFB returns the width of text string drawn using main and fallback fonts.
 func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text string) float32 {
+	return font.stringWidthFBSizes(fallbackFont, fontSize, fontSize, text)
+}
+
+// stringWidthFBSizes returns the width of a string drawn using two fonts, with
+// the characters in the fallback font at the fallback font size.
+func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontSize float32, text string) float32 {
 	var width float32 = 0.0
 
 	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
@@ -546,6 +552,7 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 	}
 
 	activeFont := font
+	activeSize := fontSize
 	var buf strings.Builder
 	runes := []rune(text)
 	for i, ch := range runes {
@@ -555,18 +562,20 @@ func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text strin
 			next = runes[i+1]
 		}
 		if !activeFont.hasGlyph(next) {
-			width += activeFont.StringWidth(fontSize, buf.String())
+			width += activeFont.StringWidth(activeSize, buf.String())
 			buf.Reset()
 			// Switch the active font
 			if activeFont == font {
 				activeFont = fallbackFont
+				activeSize = fallbackFontSize
 			} else {
 				activeFont = font
+				activeSize = fontSize
 			}
 		}
 		buf.WriteRune(ch)
 	}
-	width += activeFont.StringWidth(fontSize, buf.String())
+	width += activeFont.StringWidth(activeSize, buf.String())
 
 	return width
 }
