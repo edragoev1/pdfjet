@@ -146,9 +146,9 @@ public class Encryption {
         objNumber = pdf.GetObjNumber();
     }
 
-    /// <summary>Returns the randomly generated file encryption key.</summary>
+    /// <summary>Returns a copy of the randomly generated file encryption key.</summary>
     public byte[] GetKey() {
-        return fileEncryptionKey;
+        return (byte[]) fileEncryptionKey.Clone();
     }
 
     /// <summary>Returns the object number of the encryption dictionary.</summary>

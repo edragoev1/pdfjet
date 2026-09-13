@@ -230,17 +230,19 @@ public class TextLine implements Drawable {
      * @return this TextLine object.
      */
     public TextLine setTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        if (rgbColor != null) {
+            this.textColor = rgbColor.clone();
+        }
         return this;
     }
 
     /**
-     * Returns the text color.
+     * Returns a copy of the text color.
      *
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getTextColor() {
-        return textColor;
+        return textColor.clone();
     }
 
     /**
@@ -281,17 +283,19 @@ public class TextLine implements Drawable {
      * @return this TextLine object.
      */
     public TextLine setLineColor(float[] rgbColor) {
-        this.lineColor = rgbColor;
+        if (rgbColor != null) {
+            this.lineColor = rgbColor.clone();
+        }
         return this;
     }
 
     /**
-     * Returns the color of the underline and strikeout lines.
+     * Returns a copy of the color of the underline and strikeout lines.
      *
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getLineColor() {
-        return lineColor;
+        return lineColor.clone();
     }
 
     /**

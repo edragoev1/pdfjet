@@ -1095,8 +1095,8 @@ final public class Page {
             return this; // Early exit if out of range
         }
 
-        // Now set the brush color
-        brushColor = rgbColor;
+        // Now set the brush color, to a copy that the caller cannot change
+        brushColor = rgbColor.clone();
 
         // Proceed with setting the color (example)
         append(rgbColor[0]);
@@ -1109,13 +1109,13 @@ final public class Page {
     }
 
     /**
-     * Gets the current brush color.
+     * Gets a copy of the current brush color.
      *
      * @return An array of three floats representing the RGB components of the brush color,
      *         with each value in the range 0.0f to 1.0f.
      */
     public float[] getBrushColor() {
-        return brushColor;
+        return brushColor.clone();
     }
 
     /**
@@ -1156,8 +1156,8 @@ final public class Page {
             return this; // Early exit if out of range
         }
 
-        // Now set the pen color
-        penColor = rgbColor;
+        // Now set the pen color, to a copy that the caller cannot change
+        penColor = rgbColor.clone();
 
         // Proceed with setting the color (example)
         append(rgbColor[0]);
@@ -1170,13 +1170,13 @@ final public class Page {
     }
 
     /**
-     * Retrieves the current pen color.
+     * Retrieves a copy of the current pen color.
      *
      * @return An array of three floats representing the RGB components of the pen color.
      *         Each value is in the range of 0.0f to 1.0f.
      */
     public float[] getPenColor() {
-        return penColor;
+        return penColor.clone();
     }
 
     /**

@@ -175,13 +175,15 @@ public class TextLine : IDrawable {
 
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextLine SetTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        if (rgbColor != null) {
+            this.textColor = (float[]) rgbColor.Clone();
+        }
         return this;
     }
 
-    /// <summary>Returns the text color.</summary>
+    /// <summary>Returns a copy of the text color.</summary>
     public float[] GetTextColor() {
-        return textColor;
+        return (float[]) textColor.Clone();
     }
 
     /// <summary>Sets the color of the underline and strikeout lines as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
@@ -204,13 +206,15 @@ public class TextLine : IDrawable {
 
     /// <summary>Sets the color of the underline and strikeout lines from an array of red, green and blue values.</summary>
     public TextLine SetLineColor(float[] rgbColor) {
-        this.lineColor = rgbColor;
+        if (rgbColor != null) {
+            this.lineColor = (float[]) rgbColor.Clone();
+        }
         return this;
     }
 
-    /// <summary>Returns the color of the underline and strikeout lines.</summary>
+    /// <summary>Returns a copy of the color of the underline and strikeout lines.</summary>
     public float[] GetLineColor() {
-        return lineColor;
+        return (float[]) lineColor.Clone();
     }
 
     /// <summary>Sets the colors used to highlight words in the text.</summary>

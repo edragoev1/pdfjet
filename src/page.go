@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -1874,9 +1875,9 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	watermark.DrawOn(page)
 }
 
-// GetContent returns the content stream of this page.
+// GetContent returns a copy of the content stream of this page.
 func (page *Page) GetContent() []byte {
-	return page.buf
+	return slices.Clone(page.buf)
 }
 
 // RotateBy sets the rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.

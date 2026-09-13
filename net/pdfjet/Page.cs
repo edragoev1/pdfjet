@@ -1131,8 +1131,8 @@ public class Page {
             return this; // Early exit if out of range
         }
 
-        // Now set the brush color
-        this.brushColor = rgbColor;
+        // Now set the brush color, to a copy that the caller cannot change
+        this.brushColor = (float[]) rgbColor.Clone();
 
         // Proceed with setting the color (example)
         Append(rgbColor[0]);
@@ -1145,13 +1145,13 @@ public class Page {
     }
 
     /// <summary>
-    /// Returns the current brush color as an RGB float array.
+    /// Returns a copy of the current brush color as an RGB float array.
     /// </summary>
     /// <returns>
     /// A <c>float[]</c> containing the red, green, and blue components (0.0f to 1.0f) of the brush color.
     /// </returns>
     public float[] GetBrushColor() {
-        return brushColor;
+        return (float[]) brushColor.Clone();
     }
 
     /// <summary>
@@ -1197,8 +1197,8 @@ public class Page {
             return this; // Early exit if out of range
         }
 
-        // Now set the pen color
-        this.penColor = rgbColor;
+        // Now set the pen color, to a copy that the caller cannot change
+        this.penColor = (float[]) rgbColor.Clone();
 
         // Proceed with setting the color (example)
         Append(rgbColor[0]);
@@ -1211,13 +1211,13 @@ public class Page {
     }
 
     /// <summary>
-    /// Gets the current pen color as an RGB float array.
+    /// Gets a copy of the current pen color as an RGB float array.
     /// </summary>
     /// <returns>
     /// A <c>float[]</c> with three elements: red, green, and blue components (0.0f to 1.0f).
     /// </returns>
     public float[] GetPenColor() {
-        return penColor;
+        return (float[]) penColor.Clone();
     }
 
     /// <summary>
