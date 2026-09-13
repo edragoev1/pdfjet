@@ -456,6 +456,11 @@ public class TextBlock implements Drawable {
 
         float textAreaWidth = this.width - 2 * this.textPadding;
         String[] lines = this.textContent.split("\r?\n");
+        if (lines.length == 0) {
+            // split drops the trailing empty lines, which leaves no lines at
+            // all for a text of only line breaks. That is one empty line.
+            lines = new String[] {""};
+        }
         for (String line : lines) {
             if (rightToLeft) {
                 addRightToLeftLines(textLines, line, textAreaWidth);

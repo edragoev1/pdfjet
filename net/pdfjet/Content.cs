@@ -11,12 +11,14 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>Reads the contents of files and streams.</summary>
 public class Content {
-    /// <summary>Returns the contents of the specified text file.</summary>
+    /// <summary>Returns the contents of the specified text file, which is read as UTF-8.</summary>
     public static String OfTextFile(String fileName) {
         StringBuilder sb = new StringBuilder(4096);
         StreamReader reader = null;
         try {
-            reader = new StreamReader(fileName);
+            // UTF-8 only, as in the other ports: the reader does not look for
+            // UTF-16 and UTF-32 byte order marks, and keeps a UTF-8 one.
+            reader = new StreamReader(fileName, new UTF8Encoding(false), false);
             int ch;
             while ((ch = reader.Read()) != -1) {
                 if (ch == '\r') {
@@ -29,6 +31,10 @@ public class Content {
             }
         } finally {
             reader.Close();
+        }
+        // A byte order mark at the start of the file is not part of the text.
+        if (sb.Length > 0 && sb[0] == '\uFEFF') {
+            sb.Remove(0, 1);
         }
         return sb.ToString();
     }
@@ -50,19 +56,24 @@ public class Content {
         return ms.ToArray();
     }
 
-    /// <summary>Returns all the bytes read from the stream.</summary>
-    public static byte[] GetFromStream(Stream stream) {
+    /// <summary>Returns all the bytes read from the stream, reading bufferSize bytes at a time.</summary>
+    public static byte[] GetFromStream(Stream stream, int bufferSize) {
         MemoryStream ms = new MemoryStream();
         try {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[bufferSize];
             int count = 0;
-            while ((count = stream.Read(buffer, 0, buffer.Length)) > 0) {
+            while ((count = stream.Read(buffer, 0, bufferSize)) > 0) {
                 ms.Write(buffer, 0, count);
             }
         } finally {
             stream.Close();
         }
         return ms.ToArray();
+    }
+
+    /// <summary>Returns all the bytes read from the stream.</summary>
+    public static byte[] GetFromStream(Stream stream) {
+        return GetFromStream(stream, 4096);
     }
 }   // End of Content.cs
 }   // End of namespace PDFjet.NET

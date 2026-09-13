@@ -19,6 +19,7 @@ type Cell struct {
 	fallbackFont      *Font
 	fontSize          float32
 	text              string
+	hasText           bool // Java's null text is a cell without text, which is 0 tall
 	textBlock         *TextBlock
 	textColumn        *TextColumn
 	textBox           *TextBox
@@ -63,6 +64,7 @@ func NewCell(font *Font, text string) *Cell {
 	cell.fallbackFont = font
 	cell.fontSize = font.size
 	cell.text = text
+	cell.hasText = true
 	cell.width = 75.0
 	cell.colspan = 1
 	cell.topPadding = 2.0
@@ -108,6 +110,7 @@ func (cell *Cell) GetFallbackFont() *Font {
 // @param text the cell text.
 func (cell *Cell) SetText(text string) *Cell {
 	cell.text = text
+	cell.hasText = true
 	return cell
 }
 
@@ -126,6 +129,7 @@ func (cell *Cell) SetFontSize(fontSize float32) *Cell {
 func (cell *Cell) SetImage(image *Image) *Cell {
 	cell.image = image
 	cell.text = ""
+	cell.hasText = false
 	return cell
 }
 
@@ -138,6 +142,7 @@ func (cell *Cell) GetImage() *Image {
 func (cell *Cell) SetBarcode(barcode *Barcode) *Cell {
 	cell.barcode = barcode
 	cell.text = ""
+	cell.hasText = false
 	return cell
 }
 
@@ -162,6 +167,7 @@ func (cell *Cell) GetPoint() *Point {
 func (cell *Cell) SetTextBlock(textBlock *TextBlock) *Cell {
 	cell.textBlock = textBlock
 	cell.text = ""
+	cell.hasText = false
 	return cell
 }
 
@@ -171,6 +177,7 @@ func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
 	cell.textColumn = textColumn
 	cell.width = textColumn.w + cell.leftPadding + cell.rightPadding
 	cell.text = ""
+	cell.hasText = false
 	return cell
 }
 
@@ -194,6 +201,7 @@ func (cell *Cell) GetTextColumn() *TextColumn {
 func (cell *Cell) SetTextBox(textBox *TextBox) *Cell {
 	cell.textBox = textBox
 	cell.text = ""
+	cell.hasText = false
 	return cell
 }
 
@@ -299,7 +307,7 @@ func (cell *Cell) GetHeight(width float32) float32 {
 		cellHeight = cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
 	} else if cell.barcode != nil {
 		cellHeight = cell.barcode.GetHeight() + cell.topPadding + cell.bottomPadding
-	} else {
+	} else if cell.hasText {
 		fontHeight := cell.font.GetBodyHeightAt(cell.fontSize)
 		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeightAt(cell.fontSize) > fontHeight {
 			fontHeight = cell.fallbackFont.GetBodyHeightAt(cell.fontSize)

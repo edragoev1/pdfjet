@@ -77,6 +77,10 @@ public class Table implements Drawable {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (lineNumber == 0) {
+                    // A byte order mark at the start of the file is not part of the text.
+                    if (line.startsWith("\uFEFF")) {
+                        line = line.substring(1);
+                    }
                     delimiterRegex = getDelimiterRegex(line);
                     numberOfFields = line.split(delimiterRegex, -1).length;
                 }

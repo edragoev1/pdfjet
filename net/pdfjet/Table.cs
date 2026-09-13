@@ -63,13 +63,19 @@ public class Table : IDrawable {
     /// <param name="fileName">the file name.</param>
     public Table(Font f1, Font f2, String fileName) {
         tableData = new List<List<Cell>>();
-        using (StreamReader reader = new StreamReader(fileName)) {
+        // UTF-8 only, as in the other ports: the reader does not look for UTF-16
+        // and UTF-32 byte order marks, and keeps a UTF-8 one.
+        using (StreamReader reader = new StreamReader(fileName, new UTF8Encoding(false), false)) {
             Char[] delimiterRegex = null;
             int numberOfFields = 0;
             int lineNumber = 0;
             String line;
             while ((line = reader.ReadLine()) != null) {
                 if (lineNumber == 0) {
+                    // A byte order mark at the start of the file is not part of the text.
+                    if (line.StartsWith("\uFEFF", StringComparison.Ordinal)) {
+                        line = line.Substring(1);
+                    }
                     delimiterRegex = GetDelimiterRegex(line);
                     numberOfFields = line.Split(delimiterRegex).Length;
                 }

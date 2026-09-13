@@ -74,6 +74,8 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if lineNumber == 0 {
+			// A byte order mark at the start of the file is not part of the text.
+			line = strings.TrimPrefix(line, "\uFEFF")
 			delimiterRegex = getDelimiterRegex(line)
 			numberOfFields = len(strings.Split(line, delimiterRegex))
 		}
@@ -602,7 +604,7 @@ func (table *Table) SetColumnWidths() *Table {
 					if barcodeWidth > maxColWidths[i] {
 						maxColWidths[i] = barcodeWidth
 					}
-				} else {
+				} else if cell.hasText {
 					textWidth := cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, cell.text)
 					textWidth += cell.leftPadding + cell.rightPadding
 					if textWidth > maxColWidths[i] {
@@ -639,6 +641,7 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 			row2 := make([]*Cell, 0)
 			for _, cell := range row {
 				cell2 := NewCell(cell.GetFont(), "")
+				cell2.hasText = false // Java's new Cell(font) has no text
 				cell2.SetFallbackFont(cell.GetFallbackFont())
 				cell2.SetFontSize(cell.fontSize)
 				cell2.SetWidth(cell.GetWidth())
@@ -700,6 +703,9 @@ func (table *Table) wrapAroundCellText() {
 		row := tableData2[i]
 		for j := 0; j < len(row); j++ {
 			cell := row[j]
+			if !cell.hasText {
+				continue
+			}
 			cellWidth := getTotalWidth(row, j)
 			tokens := splitOnWhitespace(cell.text)
 			var n = 0
@@ -744,6 +750,9 @@ func (table *Table) wrapAroundCellText() {
 func getNumVerCells(row []*Cell, index int) int {
 	cell := row[index]
 	numOfVerCells := 1
+	if !cell.hasText {
+		return numOfVerCells
+	}
 	cellWidth := getTotalWidth(row, index)
 	tokens := splitOnWhitespace(cell.text)
 	var buf strings.Builder
