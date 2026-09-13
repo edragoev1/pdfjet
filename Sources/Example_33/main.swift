@@ -62,7 +62,7 @@ public class Example_33 {
     }
 
     private func loadSVG(_ path: String) throws -> SVGImage {
-        guard let image = SVGImage(fileAtPath: path) else {
+        guard let image = try SVGImage(fileAtPath: path) else {
             throw ExampleError(message: "Cannot open SVG file: \(path)")
         }
         return image

@@ -43,7 +43,7 @@ public class SVGImage : Drawable {
      *
      * - Parameter fileAtPath: the path to the SVG file.
      */
-    public convenience init?(fileAtPath: String) {
+    public convenience init?(fileAtPath: String) throws {
         guard let fileStream = InputStream(fileAtPath: fileAtPath) else {
             return nil  // cannot open file
         }
@@ -51,7 +51,7 @@ public class SVGImage : Drawable {
         // once reading is done. (Deferred until after self.init returns,
         // since reading happens inside the designated initializer.)
         defer { fileStream.close() }
-        self.init(stream: fileStream)
+        try self.init(stream: fileStream)
     }
 
     /**
@@ -59,7 +59,7 @@ public class SVGImage : Drawable {
      *
      * - Parameter stream: the input stream.
      */
-    public init(stream: InputStream) {
+    public init(stream: InputStream) throws {
         paths = [SVGPath]()
         // The caller retains ownership of the stream — we read from it
         // but do not close it, consistent with the Java and .NET editions.
@@ -77,15 +77,15 @@ public class SVGImage : Drawable {
         let xml = Array(String(decoding: bytes, as: UTF8.self).unicodeScalars)
         for (name, attributes) in SVGImage.getStartTags(xml) {
             if name == "svg" {
-                readSVGAttributes(attributes)
+                try readSVGAttributes(attributes)
             } else if name == "path" {
-                readPathAttributes(attributes)
+                try readPathAttributes(attributes)
             }
         }
         processPaths(paths ?? [])
     }
 
-    private func readSVGAttributes(_ attributes: [(String, String)]) {
+    private func readSVGAttributes(_ attributes: [(String, String)]) throws {
         for (name, value) in attributes {
             if name == "width" {
                 self.w = Float(value.trim()) ?? 0.0
@@ -94,24 +94,24 @@ public class SVGImage : Drawable {
             } else if name == "viewBox" {
                 self.viewBox = value
             } else if name == "fill" {
-                self.fill = getColor(value)
+                self.fill = try getColor(value)
             } else if name == "stroke" {
-                self.stroke = getColor(value)
+                self.stroke = try getColor(value)
             } else if name == "stroke-width" {
                 self.strokeWidth = Float(value.trim()) ?? 0.0
             }
         }
     }
 
-    private func readPathAttributes(_ attributes: [(String, String)]) {
+    private func readPathAttributes(_ attributes: [(String, String)]) throws {
         let path = SVGPath()
         for (name, value) in attributes {
             if name == "d" {
                 path.data = value
             } else if name == "fill" {
-                path.fill = getColor(value)
+                path.fill = try getColor(value)
             } else if name == "stroke" {
-                path.stroke = getColor(value)
+                path.stroke = try getColor(value)
             } else if name == "stroke-width" {
                 path.strokeWidth = Float(value.trim()) ?? 0.0
             }
@@ -323,12 +323,12 @@ public class SVGImage : Drawable {
         }
     }
 
-    func getColor(_ colorName: String) -> Int32 {
+    func getColor(_ colorName: String) throws -> Int32 {
         if colorName.hasPrefix("#") {
             if colorName.count == 7 {
                 let index = colorName.index(colorName.startIndex, offsetBy: 1)
                 guard let value = Int32(colorName[index...], radix: 16) else {
-                    return Color.transparent
+                    throw PDFjetError(message: "Invalid color: " + colorName)
                 }
                 return value
             } else if colorName.count == 4 {
@@ -339,10 +339,10 @@ public class SVGImage : Drawable {
                 let str2 = colorName[index2..<index3]
                 let str3 = colorName[index3...]
                 let str = String(str1 + str1 + str2 + str2 + str3 + str3)
-                if let value = Int32(str, radix: 16) {
-                    return value
+                guard let value = Int32(str, radix: 16) else {
+                    throw PDFjetError(message: "Invalid color: " + colorName)
                 }
-                return Color.transparent
+                return value
             } else {
                 return Color.transparent
             }
