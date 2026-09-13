@@ -321,11 +321,15 @@ Java, C# and Swift keep constants in classes; Go keeps them in packages:
 `color.Blue` for `Color.blue`, `shape.Circle` for `Point.CIRCLE`,
 `structtype.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
 `direction`, `effect`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
-`pathoperator`, `imagetype`, `mark`, the page sizes (`letter.Portrait`) and
-the font families (`IBMPlexSans.Regular`). The `alignment` package serves for
-both `Align` and `Alignment`, so it also has `Top`, `Bottom` and `Justify`.
-The core fonts are functions, `corefont.Courier()`, where the other ports have
-a `Courier` class with the metrics. The QR code error correction levels are
+`pathoperator`, `imagetype`, `mark` and the font families
+(`IBMPlexSans.Regular`). The `alignment` package serves for both `Align` and
+`Alignment`, so it also has `Top`, `Bottom` and `Justify`. The core fonts are
+functions, `corefont.Courier()`, where the other ports have a `Courier` class
+with the metrics. The page sizes are functions too, `letter.Portrait()` for
+`Letter.PORTRAIT`, because a caller can assign to a Go package variable. In all
+four ports a page size is a `PageSize` that cannot be changed, with `getWidth`
+and `getHeight`; Go's is `pagesize.PageSize`, made with `pagesize.NewPageSize`
+for a size that has no package. The QR code error correction levels are
 `qrcode.ErrorCorrectLevelL` and so on, and `Table.WITH_2_HEADER_ROWS` is
 `pdfjet.TableWith2HeaderRows`. Where Java, C# and Swift have public fields
 (`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
