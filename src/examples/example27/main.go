@@ -34,7 +34,7 @@ func Example27() {
 	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
 	f3.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
 	textBlock.SetLocation(30.0, 30.0)
@@ -129,7 +129,7 @@ func Example27() {
 	textLine.DrawOn(page)
 
 	// Right to left text in text blocks, wrapped at their width.
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/hebrew.txt"))
 	textBlock.SetLocation(180.0, 30.0)

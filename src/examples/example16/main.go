@@ -23,7 +23,7 @@ func Example16() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(15.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	colors := make(map[string]int32)
 	colors["Everyone"] = color.Red

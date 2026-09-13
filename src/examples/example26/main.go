@@ -17,7 +17,7 @@ func Example26() {
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f1.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	var x float32 = 50.0
 	var y float32 = 50.0

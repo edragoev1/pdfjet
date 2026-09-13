@@ -26,7 +26,7 @@ func Example09() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	chart := pdfjet.NewChart(f1, f2)
 	chart.SetData(getData("data/world-communications.txt", "|"))

@@ -17,7 +17,7 @@ func Example48() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	var toc = pdfjet.NewBookmark(pdf)
 	x := float32(70.0)
@@ -49,7 +49,7 @@ func Example48() {
 	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
 	title.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	y = 50.0
 	title = pdfjet.NewTitle(f1, "File Trailer", x, y).SetOffset(offset)

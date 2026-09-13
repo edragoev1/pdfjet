@@ -15,7 +15,7 @@ func Example28() {
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
 	f1.SetSize(28.0)
 
-	page := pdfjet.NewPage(pdf, letter.Landscape)
+	page := pdfjet.NewPage(pdf, letter.Landscape())
 
 	x := float32(35.0)
 	y := float32(55.0)

@@ -6,8 +6,14 @@
 // Package executive defines the executive page size in points.
 package executive
 
-// Portrait executive page dimensions:
-var Portrait = [2]float32{522.0, 756.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// Landscape executive page dimensions:
-var Landscape = [2]float32{756.0, 522.0}
+// Portrait returns the executive page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(522.0, 756.0)
+}
+
+// Landscape returns the executive page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(756.0, 522.0)
+}

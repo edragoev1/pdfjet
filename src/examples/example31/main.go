@@ -17,7 +17,7 @@ func Example31() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
 	f1.SetSize(15.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/marathi.txt"))
 	textBlock.SetLocation(50.0, 50.0)

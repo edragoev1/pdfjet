@@ -6,8 +6,14 @@
 // Package a4 defines the A4 page size in points.
 package a4
 
-// Portrait A4 page dimensions
-var Portrait = [2]float32{595.0, 842.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// Landscape A4 page dimensions
-var Landscape = [2]float32{842.0, 595.0}
+// Portrait returns the A4 page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(595.0, 842.0)
+}
+
+// Landscape returns the A4 page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(842.0, 595.0)
+}

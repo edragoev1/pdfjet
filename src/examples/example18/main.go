@@ -20,19 +20,19 @@ func Example18() {
 
 	pages := make([]*pdfjet.Page, 0)
 
-	page := pdfjet.NewPageDetached(pdf, a4.Portrait)
+	page := pdfjet.NewPageDetached(pdf, a4.Portrait())
 	rect := pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
 	rect.SetFillColor(color.Red)
 	rect.DrawOn(page)
 	pages = append(pages, page)
 
-	page = pdfjet.NewPageDetached(pdf, a4.Portrait)
+	page = pdfjet.NewPageDetached(pdf, a4.Portrait())
 	rect = pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
 	rect.SetFillColor(color.Green)
 	rect.DrawOn(page)
 	pages = append(pages, page)
 
-	page = pdfjet.NewPageDetached(pdf, a4.Portrait)
+	page = pdfjet.NewPageDetached(pdf, a4.Portrait())
 	rect = pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
 	rect.SetFillColor(color.Blue)
 	rect.DrawOn(page)

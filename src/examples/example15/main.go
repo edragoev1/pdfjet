@@ -74,7 +74,7 @@ func Example15() {
 	table.SetColumnWidths()
 
 	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, a4.Portrait)
+	table.DrawOnPages(pdf, &pages, a4.Portrait())
 	for i, page := range pages {
 		page.AddFooter(pdfjet.NewTextLine(f1,
 			"Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))

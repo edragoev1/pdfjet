@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
 // PDFobj is an object of a PDF that was read with PDF.Read, which holds the
@@ -286,7 +287,7 @@ func (obj *PDFobj) getObjectNumbers(key string) []int {
 }
 
 // GetPageSize returns the page size.
-func (obj *PDFobj) GetPageSize() [2]float32 {
+func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/MediaBox" {
 			f1, err1 := strconv.ParseFloat(obj.dict[i+4], 32)
@@ -297,10 +298,10 @@ func (obj *PDFobj) GetPageSize() [2]float32 {
 			if err2 != nil {
 				log.Fatal(err2)
 			}
-			return [2]float32{float32(f1), float32(f2)}
+			return pagesize.NewPageSize(float32(f1), float32(f2))
 		}
 	}
-	return letter.Portrait
+	return letter.Portrait()
 }
 
 // getLength return the length value.

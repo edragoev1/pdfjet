@@ -76,7 +76,7 @@ func Example17() {
 	image54 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBYN3P08.PNG")
 	image55 := pdfjet.NewImageFromFile(pdf, "images/LGK_ADDRESS.PNG")
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait())
 
 	image1.SetLocation(100.0, 80.0)
 	image1.DrawOn(page)

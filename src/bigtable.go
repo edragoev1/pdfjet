@@ -15,6 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
 // BigTable represents a table for handling large amounts of data in PDF
@@ -22,7 +23,7 @@ type BigTable struct {
 	pdf             *PDF
 	f1              *Font
 	f2              *Font
-	pageSize        [2]float32
+	pageSize        pagesize.PageSize
 	x               float32
 	y               float32
 	yText           float32
@@ -44,7 +45,7 @@ type BigTable struct {
 }
 
 // NewBigTable creates a new BigTable instance
-func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize [2]float32) *BigTable {
+func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize pagesize.PageSize) *BigTable {
 	return &BigTable{
 		pdf:            pdf,
 		f1:             f1,

@@ -14,7 +14,7 @@ func Example11() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	code := pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!")
 	code.SetLocation(170.0, 70.0)

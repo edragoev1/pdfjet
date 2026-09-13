@@ -6,8 +6,14 @@
 // Package tabloid defines the tabloid page size in points.
 package tabloid
 
-// PORTRAIT tabloid page dimensions
-var PORTRAIT = [2]float32{792.0, 1224.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// LANDSCAPE tabloid page dimensions
-var LANDSCAPE = [2]float32{1224.0, 792.0}
+// Portrait returns the tabloid page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(792.0, 1224.0)
+}
+
+// Landscape returns the tabloid page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(1224.0, 792.0)
+}

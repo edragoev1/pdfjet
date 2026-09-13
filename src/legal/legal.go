@@ -6,8 +6,14 @@
 // Package legal defines the legal page size in points.
 package legal
 
-// Portrait legal page dimensions
-var Portrait = [2]float32{612.0, 1008.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// Landscape legal page dimensions
-var Landscape = [2]float32{1008.0, 612.0}
+// Portrait returns the legal page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(612.0, 1008.0)
+}
+
+// Landscape returns the legal page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(1008.0, 612.0)
+}

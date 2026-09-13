@@ -22,7 +22,7 @@ func Example46() {
 	image2 := pdfjet.NewImageFromFile(pdf, "images/qrcode.png")
 	image2.SetLocation(10.0, 100.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textLine := pdfjet.NewTextLine(f2, "© OpenStreetMap contributors")
 	textLine.SetLocation(10.0, 655.0)

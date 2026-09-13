@@ -29,7 +29,7 @@ func Example10() {
 	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	f4.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	image1.SetLocation(90.0, 35.0)
 	image1.ScaleBy(0.75)

@@ -12,7 +12,7 @@ import (
 func Example33() error {
 	pdf := pdfjet.NewPDFFile("Example_33.pdf")
 
-	page := pdfjet.NewPage(pdf, a4.Portrait)
+	page := pdfjet.NewPage(pdf, a4.Portrait())
 
 	image, err := pdfjet.NewSVGImageFromFile("images/svg-test/europe.svg")
 	if err != nil {

@@ -22,7 +22,7 @@ func Example40() {
 	f2.SetItalic(true)
 	f2.SetSize(8.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	chart := pdfjet.NewChart(f1, f2)
 	chart.SetData(GetData())

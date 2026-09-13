@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
 // Table is used to create table objects and draw them on a page.
@@ -382,7 +383,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 // DrawOnPages draws this table on as many new pages as it needs.
 // The pages are created detached and added to the list; add them to the PDF afterwards.
 // It returns the x and y coordinates below the table on the last page.
-func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize [2]float32) [2]float32 {
+func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()

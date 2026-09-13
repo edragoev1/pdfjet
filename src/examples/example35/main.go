@@ -13,7 +13,7 @@ import (
 func Example35() {
 	pdf := pdfjet.NewPDFFile("Example_35.pdf")
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(14.0)

@@ -18,28 +18,28 @@ func Example22() {
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 	text := pdfjet.NewTextLine(f1, "Page #1 -> Go to Destination #3.")
 	text.SetGoToAction("dest#3")
 	text.SetLocation(90.0, 50.0)
 	page.AddDestinationAt("dest#1", 0.0, 0.0)
 	text.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 	text = pdfjet.NewTextLine(f1, "Page #2 -> Go to Destination #3.")
 	text.SetGoToAction("dest#3")
 	text.SetLocation(90.0, 550.0)
 	page.AddDestination("dest#2", text.GetDestinationY())
 	text.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 	text = pdfjet.NewTextLine(f1, "Page #3 -> Go to Destination #4.")
 	text.SetGoToAction("dest#4")
 	text.SetLocation(90.0, 700.0)
 	page.AddDestination("dest#3", text.GetDestinationY())
 	text.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 	text = pdfjet.NewTextLine(f1, "Page #4 -> Go to Destination #1.")
 	text.SetGoToAction("dest#1")
 	text.SetLocation(90.0, 100.0)

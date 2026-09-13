@@ -17,7 +17,7 @@ func Example07() {
 	pdf.SetTitle("PDF/A-3B compliant PDF")
 
 	var f1 = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	page := pdfjet.NewPage(pdf, a4.Landscape)
+	page := pdfjet.NewPage(pdf, a4.Landscape())
 
 	f1.SetSize(72.0)
 	page.AddWatermark(f1, "This is a Draft")
@@ -61,7 +61,7 @@ func Example07() {
 	textLine.SetLocation(xPos, yPos)
 	textLine.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, a4.Landscape)
+	page = pdfjet.NewPage(pdf, a4.Landscape())
 	textLine.SetText("Hello, World!")
 	textLine.SetUnderline(true)
 	textLine.SetLocation(xPos, 34.0)

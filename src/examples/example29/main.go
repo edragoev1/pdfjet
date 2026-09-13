@@ -16,7 +16,7 @@ func Example29() {
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	font.SetSize(15.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	paragraph1 := pdfjet.NewParagraph()
 	paragraph1.Add(pdfjet.NewTextLine(font, content.OfTextFile("data/languages/english.txt")))

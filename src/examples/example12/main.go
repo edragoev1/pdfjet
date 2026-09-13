@@ -18,7 +18,7 @@ func Example12() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("PDF417 barcode example")
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	lines := util.ReadLines("data/Example_12.java")
 	var buf strings.Builder

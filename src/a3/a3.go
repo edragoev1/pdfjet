@@ -6,8 +6,14 @@
 // Package a3 defines the A3 page size in points.
 package a3
 
-// Portrait A3 page dimensions
-var Portrait = [2]float32{842.0, 1191.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// Landscape A3 page dimensions
-var Landscape = [2]float32{1191.0, 842.0}
+// Portrait returns the A3 page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(842.0, 1191.0)
+}
+
+// Landscape returns the A3 page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(1191.0, 842.0)
+}

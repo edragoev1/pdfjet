@@ -19,7 +19,7 @@ func Example06() {
 	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
 	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", compress.Yes)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	// File attachment functionality
 	attachment := pdfjet.NewFileAttachment(pdf, file1)

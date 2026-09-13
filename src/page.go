@@ -22,6 +22,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
+	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
@@ -84,12 +85,12 @@ const (
 )
 
 // NewPage creates a page of the specified size and adds it to the PDF.
-func NewPage(pdf *PDF, pageSize [2]float32) *Page {
+func NewPage(pdf *PDF, pageSize pagesize.PageSize) *Page {
 	return newPage(pdf, pageSize, true)
 }
 
 // NewPageDetached creates a page of the specified size without adding it to the PDF.
-func NewPageDetached(pdf *PDF, pageSize [2]float32) *Page {
+func NewPageDetached(pdf *PDF, pageSize pagesize.PageSize) *Page {
 	return newPage(pdf, pageSize, false)
 }
 
@@ -102,12 +103,12 @@ func NewPageDetached(pdf *PDF, pageSize [2]float32) *Page {
 // @param pdf the pdf object.
 // @param pageSize the page size of this page.
 // @param addPageToPDF boolean flag.
-func newPage(pdf *PDF, pageSize [2]float32, addToPDF bool) *Page {
+func newPage(pdf *PDF, pageSize pagesize.PageSize, addToPDF bool) *Page {
 	page := new(Page)
 	page.pdf = pdf
 	page.contents = []int{}
-	page.width = pageSize[0]
-	page.height = pageSize[1]
+	page.width = pageSize.GetWidth()
+	page.height = pageSize.GetHeight()
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
@@ -126,8 +127,9 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page := new(Page)
 	page.pdf = pdf
 	page.pageObj = page.removeComments(pageObj)
-	page.width = pageObj.GetPageSize()[0]
-	page.height = pageObj.GetPageSize()[1]
+	pageSize := pageObj.GetPageSize()
+	page.width = pageSize.GetWidth()
+	page.height = pageSize.GetHeight()
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}

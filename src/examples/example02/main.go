@@ -36,28 +36,28 @@ func Example02() {
 	f4.SetSize(14.0)
 
 	// Create a new page in portrait Letter size
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
 	textBlock.SetLocation(50.0, 50.0)

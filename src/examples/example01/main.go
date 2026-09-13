@@ -28,7 +28,7 @@ func Example01() {
 	font1.SetSize(12.0)
 
 	// Create a new page in portrait orientation
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	colorMap := make(map[string]int32)
 	colorMap["Everyone"] = color.DarkRed

@@ -16,7 +16,7 @@ func Example38() {
 	pdf := pdfjet.NewPDFFile("Example_38.pdf")
 	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
 
-	page := pdfjet.NewPage(pdf, letter.Landscape)
+	page := pdfjet.NewPage(pdf, letter.Landscape())
 
 	table := pdfjet.NewTable()
 	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)

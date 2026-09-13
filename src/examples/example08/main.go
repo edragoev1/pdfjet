@@ -52,7 +52,7 @@ func Example08() {
 	table.SetFontInRow(14, f3)
 
 	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, letter.Portrait)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
 		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))

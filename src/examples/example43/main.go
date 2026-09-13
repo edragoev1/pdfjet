@@ -29,7 +29,7 @@ func Example43() {
 	// f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f2.SetSize(9.0)
 
-	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape)
+	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape())
 	table.SetNumberOfColumns(9)              // The order of the
 	err := table.SetTableData(fileName, ",") // these statements
 	if err != nil {

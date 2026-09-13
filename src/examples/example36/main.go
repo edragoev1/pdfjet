@@ -16,7 +16,7 @@ func Example36() {
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
 
-	page1 := pdfjet.NewPageDetached(pdf, a4.Portrait)
+	page1 := pdfjet.NewPageDetached(pdf, a4.Portrait())
 
 	text := pdfjet.NewTextLine(f1, "The map below is an embedded PNG image")
 	text.SetLocation(90.0, 30.0)
@@ -26,7 +26,7 @@ func Example36() {
 	image1.ScaleBy(0.3)
 	image1.DrawOn(page1)
 
-	page2 := pdfjet.NewPageDetached(pdf, a4.Portrait)
+	page2 := pdfjet.NewPageDetached(pdf, a4.Portrait())
 
 	text.SetText("This page was created after the second one but it was drawn first!")
 	text.SetLocation(90.0, 30.0)

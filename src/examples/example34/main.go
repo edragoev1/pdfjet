@@ -71,7 +71,7 @@ func Example34() {
 	table.RightAlignNumbers()
 
 	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, letter.Portrait)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
 		textLine := pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages)))

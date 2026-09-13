@@ -23,7 +23,7 @@ func Example41() {
 	f3 := pdfjet.NewCoreFont(pdf, corefont.HelveticaOblique())
 	f3.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	paragraphs := make([]*pdfjet.Paragraph, 0)
 

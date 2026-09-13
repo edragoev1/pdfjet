@@ -6,8 +6,14 @@
 // Package b5 defines the B5 page size in points.
 package b5
 
-// Portrait B5 page dimensions
-var Portrait = [2]float32{516.0, 729.0}
+import "github.com/edragoev1/pdfjet/v9/src/pagesize"
 
-// Landscape B5 page dimensions
-var Landscape = [2]float32{729.0, 516.0}
+// Portrait returns the B5 page size in portrait orientation.
+func Portrait() pagesize.PageSize {
+	return pagesize.NewPageSize(516.0, 729.0)
+}
+
+// Landscape returns the B5 page size in landscape orientation.
+func Landscape() pagesize.PageSize {
+	return pagesize.NewPageSize(729.0, 516.0)
+}

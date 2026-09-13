@@ -34,7 +34,7 @@ func Example47() {
 
 	var page *pdfjet.Page
 	for textFrame.HasMoreText() {
-		page = pdfjet.NewPage(pdf, letter.Landscape)
+		page = pdfjet.NewPage(pdf, letter.Landscape())
 
 		textFrame.SetLocation(x, y)
 		textFrame.SetWidth(w)

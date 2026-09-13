@@ -23,7 +23,7 @@ func Example49() {
 	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
 	f2.SetSize(16.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	paragraph1 := pdfjet.NewParagraph().
 		Add(pdfjet.NewTextLine(f1, "Hello")).

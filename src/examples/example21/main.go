@@ -15,7 +15,7 @@ func Example21() {
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f1,
 		"QR codes encoded with Low, Medium, High and Very High error correction level")

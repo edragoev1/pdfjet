@@ -18,14 +18,14 @@ func Example24() {
 	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image3 := pdfjet.NewImageFromFile(pdf, "images/rgb24pal.bmp")
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 	textLine1 := pdfjet.NewTextLine(font, "This is a JPEG image.")
 	textLine1.SetTextDirection(0)
 	textLine1.SetLocation(50.0, 50.0)
 	point := textLine1.DrawOn(page)
 	image1.ScaleBy(0.25).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
-	page = pdfjet.NewPage(pdf, letter.Portrait)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 	textLine2 := pdfjet.NewTextLine(font, "This is a PNG image.")
 	textLine2.SetTextDirection(0)
 	textLine2.SetLocation(50.0, 50.0)

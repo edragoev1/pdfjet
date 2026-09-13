@@ -42,7 +42,7 @@ func Example30() {
 
 	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
 	textLine.SetLocation(100.0, 100.0)

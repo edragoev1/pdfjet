@@ -21,7 +21,7 @@ func Example19() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
 	f2.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 	// Columns x coordinates
 	x1 := float32(50.0)
 	y1 := float32(50.0)

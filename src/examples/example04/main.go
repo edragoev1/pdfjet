@@ -49,7 +49,7 @@ func Example04() {
 	f4 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium)
 	f4.SetSize(14.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	var xPos float32 = 100.0
 	var yPos float32

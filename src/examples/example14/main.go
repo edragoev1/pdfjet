@@ -19,7 +19,7 @@ func Example14() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	barcode := datamatrix.NewDataMatrix("https://github.com/edragoev1/pdfjet")
 	barcode.SetLocation(50.0, 50.0)
