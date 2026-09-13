@@ -500,13 +500,17 @@ public class Table : IDrawable {
         return new float[] {x, y};
     }
 
+    // Draws the rows from the next row to draw, as many as fit on the page.
+    // With no page it measures them all and leaves the next row to draw as it is.
     private float[] DrawTableRows(Page page, float[] xy) {
         float x = xy[0];
         float y = xy[1];
-        while (rendered < tableData.Count) {
-            List<Cell> row = tableData[rendered];
+        int index = (rendered == -1) ? tableData.Count : rendered;
+        while (index < tableData.Count) {
+            List<Cell> row = tableData[index];
             float h = GetMaxCellHeight(row);
             if (page != null && (y + h) > (page.height - bottomMargin)) {
+                rendered = index;
                 return new float[] {x, y};
             }
             int i = 0;
@@ -525,9 +529,11 @@ public class Table : IDrawable {
             }
             x = x1;
             y += h;
-            rendered++;
+            index++;
         }
-        rendered = -1; // We are done!
+        if (page != null) {
+            rendered = -1; // We are done!
+        }
         return new float[] {x, y};
     }
 

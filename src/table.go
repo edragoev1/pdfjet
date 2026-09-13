@@ -429,13 +429,21 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	return [2]float32{x, y}
 }
 
+// drawTableRows draws the rows from the next row to draw, as many as fit on
+// the page. With no page it measures them all and leaves the next row to draw
+// as it is.
 func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	x := xy[0]
 	y := xy[1]
-	for table.rendered < len(table.tableData) {
-		row := table.tableData[table.rendered]
+	index := table.rendered
+	if index == -1 {
+		index = len(table.tableData)
+	}
+	for index < len(table.tableData) {
+		row := table.tableData[index]
 		h := table.getMaxCellHeight(row)
 		if page != nil && (y+h) > (page.height-table.bottomMargin) {
+			table.rendered = index
 			return [2]float32{x, y}
 		}
 		for i := 0; i < len(row); {
@@ -454,9 +462,11 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		}
 		x = table.x1
 		y += h
-		table.rendered++
+		index++
 	}
-	table.rendered = -1 // We are done!
+	if page != nil {
+		table.rendered = -1 // We are done!
+	}
 	return [2]float32{x, y}
 }
 

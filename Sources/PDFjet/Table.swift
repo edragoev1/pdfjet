@@ -510,13 +510,17 @@ public class Table : Drawable {
         return [x, y]
     }
 
+    // Draws the rows from the next row to draw, as many as fit on the page.
+    // With no page it measures them all and leaves the next row to draw as it is.
     private func drawTableRows(_ page: Page?, _ xy: [Float]) -> [Float] {
         var x = xy[0]
         var y = xy[1]
-        while rendered < tableData.count {
-            let row = tableData[rendered]
+        var index = (rendered == -1) ? tableData.count : rendered
+        while index < tableData.count {
+            let row = tableData[index]
             let h = getMaxCellHeight(row)
             if page != nil && (y + h) > (page!.height - bottomMargin) {
+                rendered = index
                 return [x, y]
             }
             var i = 0
@@ -536,9 +540,11 @@ public class Table : Drawable {
             }
             x = x1
             y += h
-            rendered += 1
+            index += 1
         }
-        rendered = -1   // We are done!
+        if page != nil {
+            rendered = -1   // We are done!
+        }
         return [x, y]
     }
 

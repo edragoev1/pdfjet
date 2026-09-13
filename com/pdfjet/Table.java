@@ -553,13 +553,17 @@ public class Table implements Drawable {
         return new float[] {x, y};
     }
 
+    // Draws the rows from the next row to draw, as many as fit on the page.
+    // With no page it measures them all and leaves the next row to draw as it is.
     private float[] drawTableRows(Page page, float[] xy) throws Exception {
         float x = xy[0];
         float y = xy[1];
-        while (rendered < tableData.size()) {
-            List<Cell> row = tableData.get(rendered);
+        int index = (rendered == -1) ? tableData.size() : rendered;
+        while (index < tableData.size()) {
+            List<Cell> row = tableData.get(index);
             float h = getMaxCellHeight(row);
             if (page != null && (y + h) > (page.height - bottomMargin)) {
+                rendered = index;
                 return new float[] {x, y};
             }
             int i = 0;
@@ -578,9 +582,11 @@ public class Table implements Drawable {
             }
             x = x1;
             y += h;
-            rendered++;
+            index++;
         }
-        rendered = -1; // We are done!
+        if (page != null) {
+            rendered = -1; // We are done!
+        }
         return new float[] {x, y};
     }
 
