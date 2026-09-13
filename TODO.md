@@ -376,18 +376,19 @@ renames included (the Week 1 decision), so every item is a blocker.
       the array. What is left needs a breaking change: an immutable
       `PageSize` type with `Page` and `BigTable` overloads, or functions
       instead of arrays, in Java and Go.
-- ⬜ **B** Found while fixing the drift above: Java and C# `Cell`, `TextBox`,
-      `Point`, `TextBlock` and `State` colour getters return the internal
-      array; C# `BigTable` reads files with a reader that detects UTF-16 and
-      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; a UTF-8 encoded
-      surrogate (ED A0
-      80) reads as one U+FFFD in Java and three in Swift, which is what
-      Unicode recommends. Swift `BufferedOutputStream.flush` prints a write
-      error and carries on: decided Sep 13 that Swift `PDF.complete()`
-      throws, as Java's does. Also decided Sep 13: Go `PDF.Read` and
-      `ReadWithPassword` return `([]*PDFobj, error)` for a wrong password or
-      a malformed file, and Swift `PDF.addObjects` throws when the objects
-      have no root `/Pages`, as Java's does.
+- ⬜ **B** Found while fixing the drift above: Swift `BufferedOutputStream.flush`
+      prints a write error and carries on; decided Sep 13 that Swift
+      `PDF.complete()` throws, as Java's does. Also decided Sep 13: Go
+      `PDF.Read` and `ReadWithPassword` return `([]*PDFobj, error)` for a wrong
+      password or a malformed file, and Swift `PDF.addObjects` throws when the
+      objects have no root `/Pages`, as Java's does. A UTF-8 encoded surrogate
+      (ED A0 80) reads as one U+FFFD in Java and three in Swift, which is what
+      Unicode recommends; left as it is.
+      Fixed: the colour setters and getters of `Cell`, `TextBox`, `TextBlock`,
+      `Point`, `Arc`, `Rect`, `Stamp`, `Text`, `TextFrame`, `Form` and
+      `BaseAnnotation` copy the array in Java and C#; `BigTable` reads its file
+      as UTF-8 and drops a BOM in the four ports; Java and C#
+      `Content.ofTextFile` report a missing file.
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
@@ -780,6 +781,13 @@ renames included (the Week 1 decision), so every item is a blocker.
       the table is already drawn, and returns `[Float]?`; Swift
       `Content.ofTextFile` reads invalid UTF-8 as U+FFFD instead of
       throwing.
+      The Java and C# colour setters of `Cell`, `TextBox`, `TextBlock`,
+      `Point`, `Arc`, `Rect`, `Stamp`, `Text`, `TextFrame`, `Form` and
+      `BaseAnnotation`, and C# `Line`, copy the caller's array, and their
+      colour getters return copies; `BigTable` reads its data file as UTF-8
+      and drops a byte order mark at its start in the four ports, and Swift
+      `BigTable` draws a line that is not UTF-8 with U+FFFD instead of
+      skipping it.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
