@@ -327,7 +327,7 @@ public class Point implements Drawable {
      * @return this Point object.
      */
     public Point setFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -337,7 +337,7 @@ public class Point implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getFillColor() {
-        return this.fillColor;
+        return Util.copyOf(this.fillColor);
     }
 
     /**
@@ -374,7 +374,7 @@ public class Point implements Drawable {
      * @return this Point object.
      */
     public Point setStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -384,7 +384,7 @@ public class Point implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getStrokeColor() {
-        return this.strokeColor;
+        return Util.copyOf(this.strokeColor);
     }
 
     /**

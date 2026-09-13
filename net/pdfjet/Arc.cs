@@ -164,7 +164,7 @@ public class Arc : IDrawable {
 
     /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Arc SetStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -185,7 +185,7 @@ public class Arc : IDrawable {
 
     /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Arc SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 

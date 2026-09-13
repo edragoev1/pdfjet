@@ -20,6 +20,17 @@ public class Util {
     }
 
     /**
+     * Returns a copy of the color, so that the caller cannot change the color
+     * of an object by writing into the array it passed or got back.
+     *
+     * @param color the red, green and blue components, or null.
+     * @return the copy, or null if the color is null.
+     */
+    static float[] copyOf(float[] color) {
+        return (color == null) ? null : color.clone();
+    }
+
+    /**
      * Reads the lines of a UTF-8 text file, without carriage returns.
      *
      * @param filePath the path of the text file.

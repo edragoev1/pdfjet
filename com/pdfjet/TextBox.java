@@ -410,7 +410,7 @@ public class TextBox implements Drawable {
      * @return this TextBox object.
      */
     public TextBox setFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -439,7 +439,7 @@ public class TextBox implements Drawable {
      * @return this TextBox object.
      */
     public TextBox setBackgroundColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -477,7 +477,7 @@ public class TextBox implements Drawable {
      * @return this TextBox object.
      */
     public TextBox setTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        this.textColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -487,7 +487,7 @@ public class TextBox implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getTextColor() {
-        return textColor;
+        return Util.copyOf(textColor);
     }
 
     /**
@@ -539,7 +539,7 @@ public class TextBox implements Drawable {
      * @return this TextBox object.
      */
     public TextBox setStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -549,7 +549,7 @@ public class TextBox implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getStrokeColor() {
-        return strokeColor;
+        return Util.copyOf(strokeColor);
     }
 
     /**

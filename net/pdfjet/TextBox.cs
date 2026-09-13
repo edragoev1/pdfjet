@@ -358,7 +358,7 @@ public class TextBox : IDrawable {
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBox SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -369,7 +369,7 @@ public class TextBox : IDrawable {
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBox SetBackgroundColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -390,13 +390,13 @@ public class TextBox : IDrawable {
 
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextBox SetTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        this.textColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
-        return textColor;
+        return Util.CopyOf(textColor);
     }
 
     /// <summary>Sets the language of the text, for example "en-US".</summary>
@@ -448,13 +448,13 @@ public class TextBox : IDrawable {
 
     /// <summary>Sets the color of the borders from an array of red, green and blue values.</summary>
     public TextBox SetStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the color of the borders.</summary>
     public float[] GetStrokeColor() {
-        return strokeColor;
+        return Util.CopyOf(strokeColor);
     }
 
     /// <summary>

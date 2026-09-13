@@ -187,7 +187,7 @@ public class TextBlock : IDrawable {
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBlock SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -198,7 +198,7 @@ public class TextBlock : IDrawable {
 
     /// <summary>Sets the background color from an array of red, green and blue values.</summary>
     public TextBlock SetBackgroundColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -217,7 +217,7 @@ public class TextBlock : IDrawable {
 
     /// <summary>Sets the border color from an array of red, green and blue values.</summary>
     public TextBlock SetBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -229,7 +229,7 @@ public class TextBlock : IDrawable {
 
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextBlock SetTextColor(float[] textColor) {
-        this.textColor = textColor;
+        this.textColor = Util.CopyOf(textColor);
         return this;
     }
 
@@ -256,7 +256,7 @@ public class TextBlock : IDrawable {
 
     /// <summary>Returns the background color.</summary>
     public float[] GetBackgroundColor() {
-        return this.fillColor;
+        return Util.CopyOf(this.fillColor);
     }
 
     /// <summary>Sets the colors used to highlight keywords. The keywords are matched ignoring case.</summary>

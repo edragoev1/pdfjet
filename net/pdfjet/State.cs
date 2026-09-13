@@ -33,11 +33,11 @@ class State {
     }
 
     public float[] GetBrushColor() {
-        return brushColor;
+        return (float[]) brushColor.Clone();
     }
 
     public float[] GetPenColor() {
-        return penColor;
+        return (float[]) penColor.Clone();
     }
 
     public float GetPenWidth() {

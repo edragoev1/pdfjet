@@ -204,7 +204,7 @@ public class Line : IDrawable {
 
     /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Line SetStrokeColor(float[] rgbColor) {
-        this.color = rgbColor;
+        this.color = Util.CopyOf(rgbColor);
         return this;
     }
 

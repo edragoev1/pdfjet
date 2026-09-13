@@ -130,7 +130,7 @@ public class Form implements Drawable {
      * @return the form
      */
     public Form setLabelColor(float[] labelColor) {
-        this.labelColor = labelColor;
+        this.labelColor = Util.copyOf(labelColor);
         return this;
     }
 
@@ -141,7 +141,7 @@ public class Form implements Drawable {
      * @return the form
      */
     public Form setValueColor(float[] valueColor) {
-        this.valueColor = valueColor;
+        this.valueColor = Util.copyOf(valueColor);
         return this;
     }
 

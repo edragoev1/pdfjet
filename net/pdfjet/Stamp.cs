@@ -102,7 +102,7 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(rgbColor[2]);
         Append(" rg\n");
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -129,7 +129,7 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(rgbColor[2]);
         Append(" RG\n");
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 

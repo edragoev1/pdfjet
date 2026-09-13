@@ -285,7 +285,7 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        this.textColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -314,7 +314,7 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -364,7 +364,7 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -375,7 +375,7 @@ public class TextBlock implements Drawable {
      * @return this TextBlock object.
      */
     public TextBlock setBackgroundColor(float[] fillColor) {
-        this.fillColor = fillColor;
+        this.fillColor = Util.copyOf(fillColor);
         return this;
     }
 
@@ -385,7 +385,7 @@ public class TextBlock implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0, or null.
      */
     public float[] getBackgroundColor() {
-        return this.fillColor;
+        return Util.copyOf(this.fillColor);
     }
 
     /**

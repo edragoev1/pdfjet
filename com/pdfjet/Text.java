@@ -142,7 +142,7 @@ public class Text implements Drawable {
      * @return this Text object.
      */
     public Text setBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.copyOf(rgbColor);
         this.hasBorder = true;
         return this;
     }

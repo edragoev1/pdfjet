@@ -449,7 +449,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setStrokeColor(float[] strokeColor) {
-        this.strokeColor = strokeColor;
+        this.strokeColor = Util.copyOf(strokeColor);
         return this;
     }
 
@@ -459,7 +459,7 @@ public class Cell {
      * @return the stroke color.
      */
     public float[] getStrokeColor() {
-        return this.strokeColor;
+        return Util.copyOf(this.strokeColor);
     }
 
     /**
@@ -534,7 +534,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTextColor(float[] textColor) {
-        this.textColor = textColor;
+        this.textColor = Util.copyOf(textColor);
         return this;
     }
 
@@ -544,7 +544,7 @@ public class Cell {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getTextColor() {
-        return textColor;
+        return Util.copyOf(textColor);
     }
 
     /**
@@ -568,7 +568,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBackgroundColor(float[] color) {
-        this.backgroundColor = color;
+        this.backgroundColor = Util.copyOf(color);
         return this;
     }
 
@@ -578,7 +578,7 @@ public class Cell {
      * @return the background color, or null if the cell has no background.
      */
     public float[] getBackgroundColor() {
-        return this.backgroundColor;
+        return Util.copyOf(this.backgroundColor);
     }
 
     /**

@@ -12,6 +12,14 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 /// <summary>Utility methods.</summary>
 public class Util {
+    /// <summary>
+    /// Returns a copy of the color, or null if the color is null, so that the caller
+    /// cannot change the color of an object by writing into the array it passed or got back.
+    /// </summary>
+    internal static float[] CopyOf(float[] color) {
+        return (color == null) ? null : (float[]) color.Clone();
+    }
+
     /// <summary>Reads the lines of a UTF-8 text file, without carriage returns.</summary>
     /// <param name="filePath">the path of the text file.</param>
     /// <returns>the lines.</returns>

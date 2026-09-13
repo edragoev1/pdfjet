@@ -232,7 +232,7 @@ public class Cell {
 
     /// <summary>Sets the background color from an array of red, green and blue values, or removes the background with null.</summary>
     public Cell SetBackgroundColor(float[] rgbColor) {
-        this.backgroundColor = rgbColor;
+        this.backgroundColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -356,7 +356,7 @@ public class Cell {
 
     /// <summary>Returns the background color, or null if the cell has no background.</summary>
     public float[] GetBackgroundColor() {
-        return this.backgroundColor;
+        return Util.CopyOf(this.backgroundColor);
     }
 
     /// <summary>Sets the text color as a 0xRRGGBB value.</summary>
@@ -376,13 +376,13 @@ public class Cell {
 
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public Cell SetTextColor(float[] rgbColor) {
-        this.textColor = rgbColor;
+        this.textColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
-        return this.textColor;
+        return Util.CopyOf(this.textColor);
     }
 
     /// <summary>Sets the width of the cell borders.</summary>
@@ -416,13 +416,13 @@ public class Cell {
 
     /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Cell SetStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the stroke color.</summary>
     public float[] GetStrokeColor() {
-        return this.strokeColor;
+        return Util.CopyOf(this.strokeColor);
     }
 
     internal void SetProperties(uint properties) {

@@ -215,7 +215,7 @@ public class Arc implements Drawable {
      * @return this Arc object.
      */
     public Arc setStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -253,7 +253,7 @@ public class Arc implements Drawable {
      * @return this Arc object.
      */
     public Arc setFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 

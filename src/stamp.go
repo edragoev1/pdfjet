@@ -3,6 +3,7 @@ package pdfjet
 import (
 	"bytes"
 	"math"
+	"slices"
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
@@ -103,7 +104,7 @@ func (s *Stamp) SetFillColorRGB(rgbColor []float32) *Stamp {
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" rg\n")
-	s.fillColor = rgbColor
+	s.fillColor = slices.Clone(rgbColor)
 	return s
 }
 
@@ -125,7 +126,7 @@ func (s *Stamp) SetStrokeColorRGB(rgbColor []float32) *Stamp {
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" RG\n")
-	s.strokeColor = rgbColor
+	s.strokeColor = slices.Clone(rgbColor)
 	return s
 }
 

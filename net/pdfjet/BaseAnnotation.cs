@@ -46,7 +46,7 @@ public class BaseAnnotation : IDrawable {
 
     /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public BaseAnnotation SetFillColor(float[] fillColor) {
-        this.fillColor = fillColor;
+        this.fillColor = Util.CopyOf(fillColor);
         return this;
     }
 

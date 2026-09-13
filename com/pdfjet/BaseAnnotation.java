@@ -55,7 +55,7 @@ public class BaseAnnotation implements Drawable {
      * @return this BaseAnnotation object.
      */
     public BaseAnnotation setFillColor(float[] fillColor) {
-        this.fillColor = fillColor;
+        this.fillColor = Util.copyOf(fillColor);
         return this;
     }
 

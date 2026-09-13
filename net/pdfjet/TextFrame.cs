@@ -147,7 +147,7 @@ public class TextFrame : IDrawable {
 
     /// <summary>Sets the border color from an array of red, green and blue values and draws a border around this text frame.</summary>
     public TextFrame SetBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.CopyOf(rgbColor);
         this.border = true;
         return this;
     }

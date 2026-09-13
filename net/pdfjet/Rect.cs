@@ -89,7 +89,7 @@ public class Rect  : IDrawable {
 
     /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Rect SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -120,7 +120,7 @@ public class Rect  : IDrawable {
 
     /// <summary>Sets the border color from an array of red, green and blue values, or null for no border.</summary>
     public Rect SetBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.CopyOf(rgbColor);
         return this;
     }
 

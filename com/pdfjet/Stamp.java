@@ -146,7 +146,7 @@ public class Stamp implements Drawable {
         append(" ");
         append(rgbColor[2]);
         append(" rg\n");
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -183,7 +183,7 @@ public class Stamp implements Drawable {
         append(" ");
         append(rgbColor[2]);
         append(" RG\n");
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
 

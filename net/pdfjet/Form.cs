@@ -125,7 +125,7 @@ public class Form : IDrawable {
     /// <param name="labelColor">the label color</param>
     /// <returns>the form</returns>
     public Form SetLabelColor(float[] labelColor) {
-        this.labelColor = labelColor;
+        this.labelColor = Util.CopyOf(labelColor);
         return this;
     }
 
@@ -135,7 +135,7 @@ public class Form : IDrawable {
     /// <param name="valueColor">the value color</param>
     /// <returns>the form</returns>
     public Form SetValueColor(float[] valueColor) {
-        this.valueColor = valueColor;
+        this.valueColor = Util.CopyOf(valueColor);
         return this;
     }
 

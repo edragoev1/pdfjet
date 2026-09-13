@@ -215,7 +215,7 @@ public class TextFrame implements Drawable {
      * @return this TextFrame object.
      */
     public TextFrame setBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.copyOf(rgbColor);
         this.border = true;
         return this;
     }

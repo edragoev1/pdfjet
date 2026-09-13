@@ -32,11 +32,11 @@ class State {
     }
 
     public float[] getBrushColor() {
-        return brushColor;
+        return brushColor.clone();
     }
 
     public float[] getPenColor() {
-        return penColor;
+        return penColor.clone();
     }
 
     public float getPenWidth() {

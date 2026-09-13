@@ -138,7 +138,7 @@ public class Rect implements Drawable {
      * @return this Rect object.
      */
     public Rect setFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -191,7 +191,7 @@ public class Rect implements Drawable {
      * @return this Rect object.
      */
     public Rect setBorderColor(float[] rgbColor) {
-        this.borderColor = rgbColor;
+        this.borderColor = Util.copyOf(rgbColor);
         return this;
     }
 

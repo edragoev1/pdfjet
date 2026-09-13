@@ -277,7 +277,7 @@ public class Point : IDrawable {
 
     /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
     public Point SetFillColor(float[] rgbColor) {
-        this.fillColor = rgbColor;
+        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -289,7 +289,7 @@ public class Point : IDrawable {
 
     /// <summary>Returns the fill color.</summary>
     public float[] GetFillColor() {
-        return this.fillColor;
+        return Util.CopyOf(this.fillColor);
     }
 
     /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
@@ -309,13 +309,13 @@ public class Point : IDrawable {
 
     /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
     public Point SetStrokeColor(float[] rgbColor) {
-        this.strokeColor = rgbColor;
+        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
     /// <summary>Returns the stroke color.</summary>
     public float[] GetStrokeColor() {
-        return this.strokeColor;
+        return Util.CopyOf(this.strokeColor);
     }
 
     /// <summary>
