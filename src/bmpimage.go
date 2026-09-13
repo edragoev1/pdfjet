@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"io"
-	"log"
 	"math"
 
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
@@ -21,6 +20,7 @@ type BMPImage struct {
 	bpp      int
 	palette  [][]byte
 	r5g6b5   bool // If 16 bit image two encodings can occur
+	topDown  bool // If the first row is the top row
 }
 
 const (
@@ -53,6 +53,11 @@ func NewBMPImage(reader io.Reader) *BMPImage {
 		readSignedInt(reader) // skip sizeOfHeader
 		image.w = readSignedInt(reader)
 		image.h = readSignedInt(reader)
+		if image.h < 0 {
+			// A negative height is that of a top-down bitmap.
+			image.h = -image.h
+			image.topDown = true
+		}
 		skipNBytes(reader, 2)
 		image.bpp = read2BytesLE(reader)
 		compression := readSignedInt(reader)
@@ -73,7 +78,7 @@ func NewBMPImage(reader io.Reader) *BMPImage {
 		}
 		image.parseData(reader)
 	} else {
-		log.Fatal("BMP data could not be parsed!")
+		panic("BMP data could not be parsed!")
 	}
 
 	return image
@@ -103,12 +108,19 @@ func (image *BMPImage) parseData(reader io.Reader) []byte {
 		case 32:
 			row = image.bit32to24(row, image.w)
 		default:
-			log.Fatal("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
+			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images.")
 		}
 
-		index = image.w * (image.h - i - 1) * 3
+		if image.topDown {
+			index = image.w * i * 3
+		} else {
+			index = image.w * (image.h - i - 1) * 3
+		}
 		if image.palette != nil { // indexed
 			for j := 0; j < image.w; j++ {
+				if int(row[j]) >= len(image.palette) {
+					panic("BMP parse error: imagedata not correct")
+				}
 				bmpImage[index] = image.palette[row[j]][2]
 				index++
 				bmpImage[index] = image.palette[row[j]][1]
@@ -240,7 +252,7 @@ func readSignedInt(reader io.Reader) int {
 	val |= uint32(buf[1]) & uint32(0xff)
 	val <<= 8
 	val |= uint32(buf[0]) & uint32(0xff)
-	return int(val)
+	return int(int32(val))
 }
 
 // GetWidth returns the image width.

@@ -20,6 +20,7 @@ class BMPImage {
     private int bpp;
     private byte palette[][];
     private boolean r5g6b5; // If 16 bit image two encodings can occur
+    private boolean topDown;    // If the first row is the top row
 
     private static final int m10000000 = 0x80;
     private static final int m01000000 = 0x40;
@@ -48,6 +49,11 @@ class BMPImage {
             readSignedInt(is); // Skip the sizeOfHeader
             w = readSignedInt(is);
             h = readSignedInt(is);
+            if (h < 0) {
+                // A negative height is that of a top-down bitmap.
+                h = -h;
+                topDown = true;
+            }
             skipNBytes(is, 2);
             bpp = read2BytesLE(is);
             int compression = readSignedInt(is);
@@ -100,7 +106,7 @@ class BMPImage {
                             "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
                 }
 
-                index = w*(h-i-1)*3;
+                index = topDown ? w*i*3 : w*(h-i-1)*3;
                 if (palette != null) {  // indexed
                     for (int j = 0; j < w; j++) {
                         image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][2];

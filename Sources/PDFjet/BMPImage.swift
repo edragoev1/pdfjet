@@ -16,6 +16,7 @@ class BMPImage {
     private var bpp = 0
     private var palette: [[UInt8]]?
     private var r5g6b5: Bool = false    // If 16 bit image two encodings can occur
+    private var topDown: Bool = false   // If the first row is the top row
 
     private let m10000000: UInt8 = 0x80
     private let m01000000: UInt8 = 0x40
@@ -51,6 +52,11 @@ class BMPImage {
             try readSignedInt(stream)           // size of header
             self.w = try readSignedInt(stream)
             self.h = try readSignedInt(stream)
+            if self.h < 0 {
+                // A negative height is that of a top-down bitmap.
+                self.h = -self.h
+                self.topDown = true
+            }
             try skipNBytes(stream, 2)
             self.bpp = try read2BytesLE(stream)
             let compression = try readSignedInt(stream)
@@ -76,8 +82,7 @@ class BMPImage {
     }
 
     private func parseData(_ stream: InputStream) throws {
-        // A negative height is a top-down image, which is not supported.
-        if w < 0 || h < 0 {
+        if w < 0 {
             throw BMPImageError.invalidImageData
         }
         image = [UInt8](repeating: 0, count: (3 * w * h))
@@ -106,7 +111,7 @@ class BMPImage {
                 throw BMPImageError.unsupportedBitDepth
             }
 
-            index = 3*w*((h - i) - 1)
+            index = topDown ? 3*w*i : 3*w*((h - i) - 1)
             if self.palette != nil {
                 // indexed
                 for j in 0..<self.w {
