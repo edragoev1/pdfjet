@@ -21,9 +21,9 @@ public class OptionalContentGroup {
 
     private var pdf: PDF
     private var ocgNumber: Int = -1
-    private var visible: Bool?
-    private var printable: Bool?
-    private var exportable: Bool?
+    private var visible = false
+    private var printable = false
+    private var exportable = false
     private var components = [Drawable]()
 
     /// Creates an optional content group, also called a layer.
@@ -85,17 +85,17 @@ public class OptionalContentGroup {
             pdf.append(pdf.toHexString(name!))
             pdf.append(">\n")
             pdf.append("/Usage <<\n")
-            if visible != nil {
+            if visible {
                 pdf.append("/View << /ViewState /ON >>\n")
             } else {
                 pdf.append("/View << /ViewState /OFF >>\n")
             }
-            if printable != nil {
+            if printable {
                 pdf.append("/Print << /PrintState /ON >>\n")
             } else {
                 pdf.append("/Print << /PrintState /OFF >>\n")
             }
-            if exportable != nil {
+            if exportable {
                 pdf.append("/Export << /ExportState /ON >>\n")
             } else {
                 pdf.append("/Export << /ExportState /OFF >>\n")
