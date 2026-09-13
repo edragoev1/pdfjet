@@ -379,9 +379,13 @@ renames included (the Week 1 decision), so every item is a blocker.
 - ⬜ **B** Found while fixing the drift above: Java and C# `Cell`, `TextBox`,
       `Point`, `TextBlock` and `State` colour getters return the internal
       array; C# `BigTable` reads files with a reader that detects UTF-16 and
-      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; Swift
-      `Content.ofTextFile` throws on bytes that are not UTF-8, where the
-      other ports read U+FFFD.
+      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; Java and C#
+      `Content.ofTextFile` hide a missing file behind an exception thrown
+      in `finally`, as `ofBinaryFile` did; a UTF-8 encoded surrogate (ED A0
+      80) reads as one U+FFFD in Java and three in Swift, which is what
+      Unicode recommends. Needs a decision: Swift
+      `BufferedOutputStream.flush` prints a write error and carries on;
+      reporting it means Swift `PDF.complete()` throws, as Java's does.
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
@@ -757,6 +761,22 @@ renames included (the Week 1 decision), so every item is a blocker.
       as in the other ports; Java and C# `Page` and `TextLine` colour getters
       return copies, and their array setters copy the caller's array; Go
       `Page.GetContent` and C# `Encryption.GetKey` return copies.
+      Errors: Swift `PNGImage`, `BMPImage` and `OTF` throw on invalid data
+      instead of printing a message or crashing, and a top-down BMP reads;
+      Swift stops with an error on QR data that does not fit, an invalid
+      Code 39 character, an unknown barcode type, `Stamp.drawText` without
+      a font or text and `Form.drawOn(nil)`; Go `Barcode.DrawOn` panics on an
+      unknown barcode type instead of returning (0, 0); C# throws its own
+      message for an invalid Code 39 character and throws on a truncated
+      font stream; Swift `SVGImage` throws on an invalid colour instead of
+      drawing it transparent, and its `init(stream:)` and
+      `init?(fileAtPath:)` are `throws`; `Content.ofBinaryFile` reports a
+      missing file in Java, C# and Swift; Swift `BigTable.complete()`
+      reports drawing errors and keeps lines that are not UTF-8; Swift
+      `Table.drawOn(pdf, &pages, pageSize)` returns nil, not a crash, when
+      the table is already drawn, and returns `[Float]?`; Swift
+      `Content.ofTextFile` reads invalid UTF-8 as U+FFFD instead of
+      throwing.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
