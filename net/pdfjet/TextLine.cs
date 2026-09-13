@@ -467,6 +467,35 @@ public class TextLine : IDrawable {
         return this.y;
     }
 
+    // Returns a new text line with the text and every setting of this text line,
+    // for a part of its text wrapped onto a line of its own. An alternate
+    // description that was set is kept; otherwise the new text is its own.
+    internal TextLine CopyWithText(String text) {
+        TextLine textLine = new TextLine(font, text);
+        textLine.fallbackFont = fallbackFont;
+        textLine.fontSize = fontSize;
+        textLine.underline = underline;
+        textLine.strikeout = strikeout;
+        textLine.degrees = degrees;
+        textLine.textColor = textColor;
+        textLine.lineColor = lineColor;
+        textLine.colorMap = colorMap;
+        textLine.textEffect = textEffect;
+        textLine.verticalOffset = verticalOffset;
+        textLine.explicitOffset = explicitOffset;
+        textLine.uri = uri;
+        textLine.key = key;
+        textLine.language = language;
+        if (altDescription != null && altDescription != this.text) {
+            textLine.altDescription = altDescription;
+        }
+        textLine.uriLanguage = uriLanguage;
+        textLine.uriActualText = uriActualText;
+        textLine.uriAltDescription = uriAltDescription;
+        textLine.structureType = structureType;
+        return textLine;
+    }
+
     /// <summary>
     /// Draws this text line on the specified page.
     /// </summary>

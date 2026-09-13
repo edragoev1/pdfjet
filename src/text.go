@@ -160,20 +160,10 @@ func (text *Text) drawTextLine(page *Page, x, y float32, textLine *TextLine) []f
 }
 
 // drawLine draws one wrapped line of the text line at the current location,
-// with the text line's font, colors, decorations, vertical offset and link, as
-// TextColumn does.
+// with every setting of the text line, including its vertical offset and link,
+// as TextColumn does.
 func (text *Text) drawLine(page *Page, textLine *TextLine, str string) {
-	line := NewTextLine(textLine.font, str)
-	line.SetFallbackFont(textLine.GetFallbackFont())
-	line.SetFontSize(textLine.GetFontSize())
-	line.SetTextColorRGB(textLine.GetTextColor())
-	line.SetColorMap(textLine.GetColorMap())
-	line.SetUnderline(textLine.GetUnderline())
-	line.SetStrikeout(textLine.GetStrikeout())
-	line.SetLanguage(textLine.GetLanguage())
-	line.SetVerticalOffset(textLine.GetVerticalOffset())
-	line.SetURIAction(textLine.GetURIAction())
-	line.SetGoToAction(textLine.GetGoToAction())
+	line := textLine.copyWithText(str)
 	line.SetLocation(text.xText, text.yText)
 	line.DrawOn(page)
 }

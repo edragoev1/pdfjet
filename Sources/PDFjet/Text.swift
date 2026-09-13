@@ -170,22 +170,10 @@ public class Text : Drawable {
     }
 
     // Draws one wrapped line of the text line at the current location, with
-    // the text line's font, colors, decorations, vertical offset and link, as
-    // TextColumn does.
+    // every setting of the text line, including its vertical offset and link,
+    // as TextColumn does.
     private func drawLine(_ page: Page?, _ textLine: TextLine, _ str: String) {
-        TextLine(textLine.font!, str)
-                .setFallbackFont(textLine.getFallbackFont())
-                .setFontSize(textLine.getFontSize())
-                .setTextColor(textLine.getTextColor())
-                .setColorMap(textLine.getColorMap())
-                .setUnderline(textLine.getUnderline())
-                .setStrikeout(textLine.getStrikeout())
-                .setLanguage(textLine.getLanguage())
-                .setVerticalOffset(textLine.getVerticalOffset())
-                .setURIAction(textLine.getURIAction())
-                .setGoToAction(textLine.getGoToAction())
-                .setLocation(xText, yText)
-                .drawOn(page)
+        textLine.copyWithText(str).setLocation(xText, yText).drawOn(page)
     }
 
     // Splits CJK text, which has no spaces between its words, into tokens that

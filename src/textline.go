@@ -374,6 +374,35 @@ func (textLine *TextLine) GetColorMap() map[string]int32 {
 	return textLine.colorMap
 }
 
+// copyWithText returns a new text line with the text and every setting of this
+// text line, for a part of its text wrapped onto a line of its own. An
+// alternate description that was set is kept; otherwise the new text is its own.
+func (textLine *TextLine) copyWithText(text string) *TextLine {
+	line := NewTextLine(textLine.font, text)
+	line.fallbackFont = textLine.fallbackFont
+	line.fontSize = textLine.fontSize
+	line.underline = textLine.underline
+	line.strikeout = textLine.strikeout
+	line.degrees = textLine.degrees
+	line.textColor = textLine.textColor
+	line.lineColor = textLine.lineColor
+	line.colorMap = textLine.colorMap
+	line.textEffect = textLine.textEffect
+	line.verticalOffset = textLine.verticalOffset
+	line.explicitOffset = textLine.explicitOffset
+	line.uri = textLine.uri
+	line.key = textLine.key
+	line.language = textLine.language
+	if textLine.altDescription != textLine.text {
+		line.altDescription = textLine.altDescription
+	}
+	line.uriLanguage = textLine.uriLanguage
+	line.uriActualText = textLine.uriActualText
+	line.uriAltDescription = textLine.uriAltDescription
+	line.structureType = textLine.structureType
+	return line
+}
+
 // DrawOn draws this text line on the specified page and returns the x and y
 // coordinates of its bottom right corner. It draws nothing when the page is
 // nil or the text is empty.

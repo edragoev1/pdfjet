@@ -214,15 +214,7 @@ public class TextColumn : Drawable {
         for line in paragraph.lines {
             var text: TextLine? = nil
             for token in (line.text ?? "").splitOnWhitespace() {
-                let textLine = TextLine(line.font!, token + Single.space)
-                textLine.setFallbackFont(line.getFallbackFont())
-                textLine.setFontSize(line.getFontSize())
-                textLine.setTextColor(line.getTextColor())
-                textLine.setUnderline(line.getUnderline())
-                textLine.setStrikeout(line.getStrikeout())
-                textLine.setVerticalOffset(line.getVerticalOffset())
-                textLine.setURIAction(line.getURIAction())
-                textLine.setGoToAction(line.getGoToAction())
+                let textLine = line.copyWithText(token + Single.space)
                 text = textLine
                 runLength += textLine.getWidth()
                 if runLength < self.w {

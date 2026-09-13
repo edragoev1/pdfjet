@@ -227,15 +227,7 @@ public class TextColumn : IDrawable {
             String[] tokens = Util.SplitOnWhitespace(line.text ?? "");
             TextLine text = null;
             foreach (String token in tokens) {
-                text = new TextLine(line.font, token + Single.space);
-                text.SetFallbackFont(line.GetFallbackFont());
-                text.SetFontSize(line.GetFontSize());
-                text.SetTextColor(line.GetTextColor());
-                text.SetUnderline(line.GetUnderline());
-                text.SetStrikeout(line.GetStrikeout());
-                text.SetVerticalOffset(line.GetVerticalOffset());
-                text.SetURIAction(line.GetURIAction());
-                text.SetGoToAction(line.GetGoToAction());
+                text = line.CopyWithText(token + Single.space);
                 runLength += text.GetWidth();
                 if (runLength < this.w) {
                     list.Add(text);

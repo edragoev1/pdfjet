@@ -305,22 +305,10 @@ public class TextFrame : Drawable {
         return String(String.UnicodeScalarView(scalars[0..<end]))
     }
 
-    // Draws the string at the current text position, with the text line's font,
-    // colors, decorations, vertical offset and link, as Text does.
+    // Draws the string at the current text position, with every setting of the
+    // text line, including its vertical offset and link, as Text does.
     private func drawLine(_ page: Page?, _ textLine: TextLine, _ str: String) {
-        TextLine(textLine.font!, str)
-                .setFallbackFont(textLine.getFallbackFont())
-                .setFontSize(textLine.getFontSize())
-                .setTextColor(textLine.getTextColor())
-                .setColorMap(textLine.getColorMap())
-                .setUnderline(textLine.getUnderline())
-                .setStrikeout(textLine.getStrikeout())
-                .setLanguage(textLine.getLanguage())
-                .setVerticalOffset(textLine.getVerticalOffset())
-                .setURIAction(textLine.getURIAction())
-                .setGoToAction(textLine.getGoToAction())
-                .setLocation(xText, yText)
-                .drawOn(page)
+        textLine.copyWithText(str).setLocation(xText, yText).drawOn(page)
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

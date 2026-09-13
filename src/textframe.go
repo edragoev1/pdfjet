@@ -306,20 +306,10 @@ func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 	return token[:end]
 }
 
-// drawLine draws the string at the current text position, with the text line's
-// font, colors, decorations, vertical offset and link, as Text does.
+// drawLine draws the string at the current text position, with every setting of
+// the text line, including its vertical offset and link, as Text does.
 func (tf *TextFrame) drawLine(page *Page, textLine *TextLine, str string) {
-	line := NewTextLine(textLine.font, str)
-	line.SetFallbackFont(textLine.GetFallbackFont())
-	line.SetFontSize(textLine.GetFontSize())
-	line.SetTextColorRGB(textLine.GetTextColor())
-	line.SetColorMap(textLine.GetColorMap())
-	line.SetUnderline(textLine.GetUnderline())
-	line.SetStrikeout(textLine.GetStrikeout())
-	line.SetLanguage(textLine.GetLanguage())
-	line.SetVerticalOffset(textLine.GetVerticalOffset())
-	line.SetURIAction(textLine.GetURIAction())
-	line.SetGoToAction(textLine.GetGoToAction())
+	line := textLine.copyWithText(str)
 	line.SetLocation(tf.xText, tf.yText)
 	line.DrawOn(page)
 }

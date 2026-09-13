@@ -225,22 +225,10 @@ public class Text implements Drawable {
         return new float[] {xText + font.stringWidth(fallbackFont, fontSize, buf.toString()), yText};
     }
 
-    // Draws the string at the current text position, with the attributes of the
+    // Draws the string at the current text position, with every setting of the
     // text line, including its vertical offset and its link, as TextColumn does.
     private void drawLine(Page page, TextLine textLine, String str) throws Exception {
-        new TextLine(textLine.font, str)
-                .setFallbackFont(textLine.getFallbackFont())
-                .setFontSize(textLine.getFontSize())
-                .setTextColor(textLine.getTextColor())
-                .setColorMap(textLine.getColorMap())
-                .setUnderline(textLine.getUnderline())
-                .setStrikeout(textLine.getStrikeout())
-                .setLanguage(textLine.getLanguage())
-                .setVerticalOffset(textLine.getVerticalOffset())
-                .setURIAction(textLine.getURIAction())
-                .setGoToAction(textLine.getGoToAction())
-                .setLocation(xText, yText)
-                .drawOn(page);
+        textLine.copyWithText(str).setLocation(xText, yText).drawOn(page);
     }
 
     private String[] tokenizeCJK(TextLine textLine, float textWidth) {
