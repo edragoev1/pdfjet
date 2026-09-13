@@ -67,7 +67,7 @@ public class Example_07 {
         textLine.setLocation(xPos, 34.0)
         textLine.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_07.swift
 

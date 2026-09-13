@@ -59,7 +59,7 @@ public class Example_11 {
         code.setFont(f1)
         code.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_11.swift
 

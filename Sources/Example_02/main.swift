@@ -53,7 +53,7 @@ public class Example_02 {
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_02.swift
 

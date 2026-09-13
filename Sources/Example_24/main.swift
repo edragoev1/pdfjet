@@ -33,7 +33,7 @@ public class Example_24 {
         point = textLine3.drawOn(page)
         image3.setLocation(50.0, point[1] + 5.0).scaleBy(0.75).drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_24.swift
 

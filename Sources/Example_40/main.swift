@@ -30,7 +30,7 @@ public class Example_40 {
         chart.setXYChart(false)
         chart.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     public func getData() throws -> [[Point]] {

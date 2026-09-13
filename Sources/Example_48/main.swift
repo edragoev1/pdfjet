@@ -97,7 +97,7 @@ public class Example_48 {
         toc.addBookmark(page, title)
         title.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
 }   // End of Example_48.swift

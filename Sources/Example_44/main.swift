@@ -33,7 +33,7 @@ public class Example_44 {
         column.addChineseParagraph(f2, chinese)
         column.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_44.swift
 

@@ -62,7 +62,7 @@ public class Example_01 {
         textBlock.drawOn(page)                  // Draw the Bulgarian text
 
         // Finalize the PDF creation
-        pdf.complete()
+        try pdf.complete()
     }
 }
 

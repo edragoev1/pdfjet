@@ -5,7 +5,7 @@ import PDFjet
  * Example_21.swift
  */
 public class Example_21 {
-    public init() {
+    public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_21.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA)
@@ -48,11 +48,11 @@ public class Example_21 {
         qr.setModuleLength(3.0)
         qr.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_21.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_21()
+_ = try Example_21()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_21", time0, time1)

@@ -51,7 +51,7 @@ public class Example_14 {
         caption.setLocation(300.0, xy[1] + 20.0)
         caption.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_14.swift
 

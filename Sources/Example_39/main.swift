@@ -28,7 +28,7 @@ public class Example_39 {
         chart.setDrawYAxisLabels(false)
         chart.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     public func getData() -> [[Point]] {

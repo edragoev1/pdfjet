@@ -5,7 +5,7 @@ import PDFjet
  * Example_45.swift
  */
 public class Example_45 {
-    public init() {
+    public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_45.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
@@ -40,11 +40,11 @@ public class Example_45 {
                 .setFormWidth(w)
                 .drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_45.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_45()
+_ = try Example_45()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_45", time0, time1)

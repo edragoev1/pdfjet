@@ -59,7 +59,7 @@ public class Example_49 {
         textLine.setUnderline(true)
         textLine.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_49.swift
 

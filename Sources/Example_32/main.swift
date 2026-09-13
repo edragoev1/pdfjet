@@ -30,7 +30,7 @@ public class Example_32 {
             }
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_32.swift
 

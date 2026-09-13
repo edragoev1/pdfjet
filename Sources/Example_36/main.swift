@@ -35,7 +35,7 @@ public class Example_36 {
         pdf.addPage(page2)
         pdf.addPage(page1)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_36.swift
 

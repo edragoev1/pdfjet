@@ -51,7 +51,7 @@ public class Example_30 {
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_30.swift
 

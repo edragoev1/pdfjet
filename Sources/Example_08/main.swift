@@ -53,7 +53,7 @@ public class Example_08 {
             pdf.addPage(page)
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_08.swift
 

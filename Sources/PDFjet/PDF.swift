@@ -1122,7 +1122,9 @@ public class PDF {
     /// Completes the construction of the PDF and writes it to the output stream.
     /// The output stream is then automatically closed.
     ///
-    public func complete() {
+    /// - Throws: an error if the PDF cannot be written to the output stream.
+    ///
+    public func complete() throws {
         if prevPage != nil {
             addPageContent(prevPage!)
         }
@@ -1212,7 +1214,7 @@ public class PDF {
         append(Token.newline)
         append("%%EOF\n")
 
-        os!.close()
+        try os!.close()
     }
 
     ///

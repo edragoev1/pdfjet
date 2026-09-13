@@ -126,7 +126,7 @@ public class Example_35 {
         container5.setRotation(-90)
         _ = container5.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_35.swift
 

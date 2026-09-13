@@ -443,7 +443,7 @@ public class Example_17 {
         image55.setLocation(100.0, 500.0)
         image55.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_17.swift
 

@@ -62,7 +62,7 @@ public class Example_46 {
         group.add(line)
         group.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_46.swift
 

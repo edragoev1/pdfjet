@@ -104,7 +104,7 @@ public class Example_13 {
             pdf.addPage(page)
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     public func blankOutColumn(_ table: Table, _ index: Int) {

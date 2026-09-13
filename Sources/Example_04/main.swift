@@ -76,7 +76,7 @@ public class Example_04 {
             y_pos += Float(25.0)
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_04.swift
 

@@ -89,7 +89,7 @@ public class Example_41 {
             }
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_41.swift
 

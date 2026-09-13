@@ -70,7 +70,7 @@ public class Example_22 {
         image.setGoToAction("dest#1")
         image.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_22.swift
 

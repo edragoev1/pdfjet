@@ -35,7 +35,7 @@ public class Example_09 {
         f2.setSize(7.0)
         try addTableToChart(page, chart, f1, f2)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     public func addTrendLine(_ chart: Chart) {

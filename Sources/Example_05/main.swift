@@ -5,7 +5,7 @@ import PDFjet
  * Example_05.swift
  */
 public class Example_05 {
-    public init() {
+    public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_05.pdf", append: false)!)
 
         let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
@@ -84,11 +84,11 @@ public class Example_05 {
                 // .setRotateDegreesCCW(45.0)
                 .drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_05.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = Example_05()
+_ = try Example_05()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 TextUtils.printDuration("Example_05", time0, time1)

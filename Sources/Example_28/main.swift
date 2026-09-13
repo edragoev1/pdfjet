@@ -52,7 +52,7 @@ public class Example_28 {
         drawLineOfText(page, f1, x, y, 0x26E2, 0x26FE)
         y += dy
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     private func drawLineOfText(

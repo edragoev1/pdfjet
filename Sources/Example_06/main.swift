@@ -83,7 +83,7 @@ public class Example_06 {
 
         _ = container.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_06.swift
 

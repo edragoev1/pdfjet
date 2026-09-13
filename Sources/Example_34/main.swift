@@ -65,7 +65,7 @@ public class Example_34 {
             pdf.addPage(page)
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     public func getData(

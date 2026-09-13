@@ -26,7 +26,7 @@ public class Example_25 {
         chart.addSlice(Slice(36.0,  0xCAAA2F,  "Lemons",   ""))   // dark gold
         chart.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_25.swift
 

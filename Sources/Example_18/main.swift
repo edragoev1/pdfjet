@@ -45,7 +45,7 @@ public class Example_18 {
         }
         pdf.addPages(pages)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_18.swift
 

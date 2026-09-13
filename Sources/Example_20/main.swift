@@ -94,7 +94,7 @@ public class Example_20 {
         qr.setLocation(50.0, 200.0)
         qr.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_20.swift
 

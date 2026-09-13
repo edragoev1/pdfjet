@@ -58,7 +58,7 @@ public class Example_33 {
         image.setLocation(xy[0], 670.0)
         image.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     private func loadSVG(_ path: String) throws -> SVGImage {

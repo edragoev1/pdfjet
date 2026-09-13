@@ -16,7 +16,7 @@ public class Example_38 {
         table.setLocation(50.0, 50.0)
         table.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     /**

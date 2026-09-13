@@ -38,7 +38,7 @@ public class Example_29 {
         table.setLocation(50.0, 50.0)
         table.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_29.swift
 

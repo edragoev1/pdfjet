@@ -28,7 +28,7 @@ public class Example_12 {
         textLine.setLocation(100.0, 40.0)
         textLine.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }
 

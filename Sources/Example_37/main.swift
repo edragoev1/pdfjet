@@ -36,7 +36,7 @@ public class Example_37 {
         }
         pdf.addObjects(&objects)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_37.swift
 

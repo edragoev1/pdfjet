@@ -154,7 +154,7 @@ public class Example_50 {
         page.complete(&objects)
         pdf.addObjects(&objects)
 
-        pdf.complete()
+        try pdf.complete()
     }
 
     private func stripSpacesAndDashes(_ str: String) -> String {

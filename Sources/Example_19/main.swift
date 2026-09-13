@@ -53,7 +53,7 @@ public class Example_19 {
         rect.setBorderColor(Color.black)
         rect.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_19.swift
 

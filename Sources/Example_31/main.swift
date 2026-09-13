@@ -52,7 +52,7 @@ public class Example_31 {
         page.setBrushColor(0x00003865)
         page.fillRect(50, 550, 200.0, 200.0)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_31.swift
 

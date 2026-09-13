@@ -150,7 +150,7 @@ public class Example_27 {
         textBlock.setLanguage("fa")
         textBlock.drawOn(page)
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_27.swift
 

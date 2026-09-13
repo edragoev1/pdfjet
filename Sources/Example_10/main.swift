@@ -129,7 +129,7 @@ public class Example_10 {
             line.drawOn(page)
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_10.swift
 

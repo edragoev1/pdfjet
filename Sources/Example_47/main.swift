@@ -52,7 +52,7 @@ public class Example_47 {
             y = 50.0
         }
 
-        pdf.complete()
+        try pdf.complete()
     }
 }   // End of Example_47.swift
 
