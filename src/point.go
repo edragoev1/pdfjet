@@ -187,9 +187,9 @@ func (point *Point) GetStrokeColor() [3]float32 {
 	return point.strokeColor
 }
 
-// SetDrawPath sets this point as the start of a path that will be drawn on the chart.
-func (point *Point) SetDrawPath() *Point {
-	point.drawPath = true
+// SetDrawPath sets whether this point starts a path that is drawn on the chart.
+func (point *Point) SetDrawPath(drawPath bool) *Point {
+	point.drawPath = drawPath
 	return point
 }
 

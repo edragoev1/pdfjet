@@ -19,7 +19,7 @@ public class Example_34 {
 
         let table = Table()
         let tableData = try getData(
-                "data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2)
+                "data/world-communications.txt", "|", 2, f1, f2)
 
         var p1 = Point()
         p1.setShape(Point.CIRCLE)
@@ -27,7 +27,7 @@ public class Example_34 {
         p1.setStrokeColor(Color.darkolivegreen)
         p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/India")
-        tableData[4][3].setPoint(p1)
+        tableData[4][3].setMarker(p1)
 
         p1 = Point()
         p1.setShape(Point.DIAMOND)
@@ -35,7 +35,7 @@ public class Example_34 {
         p1.setStrokeColor(Color.blue)
         p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
-        tableData[5][3].setPoint(p1)
+        tableData[5][3].setMarker(p1)
 
         p1 = Point()
         p1.setShape(Point.STAR)
@@ -43,16 +43,16 @@ public class Example_34 {
         p1.setStrokeColor(Color.red)
         p1.setAlignment(Alignment.RIGHT)
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
-        tableData[6][3].setPoint(p1)
+        tableData[6][3].setMarker(p1)
 
-        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
+        table.setData(tableData, 2)
         table.setBottomMargin(15.0)
         table.setLocation(70.0, 30.0)
         table.setTextColorInRow(6, Color.blue)
         table.setTextColorInRow(39, Color.red)
         table.setFontInRow(26, f3)
         table.removeLineBetweenRows(0, 1)
-        table.setColumnWidths()
+        table.autoAdjustColumnWidths()
         table.setColumnWidth(0, 50.0)
         table.setColumnWidth(3, 80.0)
         table.rightAlignNumbers()

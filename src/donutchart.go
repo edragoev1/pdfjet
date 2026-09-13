@@ -48,10 +48,10 @@ func (dc *DonutChart) SetLocation(xc, yc float32) Drawable {
 	return dc
 }
 
-// SetR1AndR2 sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
-func (dc *DonutChart) SetR1AndR2(r1, r2 float32) *DonutChart {
-	dc.r1 = r1
-	dc.r2 = r2
+// SetRadii sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
+func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
+	dc.r1 = outerRadius
+	dc.r2 = innerRadius
 	return dc
 }
 

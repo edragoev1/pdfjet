@@ -37,7 +37,7 @@ public class TextLine implements Drawable {
     private float[] textColor = new float[] {0f, 0f, 0f};
     private float[] lineColor = new float[] {0f, 0f, 0f};
     private Map<String, Integer> colorMap = null;
-    private int textEffect = Effect.NORMAL;
+    private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
     private boolean explicitOffset = false;     // True after setVerticalOffset
 
@@ -473,30 +473,30 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the text effect. The offset of a superscript or subscript follows
+     * Sets the script position. The offset of a superscript or subscript follows
      * the font and font size of this text line when it is drawn.
      *
-     * @param textEffect Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
+     * @param scriptPosition ScriptPosition.NORMAL, ScriptPosition.SUBSCRIPT or ScriptPosition.SUPERSCRIPT.
      * @return this TextLine.
      */
-    public TextLine setTextEffect(int textEffect) {
-        this.textEffect = textEffect;
+    public TextLine setScriptPosition(ScriptPosition scriptPosition) {
+        this.scriptPosition = scriptPosition;
         this.explicitOffset = false;
         return this;
     }
 
     /**
-     * Returns the text effect.
+     * Returns the script position.
      *
-     * @return the text effect.
+     * @return the script position.
      */
-    public int getTextEffect() {
-        return textEffect;
+    public ScriptPosition getScriptPosition() {
+        return scriptPosition;
     }
 
     /**
      * Sets the vertical offset of the text, which replaces the offset of the
-     * text effect until setTextEffect is called again.
+     * script position until setScriptPosition is called again.
      *
      * @param verticalOffset the vertical offset.
      * @return this TextLine.
@@ -509,7 +509,7 @@ public class TextLine implements Drawable {
 
     /**
      * Returns the vertical text offset: the one set with setVerticalOffset, or
-     * that of the text effect at the font and font size of this text line.
+     * that of the script position at the font and font size of this text line.
      *
      * @return the vertical text offset.
      */
@@ -517,9 +517,9 @@ public class TextLine implements Drawable {
         if (explicitOffset) {
             return verticalOffset;
         }
-        if (textEffect == Effect.SUPERSCRIPT) {
+        if (scriptPosition == ScriptPosition.SUPERSCRIPT) {
             return -font.getBodyHeight(fontSize)/2f;
-        } else if (textEffect == Effect.SUBSCRIPT) {
+        } else if (scriptPosition == ScriptPosition.SUBSCRIPT) {
             return font.getBodyHeight(fontSize)/3f;
         }
         return 0f;
@@ -622,7 +622,7 @@ public class TextLine implements Drawable {
         textLine.textColor = textColor;
         textLine.lineColor = lineColor;
         textLine.colorMap = colorMap;
-        textLine.textEffect = textEffect;
+        textLine.scriptPosition = scriptPosition;
         textLine.verticalOffset = verticalOffset;
         textLine.explicitOffset = explicitOffset;
         textLine.uri = uri;
@@ -657,7 +657,7 @@ public class TextLine implements Drawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         String alt = text.equals(altDescription) ? null : altDescription;
-        page.addBMC(structureType, language, null, alt);
+        page.addBDC(structureType, language, null, alt);
         page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();
 
@@ -673,7 +673,7 @@ public class TextLine implements Drawable {
             double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + verticalOffset;
             double x2 = x + (lineLength * Math.cos(radians));
             double y2 = y - (lineLength * Math.sin(radians));
-            page.addBMC(structureType, language, null, "Underlined text: " + text);
+            page.addBDC(structureType, language, null, "Underlined text: " + text);
             page.moveTo(x + xAdjust, y + yAdjust);
             page.lineTo(x2 + xAdjust, y2 + yAdjust);
             page.strokePath();
@@ -691,7 +691,7 @@ public class TextLine implements Drawable {
             double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
-            page.addBMC(structureType, language, null, "Strikethrough text: " + text);
+            page.addBDC(structureType, language, null, "Strikethrough text: " + text);
             page.moveTo(x - xAdjust, y - yAdjust);
             page.lineTo(x2 - xAdjust, y2 - yAdjust);
             page.strokePath();

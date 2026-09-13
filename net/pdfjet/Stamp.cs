@@ -392,7 +392,7 @@ public class Stamp : IDrawable {
 
     /// <summary>Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.</summary>
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
 
         float drawX = this.x;

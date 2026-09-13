@@ -74,13 +74,13 @@ public class BaseAnnotation implements Drawable {
     }
 
     /**
-     * Sets the transparency of this annotation.
+     * Sets the opacity of this annotation.
      *
-     * @param transparency the transparency, from 0.0 to 1.0. The default is 1.0.
+     * @param opacity the opacity, from 0.0 (invisible) to 1.0 (opaque, the default).
      * @return this BaseAnnotation object.
      */
-    public BaseAnnotation setTransparency(float transparency) {
-        this.transparency = transparency;
+    public BaseAnnotation setOpacity(float opacity) {
+        this.transparency = opacity;
         return this;
     }
 

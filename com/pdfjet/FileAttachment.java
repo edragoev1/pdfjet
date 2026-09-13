@@ -67,7 +67,7 @@ public class FileAttachment implements Drawable {
      *
      * @return this FileAttachment object.
      */
-    public FileAttachment setIconPushPin() {
+    public FileAttachment setIconPushpin() {
         this.icon = "PushPin";
         return this;
     }
@@ -105,13 +105,13 @@ public class FileAttachment implements Drawable {
     }
 
     /**
-     * Sets the attachment description
+     * Sets the contents of this attachment, the text a viewer shows for it.
      *
-     * @param description the description for the attachment
+     * @param contents the contents of this attachment.
      * @return this FileAttachment object.
      */
-    public FileAttachment setDescription(String description) {
-        this.contents = description;
+    public FileAttachment setContents(String contents) {
+        this.contents = contents;
         return this;
     }
 

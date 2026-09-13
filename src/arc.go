@@ -177,7 +177,7 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
 	}
 
-	page.AddBMC("P", arc.language, arc.actualText, arc.altDescription)
+	page.AddBDC("P", arc.language, arc.actualText, arc.altDescription)
 
 	page.SaveGraphicsState()
 
@@ -185,7 +185,7 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	centerY := page.height - arc.cy
 
 	page.rotateAroundCenter(centerX, centerY, arc.rotateDegrees)
-	page.DrawArc(
+	page.AddArcToPath(
 		arc.cx,
 		arc.cy,
 		arc.rx,

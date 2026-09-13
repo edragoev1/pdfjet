@@ -21,9 +21,9 @@ public class Example_06 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(pdf, file1);
         attachment.SetLocation(100f, 600f);
-        attachment.SetIconPushPin();
+        attachment.SetIconPushpin();
         attachment.SetTitle("Attached File: " + file1.GetFileName());
-        attachment.SetDescription(
+        attachment.SetContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
@@ -31,7 +31,7 @@ public class Example_06 {
         attachment.SetLocation(200f, 600f);
         attachment.SetIconPaperclip();
         attachment.SetTitle("Attached File: " + file2.GetFileName());
-        attachment.SetDescription(
+        attachment.SetContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
@@ -61,7 +61,7 @@ public class Example_06 {
         polygonAnnotation.SetLocation(0f, 0f);
         polygonAnnotation.SetVertices(new float[] {0f, 0f, 50f, 0f, 0f, 50f, 0f, 0f});
         polygonAnnotation.SetFillColor(Color.red);
-        polygonAnnotation.SetTransparency(0.5f);
+        polygonAnnotation.SetOpacity(0.5f);
         polygonAnnotation.SetTitle("Polygon");
         polygonAnnotation.SetContents("Polygon Annotation");
         container.Add(polygonAnnotation);
@@ -70,7 +70,7 @@ public class Example_06 {
         squareAnnotation.SetLocation(25f, 0f);
         squareAnnotation.SetSize(50f, 50f);
         squareAnnotation.SetFillColor(new float[] {0f, 0f, 1f});
-        squareAnnotation.SetTransparency(0.5f);
+        squareAnnotation.SetOpacity(0.5f);
         squareAnnotation.SetTitle("Square");
         squareAnnotation.SetContents("Square Annotation");
         container.Add(squareAnnotation);
@@ -79,7 +79,7 @@ public class Example_06 {
         circleAnnotation.SetLocation(50f, 0f);
         circleAnnotation.SetSize(50f, 50f);
         circleAnnotation.SetFillColor(new float[] {0f, 0f, 1f});
-        circleAnnotation.SetTransparency(0.5f);
+        circleAnnotation.SetOpacity(0.5f);
         circleAnnotation.SetTitle("Circle");
         circleAnnotation.SetContents("Circle Annotation");
         container.Add(circleAnnotation);

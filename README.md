@@ -303,7 +303,7 @@ arguments. Java and C# have `float` and `double` overloads of the setters,
 Swift has one form with default arguments where Java has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize`,
-`DrawStringUsingColor` (an `int32` color), `DrawStringUsingColorMap` (a
+`DrawStringUsingColor` (an `int32` color), `DrawStringUsingHighlightColors` (a
 `[3]float32` color) and `DrawStringUsingSpacing` for the `drawString`
 overloads, `StringWidthFB` for `stringWidth` with a fallback font,
 `DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
@@ -321,7 +321,7 @@ the `Font` constructor. Where the other ports have an overload with fewer
 arguments, Go has the full form only: `NewCell(font, text)`,
 `NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
-`Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
+`Table.SetData(data, headerRows)` and `Page.AddBDC` with the language.
 `content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and
 `ReadWithPassword` take the whole PDF as a `[]byte` where the other ports read
 it from a stream. Java's `PDF` keeps
@@ -335,7 +335,7 @@ public.
 Java, C# and Swift keep constants in classes; Go keeps them in packages:
 `color.Blue` for `Color.blue`, `shape.Circle` for `Point.CIRCLE`,
 `structtype.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
-`direction`, `effect`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
+`direction`, `scriptposition`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
 `pathoperator`, `imagetype`, `mark` and the font families
 (`IBMPlexSans.Regular`). The constants of a package have its type, as
 `alignment.Alignment` and `pathoperator.PathOperator`, so a plain `int` or
@@ -346,8 +346,7 @@ with the metrics. The page sizes are functions too, `letter.Portrait()` for
 four ports a page size is a `PageSize` that cannot be changed, with `getWidth`
 and `getHeight`; Go's is `pagesize.PageSize`, made with `pagesize.NewPageSize`
 for a size that has no package. The QR code error correction levels are
-`qrcode.ErrorCorrectionLevelL` and so on, and `Table.WITH_2_HEADER_ROWS` is
-`pdfjet.TableWith2HeaderRows`. Where Java, C# and Swift have public fields
+`qrcode.ErrorCorrectionLevelL` and so on. Where Java, C# and Swift have public fields
 (`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
 (`GetX1`). `Permissions` prints through `String()` in Go and `description`
 in Swift where Java and C# have `toString`; C# also keeps its `Access` and

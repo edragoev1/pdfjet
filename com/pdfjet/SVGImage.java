@@ -293,7 +293,7 @@ public class SVGImage implements Drawable {
      * @return the array containing the x and y of the SVG image.
      */
     public float[] drawOn(Page page) {
-        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.P, language, actualText, altDescription);
         for (SVGPath path : paths) {
             drawPath(path, page);
         }

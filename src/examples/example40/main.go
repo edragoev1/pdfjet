@@ -31,7 +31,7 @@ func Example40() {
 	chart.SetTitle("Vertical Bar Chart Example")
 	chart.SetXAxisTitle("Bar Chart")
 	chart.SetYAxisTitle("Vertical")
-	chart.SetDrawYAxisLines(false)
+	chart.SetDrawVGridLines(false)
 	chart.SetDrawXAxisLabels(false)
 	chart.SetXYChart(false)
 
@@ -109,7 +109,7 @@ func AddVerticalBar(
 	path1 := make([]*pdfjet.Point, 0)
 
 	point := pdfjet.NewPoint(x, 0.0)
-	point.SetDrawPath()
+	point.SetDrawPath(true)
 	point.SetShape(shape.Invisible)
 	point.SetStrokeWidth(w)
 	point.SetStrokeColor(color)

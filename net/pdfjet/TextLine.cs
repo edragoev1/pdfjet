@@ -27,7 +27,7 @@ public class TextLine : IDrawable {
     private float[] textColor = new float[] {0f, 0f, 0f};
     private float[] lineColor = new float[] {0f, 0f, 0f};
     private Dictionary<String, int> colorMap = null;
-    private int textEffect = Effect.NORMAL;
+    private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
     private bool explicitOffset = false;        // True after SetVerticalOffset
 
@@ -367,28 +367,28 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Sets the text effect. The offset of a superscript or subscript follows
+    /// Sets the script position. The offset of a superscript or subscript follows
     /// the font and font size of this text line when it is drawn.
     /// </summary>
-    /// <param name="textEffect">Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.</param>
+    /// <param name="scriptPosition">ScriptPosition.NORMAL, ScriptPosition.SUBSCRIPT or ScriptPosition.SUPERSCRIPT.</param>
     /// <returns>this TextLine.</returns>
-    public TextLine SetTextEffect(int textEffect) {
-        this.textEffect = textEffect;
+    public TextLine SetScriptPosition(ScriptPosition scriptPosition) {
+        this.scriptPosition = scriptPosition;
         this.explicitOffset = false;
         return this;
     }
 
     /// <summary>
-    /// Returns the text effect.
+    /// Returns the script position.
     /// </summary>
-    /// <returns>the text effect.</returns>
-    public int GetTextEffect() {
-        return textEffect;
+    /// <returns>the script position.</returns>
+    public ScriptPosition GetScriptPosition() {
+        return scriptPosition;
     }
 
     /// <summary>
     /// Sets the vertical offset of the text, which replaces the offset of the
-    /// text effect until SetTextEffect is called again.
+    /// script position until SetScriptPosition is called again.
     /// </summary>
     /// <param name="verticalOffset">the vertical offset.</param>
     /// <returns>this TextLine.</returns>
@@ -400,16 +400,16 @@ public class TextLine : IDrawable {
 
     /// <summary>
     /// Returns the vertical text offset: the one set with SetVerticalOffset, or
-    /// that of the text effect at the font and font size of this text line.
+    /// that of the script position at the font and font size of this text line.
     /// </summary>
     /// <returns>the vertical text offset.</returns>
     public float GetVerticalOffset() {
         if (explicitOffset) {
             return verticalOffset;
         }
-        if (textEffect == Effect.SUPERSCRIPT) {
+        if (scriptPosition == ScriptPosition.SUPERSCRIPT) {
             return -font.GetBodyHeight(fontSize)/2f;
-        } else if (textEffect == Effect.SUBSCRIPT) {
+        } else if (scriptPosition == ScriptPosition.SUBSCRIPT) {
             return font.GetBodyHeight(fontSize)/3f;
         }
         return 0f;
@@ -484,7 +484,7 @@ public class TextLine : IDrawable {
         textLine.textColor = textColor;
         textLine.lineColor = lineColor;
         textLine.colorMap = colorMap;
-        textLine.textEffect = textEffect;
+        textLine.scriptPosition = scriptPosition;
         textLine.verticalOffset = verticalOffset;
         textLine.explicitOffset = explicitOffset;
         textLine.uri = uri;
@@ -517,7 +517,7 @@ public class TextLine : IDrawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         String alt = text.Equals(altDescription) ? null : altDescription;
-        page.AddBMC(structureType, language, null, alt);
+        page.AddBDC(structureType, language, null, alt);
         page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();
 
@@ -533,7 +533,7 @@ public class TextLine : IDrawable {
             double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(structureType, language, null, "Underlined text: " + text);
+            page.AddBDC(structureType, language, null, "Underlined text: " + text);
             page.MoveTo(x + xAdjust, y + yAdjust);
             page.LineTo(x2 + xAdjust, y2 + yAdjust);
             page.StrokePath();
@@ -551,7 +551,7 @@ public class TextLine : IDrawable {
             double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBMC(structureType, language, null, "Strikethrough text: " + text);
+            page.AddBDC(structureType, language, null, "Strikethrough text: " + text);
             page.MoveTo(x - xAdjust, y - yAdjust);
             page.LineTo(x2 - xAdjust, y2 - yAdjust);
             page.StrokePath();

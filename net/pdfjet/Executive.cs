@@ -9,7 +9,7 @@ using System;
 namespace PDFjet.NET {
 /// <summary>
 /// Used to specify PDF page with size <strong>Executive</strong>.
-/// For more information about the page size classes - A3, A4, A5, B5, Executive, Letter, Legal and Tabloid - see the Page class.
+/// For more information about the page size classes - A3, A4, A5, B5, JISB5, Executive, Letter, Legal and Tabloid - see the Page class.
 /// </summary>
 public class Executive {
     /// <summary>The executive page size in portrait orientation.</summary>

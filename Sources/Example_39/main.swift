@@ -36,7 +36,7 @@ public class Example_39 {
         var path1 = [Point]()
 
         var point = Point()
-        point.setDrawPath()
+        point.setDrawPath(true)
         point.setX(0.0)
         point.setY(45.0)
         point.setShape(Point.INVISIBLE)
@@ -54,7 +54,7 @@ public class Example_39 {
 
         var path2 = [Point]()
         point = Point()
-        point.setDrawPath()
+        point.setDrawPath(true)
         point.setX(0.0)
         point.setY(35.0)
         point.setShape(Point.INVISIBLE)
@@ -72,7 +72,7 @@ public class Example_39 {
 
         var path3 = [Point]()
         point = Point()
-        point.setDrawPath()
+        point.setDrawPath(true)
         point.setX(0.0)
         point.setY(25.0)
         point.setShape(Point.INVISIBLE)
@@ -90,7 +90,7 @@ public class Example_39 {
 
         var path4 = [Point]()
         point = Point()
-        point.setDrawPath()
+        point.setDrawPath(true)
         point.setX(0.0)
         point.setY(15.0)
         point.setShape(Point.INVISIBLE)

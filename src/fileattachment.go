@@ -37,8 +37,8 @@ func (attachment *FileAttachment) SetLocation(x, y float32) Drawable {
 	return attachment
 }
 
-// SetIconPushPin sets the push pin icon.
-func (attachment *FileAttachment) SetIconPushPin() *FileAttachment {
+// SetIconPushpin sets the pushpin icon.
+func (attachment *FileAttachment) SetIconPushpin() *FileAttachment {
 	attachment.icon = "PushPin"
 	return attachment
 }
@@ -61,9 +61,9 @@ func (attachment *FileAttachment) SetTitle(title string) *FileAttachment {
 	return attachment
 }
 
-// SetDescription sets the description.
-func (attachment *FileAttachment) SetDescription(description string) *FileAttachment {
-	attachment.contents = description
+// SetContents sets the contents of this attachment, the text a viewer shows for it.
+func (attachment *FileAttachment) SetContents(contents string) *FileAttachment {
+	attachment.contents = contents
 	return attachment
 }
 

@@ -27,20 +27,6 @@ type Table struct {
 	bottomMargin       float32
 }
 
-// Constants
-const (
-	TableWith0HeaderRows = iota
-	TableWith1HeaderRow
-	TableWith2HeaderRows
-	TableWith3HeaderRows
-	TableWith4HeaderRows
-	TableWith5HeaderRows
-	TableWith6HeaderRows
-	TableWith7HeaderRows
-	TableWith8HeaderRows
-	TableWith9HeaderRows
-)
-
 // NewTable creates table objects.
 func NewTable() *Table {
 	table := new(Table)
@@ -560,9 +546,9 @@ func (table *Table) setBottomBorderOnLastRow() {
 	}
 }
 
-// SetColumnWidths auto adjusts the widths of all columns so that they are just wide enough to
+// AutoAdjustColumnWidths adjusts the widths of all columns so that they are just wide enough to
 // hold the text without truncation.
-func (table *Table) SetColumnWidths() *Table {
+func (table *Table) AutoAdjustColumnWidths() *Table {
 	maxColWidths := make([]float32, len(table.tableData[0]))
 	for _, row := range table.tableData {
 		for i := 0; i < len(row); i++ {

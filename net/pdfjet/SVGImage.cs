@@ -286,7 +286,7 @@ public class SVGImage : IDrawable {
 
     /// <summary>Draws this SVG image on the specified page.</summary>
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
         foreach (SVGPath path in paths) {
             drawPath(path, page);
         }

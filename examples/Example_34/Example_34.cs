@@ -23,7 +23,7 @@ public class Example_34 {
 
         Table table = new Table();
         List<List<Cell>> tableData = GetData(
-                "data/world-communications.txt", "|", Table.WITH_2_HEADER_ROWS, f1, f2);
+                "data/world-communications.txt", "|", 2, f1, f2);
 
         Point p1 = new Point();
         p1.SetShape(Point.CIRCLE);
@@ -31,7 +31,7 @@ public class Example_34 {
         p1.SetStrokeColor(Color.darkolivegreen);
         p1.SetAlignment(Alignment.RIGHT);
         p1.SetURIAction("https://en.wikipedia.org/wiki/India");
-        tableData[4][3].SetPoint(p1);
+        tableData[4][3].SetMarker(p1);
 
         p1 = new Point();
         p1.SetShape(Point.DIAMOND);
@@ -39,7 +39,7 @@ public class Example_34 {
         p1.SetStrokeColor(Color.blue);
         p1.SetAlignment(Alignment.RIGHT);
         p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData[5][3].SetPoint(p1);
+        tableData[5][3].SetMarker(p1);
 
         p1 = new Point();
         p1.SetShape(Point.STAR);
@@ -47,16 +47,16 @@ public class Example_34 {
         p1.SetStrokeColor(Color.red);
         p1.SetAlignment(Alignment.RIGHT);
         p1.SetURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData[6][3].SetPoint(p1);
+        tableData[6][3].SetMarker(p1);
 
-        table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
+        table.SetData(tableData, 2);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
         table.SetTextColorInRow(6, Color.blue);
         table.SetTextColorInRow(39, Color.red);
         table.SetFontInRow(26, f3);
         table.RemoveLineBetweenRows(0, 1);
-        table.SetColumnWidths();
+        table.AutoAdjustColumnWidths();
         table.SetColumnWidth(0, 50f);
         table.SetColumnWidth(3, 80f);
         table.RightAlignNumbers();

@@ -141,7 +141,7 @@ public class CompositeTextLine : IDrawable {
     /// <param name="component">the component.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine AddComponent(TextLine component) {
-        if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+        if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
             if (fontSize > 0f) {
                 // Set it on the TextLine: DrawOn uses the line's own font size,
                 // so resizing the shared Font here would have no effect.
@@ -150,7 +150,7 @@ public class CompositeTextLine : IDrawable {
             component.SetLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition);
-        } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+        } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
             if (fontSize > 0f) {
                 component.SetFontSize(fontSize * subscriptSizeFactor);
             }
@@ -202,11 +202,11 @@ public class CompositeTextLine : IDrawable {
         }
 
         foreach (TextLine component in textLines) {
-            if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+            if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
                 component.SetLocation(
                         current[X],
                         current[Y] - fontSize * superscriptPosition);
-            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
                 component.SetLocation(
                         current[X],
                         current[Y] + fontSize * subscriptPosition);
@@ -260,11 +260,11 @@ public class CompositeTextLine : IDrawable {
         float cur;
 
         foreach (TextLine component in textLines) {
-            if (component.GetTextEffect() == Effect.SUPERSCRIPT) {
+            if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
                 cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
                 if (cur < min)
                     min = cur;
-            } else if (component.GetTextEffect() == Effect.SUBSCRIPT) {
+            } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
                 cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
                 if (cur > max)
                     max = cur;

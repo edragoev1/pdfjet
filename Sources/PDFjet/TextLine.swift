@@ -28,7 +28,7 @@ public class TextLine : Drawable {
 
     private var degrees = 0
 
-    private var textEffect = Effect.NORMAL
+    private var scriptPosition = ScriptPosition.NORMAL
     private var verticalOffset: Float = 0.0
     private var explicitOffset = false      // True after setVerticalOffset
 
@@ -382,31 +382,31 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the text effect. The offset of a superscript or subscript follows
+    /// Sets the script position. The offset of a superscript or subscript follows
     /// the font and font size of this text line when it is drawn.
     ///
-    /// - Parameter textEffect: Effect.NORMAL, Effect.SUBSCRIPT or Effect.SUPERSCRIPT.
+    /// - Parameter scriptPosition: ScriptPosition.NORMAL, ScriptPosition.SUBSCRIPT or ScriptPosition.SUPERSCRIPT.
     /// - Returns: the TextLine.
     ///
     @discardableResult
-    public func setTextEffect(_ textEffect: Int) -> TextLine {
-        self.textEffect = textEffect
+    public func setScriptPosition(_ scriptPosition: ScriptPosition) -> TextLine {
+        self.scriptPosition = scriptPosition
         self.explicitOffset = false
         return self
     }
 
     ///
-    /// Returns the text effect.
+    /// Returns the script position.
     ///
-    /// - Returns: the text effect.
+    /// - Returns: the script position.
     ///
-    public func getTextEffect() -> Int {
-        return self.textEffect
+    public func getScriptPosition() -> ScriptPosition {
+        return self.scriptPosition
     }
 
     ///
     /// Sets the vertical offset of the text, which replaces the offset of the
-    /// text effect until setTextEffect is called again.
+    /// script position until setScriptPosition is called again.
     ///
     /// - Parameter verticalOffset: the vertical offset.
     /// - Returns: the TextLine.
@@ -420,7 +420,7 @@ public class TextLine : Drawable {
 
     ///
     /// Returns the vertical text offset: the one set with setVerticalOffset, or
-    /// that of the text effect at the font and font size of this text line.
+    /// that of the script position at the font and font size of this text line.
     ///
     /// - Returns: the vertical text offset.
     ///
@@ -428,9 +428,9 @@ public class TextLine : Drawable {
         if explicitOffset {
             return self.verticalOffset
         }
-        if textEffect == Effect.SUPERSCRIPT {
+        if scriptPosition == ScriptPosition.SUPERSCRIPT {
             return -font!.getBodyHeight(fontSize)/2.0
-        } else if textEffect == Effect.SUBSCRIPT {
+        } else if scriptPosition == ScriptPosition.SUBSCRIPT {
             return font!.getBodyHeight(fontSize)/3.0
         }
         return 0.0
@@ -524,7 +524,7 @@ public class TextLine : Drawable {
         textLine.textColor = textColor
         textLine.lineColor = lineColor
         textLine.colorMap = colorMap
-        textLine.textEffect = textEffect
+        textLine.scriptPosition = scriptPosition
         textLine.verticalOffset = verticalOffset
         textLine.explicitOffset = explicitOffset
         textLine.uri = uri
@@ -559,7 +559,7 @@ public class TextLine : Drawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         let alt = altDescription == text ? "" : altDescription ?? ""
-        page!.addBMC(structureType, language, "", alt)
+        page!.addBDC(structureType, language, "", alt)
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
@@ -576,7 +576,7 @@ public class TextLine : Drawable {
             let yAdjust = Double(font!.getUnderlinePosition(fontSize)) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
             let y2 = Double(y) - Double(lineLength) * sin(radians)
-            page!.addBMC(structureType, language, "", "Underlined text: " + text!)
+            page!.addBDC(structureType, language, "", "Underlined text: " + text!)
             page!.moveTo(Float(Double(x) + xAdjust), Float(Double(y) + yAdjust))
             page!.lineTo(Float(x2 + xAdjust), Float(y2 + yAdjust))
             page!.strokePath()
@@ -594,7 +594,7 @@ public class TextLine : Drawable {
             let yAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
             let y2 = Double(y) - Double(lineLength) * sin(radians)
-            page!.addBMC(structureType, language, "", "Strikethrough text: " + text!)
+            page!.addBDC(structureType, language, "", "Strikethrough text: " + text!)
             page!.moveTo(Float(Double(x) - xAdjust), Float(Double(y) - yAdjust))
             page!.lineTo(Float(x2 - xAdjust), Float(y2 - yAdjust))
             page!.strokePath()

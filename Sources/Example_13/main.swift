@@ -29,14 +29,14 @@ public class Example_13 {
         }
 
         let table = Table()
-        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
+        table.setData(tableData, 2)
         table.setLocation(100.0, 50.0)
         table.setBottomMargin(10.0)
 
         table.setFontInRow(0, f1)
         table.setFontInRow(1, f1)
 
-        table.setColumnWidths()
+        table.autoAdjustColumnWidths()
         table.removeLineBetweenRows(0, 1)
 
         var cell = table.getCellAt(1, 1)

@@ -45,9 +45,9 @@ public class DonutChart : Drawable {
 
     /// Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
     @discardableResult
-    public func setR1AndR2(_ r1: Float, _ r2: Float) -> DonutChart {
-        self.r1 = r1
-        self.r2 = r2
+    public func setRadii(_ outerRadius: Float, _ innerRadius: Float) -> DonutChart {
+        self.r1 = outerRadius
+        self.r2 = innerRadius
         return self
     }
 

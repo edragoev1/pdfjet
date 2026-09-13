@@ -39,7 +39,7 @@ final public class Example_39 {
         List<List<Point>> chartData = new ArrayList<List<Point>>();
         List<Point> path1 = new ArrayList<Point>();
         Point point = new Point();
-        point.setDrawPath();
+        point.setDrawPath(true);
         point.setX(0f);
         point.setY(45f);
         point.setShape(Point.INVISIBLE);
@@ -57,7 +57,7 @@ final public class Example_39 {
 
         List<Point> path2 = new ArrayList<Point>();
         point = new Point();
-        point.setDrawPath();
+        point.setDrawPath(true);
         point.setX(0f);
         point.setY(35f);
         point.setShape(Point.INVISIBLE);
@@ -75,7 +75,7 @@ final public class Example_39 {
 
         List<Point> path3 = new ArrayList<Point>();
         point = new Point();
-        point.setDrawPath();
+        point.setDrawPath(true);
         point.setX(0f);
         point.setY(25f);
         point.setShape(Point.INVISIBLE);
@@ -93,7 +93,7 @@ final public class Example_39 {
 
         List<Point> path4 = new ArrayList<Point>();
         point = new Point();
-        point.setDrawPath();
+        point.setDrawPath(true);
         point.setX(0f);
         point.setY(15f);
         point.setShape(Point.INVISIBLE);

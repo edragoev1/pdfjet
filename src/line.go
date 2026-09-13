@@ -185,7 +185,7 @@ func (line *Line) ScaleBy(factor float32) *Line {
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (line *Line) DrawOn(page *Page) [2]float32 {
-	page.AddBMC(structtype.P, line.language, line.actualText, line.altDescription)
+	page.AddBDC(structtype.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
 	page.SetPenColor(line.color)
 	page.SetPenWidth(line.width)

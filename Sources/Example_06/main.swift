@@ -18,9 +18,9 @@ public class Example_06 {
         // File attachment functionality
         var attachment = FileAttachment(pdf, file1)
         attachment.setLocation(100.0, 600.0)
-        attachment.setIconPushPin()
+        attachment.setIconPushpin()
         attachment.setTitle("Attached File: " + file1.getFileName())
-        attachment.setDescription(
+        attachment.setContents(
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
 
@@ -28,7 +28,7 @@ public class Example_06 {
         attachment.setLocation(200.0, 600.0)
         attachment.setIconPaperclip()
         attachment.setTitle("Attached File: " + file2.getFileName())
-        attachment.setDescription(
+        attachment.setContents(
                 "Right mouse click on the icon to save the attached file.")
         attachment.drawOn(page)
 
@@ -58,7 +58,7 @@ public class Example_06 {
         polygonAnnotation.setLocation(0.0, 0.0)
         polygonAnnotation.setVertices([0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0])
         polygonAnnotation.setFillColor(Color.red)
-        polygonAnnotation.setTransparency(0.5)
+        polygonAnnotation.setOpacity(0.5)
         polygonAnnotation.setTitle("Polygon")
         polygonAnnotation.setContents("Polygon Annotation")
         container.add(polygonAnnotation)
@@ -67,7 +67,7 @@ public class Example_06 {
         squareAnnotation.setLocation(25.0, 0.0)
         squareAnnotation.setSize(50.0, 50.0)
         squareAnnotation.setFillColor([0.0, 0.0, 1.0])
-        squareAnnotation.setTransparency(0.5)
+        squareAnnotation.setOpacity(0.5)
         squareAnnotation.setTitle("Square")
         squareAnnotation.setContents("Square Annotation")
         container.add(squareAnnotation)
@@ -76,7 +76,7 @@ public class Example_06 {
         circleAnnotation.setLocation(50.0, 0.0)
         circleAnnotation.setSize(50.0, 50.0)
         circleAnnotation.setFillColor([0.0, 0.0, 1.0])
-        circleAnnotation.setTransparency(0.5)
+        circleAnnotation.setOpacity(0.5)
         circleAnnotation.setTitle("Circle")
         circleAnnotation.setContents("Circle Annotation")
         container.add(circleAnnotation)

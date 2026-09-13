@@ -74,8 +74,8 @@ public class Bookmark {
         return bookmark
     }
 
-    /// Returns the destination key of this bookmark, or nil for the root bookmark.
-    public func getDestKey() -> String? {
+    /// Returns the name of the destination of this bookmark, or nil for the root bookmark.
+    public func getDestinationName() -> String? {
         return self.key
     }
 

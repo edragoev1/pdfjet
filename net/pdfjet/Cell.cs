@@ -174,21 +174,22 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the point inside this cell.
+    /// Sets the marker drawn in this cell: a Point, placed at its left or right
+    /// by its alignment and centered vertically.
     /// See the Point class and Example_09 for more information.
     /// </summary>
     /// <param name="point">the point.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetPoint(Point point) {
+    public Cell SetMarker(Point point) {
         this.point = point;
         return this;
     }
 
     /// <summary>
-    /// Returns the cell point.
+    /// Returns the marker drawn in this cell.
     /// </summary>
     /// <returns>the point.</returns>
-    public Point GetPoint() {
+    public Point GetMarker() {
         return this.point;
     }
 
@@ -737,7 +738,7 @@ public class Cell {
             xText = x + this.leftPadding;
         }
         if (compositeTextLine == null) {
-            page.AddBMC(StructElem.P, text, text);
+            page.AddBDC(StructElem.P, text, text);
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
             page.AddEMC();
             if (GetUnderline()) {
@@ -783,7 +784,7 @@ public class Cell {
 
     private void UnderlineText(Page page, float x, float y) {
         float descent = font.GetDescent(fontSize);
-        page.AddBMC(StructElem.P, "underline", "underline");
+        page.AddBDC(StructElem.P, "underline", "underline");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y + descent);
         page.LineTo(x + GetTextWidth(), y + descent);
@@ -793,7 +794,7 @@ public class Cell {
 
     private void StrikeoutText(Page page, float x, float y) {
         float ascent = font.GetAscent(fontSize);
-        page.AddBMC(StructElem.P, "strike out", "strike out");
+        page.AddBDC(StructElem.P, "strike out", "strike out");
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y - ascent/3f);
         page.LineTo(x + GetTextWidth(), y - ascent/3f);

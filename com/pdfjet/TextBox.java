@@ -1000,7 +1000,7 @@ public class TextBox implements Drawable {
             float yText,
             float[] color,
             Map<String, Integer> colors) {
-        page.addBMC(StructElem.P, language, text, altDescription);
+        page.addBDC(StructElem.P, language, text, altDescription);
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);

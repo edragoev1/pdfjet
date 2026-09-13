@@ -47,7 +47,7 @@ final public class Example_09 {
         float x = 0.0f;
         float y = m * x + b;
         Point p1 = new Point(x, y);
-        p1.setDrawPath();
+        p1.setDrawPath(true);
         p1.setStrokeColor(Color.blue);
         p1.setShape(Point.INVISIBLE);
 
@@ -76,7 +76,7 @@ final public class Example_09 {
                 point.setAlignment(Alignment.LEFT);
 
                 Cell cell = new Cell(f2);
-                cell.setPoint(point);
+                cell.setMarker(point);
                 cell.setText("");
 
                 tableRow.add(cell);
@@ -93,7 +93,7 @@ final public class Example_09 {
             }
         }
         table.setData(tableData);
-        table.setColumnWidths();
+        table.autoAdjustColumnWidths();
         table.setCellBorderWidth(0.2f);
         table.setLocation(70f, 360f);
         table.setColumnWidth(0, 9f);

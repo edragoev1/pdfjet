@@ -363,7 +363,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 // DrawOn draws this stamp on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
-	page.AddBMC(structtype.P, s.language, s.actualText, s.altDescription)
+	page.AddBDC(structtype.P, s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()
 
 	drawX := s.x

@@ -20,7 +20,7 @@ public class Example_25 {
 
         DonutChart chart = new DonutChart(f1, f2, true);       // true = full donut (with hole)
         chart.setLocation(300.0f, 400.0f);
-        chart.setR1AndR2(200.0f, 120.0f);
+        chart.setRadii(200.0f, 120.0f);
 
         chart.addSlice(new Slice(90.0f,  0xC1121F, "Apples",   ""));   // deep red
         chart.addSlice(new Slice(72.0f,  0x1D3557, "Oranges",  ""));   // navy blue

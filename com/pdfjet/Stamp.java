@@ -545,7 +545,7 @@ public class Stamp implements Drawable {
      * @return the x and y coordinates of the bottom right corner of this stamp.
      */
     public float[] drawOn(Page page) {
-        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
 
         float drawX = this.x;

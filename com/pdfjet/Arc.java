@@ -363,12 +363,12 @@ public class Arc implements Drawable {
             startAngle = (float) (Math.atan2((double)(line.y2 - cy), (double)(line.x2 - cx)) * (180.0 / Math.PI));
         }
 
-        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
         float centerX = cx;
         float centerY = page.height - cy;
         page.rotateAroundCenter(centerX, centerY, rotateDegrees);
-        page.drawArc(
+        page.addArcToPath(
                 cx,
                 cy,
                 rx,

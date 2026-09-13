@@ -319,7 +319,7 @@ func (image *Image) SetActualText(actualText string) *Image {
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
-	page.AddBMC(structtype.P, image.language, image.actualText, image.altDescription)
+	page.AddBDC(structtype.P, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
 
 	switch image.degrees {
@@ -381,7 +381,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	}
 
 	if image.flipUpsideDown {
-		page.appendString("1 0 0 -1 0 0 cm\n")
+		page.appendString("1 0 0 -1 0 1 cm\n")
 	}
 
 	page.appendString("/Im")
@@ -624,7 +624,8 @@ func (image *Image) ResizeToFit(page *Page, keepAspectRatio bool) {
 	}
 }
 
-// FlipUpsideDown flips the image upside down.
-func (image *Image) FlipUpsideDown(flipUpsideDown bool) {
+// SetFlipUpsideDown sets whether this image is drawn upside down.
+func (image *Image) SetFlipUpsideDown(flipUpsideDown bool) *Image {
 	image.flipUpsideDown = flipUpsideDown
+	return image
 }

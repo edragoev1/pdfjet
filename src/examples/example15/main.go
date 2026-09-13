@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/effect"
+	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
 )
 
 // Example15 draws a table whose cells hold composite text lines.
@@ -48,7 +48,7 @@ func Example15() {
 			line2 := pdfjet.NewTextLine(f4, "2")
 			line3 := pdfjet.NewTextLine(f5, "O")
 
-			line2.SetTextEffect(effect.Subscript)
+			line2.SetScriptPosition(scriptposition.Subscript)
 
 			composite.AddComponent(line1)
 			composite.AddComponent(line2)
@@ -68,10 +68,10 @@ func Example15() {
 	}
 
 	table := pdfjet.NewTable()
-	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+	table.SetData(tableData, 2)
 	table.SetBottomMargin(15.0)
 	table.SetLocation(70.0, 30.0)
-	table.SetColumnWidths()
+	table.AutoAdjustColumnWidths()
 
 	pages := make([]*pdfjet.Page, 0)
 	table.DrawOnPages(pdf, &pages, a4.Portrait())

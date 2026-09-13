@@ -47,7 +47,7 @@ public class Example_09 {
         double x = 0.0;
         double y = m * x + b;
         Point p1 = new Point(x, y);
-        p1.SetDrawPath();
+        p1.SetDrawPath(true);
         p1.SetStrokeColor(Color.blue);
         p1.SetShape(Point.INVISIBLE);
 
@@ -76,7 +76,7 @@ public class Example_09 {
                 point.SetAlignment(Alignment.LEFT);
 
                 Cell cell = new Cell(f2);
-                cell.SetPoint(point);
+                cell.SetMarker(point);
                 cell.SetText("");
 
                 tableRow.Add(cell);
@@ -93,7 +93,7 @@ public class Example_09 {
             }
         }
         table.SetData(tableData);
-        table.SetColumnWidths();
+        table.AutoAdjustColumnWidths();
         table.SetCellBorderWidth(0.2f);
         table.SetLocation(70f, 360f);
         table.SetColumnWidth(0, 9f);

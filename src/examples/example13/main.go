@@ -35,14 +35,14 @@ func Example13() {
 	}
 
 	table := pdfjet.NewTable()
-	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+	table.SetData(tableData, 2)
 	table.SetLocation(100.0, 50.0)
 	table.SetBottomMargin(10.0)
 
 	table.SetFontInRow(0, f1)
 	table.SetFontInRow(1, f1)
 
-	table.SetColumnWidths()
+	table.AutoAdjustColumnWidths()
 	table.RemoveLineBetweenRows(0, 1)
 
 	cell := table.GetCellAt(1, 1)

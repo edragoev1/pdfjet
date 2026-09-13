@@ -33,8 +33,8 @@ public class Chart : IDrawable {
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
-    private bool drawXAxisLines = true;
-    private bool drawYAxisLines = true;
+    private bool drawHGridLines = true;
+    private bool drawVGridLines = true;
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
@@ -217,16 +217,16 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Toggles drawing of horizontal grid lines.
     /// </summary>
-    public Chart SetDrawXAxisLines(bool drawXAxisLines) {
-        this.drawXAxisLines = drawXAxisLines;
+    public Chart SetDrawHGridLines(bool drawHGridLines) {
+        this.drawHGridLines = drawHGridLines;
         return this;
     }
 
     /// <summary>
     ///  Toggles drawing of vertical grid lines.
     /// </summary>
-    public Chart SetDrawYAxisLines(bool drawYAxisLines) {
-        this.drawYAxisLines = drawYAxisLines;
+    public Chart SetDrawVGridLines(bool drawVGridLines) {
+        this.drawVGridLines = drawVGridLines;
         return this;
     }
 
@@ -269,7 +269,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the horizontal grid line width (0 = invisible).
+    ///  Sets the width of the horizontal grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawHGridLines(false) hides them.
     /// </summary>
     public Chart SetHGridLineWidth(float width) {
         this.hGridLineWidth = width;
@@ -277,7 +277,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the vertical grid line width (0 = invisible).
+    ///  Sets the width of the vertical grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawVGridLines(false) hides them.
     /// </summary>
     public Chart SetVGridLineWidth(float width) {
         this.vGridLineWidth = width;
@@ -361,10 +361,10 @@ public class Chart : IDrawable {
         DrawChartBorder(page);
         DrawInnerBorder(page);
 
-        if (drawXAxisLines) {
+        if (drawHGridLines) {
             DrawHorizontalGridLines(page);
         }
-        if (drawYAxisLines) {
+        if (drawVGridLines) {
             DrawVerticalGridLines(page);
         }
 

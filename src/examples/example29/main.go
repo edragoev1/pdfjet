@@ -39,7 +39,7 @@ func Example29() {
 	tableData = append(tableData, row)
 
 	table := pdfjet.NewTable()
-	table.SetData(tableData, pdfjet.TableWith0HeaderRows)
+	table.SetData(tableData, 0)
 	table.SetLocation(50.0, 50.0)
 	table.DrawOn(page)
 

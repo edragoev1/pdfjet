@@ -65,8 +65,8 @@ public class Bookmark {
         return bookmark;
     }
 
-    /// <summary>Returns the destination key of this bookmark.</summary>
-    public String GetDestKey() {
+    /// <summary>Returns the name of the destination of this bookmark.</summary>
+    public String GetDestinationName() {
         return this.key;
     }
 

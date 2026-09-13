@@ -44,8 +44,8 @@ public class Chart : Drawable {
     private var xAxisTitle = ""
     private var yAxisTitle = ""
 
-    private var drawXAxisLines = true
-    private var drawYAxisLines = true
+    private var drawHGridLines = true
+    private var drawVGridLines = true
     private var drawXAxisLabels = true
     private var drawYAxisLabels = true
 
@@ -240,15 +240,15 @@ public class Chart : Drawable {
 
     /** Toggles drawing of horizontal grid lines. */
     @discardableResult
-    public func setDrawXAxisLines(_ drawXAxisLines: Bool) -> Chart {
-        self.drawXAxisLines = drawXAxisLines
+    public func setDrawHGridLines(_ drawHGridLines: Bool) -> Chart {
+        self.drawHGridLines = drawHGridLines
         return self
     }
 
     /** Toggles drawing of vertical grid lines. */
     @discardableResult
-    public func setDrawYAxisLines(_ drawYAxisLines: Bool) -> Chart {
-        self.drawYAxisLines = drawYAxisLines
+    public func setDrawVGridLines(_ drawVGridLines: Bool) -> Chart {
+        self.drawVGridLines = drawVGridLines
         return self
     }
 
@@ -400,10 +400,10 @@ public class Chart : Drawable {
             drawChartBorder(page!)
             drawInnerBorder(page!)
 
-            if drawXAxisLines {
+            if drawHGridLines {
                 drawHorizontalGridLines(page!)
             }
-            if drawYAxisLines {
+            if drawVGridLines {
                 drawVerticalGridLines(page!)
             }
             if drawXAxisLabels {

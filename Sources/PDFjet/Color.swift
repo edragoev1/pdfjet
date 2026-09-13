@@ -6,7 +6,9 @@
  */
 
 /**
- * Used to specify the pen and brush colors.
+ * Used to specify the pen and brush colors, as 0xRRGGBB values. The names are the
+ * CSS color keywords, in lower case as in CSS, and oldgloryred and oldgloryblue,
+ * the colors of the flag of the United States.
  *
  * - SeeAlso: [CSS color keywords](http://www.w3.org/TR/css3-color/#svg-color)
  */

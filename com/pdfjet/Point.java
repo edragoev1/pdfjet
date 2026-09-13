@@ -514,12 +514,13 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Sets this point as the start of a path that will be drawn on the chart.
+     *  Sets whether this point starts a path that is drawn on the chart.
      *
+     *  @param drawPath true to draw the path.
      *  @return the point.
      */
-    public Point setDrawPath() {
-        this.drawPath = true;
+    public Point setDrawPath(boolean drawPath) {
+        this.drawPath = drawPath;
         return this;
     }
 

@@ -59,9 +59,9 @@ public class BaseAnnotation : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the transparency of this annotation, from 0.0 to 1.0.</summary>
-    public BaseAnnotation SetTransparency(float transparency) {
-        this.transparency = transparency;
+    /// <summary>Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).</summary>
+    public BaseAnnotation SetOpacity(float opacity) {
+        this.transparency = opacity;
         return this;
     }
 

@@ -8,7 +8,7 @@ package pdfjet
 import (
 	"math"
 
-	"github.com/edragoev1/pdfjet/v9/src/effect"
+	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
 )
 
 // CompositeTextLine constructs composite text line objects.
@@ -118,7 +118,7 @@ func (composite *CompositeTextLine) GetSubscriptPosition() float32 {
 // Set the new current position
 // @param component the component.
 func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeTextLine {
-	if textLine.GetTextEffect() == effect.Superscript {
+	if textLine.GetScriptPosition() == scriptposition.Superscript {
 		if composite.fontSize > 0.0 {
 			// Set it on the TextLine: DrawOn uses the line's own font size, so
 			// resizing the shared Font here would have no effect.
@@ -127,7 +127,7 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeT
 		textLine.SetLocation(
 			composite.current[composite.x],
 			composite.current[composite.y]-composite.fontSize*composite.superscriptPosition)
-	} else if textLine.GetTextEffect() == effect.Subscript {
+	} else if textLine.GetScriptPosition() == scriptposition.Subscript {
 		if composite.fontSize > 0.0 {
 			textLine.SetFontSize(composite.fontSize * composite.subscriptSizeFactor)
 		}
@@ -160,11 +160,11 @@ func (composite *CompositeTextLine) SetLocation(x, y float32) Drawable {
 	}
 
 	for _, textLine := range composite.textLines {
-		if textLine.GetTextEffect() == effect.Superscript {
+		if textLine.GetScriptPosition() == scriptposition.Superscript {
 			textLine.SetLocation(
 				composite.current[composite.x],
 				composite.current[composite.y]-composite.fontSize*composite.superscriptPosition)
-		} else if textLine.GetTextEffect() == effect.Subscript {
+		} else if textLine.GetScriptPosition() == scriptposition.Subscript {
 			textLine.SetLocation(
 				composite.current[composite.x],
 				composite.current[composite.y]+composite.fontSize*composite.subscriptPosition)
@@ -207,12 +207,12 @@ func (composite *CompositeTextLine) GetMinMaxY() []float32 {
 	var cur float32
 
 	for _, component := range composite.textLines {
-		if component.GetTextEffect() == effect.Superscript {
+		if component.GetScriptPosition() == scriptposition.Superscript {
 			cur = (composite.position[composite.y] - component.font.ascent) - composite.fontSize*composite.superscriptPosition
 			if cur < minValue {
 				minValue = cur
 			}
-		} else if component.GetTextEffect() == effect.Subscript {
+		} else if component.GetScriptPosition() == scriptposition.Subscript {
 			cur = (composite.position[composite.y] + component.font.descent) + composite.fontSize*composite.subscriptPosition
 			if cur > maxValue {
 				maxValue = cur

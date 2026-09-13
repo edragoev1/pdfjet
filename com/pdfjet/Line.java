@@ -288,7 +288,7 @@ public class Line implements Drawable {
      *  @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
         page.setPenColor(color);
         page.setPenWidth(width);

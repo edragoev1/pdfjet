@@ -114,7 +114,7 @@ public class RadioButton : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
 
         self.r1 = font.getAscent()/2
         self.r2 = r1/2

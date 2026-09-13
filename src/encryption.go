@@ -113,7 +113,7 @@ func NewEncryption(pdf *PDF,
 	// accessibility, as ISO 14289-1 7.16 requires. The compliance has to
 	// be set before the encryption for this to apply.
 	if pdf.GetCompliance() == compliance.PDF_UA_1 {
-		permissions.SetPermissions(encryption.ExtractContentsForAccessibility, true)
+		permissions.Grant(encryption.ExtractContentsForAccessibility)
 	}
 
 	// The flags specifying which operations shall be permitted, with the

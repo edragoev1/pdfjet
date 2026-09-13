@@ -694,7 +694,7 @@ public class TextBox : Drawable {
             _ yText: Float,
             _ color: [Float],
             _ colors: [String : Int32]?) {
-        page.addBMC(StructElem.P, language, text, altDescription)
+        page.addBDC(StructElem.P, language, text, altDescription)
 
         if textDirection == Direction.LEFT_TO_RIGHT {
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, color, colors)

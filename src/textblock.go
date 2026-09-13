@@ -570,7 +570,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.AddBMC(structtype.P, textBlock.language, textBlock.textContent, "")
+	page.AddBDC(structtype.P, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
 		textBlock.fallbackFont,

@@ -38,7 +38,7 @@ func Example08() {
 	table.GetCellAt(5, 0).SetBarcode(barcode)
 	table.GetCellAt(20, 0).SetColSpan(6)
 	table.GetCellAt(20, 6).SetColSpan(2)
-	table.SetColumnWidths()
+	table.AutoAdjustColumnWidths()
 	table.SetColumnWidth(0, image.GetWidth()+4.0)
 	table.SetColumnWidth(3, table.GetColumnWidth(3)+10.0)
 	table.SetColumnWidth(5, table.GetColumnWidth(5)+10.0)

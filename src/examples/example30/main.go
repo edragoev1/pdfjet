@@ -21,12 +21,12 @@ func Example30() {
 	passwords.SetOwnerPassword("world")
 
 	permissions := encryption.NewPermissions()
-	permissions.SetPermissions(
-		encryption.Print| // Set both to allow the user to print
-			encryption.PrintHighQuality| // this document with high quality
+	permissions.Grant(
+		encryption.Print | // Set both to allow the user to print
+			encryption.PrintHighQuality | // this document with high quality
 			// encryption.ModifyContents|
 			// encryption.CopyContents|
-			encryption.AssembleDocument, true)
+			encryption.AssembleDocument)
 
 	enc, err := pdfjet.NewEncryption(pdf, passwords, permissions)
 	if err != nil {
@@ -55,10 +55,10 @@ func Example30() {
 	// File attachment functionality
 	attachment := pdfjet.NewFileAttachment(pdf, file1)
 	attachment.SetLocation(100.0, 550.0)
-	attachment.SetIconPushPin()
+	attachment.SetIconPushpin()
 	attachment.SetIconSize(24.0)
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
-	attachment.SetDescription(
+	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 

@@ -260,12 +260,12 @@ public class Arc : Drawable {
             startAngle = atan2(p2.y - cy, p2.x - cx) * (180.0 / Float.pi)
         }
 
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
         page!.saveGraphicsState()
         let centerX = cx
         let centerY = page!.height - cy
         page!.rotateAroundCenter(centerX, centerY, rotateDegrees)
-        _ = page!.drawArc(cx, cy, rx, ry, startAngle, sweepDegrees)
+        _ = page!.addArcToPath(cx, cy, rx, ry, startAngle, sweepDegrees)
         if strokeColor != nil && strokeDashPattern != nil {
             page!.setStrokeDashPattern(strokeDashPattern!)
         }

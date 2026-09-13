@@ -38,7 +38,7 @@ public class Example_15 {
                 let line1 = TextLine(f3, "H")
                 let line2 = TextLine(f4, "2")
                 let line3 = TextLine(f5, "O")
-                line2.setTextEffect(Effect.SUBSCRIPT)
+                line2.setScriptPosition(ScriptPosition.SUBSCRIPT)
                 composite.addComponent(line1)
                 composite.addComponent(line2)
                 composite.addComponent(line3)
@@ -56,10 +56,10 @@ public class Example_15 {
         }
 
         let table = Table()
-        table.setData(tableData, Table.WITH_2_HEADER_ROWS)
+        table.setData(tableData, 2)
         table.setBottomMargin(15.0)
         table.setLocation(70.0, 30.0)
-        table.setColumnWidths()
+        table.autoAdjustColumnWidths()
 
         var pages = [Page]()
         table.drawOn(pdf, &pages, A4.PORTRAIT)

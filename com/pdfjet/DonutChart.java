@@ -56,13 +56,13 @@ public class DonutChart implements Drawable {
     /**
      * Sets the outer and inner radius of this chart.
      *
-     * @param r1 the outer radius.
-     * @param r2 the inner radius. A pie chart ignores it.
+     * @param outerRadius the outer radius.
+     * @param innerRadius the inner radius. A pie chart ignores it.
      * @return this DonutChart object.
      */
-    public DonutChart setR1AndR2(float r1, float r2) {
-        this.r1 = r1;
-        this.r2 = r2;
+    public DonutChart setRadii(float outerRadius, float innerRadius) {
+        this.r1 = outerRadius;
+        this.r2 = innerRadius;
         return this;
     }
 

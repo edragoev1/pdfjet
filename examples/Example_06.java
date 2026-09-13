@@ -20,9 +20,9 @@ public class Example_06 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(pdf, file1);
         attachment.setLocation(100f, 600f);
-        attachment.setIconPushPin();
+        attachment.setIconPushpin();
         attachment.setTitle("Attached File: " + file1.getFileName());
-        attachment.setDescription(
+        attachment.setContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 
@@ -30,7 +30,7 @@ public class Example_06 {
         attachment.setLocation(200f, 600f);
         attachment.setIconPaperclip();
         attachment.setTitle("Attached File: " + file2.getFileName());
-        attachment.setDescription(
+        attachment.setContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 
@@ -60,7 +60,7 @@ public class Example_06 {
         polygonAnnotation.setLocation(0f, 0f);
         polygonAnnotation.setVertices(new float[] {0f, 0f, 50f, 0f, 0f, 50f, 0f, 0f});
         polygonAnnotation.setFillColor(Color.red);
-        polygonAnnotation.setTransparency(0.5f);
+        polygonAnnotation.setOpacity(0.5f);
         polygonAnnotation.setTitle("Polygon");
         polygonAnnotation.setContents("Polygon Annotation");
         container.add(polygonAnnotation);
@@ -69,7 +69,7 @@ public class Example_06 {
         squareAnnotation.setLocation(25f, 0f);
         squareAnnotation.setSize(50f, 50f);
         squareAnnotation.setFillColor(new float[] {0f, 0f, 1f});
-        squareAnnotation.setTransparency(0.5f);
+        squareAnnotation.setOpacity(0.5f);
         squareAnnotation.setTitle("Square");
         squareAnnotation.setContents("Square Annotation");
         container.add(squareAnnotation);
@@ -78,7 +78,7 @@ public class Example_06 {
         circleAnnotation.setLocation(50f, 0f);
         circleAnnotation.setSize(50f, 50f);
         circleAnnotation.setFillColor(new float[] {0f, 0f, 1f});
-        circleAnnotation.setTransparency(0.5f);
+        circleAnnotation.setOpacity(0.5f);
         circleAnnotation.setTitle("Circle");
         circleAnnotation.setContents("Circle Annotation");
         container.add(circleAnnotation);

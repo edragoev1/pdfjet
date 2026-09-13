@@ -66,9 +66,9 @@ func (b *BaseAnnotation) SetFillColorRGB(fillColor [3]float32) *BaseAnnotation {
 	return b
 }
 
-// SetTransparency sets the transparency level (0.0 = fully transparent, 1.0 = opaque).
-func (b *BaseAnnotation) SetTransparency(transparency float32) *BaseAnnotation {
-	b.transparency = transparency
+// SetOpacity sets the opacity, from 0.0 (invisible) to 1.0 (opaque, the default).
+func (b *BaseAnnotation) SetOpacity(opacity float32) *BaseAnnotation {
+	b.transparency = opacity
 	return b
 }
 

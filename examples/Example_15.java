@@ -45,7 +45,7 @@ public class Example_15 {
                 TextLine line2 = new TextLine(f4, "2");
                 TextLine line3 = new TextLine(f5, "O");
 
-                line2.setTextEffect(Effect.SUBSCRIPT);
+                line2.setScriptPosition(ScriptPosition.SUBSCRIPT);
 
                 composite.addComponent(line1);
                 composite.addComponent(line2);
@@ -65,10 +65,10 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.setData(tableData, Table.WITH_2_HEADER_ROWS);
+        table.setData(tableData, 2);
         table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
-        table.setColumnWidths();
+        table.autoAdjustColumnWidths();
 
         List<Page> pages = new ArrayList<Page>();
         table.drawOn(pdf, pages, A4.PORTRAIT);

@@ -564,7 +564,7 @@ public class TextBlock : Drawable {
             rect.drawOn(page)
         }
 
-        page!.addBMC(StructElem.P, language, textContent, "")
+        page!.addBDC(StructElem.P, language, textContent, "")
         page!.drawTextBlock(
             font,
             fallbackFont,

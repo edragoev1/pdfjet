@@ -25,7 +25,7 @@ public class Example_40 {
         chart.setTitle("Vertical Bar Chart Example")
         chart.setXAxisTitle("Bar Chart")
         chart.setYAxisTitle("Vertical")
-        chart.setDrawYAxisLines(false)
+        chart.setDrawVGridLines(false)
         chart.setDrawXAxisLabels(false)
         chart.setXYChart(false)
         chart.drawOn(page)
@@ -103,7 +103,7 @@ public class Example_40 {
         var path1 = [Point]()
 
         var point = Point()
-        point.setDrawPath()
+        point.setDrawPath(true)
         point.setX(x)
         point.setY(0.0)
         point.setShape(Point.INVISIBLE)

@@ -52,10 +52,10 @@ public class BaseAnnotation: Drawable {
         return self
     }
 
-    /// Sets the transparency of this annotation, from 0.0 to 1.0.
+    /// Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).
     @discardableResult
-    public func setTransparency(_ transparency: Float) -> BaseAnnotation {
-        self.transparency = transparency
+    public func setOpacity(_ opacity: Float) -> BaseAnnotation {
+        self.transparency = opacity
         return self
     }
 

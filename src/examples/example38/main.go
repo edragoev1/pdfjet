@@ -19,7 +19,7 @@ func Example38() {
 	page := pdfjet.NewPage(pdf, letter.Landscape())
 
 	table := pdfjet.NewTable()
-	table.SetData(createTableData(font), pdfjet.TableWith0HeaderRows)
+	table.SetData(createTableData(font), 0)
 	table.SetBottomMargin(10.0)
 	table.SetLocation(50.0, 50.0)
 	table.DrawOn(page)

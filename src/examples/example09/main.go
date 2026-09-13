@@ -57,7 +57,7 @@ func addTrendLine(chart *pdfjet.Chart) {
 	x := 0.0
 	y := m*float32(x) + b
 	p1 := pdfjet.NewPoint(float32(x), y)
-	p1.SetDrawPath()
+	p1.SetDrawPath(true)
 	p1.SetStrokeColor(color.Blue)
 	p1.SetShape(shape.Invisible)
 
@@ -88,7 +88,7 @@ func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font
 			point.SetAlignment(alignment.Left)
 
 			cell := pdfjet.NewCell(f2, "")
-			cell.SetPoint(point)
+			cell.SetMarker(point)
 			tableRow = append(tableRow, cell)
 
 			cell = pdfjet.NewCell(f1, point.GetText())
@@ -102,7 +102,7 @@ func addTableToChart(page *pdfjet.Page, chart *pdfjet.Chart, f1, f2 *pdfjet.Font
 	}
 
 	table.SetData(tableData, 0)
-	table.SetColumnWidths()
+	table.AutoAdjustColumnWidths()
 	table.SetCellBorderWidth(0.2)
 	table.SetLocation(70.0, 360.0)
 	table.SetColumnWidth(0, 9.0)

@@ -29,7 +29,7 @@ public class Example_40 {
         chart.SetTitle("Vertical Bar Chart Example");
         chart.SetXAxisTitle("Bar Chart");
         chart.SetYAxisTitle("Vertical");
-        chart.SetDrawYAxisLines(false);
+        chart.SetDrawVGridLines(false);
         chart.SetDrawXAxisLabels(false);
         chart.SetXYChart(false);
         chart.DrawOn(page);
@@ -106,7 +106,7 @@ public class Example_40 {
         List<Point> path1 = new List<Point>();
 
         Point point = new Point();
-        point.SetDrawPath();
+        point.SetDrawPath(true);
         point.SetX(x);
         point.SetY(0f);
         point.SetShape(Point.INVISIBLE);

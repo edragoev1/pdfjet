@@ -34,14 +34,14 @@ final public class Example_13 {
         reader.close();
 
         Table table = new Table();
-        table.setData(tableData, Table.WITH_2_HEADER_ROWS);
+        table.setData(tableData, 2);
         table.setLocation(100f, 50f);
         table.setBottomMargin(10f);
 
         table.setFontInRow(0, f1);
         table.setFontInRow(1, f1);
 
-        table.setColumnWidths();
+        table.autoAdjustColumnWidths();
         table.removeLineBetweenRows(0, 1);
 
         Cell cell = table.getCellAt(1, 1);

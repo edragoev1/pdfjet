@@ -3,7 +3,9 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package color defines the named colors as 0xRRGGBB values.
+// Package color defines the named colors as 0xRRGGBB values. The names are the
+// CSS color keywords in PascalCase, and OldGloryRed and OldGloryBlue, the colors
+// of the flag of the United States.
 package color
 
 // Constants used to specify the pen and brush colors.

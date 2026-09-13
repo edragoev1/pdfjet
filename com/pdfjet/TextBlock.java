@@ -716,7 +716,7 @@ public class TextBlock implements Drawable {
             rect.drawOn(page);
         }
 
-        page.addBMC(StructElem.P, this.language, this.textContent, null);
+        page.addBDC(StructElem.P, this.language, this.textContent, null);
         page.drawTextBlock(
             this.font,
             this.fallbackFont,

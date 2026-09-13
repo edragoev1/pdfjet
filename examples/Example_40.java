@@ -29,7 +29,7 @@ final public class Example_40 {
         chart.setTitle("Vertical Bar Chart Example");
         chart.setXAxisTitle("Bar Chart");
         chart.setYAxisTitle("Vertical");
-        chart.setDrawYAxisLines(false);
+        chart.setDrawVGridLines(false);
         chart.setDrawXAxisLabels(false);
         chart.setXYChart(false);
         chart.drawOn(page);
@@ -106,7 +106,7 @@ final public class Example_40 {
         List<Point> path1 = new ArrayList<Point>();
 
         Point point = new Point();
-        point.setDrawPath();
+        point.setDrawPath(true);
         point.setX(x);
         point.setY(0f);
         point.setShape(Point.INVISIBLE);

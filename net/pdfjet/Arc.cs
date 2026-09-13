@@ -269,14 +269,14 @@ public class Arc : IDrawable {
             startAngle = MathF.Atan2(line.y2 - cy, line.x2 - cx) * (180f / MathF.PI);
         }
 
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
 
         page.SaveGraphicsState();
 
         float centerX = cx;
         float centerY = page.height - cy;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
-        page.DrawArc(
+        page.AddArcToPath(
                 cx,
                 cy,
                 rx,

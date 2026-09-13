@@ -18,12 +18,12 @@ public class Example_30 {
         passwords.setOwnerPassword("world");
 
         Permissions permissions = new Permissions();
-        permissions.setPermissions(
+        permissions.grant(
             UserAccess.PRINT.getValue() |               // Set both to allow the user to print
             UserAccess.PRINT_HIGH_QUALITY.getValue() |  // this document with high quality
             // UserAccess.MODIFY_CONTENTS.getValue() |
             // UserAccess.COPY_CONTENTS.getValue() |
-            UserAccess.ASSEMBLE_DOCUMENT.getValue(), true);
+            UserAccess.ASSEMBLE_DOCUMENT.getValue());
 
         pdf.setEncryption(new Encryption(pdf, passwords, permissions));
 
@@ -48,10 +48,10 @@ public class Example_30 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(pdf, file1);
         attachment.setLocation(100f, 550f);
-        attachment.setIconPushPin();
+        attachment.setIconPushpin();
         attachment.setIconSize(24f);
         attachment.setTitle("Attached File: " + file1.getFileName());
-        attachment.setDescription(
+        attachment.setContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.drawOn(page);
 

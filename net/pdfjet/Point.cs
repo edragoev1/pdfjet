@@ -417,11 +417,12 @@ public class Point : IDrawable {
     }
 
     /// <summary>
-    /// Sets this point as the start of a path that will be drawn on the chart.
+    /// Sets whether this point starts a path that is drawn on the chart.
     /// </summary>
+    /// <param name="drawPath">true to draw the path.</param>
     /// <returns>the point.</returns>
-    public Point SetDrawPath() {
-        this.drawPath = true;
+    public Point SetDrawPath(bool drawPath) {
+        this.drawPath = drawPath;
         return this;
     }
 

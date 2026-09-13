@@ -182,14 +182,17 @@ func (p *Permissions) CanPrintHighQuality() bool {
 	return p.GetAccess().Has(PrintHighQuality)
 }
 
-// SetPermissions sets or clears the specified permissions.
-func (p *Permissions) SetPermissions(permissions UserAccess, grant bool) *Permissions {
-	if grant {
-		p.permissionsFlags |= uint32(permissions)
-	} else {
-		p.permissionsFlags &^= uint32(permissions)
-	}
+// Grant grants the specified permissions. The other permissions stay as they are.
+func (p *Permissions) Grant(permissions UserAccess) *Permissions {
+	p.permissionsFlags |= uint32(permissions)
 	// Re-apply mask to ensure no invalid bits were set
+	p.permissionsFlags &= ValidBitsMask
+	return p
+}
+
+// Revoke revokes the specified permissions. The other permissions stay as they are.
+func (p *Permissions) Revoke(permissions UserAccess) *Permissions {
+	p.permissionsFlags &^= uint32(permissions)
 	p.permissionsFlags &= ValidBitsMask
 	return p
 }

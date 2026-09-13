@@ -340,11 +340,11 @@ public class Point : Drawable {
     }
 
     ///
-    /// Sets this point as the start of a path that will be drawn on the chart.
+    /// Sets whether this point starts a path that is drawn on the chart.
     ///
     @discardableResult
-    public func setDrawPath() -> Point {
-        self.drawPath = true
+    public func setDrawPath(_ drawPath: Bool) -> Point {
+        self.drawPath = drawPath
         return self
     }
 

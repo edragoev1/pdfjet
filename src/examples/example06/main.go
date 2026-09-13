@@ -24,9 +24,9 @@ func Example06() {
 	// File attachment functionality
 	attachment := pdfjet.NewFileAttachment(pdf, file1)
 	attachment.SetLocation(100.0, 600.0)
-	attachment.SetIconPushPin()
+	attachment.SetIconPushpin()
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
-	attachment.SetDescription(
+	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 
@@ -34,7 +34,7 @@ func Example06() {
 	attachment.SetLocation(200.0, 600.0)
 	attachment.SetIconPaperclip()
 	attachment.SetTitle("Attached File: " + file2.GetFileName())
-	attachment.SetDescription(
+	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 
@@ -64,7 +64,7 @@ func Example06() {
 	polygonAnnotation.SetLocation(0.0, 0.0)
 	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
 	polygonAnnotation.SetFillColor(color.Red)
-	polygonAnnotation.SetTransparency(0.5)
+	polygonAnnotation.SetOpacity(0.5)
 	polygonAnnotation.SetTitle("Polygon")
 	polygonAnnotation.SetContents("Polygon Annotation")
 	container.Add(polygonAnnotation)
@@ -73,7 +73,7 @@ func Example06() {
 	squareAnnotation.SetLocation(25.0, 0.0)
 	squareAnnotation.SetSize(50.0, 50.0)
 	squareAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
-	squareAnnotation.SetTransparency(0.5)
+	squareAnnotation.SetOpacity(0.5)
 	squareAnnotation.SetTitle("Square")
 	squareAnnotation.SetContents("Square Annotation")
 	container.Add(squareAnnotation)
@@ -82,7 +82,7 @@ func Example06() {
 	circleAnnotation.SetLocation(50.0, 0.0)
 	circleAnnotation.SetSize(50.0, 50.0)
 	circleAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
-	circleAnnotation.SetTransparency(0.5)
+	circleAnnotation.SetOpacity(0.5)
 	circleAnnotation.SetTitle("Circle")
 	circleAnnotation.SetContents("Circle Annotation")
 	container.Add(circleAnnotation)

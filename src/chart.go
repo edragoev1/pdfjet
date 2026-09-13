@@ -33,8 +33,8 @@ type Chart struct {
 	title                          string
 	xAxisTitle                     string
 	yAxisTitle                     string
-	drawXAxisLines                 bool
-	drawYAxisLines                 bool
+	drawHGridLines                 bool
+	drawVGridLines                 bool
 	drawXAxisLabels                bool
 	drawYAxisLabels                bool
 	xyChart                        bool
@@ -77,8 +77,8 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.yMax = -math.MaxFloat32
 	chart.yMin = math.MaxFloat32
 
-	chart.drawXAxisLines = true
-	chart.drawYAxisLines = true
+	chart.drawHGridLines = true
+	chart.drawVGridLines = true
 	chart.drawXAxisLabels = true
 	chart.drawYAxisLabels = true
 	chart.xyChart = true
@@ -161,15 +161,15 @@ func (chart *Chart) Intercept(points []*Point, slope float32) float32 {
 	return _mean[1] - slope*_mean[0]
 }
 
-// SetDrawXAxisLines sets whether to draw horizontal grid lines on the chart.
-func (chart *Chart) SetDrawXAxisLines(drawXAxisLines bool) *Chart {
-	chart.drawXAxisLines = drawXAxisLines
+// SetDrawHGridLines sets whether to draw horizontal grid lines on the chart.
+func (chart *Chart) SetDrawHGridLines(drawHGridLines bool) *Chart {
+	chart.drawHGridLines = drawHGridLines
 	return chart
 }
 
-// SetDrawYAxisLines sets whether to draw vertical grid lines on the chart.
-func (chart *Chart) SetDrawYAxisLines(drawYAxisLines bool) *Chart {
-	chart.drawYAxisLines = drawYAxisLines
+// SetDrawVGridLines sets whether to draw vertical grid lines on the chart.
+func (chart *Chart) SetDrawVGridLines(drawVGridLines bool) *Chart {
+	chart.drawVGridLines = drawVGridLines
 	return chart
 }
 
@@ -309,10 +309,10 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.drawChartBorder(page)
 	chart.drawInnerBorder(page)
 
-	if chart.drawXAxisLines {
+	if chart.drawHGridLines {
 		chart.drawHorizontalGridLines(page)
 	}
-	if chart.drawYAxisLines {
+	if chart.drawVGridLines {
 		chart.drawVerticalGridLines(page)
 	}
 

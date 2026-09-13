@@ -7,7 +7,9 @@
 
 namespace PDFjet.NET {
 /// <summary>
-/// Used to specify the pen and brush colors.
+/// Used to specify the pen and brush colors, as 0xRRGGBB values. The names are the
+/// CSS color keywords, in lower case as in CSS, and oldgloryred and oldgloryblue,
+/// the colors of the flag of the United States.
 /// </summary>
 /// <seealso href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</seealso>
 public class Color {

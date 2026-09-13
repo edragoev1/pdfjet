@@ -213,23 +213,24 @@ public class Cell {
     }
 
     /**
-     * Sets the point inside this cell.
+     * Sets the marker drawn in this cell: a Point, placed at its left or right
+     * by its alignment and centered vertically.
      * See the Point class and Example_09 for more information.
      *
      * @param point the point.
      * @return this Cell object.
      */
-    public Cell setPoint(Point point) {
+    public Cell setMarker(Point point) {
         this.point = point;
         return this;
     }
 
     /**
-     * Returns the cell point.
+     * Returns the marker drawn in this cell.
      *
      * @return the point.
      */
-    public Point getPoint() {
+    public Point getMarker() {
         return this.point;
     }
 
@@ -931,7 +932,7 @@ public class Cell {
             xText = x + this.leftPadding;
         }
         if (compositeTextLine == null) {
-            page.addBMC(StructElem.P, text, text);
+            page.addBDC(StructElem.P, text, text);
             page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
             page.addEMC();
             if (getUnderline()) {
@@ -977,7 +978,7 @@ public class Cell {
 
     private void underlineText(Page page, float x, float y) throws Exception {
         float descent = font.getDescent(fontSize);
-        page.addBMC(StructElem.P, "underline", "underline");
+        page.addBDC(StructElem.P, "underline", "underline");
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y + descent);
         page.lineTo(x + getTextWidth(), y + descent);
@@ -987,7 +988,7 @@ public class Cell {
 
     private void strikeoutText(Page page, float x, float y) throws Exception {
         float ascent = font.getAscent(fontSize);
-        page.addBMC(StructElem.P, "strike out", "strike out");
+        page.addBDC(StructElem.P, "strike out", "strike out");
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y - ascent/3f);
         page.lineTo(x + getTextWidth(), y - ascent/3f);

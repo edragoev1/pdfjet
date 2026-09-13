@@ -351,7 +351,7 @@ final public class Image implements Drawable {
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBMC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
 
         if (degrees == 0) {
@@ -412,7 +412,7 @@ final public class Image implements Drawable {
         }
 
         if (flipUpsideDown) {
-            page.append("1 0 0 -1 0 0 cm\n");
+            page.append("1 0 0 -1 0 1 cm\n");
         }
 
         page.append("/Im");
@@ -665,11 +665,13 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Flips this image upside down
+     * Sets whether this image is drawn upside down.
      *
-     * @param flipUpsideDown flag
+     * @param flipUpsideDown true to draw this image upside down.
+     * @return this Image object.
      */
-    public void flipUpsideDown(boolean flipUpsideDown) {
+    public Image setFlipUpsideDown(boolean flipUpsideDown) {
         this.flipUpsideDown = flipUpsideDown;
+        return this;
     }
 }   // End of Image.java

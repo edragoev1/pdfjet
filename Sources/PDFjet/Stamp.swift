@@ -406,7 +406,7 @@ public class Stamp : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
 
-        page.addBMC(StructElem.P, language, actualText, altDescription)
+        page.addBDC(StructElem.P, language, actualText, altDescription)
         page.saveGraphicsState()
 
         let drawX = self.x

@@ -48,9 +48,9 @@ namespace PDFjet.NET {
         }
 
         /// <summary>Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.</summary>
-        public DonutChart SetR1AndR2(float r1, float r2) {
-            this.r1 = r1;
-            this.r2 = r2;
+        public DonutChart SetRadii(float outerRadius, float innerRadius) {
+            this.r1 = outerRadius;
+            this.r2 = innerRadius;
             return this;
         }
 

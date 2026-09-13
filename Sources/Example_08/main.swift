@@ -32,7 +32,7 @@ public class Example_08 {
         table.getCellAt(5, 0).setBarcode(barcode)
         table.getCellAt(20, 0).setColSpan(6)
         table.getCellAt(20, 6).setColSpan(2)
-        table.setColumnWidths()
+        table.autoAdjustColumnWidths()
         table.setColumnWidth(0, image.getWidth() + 4.0)
         table.setColumnWidth(3, table.getColumnWidth(3) + 10.0)
         table.setColumnWidth(5, table.getColumnWidth(5) + 10.0)

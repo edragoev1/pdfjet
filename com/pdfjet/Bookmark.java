@@ -85,11 +85,11 @@ public class Bookmark {
     }
 
     /**
-     * Returns the destination key.
+     * Returns the name of the destination of this bookmark.
      *
-     * @return the destination key.
+     * @return the name of the destination.
      */
-    public String getDestKey() {
+    public String getDestinationName() {
         return this.key;
     }
 

@@ -33,9 +33,9 @@ public class FileAttachment : Drawable {
         return self
     }
 
-    /// Uses the push pin icon.
+    /// Uses the pushpin icon.
     @discardableResult
-    public func setIconPushPin() -> FileAttachment {
+    public func setIconPushpin() -> FileAttachment {
         self.icon = "PushPin"
         return self
     }
@@ -61,10 +61,10 @@ public class FileAttachment : Drawable {
         return self
     }
 
-    /// Sets the description of this attachment.
+    /// Sets the contents of this attachment, the text a viewer shows for it.
     @discardableResult
-    public func setDescription(_ description: String) -> FileAttachment {
-        self.contents = description
+    public func setContents(_ contents: String) -> FileAttachment {
+        self.contents = contents
         return self
     }
 

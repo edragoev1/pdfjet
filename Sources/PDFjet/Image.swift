@@ -320,7 +320,7 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
         page!.saveGraphicsState()
 
         if degrees == 0 {
@@ -381,7 +381,7 @@ public class Image : Drawable {
         }
 
         if flipUpsideDown {
-            page!.append("1 0 0 -1 0 0 cm\n")
+            page!.append("1 0 0 -1 0 1 cm\n")
         }
 
         page!.append("/Im")
@@ -645,7 +645,9 @@ public class Image : Drawable {
     }
 
     /// Sets whether this image is drawn upside down.
-    public func flipUpsideDown(_ flipUpsideDown: Bool) {
+    @discardableResult
+    public func setFlipUpsideDown(_ flipUpsideDown: Bool) -> Image {
         self.flipUpsideDown = flipUpsideDown
+        return self
     }
 }   // End of Image.swift

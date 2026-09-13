@@ -44,7 +44,7 @@ func getData() [][]*pdfjet.Point {
 	path1 := make([]*pdfjet.Point, 0)
 
 	point := pdfjet.NewPoint(0.0, 45.0)
-	point.SetDrawPath()
+	point.SetDrawPath(true)
 	point.SetShape(shape.Invisible)
 	point.SetStrokeColor(color.Blue)
 	point.SetStrokeWidth(20.0)
@@ -59,7 +59,7 @@ func getData() [][]*pdfjet.Point {
 	path2 := make([]*pdfjet.Point, 0)
 
 	point = pdfjet.NewPoint(0.0, 35.0)
-	point.SetDrawPath()
+	point.SetDrawPath(true)
 	point.SetShape(shape.Invisible)
 	point.SetStrokeColor(color.Gold)
 	point.SetStrokeWidth(20.0)
@@ -74,7 +74,7 @@ func getData() [][]*pdfjet.Point {
 	path3 := make([]*pdfjet.Point, 0)
 
 	point = pdfjet.NewPoint(0.0, 25.0)
-	point.SetDrawPath()
+	point.SetDrawPath(true)
 	point.SetShape(shape.Invisible)
 	point.SetStrokeColor(color.Green)
 	point.SetStrokeWidth(20.0)
@@ -89,7 +89,7 @@ func getData() [][]*pdfjet.Point {
 	path4 := make([]*pdfjet.Point, 0)
 
 	point = pdfjet.NewPoint(0.0, 15.0)
-	point.SetDrawPath()
+	point.SetDrawPath(true)
 	point.SetShape(shape.Invisible)
 	point.SetStrokeColor(color.Red)
 	point.SetStrokeWidth(20.0)

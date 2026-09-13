@@ -17,7 +17,7 @@ public class Example_25 {
 
         let chart = DonutChart(f1, f2, true)           // true = full donut (with hole)
         chart.setLocation(300.0, 400.0)
-        chart.setR1AndR2(200.0, 120.0)
+        chart.setRadii(200.0, 120.0)
 
         chart.addSlice(Slice(90.0,  0xC1121F,  "Apples",   ""))   // deep red
         chart.addSlice(Slice(72.0,  0x1D3557,  "Oranges",  ""))   // navy blue

@@ -109,7 +109,7 @@ public class RadioButton : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
 
         this.r1 = font.GetAscent()/2;
         this.r2 = r1/2;

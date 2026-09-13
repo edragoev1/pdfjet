@@ -33,8 +33,8 @@ public class FileAttachment : IDrawable {
         return this;
     }
 
-    /// <summary>Uses the push pin icon.</summary>
-    public FileAttachment SetIconPushPin() {
+    /// <summary>Uses the pushpin icon.</summary>
+    public FileAttachment SetIconPushpin() {
         this.icon = "PushPin";
         return this;
     }
@@ -57,9 +57,9 @@ public class FileAttachment : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the description of this attachment.</summary>
-    public FileAttachment SetDescription(String description) {
-        this.contents = description;
+    /// <summary>Sets the contents of this attachment, the text a viewer shows for it.</summary>
+    public FileAttachment SetContents(String contents) {
+        this.contents = contents;
         return this;
     }
 

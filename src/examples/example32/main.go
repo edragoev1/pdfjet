@@ -29,7 +29,7 @@ func Example32() {
 	leading := font.GetBodyHeight()
 	lines := util.ReadLines("examples/Example_02.java")
 	for _, line := range lines {
-		page.DrawStringUsingColorMap(font, nil, font.GetSize(), line, x, y, grayColor, colors)
+		page.DrawStringUsingHighlightColors(font, nil, font.GetSize(), line, x, y, grayColor, colors)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
 			page = pdfjet.NewPage(pdf, letter.Portrait())

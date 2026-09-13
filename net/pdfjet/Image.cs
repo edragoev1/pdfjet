@@ -324,7 +324,7 @@ public class Image : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        page.AddBMC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
 
         if (degrees == 0) {
@@ -385,7 +385,7 @@ public class Image : IDrawable {
         }
 
         if (flipUpsideDown) {
-            page.Append("1 0 0 -1 0 0 cm\n");
+            page.Append("1 0 0 -1 0 1 cm\n");
         }
 
         page.Append("/Im");
@@ -450,11 +450,13 @@ public class Image : IDrawable {
     }
 
     /// <summary>
-    /// Flips this image upside down.
+    /// Sets whether this image is drawn upside down.
     /// </summary>
-    /// <param name="flipUpsideDown">flag</param>
-    public void FlipUpsideDown(bool flipUpsideDown) {
+    /// <param name="flipUpsideDown">true to draw this image upside down.</param>
+    /// <returns>this Image object.</returns>
+    public Image SetFlipUpsideDown(bool flipUpsideDown) {
         this.flipUpsideDown = flipUpsideDown;
+        return this;
     }
 
     private void AddSoftMask(

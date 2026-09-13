@@ -16,27 +16,6 @@ namespace PDFjet.NET {
 /// Please see Example_08.
 /// </summary>
 public class Table : IDrawable {
-    /// <summary>The table has no header rows.</summary>
-    public static readonly int WITH_0_HEADER_ROWS = 0;
-    /// <summary>The table has 1 header row.</summary>
-    public static readonly int WITH_1_HEADER_ROW  = 1;
-    /// <summary>The table has 2 header rows.</summary>
-    public static readonly int WITH_2_HEADER_ROWS = 2;
-    /// <summary>The table has 3 header rows.</summary>
-    public static readonly int WITH_3_HEADER_ROWS = 3;
-    /// <summary>The table has 4 header rows.</summary>
-    public static readonly int WITH_4_HEADER_ROWS = 4;
-    /// <summary>The table has 5 header rows.</summary>
-    public static readonly int WITH_5_HEADER_ROWS = 5;
-    /// <summary>The table has 6 header rows.</summary>
-    public static readonly int WITH_6_HEADER_ROWS = 6;
-    /// <summary>The table has 7 header rows.</summary>
-    public static readonly int WITH_7_HEADER_ROWS = 7;
-    /// <summary>The table has 8 header rows.</summary>
-    public static readonly int WITH_8_HEADER_ROWS = 8;
-    /// <summary>The table has 9 header rows.</summary>
-    public static readonly int WITH_9_HEADER_ROWS = 9;
-
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
     // The index of the next row to draw, or -1 when all rows are drawn.
@@ -649,7 +628,7 @@ public class Table : IDrawable {
     /// hold the text without truncation.
     /// </summary>
     /// <returns>this Table object.</returns>
-    public Table SetColumnWidths() {
+    public Table AutoAdjustColumnWidths() {
         float[] maxColWidths = new float[tableData[0].Count];
         foreach (List<Cell> row in tableData) {
             for (int i = 0; i < row.Count; i++) {

@@ -40,7 +40,7 @@ public class Example_39 {
 
         List<Point> path1 = new List<Point>();
         Point point = new Point();
-        point.SetDrawPath();
+        point.SetDrawPath(true);
         point.SetX(0f);
         point.SetY(45f);
         point.SetShape(Point.INVISIBLE);
@@ -58,7 +58,7 @@ public class Example_39 {
 
         List<Point> path2 = new List<Point>();
         point = new Point();
-        point.SetDrawPath();
+        point.SetDrawPath(true);
         point.SetX(0f);
         point.SetY(35f);
         point.SetShape(Point.INVISIBLE);
@@ -76,7 +76,7 @@ public class Example_39 {
 
         List<Point> path3 = new List<Point>();
         point = new Point();
-        point.SetDrawPath();
+        point.SetDrawPath(true);
         point.SetX(0f);
         point.SetY(25f);
         point.SetShape(Point.INVISIBLE);
@@ -94,7 +94,7 @@ public class Example_39 {
 
         List<Point> path4 = new List<Point>();
         point = new Point();
-        point.SetDrawPath();
+        point.SetDrawPath(true);
         point.SetX(0f);
         point.SetY(15f);
         point.SetShape(Point.INVISIBLE);

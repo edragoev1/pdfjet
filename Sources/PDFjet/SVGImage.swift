@@ -462,7 +462,7 @@ public class SVGImage : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
-        page.addBMC(StructElem.P, language, actualText, altDescription)
+        page.addBDC(StructElem.P, language, actualText, altDescription)
         for path in paths ?? [] {
             drawPath(path, page)
         }

@@ -44,7 +44,7 @@ public class Example_15 {
                 TextLine line1 = new TextLine(f3, "H");
                 TextLine line2 = new TextLine(f4, "2");
                 TextLine line3 = new TextLine(f5, "O");
-                line2.SetTextEffect(Effect.SUBSCRIPT);
+                line2.SetScriptPosition(ScriptPosition.SUBSCRIPT);
                 composite.AddComponent(line1);
                 composite.AddComponent(line2);
                 composite.AddComponent(line3);
@@ -63,10 +63,10 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.SetData(tableData, Table.WITH_2_HEADER_ROWS);
+        table.SetData(tableData, 2);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
-        table.SetColumnWidths();
+        table.AutoAdjustColumnWidths();
 
         List<Page> pages = new List<Page>();
         table.DrawOn(pdf, pages, A4.PORTRAIT);

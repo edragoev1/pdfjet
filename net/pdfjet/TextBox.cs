@@ -853,7 +853,7 @@ public class TextBox : IDrawable {
             float yText,
             float[] color,
             Dictionary<String, Int32> colors) {
-        page.AddBMC(StructElem.P, language, text, altDescription);
+        page.AddBDC(StructElem.P, language, text, altDescription);
 
         if (textDirection == Direction.LEFT_TO_RIGHT) {
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText, color, colors);

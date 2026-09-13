@@ -691,19 +691,19 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 	fallbackFont := textBox.fallbackFont
 	fontSize := textBox.fontSize
 
-	page.AddBMC(structtype.P, textBox.language, text, textBox.altDescription)
+	page.AddBDC(structtype.P, textBox.language, text, textBox.altDescription)
 
 	if textBox.textDirection == direction.LeftToRight {
-		page.DrawStringUsingColorMap(
+		page.DrawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text, xText, yText, textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.BottomToTop {
 		page.SetTextRotation(90)
-		page.DrawStringUsingColorMap(
+		page.DrawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text, yText, xText+textBox.height,
 			textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.TopToBottom {
 		page.SetTextRotation(270)
-		page.DrawStringUsingColorMap(
+		page.DrawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text,
 			(yText+textBox.width)-(textBox.margin+2*font.GetAscentAt(fontSize)), xText,
 			textBox.textColor, textBox.colors)

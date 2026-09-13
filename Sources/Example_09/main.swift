@@ -48,7 +48,7 @@ public class Example_09 {
         var x: Float = 0.0
         var y: Float = m * x + b
         let p1 = Point(x, y)
-        p1.setDrawPath()
+        p1.setDrawPath(true)
         p1.setStrokeColor(Color.blue)
         p1.setShape(Point.INVISIBLE)
 
@@ -81,7 +81,7 @@ public class Example_09 {
                 point.setAlignment(Alignment.LEFT)
 
                 var cell = Cell(f2, "")
-                cell.setPoint(point)
+                cell.setMarker(point)
                 cell.setText("")
 
                 tableRow.append(cell)
@@ -98,7 +98,7 @@ public class Example_09 {
             }
         }
         table.setData(tableData)
-        table.setColumnWidths()
+        table.autoAdjustColumnWidths()
         table.setCellBorderWidth(0.2)
         table.setLocation(70.0, 360.0)
         table.setColumnWidth(0, 9.0)

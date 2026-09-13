@@ -552,7 +552,7 @@ public class TextBlock : IDrawable {
             rect.DrawOn(page);
         }
 
-        page.AddBMC(StructElem.P, this.language, this.textContent, null);
+        page.AddBDC(StructElem.P, this.language, this.textContent, null);
         page.DrawTextBlock(
             this.font,
             this.fallbackFont,

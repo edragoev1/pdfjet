@@ -137,19 +137,26 @@ public class Permissions {
     }
 
     /**
-     * Sets or clears the specified permissions.
+     * Grants the specified permissions. The other permissions stay as they are.
      *
-     * @param permissions The permissions to modify (from the UserAccess enum values).
-     * @param grant True to grant the permissions; false to revoke them.
+     * @param permissions the permissions to grant, the UserAccess values combined with |.
      * @return this Permissions object.
      */
-    public Permissions setPermissions(int permissions, boolean grant) {
-        if (grant) {
-            permissionsFlags |= permissions;
-        } else {
-            permissionsFlags &= ~permissions;
-        }
+    public Permissions grant(int permissions) {
+        permissionsFlags |= permissions;
         // Re-apply mask to ensure no invalid bits were set
+        permissionsFlags &= VALID_BITS_MASK;
+        return this;
+    }
+
+    /**
+     * Revokes the specified permissions. The other permissions stay as they are.
+     *
+     * @param permissions the permissions to revoke, the UserAccess values combined with |.
+     * @return this Permissions object.
+     */
+    public Permissions revoke(int permissions) {
+        permissionsFlags &= ~permissions;
         permissionsFlags &= VALID_BITS_MASK;
         return this;
     }

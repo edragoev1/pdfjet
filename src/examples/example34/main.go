@@ -32,7 +32,7 @@ func Example34() {
 
 	table := pdfjet.NewTable()
 	tableData := getData(
-		"data/world-communications.txt", "|", pdfjet.TableWith2HeaderRows, f1, f2)
+		"data/world-communications.txt", "|", 2, f1, f2)
 
 	p1 := pdfjet.NewPoint(0.0, 0.0)
 	p1.SetShape(shape.Circle)
@@ -40,7 +40,7 @@ func Example34() {
 	p1.SetStrokeColor(color.DarkOliveGreen)
 	p1.SetAlignment(alignment.Right)
 	p1.SetURIAction("https://en.wikipedia.org/wiki/India")
-	tableData[4][3].SetPoint(p1)
+	tableData[4][3].SetMarker(p1)
 
 	p1 = pdfjet.NewPoint(0.0, 0.0)
 	p1.SetShape(shape.Diamond)
@@ -48,7 +48,7 @@ func Example34() {
 	p1.SetStrokeColor(color.Blue)
 	p1.SetAlignment(alignment.Right)
 	p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union")
-	tableData[5][3].SetPoint(p1)
+	tableData[5][3].SetMarker(p1)
 
 	p1 = pdfjet.NewPoint(0.0, 0.0)
 	p1.SetShape(shape.Star)
@@ -56,16 +56,16 @@ func Example34() {
 	p1.SetStrokeColor(color.Red)
 	p1.SetAlignment(alignment.Right)
 	p1.SetURIAction("https://en.wikipedia.org/wiki/United_States")
-	tableData[6][3].SetPoint(p1)
+	tableData[6][3].SetMarker(p1)
 
-	table.SetData(tableData, pdfjet.TableWith2HeaderRows)
+	table.SetData(tableData, 2)
 	table.SetBottomMargin(15.0)
 	table.SetLocation(70.0, 30.0)
 	table.SetTextColorInRow(6, color.Blue)
 	table.SetTextColorInRow(39, color.Red)
 	table.SetFontInRow(26, f3)
 	table.RemoveLineBetweenRows(0, 1)
-	table.SetColumnWidths()
+	table.AutoAdjustColumnWidths()
 	table.SetColumnWidth(0, 50.0)
 	table.SetColumnWidth(3, 80.0)
 	table.RightAlignNumbers()

@@ -232,7 +232,7 @@ public class Line : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
         page!.saveGraphicsState()
         page!.setPenColor(color)
         page!.setPenWidth(width)

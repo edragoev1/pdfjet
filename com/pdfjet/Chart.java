@@ -49,8 +49,8 @@ public class Chart implements Drawable {
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
-    private boolean drawXAxisLines = true;
-    private boolean drawYAxisLines = true;
+    private boolean drawHGridLines = true;
+    private boolean drawVGridLines = true;
     private boolean drawXAxisLabels = true;
     private boolean drawYAxisLabels = true;
 
@@ -264,22 +264,22 @@ public class Chart implements Drawable {
     /**
      * Sets whether the horizontal grid lines are drawn.
      *
-     * @param drawXAxisLines true to draw them.
+     * @param drawHGridLines true to draw them.
      * @return this Chart object.
      */
-    public Chart setDrawXAxisLines(boolean drawXAxisLines) {
-        this.drawXAxisLines = drawXAxisLines;
+    public Chart setDrawHGridLines(boolean drawHGridLines) {
+        this.drawHGridLines = drawHGridLines;
         return this;
     }
 
     /**
      * Sets whether the vertical grid lines are drawn.
      *
-     * @param drawYAxisLines true to draw them.
+     * @param drawVGridLines true to draw them.
      * @return this Chart object.
      */
-    public Chart setDrawYAxisLines(boolean drawYAxisLines) {
-        this.drawYAxisLines = drawYAxisLines;
+    public Chart setDrawVGridLines(boolean drawVGridLines) {
+        this.drawVGridLines = drawVGridLines;
         return this;
     }
 
@@ -339,7 +339,8 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the width of the horizontal grid lines. A width of 0 hides them.
+     * Sets the width of the horizontal grid lines. A width of 0 draws the thinnest
+     * line a viewer shows; setDrawHGridLines(false) hides them.
      *
      * @param width the line width.
      * @return this Chart object.
@@ -350,7 +351,8 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the width of the vertical grid lines. A width of 0 hides them.
+     * Sets the width of the vertical grid lines. A width of 0 draws the thinnest
+     * line a viewer shows; setDrawVGridLines(false) hides them.
      *
      * @param width the line width.
      * @return this Chart object.
@@ -452,10 +454,10 @@ public class Chart implements Drawable {
         drawChartBorder(page);
         drawInnerBorder(page);
 
-        if (drawXAxisLines) {
+        if (drawHGridLines) {
             drawHorizontalGridLines(page);
         }
-        if (drawYAxisLines) {
+        if (drawVGridLines) {
             drawVerticalGridLines(page);
         }
         if (drawXAxisLabels) {

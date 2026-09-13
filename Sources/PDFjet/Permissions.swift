@@ -139,21 +139,30 @@ public class Permissions: CustomStringConvertible {
     }
 
     ///
-    /// Sets or clears the specified permissions.
+    /// Grants the specified permissions. The other permissions stay as they are.
     ///
-    /// - Parameter permissions: the permissions to modify (from the UserAccess
-    ///   values).
-    /// - Parameter grant: true to grant the permissions; false to revoke them.
+    /// - Parameter permissions: the permissions to grant, the UserAccess values
+    ///   combined with |.
     /// - Returns: this Permissions object.
     ///
     @discardableResult
-    public func setPermissions(_ permissions: Int, _ grant: Bool) -> Permissions {
-        if grant {
-            permissionsFlags |= permissions
-        } else {
-            permissionsFlags &= ~permissions
-        }
+    public func grant(_ permissions: Int) -> Permissions {
+        permissionsFlags |= permissions
         // Re-apply mask to ensure no invalid bits were set
+        permissionsFlags &= Permissions.VALID_BITS_MASK
+        return self
+    }
+
+    ///
+    /// Revokes the specified permissions. The other permissions stay as they are.
+    ///
+    /// - Parameter permissions: the permissions to revoke, the UserAccess values
+    ///   combined with |.
+    /// - Returns: this Permissions object.
+    ///
+    @discardableResult
+    public func revoke(_ permissions: Int) -> Permissions {
+        permissionsFlags &= ~permissions
         permissionsFlags &= Permissions.VALID_BITS_MASK
         return self
     }

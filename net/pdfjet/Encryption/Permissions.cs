@@ -137,17 +137,22 @@ namespace PDFjet.NET {
         public bool CanPrintHighQuality => Access.HasFlag(UserAccess.PrintHighQuality);
 
         /// <summary>
-        /// Sets or clears the specified permissions.
+        /// Grants the specified permissions. The other permissions stay as they are.
         /// </summary>
-        /// <param name="permissions">The permissions to modify (from the <see cref="UserAccess"/> enum).</param>
-        /// <param name="grant">True to grant the permissions; false to revoke them.</param>
-        public Permissions SetPermissions(UserAccess permissions, bool grant = true) {
-            if (grant) {
-                _permissionsFlags |= (uint)permissions;
-            } else {
-                _permissionsFlags &= ~(uint)permissions;
-            }
+        /// <param name="permissions">The permissions to grant.</param>
+        public Permissions Grant(UserAccess permissions) {
+            _permissionsFlags |= (uint)permissions;
             // Re-apply mask to ensure no invalid bits were set by the enum value itself
+            _permissionsFlags &= ValidBitsMask;
+            return this;
+        }
+
+        /// <summary>
+        /// Revokes the specified permissions. The other permissions stay as they are.
+        /// </summary>
+        /// <param name="permissions">The permissions to revoke.</param>
+        public Permissions Revoke(UserAccess permissions) {
+            _permissionsFlags &= ~(uint)permissions;
             _permissionsFlags &= ValidBitsMask;
             return this;
         }

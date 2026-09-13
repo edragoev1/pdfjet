@@ -11,7 +11,7 @@ import (
 	"math"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/effect"
+	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
 	"github.com/edragoev1/pdfjet/v9/src/single"
 	"github.com/edragoev1/pdfjet/v9/src/structtype"
 )
@@ -30,7 +30,7 @@ type TextLine struct {
 	textColor          [3]float32
 	lineColor          [3]float32
 	colorMap           map[string]int32
-	textEffect         effect.Effect
+	scriptPosition     scriptposition.ScriptPosition
 	verticalOffset     float32
 	explicitOffset     bool // True after SetVerticalOffset
 	uri, key           string
@@ -276,23 +276,23 @@ func (textLine *TextLine) GetTextRotation() int {
 	return textLine.degrees
 }
 
-// SetTextEffect sets the text effect: effect.Normal, effect.Subscript or
-// effect.Superscript. The offset of a superscript or subscript follows the font
+// SetScriptPosition sets the script position: scriptposition.Normal, scriptposition.Subscript or
+// scriptposition.Superscript. The offset of a superscript or subscript follows the font
 // and font size of this text line when it is drawn.
-func (textLine *TextLine) SetTextEffect(textEffect effect.Effect) *TextLine {
-	textLine.textEffect = textEffect
+func (textLine *TextLine) SetScriptPosition(scriptPosition scriptposition.ScriptPosition) *TextLine {
+	textLine.scriptPosition = scriptPosition
 	textLine.explicitOffset = false
 	return textLine
 }
 
-// GetTextEffect returns the text effect.
-// @return the text effect.
-func (textLine *TextLine) GetTextEffect() effect.Effect {
-	return textLine.textEffect
+// GetScriptPosition returns the script position.
+// @return the script position.
+func (textLine *TextLine) GetScriptPosition() scriptposition.ScriptPosition {
+	return textLine.scriptPosition
 }
 
 // SetVerticalOffset sets the vertical offset of the text, which replaces the
-// offset of the text effect until SetTextEffect is called again.
+// offset of the script position until SetScriptPosition is called again.
 func (textLine *TextLine) SetVerticalOffset(verticalOffset float32) *TextLine {
 	textLine.verticalOffset = verticalOffset
 	textLine.explicitOffset = true
@@ -300,15 +300,15 @@ func (textLine *TextLine) SetVerticalOffset(verticalOffset float32) *TextLine {
 }
 
 // GetVerticalOffset returns the vertical text offset: the one set with
-// SetVerticalOffset, or that of the text effect at the font and font size of
+// SetVerticalOffset, or that of the script position at the font and font size of
 // this text line.
 func (textLine *TextLine) GetVerticalOffset() float32 {
 	if textLine.explicitOffset {
 		return textLine.verticalOffset
 	}
-	if textLine.textEffect == effect.Superscript {
+	if textLine.scriptPosition == scriptposition.Superscript {
 		return -textLine.font.GetBodyHeightAt(textLine.fontSize) / 2.0
-	} else if textLine.textEffect == effect.Subscript {
+	} else if textLine.scriptPosition == scriptposition.Subscript {
 		return textLine.font.GetBodyHeightAt(textLine.fontSize) / 3.0
 	}
 	return 0.0
@@ -387,7 +387,7 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 	line.textColor = textLine.textColor
 	line.lineColor = textLine.lineColor
 	line.colorMap = textLine.colorMap
-	line.textEffect = textLine.textEffect
+	line.scriptPosition = textLine.scriptPosition
 	line.verticalOffset = textLine.verticalOffset
 	line.explicitOffset = textLine.explicitOffset
 	line.uri = textLine.uri
@@ -421,8 +421,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if alt == textLine.text {
 		alt = ""
 	}
-	page.AddBMC(textLine.structureType, textLine.language, "", alt)
-	page.DrawStringUsingColorMap(
+	page.AddBDC(textLine.structureType, textLine.language, "", alt)
+	page.DrawStringUsingHighlightColors(
 		textLine.font,
 		textLine.fallbackFont,
 		textLine.fontSize,
@@ -446,7 +446,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := underlinePosition*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
-		page.AddBMC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
+		page.AddBDC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
 		page.MoveTo(float32(float64(textLine.x)+xAdjust), float32(float64(textLine.y)+yAdjust))
 		page.LineTo(float32(x2+xAdjust), float32(y2+yAdjust))
 		page.StrokePath()
@@ -465,7 +465,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
-		page.AddBMC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
+		page.AddBDC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
 		page.MoveTo(float32(float64(textLine.x)-xAdjust), float32(float64(textLine.y)-yAdjust))
 		page.LineTo(float32(x2-xAdjust), float32(y2-yAdjust))
 		page.StrokePath()

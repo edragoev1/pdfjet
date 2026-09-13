@@ -21,7 +21,7 @@ func Example25() {
 
 	chart := pdfjet.NewDonutChart(f1, f2, true) // true = full donut (with hole)
 	chart.SetLocation(300.0, 400.0)
-	chart.SetR1AndR2(200.0, 120.0)
+	chart.SetRadii(200.0, 120.0)
 
 	chart.AddSlice(pdfjet.NewSlice(90.0, 0xC1121F, "Apples", ""))   // deep red
 	chart.AddSlice(pdfjet.NewSlice(72.0, 0x1D3557, "Oranges", ""))  // navy blue

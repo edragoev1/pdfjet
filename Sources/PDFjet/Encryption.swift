@@ -49,8 +49,8 @@ public class Encryption {
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
         if pdf.getCompliance() == Compliance.PDF_UA_1 {
-            permissions.setPermissions(
-                    UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.getValue(), true)
+            permissions.grant(
+                    UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.getValue())
         }
 
         // The flags specifying which operations shall be permitted, with the

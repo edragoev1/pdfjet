@@ -69,8 +69,8 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 	return bookmark2
 }
 
-// GetDestKey returns the destination key.
-func (bookmark *Bookmark) GetDestKey() string {
+// GetDestinationName returns the name of the destination of this bookmark.
+func (bookmark *Bookmark) GetDestinationName() string {
 	return bookmark.key
 }
 

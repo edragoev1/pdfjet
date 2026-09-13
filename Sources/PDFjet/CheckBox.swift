@@ -166,7 +166,7 @@ public class CheckBox : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBMC(StructElem.P, language, actualText, altDescription)
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
 
         self.w = self.font.getAscent()
         self.h = self.w

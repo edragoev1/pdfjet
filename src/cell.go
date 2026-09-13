@@ -150,15 +150,16 @@ func (cell *Cell) GetBarcode() *Barcode {
 	return cell.barcode
 }
 
-// SetPoint sets the point inside this cell.
+// SetMarker sets the marker drawn in this cell: a Point, placed at its left or
+// right by its alignment and centered vertically.
 // See the Point class and Example_09 for more information.
-func (cell *Cell) SetPoint(point *Point) *Cell {
+func (cell *Cell) SetMarker(point *Point) *Cell {
 	cell.point = point
 	return cell
 }
 
-// GetPoint returns the cell point.
-func (cell *Cell) GetPoint() *Point {
+// GetMarker returns the marker drawn in this cell.
+func (cell *Cell) GetMarker() *Point {
 	return cell.point
 }
 
@@ -642,8 +643,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		xText = x + cell.leftPadding
 	}
 	if cell.compositeTextLine == nil {
-		page.AddBMC("P", "", cell.text, cell.text)
-		page.DrawStringUsingColorMap(
+		page.AddBDC("P", "", cell.text, cell.text)
+		page.DrawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {
@@ -683,7 +684,7 @@ func (cell *Cell) getTextWidth() float32 {
 // underlineText underlines the cell text.
 func (cell *Cell) underlineText(page *Page, x, y float32) {
 	descent := cell.font.GetDescentAt(cell.fontSize)
-	page.AddBMC("P", "", "underline", "underline")
+	page.AddBDC("P", "", "underline", "underline")
 	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
 	page.MoveTo(x, y+descent)
 	page.LineTo(x+cell.getTextWidth(), y+descent)
@@ -694,7 +695,7 @@ func (cell *Cell) underlineText(page *Page, x, y float32) {
 // strikeoutText strikes out the cell text.
 func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	ascent := cell.font.GetAscentAt(cell.fontSize)
-	page.AddBMC("P", "", "strike out", "strike out")
+	page.AddBDC("P", "", "strike out", "strike out")
 	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)
 	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)

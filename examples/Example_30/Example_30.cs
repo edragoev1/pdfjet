@@ -17,12 +17,12 @@ public class Example_30 {
         passwords.SetOwnerPassword("world");
 
         var permissions = new Permissions();
-        permissions.SetPermissions(
+        permissions.Grant(
             UserAccess.Print |               // Set both to allow the user to print
             UserAccess.PrintHighQuality |    // this document with high quality
             // UserAccess.ModifyContents |
             // UserAccess.CopyContents |
-            UserAccess.AssembleDocument, true);
+            UserAccess.AssembleDocument);
 
         pdf.SetEncryption(new Encryption(pdf, passwords, permissions));
 
@@ -47,10 +47,10 @@ public class Example_30 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(pdf, file1);
         attachment.SetLocation(100f, 550f);
-        attachment.SetIconPushPin();
+        attachment.SetIconPushpin();
         attachment.SetIconSize(24f);
         attachment.SetTitle("Attached File: " + file1.GetFileName());
-        attachment.SetDescription(
+        attachment.SetContents(
                 "Right mouse click on the icon to save the attached file.");
         attachment.DrawOn(page);
 
