@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
@@ -623,6 +624,50 @@ func (pdf *PDF) addNumsParentTree() {
 	pdf.endObj()
 }
 
+// addInfoObject adds the document information dictionary, which readers like
+// pdfinfo show. It says what the XMP metadata of PDF/A and PDF/UA documents says.
+func (pdf *PDF) addInfoObject() int {
+	pdf.newObj()
+	pdf.appendString("<<\n")
+	pdf.appendInfoText("/Title", pdf.title)
+	pdf.appendInfoText("/Author", pdf.author)
+	pdf.appendInfoText("/Subject", pdf.subject)
+	pdf.appendInfoText("/Keywords", pdf.keywords)
+	pdf.appendInfoText("/Creator", pdf.creator)
+	pdf.appendInfoText("/Producer", pdf.producer)
+	// The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+	date := "D:" + strings.NewReplacer("-", "", "T", "", ":", "").Replace(pdf.createDate)
+	pdf.appendInfoString("/CreationDate", []byte(date))
+	pdf.appendString(">>\n")
+	pdf.endObj()
+	return pdf.getObjNumber()
+}
+
+// appendInfoText appends an entry of the information dictionary with the text
+// in UTF-16BE with a byte order mark, unless the text is empty.
+func (pdf *PDF) appendInfoText(key, text string) {
+	if text == "" {
+		return
+	}
+	bytes := []byte{0xFE, 0xFF}
+	for _, unit := range utf16.Encode([]rune(text)) {
+		bytes = append(bytes, byte(unit>>8), byte(unit))
+	}
+	pdf.appendInfoString(key, bytes)
+}
+
+// appendInfoString appends an entry of the information dictionary with the
+// bytes of a string, encrypted if the document is encrypted.
+func (pdf *PDF) appendInfoString(key string, bytes []byte) {
+	if pdf.encryption != nil {
+		bytes, _ = encryption.Encrypt(bytes, pdf.encryption.GetKey())
+	}
+	pdf.appendString(key)
+	pdf.appendString(" <")
+	pdf.appendString(hex.EncodeToString(bytes))
+	pdf.appendString(">\n")
+}
+
 func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) int {
 	// Add the root object
 	pdf.newObj()
@@ -1153,6 +1198,7 @@ func (pdf *PDF) Complete() {
 		}
 	}
 
+	infoObjNumber := pdf.addInfoObject()
 	rootObjNumber := pdf.addRootObject(structTreeRootObjNumber, outlineDictNum)
 	startxref := pdf.byteCount
 
@@ -1191,6 +1237,10 @@ func (pdf *PDF) Complete() {
 		pdf.appendInteger(pdf.encryption.getObjNumber())
 		pdf.appendString(" 0 R\n")
 	}
+
+	pdf.appendString("/Info ")
+	pdf.appendInteger(infoObjNumber)
+	pdf.appendString(" 0 R\n")
 
 	pdf.appendString("/Root ")
 	pdf.appendInteger(rootObjNumber)

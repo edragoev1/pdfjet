@@ -608,6 +608,45 @@ public class PDF {
         EndObj();
     }
 
+    // Adds the document information dictionary, which readers like pdfinfo
+    // show. It says what the XMP metadata of PDF/A and PDF/UA documents says.
+    private int AddInfoObject() {
+        NewObj();
+        Append(Token.BeginDictionary);
+        AppendInfoText("/Title", title);
+        AppendInfoText("/Author", author);
+        AppendInfoText("/Subject", subject);
+        AppendInfoText("/Keywords", keywords);
+        AppendInfoText("/Creator", creator);
+        AppendInfoText("/Producer", producer);
+        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+        String date = "D:" + createDate.Replace("-", "").Replace("T", "").Replace(":", "");
+        AppendInfoString("/CreationDate", Encoding.ASCII.GetBytes(date));
+        Append(Token.EndDictionary);
+        EndObj();
+        return GetObjNumber();
+    }
+
+    // Appends an entry of the information dictionary with the text in UTF-16BE
+    // with a byte order mark, unless the text is null.
+    private void AppendInfoText(String key, String text) {
+        if (text != null) {
+            AppendInfoString(key, Encoding.BigEndianUnicode.GetBytes("\uFEFF" + text));
+        }
+    }
+
+    // Appends an entry of the information dictionary with the bytes of a
+    // string, encrypted if the document is encrypted.
+    private void AppendInfoString(String key, byte[] bytes) {
+        if (encryption != null) {
+            bytes = AES256.Encrypt(bytes, encryption.GetKey());
+        }
+        Append(key);
+        Append(" <");
+        Append(Util.ToHexString(bytes));
+        Append(">\n");
+    }
+
     private int AddRootObject(int structTreeRootObjNumber, int outlineDictNum) {
         // Add the root object
         NewObj();
@@ -1137,6 +1176,7 @@ public class PDF {
             }
         }
 
+        int infoObjNumber = AddInfoObject();
         int rootObjNumber = AddRootObject(structTreeRootObjNumber, outlineDictNum);
         int startxref = byteCount;
 
@@ -1176,6 +1216,10 @@ public class PDF {
             Append(encryption.GetObjNumber());
             Append(" 0 R\n");
         }
+
+        Append("/Info ");
+        Append(infoObjNumber);
+        Append(" 0 R\n");
 
         Append("/Root ");
         Append(rootObjNumber);

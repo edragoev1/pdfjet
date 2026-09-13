@@ -95,6 +95,7 @@ final public class PDF {
     // ...
     // StructElemN
     // StructTreeRoot
+    // Info
     // Root
     // xref table
     // Trailer
@@ -647,6 +648,45 @@ final public class PDF {
         endObj();
     }
 
+    // Adds the document information dictionary, which readers like pdfinfo
+    // show. It says what the XMP metadata of PDF/A and PDF/UA documents says.
+    private int addInfoObject() throws Exception {
+        newObj();
+        append(Token.BEGIN_DICTIONARY);
+        appendInfoText("/Title", title);
+        appendInfoText("/Author", author);
+        appendInfoText("/Subject", subject);
+        appendInfoText("/Keywords", keywords);
+        appendInfoText("/Creator", creator);
+        appendInfoText("/Producer", producer);
+        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+        String date = "D:" + createDate.replace("-", "").replace("T", "").replace(":", "");
+        appendInfoString("/CreationDate", date.getBytes(StandardCharsets.US_ASCII));
+        append(Token.END_DICTIONARY);
+        endObj();
+        return getObjNumber();
+    }
+
+    // Appends an entry of the information dictionary with the text in UTF-16BE
+    // with a byte order mark, unless the text is null.
+    private void appendInfoText(String key, String text) throws Exception {
+        if (text != null) {
+            appendInfoString(key, ("\uFEFF" + text).getBytes(StandardCharsets.UTF_16BE));
+        }
+    }
+
+    // Appends an entry of the information dictionary with the bytes of a
+    // string, encrypted if the document is encrypted.
+    private void appendInfoString(String key, byte[] bytes) throws Exception {
+        if (encryption != null) {
+            bytes = AES256.encrypt(bytes, encryption.getKey());
+        }
+        append(key);
+        append(" <");
+        append(Util.toHexString(bytes));
+        append(">\n");
+    }
+
     private int addRootObject(
             int structTreeRootObjNumber, int outlineDictNumber) throws Exception {
         // Add the root object
@@ -1196,6 +1236,7 @@ final public class PDF {
             }
         }
 
+        int infoObjNumber = addInfoObject();
         int rootObjNumber = addRootObject(structTreeRootObjNumber, outlineDictNum);
         int startxref = byteCount;
 
@@ -1234,6 +1275,10 @@ final public class PDF {
             append(encryption.getObjNumber());
             append(" 0 R\n");
         }
+
+        append("/Info ");
+        append(infoObjNumber);
+        append(" 0 R\n");
 
         append("/Root ");
         append(rootObjNumber);

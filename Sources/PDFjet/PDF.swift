@@ -626,6 +626,51 @@ public class PDF {
         append(buffer)
     }
 
+    /// Adds the document information dictionary, which readers like pdfinfo
+    /// show. It says what the XMP metadata of PDF/A and PDF/UA documents says.
+    private func addInfoObject() -> Int {
+        newObj()
+        append(Token.beginDictionary)
+        appendInfoText("/Title", title)
+        appendInfoText("/Author", author)
+        appendInfoText("/Subject", subject)
+        appendInfoText("/Keywords", keywords)
+        appendInfoText("/Creator", creator)
+        appendInfoText("/Producer", producer)
+        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+        let date = "D:" + createDate!
+                .replacingOccurrences(of: "-", with: "")
+                .replacingOccurrences(of: "T", with: "")
+                .replacingOccurrences(of: ":", with: "")
+        appendInfoString("/CreationDate", Array(date.utf8))
+        append(Token.endDictionary)
+        endObj()
+        return getObjNumber()
+    }
+
+    /// Appends an entry of the information dictionary with the text in
+    /// UTF-16BE with a byte order mark, unless the text is nil.
+    private func appendInfoText(_ key: String, _ text: String?) {
+        guard let text = text else {
+            return
+        }
+        var bytes: [UInt8] = [0xFE, 0xFF]
+        for unit in text.utf16 {
+            bytes.append(UInt8(unit >> 8))
+            bytes.append(UInt8(unit & 0xFF))
+        }
+        appendInfoString(key, bytes)
+    }
+
+    /// Appends an entry of the information dictionary with the bytes of a
+    /// string, encrypted if the document is encrypted.
+    private func appendInfoString(_ key: String, _ bytes: [UInt8]) {
+        append(key)
+        append(" <")
+        append(toHex(encrypted(bytes)))
+        append(">\n")
+    }
+
     private func addRootObject(
             _ structTreeRootObjNumber: Int,
             _ outlineDictNumber: Int) -> Int {
@@ -1110,6 +1155,7 @@ public class PDF {
             }
         }
 
+        let infoObjNumber = addInfoObject()
         let rootObjNumber = addRootObject(structTreeRootObjNumber, outlineDictNum)
         let startxref = byteCount
 
@@ -1150,6 +1196,10 @@ public class PDF {
             append(encryption.getObjNumber())
             append(Token.objRef)
         }
+
+        append("/Info ")
+        append(infoObjNumber)
+        append(Token.objRef)
 
         append("/Root ")
         append(rootObjNumber)
