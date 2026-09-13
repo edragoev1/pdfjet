@@ -60,7 +60,8 @@ public class Bookmark {
         let key = bm.goToNext()
 
         let bookmark = Bookmark(page, title.textLine!.getDestinationY(), key,
-                title.textLine!.text!.components(separatedBy: " ").filter{ !$0.isEmpty }.joined(separator: " "))
+                title.textLine!.text!.replacingOccurrences(
+                        of: "[ \\t\\n\\x0B\\f\\r]+", with: " ", options: .regularExpression))
         bookmark.parent = self
         bookmark.dest = page.addDestination(key, title.textLine!.getDestinationY())
         if children == nil {
@@ -73,14 +74,14 @@ public class Bookmark {
         return bookmark
     }
 
-    /// Returns the destination key of this bookmark.
-    public func getDestKey() -> String {
-        return self.key!
+    /// Returns the destination key of this bookmark, or nil for the root bookmark.
+    public func getDestKey() -> String? {
+        return self.key
     }
 
-    /// Returns the title of this bookmark.
-    public func getTitle() -> String {
-        return self.title!
+    /// Returns the title of this bookmark, or nil for the root bookmark.
+    public func getTitle() -> String? {
+        return self.title
     }
 
     /// Returns the parent bookmark.
