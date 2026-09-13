@@ -41,7 +41,7 @@ func Example37(fileName string) {
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
 		page.AddFontResource(font1, &objects)
 		page.SetBrushColor(color.Blue)
-		// page.DrawString(font1, nil, "Hello, World!", 50.0, 200.0)
+		// page.DrawString(font1, nil, font1.GetSize(), "Hello, World!", 50.0, 200.0)
 		text.DrawOn(page)
 
 		page.Complete(&objects) // The graphics stack is unwinded automatically

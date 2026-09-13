@@ -229,9 +229,18 @@ func (page *Page) DrawLine(x1, y1, x2, y2 float32) {
 	page.StrokePath()
 }
 
-// DrawString draws a string using the specified font1 and font2 at the x, y location.
-func (page *Page) DrawString(font1 *Font, font2 *Font, text string, x, y float32) {
-	page.DrawStringUsingColorMap(font1, font2, font1.size, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+// DrawString draws the string in black at the x, y location. The fallback font
+// is used for the characters the main font does not have.
+func (page *Page) DrawString(font, fallbackFont *Font, fontSize float32, text string, x, y float32) {
+	page.DrawStringUsingColorMap(font, fallbackFont, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+}
+
+// DrawStringUsingColor draws the string in the 0xRRGGBB color at the x, y
+// location, highlighting the words in the colors map. The fallback font is used
+// for the characters the main font does not have.
+func (page *Page) DrawStringUsingColor(
+	font, fallbackFont *Font, fontSize float32, text string, x, y float32, color int32, colors map[string]int32) {
+	page.DrawStringUsingColorMap(font, fallbackFont, fontSize, text, x, y, colorToRGB(color), colors)
 }
 
 // DrawStringUsingFontSize draws a string using the specified font and font size

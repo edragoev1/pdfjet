@@ -33,6 +33,11 @@ func (title *Title) GetPrefix() *TextLine {
 	return title.prefix
 }
 
+// GetTextLine returns the text line of the title.
+func (title *Title) GetTextLine() *TextLine {
+	return title.textLine
+}
+
 // SetOffset sets the offset of the title text.
 func (title *Title) SetOffset(offset float32) *Title {
 	title.textLine.SetLocation(title.textLine.x+offset, title.textLine.y)

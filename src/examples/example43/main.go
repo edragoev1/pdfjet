@@ -30,8 +30,8 @@ func Example43() {
 	f2.SetSize(9.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape())
-	table.SetNumberOfColumns(9)              // The order of the
-	err := table.SetTableData(fileName, ",") // these statements
+	table.SetNumberOfColumns(9)                 // The order of the
+	_, err := table.SetTableData(fileName, ",") // these statements
 	if err != nil {
 		log.Printf("Failed to load table data: %v", err)
 		return

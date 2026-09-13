@@ -364,7 +364,7 @@ final public class Page {
             String str,
             float x,
             float y,
-            Integer color,
+            int color,
             Map<String, Integer> colors) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;

@@ -93,6 +93,13 @@ public class Rect : Drawable {
         return self
     }
 
+    /// Sets the fill color from red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setFillColor(_ r: Float, _ g: Float, _ b: Float) -> Rect {
+        self.fillColor = [r, g, b]
+        return self
+    }
+
     /// Sets the border color as a 0xRRGGBB value. Color.transparent removes the border.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Rect {
@@ -111,6 +118,13 @@ public class Rect : Drawable {
     @discardableResult
     public func setBorderColor(_ borderColor: [Float]?) -> Rect {
         self.borderColor = borderColor
+        return self
+    }
+
+    /// Sets the border color from red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setBorderColor(_ r: Float, _ g: Float, _ b: Float) -> Rect {
+        self.borderColor = [r, g, b]
         return self
     }
 

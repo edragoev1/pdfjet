@@ -292,7 +292,8 @@ arguments. Java and C# have `float` and `double` overloads of the setters,
 Swift has one form with default arguments where Java has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize`,
-`DrawStringUsingColorMap` and `DrawStringUsingSpacing` for the `drawString`
+`DrawStringUsingColor` (an `int32` color), `DrawStringUsingColorMap` (a
+`[3]float32` color) and `DrawStringUsingSpacing` for the `drawString`
 overloads, `StringWidthFB` for `stringWidth` with a fallback font,
 `DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
@@ -302,7 +303,7 @@ port.
 
 Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewPageDetached` for
-`Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, and `NewFont`,
+`Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, `NewTextBoxWithSize`, and `NewFont`,
 `NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
 `NewFontStream2` where the other ports pass `Font.STREAM` or a `CoreFont` to
 the `Font` constructor. Where the other ports have an overload with fewer
@@ -310,7 +311,9 @@ arguments, Go has the full form only: `NewCell(font, text)`,
 `NewDestination(name, x, y)`, `NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBMC` with the language.
-`content.GetFromReader` is `Content.getFromStream`. Java's `PDF` keeps
+`content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and
+`ReadWithPassword` take the whole PDF as a `[]byte` where the other ports read
+it from a stream. Java's `PDF` keeps
 `append`, `newObj`, `endObj` and `getObjNumber` public, which the other ports
 keep internal: the `com.pdfjet.encryption` package writes the encryption
 dictionary with them, and Java has no visibility between package-private and

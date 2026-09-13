@@ -39,10 +39,6 @@ public class SVGImage implements Drawable {
 
     private ColorMap colorMap = null;
 
-    /** The default constructor */
-    public SVGImage() {
-    }
-
     /**
      * Used to embed SVG images in the PDF document.
      *

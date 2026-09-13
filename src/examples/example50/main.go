@@ -75,55 +75,55 @@ func Example50(fileName string) {
 	page.SetBrushColor(color.Blue)
 
 	// First Name and Initial
-	page.DrawString(font2, nil, "Иван", x, y)
+	page.DrawString(font2, nil, font2.GetSize(), "Иван", x, y)
 
 	// Last Name
-	page.DrawString(font3, nil, "Jones", x+258.0, y)
+	page.DrawString(font3, nil, font3.GetSize(), "Jones", x+258.0, y)
 
 	// Social Insurance Number
 	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("243-590-129"), x+437.0, y, dx)
 
 	// Last Name at Birth
 	y += dy
-	page.DrawString(font1, nil, "Culverton", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Culverton", x, y)
 
 	// Mailing Address
 	y += dy
-	page.DrawString(font1, nil, "10 Elm Street", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "10 Elm Street", x, y)
 
 	// City
 	y += dy
-	page.DrawString(font1, nil, "Toronto", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Toronto", x, y)
 
 	// Province or Territory
-	page.DrawString(font1, nil, "Ontario", x+365.0, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Ontario", x+365.0, y)
 
 	// Postal Code
 	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
 
 	// Home Address
 	y += dy
-	page.DrawString(font1, nil, "10 Oak Road", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "10 Oak Road", x, y)
 
 	// City
 	y += dy
-	page.DrawString(font1, nil, "Toronto", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Toronto", x, y)
 
 	// Previous Province or Territory
-	page.DrawString(font1, nil, "Ontario", x+365.0, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Ontario", x+365.0, y)
 
 	// Postal Code
 	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("L7B 2E9"), x+482.0, y, dx)
 
 	// Home telephone number
-	page.DrawString(font1, nil, "905-222-3333", x, y+dy)
+	page.DrawString(font1, nil, font1.GetSize(), "905-222-3333", x, y+dy)
 	// Work telephone number
 	y += dy
-	page.DrawString(font1, nil, "416-567-9903", x+279.0, y)
+	page.DrawString(font1, nil, font1.GetSize(), "416-567-9903", x+279.0, y)
 
 	// Previous province or territory
 	y += dy
-	page.DrawString(font1, nil, "British Columbia", x+452.0, y)
+	page.DrawString(font1, nil, font1.GetSize(), "British Columbia", x+452.0, y)
 
 	// Move date from previous province or territory
 	y += dy
@@ -134,21 +134,21 @@ func Example50(fileName string) {
 
 	// First name of spouse
 	y = 521.0
-	page.DrawString(font1, nil, "Melanie", x, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Melanie", x, y)
 	// Last name of spouse
-	page.DrawString(font1, nil, "Jones", x+258.0, y)
+	page.DrawString(font1, nil, font1.GetSize(), "Jones", x+258.0, y)
 
 	// Social Insurance number of spouse
 	page.DrawStringUsingSpacing(font1, font1.GetSize(), stripSpacesAndDashes("192-760-427"), x+437.0, y, dx)
 
 	// Spouse or common-law partner's address
-	page.DrawString(font1, nil, "12 Smithfield Drive", x, 554.0)
+	page.DrawString(font1, nil, font1.GetSize(), "12 Smithfield Drive", x, 554.0)
 
 	// Signature Date
-	page.DrawString(font1, nil, "2016-08-07", x+475.0, 615.0)
+	page.DrawString(font1, nil, font1.GetSize(), "2016-08-07", x+475.0, 615.0)
 
 	// Signature Date of spouse
-	page.DrawString(font1, nil, "2016-08-07", x+475.0, 651.0)
+	page.DrawString(font1, nil, font1.GetSize(), "2016-08-07", x+475.0, 651.0)
 
 	// Female Checkbox 1
 	// pdfjet.XMarkCheckBox(page, 477.5, 197.5, 7.0)

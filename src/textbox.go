@@ -80,6 +80,16 @@ func NewTextBoxWithText(font *Font, text string) *TextBox {
 	return textBox
 }
 
+// NewTextBoxWithSize creates a text box and sets the font, the text, the width
+// and the height. A height of 0 lets the text box grow to fit its text.
+func NewTextBoxWithSize(font *Font, text string, width, height float32) *TextBox {
+	textBox := NewTextBoxWithText(font, text)
+	textBox.width = width
+	textBox.height = height
+	textBox.fixedHeight = height > 0.0
+	return textBox
+}
+
 // SetFont sets the font of this text box.
 func (textBox *TextBox) SetFont(font *Font) *TextBox {
 	textBox.font = font

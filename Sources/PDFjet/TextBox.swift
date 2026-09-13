@@ -244,6 +244,13 @@ public class TextBox : Drawable {
         return self
     }
 
+    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> TextBox {
+        self.textColor = [r, g, b]
+        return self
+    }
+
     /// Returns the text color.
     public func getTextColor() -> [Float] {
         return self.textColor
@@ -267,6 +274,13 @@ public class TextBox : Drawable {
     @discardableResult
     public func setStrokeColor(_ rgbColor: [Float]?) -> TextBox {
         self.strokeColor = rgbColor
+        return self
+    }
+
+    /// Sets the color of the borders from red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> TextBox {
+        self.strokeColor = [r, g, b]
         return self
     }
 

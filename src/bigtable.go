@@ -209,8 +209,10 @@ func newDataScanner(file *os.File) *bufio.Scanner {
 	return bufio.NewScanner(reader)
 }
 
-// SetTableData sets the table data from file
-func (bt *BigTable) SetTableData(fileName, delimiter string) error {
+// SetTableData sets the table data from the file, with the fields of each line
+// separated by the delimiter. It returns the table, or an error if the file
+// cannot be read.
+func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) {
 	bt.fileName = fileName
 	bt.delimiter = delimiter
 	bt.vertLines = make([]float32, bt.numberOfColumns+1)
@@ -220,7 +222,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 
 	file, err := os.Open(fileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -258,11 +260,11 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return err
+		return nil, err
 	}
 
 	bt.setVertLines()
-	return nil
+	return bt, nil
 }
 
 // setVertLines sets the x coordinates of the vertical lines from the location
