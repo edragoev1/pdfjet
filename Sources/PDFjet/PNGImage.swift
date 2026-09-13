@@ -60,7 +60,7 @@ public class PNGImage {
             } else if chunkType == "PLTE" {
                 pLTE = chunk.getData()!
                 if pLTE!.count % 3 != 0 {
-                    Swift.print("Incorrect palette length: \(String(pLTE!.count))")
+                    throw PDFjetError(message: "Incorrect palette length.")
                 }
             } else if chunkType == "tRNS" {
                 if colorType == 3 {
@@ -74,7 +74,7 @@ public class PNGImage {
         var inflatedImageData = [UInt8]()   // The inflated image data
         _ = try Puff(output: &inflatedImageData, input: &iDAT)
 
-        var image: [UInt8]?                 // The image data
+        let image: [UInt8]                  // The image data
         if colorType == 0 {
             // Grayscale Image
             if bitDepth == 16 {
@@ -88,13 +88,13 @@ public class PNGImage {
             } else if bitDepth == 1 {
                 image = getImageColorType0BitDepth1(inflatedImageData)
             } else {
-                Swift.print("Image with unsupported bit depth == \(String(bitDepth))")
+                throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
             }
         } else if colorType == 6 {
             if bitDepth == 8 {
                 image = getImageColorType6BitDepth8(inflatedImageData)
             } else {
-                Swift.print("Image with unsupported bit depth == \(String(bitDepth))")
+                throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
             }
         } else {
             // Color Image
@@ -110,12 +110,12 @@ public class PNGImage {
                 if bitDepth == 8 || bitDepth == 4 || bitDepth == 2 || bitDepth == 1 {
                     image = getImageColorType3(inflatedImageData)
                 } else {
-                    Swift.print("Image with unsupported bit depth == \(String(bitDepth))")
+                    throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
                 }
             }
         }
 
-        FlateEncode(&deflatedImageData, image!)
+        FlateEncode(&deflatedImageData, image)
     }
 
     /// Returns the image width.
@@ -150,6 +150,9 @@ public class PNGImage {
 
     private func readPNG(_ stream: InputStream) throws -> [UInt8] {
         let contents = try Content.getFromStream(stream)
+        if contents.count < 8 {
+            throw PDFjetError(message: "File is too short!")
+        }
         if contents[0] == 0x89 &&
                 contents[1] == 0x50 &&
                 contents[2] == 0x4E &&
@@ -160,7 +163,7 @@ public class PNGImage {
                 contents[7] == 0x0A {
             // The PNG signature is correct.
         } else {
-            Swift.print("Wrong PNG signature.")
+            throw PDFjetError(message: "Wrong PNG signature.")
         }
         return contents
     }
@@ -170,7 +173,7 @@ public class PNGImage {
         var chunks = [Chunk]()
         var offset = 8      // Skip the header!
         while true {
-            let chunk = getChunk(&buffer, &offset)
+            let chunk = try getChunk(&buffer, &offset)
             let chunkType = String(bytes: chunk.type!, encoding: .utf8)!
             if chunkType == "IEND" {
                 break
@@ -182,26 +185,26 @@ public class PNGImage {
 
     private func getChunk(
             _ buffer: inout [UInt8],
-            _ offset: inout Int) -> Chunk {
+            _ offset: inout Int) throws -> Chunk {
         let chunk = Chunk()
 
         // The length of the data chunk.
-        chunk.length = getUInt32(getBytes(&buffer, &offset, 4), 0)
+        chunk.length = getUInt32(try getBytes(&buffer, &offset, 4), 0)
 
         // The chunk type.
-        chunk.type = getBytes(&buffer, &offset, 4)
+        chunk.type = try getBytes(&buffer, &offset, 4)
 
         // The chunk data.
-        chunk.data = getBytes(&buffer, &offset, Int(chunk.length!))
+        chunk.data = try getBytes(&buffer, &offset, Int(chunk.length!))
 
         // CRC of the type and data chunks.
-        chunk.crc = getUInt32(getBytes(&buffer, &offset, 4), 0)
+        chunk.crc = getUInt32(try getBytes(&buffer, &offset, 4), 0)
 
         let crc = CRC32()
         crc.update(chunk.type!, 0, 4)
         crc.update(chunk.data!, 0, Int(chunk.length!))
         if crc.getValue() != chunk.crc {
-            Swift.print("Chunk has bad CRC.")
+            throw PDFjetError(message: "Chunk has bad CRC.")
         }
 
         return chunk
@@ -210,7 +213,10 @@ public class PNGImage {
     private func getBytes(
             _ buffer: inout [UInt8],
             _ offset: inout Int,
-            _ length: Int) -> [UInt8] {
+            _ length: Int) throws -> [UInt8] {
+        if offset + length > buffer.count {
+            throw PDFjetError(message: "Error reading input stream!")
+        }
         var bytes = [UInt8]()
         var i = 0
         while i < length {

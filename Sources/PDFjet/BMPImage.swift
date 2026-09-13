@@ -31,41 +31,43 @@ class BMPImage {
     enum BMPImageError: Error {
         case notParsed
         case unsupportedBitDepth
+        case unexpectedEndOfStream
+        case invalidImageData
     }
 
     // Tested with images created from GIMP
     /// Reads a BMP image from the stream.
     public init(_ stream: InputStream) throws {
-        let bm = getBytes(stream, 2)
+        let bm = try getBytes(stream, 2)
         // From Wikipedia
-        if (Unicode.Scalar(bm![0]) == "B" && Unicode.Scalar(bm![1]) == "M") ||
-                (Unicode.Scalar(bm![0]) == "B" && Unicode.Scalar(bm![1]) == "A") ||
-                (Unicode.Scalar(bm![0]) == "C" && Unicode.Scalar(bm![1]) == "I") ||
-                (Unicode.Scalar(bm![0]) == "C" && Unicode.Scalar(bm![1]) == "P") ||
-                (Unicode.Scalar(bm![0]) == "I" && Unicode.Scalar(bm![1]) == "C") ||
-                (Unicode.Scalar(bm![0]) == "P" && Unicode.Scalar(bm![1]) == "T") {
-            skipNBytes(stream, 8)
-            let offset = readSignedInt(stream)
-            readSignedInt(stream)               // size of header
-            self.w = readSignedInt(stream)
-            self.h = readSignedInt(stream)
-            skipNBytes(stream, 2)
-            self.bpp = read2BytesLE(stream)
-            let compression = readSignedInt(stream)
+        if (Unicode.Scalar(bm[0]) == "B" && Unicode.Scalar(bm[1]) == "M") ||
+                (Unicode.Scalar(bm[0]) == "B" && Unicode.Scalar(bm[1]) == "A") ||
+                (Unicode.Scalar(bm[0]) == "C" && Unicode.Scalar(bm[1]) == "I") ||
+                (Unicode.Scalar(bm[0]) == "C" && Unicode.Scalar(bm[1]) == "P") ||
+                (Unicode.Scalar(bm[0]) == "I" && Unicode.Scalar(bm[1]) == "C") ||
+                (Unicode.Scalar(bm[0]) == "P" && Unicode.Scalar(bm[1]) == "T") {
+            try skipNBytes(stream, 8)
+            let offset = try readSignedInt(stream)
+            try readSignedInt(stream)           // size of header
+            self.w = try readSignedInt(stream)
+            self.h = try readSignedInt(stream)
+            try skipNBytes(stream, 2)
+            self.bpp = try read2BytesLE(stream)
+            let compression = try readSignedInt(stream)
             if bpp > 8 {
                 r5g6b5 = (compression == 3)
-                skipNBytes(stream, 20)
+                try skipNBytes(stream, 20)
                 if offset > 54 {
-                    skipNBytes(stream, offset - 54)
+                    try skipNBytes(stream, offset - 54)
                 }
             } else {
-                skipNBytes(stream, 12)
-                var numPalColors = readSignedInt(stream)
+                try skipNBytes(stream, 12)
+                var numPalColors = try readSignedInt(stream)
                 if numPalColors == 0 {
                     numPalColors = Int(pow(2.0, Double(bpp)))
                 }
-                skipNBytes(stream, 4)
-                parsePalette(stream, numPalColors)
+                try skipNBytes(stream, 4)
+                try parsePalette(stream, numPalColors)
             }
             try parseData(stream)
         } else {
@@ -74,12 +76,16 @@ class BMPImage {
     }
 
     private func parseData(_ stream: InputStream) throws {
+        // A negative height is a top-down image, which is not supported.
+        if w < 0 || h < 0 {
+            throw BMPImageError.invalidImageData
+        }
         image = [UInt8](repeating: 0, count: (3 * w * h))
         let rowsize = 4 * Int(ceil(Double(w * bpp) / 32.0)) // 4 byte alignment
         var row: [UInt8]
         var index = 0
         for i in 0..<self.h {
-            row = getBytes(stream, rowsize)!
+            row = try getBytes(stream, rowsize)
             if self.bpp == 1 {
                 row = bit1to8(row, w)           // opslag i palette
             } else if self.bpp == 4 {
@@ -104,6 +110,9 @@ class BMPImage {
             if self.palette != nil {
                 // indexed
                 for j in 0..<self.w {
+                    if Int(row[j]) >= self.palette!.count {
+                        throw BMPImageError.invalidImageData
+                    }
                     image![index] = self.palette![Int(row[j])][2]
                     index += 1
                     image![index] = self.palette![Int(row[j])][1]
@@ -211,29 +220,41 @@ class BMPImage {
         return ret
     }
 
-    private func parsePalette(_ stream: InputStream, _ size: Int) {
+    private func parsePalette(_ stream: InputStream, _ size: Int) throws {
+        if size < 0 {
+            throw BMPImageError.invalidImageData
+        }
         self.palette = [[UInt8]]()
         for _ in 0..<size {
-            self.palette!.append(getBytes(stream, 4)!)
+            self.palette!.append(try getBytes(stream, 4))
         }
     }
 
-    private func skipNBytes(_ stream: InputStream, _ n: Int) {
-        var buf = [UInt8](repeating: 0, count: n)
-        if stream.read(&buf, maxLength: buf.count) == buf.count {
-        }
+    private func skipNBytes(_ stream: InputStream, _ n: Int) throws {
+        _ = try getBytes(stream, n)
     }
 
-    private func getBytes(_ stream: InputStream, _ length: Int) -> [UInt8]? {
+    // Reads length bytes: a single read may return fewer bytes than asked for.
+    private func getBytes(_ stream: InputStream, _ length: Int) throws -> [UInt8] {
+        if length < 0 {
+            throw BMPImageError.invalidImageData
+        }
         var buf = [UInt8](repeating: 0, count: length)
-        if stream.read(&buf, maxLength: buf.count) == buf.count {
-            return buf
+        var offset = 0
+        while offset < length {
+            let read = buf.withUnsafeMutableBufferPointer {
+                stream.read($0.baseAddress! + offset, maxLength: length - offset)
+            }
+            if read <= 0 {
+                throw BMPImageError.unexpectedEndOfStream
+            }
+            offset += read
         }
-        return nil
+        return buf
     }
 
-    private func read2BytesLE(_ stream: InputStream) -> Int {
-        let buf = getBytes(stream, 2)!
+    private func read2BytesLE(_ stream: InputStream) throws -> Int {
+        let buf = try getBytes(stream, 2)
         var val: UInt32 = 0
         val |= UInt32(buf[1] & 0xff)
         val <<= 8
@@ -242,8 +263,8 @@ class BMPImage {
     }
 
     @discardableResult
-    private func readSignedInt(_ stream: InputStream) -> Int {
-        let buf = getBytes(stream, 4)!
+    private func readSignedInt(_ stream: InputStream) throws -> Int {
+        let buf = try getBytes(stream, 4)
         var val: Int64 = 0
         val |= Int64(buf[3] & 0xff)
         val <<= 8
@@ -252,7 +273,7 @@ class BMPImage {
         val |= Int64(buf[1] & 0xff)
         val <<= 8
         val |= Int64(buf[0] & 0xff)
-        return Int(val)
+        return Int(Int32(truncatingIfNeeded: val))
     }
 
     /// Returns the image width.

@@ -59,7 +59,7 @@ class OTF {
             version == 0x4F54544F {     // CFF OTF
             // We should be able to read this font
         } else {
-            Swift.print("OTF version == \(version) is not supported.")
+            throw PDFjetError(message: "OTF version == \(version) is not supported.")
         }
 
         let numOfTables = readUInt16()      // numOfTables
