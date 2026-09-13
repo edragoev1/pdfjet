@@ -271,7 +271,7 @@ public class Table : IDrawable {
     /// <param name="index">the index of the specified column.</param>
     /// <param name="alignment">the specified alignment. Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY.</param>
     /// <returns>this Table object.</returns>
-    public Table SetTextAlignInColumn(int index, Alignment alignment) {
+    public Table SetTextAlignmentInColumn(int index, Alignment alignment) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 Cell cell = row[index];
@@ -748,7 +748,7 @@ public class Table : IDrawable {
                     cell2.SetProperties(cell.GetProperties());
                     cell2.SetColSpan(cell.GetColSpan());
                     cell2.SetTextAlignment(cell.GetTextAlignment());
-                    cell2.SetVerTextAlignment(cell.GetVerTextAlignment());
+                    cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);
                     cell2.SetBorder(Border.TOP, false);
                     row2.Add(cell2);

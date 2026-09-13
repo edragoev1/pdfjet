@@ -556,7 +556,7 @@ public class Cell {
     /// <param name="alignment">the alignment.
     /// Supported values: Alignment.TOP, Alignment.CENTER and Alignment.BOTTOM.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetVerTextAlignment(Alignment alignment) {
+    public Cell SetVerticalAlignment(Alignment alignment) {
         this.valign = alignment;
         return this;
     }
@@ -565,7 +565,7 @@ public class Cell {
     /// Returns the cell text vertical alignment.
     /// </summary>
     /// <returns>the vertical alignment.</returns>
-    public Alignment GetVerTextAlignment() {
+    public Alignment GetVerticalAlignment() {
         return this.valign;
     }
 

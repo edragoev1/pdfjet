@@ -506,17 +506,17 @@ func (cell *Cell) GetTextAlignment() alignment.Alignment {
 	return cell.textAlignment
 }
 
-// SetVerTextAlignment sets the cell text vertical alignment.
+// SetVerticalAlignment sets the cell text vertical alignment.
 // @param alignment the alignment code.
 // Supported values: alignment.Top, alignment.Center and alignment.Bottom.
-func (cell *Cell) SetVerTextAlignment(valign alignment.Alignment) *Cell {
+func (cell *Cell) SetVerticalAlignment(valign alignment.Alignment) *Cell {
 	cell.valign = valign
 	return cell
 }
 
-// GetVerTextAlignment returns the cell text vertical alignment.
+// GetVerticalAlignment returns the cell text vertical alignment.
 // @return the vertical alignment code.
-func (cell *Cell) GetVerTextAlignment() alignment.Alignment {
+func (cell *Cell) GetVerticalAlignment() alignment.Alignment {
 	return cell.valign
 }
 

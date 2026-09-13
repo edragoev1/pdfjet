@@ -652,7 +652,7 @@ public class Cell {
      * - Returns: this Cell object.
      */
     @discardableResult
-    public func setVerTextAlignment(_ alignment: Alignment) -> Cell {
+    public func setVerticalAlignment(_ alignment: Alignment) -> Cell {
         self.valign = alignment
         return self
     }
@@ -662,7 +662,7 @@ public class Cell {
      *
      * - Returns: the vertical alignment.
      */
-    public func getVerTextAlignment() -> Alignment {
+    public func getVerticalAlignment() -> Alignment {
         return self.valign
     }
 

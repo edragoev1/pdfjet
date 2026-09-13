@@ -221,12 +221,12 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	return table
 }
 
-// SetTextAlignInColumn sets the text alignment in the specified column.
+// SetTextAlignmentInColumn sets the text alignment in the specified column.
 //
 // @param index the index of the specified column.
 // @param alignment the specified alignment.
 // Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
-func (table *Table) SetTextAlignInColumn(index int, textAlignment alignment.Alignment) *Table {
+func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.Alignment) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
 			cell := row[index]
@@ -668,7 +668,7 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 				cell2.SetTextAlignment(cell.GetTextAlignment())
 				cell2.SetUnderline(cell.GetUnderline())
 				cell2.SetStrikeout(cell.GetStrikeout())
-				cell2.SetVerTextAlignment(cell.GetVerTextAlignment())
+				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
 				cell2.SetTopBorder(false)
 				row2 = append(row2, cell2)

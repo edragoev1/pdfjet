@@ -296,7 +296,7 @@ public class Table implements Drawable {
      *                  Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY.
      * @return this Table object.
      */
-    public Table setTextAlignInColumn(int index, Alignment alignment) {
+    public Table setTextAlignmentInColumn(int index, Alignment alignment) {
         for (List<Cell> row : tableData) {
             if (index < row.size()) {
                 Cell cell = row.get(index);
@@ -809,7 +809,7 @@ public class Table implements Drawable {
                     // The column span, borders, underline and strikeout.
                     cell2.setProperties(cell.getProperties());
                     cell2.setTextAlignment(cell.getTextAlignment());
-                    cell2.setVerTextAlignment(cell.getVerTextAlignment());
+                    cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);
                     cell2.setBorder(Border.TOP, false);
                     row2.add(cell2);

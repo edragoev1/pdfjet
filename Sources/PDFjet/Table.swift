@@ -257,7 +257,7 @@ public class Table : Drawable {
     /// - Parameter alignment: the specified alignment.
     ///
     @discardableResult
-    public func setTextAlignInColumn(_ index: Int, _ alignment: Alignment) -> Table {
+    public func setTextAlignmentInColumn(_ index: Int, _ alignment: Alignment) -> Table {
         for row in tableData {
             if index < row.count {
                 let cell = row[index]
@@ -764,7 +764,7 @@ public class Table : Drawable {
                     cell2.setRightBorder(cell.getRightBorder())
                     cell2.setUnderline(cell.getUnderline())
                     cell2.setStrikeout(cell.getStrikeout())
-                    cell2.setVerTextAlignment(cell.getVerTextAlignment())
+                    cell2.setVerticalAlignment(cell.getVerticalAlignment())
                     cell2.setTopPadding(0.0)
                     cell2.setTopBorder(false)
                     row2.append(cell2)

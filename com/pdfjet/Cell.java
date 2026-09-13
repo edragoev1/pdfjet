@@ -769,7 +769,7 @@ public class Cell {
      * Supported values: Alignment.TOP, Alignment.CENTER and Alignment.BOTTOM.
      * @return this Cell object.
      */
-    public Cell setVerTextAlignment(Alignment alignment) {
+    public Cell setVerticalAlignment(Alignment alignment) {
         this.valign = alignment;
         return this;
     }
@@ -779,7 +779,7 @@ public class Cell {
      *
      * @return the vertical alignment.
      */
-    public Alignment getVerTextAlignment() {
+    public Alignment getVerticalAlignment() {
         return this.valign;
     }
 
