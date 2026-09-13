@@ -46,9 +46,10 @@ jobs:
         runs-on: ubuntu-24.04
         steps:
             # Only the ports, the DocFX configuration, the examples, the fonts,
-            # images and data the examples read, and .github (for the Install
-            # Swift action) are checked out. Files in the repository root are
-            # always checked out.
+            # images and data the examples read, .github (for the Install
+            # Swift action) and tests/swift, the path of the test target that
+            # SwiftPM checks in Package.swift, are checked out. Files in the
+            # repository root are always checked out.
             - uses: actions/checkout@v7
               with:
                   sparse-checkout: |
@@ -63,6 +64,7 @@ jobs:
                       images
                       data
                       PngSuite
+                      tests/swift
 
             - uses: actions/setup-java@v6
               with:
