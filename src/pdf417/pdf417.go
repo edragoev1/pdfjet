@@ -249,7 +249,7 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 		}
 		x += n * barcode.w1
 	}
-	barcode.x1 = x
+	x0 := x // Where the codewords of each row start
 
 	k := 1 // Cluster index
 	for i := 0; i < len(barcode.codewords); i++ {
@@ -267,7 +267,7 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 			break
 		}
 		if (i+1)%(barcode.cols+2) == 0 {
-			x = barcode.x1
+			x = x0
 			y += barcode.h1
 			k++
 			if k == 4 {

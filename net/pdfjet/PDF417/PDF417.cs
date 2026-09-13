@@ -265,7 +265,7 @@ public class PDF417 : IDrawable {
             }
             x += n * w1;
         }
-        x1 = x;
+        float x0 = x;   // Where the codewords of each row start
 
         int k = 1;  // Cluster index
         for (int i = 0; i < codewords.Length; i++) {
@@ -280,7 +280,7 @@ public class PDF417 : IDrawable {
             }
             if (i == codewords.Length - 1) break;
             if ((i + 1) % (cols + 2) == 0) {
-                x = x1;
+                x = x0;
                 y += h1;
                 k++;
                 if (k == 4) k = 1;

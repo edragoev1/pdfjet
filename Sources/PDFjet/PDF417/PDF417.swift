@@ -270,7 +270,7 @@ public class PDF417 : Drawable {
             }
             x += Float(n) * w1
         }
-        x1 = x
+        let x0 = x              // Where the codewords of each row start
 
         var k = 1               // Cluster index
         for i in 0..<codewords.count {
@@ -287,7 +287,7 @@ public class PDF417 : Drawable {
                 break
             }
             if (i + 1) % (cols + 2) == 0 {
-                x = x1
+                x = x0
                 y += h1
                 k += 1
                 if k == 4 {
