@@ -733,15 +733,21 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ### Names in one port
 
-- ⬜ **B** C#: `SVGImage.getWidth` and `getHeight` are lower case
+- ✅ **B** C#: `SVGImage.getWidth` and `getHeight` are lower case
       (`SVGImage.cs:213`); `Compliance.PDF_1_7` is `PDF_17` in the other
       ports (`PDF_1_7` reads better next to `PDF_UA_1`); `PathOperator`,
       `Token`, `UserAccess` and `Point.ControlPointC`/`V`/`Y` are PascalCase
       where the other C# constant classes copy Java's `UPPER_SNAKE`.
-- ⬜ **B** Swift: `PathOperator`, `Token` and `Point.controlPointC`/`V`/`Y` are
+      Fixed: `SVGImage.GetWidth` and `GetHeight`; `Compliance.PDF_1_7` in the
+      four ports; the C# `PathOperator` and `UserAccess` members and
+      `Point.CONTROL_POINT_C`, `V` and `Y` are `UPPER_SNAKE`. `Token` is
+      internal in every port since the public by accident fixes.
+- ✅ **B** Swift: `PathOperator`, `Token` and `Point.controlPointC`/`V`/`Y` are
       camelCase and `StructElem` is PascalCase (`Document`, `THead`) where the
       other Swift constant classes copy Java's `UPPER_SNAKE`.
-- ⬜ **B** Go: `RadioButton.SelectButton` and `CheckBox.XMarkCheckBox`, whose
+      Fixed: the `PathOperator` cases, `Point.CONTROL_POINT_C`, `V` and `Y`
+      and the `StructElem` constants are `UPPER_SNAKE`; `Token` is internal.
+- ✅ **B** Go: `RadioButton.SelectButton` and `CheckBox.XMarkCheckBox`, whose
       suffixes no overload explains; `NewImage2`; `Page.GetPenColorRGB` and
       `GetBrushColorRGB` with no plain `GetPenColor` and `GetBrushColor`;
       `mark.UnCheck`; `tabloid.PORTRAIT` and `LANDSCAPE` where the other page
@@ -749,13 +755,29 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Salsa20()` returns a document ID; the `Courier` … `ZapfDingbats`
       constants in `src/corefont.go`, numbered from 0 and named like the
       `corefont.Courier()` functions; `ValidBitsMask`.
-- ⬜ **B** Go exports helpers that Week 4 meant to hide and the README does not
+      Fixed: `RadioButton.Select`, as in Java; `NewImageForObjects`;
+      `Page.GetPenColor` and `GetBrushColor`, which return the `[3]float32`
+      color as `Point.GetStrokeColor` does; `mark.Uncheck`; the document ID
+      comes from `DocumentID` in the internal `salsa20` package; and
+      `validBitsMask` is unexported. `CheckBox.XMarkCheckBox` was already
+      `Check(mark.X)`, `tabloid` already had `Portrait()` and `Landscape()`,
+      and the core font constants went with the public by accident fixes.
+- ✅ **B** Go exports helpers that Week 4 meant to hide and the README does not
       list: `BitBuffer`, `RSBlock`, `Polynomial`, `TextCompact`, `L5ECC`,
       `Round` and the `src/round` package, `JPGImage`, `BMPImage`,
       `FontStream1`, `FontStream2`, `NewCoreFontForPDFobj`.
-- ⬜ **B** Java: the sources in `com/pdfjet/fonts`, `qrcode`, `pdf417` and
+      Fixed: they are unexported (`bitBuffer`, `qrRSBlock`, `qrPolynomial`,
+      `textCompactWrapper`, `l5ECCWrapper`, `roundedRange`, `jpgImage`,
+      `bmpImage`, `fontStream1`, `fontStream2`, `newCoreFontForPDFobj`), the
+      unused `src/round` package is removed, and the README lists the helpers
+      that stay exported.
+- ✅ **B** Java: the sources in `com/pdfjet/fonts`, `qrcode`, `pdf417` and
       `datamatrix` declare `package com.pdfjet`, while `barcodes`,
       `corefonts` and `encryption` have their own packages.
+      Fixed: they declare `com.pdfjet.fonts`, `com.pdfjet.qrcode`,
+      `com.pdfjet.pdf417` and `com.pdfjet.datamatrix`, as the Go packages are
+      named, and the examples import them. The core font metrics went into
+      `com.pdfjet` with the public by accident fixes.
 
 ## Week 4 (Oct 2–11): parity audit, docs, release
 
@@ -1074,6 +1096,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       constant classes cannot be constructed. New: `Font(pdf, stream)` reads
       stream fonts, `Image.setLanguage`, the `SVGImage` link and marked
       content setters, and the `TextLine` URI getters.
+      Breaking, names in one port: `Compliance.PDF_1_7` in Java, Go and
+      Swift; C# `SVGImage.GetWidth` and `GetHeight`, and the C# `PathOperator`
+      and `UserAccess` members and `Point.CONTROL_POINT_C`, `V` and `Y` in
+      `UPPER_SNAKE`; the Swift `PathOperator` cases, `Point.CONTROL_POINT_C`,
+      `V` and `Y` and the `StructElem` constants in `UPPER_SNAKE`; Go
+      `RadioButton.Select`, `NewImageForObjects`, `Page.GetPenColor` and
+      `GetBrushColor` and `mark.Uncheck`, and no exported `djb` and `round`
+      packages, `ValidBitsMask`, QR code and PDF417 helpers, `JPGImage`,
+      `BMPImage`, `FontStream1`, `FontStream2` or `NewCoreFontForPDFobj`; Java
+      imports `com.pdfjet.fonts`, `com.pdfjet.qrcode`, `com.pdfjet.pdf417` and
+      `com.pdfjet.datamatrix` for the font names and the 2D barcodes.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
