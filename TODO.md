@@ -379,9 +379,8 @@ renames included (the Week 1 decision), so every item is a blocker.
 - ⬜ **B** Found while fixing the drift above: Java and C# `Cell`, `TextBox`,
       `Point`, `TextBlock` and `State` colour getters return the internal
       array; C# `BigTable` reads files with a reader that detects UTF-16 and
-      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; Java and C#
-      `Content.ofTextFile` hide a missing file behind an exception thrown
-      in `finally`, as `ofBinaryFile` did; a UTF-8 encoded surrogate (ED A0
+      UTF-32 and drops a BOM, Java `BigTable` keeps a BOM; a UTF-8 encoded
+      surrogate (ED A0
       80) reads as one U+FFFD in Java and three in Swift, which is what
       Unicode recommends. Needs a decision: Swift
       `BufferedOutputStream.flush` prints a write error and carries on;
@@ -771,7 +770,8 @@ renames included (the Week 1 decision), so every item is a blocker.
       font stream; Swift `SVGImage` throws on an invalid colour instead of
       drawing it transparent, and its `init(stream:)` and
       `init?(fileAtPath:)` are `throws`; `Content.ofBinaryFile` reports a
-      missing file in Java, C# and Swift; Swift `BigTable.complete()`
+      missing file in Java, C# and Swift, and so does `Content.ofTextFile`
+      in Java and C#; Swift `BigTable.complete()`
       reports drawing errors and keeps lines that are not UTF-8; Swift
       `Table.drawOn(pdf, &pages, pageSize)` returns nil, not a crash, when
       the table is already drawn, and returns `[Float]?`; Swift

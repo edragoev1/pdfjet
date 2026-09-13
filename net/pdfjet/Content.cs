@@ -14,11 +14,9 @@ public class Content {
     /// <summary>Returns the contents of the specified text file, which is read as UTF-8.</summary>
     public static String OfTextFile(String fileName) {
         StringBuilder sb = new StringBuilder(4096);
-        StreamReader reader = null;
-        try {
-            // UTF-8 only, as in the other ports: the reader does not look for
-            // UTF-16 and UTF-32 byte order marks, and keeps a UTF-8 one.
-            reader = new StreamReader(fileName, new UTF8Encoding(false), false);
+        // UTF-8 only, as in the other ports: the reader does not look for
+        // UTF-16 and UTF-32 byte order marks, and keeps a UTF-8 one.
+        using (StreamReader reader = new StreamReader(fileName, new UTF8Encoding(false), false)) {
             int ch;
             while ((ch = reader.Read()) != -1) {
                 if (ch == '\r') {
@@ -29,8 +27,6 @@ public class Content {
                     sb.Append((char) ch);
                 }
             }
-        } finally {
-            reader.Close();
         }
         // A byte order mark at the start of the file is not part of the text.
         if (sb.Length > 0 && sb[0] == '\uFEFF') {

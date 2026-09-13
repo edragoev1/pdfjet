@@ -26,11 +26,8 @@ public class Content {
      */
     public static String ofTextFile(String fileName) throws IOException {
         StringBuilder sb = new StringBuilder(4096);
-        InputStream stream = null;
-        Reader reader = null;
-        try {
-            stream = new BufferedInputStream(new FileInputStream(fileName));
-            reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+        try (Reader reader = new InputStreamReader(
+                new BufferedInputStream(new FileInputStream(fileName)), StandardCharsets.UTF_8)) {
             int ch = 0;
             while ((ch = reader.read()) != -1) {
                 if (ch == '\r') {
@@ -41,9 +38,6 @@ public class Content {
                     sb.append((char) ch);
                 }
             }
-        } finally {
-            reader.close();
-            stream.close();
         }
         // A byte order mark at the start of the file is not part of the text.
         if (sb.length() > 0 && sb.charAt(0) == '\uFEFF') {
