@@ -142,14 +142,14 @@ namespace PDFjet.NET {
         /// Reorders the string like ReorderVisually(string), and returns the
         /// part of the result that comes from the characters of the string at
         /// the indexes from <paramref name="from"/>, inclusive, to
-        /// <paramref name="to"/>, exclusive. The letters are shaped in the
-        /// context of the whole string, so a word that is broken between two
-        /// lines keeps its joined forms at the break when each line is made
-        /// this way.
+        /// <paramref name="to"/>, exclusive, counted in UTF-16 code units as
+        /// Substring counts them. The letters are shaped in the context of the
+        /// whole string, so a word that is broken between two lines keeps its
+        /// joined forms at the break when each line is made this way.
         /// </summary>
         /// <param name="str">The input string.</param>
-        /// <param name="from">The index of the first character to return.</param>
-        /// <param name="to">The index after the last character to return.</param>
+        /// <param name="from">The UTF-16 index of the first character to return.</param>
+        /// <param name="to">The UTF-16 index after the last character to return.</param>
         /// <returns>The reordered part of the string.</returns>
         public static string ReorderVisually(string str, int from, int to) {
             // Work with code points so that supplementary characters are

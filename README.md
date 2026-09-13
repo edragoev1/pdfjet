@@ -269,6 +269,16 @@ component, as a `float[]` in Java and C#, a `[Float]` in Swift and a
 `[2]float32` in Go. `DonutChart.drawOn` returns the bottom right corner of the
 outer circle of the chart; the slice labels can extend past it.
 
+`Bidi.reorderVisually(str, from, to)` counts `from` and `to` in the units that
+each language indexes its strings with: UTF-16 code units in Java and C#, as
+`length` and `substring` do, bytes in Go (`ReorderVisuallyPart`), as `len` and
+slicing do, and Unicode scalars in Swift, where a `String` has no integer
+indexes, as its `unicodeScalars` view does.
+
+Where Java and C# throw an `Exception` with a message, Swift throws a
+`PDFjetError`, whose `message` and `description` are that message, and Go
+returns an `error`, or panics where the function returns none.
+
 `Permissions` takes the `UserAccess` values as a typed flags value in C# (a
 `[Flags]` enum) and Go (`UserAccess` with `Has`, `Add` and `Remove`), and as an
 `int` in Java and Swift, where the values of the `UserAccess` enum are combined

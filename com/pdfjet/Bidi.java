@@ -147,14 +147,15 @@ public class Bidi {
     /**
      * Reorders the string like {@link #reorderVisually(String)}, and returns
      * the part of the result that comes from the characters of the string at
-     * the indexes from {@code from}, inclusive, to {@code to}, exclusive. The
+     * the indexes from {@code from}, inclusive, to {@code to}, exclusive,
+     * counted in UTF-16 code units as {@code substring} counts them. The
      * letters are shaped in the context of the whole string, so a word that
      * is broken between two lines keeps its joined forms at the break when
      * each line is made this way.
      *
      * @param str the input string.
-     * @param from the index of the first character to return.
-     * @param to the index after the last character to return.
+     * @param from the UTF-16 index of the first character to return.
+     * @param to the UTF-16 index after the last character to return.
      * @return the reordered part of the string.
      */
     public static String reorderVisually(String str, int from, int to) {
