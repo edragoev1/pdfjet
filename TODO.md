@@ -185,15 +185,24 @@ renames included (the Week 1 decision), so every item is a blocker.
 - ✅ **B** Swift `Executive.PORTRAIT` and `LANDSCAPE` are `[Double]`, so
       `Page(pdf, Executive.PORTRAIT)` does not compile (`Executive.swift:16`).
       Fixed: typed `[Float]`; the other page sizes already were.
-- ⬜ **B** C# `Compressor.Deflate` returns no bytes for empty input, which is
+- ✅ **B** C# `Compressor.Deflate` returns no bytes for empty input, which is
       not a zlib stream, so an empty page gets a broken `/FlateDecode` stream
       (`Compressor.cs:18`).
-- ⬜ **B** C# `SVG` parses path numbers with `float.Parse` in the current
+      Fixed: the early return is gone; an empty page gets the 8 byte zlib
+      stream Java writes, and MuPDF no longer warns.
+- ✅ **B** C# `SVG` parses path numbers with `float.Parse` in the current
       culture, so SVG images break on a German or French system
       (`SVG.cs:100`).
-- ⬜ **B** 8-bit indexed PNG: Java, C# and Swift undo the row filters on the
+      Fixed: `SVG.cs` and the colours in `SVGImage.cs` parse in the
+      invariant culture; de-DE and fr-FR give Java's output.
+- ✅ **B** 8-bit indexed PNG: Java, C# and Swift undo the row filters on the
       RGB bytes after the palette lookup, 3 bytes per pixel, instead of on the
       indexes; Go never undoes them (`PNGImage.java:342`, `pngimage.go:313`).
+      Fixed: one function reads 1, 2, 4 and 8 bit palette images, undoing
+      the filters on the packed indexes (one byte per pixel) before the
+      palette and tRNS lookup; 1, 2 and 4 bit grayscale images never undid
+      their filters and do now. 468 PngSuite images re-encoded with every
+      filter, with and without tRNS, match PIL in the four ports.
 - ✅ **B** `Chart`: Java and Swift start the automatic maximums at the
       smallest positive float (`Float.MIN_VALUE`, `leastNonzeroMagnitude`),
       so all-negative data gets a maximum of 0 (`Chart.java:40`); C# rounds
@@ -275,13 +284,19 @@ renames included (the Week 1 decision), so every item is a blocker.
       track the RGB the specification converts them to, and
       `restoreGraphicsState` restores the tracked state with `State`. No
       content stream changes.
-- ⬜ **B** Java and Swift `FontStream1` read the font with one `read()` and no loop,
+- ✅ **B** Java and Swift `FontStream1` read the font with one `read()` and no loop,
       so a short read corrupts it (`FontStream1.java:367`).
-- ⬜ **B** `SVGImage`: Go passes a `structureType` nothing sets to `AddBMC`, an
+      Fixed: both read fully and fail on a truncated stream; a stream that
+      returns 3 bytes per read gives the same PDF as a normal one.
+- ✅ **B** `SVGImage`: Go passes a `structureType` nothing sets to `AddBMC`, an
       empty tag in PDF/UA (`svgimage.go:326`); Java and C# never close the
       file (`SVGImage.java:53`); Swift scans for `" d="` and `" fill="`
       instead of parsing XML, losing single-quoted attributes and attributes
       after a newline (`SVGImage.swift:82`).
+      Fixed: Go tags `/P` with a space as alt and actual text; Java and C#
+      close the file; Swift tokenizes start tags like an XML parser
+      (quotes, line breaks, attribute order, comments, character
+      references), and the 71 SVG files in `images/` match Java.
 - ✅ `Container`: Swift `add` never sets `parent`, so annotations in a nested
       container miss the offset (`Container.swift:139`); C# compares
       `GetType() == typeof(Container)`, which misses a subclass.
@@ -340,6 +355,8 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Table.drawOn(pdf, pages, size)` crashes on `xy!` after a completed draw
       (`Table.swift:477`). Go and Swift crash on a truncated BMP where Java
       throws. C# Code 39 throws `KeyNotFoundException` before its own message.
+      C# `FontStream1` stops without an error on a truncated font stream,
+      where Java and Swift throw.
 
 ### Types and signatures
 
@@ -655,6 +672,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       `BigTable.setLocation` sets the location instead of adding to x, and
       can be called before `setTableData`; `BigTable.setLanguage`, which did
       nothing, is removed.
+      PNG images with row filters draw correctly: palette images at every
+      bit depth and 1, 2 and 4 bit grayscale images, and 1, 2 and 4 bit
+      palette images get the transparency of their tRNS chunk; C# reads
+      SVG files in a culture with a decimal comma; `SVGImage(path)` closes
+      the file in Java and C#; Go `SVGImage` writes a `/P` tag and space alt
+      and actual text in PDF/UA files; Swift `SVGImage` reads attributes in
+      single quotes, over several lines or in any order; C# empty pages get
+      a valid compressed content stream; Java and Swift read `.ttf.stream`
+      and `.otf.stream` fonts from streams that return fewer bytes than
+      asked for, and fail on a truncated one.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
