@@ -122,6 +122,8 @@ func NewImage(pdf *PDF, reader io.Reader, imageType int) *Image {
 // @param imageType could be ImageType.JPG, ImageType.PNG or ImageType.BMP
 func NewImage2(objects *[]*PDFobj, reader io.Reader, imageType int) *Image {
 	image := new(Image)
+	image.altDescription = single.Space
+	image.actualText = single.Space
 
 	switch imageType {
 	case imagetype.JPG:

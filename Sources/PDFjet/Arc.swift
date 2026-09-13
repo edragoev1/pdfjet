@@ -19,7 +19,7 @@ public class Arc : Drawable {
     private var rotateDegrees: Float = 0.0
 
     private var fillColor: [Float]?
-    private var strokeColor: [Float]? = [0.0, 0.0, 0.0]     // Black color
+    private var strokeColor: [Float]?
     private var strokeWidth: Float = 0.0
     private var strokeDashPattern: String? = "[] 0"
 

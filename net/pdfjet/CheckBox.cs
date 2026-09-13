@@ -19,7 +19,7 @@ public class CheckBox : IDrawable {
     private float w;
     private float h;
     private int boxColor = Color.black;
-    private int checkColor = Color.blue;
+    private int checkColor = Color.black;
     private float penWidth;
     private float checkWidth;
     private int mark = 0;
@@ -33,7 +33,7 @@ public class CheckBox : IDrawable {
     private String altDescription = Single.space;
 
     /// <summary>
-    /// Creates a CheckBox with blue check mark.
+    /// Creates a CheckBox with black check mark.
     /// </summary>
     public CheckBox(Font font, String label) {
         this.font = font;

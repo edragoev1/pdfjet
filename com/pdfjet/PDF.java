@@ -19,7 +19,7 @@ import java.util.zip.*;
  * Used to create PDF objects that represent PDF documents.
  */
 final public class PDF {
-    Compliance compliance;
+    Compliance compliance = Compliance.PDF_17;
     Bookmark toc = null;
     List<Font> fonts = new ArrayList<Font>();
     List<Image> images = new ArrayList<Image>();
@@ -929,7 +929,7 @@ final public class PDF {
             append(annot.fileAttachment.icon);
             append("\n");
 
-            if (annot.fileAttachment.title != null) {
+            if (annot.fileAttachment.title != null && !annot.fileAttachment.title.isEmpty()) {
                 byte[] title = annot.fileAttachment.title.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     title = AES256.encrypt(title, encryption.getKey());
@@ -939,7 +939,7 @@ final public class PDF {
                 append(">\n");
             }
 
-            if (annot.fileAttachment.contents != null) {
+            if (annot.fileAttachment.contents != null && !annot.fileAttachment.contents.isEmpty()) {
                 byte[] contents = annot.fileAttachment.contents.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     contents = AES256.encrypt(contents, encryption.getKey());

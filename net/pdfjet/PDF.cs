@@ -882,7 +882,7 @@ public class PDF {
             Append(annot.fileAttachment.icon);
             Append("\n");
 
-            if (annot.fileAttachment.title != null) {
+            if (!String.IsNullOrEmpty(annot.fileAttachment.title)) {
                 byte[] title = Encoding.UTF8.GetBytes(annot.fileAttachment.title);
                 if (encryption != null) {
                     title = AES256.Encrypt(title, encryption.GetKey());
@@ -892,7 +892,7 @@ public class PDF {
                 Append(">\n");
             }
 
-            if (annot.fileAttachment.contents != null) {
+            if (!String.IsNullOrEmpty(annot.fileAttachment.contents)) {
                 byte[] contents = Encoding.UTF8.GetBytes(annot.fileAttachment.contents);
                 if (encryption != null) {
                     contents = AES256.Encrypt(contents, encryption.GetKey());

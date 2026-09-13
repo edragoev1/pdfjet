@@ -24,7 +24,7 @@ func NewFileAttachment(pdf *PDF, embeddedFile *EmbeddedFile) *FileAttachment {
 	attachment.embeddedFile = embeddedFile
 	icon := "PushPin"
 	attachment.icon = icon
-	contents := "Right mouse click on the icon to save the attached attachment."
+	contents := "Right mouse click on the icon to save the attached file."
 	attachment.contents = contents
 	attachment.h = 24.0
 	return attachment

@@ -20,7 +20,7 @@ public class Arc : IDrawable {
     private float rotateDegrees;
 
     private float[] fillColor;
-    private float[] strokeColor = new float[] {0f, 0f, 0f};   // Black color
+    private float[] strokeColor;
     private float strokeWidth = 0f;
     private String strokeDashPattern = "[] 0";
 
