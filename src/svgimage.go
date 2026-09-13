@@ -25,6 +25,8 @@ type SVGImage struct {
 	viewBox        string
 	fill           int32
 	stroke         int32
+	fillNone       bool // fill="none" on the svg element
+	strokeNone     bool // stroke="none" on the svg element
 	strokeWidth    float32
 	paths          []*SVGPath
 	uri            string
@@ -95,12 +97,14 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 						return nil, fmt.Errorf("invalid SVG fill: %w", err)
 					}
 					image.fill = c
+					image.fillNone = isNone(attr.Value)
 				case "stroke":
 					c, err := getColor(colorMap, attr.Value)
 					if err != nil {
 						return nil, fmt.Errorf("invalid SVG stroke: %w", err)
 					}
 					image.stroke = c
+					image.strokeNone = isNone(attr.Value)
 				case "stroke-width":
 					sw, err := parseFloatLenient(attr.Value)
 					if err != nil {
@@ -122,12 +126,14 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 						return nil, fmt.Errorf("invalid path fill: %w", err)
 					}
 					path.fill = c
+					path.fillNone = isNone(attr.Value)
 				case "stroke":
 					c, err := getColor(colorMap, attr.Value)
 					if err != nil {
 						return nil, fmt.Errorf("invalid path stroke: %w", err)
 					}
 					path.stroke = c
+					path.strokeNone = isNone(attr.Value)
 				case "stroke-width":
 					sw, err := parseFloatLenient(attr.Value)
 					if err != nil {
@@ -301,13 +307,26 @@ func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
 
+// isNone reports whether the value is none, which turns the fill or the stroke off.
+func isNone(value string) bool {
+	return strings.TrimSpace(value) == "none"
+}
+
 func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
-	var fillColor = path.fill
-	if fillColor == color.Transparent {
+	// none on the path wins over the color of the svg element; a color that
+	// is not set is taken from the svg element.
+	noFill := path.fillNone || (path.fill == color.Transparent && image.fillNone)
+	fillColor := path.fill
+	if noFill {
+		fillColor = color.Transparent
+	} else if fillColor == color.Transparent {
 		fillColor = image.fill
 	}
-	var strokeColor = path.stroke
-	if strokeColor == color.Transparent {
+	noStroke := path.strokeNone || (path.stroke == color.Transparent && image.strokeNone)
+	strokeColor := path.stroke
+	if noStroke {
+		strokeColor = color.Transparent
+	} else if strokeColor == color.Transparent {
 		strokeColor = image.stroke
 	}
 	var strokeWidth = image.strokeWidth
@@ -315,9 +334,14 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 		strokeWidth = path.strokeWidth
 	}
 
-	if fillColor == color.Transparent &&
+	// A path whose fill is not none, with no fill and no stroke color, is
+	// filled black, as SVG fills a path black by default.
+	if !noFill && fillColor == color.Transparent &&
 		strokeColor == color.Transparent {
 		fillColor = color.Black
+	}
+	if fillColor == color.Transparent && strokeColor == color.Transparent {
+		return // fill="none" and no stroke: nothing to draw
 	}
 
 	page.SetBrushColor(fillColor)
@@ -341,19 +365,29 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	}
 
 	if strokeColor != color.Transparent {
+		// Z closes and strokes a subpath; a path that is still open at the end
+		// is stroked without closing it.
+		open := false
 		for _, op := range path.operations {
 			if op.cmd == 'M' {
 				page.MoveTo(op.x+image.x, op.y+image.y)
+				open = true
 			} else if op.cmd == 'L' {
 				page.LineTo(op.x+image.x, op.y+image.y)
+				open = true
 			} else if op.cmd == 'C' {
 				page.CurveTo(
 					op.x1+image.x, op.y1+image.y,
 					op.x2+image.x, op.y2+image.y,
 					op.x+image.x, op.y+image.y)
+				open = true
 			} else if op.cmd == 'Z' {
 				page.ClosePath()
+				open = false
 			}
+		}
+		if open {
+			page.StrokePath()
 		}
 	}
 }

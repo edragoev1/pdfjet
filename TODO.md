@@ -816,6 +816,48 @@ renames included (the Week 1 decision), so every item is a blocker.
         Fixed: the ID is 16 bytes from `SecureRandom`,
         `RandomNumberGenerator`, `crypto/rand` and
         `SystemRandomNumberGenerator`, and the Salsa20 classes are gone.
+- ✅ Unit tests (Sep 13): the four ports had none. Each has a suite with the
+      same cases and expected values: JUnit 5 in `tests/java`, xUnit in
+      `tests/dotnet`, the `testing` package next to the Go sources and Swift
+      Testing in `tests/swift`, run by `test-java.sh`, `test-dotnet.sh`,
+      `test-go.sh` and `test-swift.sh`, by the Build workflow (the Java tests
+      on JDK 21 and 8) and by `check-examples.sh`. PNG samples are checked
+      against MuPDF and Pillow. `generate-documentation.sh` gives DocC the
+      PDFjet symbol graph only, as the test target adds two test modules.
+- ✅ Bugs the unit tests found, fixed in every port that had them:
+      - Java `Decompressor.inflate` threw on an empty zlib stream, so
+        `PDF.read` failed on any PDF with a blank page; the other ports read it.
+      - SVG `fill="none"` without a stroke was filled black, and `none` on a
+        path did not override the color of the svg element; four ports.
+      - An open SVG path with a stroke was never stroked, which left an
+        unpainted path in the content stream; four ports.
+      - A grayscale PNG with alpha (color type 4) crashed with an index out of
+        range in the true color decoder; four ports. 8-bit images are a
+        DeviceGray image with a soft mask, and 16-bit ones fail with the
+        message of 16-bit RGBA images.
+      - An interlaced PNG logged a warning and then crashed; four ports. It
+        fails with "Interlaced PNG images are not supported." and the OptiPNG
+        command.
+      - Swift `Puff` read past the end of a truncated zlib stream and
+        trapped; it throws.
+      - C# `BMPImage` looped forever, at full CPU, on a truncated BMP file:
+        the read loop tested `read < 0`, copied from Java, where `Stream.Read`
+        returns 0 at the end of a stream. It throws Java's message.
+      - C# `Decompressor.Inflate` returned the bytes of a truncated Flate
+        stream without an error, as `ZLibStream` does. It reads the
+        `ZLibStream` with `Read`, which reads the input only until the stream
+        ends (`CopyTo` reads all of it), from an input stream that remembers a
+        read at its end, and throws when there was one; bytes after the end of
+        a stream are still ignored.
+      In the four ports every truncation of a stream fails with an error and a
+      stream followed by other bytes decodes. Java example PDFs render the
+      same before and after the fixes.
+- ⬜ S Port differences the tests found and left as they are: Swift
+      `BMPImage` needs an opened stream where `PNGImage` opens its own; Swift
+      stops with `fatalError` on invalid Code 39, UPC-A and EAN-13 input and
+      on QR data that does not fit, which a test cannot catch; Swift
+      `PNGImage.getAlpha` returns no bytes where Java returns null; Go and
+      Swift have no public hex helper like Java `Util.toHexString`.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
       Done on Sep 13: `check-examples.sh` is clean with the version bump,

@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"fmt"
 	"io"
-	"log"
 	"math"
 
 	"github.com/edragoev1/pdfjet/v9/src/compressor"
@@ -58,8 +57,8 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 			image.colorType = int(chunk.ChunkData[9])   // Color Type
 
 			if chunk.ChunkData[12] == 1 {
-				log.Println("Interlaced PNG images are not supported.")
-				log.Println("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
+				panic("Interlaced PNG images are not supported.\n" +
+					"Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
 			}
 		case "IDAT":
 			image.iDAT = append(image.iDAT, chunk.ChunkData...)
@@ -99,6 +98,13 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 		case 1:
 			imageData = image.getImageColorType0BitDepth1(inflatedIDAT)
 		default:
+			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
+		}
+	case 4:
+		// Grayscale image with alpha
+		if image.bitDepth == 8 {
+			imageData = image.getImageColorType4BitDepth8(inflatedIDAT)
+		} else {
 			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
 	case 6:
@@ -259,6 +265,36 @@ func (image *PNGImage) getImageColorType2BitDepth8(buf []byte) []byte {
 }
 
 // Truecolor Image with Alpha Transparency
+// getImageColorType4BitDepth8 returns the gray samples; the alpha samples go
+// in the soft mask.
+func (image *PNGImage) getImageColorType4BitDepth8(buf []byte) []byte {
+	image2 := make([]byte, 2*image.w*image.h)
+	filters := make([]byte, image.h)
+	bytesPerLine := 2*image.w + 1
+	k := 0
+	j := 0
+	for i := 0; i < len(buf); i++ {
+		if i%bytesPerLine == 0 {
+			filters[j] = buf[i]
+			j++
+		} else {
+			image2[k] = buf[i]
+			k++
+		}
+	}
+	applyFilters(filters, image2, image.w, image.h, 2)
+
+	gray := make([]byte, image.w*image.h)
+	alpha := make([]byte, image.w*image.h)
+	for i := range gray {
+		gray[i] = image2[2*i]
+		alpha[i] = image2[2*i+1]
+	}
+	image.deflatedAlphaData = compressor.Deflate(alpha)
+
+	return gray
+}
+
 func (image *PNGImage) getImageColorType6BitDepth8(buf []byte) []byte {
 	image2 := make([]byte, 4*image.w*image.h) // Image data
 

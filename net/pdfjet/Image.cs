@@ -68,6 +68,8 @@ public class Image : IDrawable {
             h = png.GetHeight();
             if (png.GetColorType() == 0) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", png.GetBitDepth());
+            } else if (png.GetColorType() == 4) {
+                AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceGray", 8);
             } else {
                 if (png.GetBitDepth() == 16) {
                     AddImage(pdf, data, null, imageType, "DeviceRGB", 16);
@@ -128,6 +130,8 @@ public class Image : IDrawable {
             h = png.GetHeight();
             if (png.GetColorType() == 0) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", png.GetBitDepth());
+            } else if (png.GetColorType() == 4) {
+                AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceGray", 8);
             } else {
                 if (png.GetBitDepth() == 16) {
                     AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 16);

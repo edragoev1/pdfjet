@@ -17,6 +17,8 @@ public class SVGImage : Drawable {
     var viewBox: String?
     var fill: Int32 = Color.transparent
     var stroke: Int32 = Color.transparent
+    var fillNone = false    // fill="none" on the svg element
+    var strokeNone = false  // stroke="none" on the svg element
     var strokeWidth: Float = 0.0
     var paths: [SVGPath]?
     var uri: String?
@@ -95,8 +97,10 @@ public class SVGImage : Drawable {
                 self.viewBox = value
             } else if name == "fill" {
                 self.fill = try getColor(value)
+                self.fillNone = SVGImage.isNone(value)
             } else if name == "stroke" {
                 self.stroke = try getColor(value)
+                self.strokeNone = SVGImage.isNone(value)
             } else if name == "stroke-width" {
                 self.strokeWidth = Float(value.trim()) ?? 0.0
             }
@@ -110,8 +114,10 @@ public class SVGImage : Drawable {
                 path.data = value
             } else if name == "fill" {
                 path.fill = try getColor(value)
+                path.fillNone = SVGImage.isNone(value)
             } else if name == "stroke" {
                 path.stroke = try getColor(value)
+                path.strokeNone = SVGImage.isNone(value)
             } else if name == "stroke-width" {
                 path.strokeWidth = Float(value.trim()) ?? 0.0
             }
@@ -431,13 +437,22 @@ public class SVGImage : Drawable {
         return self.h
     }
 
+    // Returns true for the value none, which turns the fill or the stroke off.
+    private static func isNone(_ value: String) -> Bool {
+        return value.trim() == "none"
+    }
+
     private func drawPath(_ path: SVGPath, _ page: Page) {
-        var fillColor = path.fill
-        if fillColor == Color.transparent {
+        // none on the path wins over the color of the svg element; a color
+        // that is not set, or not understood, is taken from the svg element.
+        let noFill = path.fillNone || (path.fill == Color.transparent && self.fillNone)
+        var fillColor = noFill ? Color.transparent : path.fill
+        if !noFill && fillColor == Color.transparent {
             fillColor = self.fill
         }
-        var strokeColor = path.stroke
-        if strokeColor == Color.transparent {
+        let noStroke = path.strokeNone || (path.stroke == Color.transparent && self.strokeNone)
+        var strokeColor = noStroke ? Color.transparent : path.stroke
+        if !noStroke && strokeColor == Color.transparent {
             strokeColor = self.stroke
         }
         var strokeWidth = self.strokeWidth
@@ -445,9 +460,14 @@ public class SVGImage : Drawable {
             strokeWidth = path.strokeWidth
         }
 
-        if fillColor == Color.transparent &&
+        // A path whose fill is not none, with no fill and no stroke color, is
+        // filled black, as SVG fills a path black by default.
+        if !noFill && fillColor == Color.transparent &&
                 strokeColor == Color.transparent {
             fillColor = Color.black
+        }
+        if fillColor == Color.transparent && strokeColor == Color.transparent {
+            return  // fill="none" and no stroke: nothing to draw
         }
 
         page.setBrushColor(fillColor)
@@ -476,19 +496,29 @@ public class SVGImage : Drawable {
         }
 
         if strokeColor != Color.transparent {
+            // Z closes and strokes a subpath; a path that is still open at the
+            // end is stroked without closing it.
+            var open = false
             for op in operations {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
+                    open = true
                 } else if op.cmd == "L" {
                     page.lineTo(op.x + x, op.y + y)
+                    open = true
                 } else if op.cmd == "C" {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y)
+                    open = true
                 } else if op.cmd == "Z" {
                     page.closePath()
+                    open = false
                 }
+            }
+            if open {
+                page.strokePath()
             }
         }
     }

@@ -222,7 +222,8 @@ class BMPImage {
         int totalRead = 0;
         while (totalRead < length) {
             int read = inputStream.Read(buf, totalRead, length - totalRead);
-            if (read < 0) {
+            // Stream.Read returns 0 at the end of the stream, where Java's read returns -1.
+            if (read <= 0) {
                 throw new Exception("Unexpected end of stream: expected " + length + " bytes");
             }
             totalRead += read;

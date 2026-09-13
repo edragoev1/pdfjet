@@ -289,12 +289,62 @@ class Decompressor {
         return bos.ToArray();
     }
 
+    /// <summary>
+    /// Decodes a zlib stream. A stream that ends before its end, as a
+    /// truncated one does, throws; bytes after the end of the stream are
+    /// ignored, as in the other ports.
+    /// </summary>
     internal static byte[] Inflate(byte[] data) {
         using var outStream = new MemoryStream();
-        using var inStream = new MemoryStream(data);
-        using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
-        zlib.CopyTo(outStream);
+        var inStream = new EndOfInputStream(data);
+        using (var zlib = new ZLibStream(inStream, CompressionMode.Decompress)) {
+            // Not CopyTo: ZLibStream.CopyTo reads all of its input, whether the
+            // stream ends before it or not.
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = zlib.Read(buffer, 0, buffer.Length)) > 0) {
+                outStream.Write(buffer, 0, count);
+            }
+        }
+        // ZLibStream returns the bytes decoded so far, without an error, when
+        // its input ends first. Its Read reads the input only until the stream
+        // ends, so a read at the end of the input means the stream was cut short.
+        if (inStream.ReadAtEnd) {
+            throw new InvalidDataException("Truncated or invalid Flate stream");
+        }
         return outStream.ToArray();
+    }
+
+    /// <summary>The input of Inflate, which remembers a read at its end.</summary>
+    private sealed class EndOfInputStream : MemoryStream {
+        internal bool ReadAtEnd { get; private set; }
+
+        internal EndOfInputStream(byte[] data) : base(data, false) {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) {
+            int read = base.Read(buffer, offset, count);
+            if (read == 0 && count > 0) {
+                ReadAtEnd = true;
+            }
+            return read;
+        }
+
+        public override int Read(Span<byte> buffer) {
+            int read = base.Read(buffer);
+            if (read == 0 && buffer.Length > 0) {
+                ReadAtEnd = true;
+            }
+            return read;
+        }
+
+        public override int ReadByte() {
+            int value = base.ReadByte();
+            if (value == -1) {
+                ReadAtEnd = true;
+            }
+            return value;
+        }
     }
 }   // End of Decompressor.cs
 }   // End of package PDFjet.NET

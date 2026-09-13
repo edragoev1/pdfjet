@@ -52,8 +52,8 @@ public class PNGImage {
                 Swift.print("Interlace: " + String(chunk.getData()![12]))
 */
                 if chunk.getData()![12] == 1 {
-                    Swift.print("Interlaced PNG images are not supported.")
-                    Swift.print("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n")
+                    throw PDFjetError(message: "Interlaced PNG images are not supported.\n" +
+                            "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
                 }
             } else if chunkType == "IDAT" {
                 iDAT.append(contentsOf: chunk.getData()!)
@@ -87,6 +87,13 @@ public class PNGImage {
                 image = getImageColorType0BitDepth2(inflatedImageData)
             } else if bitDepth == 1 {
                 image = getImageColorType0BitDepth1(inflatedImageData)
+            } else {
+                throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
+            }
+        } else if colorType == 4 {
+            // Grayscale image with alpha
+            if bitDepth == 8 {
+                image = getImageColorType4BitDepth8(inflatedImageData)
             } else {
                 throw PDFjetError(message: "Image with unsupported bit depth == \(bitDepth)")
             }
@@ -274,6 +281,34 @@ public class PNGImage {
     }
 
     // Truecolor Image with Alpha Transparency
+    // The gray samples are the image and the alpha samples its soft mask.
+    private func getImageColorType4BitDepth8(_ buf: [UInt8]) -> [UInt8] {
+        var image = [UInt8](repeating: 0, count: 2 * self.w * self.h)
+        var filters = [UInt8](repeating: 0, count: self.h)
+        let bytesPerLine = 2 * self.w + 1
+        var k = 0
+        var j = 0
+        for i in 0..<buf.count {
+            if i % bytesPerLine == 0 {
+                filters[k] = buf[i]
+                k += 1
+            } else {
+                image[j] = buf[i]
+                j += 1
+            }
+        }
+        applyFilters(&filters, &image, self.w, self.h, 2)
+
+        var gray = [UInt8](repeating: 0, count: self.w * self.h)
+        var alpha = [UInt8](repeating: 0, count: self.w * self.h)
+        for i in 0..<gray.count {
+            gray[i] = image[2 * i]
+            alpha[i] = image[2 * i + 1]
+        }
+        FlateEncode(&deflatedAlphaData, alpha)
+        return gray
+    }
+
     private func getImageColorType6BitDepth8(_ buf: [UInt8]) -> [UInt8] {
         var image = [UInt8](repeating: 0, count: 4 * self.w * self.h)
         var filters = [UInt8](repeating: 0, count: self.h)

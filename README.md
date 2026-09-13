@@ -86,7 +86,8 @@ The `Build` GitHub Actions workflow runs `build-java.sh`, `build-dotnet.sh`,
 `build-go.sh` and `build-swift.sh` on every push to `master` and on pull
 requests, one job per port. A job fails if the library or an example does not
 compile or compiles with a warning, `go vet` reports a problem in the Go port,
-an example exits with an error, or an example does not create its PDF file. A
+an example exits with an error, an example does not create its PDF file, or a
+unit test fails. A
 second job then checks the PDFs with `.github/scripts/check-example-pdfs.py`:
 each example must render the same, with its text in the same fonts, sizes,
 colors and positions and the same drawing instructions on every page, in the
@@ -95,13 +96,43 @@ each example that declares PDF/A or PDF/UA compliance must pass
 [veraPDF](https://verapdf.org/) in all four ports.
 
 To run the same checks locally before pushing, run `./check-examples.sh`. It
-builds the four ports one after another in the repository folder and then
-checks their PDFs, so it needs the four toolchains, Python 3 and veraPDF.
+builds the four ports and runs their unit tests one after another in the
+repository folder and then checks their PDFs, so it needs the four toolchains,
+Python 3 and veraPDF.
 
 The `Windows` workflow runs the Windows scripts, `build-java.cmd`,
 `build-dotnet.cmd`, `build-go.cmd` and `build-swift.cmd`, on a Windows runner
 and checks that every example creates its PDF file. It only runs when started
 from the Actions tab.
+
+## Unit tests
+
+Each port has unit tests with the same cases and the same expected values, so
+a difference between the ports fails a test. They cover the numbers written in
+content streams, the stream filters, page sizes, fonts, text lines, text
+blocks, text boxes, cells and tables, right to left text, the page graphics
+state, shapes, charts, SVG, PNG and BMP images, bookmarks, layers, writing and
+reading back PDFs, encryption with passwords and permissions, and the
+barcodes. A test for a known bug is skipped, with the TODO.md item as its
+reason.
+
+| Port | Tests | Framework | Run |
+|---|---|---|---|
+| Java | `tests/java` | JUnit 5 | `./test-java.sh` |
+| C# | `tests/dotnet` | xUnit | `./test-dotnet.sh` |
+| Go | `src/**/*_test.go` | `testing` | `./test-go.sh` |
+| Swift | `tests/swift` | Swift Testing | `./test-swift.sh` |
+
+The tests are not part of the libraries and add no dependency to them.
+`test-java.sh` downloads the JUnit console launcher once into `build/junit`
+and checks its SHA-256, and builds and runs the tests on Java 8 as on later
+releases. The C# tests compile the library sources into the test project, so
+they can test internal classes, and restore xUnit from NuGet. The Go tests read
+the PngSuite images from the repository, and skip the tests that need the
+fonts when the `fonts` directory is not there. The PDFs the tests make stay in
+memory, and the files they need to write go to the system's temporary
+directory. `./check-examples.sh` runs the unit tests of each port after its
+examples.
 
 ## Documentation
 

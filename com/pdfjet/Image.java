@@ -84,6 +84,8 @@ final public class Image implements Drawable {
             h = png.getHeight();
             if (png.getColorType() == 0) {
                 addImage(pdf, data, null, imageType, "DeviceGray", png.getBitDepth());
+            } else if (png.getColorType() == 4) {
+                addImage(pdf, data, png.getAlpha(), imageType, "DeviceGray", 8);
             } else {
                 if (png.getBitDepth() == 16) {
                     addImage(pdf, data, null, imageType, "DeviceRGB", 16);
@@ -131,6 +133,8 @@ final public class Image implements Drawable {
             h = png.getHeight();
             if (png.getColorType() == 0) {
                 addImageToObjects(objects, data, null, imageType, "DeviceGray", png.getBitDepth());
+            } else if (png.getColorType() == 4) {
+                addImageToObjects(objects, data, png.getAlpha(), imageType, "DeviceGray", 8);
             } else {
                 if (png.getBitDepth() == 16) {
                     addImageToObjects(objects, data, null, imageType, "DeviceRGB", 16);

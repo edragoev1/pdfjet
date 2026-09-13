@@ -26,6 +26,8 @@ public class SVGImage implements Drawable {
     String viewBox = null;
     int fill = Color.transparent;
     int stroke = Color.transparent;
+    boolean fillNone = false;       // fill="none" on the svg element
+    boolean strokeNone = false;     // stroke="none" on the svg element
     float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
@@ -118,8 +120,10 @@ public class SVGImage implements Drawable {
                 this.viewBox = value;
             } else if (name.equals("fill")) {
                 this.fill = colorMap.getColor(value);
+                this.fillNone = isNone(value);
             } else if (name.equals("stroke")) {
                 this.stroke = colorMap.getColor(value);
+                this.strokeNone = isNone(value);
             } else if (name.equals("stroke-width")) {
                 try {
                     this.strokeWidth = Float.parseFloat(value);
@@ -139,8 +143,10 @@ public class SVGImage implements Drawable {
                 path.data = value;
             } else if (name.equals("fill")) {
                 path.fill = colorMap.getColor(value);
+                path.fillNone = isNone(value);
             } else if (name.equals("stroke")) {
                 path.stroke = colorMap.getColor(value);
+                path.strokeNone = isNone(value);
             } else if (name.equals("stroke-width")) {
                 try {
                     path.strokeWidth = Float.parseFloat(value);
@@ -283,13 +289,22 @@ public class SVGImage implements Drawable {
         return this.h;
     }
 
+    // Returns true for the value none, which turns the fill or the stroke off.
+    private static boolean isNone(String value) {
+        return value.trim().equals("none");
+    }
+
     private void drawPath(SVGPath path, Page page) {
-        int fillColor = path.fill;
-        if (fillColor == Color.transparent) {
+        // none on the path wins over the color of the svg element; a color
+        // that is not set, or not understood, is taken from the svg element.
+        boolean noFill = path.fillNone || (path.fill == Color.transparent && this.fillNone);
+        int fillColor = noFill ? Color.transparent : path.fill;
+        if (!noFill && fillColor == Color.transparent) {
             fillColor = this.fill;
         }
-        int strokeColor = path.stroke;
-        if (strokeColor == Color.transparent) {
+        boolean noStroke = path.strokeNone || (path.stroke == Color.transparent && this.strokeNone);
+        int strokeColor = noStroke ? Color.transparent : path.stroke;
+        if (!noStroke && strokeColor == Color.transparent) {
             strokeColor = this.stroke;
         }
         float strokeWidth = this.strokeWidth;
@@ -297,9 +312,14 @@ public class SVGImage implements Drawable {
             strokeWidth = path.strokeWidth;
         }
 
-        if (fillColor == Color.transparent &&
+        // A path whose fill is not none, with no fill and no stroke color, is
+        // filled black, as SVG fills a path black by default.
+        if (!noFill && fillColor == Color.transparent &&
                 strokeColor == Color.transparent) {
             fillColor = Color.black;
+        }
+        if (fillColor == Color.transparent && strokeColor == Color.transparent) {
+            return;     // fill="none" and no stroke: nothing to draw
         }
 
         page.setBrushColor(fillColor);
@@ -324,19 +344,29 @@ public class SVGImage implements Drawable {
         }
 
         if (strokeColor != Color.transparent) {
+            // Z closes and strokes a subpath; a path that is still open at the
+            // end is stroked without closing it.
+            boolean open = false;
             for (PathOp op : path.operations) {
                 if (op.cmd == 'M') {
                     page.moveTo(op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'L') {
                     page.lineTo(op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'C') {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'Z') {
                     page.closePath();
+                    open = false;
                 }
+            }
+            if (open) {
+                page.strokePath();
             }
         }
     }

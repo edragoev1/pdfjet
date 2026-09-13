@@ -311,7 +311,9 @@ final class Puff {
 
         // load at least need bits into value
         while self.bitcnt < need {
-            if self.incnt == input.count {
+            // >= and not ==: the zlib header is skipped without reading it, so
+            // the input can be shorter than the bytes counted as read.
+            if self.incnt >= input.count {
                 throw PuffError.read(error: 1)  // out of input
             }
             // load eight bits
@@ -479,6 +481,9 @@ final class Puff {
             // code |= try bits(1, &input)     // get next bit
             var buffer = self.bitbuf
             if self.bitcnt < 1 {
+                if self.incnt >= input.count {
+                    throw PuffError.read(error: 1)  // out of input
+                }
                 buffer |= UInt32(input[self.incnt]) << self.bitcnt
                 self.incnt += 1
                 self.bitcnt += 8

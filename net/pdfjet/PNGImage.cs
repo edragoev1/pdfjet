@@ -47,8 +47,8 @@ public class PNGImage {
                 this.colorType = chunk.GetData()[9];            // Color Type
 
                 if (chunk.GetData()[12] == 1) {
-                    Console.WriteLine("Interlaced PNG images are not supported.");
-                    Console.WriteLine("Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n");
+                    throw new Exception("Interlaced PNG images are not supported.\n" +
+                            "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
             } else if (chunkType.Equals("IDAT")) {
                 iDAT = AppendIdatChunk(iDAT, chunk.GetData());
@@ -80,6 +80,13 @@ public class PNGImage {
                 imageData = GetImageColorType0BitDepth2(inflatedImageData);
             } else if (bitDepth == 1) {
                 imageData = GetImageColorType0BitDepth1(inflatedImageData);
+            } else {
+                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+            }
+        } else if (colorType == 4) {
+            // Grayscale image with alpha
+            if (bitDepth == 8) {
+                imageData = GetImageColorType4BitDepth8(inflatedImageData);
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
@@ -247,6 +254,31 @@ public class PNGImage {
     }
 
     // Truecolor Image with Alpha Transparency
+    // The gray samples are the image and the alpha samples its soft mask.
+    private byte[] GetImageColorType4BitDepth8(byte[] buf) {
+        byte[] gray = new byte[this.w * this.h];
+        byte[] alpha = new byte[this.w * this.h];
+        byte[] image = new byte[2 * this.w * this.h];
+        byte[] filters = new byte[this.h];
+        int bytesPerLine = 2 * this.w + 1;
+        int k = 0;
+        int j = 0;
+        for (int i = 0; i < buf.Length; i++) {
+            if (i % bytesPerLine == 0) {
+                filters[j++] = buf[i];
+            } else {
+                image[k++] = buf[i];
+            }
+        }
+        ApplyFilters(filters, image, this.w, this.h, 2);
+        for (int i = 0; i < gray.Length; i++) {
+            gray[i] = image[2 * i];
+            alpha[i] = image[2 * i + 1];
+        }
+        deflatedAlphaData = Compressor.Deflate(alpha);
+        return gray;
+    }
+
     private byte[] GetImageColorType6BitDepth8(byte[] buf) {
         byte[] idata = new byte[3 * this.w * this.h];   // Image data
         byte[] alpha = new byte[this.w * this.h];       // Alpha values

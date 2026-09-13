@@ -1,8 +1,9 @@
 # Builds the Java, C#, Go and Swift ports and runs their examples, one job per
-# port, with the port's build-*.sh script. The examples are the test suite. A
-# job fails if the library or an example does not compile or compiles with a
-# warning, go vet reports a problem in the Go port, an example exits with an
-# error, or an example does not create its PDF file. The compare job
+# port, with the port's build-*.sh script, and then the port's unit tests with
+# its test-*.sh script. A job fails if the library or an example does not
+# compile or compiles with a warning, go vet reports a problem in the Go port,
+# an example exits with an error, an example does not create its PDF file, or a
+# unit test fails. The compare job
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
 # declare PDF/A or PDF/UA compliance must pass veraPDF. The java8 job builds the
@@ -89,10 +90,17 @@ jobs:
                   if-no-files-found: error
                   retention-days: 3
 
+            # The unit tests in tests/<port>, or next to the code in src for Go.
+            # The Java script downloads the JUnit console launcher and checks
+            # its SHA-256; the C# tests restore xUnit from NuGet.
+            - name: Run the unit tests
+              run: bash -e test-${{ matrix.port }}.sh
+
     # The java job builds with JDK 21 and javac --release 8. This job builds with
-    # JDK 8, whose javac has no --release option, and runs the examples on the
-    # Java 8 runtime, so the library, the examples and build-java.sh keep working
-    # there. The compare job does not check its PDFs.
+    # JDK 8, whose javac has no --release option, and runs the examples and the
+    # unit tests on the Java 8 runtime, so the library, the examples, the tests,
+    # build-java.sh and test-java.sh keep working there. The compare job does not
+    # check its PDFs.
     java8:
         name: java (JDK 8)
         runs-on: ubuntu-24.04
@@ -117,6 +125,9 @@ jobs:
                       fi
                   done
                   exit $missing
+
+            - name: Run the unit tests
+              run: bash -e test-java.sh
 
     # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py.
     compare:

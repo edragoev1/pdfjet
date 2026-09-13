@@ -99,6 +99,8 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 		image.h = png.GetHeight()
 		if png.GetColorType() == 0 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
+		} else if png.GetColorType() == 4 {
+			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.Gray, 8)
 		} else {
 			bitDepth := 8
 			if png.GetBitDepth() == 16 {
@@ -149,6 +151,8 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader, imageType imagetyp
 		image.h = png.GetHeight()
 		if png.GetColorType() == 0 {
 			image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
+		} else if png.GetColorType() == 4 {
+			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.Gray, 8)
 		} else {
 			bitDepth := 8
 			if png.GetBitDepth() == 16 {

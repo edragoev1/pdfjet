@@ -4,8 +4,9 @@
 #   ./check-examples.sh
 #
 # Builds the Java, C#, Go and Swift ports and runs their examples with the
-# build-*.sh scripts, as the workflow's port jobs do, then checks the example
-# PDFs with .github/scripts/check-example-pdfs.py, as its compare job does.
+# build-*.sh scripts and their unit tests with the test-*.sh scripts, as the
+# workflow's port jobs do, then checks the example PDFs with
+# .github/scripts/check-example-pdfs.py, as its compare job does.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -57,6 +58,12 @@ for port in java dotnet go swift; do
         fi
     done
     if [ $missing = 1 ]; then
+        exit 1
+    fi
+    echo "Running the $port unit tests, logging to $WORK/logs/$port-tests.log"
+    if ! bash -e test-$port.sh > "$WORK/logs/$port-tests.log" 2>&1; then
+        tail -n 40 "$WORK/logs/$port-tests.log"
+        echo "The $port unit tests failed."
         exit 1
     fi
 done

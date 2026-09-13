@@ -296,7 +296,11 @@ class Decompressor {
             byte[] buf = new byte[4096];
             while (!inflater.finished()) {
                 int count = inflater.inflate(buf);
-                if (count == 0 && inflater.needsInput()) {
+                // An empty stream is finished after an inflate that returns no
+                // bytes. A stream that is not finished and needs more input or
+                // a preset dictionary is truncated or invalid.
+                if (count == 0 && !inflater.finished() &&
+                        (inflater.needsInput() || inflater.needsDictionary())) {
                     throw new DataFormatException("Truncated or invalid Flate stream");
                 }
                 bos.write(buf, 0, count);

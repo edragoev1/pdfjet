@@ -31,8 +31,15 @@ go run go.abhg.dev/doc2go@v0.12.2 -out docs/go -home github.com/edragoev1/pdfjet
 # /pdfjet/swift/, as on GitHub Pages.
 rm -rf docs/swift
 swift package dump-symbol-graph --minimum-access-level public --skip-synthesized-members
+# The dump also has the modules of the test target, PDFjetPackageTests and
+# PDFjetPackageDiscoveredTests, so DocC gets a copy with the PDFjet module only.
+symbolgraph="$(dirname "$(swift build --show-bin-path)")/symbolgraph"
+rm -rf build/symbolgraph-pdfjet
+mkdir -p build/symbolgraph-pdfjet
+find "$symbolgraph" -maxdepth 1 \( -name 'PDFjet.symbols.json' -o -name 'PDFjet@*.symbols.json' \) \
+    -exec cp {} build/symbolgraph-pdfjet/ \;
 docc convert \
-    --additional-symbol-graph-dir "$(dirname "$(swift build --show-bin-path)")/symbolgraph" \
+    --additional-symbol-graph-dir build/symbolgraph-pdfjet \
     --fallback-display-name PDFjet \
     --fallback-bundle-identifier com.pdfjet.PDFjet \
     --transform-for-static-hosting \

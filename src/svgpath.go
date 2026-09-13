@@ -13,6 +13,8 @@ type SVGPath struct {
 	operations  []*PathOp // The PDF path operations
 	fill        int32     // The fill color
 	stroke      int32     // The stroke color
+	fillNone    bool      // fill="none": not filled, whatever the svg element says
+	strokeNone  bool      // stroke="none": not stroked, whatever the svg element says
 	strokeWidth float32   // The stroke width
 }
 

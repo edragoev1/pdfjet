@@ -53,7 +53,8 @@ public class PNGImage {
                 this.bitDepth = chunk.getData()[8];         // Bit Depth
                 this.colorType = chunk.getData()[9];        // Color Type
                 if (chunk.getData()[12] == 1) {
-                    PDF.LOG.warning("Interlaced PNG images are not supported.\nConvert the image using OptiPNG:\noptipng -i0 -o7 myimage.png\n");
+                    throw new Exception("Interlaced PNG images are not supported.\n" +
+                            "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
             } else if (chunkType.equals("IDAT")) {
                 iDAT = appendIdatChunk(iDAT, chunk.getData());
@@ -85,6 +86,13 @@ public class PNGImage {
                 image = getImageColorType0BitDepth2(inflatedImageData);
             } else if (bitDepth == 1) {
                 image = getImageColorType0BitDepth1(inflatedImageData);
+            } else {
+                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+            }
+        } else if (colorType == 4) {
+            // Grayscale image with alpha
+            if (bitDepth == 8) {
+                image = getImageColorType4BitDepth8(inflatedImageData);
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
@@ -274,6 +282,31 @@ public class PNGImage {
     }
 
     // Truecolor Image with Alpha Transparency
+    // The gray samples are the image and the alpha samples its soft mask.
+    private byte[] getImageColorType4BitDepth8(byte[] buf) {
+        byte[] gray = new byte[this.w * this.h];
+        byte[] alpha = new byte[this.w * this.h];
+        byte[] image = new byte[2 * this.w * this.h];
+        byte[] filters = new byte[this.h];
+        int bytesPerLine = 2 * this.w + 1;
+        int k = 0;
+        int j = 0;
+        for (int i = 0; i < buf.length; i++) {
+            if (i % bytesPerLine == 0) {
+                filters[j++] = buf[i];
+            } else {
+                image[k++] = buf[i];
+            }
+        }
+        applyFilters(filters, image, this.w, this.h, 2);
+        for (int i = 0; i < gray.length; i++) {
+            gray[i] = image[2 * i];
+            alpha[i] = image[2 * i + 1];
+        }
+        deflatedAlphaData = Compressor.deflate(alpha);
+        return gray;
+    }
+
     private byte[] getImageColorType6BitDepth8(byte[] buf) {
         byte[] idata = new byte[3 * this.w * this.h];   // Image data
         byte[] alpha = new byte[this.w * this.h];       // Alpha values

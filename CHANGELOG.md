@@ -186,6 +186,15 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - PNG images with row filters and palette transparency, top-down BMP images and
   SVG files are read correctly, and `Image.setFlipUpsideDown` flips an image in
   place.
+- Grayscale PNG images with alpha are embedded as a gray image with a soft
+  mask instead of crashing, and an interlaced PNG image fails with a clear
+  message instead of crashing.
+- SVG images: `fill="none"` without a stroke draws nothing instead of a black
+  shape, `none` on a path overrides the colors of the svg element, and an open
+  path with a stroke is stroked.
+- Java reads a PDF that has a blank page. A truncated Flate stream fails with
+  an error in the four ports: Swift crashed and C# returned the bytes decoded
+  so far. C# no longer hangs on a truncated BMP image.
 - `Rect`, `Point`, `Page`, `PDF` and `PDFobj` behave the same in the four
   ports. `Line.setLocation` moves the whole line, `Rect.scaleBy` keeps the
   location, and `Path.setLocation` sets the offset instead of adding to it.
@@ -269,6 +278,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   the fonts made it larger than the 500 MiB Go allows.
 - The Swift package declares the `PDFjet` library product, so other Swift
   packages can depend on it.
+- Unit tests in all four ports, with the same cases and expected values:
+  JUnit 5 for Java, xUnit for C#, the `testing` package for Go and Swift
+  Testing for Swift. `test-java.sh`, `test-dotnet.sh`, `test-go.sh` and
+  `test-swift.sh` run them, and so do the Build workflow, which also runs the
+  Java tests on Java 8, and `check-examples.sh`. They add no dependency to the
+  libraries.
 
 ### Documentation
 - The C# API reference is built by DocFX and published under `dotnet/`, next

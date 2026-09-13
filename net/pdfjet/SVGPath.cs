@@ -18,6 +18,10 @@ internal class SVGPath {
     internal int fill = Color.transparent;    // The fill color or -1 (don't fill)
     /// <summary>The stroke color, or Color.transparent to not stroke the path.</summary>
     internal int stroke = Color.transparent;  // The stroke color or -1 (don't stroke)
+    /// <summary>True for fill="none": not filled, whatever the svg element says.</summary>
+    internal bool fillNone = false;
+    /// <summary>True for stroke="none": not stroked, whatever the svg element says.</summary>
+    internal bool strokeNone = false;
     /// <summary>The stroke width.</summary>
     internal float strokeWidth = 0f;          // The stroke width
 }

@@ -22,6 +22,8 @@ public class SVGImage : IDrawable {
     String viewBox = null;
     int fill = Color.transparent;
     int stroke = Color.transparent;
+    bool fillNone = false;      // fill="none" on the svg element
+    bool strokeNone = false;    // stroke="none" on the svg element
     float strokeWidth = 0f;
 
     List<SVGPath> paths = null;
@@ -101,8 +103,10 @@ public class SVGImage : IDrawable {
                 this.viewBox = value;
             } else if (name.Equals("fill")) {
                 this.fill = getColor(value);
+                this.fillNone = IsNone(value);
             } else if (name.Equals("stroke")) {
                 this.stroke = getColor(value);
+                this.strokeNone = IsNone(value);
             } else if (name.Equals("stroke-width")) {
                 try {
                     this.strokeWidth = float.Parse(value, CultureInfo.InvariantCulture);
@@ -123,8 +127,10 @@ public class SVGImage : IDrawable {
                 path.data = value;
             } else if (name.Equals("fill")) {
                 path.fill = getColor(value);
+                path.fillNone = IsNone(value);
             } else if (name.Equals("stroke")) {
                 path.stroke = getColor(value);
+                path.strokeNone = IsNone(value);
             } else if (name.Equals("stroke-width")) {
                 try {
                     path.strokeWidth = float.Parse(value, CultureInfo.InvariantCulture);
@@ -256,13 +262,22 @@ public class SVGImage : IDrawable {
         return this.h;
     }
 
+    // Returns true for the value none, which turns the fill or the stroke off.
+    private static bool IsNone(String value) {
+        return value.Trim().Equals("none");
+    }
+
     private void drawPath(SVGPath path, Page page) {
-        int fillColor = path.fill;
-        if (fillColor == Color.transparent) {
+        // none on the path wins over the color of the svg element; a color
+        // that is not set, or not understood, is taken from the svg element.
+        bool noFill = path.fillNone || (path.fill == Color.transparent && this.fillNone);
+        int fillColor = noFill ? Color.transparent : path.fill;
+        if (!noFill && fillColor == Color.transparent) {
             fillColor = this.fill;
         }
-        int strokeColor = path.stroke;
-        if (strokeColor == Color.transparent) {
+        bool noStroke = path.strokeNone || (path.stroke == Color.transparent && this.strokeNone);
+        int strokeColor = noStroke ? Color.transparent : path.stroke;
+        if (!noStroke && strokeColor == Color.transparent) {
             strokeColor = this.stroke;
         }
         float strokeWidth = this.strokeWidth;
@@ -270,9 +285,14 @@ public class SVGImage : IDrawable {
             strokeWidth = path.strokeWidth;
         }
 
-        if (fillColor == Color.transparent &&
+        // A path whose fill is not none, with no fill and no stroke color, is
+        // filled black, as SVG fills a path black by default.
+        if (!noFill && fillColor == Color.transparent &&
                 strokeColor == Color.transparent) {
             fillColor = Color.black;
+        }
+        if (fillColor == Color.transparent && strokeColor == Color.transparent) {
+            return;     // fill="none" and no stroke: nothing to draw
         }
 
         page.SetBrushColor(fillColor);
@@ -297,19 +317,29 @@ public class SVGImage : IDrawable {
         }
 
         if (strokeColor != Color.transparent) {
+            // Z closes and strokes a subpath; a path that is still open at the
+            // end is stroked without closing it.
+            bool open = false;
             foreach (PathOp op in path.operations) {
                 if (op.cmd == 'M') {
                     page.MoveTo(op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'L') {
                     page.LineTo(op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'C') {
                     page.CurveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y);
+                    open = true;
                 } else if (op.cmd == 'Z') {
                     page.ClosePath();
+                    open = false;
                 }
+            }
+            if (open) {
+                page.StrokePath();
             }
         }
     }
