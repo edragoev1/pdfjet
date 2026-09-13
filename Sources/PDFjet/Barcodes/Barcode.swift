@@ -240,7 +240,6 @@ public class Barcode : Drawable {
 
     private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
-        let y: Float = y1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
         // Calculate the check digit:
@@ -274,8 +273,9 @@ public class Barcode : Drawable {
         // characters and would corrupt any indexing done against them).
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(checkDigit + 0x30)!)
+        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: h + 8.0, direction: direction)  // 95 modules
 
-        x = drawEGuard(page, x1, y1, x, h + 8)
+        x = drawEGuard(page, bars, x, h + 8)
         var xGroup1Start = x
 
         i = 0
@@ -285,7 +285,7 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 != 0 {
-                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
@@ -295,7 +295,7 @@ public class Barcode : Drawable {
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, x1, y1, x, h + 8)
+        x = drawMGuard(page, bars, x, h + 8)
         let xRightGroupStart = x
         var xGroup2End: Float = 0.0
 
@@ -309,15 +309,17 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 == 0 {
-                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
-        x = drawEGuard(page, x1, y1, x, h + 8)
+        x = drawEGuard(page, bars, x, h + 8)
 
-        var xy = [x, y]
+        var left = x1
+        var right = x
+        var bottom = y1 + h + 8
         if font != nil {
             // Standard UPC-A layout: the leading (number system) digit and
             // the trailing check digit are printed in the quiet zones
@@ -340,37 +342,34 @@ public class Barcode : Drawable {
             let yText = y1 + h + font!.getBodyHeight(font!.getSize())
             let gap = font!.stringWidth(font!.getSize(), " ")
 
-            let left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
-            drawDigits(page, x1, y1, firstDigit, left, yText)
-            drawDigits(page, x1, y1, group1,
+            left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
+            drawText(page, bars, firstDigit, left, yText)
+            drawText(page, bars, group1,
                     xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font!.stringWidth(font!.getSize(), group1))/2,
                     yText)
-            drawDigits(page, x1, y1, group2,
+            drawText(page, bars, group2,
                     xRightGroupStart + ((xGroup2End - xRightGroupStart) - font!.stringWidth(font!.getSize(), group2))/2,
                     yText)
-            let xyLast = drawDigits(page, x1, y1, lastDigit, x + gap, yText)
-
-            xy[0] = max(x, xyLast[0])
-            xy[1] = max(y, xyLast[1])
+            let xy = drawText(page, bars, lastDigit, x + gap, yText)
+            right = xy[0]
+            bottom = max(bottom, xy[1])
 
             font!.setSize(fontSize)
-            return turnCorner(x1, y1, left, [xy[0], xy[1] + font!.getDescent(font!.getSize())])
         }
 
-        return turnCorner(x1, y1, x1, [xy[0], xy[1]])
+        return bars.getBottomRight(left, right, bottom)
     }
 
     private func drawEGuard(
             _ page: Page?,
-            _ x1: Float,
-            _ y1: Float,
+            _ bars: Bars,
             _ x: Float,
             _ h: Float) -> Float {
         if page != nil {
             // 101
             page!.addArtifactBMC()
-            drawBar(page, x1, y1, x + (0.5 * m1), m1, h)
-            drawBar(page, x1, y1, x + (2.5 * m1), m1, h)
+            strokeBar(page, bars, x + (0.5 * m1), m1, h)
+            strokeBar(page, bars, x + (2.5 * m1), m1, h)
             page!.addEMC()
         }
         return (x + (3.0 * m1))
@@ -378,32 +377,43 @@ public class Barcode : Drawable {
 
     private func drawMGuard(
             _ page: Page?,
-            _ x1: Float,
-            _ y1: Float,
+            _ bars: Bars,
             _ x: Float,
             _ h: Float) -> Float {
         if page != nil {
             // 01010
             page!.addArtifactBMC()
-            drawBar(page, x1, y1, x + (1.5 * m1), m1, h)
-            drawBar(page, x1, y1, x + (3.5 * m1), m1, h)
+            strokeBar(page, bars, x + (1.5 * m1), m1, h)
+            strokeBar(page, bars, x + (3.5 * m1), m1, h)
             page!.addEMC()
         }
         return (x + (5.0 * m1))
     }
 
-    // Strokes the bar of width w and height h centered on x of an EAN-13 or UPC-A
-    // barcode drawn left to right from (x1, y1), turned to the direction of the barcode.
+    // Draws the bar of width w and height h that starts at x.
     private func drawBar(
             _ page: Page?,
-            _ x1: Float,
-            _ y1: Float,
+            _ bars: Bars,
             _ x: Float,
             _ w: Float,
             _ h: Float) {
         if page != nil {
-            let top = turn(x1, y1, x, y1)
-            let bottom = turn(x1, y1, x, y1 + h)
+            page!.addArtifactBMC()
+            strokeBar(page, bars, x + w/2, w, h)
+            page!.addEMC()
+        }
+    }
+
+    // Strokes the bar of width w and height h centered on x.
+    private func strokeBar(
+            _ page: Page?,
+            _ bars: Bars,
+            _ x: Float,
+            _ w: Float,
+            _ h: Float) {
+        if page != nil {
+            let top = bars.turn(x, bars.y1)
+            let bottom = bars.turn(x, bars.y1 + h)
             page!.setPenWidth(w)
             page!.moveTo(top[0], top[1])
             page!.lineTo(bottom[0], bottom[1])
@@ -411,82 +421,29 @@ public class Barcode : Drawable {
         }
     }
 
-    private func drawDigitBar(
-            _ page: Page?,
-            _ x1: Float,
-            _ y1: Float,
-            _ x: Float,
-            _ w: Float,
-            _ h: Float) {
-        if page != nil {
-            page!.addArtifactBMC()
-            drawBar(page, x1, y1, x + w/2, w, h)
-            page!.addEMC()
-        }
-    }
-
-    // Draws the digits at (x, y) of an EAN-13 or UPC-A barcode drawn left to right
-    // from (x1, y1), turned to the direction of the barcode. Returns the bottom right
-    // corner of the digits before the turn.
+    // Draws the text with its baseline starting at (x, y). Returns the end of
+    // the baseline and the bottom of the text, before the turn.
     @discardableResult
-    private func drawDigits(
+    private func drawText(
             _ page: Page?,
-            _ x1: Float,
-            _ y1: Float,
-            _ digits: String,
+            _ bars: Bars,
+            _ str: String,
             _ x: Float,
             _ y: Float) -> [Float] {
-        let textLine = TextLine(font!, digits)
-        if direction == Direction.LEFT_TO_RIGHT {
-            textLine.setLocation(x, y)
-            return textLine.drawOn(page)
-        }
-        let xy = turn(x1, y1, x, y)
+        let textLine = TextLine(font!, str)
+        let xy = bars.turn(x, y)
         textLine.setLocation(xy[0], xy[1])
-        textLine.setTextRotation(direction == Direction.TOP_TO_BOTTOM ? 270 : 90)
+        if direction == Direction.TOP_TO_BOTTOM {
+            textLine.setTextRotation(270)
+        } else if direction == Direction.BOTTOM_TO_TOP {
+            textLine.setTextRotation(90)
+        }
         textLine.drawOn(page)
-        return [x + font!.stringWidth(font!.getSize(), digits), y]
-    }
-
-    // Returns the point (x, y) of an EAN-13 or UPC-A barcode drawn left to right
-    // from (x1, y1), turned to the direction of the barcode: top to bottom turns it
-    // a quarter turn clockwise, bottom to top counter-clockwise, and the bars stay
-    // right of x1 and below y1.
-    private func turn(_ x1: Float, _ y1: Float, _ x: Float, _ y: Float) -> [Float] {
-        let h = m1 * barHeightFactor + 8.0      // The height of the guard bars
-        if direction == Direction.TOP_TO_BOTTOM {
-            return [x1 + h - (y - y1), y1 + (x - x1)]
-        } else if direction == Direction.BOTTOM_TO_TOP {
-            return [x1 + (y - y1), y1 + 95.0 * m1 - (x - x1)]   // 95 modules
-        }
-        return [x, y]
-    }
-
-    // Returns the bottom right corner of an EAN-13 or UPC-A barcode drawn left to
-    // right from (x1, y1), turned to the direction of the barcode, where xy is the
-    // bottom right corner and left the left edge before the turn.
-    private func turnCorner(_ x1: Float, _ y1: Float, _ left: Float, _ xy: [Float]) -> [Float] {
-        let h = m1 * barHeightFactor + 8.0
-        if direction == Direction.TOP_TO_BOTTOM {
-            return [x1 + h, y1 + (xy[0] - x1)]
-        } else if direction == Direction.BOTTOM_TO_TOP {
-            return [x1 + max(xy[1] - y1, h), y1 + 95.0 * m1 + (x1 - left)]
-        }
-        return xy
+        return [x + font!.stringWidth(font!.getSize(), str), y + font!.getDescent(font!.getSize())]
     }
 
     private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
-        var x: Float = x1
-        var y: Float = y1
-
-        var w: Float = m1
-        var h: Float = m1
-
-        if direction == Direction.TOP_TO_BOTTOM {
-            w *= barHeightFactor
-        } else if direction == Direction.LEFT_TO_RIGHT {
-            h *= barHeightFactor
-        }
+        let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
         var list = [UInt16]()
         for symchar in text.unicodeScalars {
@@ -526,47 +483,39 @@ public class Barcode : Drawable {
         buf.append(String(UnicodeScalar(GS1_128.STOP)!))
 
         let scalars = [UnicodeScalar](buf.unicodeScalars)
+        var length: Float = 0.0
+        for scalar in scalars {
+            for symbolScalar in String(GS1_128.TABLE[Int(scalar.value)]).unicodeScalars {
+                length += Float(Int(symbolScalar.value) - 0x30) * m1
+            }
+        }
+
+        let bars = Bars(x1: x1, y1: y1, length: length, height: h, direction: direction)
+        var x: Float = x1
         for scalar in scalars {
             let symbol = String(GS1_128.TABLE[Int(scalar.value)])
             var j = 0
             for scalar in symbol.unicodeScalars {
                 let n = Int(scalar.value) - 0x30
                 if j%2 == 0 {
-                    if direction == Direction.LEFT_TO_RIGHT {
-                        drawVertBar(page, x, y, m1 * Float(n), h)
-                    } else if direction == Direction.TOP_TO_BOTTOM {
-                        drawHorzBar(page, x, y, m1 * Float(n), w)
-                    }
+                    drawBar(page, bars, x, m1 * Float(n), h)
                 }
-                if direction == Direction.LEFT_TO_RIGHT {
-                    x += Float(n) * m1
-                } else if direction == Direction.TOP_TO_BOTTOM {
-                    y += Float(n) * m1
-                }
+                x += Float(n) * m1
                 j += 1
             }
         }
 
-        var xy = [x, y]
+        var right = x
+        var bottom = y1 + h
         if font != nil {
-            if direction == Direction.LEFT_TO_RIGHT {
-                let textLine = TextLine(font!, text)
-                        .setLocation(x1 + ((x - x1) - font!.stringWidth(text))/2, y1 + h + font!.bodyHeight)
-                xy = textLine.drawOn(page)
-                xy[0] = max(x, xy[0])
-                return [xy[0], xy[1] + font!.descent]
-            } else if direction == Direction.TOP_TO_BOTTOM {
-                let textLine = TextLine(font!, text)
-                        .setLocation(
-                                x + w + font!.bodyHeight,
-                                y - ((y - y1) - font!.stringWidth(text))/2)
-                        .setTextRotation(90)
-                xy = textLine.drawOn(page)
-                xy[1] = max(y, xy[1])
-            }
+            let xy = drawText(page, bars, text,
+                    x1 + ((x - x1) - font!.stringWidth(text))/2,
+                    y1 + h + font!.bodyHeight)
+            right = max(right, xy[0])
+            bottom = xy[1]
         }
 
-        return xy
+        return bars.getBottomRight(x1, right, bottom)
     }
 
     private func drawCode39(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
@@ -574,153 +523,57 @@ public class Barcode : Drawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         let fullText = "*" + text + "*"
-
-        var x: Float = x1
-        var y: Float = y1
-        let w: Float = m1 * barHeightFactor     // Barcode width when drawn vertically
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
-        var xy: [Float] = [0.0, 0.0]
+        var length: Float = 0.0
+        for symchar in fullText.unicodeScalars {
+            guard let code = tableB[String(symchar)] else {
+                fatalError("The input string '" + fullText +
+                        "' contains characters that are invalid in a Code39 barcode.")
+            }
+            for ch in code.unicodeScalars {
+                length += (ch == "W" || ch == "B") ? 3 * m1 : m1
+            }
+            length += m1
+        }
+        length -= m1    // There is no gap after the last character
 
-        if direction == Direction.LEFT_TO_RIGHT {
-            for symchar in fullText.unicodeScalars {
-                let code = tableB[String(symchar)]
-                if code == nil {
-                    fatalError("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.")
-                } else {
-                    let scalars = Array(code!.unicodeScalars)
-                    for i in 0..<9 {
-                        let ch = String(scalars[i])
-                        if ch == "w" {
-                            x += m1
-                        } else if ch == "W" {
-                            x += m1 * 3
-                        } else if ch == "b" {
-                            drawVertBar(page, x, y, m1, h)
-                            x += m1
-                        } else if ch == "B" {
-                            drawVertBar(page, x, y, m1 * 3, h)
-                            x += m1 * 3
-                        }
-                    }
+        let bars = Bars(x1: x1, y1: y1, length: length, height: h, direction: direction)
+        var x: Float = x1
+        for symchar in fullText.unicodeScalars {
+            let scalars = Array(tableB[String(symchar)]!.unicodeScalars)
+            for i in 0..<9 {
+                let ch = String(scalars[i])
+                if ch == "w" {
                     x += m1
+                } else if ch == "W" {
+                    x += m1 * 3
+                } else if ch == "b" {
+                    drawBar(page, bars, x, m1, h)
+                    x += m1
+                } else if ch == "B" {
+                    drawBar(page, bars, x, m1 * 3, h)
+                    x += m1 * 3
                 }
             }
-
-            if font != nil {
-                let textLine = TextLine(font!, fullText)
-                        .setLocation(
-                                x1 + ((x - x1) - font!.stringWidth(fullText))/2,
-                                y1 + h + font!.bodyHeight)
-                xy = textLine.drawOn(page)
-                xy[0] = max(x, xy[0])
-            }
-        } else if direction == Direction.TOP_TO_BOTTOM {
-            for symchar in fullText.unicodeScalars {
-                let code = tableB[String(symchar)]
-                if code == nil {
-                    fatalError("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.")
-                } else {
-                    let scalars = Array(code!.unicodeScalars)
-                    for i in 0..<9 {
-                        let ch = String(scalars[i])
-                        if ch == "w" {
-                            y += m1
-                        } else if ch == "W" {
-                            y += 3 * m1
-                        } else if ch == "b" {
-                            drawHorzBar(page, x, y, m1, h)
-                            y += m1
-                        } else if ch == "B" {
-                            drawHorzBar(page, x, y, 3 * m1, h)
-                            y += 3 * m1
-                        }
-                    }
-                    y += m1
-                }
-            }
-
-            if font != nil {
-                let textLine = TextLine(font!, fullText)
-                        .setLocation(
-                                x - font!.bodyHeight,
-                                y1 + ((y - y1) - font!.stringWidth(fullText))/2)
-                        .setTextRotation(270)
-                xy = textLine.drawOn(page)
-                xy[0] = max(x, xy[0]) + w
-                xy[1] = max(y, xy[1])
-            }
-        } else if direction == Direction.BOTTOM_TO_TOP {
-            var height: Float = 0.0
-
-            for symchar in fullText.unicodeScalars {
-                let code = tableB[String(symchar)]
-                if code == nil {
-                    fatalError("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.")
-                } else {
-                    let scalar = Array(code!.unicodeScalars)
-                    for i in 0..<9 {
-                        let ch = String(scalar[i])
-                        if ch == "w" || ch == "b" {
-                            height += m1
-                        } else if ch == "W" || ch == "B" {
-                            height += 3 * m1
-                        }
-                    }
-                    height += m1
-                }
-            }
-
-            y += height - m1
-
-            for symchar in fullText.unicodeScalars {
-                let code = tableB[String(symchar)]
-                if code == nil {
-                    fatalError("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.")
-                } else {
-                    let scalars = Array(code!.unicodeScalars)
-                    for i in 0..<9 {
-                        let ch = String(scalars[i])
-                        if ch == "w" {
-                            y -= m1
-                        } else if ch == "W" {
-                            y -= 3 * m1
-                        } else if ch == "b" {
-                            drawHorzBar2(page, x, y, m1, h)
-                            y -= m1
-                        } else if ch == "B" {
-                            drawHorzBar2(page, x, y, 3 * m1, h)
-                            y -= 3 * m1
-                        }
-                    }
-                    y -= m1
-                }
-            }
-
-            if font != nil {
-                y = y1 + ( height - m1)
-
-                let textLine = TextLine(font!, fullText)
-                        .setLocation(
-                                x + w + font!.bodyHeight,
-                                y - ((y - y1) - font!.stringWidth(fullText))/2)
-                        .setTextRotation(90)
-                xy = textLine.drawOn(page)
-                xy[1] = max(y, xy[1])
-                return [xy[0], xy[1] + font!.descent]
-            }
+            x += m1
         }
 
-        return [xy[0], xy[1]]
+        var right = x1 + length
+        var bottom = y1 + h
+        if font != nil {
+            let xy = drawText(page, bars, fullText,
+                    x1 + (length - font!.stringWidth(fullText))/2,
+                    y1 + h + font!.bodyHeight)
+            right = max(right, xy[0])
+            bottom = xy[1]
+        }
+
+        return bars.getBottomRight(x1, right, bottom)
     }
 
     private func drawCodeEAN13(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
-        let y: Float = y1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
         let scalars = Array(text.unicodeScalars)
@@ -749,8 +602,9 @@ public class Barcode : Drawable {
         // characters and would corrupt any indexing done against them).
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(UInt16(checkDigit) + 0x30)!)
+        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: h + 8.0, direction: direction)  // 95 modules
 
-        x = drawEGuard(page, x1, y1, x, h + 8)
+        x = drawEGuard(page, bars, x, h + 8)
         let xLeftGroupStart = x
         let group1 = Array(lgMap[Int(fullScalars[0].value) - 0x30].unicodeScalars)
 
@@ -765,14 +619,14 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 != 0 {
-                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, x1, y1, x, h + 8)
+        x = drawMGuard(page, bars, x, h + 8)
         let xRightGroupStart = x
 
         i = 7
@@ -782,16 +636,18 @@ public class Barcode : Drawable {
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 == 0 {
-                    drawDigitBar(page, x1, y1, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, h)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
         let xRightGroupEnd = x
-        x = drawEGuard(page, x1, y1, x, h + 8)
+        x = drawEGuard(page, bars, x, h + 8)
 
-        var xy = [x, y]
+        var left = x1
+        var right = x
+        var bottom = y1 + h + 8
         if font != nil {
             // Standard EAN-13 layout: the leading (number system) digit sits
             // in the quiet zone to the left of the start guard bars, not
@@ -814,70 +670,54 @@ public class Barcode : Drawable {
             let yText = y1 + h + font!.getBodyHeight(font!.getSize())
             let gap = font!.stringWidth(font!.getSize(), " ")
 
-            let left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
-            drawDigits(page, x1, y1, firstDigit, left, yText)
-            drawDigits(page, x1, y1, leftGroup,
+            left = x1 - gap - font!.stringWidth(font!.getSize(), firstDigit)
+            drawText(page, bars, firstDigit, left, yText)
+            drawText(page, bars, leftGroup,
                     xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font!.stringWidth(font!.getSize(), leftGroup))/2,
                     yText)
-            let xyRight = drawDigits(page, x1, y1, rightGroup,
+            let xy = drawText(page, bars, rightGroup,
                     xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font!.stringWidth(font!.getSize(), rightGroup))/2,
                     yText)
-
-            xy[0] = max(x, xyRight[0])
-            xy[1] = max(y, xyRight[1])
+            right = max(right, xy[0])
+            bottom = max(bottom, xy[1])
 
             font!.setSize(fontSize)
-            return turnCorner(x1, y1, left, [xy[0], xy[1] + font!.getDescent(font!.getSize())])
         }
 
-        return turnCorner(x1, y1, x1, [xy[0], xy[1]])
+        return bars.getBottomRight(left, right, bottom)
     }
 
-    private func drawVertBar(
-            _ page: Page?,
-            _ x: Float,
-            _ y: Float,
-            _ m1: Float,    // Module length
-            _ h: Float) {
-        if page != nil {
-            page!.addArtifactBMC()
-            page!.setPenWidth(m1)
-            page!.moveTo(x + m1/2, y)
-            page!.lineTo(x + m1/2, y + h)
-            page!.strokePath()
-            page!.addEMC()
+    // The bars of a barcode, length long and height high, drawn left to right from
+    // (x1, y1) and turned to the direction of the barcode: top to bottom is a quarter
+    // turn clockwise and bottom to top a quarter turn counter-clockwise, and the bars
+    // stay right of x1 and below y1. The draw methods take the coordinates of the
+    // barcode drawn left to right.
+    private struct Bars {
+        let x1: Float
+        let y1: Float
+        let length: Float
+        let height: Float
+        let direction: Direction
+
+        // Returns the point (x, y) turned to the direction of the barcode.
+        func turn(_ x: Float, _ y: Float) -> [Float] {
+            if direction == Direction.TOP_TO_BOTTOM {
+                return [x1 + height - (y - y1), y1 + (x - x1)]
+            } else if direction == Direction.BOTTOM_TO_TOP {
+                return [x1 + (y - y1), y1 + length - (x - x1)]
+            }
+            return [x, y]
         }
-    }
 
-    private func drawHorzBar(
-            _ page: Page?,
-            _ x: Float,
-            _ y: Float,
-            _ m1: Float,    // Module length
-            _ w: Float) {
-        if page != nil {
-            page!.addArtifactBMC()
-            page!.setPenWidth(m1)
-            page!.moveTo(x, y + m1/2)
-            page!.lineTo(x + w, y + m1/2)
-            page!.strokePath()
-            page!.addEMC()
-        }
-    }
-
-    private func drawHorzBar2(
-            _ page: Page?,
-            _ x: Float,
-            _ y: Float,
-            _ m1: Float,    // Module length
-            _ w: Float) {
-        if page != nil {
-            page!.addArtifactBMC()
-            page!.setPenWidth(m1)
-            page!.moveTo(x, y - m1/2)
-            page!.lineTo(x + w, y - m1/2)
-            page!.strokePath()
-            page!.addEMC()
+        // Returns the bottom right corner, turned to the direction of the barcode, of
+        // a barcode that spans from left to right and from y1 to bottom.
+        func getBottomRight(_ left: Float, _ right: Float, _ bottom: Float) -> [Float] {
+            if direction == Direction.TOP_TO_BOTTOM {
+                return [x1 + height, y1 + (right - x1)]
+            } else if direction == Direction.BOTTOM_TO_TOP {
+                return [x1 + (bottom - y1), y1 + length + (x1 - left)]
+            }
+            return [right, bottom]
         }
     }
 

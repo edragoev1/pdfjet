@@ -264,7 +264,6 @@ public class Barcode implements Drawable {
 
     private float[] drawCodeUPC(Page page, float x1, float y1) throws Exception {
         float x = x1;
-        float y = y1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         int sum = 0;
@@ -283,8 +282,9 @@ public class Barcode implements Drawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + Integer.toString(checkDigit);
+        Bars bars = new Bars(x1, y1, 95f * m1, h + 8f, direction);  // 95 modules
 
-        x = drawEGuard(page, x1, y1, x, h + 8);
+        x = drawEGuard(page, bars, x, h + 8);
         float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText.charAt(i) - '0';
@@ -292,7 +292,7 @@ public class Barcode implements Drawable {
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
                 if (j%2 != 0) {
-                    drawDigitBar(page, x1, y1, x, n*m1, h);
+                    drawBar(page, bars, x, n*m1, h);
                 }
                 x += n*m1;
             }
@@ -301,7 +301,7 @@ public class Barcode implements Drawable {
             }
         }
         float xLeftGroupEnd = x;
-        x = drawMGuard(page, x1, y1, x, h + 8);
+        x = drawMGuard(page, bars, x, h + 8);
         float xRightGroupStart = x;
         float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
@@ -313,14 +313,16 @@ public class Barcode implements Drawable {
             for (int j = 0; j < 4; j++) {
                 int n = str.charAt(j) - '0';
                 if (j%2 == 0) {
-                    drawDigitBar(page, x1, y1, x, n*m1, h);
+                    drawBar(page, bars, x, n*m1, h);
                 }
                 x += n*m1;
             }
         }
-        x = drawEGuard(page, x1, y1, x, h + 8);
+        x = drawEGuard(page, bars, x, h + 8);
 
-        float[] xy = new float[] {x, y};
+        float left = x1;
+        float right = x;
+        float bottom = y1 + h + 8;
         if (font != null) {
             // Standard UPC-A layout: the leading (number system) digit and
             // the trailing check digit are printed in the quiet zones
@@ -337,54 +339,60 @@ public class Barcode implements Drawable {
             float yText = y1 + h + font.getBodyHeight();
             float gap = font.stringWidth(" ");
 
-            float left = x1 - gap - font.stringWidth(firstDigit);
-            drawDigits(page, x1, y1, firstDigit, left, yText);
-            drawDigits(page, x1, y1, group1,
+            left = x1 - gap - font.stringWidth(firstDigit);
+            drawText(page, bars, firstDigit, left, yText);
+            drawText(page, bars, group1,
                     xGroup1Start + ((xLeftGroupEnd - xGroup1Start) - font.stringWidth(group1))/2,
                     yText);
-            drawDigits(page, x1, y1, group2,
+            drawText(page, bars, group2,
                     xRightGroupStart + ((xGroup2End - xRightGroupStart) - font.stringWidth(group2))/2,
                     yText);
-            float[] xyLast = drawDigits(page, x1, y1, lastDigit, x + gap, yText);
-
-            xy[0] = Math.max(x, xyLast[0]);
-            xy[1] = Math.max(y, xyLast[1]);
+            float[] xy = drawText(page, bars, lastDigit, x + gap, yText);
+            right = xy[0];
+            bottom = Math.max(bottom, xy[1]);
 
             font.setSize(fontSize);
-            return turnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.getDescent()});
         }
 
-        return turnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
+        return bars.getBottomRight(left, right, bottom);
     }
 
-    private float drawEGuard(Page page, float x1, float y1, float x, float h) {
+    private float drawEGuard(Page page, Bars bars, float x, float h) {
         if (page != null) {
             // 101
             page.addArtifactBMC();
-            drawBar(page, x1, y1, x + (0.5f * m1), m1, h);
-            drawBar(page, x1, y1, x + (2.5f * m1), m1, h);
+            strokeBar(page, bars, x + (0.5f * m1), m1, h);
+            strokeBar(page, bars, x + (2.5f * m1), m1, h);
             page.addEMC();
         }
         return (x + (3.0f * m1));
     }
 
-    private float drawMGuard(Page page, float x1, float y1, float x, float h) {
+    private float drawMGuard(Page page, Bars bars, float x, float h) {
         if (page != null) {
             // 01010
             page.addArtifactBMC();
-            drawBar(page, x1, y1, x + (1.5f * m1), m1, h);
-            drawBar(page, x1, y1, x + (3.5f * m1), m1, h);
+            strokeBar(page, bars, x + (1.5f * m1), m1, h);
+            strokeBar(page, bars, x + (3.5f * m1), m1, h);
             page.addEMC();
         }
         return (x + (5.0f * m1));
     }
 
-    // Strokes the bar of width w and height h centered on x of an EAN-13 or UPC-A
-    // barcode drawn left to right from (x1, y1), turned to the direction of the barcode.
-    private void drawBar(Page page, float x1, float y1, float x, float w, float h) {
+    // Draws the bar of width w and height h that starts at x.
+    private void drawBar(Page page, Bars bars, float x, float w, float h) {
         if (page != null) {
-            float[] top = turn(x1, y1, x, y1);
-            float[] bottom = turn(x1, y1, x, y1 + h);
+            page.addArtifactBMC();
+            strokeBar(page, bars, x + w / 2, w, h);
+            page.addEMC();
+        }
+    }
+
+    // Strokes the bar of width w and height h centered on x.
+    private void strokeBar(Page page, Bars bars, float x, float w, float h) {
+        if (page != null) {
+            float[] top = bars.turn(x, bars.y1);
+            float[] bottom = bars.turn(x, bars.y1 + h);
             page.setPenWidth(w);
             page.moveTo(top[0], top[1]);
             page.lineTo(bottom[0], bottom[1]);
@@ -392,70 +400,23 @@ public class Barcode implements Drawable {
         }
     }
 
-    private void drawDigitBar(Page page, float x1, float y1, float x, float w, float h) {
-        if (page != null) {
-            page.addArtifactBMC();
-            drawBar(page, x1, y1, x + w / 2, w, h);
-            page.addEMC();
-        }
-    }
-
-    // Draws the digits at (x, y) of an EAN-13 or UPC-A barcode drawn left to right
-    // from (x1, y1), turned to the direction of the barcode. Returns the bottom right
-    // corner of the digits before the turn.
-    private float[] drawDigits(
-            Page page, float x1, float y1, String digits, float x, float y) throws Exception {
-        TextLine textLine = new TextLine(font, digits);
-        if (direction == Direction.LEFT_TO_RIGHT) {
-            textLine.setLocation(x, y);
-            return textLine.drawOn(page);
-        }
-        float[] xy = turn(x1, y1, x, y);
+    // Draws the text with its baseline starting at (x, y). Returns the end of
+    // the baseline and the bottom of the text, before the turn.
+    private float[] drawText(Page page, Bars bars, String str, float x, float y) throws Exception {
+        TextLine textLine = new TextLine(font, str);
+        float[] xy = bars.turn(x, y);
         textLine.setLocation(xy[0], xy[1]);
-        textLine.setTextRotation(direction == Direction.TOP_TO_BOTTOM ? 270 : 90);
+        if (direction == Direction.TOP_TO_BOTTOM) {
+            textLine.setTextRotation(270);
+        } else if (direction == Direction.BOTTOM_TO_TOP) {
+            textLine.setTextRotation(90);
+        }
         textLine.drawOn(page);
-        return new float[] {x + font.stringWidth(digits), y};
-    }
-
-    // Returns the point (x, y) of an EAN-13 or UPC-A barcode drawn left to right
-    // from (x1, y1), turned to the direction of the barcode: top to bottom turns it
-    // a quarter turn clockwise, bottom to top counter-clockwise, and the bars stay
-    // right of x1 and below y1.
-    private float[] turn(float x1, float y1, float x, float y) {
-        float h = m1 * barHeightFactor + 8f;    // The height of the guard bars
-        if (direction == Direction.TOP_TO_BOTTOM) {
-            return new float[] {x1 + h - (y - y1), y1 + (x - x1)};
-        } else if (direction == Direction.BOTTOM_TO_TOP) {
-            return new float[] {x1 + (y - y1), y1 + 95f * m1 - (x - x1)};  // 95 modules
-        }
-        return new float[] {x, y};
-    }
-
-    // Returns the bottom right corner of an EAN-13 or UPC-A barcode drawn left to
-    // right from (x1, y1), turned to the direction of the barcode, where xy is the
-    // bottom right corner and left the left edge before the turn.
-    private float[] turnCorner(float x1, float y1, float left, float[] xy) {
-        float h = m1 * barHeightFactor + 8f;
-        if (direction == Direction.TOP_TO_BOTTOM) {
-            return new float[] {x1 + h, y1 + (xy[0] - x1)};
-        } else if (direction == Direction.BOTTOM_TO_TOP) {
-            return new float[] {x1 + Math.max(xy[1] - y1, h), y1 + 95f * m1 + (x1 - left)};
-        }
-        return xy;
+        return new float[] {x + font.stringWidth(str), y + font.getDescent()};
     }
 
     private float[] drawCode128(Page page, float x1, float y1) throws Exception {
-        float x = x1;
-        float y = y1;
-
-        float w = m1;
-        float h = m1;
-
-        if (direction == Direction.TOP_TO_BOTTOM) {
-            w *= barHeightFactor;
-        } else if (direction == Direction.LEFT_TO_RIGHT) {
-            h *= barHeightFactor;
-        }
+        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         List<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < text.length(); i++) {
@@ -495,48 +456,39 @@ public class Barcode implements Drawable {
         buf.append((char) checkDigit);
         buf.append((char) GS1_128.STOP);
 
+        float length = 0f;
+        for (int i = 0; i < buf.length(); i++) {
+            String symbol = Integer.toString(GS1_128.TABLE[buf.charAt(i)]);
+            for (int j = 0; j < symbol.length(); j++) {
+                length += (symbol.charAt(j) - 0x30) * m1;
+            }
+        }
+
+        Bars bars = new Bars(x1, y1, length, h, direction);
+        float x = x1;
         for (int i = 0; i < buf.length(); i++) {
             int si = buf.charAt(i);
             String symbol = Integer.toString(GS1_128.TABLE[si]);
             for (int j = 0; j < symbol.length(); j++) {
                 int n = symbol.charAt(j) - 0x30;
                 if (j%2 == 0) {
-                    if (direction == Direction.LEFT_TO_RIGHT) {
-                        drawVertBar(page, x, y, n * m1, h);
-                    } else if (direction == Direction.TOP_TO_BOTTOM) {
-                        drawHorzBar(page, x, y, n * m1, w);
-                    }
+                    drawBar(page, bars, x, n * m1, h);
                 }
-                if (direction == Direction.LEFT_TO_RIGHT) {
-                    x += n * m1;
-                } else if (direction == Direction.TOP_TO_BOTTOM) {
-                    y += n * m1;
-                }
+                x += n * m1;
             }
         }
 
-        float[] xy = new float[] {x, y};
+        float right = x;
+        float bottom = y1 + h;
         if (font != null) {
-            if (direction == Direction.LEFT_TO_RIGHT) {
-                TextLine textLine = new TextLine(font, text);
-                textLine.setLocation(
-                        x1 + ((x - x1) - font.stringWidth(text))/2,
-                        y1 + h + font.getBodyHeight());
-                xy = textLine.drawOn(page);
-                xy[0] = Math.max(x, xy[0]);
-                return new float[] {xy[0], xy[1] + font.getDescent()};
-            } else if (direction == Direction.TOP_TO_BOTTOM) {
-                TextLine textLine = new TextLine(font, text);
-                textLine.setLocation(
-                        x + w + font.getBodyHeight(),
-                        y - ((y - y1) - font.stringWidth(text))/2);
-                textLine.setTextRotation(90);
-                xy = textLine.drawOn(page);
-                xy[1] = Math.max(y, xy[1]);
-            }
+            float[] xy = drawText(page, bars, text,
+                    x1 + ((x - x1) - font.stringWidth(text))/2,
+                    y1 + h + font.getBodyHeight());
+            right = Math.max(right, xy[0]);
+            bottom = xy[1];
         }
 
-        return xy;
+        return bars.getBottomRight(x1, right, bottom);
     }
 
     private float[] drawCode39(Page page, float x1, float y1) throws Exception {
@@ -544,137 +496,59 @@ public class Barcode implements Drawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         String fullText = "*" + text + "*";
-        float x = x1;
-        float y = y1;
-        float w = m1 * barHeightFactor; // Barcode width when drawn vertically
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        float[] xy = new float[] {0f, 0f};
-        if (direction == Direction.LEFT_TO_RIGHT) {
-            for (int i = 0; i < fullText.length(); i++) {
-                String code = tableB.get(fullText.charAt(i));
-                if (code == null) {
-                    throw new Exception("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.");
-                }
-                for (int j = 0; j < 9; j++) {
-                    char ch = code.charAt(j);
-                    if (ch == 'w') {
-                        x += m1;
-                    } else if (ch == 'W') {
-                        x += m1 * 3;
-                    } else if (ch == 'b') {
-                        drawVertBar(page, x, y, m1, h);
-                        x += m1;
-                    } else if (ch == 'B') {
-                        drawVertBar(page, x, y, m1 * 3, h);
-                        x += m1 * 3;
-                    }
-                }
-                x += m1;
+        float length = 0f;
+        for (int i = 0; i < fullText.length(); i++) {
+            String code = tableB.get(fullText.charAt(i));
+            if (code == null) {
+                throw new Exception("The input string '" + fullText +
+                        "' contains characters that are invalid in a Code39 barcode.");
             }
+            for (int j = 0; j < 9; j++) {
+                char ch = code.charAt(j);
+                length += (ch == 'W' || ch == 'B') ? 3 * m1 : m1;
+            }
+            length += m1;
+        }
+        length -= m1;   // There is no gap after the last character
 
-            if (font != null) {
-                TextLine textLine = new TextLine(font, fullText);
-                textLine.setLocation(
-                        x1 + ((x - x1) - font.stringWidth(fullText))/2,
-                        y1 + h + font.getBodyHeight());
-                xy = textLine.drawOn(page);
-                xy[0] = Math.max(x, xy[0]);
-            }
-        } else if (direction == Direction.TOP_TO_BOTTOM) {
-            for (int i = 0; i < fullText.length(); i++) {
-                String code = tableB.get(fullText.charAt(i));
-                if (code == null) {
-                    throw new Exception("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.");
+        Bars bars = new Bars(x1, y1, length, h, direction);
+        float x = x1;
+        for (int i = 0; i < fullText.length(); i++) {
+            String code = tableB.get(fullText.charAt(i));
+            for (int j = 0; j < 9; j++) {
+                char ch = code.charAt(j);
+                if (ch == 'w') {
+                    x += m1;
+                } else if (ch == 'W') {
+                    x += m1 * 3;
+                } else if (ch == 'b') {
+                    drawBar(page, bars, x, m1, h);
+                    x += m1;
+                } else if (ch == 'B') {
+                    drawBar(page, bars, x, m1 * 3, h);
+                    x += m1 * 3;
                 }
-                for (int j = 0; j < 9; j++) {
-                    char ch = code.charAt(j);
-                    if (ch == 'w') {
-                        y += m1;
-                    } else if (ch == 'W') {
-                        y += 3 * m1;
-                    } else if (ch == 'b') {
-                        drawHorzBar(page, x, y, m1, h);
-                        y += m1;
-                    } else if (ch == 'B') {
-                        drawHorzBar(page, x, y, 3 * m1, h);
-                        y += 3 * m1;
-                    }
-                }
-                y += m1;
             }
-
-            if (font != null) {
-                TextLine textLine = new TextLine(font, fullText);
-                textLine.setLocation(
-                        x - font.getBodyHeight(),
-                        y1 + ((y - y1) - font.stringWidth(fullText))/2);
-                textLine.setTextRotation(270);
-                xy = textLine.drawOn(page);
-                xy[0] = Math.max(x, xy[0]) + w;
-                xy[1] = Math.max(y, xy[1]);
-            }
-        } else if (direction == Direction.BOTTOM_TO_TOP) {
-            float height = 0.0f;
-
-            for (int i = 0; i < fullText.length(); i++) {
-                String code = tableB.get(fullText.charAt(i));
-                if (code == null) {
-                    throw new Exception("The input string '" + fullText +
-                            "' contains characters that are invalid in a Code39 barcode.");
-                }
-                for (int j = 0; j < 9; j++) {
-                    char ch = code.charAt(j);
-                    if (ch == 'w' || ch == 'b') {
-                        height += m1;
-                    } else if (ch == 'W' || ch == 'B') {
-                        height += 3 * m1;
-                    }
-                }
-                height += m1;
-            }
-
-            y += height - m1;
-            for (int i = 0; i < fullText.length(); i++) {
-                String code = tableB.get(fullText.charAt(i));
-                for (int j = 0; j < 9; j++) {
-                    char ch = code.charAt(j);
-                    if (ch == 'w') {
-                        y -= m1;
-                    } else if (ch == 'W') {
-                        y -= 3 * m1;
-                    } else if (ch == 'b') {
-                        drawHorzBar2(page, x, y, m1, h);
-                        y -= m1;
-                    } else if (ch == 'B') {
-                        drawHorzBar2(page, x, y, 3 * m1, h);
-                        y -= 3 * m1;
-                    }
-                }
-                y -= m1;
-            }
-
-            if (font != null) {
-                y = y1 + (height - m1);
-                TextLine textLine = new TextLine(font, fullText);
-                textLine.setLocation(
-                        x + w + font.getBodyHeight(),
-                        y - ((y - y1) - font.stringWidth(fullText))/2);
-                textLine.setTextRotation(90);
-                xy = textLine.drawOn(page);
-                xy[1] = Math.max(y, xy[1]);
-                return new float[] {xy[0], xy[1] + font.getDescent()};
-            }
+            x += m1;
         }
 
-        return new float[] {xy[0], xy[1]};
+        float right = x1 + length;
+        float bottom = y1 + h;
+        if (font != null) {
+            float[] xy = drawText(page, bars, fullText,
+                    x1 + (length - font.stringWidth(fullText))/2,
+                    y1 + h + font.getBodyHeight());
+            right = Math.max(right, xy[0]);
+            bottom = xy[1];
+        }
+
+        return bars.getBottomRight(x1, right, bottom);
     }
 
     private float[] drawCodeEAN13(Page page, float x1, float y1) throws Exception {
         float x = x1;
-        float y = y1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         int sum = 0;
@@ -693,8 +567,9 @@ public class Barcode implements Drawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + Integer.toString(checkDigit);
+        Bars bars = new Bars(x1, y1, 95f * m1, h + 8f, direction);  // 95 modules
 
-        x = drawEGuard(page, x1, y1, x, h + 8);
+        x = drawEGuard(page, bars, x, h + 8);
         float xLeftGroupStart = x;
         String group1 = lgMap[fullText.charAt(0) - '0'];
         for (int i = 1; i < 7; i++) {
@@ -706,35 +581,37 @@ public class Barcode implements Drawable {
             int n = str.charAt(0) - '0';
             x += n*m1;
             n = str.charAt(1) - '0';
-            drawDigitBar(page, x1, y1, x, n*m1, h);
+            drawBar(page, bars, x, n*m1, h);
             x += n*m1;
             n = str.charAt(2) - '0';
             x += n*m1;
             n = str.charAt(3) - '0';
-            drawDigitBar(page, x1, y1, x, n*m1, h);
+            drawBar(page, bars, x, n*m1, h);
             x += n*m1;
         }
         float xLeftGroupEnd = x;
-        x = drawMGuard(page, x1, y1, x, h + 8);
+        x = drawMGuard(page, bars, x, h + 8);
         float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText.charAt(i) - '0';
             String str = lCode[digit];
             int n = str.charAt(0) - '0';
-            drawDigitBar(page, x1, y1, x, n*m1, h);
+            drawBar(page, bars, x, n*m1, h);
             x += n*m1;
             n = str.charAt(1) - '0';
             x += n*m1;
             n = str.charAt(2) - '0';
-            drawDigitBar(page, x1, y1, x, n*m1, h);
+            drawBar(page, bars, x, n*m1, h);
             x += n*m1;
             n = str.charAt(3) - '0';
             x += n*m1;
         }
         float xRightGroupEnd = x;
-        x = drawEGuard(page, x1, y1, x, h + 8);
+        x = drawEGuard(page, bars, x, h + 8);
 
-        float[] xy = new float[] {x, y};
+        float left = x1;
+        float right = x;
+        float bottom = y1 + h + 8;
 
         if (font != null) {
             // Standard EAN-13 layout: the leading (number system) digit sits
@@ -752,71 +629,62 @@ public class Barcode implements Drawable {
             float yText = y1 + h + font.getBodyHeight();
             float gap = font.stringWidth(" ");
 
-            float left = x1 - gap - font.stringWidth(firstDigit);
-            drawDigits(page, x1, y1, firstDigit, left, yText);
-            drawDigits(page, x1, y1, leftGroup,
+            left = x1 - gap - font.stringWidth(firstDigit);
+            drawText(page, bars, firstDigit, left, yText);
+            drawText(page, bars, leftGroup,
                     xLeftGroupStart + ((xLeftGroupEnd - xLeftGroupStart) - font.stringWidth(leftGroup))/2,
                     yText);
-            float[] xyRight = drawDigits(page, x1, y1, rightGroup,
+            float[] xy = drawText(page, bars, rightGroup,
                     xRightGroupStart + ((xRightGroupEnd - xRightGroupStart) - font.stringWidth(rightGroup))/2,
                     yText);
-
-            xy[0] = Math.max(x, xyRight[0]);
-            xy[1] = Math.max(y, xyRight[1]);
+            right = Math.max(right, xy[0]);
+            bottom = Math.max(bottom, xy[1]);
 
             font.setSize(fontSize);
-
-            return turnCorner(x1, y1, left, new float[] {xy[0], xy[1] + font.getDescent()});
         }
 
-        return turnCorner(x1, y1, x1, new float[] {xy[0], xy[1]});
+        return bars.getBottomRight(left, right, bottom);
     }
 
-    private void drawVertBar(
-            Page page,
-            float x,
-            float y,
-            float m1,   // Module length
-            float h) throws Exception {
-        if (page != null) {
-            page.addArtifactBMC();
-            page.setPenWidth(m1);
-            page.moveTo(x + m1 / 2, y);
-            page.lineTo(x + m1 / 2, y + h);
-            page.strokePath();
-            page.addEMC();
+    // The bars of a barcode, length long and height high, drawn left to right from
+    // (x1, y1) and turned to the direction of the barcode: top to bottom is a quarter
+    // turn clockwise and bottom to top a quarter turn counter-clockwise, and the bars
+    // stay right of x1 and below y1. The draw methods take the coordinates of the
+    // barcode drawn left to right.
+    private static final class Bars {
+        final float x1;
+        final float y1;
+        final float length;
+        final float height;
+        final Direction direction;
+
+        Bars(float x1, float y1, float length, float height, Direction direction) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.length = length;
+            this.height = height;
+            this.direction = direction;
         }
-    }
 
-    private void drawHorzBar(
-            Page page,
-            float x,
-            float y,
-            float m1,   // Module length
-            float w) {
-        if (page != null) {
-            page.addArtifactBMC();
-            page.setPenWidth(m1);
-            page.moveTo(x, y + m1 / 2);
-            page.lineTo(x + w, y + m1 / 2);
-            page.strokePath();
-            page.addEMC();
+        // Returns the point (x, y) turned to the direction of the barcode.
+        float[] turn(float x, float y) {
+            if (direction == Direction.TOP_TO_BOTTOM) {
+                return new float[] {x1 + height - (y - y1), y1 + (x - x1)};
+            } else if (direction == Direction.BOTTOM_TO_TOP) {
+                return new float[] {x1 + (y - y1), y1 + length - (x - x1)};
+            }
+            return new float[] {x, y};
         }
-    }
 
-    private void drawHorzBar2(
-            Page page,
-            float x,
-            float y,
-            float m1,   // Module length
-            float w) throws Exception {
-        if (page != null) {
-            page.addArtifactBMC();
-            page.setPenWidth(m1);
-            page.moveTo(x, y - m1 / 2);
-            page.lineTo(x + w, y - m1 / 2);
-            page.strokePath();
-            page.addEMC();
+        // Returns the bottom right corner, turned to the direction of the barcode, of
+        // a barcode that spans from left to right and from y1 to bottom.
+        float[] getBottomRight(float left, float right, float bottom) {
+            if (direction == Direction.TOP_TO_BOTTOM) {
+                return new float[] {x1 + height, y1 + (right - x1)};
+            } else if (direction == Direction.BOTTOM_TO_TOP) {
+                return new float[] {x1 + (bottom - y1), y1 + length + (x1 - left)};
+            }
+            return new float[] {right, bottom};
         }
     }
 

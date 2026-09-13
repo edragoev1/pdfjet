@@ -630,9 +630,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       are drawn top to bottom a quarter turn clockwise and bottom to top a
       quarter turn counter-clockwise, as Code 39 is, so Example_11 draws its
       UPC-A and EAN-13 bottom to top, as it asks.
-- ⬜ S Code 128 draws nothing bottom to top in the four ports, and top to
+- ✅ S Code 128 draws nothing bottom to top in the four ports, and top to
       bottom its text reads up on the right, where Code 39's reads down on
       the left.
+      Fixed: the four barcodes are drawn left to right and turned to their
+      direction, so Code 128 is drawn bottom to top, and top to bottom its
+      text reads down on the left, as Code 39's does. Code 39 no longer
+      returns (0, 0) as its corner without a font, and its text is centered
+      on the bars, not on the bars and the gap after the last character.
+      `drawOn` returns the bottom right corner of the bars and the text of
+      every barcode in every direction, with or without a font.
 
 ### Names: misleading, redundant or dead
 
@@ -997,7 +1004,8 @@ renames included (the Week 1 decision), so every item is a blocker.
       border, and `TextBlock.getHeight` returns the drawn height.
       `PDF417.setModuleLength`, `QRCode`/`DataMatrix.getModules`, the
       `ErrorCorrectionLevel` enum, `Barcode.setDirection(Direction)`, and
-      EAN-13 and UPC-A drawn in that direction.
+      EAN-13 and UPC-A drawn in that direction; Code 128 is drawn bottom to
+      top, and top to bottom its text is on the left, as Code 39's is.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
