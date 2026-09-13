@@ -375,9 +375,7 @@ renames included (the Week 1 decision), so every item is a blocker.
       and Go's page sizes are functions (`a4.Portrait()`) returning
       `pagesize.PageSize`. Assigning to or indexing a constant no longer
       compiles, and all 200 example PDFs are unchanged.
-- ⬜ **B** Found while fixing the drift above: Swift `BufferedOutputStream.flush`
-      prints a write error and carries on; decided Sep 13 that Swift
-      `PDF.complete()` throws, as Java's does. Also decided Sep 13: Go
+- ⬜ **B** Found while fixing the drift above: decided Sep 13 that Go
       `PDF.Read` and `ReadWithPassword` return `([]*PDFobj, error)` for a wrong
       password or a malformed file, and Swift `PDF.addObjects` throws when the
       objects have no root `/Pages`, as Java's does. A UTF-8 encoded surrogate
@@ -387,7 +385,9 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Point`, `Arc`, `Rect`, `Stamp`, `Text`, `TextFrame`, `Form` and
       `BaseAnnotation` copy the array in Java and C#; `BigTable` reads its file
       as UTF-8 and drops a BOM in the four ports; Java and C#
-      `Content.ofTextFile` report a missing file.
+      `Content.ofTextFile` report a missing file; Swift `BufferedOutputStream`
+      keeps the first write error instead of printing it, and
+      `PDF.complete()` throws it (decided Sep 13).
 - ⬜ **B** Errors. Go exits with `log.Fatal` where Java throws: `ReadWithPassword`
       on a wrong password (`pdf.go:1321`), bad numbers in `pdfobj.go`,
       `svg.go` (23 calls), `otf.go`, `font.go:280`, `NewEmbeddedFileAtPath`,
@@ -799,6 +799,9 @@ renames included (the Week 1 decision), so every item is a blocker.
       `PDFobj.getPageSize()` returns one; Go `NewPage`, `NewPageDetached`,
       `NewBigTable` and `Table.DrawOnPages` take one. `Token` is no longer
       public in Java, C# and Swift.
+      Breaking: Swift `PDF.complete()` throws when the PDF cannot be
+      written, as Java's does, where a failed write printed a message and
+      `complete()` returned as if it had succeeded.
       Then: Data Matrix barcodes (Example_14), Swift encryption, random salts, `EncryptMetadata true`, right to
       left fixes, TODO cleanups, and the fixes and renames from the API audit.
 - ⬜ **B** Version bump: producer string `PDFjet v9.0.0` in `PDF.java`,
