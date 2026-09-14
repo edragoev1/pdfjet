@@ -42,7 +42,7 @@ public class TextLine : Drawable {
     private var structureType = StructElem.P
 
     private var textColor: [Float] = [0.0, 0.0, 0.0]
-    private var lineColor: [Float] = [0.0, 0.0, 0.0]
+    private var decorationColor: [Float] = [0.0, 0.0, 0.0]
     private var colorMap: [String: Int32]?
 
     ///
@@ -203,20 +203,20 @@ public class TextLine : Drawable {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
-        self.lineColor = [r, g, b]
+        self.decorationColor = [r, g, b]
         return self
     }
 
     /// Sets the color of the underline and strikeout lines from an array of red, green and blue values.
     @discardableResult
-    public func setDecorationColor(_ lineColor: [Float]) -> TextLine {
-        self.lineColor = lineColor
+    public func setDecorationColor(_ decorationColor: [Float]) -> TextLine {
+        self.decorationColor = decorationColor
         return self
     }
 
     /// Returns the color of the underline and strikeout lines.
     public func getDecorationColor() -> [Float] {
-        return self.lineColor
+        return self.decorationColor
     }
 
     ///
@@ -528,7 +528,7 @@ public class TextLine : Drawable {
         textLine.strikeout = strikeout
         textLine.degrees = degrees
         textLine.textColor = textColor
-        textLine.lineColor = lineColor
+        textLine.decorationColor = decorationColor
         textLine.colorMap = colorMap
         textLine.scriptPosition = scriptPosition
         textLine.verticalOffset = verticalOffset
@@ -573,7 +573,7 @@ public class TextLine : Drawable {
         let radians = Double.pi * Double(degrees) / 180.0
         if underline {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
-            page!.setPenColor(lineColor)
+            page!.setPenColor(decorationColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if self.isLastToken {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
@@ -591,7 +591,7 @@ public class TextLine : Drawable {
 
         if strikeout {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
-            page!.setPenColor(lineColor)
+            page!.setPenColor(decorationColor)
             var lineLength = font!.stringWidth(fallbackFont, fontSize, text!)
             if self.isLastToken {
                 lineLength -= font!.stringWidth(fallbackFont, fontSize, Single.space)
@@ -616,7 +616,7 @@ public class TextLine : Drawable {
                     (self.y  + verticalOffset) + font!.getDescent(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
-                    0.0,    // Transparency
+                    0.0,    // Opacity
                     nil,    // Title
                     nil,    // Contents
                     uri,

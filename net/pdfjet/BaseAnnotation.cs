@@ -14,7 +14,7 @@ public abstract class BaseAnnotation : IDrawable {
     internal float[] point2 = new float[] {0f, 0f};
     internal float[] vertices = null;
     internal float[] fillColor = new float[] {0.5f, 0.5f, 0.5f};
-    internal float transparency = 1f;
+    internal float opacity = 1f;
     internal String title = null;
     internal String contents = null;
     internal String uri = null;
@@ -61,7 +61,7 @@ public abstract class BaseAnnotation : IDrawable {
 
     /// <summary>Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).</summary>
     public BaseAnnotation SetOpacity(float opacity) {
-        this.transparency = opacity;
+        this.opacity = opacity;
         return this;
     }
 
@@ -108,7 +108,7 @@ public abstract class BaseAnnotation : IDrawable {
                 point2[1],
                 vertices,       // Vertices
                 fillColor,      // Fill Color
-                transparency,   // Transparency
+                opacity,        // Opacity
                 title,          // Title
                 contents,       // Contents
                 uri,            //

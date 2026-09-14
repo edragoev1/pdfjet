@@ -1059,7 +1059,7 @@ public class PDF {
             append("]\n")
 
             append("/CA ")
-            append(annot.transparency)
+            append(annot.opacity)
             append("\n")
 
             if let title = annot.title, !title.isEmpty {
@@ -1084,7 +1084,7 @@ public class PDF {
             append("]\n")
 
             append("/CA ")
-            append(annot.transparency)
+            append(annot.opacity)
             append("\n")
 
             if let title = annot.title, !title.isEmpty {

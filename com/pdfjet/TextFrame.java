@@ -27,7 +27,7 @@ public class TextFrame implements Drawable {
     private float y;
     private float w;
     private float h;
-    private float paragraphLeading = 24f;
+    private float paragraphGap = 24f;
     private boolean border = false;
     private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
@@ -71,7 +71,7 @@ public class TextFrame implements Drawable {
         for (String text : inputList) {
             this.paragraphs.add(new Paragraph(new TextLine(f1, text)));
         }
-        this.paragraphLeading = 2f * f1.getBodyHeight();
+        this.paragraphGap = 2f * f1.getBodyHeight();
     }
 
     /**
@@ -132,11 +132,11 @@ public class TextFrame implements Drawable {
      * Sets the vertical distance between paragraphs, from the baseline of the
      * last line of a paragraph to the baseline of the first line of the next.
      *
-     * @param paragraphLeading the distance between paragraphs.
+     * @param paragraphGap the distance between paragraphs.
      * @return this TextFrame object.
      */
-    public TextFrame setParagraphGap(float paragraphLeading) {
-        this.paragraphLeading = paragraphLeading;
+    public TextFrame setParagraphGap(float paragraphGap) {
+        this.paragraphGap = paragraphGap;
         return this;
     }
 
@@ -287,7 +287,7 @@ public class TextFrame implements Drawable {
             }
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + paragraphLeading;
+            nextBaseline = yText + paragraphGap;
             paragraphIndex++;
             lineIndex = 0;
         }

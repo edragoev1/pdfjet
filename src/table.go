@@ -658,8 +658,8 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 					cell2.SetBackgroundColorRGB(cell.backgroundColor)
 				}
 				cell2.SetBorderWidth(cell.GetBorderWidth())
-				if cell.hasStrokeColor {
-					cell2.SetBorderColorRGB(cell.strokeColor)
+				if cell.hasBorderColor {
+					cell2.SetBorderColorRGB(cell.borderColor)
 				}
 				cell2.SetTextColorRGB(cell.GetTextColor())
 				// Java copies these across with Cell.setProperties()

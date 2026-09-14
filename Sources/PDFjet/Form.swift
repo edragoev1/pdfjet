@@ -18,7 +18,7 @@ public class Form : Drawable {
     private var f2: Font?
     private var valueFontSize: Float = 9.0
     private var formWidth: Float = 500.0
-    private var lineWidth: Float = 0.0
+    private var strokeWidth: Float = 0.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.33, 0.33, 0.66]
 
@@ -44,8 +44,8 @@ public class Form : Drawable {
 
     /// Sets the width of the lines.
     @discardableResult
-    public func setStrokeWidth(_ lineWidth: Float) -> Form {
-        self.lineWidth = lineWidth
+    public func setStrokeWidth(_ strokeWidth: Float) -> Form {
+        self.strokeWidth = strokeWidth
         return self
     }
 
@@ -131,7 +131,7 @@ public class Form : Drawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField)
-                        hLine.setStrokeWidth(lineWidth).drawOn(page)
+                        hLine.setStrokeWidth(strokeWidth).drawOn(page)
                     }
                     yField += f1!.getAscent(labelFontSize) + 3.0*f1!.getDescent(labelFontSize)
                 }
@@ -163,13 +163,13 @@ public class Form : Drawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField)
-                vLine.setStrokeWidth(lineWidth).drawOn(page)
+                vLine.setStrokeWidth(strokeWidth).drawOn(page)
             }
         }
 
         let rect = Rect()
         rect.setLocation(x, y)
-        rect.setBorderWidth(lineWidth)
+        rect.setBorderWidth(strokeWidth)
         rect.setBorderColor(Color.black)
         rect.setSize(formWidth, yField)
         rect.drawOn(page)

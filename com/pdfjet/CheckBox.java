@@ -17,8 +17,8 @@ public class CheckBox implements Drawable {
     private float y;
     private float w;
     private float h;
-    private float[] boxColor = {0f, 0f, 0f};
-    private float[] checkColor = {0f, 0f, 0f};
+    private float[] borderColor = {0f, 0f, 0f};
+    private float[] checkmarkColor = {0f, 0f, 0f};
     private float penWidth;
     private float checkWidth;
     private int mark = 0;
@@ -56,11 +56,11 @@ public class CheckBox implements Drawable {
     /**
      *  Sets the color of the check box.
      *
-     *  @param boxColor the check box color specified as an 0xRRGGBB integer.
+     *  @param borderColor the border color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
-    public CheckBox setBorderColor(int boxColor) {
-        this.boxColor = Util.toRGB(boxColor);
+    public CheckBox setBorderColor(int borderColor) {
+        this.borderColor = Util.toRGB(borderColor);
         return this;
     }
 
@@ -71,18 +71,18 @@ public class CheckBox implements Drawable {
      * @return this CheckBox object.
      */
     public CheckBox setBorderColor(float[] rgbColor) {
-        this.boxColor = Util.copyOf(rgbColor);
+        this.borderColor = Util.copyOf(rgbColor);
         return this;
     }
 
     /**
      *  Sets the color of the check mark.
      *
-     *  @param checkColor the check mark color specified as an 0xRRGGBB integer.
+     *  @param checkmarkColor the check mark color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
-    public CheckBox setCheckmarkColor(int checkColor) {
-        this.checkColor = Util.toRGB(checkColor);
+    public CheckBox setCheckmarkColor(int checkmarkColor) {
+        this.checkmarkColor = Util.toRGB(checkmarkColor);
         return this;
     }
 
@@ -93,7 +93,7 @@ public class CheckBox implements Drawable {
      * @return this CheckBox object.
      */
     public CheckBox setCheckmarkColor(float[] rgbColor) {
-        this.checkColor = Util.copyOf(rgbColor);
+        this.checkmarkColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -206,13 +206,13 @@ public class CheckBox implements Drawable {
 
         float yBox = y;
         page.setPenWidth(penWidth);
-        page.setPenColor(boxColor);
+        page.setPenColor(borderColor);
         page.setStrokeDashPattern("[] 0");
         page.drawRect(x + this.penWidth, yBox + this.penWidth, w, h);
 
         if (mark == Mark.CHECK || mark == Mark.X) {
             page.setPenWidth(checkWidth);
-            page.setPenColor(checkColor);
+            page.setPenColor(checkmarkColor);
             if (mark == Mark.CHECK) {
                 // Draw check mark
                 page.moveTo(x + checkWidth + penWidth, yBox + h/2 + penWidth);
@@ -248,7 +248,7 @@ public class CheckBox implements Drawable {
                     y + font.getBodyHeight(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
-                    0f,         // Transparency
+                    0f,         // Opacity
                     null,       // Title
                     null,       // Contents
                     uri,

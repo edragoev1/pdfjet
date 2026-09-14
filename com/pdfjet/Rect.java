@@ -315,7 +315,7 @@ public class Rect implements Drawable {
                     this.y + this.h,
                     null,       // Vertices
                     null,       // Fill Color
-                    0f,         // Transparency
+                    0f,         // Opacity
                     null,       // Title
                     null,       // Contents
                     this.uri,

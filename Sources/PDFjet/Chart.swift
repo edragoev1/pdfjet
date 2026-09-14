@@ -54,8 +54,8 @@ public class Chart : Drawable {
     private var hGridLineWidth: Float = 0.0
     private var vGridLineWidth: Float = 0.0
 
-    private var hGridLinePattern = "[1 1] 0"
-    private var vGridLinePattern = "[1 1] 0"
+    private var hGridLineDashPattern = "[1 1] 0"
+    private var vGridLineDashPattern = "[1 1] 0"
 
     private var axisLineWidth: Float = 0.5
     private var chartBorderWidth: Float = 0.0
@@ -276,14 +276,14 @@ public class Chart : Drawable {
     /// Sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
     public func setHGridLineDashPattern(_ pattern: String) -> Chart {
-        self.hGridLinePattern = pattern
+        self.hGridLineDashPattern = pattern
         return self
     }
 
     /// Sets the vertical grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
     public func setVGridLineDashPattern(_ pattern: String) -> Chart {
-        self.vGridLinePattern = pattern
+        self.vGridLineDashPattern = pattern
         return self
     }
 
@@ -431,7 +431,7 @@ public class Chart : Drawable {
                                 point.y + point.r,
                                 nil,    // Vertices
                                 nil,    // Fill Color
-                                0.0,    // Transparency
+                                0.0,    // Opacity
                                 nil,    // Title
                                 nil,    // Contents
                                 point.getURIAction(),
@@ -684,7 +684,7 @@ public class Chart : Drawable {
     private func drawHorizontalGridLines(_ page: Page) {
         page.setPenWidth(hGridLineWidth)
         page.setPenColor(gridLineColor)
-        page.setStrokeDashPattern(hGridLinePattern)
+        page.setStrokeDashPattern(hGridLineDashPattern)
         let x = x8
         var y = y8
         let step = (y8 - y5) / Float(yAxisGridLines)
@@ -698,7 +698,7 @@ public class Chart : Drawable {
     private func drawVerticalGridLines(_ page: Page) {
         page.setPenWidth(vGridLineWidth)
         page.setPenColor(gridLineColor)
-        page.setStrokeDashPattern(vGridLinePattern)
+        page.setStrokeDashPattern(vGridLineDashPattern)
         var x = x5
         let y = y5
         let step = (x6 - x5) / Float(xAxisGridLines)

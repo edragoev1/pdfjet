@@ -15,7 +15,7 @@ public abstract class BaseAnnotation implements Drawable {
     float[] point2 = new float[] {0f, 0f};
     float[] vertices = null;
     float[] fillColor = new float[] {0.5f, 0.5f, 0.5f};
-    float transparency = 1f;
+    float opacity = 1f;
     String title = null;
     String contents = null;
     String uri = null;
@@ -80,7 +80,7 @@ public abstract class BaseAnnotation implements Drawable {
      * @return this BaseAnnotation object.
      */
     public BaseAnnotation setOpacity(float opacity) {
-        this.transparency = opacity;
+        this.opacity = opacity;
         return this;
     }
 
@@ -141,7 +141,7 @@ public abstract class BaseAnnotation implements Drawable {
                 point2[1],
                 vertices,       // Vertices
                 fillColor,      // Fill Color
-                transparency,   // Transparency
+                opacity,        // Opacity
                 title,          // Title
                 contents,       // Contents
                 uri,            //

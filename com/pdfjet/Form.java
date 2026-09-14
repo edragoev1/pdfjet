@@ -20,7 +20,7 @@ public class Form implements Drawable {
     private Font f2;
     private float valueFontSize = 9f;
     private float formWidth = 500f;
-    private float lineWidth = 0.0f;
+    private float strokeWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
 
@@ -58,13 +58,13 @@ public class Form implements Drawable {
     }
 
     /**
-     * Sets the line width
+     * Sets the stroke width
      *
-     * @param lineWidth the line width
+     * @param strokeWidth the stroke width
      * @return this form
      */
-    public Form setStrokeWidth(float lineWidth) {
-        this.lineWidth = lineWidth;
+    public Form setStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
         return this;
     }
 
@@ -186,7 +186,7 @@ public class Form implements Drawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField);
-                        hLine.setStrokeWidth(lineWidth).drawOn(page);
+                        hLine.setStrokeWidth(strokeWidth).drawOn(page);
                     }
                     yField += f1.getAscent(labelFontSize) + 3f*f1.getDescent(labelFontSize);
                 }
@@ -218,13 +218,13 @@ public class Form implements Drawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField);
-                vLine.setStrokeWidth(lineWidth).drawOn(page);
+                vLine.setStrokeWidth(strokeWidth).drawOn(page);
             }
         }
 
         Rect rect = new Rect();
         rect.setLocation(x, y);
-        rect.setBorderWidth(lineWidth);
+        rect.setBorderWidth(strokeWidth);
         rect.setBorderColor(Color.black);
         rect.setSize(formWidth, yField);
         rect.drawOn(page);

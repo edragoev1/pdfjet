@@ -1088,7 +1088,7 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString("]\n")
 
 		pdf.appendString("/CA ")
-		pdf.appendFloat32(annot.transparency)
+		pdf.appendFloat32(annot.opacity)
 		pdf.appendString("\n")
 
 		if annot.title != "" {
@@ -1121,7 +1121,7 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString("]\n")
 
 		pdf.appendString("/CA ")
-		pdf.appendFloat32(annot.transparency)
+		pdf.appendFloat32(annot.opacity)
 		pdf.appendString("\n")
 
 		if annot.title != "" {

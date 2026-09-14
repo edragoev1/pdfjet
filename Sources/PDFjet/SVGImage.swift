@@ -541,7 +541,7 @@ public class SVGImage : Drawable {
                     y + h,
                     nil,    // Vertices
                     nil,    // Fill Color
-                    0.0,    // Transparency
+                    0.0,    // Opacity
                     nil,    // Title
                     nil,    // Contents
                     uri,

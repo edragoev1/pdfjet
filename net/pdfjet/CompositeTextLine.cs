@@ -23,8 +23,8 @@ public class CompositeTextLine : IDrawable {
     private float[] current  = new float[2];
 
     // Subscript and Superscript size factors
-    private float subscriptSizeFactor   = 0.583f;
-    private float superscriptSizeFactor = 0.583f;
+    private float subscriptFactor   = 0.583f;
+    private float superscriptFactor = 0.583f;
 
     // Subscript and Superscript positions in relation to the base font
     private float superscriptPosition = 0.350f;
@@ -64,7 +64,7 @@ public class CompositeTextLine : IDrawable {
     /// <param name="superscript">the superscript size factor.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSuperscriptFactor(float superscript) {
-        this.superscriptSizeFactor = superscript;
+        this.superscriptFactor = superscript;
         return this;
     }
 
@@ -73,7 +73,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>superscript the superscript size factor.</returns>
     public float GetSuperscriptFactor() {
-        return superscriptSizeFactor;
+        return superscriptFactor;
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class CompositeTextLine : IDrawable {
     /// <param name="subscript">the subscript size factor.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSubscriptFactor(float subscript) {
-        this.subscriptSizeFactor = subscript;
+        this.subscriptFactor = subscript;
         return this;
     }
 
@@ -91,7 +91,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>subscript the subscript size factor.</returns>
     public float GetSubscriptFactor() {
-        return subscriptSizeFactor;
+        return subscriptFactor;
     }
 
     /// <summary>
@@ -145,14 +145,14 @@ public class CompositeTextLine : IDrawable {
             if (fontSize > 0f) {
                 // Set it on the TextLine: DrawOn uses the line's own font size,
                 // so resizing the shared Font here would have no effect.
-                component.SetFontSize(fontSize * superscriptSizeFactor);
+                component.SetFontSize(fontSize * superscriptFactor);
             }
             component.SetLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition);
         } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
             if (fontSize > 0f) {
-                component.SetFontSize(fontSize * subscriptSizeFactor);
+                component.SetFontSize(fontSize * subscriptFactor);
             }
             component.SetLocation(
                     current[X],

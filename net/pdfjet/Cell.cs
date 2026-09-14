@@ -31,8 +31,8 @@ public class Cell {
 
     internal float[] backgroundColor;
     internal float[] textColor = new float[] {0f, 0f, 0f};
-    internal float strokeWidth;
-    internal float[] strokeColor;
+    internal float borderWidth;
+    internal float[] borderColor;
 
     private int colspan = 1;
     // Only the top and left borders are drawn unless SetBorder says otherwise.
@@ -372,37 +372,37 @@ public class Cell {
     }
 
     /// <summary>Sets the width of the cell borders.</summary>
-    /// <param name="strokeWidth">the width of the cell borders.</param>
+    /// <param name="borderWidth">the width of the cell borders.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetBorderWidth(float strokeWidth) {
-        this.strokeWidth = strokeWidth;
+    public Cell SetBorderWidth(float borderWidth) {
+        this.borderWidth = borderWidth;
         return this;
     }
 
     /// <summary>Returns the width of the cell borders.</summary>
     /// <returns>the width of the cell borders.</returns>
     public float GetBorderWidth() {
-        return this.strokeWidth;
+        return this.borderWidth;
     }
 
-    /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the border color as a 0xRRGGBB value.</summary>
     public Cell SetBorderColor(int color) {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
+        this.borderColor = new float[] {r, g, b};
         return this;
     }
 
-    /// <summary>Sets the stroke color from an array of red, green and blue values.</summary>
+    /// <summary>Sets the border color from an array of red, green and blue values.</summary>
     public Cell SetBorderColor(float[] rgbColor) {
-        this.strokeColor = Util.CopyOf(rgbColor);
+        this.borderColor = Util.CopyOf(rgbColor);
         return this;
     }
 
-    /// <summary>Returns the stroke color.</summary>
+    /// <summary>Returns the border color.</summary>
     public float[] GetBorderColor() {
-        return Util.CopyOf(this.strokeColor);
+        return Util.CopyOf(this.borderColor);
     }
 
     /// <summary>
@@ -610,7 +610,7 @@ public class Cell {
                         point.y + point.r,
                         null,   // Vertices
                         null,   // Fill Color
-                        0f,     // Transparency
+                        0f,     // Opacity
                         null,   // Title
                         null,   // Contents
                         point.GetURIAction(),
@@ -631,7 +631,7 @@ public class Cell {
             float cellH) {
         page.AddArtifactBMC();
         page.SetBrushColor(backgroundColor);
-        page.FillRect(x, y + strokeWidth/2, cellW, cellH);
+        page.FillRect(x, y + borderWidth/2, cellW, cellH);
         page.AddEMC();
     }
 
@@ -642,9 +642,9 @@ public class Cell {
             float cellW,
             float cellH) {
         page.AddArtifactBMC();
-        page.SetPenColor(strokeColor);
-        page.SetPenWidth(strokeWidth);
-        float qWidth = strokeWidth / 4;
+        page.SetPenColor(borderColor);
+        page.SetPenWidth(borderWidth);
+        float qWidth = borderWidth / 4;
         if (GetBorder(Border.TOP)) {
             page.MoveTo(x - qWidth, y);
             page.LineTo(x + cellW, y);
@@ -686,7 +686,7 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.SetPenColor(strokeColor);
+        page.SetPenColor(borderColor);
         float xText;
         if (GetTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (GetTextWidth() + this.rightPadding);
@@ -722,7 +722,7 @@ public class Cell {
                     yText + font.GetDescent(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
-                    0f,         // Transparency
+                    0f,         // Opacity
                     null,       // Title
                     null,       // Contents
                     uri,

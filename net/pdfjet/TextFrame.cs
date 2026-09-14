@@ -28,7 +28,7 @@ public class TextFrame : IDrawable {
     private float y;
     private float w;
     private float h;
-    private float paragraphLeading = 24f;
+    private float paragraphGap = 24f;
     private bool border = false;
     private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
@@ -67,7 +67,7 @@ public class TextFrame : IDrawable {
         foreach (String text in inputList) {
             this.paragraphs.Add(new Paragraph(new TextLine(f1, text)));
         }
-        this.paragraphLeading = 2f * f1.GetBodyHeight();
+        this.paragraphGap = 2f * f1.GetBodyHeight();
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -107,8 +107,8 @@ public class TextFrame : IDrawable {
     /// Sets the vertical distance between paragraphs, from the baseline of the
     /// last line of a paragraph to the baseline of the first line of the next.
     /// </summary>
-    public TextFrame SetParagraphGap(float paragraphLeading) {
-        this.paragraphLeading = paragraphLeading;
+    public TextFrame SetParagraphGap(float paragraphGap) {
+        this.paragraphGap = paragraphGap;
         return this;
     }
 
@@ -226,7 +226,7 @@ public class TextFrame : IDrawable {
             }
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + paragraphLeading;
+            nextBaseline = yText + paragraphGap;
             paragraphIndex++;
             lineIndex = 0;
         }

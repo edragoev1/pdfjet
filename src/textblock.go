@@ -736,7 +736,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 			x2:             textBlock.x + textBlock.width,
 			y2:             textBlock.y + blockHeight,
 			vertices:       nil,
-			transparency:   0.0,
+			opacity:        0.0,
 			title:          "",
 			contents:       "",
 			uri:            textBlock.uri,

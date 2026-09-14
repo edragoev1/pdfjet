@@ -43,8 +43,8 @@ public class Chart : IDrawable {
     private int gridLineColor = Color.black;
     private float hGridLineWidth = 0f;
     private float vGridLineWidth = 0f;
-    private String hGridLinePattern = "[1 1] 0";
-    private String vGridLinePattern = "[1 1] 0";
+    private String hGridLineDashPattern = "[1 1] 0";
+    private String vGridLineDashPattern = "[1 1] 0";
 
     private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
@@ -252,7 +252,7 @@ public class Chart : IDrawable {
     ///  Sets the horizontal grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
     public Chart SetHGridLineDashPattern(String pattern) {
-        this.hGridLinePattern = pattern;
+        this.hGridLineDashPattern = pattern;
         return this;
     }
 
@@ -260,7 +260,7 @@ public class Chart : IDrawable {
     ///  Sets the vertical grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
     public Chart SetVGridLineDashPattern(String pattern) {
-        this.vGridLinePattern = pattern;
+        this.vGridLineDashPattern = pattern;
         return this;
     }
 
@@ -387,7 +387,7 @@ public class Chart : IDrawable {
                             point.y + point.r,
                             null,   // Vertices
                             null,   // Fill Color
-                            0f,     // Transparency
+                            0f,     // Opacity
                             null,   // Title
                             null,   // Contents
                             point.GetURIAction(),
@@ -664,7 +664,7 @@ public class Chart : IDrawable {
     private void DrawHorizontalGridLines(Page page) {
         page.SetPenWidth(hGridLineWidth);
         page.SetPenColor(gridLineColor);
-        page.SetStrokeDashPattern(hGridLinePattern);
+        page.SetStrokeDashPattern(hGridLineDashPattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -680,7 +680,7 @@ public class Chart : IDrawable {
     private void DrawVerticalGridLines(Page page) {
         page.SetPenWidth(vGridLineWidth);
         page.SetPenColor(gridLineColor);
-        page.SetStrokeDashPattern(vGridLinePattern);
+        page.SetStrokeDashPattern(vGridLineDashPattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;

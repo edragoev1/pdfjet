@@ -35,7 +35,7 @@ public class TextLine implements Drawable {
 
     private int degrees = 0;
     private float[] textColor = new float[] {0f, 0f, 0f};
-    private float[] lineColor = new float[] {0f, 0f, 0f};
+    private float[] decorationColor = new float[] {0f, 0f, 0f};
     private Map<String, Integer> colorMap = null;
     private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
@@ -227,7 +227,7 @@ public class TextLine implements Drawable {
 
     /**
      * Sets the color of the underline and strikeout lines.
-     * Color.transparent leaves the line color unchanged.
+     * Color.transparent leaves the decoration color unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextLine object.
@@ -239,7 +239,7 @@ public class TextLine implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.lineColor = new float[] {r, g, b};
+        this.decorationColor = new float[] {r, g, b};
         return this;
     }
 
@@ -251,7 +251,7 @@ public class TextLine implements Drawable {
      */
     public TextLine setDecorationColor(float[] rgbColor) {
         if (rgbColor != null) {
-            this.lineColor = rgbColor.clone();
+            this.decorationColor = rgbColor.clone();
         }
         return this;
     }
@@ -262,7 +262,7 @@ public class TextLine implements Drawable {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getDecorationColor() {
-        return lineColor.clone();
+        return decorationColor.clone();
     }
 
     /**
@@ -614,7 +614,7 @@ public class TextLine implements Drawable {
         textLine.strikeout = strikeout;
         textLine.degrees = degrees;
         textLine.textColor = textColor;
-        textLine.lineColor = lineColor;
+        textLine.decorationColor = decorationColor;
         textLine.colorMap = colorMap;
         textLine.scriptPosition = scriptPosition;
         textLine.verticalOffset = verticalOffset;
@@ -658,7 +658,7 @@ public class TextLine implements Drawable {
         double radians = Math.PI * degrees / 180.0;
         if (underline) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
-            page.setPenColor(lineColor);
+            page.setPenColor(decorationColor);
             double lineLength = font.stringWidth(fallbackFont, fontSize, text);
             if (this.isLastToken) {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
@@ -676,7 +676,7 @@ public class TextLine implements Drawable {
 
         if (strikeout) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
-            page.setPenColor(lineColor);
+            page.setPenColor(decorationColor);
             double lineLength = font.stringWidth(fallbackFont, fontSize, text);
             if (this.isLastToken) {
                 lineLength -= font.stringWidth(fallbackFont, fontSize, Single.space);
@@ -701,7 +701,7 @@ public class TextLine implements Drawable {
                     (y + verticalOffset) + font.getDescent(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
-                    0f,     // Transparency
+                    0f,     // Opacity
                     null,   // Title
                     null,   // Contents
                     uri,

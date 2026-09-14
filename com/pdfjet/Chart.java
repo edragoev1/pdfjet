@@ -59,8 +59,8 @@ public class Chart implements Drawable {
     private int gridLineColor = Color.black;
     private float hGridLineWidth;
     private float vGridLineWidth;
-    private String hGridLinePattern = "[1 1] 0";
-    private String vGridLinePattern = "[1 1] 0";
+    private String hGridLineDashPattern = "[1 1] 0";
+    private String vGridLineDashPattern = "[1 1] 0";
 
     private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
@@ -325,7 +325,7 @@ public class Chart implements Drawable {
      * @return this Chart object.
      */
     public Chart setHGridLineDashPattern(String pattern) {
-        this.hGridLinePattern = pattern;
+        this.hGridLineDashPattern = pattern;
         return this;
     }
 
@@ -336,7 +336,7 @@ public class Chart implements Drawable {
      * @return this Chart object.
      */
     public Chart setVGridLineDashPattern(String pattern) {
-        this.vGridLinePattern = pattern;
+        this.vGridLineDashPattern = pattern;
         return this;
     }
 
@@ -466,7 +466,7 @@ public class Chart implements Drawable {
                             point.y + point.r,
                             null,   // Vertices
                             null,   // Fill Color
-                            0f,     // Transparency
+                            0f,     // Opacity
                             null,   // Title
                             null,   // Contents
                             point.getURIAction(),
@@ -729,7 +729,7 @@ public class Chart implements Drawable {
     private void drawHorizontalGridLines(Page page) {
         page.setPenWidth(hGridLineWidth);
         page.setPenColor(gridLineColor);
-        page.setStrokeDashPattern(hGridLinePattern);
+        page.setStrokeDashPattern(hGridLineDashPattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -743,7 +743,7 @@ public class Chart implements Drawable {
     private void drawVerticalGridLines(Page page) {
         page.setPenWidth(vGridLineWidth);
         page.setPenColor(gridLineColor);
-        page.setStrokeDashPattern(vGridLinePattern);
+        page.setStrokeDashPattern(vGridLineDashPattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;

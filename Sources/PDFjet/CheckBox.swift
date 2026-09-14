@@ -16,8 +16,8 @@ public class CheckBox : Drawable {
     private var y: Float = 0.0
     private var w: Float = 0.0
     private var h: Float = 0.0
-    private var boxColor: [Float] = [0.0, 0.0, 0.0]
-    private var checkColor: [Float] = [0.0, 0.0, 0.0]
+    private var borderColor: [Float] = [0.0, 0.0, 0.0]
+    private var checkmarkColor: [Float] = [0.0, 0.0, 0.0]
     private var penWidth: Float?
     private var checkWidth: Float?
     private var mark = 0
@@ -52,38 +52,38 @@ public class CheckBox : Drawable {
     ///
     /// Sets the color of the check box.
     ///
-    /// - Parameter boxColor: the check box color specified as an 0xRRGGBB integer.
+    /// - Parameter borderColor: the border color specified as an 0xRRGGBB integer.
     /// - Returns: this CheckBox.
     ///
     @discardableResult
-    public func setBorderColor(_ boxColor: Int32) -> CheckBox {
-        self.boxColor = Util.toRGB(boxColor)
+    public func setBorderColor(_ borderColor: Int32) -> CheckBox {
+        self.borderColor = Util.toRGB(borderColor)
         return self
     }
 
     /// Sets the color of the check box from an array of red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setBorderColor(_ rgbColor: [Float]) -> CheckBox {
-        self.boxColor = rgbColor
+        self.borderColor = rgbColor
         return self
     }
 
     ///
     /// Sets the color of the check mark.
     ///
-    /// - Parameter checkColor: the check mark color specified as an 0xRRGGBB integer.
+    /// - Parameter checkmarkColor: the check mark color specified as an 0xRRGGBB integer.
     /// - Returns: this CheckBox.
     ///
     @discardableResult
-    public func setCheckmarkColor(_ checkColor: Int32) -> CheckBox {
-        self.checkColor = Util.toRGB(checkColor)
+    public func setCheckmarkColor(_ checkmarkColor: Int32) -> CheckBox {
+        self.checkmarkColor = Util.toRGB(checkmarkColor)
         return self
     }
 
     /// Sets the color of the check mark from an array of red, green and blue values between 0.0 and 1.0.
     @discardableResult
     public func setCheckmarkColor(_ rgbColor: [Float]) -> CheckBox {
-        self.checkColor = rgbColor
+        self.checkmarkColor = rgbColor
         return self
     }
 
@@ -189,13 +189,13 @@ public class CheckBox : Drawable {
 
         let yBox: Float = y
         page!.setPenWidth(self.penWidth!)
-        page!.setPenColor(self.boxColor)
+        page!.setPenColor(self.borderColor)
         page!.setStrokeDashPattern("[] 0")
         page!.drawRect(self.x + self.penWidth!, yBox + self.penWidth!, self.w, self.h)
 
         if mark == Mark.CHECK || mark == Mark.X {
             page!.setPenWidth(self.checkWidth!)
-            page!.setPenColor(self.checkColor)
+            page!.setPenColor(self.checkmarkColor)
             if mark == Mark.CHECK {
                 // Draw check mark
                 page!.moveTo(x + checkWidth! + penWidth!, yBox + h/2 + penWidth!)
@@ -230,7 +230,7 @@ public class CheckBox : Drawable {
                     y + font.getBodyHeight(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
-                    0.0,    // Transparency
+                    0.0,    // Opacity
                     nil,    // Title
                     nil,    // Contents
                     uri,

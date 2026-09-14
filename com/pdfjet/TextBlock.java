@@ -881,7 +881,7 @@ public class TextBlock implements Drawable {
                     this.y + blockHeight,
                     null,   // Vertices
                     null,   // Fill Color
-                    0f,     // Transparency
+                    0f,     // Opacity
                     null,   // Title
                     null,   // Contents
                     uri,

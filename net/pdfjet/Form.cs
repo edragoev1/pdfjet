@@ -21,7 +21,7 @@ public class Form : IDrawable {
     private Font f2;
     private float valueFontSize = 9f;
     private float formWidth = 500f;
-    private float lineWidth = 0.0f;
+    private float strokeWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
 
@@ -60,12 +60,12 @@ public class Form : IDrawable {
     }
 
     /// <summary>
-    /// Sets the line width
+    /// Sets the stroke width
     /// </summary>
-    /// <param name="lineWidth">the line width</param>
+    /// <param name="strokeWidth">the stroke width</param>
     /// <returns>this form</returns>
-    public Form SetStrokeWidth(float lineWidth) {
-        this.lineWidth = lineWidth;
+    public Form SetStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
         return this;
     }
 
@@ -178,7 +178,7 @@ public class Form : IDrawable {
                                 y + yField,
                                 x + formWidth,
                                 y + yField);
-                        hLine.SetStrokeWidth(lineWidth).DrawOn(page);
+                        hLine.SetStrokeWidth(strokeWidth).DrawOn(page);
                     }
                     yField += f1.GetAscent(labelFontSize) + 3f*f1.GetDescent(labelFontSize);
                 }
@@ -210,13 +210,13 @@ public class Form : IDrawable {
                         (y + yField) - rowHeight,
                         x + field.x,
                         y + yField);
-                vLine.SetStrokeWidth(lineWidth).DrawOn(page);
+                vLine.SetStrokeWidth(strokeWidth).DrawOn(page);
             }
         }
 
         Rect rect = new Rect();
         rect.SetLocation(x, y);
-        rect.SetBorderWidth(lineWidth);
+        rect.SetBorderWidth(strokeWidth);
         rect.SetBorderColor(Color.black);
         rect.SetSize(formWidth, yField);
         rect.DrawOn(page);

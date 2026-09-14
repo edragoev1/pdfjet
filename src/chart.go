@@ -40,8 +40,8 @@ type Chart struct {
 	gridLineColor                  int32
 	hGridLineWidth                 float32
 	vGridLineWidth                 float32
-	hGridLinePattern               string
-	vGridLinePattern               string
+	hGridLineDashPattern           string
+	vGridLineDashPattern           string
 	axisLineWidth                  float32
 	chartBorderWidth               float32
 	innerBorderWidth               float32
@@ -83,8 +83,8 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.drawXAxisLabels = true
 	chart.drawYAxisLabels = true
 	chart.gridLineColor = color.Black
-	chart.hGridLinePattern = "[1 1] 0"
-	chart.vGridLinePattern = "[1 1] 0"
+	chart.hGridLineDashPattern = "[1 1] 0"
+	chart.vGridLineDashPattern = "[1 1] 0"
 	chart.axisLineWidth = 0.5
 	chart.chartBorderWidth = 0.0
 	chart.innerBorderWidth = 0.0
@@ -211,13 +211,13 @@ func (chart *Chart) SetVGridLineWidth(width float32) *Chart {
 
 // SetHGridLineDashPattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
 func (chart *Chart) SetHGridLineDashPattern(pattern string) *Chart {
-	chart.hGridLinePattern = pattern
+	chart.hGridLineDashPattern = pattern
 	return chart
 }
 
 // SetVGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
 func (chart *Chart) SetVGridLineDashPattern(pattern string) *Chart {
-	chart.vGridLinePattern = pattern
+	chart.vGridLineDashPattern = pattern
 	return chart
 }
 
@@ -371,7 +371,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 					x2:             point.x + point.r,
 					y2:             point.y + point.r,
 					vertices:       nil,
-					transparency:   0.0,
+					opacity:        0.0,
 					title:          "",
 					contents:       "",
 					uri:            point.uri,
@@ -642,7 +642,7 @@ func (chart *Chart) drawAxisLines(page *Page) {
 func (chart *Chart) drawHorizontalGridLines(page *Page) {
 	page.SetPenWidth(chart.hGridLineWidth)
 	page.SetPenColor(chart.gridLineColor)
-	page.SetStrokeDashPattern(chart.hGridLinePattern)
+	page.SetStrokeDashPattern(chart.hGridLineDashPattern)
 	x := chart.x8
 	y := chart.y8
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
@@ -656,7 +656,7 @@ func (chart *Chart) drawHorizontalGridLines(page *Page) {
 func (chart *Chart) drawVerticalGridLines(page *Page) {
 	page.SetPenWidth(chart.vGridLineWidth)
 	page.SetPenColor(chart.gridLineColor)
-	page.SetStrokeDashPattern(chart.vGridLinePattern)
+	page.SetStrokeDashPattern(chart.vGridLineDashPattern)
 	x := chart.x5
 	y := chart.y5
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)

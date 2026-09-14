@@ -540,6 +540,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       font unless another was set, and `Chart` has the `BarChart` rules and
       setters. `TextColumn.getHeight`/`getSize` and the missing text getters
       stay for 10.0 with the `TextColumn` fold.
+- ✅ **B** Second audit, a field and its setter disagree (Sep 14,
+      `api-suggestions.html`): the fields are named after their setters in
+      the four ports: `opacity` in `BaseAnnotation` and `Annotation`,
+      `borderColor` and `borderWidth` in `Cell`, `borderColor` and
+      `checkmarkColor` in `CheckBox`, `strokeWidth` in `Form`,
+      `decorationColor` in `TextLine`, `hGridLineDashPattern` and
+      `vGridLineDashPattern` in `Chart`, `paragraphGap` in `TextFrame`, and
+      `superscriptFactor` and `subscriptFactor` in `CompositeTextLine`.
+      Internal, so no caller changes.
 
 ### Types and signatures
 

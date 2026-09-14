@@ -693,7 +693,7 @@ public class TextBlock : IDrawable {
                     this.y + blockHeight,
                     null,   // Vertices
                     null,   // Fill Color
-                    0f,     // Transparency
+                    0f,     // Opacity
                     null,   // Title
                     null,   // Contents
                     uri,

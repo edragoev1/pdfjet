@@ -34,9 +34,9 @@ type Cell struct {
 
 	backgroundColor    [3]float32
 	hasBackgroundColor bool
-	strokeColor        [3]float32
-	hasStrokeColor     bool
-	strokeWidth        float32
+	borderColor        [3]float32
+	hasBorderColor     bool
+	borderWidth        float32
 	textColor          [3]float32
 
 	colspan      int
@@ -346,41 +346,41 @@ func (cell *Cell) GetBackgroundColor() *[3]float32 {
 
 // SetBorderColorRGB sets the color of the cell borders from red, green and blue values.
 func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
-	cell.strokeColor = color
-	cell.hasStrokeColor = true
+	cell.borderColor = color
+	cell.hasBorderColor = true
 	return cell
 }
 
 // SetBorderColor sets the color of the cell borders.
 //   - color: the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetBorderColor(color int32) *Cell {
-	cell.strokeColor = colorToRGB(color)
-	cell.hasStrokeColor = true
+	cell.borderColor = colorToRGB(color)
+	cell.hasBorderColor = true
 	return cell
 }
 
 // GetBorderColor returns a copy of the color of the cell borders, or nil if none was set.
 func (cell *Cell) GetBorderColor() *[3]float32 {
-	if !cell.hasStrokeColor {
+	if !cell.hasBorderColor {
 		return nil
 	}
-	strokeColor := cell.strokeColor
-	return &strokeColor
+	borderColor := cell.borderColor
+	return &borderColor
 }
 
 // SetBorderWidth sets the width of the cell borders.
-//   - strokeWidth: the width of the cell borders.
+//   - borderWidth: the width of the cell borders.
 //
 // Returns this Cell object.
-func (cell *Cell) SetBorderWidth(strokeWidth float32) *Cell {
-	cell.strokeWidth = strokeWidth
+func (cell *Cell) SetBorderWidth(borderWidth float32) *Cell {
+	cell.borderWidth = borderWidth
 	return cell
 }
 
 // GetBorderWidth returns the width of the cell borders.
 // Returns the width of the cell borders.
 func (cell *Cell) GetBorderWidth() float32 {
-	return cell.strokeWidth
+	return cell.borderWidth
 }
 
 // SetTextColorRGB sets the text color from red, green and blue values.
@@ -580,17 +580,17 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
 	page.SetBrushColorRGB(cell.backgroundColor)
-	page.FillRect(x, y+cell.strokeWidth/2, cellW, cellH)
+	page.FillRect(x, y+cell.borderWidth/2, cellW, cellH)
 	page.AddEMC()
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
-	if cell.hasStrokeColor {
-		page.SetPenColorRGB(cell.strokeColor)
+	if cell.hasBorderColor {
+		page.SetPenColorRGB(cell.borderColor)
 	}
-	page.SetPenWidth(cell.strokeWidth)
-	qWidth := cell.strokeWidth / 4.0
+	page.SetPenWidth(cell.borderWidth)
+	qWidth := cell.borderWidth / 4.0
 	if cell.topBorder {
 		page.MoveTo(x-qWidth, y)
 		page.LineTo(x+cellW, y)
@@ -629,8 +629,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		panic("Invalid vertical text alignment option.")
 	}
 
-	if cell.hasStrokeColor {
-		page.SetPenColorRGB(cell.strokeColor)
+	if cell.hasBorderColor {
+		page.SetPenColorRGB(cell.borderColor)
 	}
 	var xText float32
 	if cell.textAlignment == alignment.Right {

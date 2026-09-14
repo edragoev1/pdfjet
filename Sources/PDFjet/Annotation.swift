@@ -26,7 +26,7 @@ class Annotation {
     var y2: Float = 0.0
     var vertices: [Float]?
     var fillColor: [Float]?
-    var transparency: Float = 0.0
+    var opacity: Float = 0.0
     var title: String?
     var contents: String?
     var uri: String?
@@ -47,7 +47,7 @@ class Annotation {
     ///   - y2: The y coordinate of the bottom right corner.
     ///   - vertices: The polygon annotation vertices.
     ///   - fillColor: The fill color as RGB floats.
-    ///   - transparency: The transparency value (0.0 to 1.0).
+    ///   - opacity: The opacity value (0.0 to 1.0).
     ///   - title: The annotation title.
     ///   - contents: The annotation content/description.
     ///   - uri: The URI string.
@@ -63,7 +63,7 @@ class Annotation {
         _ y2: Float,
         _ vertices: [Float]?,
         _ fillColor: [Float]?,
-        _ transparency: Float,
+        _ opacity: Float,
         _ title: String?,
         _ contents: String?,
         _ uri: String?,
@@ -79,7 +79,7 @@ class Annotation {
         self.y2 = y2
         self.vertices = vertices
         self.fillColor = fillColor
-        self.transparency = transparency
+        self.opacity = opacity
         self.title = title
         self.contents = contents
         self.uri = uri

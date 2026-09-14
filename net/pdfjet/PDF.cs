@@ -1058,7 +1058,7 @@ public class PDF {
             Append("]\n");
 
             Append("/CA ");
-            Append(annot.transparency);
+            Append(annot.opacity);
             Append("\n");
 
             if (!String.IsNullOrEmpty(annot.title)) {
@@ -1091,7 +1091,7 @@ public class PDF {
             Append("]\n");
 
             Append("/CA ");
-            Append(annot.transparency);
+            Append(annot.opacity);
             Append("\n");
 
             if (!String.IsNullOrEmpty(annot.title)) {

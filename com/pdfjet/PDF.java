@@ -1113,7 +1113,7 @@ final public class PDF {
             append("]\n");
 
             append("/CA ");
-            append(annot.transparency);
+            append(annot.opacity);
             append("\n");
 
             if (annot.title != null && !annot.title.isEmpty()) {
@@ -1146,7 +1146,7 @@ final public class PDF {
             append("]\n");
 
             append("/CA ");
-            append(annot.transparency);
+            append(annot.opacity);
             append("\n");
 
             if (annot.title != null && !annot.title.isEmpty()) {

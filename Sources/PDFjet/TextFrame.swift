@@ -25,7 +25,7 @@ public class TextFrame : Drawable {
     private var y: Float = 0.0
     private var w: Float = 0.0
     private var h: Float = 0.0
-    private var paragraphLeading: Float = 24.0
+    private var paragraphGap: Float = 24.0
     private var border = false
     private var borderColor: [Float] = [0.0, 0.0, 0.0]
     private var borderWidth: Float = 0.5
@@ -57,7 +57,7 @@ public class TextFrame : Drawable {
     /// size. An empty line separates the paragraphs.
     public init(_ f1: Font, _ inputList: [String]) {
         self.paragraphs = inputList.map { Paragraph(TextLine(f1, $0)) }
-        self.paragraphLeading = 2.0 * f1.getBodyHeight()
+        self.paragraphGap = 2.0 * f1.getBodyHeight()
     }
 
     /// Sets the location of the top left corner of this text frame.
@@ -96,8 +96,8 @@ public class TextFrame : Drawable {
     /// Sets the vertical distance between paragraphs, from the baseline of the
     /// last line of a paragraph to the baseline of the first line of the next.
     @discardableResult
-    public func setParagraphGap(_ paragraphLeading: Float) -> TextFrame {
-        self.paragraphLeading = paragraphLeading
+    public func setParagraphGap(_ paragraphGap: Float) -> TextFrame {
+        self.paragraphGap = paragraphGap
         return self
     }
 
@@ -223,7 +223,7 @@ public class TextFrame : Drawable {
             }
             xText = x
             rowOpen = false
-            nextBaseline = yText + paragraphLeading
+            nextBaseline = yText + paragraphGap
             paragraphIndex += 1
             lineIndex = 0
         }

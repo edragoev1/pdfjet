@@ -19,7 +19,7 @@ type Form struct {
 	labelFontSize float32    // = 9f
 	valueFontSize float32    // = 9f
 	formWidth     float32    // = 500f
-	lineWidth     float32    // = 0f
+	strokeWidth   float32    // = 0f
 	labelColor    [3]float32 // = Color.black
 	valueColor    [3]float32
 }
@@ -49,9 +49,9 @@ func (form *Form) SetFormWidth(formWidth float32) *Form {
 	return form
 }
 
-// SetStrokeWidth sets the line width.
-func (form *Form) SetStrokeWidth(lineWidth float32) *Form {
-	form.lineWidth = lineWidth
+// SetStrokeWidth sets the stroke width.
+func (form *Form) SetStrokeWidth(strokeWidth float32) *Form {
+	form.strokeWidth = strokeWidth
 	return form
 }
 
@@ -130,7 +130,7 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 						form.y+yField,
 						form.x+form.formWidth,
 						form.y+yField)
-					hLine.SetStrokeWidth(form.lineWidth).DrawOn(page)
+					hLine.SetStrokeWidth(form.strokeWidth).DrawOn(page)
 				}
 				yField += form.f1.GetAscentAt(form.labelFontSize) + 3.0*form.f1.GetDescentAt(form.labelFontSize)
 			}
@@ -160,12 +160,12 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 				(form.y+yField)-rowHeight,
 				form.x+field.x,
 				form.y+yField)
-			vLine.SetStrokeWidth(form.lineWidth).DrawOn(page)
+			vLine.SetStrokeWidth(form.strokeWidth).DrawOn(page)
 		}
 	}
 
 	rect := NewRect(form.x, form.y, form.formWidth, yField)
-	rect.SetBorderWidth(form.lineWidth)
+	rect.SetBorderWidth(form.strokeWidth)
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 

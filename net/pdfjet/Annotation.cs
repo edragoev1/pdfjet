@@ -26,7 +26,7 @@ internal class Annotation {
     internal float y2 = 0f;
     internal float[] vertices = null;
     internal float[] fillColor = null;
-    internal float transparency = 0f;
+    internal float opacity = 0f;
     internal String title = null;
     internal String contents = null;
     internal String uri = null;
@@ -48,7 +48,7 @@ internal class Annotation {
     /// <param name="y2">the y coordinate of the bottom right corner.</param>
     /// <param name="vertices">the polygon annotation vertices.</param>
     /// <param name="fillColor">the fill color as an RGB array.</param>
-    /// <param name="transparency">the transparency, from 0.0 to 1.0.</param>
+    /// <param name="opacity">the opacity, from 0.0 to 1.0.</param>
     /// <param name="title">the title.</param>
     /// <param name="contents">the text contents.</param>
     /// <param name="uri">the URI string.</param>
@@ -64,7 +64,7 @@ internal class Annotation {
             float y2,
             float[] vertices,
             float[] fillColor,
-            float transparency,
+            float opacity,
             String title,
             String contents,
             String uri,
@@ -79,7 +79,7 @@ internal class Annotation {
         this.y2 = y2;
         this.vertices = vertices;
         this.fillColor = fillColor;
-        this.transparency = transparency;
+        this.opacity = opacity;
         this.title = title;
         this.contents = contents;
         this.uri = uri;

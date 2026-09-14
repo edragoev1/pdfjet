@@ -25,7 +25,7 @@ class Annotation {
     float y2 = 0f;
     float[] vertices = null;
     float[] fillColor = null;
-    float transparency = 0f;
+    float opacity = 0f;
     String title = null;
     String contents = null;
     String uri = null;
@@ -57,7 +57,7 @@ class Annotation {
             float y2,
             float[] vertices,
             float[] fillColor,
-            float transparency,
+            float opacity,
             String title,
             String contents,
             String uri,
@@ -72,7 +72,7 @@ class Annotation {
         this.y2 = y2;
         this.vertices = vertices;
         this.fillColor = fillColor;
-        this.transparency = transparency;
+        this.opacity = opacity;
         this.title = title;
         this.contents = contents;
         this.uri = uri;

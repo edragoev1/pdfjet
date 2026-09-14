@@ -9,7 +9,7 @@ type BaseAnnotation struct {
 	point2         [2]float32
 	vertices       []float32 // Flattened array of x,y pairs
 	fillColor      [3]float32
-	transparency   float32
+	opacity        float32
 	title          string
 	contents       string
 	uri            string
@@ -24,10 +24,10 @@ type BaseAnnotation struct {
 // and text annotations embed.
 func newBaseAnnotation() *BaseAnnotation {
 	return &BaseAnnotation{
-		fillColor:    [3]float32{0.5, 0.5, 0.5},
-		transparency: 1.0,
-		point1:       [2]float32{0, 0},
-		point2:       [2]float32{0, 0},
+		fillColor: [3]float32{0.5, 0.5, 0.5},
+		opacity:   1.0,
+		point1:    [2]float32{0, 0},
+		point2:    [2]float32{0, 0},
 	}
 }
 
@@ -67,7 +67,7 @@ func (b *BaseAnnotation) SetFillColorRGB(fillColor [3]float32) *BaseAnnotation {
 
 // SetOpacity sets the opacity, from 0.0 (invisible) to 1.0 (opaque, the default).
 func (b *BaseAnnotation) SetOpacity(opacity float32) *BaseAnnotation {
-	b.transparency = opacity
+	b.opacity = opacity
 	return b
 }
 
@@ -120,7 +120,7 @@ func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
 		y2:             b.point2[1],
 		vertices:       b.vertices,
 		fillColor:      b.fillColor,
-		transparency:   b.transparency,
+		opacity:        b.opacity,
 		title:          b.title,
 		contents:       b.contents,
 		uri:            b.uri,

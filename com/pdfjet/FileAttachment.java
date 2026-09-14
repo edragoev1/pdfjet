@@ -117,7 +117,7 @@ public class FileAttachment implements Drawable {
                 y + h,
                 null,   // Vertices
                 null,   // Fill Color
-                0f,     // Transparency
+                0f,     // Opacity
                 null,   // Title
                 null,   // Contents
                 null,

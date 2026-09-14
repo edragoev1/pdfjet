@@ -22,8 +22,8 @@ public class CompositeTextLine : Drawable {
     private var current = [Float](repeating: 0, count: 2)
 
     // Subscript and Superscript size factors
-    private var subscriptSizeFactor: Float = 0.583
-    private var superscriptSizeFactor: Float  = 0.583
+    private var subscriptFactor: Float = 0.583
+    private var superscriptFactor: Float  = 0.583
 
     // Subscript and Superscript positions in relation to the base font
     private var superscriptPosition: Float = 0.350
@@ -62,11 +62,11 @@ public class CompositeTextLine : Drawable {
     /**
      * Sets the superscript factor for this composite text line.
      *
-     * - Parameter superscriptSizeFactor: the superscript size factor.
+     * - Parameter superscriptFactor: the superscript size factor.
      */
     @discardableResult
-    public func setSuperscriptFactor(_ superscriptSizeFactor: Float) -> CompositeTextLine {
-        self.superscriptSizeFactor = superscriptSizeFactor
+    public func setSuperscriptFactor(_ superscriptFactor: Float) -> CompositeTextLine {
+        self.superscriptFactor = superscriptFactor
         return self
     }
 
@@ -76,17 +76,17 @@ public class CompositeTextLine : Drawable {
      * - Returns: superscript the superscript size factor.
      */
     public func getSuperscriptFactor()-> Float {
-        return self.superscriptSizeFactor
+        return self.superscriptFactor
     }
 
     /**
      * Sets the subscript factor for this composite text line.
      *
-     * - Parameter subscriptSizeFactor: the subscript size factor.
+     * - Parameter subscriptFactor: the subscript size factor.
      */
     @discardableResult
-    public func setSubscriptFactor(_ subscriptSizeFactor: Float) -> CompositeTextLine {
-        self.subscriptSizeFactor = subscriptSizeFactor
+    public func setSubscriptFactor(_ subscriptFactor: Float) -> CompositeTextLine {
+        self.subscriptFactor = subscriptFactor
         return self
     }
 
@@ -96,7 +96,7 @@ public class CompositeTextLine : Drawable {
      * - Returns: subscript the subscript size factor.
      */
     public func getSubscriptFactor()-> Float {
-        return self.subscriptSizeFactor
+        return self.subscriptFactor
     }
 
     /**
@@ -155,14 +155,14 @@ public class CompositeTextLine : Drawable {
             if fontSize > 0 {
                 // Set it on the TextLine: drawOn uses the line's own font size,
                 // so resizing the shared Font here would have no effect.
-                component.setFontSize(fontSize * superscriptSizeFactor)
+                component.setFontSize(fontSize * superscriptFactor)
             }
             component.setLocation(
                     current[X],
                     current[Y] - fontSize * superscriptPosition)
         } else if component.getScriptPosition() == ScriptPosition.SUBSCRIPT {
             if fontSize > 0 {
-                component.setFontSize(fontSize * subscriptSizeFactor)
+                component.setFontSize(fontSize * subscriptFactor)
             }
             component.setLocation(
                     current[X],

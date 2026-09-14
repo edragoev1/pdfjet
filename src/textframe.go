@@ -26,13 +26,13 @@ import (
 // TextBlock for one run of text in one font. Please see Example_03 and
 // Example_47.
 type TextFrame struct {
-	paragraphs       []*Paragraph
-	x, y, w, h       float32
-	paragraphLeading float32
-	border           bool
-	borderColor      [3]float32
-	borderWidth      float32
-	borderPattern    string
+	paragraphs    []*Paragraph
+	x, y, w, h    float32
+	paragraphGap  float32
+	border        bool
+	borderColor   [3]float32
+	borderWidth   float32
+	borderPattern string
 
 	// The text that is not drawn yet starts at this paragraph, at this text
 	// line of the paragraph and at this token of the text line. The tokens are
@@ -59,7 +59,7 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 		paragraphs = append(paragraphs, NewParagraph().Add(NewTextLine(f1, text)))
 	}
 	tf := NewTextFrameFromParagraphs(paragraphs)
-	tf.paragraphLeading = 2 * f1.GetBodyHeight()
+	tf.paragraphGap = 2 * f1.GetBodyHeight()
 	return tf
 }
 
@@ -68,11 +68,11 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 // otherwise.
 func NewTextFrameFromParagraphs(paragraphs []*Paragraph) *TextFrame {
 	return &TextFrame{
-		paragraphs:       paragraphs,
-		paragraphLeading: 24.0,
-		borderColor:      [3]float32{0.0, 0.0, 0.0},
-		borderWidth:      0.5,
-		borderPattern:    "[] 0",
+		paragraphs:    paragraphs,
+		paragraphGap:  24.0,
+		borderColor:   [3]float32{0.0, 0.0, 0.0},
+		borderWidth:   0.5,
+		borderPattern: "[] 0",
 	}
 }
 
@@ -109,8 +109,8 @@ func (tf *TextFrame) GetHeight() float32 {
 // SetParagraphGap sets the vertical distance between paragraphs, from the
 // baseline of the last line of a paragraph to the baseline of the first line
 // of the next.
-func (tf *TextFrame) SetParagraphGap(paragraphLeading float32) *TextFrame {
-	tf.paragraphLeading = paragraphLeading
+func (tf *TextFrame) SetParagraphGap(paragraphGap float32) *TextFrame {
+	tf.paragraphGap = paragraphGap
 	return tf
 }
 
@@ -229,7 +229,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 		}
 		tf.xText = tf.x
 		tf.rowOpen = false
-		tf.nextBaseline = tf.yText + tf.paragraphLeading
+		tf.nextBaseline = tf.yText + tf.paragraphGap
 		tf.paragraphIndex++
 		tf.lineIndex = 0
 	}

@@ -15,8 +15,8 @@ import (
 // By default, the checkbox is unchecked.
 type CheckBox struct {
 	x, y, w, h     float32
-	boxColor       [3]float32
-	checkColor     [3]float32
+	borderColor    [3]float32
+	checkmarkColor [3]float32
 	penWidth       float32
 	checkWidth     float32
 	mark           mark.Mark
@@ -32,8 +32,8 @@ type CheckBox struct {
 // NewCheckBox creates a CheckBox with black check mark.
 func NewCheckBox(font *Font, label string) *CheckBox {
 	checkBox := new(CheckBox)
-	checkBox.boxColor = colorToRGB(color.Black)
-	checkBox.checkColor = colorToRGB(color.Black)
+	checkBox.borderColor = colorToRGB(color.Black)
+	checkBox.checkmarkColor = colorToRGB(color.Black)
 	checkBox.font = font
 	checkBox.fontSize = 12.0
 	checkBox.label = label
@@ -50,32 +50,32 @@ func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
 }
 
 // SetBorderColor sets the color of the checkbox.
-//   - boxColor: the checkbox color specified as an 0xRRGGBB integer.
+//   - borderColor: the checkbox color specified as an 0xRRGGBB integer.
 //
 // Returns the CheckBox.
-func (checkBox *CheckBox) SetBorderColor(boxColor int32) *CheckBox {
-	checkBox.boxColor = colorToRGB(boxColor)
+func (checkBox *CheckBox) SetBorderColor(borderColor int32) *CheckBox {
+	checkBox.borderColor = colorToRGB(borderColor)
 	return checkBox
 }
 
 // SetBorderColorRGB sets the color of the box from red, green and blue values.
 func (checkBox *CheckBox) SetBorderColorRGB(rgbColor [3]float32) *CheckBox {
-	checkBox.boxColor = rgbColor
+	checkBox.borderColor = rgbColor
 	return checkBox
 }
 
 // SetCheckmarkColor sets the color of the check mark.
-//   - checkColor: the check mark color specified as an 0xRRGGBB integer.
+//   - checkmarkColor: the check mark color specified as an 0xRRGGBB integer.
 //
 // Returns the CheckBox.
-func (checkBox *CheckBox) SetCheckmarkColor(checkColor int32) *CheckBox {
-	checkBox.checkColor = colorToRGB(checkColor)
+func (checkBox *CheckBox) SetCheckmarkColor(checkmarkColor int32) *CheckBox {
+	checkBox.checkmarkColor = colorToRGB(checkmarkColor)
 	return checkBox
 }
 
 // SetCheckmarkColorRGB sets the color of the check mark from red, green and blue values.
 func (checkBox *CheckBox) SetCheckmarkColorRGB(rgbColor [3]float32) *CheckBox {
-	checkBox.checkColor = rgbColor
+	checkBox.checkmarkColor = rgbColor
 	return checkBox
 }
 
@@ -157,13 +157,13 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 
 	yBox := checkBox.y
 	page.SetPenWidth(checkBox.penWidth)
-	page.SetPenColorRGB(checkBox.boxColor)
+	page.SetPenColorRGB(checkBox.borderColor)
 	page.SetStrokeDashPattern("[] 0")
 	page.DrawRect(checkBox.x+checkBox.penWidth, yBox+checkBox.penWidth, checkBox.w, checkBox.h)
 
 	if checkBox.mark == mark.Check || checkBox.mark == mark.X {
 		page.SetPenWidth(checkBox.checkWidth)
-		page.SetPenColorRGB(checkBox.checkColor)
+		page.SetPenColorRGB(checkBox.checkmarkColor)
 		switch checkBox.mark {
 		case mark.Check:
 			// Draw check mark
@@ -209,7 +209,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
 			y2:             checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
 			vertices:       nil,
-			transparency:   0.0,
+			opacity:        0.0,
 			title:          "",
 			contents:       "",
 			uri:            checkBox.uri,

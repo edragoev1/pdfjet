@@ -51,9 +51,9 @@ public class Cell {
     /** The text color as an RGB array. */
     protected float[] textColor = new float[] {0f, 0f, 0f};
     /** The width of the cell borders. */
-    protected float strokeWidth;
-    /** The stroke color as an RGB array. */
-    protected float[] strokeColor;
+    protected float borderWidth;
+    /** The border color as an RGB array. */
+    protected float[] borderColor;
 
     private int colspan = 1;
     // Only the top and left borders are drawn unless setBorder says otherwise.
@@ -414,7 +414,7 @@ public class Cell {
     }
 
     /**
-     * Sets the stroke color of this cell.
+     * Sets the border color of this cell.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
@@ -423,38 +423,38 @@ public class Cell {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
+        this.borderColor = new float[] {r, g, b};
         return this;
     }
 
     /**
-     * Sets the stroke color of this cell.
+     * Sets the border color of this cell.
      *
-     * @param strokeColor the red, green and blue components, from 0.0 to 1.0.
+     * @param borderColor the red, green and blue components, from 0.0 to 1.0.
      * @return this Cell object.
      */
-    public Cell setBorderColor(float[] strokeColor) {
-        this.strokeColor = Util.copyOf(strokeColor);
+    public Cell setBorderColor(float[] borderColor) {
+        this.borderColor = Util.copyOf(borderColor);
         return this;
     }
 
     /**
-     * Returns the stroke color.
+     * Returns the border color.
      *
-     * @return the stroke color.
+     * @return the border color.
      */
     public float[] getBorderColor() {
-        return Util.copyOf(this.strokeColor);
+        return Util.copyOf(this.borderColor);
     }
 
     /**
      * Sets the width of the cell borders.
      *
-     * @param strokeWidth the width of the cell borders.
+     * @param borderWidth the width of the cell borders.
      * @return this Cell object.
      */
-    public Cell setBorderWidth(float strokeWidth) {
-        this.strokeWidth = strokeWidth;
+    public Cell setBorderWidth(float borderWidth) {
+        this.borderWidth = borderWidth;
         return this;
     }
 
@@ -464,7 +464,7 @@ public class Cell {
      * @return the width of the cell borders.
      */
     public float getBorderWidth() {
-        return this.strokeWidth;
+        return this.borderWidth;
     }
 
     /**
@@ -802,7 +802,7 @@ public class Cell {
                         point.y + point.r,
                         null,   // Vertices
                         null,   // Fill Color
-                        0f,     // Transparency
+                        0f,     // Opacity
                         null,   // Title
                         null,   // Contents
                         point.getURIAction(),
@@ -823,7 +823,7 @@ public class Cell {
             float cellH) {
         page.addArtifactBMC();
         page.setBrushColor(backgroundColor);
-        page.fillRect(x, y + strokeWidth/2, cellW, cellH);
+        page.fillRect(x, y + borderWidth/2, cellW, cellH);
         page.addEMC();
     }
 
@@ -834,9 +834,9 @@ public class Cell {
             float cellW,
             float cellH) {
         page.addArtifactBMC();
-        page.setPenColor(strokeColor);
-        page.setPenWidth(strokeWidth);
-        float qWidth = strokeWidth / 4;
+        page.setPenColor(borderColor);
+        page.setPenWidth(borderWidth);
+        float qWidth = borderWidth / 4;
         if (getBorder(Border.TOP)) {
             page.moveTo(x - qWidth, y);
             page.lineTo(x + cellW, y);
@@ -878,7 +878,7 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.setPenColor(strokeColor);
+        page.setPenColor(borderColor);
         float xText;
         if (getTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (getTextWidth() + this.rightPadding);
@@ -914,7 +914,7 @@ public class Cell {
                     yText + font.getDescent(fontSize),
                     null,       // Vertices
                     null,       // Fill Color
-                    0f,         // Transparency
+                    0f,         // Opacity
                     null,       // Title
                     null,       // Contents
                     uri,

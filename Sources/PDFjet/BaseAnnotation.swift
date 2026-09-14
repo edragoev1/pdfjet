@@ -7,7 +7,7 @@ public class BaseAnnotation: Drawable {
     var point2: [Float] = [0, 0]
     var vertices: [Float]?
     var fillColor: [Float] = [0.5, 0.5, 0.5]
-    var transparency: Float = 1.0
+    var opacity: Float = 1.0
     var title: String?
     var contents: String?
     var uri: String?
@@ -55,7 +55,7 @@ public class BaseAnnotation: Drawable {
     /// Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).
     @discardableResult
     public func setOpacity(_ opacity: Float) -> BaseAnnotation {
-        self.transparency = opacity
+        self.opacity = opacity
         return self
     }
 
@@ -107,7 +107,7 @@ public class BaseAnnotation: Drawable {
             point2[1],
             vertices,
             fillColor,
-            transparency,
+            opacity,
             title,
             contents,
             uri,

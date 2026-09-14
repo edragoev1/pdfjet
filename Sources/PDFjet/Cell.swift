@@ -30,8 +30,8 @@ public class Cell {
 
     var backgroundColor: [Float]?
     var textColor: [Float] = [0.0, 0.0, 0.0]
-    var strokeWidth: Float = 0.0
-    var strokeColor: [Float]?
+    var borderWidth: Float = 0.0
+    var borderColor: [Float]?
 
     private var colspan: Int = 1
     private var uri: String?
@@ -428,38 +428,38 @@ public class Cell {
         return self.backgroundColor
     }
 
-    /// Sets the stroke color as a 0xRRGGBB value.
+    /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Cell {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
-        self.strokeColor = [r, g, b]
+        self.borderColor = [r, g, b]
         return self
     }
 
-    /// Sets the stroke color from an array of red, green and blue values.
+    /// Sets the border color from an array of red, green and blue values.
     @discardableResult
     public func setBorderColor(_ rgbColor: [Float]?) -> Cell {
-        self.strokeColor = rgbColor
+        self.borderColor = rgbColor
         return self
     }
 
-    /// Returns the stroke color.
+    /// Returns the border color.
     public func getBorderColor() -> [Float]? {
-        return self.strokeColor
+        return self.borderColor
     }
 
     /// Sets the width of the cell borders.
     @discardableResult
-    public func setBorderWidth(_ strokeWidth: Float) -> Cell {
-        self.strokeWidth = strokeWidth
+    public func setBorderWidth(_ borderWidth: Float) -> Cell {
+        self.borderWidth = borderWidth
         return self
     }
 
     /// Returns the width of the cell borders.
     public func getBorderWidth() -> Float {
-        return self.strokeWidth
+        return self.borderWidth
     }
 
     /**
@@ -671,7 +671,7 @@ public class Cell {
                         point!.y + point!.r,
                         nil,    // Vertices
                         nil,    // Fill Color
-                        0.0,    // Transparency
+                        0.0,    // Opacity
                         nil,    // Title
                         nil,    // Contents
                         point!.getURIAction(),
@@ -692,7 +692,7 @@ public class Cell {
             _ cellH: Float) {
         page.addArtifactBMC()
         page.setBrushColor(backgroundColor!)
-        page.fillRect(x, y + strokeWidth/2, cellW, cellH)
+        page.fillRect(x, y + borderWidth/2, cellW, cellH)
         page.addEMC()
     }
 
@@ -703,9 +703,9 @@ public class Cell {
             _ cellW: Float,
             _ cellH: Float) {
         page.addArtifactBMC()
-        page.setPenColor(strokeColor)
-        page.setPenWidth(strokeWidth)
-        let qWidth: Float = strokeWidth / 4.0
+        page.setPenColor(borderColor)
+        page.setPenWidth(borderWidth)
+        let qWidth: Float = borderWidth / 4.0
         if topBorder {
             page.moveTo(x - qWidth, y)
             page.lineTo(x + cellW, y)
@@ -747,7 +747,7 @@ public class Cell {
             fatalError("Invalid vertical text alignment option.")
         }
 
-        page.setPenColor(strokeColor)
+        page.setPenColor(borderColor)
         var xText: Float
         if getTextAlignment() == Alignment.RIGHT {
             xText = (x + cellW) - (getTextWidth() + self.rightPadding)
@@ -783,7 +783,7 @@ public class Cell {
                     yText + font.getDescent(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
-                    0.0,    // Transparency
+                    0.0,    // Opacity
                     nil,    // Title
                     nil,    // Contents
                     uri,

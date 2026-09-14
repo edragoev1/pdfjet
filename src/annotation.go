@@ -20,7 +20,7 @@ type annotationObject struct {
 	y2             float32
 	vertices       []float32
 	fillColor      [3]float32
-	transparency   float32
+	opacity        float32
 	title          string
 	contents       string
 	uri            string

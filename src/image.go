@@ -410,7 +410,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 			x2:             image.x + image.w,
 			y2:             image.y + image.h,
 			vertices:       nil,
-			transparency:   0.0,
+			opacity:        0.0,
 			title:          "",
 			contents:       "",
 			uri:            image.uri,

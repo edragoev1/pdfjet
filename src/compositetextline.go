@@ -21,8 +21,8 @@ type CompositeTextLine struct {
 	position  [2]float32
 	current   [2]float32
 	// Subscript and Superscript size factors
-	subscriptSizeFactor   float32
-	superscriptSizeFactor float32
+	subscriptFactor   float32
+	superscriptFactor float32
 	// Subscript and Superscript positions in relation to the base font
 	superscriptPosition float32
 	subscriptPosition   float32
@@ -38,8 +38,8 @@ func NewCompositeTextLine(x, y float32) *CompositeTextLine {
 	compositeTextLine.position[compositeTextLine.y] = y
 	compositeTextLine.current[compositeTextLine.x] = x
 	compositeTextLine.current[compositeTextLine.y] = y
-	compositeTextLine.subscriptSizeFactor = 0.583
-	compositeTextLine.superscriptSizeFactor = 0.583
+	compositeTextLine.subscriptFactor = 0.583
+	compositeTextLine.superscriptFactor = 0.583
 	// Subscript and Superscript positions in relation to the base font
 	compositeTextLine.superscriptPosition = 0.350
 	compositeTextLine.subscriptPosition = 0.141
@@ -60,14 +60,14 @@ func (composite *CompositeTextLine) GetFontSize() float32 {
 // SetSuperscriptFactor sets the superscript factor for this composite text line.
 //   - superscript: the superscript size factor.
 func (composite *CompositeTextLine) SetSuperscriptFactor(superscript float32) *CompositeTextLine {
-	composite.superscriptSizeFactor = superscript
+	composite.superscriptFactor = superscript
 	return composite
 }
 
 // GetSuperscriptFactor gets the superscript factor for this text line.
 // Returns superscript the superscript size factor.
 func (composite *CompositeTextLine) GetSuperscriptFactor() float32 {
-	return composite.superscriptSizeFactor
+	return composite.superscriptFactor
 }
 
 /**
@@ -76,14 +76,14 @@ func (composite *CompositeTextLine) GetSuperscriptFactor() float32 {
  *   - subscript: the subscript size factor.
  */
 func (composite *CompositeTextLine) SetSubscriptFactor(subscript float32) *CompositeTextLine {
-	composite.subscriptSizeFactor = subscript
+	composite.subscriptFactor = subscript
 	return composite
 }
 
 // GetSubscriptFactor gets the subscript factor for this text line.
 // Returns subscript the subscript size factor.
 func (composite *CompositeTextLine) GetSubscriptFactor() float32 {
-	return composite.subscriptSizeFactor
+	return composite.subscriptFactor
 }
 
 // SetSuperscriptPosition sets the superscript position for this composite text line.
@@ -122,14 +122,14 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeT
 		if composite.fontSize > 0.0 {
 			// Set it on the TextLine: DrawOn uses the line's own font size, so
 			// resizing the shared Font here would have no effect.
-			textLine.SetFontSize(composite.fontSize * composite.superscriptSizeFactor)
+			textLine.SetFontSize(composite.fontSize * composite.superscriptFactor)
 		}
 		textLine.SetLocation(
 			composite.current[composite.x],
 			composite.current[composite.y]-composite.fontSize*composite.superscriptPosition)
 	} else if textLine.GetScriptPosition() == scriptposition.Subscript {
 		if composite.fontSize > 0.0 {
-			textLine.SetFontSize(composite.fontSize * composite.subscriptSizeFactor)
+			textLine.SetFontSize(composite.fontSize * composite.subscriptFactor)
 		}
 		textLine.SetLocation(
 			composite.current[composite.x],

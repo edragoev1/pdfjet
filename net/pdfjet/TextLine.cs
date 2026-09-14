@@ -25,7 +25,7 @@ public class TextLine : IDrawable {
 
     private int degrees = 0;
     private float[] textColor = new float[] {0f, 0f, 0f};
-    private float[] lineColor = new float[] {0f, 0f, 0f};
+    private float[] decorationColor = new float[] {0f, 0f, 0f};
     private Dictionary<String, int> colorMap = null;
     private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
@@ -187,21 +187,21 @@ public class TextLine : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.lineColor = new float[] {r, g, b};
+        this.decorationColor = new float[] {r, g, b};
         return this;
     }
 
     /// <summary>Sets the color of the underline and strikeout lines from an array of red, green and blue values.</summary>
     public TextLine SetDecorationColor(float[] rgbColor) {
         if (rgbColor != null) {
-            this.lineColor = (float[]) rgbColor.Clone();
+            this.decorationColor = (float[]) rgbColor.Clone();
         }
         return this;
     }
 
     /// <summary>Returns a copy of the color of the underline and strikeout lines.</summary>
     public float[] GetDecorationColor() {
-        return (float[]) lineColor.Clone();
+        return (float[]) decorationColor.Clone();
     }
 
     /// <summary>Sets the colors used to highlight words in the text.</summary>
@@ -484,7 +484,7 @@ public class TextLine : IDrawable {
         textLine.strikeout = strikeout;
         textLine.degrees = degrees;
         textLine.textColor = textColor;
-        textLine.lineColor = lineColor;
+        textLine.decorationColor = decorationColor;
         textLine.colorMap = colorMap;
         textLine.scriptPosition = scriptPosition;
         textLine.verticalOffset = verticalOffset;
@@ -526,7 +526,7 @@ public class TextLine : IDrawable {
         double radians = Math.PI * degrees / 180.0;
         if (underline) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
-            page.SetPenColor(lineColor);
+            page.SetPenColor(decorationColor);
             double lineLength = font.StringWidth(fallbackFont, fontSize, text);
             if (this.isLastToken) {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
@@ -544,7 +544,7 @@ public class TextLine : IDrawable {
 
         if (strikeout) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
-            page.SetPenColor(lineColor);
+            page.SetPenColor(decorationColor);
             double lineLength = font.StringWidth(fallbackFont, fontSize, text);
             if (this.isLastToken) {
                 lineLength -= font.StringWidth(fallbackFont, fontSize, Single.space);
@@ -569,7 +569,7 @@ public class TextLine : IDrawable {
                     (y + verticalOffset) + font.GetDescent(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
-                    0f,     // Transparency
+                    0f,     // Opacity
                     null,   // Title
                     null,   // Contents
                     uri,

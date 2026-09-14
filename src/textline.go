@@ -28,7 +28,7 @@ type TextLine struct {
 	strikeout          bool
 	degrees            int
 	textColor          [3]float32
-	lineColor          [3]float32
+	decorationColor    [3]float32
 	colorMap           map[string]int32
 	scriptPosition     scriptposition.ScriptPosition
 	verticalOffset     float32
@@ -163,20 +163,20 @@ func (textLine *TextLine) SetDecorationColor(c int32) *TextLine {
 	r := float32((c>>16)&0xff) / 255.0
 	g := float32((c>>8)&0xff) / 255.0
 	b := float32((c)&0xff) / 255.0
-	textLine.lineColor = [3]float32{r, g, b}
+	textLine.decorationColor = [3]float32{r, g, b}
 	return textLine
 }
 
 // SetDecorationColorRGB sets the color of the underline and strikeout lines from the
 // red, green and blue components, from 0.0 to 1.0.
 func (textLine *TextLine) SetDecorationColorRGB(c [3]float32) *TextLine {
-	textLine.lineColor = c
+	textLine.decorationColor = c
 	return textLine
 }
 
 // GetDecorationColor returns the color of the underline and strikeout lines.
 func (textLine *TextLine) GetDecorationColor() [3]float32 {
-	return textLine.lineColor
+	return textLine.decorationColor
 }
 
 // GetTextColor returns the text color.
@@ -415,7 +415,7 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 	line.strikeout = textLine.strikeout
 	line.degrees = textLine.degrees
 	line.textColor = textLine.textColor
-	line.lineColor = textLine.lineColor
+	line.decorationColor = textLine.decorationColor
 	line.colorMap = textLine.colorMap
 	line.scriptPosition = textLine.scriptPosition
 	line.verticalOffset = textLine.verticalOffset
@@ -466,7 +466,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	radians := math.Pi * float64(textLine.degrees) / 180.0
 	if textLine.underline {
 		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
-		page.SetPenColorRGB(textLine.lineColor)
+		page.SetPenColorRGB(textLine.decorationColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
 			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
@@ -485,7 +485,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	if textLine.strikeout {
 		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
-		page.SetPenColorRGB(textLine.lineColor)
+		page.SetPenColorRGB(textLine.decorationColor)
 		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
 			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
@@ -510,7 +510,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
 			y2:             (textLine.y + verticalOffset) + textLine.font.GetDescentAt(textLine.fontSize),
 			vertices:       nil,
-			transparency:   0.0,
+			opacity:        0.0,
 			title:          "",
 			contents:       "",
 			uri:            textLine.uri,

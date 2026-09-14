@@ -256,7 +256,7 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 			x2:             rect.x + rect.width,
 			y2:             rect.y + rect.height,
 			vertices:       nil,
-			transparency:   0.0,
+			opacity:        0.0,
 			title:          "",
 			contents:       "",
 			uri:            rect.uri,
