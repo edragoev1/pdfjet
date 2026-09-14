@@ -10,259 +10,259 @@ public class Example_17 {
 
         var fileName = "PngSuite/BASN3P08.PNG"
         var fis = InputStream(fileAtPath: fileName)
-        let image1 = try Image(pdf, fis!, ImageType.PNG)
+        let image1 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image2 = try Image(pdf, fis!, ImageType.PNG)
+        let image2 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image3 = try Image(pdf, fis!, ImageType.PNG)
+        let image3 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN3P01.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image4 = try Image(pdf, fis!, ImageType.PNG)
+        let image4 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/S01N3P01.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image5 = try Image(pdf, fis!, ImageType.PNG)
+        let image5 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/S02N3P01.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image6 = try Image(pdf, fis!, ImageType.PNG)
+        let image6 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S03N3P01.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image7 = try Image(pdf, fis!, ImageType.PNG)
+        let image7 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S04N3P01.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image8 = try Image(pdf, fis!, ImageType.PNG)
+        let image8 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S05N3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image9 = try Image(pdf, fis!, ImageType.PNG)
+        let image9 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S06N3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image10 = try Image(pdf, fis!, ImageType.PNG)
+        let image10 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S07N3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image11 = try Image(pdf, fis!, ImageType.PNG)
+        let image11 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S08N3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image12 = try Image(pdf, fis!, ImageType.PNG)
+        let image12 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S09N3P02.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image13 = try Image(pdf, fis!, ImageType.PNG)
+        let image13 = try Image(pdf, fis!)
 
 
 
         fileName = "PngSuite/S32N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image14 = try Image(pdf, fis!, ImageType.PNG)
+        let image14 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S33N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image15 = try Image(pdf, fis!, ImageType.PNG)
+        let image15 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S34N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image16 = try Image(pdf, fis!, ImageType.PNG)
+        let image16 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S35N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image17 = try Image(pdf, fis!, ImageType.PNG)
+        let image17 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S36N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image18 = try Image(pdf, fis!, ImageType.PNG)
+        let image18 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S37N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image19 = try Image(pdf, fis!, ImageType.PNG)
+        let image19 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S38N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image20 = try Image(pdf, fis!, ImageType.PNG)
+        let image20 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S39N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image21 = try Image(pdf, fis!, ImageType.PNG)
+        let image21 = try Image(pdf, fis!)
 
         fileName = "PngSuite/S40N3P04.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image22 = try Image(pdf, fis!, ImageType.PNG)
+        let image22 = try Image(pdf, fis!)
 
 
         fileName = "images/qrcode.png"
         fis = InputStream(fileAtPath: fileName)
-        let image23 = try Image(pdf, fis!, ImageType.PNG)
+        let image23 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/F00N2C08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image24 = try Image(pdf, fis!, ImageType.PNG)
+        let image24 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F01N2C08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image25 = try Image(pdf, fis!, ImageType.PNG)
+        let image25 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F02N2C08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image26 = try Image(pdf, fis!, ImageType.PNG)
+        let image26 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F03N2C08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image27 = try Image(pdf, fis!, ImageType.PNG)
+        let image27 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F04N2C08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image28 = try Image(pdf, fis!, ImageType.PNG)
+        let image28 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/Z00N2C08.PNG"
         // color, no interlacing, compression level 0 (none)
         fis = InputStream(fileAtPath: fileName)
-        let image29 = try Image(pdf, fis!, ImageType.PNG)
+        let image29 = try Image(pdf, fis!)
 
         fileName = "PngSuite/Z03N2C08.PNG"
         // color, no interlacing, compression level 3
         fis = InputStream(fileAtPath: fileName)
-        let image30 = try Image(pdf, fis!, ImageType.PNG)
+        let image30 = try Image(pdf, fis!)
 
         fileName = "PngSuite/Z06N2C08.PNG"
         // color, no interlacing, compression level 6 (default)
         fis = InputStream(fileAtPath: fileName)
-        let image31 = try Image(pdf, fis!, ImageType.PNG)
+        let image31 = try Image(pdf, fis!)
 
         fileName = "PngSuite/Z09N2C08.PNG"
         // color, no interlacing, compression level 9 (maximum)
         fis = InputStream(fileAtPath: fileName)
-        let image32 = try Image(pdf, fis!, ImageType.PNG)
+        let image32 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/F00N0G08.PNG"
         // 8 bit greyscale, no interlacing, filter-type 0
         fis = InputStream(fileAtPath: fileName)
-        let image33 = try Image(pdf, fis!, ImageType.PNG)
+        let image33 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F01N0G08.PNG"
         // 8 bit greyscale, no interlacing, filter-type 1
         fis = InputStream(fileAtPath: fileName)
-        let image34 = try Image(pdf, fis!, ImageType.PNG)
+        let image34 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F02N0G08.PNG"
         // 8 bit greyscale, no interlacing, filter-type 2
         fis = InputStream(fileAtPath: fileName)
-        let image35 = try Image(pdf, fis!, ImageType.PNG)
+        let image35 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F03N0G08.PNG"
         // 8 bit greyscale, no interlacing, filter-type 3
         fis = InputStream(fileAtPath: fileName)
-        let image36 = try Image(pdf, fis!, ImageType.PNG)
+        let image36 = try Image(pdf, fis!)
 
         fileName = "PngSuite/F04N0G08.PNG"
         // 8 bit greyscale, no interlacing, filter-type 4
         fis = InputStream(fileAtPath: fileName)
-        let image37 = try Image(pdf, fis!, ImageType.PNG)
+        let image37 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/BASN0G08.PNG"
         // 8 bit grayscale
         fis = InputStream(fileAtPath: fileName)
-        let image38 = try Image(pdf, fis!, ImageType.PNG)
+        let image38 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN0G04.PNG"
         // 4 bit grayscale
         fis = InputStream(fileAtPath: fileName)
-        let image39 = try Image(pdf, fis!, ImageType.PNG)
+        let image39 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN0G02.PNG"
         // 2 bit grayscale
         fis = InputStream(fileAtPath: fileName)
-        let image40 = try Image(pdf, fis!, ImageType.PNG)
+        let image40 = try Image(pdf, fis!)
 
         fileName = "PngSuite/BASN0G01.PNG"
         // Black and White image
         fis = InputStream(fileAtPath: fileName)
-        let image41 = try Image(pdf, fis!, ImageType.PNG)
+        let image41 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/BGAN6A08.PNG"
         // Image with alpha transparency
         fis = InputStream(fileAtPath: fileName)
-        let image42 = try Image(pdf, fis!, ImageType.PNG)
+        let image42 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/OI1N2C16.PNG"
         // Color image with 1 IDAT chunk
         fis = InputStream(fileAtPath: fileName)
-        let image43 = try Image(pdf, fis!, ImageType.PNG)
+        let image43 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI4N2C16.PNG"
         // Color image with 2 IDAT chunks
         fis = InputStream(fileAtPath: fileName)
-        let image44 = try Image(pdf, fis!, ImageType.PNG)
+        let image44 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI4N2C16.PNG"
         // Color image with 4 IDAT chunks
         fis = InputStream(fileAtPath: fileName)
-        let image45 = try Image(pdf, fis!, ImageType.PNG)
+        let image45 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI9N2C16.PNG"
         // IDAT chunks with length == 1
         fis = InputStream(fileAtPath: fileName)
-        let image46 = try Image(pdf, fis!, ImageType.PNG)
+        let image46 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/OI1N0G16.PNG"
         // Grayscale image with 1 IDAT chunk
         fis = InputStream(fileAtPath: fileName)
-        let image47 = try Image(pdf, fis!, ImageType.PNG)
+        let image47 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI4N0G16.PNG"
         // Grayscale image with 2 IDAT chunks
         fis = InputStream(fileAtPath: fileName)
-        let image48 = try Image(pdf, fis!, ImageType.PNG)
+        let image48 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI4N0G16.PNG"
         // Grayscale image with 4 IDAT chunks
         fis = InputStream(fileAtPath: fileName)
-        let image49 = try Image(pdf, fis!, ImageType.PNG)
+        let image49 = try Image(pdf, fis!)
 
         fileName = "PngSuite/OI9N0G16.PNG"
         // IDAT chunks with length == 1
         fis = InputStream(fileAtPath: fileName)
-        let image50 = try Image(pdf, fis!, ImageType.PNG)
+        let image50 = try Image(pdf, fis!)
 
 
         fileName = "PngSuite/TBBN3P08.PNG"  // Transparent, black background chunk
         fis = InputStream(fileAtPath: fileName)
-        let image51 = try Image(pdf, fis!, ImageType.PNG)
+        let image51 = try Image(pdf, fis!)
 
         fileName = "PngSuite/TBGN3P08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image52 = try Image(pdf, fis!, ImageType.PNG)
+        let image52 = try Image(pdf, fis!)
 
         fileName = "PngSuite/TBWN3P08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image53 = try Image(pdf, fis!, ImageType.PNG)
+        let image53 = try Image(pdf, fis!)
 
         fileName = "PngSuite/TBYN3P08.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image54 = try Image(pdf, fis!, ImageType.PNG)
+        let image54 = try Image(pdf, fis!)
 
 
         fileName = "images/LGK_ADDRESS.PNG"
         fis = InputStream(fileAtPath: fileName)
-        let image55 = try Image(pdf, fis!, ImageType.PNG)
+        let image55 = try Image(pdf, fis!)
 
 
         let page = Page(pdf, A4.PORTRAIT)

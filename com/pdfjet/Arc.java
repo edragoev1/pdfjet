@@ -216,17 +216,6 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Rotates this arc clockwise.
-     *
-     * @param degrees the rotation angle in degrees.
-     * @return this Arc object.
-     */
-    public Arc setRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
-    /**
      * Rotates this arc counterclockwise.
      *
      * @param degrees the rotation angle in degrees.

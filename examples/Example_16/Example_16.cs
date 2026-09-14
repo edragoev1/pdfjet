@@ -42,9 +42,8 @@ public class Example_16 {
         textBox.SetWidth(400f);
         // If no height is specified the height will be calculated based on the text.
         textBox.SetHeight(450f);
-        // textBox.SetTextDirection(Direction.LEFT_TO_RIGHT);
-        // textBox.SetTextDirection(Direction.BOTTOM_TO_TOP);
-        // textBox.SetTextDirection(Direction.TOP_TO_BOTTOM);
+        // textBox.SetTextRotation(90);     // bottom to top
+        // textBox.SetTextRotation(270);    // top to bottom
 
         textBox.SetVerticalAlignment(Alignment.TOP);
         // textBox.SetVerticalAlignment(Alignment.BOTTOM);

@@ -85,7 +85,7 @@ func Example35() {
 	nested1 := pdfjet.NewContainer(200.0, 200.0)
 	nested1.SetLocation(0.0, 0.0)
 	nested1.SetRotation(30)
-	nested1.SetScaleFactor(0.8)
+	nested1.ScaleBy(0.8)
 
 	innerRect := pdfjet.NewRect(0.0, 0.0, 200.0, 200.0)
 	innerRect.SetFillColor(color.Blue)
@@ -112,7 +112,7 @@ func Example35() {
 
 	container.Add(nested2)
 
-	container.SetRotationClockwise(45)
+	container.SetRotation(-45)
 	// Draw the entire hierarchy on the page
 	container.DrawOn(page)
 

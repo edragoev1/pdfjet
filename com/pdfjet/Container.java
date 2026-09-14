@@ -65,17 +65,6 @@ public class Container implements Drawable {
     }
 
     /**
-     * Sets clockwise rotation.
-     *
-     * @param degrees the rotation angle in degrees (clockwise)
-     * @return this Container object.
-     */
-    public Container setRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
-    /**
      * Returns the center of this container, which it rotates around.
      *
      * @return the x and y coordinates of the center.
@@ -90,8 +79,8 @@ public class Container implements Drawable {
      * @param factor the scaling factor to apply
      * @return this Container object.
      */
-    public Container setScaleFactor(float factor) {
-        setScaleFactorXY(factor, factor);
+    public Container scaleBy(float factor) {
+        scaleBy(factor, factor);
         return this;
     }
 
@@ -102,7 +91,7 @@ public class Container implements Drawable {
      * @param sy the scaling factor for Y
      * @return this Container object.
      */
-    public Container setScaleFactorXY(float sx, float sy) {
+    public Container scaleBy(float sx, float sy) {
         this.scaleX = sx;
         this.scaleY = sy;
         return this;

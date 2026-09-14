@@ -494,10 +494,8 @@ and `float32` in Go, with no `double` overloads: a Java or C# caller writes
 `50f` or casts a `double`. Swift has one form with default arguments where Java
 has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
-`SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize`,
-`DrawStringUsingColor` (an `int32` color), `DrawStringUsingHighlightColors` (a
-`[3]float32` color) and `DrawStringUsingSpacing` for the `drawString`
-overloads, `StringWidthFB` for `stringWidth` with a fallback font,
+`SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize` and
+`DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthFB` for `stringWidth` with a fallback font,
 `DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
 `addResource` overloads of `Page` and `PDFobj`. Every color setter takes an
@@ -527,7 +525,7 @@ Java, C# and Swift keep constants in classes; Go keeps them in packages:
 `color.Blue` for `Color.blue`, `shape.Circle` for `Shape.CIRCLE`,
 `structelem.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
 `direction`, `scriptposition`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
-`pathoperator`, `imagetype`, `mark` and the font families
+`pathoperator`, `mark` and the font families
 (`IBMPlexSans.Regular`). The constants of a package have its type, as
 `alignment.Alignment` and `pathoperator.PathOperator`, so a plain `int` or
 `string` variable does not compile where one is expected. The core fonts are
@@ -541,3 +539,9 @@ for a size that has no package. The QR code error correction levels are
 `Paragraph` and `Title` have the getters an example needs (`getX1`,
 `getPrefix`). `Permissions` prints through `String()` in Go and `description`
 in Swift where Java and C# have `toString`.
+
+Two conventions hold in every port. A rotation is `setRotation(degrees)` and a
+positive angle turns counterclockwise, on shapes, images, pages and text alike.
+A spacing setter that takes points is a gap (`setLineGap`, `setParagraphGap`)
+and one that takes a multiple of the line is a spacing (`setLineSpacing`,
+`setParagraphSpacing`).

@@ -644,7 +644,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	}
 	if cell.compositeTextLine == nil {
 		page.AddBDC("P", "", cell.text, cell.text)
-		page.DrawStringUsingHighlightColors(
+		page.drawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
 		page.AddEMC()
 		if cell.underline {

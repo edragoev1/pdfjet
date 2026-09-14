@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
@@ -136,7 +135,7 @@ func TestPNGImageAnImageFromAPngHasItsSize(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	image := NewImage(testNewPDF(), file, imagetype.PNG)
+	image := NewImage(testNewPDF(), file)
 	if image.GetWidth() != 32 || image.GetHeight() != 32 {
 		t.Errorf("size %v x %v", image.GetWidth(), image.GetHeight())
 	}
@@ -165,7 +164,7 @@ func TestPNGImageAnImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask(t *testing
 	}
 	defer file.Close()
 	doc := testNewDoc()
-	image := NewImage(doc.pdf, file, imagetype.PNG)
+	image := NewImage(doc.pdf, file)
 	image.DrawOn(NewPage(doc.pdf, testLetterPortrait()))
 	raw := string(doc.complete())
 	if !strings.Contains(raw, "DeviceGray") || !strings.Contains(raw, "/SMask") || strings.Contains(raw, "DeviceRGB") {

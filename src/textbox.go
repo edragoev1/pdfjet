@@ -406,9 +406,17 @@ func (textBox *TextBox) SetURIAction(uri string) *TextBox {
 	return textBox
 }
 
-// SetTextDirection sets the text direction.
-func (textBox *TextBox) SetTextDirection(textDirection direction.Direction) *TextBox {
-	textBox.textDirection = textDirection
+// SetTextRotation sets the rotation of the text, counterclockwise: 0 reads left
+// to right, 90 bottom to top and 270 top to bottom. Other angles read left to right.
+func (textBox *TextBox) SetTextRotation(degrees int) *TextBox {
+	switch degrees {
+	case 90:
+		textBox.textDirection = direction.BottomToTop
+	case 270:
+		textBox.textDirection = direction.TopToBottom
+	default:
+		textBox.textDirection = direction.LeftToRight
+	}
 	return textBox
 }
 
@@ -694,16 +702,16 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 	page.AddBDC(structelem.P, textBox.language, text, textBox.altDescription)
 
 	if textBox.textDirection == direction.LeftToRight {
-		page.DrawStringUsingHighlightColors(
+		page.drawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text, xText, yText, textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.BottomToTop {
 		page.SetTextRotation(90)
-		page.DrawStringUsingHighlightColors(
+		page.drawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text, yText, xText+textBox.height,
 			textBox.textColor, textBox.colors)
 	} else if textBox.textDirection == direction.TopToBottom {
 		page.SetTextRotation(270)
-		page.DrawStringUsingHighlightColors(
+		page.drawStringUsingHighlightColors(
 			font, fallbackFont, fontSize, text,
 			(yText+textBox.width)-(textBox.margin+2*font.GetAscentAt(fontSize)), xText,
 			textBox.textColor, textBox.colors)

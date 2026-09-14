@@ -67,8 +67,6 @@ public class Example_05 {
             .SetSweepDegreesCW(270f)
             // .SetSweepDegreesCCW(270f)
             // .ScaleBy(2f)
-            // .SetRotationClockwise(90f)
-            // .SetRotation(90f)
             .SetStrokeWidth(5f)
             .SetStrokeColor(Color.blue)
             .DrawOn(page);
@@ -81,8 +79,7 @@ public class Example_05 {
             .SetStrokeWidth(1.5f)
             .SetStrokeColor(Color.blue)
             .ScaleBy(0.5f)
-            .SetRotationClockwise(45f)
-            // .SetRotation(45f)
+            .SetRotation(-45f)
             .DrawOn(page);
 
         pdf.Complete();

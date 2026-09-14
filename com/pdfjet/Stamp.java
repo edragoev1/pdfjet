@@ -398,17 +398,6 @@ public class Stamp implements Drawable {
     }
 
     /**
-     * Sets a clockwise rotation.
-     *
-     * @param degrees the rotation angle in degrees, clockwise.
-     * @return this Stamp object.
-     */
-    public Stamp setRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
-    /**
      * Writes this stamp to the document as a form XObject.
      * Call it once, after drawing the content and before drawOn.
      *

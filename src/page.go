@@ -232,15 +232,15 @@ func (page *Page) DrawLine(x1, y1, x2, y2 float32) {
 // DrawString draws the string in black at the x, y location. The fallback font
 // is used for the characters the main font does not have.
 func (page *Page) DrawString(font, fallbackFont *Font, fontSize float32, text string, x, y float32) {
-	page.DrawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+	page.drawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 }
 
-// DrawStringUsingColor draws the string in the 0xRRGGBB color at the x, y
+// drawStringUsingColor draws the string in the 0xRRGGBB color at the x, y
 // location, highlighting the words in the colors map. The fallback font is used
 // for the characters the main font does not have.
-func (page *Page) DrawStringUsingColor(
+func (page *Page) drawStringUsingColor(
 	font, fallbackFont *Font, fontSize float32, text string, x, y float32, color int32, colors map[string]int32) {
-	page.DrawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, colorToRGB(color), colors)
+	page.drawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, colorToRGB(color), colors)
 }
 
 // DrawStringUsingFontSize draws a string using the specified font and font size
@@ -250,11 +250,11 @@ func (page *Page) DrawStringUsingFontSize(
 	page.drawString(font, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 }
 
-// DrawStringUsingHighlightColors draws the text given by the specified string,
+// drawStringUsingHighlightColors draws the text given by the specified string,
 // using the specified main font and the current brush color.
 // If the main font is missing some glyphs - the fallback font is used.
 // The baseline of the leftmost character is at position (x, y) on the page.
-func (page *Page) DrawStringUsingHighlightColors(
+func (page *Page) drawStringUsingHighlightColors(
 	font, fallbackFont *Font, fontSize float32, text string, x, y float32, brush [3]float32, colors map[string]int32) {
 	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
 		page.drawString(font, fontSize, text, x, y, brush, colors)
@@ -1894,11 +1894,11 @@ func (page *Page) GetContent() []byte {
 	return slices.Clone(page.buf)
 }
 
-// SetRotationClockwise sets the clockwise rotation of this page in degrees.
-// Only 0, 90, 180 and 270 are accepted; other values are ignored.
-func (page *Page) SetRotationClockwise(degrees int) *Page {
+// SetRotation rotates this page counterclockwise when it is displayed, by 0, 90,
+// 180 or 270 degrees, as every rotation in PDFjet turns. Other angles are ignored.
+func (page *Page) SetRotation(degrees int) *Page {
 	if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
-		page.rotateDegrees = float32(degrees)
+		page.rotateDegrees = float32((360 - degrees) % 360)
 	}
 	return page
 }
@@ -2103,7 +2103,7 @@ func (page *Page) drawTextBlock(
 	if len(textLines) == 0 {
 		return
 	}
-	// The fallback font is used as DrawStringUsingHighlightColors uses it.
+	// The fallback font is used as drawStringUsingHighlightColors uses it.
 	hasFallbackFont := fallbackFont != nil && fallbackFont != font &&
 		!font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK
 
@@ -2163,7 +2163,7 @@ func (page *Page) drawTextBlock(
 
 // drawTextBlockLine draws a line of a text block at the text position, with the
 // characters the font has no glyph for in the fallback font, as
-// DrawStringUsingHighlightColors draws them.
+// drawStringUsingHighlightColors draws them.
 func (page *Page) drawTextBlockLine(
 	font, fallbackFont *Font, fontSize, fallbackFontSize float32,
 	text string, textColor [3]float32, highlightColors map[string]int32) {

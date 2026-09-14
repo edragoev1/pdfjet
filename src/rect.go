@@ -107,8 +107,8 @@ func (rect *Rect) SetBorderWidth(borderWidth float32) *Rect {
 	return rect
 }
 
-// SetBorderPattern sets the line dash pattern of the border.
-func (rect *Rect) SetBorderPattern(borderPattern string) *Rect {
+// SetBorderDashPattern sets the line dash pattern of the border.
+func (rect *Rect) SetBorderDashPattern(borderPattern string) *Rect {
 	rect.borderPattern = borderPattern
 	return rect
 }

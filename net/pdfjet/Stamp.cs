@@ -270,15 +270,6 @@ public class Stamp : IDrawable {
     }
 
     /// <summary>
-    /// Sets clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
-    public Stamp SetRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
-    /// <summary>
     /// Writes this stamp to the document as a form XObject.
     /// Call it once, after drawing the content and before DrawOn.
     /// </summary>

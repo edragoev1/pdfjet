@@ -52,7 +52,7 @@ func Example06() {
 	container := pdfjet.NewContainer(400.0, 400.0)
 	container.SetLocation(100.0, 100.0)
 	container.SetBorderColor(color.Black)
-	container.SetRotationClockwise(90)
+	container.SetRotation(-90)
 
 	rect := pdfjet.NewRect(0.0, 0.0, 25.0, 25.0)
 	rect.SetBorderColor(color.Black)

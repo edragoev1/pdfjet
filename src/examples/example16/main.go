@@ -46,9 +46,8 @@ func Example16() {
 	textBox.SetWidth(400.0)
 	// If no height is specified the height will be calculated based on the text.
 	textBox.SetHeight(450.0)
-	// textBox.SetTextDirection(direction.LeftToRight)
-	// textBox.SetTextDirection(direction.BottomToTop)
-	// textBox.SetTextDirection(direction.TopToBottom)
+	// textBox.SetTextRotation(90)  // bottom to top
+	// textBox.SetTextRotation(270) // top to bottom
 
 	textBox.SetVerticalAlignment(alignment.Top)
 	// textBox.SetVerticalAlignment(alignment.Bottom)

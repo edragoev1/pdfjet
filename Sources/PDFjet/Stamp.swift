@@ -289,13 +289,6 @@ public class Stamp : Drawable {
         return self
     }
 
-    /// Sets a clockwise rotation in degrees.
-    @discardableResult
-    public func setRotationClockwise(_ degrees: Float) -> Stamp {
-        self.rotateDegrees = -degrees
-        return self
-    }
-
     ///
     /// Writes this stamp to the document as a form XObject.
     /// Call it once, after drawing the content and before drawOn.

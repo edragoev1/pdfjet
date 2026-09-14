@@ -28,7 +28,7 @@ public class Example_32 {
         float leading = font.getBodyHeight();
         List<String> lines = Util.readLines("examples/Example_02.java");
         for (String line : lines) {
-            page.drawString(font, font.getSize(), line, x, y, grayColor, colors);
+            new TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page);
             y += leading;
             if (y > (page.getHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

@@ -22,7 +22,7 @@ public class Example_32 {
         let leading = font.getBodyHeight()
         let lines = try Util.readLines("examples/Example_02.java")
         for line in lines {
-            page.drawString(font, font.getSize(), line, x, y, grayColor, colors)
+            TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page)
             y += leading
             if y > (page.getHeight() - 20.0) {
                 page = Page(pdf, Letter.PORTRAIT)

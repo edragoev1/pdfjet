@@ -139,8 +139,8 @@ func (tf *TextFrame) SetBorderWidth(borderWidth float32) *TextFrame {
 	return tf
 }
 
-// SetBorderPattern sets the dash pattern of the border, for example "[3] 0".
-func (tf *TextFrame) SetBorderPattern(borderPattern string) *TextFrame {
+// SetBorderDashPattern sets the dash pattern of the border, for example "[3] 0".
+func (tf *TextFrame) SetBorderDashPattern(borderPattern string) *TextFrame {
 	tf.borderPattern = borderPattern
 	return tf
 }
@@ -175,7 +175,7 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 		rect := NewRect(tf.x, tf.y, tf.w, bottom-tf.y)
 		rect.SetBorderColorRGB(tf.borderColor)
 		rect.SetBorderWidth(tf.borderWidth)
-		rect.SetBorderPattern(tf.borderPattern)
+		rect.SetBorderDashPattern(tf.borderPattern)
 		rect.DrawOn(page)
 	}
 

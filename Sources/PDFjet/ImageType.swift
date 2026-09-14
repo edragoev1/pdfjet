@@ -10,7 +10,7 @@
  * Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
  * See the Image class for more information.
  */
-public enum ImageType : Int {
+enum ImageType : Int {
     case JPG
     case PNG
     case BMP

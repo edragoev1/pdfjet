@@ -59,15 +59,6 @@ public class Container : IDrawable {
         return this;
     }
 
-    /// <summary>
-    /// Sets clockwise rotation.
-    /// </summary>
-    /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
-    public Container SetRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
     /// <summary>Returns the center of this container, which it rotates around.</summary>
     public float[] GetRotationCenter() {
         return new float[] {x + width/2f, y + height/2f};
@@ -77,8 +68,8 @@ public class Container : IDrawable {
     /// Sets a uniform scaling factor for both X and Y axes.
     /// </summary>
     /// <param name="factor">The scaling factor to apply.</param>
-    public Container SetScaleFactor(float factor) {
-        SetScaleFactorXY(factor, factor);
+    public Container ScaleBy(float factor) {
+        ScaleBy(factor, factor);
         return this;
     }
 
@@ -87,7 +78,7 @@ public class Container : IDrawable {
     /// </summary>
     /// <param name="sx">The scaling factor for X.</param>
     /// <param name="sy">The scaling factor for Y.</param>
-    public Container SetScaleFactorXY(float sx, float sy) {
+    public Container ScaleBy(float sx, float sy) {
         this.scaleX = sx;
         this.scaleY = sy;
         return this;

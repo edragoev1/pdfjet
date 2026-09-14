@@ -83,7 +83,7 @@ public class Example_35 {
         Container nested1 = new Container(200f, 200f);
         nested1.setLocation(0f, 0f);
         nested1.setRotation(30);
-        nested1.setScaleFactor(0.8f);
+        nested1.scaleBy(0.8f);
 
         Rect innerRect = new Rect(0f, 0f, 200f, 200f);
         innerRect.setFillColor(Color.blue);
@@ -110,7 +110,7 @@ public class Example_35 {
 
         container.add(nested2);
 
-        container.setRotationClockwise(45);
+        container.setRotation(-45);
         // Draw the entire hierarchy on the page
         container.drawOn(page);
 

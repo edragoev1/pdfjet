@@ -47,7 +47,7 @@ public class Example_06 {
         let container = Container(400.0, 400.0)
         container.setLocation(100.0, 100.0)
         container.setBorderColor(Color.black)
-        container.setRotationClockwise(90)
+        container.setRotation(-90)
 
         let rect = Rect(0.0, 0.0, 25.0, 25.0)
         rect.setBorderColor(Color.black)

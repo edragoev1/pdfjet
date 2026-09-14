@@ -117,7 +117,7 @@ class PNGImageTest {
     void anImageFromAPngHasItsSize() throws Exception {
         InputStream in = TestSupport.open("PngSuite/BASN2C08.PNG");
         try {
-            Image image = new Image(TestSupport.newPDF(), in, ImageType.PNG);
+            Image image = new Image(TestSupport.newPDF(), in);
             assertEquals(32f, image.getWidth(), 0f);
             assertEquals(32f, image.getHeight(), 0f);
         } finally {
@@ -262,7 +262,7 @@ class PNGImageTest {
         PDF pdf = new PDF(bos);
         InputStream in = TestSupport.open("PngSuite/BASN4A08.PNG");
         try {
-            Image image = new Image(pdf, in, ImageType.PNG);
+            Image image = new Image(pdf, in);
             image.drawOn(new Page(pdf, Letter.PORTRAIT));
         } finally {
             in.close();

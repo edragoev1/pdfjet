@@ -11,7 +11,7 @@ package com.pdfjet;
  * Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
  * See the Image class for more information.
  */
-public enum ImageType {
+enum ImageType {
     /** JPEG image */
     JPG,
     /** PNG image */

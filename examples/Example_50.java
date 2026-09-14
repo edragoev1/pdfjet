@@ -17,7 +17,7 @@ class Example_50 {
                 new BufferedInputStream(new FileInputStream(fileName)));
 
         FileInputStream stream = new FileInputStream("images/qrcode.png");
-        Image image = new Image(objects, stream, ImageType.PNG);
+        Image image = new Image(objects, stream);
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);
 

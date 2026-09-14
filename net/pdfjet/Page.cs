@@ -310,10 +310,10 @@ public class Page {
         watermark.DrawOn(this);
     }
 
-    /// <summary>Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.</summary>
-    public Page SetRotationClockwise(int degrees) {
+    /// <summary>Rotates this page counterclockwise when it is displayed, by 0, 90, 180 or 270 degrees; other angles are ignored.</summary>
+    public Page SetRotation(int degrees) {
         if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
-            this.rotateDegrees = degrees;
+            this.rotateDegrees = (360 - degrees) % 360;
         }
         return this;
     }
@@ -413,7 +413,7 @@ public class Page {
     /// Draws the string in the specified 0xRRGGBB color, highlighting the words in the colors map.
     /// The fallback font is used for characters the main font does not have.
     /// </summary>
-    public void DrawString(
+    internal void DrawString(
             Font font,
             Font fallbackFont,
             float fontSize,
@@ -442,7 +442,7 @@ public class Page {
     /// <param name="y">the y coordinate.</param>
     /// <param name="textColor">the text color as an RGB array.</param>
     /// <param name="colors">the words to highlight and their colors.</param>
-    public void DrawString(
+    internal void DrawString(
             Font font,
             Font fallbackFont,
             float fontSize,
@@ -501,7 +501,7 @@ public class Page {
     /// <param name="y">the y coordinate.</param>
     /// <param name="textColor">the text color as an RGB array.</param>
     /// <param name="highlightColors">the words to highlight and their colors.</param>
-    public void DrawString(
+    internal void DrawString(
             Font font,
             float fontSize,
             String str,

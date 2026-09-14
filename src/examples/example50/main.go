@@ -11,7 +11,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
-	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 )
 
 // Example50 shows how to fill in an existing PDF form.
@@ -33,7 +32,7 @@ func Example50(fileName string) {
 	}
 	defer file1.Close()
 	reader := bufio.NewReader(file1)
-	image1 := pdfjet.NewImageForObjects(&objects, reader, imagetype.PNG)
+	image1 := pdfjet.NewImageForObjects(&objects, reader)
 	image1.SetLocation(495.0, 65.0)
 	image1.ScaleBy(0.40)
 

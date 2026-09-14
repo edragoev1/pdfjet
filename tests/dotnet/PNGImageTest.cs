@@ -93,7 +93,7 @@ public class PNGImageTest {
     [Fact]
     public void AnImageFromAPngHasItsSize() {
         using (Stream stream = TestSupport.Open("PngSuite/BASN2C08.PNG")) {
-            Image image = new Image(TestSupport.NewPDF(), stream, ImageType.PNG);
+            Image image = new Image(TestSupport.NewPDF(), stream);
             Assert.Equal(32f, image.GetWidth());
             Assert.Equal(32f, image.GetHeight());
         }
@@ -255,7 +255,7 @@ public class PNGImageTest {
         MemoryStream output = new MemoryStream();
         PDF pdf = new PDF(output);
         using (Stream stream = TestSupport.Open("PngSuite/BASN4A08.PNG")) {
-            Image image = new Image(pdf, stream, ImageType.PNG);
+            Image image = new Image(pdf, stream);
             image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         }
         pdf.Complete();

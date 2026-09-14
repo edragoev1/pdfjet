@@ -958,13 +958,20 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the direction of the text.
+     * Sets the rotation of the text, counterclockwise: 0 reads left to right,
+     * 90 bottom to top and 270 top to bottom. Other angles read left to right.
      *
-     * @param textDirection the text direction.
+     * @param degrees the angle: 0, 90 or 270.
      * @return this TextBox object.
      */
-    public TextBox setTextDirection(Direction textDirection) {
-        this.textDirection = textDirection;
+    public TextBox setTextRotation(int degrees) {
+        if (degrees == 90) {
+            this.textDirection = Direction.BOTTOM_TO_TOP;
+        } else if (degrees == 270) {
+            this.textDirection = Direction.TOP_TO_BOTTOM;
+        } else {
+            this.textDirection = Direction.LEFT_TO_RIGHT;
+        }
         return this;
     }
 } // End of TextBox.java

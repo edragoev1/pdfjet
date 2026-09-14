@@ -83,7 +83,7 @@ import Testing
     }
 
     @Test func anImageFromAPngHasItsSize() throws {
-        let image = try Image(TestSupport.newPDF(), TestSupport.open("PngSuite/BASN2C08.PNG"), ImageType.PNG)
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("PngSuite/BASN2C08.PNG"))
         #expect(image.getWidth() == 32)
         #expect(image.getHeight() == 32)
     }
@@ -219,7 +219,7 @@ import Testing
 
     @Test func anImageFromAGrayscalePngWithAlphaIsGrayWithASoftMask() throws {
         let memory = MemoryPDF()
-        let image = try Image(memory.pdf, TestSupport.open("PngSuite/BASN4A08.PNG"), ImageType.PNG)
+        let image = try Image(memory.pdf, TestSupport.open("PngSuite/BASN4A08.PNG"))
         _ = image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)

@@ -136,7 +136,7 @@ public class Rect  : IDrawable {
     }
 
     /// <summary>Sets the dash pattern of the border.</summary>
-    public Rect SetBorderPattern(String borderPattern) {
+    public Rect SetBorderDashPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }

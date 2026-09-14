@@ -7,14 +7,15 @@ package pdfjet
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"math"
 	"os"
 	"strconv"
-	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/imagetype"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/internal/device"
+	"github.com/edragoev1/pdfjet/v9/src/internal/imagetype"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -43,17 +44,6 @@ type Image struct {
 // NewImageFromFile creates an image from the PNG, BMP or JPEG file at the specified path.
 // It panics if the extension is not supported or the file cannot be opened.
 func NewImageFromFile(pdf *PDF, filePath string) *Image {
-	var imageType imagetype.ImageType
-	if strings.HasSuffix(strings.ToLower(filePath), ".png") {
-		imageType = imagetype.PNG
-	} else if strings.HasSuffix(strings.ToLower(filePath), ".bmp") {
-		imageType = imagetype.BMP
-	} else if strings.HasSuffix(strings.ToLower(filePath), ".jpg") ||
-		strings.HasSuffix(strings.ToLower(filePath), ".jpeg") {
-		imageType = imagetype.JPG
-	} else {
-		panic("Invalid image file extension.")
-	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		panic(err)
@@ -64,14 +54,16 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 			panic("Error closing file: " + err.Error())
 		}
 	}(file)
-	return NewImage(pdf, bufio.NewReader(file), imageType)
+	return NewImage(pdf, bufio.NewReader(file))
 }
 
 // NewImage the main constructor for the Image class.
 // @param pdf the PDF to which we add this image.
 // @param inputStream the input stream to read the image from.
-// @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
-func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image {
+func NewImage(pdf *PDF, reader io.Reader) *Image {
+	buf := content.GetFromStream(reader)
+	imageType := imageTypeOf(buf)
+	reader = bytes.NewReader(buf)
 	image := new(Image)
 	image.altDescription = single.Space
 	image.actualText = single.Space
@@ -122,8 +114,10 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 // NewImageForObjects adds this image to the existing PDF objects.
 // @param objects the map to which we add this image.
 // @param inputStream the input stream to read the image from.
-// @param imageType could be imagetype.JPG, imagetype.PNG or imagetype.BMP
-func NewImageForObjects(objects *[]*PDFobj, reader io.Reader, imageType imagetype.ImageType) *Image {
+func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
+	buf := content.GetFromStream(reader)
+	imageType := imageTypeOf(buf)
+	reader = bytes.NewReader(buf)
 	image := new(Image)
 	image.altDescription = single.Space
 	image.actualText = single.Space
@@ -293,13 +287,13 @@ func (image *Image) SetGoToAction(key string) *Image {
 	return image
 }
 
-// SetRotationClockwise sets the image rotation to the specified number of degrees.
-// @param degrees the number of degrees.
-func (image *Image) SetRotationClockwise(degrees int) *Image {
+// SetRotation rotates this image counterclockwise by 0, 90, 180 or 270 degrees,
+// as every rotation in PDFjet turns. It panics on any other angle.
+func (image *Image) SetRotation(degrees int) *Image {
 	if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
 		panic("The rotation angle must be 0, 90, 180 or 270")
 	}
-	image.degrees = degrees
+	image.degrees = (360 - degrees) % 360
 	return image
 }
 
@@ -638,4 +632,19 @@ func (image *Image) ResizeToFit(page *Page, keepAspectRatio bool) {
 func (image *Image) SetFlipUpsideDown(flipUpsideDown bool) *Image {
 	image.flipUpsideDown = flipUpsideDown
 	return image
+}
+
+// imageTypeOf returns the type of the image from its first bytes, and panics
+// when the image is not a PNG, JPEG or BMP file.
+func imageTypeOf(buf []byte) imagetype.ImageType {
+	if len(buf) >= 4 && buf[0] == 0x89 && buf[1] == 'P' && buf[2] == 'N' && buf[3] == 'G' {
+		return imagetype.PNG
+	}
+	if len(buf) >= 2 && buf[0] == 0xFF && buf[1] == 0xD8 {
+		return imagetype.JPG
+	}
+	if len(buf) >= 2 && buf[0] == 'B' && buf[1] == 'M' {
+		return imagetype.BMP
+	}
+	panic("The image is not a PNG, JPEG or BMP file.")
 }

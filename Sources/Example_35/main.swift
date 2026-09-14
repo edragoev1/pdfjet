@@ -76,7 +76,7 @@ public class Example_35 {
         let nested1 = Container(200.0, 200.0)
         nested1.setLocation(0.0, 0.0)
         nested1.setRotation(30)
-        nested1.setScaleFactor(0.8)
+        nested1.scaleBy(0.8)
 
         let innerRect = Rect(0.0, 0.0, 200.0, 200.0)
         innerRect.setFillColor(Color.blue)
@@ -103,7 +103,7 @@ public class Example_35 {
 
         container.add(nested2)
 
-        container.setRotationClockwise(45)
+        container.setRotation(-45)
         // Draw the entire hierarchy on the page
         _ = container.drawOn(page)
 

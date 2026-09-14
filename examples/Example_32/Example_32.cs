@@ -28,7 +28,7 @@ public class Example_32 {
         float leading = font.GetBodyHeight();
         List<String> lines = Util.ReadLines("examples/Example_02.java");
         foreach (String line in lines) {
-            page.DrawString(font, font.GetSize(), line, x, y, grayColor, colors);
+            new TextLine(font, line).SetTextColor(grayColor).SetHighlightColors(colors).SetLocation(x, y).DrawOn(page);
             y += leading;
             if (y > (page.GetHeight() - 20f)) {
                 page = new Page(pdf, Letter.PORTRAIT);

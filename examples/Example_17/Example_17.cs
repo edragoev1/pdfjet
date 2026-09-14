@@ -13,256 +13,256 @@ public class Example_17 {
 
         String fileName = "PngSuite/BASN3P08.PNG";
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image1 = new Image(pdf, fis, ImageType.PNG);
+        Image image1 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image2 = new Image(pdf, fis, ImageType.PNG);
+        Image image2 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image3 = new Image(pdf, fis, ImageType.PNG);
+        Image image3 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN3P01.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image4 = new Image(pdf, fis, ImageType.PNG);
+        Image image4 = new Image(pdf, fis);
 
         fileName = "PngSuite/S01N3P01.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image5 = new Image(pdf, fis, ImageType.PNG);
+        Image image5 = new Image(pdf, fis);
 
         fileName = "PngSuite/S02N3P01.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image6 = new Image(pdf, fis, ImageType.PNG);
+        Image image6 = new Image(pdf, fis);
 
         fileName = "PngSuite/S03N3P01.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image7 = new Image(pdf, fis, ImageType.PNG);
+        Image image7 = new Image(pdf, fis);
 
         fileName = "PngSuite/S04N3P01.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image8 = new Image(pdf, fis, ImageType.PNG);
+        Image image8 = new Image(pdf, fis);
 
         fileName = "PngSuite/S05N3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image9 = new Image(pdf, fis, ImageType.PNG);
+        Image image9 = new Image(pdf, fis);
 
         fileName = "PngSuite/S06N3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image10 = new Image(pdf, fis, ImageType.PNG);
+        Image image10 = new Image(pdf, fis);
 
         fileName = "PngSuite/S07N3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image11 = new Image(pdf, fis, ImageType.PNG);
+        Image image11 = new Image(pdf, fis);
 
         fileName = "PngSuite/S08N3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image12 = new Image(pdf, fis, ImageType.PNG);
+        Image image12 = new Image(pdf, fis);
 
         fileName = "PngSuite/S09N3P02.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image13 = new Image(pdf, fis, ImageType.PNG);
+        Image image13 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/S32N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image14 = new Image(pdf, fis, ImageType.PNG);
+        Image image14 = new Image(pdf, fis);
 
         fileName = "PngSuite/S33N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image15 = new Image(pdf, fis, ImageType.PNG);
+        Image image15 = new Image(pdf, fis);
 
         fileName = "PngSuite/S34N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image16 = new Image(pdf, fis, ImageType.PNG);
+        Image image16 = new Image(pdf, fis);
 
         fileName = "PngSuite/S35N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image17 = new Image(pdf, fis, ImageType.PNG);
+        Image image17 = new Image(pdf, fis);
 
         fileName = "PngSuite/S36N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image18 = new Image(pdf, fis, ImageType.PNG);
+        Image image18 = new Image(pdf, fis);
 
         fileName = "PngSuite/S37N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image19 = new Image(pdf, fis, ImageType.PNG);
+        Image image19 = new Image(pdf, fis);
 
         fileName = "PngSuite/S38N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image20 = new Image(pdf, fis, ImageType.PNG);
+        Image image20 = new Image(pdf, fis);
 
         fileName = "PngSuite/S39N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image21 = new Image(pdf, fis, ImageType.PNG);
+        Image image21 = new Image(pdf, fis);
 
         fileName = "PngSuite/S40N3P04.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image22 = new Image(pdf, fis, ImageType.PNG);
+        Image image22 = new Image(pdf, fis);
 
 
         fileName = "images/qrcode.png";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image23 = new Image(pdf, fis, ImageType.PNG);
+        Image image23 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/F00N2C08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image24 = new Image(pdf, fis, ImageType.PNG);
+        Image image24 = new Image(pdf, fis);
 
         fileName = "PngSuite/F01N2C08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image25 = new Image(pdf, fis, ImageType.PNG);
+        Image image25 = new Image(pdf, fis);
 
         fileName = "PngSuite/F02N2C08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image26 = new Image(pdf, fis, ImageType.PNG);
+        Image image26 = new Image(pdf, fis);
 
         fileName = "PngSuite/F03N2C08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image27 = new Image(pdf, fis, ImageType.PNG);
+        Image image27 = new Image(pdf, fis);
 
         fileName = "PngSuite/F04N2C08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image28 = new Image(pdf, fis, ImageType.PNG);
+        Image image28 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/Z00N2C08.PNG";
         // color, no interlacing, compression level 0 (none)
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image29 = new Image(pdf, fis, ImageType.PNG);
+        Image image29 = new Image(pdf, fis);
 
         fileName = "PngSuite/Z03N2C08.PNG";
         // color, no interlacing, compression level 3
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image30 = new Image(pdf, fis, ImageType.PNG);
+        Image image30 = new Image(pdf, fis);
 
         fileName = "PngSuite/Z06N2C08.PNG";
         // color, no interlacing, compression level 6 (default)
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image31 = new Image(pdf, fis, ImageType.PNG);
+        Image image31 = new Image(pdf, fis);
 
         fileName = "PngSuite/Z09N2C08.PNG";
         // color, no interlacing, compression level 9 (maximum)
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image32 = new Image(pdf, fis, ImageType.PNG);
+        Image image32 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/F00N0G08.PNG";
         // 8 bit greyscale, no interlacing, filter-type 0
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image33 = new Image(pdf, fis, ImageType.PNG);
+        Image image33 = new Image(pdf, fis);
 
         fileName = "PngSuite/F01N0G08.PNG";
         // 8 bit greyscale, no interlacing, filter-type 1
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image34 = new Image(pdf, fis, ImageType.PNG);
+        Image image34 = new Image(pdf, fis);
 
         fileName = "PngSuite/F02N0G08.PNG";
         // 8 bit greyscale, no interlacing, filter-type 2
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image35 = new Image(pdf, fis, ImageType.PNG);
+        Image image35 = new Image(pdf, fis);
 
         fileName = "PngSuite/F03N0G08.PNG";
         // 8 bit greyscale, no interlacing, filter-type 3
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image36 = new Image(pdf, fis, ImageType.PNG);
+        Image image36 = new Image(pdf, fis);
 
         fileName = "PngSuite/F04N0G08.PNG";
         // 8 bit greyscale, no interlacing, filter-type 4
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image37 = new Image(pdf, fis, ImageType.PNG);
+        Image image37 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/BASN0G08.PNG";
         // 8 bit grayscale
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image38 = new Image(pdf, fis, ImageType.PNG);
+        Image image38 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN0G04.PNG";
         // 4 bit grayscale
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image39 = new Image(pdf, fis, ImageType.PNG);
+        Image image39 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN0G02.PNG";
         // 2 bit grayscale
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image40 = new Image(pdf, fis, ImageType.PNG);
+        Image image40 = new Image(pdf, fis);
 
         fileName = "PngSuite/BASN0G01.PNG";
         // Black and White image
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image41 = new Image(pdf, fis, ImageType.PNG);
+        Image image41 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/BGAN6A08.PNG";
         // Image with alpha transparency
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image42 = new Image(pdf, fis, ImageType.PNG);
+        Image image42 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/OI1N2C16.PNG";
         // Color image with 1 IDAT chunk
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image43 = new Image(pdf, fis, ImageType.PNG);
+        Image image43 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI4N2C16.PNG";
         // Color image with 2 IDAT chunks
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image44 = new Image(pdf, fis, ImageType.PNG);
+        Image image44 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI4N2C16.PNG";
         // Color image with 4 IDAT chunks
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image45 = new Image(pdf, fis, ImageType.PNG);
+        Image image45 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI9N2C16.PNG";
         // IDAT chunks with length == 1
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image46 = new Image(pdf, fis, ImageType.PNG);
+        Image image46 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/OI1N0G16.PNG";
         // Grayscale image with 1 IDAT chunk
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image47 = new Image(pdf, fis, ImageType.PNG);
+        Image image47 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI4N0G16.PNG";
         // Grayscale image with 2 IDAT chunks
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image48 = new Image(pdf, fis, ImageType.PNG);
+        Image image48 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI4N0G16.PNG";
         // Grayscale image with 4 IDAT chunks
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image49 = new Image(pdf, fis, ImageType.PNG);
+        Image image49 = new Image(pdf, fis);
 
         fileName = "PngSuite/OI9N0G16.PNG";
         // IDAT chunks with length == 1
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image50 = new Image(pdf, fis, ImageType.PNG);
+        Image image50 = new Image(pdf, fis);
 
 
         fileName = "PngSuite/TBBN3P08.PNG";
         // Transparent, black background chunk
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image51 = new Image(pdf, fis, ImageType.PNG);
+        Image image51 = new Image(pdf, fis);
 
         fileName = "PngSuite/TBGN3P08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image52 = new Image(pdf, fis, ImageType.PNG);
+        Image image52 = new Image(pdf, fis);
 
         fileName = "PngSuite/TBWN3P08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image53 = new Image(pdf, fis, ImageType.PNG);
+        Image image53 = new Image(pdf, fis);
 
         fileName = "PngSuite/TBYN3P08.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image54 = new Image(pdf, fis, ImageType.PNG);
+        Image image54 = new Image(pdf, fis);
 
         fileName = "images/LGK_ADDRESS.PNG";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-        Image image55 = new Image(pdf, fis, ImageType.PNG);
+        Image image55 = new Image(pdf, fis);
 
 
         Page page = new Page(pdf, A4.PORTRAIT);

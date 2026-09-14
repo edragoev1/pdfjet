@@ -80,7 +80,7 @@ public class Example_35 {
         Container nested1 = new Container(200f, 200f);
         nested1.SetLocation(0f, 0f);
         nested1.SetRotation(30);
-        nested1.SetScaleFactor(0.8f);
+        nested1.ScaleBy(0.8f);
 
         Rect innerRect = new Rect(0f, 0f, 200f, 200f);
         innerRect.SetFillColor(Color.blue);
@@ -107,7 +107,7 @@ public class Example_35 {
 
         container.Add(nested2);
 
-        container.SetRotationClockwise(45);
+        container.SetRotation(-45);
         // Draw the entire hierarchy on the page
         container.DrawOn(page);
 

@@ -341,7 +341,7 @@ final public class Page {
      * @param color the text color as a 0xRRGGBB value.
      * @param colors map used to highlight specific words.
      */
-    public void drawString(
+    void drawString(
             Font font,
             Font fallbackFont,
             float fontSize,
@@ -371,7 +371,7 @@ final public class Page {
      *  @param textColor the text color.
      *  @param highlightColors map used to highlight specific words.
      */
-    public void drawString(
+    void drawString(
             Font font,
             Font fallbackFont,
             float fontSize,
@@ -444,7 +444,7 @@ final public class Page {
      *  @param textColor the text color.
      *  @param highlightColors map used to highlight specific words.
      */
-    public void drawString(
+    void drawString(
             Font font,
             float fontSize,
             String str,
@@ -2319,14 +2319,15 @@ final public class Page {
     }
 
     /**
-     * Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
+     * Rotates this page counterclockwise when it is displayed, as every
+     * rotation in PDFjet turns. Other angles are ignored.
      *
-     * @param degrees the rotation angle in degrees, clockwise.
+     * @param degrees the angle: 0, 90, 180 or 270.
      * @return this Page object.
      */
-    public Page setRotationClockwise(int degrees) {
+    public Page setRotation(int degrees) {
         if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
-            this.rotateDegrees = degrees;
+            this.rotateDegrees = (360 - degrees) % 360;
         }
         return this;
     }

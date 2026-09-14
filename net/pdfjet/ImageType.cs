@@ -12,7 +12,7 @@ namespace PDFjet.NET {
 /// Supported types: ImageType.JPG, ImageType.PNG and ImageType.BMP
 /// See the Image class for more information.
 /// </summary>
-public enum ImageType {
+internal enum ImageType {
     /// <summary>JPEG image.</summary>
     JPG,
     /// <summary>PNG image.</summary>

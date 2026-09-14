@@ -172,13 +172,6 @@ public class Arc : Drawable {
         return self
     }
 
-    /// Rotates this arc clockwise by the specified degrees.
-    @discardableResult
-    public func setRotationClockwise(_ degrees: Float) -> Arc {
-        self.rotateDegrees = -degrees
-        return self
-    }
-
     /// Rotates this arc counterclockwise by the specified degrees.
     @discardableResult
     public func setRotation(_ degrees: Float) -> Arc {

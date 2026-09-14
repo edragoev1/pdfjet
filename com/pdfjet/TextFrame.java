@@ -193,7 +193,7 @@ public class TextFrame implements Drawable {
      * @param borderPattern the dash pattern, for example "[3] 0".
      * @return this TextFrame object.
      */
-    public TextFrame setBorderPattern(String borderPattern) {
+    public TextFrame setBorderDashPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }
@@ -233,7 +233,7 @@ public class TextFrame implements Drawable {
             Rect rect = new Rect(x, y, w, bottom - y);
             rect.setBorderColor(borderColor);
             rect.setBorderWidth(borderWidth);
-            rect.setBorderPattern(borderPattern);
+            rect.setBorderDashPattern(borderPattern);
             rect.drawOn(page);
         }
 

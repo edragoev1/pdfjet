@@ -195,7 +195,7 @@ public class Rect : Drawable {
 
     /// Sets the dash pattern of the border.
     @discardableResult
-    public func setBorderPattern(_ borderPattern: String) -> Rect {
+    public func setBorderDashPattern(_ borderPattern: String) -> Rect {
         self.borderPattern = borderPattern
         return self
     }

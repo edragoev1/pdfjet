@@ -50,9 +50,7 @@ final public class Image implements Drawable {
      * @throws Exception  If an input or output exception occurred
      */
     public Image(PDF pdf, String filePath) throws Exception {
-        this(pdf, new FileInputStream(filePath),
-                filePath.toLowerCase().endsWith(".png") ? ImageType.PNG :
-                filePath.toLowerCase().endsWith(".bmp") ? ImageType.BMP : ImageType.JPG);
+        this(pdf, new FileInputStream(filePath));
     }
 
     /**
@@ -60,10 +58,15 @@ final public class Image implements Drawable {
      *
      * @param pdf the PDF to which we add this image.
      * @param inputStream the input stream to read the image from.
-     * @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
      * @throws Exception  If an input or output exception occurred
      */
-    public Image(PDF pdf, InputStream inputStream, ImageType imageType) throws Exception {
+    public Image(PDF pdf, InputStream inputStream) throws Exception {
+        this(pdf, Content.getFromStream(inputStream));
+    }
+
+    private Image(PDF pdf, byte[] bytes) throws Exception {
+        ImageType imageType = typeOf(bytes);
+        InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -109,10 +112,15 @@ final public class Image implements Drawable {
      *
      * @param objects the map to which we add this image.
      * @param inputStream the input stream to read the image from.
-     * @param imageType ImageType.JPG, ImageType.PNG and ImageType.BMP.
      * @throws Exception  If an input or output exception occurred
      */
-    public Image(List<PDFobj> objects, InputStream inputStream, ImageType imageType) throws Exception {
+    public Image(List<PDFobj> objects, InputStream inputStream) throws Exception {
+        this(objects, Content.getFromStream(inputStream));
+    }
+
+    private Image(List<PDFobj> objects, byte[] bytes) throws Exception {
+        ImageType imageType = typeOf(bytes);
+        InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -290,17 +298,17 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Sets the image rotation to the specified number of degrees.
+     * Rotates this image counterclockwise, as every rotation in PDFjet turns.
      *
-     * @param degrees the number of degrees.
+     * @param degrees the angle: 0, 90, 180 or 270.
      * @return this Image object.
-     * @throws Exception if there is an issue.
+     * @throws Exception if the angle is not one of the four.
      */
-    public Image setRotationClockwise(int degrees) throws Exception {
+    public Image setRotation(int degrees) throws Exception {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
         }
-        this.degrees = degrees;
+        this.degrees = (360 - degrees) % 360;
         return this;
     }
 
@@ -667,5 +675,19 @@ final public class Image implements Drawable {
     public Image setFlipUpsideDown(boolean flipUpsideDown) {
         this.flipUpsideDown = flipUpsideDown;
         return this;
+    }
+
+    /** Returns the type of the image from its first bytes. */
+    static ImageType typeOf(byte[] bytes) throws Exception {
+        if (bytes.length >= 4 && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') {
+            return ImageType.PNG;
+        }
+        if (bytes.length >= 2 && (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xD8) {
+            return ImageType.JPG;
+        }
+        if (bytes.length >= 2 && bytes[0] == 'B' && bytes[1] == 'M') {
+            return ImageType.BMP;
+        }
+        throw new Exception("The image is not a PNG, JPEG or BMP file.");
     }
 }   // End of Image.java

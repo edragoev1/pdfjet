@@ -131,7 +131,7 @@ public class TextFrame : Drawable {
 
     /// Sets the dash pattern of the border, for example "[3] 0".
     @discardableResult
-    public func setBorderPattern(_ borderPattern: String) -> TextFrame {
+    public func setBorderDashPattern(_ borderPattern: String) -> TextFrame {
         self.borderPattern = borderPattern
         return self
     }
@@ -167,7 +167,7 @@ public class TextFrame : Drawable {
             let rect = Rect(x, y, w, bottom - y)
             rect.setBorderColor(borderColor)
             rect.setBorderWidth(borderWidth)
-            rect.setBorderPattern(borderPattern)
+            rect.setBorderDashPattern(borderPattern)
             rect.drawOn(page)
         }
 

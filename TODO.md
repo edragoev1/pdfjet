@@ -295,6 +295,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       draws with the sizes of its fonts like `BarChart`, the palette colors a
       series without a color, and Example_09 computes its own trend line, in
       the four ports; Example_09 draws the same PDF.
+- ✅ **B** The rename sweep (Sep 14): one `setRotation`, counterclockwise, on
+      `Arc`, `Container`, `Stamp`, `Image` and `Page`, and `TextBox.setTextRotation`
+      for `setTextDirection`; `setBorderDashPattern` for `setBorderPattern`;
+      `Container.scaleBy`; `Page.drawString` down to three public forms, with
+      Example_32 on `TextLine`; `Image` detects PNG, JPEG and BMP from the first
+      bytes and `ImageType` is internal; the gap (points) and spacing (multiple)
+      rule documented. Only Example_32 draws differently: `TextLine` sets the
+      color before each line.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

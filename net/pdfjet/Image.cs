@@ -36,9 +36,7 @@ public class Image : IDrawable {
     /// </summary>
     /// <param name="pdf">the PDF to which we add this image.</param>
     /// <param name="filePath">the file path to the image file.</param>
-    public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read),
-            filePath.ToLower().EndsWith(".png") ? ImageType.PNG :
-            filePath.ToLower().EndsWith(".bmp") ? ImageType.BMP : ImageType.JPG) {
+    public Image(PDF pdf, String filePath) : this(pdf, new FileStream(filePath, FileMode.Open, FileAccess.Read)) {
     }
 
     /// <summary>
@@ -46,8 +44,12 @@ public class Image : IDrawable {
     /// </summary>
     /// <param name="pdf">the page to draw this image on.</param>
     /// <param name="inputStream">the input stream to read the image from.</param>
-    /// <param name="imageType">ImageType.JPG, ImageType.PNG or ImageType.BMP.</param>
-    public Image(PDF pdf, Stream inputStream, ImageType imageType) {
+    public Image(PDF pdf, Stream inputStream) : this(pdf, Content.GetFromStream(inputStream)) {
+    }
+
+    private Image(PDF pdf, byte[] bytes) {
+        ImageType imageType = TypeOf(bytes);
+        Stream inputStream = new MemoryStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -88,19 +90,9 @@ public class Image : IDrawable {
         inputStream.Dispose();
     }
 
-    // Method for creating images from byte[] image data
-    /// <summary>Creates an image of the specified type from a byte array.</summary>
-    internal static Image CreateImage(PDF pdf, byte[] imageBytes, ImageType imageType) {
-        MemoryStream ms = new MemoryStream(imageBytes);
-        Image image = new Image(pdf, ms, imageType);
-        ms.Dispose();
-        return image;
-    }
-
-    // Convenience method for creating .PNG images
-    /// <summary>Creates a PNG image from a byte array.</summary>
+    // Creates an image from the bytes of a PNG, JPEG or BMP file.
     internal static Image CreateImage(PDF pdf, byte[] imageBytes) {
-        return CreateImage(pdf, imageBytes, ImageType.PNG);
+        return new Image(pdf, imageBytes);
     }
 
     /// <summary>
@@ -108,8 +100,12 @@ public class Image : IDrawable {
     /// </summary>
     /// <param name="objects">the objects of the existing PDF.</param>
     /// <param name="inputStream">the input stream to read the image from.</param>
-    /// <param name="imageType">ImageType.JPG, ImageType.PNG and ImageType.BMP.</param>
-    public Image(List<PDFobj> objects, Stream inputStream, ImageType imageType) {
+    public Image(List<PDFobj> objects, Stream inputStream) : this(objects, Content.GetFromStream(inputStream)) {
+    }
+
+    private Image(List<PDFobj> objects, byte[] bytes) {
+        ImageType imageType = TypeOf(bytes);
+        Stream inputStream = new MemoryStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
             JPGImage jpg = new JPGImage(inputStream);
@@ -224,16 +220,12 @@ public class Image : IDrawable {
         return this.ScaleBy(factor, factor);
     }
 
-    /// <summary>
-    /// Sets the image rotation to the specified number of degrees.
-    /// </summary>
-    /// <param name="degrees">the number of degrees.</param>
-    /// <returns>this Image object.</returns>
-    public Image SetRotationClockwise(int degrees) {
+    /// <summary>Rotates this image counterclockwise by 0, 90, 180 or 270 degrees, as every rotation in PDFjet turns.</summary>
+    public Image SetRotation(int degrees) {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
         }
-        this.degrees = degrees;
+        this.degrees = (360 - degrees) % 360;
         return this;
     }
 
@@ -642,6 +634,20 @@ public class Image : IDrawable {
         obj.number = objects.Count + 1;
         objects.Add(obj);
         objNumber = obj.number;
+    }
+
+    // The type of the image, from its first bytes.
+    internal static ImageType TypeOf(byte[] bytes) {
+        if (bytes.Length >= 4 && bytes[0] == 0x89 && bytes[1] == (byte) 'P' && bytes[2] == (byte) 'N' && bytes[3] == (byte) 'G') {
+            return ImageType.PNG;
+        }
+        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+            return ImageType.JPG;
+        }
+        if (bytes.Length >= 2 && bytes[0] == (byte) 'B' && bytes[1] == (byte) 'M') {
+            return ImageType.BMP;
+        }
+        throw new Exception("The image is not a PNG, JPEG or BMP file.");
     }
 }   // End of Image.cs
 }   // End of namespace PDFjet.NET

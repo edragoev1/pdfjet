@@ -162,12 +162,6 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
-    public Arc SetRotationClockwise(float degrees) {
-        this.rotateDegrees = -degrees;
-        return this;
-    }
-
     /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
     public Arc SetRotation(float degrees) {
         this.rotateDegrees = degrees;

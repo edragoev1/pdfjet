@@ -125,12 +125,6 @@ func (arc *Arc) SetFillColorRGB(rgbColor [3]float32) *Arc {
 	return arc
 }
 
-// SetRotationClockwise rotates this arc clockwise by the specified degrees.
-func (arc *Arc) SetRotationClockwise(degrees float32) *Arc {
-	arc.rotateDegrees = -degrees
-	return arc
-}
-
 // SetRotation rotates this arc counterclockwise by the specified degrees.
 func (arc *Arc) SetRotation(degrees float32) *Arc {
 	arc.rotateDegrees = degrees

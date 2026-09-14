@@ -66,8 +66,6 @@ public class Example_05 {
                 .setSweepDegreesCW(270.0)
                 // .setSweepDegreesCCW(270.0)
                 // .scaleBy(2.0)
-                // .setRotationClockwise(90.0)
-                // .setRotation(90.0)
                 .setStrokeWidth(5.0)
                 .setStrokeColor(Color.blue)
                 .drawOn(page)
@@ -80,8 +78,7 @@ public class Example_05 {
                 .setStrokeWidth(1.5)
                 .setStrokeColor(Color.blue)
                 .scaleBy(0.5)
-                .setRotationClockwise(45.0)
-                // .setRotation(45.0)
+                .setRotation(-45.0)
                 .drawOn(page)
 
         try pdf.complete()

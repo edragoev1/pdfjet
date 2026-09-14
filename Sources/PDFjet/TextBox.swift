@@ -729,10 +729,16 @@ public class TextBox : Drawable {
         return self
     }
 
-    /// Sets the direction of the text.
+    /// Sets the rotation of the text, counterclockwise: 0 reads left to right, 90 bottom to top and 270 top to bottom. Other angles read left to right.
     @discardableResult
-    public func setTextDirection(_ textDirection: Direction) -> TextBox {
-        self.textDirection = textDirection
+    public func setTextRotation(_ degrees: Int) -> TextBox {
+        if degrees == 90 {
+            self.textDirection = Direction.BOTTOM_TO_TOP
+        } else if degrees == 270 {
+            self.textDirection = Direction.TOP_TO_BOTTOM
+        } else {
+            self.textDirection = Direction.LEFT_TO_RIGHT
+        }
         return self
     }
 }   // End of TextBox.swift

@@ -31,7 +31,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   returns the bottom right corner of the outer circle.
 - `Box` is removed in favor of `Rect`: `setColor` becomes `setBorderColor`, or
   `setFillColor` with `setFillShape(true)`, and `setLineWidth` and `setPattern`
-  become `setBorderWidth` and `setBorderPattern`.
+  become `setBorderWidth` and `setBorderDashPattern`.
 - A page size is an immutable `PageSize` with `getWidth` and `getHeight`. The
   `Page` and `BigTable` constructors and `Table.drawOn(pdf, pages, pageSize)`
   take one, and the Go page sizes are functions such as `letter.Portrait()`.
@@ -59,11 +59,29 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   C# and Swift, as in Go; `Paragraph.getX1`, `getY1`, `getX2`, `getY2`,
   `getTextX` and `getTextY` and `Title.getPrefix` and `getTextLine` are the
   getters, in the four ports.
+- One rotation: every rotation setter is `setRotation(degrees)` and positive
+  angles turn counterclockwise, as `setTextRotation` always did. The
+  `setRotationClockwise` of `Arc`, `Container`, `Stamp`, `Image` and `Page` is
+  gone (`setRotation(-45)` turns clockwise), and `TextBox.setTextDirection`
+  is `setTextRotation(0, 90 or 270)`; `Direction` stays with barcodes.
+- One dash pattern name: `Rect` and `TextFrame.setBorderPattern` are
+  `setBorderDashPattern`, like `setStrokeDashPattern` and
+  `setGridLineDashPattern`. `Container.setScaleFactor` and `setScaleFactorXY`
+  are `scaleBy`, like every other shape and image.
+- `Page.drawString` keeps three public forms: with a font size, with a fallback
+  font, and with a letter spacing; the color and highlight forms are internal
+  and `TextLine` is the way to draw colored or highlighted text (Example_32).
+- `Image` reads the type of an image from its first bytes: the constructors take
+  the stream alone, and `ImageType` is internal.
+- A spacing setter that takes points is a gap (`TextBox.setLineGap`,
+  `TextFrame.setParagraphGap`) and one that takes a multiple is a spacing
+  (`TextBlock.setLineSpacing`, `TextColumn.setLineSpacing` and
+  `setParagraphSpacing`); the doc comments say which.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".
 - Constants have types. The Go constant packages are typed, `PathOperator`,
-  `ImageType`, `PageLayout`, `PageMode`, `ScriptPosition`,
+  `PageLayout`, `PageMode`, `ScriptPosition`,
   `ErrorCorrectionLevel`, `Shape` and `StructElem` are enums in Java, C# and
   Swift, and `Align` is gone: every alignment is an `Alignment`. The `Point`
   shape constants are `Shape.CIRCLE` and so on, `Point.setShape`,

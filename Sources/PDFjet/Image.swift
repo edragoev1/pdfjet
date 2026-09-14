@@ -37,6 +37,7 @@ public class Image : Drawable {
     }
 
     enum ImageError: Error {
+    case format(String)
         case rotation(String)
     }
 
@@ -47,13 +48,7 @@ public class Image : Drawable {
     /// - Parameter filePath: the path to the image file.
     ///
     public convenience init(_ pdf: PDF, _ filePath: String) throws {
-        if (filePath.lowercased().hasSuffix(".png")) {
-            try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.PNG)
-        } else if (filePath.lowercased().hasSuffix(".bmp")) {
-            try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.BMP)
-        } else {
-            try self.init(pdf, InputStream(fileAtPath: filePath)!, ImageType.JPG)
-        }
+        try self.init(pdf, InputStream(fileAtPath: filePath)!)
     }
 
     ///
@@ -61,12 +56,14 @@ public class Image : Drawable {
     ///
     /// - Parameter pdf: the PDF to which we add this image.
     /// - Parameter stream: the input stream to read the image from.
-    /// - Parameter imageType: ImageType.JPG, ImageType.PNG and ImageType.BMP.
     ///
-    public init(
-            _ pdf: PDF,
-            _ stream: InputStream,
-            _ imageType: ImageType) throws {
+    public convenience init(_ pdf: PDF, _ stream: InputStream) throws {
+        try self.init(pdf, try Content.getFromStream(stream))
+    }
+
+    private init(_ pdf: PDF, _ bytes: [UInt8]) throws {
+        let imageType = try Image.typeOf(bytes)
+        let stream = InputStream(data: Data(bytes))
         stream.open()
         if imageType == ImageType.JPG {
             let jpg = try JPGImage(stream)
@@ -108,12 +105,14 @@ public class Image : Drawable {
     ///
     /// - Parameter objects: the map to which we add this image.
     /// - Parameter stream: the input stream to read the image from.
-    /// - Parameter imageType: ImageType.JPG, ImageType.PNG and ImageType.BMP.
     ///
-    public init(
-            _ objects: inout [PDFobj],
-            _ stream: InputStream,
-            _ imageType: ImageType) throws {
+    public convenience init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
+        try self.init(&objects, try Content.getFromStream(stream))
+    }
+
+    private init(_ objects: inout [PDFobj], _ bytes: [UInt8]) throws {
+        let imageType = try Image.typeOf(bytes)
+        let stream = InputStream(data: Data(bytes))
         stream.open()
         var data: [UInt8]
         var alpha = [UInt8]()
@@ -278,17 +277,13 @@ public class Image : Drawable {
         return self
     }
 
-    ///
-    /// Sets the image rotation to the specified number of degrees.
-    ///
-    /// - Parameter degrees: the number of degrees.
-    ///
+    /// Rotates this image counterclockwise by 0, 90, 180 or 270 degrees, as every rotation in PDFjet turns.
     @discardableResult
-    public func setRotationClockwise(_ degrees: Int) throws -> Image {
+    public func setRotation(_ degrees: Int) throws -> Image {
         if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
             throw ImageError.rotation("The rotation angle must be 0, 90, 180 or 270")
         }
-        self.degrees = degrees
+        self.degrees = (360 - degrees) % 360
         return self
     }
 
@@ -665,5 +660,19 @@ public class Image : Drawable {
     public func setFlipUpsideDown(_ flipUpsideDown: Bool) -> Image {
         self.flipUpsideDown = flipUpsideDown
         return self
+    }
+
+    /// Returns the type of the image from its first bytes.
+    static func typeOf(_ bytes: [UInt8]) throws -> ImageType {
+        if bytes.count >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 {
+            return ImageType.PNG
+        }
+        if bytes.count >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8 {
+            return ImageType.JPG
+        }
+        if bytes.count >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D {
+            return ImageType.BMP
+        }
+        throw ImageError.format("The image is not a PNG, JPEG or BMP file.")
     }
 }   // End of Image.swift

@@ -85,7 +85,7 @@ func Example05() {
 	ellipse.SetStrokeWidth(1.5)
 	ellipse.SetStrokeColor(color.Blue)
 	ellipse.ScaleBy(0.5)
-	ellipse.SetRotationClockwise(45.0)
+	ellipse.SetRotation(-45.0)
 	// ellipse.SetRotation(45.0)
 	ellipse.DrawOn(page)
 

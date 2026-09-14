@@ -278,7 +278,7 @@ public class Page {
 
     /// Draws the string in the specified 0xRRGGBB color, highlighting the words in the colors map.
     /// The fallback font is used for characters the main font does not have.
-    public final func drawString(
+    final func drawString(
             _ font: Font,
             _ fallbackFont: Font?,
             _ fontSize: Float,
@@ -308,7 +308,7 @@ public class Page {
     /// - Parameter textColor: the text color as an array of red, green and blue values.
     /// - Parameter highlightColors: the words to highlight and their colors, or nil.
     ///
-    public final func drawString(
+    final func drawString(
             _ font: Font,
             _ fallbackFont: Font?,
             _ fontSize: Float,
@@ -372,7 +372,7 @@ public class Page {
     /// - Parameter textColor: the text color as an array of red, green and blue values.
     /// - Parameter highlightColors: the words to highlight and their colors, or nil.
     ///
-    public final func drawString(
+    final func drawString(
             _ font: Font,
             _ fontSize: Float,
             _ text: String?,
@@ -2151,13 +2151,11 @@ public class Page {
         watermark.drawOn(self)
     }
 
-    /// Sets the clockwise rotation of this page. Only 0, 90, 180 and 270 are accepted; other values are ignored.
-    ///
-    /// - Parameter degrees: the rotation angle in degrees, clockwise.
+    /// Rotates this page counterclockwise when it is displayed, by 0, 90, 180 or 270 degrees; other angles are ignored.
     @discardableResult
-    public func setRotationClockwise(_ degrees: Int) -> Page {
+    public func setRotation(_ degrees: Int) -> Page {
         if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
-            self.rotateDegrees = Float(degrees)
+            self.rotateDegrees = Float((360 - degrees) % 360)
         }
         return self
     }

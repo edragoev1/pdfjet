@@ -251,12 +251,6 @@ func (s *Stamp) SetRotation(degrees float64) *Stamp {
 	return s
 }
 
-// SetRotationClockwise sets a clockwise rotation, in degrees.
-func (s *Stamp) SetRotationClockwise(degrees float64) *Stamp {
-	s.rotateDegrees = float32(-degrees)
-	return s
-}
-
 // Complete writes this stamp to the document as a form XObject.
 // Call it once, after drawing the content and before DrawOn.
 func (s *Stamp) Complete() {

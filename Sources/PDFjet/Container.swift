@@ -59,15 +59,6 @@ public class Container: Drawable {
         return self
     }
 
-    /// Sets clockwise rotation.
-    ///
-    /// - Parameter degrees: The rotation angle in degrees (clockwise).
-    @discardableResult
-    public func setRotationClockwise(_ degrees: Double) -> Container {
-        self.rotateDegrees = Float(-degrees)
-        return self
-    }
-
     /// Returns the center of this container, which it rotates around.
     public func getRotationCenter() -> [Float] {
         return [self.x + self.width/2.0, self.y + self.height/2.0]
@@ -77,8 +68,8 @@ public class Container: Drawable {
     ///
     /// - Parameter factor: The scaling factor to apply.
     @discardableResult
-    public func setScaleFactor(_ factor: Float) -> Container {
-        setScaleFactorXY(factor, factor)
+    public func scaleBy(_ factor: Float) -> Container {
+        scaleBy(factor, factor)
         return self
     }
 
@@ -88,7 +79,7 @@ public class Container: Drawable {
     ///   - sx: The scaling factor for X.
     ///   - sy: The scaling factor for Y.
     @discardableResult
-    public func setScaleFactorXY(_ sx: Float, _ sy: Float) -> Container {
+    public func scaleBy(_ sx: Float, _ sy: Float) -> Container {
         self.scaleX = sx
         self.scaleY = sy
         return self

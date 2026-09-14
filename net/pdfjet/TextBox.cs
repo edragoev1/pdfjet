@@ -830,9 +830,15 @@ public class TextBox : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the direction of the text.</summary>
-    public TextBox SetTextDirection(Direction textDirection) {
-        this.textDirection = textDirection;
+    /// <summary>Sets the rotation of the text, counterclockwise: 0 reads left to right, 90 bottom to top and 270 top to bottom. Other angles read left to right.</summary>
+    public TextBox SetTextRotation(int degrees) {
+        if (degrees == 90) {
+            this.textDirection = Direction.BOTTOM_TO_TOP;
+        } else if (degrees == 270) {
+            this.textDirection = Direction.TOP_TO_BOTTOM;
+        } else {
+            this.textDirection = Direction.LEFT_TO_RIGHT;
+        }
         return this;
     }
 }   // End of TextBox.cs

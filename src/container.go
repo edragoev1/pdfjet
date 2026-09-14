@@ -60,32 +60,24 @@ func (c *Container) SetRotation(degrees float64) *Container {
 	return c
 }
 
-// SetRotationClockwise sets the clockwise rotation angle of the container in degrees.
-//
-// degrees specifies the angle to rotate clockwise.
-func (c *Container) SetRotationClockwise(degrees float64) *Container {
-	c.rotateDegrees = float32(-degrees)
-	return c
-}
-
 // GetRotationCenter returns the center of this container, which it rotates around.
 func (c *Container) GetRotationCenter() [2]float32 {
 	return [2]float32{c.x + c.width/2.0, c.y + c.height/2.0}
 }
 
-// SetScaleFactor sets a uniform scaling factor for both X and Y axes.
+// ScaleBy sets a uniform scaling factor for both X and Y axes.
 //
 // factor specifies the scaling factor to apply.
-func (c *Container) SetScaleFactor(factor float32) *Container {
-	c.SetScaleFactorXY(factor, factor)
+func (c *Container) ScaleBy(factor float32) *Container {
+	c.ScaleByWidthAndHeight(factor, factor)
 	return c
 }
 
-// SetScaleFactorXY sets non-uniform scaling factors for the X and Y axes.
+// ScaleByWidthAndHeight sets non-uniform scaling factors for the X and Y axes.
 //
 // sx specifies the scaling factor along the X-axis.
 // sy specifies the scaling factor along the Y-axis.
-func (c *Container) SetScaleFactorXY(sx, sy float32) *Container {
+func (c *Container) ScaleByWidthAndHeight(sx, sy float32) *Container {
 	c.scaleX = sx
 	c.scaleY = sy
 	return c

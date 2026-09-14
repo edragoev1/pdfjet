@@ -137,7 +137,7 @@ public class TextFrame : IDrawable {
     }
 
     /// <summary>Sets the dash pattern of the border, for example "[3] 0".</summary>
-    public TextFrame SetBorderPattern(String borderPattern) {
+    public TextFrame SetBorderDashPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }
@@ -170,7 +170,7 @@ public class TextFrame : IDrawable {
             Rect rect = new Rect(x, y, w, bottom - y);
             rect.SetBorderColor(borderColor);
             rect.SetBorderWidth(borderWidth);
-            rect.SetBorderPattern(borderPattern);
+            rect.SetBorderDashPattern(borderPattern);
             rect.DrawOn(page);
         }
 

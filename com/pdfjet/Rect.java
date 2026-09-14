@@ -209,7 +209,7 @@ public class Rect implements Drawable {
      * @param borderPattern the line dash pattern.
      * @return this Rect object.
      */
-    public Rect setBorderPattern(String borderPattern) {
+    public Rect setBorderDashPattern(String borderPattern) {
         this.borderPattern = borderPattern;
         return this;
     }

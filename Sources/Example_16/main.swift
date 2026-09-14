@@ -38,9 +38,8 @@ public class Example_16 {
         textBox.setWidth(400.0)
         // If no height is specified the height will be calculated based on the text.
         textBox.setHeight(450.0)
-        // textBox.setTextDirection(Direction.LEFT_TO_RIGHT)
-        // textBox.setTextDirection(Direction.BOTTOM_TO_TOP)
-        // textBox.setTextDirection(Direction.TOP_TO_BOTTOM)
+        // textBox.setTextRotation(90)     // bottom to top
+        // textBox.setTextRotation(270)    // top to bottom
 
         textBox.setVerticalAlignment(Alignment.TOP)
         // textBox.setVerticalAlignment(Alignment.BOTTOM)

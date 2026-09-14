@@ -437,7 +437,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		alt = ""
 	}
 	page.AddBDC(textLine.structureType, textLine.language, "", alt)
-	page.DrawStringUsingHighlightColors(
+	page.drawStringUsingHighlightColors(
 		textLine.font,
 		textLine.fallbackFont,
 		textLine.fontSize,
