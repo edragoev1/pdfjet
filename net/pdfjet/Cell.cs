@@ -22,6 +22,7 @@ public class Cell {
     internal TextBlock textBlock;
     internal TextColumn textColumn;
     internal Point point;
+    private Alignment markerAlignment = Alignment.RIGHT;
     internal CompositeTextLine compositeTextLine;
     internal float width = 75f;
     internal float topPadding = 2f;
@@ -174,14 +175,16 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the marker drawn in this cell: a Point, placed at its left or right
-    /// by its alignment and centered vertically.
+    /// Sets the marker drawn in this cell: a Point, placed at the left or the
+    /// right of the cell and centered vertically.
     /// See the Point class and Example_09 for more information.
     /// </summary>
     /// <param name="point">the point.</param>
+    /// <param name="alignment">Alignment.LEFT or Alignment.RIGHT.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetMarker(Point point) {
+    public Cell SetMarker(Point point, Alignment alignment) {
         this.point = point;
+        this.markerAlignment = alignment;
         return this;
     }
 
@@ -622,9 +625,9 @@ public class Cell {
 
         DrawBorders(page, x, y, w, h);
         if (point != null) {
-            if (point.alignment == Alignment.LEFT) {
+            if (markerAlignment == Alignment.LEFT) {
                 point.x = x + 2*point.r;
-            } else if (point.alignment == Alignment.RIGHT) {
+            } else if (markerAlignment == Alignment.RIGHT) {
                 point.x = (x + w) - this.rightPadding/2;
             }
             point.y = y + h/2;

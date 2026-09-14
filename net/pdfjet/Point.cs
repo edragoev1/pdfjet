@@ -8,22 +8,20 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Used to create point objects with different shapes and draw them on a page.
-/// Please note: When we are mentioning (x, y) coordinates of a point - we are talking about the coordinates of the center of the point.
+/// A point with a marker: a shape drawn around its (x, y) coordinates, which
+/// are the center of the marker. A point is drawn on a page on its own, as the
+/// marker of a table cell, or in a chart Series, and a list of points is a
+/// path for Page.DrawPath.
 ///
 /// Please see Example_05.
 /// </summary>
 public class Point : IDrawable {
-
-    // For the c operator we have both control points
     /// <summary>A control point of a curve drawn with the c operator, which uses both control points.</summary>
     public static readonly char CONTROL_POINT_C = 'c';
 
-    // For the v operator, the first control point shall coincide with initial point of the curve.
     /// <summary>A control point of a curve drawn with the v operator, where the first control point is the start point.</summary>
     public static readonly char CONTROL_POINT_V = 'v';
 
-    // For the y operator, the second control point shall coincide with final point of the curve.
     /// <summary>A control point of a curve drawn with the y operator, where the second control point is the end point.</summary>
     public static readonly char CONTROL_POINT_Y = 'y';
 
@@ -35,17 +33,9 @@ public class Point : IDrawable {
     internal float[] fillColor = null;
     internal float strokeWidth = 1f;
     internal float[] strokeColor = null;
-    internal string strokeDashPattern = "[] 0";
     internal PathOperator pathOperator = PathOperator.CLOSE_AND_STROKE;
 
-    internal Alignment alignment = Alignment.RIGHT;
-
     internal char controlPoint = '\0';
-    internal bool drawPath = false;
-
-    private String text;
-    private float[] textColor = new float[] {0f, 0f, 0f};
-    private int textDirection;
     private String uri;
 
     /// <summary>
@@ -77,8 +67,8 @@ public class Point : IDrawable {
     }
 
     /// <summary>
-    /// Copy constructor. Creates a deep copy of the specified point,
-    /// including all visual properties, URI action, and text attributes.
+    /// Copy constructor. Creates a copy of the specified point, including its
+    /// marker and its URI action.
     /// </summary>
     /// <param name="point">the point to copy.</param>
     public Point(Point point) {
@@ -86,21 +76,11 @@ public class Point : IDrawable {
         this.y = point.y;
         this.r = point.r;
         this.shape = point.shape;
-        this.alignment = point.alignment;
-        this.fillColor = point.fillColor != null
-                ? new float[] {point.fillColor[0], point.fillColor[1], point.fillColor[2]}
-                : null;
+        this.fillColor = Util.CopyOf(point.fillColor);
         this.strokeWidth = point.strokeWidth;
-        this.strokeColor = point.strokeColor != null
-                ? new float[] {point.strokeColor[0], point.strokeColor[1], point.strokeColor[2]}
-                : null;
-        this.strokeDashPattern = point.strokeDashPattern;
+        this.strokeColor = Util.CopyOf(point.strokeColor);
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
-        this.drawPath = point.drawPath;
-        this.text = point.text;
-        this.textColor = Util.CopyOf(point.textColor);
-        this.textDirection = point.textDirection;
         this.uri = point.uri;
     }
 
@@ -189,12 +169,6 @@ public class Point : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the width of the lines used to draw this point.</summary>
-    public Point SetStrokeWidth(float strokeWidth) {
-        this.strokeWidth = strokeWidth;
-        return this;
-    }
-
     /// <summary>Returns the fill color.</summary>
     public float[] GetFillColor() {
         return Util.CopyOf(this.fillColor);
@@ -231,6 +205,12 @@ public class Point : IDrawable {
         return shape;
     }
 
+    /// <summary>Sets the width of the lines used to draw this point.</summary>
+    public Point SetStrokeWidth(float strokeWidth) {
+        this.strokeWidth = strokeWidth;
+        return this;
+    }
+
     /// <summary>
     /// Returns the width of the lines used to draw this point.
     /// </summary>
@@ -239,66 +219,15 @@ public class Point : IDrawable {
         return strokeWidth;
     }
 
-    /// <summary>
-    /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-    /// It is specified by a dash array and a dash phase.
-    /// The elements of the dash array are positive numbers that specify the lengths of
-    /// alternating dashes and gaps.
-    /// The dash phase specifies the distance into the dash pattern at which to start the dash.
-    /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// <code>
-    /// Examples of line dash patterns:
-    ///
-    ///     "[Array] Phase"     Appearance          Description
-    ///     _______________     _________________   ____________________________________
-    ///     "[] 0"              -----------------   Solid line
-    ///     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-    ///     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-    ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-    ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-    ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// </code>
-    /// </summary>
-    /// <param name="strokeDashPattern">the stroke dash pattern.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetStrokeDashPattern(String strokeDashPattern) {
-        this.strokeDashPattern = strokeDashPattern;
-        return this;
-    }
-
-    /// <summary>
-    /// Returns the dash pattern.
-    /// </summary>
-    /// <returns>the dash pattern.</returns>
-    public String GetStrokeDashPattern() {
-        return strokeDashPattern;
-    }
-
-    /// <summary>Sets the path operator used to draw this point, for example PathOperator.STROKE.</summary>
-    public Point SetPathOperator(PathOperator pathOperator) {
-        this.pathOperator = pathOperator;
-        return this;
-    }
-
-    /// <summary>Returns the path operator used to draw this point.</summary>
-    public PathOperator GetPathOperator() {
+    /// <summary>Returns the path operator the marker is painted with.</summary>
+    internal PathOperator GetPathOperator() {
         return this.pathOperator;
     }
 
     /// <summary>
-    /// Sets whether this point starts a path that is drawn on the chart.
+    /// Sets the URI of the link opened by a click on this point.
     /// </summary>
-    /// <param name="drawPath">true to draw the path.</param>
-    /// <returns>the point.</returns>
-    public Point SetDrawPath(bool drawPath) {
-        this.drawPath = drawPath;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the URI for the "click point" action.
-    /// </summary>
-    /// <param name="uri">the URI</param>
+    /// <param name="uri">the URI.</param>
     /// <returns>this Point object.</returns>
     public Point SetURIAction(String uri) {
         this.uri = uri;
@@ -306,96 +235,11 @@ public class Point : IDrawable {
     }
 
     /// <summary>
-    /// Returns the URI for the "click point" action.
+    /// Returns the URI of the link opened by a click on this point.
     /// </summary>
-    /// <returns>the URI for the "click point" action.</returns>
+    /// <returns>the URI, or null.</returns>
     public String GetURIAction() {
         return uri;
-    }
-
-    /// <summary>
-    /// Sets the point text.
-    /// </summary>
-    /// <param name="text">the text.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetText(String text) {
-        this.text = text;
-        return this;
-    }
-
-    /// <summary>
-    /// Returns the text associated with this point.
-    /// </summary>
-    /// <returns>the text.</returns>
-    public String GetText() {
-        return text;
-    }
-
-    /// <summary>
-    /// Sets the point's text color.
-    /// </summary>
-    /// <param name="textColor">the text color.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetTextColor(int textColor) {
-        float r = ((textColor >> 16) & 0xff)/255f;
-        float g = ((textColor >>  8) & 0xff)/255f;
-        float b = ((textColor)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the point's text color.
-    /// </summary>
-    /// <param name="textColor">the red, green and blue components of the text color, from 0.0 to 1.0.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetTextColor(float[] textColor) {
-        this.textColor = Util.CopyOf(textColor);
-        return this;
-    }
-
-    /// <summary>
-    /// Returns the point's text color.
-    /// </summary>
-    /// <returns>the red, green and blue components of the text color.</returns>
-    public float[] GetTextColor() {
-        return Util.CopyOf(this.textColor);
-    }
-
-    /// <summary>
-    /// Sets the point's text direction.
-    /// </summary>
-    /// <param name="textDirection">the text direction.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetTextRotation(int textDirection) {
-        this.textDirection = textDirection;
-        return this;
-    }
-
-    /// <summary>
-    /// Returns the point's text direction.
-    /// </summary>
-    /// <returns>the text direction.</returns>
-    public int GetTextRotation() {
-        return this.textDirection;
-    }
-
-    /// <summary>
-    /// Sets the point alignment.
-    /// </summary>
-    /// <param name="alignment">the alignment value.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetAlignment(Alignment alignment) {
-        this.alignment = alignment;
-        return this;
-    }
-
-    /// <summary>
-    /// Returns the point alignment.
-    /// </summary>
-    /// <returns>Alignment the alignment value.</returns>
-    public Alignment GetAlignment() {
-        return this.alignment;
     }
 
     /// <summary>

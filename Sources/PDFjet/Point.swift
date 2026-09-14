@@ -6,9 +6,10 @@
  */
 
 ///
-/// Used to create point objects with different shapes and draw them on a page.
-/// Please note: When we are mentioning (x, y) coordinates of a point - we are
-/// talking about the coordinates of the center of the point.
+/// A point with a marker: a shape drawn around its (x, y) coordinates, which
+/// are the center of the marker. A point is drawn on a page on its own, as the
+/// marker of a table cell, or in a chart Series, and an array of points is a
+/// path for Page.drawPath.
 ///
 /// Please see Example_05.
 ///
@@ -25,20 +26,13 @@ public class Point : Drawable {
     var y: Float = 0.0
     var r: Float = 2.0
     var shape = Shape.CIRCLE
-    var align = Alignment.RIGHT
 
     var fillColor: [Float]?
     var strokeWidth: Float = 1.0
     var strokeColor: [Float]?
-    var strokeDashPattern = "[] 0"
     var pathOperator = PathOperator.CLOSE_AND_STROKE
 
     var controlPoint: String = ""
-    var drawPath = false
-
-    private var text: String?
-    private var textColor: [Float] = [0.0, 0.0, 0.0]
-    private var textDirection: Int = 0
     private var uri: String?
 
     /// Creates a point.
@@ -73,7 +67,7 @@ public class Point : Drawable {
     }
 
     ///
-    /// Creates a copy of the specified point, including its colors, text and URI action.
+    /// Creates a copy of the specified point, including its marker and its URI action.
     ///
     /// - Parameter point: the point to copy.
     ///
@@ -82,17 +76,11 @@ public class Point : Drawable {
         self.y = point.y
         self.r = point.r
         self.shape = point.shape
-        self.align = point.align
         self.fillColor = point.fillColor
         self.strokeWidth = point.strokeWidth
         self.strokeColor = point.strokeColor
-        self.strokeDashPattern = point.strokeDashPattern
         self.pathOperator = point.pathOperator
         self.controlPoint = point.controlPoint
-        self.drawPath = point.drawPath
-        self.text = point.text
-        self.textColor = point.textColor
-        self.textDirection = point.textDirection
         self.uri = point.uri
     }
 
@@ -269,57 +257,15 @@ public class Point : Drawable {
         return self.strokeWidth
     }
 
-    ///
-    /// The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-    /// It is specified by a dash array and a dash phase.
-    /// The elements of the dash array are positive numbers that specify the lengths of
-    /// alternating dashes and gaps.
-    /// The dash phase specifies the distance into the dash pattern at which to start the dash.
-    /// The elements of both the dash array and the dash phase are expressed in user space units.
-    /// Examples of line dash patterns:
-    ///
-    /// ```
-    ///     "[Array] Phase"     Appearance          Description
-    ///     _______________     _________________   ____________________________________
-    ///
-    ///     "[] 0"              -----------------   Solid line
-    ///     "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-    ///     "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-    ///     "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-    ///     "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-    ///     "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-    /// ```
-    ///
-    /// - Parameter strokeDashPattern: the line dash pattern.
-    ///
-    @discardableResult
-    public func setStrokeDashPattern(_ strokeDashPattern: String) -> Point {
-        self.strokeDashPattern = strokeDashPattern
-        return self
+    /// Returns the path operator the marker is painted with.
+    func getPathOperator() -> PathOperator {
+        return self.pathOperator
     }
 
     ///
-    /// Returns the line dash pattern.
+    /// Sets the URI of the link opened by a click on this point.
     ///
-    /// - Returns: the line dash pattern.
-    ///
-    public func getStrokeDashPattern() -> String {
-        return self.strokeDashPattern
-    }
-
-    ///
-    /// Sets whether this point starts a path that is drawn on the chart.
-    ///
-    @discardableResult
-    public func setDrawPath(_ drawPath: Bool) -> Point {
-        self.drawPath = drawPath
-        return self
-    }
-
-    ///
-    /// Sets the URI for the "click point" action.
-    ///
-    /// - Parameter uri: the URI
+    /// - Parameter uri: the URI.
     ///
     @discardableResult
     public func setURIAction(_ uri: String) -> Point {
@@ -328,121 +274,12 @@ public class Point : Drawable {
     }
 
     ///
-    /// Returns the URI for the "click point" action.
+    /// Returns the URI of the link opened by a click on this point.
     ///
-    /// - Returns: the URI for the "click point" action.
+    /// - Returns: the URI, or nil.
     ///
     public func getURIAction() -> String? {
         return self.uri
-    }
-
-    ///
-    /// Sets the point text.
-    ///
-    /// - Parameter text: the text.
-    ///
-    @discardableResult
-    public func setText(_ text: String) -> Point {
-        self.text = text
-        return self
-    }
-
-    ///
-    /// Returns the text associated with this point.
-    ///
-    /// - Returns: the text.
-    ///
-    public func getText() -> String? {
-        return self.text
-    }
-
-    ///
-    /// Sets the point's text color.
-    ///
-    /// - Parameter textColor: the text color.
-    ///
-    @discardableResult
-    public func setTextColor(_ textColor: Int32) -> Point {
-        let r = Float((textColor >> 16) & 0xff)/255.0
-        let g = Float((textColor >>  8) & 0xff)/255.0
-        let b = Float((textColor)       & 0xff)/255.0
-        return setTextColor([r, g, b])
-    }
-
-    /// Sets the text color from an array of red, green and blue values.
-    @discardableResult
-    public func setTextColor(_ textColor: [Float]) -> Point {
-        self.textColor = textColor
-        return self
-    }
-
-    ///
-    /// Returns the point's text color.
-    ///
-    /// - Returns: the text color.
-    ///
-    public func getTextColor() -> [Float] {
-        return self.textColor
-    }
-
-    ///
-    /// Sets the point's text direction.
-    ///
-    /// - Parameter textDirection: the text direction.
-    ///
-    @discardableResult
-    public func setTextRotation(_ textDirection: Int) -> Point {
-        self.textDirection = textDirection
-        return self
-    }
-
-    ///
-    /// Returns the point's text direction.
-    ///
-    /// - Returns: the text direction.
-    ///
-    public func getTextRotation() -> Int {
-        return self.textDirection
-    }
-
-    ///
-    /// Sets the point alignment inside table cell.
-    ///
-    /// - Parameter align: the alignment value.
-    ///
-    @discardableResult
-    public func setAlignment(_ align: Alignment) -> Point {
-        self.align = align
-        return self
-    }
-
-    ///
-    /// Returns the point alignment.
-    ///
-    /// - Returns: align the alignment value.
-    ///
-    public func getAlignment() -> Alignment {
-        return self.align
-    }
-
-    ///
-    /// Sets the path operator used to paint this point.
-    ///
-    /// - Parameter pathOperator: the path painting operator.
-    ///
-    @discardableResult
-    public func setPathOperator(_ pathOperator: PathOperator) -> Point {
-        self.pathOperator = pathOperator
-        return self
-    }
-
-    ///
-    /// Returns the path operator used to paint this point.
-    ///
-    /// - Returns: the path painting operator.
-    ///
-    public func getPathOperator() -> PathOperator {
-        return self.pathOperator
     }
 
     ///

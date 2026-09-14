@@ -71,7 +71,8 @@ public class Chart implements Drawable {
     private Font f1;
     private Font f2;
 
-    private List<List<Point>> chartData = null;
+    private final List<Series> series = new ArrayList<Series>();
+    private boolean drawLegend = true;
 
     static final int[] DEFAULT_PALETTE = {
         Color.blue,
@@ -129,23 +130,29 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the chart data: a list of series, each a list of points.
+     * Adds a series and returns it, to add its points and set its line and
+     * marker. A series without a stroke color has the next color of the
+     * palette. The legend lists the series that have a name.
      *
-     * @param chartData the chart data.
-     * @return this Chart object.
+     * @param name the series name, shown in the legend; empty for none.
+     * @return the new Series object.
      */
-    public Chart setData(List<List<Point>> chartData) {
-        this.chartData = chartData;
-        return this;
+    public Series addSeries(String name) {
+        Series s = new Series(name);
+        series.add(s);
+        return s;
     }
 
     /**
-     * Returns the chart data.
+     * Sets whether the legend is drawn. The legend lists the series that have
+     * a name, under the title, each with its line or its marker.
      *
-     * @return the list of series, each a list of points.
+     * @param drawLegend true to draw the legend.
+     * @return this Chart object.
      */
-    public List<List<Point>> getData() {
-        return chartData;
+    public Chart setDrawLegend(boolean drawLegend) {
+        this.drawLegend = drawLegend;
+        return this;
     }
 
     /** Sets the top-left position. Returns this for chaining. */
@@ -340,16 +347,21 @@ public class Chart implements Drawable {
         roundXAxisMinAndMaxValues();
         roundYAxisMinAndMaxValues();
 
-        // Draw chart title (centered, top)
+        // Draw chart title (centered, top), then the legend under it
+        page.setBrushColor(Color.black);
         page.drawString(
                 f1,
                 f1.getSize(),
                 title,
                 x1 + ((w - f1.stringWidth(title)) / 2),
                 y1 + 1.5f * f1.bodyHeight);
+        boolean legend = drawLegend && hasSeriesNames();
+        if (legend) {
+            drawLegend(page, y1 + 1.5f * f1.bodyHeight + 1.5f * f2.bodyHeight);
+        }
 
         // Compute margins and inner plot area
-        float topMargin = 2.5f * f1.bodyHeight;
+        float topMargin = 2.5f * f1.bodyHeight + (legend ? 1.5f * f2.bodyHeight : 0f);
         float leftMargin = getLongestAxisYLabelWidth() + 2f * f2.bodyHeight;
         float rightMargin = 2f * f2.bodyHeight;
         float bottomMargin = 2.5f * f2.bodyHeight;
@@ -380,10 +392,10 @@ public class Chart implements Drawable {
         }
 
         // Defensive copy so the user's data is never mutated
-        List<List<Point>> plotData = new ArrayList<List<Point>>(chartData.size());
-        for (List<Point> original : chartData) {
-            List<Point> copy = new ArrayList<Point>(original.size());
-            for (Point p : original) {
+        List<List<Point>> plotData = new ArrayList<List<Point>>(series.size());
+        for (Series s : series) {
+            List<Point> copy = new ArrayList<Point>(s.points.size());
+            for (Point p : s.points) {
                 copy.add(new Point(p));
             }
             plotData.add(copy);
@@ -448,14 +460,72 @@ public class Chart implements Drawable {
 
     /** Returns true if at least one series has points. */
     private boolean hasPoints() {
-        if (chartData != null) {
-            for (List<Point> points : chartData) {
-                if (!points.isEmpty()) {
-                    return true;
-                }
+        for (Series s : series) {
+            if (!s.points.isEmpty()) {
+                return true;
             }
         }
         return false;
+    }
+
+    /** Returns true if a series has a name to list in the legend. */
+    private boolean hasSeriesNames() {
+        for (Series s : series) {
+            if (!s.name.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Returns the color of the series at the index: its own or the palette's. */
+    private float[] seriesColor(Series s, int index) {
+        return s.strokeColor != null ? s.strokeColor : toFloatArray(DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]);
+    }
+
+    /**
+     * Draws the legend centered on the chart: the line of each named series
+     * that draws its path, its marker when it has one, and its name.
+     */
+    private void drawLegend(Page page, float baseline) throws Exception {
+        float ascent = f2.getAscent();
+        float sample = 2f * ascent;     // the width of the line or the marker
+        float gap = ascent / 2f;
+        float width = 0f;
+        int entries = 0;
+        for (Series s : series) {
+            if (!s.name.isEmpty()) {
+                width += sample + gap + f2.stringWidth(s.name);
+                entries++;
+            }
+        }
+        width += (entries - 1) * f2.bodyHeight;
+        float x = x1 + (w - width) / 2f;
+        for (int j = 0; j < series.size(); j++) {
+            Series s = series.get(j);
+            if (s.name.isEmpty()) {
+                continue;
+            }
+            float[] color = seriesColor(s, j);
+            float yMid = baseline - ascent / 2f;
+            page.setPenColor(color);
+            if (s.drawPath) {
+                page.setPenWidth(s.strokeWidth);
+                page.setStrokeDashPattern(s.strokeDashPattern);
+                page.drawLine(x, yMid, x + sample, yMid);
+            }
+            if (s.shape != Shape.INVISIBLE) {
+                page.setPenWidth(1f);
+                page.setDefaultStrokeDashPattern();
+                page.drawPoint(new Point(x + sample / 2f, yMid).setShape(s.shape).setRadius(s.radius));
+            }
+            x += sample + gap;
+            page.setBrushColor(Color.black);
+            page.drawString(f2, f2.getSize(), s.name, x, baseline);
+            x += f2.stringWidth(s.name) + f2.bodyHeight;
+        }
+        page.setDefaultPenWidth();
+        page.setDefaultStrokeDashPattern();
     }
 
     /**
@@ -516,8 +586,8 @@ public class Chart implements Drawable {
         if (xAxisGridLines != 0) {
             return;
         }
-        for (List<Point> points : chartData) {
-            for (Point point : points) {
+        for (Series s : series) {
+            for (Point point : s.points) {
                 if (point.x < xMin) {
                     xMin = point.x;
                 }
@@ -533,8 +603,8 @@ public class Chart implements Drawable {
         if (yAxisGridLines != 0) {
             return;
         }
-        for (List<Point> points : chartData) {
-            for (Point point : points) {
+        for (Series s : series) {
+            for (Point point : s.points) {
                 if (point.y < yMin) {
                     yMin = point.y;
                 }
@@ -658,60 +728,34 @@ public class Chart implements Drawable {
         return new float[] {r, g, b};
     }
 
-    /** Draws connecting paths, point markers, and point text. */
+    /**
+     * Draws the line of each series that draws its path, then the markers of
+     * its points: a point without a stroke color in the color of the series.
+     */
     private void drawPathsAndPoints(
-            Page page, List<List<Point>> chartData) throws Exception {
-        int seriesIndex = 0;
-        for (List<Point> points : chartData) {
-            // Skip a series with no points; the next series keeps its color
+            Page page, List<List<Point>> plotData) throws Exception {
+        for (int j = 0; j < series.size(); j++) {
+            Series s = series.get(j);
+            List<Point> points = plotData.get(j);
             if (points.isEmpty()) {
-                seriesIndex++;
                 continue;
             }
-            Point p0 = points.get(0);
-            if (p0.drawPath) {
-                if (p0.strokeColor == null) {
-                    int index = seriesIndex % DEFAULT_PALETTE.length;
-                    p0.strokeColor = toFloatArray(DEFAULT_PALETTE[index]);
-                }
-                page.setPenColor(p0.strokeColor);
-                page.setPenWidth(p0.strokeWidth);
-                page.setStrokeDashPattern(p0.strokeDashPattern);
+            float[] color = seriesColor(s, j);
+            if (s.drawPath) {
+                page.setPenColor(color);
+                page.setPenWidth(s.strokeWidth);
+                page.setStrokeDashPattern(s.strokeDashPattern);
                 page.drawPath(points, PathOperator.STROKE);
-                if (p0.getText() != null) {
-                    // The text starts at the first point, half an ascent along
-                    // the path, centered across the stroke: on the line when
-                    // it is not rotated, along a vertical stroke when it is.
-                    float ascent = f2.getAscent();
-                    float x = p0.x + ascent / 2f;
-                    float y = p0.y + ascent / 2f;
-                    if (p0.getTextRotation() != 0) {
-                        y = p0.y - ascent / 2f;
-                    }
-                    page.setBrushColor(p0.getTextColor());
-                    page.setTextRotation(p0.getTextRotation());
-                    page.drawString(
-                            f2,
-                            null,
-                            f2.getSize(),
-                            p0.getText(),
-                            x,
-                            y,
-                            p0.getTextColor(),
-                            null);
-                    page.setTextRotation(0);
-                }
             }
             for (Point point : points) {
-                if (point.getShape() != Shape.INVISIBLE) {
-                    page.setPenColor(point.strokeColor);
+                if (point.shape != Shape.INVISIBLE) {
+                    page.setPenColor(point.strokeColor != null ? point.strokeColor : color);
                     page.setPenWidth(point.strokeWidth);
-                    page.setStrokeDashPattern(point.strokeDashPattern);
+                    page.setDefaultStrokeDashPattern();
                     page.setBrushColor(point.fillColor);
                     page.drawPoint(point);
                 }
             }
-            seriesIndex++;
         }
     }
 

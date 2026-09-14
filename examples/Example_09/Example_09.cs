@@ -6,8 +6,22 @@ using PDFjet.NET;
 
 /**
  * Example_09.cs
+ *
+ * Draws an XY chart of the countries of a data file, each a marker that links
+ * to a page about the country, with the trend line of the points, and a table
+ * of the countries with a marker of their own.
  */
 public class Example_09 {
+    /** A country of the data file: its name and its point on the chart. */
+    private sealed class Country {
+        internal readonly String name;
+        internal readonly Point point;
+        internal Country(String name, Point point) {
+            this.name = name;
+            this.point = point;
+        }
+    }
+
     public Example_09() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_09.pdf", FileMode.Create)));
@@ -20,73 +34,62 @@ public class Example_09 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        List<Country> countries = ReadCountries("data/world-communications.txt", "|");
+
         Chart chart = new Chart(f1, f2);
-        chart.SetData(GetData("data/world-communications.txt", "|"));
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);
         chart.SetTitle("World View - Communications");
         chart.SetXAxisTitle("Cell phones per capita");
         chart.SetYAxisTitle("Internet users % of the population");
-        AddTrendLine(chart);
+        Series markers = chart.AddSeries("").SetStrokeColor(Color.gray);
+        foreach (Country country in countries) {
+            markers.AddPoint(country.point);
+        }
+        AddTrendLine(chart, countries);
         chart.DrawOn(page);
 
         f1.SetSize(7f);
         f2.SetSize(7f);
-        AddTableToChart(page, chart, f1, f2);
+        AddTableToChart(page, countries, f1, f2);
 
         pdf.Complete();
     }
 
-    public void AddTrendLine(Chart chart) {
-        List<Point> points = chart.GetData()[0];
-
+    private void AddTrendLine(Chart chart, List<Country> countries) {
+        List<Point> points = new List<Point>();
+        foreach (Country country in countries) {
+            points.Add(country.point);
+        }
         float m = Slope(points);
         float b = Intercept(points, m);
-
-        List<Point> trendline = new List<Point>();
-        float x = 0.0f;
-        float y = m * x + b;
-        Point p1 = new Point(x, y);
-        p1.SetDrawPath(true);
-        p1.SetStrokeColor(Color.blue);
-        p1.SetShape(Shape.INVISIBLE);
-
-        x = 1.5f;
-        y = m * x + b;
-        Point p2 = new Point(x, y);
-        p2.SetShape(Shape.INVISIBLE);
-
-        trendline.Add(p1);
-        trendline.Add(p2);
-
-        chart.GetData().Add(trendline);
+        chart.AddSeries("Trend line")
+                .SetDrawPath(true)
+                .SetStrokeColor(Color.blue)
+                .SetShape(Shape.INVISIBLE)
+                .AddPoint(0f, b)
+                .AddPoint(1.5f, m * 1.5f + b);
     }
 
-    public void AddTableToChart(
-            Page page, Chart chart, Font f1, Font f2) {
+    private void AddTableToChart(
+            Page page, List<Country> countries, Font f1, Font f2) {
         Table table = new Table();
         List<List<Cell>> tableData = new List<List<Cell>>();
-        List<Point> points = chart.GetData()[0];
-        for (int i = 0; i < points.Count; i++) {
-            Point point = points[i];
-            if (point.GetShape() != Shape.CIRCLE) {
+        foreach (Country country in countries) {
+            if (country.point.GetShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new List<Cell>();
 
-                point.SetRadius(2f);
-                point.SetAlignment(Alignment.LEFT);
-
                 Cell cell = new Cell(f2);
-                cell.SetMarker(point);
+                cell.SetMarker(country.point, Alignment.LEFT);
                 cell.SetText("");
-
                 tableRow.Add(cell);
 
                 cell = new Cell(f1);
-                cell.SetText(point.GetText());
+                cell.SetText(country.name);
                 tableRow.Add(cell);
 
                 cell = new Cell(f2);
-                cell.SetText(point.GetURIAction());
+                cell.SetText(country.point.GetURIAction());
                 tableRow.Add(cell);
 
                 tableData.Add(tableRow);
@@ -100,14 +103,11 @@ public class Example_09 {
         table.DrawOn(page);
     }
 
-    public List<List<Point>> GetData(
+    private List<Country> ReadCountries(
             String fileName,
             String delimiter) {
-        List<List<Point>> chartData = new List<List<Point>>();
-
-        StreamReader reader =
-                new StreamReader(fileName);
-        List<Point> points = new List<Point>();
+        List<Country> countries = new List<Country>();
+        StreamReader reader = new StreamReader(fileName);
         String line = null;
         while ((line = reader.ReadLine()) != null) {
             String[] cols = null;
@@ -120,26 +120,22 @@ public class Example_09 {
                     "Only pipes and tabs can be used as delimiters");
             }
 
-            Point point = new Point();
             try {
                 double population =
                         Double.Parse(cols[1].Replace(",", ""));
-                point.SetText(cols[0].Trim());
-                String country_name = point.GetText();
+                String name = cols[0].Trim();
+                String country_name = name;
                 country_name = country_name.Replace(" ", "_");
                 country_name = country_name.Replace("'", "_");
                 country_name = country_name.Replace(",", "_");
                 country_name = country_name.Replace("(", "_");
                 country_name = country_name.Replace(")", "_");
+                Point point = new Point(
+                        (float) (Double.Parse(cols[5].Replace(",", "")) / population),
+                        (float) (Double.Parse(cols[7].Replace(",", "")) / population * 100));
                 point.SetURIAction(
                         "http://pdfjet.com/country/" + country_name + ".txt");
-                point.SetX((float) (Double.Parse(
-                        cols[5].Replace(",", "")) / population));
-                point.SetY((float) (Double.Parse(
-                        cols[7].Replace(",", "")) / population * 100));
-
                 point.SetRadius(2.0f);
-                point.SetStrokeColor(Color.gray);
 
                 if (point.GetX() > 1.25f) {
                     point.SetShape(Shape.RIGHT_ARROW);
@@ -147,25 +143,23 @@ public class Example_09 {
                 } else if (point.GetY() > 80f) {
                     point.SetShape(Shape.UP_ARROW);
                     point.SetStrokeColor(Color.blue);
-                } else if (point.GetText().Equals("France")) {
+                } else if (name.Equals("France")) {
                     point.SetShape(Shape.MULTIPLY);
                     point.SetStrokeColor(Color.green);
-                } else if (point.GetText().Equals("Canada")) {
+                } else if (name.Equals("Canada")) {
                     point.SetShape(Shape.BOX);
                     point.SetStrokeColor(Color.orange);
-                } else if (point.GetText().StartsWith("United States")) {
+                } else if (name.StartsWith("United States")) {
                     point.SetShape(Shape.STAR);
                     point.SetStrokeColor(Color.red);
                 }
 
-                points.Add(point);
+                countries.Add(new Country(name, point));
             } catch (Exception) {
             }
         }
         reader.Close();
-        chartData.Add(points);
-
-        return chartData;
+        return countries;
     }
 
     // The slope and intercept of the ordinary least squares trend line of the points.

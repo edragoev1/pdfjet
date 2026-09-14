@@ -4,9 +4,19 @@ import PDFjet
 ///
 /// Example_09.swift
 ///
+/// Draws an XY chart of the countries of a data file, each a marker that links
+/// to a page about the country, with the trend line of the points, and a table
+/// of the countries with a marker of their own.
+///
 struct ExampleError: Error, CustomStringConvertible {
     let message: String
     var description: String { message }
+}
+
+/// A country of the data file: its name and its point on the chart.
+struct Country {
+    let name: String
+    let point: Point
 }
 
 public class Example_09 {
@@ -21,77 +31,59 @@ public class Example_09 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        let countries = try readCountries("data/world-communications.txt", "|")
+
         let chart = Chart(f1, f2)
-        chart.setData(try getData("data/world-communications.txt", "|"))
         chart.setLocation(70.0, 50.0)
         chart.setSize(500.0, 300.0)
         chart.setTitle("World View - Communications")
         chart.setXAxisTitle("Cell phones per capita")
         chart.setYAxisTitle("Internet users % of the population")
-        addTrendLine(chart)
+        let markers = chart.addSeries("").setStrokeColor(Color.gray)
+        for country in countries {
+            markers.addPoint(country.point)
+        }
+        addTrendLine(chart, countries)
         chart.drawOn(page)
 
         f1.setSize(7.0)
         f2.setSize(7.0)
-        try addTableToChart(page, chart, f1, f2)
+        try addTableToChart(page, countries, f1, f2)
 
         try pdf.complete()
     }
 
-    public func addTrendLine(_ chart: Chart) {
-        let points = chart.getData()![0]
-
+    func addTrendLine(_ chart: Chart, _ countries: [Country]) {
+        let points = countries.map { $0.point }
         let m = slope(points)
         let b = intercept(points, m)
-
-        var trendLine = [Point]()
-        var x: Float = 0.0
-        var y: Float = m * x + b
-        let p1 = Point(x, y)
-        p1.setDrawPath(true)
-        p1.setStrokeColor(Color.blue)
-        p1.setShape(Shape.INVISIBLE)
-
-        x = 1.5
-        y = m * x + b
-        let p2 = Point(x, y)
-        p2.setShape(Shape.INVISIBLE)
-
-        trendLine.append(p1)
-        trendLine.append(p2)
-
-        var chartData = chart.getData()!
-        chartData.append(trendLine)
-        chart.setData(chartData)
+        chart.addSeries("Trend line")
+                .setDrawPath(true)
+                .setStrokeColor(Color.blue)
+                .setShape(Shape.INVISIBLE)
+                .addPoint(0.0, b)
+                .addPoint(1.5, m * 1.5 + b)
     }
 
-    public func addTableToChart(
+    func addTableToChart(
             _ page: Page,
-            _ chart: Chart,
+            _ countries: [Country],
             _ f1: Font,
             _ f2: Font) throws {
         let table = Table()
         var tableData = [[Cell]]()
-        let points = chart.getData()![0]
-        for point in points {
-            if point.getShape() != Shape.CIRCLE {
+        for country in countries {
+            if country.point.getShape() != Shape.CIRCLE {
                 var tableRow = [Cell]()
 
-                point.setRadius(2.0)
-                point.setAlignment(Alignment.LEFT)
-
                 var cell = Cell(f2, "")
-                cell.setMarker(point)
-                cell.setText("")
-
+                cell.setMarker(country.point, Alignment.LEFT)
                 tableRow.append(cell)
 
-                cell = Cell(f1, "")
-                cell.setText(point.getText())
+                cell = Cell(f1, country.name)
                 tableRow.append(cell)
 
-                cell = Cell(f2, "")
-                cell.setText(point.getURIAction())
+                cell = Cell(f2, country.point.getURIAction())
                 tableRow.append(cell)
 
                 tableData.append(tableRow)
@@ -105,11 +97,10 @@ public class Example_09 {
         table.drawOn(page)
     }
 
-    public func getData(
+    func readCountries(
             _ fileName: String,
-            _ delimiter: String) throws -> [[Point]] {
-        var chartData = [[Point]]()
-        var points = [Point]()
+            _ delimiter: String) throws -> [Country] {
+        var countries = [Country]()
 
         let text = (try String(contentsOfFile:
                 fileName, encoding: .utf8)).trimmingCharacters(in: .newlines)
@@ -126,25 +117,21 @@ public class Example_09 {
                         message: "Only pipes and tabs can be used as delimiters")
             }
 
-            var country_name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
             let population = Double(cols![1].filter({ $0 != "," }))
             let x = Double(cols![5].filter({ $0 != "," }))
             let y = Double(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
 
             if population != nil && x != nil && y != nil {
-                let point = Point()
-                point.setText(country_name)
+                var country_name = name
                 country_name = country_name.replacingOccurrences(of: " ", with: "_")
                 country_name = country_name.replacingOccurrences(of: "'", with: "_")
                 country_name = country_name.replacingOccurrences(of: ",", with: "_")
                 country_name = country_name.replacingOccurrences(of: "(", with: "_")
                 country_name = country_name.replacingOccurrences(of: ")", with: "_")
+                let point = Point(Float(x! / population!), Float(y! / population! * 100.0))
                 point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
-                point.setX(Float(x! / population!))
-                point.setY(Float(y! / population! * 100.0))
-
                 point.setRadius(2.0)
-                point.setStrokeColor(Color.gray)
 
                 if point.getX() > 1.25 {
                     point.setShape(Shape.RIGHT_ARROW)
@@ -152,23 +139,22 @@ public class Example_09 {
                 } else if point.getY() > 80.0 {
                     point.setShape(Shape.UP_ARROW)
                     point.setStrokeColor(Color.blue)
-                } else if point.getText() == "France" {
+                } else if name == "France" {
                     point.setShape(Shape.MULTIPLY)
                     point.setStrokeColor(Color.green)
-                } else if point.getText() == "Canada" {
+                } else if name == "Canada" {
                     point.setShape(Shape.BOX)
                     point.setStrokeColor(Color.orange)
-                } else if point.getText()!.hasPrefix("United States") {
+                } else if name.hasPrefix("United States") {
                     point.setShape(Shape.STAR)
                     point.setStrokeColor(Color.red)
                 }
-                points.append(point)
+                countries.append(Country(name: name, point: point))
             }
         }
-        chartData.append(points)
-
-        return chartData
+        return countries
     }
+
     // The slope and intercept of the ordinary least squares trend line of the points.
     private func slope(_ points: [Point]) -> Float {
         return covar(points) / devsq(points) * Float(points.count - 1)

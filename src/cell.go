@@ -26,6 +26,7 @@ type Cell struct {
 	image             *Image
 	barcode           *Barcode
 	point             *Point
+	markerAlignment   alignment.Alignment
 	width             float32
 	topPadding        float32
 	bottomPadding     float32
@@ -59,6 +60,7 @@ type Cell struct {
 // @param text the text.
 func NewCell(font *Font, text string) *Cell {
 	cell := new(Cell)
+	cell.markerAlignment = alignment.Right
 	cell.font = font
 	cell.fallbackFont = font
 	cell.fontSize = font.size
@@ -150,11 +152,14 @@ func (cell *Cell) GetBarcode() *Barcode {
 	return cell.barcode
 }
 
-// SetMarker sets the marker drawn in this cell: a Point, placed at its left or
-// right by its alignment and centered vertically.
+// SetMarker sets the marker drawn in this cell: a Point, placed at the left or
+// the right of the cell and centered vertically.
 // See the Point class and Example_09 for more information.
-func (cell *Cell) SetMarker(point *Point) *Cell {
+// @param point the point.
+// @param align alignment.Left or alignment.Right.
+func (cell *Cell) SetMarker(point *Point, align alignment.Alignment) *Cell {
 	cell.point = point
+	cell.markerAlignment = align
 	return cell
 }
 
@@ -552,7 +557,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 	cell.drawBorders(page, x, y, w, h)
 	if cell.point != nil {
-		switch cell.point.align {
+		switch cell.markerAlignment {
 		case alignment.Left:
 			cell.point.x = x + 2*cell.point.r
 		case alignment.Right:

@@ -55,7 +55,8 @@ public class Chart : IDrawable {
     private Font f1 = null;
     private Font f2 = null;
 
-    private List<List<Point>> chartData = null;
+    private readonly List<Series> series = new List<Series>();
+    private bool drawLegend = true;
 
     internal static readonly int[] DEFAULT_PALETTE = {
         Color.blue,
@@ -103,18 +104,27 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the chart data (list of series, each a list of points).
+    /// Adds a series and returns it, to add its points and set its line and
+    /// marker. A series without a stroke color has the next color of the
+    /// palette. The legend lists the series that have a name.
     /// </summary>
-    public Chart SetData(List<List<Point>> chartData) {
-        this.chartData = chartData;
-        return this;
+    /// <param name="name">the series name, shown in the legend; empty for none.</param>
+    /// <returns>the new Series object.</returns>
+    public Series AddSeries(String name) {
+        Series s = new Series(name);
+        series.Add(s);
+        return s;
     }
 
     /// <summary>
-    ///  Returns the chart data.
+    /// Sets whether the legend is drawn. The legend lists the series that have
+    /// a name, under the title, each with its line or its marker.
     /// </summary>
-    public List<List<Point>> GetData() {
-        return chartData;
+    /// <param name="drawLegend">true to draw the legend.</param>
+    /// <returns>this Chart object.</returns>
+    public Chart SetDrawLegend(bool drawLegend) {
+        this.drawLegend = drawLegend;
+        return this;
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -267,16 +277,21 @@ public class Chart : IDrawable {
         RoundXAxisMinAndMaxValues();
         RoundYAxisMinAndMaxValues();
 
-        // Draw chart title (centered, top)
+        // Draw chart title (centered, top), then the legend under it
+        page.SetBrushColor(Color.black);
         page.DrawString(
                 f1,
                 f1.GetSize(),
                 title,
                 x1 + ((w - f1.StringWidth(title)) / 2),
                 y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()));
+        bool legend = drawLegend && HasSeriesNames();
+        if (legend) {
+            DrawLegend(page, y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()) + 1.5f * f2.GetBodyHeight(f2.GetSize()));
+        }
 
         // Compute margins and inner plot area
-        float topMargin = 2.5f * f1.GetBodyHeight(f1.GetSize());
+        float topMargin = 2.5f * f1.GetBodyHeight(f1.GetSize()) + (legend ? 1.5f * f2.GetBodyHeight(f2.GetSize()) : 0f);
         float leftMargin = GetLongestAxisYLabelWidth() + 2f * f2.GetBodyHeight(f2.GetSize());
         float rightMargin = 2f * f2.GetBodyHeight(f2.GetSize());
         float bottomMargin = 2.5f * f2.GetBodyHeight(f2.GetSize());
@@ -308,10 +323,10 @@ public class Chart : IDrawable {
         }
 
         // Defensive copy so the user's data is never mutated
-        List<List<Point>> plotData = new List<List<Point>>(chartData.Count);
-        foreach (List<Point> original in chartData) {
-            List<Point> copy = new List<Point>(original.Count);
-            foreach (Point point in original) {
+        List<List<Point>> plotData = new List<List<Point>>(series.Count);
+        foreach (Series s in series) {
+            List<Point> copy = new List<Point>(s.points.Count);
+            foreach (Point point in s.points) {
                 copy.Add(new Point(point));
             }
             plotData.Add(copy);
@@ -376,14 +391,72 @@ public class Chart : IDrawable {
     ///  Returns true if at least one series has points.
     /// </summary>
     private bool HasPoints() {
-        if (chartData != null) {
-            foreach (List<Point> points in chartData) {
-                if (points.Count > 0) {
-                    return true;
-                }
+        foreach (Series s in series) {
+            if (s.points.Count > 0) {
+                return true;
             }
         }
         return false;
+    }
+
+    /// <summary>Returns true if a series has a name to list in the legend.</summary>
+    private bool HasSeriesNames() {
+        foreach (Series s in series) {
+            if (s.name.Length > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>Returns the color of the series at the index: its own or the palette's.</summary>
+    private float[] SeriesColor(Series s, int index) {
+        return s.strokeColor != null ? s.strokeColor : ToFloatArray(DEFAULT_PALETTE[index % DEFAULT_PALETTE.Length]);
+    }
+
+    /// <summary>
+    /// Draws the legend centered on the chart: the line of each named series
+    /// that draws its path, its marker when it has one, and its name.
+    /// </summary>
+    private void DrawLegend(Page page, float baseline) {
+        float ascent = f2.GetAscent();
+        float sample = 2f * ascent;     // the width of the line or the marker
+        float gap = ascent / 2f;
+        float width = 0f;
+        int entries = 0;
+        foreach (Series s in series) {
+            if (s.name.Length > 0) {
+                width += sample + gap + f2.StringWidth(s.name);
+                entries++;
+            }
+        }
+        width += (entries - 1) * f2.GetBodyHeight(f2.GetSize());
+        float x = x1 + (w - width) / 2f;
+        for (int j = 0; j < series.Count; j++) {
+            Series s = series[j];
+            if (s.name.Length == 0) {
+                continue;
+            }
+            float[] color = SeriesColor(s, j);
+            float yMid = baseline - ascent / 2f;
+            page.SetPenColor(color);
+            if (s.drawPath) {
+                page.SetPenWidth(s.strokeWidth);
+                page.SetStrokeDashPattern(s.strokeDashPattern);
+                page.DrawLine(x, yMid, x + sample, yMid);
+            }
+            if (s.shape != Shape.INVISIBLE) {
+                page.SetPenWidth(1f);
+                page.SetDefaultStrokeDashPattern();
+                page.DrawPoint(new Point(x + sample / 2f, yMid).SetShape(s.shape).SetRadius(s.radius));
+            }
+            x += sample + gap;
+            page.SetBrushColor(Color.black);
+            page.DrawString(f2, f2.GetSize(), s.name, x, baseline);
+            x += f2.StringWidth(s.name) + f2.GetBodyHeight(f2.GetSize());
+        }
+        page.SetDefaultPenWidth();
+        page.SetDefaultStrokeDashPattern();
     }
 
     /// <summary>
@@ -444,8 +517,8 @@ public class Chart : IDrawable {
         if (xAxisGridLines != 0) {
             return;
         }
-        foreach (List<Point> points in chartData) {
-            foreach (Point point in points) {
+        foreach (Series s in series) {
+            foreach (Point point in s.points) {
                 if (point.x < xMin) {
                     xMin = point.x;
                 }
@@ -463,8 +536,8 @@ public class Chart : IDrawable {
         if (yAxisGridLines != 0) {
             return;
         }
-        foreach (List<Point> points in chartData) {
-            foreach (Point point in points) {
+        foreach (Series s in series) {
+            foreach (Point point in s.points) {
                 if (point.y < yMin) {
                     yMin = point.y;
                 }
@@ -600,61 +673,33 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Draws connecting paths, point markers, and point text.
+    /// Draws the line of each series that draws its path, then the markers of
+    /// its points: a point without a stroke color in the color of the series.
     /// </summary>
     private void DrawPathsAndPoints(
-            Page page, List<List<Point>> chartData) {
-        int seriesIndex = 0;
-        foreach (List<Point> points in chartData) {
-            // Skip a series with no points; the next series keeps its color
+            Page page, List<List<Point>> plotData) {
+        for (int j = 0; j < series.Count; j++) {
+            Series s = series[j];
+            List<Point> points = plotData[j];
             if (points.Count == 0) {
-                seriesIndex++;
                 continue;
             }
-            Point p0 = points[0];
-            if (p0.drawPath) {
-                if (p0.strokeColor == null) {
-                    int index = seriesIndex % DEFAULT_PALETTE.Length;
-                    p0.strokeColor = ToFloatArray(DEFAULT_PALETTE[index]);
-                }
-                page.SetPenColor(p0.strokeColor);
-                page.SetPenWidth(p0.strokeWidth);
-                page.SetStrokeDashPattern(p0.strokeDashPattern);
+            float[] color = SeriesColor(s, j);
+            if (s.drawPath) {
+                page.SetPenColor(color);
+                page.SetPenWidth(s.strokeWidth);
+                page.SetStrokeDashPattern(s.strokeDashPattern);
                 page.DrawPath(points, PathOperator.STROKE);
-                if (p0.GetText() != null) {
-                    // The text starts at the first point, half an ascent along
-                    // the path, centered across the stroke: on the line when
-                    // it is not rotated, along a vertical stroke when it is.
-                    float ascent = f2.GetAscent();
-                    float x = p0.x + ascent / 2f;
-                    float y = p0.y + ascent / 2f;
-                    if (p0.GetTextRotation() != 0) {
-                        y = p0.y - ascent / 2f;
-                    }
-                    page.SetBrushColor(p0.GetTextColor());
-                    page.SetTextRotation(p0.GetTextRotation());
-                    page.DrawString(
-                            f2,
-                            null,
-                            f2.GetSize(),
-                            p0.GetText(),
-                            x,
-                            y,
-                            p0.GetTextColor(),
-                            null);
-                    page.SetTextRotation(0);
-                }
             }
             foreach (Point point in points) {
-                if (point.GetShape() != Shape.INVISIBLE) {
-                    page.SetPenColor(point.strokeColor);
+                if (point.shape != Shape.INVISIBLE) {
+                    page.SetPenColor(point.strokeColor != null ? point.strokeColor : color);
                     page.SetPenWidth(point.strokeWidth);
-                    page.SetStrokeDashPattern(point.strokeDashPattern);
+                    page.SetDefaultStrokeDashPattern();
                     page.SetBrushColor(point.fillColor);
                     page.DrawPoint(point);
                 }
             }
-            seriesIndex++;
         }
     }
 

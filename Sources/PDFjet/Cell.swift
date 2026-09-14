@@ -21,6 +21,7 @@ public class Cell {
     var textColumn: TextColumn?
     var textBox: TextBox?
     var point: Point?
+    private var markerAlignment = Alignment.RIGHT
     var compositeTextLine: CompositeTextLine?
     var width: Float = 75.0
     var topPadding: Float = 2.0
@@ -184,15 +185,17 @@ public class Cell {
     }
 
     /**
-     * Sets the marker drawn in this cell: a Point, placed at its left or right
-     * by its alignment and centered vertically.
+     * Sets the marker drawn in this cell: a Point, placed at the left or the
+     * right of the cell and centered vertically.
      * See the Point class and Example_09 for more information.
      *
      * - Parameter point: the point.
+     * - Parameter alignment: Alignment.LEFT or Alignment.RIGHT.
      */
     @discardableResult
-    public func setMarker(_ point: Point?) -> Cell {
+    public func setMarker(_ point: Point?, _ alignment: Alignment) -> Cell {
         self.point = point
+        self.markerAlignment = alignment
         return self
     }
 
@@ -697,9 +700,9 @@ public class Cell {
 
         drawBorders(page, x, y, w, h)
         if point != nil {
-            if point!.align == Alignment.LEFT {
+            if markerAlignment == Alignment.LEFT {
                 point!.x = x + 2*point!.r
-            } else if point!.align == Alignment.RIGHT {
+            } else if markerAlignment == Alignment.RIGHT {
                 point!.x = (x + w) - self.rightPadding/2
             }
             point!.y = y + h/2

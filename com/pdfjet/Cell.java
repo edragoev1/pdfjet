@@ -33,6 +33,7 @@ public class Cell {
     protected TextColumn textColumn;
     /** The point drawn in this cell. */
     protected Point point;
+    private Alignment markerAlignment = Alignment.RIGHT;
     /** The composite text line drawn in this cell. */
     protected CompositeTextLine compositeTextLine;
     /** The width of this cell. */
@@ -213,15 +214,17 @@ public class Cell {
     }
 
     /**
-     * Sets the marker drawn in this cell: a Point, placed at its left or right
-     * by its alignment and centered vertically.
+     * Sets the marker drawn in this cell: a Point, placed at the left or the
+     * right of the cell and centered vertically.
      * See the Point class and Example_09 for more information.
      *
      * @param point the point.
+     * @param alignment Alignment.LEFT or Alignment.RIGHT.
      * @return this Cell object.
      */
-    public Cell setMarker(Point point) {
+    public Cell setMarker(Point point, Alignment alignment) {
         this.point = point;
+        this.markerAlignment = alignment;
         return this;
     }
 
@@ -828,9 +831,9 @@ public class Cell {
 
         drawBorders(page, x, y, w, h);
         if (point != null) {
-            if (point.align == Alignment.LEFT) {
+            if (markerAlignment == Alignment.LEFT) {
                 point.x = x + 2*point.r;
-            } else if (point.align == Alignment.RIGHT) {
+            } else if (markerAlignment == Alignment.RIGHT) {
                 point.x = (x + w) - this.rightPadding/2;
             }
             point.y = y + h/2;

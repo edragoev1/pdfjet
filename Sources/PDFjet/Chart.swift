@@ -64,8 +64,8 @@ public class Chart : Drawable {
     private var f1: Font?
     private var f2: Font?
 
-    /// The data series of this chart, one array of points per series.
-    private var chartData: [[Point]]?
+    private var series = [Series]()
+    private var drawLegend = true
 
     static let DEFAULT_PALETTE = [
         Color.blue,
@@ -126,24 +126,31 @@ public class Chart : Drawable {
     }
 
     /**
-     * Sets the data that will be used to draw this chart.
+     * Adds a series and returns it, to add its points and set its line and
+     * marker. A series without a stroke color has the next color of the
+     * palette. The legend lists the series that have a name.
      *
-     * - Parameter chartData: the data.
-     * - Returns: this Chart object.
+     * - Parameter name: the series name, shown in the legend; empty for none.
+     * - Returns: the new Series object.
      */
     @discardableResult
-    public func setData(_ chartData: [[Point]]?) -> Chart {
-        self.chartData = chartData
-        return self
+    public func addSeries(_ name: String) -> Series {
+        let s = Series(name)
+        series.append(s)
+        return s
     }
 
     /**
-     * Returns the chart data.
+     * Sets whether the legend is drawn. The legend lists the series that have
+     * a name, under the title, each with its line or its marker.
      *
-     * - Returns: the chart data.
+     * - Parameter drawLegend: true to draw the legend.
+     * - Returns: this Chart object.
      */
-    public func getData() -> [[Point]]? {
-        return self.chartData
+    @discardableResult
+    public func setDrawLegend(_ drawLegend: Bool) -> Chart {
+        self.drawLegend = drawLegend
+        return self
     }
 
     /**
@@ -313,17 +320,22 @@ public class Chart : Drawable {
         roundXAxisMinAndMaxValues()
         roundYAxisMinAndMaxValues()
 
-        // Draw chart title
+        // Draw chart title, then the legend under it
+        let legend = drawLegend && hasSeriesNames()
         if page != nil {
+            page!.setBrushColor(Color.black)
             page!.drawString(
                     f1!,
                     f1!.getSize(),
                     title,
                     x1 + ((w - f1!.stringWidth(title)) / 2),
                     y1 + 1.5 * f1!.bodyHeight)
+            if legend {
+                drawLegend(page!, y1 + 1.5 * f1!.bodyHeight + 1.5 * f2!.bodyHeight)
+            }
         }
 
-        let topMargin = 2.5 * f1!.bodyHeight
+        let topMargin = 2.5 * f1!.bodyHeight + (legend ? 1.5 * f2!.bodyHeight : 0.0)
         let leftMargin = getLongestAxisYLabelWidth() + 2.0 * f2!.bodyHeight
         let rightMargin = 2.0 * f2!.bodyHeight
         let bottomMargin = 2.5 * f2!.bodyHeight
@@ -360,8 +372,8 @@ public class Chart : Drawable {
 
         // Translate copies of the points, so the data of the chart is not changed
         var plotData = [[Point]]()
-        for points in chartData! {
-            plotData.append(points.map { Point($0) })
+        for s in series {
+            plotData.append(s.points.map { Point($0) })
         }
         for points in plotData {
             for point in points {
@@ -423,7 +435,58 @@ public class Chart : Drawable {
 
     // Returns true if at least one series has points.
     private func hasPoints() -> Bool {
-        return chartData?.contains(where: { !$0.isEmpty }) ?? false
+        return series.contains(where: { !$0.points.isEmpty })
+    }
+
+    // Returns true if a series has a name to list in the legend.
+    private func hasSeriesNames() -> Bool {
+        return series.contains(where: { !$0.name.isEmpty })
+    }
+
+    // Returns the color of the series at the index: its own or the palette's.
+    private func seriesColor(_ s: Series, _ index: Int) -> [Float] {
+        return s.strokeColor ?? toFloatArray(Chart.DEFAULT_PALETTE[index % Chart.DEFAULT_PALETTE.count])
+    }
+
+    // Draws the legend centered on the chart: the line of each named series
+    // that draws its path, its marker when it has one, and its name.
+    private func drawLegend(_ page: Page, _ baseline: Float) {
+        let ascent = f2!.getAscent()
+        let sample = 2.0 * ascent   // the width of the line or the marker
+        let gap = ascent / 2.0
+        var width: Float = 0.0
+        var entries = 0
+        for s in series where !s.name.isEmpty {
+            width += sample + gap + f2!.stringWidth(s.name)
+            entries += 1
+        }
+        width += Float(entries - 1) * f2!.bodyHeight
+        var x = x1 + (w - width) / 2.0
+        for j in 0..<series.count {
+            let s = series[j]
+            if s.name.isEmpty {
+                continue
+            }
+            let color = seriesColor(s, j)
+            let yMid = baseline - ascent / 2.0
+            page.setPenColor(color)
+            if s.drawPath {
+                page.setPenWidth(s.strokeWidth)
+                page.setStrokeDashPattern(s.strokeDashPattern)
+                page.drawLine(x, yMid, x + sample, yMid)
+            }
+            if s.shape != Shape.INVISIBLE {
+                page.setPenWidth(1.0)
+                page.setDefaultStrokeDashPattern()
+                page.drawPoint(Point(x + sample / 2.0, yMid).setShape(s.shape).setRadius(s.radius))
+            }
+            x += sample + gap
+            page.setBrushColor(Color.black)
+            page.drawString(f2!, f2!.getSize(), s.name, x, baseline)
+            x += f2!.stringWidth(s.name) + f2!.bodyHeight
+        }
+        page.setDefaultPenWidth()
+        page.setDefaultStrokeDashPattern()
     }
 
     // Formats a label with minDigits to maxDigits decimal places, rounding
@@ -490,8 +553,8 @@ public class Chart : Drawable {
         if xAxisGridLines != 0 {
             return
         }
-        for points in chartData! {
-            for point in points {
+        for s in series {
+            for point in s.points {
                 if point.x < xMin {
                     xMin = point.x
                 }
@@ -506,8 +569,8 @@ public class Chart : Drawable {
         if yAxisGridLines != 0 {
             return
         }
-        for points in chartData! {
-            for point in points {
+        for s in series {
+            for point in s.points {
                 if point.y < yMin {
                     yMin = point.y
                 }
@@ -624,55 +687,31 @@ public class Chart : Drawable {
         }
     }
 
-    private func drawPathsAndPoints(
-            _ page: Page, _ chartData: [[Point]]) {
-        var seriesIndex = 0
-        for points in chartData {
-            if points.count > 0 {
-                let p0 = points[0]
-                if p0.drawPath {
-                    if p0.strokeColor == nil {
-                        let index = seriesIndex % Chart.DEFAULT_PALETTE.count
-                        p0.strokeColor = toFloatArray(Chart.DEFAULT_PALETTE[index])
-                    }
-                    page.setPenColor(p0.strokeColor)
-                    page.setPenWidth(p0.strokeWidth)
-                    page.setStrokeDashPattern(p0.strokeDashPattern)
-                    page.drawPath(points, PathOperator.STROKE)
-                    if p0.getText() != nil {
-                        // The text starts at the first point, half an ascent along
-                        // the path, centered across the stroke: on the line when
-                        // it is not rotated, along a vertical stroke when it is.
-                        let ascent = f2!.getAscent()
-                        let x = p0.x + ascent / 2.0
-                        var y = p0.y + ascent / 2.0
-                        if p0.getTextRotation() != 0 {
-                            y = p0.y - ascent / 2.0
-                        }
-                        page.setBrushColor(p0.getTextColor())
-                        page.setTextRotation(p0.getTextRotation())
-                        page.drawString(
-                            f2!,
-                            f2!.getSize(),
-                            p0.getText(),
-                            x,
-                            y,
-                            p0.getTextColor(),
-                            nil)
-                        page.setTextRotation(0)
-                    }
-                }
-                for point in points {
-                    if point.getShape() != Shape.INVISIBLE {
-                        page.setPenColor(point.strokeColor)
-                        page.setPenWidth(point.strokeWidth)
-                        page.setStrokeDashPattern(point.strokeDashPattern)
-                        page.setBrushColor(point.fillColor)
-                        page.drawPoint(point)
-                    }
+    // Draws the line of each series that draws its path, then the markers of
+    // its points: a point without a stroke color in the color of the series.
+    private func drawPathsAndPoints(_ page: Page, _ plotData: [[Point]]) {
+        for j in 0..<series.count {
+            let s = series[j]
+            let points = plotData[j]
+            if points.isEmpty {
+                continue
+            }
+            let color = seriesColor(s, j)
+            if s.drawPath {
+                page.setPenColor(color)
+                page.setPenWidth(s.strokeWidth)
+                page.setStrokeDashPattern(s.strokeDashPattern)
+                page.drawPath(points, PathOperator.STROKE)
+            }
+            for point in points {
+                if point.shape != Shape.INVISIBLE {
+                    page.setPenColor(point.strokeColor ?? color)
+                    page.setPenWidth(point.strokeWidth)
+                    page.setDefaultStrokeDashPattern()
+                    page.setBrushColor(point.fillColor)
+                    page.drawPoint(point)
                 }
             }
-            seriesIndex += 1
         }
     }
 

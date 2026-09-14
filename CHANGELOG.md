@@ -87,7 +87,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   library. `Util.readLines` is `Content.linesOfTextFile`.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
-  decimal places. See "Charts and calendars".
+  decimal places. `Chart.setData` and `getData` are gone: a chart is built
+  from `addSeries(name)`, which returns a `Series` with the points, the line
+  and the marker, and `Point` keeps only its coordinates, its marker and its
+  link. `Cell.setMarker` takes the alignment of the marker. See "Charts and
+  calendars".
 - Constants have types. The Go constant packages are typed, `PathOperator`,
   `PageLayout`, `PageMode`, `ScriptPosition`,
   `ErrorCorrectionLevel`, `Shape` and `StructElem` are enums in Java, C# and
@@ -242,6 +246,20 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   hides the axis lines. Example_39 draws a horizontal bar chart of the ten
   longest rivers with these, each bar in its own color, with a color key and a
   note under it, and Example_40 a grouped and a stacked vertical bar chart.
+- `Chart` data is a list of `Series`: `chart.addSeries(name)` returns the
+  series, with `addPoint(x, y)` for a point with the marker of the series,
+  `addPoint(point)` for a point with its own marker and link, `setDrawPath` to
+  connect the points, `setStrokeColor`, `setStrokeWidth` and
+  `setStrokeDashPattern` for the line, and `setShape` and `setRadius` for the
+  marker. A series without a color has the next color of the palette, and a
+  point without a stroke color has the color of its series. The legend under
+  the title lists the named series with their line or marker,
+  `setDrawLegend(false)` hides it, and the text a path series wrote along its
+  line is gone. `Point` keeps its coordinates, radius, shape, colors, stroke
+  width and URI action; its text, text color, text rotation, alignment, dash
+  pattern, path flag and path operator are gone. `Cell.setMarker(point,
+  alignment)` places the marker at the left or the right of the cell, where
+  the alignment was a property of the point.
 - `Chart` draws only XY charts: `setXYChart` and its category mode are removed,
   bar charts are `BarChart`. `Chart` draws with the sizes of its two fonts, as
   `BarChart` does, so `setFontSize` is gone; `setAutoColors` is gone, the palette
@@ -326,7 +344,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - Misleading names are renamed: `BaseAnnotation.setOpacity`,
   `FileAttachment.setContents` and `setIconPushpin`, `DonutChart.setRadii`,
   `Bookmark.getDestinationName`, `Table.autoAdjustColumnWidths`,
-  `Point.setDrawPath(boolean)`, `Cell.setMarker`, `Page.addBDC`,
+  `Cell.setMarker`, `Page.addBDC`,
   `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHGridLines` and
   `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
   enum instead of `Effect`, and Go `DrawStringUsingHighlightColors`.

@@ -6,33 +6,27 @@
 package pdfjet
 
 import (
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
-// Point is used to create point objects with different shapes and draw them on a page.
-// Please note: When we are mentioning (x, y) coordinates of a point,
-// we are talking about the coordinates of the center of the point.
+// Point is a point with a marker: a shape drawn around its (x, y) coordinates,
+// which are the center of the marker. A point is drawn on a page on its own,
+// as the marker of a table cell, or in a chart Series, and a slice of points
+// is a path for Page.DrawPath.
 // Please see Example_05.
 type Point struct {
-	x, y              float32
-	r                 float32
-	shape             shape.Shape
-	align             alignment.Alignment
-	fillColor         [3]float32
-	hasFillColor      bool
-	strokeWidth       float32
-	strokeColor       [3]float32
-	hasStrokeColor    bool
-	strokeDashPattern string
-	pathOperator      pathoperator.PathOperator
-	controlPoint      byte
-	drawPath          bool
-	text              string
-	textColor         [3]float32
-	textDirection     int
-	uri               string
+	x, y           float32
+	r              float32
+	shape          shape.Shape
+	fillColor      [3]float32
+	hasFillColor   bool
+	strokeWidth    float32
+	strokeColor    [3]float32
+	hasStrokeColor bool
+	pathOperator   pathoperator.PathOperator
+	controlPoint   byte
+	uri            string
 }
 
 // NewPoint constructor for creating point objects.
@@ -45,10 +39,7 @@ func NewPoint(x, y float32) *Point {
 	point.y = y
 	point.r = 2.0
 	point.shape = shape.Circle
-	point.textColor = [3]float32{0, 0, 0}
-	point.align = alignment.Right
 	point.strokeWidth = 1.0
-	point.strokeDashPattern = "[] 0"
 	point.pathOperator = pathoperator.CloseAndStroke
 	return point
 }
@@ -78,6 +69,12 @@ func NewControlPointY(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.controlPoint = 'y'
 	return point
+}
+
+// copyPoint returns a copy of the point, including its marker and its URI action.
+func copyPoint(point *Point) *Point {
+	copied := *point
+	return &copied
 }
 
 // SetLocation sets the location (x, y) of this point.
@@ -184,82 +181,29 @@ func (point *Point) GetStrokeColor() [3]float32 {
 	return point.strokeColor
 }
 
-// SetDrawPath sets whether this point starts a path that is drawn on the chart.
-func (point *Point) SetDrawPath(drawPath bool) *Point {
-	point.drawPath = drawPath
+// SetStrokeWidth sets the width of the lines used to draw this point.
+func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
+	point.strokeWidth = strokeWidth
 	return point
 }
 
-// SetURIAction sets the URI for the "click point" action.
-// @param uri the URI
+// GetStrokeWidth returns the width of the lines used to draw this point.
+// @return the stroke width.
+func (point *Point) GetStrokeWidth() float32 {
+	return point.strokeWidth
+}
+
+// SetURIAction sets the URI of the link opened by a click on this point.
+// @param uri the URI.
 func (point *Point) SetURIAction(uri string) *Point {
 	point.uri = uri
 	return point
 }
 
-// GetURIAction returns the URI for the "click point" action.
-// @return the URI for the "click point" action.
+// GetURIAction returns the URI of the link opened by a click on this point.
+// @return the URI, or "".
 func (point *Point) GetURIAction() string {
 	return point.uri
-}
-
-// SetText sets the point text.
-// @param text the text.
-func (point *Point) SetText(text string) *Point {
-	point.text = text
-	return point
-}
-
-// GetText returns the text associated with this point.
-// @return the text.
-func (point *Point) GetText() string {
-	return point.text
-}
-
-// SetTextColor sets the point's text color as a 0xRRGGBB value.
-func (point *Point) SetTextColor(textColor int32) *Point {
-	r := float32((textColor>>16)&0xff) / 255.0
-	g := float32((textColor>>8)&0xff) / 255.0
-	b := float32((textColor)&0xff) / 255.0
-	point.textColor = [3]float32{r, g, b}
-	return point
-}
-
-// SetTextColorRGB sets the point's text color from the red, green and blue components, from 0.0 to 1.0.
-func (point *Point) SetTextColorRGB(textColor [3]float32) *Point {
-	point.textColor = textColor
-	return point
-}
-
-// GetTextColor returns the point's text color as red, green and blue values.
-func (point *Point) GetTextColor() [3]float32 {
-	return point.textColor
-}
-
-// SetTextRotation sets the point's text direction.
-// @param textDirection the text direction.
-func (point *Point) SetTextRotation(textDirection int) *Point {
-	point.textDirection = textDirection
-	return point
-}
-
-// GetTextRotation returns the point's text direction.
-// @return the text direction.
-func (point *Point) GetTextRotation() int {
-	return point.textDirection
-}
-
-// SetAlignment sets the point alignment inside table cell.
-// @param align the alignment value.
-func (point *Point) SetAlignment(align alignment.Alignment) *Point {
-	point.align = align
-	return point
-}
-
-// GetAlignment returns the point alignment.
-// @return align the alignment value.
-func (point *Point) GetAlignment() alignment.Alignment {
-	return point.align
 }
 
 // DrawOn draws this point on the specified page.
@@ -288,61 +232,4 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 	page.RestoreGraphicsState()
 
 	return [2]float32{point.x + point.r, point.y + point.r}
-}
-
-// SetStrokeWidth sets the width of the lines used to draw this point.
-func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
-	point.strokeWidth = strokeWidth
-	return point
-}
-
-// GetStrokeWidth returns the width of the lines used to draw this point.
-// @return the stroke width.
-func (point *Point) GetStrokeWidth() float32 {
-	return point.strokeWidth
-}
-
-// SetStrokeDashPattern sets the line dash pattern that controls the pattern
-// of dashes and gaps used to stroke paths.
-// It is specified by a dash array and a dash phase.
-// The elements of the dash array are positive numbers that specify the lengths of
-// alternating dashes and gaps.
-// The dash phase specifies the distance into the dash pattern at which to start the dash.
-// The elements of both the dash array and the dash phase are expressed in user space units.
-//
-// Examples of line dash patterns:
-//
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
-//
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-//
-// @param strokeDashPattern the line dash pattern.
-func (point *Point) SetStrokeDashPattern(strokeDashPattern string) *Point {
-	point.strokeDashPattern = strokeDashPattern
-	return point
-}
-
-// GetStrokeDashPattern returns the line dash pattern.
-// @return the line dash pattern.
-func (point *Point) GetStrokeDashPattern() string {
-	return point.strokeDashPattern
-}
-
-// SetPathOperator sets the path operator used to draw this point.
-// @param pathOperator the path operator, for example pathoperator.Stroke.
-func (point *Point) SetPathOperator(pathOperator pathoperator.PathOperator) *Point {
-	point.pathOperator = pathOperator
-	return point
-}
-
-// GetPathOperator returns the path operator used to draw this point.
-// @return the path operator.
-func (point *Point) GetPathOperator() pathoperator.PathOperator {
-	return point.pathOperator
 }

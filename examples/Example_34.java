@@ -30,25 +30,22 @@ final public class Example_34 {
         p1.setShape(Shape.CIRCLE);
         p1.setRadius(2f);
         p1.setStrokeColor(Color.darkolivegreen);
-        p1.setAlignment(Alignment.RIGHT);
         p1.setURIAction("https://en.wikipedia.org/wiki/India");
-        tableData.get(4).get(3).setMarker(p1);
+        tableData.get(4).get(3).setMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.setShape(Shape.DIAMOND);
         p1.setRadius(2.5f);
         p1.setStrokeColor(Color.blue);
-        p1.setAlignment(Alignment.RIGHT);
         p1.setURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData.get(5).get(3).setMarker(p1);
+        tableData.get(5).get(3).setMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.setShape(Shape.STAR);
         p1.setRadius(3f);
         p1.setStrokeColor(Color.red);
-        p1.setAlignment(Alignment.RIGHT);
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData.get(6).get(3).setMarker(p1);
+        tableData.get(6).get(3).setMarker(p1, Alignment.RIGHT);
 
         table.setData(tableData, 2);
         table.setBottomMargin(15f);

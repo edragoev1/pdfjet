@@ -7,8 +7,22 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_09.java
+ *
+ * Draws an XY chart of the countries of a data file, each a marker that links
+ * to a page about the country, with the trend line of the points, and a table
+ * of the countries with a marker of their own.
  */
 final public class Example_09 {
+    /** A country of the data file: its name and its point on the chart. */
+    private static final class Country {
+        final String name;
+        final Point point;
+        Country(String name, Point point) {
+            this.name = name;
+            this.point = point;
+        }
+    }
+
     public Example_09() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_09.pdf")));
@@ -21,73 +35,62 @@ final public class Example_09 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        List<Country> countries = readCountries("data/world-communications.txt", "|");
+
         Chart chart = new Chart(f1, f2);
-        chart.setData(getData("data/world-communications.txt", "|"));
         chart.setLocation(70f, 50f);
         chart.setSize(500f, 300f);
         chart.setTitle("World View - Communications");
         chart.setXAxisTitle("Cell phones per capita");
         chart.setYAxisTitle("Internet users % of the population");
-        addTrendLine(chart);
+        Series markers = chart.addSeries("").setStrokeColor(Color.gray);
+        for (Country country : countries) {
+            markers.addPoint(country.point);
+        }
+        addTrendLine(chart, countries);
         chart.drawOn(page);
 
         f1.setSize(7f);
         f2.setSize(7f);
-        addTableToChart(page, chart, f1, f2);
+        addTableToChart(page, countries, f1, f2);
 
         pdf.complete();
     }
 
-    public void addTrendLine(Chart chart) {
-        List<Point> points = chart.getData().get(0);
-
+    public void addTrendLine(Chart chart, List<Country> countries) {
+        List<Point> points = new ArrayList<Point>();
+        for (Country country : countries) {
+            points.add(country.point);
+        }
         float m = slope(points);
         float b = intercept(points, m);
-
-        List<Point> trendLine = new ArrayList<Point>();
-        float x = 0.0f;
-        float y = m * x + b;
-        Point p1 = new Point(x, y);
-        p1.setDrawPath(true);
-        p1.setStrokeColor(Color.blue);
-        p1.setShape(Shape.INVISIBLE);
-
-        x = 1.5f;
-        y = m * x + b;
-        Point p2 = new Point(x, y);
-        p2.setShape(Shape.INVISIBLE);
-
-        trendLine.add(p1);
-        trendLine.add(p2);
-
-        chart.getData().add(trendLine);
+        chart.addSeries("Trend line")
+                .setDrawPath(true)
+                .setStrokeColor(Color.blue)
+                .setShape(Shape.INVISIBLE)
+                .addPoint(0f, b)
+                .addPoint(1.5f, m * 1.5f + b);
     }
 
     public void addTableToChart(
-            Page page, Chart chart, Font f1, Font f2) throws Exception {
+            Page page, List<Country> countries, Font f1, Font f2) throws Exception {
         Table table = new Table();
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-        List<Point> points = chart.getData().get(0);
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
-            if (point.getShape() != Shape.CIRCLE) {
+        for (Country country : countries) {
+            if (country.point.getShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new ArrayList<Cell>();
 
-                point.setRadius(2f);
-                point.setAlignment(Alignment.LEFT);
-
                 Cell cell = new Cell(f2);
-                cell.setMarker(point);
+                cell.setMarker(country.point, Alignment.LEFT);
                 cell.setText("");
-
                 tableRow.add(cell);
 
                 cell = new Cell(f1);
-                cell.setText(point.getText());
+                cell.setText(country.name);
                 tableRow.add(cell);
 
                 cell = new Cell(f2);
-                cell.setText(point.getURIAction());
+                cell.setText(country.point.getURIAction());
                 tableRow.add(cell);
 
                 tableData.add(tableRow);
@@ -101,12 +104,10 @@ final public class Example_09 {
         table.drawOn(page);
     }
 
-    public List<List<Point>> getData(
+    public List<Country> readCountries(
             String fileName,
             String delimiter) throws Exception {
-        List<List<Point>> chartData = new ArrayList<List<Point>>();
-
-        List<Point> points = new ArrayList<Point>();
+        List<Country> countries = new ArrayList<Country>();
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(
@@ -123,23 +124,21 @@ final public class Example_09 {
                         "Only pipes and tabs can be used as delimiters");
                 }
 
-                Point point = new Point();
                 try {
                     double population =
                             Double.valueOf(cols[1].replace(",", ""));
-                    point.setText(cols[0].trim());
-                    String country_name = point.getText();
+                    String name = cols[0].trim();
+                    String country_name = name;
                     country_name = country_name.replace(" ", "_");
                     country_name = country_name.replace("'", "_");
                     country_name = country_name.replace(",", "_");
                     country_name = country_name.replace("(", "_");
                     country_name = country_name.replace(")", "_");
+                    Point point = new Point(
+                            (float) (Double.valueOf(cols[5].replace(",", "")) / population),
+                            (float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
                     point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
-                    point.setX((float) (Double.valueOf(cols[5].replace(",", "")) / population));
-                    point.setY((float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
-
                     point.setRadius(2f);
-                    point.setStrokeColor(Color.gray);
 
                     if (point.getX() > 1.25f) {
                         point.setShape(Shape.RIGHT_ARROW);
@@ -147,27 +146,25 @@ final public class Example_09 {
                     } else if (point.getY() > 80f) {
                         point.setShape(Shape.UP_ARROW);
                         point.setStrokeColor(Color.blue);
-                    } else if (point.getText().equals("France")) {
+                    } else if (name.equals("France")) {
                         point.setShape(Shape.MULTIPLY);
                         point.setStrokeColor(Color.green);
-                    } else if (point.getText().equals("Canada")) {
+                    } else if (name.equals("Canada")) {
                         point.setShape(Shape.BOX);
                         point.setStrokeColor(Color.orange);
-                    } else if (point.getText().startsWith("United States")) {
+                    } else if (name.startsWith("United States")) {
                         point.setShape(Shape.STAR);
                         point.setStrokeColor(Color.red);
                     }
 
-                    points.add(point);
+                    countries.add(new Country(name, point));
                 } catch (Exception e) {
                 }
             }
         } finally {
             reader.close();
         }
-        chartData.add(points);
-
-        return chartData;
+        return countries;
     }
 
     // The slope and intercept of the ordinary least squares trend line of the points.

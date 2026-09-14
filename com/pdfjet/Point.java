@@ -7,51 +7,34 @@
 package com.pdfjet;
 
 /**
- *  Used to create point objects with different shapes and draw them on a page.
- *  Please note: When we are mentioning (x, y) coordinates of a point - we are talking about the coordinates of the center of the point.
+ * A point with a marker: a shape drawn around its (x, y) coordinates, which
+ * are the center of the marker. A point is drawn on a page on its own, as the
+ * marker of a table cell, or in a chart Series, and a list of points is a
+ * path for Page.drawPath.
  *
- *  Please see Example_05.
+ * Please see Example_05.
  */
 public class Point implements Drawable {
-    /** Control point for the c operator, which uses both control points. */
+    /** A control point of a curve drawn with the c operator, which uses both control points. */
     public static final char CONTROL_POINT_C = 'c';
 
-    /** Control point for the v operator, where the first control point coincides with the initial point of the curve. */
+    /** A control point of a curve drawn with the v operator, where the first control point is the start point. */
     public static final char CONTROL_POINT_V = 'v';
 
-    /** Control point for the y operator, where the second control point coincides with the final point of the curve. */
+    /** A control point of a curve drawn with the y operator, where the second control point is the end point. */
     public static final char CONTROL_POINT_Y = 'y';
 
-    /** The x coordinate. */
-    protected float x;
-    /** The y coordinate. */
-    protected float y;
-    /** The radius. */
-    protected float r = 2f;
-    /** The shape, one of the shape constants in this class. */
-    protected Shape shape = Shape.CIRCLE;
-    /** The alignment of the text relative to this point. */
-    protected Alignment align = Alignment.RIGHT;
+    float x;
+    float y;
+    float r = 2f;
+    Shape shape = Shape.CIRCLE;
 
-    /** The fill color as an RGB array, or null. */
-    protected float[] fillColor = null;
-    /** The stroke width. */
-    protected float strokeWidth = 1f;
-    /** The stroke color as an RGB array, or null. */
-    protected float[] strokeColor = null;
-    /** The stroke dash pattern. */
-    protected String strokeDashPattern = "[] 0";
-    /** The operator used to paint the shape. */
-    protected PathOperator pathOperator = PathOperator.CLOSE_AND_STROKE;
+    float[] fillColor = null;
+    float strokeWidth = 1f;
+    float[] strokeColor = null;
+    PathOperator pathOperator = PathOperator.CLOSE_AND_STROKE;
 
-    /** The control point type when this point is part of a path, or 0 if it is not a control point. */
-    protected char controlPoint = '\0';
-    /** True if this point starts a path drawn on a chart. */
-    protected boolean drawPath = false;
-
-    private String text;
-    private float[] textColor = new float[] {0f, 0f, 0f};
-    private int textDirection;
+    char controlPoint = '\0';
     private String uri;
 
     /**
@@ -61,8 +44,8 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Copy constructor. Creates a deep copy of the specified point,
-     *  including all visual properties, URI action, and text attributes.
+     *  Copy constructor. Creates a copy of the specified point, including its
+     *  marker and its URI action.
      *
      *  @param point the point to copy.
      */
@@ -71,21 +54,11 @@ public class Point implements Drawable {
         this.y = point.y;
         this.r = point.r;
         this.shape = point.shape;
-        this.align = point.align;
-        this.fillColor = point.fillColor != null
-                ? new float[] {point.fillColor[0], point.fillColor[1], point.fillColor[2]}
-                : null;
+        this.fillColor = Util.copyOf(point.fillColor);
         this.strokeWidth = point.strokeWidth;
-        this.strokeColor = point.strokeColor != null
-                ? new float[] {point.strokeColor[0], point.strokeColor[1], point.strokeColor[2]}
-                : null;
-        this.strokeDashPattern = point.strokeDashPattern;
+        this.strokeColor = Util.copyOf(point.strokeColor);
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
-        this.drawPath = point.drawPath;
-        this.text = point.text;
-        this.textColor = Util.copyOf(point.textColor);
-        this.textDirection = point.textDirection;
         this.uri = point.uri;
     }
 
@@ -294,80 +267,15 @@ public class Point implements Drawable {
         return strokeWidth;
     }
 
-    /**
-     *
-     *  The line dash pattern controls the pattern of dashes and gaps used to stroke paths.
-     *  It is specified by a dash array and a dash phase.
-     *  The elements of the dash array are positive numbers that specify the lengths of
-     *  alternating dashes and gaps.
-     *  The dash phase specifies the distance into the dash pattern at which to start the dash.
-     *  The elements of both the dash array and the dash phase are expressed in user space units.
-     *  <pre>
-     *  Examples of line dash patterns:
-     *
-     *      "[Array] Phase"     Appearance          Description
-     *      _______________     _________________   ____________________________________
-     *
-     *      "[] 0"              -----------------   Solid line
-     *      "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-     *      "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-     *      "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-     *      "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-     *      "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
-     *  </pre>
-     *
-     *  @param strokeDashPattern the line dash pattern.
-     *  @return this Point object.
-     */
-    public Point setStrokeDashPattern(String strokeDashPattern) {
-        this.strokeDashPattern = strokeDashPattern;
-        return this;
-    }
-
-    /**
-     *  Returns the line dash pattern.
-     *
-     *  @return the line dash pattern.
-     */
-    public String getStrokeDashPattern() {
-        return strokeDashPattern;
-    }
-
-    /**
-     * Sets the path operator used to draw this point.
-     *
-     * @param pathOperator the path operator, for example PathOperator.STROKE.
-     * @return this Point object.
-     */
-    public Point setPathOperator(PathOperator pathOperator) {
-        this.pathOperator = pathOperator;
-        return this;
-    }
-
-    /**
-     * Returns the path operator used to draw this point.
-     *
-     * @return the path operator.
-     */
-    public PathOperator getPathOperator() {
+    /** Returns the path operator the marker is painted with. */
+    PathOperator getPathOperator() {
         return this.pathOperator;
     }
 
     /**
-     *  Sets whether this point starts a path that is drawn on the chart.
+     *  Sets the URI of the link opened by a click on this point.
      *
-     *  @param drawPath true to draw the path.
-     *  @return the point.
-     */
-    public Point setDrawPath(boolean drawPath) {
-        this.drawPath = drawPath;
-        return this;
-    }
-
-    /**
-     *  Sets the URI for the "click point" action.
-     *
-     *  @param uri the URI
+     *  @param uri the URI.
      *  @return this Point object.
      */
     public Point setURIAction(String uri) {
@@ -376,106 +284,12 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Returns the URI for the "click point" action.
+     *  Returns the URI of the link opened by a click on this point.
      *
-     *  @return the URI for the "click point" action.
+     *  @return the URI, or null.
      */
     public String getURIAction() {
         return uri;
-    }
-
-    /**
-     *  Sets the point text.
-     *
-     *  @param text the text.
-     *  @return this Point object.
-     */
-    public Point setText(String text) {
-        this.text = text;
-        return this;
-    }
-
-    /**
-     *  Returns the text associated with this point.
-     *
-     *  @return the text.
-     */
-    public String getText() {
-        return this.text;
-    }
-
-    /**
-     *  Sets the point's text color.
-     *
-     *  @param textColor the text color.
-     *  @return this Point object.
-     */
-    public Point setTextColor(int textColor) {
-        float r = ((textColor >> 16) & 0xff)/255f;
-        float g = ((textColor >>  8) & 0xff)/255f;
-        float b = ((textColor)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     *  Sets the point's text color.
-     *
-     *  @param textColor the red, green and blue components of the text color, from 0.0 to 1.0.
-     *  @return this Point object.
-     */
-    public Point setTextColor(float[] textColor) {
-        this.textColor = Util.copyOf(textColor);
-        return this;
-    }
-
-    /**
-     *  Returns the point's text color.
-     *
-     *  @return the red, green and blue components of the text color.
-     */
-    public float[] getTextColor() {
-        return Util.copyOf(this.textColor);
-    }
-
-    /**
-     *  Sets the point's text direction.
-     *
-     *  @param textDirection the text direction.
-     *  @return this Point object.
-     */
-    public Point setTextRotation(int textDirection) {
-        this.textDirection = textDirection;
-        return this;
-    }
-
-    /**
-     *  Returns the point's text direction.
-     *
-     *  @return the text direction.
-     */
-    public int getTextRotation() {
-        return this.textDirection;
-    }
-
-    /**
-     *  Sets the point alignment inside table cell.
-     *
-     *  @param align the alignment value.
-     *  @return this Point object.
-     */
-    public Point setAlignment(Alignment align) {
-        this.align = align;
-        return this;
-    }
-
-    /**
-     *  Returns the point alignment.
-     *
-     *  @return align the alignment value.
-     */
-    public Alignment getAlignment() {
-        return this.align;
     }
 
     /**

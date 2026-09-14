@@ -13,20 +13,21 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
-func testSeries(ys ...float32) [][]*Point {
-	points := make([]*Point, 0)
-	for i, y := range ys {
-		points = append(points, NewPoint(float32(i+1), y))
-	}
-	return [][]*Point{points}
+func testChart(pdf *PDF) *Chart {
+	font := testHelvetica(pdf)
+	chart := NewChart(font, font).SetSize(300, 200)
+	chart.SetLocation(50, 50)
+	return chart
 }
 
-func testDrawChart(data [][]*Point) string {
+func testDrawChart(ys ...float32) string {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	font := testHelvetica(pdf)
-	chart := NewChart(font, font).SetSize(300, 200).SetData(data)
-	chart.SetLocation(50, 50)
+	chart := testChart(pdf)
+	series := chart.AddSeries("")
+	for i, y := range ys {
+		series.AddPoint(float32(i+1), y)
+	}
 	chart.DrawOn(page)
 	return testContent(page)
 }
@@ -34,9 +35,8 @@ func testDrawChart(data [][]*Point) string {
 func TestChartAChartWithoutPointsDrawsNothing(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	font := testHelvetica(pdf)
-	chart := NewChart(font, font).SetSize(300, 200).SetData([][]*Point{})
-	chart.SetLocation(50, 50)
+	chart := testChart(pdf)
+	chart.AddSeries("empty")
 	testAssertXY(t, 350, 250, chart.DrawOn(page))
 	if len(page.GetContent()) != 0 {
 		t.Errorf("content %q", testContent(page))
@@ -44,7 +44,7 @@ func TestChartAChartWithoutPointsDrawsNothing(t *testing.T) {
 }
 
 func TestChartAllNegativeDataGetsNegativeAxisLabels(t *testing.T) {
-	content := testDrawChart(testSeries(-5, -2.5, -1))
+	content := testDrawChart(-5, -2.5, -1)
 	if !strings.Contains(content, testHex("-5.0")) || !strings.Contains(content, testHex("-1.0")) {
 		t.Errorf("labels missing from %q", content)
 	}
@@ -54,7 +54,7 @@ func TestChartAllNegativeDataGetsNegativeAxisLabels(t *testing.T) {
 }
 
 func TestChartFlatDataIsDrawnWithoutNaN(t *testing.T) {
-	content := testDrawChart(testSeries(3, 3, 3))
+	content := testDrawChart(3, 3, 3)
 	if strings.Contains(content, "NaN") {
 		t.Error("NaN in the content")
 	}
@@ -64,25 +64,49 @@ func TestChartFlatDataIsDrawnWithoutNaN(t *testing.T) {
 }
 
 func TestChartWholeNumberStepsGetWholeNumberLabels(t *testing.T) {
-	content := testDrawChart(testSeries(10, 60, 35))
+	content := testDrawChart(10, 60, 35)
 	if !strings.Contains(content, testHex("60")) || strings.Contains(content, testHex("60.00")) {
 		t.Errorf("labels in %q", content)
 	}
 }
 
-func TestChartAPathSeriesKeepsItsStrokeWidthAndWritesItsText(t *testing.T) {
-	p1 := NewPoint(1, 2).SetDrawPath(true).SetShape(shape.Invisible)
-	p1.SetStrokeWidth(20).SetStrokeColor(color.Blue).SetText("label")
-	p2 := NewPoint(3, 2).SetShape(shape.Invisible)
-	content := testDrawChart([][]*Point{{p1, p2}})
+func TestChartAPathSeriesKeepsItsStrokeWidthAndIsListedInTheLegend(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf)
+	chart.AddSeries("label").SetDrawPath(true).SetShape(shape.Invisible).
+		SetStrokeWidth(20).SetStrokeColor(color.Blue).
+		AddPoint(1, 2).AddPoint(3, 2)
+	chart.DrawOn(page)
+	content := testContent(page)
 	if !strings.Contains(content, "20 w") || !strings.Contains(content, testHex("label")) {
-		t.Errorf("stroke width or text missing from %q", content)
+		t.Errorf("stroke width or legend missing from %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	chart.SetDrawLegend(false).DrawOn(page)
+	if strings.Contains(testContent(page), testHex("label")) {
+		t.Errorf("legend drawn in %q", testContent(page))
+	}
+}
+
+func TestChartAPointWithoutAColorIsDrawnInTheColorOfItsSeries(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf)
+	chart.AddSeries("").SetStrokeColor(color.Red).
+		AddPoint(1, 1).
+		AddPointWithMarker(NewPoint(2, 2).SetStrokeColor(color.Blue).SetShape(shape.Box))
+	chart.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, "1 0 0 RG") || !strings.Contains(content, "0 0 1 RG") {
+		t.Errorf("marker colors missing from %q", content)
 	}
 }
 
 func TestChartLabelsUseAPeriod(t *testing.T) {
 	// Java sets a German default locale here; Go formats without a locale.
-	content := testDrawChart(testSeries(1, 2, 3))
+	content := testDrawChart(1, 2, 3)
 	if !strings.Contains(content, testHex("1.25")) || strings.Contains(content, testHex("1,25")) {
 		t.Errorf("labels in %q", content)
 	}

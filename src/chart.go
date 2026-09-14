@@ -19,7 +19,8 @@ import (
 // Please see Example_09.
 type Chart struct {
 	f1, f2                         *Font
-	chartData                      [][]*Point
+	series                         []*Series
+	drawLegend                     bool
 	w                              float32
 	h                              float32
 	x1, x2, x3, x4, x5, x6, x7, x8 float32
@@ -74,6 +75,8 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.yMax = -math.MaxFloat32
 	chart.yMin = math.MaxFloat32
 
+	chart.series = make([]*Series, 0)
+	chart.drawLegend = true
 	chart.drawHGridLines = true
 	chart.drawVGridLines = true
 	chart.drawXAxisLabels = true
@@ -105,15 +108,21 @@ func (chart *Chart) SetYAxisTitle(title string) *Chart {
 	return chart
 }
 
-// SetData sets the data that will be used to draw chart.
-func (chart *Chart) SetData(chartData [][]*Point) *Chart {
-	chart.chartData = chartData
-	return chart
+// AddSeries adds a series and returns it, to add its points and set its line
+// and marker. A series without a stroke color has the next color of the
+// palette. The legend lists the series that have a name.
+// @param name the series name, shown in the legend; empty for none.
+func (chart *Chart) AddSeries(name string) *Series {
+	series := newSeries(name)
+	chart.series = append(chart.series, series)
+	return series
 }
 
-// GetData returns the chart data.
-func (chart *Chart) GetData() [][]*Point {
-	return chart.chartData
+// SetDrawLegend sets whether the legend is drawn. The legend lists the series
+// that have a name, under the title, each with its line or its marker.
+func (chart *Chart) SetDrawLegend(drawLegend bool) *Chart {
+	chart.drawLegend = drawLegend
+	return chart
 }
 
 // SetLocation sets the location of chart on the page.
@@ -248,7 +257,8 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.roundXAxisMinAndMaxValues()
 	chart.roundYAxisMinAndMaxValues()
 
-	// Draw chart title
+	// Draw chart title, then the legend under it
+	page.SetBrushColor(color.Black)
 	page.drawString(
 		chart.f1,
 		chart.f1.GetSize(),
@@ -257,8 +267,12 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.y1+1.5*chart.f1.bodyHeight,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
-
+	legend := chart.drawLegend && chart.hasSeriesNames()
 	topMargin := 2.5 * chart.f1.bodyHeight
+	if legend {
+		chart.drawLegendOn(page, chart.y1+1.5*chart.f1.bodyHeight+1.5*chart.f2.bodyHeight)
+		topMargin += 1.5 * chart.f2.bodyHeight
+	}
 	leftMargin := chart.getLongestAxisYLabelWidth() + 2.0*chart.f2.bodyHeight
 	rightMargin := 2.0 * chart.f2.bodyHeight
 	bottomMargin := 2.5 * chart.f2.bodyHeight
@@ -293,13 +307,11 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	}
 
 	// Defensive copy so the user's data is never mutated
-	plotData := make([][]*Point, len(chart.chartData))
-	for i, original := range chart.chartData {
-		pointCopy := make([]*Point, len(original))
-		for j, p := range original {
-			// Create a shallow copy of the Point
-			copyPoint := *p
-			pointCopy[j] = &copyPoint
+	plotData := make([][]*Point, len(chart.series))
+	for i, s := range chart.series {
+		pointCopy := make([]*Point, len(s.points))
+		for j, p := range s.points {
+			pointCopy[j] = copyPoint(p)
 		}
 		plotData[i] = pointCopy
 	}
@@ -367,12 +379,73 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 
 // hasPoints returns true if at least one series has points.
 func (chart *Chart) hasPoints() bool {
-	for _, points := range chart.chartData {
-		if len(points) > 0 {
+	for _, s := range chart.series {
+		if len(s.points) > 0 {
 			return true
 		}
 	}
 	return false
+}
+
+// hasSeriesNames returns true if a series has a name to list in the legend.
+func (chart *Chart) hasSeriesNames() bool {
+	for _, s := range chart.series {
+		if s.name != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// seriesColor returns the color of the series at the index: its own or the palette's.
+func (chart *Chart) seriesColor(s *Series, index int) [3]float32 {
+	if s.hasStrokeColor {
+		return s.strokeColor
+	}
+	return chart.toFloatArray(defaultPalette[index%len(defaultPalette)])
+}
+
+// drawLegendOn draws the legend centered on the chart: the line of each named
+// series that draws its path, its marker when it has one, and its name.
+func (chart *Chart) drawLegendOn(page *Page, baseline float32) {
+	f2 := chart.f2
+	ascent := f2.ascent
+	sample := 2.0 * ascent // the width of the line or the marker
+	gap := ascent / 2.0
+	width := float32(0.0)
+	entries := 0
+	for _, s := range chart.series {
+		if s.name != "" {
+			width += sample + gap + f2.StringWidth(f2.size, s.name)
+			entries++
+		}
+	}
+	width += float32(entries-1) * f2.bodyHeight
+	x := chart.x1 + (chart.w-width)/2.0
+	for j, s := range chart.series {
+		if s.name == "" {
+			continue
+		}
+		rgb := chart.seriesColor(s, j)
+		yMid := baseline - ascent/2.0
+		page.SetPenColorRGB(rgb)
+		if s.drawPath {
+			page.SetPenWidth(s.strokeWidth)
+			page.SetStrokeDashPattern(s.strokeDashPattern)
+			page.DrawLine(x, yMid, x+sample, yMid)
+		}
+		if s.shape != shape.Invisible {
+			page.SetPenWidth(1.0)
+			page.SetDefaultStrokeDashPattern()
+			page.DrawPoint(NewPoint(x+sample/2.0, yMid).SetShape(s.shape).SetRadius(s.radius))
+		}
+		x += sample + gap
+		page.SetBrushColor(color.Black)
+		page.drawString(f2, f2.size, s.name, x, baseline, [3]float32{0.0, 0.0, 0.0}, nil)
+		x += f2.StringWidth(f2.size, s.name) + f2.bodyHeight
+	}
+	page.SetDefaultPenWidth()
+	page.SetDefaultStrokeDashPattern()
 }
 
 // format formats a label with minDigits to maxDigits decimal places, rounding
@@ -440,8 +513,8 @@ func (chart *Chart) setXAxisMinAndMaxChartValues() {
 	if chart.xAxisGridLines != 0 {
 		return
 	}
-	for _, points := range chart.chartData {
-		for _, point := range points {
+	for _, s := range chart.series {
+		for _, point := range s.points {
 			if point.x < chart.xMin {
 				chart.xMin = point.x
 			}
@@ -456,8 +529,8 @@ func (chart *Chart) setYAxisMinAndMaxChartValues() {
 	if chart.yAxisGridLines != 0 {
 		return
 	}
-	for _, points := range chart.chartData {
-		for _, point := range points {
+	for _, s := range chart.series {
+		for _, point := range s.points {
 			if point.y < chart.yMin {
 				chart.yMin = point.y
 			}
@@ -563,67 +636,37 @@ func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 	}
 }
 
-func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
-	seriesIndex := 0
-	for _, points := range chartData {
-		// Skip a series with no points; the next series keeps its color
+// drawPathsAndPoints draws the line of each series that draws its path, then
+// the markers of its points: a point without a stroke color in the color of
+// the series.
+func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point) {
+	for j, s := range chart.series {
+		points := plotData[j]
 		if len(points) == 0 {
-			seriesIndex++
 			continue
 		}
-		p0 := points[0]
-		if p0.drawPath {
-			if !p0.hasStrokeColor {
-				index := seriesIndex % len(defaultPalette)
-				p0.strokeColor = chart.toFloatArray(defaultPalette[index])
-				p0.hasStrokeColor = true
-			}
-			if p0.hasStrokeColor {
-				page.SetPenColorRGB(p0.strokeColor)
-			}
-			page.SetPenWidth(p0.strokeWidth)
-			page.SetStrokeDashPattern(p0.strokeDashPattern)
+		rgb := chart.seriesColor(s, j)
+		if s.drawPath {
+			page.SetPenColorRGB(rgb)
+			page.SetPenWidth(s.strokeWidth)
+			page.SetStrokeDashPattern(s.strokeDashPattern)
 			page.DrawPath(points, pathoperator.Stroke)
-			if p0.GetText() != "" {
-				// The text starts at the first point, half an ascent along
-				// the path, centered across the stroke: on the line when
-				// it is not rotated, along a vertical stroke when it is.
-				ascent := chart.f2.GetAscent()
-				x := p0.x + ascent/2.0
-				y := p0.y + ascent/2.0
-				if p0.GetTextRotation() != 0 {
-					y = p0.y - ascent/2.0
-				}
-				page.SetBrushColorRGB(p0.GetTextColor())
-				page.SetTextRotation(p0.GetTextRotation())
-				page.drawString(
-					chart.f2,
-					chart.f2.GetSize(),
-					p0.text,
-					x,
-					y,
-					p0.textColor,
-					nil)
-				page.SetTextRotation(0)
-			}
 		}
 		for _, point := range points {
-			if point.GetShape() != shape.Invisible {
-				// The other ports pass a null color here and their
-				// setPenColor/setBrushColor return early on it. The has*
-				// flags are this port's stand-in for that null.
+			if point.shape != shape.Invisible {
 				if point.hasStrokeColor {
 					page.SetPenColorRGB(point.strokeColor)
+				} else {
+					page.SetPenColorRGB(rgb)
 				}
 				page.SetPenWidth(point.strokeWidth)
-				page.SetStrokeDashPattern(point.strokeDashPattern)
+				page.SetDefaultStrokeDashPattern()
 				if point.hasFillColor {
 					page.SetBrushColorRGB(point.fillColor)
 				}
 				page.DrawPoint(point)
 			}
 		}
-		seriesIndex++
 	}
 }
 
