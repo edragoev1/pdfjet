@@ -70,7 +70,6 @@ public class Chart implements Drawable {
     // f1 = chart title font, f2 = axis title/label font
     private Font f1;
     private Font f2;
-    private float fontSize = 8f;
 
     private List<List<Point>> chartData = null;
 
@@ -84,7 +83,6 @@ public class Chart implements Drawable {
         Color.magenta,
         Color.olive
     };
-    private boolean autoColors = true;
 
     /**
      *  Creates an XY chart.
@@ -171,17 +169,6 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the font size of the axis labels.
-     *
-     * @param fontSize the font size.
-     * @return this Chart object.
-     */
-    public Chart setFontSize(float fontSize) {
-        this.fontSize = fontSize;
-        return this;
-    }
-
-    /**
      * Sets the minimum number of decimal places in the axis labels. The labels
      * of an axis have at least the decimal places of its step, so an axis with
      * a whole number step has whole number labels. The default is 0.
@@ -204,28 +191,6 @@ public class Chart implements Drawable {
     public Chart setMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
         return this;
-    }
-
-    /**
-     *  Calculates the slope of a trend line (OLS). See Example_09.
-     *
-     *  @param points the list of points.
-     *  @return the slope.
-     */
-    public float slope(List<Point> points) {
-        return (covar(points) / devsq(points) * (points.size() - 1));
-    }
-
-    /**
-     *  Calculates the intercept of a trend line (OLS). See Example_09.
-     *
-     *  @param points the list of points.
-     *  @param slope the slope.
-     *  @return the intercept.
-     */
-    public float intercept(List<Point> points, float slope) {
-        float[] _mean = mean(points);
-        return (_mean[1] - slope * _mean[0]);
     }
 
     /**
@@ -343,17 +308,6 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets whether the series colors are assigned automatically.
-     *
-     * @param autoColors true to assign the colors automatically.
-     * @return this Chart object.
-     */
-    public Chart setAutoColors(boolean autoColors) {
-        this.autoColors = autoColors;
-        return this;
-    }
-
-    /**
      *  Draws this chart on the specified page.
      *
      *  @param page the page to draw on.
@@ -389,9 +343,9 @@ public class Chart implements Drawable {
         // Draw chart title (centered, top)
         page.drawString(
                 f1,
-                fontSize,
+                f1.getSize(),
                 title,
-                x1 + ((w - f1.stringWidth(fontSize, title)) / 2),
+                x1 + ((w - f1.stringWidth(title)) / 2),
                 y1 + 1.5f * f1.bodyHeight);
 
         // Compute margins and inner plot area
@@ -469,19 +423,19 @@ public class Chart implements Drawable {
         page.setTextRotation(90);
         page.drawString(
                 f2,
-                fontSize,
+                f2.getSize(),
                 yAxisTitle,
                 x1 + f2.bodyHeight,
-                y8 - ((y8 - y5) - f2.stringWidth(fontSize, yAxisTitle)) / 2);
+                y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2);
 
         // Draw X axis title
         page.setTextRotation(0);
         page.setBrushColor(Color.black);
         page.drawString(
                 f2,
-                fontSize,
+                f2.getSize(),
                 xAxisTitle,
-                x5 + ((x6 - x5) - f2.stringWidth(fontSize, xAxisTitle)) / 2,
+                x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2,
                 y4 - f2.bodyHeight / 2);
 
         // Restore default pen/brush state
@@ -549,8 +503,8 @@ public class Chart implements Drawable {
     /** Returns the width of the widest Y axis label (for left margin). */
     private float getLongestAxisYLabelWidth() {
         float step = (yMax - yMin) / yAxisGridLines;
-        float minLabelWidth = f2.stringWidth(fontSize, format(yMin, step) + "0");
-        float maxLabelWidth = f2.stringWidth(fontSize, format(yMax, step) + "0");
+        float minLabelWidth = f2.stringWidth(format(yMin, step) + "0");
+        float maxLabelWidth = f2.stringWidth(format(yMax, step) + "0");
         if (maxLabelWidth > minLabelWidth) {
             return maxLabelWidth;
         }
@@ -672,7 +626,7 @@ public class Chart implements Drawable {
         page.setBrushColor(Color.black);
         for (int i = 0; i < (xAxisGridLines + 1); i++) {
             String label = format(xMin + valueStep * i, valueStep);
-            page.drawString(f2, fontSize, label, x - (f2.stringWidth(fontSize, label) / 2), y);
+            page.drawString(f2, f2.getSize(), label, x - (f2.stringWidth(label) / 2), y);
             x += step;
         }
     }
@@ -686,7 +640,7 @@ public class Chart implements Drawable {
         page.setBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {
             String label = format(yMin + valueStep * i, valueStep);
-            page.drawString(f2, fontSize, label, x, y);
+            page.drawString(f2, f2.getSize(), label, x, y);
             y -= step;
         }
     }
@@ -716,7 +670,7 @@ public class Chart implements Drawable {
             }
             Point p0 = points.get(0);
             if (p0.drawPath) {
-                if (autoColors && p0.strokeColor == null) {
+                if (p0.strokeColor == null) {
                     int index = seriesIndex % DEFAULT_PALETTE.length;
                     p0.strokeColor = toFloatArray(DEFAULT_PALETTE[index]);
                 }
@@ -728,7 +682,7 @@ public class Chart implements Drawable {
                     // The text starts at the first point, half an ascent along
                     // the path, centered across the stroke: on the line when
                     // it is not rotated, along a vertical stroke when it is.
-                    float ascent = f2.getAscent(fontSize);
+                    float ascent = f2.getAscent();
                     float x = p0.x + ascent / 2f;
                     float y = p0.y + ascent / 2f;
                     if (p0.getTextRotation() != 0) {
@@ -739,7 +693,7 @@ public class Chart implements Drawable {
                     page.drawString(
                             f2,
                             null,
-                            fontSize,
+                            f2.getSize(),
                             p0.getText(),
                             x,
                             y,
@@ -806,38 +760,6 @@ public class Chart implements Drawable {
         round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);
 
         return round;
-    }
-
-    /** Returns [mean_x, mean_y] for the given points. */
-    private float[] mean(List<Point> points) {
-        float[] _mean = new float[2];
-        for (Point point : points) {
-            _mean[0] += point.x;
-            _mean[1] += point.y;
-        }
-        _mean[0] /= points.size();
-        _mean[1] /= points.size();
-        return _mean;
-    }
-
-    /** Returns the covariance of x and y. */
-    private float covar(List<Point> points) {
-        float covariance = 0f;
-        float[] _mean = mean(points);
-        for (Point point : points) {
-            covariance += (point.x - _mean[0]) * (point.y - _mean[1]);
-        }
-        return (covariance / (points.size() - 1));
-    }
-
-    /** Returns the sum of squared deviations of x from mean_x. */
-    private float devsq(List<Point> points) {
-        float _devsq = 0f;
-        float[] _mean = mean(points);
-        for (Point point : points) {
-            _devsq = _devsq + (float) Math.pow((point.x - _mean[0]), 2);
-        }
-        return _devsq;
     }
 
     /**

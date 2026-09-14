@@ -63,7 +63,6 @@ public class Chart : Drawable {
 
     private var f1: Font?
     private var f2: Font?
-    private var fontSize: Float = 8.0
 
     /// The data series of this chart, one array of points per series.
     private var chartData: [[Point]]?
@@ -78,7 +77,6 @@ public class Chart : Drawable {
         Color.magenta,
         Color.olive
     ]
-    private var autoColors = true
 
     /**
      * Create a XY chart object.
@@ -203,42 +201,6 @@ public class Chart : Drawable {
         return self
     }
 
-    /**
-     * Calculates the slope of a trend line given a list of points.
-     * See Example_09.
-     *
-     * - Parameter points: the list of points.
-     * - Returns: the slope float value.
-     */
-    public func slope(_ points: [Point])-> Float {
-        return (covar(points) / devsq(points) * Float(points.count - 1))
-    }
-
-    /**
-     * Calculates the intercept of a trend line given a list of points.
-     * See Example_09.
-     *
-     * - Parameter points: the list of points.
-     * - Parameter slope: the slope of the trend line.
-     * - Returns: the intercept float value.
-     */
-    public func intercept(_ points: [Point], _ slope: Double)-> Float {
-        return intercept(points, Float(slope))
-    }
-
-    /**
-     * Calculates the intercept of a trend line given a list of points.
-     * See Example_09.
-     *
-     * - Parameter points: the list of points.
-     * - Parameter slope: the slope of the trend line.
-     * - Returns: the intercept float value.
-     */
-    public func intercept(_ points: [Point], _ slope: Float)-> Float {
-        let _mean: [Float] = mean(points)
-        return (_mean[1] - slope * _mean[0])
-    }
-
     /** Toggles drawing of horizontal grid lines. */
     @discardableResult
     public func setDrawHGridLines(_ drawHGridLines: Bool) -> Chart {
@@ -250,13 +212,6 @@ public class Chart : Drawable {
     @discardableResult
     public func setDrawVGridLines(_ drawVGridLines: Bool) -> Chart {
         self.drawVGridLines = drawVGridLines
-        return self
-    }
-
-    /// Sets the font size used for the axis labels and point text.
-    @discardableResult
-    public func setFontSize(_ fontSize: Float) -> Chart {
-        self.fontSize = fontSize
         return self
     }
 
@@ -301,13 +256,6 @@ public class Chart : Drawable {
     @discardableResult
     public func setVGridLineDashPattern(_ pattern: String) -> Chart {
         self.vGridLinePattern = pattern
-        return self
-    }
-
-    /// Toggles the automatic stroke colors for the data series.
-    @discardableResult
-    public func setAutoColors(_ autoColors: Bool) -> Chart {
-        self.autoColors = autoColors
         return self
     }
 
@@ -369,9 +317,9 @@ public class Chart : Drawable {
         if page != nil {
             page!.drawString(
                     f1!,
-                    fontSize,
+                    f1!.getSize(),
                     title,
-                    x1 + ((w - f1!.stringWidth(fontSize, title)) / 2),
+                    x1 + ((w - f1!.stringWidth(title)) / 2),
                     y1 + 1.5 * f1!.bodyHeight)
         }
 
@@ -450,19 +398,19 @@ public class Chart : Drawable {
             page!.setTextRotation(90)
             page!.drawString(
                     f2!,
-                    fontSize,
+                    f2!.getSize(),
                     yAxisTitle,
                     x1 + f2!.bodyHeight,
-                    y8 - ((y8 - y5) - f2!.stringWidth(fontSize, yAxisTitle)) / 2)
+                    y8 - ((y8 - y5) - f2!.stringWidth(yAxisTitle)) / 2)
 
             // Draw the X axis title
             page!.setTextRotation(0)
             page!.setBrushColor(Color.black)
             page!.drawString(
                     f2!,
-                    fontSize,
+                    f2!.getSize(),
                     xAxisTitle,
-                    x5 + ((x6 - x5) - f2!.stringWidth(fontSize, xAxisTitle)) / 2,
+                    x5 + ((x6 - x5) - f2!.stringWidth(xAxisTitle)) / 2,
                     y4 - f2!.bodyHeight / 2)
 
             page!.setDefaultPenWidth()
@@ -530,8 +478,8 @@ public class Chart : Drawable {
 
     private func getLongestAxisYLabelWidth()-> Float {
         let step = (yMax - yMin) / Float(yAxisGridLines)
-        let minLabelWidth = f2!.stringWidth(fontSize, format(yMin, step) + "0")
-        let maxLabelWidth = f2!.stringWidth(fontSize, format(yMax, step) + "0")
+        let minLabelWidth = f2!.stringWidth(format(yMin, step) + "0")
+        let maxLabelWidth = f2!.stringWidth(format(yMax, step) + "0")
         if maxLabelWidth > minLabelWidth {
             return maxLabelWidth
         }
@@ -647,9 +595,9 @@ public class Chart : Drawable {
             let label = format(xMin + valueStep * Float(i), valueStep)
             page.drawString(
                     f2!,
-                    fontSize,
+                    f2!.getSize(),
                     label,
-                    x - (f2!.stringWidth(fontSize, label) / 2),
+                    x - (f2!.stringWidth(label) / 2),
                     y)
             x += step
             i += 1
@@ -667,7 +615,7 @@ public class Chart : Drawable {
             let label = format(yMin + valueStep * Float(i), valueStep)
             page.drawString(
                     f2!,
-                    fontSize,
+                    f2!.getSize(),
                     label,
                     x,
                     y)
@@ -683,7 +631,7 @@ public class Chart : Drawable {
             if points.count > 0 {
                 let p0 = points[0]
                 if p0.drawPath {
-                    if autoColors && p0.strokeColor == nil {
+                    if p0.strokeColor == nil {
                         let index = seriesIndex % Chart.DEFAULT_PALETTE.count
                         p0.strokeColor = toFloatArray(Chart.DEFAULT_PALETTE[index])
                     }
@@ -695,7 +643,7 @@ public class Chart : Drawable {
                         // The text starts at the first point, half an ascent along
                         // the path, centered across the stroke: on the line when
                         // it is not rotated, along a vertical stroke when it is.
-                        let ascent = f2!.getAscent(fontSize)
+                        let ascent = f2!.getAscent()
                         let x = p0.x + ascent / 2.0
                         var y = p0.y + ascent / 2.0
                         if p0.getTextRotation() != 0 {
@@ -705,7 +653,7 @@ public class Chart : Drawable {
                         page.setTextRotation(p0.getTextRotation())
                         page.drawString(
                             f2!,
-                            fontSize,
+                            f2!.getSize(),
                             p0.getText(),
                             x,
                             y,
@@ -773,39 +721,6 @@ public class Chart : Drawable {
         round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())
 
         return round
-    }
-
-    private func mean(_ points: [Point])-> [Float] {
-        var _mean = [Float](repeating: 0, count: 2)
-        for point in points {
-            _mean[0] += point.x
-            _mean[1] += point.y
-        }
-        let n = Float(points.count)
-        _mean[0] /= n
-        _mean[1] /= n
-        return _mean
-    }
-
-    private func covar(_ points: [Point])-> Float {
-        var covariance: Float = 0.0
-        let _mean = mean(points)
-        for point in points {
-            covariance += (point.x - _mean[0]) * (point.y - _mean[1])
-        }
-        return (covariance / Float(points.count - 1))
-    }
-
-    /**
-     * devsq() returns the sum of squares of deviations.
-     */
-    private func devsq(_ points: [Point])-> Float {
-        var _devsq: Float = 0.0
-        let _mean = mean(points)
-        for point in points {
-            _devsq += Float(pow(Double(point.x - _mean[0]), 2))
-        }
-        return _devsq
     }
 
     /// Sets xMin and xMax for the X axis and the number of X grid lines.

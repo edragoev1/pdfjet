@@ -289,6 +289,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       Swift. Fixed (Sep 14): the fields are private, `Paragraph` and `Title`
       have the getters Go had (`getX1`, `getTextX`, `getPrefix`, ...), and
       Example_03, 41 and 48 call them; the audit lists no Go-only getter.
+- ✅ **B** Chart leftovers: `setFontSize` drew everything at 8 points whatever
+      the fonts' sizes, `setAutoColors` had no clear meaning, and `slope` and
+      `intercept` were statistics on a chart object. Fixed (Sep 14): `Chart`
+      draws with the sizes of its fonts like `BarChart`, the palette colors a
+      series without a color, and Example_09 computes its own trend line, in
+      the four ports; Example_09 draws the same PDF.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

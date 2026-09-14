@@ -205,7 +205,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   and the value labels inside the segments. Example_39 draws a horizontal bar
   chart and Example_40 a grouped and a stacked vertical bar chart with it.
 - `Chart` draws only XY charts: `setXYChart` and its category mode are removed,
-  bar charts are `BarChart`. Stroke widths are page units and are no longer
+  bar charts are `BarChart`. `Chart` draws with the sizes of its two fonts, as
+  `BarChart` does, so `setFontSize` is gone; `setAutoColors` is gone, the palette
+  colors a series that has no color; and `slope` and `intercept` are gone,
+  Example_09 computes its trend line. Stroke widths are page units and are no longer
   scaled by the plot to chart width ratio, so a path is as wide as it was set.
   The axis labels have the decimal places of the axis step, so an axis with
   whole number steps has whole number labels; the default minimum is 0

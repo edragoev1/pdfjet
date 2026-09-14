@@ -41,8 +41,8 @@ final public class Example_09 {
     public void addTrendLine(Chart chart) {
         List<Point> points = chart.getData().get(0);
 
-        float m = chart.slope(points);
-        float b = chart.intercept(points, m);
+        float m = slope(points);
+        float b = intercept(points, m);
 
         List<Point> trendLine = new ArrayList<Point>();
         float x = 0.0f;
@@ -168,6 +168,45 @@ final public class Example_09 {
         chartData.add(points);
 
         return chartData;
+    }
+
+    // The slope and intercept of the ordinary least squares trend line of the points.
+    private static float slope(List<Point> points) {
+        return covar(points) / devsq(points) * (points.size() - 1);
+    }
+
+    private static float intercept(List<Point> points, float slope) {
+        float[] mean = mean(points);
+        return mean[1] - slope * mean[0];
+    }
+
+    private static float[] mean(List<Point> points) {
+        float[] mean = new float[2];
+        for (Point point : points) {
+            mean[0] += point.getX();
+            mean[1] += point.getY();
+        }
+        mean[0] /= points.size();
+        mean[1] /= points.size();
+        return mean;
+    }
+
+    private static float covar(List<Point> points) {
+        float covariance = 0f;
+        float[] mean = mean(points);
+        for (Point point : points) {
+            covariance += (point.getX() - mean[0]) * (point.getY() - mean[1]);
+        }
+        return covariance / (points.size() - 1);
+    }
+
+    private static float devsq(List<Point> points) {
+        float devsq = 0f;
+        float[] mean = mean(points);
+        for (Point point : points) {
+            devsq = devsq + (float) Math.pow(point.getX() - mean[0], 2);
+        }
+        return devsq;
     }
 
     public static void main(String[] args) throws Exception {

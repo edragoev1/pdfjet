@@ -41,8 +41,8 @@ public class Example_09 {
     public func addTrendLine(_ chart: Chart) {
         let points = chart.getData()![0]
 
-        let m = chart.slope(points)
-        let b = chart.intercept(points, m)
+        let m = slope(points)
+        let b = intercept(points, m)
 
         var trendLine = [Point]()
         var x: Float = 0.0
@@ -168,6 +168,45 @@ public class Example_09 {
         chartData.append(points)
 
         return chartData
+    }
+    // The slope and intercept of the ordinary least squares trend line of the points.
+    private func slope(_ points: [Point]) -> Float {
+        return covar(points) / devsq(points) * Float(points.count - 1)
+    }
+
+    private func intercept(_ points: [Point], _ slope: Float) -> Float {
+        let m = mean(points)
+        return m[1] - slope * m[0]
+    }
+
+    private func mean(_ points: [Point]) -> [Float] {
+        var m = [Float](repeating: 0, count: 2)
+        for point in points {
+            m[0] += point.getX()
+            m[1] += point.getY()
+        }
+        let n = Float(points.count)
+        m[0] /= n
+        m[1] /= n
+        return m
+    }
+
+    private func covar(_ points: [Point]) -> Float {
+        var covariance: Float = 0.0
+        let m = mean(points)
+        for point in points {
+            covariance += (point.getX() - m[0]) * (point.getY() - m[1])
+        }
+        return covariance / Float(points.count - 1)
+    }
+
+    private func devsq(_ points: [Point]) -> Float {
+        var sum: Float = 0.0
+        let m = mean(points)
+        for point in points {
+            sum += Float(pow(Double(point.getX() - m[0]), 2))
+        }
+        return sum
     }
 }   // End of Example_09.swift
 

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -49,8 +50,8 @@ func Example09() {
 func addTrendLine(chart *pdfjet.Chart) {
 	points := chart.GetData()[0]
 
-	m := chart.Slope(points)
-	b := chart.Intercept(points, m)
+	m := slope(points)
+	b := intercept(points, m)
 
 	trendLine := make([]*pdfjet.Point, 0)
 
@@ -210,4 +211,44 @@ func main() {
 	Example09()
 	time1 := time.Now().UnixMilli()
 	pdfjet.PrintDuration("Example_09", time0, time1)
+}
+
+// The slope and intercept of the ordinary least squares trend line of the points.
+func slope(points []*pdfjet.Point) float32 {
+	return covar(points) / devsq(points) * float32(len(points)-1)
+}
+
+func intercept(points []*pdfjet.Point, slope float32) float32 {
+	m := mean(points)
+	return m[1] - slope*m[0]
+}
+
+func mean(points []*pdfjet.Point) []float32 {
+	m := make([]float32, 2)
+	for _, point := range points {
+		m[0] += point.GetX()
+		m[1] += point.GetY()
+	}
+	n := float32(len(points))
+	m[0] /= n
+	m[1] /= n
+	return m
+}
+
+func covar(points []*pdfjet.Point) float32 {
+	var covariance float32
+	m := mean(points)
+	for _, point := range points {
+		covariance += (point.GetX() - m[0]) * (point.GetY() - m[1])
+	}
+	return covariance / float32(len(points)-1)
+}
+
+func devsq(points []*pdfjet.Point) float32 {
+	var sum float32
+	m := mean(points)
+	for _, point := range points {
+		sum += float32(math.Pow(float64(point.GetX()-m[0]), float64(2)))
+	}
+	return sum
 }

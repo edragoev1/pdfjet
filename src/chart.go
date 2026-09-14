@@ -45,11 +45,9 @@ type Chart struct {
 	innerBorderWidth               float32
 	minFractionDigits              int
 	maxFractionDigits              int
-	fontSize                       float32
-	autoColors                     bool
 }
 
-// defaultPalette holds the stroke colors used when autoColors is enabled.
+// defaultPalette holds the stroke colors of the series that have no color.
 var defaultPalette = [...]int32{
 	color.Blue,
 	color.Red,
@@ -86,8 +84,6 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.innerBorderWidth = 0.0
 	chart.minFractionDigits = 0
 	chart.maxFractionDigits = 2
-	chart.fontSize = 8.0
-	chart.autoColors = true
 	return chart
 }
 
@@ -150,19 +146,6 @@ func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) *Chart {
 	return chart
 }
 
-// Slope calculates the slope of a trend line given a list of points.
-// See Example_09.
-func (chart *Chart) Slope(points []*Point) float32 {
-	return chart.covar(points) / chart.devsq(points) * float32(len(points)-1)
-}
-
-// Intercept calculates the intercept of a trend line given a list of points.
-// See Example_09.
-func (chart *Chart) Intercept(points []*Point, slope float32) float32 {
-	_mean := chart.mean(points)
-	return _mean[1] - slope*_mean[0]
-}
-
 // SetDrawHGridLines sets whether to draw horizontal grid lines on the chart.
 func (chart *Chart) SetDrawHGridLines(drawHGridLines bool) *Chart {
 	chart.drawHGridLines = drawHGridLines
@@ -172,12 +155,6 @@ func (chart *Chart) SetDrawHGridLines(drawHGridLines bool) *Chart {
 // SetDrawVGridLines sets whether to draw vertical grid lines on the chart.
 func (chart *Chart) SetDrawVGridLines(drawVGridLines bool) *Chart {
 	chart.drawVGridLines = drawVGridLines
-	return chart
-}
-
-// SetFontSize sets the font size used for the axis labels and point text.
-func (chart *Chart) SetFontSize(fontSize float32) *Chart {
-	chart.fontSize = fontSize
 	return chart
 }
 
@@ -216,12 +193,6 @@ func (chart *Chart) SetHGridLineDashPattern(pattern string) *Chart {
 // SetVGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
 func (chart *Chart) SetVGridLineDashPattern(pattern string) *Chart {
 	chart.vGridLinePattern = pattern
-	return chart
-}
-
-// SetAutoColors toggles the automatic stroke colors for the data series.
-func (chart *Chart) SetAutoColors(autoColors bool) *Chart {
-	chart.autoColors = autoColors
 	return chart
 }
 
@@ -280,9 +251,9 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Draw chart title
 	page.drawString(
 		chart.f1,
-		chart.fontSize,
+		chart.f1.GetSize(),
 		chart.title,
-		chart.x1+((chart.w-chart.f1.StringWidth(chart.fontSize, chart.title))/2),
+		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.GetSize(), chart.title))/2),
 		chart.y1+1.5*chart.f1.bodyHeight,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -368,10 +339,10 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SetTextRotation(90)
 	page.drawString(
 		chart.f2,
-		chart.fontSize,
+		chart.f2.GetSize(),
 		chart.yAxisTitle,
 		chart.x1+chart.f2.bodyHeight,
-		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.fontSize, chart.yAxisTitle))/2,
+		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.yAxisTitle))/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -380,9 +351,9 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SetBrushColor(color.Black)
 	page.drawString(
 		chart.f2,
-		chart.fontSize,
+		chart.f2.GetSize(),
 		chart.xAxisTitle,
-		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.fontSize, chart.xAxisTitle))/2,
+		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.xAxisTitle))/2,
 		chart.y4-chart.f2.bodyHeight/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -457,8 +428,8 @@ func (chart *Chart) formatAxis(value, step float32) string {
 
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
 	step := (chart.yMax - chart.yMin) / float32(chart.yAxisGridLines)
-	minLabelWidth := chart.f2.StringWidth(chart.fontSize, chart.formatAxis(chart.yMin, step)+"0")
-	maxLabelWidth := chart.f2.StringWidth(chart.fontSize, chart.formatAxis(chart.yMax, step)+"0")
+	minLabelWidth := chart.f2.StringWidth(chart.f2.GetSize(), chart.formatAxis(chart.yMin, step)+"0")
+	maxLabelWidth := chart.f2.StringWidth(chart.f2.GetSize(), chart.formatAxis(chart.yMax, step)+"0")
 	if maxLabelWidth > minLabelWidth {
 		return maxLabelWidth
 	}
@@ -573,7 +544,7 @@ func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
 		label := chart.formatAxis(chart.xMin+valueStep*float32(i), valueStep)
 		page.drawString(
-			chart.f2, chart.fontSize, label, x-(chart.f2.StringWidth(chart.fontSize, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
+			chart.f2, chart.f2.GetSize(), label, x-(chart.f2.StringWidth(chart.f2.GetSize(), label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
 	}
 }
@@ -587,7 +558,7 @@ func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
 		label := chart.formatAxis(chart.yMin+valueStep*float32(i), valueStep)
-		page.drawString(chart.f2, chart.fontSize, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
+		page.drawString(chart.f2, chart.f2.GetSize(), label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
 }
@@ -602,7 +573,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 		}
 		p0 := points[0]
 		if p0.drawPath {
-			if chart.autoColors && !p0.hasStrokeColor {
+			if !p0.hasStrokeColor {
 				index := seriesIndex % len(defaultPalette)
 				p0.strokeColor = chart.toFloatArray(defaultPalette[index])
 				p0.hasStrokeColor = true
@@ -617,7 +588,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 				// The text starts at the first point, half an ascent along
 				// the path, centered across the stroke: on the line when
 				// it is not rotated, along a vertical stroke when it is.
-				ascent := chart.f2.GetAscentAt(chart.fontSize)
+				ascent := chart.f2.GetAscent()
 				x := p0.x + ascent/2.0
 				y := p0.y + ascent/2.0
 				if p0.GetTextRotation() != 0 {
@@ -627,7 +598,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 				page.SetTextRotation(p0.GetTextRotation())
 				page.drawString(
 					chart.f2,
-					chart.fontSize,
+					chart.f2.GetSize(),
 					p0.text,
 					x,
 					y,
@@ -733,37 +704,6 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	round.numOfGridLines = int(math.Round(float64((round.maxValue - round.minValue) / step)))
 
 	return round
-}
-
-func (chart *Chart) mean(points []*Point) []float32 {
-	_mean := make([]float32, 2)
-	for _, point := range points {
-		_mean[0] += point.x
-		_mean[1] += point.y
-	}
-	n := float32(len(points))
-	_mean[0] /= n
-	_mean[1] /= n
-	return _mean
-}
-
-func (chart *Chart) covar(points []*Point) float32 {
-	var covariance float32
-	_mean := chart.mean(points)
-	for _, point := range points {
-		covariance += (point.x - _mean[0]) * (point.y - _mean[1])
-	}
-	return covariance / float32(len(points)-1)
-}
-
-// devsq returns the sum of squares of deviations.
-func (chart *Chart) devsq(points []*Point) float32 {
-	var _devsq float32
-	_mean := chart.mean(points)
-	for _, point := range points {
-		_devsq += float32(math.Pow(float64(point.x-_mean[0]), float64(2)))
-	}
-	return _devsq
 }
 
 // SetXAxisMinMax sets xMin and xMax for the X axis and the number of X grid lines.

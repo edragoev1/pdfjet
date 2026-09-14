@@ -40,8 +40,8 @@ public class Example_09 {
     public void AddTrendLine(Chart chart) {
         List<Point> points = chart.GetData()[0];
 
-        float m = chart.Slope(points);
-        float b = chart.Intercept(points, m);
+        float m = Slope(points);
+        float b = Intercept(points, m);
 
         List<Point> trendline = new List<Point>();
         float x = 0.0f;
@@ -166,6 +166,45 @@ public class Example_09 {
         chartData.Add(points);
 
         return chartData;
+    }
+
+    // The slope and intercept of the ordinary least squares trend line of the points.
+    private static float Slope(List<Point> points) {
+        return Covar(points) / Devsq(points) * (points.Count - 1);
+    }
+
+    private static float Intercept(List<Point> points, float slope) {
+        float[] mean = Mean(points);
+        return mean[1] - slope * mean[0];
+    }
+
+    private static float[] Mean(List<Point> points) {
+        float[] mean = new float[2];
+        foreach (Point point in points) {
+            mean[0] += point.GetX();
+            mean[1] += point.GetY();
+        }
+        mean[0] /= points.Count;
+        mean[1] /= points.Count;
+        return mean;
+    }
+
+    private static float Covar(List<Point> points) {
+        float covariance = 0f;
+        float[] mean = Mean(points);
+        foreach (Point point in points) {
+            covariance += (point.GetX() - mean[0]) * (point.GetY() - mean[1]);
+        }
+        return covariance / (points.Count - 1);
+    }
+
+    private static float Devsq(List<Point> points) {
+        float devsq = 0f;
+        float[] mean = Mean(points);
+        foreach (Point point in points) {
+            devsq += (float) Math.Pow(point.GetX() - mean[0], 2);
+        }
+        return devsq;
     }
 
     public static void Main(String[] args) {

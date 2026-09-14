@@ -54,7 +54,6 @@ public class Chart : IDrawable {
     // f1 = chart title font, f2 = axis title/label font
     private Font f1 = null;
     private Font f2 = null;
-    private float fontSize = 8f;
 
     private List<List<Point>> chartData = null;
 
@@ -68,7 +67,6 @@ public class Chart : IDrawable {
         Color.magenta,
         Color.olive
     };
-    private bool autoColors = true;
 
     /// <summary>
     /// Creates an XY chart.
@@ -142,14 +140,6 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the font size for axis labels.
-    /// </summary>
-    public Chart SetFontSize(float fontSize) {
-        this.fontSize = fontSize;
-        return this;
-    }
-
-    /// <summary>
     ///  Sets the minimum number of decimal places in the axis labels. The labels
     ///  of an axis have at least the decimal places of its step, so an axis with
     ///  a whole number step has whole number labels. The default is 0.
@@ -165,26 +155,6 @@ public class Chart : IDrawable {
     public Chart SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
         return this;
-    }
-
-    /// <summary>
-    /// Calculates the slope of a trend line (OLS). See Example_09.
-    /// </summary>
-    /// <param name="points">the data points.</param>
-    /// <returns>the slope.</returns>
-    public float Slope(List<Point> points) {
-        return (Covar(points) / Devsq(points) * (points.Count - 1));
-    }
-
-    /// <summary>
-    /// Calculates the intercept of a trend line (OLS). See Example_09.
-    /// </summary>
-    /// <param name="points">the data points.</param>
-    /// <param name="slope">the pre-computed slope.</param>
-    /// <returns>the intercept.</returns>
-    public float Intercept(List<Point> points, float slope) {
-        float[] _mean = Mean(points);
-        return (_mean[1] - slope * _mean[0]);
     }
 
     /// <summary>
@@ -300,9 +270,9 @@ public class Chart : IDrawable {
         // Draw chart title (centered, top)
         page.DrawString(
                 f1,
-                fontSize,
+                f1.GetSize(),
                 title,
-                x1 + ((w - f1.StringWidth(fontSize, title)) / 2),
+                x1 + ((w - f1.StringWidth(title)) / 2),
                 y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()));
 
         // Compute margins and inner plot area
@@ -380,19 +350,19 @@ public class Chart : IDrawable {
         page.SetTextRotation(90);
         page.DrawString(
                 f2,
-                fontSize,
+                f2.GetSize(),
                 yAxisTitle,
                 x1 + f2.GetBodyHeight(f2.GetSize()),
-                y8 - ((y8 - y5) - f2.StringWidth(fontSize, yAxisTitle)) / 2);
+                y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2);
 
         // Draw X axis title
         page.SetTextRotation(0);
         page.SetBrushColor(Color.black);
         page.DrawString(
                 f2,
-                fontSize,
+                f2.GetSize(),
                 xAxisTitle,
-                x5 + ((x6 - x5) - f2.StringWidth(fontSize, xAxisTitle)) / 2,
+                x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
         page.SetDefaultPenWidth();
@@ -458,9 +428,9 @@ public class Chart : IDrawable {
     private float GetLongestAxisYLabelWidth() {
         float step = (yMax - yMin) / yAxisGridLines;
         float minLabelWidth =
-                f2.StringWidth(fontSize, Format(yMin, step) + "0");
+                f2.StringWidth(Format(yMin, step) + "0");
         float maxLabelWidth =
-                f2.StringWidth(fontSize, Format(yMax, step) + "0");
+                f2.StringWidth(Format(yMax, step) + "0");
         if (maxLabelWidth > minLabelWidth) {
             return maxLabelWidth;
         }
@@ -600,7 +570,7 @@ public class Chart : IDrawable {
         page.SetBrushColor(Color.black);
         for (int i = 0; i < (xAxisGridLines + 1); i++) {
             String label = Format(xMin + valueStep * i, valueStep);
-            page.DrawString(f2, fontSize, label, x - (f2.StringWidth(fontSize, label) / 2), y);
+            page.DrawString(f2, f2.GetSize(), label, x - (f2.StringWidth(label) / 2), y);
             x += step;
         }
     }
@@ -616,15 +586,9 @@ public class Chart : IDrawable {
         page.SetBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {
             String label = Format(yMin + valueStep * i, valueStep);
-            page.DrawString(f2, fontSize, label, x, y);
+            page.DrawString(f2, f2.GetSize(), label, x, y);
             y -= step;
         }
-    }
-
-    /// <summary>Sets whether the series colors are assigned automatically.</summary>
-    public Chart SetAutoColors(bool autoColors) {
-        this.autoColors = autoColors;
-        return this;
     }
 
     /// <summary>Converts a 0xRRGGBB color to red, green and blue values between 0.0 and 1.0.</summary>
@@ -649,7 +613,7 @@ public class Chart : IDrawable {
             }
             Point p0 = points[0];
             if (p0.drawPath) {
-                if (autoColors && p0.strokeColor == null) {
+                if (p0.strokeColor == null) {
                     int index = seriesIndex % DEFAULT_PALETTE.Length;
                     p0.strokeColor = ToFloatArray(DEFAULT_PALETTE[index]);
                 }
@@ -661,7 +625,7 @@ public class Chart : IDrawable {
                     // The text starts at the first point, half an ascent along
                     // the path, centered across the stroke: on the line when
                     // it is not rotated, along a vertical stroke when it is.
-                    float ascent = f2.GetAscent(fontSize);
+                    float ascent = f2.GetAscent();
                     float x = p0.x + ascent / 2f;
                     float y = p0.y + ascent / 2f;
                     if (p0.GetTextRotation() != 0) {
@@ -672,7 +636,7 @@ public class Chart : IDrawable {
                     page.DrawString(
                             f2,
                             null,
-                            fontSize,
+                            f2.GetSize(),
                             p0.GetText(),
                             x,
                             y,
@@ -737,44 +701,6 @@ public class Chart : IDrawable {
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
 
         return round;
-    }
-
-    /// <summary>
-    ///  Returns [mean_x, mean_y] for the given points.
-    /// </summary>
-    private float[] Mean(List<Point> points) {
-        float[] _mean = new float[2];
-        foreach (Point point in points) {
-            _mean[0] += point.x;
-            _mean[1] += point.y;
-        }
-        _mean[0] /= points.Count;
-        _mean[1] /= points.Count;
-        return _mean;
-    }
-
-    /// <summary>
-    ///  Returns the covariance of x and y.
-    /// </summary>
-    private float Covar(List<Point> points) {
-        float covariance = 0f;
-        float[] _mean = Mean(points);
-        foreach (Point point in points) {
-            covariance += (point.x - _mean[0]) * (point.y - _mean[1]);
-        }
-        return (covariance / (points.Count - 1));
-    }
-
-    /// <summary>
-    ///  Returns the sum of squared deviations of x from mean_x.
-    /// </summary>
-    private float Devsq(List<Point> points) {
-        float _devsq = 0f;
-        float[] _mean = Mean(points);
-        foreach (Point point in points) {
-            _devsq += (float) Math.Pow((point.x - _mean[0]), 2);
-        }
-        return _devsq;
     }
 
     /// <summary>

@@ -153,8 +153,8 @@
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">3</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
     <tr><td>One way to say each thing</td><td class="num">5</td><td class="num">5</td><td>Rotation and spacing variants, drawString overloads</td></tr>
-    <tr><td>Hide what is not for users</td><td class="num">2</td><td class="num">2</td><td>Java internals, chart leftovers</td></tr>
-    <tr class="total"><td>Total</td><td class="num">10</td><td class="num">8</td><td></td></tr>
+    <tr><td>Hide what is not for users</td><td class="num">1</td><td class="num">1</td><td>Java internals</td></tr>
+    <tr class="total"><td>Total</td><td class="num">9</td><td class="num">7</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -266,13 +266,6 @@
 
 
 
-<section class="item">
-  <h3>Chart leftovers <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Chart.setFontSize</code> overrides both fonts while <code>BarChart</code> uses the font sizes. <code>slope</code> and <code>intercept</code> are statistics on a chart object. <code>setAutoColors</code> has no clear meaning.</p>
-  <span class="label">Suggestion</span>
-  <p>Drop all three and match <code>BarChart</code>. Example_09 computes its trend line with two static helpers or in the example.</p>
-</section>
 
 <h2 id="plan">What to do in 9.0.0</h2>
 <div class="plan">
