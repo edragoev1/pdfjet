@@ -555,6 +555,10 @@ renames included (the Week 1 decision), so every item is a blocker.
       of the next, one empty line in the size of the next paragraph by default
       in both constructors, in the four ports with unit tests. Example_10 (`TextColumn`) does not change; the `TextColumn` and
       `TextFrame` paragraph spacings stay two until the 10.0 fold.
+- ✅ Example_41 was a copy of Example_03 in the four ports (both moved from
+      `Text` to `TextFrame` when `Text` went). Removed; Example_51, the merge
+      example, is Example_41, and the scripts, workflows and example pages
+      count 50 examples.
 
 ### Types and signatures
 
@@ -919,7 +923,7 @@ renames included (the Week 1 decision), so every item is a blocker.
       the objects the pages use are renumbered and written at once, the
       entries a page inherits are written on it, references to the page tree,
       the catalog and pages that are not merged become null, and the merged
-      strings and streams are encrypted when the PDF is. Example_51; the
+      strings and streams are encrypted when the PDF is. Example_41; the
       examples go to 51. Split is next.
 
 ### Broken PDFs from misuse (Sep 14)

@@ -3,100 +3,64 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
+	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example41 draws paragraphs of styled text with the Text component on Letter paper.
+// Example41 merges existing PDF documents into one, after a cover page drawn
+// with PDFjet. The pages of each document follow in their order and keep their
+// content, resources, annotations and links. The parts of a document that
+// belong to the whole document, such as its bookmarks, form fields and
+// tagging, are left out.
 func Example41() {
 	pdf, err := pdfjet.NewPDFFile("Example_41.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
+	fileNames := []string{
+		"data/testPDFs/wirth.pdf",
+		"data/testPDFs/rc65-16e.pdf",
+		"data/testPDFs/PDFjetLogo.pdf",
+	}
+	documents := make([][]*pdfjet.PDFobj, 0)
+	for _, fileName := range fileNames {
+		buf, err := os.ReadFile(fileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		objects, err := pdf.Read(buf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		documents = append(documents, objects)
+	}
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f2.SetSize(10.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
-	f3.SetSize(10.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f1.SetSize(24.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-
-	paragraphs := make([]*pdfjet.Paragraph, 0)
-
-	paragraph := pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
-	paragraphs = append(paragraphs, paragraph)
-
-	paragraph = pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
-	paragraphs = append(paragraphs, paragraph)
-
-	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 50.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
-
-	paragraphNumber := 1
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			paragraphNumber = 1
-		} else {
-			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
-			textLine.DrawOn(page)
-			paragraphNumber++
+	pdfjet.NewTextLine(f1, "Merged documents").SetLocation(50.0, 80.0).DrawOn(page)
+	y := float32(130.0)
+	for i, fileName := range fileNames {
+		pages := len(pdf.GetPageObjects(documents[i]))
+		text := fmt.Sprintf("%s, %d pages", fileName, pages)
+		if pages == 1 {
+			text = fmt.Sprintf("%s, %d page", fileName, pages)
 		}
+		pdfjet.NewTextLine(f2, text).SetLocation(50.0, y).DrawOn(page)
+		y += 20.0
 	}
 
-	colorMap := make(map[string]int32)
-	colorMap["Physics"] = color.Red
-	colorMap["physics"] = color.Red
-	colorMap["Experimentation"] = color.Orange
-	colorMap["science"] = color.Blue
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
-			p.GetTextLines()[0].SetTextColor(color.Navy)
-		} else {
-			p.SetTextColor(color.Gray)
-			p.SetHighlightColors(colorMap)
-		}
-	}
-
-	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 150.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
-
-	paragraphNumber = 1
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			paragraphNumber = 1
-		} else {
-			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
-			textLine.DrawOn(page)
-			pdfjet.NewLine(
-				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
-			paragraphNumber++
+	for _, objects := range documents {
+		if err := pdf.Merge(objects); err != nil {
+			log.Fatal(err)
 		}
 	}
 

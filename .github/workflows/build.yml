@@ -73,7 +73,7 @@ jobs:
             - name: Check that every example created its PDF file
               run: |
                   missing=0
-                  for i in $(seq -w 1 51); do
+                  for i in $(seq -w 1 50); do
                       if [ ! -s "Example_$i.pdf" ]; then
                           echo "::error::Example_$i.pdf was not created"
                           missing=1
@@ -118,7 +118,7 @@ jobs:
             - name: Check that every example created its PDF file
               run: |
                   missing=0
-                  for i in $(seq -w 1 51); do
+                  for i in $(seq -w 1 50); do
                       if [ ! -s "Example_$i.pdf" ]; then
                           echo "::error::Example_$i.pdf was not created"
                           missing=1

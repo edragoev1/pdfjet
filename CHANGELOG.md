@@ -178,7 +178,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   tree; bookmarks, form fields, tagging, named destinations and optional
   content settings are left out. An encrypted PDF encrypts the merged pages. A
   PDF/UA or PDF/A document cannot merge, and `merge` cannot be combined with
-  `addObjects`. Example_51 merges three documents after a cover page; tests
+  `addObjects`. Example_41 merges three documents after a cover page; tests
   cover the order, the inherited entries, links to merged pages, encryption
   both ways and the refused uses, in the four ports.
 - Filter chains, encrypted PDFs, hybrid reference files and broken
@@ -532,6 +532,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   array-only `Cell.SetBorderColorRGB` as documented conventions.
 
 ### Build, checks and examples
+- Example_41 was a copy of Example_03 and is removed; the merge example that was
+  Example_51 is Example_41, so the examples are numbered 1 to 50.
 - The examples draw with the embedded IBM Plex fonts, which a PDF/UA document
   needs, instead of the core fonts. The core fonts stay in Example_04, whose
   CJK fonts are not embedded either, in Example_05, which shows their
@@ -638,7 +640,7 @@ the unused `Embed` enum are removed. Highlights below; see
 ### Deprecated methods removed
 - `TextLine.setColor` is removed from all four ports; call `setTextColor`,
   which it only forwarded to. The Swift `DonutChart`, the Java `Example_37` and
-  the Swift `Example_03`, `Example_37` and `Example_41` now call `setTextColor`.
+  the Swift `Example_03` and `Example_37` now call `setTextColor`.
 - `TextColumn.setSize` is removed from all four ports; call `setWidth` and
   `setHeight`. Java, Go and Swift get `setHeight`, which C# already had, and
   their `Example_10` uses the two setters, as the C# example already did.

@@ -1,98 +1,52 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_41.java
+ * Example_41.cs
+ *
+ * Merges existing PDF documents into one, after a cover page drawn with PDFjet.
+ * The pages of each document follow in their order and keep their content,
+ * resources, annotations and links. The parts of a document that belong to the
+ * whole document, such as its bookmarks, form fields and tagging, are left out.
  */
 public class Example_41 {
     public Example_41() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_41.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(10f);
+        String[] fileNames = {
+            "data/testPDFs/wirth.pdf",
+            "data/testPDFs/rc65-16e.pdf",
+            "data/testPDFs/PDFjetLogo.pdf"
+        };
+        List<List<PDFobj>> documents = new List<List<PDFobj>>();
+        foreach (String fileName in fileNames) {
+            using (BufferedStream stream = new BufferedStream(
+                    new FileStream(fileName, FileMode.Open, FileAccess.Read))) {
+                documents.Add(pdf.Read(stream));
+            }
+        }
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.SetSize(10f);
-
-        Font f3 = new Font(pdf, IBMPlexSans.Italic);
-        f3.SetSize(10f);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.SetSize(24f);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-
-        List<Paragraph> paragraphs = new List<Paragraph>();
-        Paragraph paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f2, "This text is bold!").SetTextColor(Color.blue));
-        paragraphs.Add(paragraph);
-
-        paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
-        paragraphs.Add(paragraph);
-
-        TextFrame text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 50f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
-
-        int paragraphNumber = 1;
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
-                        .DrawOn(page);
-                paragraphNumber++;
-            }
+        new TextLine(f1, "Merged documents").SetLocation(50f, 80f).DrawOn(page);
+        float y = 130f;
+        for (int i = 0; i < fileNames.Length; i++) {
+            int pages = pdf.GetPageObjects(documents[i]).Count;
+            String text = fileNames[i] + ", " + pages + (pages == 1 ? " page" : " pages");
+            new TextLine(f2, text).SetLocation(50f, y).DrawOn(page);
+            y += 20f;
         }
 
-        Dictionary<String, int> colorMap = new Dictionary<String, int>();
-        colorMap["Physics"] = Color.red;
-        colorMap["physics"] = Color.red;
-        colorMap["Experimentation"] = Color.orange;
-        colorMap["science"] = Color.blue;
-        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
-                p.GetTextLines()[0].SetTextColor(Color.navy);
-            } else {
-                p.SetTextColor(Color.gray);
-                p.SetHighlightColors(colorMap);
-            }
-        }
-
-        text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 150f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
-
-        paragraphNumber = 1;
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
-                        .DrawOn(page);
-                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
-                        .SetStrokeColor(Color.navy)
-                        .SetStrokeWidth(1f).DrawOn(page);
-                paragraphNumber++;
-            }
+        foreach (List<PDFobj> objects in documents) {
+            pdf.Merge(objects);
         }
 
         pdf.Complete();
@@ -103,7 +57,6 @@ public class Example_41 {
         long time0 = sw.ElapsedMilliseconds;
         new Example_41();
         long time1 = sw.ElapsedMilliseconds;
-        sw.Stop();
         Console.WriteLine("Example_41 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_41.cs

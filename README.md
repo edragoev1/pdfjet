@@ -193,7 +193,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 51 examples, the same in every port. Build
+The [examples](examples) folder has 50 examples, the same in every port. Build
 a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
@@ -454,7 +454,7 @@ debug build.
 
 `merge` adds all the pages of a document that was read after the pages of a PDF,
 in their order. A PDF can merge several documents and draw pages of its own
-before, between and after them; Example_51 puts a cover page in front of three
+before, between and after them; Example_41 puts a cover page in front of three
 documents:
 
 ```java
