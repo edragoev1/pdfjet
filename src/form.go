@@ -18,7 +18,7 @@ type Form struct {
 	f1, f2        *Font
 	labelFontSize float32    // = 9f
 	valueFontSize float32    // = 9f
-	formWidth     float32    // = 500f
+	width         float32    // = 500f
 	strokeWidth   float32    // = 0f
 	labelColor    [3]float32 // = Color.black
 	valueColor    [3]float32
@@ -30,7 +30,7 @@ func NewForm(fields []*Field) *Form {
 	form.fields = append([]*Field(nil), fields...) // A copy, as in the other ports.
 	form.labelFontSize = 9.0
 	form.valueFontSize = 9.0
-	form.formWidth = 500.0
+	form.width = 500.0
 	form.labelColor = [3]float32{0.0, 0.0, 0.0}
 	form.valueColor = [3]float32{0.33, 0.33, 0.66}
 	return form
@@ -43,9 +43,9 @@ func (form *Form) SetLocation(x, y float32) Drawable {
 	return form
 }
 
-// SetFormWidth sets the form width.
-func (form *Form) SetFormWidth(formWidth float32) *Form {
-	form.formWidth = formWidth
+// SetWidth sets the width of this form.
+func (form *Form) SetWidth(width float32) *Form {
+	form.width = width
 	return form
 }
 
@@ -128,7 +128,7 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 					hLine := NewLine(
 						form.x,
 						form.y+yField,
-						form.x+form.formWidth,
+						form.x+form.width,
 						form.y+yField)
 					hLine.SetStrokeWidth(form.strokeWidth).DrawOn(page)
 				}
@@ -164,10 +164,10 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 		}
 	}
 
-	rect := NewRect(form.x, form.y, form.formWidth, yField)
+	rect := NewRect(form.x, form.y, form.width, yField)
 	rect.SetBorderWidth(form.strokeWidth)
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 
-	return [2]float32{form.x + form.formWidth, form.y + yField}
+	return [2]float32{form.x + form.width, form.y + yField}
 }

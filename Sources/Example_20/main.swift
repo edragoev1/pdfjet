@@ -73,7 +73,7 @@ public class Example_20 {
         path.add(Point( 8.0,  3.5))
 
         path.add(Point(10.5,  4.5))
-        path.setClosePath(true)
+        path.setClosed(true)
         path.setStrokeColor(Color.red)
         // path.setFillShape(true)
         path.setLocation(100.0, 100.0)

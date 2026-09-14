@@ -25,7 +25,7 @@ func Example25() {
 	f2.SetSize(10.0)
 
 	chart := pdfjet.NewDonutChart(f1, f2)
-	chart.SetLocation(300.0, 400.0)
+	chart.SetLocation(100.0, 200.0)
 	chart.SetRadii(200.0, 120.0) // an inner radius of 0 makes a pie chart
 
 	chart.AddSlice(pdfjet.NewSlice(25.0, 0xC1121F, "Apples"))  // deep red

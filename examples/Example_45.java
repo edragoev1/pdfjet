@@ -44,7 +44,7 @@ public class Example_45 {
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)
-                .setFormWidth(w)
+                .setWidth(w)
                 .drawOn(page);
 
         pdf.complete();

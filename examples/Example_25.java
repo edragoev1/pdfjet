@@ -20,7 +20,7 @@ public class Example_25 {
         f2.setSize(10.0f);
 
         DonutChart chart = new DonutChart(f1, f2);
-        chart.setLocation(300.0f, 400.0f);
+        chart.setLocation(100.0f, 200.0f);
         chart.setRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart
 
         chart.addSlice(new Slice(25f, 0xC1121F, "Apples"));   // deep red

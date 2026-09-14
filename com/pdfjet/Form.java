@@ -19,7 +19,7 @@ public class Form implements Drawable {
     private float labelFontSize = 9f;
     private Font f2;
     private float valueFontSize = 9f;
-    private float formWidth = 500f;
+    private float width = 500f;
     private float strokeWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
@@ -47,13 +47,13 @@ public class Form implements Drawable {
     }
 
     /**
-     * Sets the form width
+     * Sets the width of this form.
      *
-     * @param formWidth the form width
+     * @param width the width of this form.
      * @return this form
      */
-    public Form setFormWidth(float formWidth) {
-        this.formWidth = formWidth;
+    public Form setWidth(float width) {
+        this.width = width;
         return this;
     }
 
@@ -184,7 +184,7 @@ public class Form implements Drawable {
                         Line hLine = new Line(
                                 x,
                                 y + yField,
-                                x + formWidth,
+                                x + width,
                                 y + yField);
                         hLine.setStrokeWidth(strokeWidth).drawOn(page);
                     }
@@ -226,9 +226,9 @@ public class Form implements Drawable {
         rect.setLocation(x, y);
         rect.setBorderWidth(strokeWidth);
         rect.setBorderColor(Color.black);
-        rect.setSize(formWidth, yField);
+        rect.setSize(width, yField);
         rect.drawOn(page);
 
-        return new float[] { x + formWidth, y + yField };
+        return new float[] { x + width, y + yField };
     }
 }   // End of Form.java

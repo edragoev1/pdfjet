@@ -28,7 +28,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   last in a chain, and every Go `DrawOn` returns `[2]float32`. `Arc.drawOn`
   returns the bottom right corner in all four ports. `Table`, `TextBlock`,
   `SVGImage` and `DonutChart` implement `Drawable`, and `DonutChart.drawOn`
-  returns the bottom right corner of the outer circle.
+  returns the bottom right corner of the outer circle. `DonutChart.setLocation`
+  sets the top left corner of the outer circle, where it set the center.
 - `Box` is removed in favor of `Rect`: `setColor` becomes `setBorderColor`, or
   `setFillColor` with `setFillShape(true)`, and `setLineWidth` and `setPattern`
   become `setBorderWidth` and `setBorderDashPattern`.
@@ -443,7 +444,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `Cell.setMarker`, `Page.addBDC`,
   `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHGridLines` and
   `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
-  enum instead of `Effect`, and Go `DrawStringUsingHighlightColors`.
+  enum instead of `Effect`, `Form.setWidth`, `Path.setClosed`, and Go
+  `DrawStringUsingHighlightColors`.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

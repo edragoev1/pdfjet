@@ -10,7 +10,7 @@ import Testing
 @Suite struct DonutChartTests {
     private func chart(_ pdf: PDF) -> DonutChart {
         let font = TestSupport.helvetica(pdf)
-        return DonutChart(font, font).setLocation(200, 200).setRadii(100, 50)
+        return DonutChart(font, font).setLocation(100, 100).setRadii(100, 50)
     }
 
     @Test func aChartWithoutValuesDrawsNothing() {

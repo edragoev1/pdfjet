@@ -20,7 +20,7 @@ public class Form : IDrawable {
     private float labelFontSize = 9f;
     private Font f2;
     private float valueFontSize = 9f;
-    private float formWidth = 500f;
+    private float width = 500f;
     private float strokeWidth = 0.0f;
     private float[] labelColor = new float[] {0f, 0f, 0f};
     private float[] valueColor = new float[] {0.33f, 0.33f, 0.66f};
@@ -50,12 +50,12 @@ public class Form : IDrawable {
     }
 
     /// <summary>
-    /// Sets the form width
+    /// Sets the width of this form.
     /// </summary>
-    /// <param name="formWidth">the form width</param>
+    /// <param name="width">the width of this form</param>
     /// <returns>this form</returns>
-    public Form SetFormWidth(float formWidth) {
-        this.formWidth = formWidth;
+    public Form SetWidth(float width) {
+        this.width = width;
         return this;
     }
 
@@ -176,7 +176,7 @@ public class Form : IDrawable {
                         Line hLine = new Line(
                                 x,
                                 y + yField,
-                                x + formWidth,
+                                x + width,
                                 y + yField);
                         hLine.SetStrokeWidth(strokeWidth).DrawOn(page);
                     }
@@ -218,10 +218,10 @@ public class Form : IDrawable {
         rect.SetLocation(x, y);
         rect.SetBorderWidth(strokeWidth);
         rect.SetBorderColor(Color.black);
-        rect.SetSize(formWidth, yField);
+        rect.SetSize(width, yField);
         rect.DrawOn(page);
 
-        return [ x + formWidth, y + yField ];
+        return [ x + width, y + yField ];
     }
 }   // End of Form.cs
 }   // End of namespace PDFjet.NET

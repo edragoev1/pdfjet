@@ -62,7 +62,7 @@ public class Example_22 {
         path.Add(new Point( 7f, 19f));
         path.Add(new Point( 7f,  9f));
         path.Add(new Point( 3f,  9f));
-        path.SetClosePath(true);
+        path.SetClosed(true);
         path.SetStrokeColor(Color.oldgloryblue);
         path.SetStrokeColor(Color.deepskyblue);
         path.SetFillShape(true);

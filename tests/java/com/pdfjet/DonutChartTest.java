@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DonutChartTest {
     private static DonutChart chart(PDF pdf) throws Exception {
         Font font = TestSupport.helvetica(pdf);
-        return new DonutChart(font, font).setLocation(200f, 200f).setRadii(100f, 50f);
+        return new DonutChart(font, font).setLocation(100f, 100f).setRadii(100f, 50f);
     }
 
     @Test

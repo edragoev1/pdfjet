@@ -21,7 +21,7 @@ type Path struct {
 	width         float32
 	pattern       string
 	fillShape     bool
-	closePath     bool
+	closed        bool
 	xBox          float32
 	yBox          float32
 	lineCapStyle  capstyle.CapStyle
@@ -100,12 +100,12 @@ func (path *Path) SetStrokeColorRGB(rgbColor [3]float32) *Path {
 	return path
 }
 
-// SetClosePath sets whether a line is drawn from the last point of this path back to the first.
-//   - closePath: true to close the path.
+// SetClosed sets whether a line is drawn from the last point of this path back to the first.
+//   - closed: true to close the path.
 //
 // Returns this Path object.
-func (path *Path) SetClosePath(closePath bool) *Path {
-	path.closePath = closePath
+func (path *Path) SetClosed(closed bool) *Path {
+	path.closed = closed
 	return path
 }
 
@@ -194,7 +194,7 @@ func (path *Path) DrawOn(page *Page) [2]float32 {
 		page.SetStrokeDashPattern(path.pattern)
 		page.SetLineCapStyle(path.lineCapStyle)
 		page.SetLineJoinStyle(path.lineJoinStyle)
-		if path.closePath {
+		if path.closed {
 			page.DrawPath(path.points, pathoperator.CloseAndStroke)
 		} else {
 			page.DrawPath(path.points, pathoperator.Stroke)

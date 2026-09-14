@@ -16,8 +16,8 @@ namespace PDFjet.NET {
     public class DonutChart : IDrawable {
         private readonly Font f1;
         private readonly Font f2;
-        private float xc;
-        private float yc;
+        private float x;
+        private float y;
         private float r1;
         private float r2;
         private readonly List<Slice> slices;
@@ -33,10 +33,16 @@ namespace PDFjet.NET {
             this.slices = new List<Slice>();
         }
 
-        /// <summary>Sets the center of this chart.</summary>
-        public DonutChart SetLocation(float xc, float yc) {
-            this.xc = xc;
-            this.yc = yc;
+        /// <summary>
+        /// Sets the top left corner of the outer circle of this chart. The center
+        /// is one outer radius to the right of it and one below. The slice labels
+        /// can extend past the circle.
+        /// </summary>
+        /// <param name="x">the x coordinate of the top left corner.</param>
+        /// <param name="y">the y coordinate of the top left corner.</param>
+        public DonutChart SetLocation(float x, float y) {
+            this.x = x;
+            this.y = y;
             return this;
         }
 
@@ -209,6 +215,9 @@ namespace PDFjet.NET {
         /// <returns>x and y coordinates of the bottom right corner of the outer circle
         /// of this chart. The slice labels can extend past it.</returns>
         public float[] DrawOn(Page page) {
+            float xc = x + r1;      // the center of the chart
+            float yc = y + r1;
+
             // The slices with a value above 0 share the circle
             float total = 0.0f;
             foreach (Slice slice in slices) {

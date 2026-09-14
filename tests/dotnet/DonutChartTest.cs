@@ -10,7 +10,7 @@ namespace PDFjet.NET {
 public class DonutChartTest {
     private static DonutChart NewChart(PDF pdf) {
         Font font = TestSupport.Helvetica(pdf);
-        return new DonutChart(font, font).SetLocation(200f, 200f).SetRadii(100f, 50f);
+        return new DonutChart(font, font).SetLocation(100f, 100f).SetRadii(100f, 50f);
     }
 
     [Fact]

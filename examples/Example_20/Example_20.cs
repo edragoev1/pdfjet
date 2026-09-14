@@ -78,7 +78,7 @@ class Example_20 {
         path.Add(new Point( 8.0f,  3.5f));
 
         path.Add(new Point(10.5f,  4.5f));
-        path.SetClosePath(true);
+        path.SetClosed(true);
         path.SetStrokeColor(Color.red);
         // path.SetFillShape(true);
         path.SetLocation(100f, 100f);

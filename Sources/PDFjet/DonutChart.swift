@@ -14,8 +14,8 @@ import Foundation
 public class DonutChart : Drawable {
     var f1: Font?
     var f2: Font?
-    var xc: Float = 0.0
-    var yc: Float = 0.0
+    var x: Float = 0.0
+    var y: Float = 0.0
     var r1: Float = 0.0
     var r2: Float = 0.0
     var slices: [Slice]?
@@ -32,11 +32,19 @@ public class DonutChart : Drawable {
         self.slices = [Slice]()
     }
 
-    /// Sets the center of this chart.
+    ///
+    /// Sets the top left corner of the outer circle of this chart. The center
+    /// is one outer radius to the right of it and one below. The slice labels
+    /// can extend past the circle.
+    ///
+    /// - Parameter x: the x coordinate of the top left corner.
+    /// - Parameter y: the y coordinate of the top left corner.
+    /// - Returns: this DonutChart object.
+    ///
     @discardableResult
-    public func setLocation(_ xc: Float, _ yc: Float) -> Self {
-        self.xc = xc
-        self.yc = yc
+    public func setLocation(_ x: Float, _ y: Float) -> Self {
+        self.x = x
+        self.y = y
         return self
     }
 
@@ -211,6 +219,9 @@ public class DonutChart : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
+        let xc = x + r1     // the center of the chart
+        let yc = y + r1
+
         // The slices with a value above 0 share the circle
         var total: Float = 0.0
         for slice in slices! {

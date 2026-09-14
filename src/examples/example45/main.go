@@ -45,7 +45,7 @@ func Example45() {
 		SetLabelFontSize(8.0).
 		SetValueFont(f2).
 		SetValueFontSize(10.0).
-		SetFormWidth(w).
+		SetWidth(w).
 		SetLocation(50.0, 50.0).
 		DrawOn(page)
 

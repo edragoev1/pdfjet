@@ -19,7 +19,7 @@ public class Path : IDrawable {
     private float width = 0f;
     private String pattern = "[] 0";
     private bool fillShape = false;
-    private bool closePath = false;
+    private bool closed = false;
     private List<Point> points = null;
     private float xBox;
     private float yBox;
@@ -104,10 +104,10 @@ public class Path : IDrawable {
     /// <summary>
     /// Sets whether a line is drawn from the last point of this path back to the first.
     /// </summary>
-    /// <param name="closePath">true to close the path.</param>
+    /// <param name="closed">true to close the path.</param>
     /// <returns>this Path object.</returns>
-    public Path SetClosePath(bool closePath) {
-        this.closePath = closePath;
+    public Path SetClosed(bool closed) {
+        this.closed = closed;
         return this;
     }
 
@@ -211,7 +211,7 @@ public class Path : IDrawable {
             page.SetStrokeDashPattern(pattern);
             page.SetLineCapStyle(lineCapStyle);
             page.SetLineJoinStyle(lineJoinStyle);
-            if (closePath) {
+            if (closed) {
                 page.DrawPath(points, PathOperator.CLOSE_AND_STROKE);
             } else {
                 page.DrawPath(points, PathOperator.STROKE);

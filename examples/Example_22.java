@@ -63,7 +63,7 @@ public class Example_22 {
         path.add(new Point( 7f, 19f));
         path.add(new Point( 7f,  9f));
         path.add(new Point( 3f,  9f));
-        path.setClosePath(true);
+        path.setClosed(true);
         path.setStrokeColor(Color.oldgloryblue);
         path.setStrokeColor(Color.deepskyblue);
         path.setFillShape(true);

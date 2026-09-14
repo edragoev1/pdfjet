@@ -20,8 +20,8 @@ import (
 type DonutChart struct {
 	f1     *Font
 	f2     *Font
-	xc     float32
-	yc     float32
+	x      float32
+	y      float32
 	r1     float32
 	r2     float32
 	slices []*Slice
@@ -38,12 +38,14 @@ func NewDonutChart(f1, f2 *Font) *DonutChart {
 	}
 }
 
-// SetLocation sets the center of this chart.
+// SetLocation sets the top left corner of the outer circle of this chart. The
+// center is one outer radius to the right of it and one below. The slice labels
+// can extend past the circle.
 // It returns the chart as a Drawable, so in a chain of setter calls
 // SetLocation goes last, right before DrawOn.
-func (dc *DonutChart) SetLocation(xc, yc float32) Drawable {
-	dc.xc = xc
-	dc.yc = yc
+func (dc *DonutChart) SetLocation(x, y float32) Drawable {
+	dc.x = x
+	dc.y = y
 	return dc
 }
 
@@ -225,6 +227,9 @@ func (dc *DonutChart) drawLinePointer(
 // It returns the x and y coordinates of the bottom right corner of the outer
 // circle of this chart. The slice labels can extend past it.
 func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
+	xc := dc.x + dc.r1 // the center of the chart
+	yc := dc.y + dc.r1
+
 	// The slices with a value above 0 share the circle
 	total := float32(0.0)
 	for _, slice := range dc.slices {
@@ -233,7 +238,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	if total <= 0.0 {
-		return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
+		return [2]float32{xc + dc.r1, yc + dc.r1}
 	}
 
 	angle := float32(0.0)
@@ -244,13 +249,13 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		sweep := slice.value * 360.0 / total
 		angle = dc.drawSlice(
 			page, slice.color,
-			dc.xc, dc.yc,
+			xc, yc,
 			dc.r1, dc.r2,
 			angle, angle+sweep,
 		)
 		dc.drawLinePointer(
 			page, slice.text,
-			dc.xc, dc.yc,
+			xc, yc,
 			dc.r1,
 			angle-sweep, angle,
 		)
@@ -263,7 +268,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			label.SetTextColor(color.White)
 			midAngle := angle - sweep/2.0 - 90.0
 			midR := (dc.r1 + dc.r2) / 2.0
-			pos := getPoint(dc.xc, dc.yc, midR, midAngle)
+			pos := getPoint(xc, yc, midR, midAngle)
 			label.SetLocation(
 				pos[0]-dc.f2.StringWidth(dc.f2.size, pctStr)/2.0,
 				pos[1]+dc.f2.GetAscent()/3.0,
@@ -272,5 +277,5 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 
-	return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
+	return [2]float32{xc + dc.r1, yc + dc.r1}
 }

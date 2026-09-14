@@ -42,7 +42,7 @@ public class Example_45 {
                 .SetValueFont(f2)
                 .SetValueFontSize(10f)
                 .SetLocation(50f, 50f)
-                .SetFormWidth(w)
+                .SetWidth(w)
                 .DrawOn(page);
 
         pdf.Complete();

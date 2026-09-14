@@ -16,7 +16,7 @@ public class Example_25 {
         f2.setSize(10.0)
 
         let chart = DonutChart(f1, f2)
-        chart.setLocation(300.0, 400.0)
+        chart.setLocation(100.0, 200.0)
         chart.setRadii(200.0, 120.0)     // an inner radius of 0 makes a pie chart
 
         chart.addSlice(Slice(25.0, 0xC1121F, "Apples"))   // deep red

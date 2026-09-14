@@ -18,8 +18,8 @@ import java.util.List;
 public class DonutChart implements Drawable {
     Font f1;
     Font f2;
-    float xc = 0.0f;
-    float yc = 0.0f;
+    float x = 0.0f;
+    float y = 0.0f;
     float r1 = 0.0f;
     float r2 = 0.0f;
     List<Slice> slices;
@@ -37,15 +37,17 @@ public class DonutChart implements Drawable {
     }
 
     /**
-     * Sets the center of this chart.
+     * Sets the top left corner of the outer circle of this chart. The center
+     * is one outer radius to the right of it and one below. The slice labels
+     * can extend past the circle.
      *
-     * @param xc the x coordinate of the center.
-     * @param yc the y coordinate of the center.
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
      * @return this DonutChart object.
      */
-    public DonutChart setLocation(float xc, float yc) {
-        this.xc = xc;
-        this.yc = yc;
+    public DonutChart setLocation(float x, float y) {
+        this.x = x;
+        this.y = y;
         return this;
     }
 
@@ -229,6 +231,9 @@ public class DonutChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        float xc = x + r1;      // the center of the chart
+        float yc = y + r1;
+
         // The slices with a value above 0 share the circle
         float total = 0.0f;
         for (Slice slice : slices) {

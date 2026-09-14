@@ -90,7 +90,7 @@ func Example20() {
 	path.Add(pdfjet.NewPoint(8.0, 3.5))
 
 	path.Add(pdfjet.NewPoint(10.5, 4.5))
-	path.SetClosePath(true)
+	path.SetClosed(true)
 	path.SetStrokeColor(color.Red)
 	// path.SetFillShape(true)
 	path.SetLocation(100.0, 100.0)

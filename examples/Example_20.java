@@ -80,7 +80,7 @@ class Example_20 {
         path.add(new Point( 8.0f,  3.5f));
 
         path.add(new Point(10.5f,  4.5f));
-        path.setClosePath(true);
+        path.setClosed(true);
         path.setStrokeColor(Color.red);
         // path.setFillShape(true);
         path.setLocation(100f, 100f);

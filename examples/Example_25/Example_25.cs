@@ -19,7 +19,7 @@ public class Example_25 {
         f2.SetSize(10.0f);
 
         DonutChart chart = new DonutChart(f1, f2);
-        chart.SetLocation(300.0f, 400.0f);
+        chart.SetLocation(100.0f, 200.0f);
         chart.SetRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart
 
         chart.AddSlice(new Slice(25f, 0xC1121F, "Apples"));    // deep red

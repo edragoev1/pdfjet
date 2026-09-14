@@ -17,7 +17,7 @@ public class Form : Drawable {
     private var labelFontSize: Float = 9.0
     private var f2: Font?
     private var valueFontSize: Float = 9.0
-    private var formWidth: Float = 500.0
+    private var width: Float = 500.0
     private var strokeWidth: Float = 0.0
     private var labelColor: [Float] = [0.0, 0.0, 0.0]
     private var valueColor: [Float] = [0.33, 0.33, 0.66]
@@ -37,8 +37,8 @@ public class Form : Drawable {
 
     /// Sets the width of this form.
     @discardableResult
-    public func setFormWidth(_ formWidth: Float) -> Form {
-        self.formWidth = formWidth
+    public func setWidth(_ width: Float) -> Form {
+        self.width = width
         return self
     }
 
@@ -129,7 +129,7 @@ public class Form : Drawable {
                         let hLine = Line(
                                 x,
                                 y + yField,
-                                x + formWidth,
+                                x + width,
                                 y + yField)
                         hLine.setStrokeWidth(strokeWidth).drawOn(page)
                     }
@@ -171,9 +171,9 @@ public class Form : Drawable {
         rect.setLocation(x, y)
         rect.setBorderWidth(strokeWidth)
         rect.setBorderColor(Color.black)
-        rect.setSize(formWidth, yField)
+        rect.setSize(width, yField)
         rect.drawOn(page)
 
-        return [ x + formWidth, y + yField ]
+        return [ x + width, y + yField ]
     }
 }   // End of Form.swift

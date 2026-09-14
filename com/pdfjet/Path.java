@@ -19,7 +19,7 @@ public class Path implements Drawable {
     private float width = 0f;
     private String pattern = "[] 0";
     private boolean fillShape = false;
-    private boolean closePath = false;
+    private boolean closed = false;
     private List<Point> points = null;
     private float xBox;
     private float yBox;
@@ -111,11 +111,11 @@ public class Path implements Drawable {
     /**
      * Sets whether a line is drawn from the last point of this path back to the first.
      *
-     * @param closePath true to close the path.
+     * @param closed true to close the path.
      * @return this Path object.
      */
-    public Path setClosePath(boolean closePath) {
-        this.closePath = closePath;
+    public Path setClosed(boolean closed) {
+        this.closed = closed;
         return this;
     }
 
@@ -224,7 +224,7 @@ public class Path implements Drawable {
             page.setStrokeDashPattern(pattern);
             page.setLineCapStyle(lineCapStyle);
             page.setLineJoinStyle(lineJoinStyle);
-            if (closePath) {
+            if (closed) {
                 page.drawPath(points, PathOperator.CLOSE_AND_STROKE);
             } else {
                 page.drawPath(points, PathOperator.STROKE);

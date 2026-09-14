@@ -15,7 +15,7 @@ import (
 func testDonutChart(pdf *PDF) *DonutChart {
 	font := testHelvetica(pdf)
 	chart := NewDonutChart(font, font).SetRadii(100, 50)
-	chart.SetLocation(200, 200)
+	chart.SetLocation(100, 100)
 	return chart
 }
 

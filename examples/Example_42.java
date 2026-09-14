@@ -45,7 +45,7 @@ public class Example_42 {
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setLocation(50f, 50f)
-                .setFormWidth(w)
+                .setWidth(w)
                 .setStrokeWidth(0.2f)
                 .drawOn(page));
 

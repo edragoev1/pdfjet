@@ -559,6 +559,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Text` to `TextFrame` when `Text` went). Removed; Example_51, the merge
       example, is Example_41, and the scripts, workflows and example pages
       count 50 examples.
+- ✅ **B** Second audit, one name with two meanings (Sep 14,
+      `api-suggestions.html`): `DonutChart.setLocation` sets the top left
+      corner of the outer circle, where it set the center, to match `drawOn`,
+      which returns the bottom right corner; `Form.setFormWidth` is `setWidth`
+      and `Path.setClosePath` is `setClosed`, with their fields, in the four
+      ports. Example_25 and the unit tests place the chart at the same center.
 
 ### Types and signatures
 

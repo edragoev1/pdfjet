@@ -17,7 +17,7 @@ public class Path : Drawable {
     private var width: Float = 0.0
     private var pattern: String = "[] 0"
     private var fillShape = false
-    private var closePath = false
+    private var closed = false
 
     private var points = [Point]()
 
@@ -111,12 +111,12 @@ public class Path : Drawable {
     ///
     /// Sets whether a line is drawn from the last point of this path back to the first.
     ///
-    /// - Parameter closePath: true to close the path.
+    /// - Parameter closed: true to close the path.
     /// - Returns: this Path object.
     ///
     @discardableResult
-    public func setClosePath(_ closePath: Bool) -> Path {
-        self.closePath = closePath
+    public func setClosed(_ closed: Bool) -> Path {
+        self.closed = closed
         return self
     }
 
@@ -230,7 +230,7 @@ public class Path : Drawable {
             page!.setStrokeDashPattern(self.pattern)
             page!.setLineCapStyle(self.lineCapStyle)
             page!.setLineJoinStyle(self.lineJoinStyle)
-            if closePath {
+            if closed {
                 page!.drawPath(points, PathOperator.CLOSE_AND_STROKE)
             } else {
                 page!.drawPath(points, PathOperator.STROKE)

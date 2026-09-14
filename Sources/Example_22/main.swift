@@ -59,7 +59,7 @@ public class Example_22 {
         path.add(Point( 7.0, 19.0))
         path.add(Point( 7.0,  9.0))
         path.add(Point( 3.0,  9.0))
-        path.setClosePath(true)
+        path.setClosed(true)
         path.setStrokeColor(Color.oldgloryblue)
         path.setStrokeColor(Color.deepskyblue)
         path.setFillShape(true)

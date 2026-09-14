@@ -37,7 +37,7 @@ public class Example_45 {
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
                 .setLocation(50.0, 50.0)
-                .setFormWidth(w)
+                .setWidth(w)
                 .drawOn(page)
 
         try pdf.complete()
