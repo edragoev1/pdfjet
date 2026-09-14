@@ -49,8 +49,6 @@ public class Chart : Drawable {
     private var drawXAxisLabels = true
     private var drawYAxisLabels = true
 
-    private var xyChart = true
-
     private var hGridLineWidth: Float = 0.0
     private var vGridLineWidth: Float = 0.0
 
@@ -60,7 +58,7 @@ public class Chart : Drawable {
     private var chartBorderWidth: Float = 0.0
     private var innerBorderWidth: Float = 0.0
 
-    private var minFractionDigits = 2
+    private var minFractionDigits = 0
     private var maxFractionDigits = 2
 
     private var f1: Font?
@@ -70,7 +68,7 @@ public class Chart : Drawable {
     /// The data series of this chart, one array of points per series.
     private var chartData: [[Point]]?
 
-    private static let DEFAULT_PALETTE = [
+    static let DEFAULT_PALETTE = [
         Color.blue,
         Color.red,
         Color.green,
@@ -179,7 +177,9 @@ public class Chart : Drawable {
     }
 
     /**
-     * Sets the minimum number of fractions digits do display for the X and Y axis labels.
+     * Sets the minimum number of decimal places in the axis labels. The labels
+     * of an axis have at least the decimal places of its step, so an axis with
+     * a whole number step has whole number labels. The default is 0.
      *
      * - Parameter minFractionDigits: the minimum number of fraction digits.
      * - Returns: this Chart object.
@@ -191,7 +191,8 @@ public class Chart : Drawable {
     }
 
     /**
-     * Sets the maximum number of fractions digits do display for the X and Y axis labels.
+     * Sets the maximum number of decimal places in the axis labels. The
+     * default is 2.
      *
      * - Parameter maxFractionDigits: the maximum number of fraction digits.
      * - Returns: this Chart object.
@@ -259,14 +260,16 @@ public class Chart : Drawable {
         return self
     }
 
-    /// Sets the width of the chart border.
+    /// Sets the width of the outer chart border. A width of 0, the default,
+    /// draws the thinnest line a viewer shows.
     @discardableResult
     public func setChartBorderWidth(_ width: Float) -> Chart {
         self.chartBorderWidth = width
         return self
     }
 
-    /// Sets the width of the inner border.
+    /// Sets the width of the plot area border. A width of 0, the default,
+    /// draws the thinnest line a viewer shows.
     @discardableResult
     public func setInnerBorderWidth(_ width: Float) -> Chart {
         self.innerBorderWidth = width
@@ -330,13 +333,6 @@ public class Chart : Drawable {
         return self
     }
 
-    /// Sets whether this is an XY scatter chart rather than a category chart.
-    @discardableResult
-    public func setXYChart(_ xyChart: Bool) -> Chart {
-        self.xyChart = xyChart
-        return self
-    }
-
     /**
      * Draws this chart on the specified page.
      *
@@ -375,7 +371,7 @@ public class Chart : Drawable {
                     f1!,
                     fontSize,
                     title,
-                    x1 + ((w - f1!.stringWidth(title)) / 2),
+                    x1 + ((w - f1!.stringWidth(fontSize, title)) / 2),
                     y1 + 1.5 * f1!.bodyHeight)
         }
 
@@ -421,14 +417,8 @@ public class Chart : Drawable {
         }
         for points in plotData {
             for point in points {
-                if xyChart {
-                    point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
-                    point.strokeWidth *= (x6 - x5) / w
-                } else {
-                    point.x = x5 + point.x * (x6 - x5) / w
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
-                }
+                point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
+                point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
                 if point.getURIAction() != nil {
                     if page != nil {
                         page!.addAnnotation(Annotation(
@@ -463,7 +453,7 @@ public class Chart : Drawable {
                     fontSize,
                     yAxisTitle,
                     x1 + f2!.bodyHeight,
-                    y8 - ((y8 - y5) - f2!.stringWidth(yAxisTitle)) / 2)
+                    y8 - ((y8 - y5) - f2!.stringWidth(fontSize, yAxisTitle)) / 2)
 
             // Draw the X axis title
             page!.setTextRotation(0)
@@ -472,7 +462,7 @@ public class Chart : Drawable {
                     f2!,
                     fontSize,
                     xAxisTitle,
-                    x5 + ((x6 - x5) - f2!.stringWidth(xAxisTitle)) / 2,
+                    x5 + ((x6 - x5) - f2!.stringWidth(fontSize, xAxisTitle)) / 2,
                     y4 - f2!.bodyHeight / 2)
 
             page!.setDefaultPenWidth()
@@ -488,11 +478,11 @@ public class Chart : Drawable {
         return chartData?.contains(where: { !$0.isEmpty }) ?? false
     }
 
-    // Formats an axis label with minFractionDigits to maxFractionDigits
-    // decimal places, rounding the exact value half to even. The label has a
-    // "." decimal separator and no grouping whatever the locale, and a value
-    // that rounds to zero has no minus sign.
-    private func format(_ value: Float) -> String {
+    // Formats a label with minDigits to maxDigits decimal places, rounding
+    // the exact value half to even. The label has a "." decimal separator and
+    // no grouping whatever the locale, and a value that rounds to zero has no
+    // minus sign.
+    static func format(_ value: Float, _ minDigits: Int, _ maxDigits: Int) -> String {
         if value.isNaN {
             return "NaN"
         }
@@ -500,8 +490,8 @@ public class Chart : Drawable {
             return (value < 0) ? "-Infinity" : "Infinity"
         }
         // A minimum above the maximum is lowered to it, as in Java's NumberFormat
-        let maxDigits = max(maxFractionDigits, 0)
-        let minDigits = min(max(minFractionDigits, 0), maxDigits)
+        let maxDigits = max(maxDigits, 0)
+        let minDigits = min(max(minDigits, 0), maxDigits)
         // String(format:) without a locale writes the exact digits with a "."
         var label = String(format: "%.\(maxDigits)f", Double(value))
         if let point = label.firstIndex(of: ".") {
@@ -518,9 +508,30 @@ public class Chart : Drawable {
         return label
     }
 
+    // Returns the number of decimal places, at most maxDigits, that write the
+    // axis step exactly: 0 for 10, 1 for 2.5, 2 for 0.25.
+    static func fractionDigitsOf(_ step: Float, _ maxDigits: Int) -> Int {
+        var digits = 0
+        while digits < maxDigits {
+            let scaled = Double(step) * pow(10.0, Double(digits))
+            if abs(scaled - scaled.rounded()) < 1e-4 {
+                return digits
+            }
+            digits += 1
+        }
+        return max(maxDigits, 0)
+    }
+
+    // Formats the label of an axis with the specified step.
+    private func format(_ value: Float, _ step: Float) -> String {
+        let digits = max(minFractionDigits, Chart.fractionDigitsOf(step, maxFractionDigits))
+        return Chart.format(value, digits, maxFractionDigits)
+    }
+
     private func getLongestAxisYLabelWidth()-> Float {
-        let minLabelWidth = f2!.stringWidth(format(yMin) + "0")
-        let maxLabelWidth = f2!.stringWidth(format(yMax) + "0")
+        let step = (yMax - yMin) / Float(yAxisGridLines)
+        let minLabelWidth = f2!.stringWidth(fontSize, format(yMin, step) + "0")
+        let maxLabelWidth = f2!.stringWidth(fontSize, format(yMax, step) + "0")
         if maxLabelWidth > minLabelWidth {
             return maxLabelWidth
         }
@@ -563,7 +574,7 @@ public class Chart : Drawable {
         if xAxisGridLines != 0 {
             return
         }
-        let round = roundMaxAndMinValues(xMax, xMin)
+        let round = Chart.roundMaxAndMinValues(xMax, xMin)
         xMax = round.maxValue
         xMin = round.minValue
         xAxisGridLines = round.numOfGridLines
@@ -573,7 +584,7 @@ public class Chart : Drawable {
         if yAxisGridLines != 0 {
             return
         }
-        let round = roundMaxAndMinValues(yMax, yMin)
+        let round = Chart.roundMaxAndMinValues(yMax, yMin)
         yMax = round.maxValue
         yMin = round.minValue
         yAxisGridLines = round.numOfGridLines
@@ -629,15 +640,16 @@ public class Chart : Drawable {
         var x = x5
         let y = y8 + f2!.getBodyHeight(f2!.getSize())
         let step = (x6 - x5) / Float(xAxisGridLines)
+        let valueStep = (xMax - xMin) / Float(xAxisGridLines)
         page.setBrushColor(Color.black)
         var i = 0
         while i < (xAxisGridLines + 1) {
-            let label = format(xMin + ((xMax - xMin) / Float(xAxisGridLines)) * Float(i))
+            let label = format(xMin + valueStep * Float(i), valueStep)
             page.drawString(
                     f2!,
                     fontSize,
                     label,
-                    x - (f2!.stringWidth(label) / 2),
+                    x - (f2!.stringWidth(fontSize, label) / 2),
                     y)
             x += step
             i += 1
@@ -648,10 +660,11 @@ public class Chart : Drawable {
         let x = x5 - getLongestAxisYLabelWidth()
         var y = y8 + f2!.ascent / 3
         let step = (y8 - y5) / Float(yAxisGridLines)
+        let valueStep = (yMax - yMin) / Float(yAxisGridLines)
         page.setBrushColor(Color.black)
         var i = 0
         while i < (yAxisGridLines + 1) {
-            let label = format(yMin + ((yMax - yMin) / Float(yAxisGridLines)) * Float(i))
+            let label = format(yMin + valueStep * Float(i), valueStep)
             page.drawString(
                     f2!,
                     fontSize,
@@ -679,16 +692,26 @@ public class Chart : Drawable {
                     page.setStrokeDashPattern(p0.strokeDashPattern)
                     page.drawPath(points, PathOperator.STROKE)
                     if p0.getText() != nil {
+                        // The text starts at the first point, half an ascent along
+                        // the path, centered across the stroke: on the line when
+                        // it is not rotated, along a vertical stroke when it is.
+                        let ascent = f2!.getAscent(fontSize)
+                        let x = p0.x + ascent / 2.0
+                        var y = p0.y + ascent / 2.0
+                        if p0.getTextRotation() != 0 {
+                            y = p0.y - ascent / 2.0
+                        }
                         page.setBrushColor(p0.getTextColor())
                         page.setTextRotation(p0.getTextRotation())
                         page.drawString(
                             f2!,
                             fontSize,
                             p0.getText(),
-                            p0.x + (p0.strokeWidth - f2!.getAscent())/2.0,
-                            p0.y,
+                            x,
+                            y,
                             p0.getTextColor(),
                             nil)
+                        page.setTextRotation(0)
                     }
                 }
                 for point in points {
@@ -710,7 +733,7 @@ public class Chart : Drawable {
     /// Uses the span (max - min) to support negative values and
     /// zero crossings. Rounds max up and min down to step multiples.
     ///
-    private func roundMaxAndMinValues(_ maxValue: Float, _ minValue: Float) -> Round {
+    static func roundMaxAndMinValues(_ maxValue: Float, _ minValue: Float) -> Round {
         var span = maxValue - minValue
         if span <= 0.0 { span = 1.0 }   // guard against flat data
 

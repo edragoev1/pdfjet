@@ -1,11 +1,13 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_40.cs
+ *
+ * Draws a bar chart with vertical bars: two series grouped by month, with a
+ * legend under the title.
  */
 public class Example_40 {
     public Example_40() {
@@ -15,115 +17,31 @@ public class Example_40 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetItalic(true);
         f1.SetSize(10f);
 
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.SetItalic(true);
         f2.SetSize(8f);
 
-        Chart chart = new Chart(f1, f2);
-        chart.SetData(GetData());
+        BarChart chart = new BarChart(f1, f2);
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);
-        chart.SetTitle("Vertical Bar Chart Example");
-        chart.SetXAxisTitle("Bar Chart");
-        chart.SetYAxisTitle("Vertical");
-        chart.SetDrawVGridLines(false);
-        chart.SetDrawXAxisLabels(false);
-        chart.SetXYChart(false);
+        chart.SetTitle("Units sold by month");
+        chart.SetXAxisTitle("Month");
+        chart.SetYAxisTitle("Units");
+        chart.SetCategories(
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
+        chart.AddSeries("2025",
+                new float[] {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f},
+                Color.seagreen);
+        chart.AddSeries("2026",
+                new float[] {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f},
+                Color.indianred);
+        chart.SetGroupGap(0.4f);
+        chart.SetBarGap(0.1f);
         chart.DrawOn(page);
 
         pdf.Complete();
-    }
-
-    public List<List<Point>> GetData() {
-        List<List<Point>> chartData = new List<List<Point>>();
-
-        float w = 14f;
-        float x = 10f;
-        float dx1 = 16f;
-        float dx2 = 26f;
-        AddVerticalBar(chartData, x, w, 45f, Color.green, " January", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 75f, Color.red, " January", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 65f, Color.green, " February", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 20f, Color.red, " February", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " March", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " March", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 45f, Color.green, " April", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 75f, Color.red, " April", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 65f, Color.green, " May", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 20f, Color.red, " May", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " June", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " June", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " July", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " July", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " August", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " August", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " September", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " September", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " October", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " October", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " November", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " November", Color.white);
-        x += dx2;
-        AddVerticalBar(chartData, x, w, 31f, Color.green, " December", Color.white);
-        x += dx1;
-        AddVerticalBar(chartData, x, w, 73f, Color.red, " December", Color.white);
-
-        return chartData;
-    }
-
-    private void AddVerticalBar(
-            List<List<Point>> chartData,
-            float x,
-            float w,
-            float h,
-            int color,
-            String text,
-            int textColor) {
-        List<Point> path1 = new List<Point>();
-
-        Point point = new Point();
-        point.SetDrawPath(true);
-        point.SetX(x);
-        point.SetY(0f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetStrokeWidth(w);
-        point.SetStrokeColor(color);
-        point.SetText(text);
-        point.SetTextColor(textColor);
-        point.SetTextRotation(90);
-        path1.Add(point);
-
-        point = new Point();
-        point.SetX(x);
-        point.SetY(h);
-        point.SetShape(Point.INVISIBLE);
-        path1.Add(point);
-
-        chartData.Add(path1);
     }
 
     public static void Main(String[] args) {

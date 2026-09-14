@@ -54,8 +54,6 @@ public class Chart implements Drawable {
     private boolean drawXAxisLabels = true;
     private boolean drawYAxisLabels = true;
 
-    private boolean xyChart = true;  // true = XY scatter, false = category mode
-
     // Grid line styling (width 0 = invisible, pattern default = dotted)
     private float hGridLineWidth;
     private float vGridLineWidth;
@@ -66,7 +64,7 @@ public class Chart implements Drawable {
     private float innerBorderWidth = 0f;
 
     // Label number formatting
-    private int minFractionDigits = 2;
+    private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
 
     // f1 = chart title font, f2 = axis title/label font
@@ -76,7 +74,7 @@ public class Chart implements Drawable {
 
     private List<List<Point>> chartData = null;
 
-    private static final int[] DEFAULT_PALETTE = {
+    static final int[] DEFAULT_PALETTE = {
         Color.blue,
         Color.red,
         Color.green,
@@ -207,7 +205,9 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the minimum number of decimal places in the axis labels.
+     * Sets the minimum number of decimal places in the axis labels. The labels
+     * of an axis have at least the decimal places of its step, so an axis with
+     * a whole number step has whole number labels. The default is 0.
      *
      * @param minFractionDigits the minimum number of decimal places.
      * @return this Chart object.
@@ -218,7 +218,8 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the maximum number of decimal places in the axis labels.
+     * Sets the maximum number of decimal places in the axis labels. The
+     * default is 2.
      *
      * @param maxFractionDigits the maximum number of decimal places.
      * @return this Chart object.
@@ -306,18 +307,8 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets whether this is an XY scatter chart or a category chart.
-     *
-     * @param xyChart true for an XY scatter chart, false for a category chart.
-     * @return this Chart object.
-     */
-    public Chart setXYChart(boolean xyChart) {
-        this.xyChart = xyChart;
-        return this;
-    }
-
-    /**
-     * Sets the width of the outer chart border. A width of 0 hides it.
+     * Sets the width of the outer chart border. A width of 0, the default,
+     * draws the thinnest line a viewer shows.
      *
      * @param width the border width.
      * @return this Chart object.
@@ -328,7 +319,8 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Sets the width of the plot area border. A width of 0 hides it.
+     * Sets the width of the plot area border. A width of 0, the default,
+     * draws the thinnest line a viewer shows.
      *
      * @param width the border width.
      * @return this Chart object.
@@ -433,7 +425,7 @@ public class Chart implements Drawable {
                 f1,
                 fontSize,
                 title,
-                x1 + ((w - f1.stringWidth(title)) / 2),
+                x1 + ((w - f1.stringWidth(fontSize, title)) / 2),
                 y1 + 1.5f * f1.bodyHeight);
 
         // Compute margins and inner plot area
@@ -480,14 +472,8 @@ public class Chart implements Drawable {
         // Translate data coordinates to page coordinates (on the copies)
         for (List<Point> points : plotData) {
             for (Point point : points) {
-                if (xyChart) {
-                    point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                    point.setStrokeWidth(point.getStrokeWidth() * (x6 - x5) / w);
-                } else {
-                    point.x = x5 + (point.x / w) * (x6 - x5);
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                }
+                point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
+                point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 if (point.getURIAction() != null) {
                     page.addAnnotation(new Annotation(
                             Annotation.Link,
@@ -520,7 +506,7 @@ public class Chart implements Drawable {
                 fontSize,
                 yAxisTitle,
                 x1 + f2.bodyHeight,
-                y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2);
+                y8 - ((y8 - y5) - f2.stringWidth(fontSize, yAxisTitle)) / 2);
 
         // Draw X axis title
         page.setTextRotation(0);
@@ -529,7 +515,7 @@ public class Chart implements Drawable {
                 f2,
                 fontSize,
                 xAxisTitle,
-                x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2,
+                x5 + ((x6 - x5) - f2.stringWidth(fontSize, xAxisTitle)) / 2,
                 y4 - f2.bodyHeight / 2);
 
         // Restore default pen/brush state
@@ -553,18 +539,18 @@ public class Chart implements Drawable {
     }
 
     /**
-     * Formats an axis label with minFractionDigits to maxFractionDigits
-     * decimal places, rounding the exact value half to even. The label has a
-     * "." decimal separator and no grouping whatever the default locale, and
-     * a value that rounds to zero has no minus sign.
+     * Formats a label with minDigits to maxDigits decimal places, rounding the
+     * exact value half to even. The label has a "." decimal separator and no
+     * grouping whatever the default locale, and a value that rounds to zero
+     * has no minus sign.
      */
-    private String format(float value) {
+    static String format(float value, int minDigits, int maxDigits) {
         if (Float.isNaN(value) || Float.isInfinite(value)) {
             return String.valueOf(value);
         }
         // A minimum above the maximum is lowered to it, as in NumberFormat
-        int maxDigits = Math.max(maxFractionDigits, 0);
-        int minDigits = Math.min(Math.max(minFractionDigits, 0), maxDigits);
+        maxDigits = Math.max(maxDigits, 0);
+        minDigits = Math.min(Math.max(minDigits, 0), maxDigits);
         BigDecimal label = new BigDecimal(value)
                 .setScale(maxDigits, RoundingMode.HALF_EVEN)
                 .stripTrailingZeros();
@@ -574,10 +560,31 @@ public class Chart implements Drawable {
         return label.toPlainString();
     }
 
+    /**
+     * Returns the number of decimal places, at most maxDigits, that write the
+     * axis step exactly: 0 for 10, 1 for 2.5, 2 for 0.25.
+     */
+    static int fractionDigitsOf(float step, int maxDigits) {
+        for (int digits = 0; digits < maxDigits; digits++) {
+            double scaled = step * Math.pow(10, digits);
+            if (Math.abs(scaled - Math.round(scaled)) < 1e-4) {
+                return digits;
+            }
+        }
+        return Math.max(maxDigits, 0);
+    }
+
+    /** Formats the label of an axis with the specified step. */
+    private String format(float value, float step) {
+        int digits = Math.max(minFractionDigits, fractionDigitsOf(step, maxFractionDigits));
+        return format(value, digits, maxFractionDigits);
+    }
+
     /** Returns the width of the widest Y axis label (for left margin). */
     private float getLongestAxisYLabelWidth() {
-        float minLabelWidth = f2.stringWidth(format(yMin) + "0");
-        float maxLabelWidth = f2.stringWidth(format(yMax) + "0");
+        float step = (yMax - yMin) / yAxisGridLines;
+        float minLabelWidth = f2.stringWidth(fontSize, format(yMin, step) + "0");
+        float maxLabelWidth = f2.stringWidth(fontSize, format(yMax, step) + "0");
         if (maxLabelWidth > minLabelWidth) {
             return maxLabelWidth;
         }
@@ -695,10 +702,11 @@ public class Chart implements Drawable {
         float x = x5;
         float y = y8 + f2.getBodyHeight(f2.getSize());
         float step = (x6 - x5) / xAxisGridLines;
+        float valueStep = (xMax - xMin) / xAxisGridLines;
         page.setBrushColor(Color.black);
         for (int i = 0; i < (xAxisGridLines + 1); i++) {
-            String label = format(xMin + ((xMax - xMin) / xAxisGridLines) * i);
-            page.drawString(f2, fontSize, label, x - (f2.stringWidth(label) / 2), y);
+            String label = format(xMin + valueStep * i, valueStep);
+            page.drawString(f2, fontSize, label, x - (f2.stringWidth(fontSize, label) / 2), y);
             x += step;
         }
     }
@@ -708,9 +716,10 @@ public class Chart implements Drawable {
         float x = x5 - getLongestAxisYLabelWidth();
         float y = y8 + f2.ascent / 3;
         float step = (y8 - y5) / yAxisGridLines;
+        float valueStep = (yMax - yMin) / yAxisGridLines;
         page.setBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {
-            String label = format(yMin + ((yMax - yMin) / yAxisGridLines) * i);
+            String label = format(yMin + valueStep * i, valueStep);
             page.drawString(f2, fontSize, label, x, y);
             y -= step;
         }
@@ -750,6 +759,15 @@ public class Chart implements Drawable {
                 page.setStrokeDashPattern(p0.strokeDashPattern);
                 page.drawPath(points, PathOperator.STROKE);
                 if (p0.getText() != null) {
+                    // The text starts at the first point, half an ascent along
+                    // the path, centered across the stroke: on the line when
+                    // it is not rotated, along a vertical stroke when it is.
+                    float ascent = f2.getAscent(fontSize);
+                    float x = p0.x + ascent / 2f;
+                    float y = p0.y + ascent / 2f;
+                    if (p0.getTextRotation() != 0) {
+                        y = p0.y - ascent / 2f;
+                    }
                     page.setBrushColor(p0.getTextColor());
                     page.setTextRotation(p0.getTextRotation());
                     page.drawString(
@@ -757,10 +775,11 @@ public class Chart implements Drawable {
                             null,
                             fontSize,
                             p0.getText(),
-                            p0.x + (p0.strokeWidth - f2.getAscent())/2f,
-                            p0.y,
+                            x,
+                            y,
                             p0.getTextColor(),
                             null);
+                    page.setTextRotation(0);
                 }
             }
             for (Point point : points) {
@@ -781,7 +800,7 @@ public class Chart implements Drawable {
      * Uses the span (max - min) to support negative values and
      * zero crossings. Rounds max up and min down to step multiples.
      */
-    private Round roundMaxAndMinValues(float maxValue, float minValue) {
+    static Round roundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
         if (span <= 0f) { span = 1f; }  // guard against flat data
 

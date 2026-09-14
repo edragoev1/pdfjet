@@ -8,6 +8,9 @@ package pdfjet
 import (
 	"strings"
 	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
 func testSeries(ys ...float32) [][]*Point {
@@ -42,7 +45,7 @@ func TestChartAChartWithoutPointsDrawsNothing(t *testing.T) {
 
 func TestChartAllNegativeDataGetsNegativeAxisLabels(t *testing.T) {
 	content := testDrawChart(testSeries(-5, -2.5, -1))
-	if !strings.Contains(content, testHex("-5.00")) || !strings.Contains(content, testHex("-1.00")) {
+	if !strings.Contains(content, testHex("-5.0")) || !strings.Contains(content, testHex("-1.0")) {
 		t.Errorf("labels missing from %q", content)
 	}
 	if strings.Contains(content, "NaN") {
@@ -55,8 +58,25 @@ func TestChartFlatDataIsDrawnWithoutNaN(t *testing.T) {
 	if strings.Contains(content, "NaN") {
 		t.Error("NaN in the content")
 	}
-	if !strings.Contains(content, testHex("3.00")) || !strings.Contains(content, testHex("4.00")) {
+	if !strings.Contains(content, testHex("3.0")) || !strings.Contains(content, testHex("4.0")) {
 		t.Errorf("labels missing from %q", content)
+	}
+}
+
+func TestChartWholeNumberStepsGetWholeNumberLabels(t *testing.T) {
+	content := testDrawChart(testSeries(10, 60, 35))
+	if !strings.Contains(content, testHex("60")) || strings.Contains(content, testHex("60.00")) {
+		t.Errorf("labels in %q", content)
+	}
+}
+
+func TestChartAPathSeriesKeepsItsStrokeWidthAndWritesItsText(t *testing.T) {
+	p1 := NewPoint(1, 2).SetDrawPath(true).SetShape(shape.Invisible)
+	p1.SetStrokeWidth(20).SetStrokeColor(color.Blue).SetText("label")
+	p2 := NewPoint(3, 2).SetShape(shape.Invisible)
+	content := testDrawChart([][]*Point{{p1, p2}})
+	if !strings.Contains(content, "20 w") || !strings.Contains(content, testHex("label")) {
+		t.Errorf("stroke width or text missing from %q", content)
 	}
 }
 

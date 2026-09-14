@@ -1,11 +1,13 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 
 /**
  * Example_39.java
+ *
+ * Draws a bar chart with horizontal bars: one series, the value written at
+ * the end of each bar.
  */
 final public class Example_39 {
     public Example_39() throws Exception {
@@ -13,108 +15,25 @@ final public class Example_39 {
                 new BufferedOutputStream(new FileOutputStream("Example_39.pdf")));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.setItalic(true);
         f1.setSize(10f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f2.setItalic(true);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.setSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Chart chart = new Chart(f1, f2);
+        BarChart chart = new BarChart(f1, f2);
         chart.setLocation(70f, 50f);
         chart.setSize(500f, 300f);
-        chart.setTitle("Horizontal Bar Chart Example");
-        chart.setXAxisTitle("");
-        chart.setYAxisTitle("");
-        chart.setData(getData());
-        chart.setDrawYAxisLabels(false);
+        chart.setTitle("Longest rivers");
+        chart.setXAxisTitle("Length in km");
+        chart.setCategories("Nile", "Amazon", "Yangtze", "Mississippi", "Yenisei", "Yellow River");
+        chart.addSeries("", new float[] {6650f, 6400f, 6300f, 6275f, 5539f, 5464f}, Color.steelblue);
+        chart.setHorizontal(true);
+        chart.setDrawValueLabels(true);
         chart.drawOn(page);
 
         pdf.complete();
-    }
-
-    public List<List<Point>> getData() throws Exception {
-        List<List<Point>> chartData = new ArrayList<List<Point>>();
-        List<Point> path1 = new ArrayList<Point>();
-        Point point = new Point();
-        point.setDrawPath(true);
-        point.setX(0f);
-        point.setY(45f);
-        point.setShape(Point.INVISIBLE);
-        point.setStrokeColor(Color.blue);
-        point.setStrokeWidth(20f);
-        point.setText(" Horizontal");
-        point.setTextColor(Color.white);
-        path1.add(point);
-
-        point = new Point();
-        point.setX(35f);
-        point.setY(45f);
-        point.setShape(Point.INVISIBLE);
-        path1.add(point);
-
-        List<Point> path2 = new ArrayList<Point>();
-        point = new Point();
-        point.setDrawPath(true);
-        point.setX(0f);
-        point.setY(35f);
-        point.setShape(Point.INVISIBLE);
-        point.setStrokeColor(Color.gold);
-        point.setStrokeWidth(20f);
-        point.setText(" Bar");
-        point.setTextColor(Color.black);
-        path2.add(point);
-
-        point = new Point();
-        point.setX(22f);
-        point.setY(35f);
-        point.setShape(Point.INVISIBLE);
-        path2.add(point);
-
-        List<Point> path3 = new ArrayList<Point>();
-        point = new Point();
-        point.setDrawPath(true);
-        point.setX(0f);
-        point.setY(25f);
-        point.setShape(Point.INVISIBLE);
-        point.setStrokeColor(Color.green);
-        point.setStrokeWidth(20f);
-        point.setText(" Chart");
-        point.setTextColor(Color.white);
-        path3.add(point);
-
-        point = new Point();
-        point.setX(30f);
-        point.setY(25f);
-        point.setShape(Point.INVISIBLE);
-        path3.add(point);
-
-        List<Point> path4 = new ArrayList<Point>();
-        point = new Point();
-        point.setDrawPath(true);
-        point.setX(0f);
-        point.setY(15f);
-        point.setShape(Point.INVISIBLE);
-        point.setStrokeColor(Color.red);
-        point.setStrokeWidth(20f);
-        point.setText(" Example");
-        point.setTextColor(Color.white);
-        path4.add(point);
-
-        point = new Point();
-        point.setX(47f);
-        point.setY(15f);
-        point.setShape(Point.INVISIBLE);
-        path4.add(point);
-
-        chartData.add(path1);
-        chartData.add(path2);
-        chartData.add(path3);
-        chartData.add(path4);
-
-        return chartData;
     }
 
     public static void main(String[] args) throws Exception {

@@ -36,16 +36,31 @@ import Testing
 
     @Test func allNegativeDataGetsNegativeAxisLabels() {
         let content = draw(series(-5, -2.5, -1))
-        #expect(content.contains(TestSupport.hex("-5.00")), "\(content)")
-        #expect(content.contains(TestSupport.hex("-1.00")), "\(content)")
+        #expect(content.contains(TestSupport.hex("-5.0")), "\(content)")
+        #expect(content.contains(TestSupport.hex("-1.0")), "\(content)")
         #expect(!content.contains("NaN"))
     }
 
     @Test func flatDataIsDrawnWithoutNaN() {
         let content = draw(series(3, 3, 3))
         #expect(!content.contains("NaN"))
-        #expect(content.contains(TestSupport.hex("3.00")), "\(content)")
-        #expect(content.contains(TestSupport.hex("4.00")), "\(content)")
+        #expect(content.contains(TestSupport.hex("3.0")), "\(content)")
+        #expect(content.contains(TestSupport.hex("4.0")), "\(content)")
+    }
+
+    @Test func wholeNumberStepsGetWholeNumberLabels() {
+        let content = draw(series(10, 60, 35))
+        #expect(content.contains(TestSupport.hex("60")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("60.00")), "\(content)")
+    }
+
+    @Test func aPathSeriesKeepsItsStrokeWidthAndWritesItsText() {
+        let p1 = Point(1, 2).setDrawPath(true).setShape(Point.INVISIBLE)
+        p1.setStrokeWidth(20).setStrokeColor(Color.blue).setText("label")
+        let p2 = Point(3, 2).setShape(Point.INVISIBLE)
+        let content = draw([[p1, p2]])
+        #expect(content.contains("20 w"), "\(content)")
+        #expect(content.contains(TestSupport.hex("label")), "\(content)")
     }
 
     @Test func labelsUseAPeriodWhateverTheDefaultLocale() {

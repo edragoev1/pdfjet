@@ -217,6 +217,21 @@ renames included (the Week 1 decision), so every item is a blocker.
       `drawOn` draws nothing and an empty series is skipped; flat data gets
       a range of the value to the value plus 1 before rounding. Example_09,
       Example_39 and Example_40 are unchanged.
+- ✅ **B** Bar charts were a two point path with a 20 point stroke on the XY
+      `Chart`: the bars at the ends of the rounded axis stuck out of the plot
+      (Example_39 covered its title and X axis labels), the bar text sat in the
+      upper half of a horizontal bar, `setXYChart(false)` mapped x as a
+      fraction of the chart width so Example_40 computed bar positions in
+      page points, the month names were repeated in every bar with no legend,
+      and integer data got `0.00` labels. Stroke widths were scaled by the
+      plot to chart width ratio in XY mode only (`Chart.java:486`), and the
+      titles were centered at the font size but drawn at `fontSize`.
+      Fixed (Sep 14): new `BarChart` in the four ports (categories, grouped
+      series, horizontal or vertical, legend, value labels, value axis that
+      includes 0, tests) and Example_39 and Example_40 rewritten with it;
+      `Chart` loses `setXYChart` and the stroke scaling, centers the titles
+      at the drawn size, centers the path text across the stroke, and writes
+      axis labels with the decimal places of the axis step.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

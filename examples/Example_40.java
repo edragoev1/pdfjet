@@ -1,11 +1,13 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 
 /**
  * Example_40.java
+ *
+ * Draws a bar chart with vertical bars: two series grouped by month, with a
+ * legend under the title.
  */
 final public class Example_40 {
     public Example_40() throws Exception {
@@ -15,115 +17,31 @@ final public class Example_40 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.setItalic(true);
         f1.setSize(10f);
 
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
-        f2.setItalic(true);
         f2.setSize(8f);
 
-        Chart chart = new Chart(f1, f2);
-        chart.setData(getData());
+        BarChart chart = new BarChart(f1, f2);
         chart.setLocation(70f, 50f);
         chart.setSize(500f, 300f);
-        chart.setTitle("Vertical Bar Chart Example");
-        chart.setXAxisTitle("Bar Chart");
-        chart.setYAxisTitle("Vertical");
-        chart.setDrawVGridLines(false);
-        chart.setDrawXAxisLabels(false);
-        chart.setXYChart(false);
+        chart.setTitle("Units sold by month");
+        chart.setXAxisTitle("Month");
+        chart.setYAxisTitle("Units");
+        chart.setCategories(
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
+        chart.addSeries("2025",
+                new float[] {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f},
+                Color.seagreen);
+        chart.addSeries("2026",
+                new float[] {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f},
+                Color.indianred);
+        chart.setGroupGap(0.4f);
+        chart.setBarGap(0.1f);
         chart.drawOn(page);
 
         pdf.complete();
-    }
-
-    public List<List<Point>> getData() throws Exception {
-        List<List<Point>> chartData = new ArrayList<List<Point>>();
-
-        float w = 14f;
-        float x = 10f;
-        float dx1 = 16f;
-        float dx2 = 26f;
-        addVerticalBar(chartData, x, w, 45f, Color.green, " January", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 75f, Color.red, " January", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 65f, Color.green, " February", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 20f, Color.red, " February", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " March", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " March", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 45f, Color.green, " April", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 75f, Color.red, " April", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 65f, Color.green, " May", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 20f, Color.red, " May", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " June", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " June", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " July", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " July", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " August", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " August", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " September", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " September", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " October", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " October", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " November", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " November", Color.white);
-        x += dx2;
-        addVerticalBar(chartData, x, w, 31f, Color.green, " December", Color.white);
-        x += dx1;
-        addVerticalBar(chartData, x, w, 73f, Color.red, " December", Color.white);
-
-        return chartData;
-    }
-
-    private void addVerticalBar(
-            List<List<Point>> chartData,
-            Float x,
-            Float w,
-            Float h,
-            int color,
-            String text,
-            int textColor) {
-        List<Point> path1 = new ArrayList<Point>();
-
-        Point point = new Point();
-        point.setDrawPath(true);
-        point.setX(x);
-        point.setY(0f);
-        point.setShape(Point.INVISIBLE);
-        point.setStrokeWidth(w);
-        point.setStrokeColor(color);
-        point.setText(text);
-        point.setTextColor(textColor);
-        point.setTextRotation(90);
-        path1.add(point);
-
-        point = new Point();
-        point.setX(x);
-        point.setY(h);
-        point.setShape(Point.INVISIBLE);
-        path1.add(point);
-
-        chartData.add(path1);
     }
 
     public static void main(String[] args) throws Exception {

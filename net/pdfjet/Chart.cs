@@ -38,8 +38,6 @@ public class Chart : IDrawable {
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
-    private bool xyChart = true;  // true = XY scatter, false = category mode
-
     // Grid line styling (width 0 = invisible, pattern default = dotted)
     private float hGridLineWidth = 0f;
     private float vGridLineWidth = 0f;
@@ -50,8 +48,7 @@ public class Chart : IDrawable {
     private float innerBorderWidth = 0f;
 
     // Label number formatting
-    private NumberFormat nf = null;
-    private int minFractionDigits = 2;
+    private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
 
     // f1 = chart title font, f2 = axis title/label font
@@ -61,7 +58,7 @@ public class Chart : IDrawable {
 
     private List<List<Point>> chartData = null;
 
-    private static readonly int[] DEFAULT_PALETTE = {
+    internal static readonly int[] DEFAULT_PALETTE = {
         Color.blue,
         Color.red,
         Color.green,
@@ -81,7 +78,6 @@ public class Chart : IDrawable {
     public Chart(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
-        nf = NumberFormat.GetInstance();
     }
 
     /// <summary>
@@ -169,7 +165,9 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets minimum decimal places for axis labels.
+    ///  Sets the minimum number of decimal places in the axis labels. The labels
+    ///  of an axis have at least the decimal places of its step, so an axis with
+    ///  a whole number step has whole number labels. The default is 0.
     /// </summary>
     public Chart SetMinimumFractionDigits(int minFractionDigits) {
         this.minFractionDigits = minFractionDigits;
@@ -177,7 +175,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets maximum decimal places for axis labels.
+    ///  Sets the maximum number of decimal places in the axis labels. The default is 2.
     /// </summary>
     public Chart SetMaximumFractionDigits(int maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
@@ -245,15 +243,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets XY scatter mode (true) or category mode (false).
-    /// </summary>
-    public Chart SetXYChart(bool xyChart) {
-        this.xyChart = xyChart;
-        return this;
-    }
-
-    /// <summary>
-    ///  Sets the outer chart border width (0 = invisible).
+    ///  Sets the width of the outer chart border. A width of 0, the default, draws the thinnest line a viewer shows.
     /// </summary>
     public Chart SetChartBorderWidth(float width) {
         this.chartBorderWidth = width;
@@ -261,7 +251,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the inner plot area border width (0 = invisible).
+    ///  Sets the width of the plot area border. A width of 0, the default, draws the thinnest line a viewer shows.
     /// </summary>
     public Chart SetInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
@@ -311,9 +301,6 @@ public class Chart : IDrawable {
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 
-        nf.SetMinimumFractionDigits(minFractionDigits);
-        nf.SetMaximumFractionDigits(maxFractionDigits);
-
         // Compute outer rectangle corners
         x2 = x1 + w;
         y2 = y1;
@@ -340,7 +327,7 @@ public class Chart : IDrawable {
                 f1,
                 fontSize,
                 title,
-                x1 + ((w - f1.StringWidth(title)) / 2),
+                x1 + ((w - f1.StringWidth(fontSize, title)) / 2),
                 y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()));
 
         // Compute margins and inner plot area
@@ -388,14 +375,8 @@ public class Chart : IDrawable {
         // Translate data coordinates to page coordinates (on the copies)
         foreach (List<Point> points in plotData) {
             foreach (Point point in points) {
-                if (xyChart) {
-                    point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                    point.strokeWidth *= (x6 - x5) / w;
-                } else {
-                    point.x = x5 + point.x * (x6 - x5) / w;
-                    point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                }
+                point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
+                point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
                 if (point.GetURIAction() != null) {
                     page.AddAnnotation(new Annotation(
                             Annotation.Link,
@@ -427,7 +408,7 @@ public class Chart : IDrawable {
                 fontSize,
                 yAxisTitle,
                 x1 + f2.GetBodyHeight(f2.GetSize()),
-                y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2);
+                y8 - ((y8 - y5) - f2.StringWidth(fontSize, yAxisTitle)) / 2);
 
         // Draw X axis title
         page.SetTextRotation(0);
@@ -436,7 +417,7 @@ public class Chart : IDrawable {
                 f2,
                 fontSize,
                 xAxisTitle,
-                x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
+                x5 + ((x6 - x5) - f2.StringWidth(fontSize, xAxisTitle)) / 2,
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
         page.SetDefaultPenWidth();
@@ -461,13 +442,50 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
+    /// Formats a label with minDigits to maxDigits decimal places, rounding the
+    /// exact value half to even. The label has a "." decimal separator and no
+    /// grouping whatever the default locale, and a value that rounds to zero
+    /// has no minus sign.
+    /// </summary>
+    internal static String Format(float value, int minDigits, int maxDigits) {
+        // A minimum above the maximum is lowered to it, as in NumberFormat
+        maxDigits = Math.Max(maxDigits, 0);
+        minDigits = Math.Min(Math.Max(minDigits, 0), maxDigits);
+        NumberFormat nf = NumberFormat.GetInstance();
+        nf.SetMaximumFractionDigits(maxDigits);
+        nf.SetMinimumFractionDigits(minDigits);
+        return nf.Format(value);
+    }
+
+    /// <summary>
+    /// Returns the number of decimal places, at most maxDigits, that write the
+    /// axis step exactly: 0 for 10, 1 for 2.5, 2 for 0.25.
+    /// </summary>
+    internal static int FractionDigitsOf(float step, int maxDigits) {
+        for (int digits = 0; digits < maxDigits; digits++) {
+            double scaled = step * Math.Pow(10, digits);
+            if (Math.Abs(scaled - Math.Round(scaled)) < 1e-4) {
+                return digits;
+            }
+        }
+        return Math.Max(maxDigits, 0);
+    }
+
+    /// <summary>Formats the label of an axis with the specified step.</summary>
+    private String Format(float value, float step) {
+        int digits = Math.Max(minFractionDigits, FractionDigitsOf(step, maxFractionDigits));
+        return Format(value, digits, maxFractionDigits);
+    }
+
+    /// <summary>
     ///  Returns the width of the widest Y axis label (for left margin).
     /// </summary>
     private float GetLongestAxisYLabelWidth() {
+        float step = (yMax - yMin) / yAxisGridLines;
         float minLabelWidth =
-                f2.StringWidth(nf.Format(yMin) + "0");
+                f2.StringWidth(fontSize, Format(yMin, step) + "0");
         float maxLabelWidth =
-                f2.StringWidth(nf.Format(yMax) + "0");
+                f2.StringWidth(fontSize, Format(yMax, step) + "0");
         if (maxLabelWidth > minLabelWidth) {
             return maxLabelWidth;
         }
@@ -603,10 +621,11 @@ public class Chart : IDrawable {
         float x = x5;
         float y = y8 + f2.GetBodyHeight(f2.GetSize());
         float step = (x6 - x5) / xAxisGridLines;
+        float valueStep = (xMax - xMin) / xAxisGridLines;
         page.SetBrushColor(Color.black);
         for (int i = 0; i < (xAxisGridLines + 1); i++) {
-            String label = nf.Format(xMin + ((xMax - xMin) / xAxisGridLines) * i);
-            page.DrawString(f2, fontSize, label, x - (f2.StringWidth(label) / 2), y);
+            String label = Format(xMin + valueStep * i, valueStep);
+            page.DrawString(f2, fontSize, label, x - (f2.StringWidth(fontSize, label) / 2), y);
             x += step;
         }
     }
@@ -618,9 +637,10 @@ public class Chart : IDrawable {
         float x = x5 - GetLongestAxisYLabelWidth();
         float y = y8 + f2.GetAscent() / 3;
         float step = (y8 - y5) / yAxisGridLines;
+        float valueStep = (yMax - yMin) / yAxisGridLines;
         page.SetBrushColor(Color.black);
         for (int i = 0; i < (yAxisGridLines + 1); i++) {
-            String label = nf.Format(yMin + ((yMax - yMin) / yAxisGridLines) * i);
+            String label = Format(yMin + valueStep * i, valueStep);
             page.DrawString(f2, fontSize, label, x, y);
             y -= step;
         }
@@ -663,6 +683,15 @@ public class Chart : IDrawable {
                 page.SetStrokeDashPattern(p0.strokeDashPattern);
                 page.DrawPath(points, PathOperator.STROKE);
                 if (p0.GetText() != null) {
+                    // The text starts at the first point, half an ascent along
+                    // the path, centered across the stroke: on the line when
+                    // it is not rotated, along a vertical stroke when it is.
+                    float ascent = f2.GetAscent(fontSize);
+                    float x = p0.x + ascent / 2f;
+                    float y = p0.y + ascent / 2f;
+                    if (p0.GetTextRotation() != 0) {
+                        y = p0.y - ascent / 2f;
+                    }
                     page.SetBrushColor(p0.GetTextColor());
                     page.SetTextRotation(p0.GetTextRotation());
                     page.DrawString(
@@ -670,10 +699,11 @@ public class Chart : IDrawable {
                             null,
                             fontSize,
                             p0.GetText(),
-                            p0.x + (p0.strokeWidth - f2.GetAscent())/2f,
-                            p0.y,
+                            x,
+                            y,
                             p0.GetTextColor(),
                             null);
+                    page.SetTextRotation(0);
                 }
             }
             foreach (Point point in points) {
@@ -694,7 +724,7 @@ public class Chart : IDrawable {
     /// Uses the span (max - min) to support negative values and
     /// zero crossings. Rounds max up and min down to step multiples.
     /// </summary>
-    private Round RoundMaxAndMinValues(float maxValue, float minValue) {
+    internal static Round RoundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
         if (span <= 0f) { span = 1f; }  // guard against flat data
 

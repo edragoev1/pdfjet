@@ -40,8 +40,8 @@ public class ChartTest {
     [Fact]
     public void AllNegativeDataGetsNegativeAxisLabels() {
         string content = Draw(Series(-5f, -2.5f, -1f));
-        Assert.Contains(TestSupport.Hex("-5.00"), content);
-        Assert.Contains(TestSupport.Hex("-1.00"), content);
+        Assert.Contains(TestSupport.Hex("-5.0"), content);
+        Assert.Contains(TestSupport.Hex("-1.0"), content);
         Assert.DoesNotContain("NaN", content);
     }
 
@@ -49,8 +49,27 @@ public class ChartTest {
     public void FlatDataIsDrawnWithoutNaN() {
         string content = Draw(Series(3f, 3f, 3f));
         Assert.DoesNotContain("NaN", content);
-        Assert.Contains(TestSupport.Hex("3.00"), content);
-        Assert.Contains(TestSupport.Hex("4.00"), content);
+        Assert.Contains(TestSupport.Hex("3.0"), content);
+        Assert.Contains(TestSupport.Hex("4.0"), content);
+    }
+
+    [Fact]
+    public void WholeNumberStepsGetWholeNumberLabels() {
+        string content = Draw(Series(10f, 60f, 35f));
+        Assert.Contains(TestSupport.Hex("60"), content);
+        Assert.DoesNotContain(TestSupport.Hex("60.00"), content);
+    }
+
+    [Fact]
+    public void APathSeriesKeepsItsStrokeWidthAndWritesItsText() {
+        Point p1 = new Point(1f, 2f).SetDrawPath(true).SetShape(Point.INVISIBLE);
+        p1.SetStrokeWidth(20f).SetStrokeColor(Color.blue).SetText("label");
+        Point p2 = new Point(3f, 2f).SetShape(Point.INVISIBLE);
+        List<Point> path = new List<Point> {p1, p2};
+        List<List<Point>> data = new List<List<Point>> {path};
+        string content = Draw(data);
+        Assert.Contains("20 w", content);
+        Assert.Contains(TestSupport.Hex("label"), content);
     }
 
     [Fact]

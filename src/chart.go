@@ -37,7 +37,6 @@ type Chart struct {
 	drawVGridLines                 bool
 	drawXAxisLabels                bool
 	drawYAxisLabels                bool
-	xyChart                        bool
 	hGridLineWidth                 float32
 	vGridLineWidth                 float32
 	hGridLinePattern               string
@@ -81,12 +80,11 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.drawVGridLines = true
 	chart.drawXAxisLabels = true
 	chart.drawYAxisLabels = true
-	chart.xyChart = true
 	chart.hGridLinePattern = "[1 1] 0"
 	chart.vGridLinePattern = "[1 1] 0"
 	chart.chartBorderWidth = 0.0
 	chart.innerBorderWidth = 0.0
-	chart.minFractionDigits = 2
+	chart.minFractionDigits = 0
 	chart.maxFractionDigits = 2
 	chart.fontSize = 8.0
 	chart.autoColors = true
@@ -136,13 +134,17 @@ func (chart *Chart) SetSize(w, h float32) *Chart {
 	return chart
 }
 
-// SetMinimumFractionDigits sets the minimum number of fractions digits do display for the X and Y axis labels.
+// SetMinimumFractionDigits sets the minimum number of decimal places in the
+// axis labels. The labels of an axis have at least the decimal places of its
+// step, so an axis with a whole number step has whole number labels. The
+// default is 0.
 func (chart *Chart) SetMinimumFractionDigits(minFractionDigits int) *Chart {
 	chart.minFractionDigits = minFractionDigits
 	return chart
 }
 
-// SetMaximumFractionDigits sets the maximum number of fractions digits do display for the X and Y axis labels.
+// SetMaximumFractionDigits sets the maximum number of decimal places in the
+// axis labels. The default is 2.
 func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) *Chart {
 	chart.maxFractionDigits = maxFractionDigits
 	return chart
@@ -179,13 +181,15 @@ func (chart *Chart) SetFontSize(fontSize float32) *Chart {
 	return chart
 }
 
-// SetChartBorderWidth sets the width of the chart border.
+// SetChartBorderWidth sets the width of the outer chart border. A width of 0,
+// the default, draws the thinnest line a viewer shows.
 func (chart *Chart) SetChartBorderWidth(width float32) *Chart {
 	chart.chartBorderWidth = width
 	return chart
 }
 
-// SetInnerBorderWidth sets the width of the inner border.
+// SetInnerBorderWidth sets the width of the plot area border. A width of 0,
+// the default, draws the thinnest line a viewer shows.
 func (chart *Chart) SetInnerBorderWidth(width float32) *Chart {
 	chart.innerBorderWidth = width
 	return chart
@@ -241,12 +245,6 @@ func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) *Chart {
 	return chart
 }
 
-// SetXYChart sets whether this is an XY chart (true) or a category chart (false).
-func (chart *Chart) SetXYChart(xyChart bool) *Chart {
-	chart.xyChart = xyChart
-	return chart
-}
-
 // DrawOn draws chart on the specified page.
 // @param page the page to draw chart on.
 func (chart *Chart) DrawOn(page *Page) [2]float32 {
@@ -284,7 +282,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.f1,
 		chart.fontSize,
 		chart.title,
-		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.size, chart.title))/2),
+		chart.x1+((chart.w-chart.f1.StringWidth(chart.fontSize, chart.title))/2),
 		chart.y1+1.5*chart.f1.bodyHeight,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -338,14 +336,8 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Translate the point coordinates (on the copies)
 	for _, points := range plotData {
 		for _, point := range points {
-			if chart.xyChart {
-				point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
-				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
-				point.strokeWidth = point.strokeWidth * (chart.x6 - chart.x5) / chart.w
-			} else {
-				point.x = chart.x5 + (point.x/chart.w)*(chart.x6-chart.x5)
-				point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
-			}
+			point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
+			point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
 			if point.uri != "" {
 				// AddAnnotation flips y into PDF space; do not pre-flip here.
 				page.addAnnotation(&Annotation{
@@ -379,7 +371,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.fontSize,
 		chart.yAxisTitle,
 		chart.x1+chart.f2.bodyHeight,
-		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.f2.size, chart.yAxisTitle))/2,
+		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.fontSize, chart.yAxisTitle))/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -390,7 +382,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.f2,
 		chart.fontSize,
 		chart.xAxisTitle,
-		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.f2.size, chart.xAxisTitle))/2,
+		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.fontSize, chart.xAxisTitle))/2,
 		chart.y4-chart.f2.bodyHeight/2,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -412,11 +404,10 @@ func (chart *Chart) hasPoints() bool {
 	return false
 }
 
-// format formats an axis label with minFractionDigits to maxFractionDigits
-// decimal places, rounding the exact value half to even. The label has a "."
-// decimal separator and no grouping, and a value that rounds to zero has no
-// minus sign.
-func (chart *Chart) format(value float32) string {
+// format formats a label with minDigits to maxDigits decimal places, rounding
+// the exact value half to even. The label has a "." decimal separator and no
+// grouping, and a value that rounds to zero has no minus sign.
+func format(value float32, minDigits, maxDigits int) string {
 	if math.IsNaN(float64(value)) {
 		return "NaN"
 	}
@@ -427,8 +418,8 @@ func (chart *Chart) format(value float32) string {
 		return "Infinity"
 	}
 	// A minimum above the maximum is lowered to it, as in Java's NumberFormat
-	maxDigits := max(chart.maxFractionDigits, 0)
-	minDigits := min(max(chart.minFractionDigits, 0), maxDigits)
+	maxDigits = max(maxDigits, 0)
+	minDigits = min(max(minDigits, 0), maxDigits)
 	label := strconv.FormatFloat(float64(value), 'f', maxDigits, 64)
 	if point := strings.IndexByte(label, '.'); point != -1 {
 		end := len(label)
@@ -446,9 +437,28 @@ func (chart *Chart) format(value float32) string {
 	return label
 }
 
+// fractionDigitsOf returns the number of decimal places, at most maxDigits,
+// that write the axis step exactly: 0 for 10, 1 for 2.5, 2 for 0.25.
+func fractionDigitsOf(step float32, maxDigits int) int {
+	for digits := 0; digits < maxDigits; digits++ {
+		scaled := float64(step) * math.Pow(10, float64(digits))
+		if math.Abs(scaled-math.Round(scaled)) < 1e-4 {
+			return digits
+		}
+	}
+	return max(maxDigits, 0)
+}
+
+// formatAxis formats the label of an axis with the specified step.
+func (chart *Chart) formatAxis(value, step float32) string {
+	digits := max(chart.minFractionDigits, fractionDigitsOf(step, chart.maxFractionDigits))
+	return format(value, digits, chart.maxFractionDigits)
+}
+
 func (chart *Chart) getLongestAxisYLabelWidth() float32 {
-	minLabelWidth := chart.f2.StringWidth(chart.f2.size, chart.format(chart.yMin)+"0")
-	maxLabelWidth := chart.f2.StringWidth(chart.f2.size, chart.format(chart.yMax)+"0")
+	step := (chart.yMax - chart.yMin) / float32(chart.yAxisGridLines)
+	minLabelWidth := chart.f2.StringWidth(chart.fontSize, chart.formatAxis(chart.yMin, step)+"0")
+	maxLabelWidth := chart.f2.StringWidth(chart.fontSize, chart.formatAxis(chart.yMax, step)+"0")
 	if maxLabelWidth > minLabelWidth {
 		return maxLabelWidth
 	}
@@ -491,7 +501,7 @@ func (chart *Chart) roundXAxisMinAndMaxValues() {
 	if chart.xAxisGridLines != 0 {
 		return
 	}
-	round := chart.roundMaxAndMinValues(chart.xMax, chart.xMin)
+	round := roundMaxAndMinValues(chart.xMax, chart.xMin)
 	chart.xMax = round.maxValue
 	chart.xMin = round.minValue
 	chart.xAxisGridLines = round.numOfGridLines
@@ -501,7 +511,7 @@ func (chart *Chart) roundYAxisMinAndMaxValues() {
 	if chart.yAxisGridLines != 0 {
 		return
 	}
-	round := chart.roundMaxAndMinValues(chart.yMax, chart.yMin)
+	round := roundMaxAndMinValues(chart.yMax, chart.yMin)
 	chart.yMax = round.maxValue
 	chart.yMin = round.minValue
 	chart.yAxisGridLines = round.numOfGridLines
@@ -558,11 +568,12 @@ func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 	x := chart.x5
 	y := chart.y8 + chart.f2.GetBodyHeight()
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
+	valueStep := (chart.xMax - chart.xMin) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
-		label := chart.format(chart.xMin + ((chart.xMax-chart.xMin)/float32(chart.xAxisGridLines))*float32(i))
+		label := chart.formatAxis(chart.xMin+valueStep*float32(i), valueStep)
 		page.drawString(
-			chart.f2, chart.fontSize, label, x-(chart.f2.StringWidth(chart.f2.size, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
+			chart.f2, chart.fontSize, label, x-(chart.f2.StringWidth(chart.fontSize, label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
 	}
 }
@@ -572,9 +583,10 @@ func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 	x := chart.x5 - chart.getLongestAxisYLabelWidth()
 	y := chart.y8 + chart.f2.ascent/3
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
+	valueStep := (chart.yMax - chart.yMin) / float32(chart.yAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
-		label := chart.format(chart.yMin + ((chart.yMax-chart.yMin)/float32(chart.yAxisGridLines))*float32(i))
+		label := chart.formatAxis(chart.yMin+valueStep*float32(i), valueStep)
 		page.drawString(chart.f2, chart.fontSize, label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
@@ -602,16 +614,26 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 			page.SetStrokeDashPattern(p0.strokeDashPattern)
 			page.DrawPath(points, pathoperator.Stroke)
 			if p0.GetText() != "" {
+				// The text starts at the first point, half an ascent along
+				// the path, centered across the stroke: on the line when
+				// it is not rotated, along a vertical stroke when it is.
+				ascent := chart.f2.GetAscentAt(chart.fontSize)
+				x := p0.x + ascent/2.0
+				y := p0.y + ascent/2.0
+				if p0.GetTextRotation() != 0 {
+					y = p0.y - ascent/2.0
+				}
 				page.SetBrushColorRGB(p0.GetTextColor())
 				page.SetTextRotation(p0.GetTextRotation())
 				page.drawString(
 					chart.f2,
 					chart.fontSize,
 					p0.text,
-					p0.x+(p0.strokeWidth-chart.f2.ascent)/2.0,
-					p0.y,
+					x,
+					y,
 					p0.textColor,
 					nil)
+				page.SetTextRotation(0)
 			}
 		}
 		for _, point := range points {
@@ -638,7 +660,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, chartData [][]*Point) {
 // Uses the span (max - min) to support negative values and zero crossings.
 // Rounds max up and min down to step multiples, then recomputes grid lines
 // to ensure they match the final rounded range.
-func (chart *Chart) roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
+func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	span := maxValue - minValue
 	if span <= 0 {
 		span = 1.0 // Guard against flat data

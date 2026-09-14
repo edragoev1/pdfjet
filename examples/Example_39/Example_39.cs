@@ -1,11 +1,13 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_39.cs
+ *
+ * Draws a bar chart with horizontal bars: one series, the value written at
+ * the end of each bar.
  */
 public class Example_39 {
     public Example_39() {
@@ -13,109 +15,25 @@ public class Example_39 {
                 new FileStream("Example_39.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetItalic(true);
         f1.SetSize(10f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f2.SetItalic(true);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.SetSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Chart chart = new Chart(f1, f2);
+        BarChart chart = new BarChart(f1, f2);
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);
-        chart.SetTitle("Horizontal Bar Chart Example");
-        chart.SetXAxisTitle("");
-        chart.SetYAxisTitle("");
-        chart.SetData(GetData());
-        chart.SetDrawYAxisLabels(false);
+        chart.SetTitle("Longest rivers");
+        chart.SetXAxisTitle("Length in km");
+        chart.SetCategories("Nile", "Amazon", "Yangtze", "Mississippi", "Yenisei", "Yellow River");
+        chart.AddSeries("", new float[] {6650f, 6400f, 6300f, 6275f, 5539f, 5464f}, Color.steelblue);
+        chart.SetHorizontal(true);
+        chart.SetDrawValueLabels(true);
         chart.DrawOn(page);
 
         pdf.Complete();
-    }
-
-    public List<List<Point>> GetData() {
-        List<List<Point>> chartData = new List<List<Point>>();
-
-        List<Point> path1 = new List<Point>();
-        Point point = new Point();
-        point.SetDrawPath(true);
-        point.SetX(0f);
-        point.SetY(45f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetStrokeColor(Color.blue);
-        point.SetStrokeWidth(20f);
-        point.SetText(" Horizontal");
-        point.SetTextColor(Color.white);
-        path1.Add(point);
-
-        point = new Point();
-        point.SetX(35f);
-        point.SetY(45f);
-        point.SetShape(Point.INVISIBLE);
-        path1.Add(point);
-
-        List<Point> path2 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath(true);
-        point.SetX(0f);
-        point.SetY(35f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetStrokeColor(Color.gold);
-        point.SetStrokeWidth(20f);
-        point.SetText(" Bar");
-        point.SetTextColor(Color.black);
-        path2.Add(point);
-
-        point = new Point();
-        point.SetX(22f);
-        point.SetY(35f);
-        point.SetShape(Point.INVISIBLE);
-        path2.Add(point);
-
-        List<Point> path3 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath(true);
-        point.SetX(0f);
-        point.SetY(25f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetStrokeColor(Color.green);
-        point.SetStrokeWidth(20f);
-        point.SetText(" Chart");
-        point.SetTextColor(Color.white);
-        path3.Add(point);
-
-        point = new Point();
-        point.SetX(30f);
-        point.SetY(25f);
-        point.SetShape(Point.INVISIBLE);
-        path3.Add(point);
-
-        List<Point> path4 = new List<Point>();
-        point = new Point();
-        point.SetDrawPath(true);
-        point.SetX(0f);
-        point.SetY(15f);
-        point.SetShape(Point.INVISIBLE);
-        point.SetStrokeColor(Color.red);
-        point.SetStrokeWidth(20f);
-        point.SetText(" Example");
-        point.SetTextColor(Color.white);
-        path4.Add(point);
-
-        point = new Point();
-        point.SetX(47f);
-        point.SetY(15f);
-        point.SetShape(Point.INVISIBLE);
-        path4.Add(point);
-
-        chartData.Add(path1);
-        chartData.Add(path2);
-        chartData.Add(path3);
-        chartData.Add(path4);
-
-        return chartData;
     }
 
     public static void Main(String[] args) {

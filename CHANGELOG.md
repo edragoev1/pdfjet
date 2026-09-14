@@ -39,6 +39,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `JISB5`.
 - Many methods and constants are renamed or removed so that one concept has
   one name in every class and port. See "Names".
+- `Chart.setXYChart` is removed with its category mode; bar charts are drawn
+  with the new `BarChart`. `Chart` axis labels with whole number steps have no
+  decimal places. See "Charts and calendars".
 - Constants have types. The Go constant packages are typed, `PathOperator`,
   `ImageType`, `PageLayout`, `PageMode`, `ScriptPosition` and
   `ErrorCorrectionLevel` are enums in Java, C# and Swift, and `Align` is gone:
@@ -162,6 +165,19 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `Text.readLines` moves to `Util.readLines` (Go `util.ReadLines`).
 
 ### Charts and calendars
+- New `BarChart` in the four ports: categories on one axis, the bars of the
+  series grouped inside each category, vertical or horizontal, with a value
+  axis that always includes 0, a legend under the title, optional value labels
+  at the bar ends, and grid, axis and border line settings. Example_39 and
+  Example_40 draw a horizontal and a grouped vertical bar chart with it.
+- `Chart` draws only XY charts: `setXYChart` and its category mode are removed,
+  bar charts are `BarChart`. Stroke widths are page units and are no longer
+  scaled by the plot to chart width ratio, so a path is as wide as it was set.
+  The axis labels have the decimal places of the axis step, so an axis with
+  whole number steps has whole number labels; the default minimum is 0
+  decimal places. The title and axis titles are centered at the size they are
+  drawn, and the text of a path series starts at its first point, centered
+  across the stroke.
 - `Chart` handles negative, empty and flat data and its colors the same way in
   the four ports, and writes the same axis labels whatever the locale.
 - `DonutChart` computes the same percentages in every port.

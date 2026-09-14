@@ -48,8 +48,8 @@ class ChartTest {
     @Test
     void allNegativeDataGetsNegativeAxisLabels() throws Exception {
         String content = draw(series(-5f, -2.5f, -1f));
-        assertTrue(content.contains(TestSupport.hex("-5.00")), content);
-        assertTrue(content.contains(TestSupport.hex("-1.00")), content);
+        assertTrue(content.contains(TestSupport.hex("-5.0")), content);
+        assertTrue(content.contains(TestSupport.hex("-1.0")), content);
         assertFalse(content.contains("NaN"));
     }
 
@@ -57,8 +57,30 @@ class ChartTest {
     void flatDataIsDrawnWithoutNaN() throws Exception {
         String content = draw(series(3f, 3f, 3f));
         assertFalse(content.contains("NaN"));
-        assertTrue(content.contains(TestSupport.hex("3.00")), content);
-        assertTrue(content.contains(TestSupport.hex("4.00")), content);
+        assertTrue(content.contains(TestSupport.hex("3.0")), content);
+        assertTrue(content.contains(TestSupport.hex("4.0")), content);
+    }
+
+    @Test
+    void wholeNumberStepsGetWholeNumberLabels() throws Exception {
+        String content = draw(series(10f, 60f, 35f));
+        assertTrue(content.contains(TestSupport.hex("60")), content);
+        assertFalse(content.contains(TestSupport.hex("60.00")), content);
+    }
+
+    @Test
+    void aPathSeriesKeepsItsStrokeWidthAndWritesItsText() throws Exception {
+        Point p1 = new Point(1f, 2f).setDrawPath(true).setShape(Point.INVISIBLE);
+        p1.setStrokeWidth(20f).setStrokeColor(Color.blue).setText("label");
+        Point p2 = new Point(3f, 2f).setShape(Point.INVISIBLE);
+        List<Point> path = new ArrayList<Point>();
+        path.add(p1);
+        path.add(p2);
+        List<List<Point>> data = new ArrayList<List<Point>>();
+        data.add(path);
+        String content = draw(data);
+        assertTrue(content.contains("20 w"), content);
+        assertTrue(content.contains(TestSupport.hex("label")), content);
     }
 
     @Test

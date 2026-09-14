@@ -7,106 +7,33 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
-// Example39 creates a chart with horizontal bars.
+// Example39 draws a bar chart with horizontal bars: one series, the value
+// written at the end of each bar.
 func Example39() {
 	pdf := pdfjet.NewPDFFile("Example_39.pdf")
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f1.SetItalic(true)
 	f1.SetSize(10.0)
 
-	f2 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f2.SetItalic(true)
+	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f2.SetSize(8.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	chart := pdfjet.NewChart(f1, f2)
-	chart.SetLocation(70.0, 50.0)
+	chart := pdfjet.NewBarChart(f1, f2)
 	chart.SetSize(500.0, 300.0)
-	chart.SetTitle("Horizontal Bar Chart Example")
-	chart.SetXAxisTitle("")
-	chart.SetYAxisTitle("")
-	chart.SetData(getData())
-	chart.SetDrawYAxisLabels(false)
-
+	chart.SetTitle("Longest rivers")
+	chart.SetXAxisTitle("Length in km")
+	chart.SetCategories("Nile", "Amazon", "Yangtze", "Mississippi", "Yenisei", "Yellow River")
+	chart.AddSeriesWithColor("", []float32{6650.0, 6400.0, 6300.0, 6275.0, 5539.0, 5464.0}, color.SteelBlue)
+	chart.SetHorizontal(true)
+	chart.SetDrawValueLabels(true)
+	chart.SetLocation(70.0, 50.0)
 	chart.DrawOn(page)
 
 	pdf.Complete()
-}
-
-func getData() [][]*pdfjet.Point {
-	chartData := make([][]*pdfjet.Point, 0)
-
-	path1 := make([]*pdfjet.Point, 0)
-
-	point := pdfjet.NewPoint(0.0, 45.0)
-	point.SetDrawPath(true)
-	point.SetShape(shape.Invisible)
-	point.SetStrokeColor(color.Blue)
-	point.SetStrokeWidth(20.0)
-	point.SetText(" Horizontal")
-	point.SetTextColor(color.White)
-	path1 = append(path1, point)
-
-	point = pdfjet.NewPoint(35.0, 45.0)
-	point.SetShape(shape.Invisible)
-	path1 = append(path1, point)
-
-	path2 := make([]*pdfjet.Point, 0)
-
-	point = pdfjet.NewPoint(0.0, 35.0)
-	point.SetDrawPath(true)
-	point.SetShape(shape.Invisible)
-	point.SetStrokeColor(color.Gold)
-	point.SetStrokeWidth(20.0)
-	point.SetText(" Bar")
-	point.SetTextColor(color.Black)
-	path2 = append(path2, point)
-
-	point = pdfjet.NewPoint(22.0, 35.0)
-	point.SetShape(shape.Invisible)
-	path2 = append(path2, point)
-
-	path3 := make([]*pdfjet.Point, 0)
-
-	point = pdfjet.NewPoint(0.0, 25.0)
-	point.SetDrawPath(true)
-	point.SetShape(shape.Invisible)
-	point.SetStrokeColor(color.Green)
-	point.SetStrokeWidth(20.0)
-	point.SetText(" Chart")
-	point.SetTextColor(color.White)
-	path3 = append(path3, point)
-
-	point = pdfjet.NewPoint(30.0, 25.0)
-	point.SetShape(shape.Invisible)
-	path3 = append(path3, point)
-
-	path4 := make([]*pdfjet.Point, 0)
-
-	point = pdfjet.NewPoint(0.0, 15.0)
-	point.SetDrawPath(true)
-	point.SetShape(shape.Invisible)
-	point.SetStrokeColor(color.Red)
-	point.SetStrokeWidth(20.0)
-	point.SetText(" Example")
-	point.SetTextColor(color.White)
-	path4 = append(path4, point)
-
-	point = pdfjet.NewPoint(47.0, 15.0)
-	point.SetShape(shape.Invisible)
-	path4 = append(path4, point)
-
-	chartData = append(chartData, path1)
-	chartData = append(chartData, path2)
-	chartData = append(chartData, path3)
-	chartData = append(chartData, path4)
-
-	return chartData
 }
 
 func main() {
