@@ -13,7 +13,7 @@ import java.util.zip.*;
 /**
  * This class parses and extracts the data from TTF and OTF font files.
  */
-public class OTF {
+class OTF {
     String fontName;
     String fontInfo;
     int unitsPerEm;
@@ -48,7 +48,7 @@ public class OTF {
      * @param stream the input stream
      * @throws Exception if there is a problem
      */
-    public OTF(InputStream stream) throws Exception {
+    OTF(InputStream stream) throws Exception {
         buf = Content.getFromStream(stream);
 
         // Extract OTF metadata

@@ -24,8 +24,8 @@ type fontTable struct {
 	length   int
 }
 
-// OTF is used to construct TTF and OTF font objects.
-type OTF struct {
+// openTypeFont is used to construct TTF and OTF font objects.
+type openTypeFont struct {
 	fontName           string
 	fontInfo           string
 	buf                []byte
@@ -58,9 +58,9 @@ type OTF struct {
 	stringOffset       int
 }
 
-// NewOTF is the constructor for TTF and OTF fonts.
-func NewOTF(reader io.Reader) *OTF {
-	otf := new(OTF)
+// newOpenTypeFont is the constructor for TTF and OTF fonts.
+func newOpenTypeFont(reader io.Reader) *openTypeFont {
+	otf := new(openTypeFont)
 	otf.buf = content.GetFromStream(reader)
 	otf.unicodeToGID = make([]int, 0x10000)
 
@@ -133,7 +133,7 @@ func NewOTF(reader io.Reader) *OTF {
 	return otf
 }
 
-func getHeadTable(otf *OTF, table *fontTable) {
+func getHeadTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 16
 	_ = readUint16(otf) // Skip the flags
 	otf.unitsPerEm = int(readUint16(otf))
@@ -144,7 +144,7 @@ func getHeadTable(otf *OTF, table *fontTable) {
 	otf.bBoxURy = readInt16(otf)
 }
 
-func getHheaTable(otf *OTF, table *fontTable) {
+func getHheaTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 4
 	otf.ascent = readInt16(otf)
 	otf.descent = readInt16(otf)
@@ -152,7 +152,7 @@ func getHheaTable(otf *OTF, table *fontTable) {
 	otf.advanceWidth = make([]uint16, readUint16(otf))
 }
 
-func getOs2Table(otf *OTF, table *fontTable) {
+func getOs2Table(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 64
 	otf.firstChar = rune(readUint16(otf))
 	otf.lastChar = rune(readUint16(otf))
@@ -160,7 +160,7 @@ func getOs2Table(otf *OTF, table *fontTable) {
 	otf.capHeight = int16(readUint16(otf))
 }
 
-func getNameTable(otf *OTF, table *fontTable) {
+func getNameTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
 	otf.format = int(readUint16(otf))
 	otf.count = int(readUint16(otf))
@@ -211,7 +211,7 @@ func getNameTable(otf *OTF, table *fontTable) {
 	}
 }
 
-func getCmapTable(otf *OTF, table *fontTable) {
+func getCmapTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
 	tableOffset := otf.index
 	otf.index += 2
@@ -298,7 +298,7 @@ func getCmapTable(otf *OTF, table *fontTable) {
 	}
 }
 
-func getHmtxTable(otf *OTF, table *fontTable) {
+func getHmtxTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
 	for i := 0; i < len(otf.advanceWidth); i++ {
 		otf.advanceWidth[i] = readUint16(otf)
@@ -306,7 +306,7 @@ func getHmtxTable(otf *OTF, table *fontTable) {
 	}
 }
 
-func getPostTable(otf *OTF, table *fontTable) {
+func getPostTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
 	otf.postVersion = readUint32(otf)
 	otf.italicAngle = readUint32(otf)
@@ -314,7 +314,7 @@ func getPostTable(otf *OTF, table *fontTable) {
 	otf.underlineThickness = readInt16(otf)
 }
 
-func getCffTable(otf *OTF, table *fontTable) {
+func getCffTable(otf *openTypeFont, table *fontTable) {
 	otf.cff = true
 	otf.cffOff = table.offset
 	otf.cffLen = table.length
@@ -324,7 +324,7 @@ func getCffTable(otf *OTF, table *fontTable) {
 // letters and ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase
 // and MarkToLigature lookups, and the marks that attach to other marks, like a
 // Thai tone mark above an upper vowel, from its MarkToMark lookups.
-func getGposTable(otf *OTF, table *fontTable) {
+func getGposTable(otf *openTypeFont, table *fontTable) {
 	otf.markToMarkOffsets = make(map[int][2]int)
 	otf.markAnchors = make([]map[int][]int, 0)
 	otf.baseAnchors = make([]map[int][]int, 0)
@@ -358,7 +358,7 @@ func getGposTable(otf *OTF, table *fontTable) {
 // and 0 before one that is not. A ligature has anchors for each of the letters
 // it joins, and keeps those of its first letter, like the lam of a lam-alef
 // ligature.
-func (otf *OTF) getMarkToBaseAnchors(subTable int, ligature bool) {
+func (otf *openTypeFont) getMarkToBaseAnchors(subTable int, ligature bool) {
 	markGlyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+2))
 	baseGlyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+4))
 	classCount := otf.uint16At(subTable + 6)
@@ -401,7 +401,7 @@ func (otf *OTF) getMarkToBaseAnchors(subTable int, ligature bool) {
 // getMarkToMarkOffsets keeps the offset of each mark from the mark it attaches
 // to, in font units, by the glyph IDs of the two marks. The first lookup that
 // has a pair of marks places them.
-func (otf *OTF) getMarkToMarkOffsets(subTable int) {
+func (otf *openTypeFont) getMarkToMarkOffsets(subTable int) {
 	mark1Glyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+2))
 	mark2Glyphs := otf.coverageGlyphs(subTable + otf.uint16At(subTable+4))
 	classCount := otf.uint16At(subTable + 6)
@@ -428,7 +428,7 @@ func (otf *OTF) getMarkToMarkOffsets(subTable int) {
 
 // coverageGlyphs returns the glyph IDs of a coverage table, in the order of
 // their coverage indexes.
-func (otf *OTF) coverageGlyphs(offset int) []int {
+func (otf *openTypeFont) coverageGlyphs(offset int) []int {
 	format := otf.uint16At(offset)
 	count := otf.uint16At(offset + 2)
 	if format == 1 {
@@ -463,18 +463,18 @@ func (otf *OTF) coverageGlyphs(offset int) []int {
 
 // The GPOS table is read at offsets from its subtables. A value outside the
 // font data is read as 0, so a broken table cannot stop the font from loading.
-func (otf *OTF) uint16At(offset int) int {
+func (otf *openTypeFont) uint16At(offset int) int {
 	if offset < 0 || offset+2 > len(otf.buf) {
 		return 0
 	}
 	return int(otf.buf[offset])<<8 | int(otf.buf[offset+1])
 }
 
-func (otf *OTF) int16At(offset int) int {
+func (otf *openTypeFont) int16At(offset int) int {
 	return int(int16(otf.uint16At(offset)))
 }
 
-func (otf *OTF) uint32At(offset int) int {
+func (otf *openTypeFont) uint32At(offset int) int {
 	return otf.uint16At(offset)<<16 | otf.uint16At(offset+2)
 }
 
@@ -489,7 +489,7 @@ func getSegmentFor(ch rune, startCount, endCount []uint16, segCount int) int {
 	return segment
 }
 
-func readInt16(otf *OTF) int16 {
+func readInt16(otf *openTypeFont) int16 {
 	value := int16(otf.buf[otf.index]) << 8
 	otf.index++
 	value |= int16(otf.buf[otf.index])
@@ -497,13 +497,13 @@ func readInt16(otf *OTF) int16 {
 	return value
 }
 
-func readUint8(otf *OTF) uint8 {
+func readUint8(otf *openTypeFont) uint8 {
 	value := otf.buf[otf.index]
 	otf.index++
 	return value
 }
 
-func readUint16(otf *OTF) uint16 {
+func readUint16(otf *openTypeFont) uint16 {
 	value := uint16(otf.buf[otf.index]) << 8
 	otf.index++
 	value |= uint16(otf.buf[otf.index])
@@ -511,7 +511,7 @@ func readUint16(otf *OTF) uint16 {
 	return value
 }
 
-func readUint32(otf *OTF) uint32 {
+func readUint32(otf *openTypeFont) uint32 {
 	value := uint32(otf.buf[otf.index]) << 24
 	otf.index++
 	value |= uint32(otf.buf[otf.index]) << 16
@@ -523,7 +523,7 @@ func readUint32(otf *OTF) uint32 {
 	return value
 }
 
-func readNBytes(otf *OTF, n int) []byte {
+func readNBytes(otf *openTypeFont, n int) []byte {
 	buf := make([]byte, 0)
 	for i := 0; i < n; i++ {
 		buf = append(buf, otf.buf[otf.index])

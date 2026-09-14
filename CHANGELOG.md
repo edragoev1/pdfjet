@@ -84,6 +84,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `drawOn`), `TextUtils` is gone and the examples print their own duration,
   and the font generators live in `util/` with their scripts, outside the
   library. `Util.readLines` is `Content.linesOfTextFile`.
+- The font parser `OTF` and the PNG decoder `PNGImage` are internal in the
+  four ports: `Font` and `Image` read those files. The ICC profile bytes of
+  Go and Swift and the Swift `PDFobj.dict` field are internal too.
 - `TextBox` is removed: `TextBlock` draws a wrapped text box, with a fixed
   height, vertical alignment and strikeout added from `TextBox`, and a cell
   holds a `TextBlock` (`Cell.setTextBox` is gone). See "Text".

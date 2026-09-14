@@ -343,7 +343,7 @@ func escapeXML(text string) string {
 }
 
 func (pdf *PDF) addOutputIntentObject() int {
-	profile := ICCBlackScaledProfile
+	profile := iccBlackScaledProfile
 	if pdf.encryption != nil {
 		profile = pdf.encryption.encrypt(profile)
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
-	otf := NewOTF(reader)
+	otf := newOpenTypeFont(reader)
 
 	font.name = otf.fontName
 	font.firstChar = otf.firstChar
@@ -61,7 +61,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.fonts = append(pdf.fonts, font)
 }
 
-func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
+func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *openTypeFont) {
 	// Check if the font file is already embedded
 	for _, f := range pdf.fonts {
 		if f.fileObjNumber != 0 && f.name == otf.fontName {
@@ -109,7 +109,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *OTF) {
 	font.fileObjNumber = pdf.getObjNumber()
 }
 
-func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *OTF) {
+func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
 		if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName {
 			font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
@@ -172,7 +172,7 @@ func toGlyphSpace(value int16, unitsPerEm int) int {
 	return rounded
 }
 
-func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
+func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
 		if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName {
 			font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
@@ -250,7 +250,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *OTF) {
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
 
-func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *OTF) {
+func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
 		if f.cidFontDictObjNumber != 0 && f.name == otf.fontName {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber

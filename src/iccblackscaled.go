@@ -5,8 +5,8 @@
 
 package pdfjet
 
-// ICCBlackScaledProfile is used in the pdf.go
-var ICCBlackScaledProfile = []byte{
+// iccBlackScaledProfile is used in the pdf.go
+var iccBlackScaledProfile = []byte{
 	0x78,
 	0x9C,
 	0xB5,

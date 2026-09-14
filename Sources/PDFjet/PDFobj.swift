@@ -18,7 +18,7 @@ public final class PDFobj {
     /// object that was read, for example the /MediaBox or /Rotate of a page:
     /// getDict returns a copy, since Swift arrays are values.
     ///
-    public final var dict = [String]()
+    final var dict = [String]()
     var streamOffset = 0
     var stream: [UInt8]?            // The compressed stream
     final var data = [UInt8]()      // The decompressed data

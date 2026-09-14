@@ -132,7 +132,7 @@
 <header>
   <p class="eyebrow">Second audit, for the v9.0.0 release</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and the drift that could crash or misplace something were fixed the same day and are listed at the end. What remains is drift in error handling and signatures, a few internals still public, and a dozen names worth changing before the release.</p>
+  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and the drift that could crash or misplace something were fixed the same day and are listed at the end. What remains is drift in error handling and signatures, and a dozen names worth changing before the release.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 533ecc67 (102 lines, 101 public types per port), a method-by-method reading of Page, PDF, the shapes, the text classes, the charts and the annotations in all four ports, and the 50 examples.</span>
     <span>14 September 2026</span>
@@ -143,7 +143,6 @@
   <ol>
     <li><a href="#drift">Drift between the ports</a></li>
     <li><a href="#library">Inconsistencies shared by all four ports</a></li>
-    <li><a href="#public">Internals that are still public</a></li>
     <li><a href="#names">Names</a></li>
     <li><a href="#fixed">Fixed on 14 September</a></li>
     <li><a href="#later">Left for 10.0</a></li>
@@ -156,10 +155,9 @@
   <tbody>
     <tr><td>Drift between the ports</td><td class="num">17</td><td class="num">17</td><td>Output and error handling that depend on the port</td></tr>
     <tr><td>Inconsistencies shared by all four ports</td><td class="num">6</td><td class="num">4</td><td>Two rules for one setting</td></tr>
-    <tr><td>Internals that are still public</td><td class="num">5</td><td class="num">5</td><td>Parsers, profiles and fields in the public API</td></tr>
     <tr><td>Names</td><td class="num">10</td><td class="num">6</td><td>Abbreviations, a misleading verb, one name for two things</td></tr>
     <tr><td>Left for 10.0</td><td class="num">2</td><td class="num">0</td><td>One paragraph flow, one table API</td></tr>
-    <tr class="total"><td>Total</td><td class="num">40</td><td class="num">32</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">35</td><td class="num">27</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -302,23 +300,6 @@
   <p>Add them when the text classes are next touched.</p>
 </section>
 
-<h2 id="public">Internals that are still public</h2>
-<p>The first audit hid the Java internals and the Go-only exports. These are what the second reading turned up.</p>
-
-<section class="item">
-  <h3>Five types or fields that are implementation <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <ul>
-    <li><code>OTF</code>, the font parser, is public in Java, C# and Go; Swift hides it.</li>
-    <li><code>PNGImage</code> is public in all four; <code>Image</code> reads PNG files, and only the tests use the class.</li>
-    <li>Swift <code>PDFobj.dict</code> is a public var; the other ports go through <code>getDict</code>.</li>
-    <li>The ICC profile bytes are public in Go (<code>ICCBlackScaledProfile</code>) and Swift (<code>ICCBlackScaled.profile</code>).</li>
-    <li><code>CheckBox.xMark(page, x, y, size)</code> is a public static helper, <code>XMarkCheckBox</code> in Go, used only by <code>CheckBox</code> itself.</li>
-  </ul>
-  <span class="label">Suggestion</span>
-  <p>Make them internal. The Go <code>corefont</code> struct fields stay exported, since the metrics live in their own package; that one is documented.</p>
-</section>
-
 <h2 id="names">Names</h2>
 <p>The names that still say the wrong thing, or say one thing two ways.</p>
 
@@ -391,6 +372,7 @@
     <li><code>CompositeTextLine.getLocation</code> returns a copy in Java and C#.</li>
     <li>Go <code>OptionalContentGroup.Clear</code> allocates a new list, so a slice handed out earlier no longer sees later additions.</li>
     <li><code>BigTable</code> aligns a number with the same <code>Table.isNumber</code> test in the four ports, instead of each language's float parser; Go <code>BigTable</code> treats an empty delimiter as one field per line and reads lines longer than 64 KB, as <code>Table</code> does.</li>
+    <li>The font parser <code>OTF</code> and the PNG decoder <code>PNGImage</code> are internal in the four ports, as are the ICC profile bytes of Go and Swift and the Swift <code>PDFobj.dict</code> field. <code>CheckBox.xMark</code> stays public: Example_50 uses it to tick the boxes of an existing form, so it is a feature, not an internal, and the audit had it wrong.</li>
     <li>The stale white fill color of the Go link annotations in <code>Chart</code>, <code>TextBlock</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code>, <code>RadioButton</code> and <code>FileAttachment</code> is gone.</li>
   </ul>
 </div>

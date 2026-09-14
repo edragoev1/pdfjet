@@ -17,7 +17,7 @@ namespace PDFjet.NET {
 /// <para>To convert interlaced image to non-interlaced image use OptiPNG:</para>
 /// <code>optipng -i0 -o7 myimage.png</code>
 /// </remarks>
-public class PNGImage {
+internal class PNGImage {
     int w = 0;                  // Image width in pixels
     int h = 0;                  // Image height in pixels
 

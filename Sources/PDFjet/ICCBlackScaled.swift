@@ -6,9 +6,9 @@
  */
 
 /// The ICC color profile embedded in PDF/A documents.
-public class ICCBlackScaled {
+class ICCBlackScaled {
     /// The zlib compressed bytes of the profile.
-    public static let profile: [UInt8] = [
+    static let profile: [UInt8] = [
 0x78,
 0x9C,
 0xB5,

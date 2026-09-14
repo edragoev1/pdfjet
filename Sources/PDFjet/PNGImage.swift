@@ -16,7 +16,7 @@ import Foundation
  * optipng -i0 -o7 myimage.png
  * ```
  */
-public class PNGImage {
+class PNGImage {
     var w: Int = 0                      // Image width in pixels
     var h: Int = 0                      // Image height in pixels
 
@@ -34,7 +34,7 @@ public class PNGImage {
      * Used to embed PNG images in the PDF document.
      *
      */
-    public init(_ stream: InputStream) throws {
+    init(_ stream: InputStream) throws {
         var buffer = try readPNG(stream)
         let chunks = try processPNG(&buffer)
         var hasImageData = false
@@ -131,32 +131,32 @@ public class PNGImage {
     }
 
     /// Returns the image width.
-    public func getWidth() -> Int {
+    func getWidth() -> Int {
         return self.w
     }
 
     /// Returns the image height.
-    public func getHeight() -> Int {
+    func getHeight() -> Int {
         return self.h
     }
 
     /// Returns the PNG color type.
-    public func getColorType() -> Int {
+    func getColorType() -> Int {
         return self.colorType
     }
 
     /// Returns the bit depth.
-    public func getBitDepth() -> Int {
+    func getBitDepth() -> Int {
         return self.bitDepth
     }
 
     /// Returns the compressed image data.
-    public func getData() -> [UInt8] {
+    func getData() -> [UInt8] {
         return self.deflatedImageData
     }
 
     /// Returns the compressed alpha channel data.
-    public func getAlpha() -> [UInt8]? {
+    func getAlpha() -> [UInt8]? {
         // Deflated data is never empty, so no bytes means no alpha channel.
         return self.deflatedAlphaData.isEmpty ? nil : self.deflatedAlphaData
     }

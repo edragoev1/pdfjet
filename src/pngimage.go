@@ -16,13 +16,13 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
-// PNGImage is used to embed PNG images in the PDF document.
+// pngImage is used to embed PNG images in the PDF document.
 //
 // Please note: interlaced images are not supported.
 // To convert an interlaced image to a non-interlaced image, use OptiPNG:
 //
 //	optipng -i0 -o7 myimage.png
-type PNGImage struct {
+type pngImage struct {
 	w int // Image width in pixels
 	h int // Image height in pixels
 
@@ -37,9 +37,9 @@ type PNGImage struct {
 	colorType int
 }
 
-// NewPNGImage is used to embed PNG images in a PDF document.
-func NewPNGImage(reader io.Reader) *PNGImage {
-	image := new(PNGImage)
+// newPNGImage is used to embed PNG images in a PDF document.
+func newPNGImage(reader io.Reader) *pngImage {
+	image := new(pngImage)
 	image.bitDepth = 8
 	image.colorType = 0
 
@@ -142,36 +142,36 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 }
 
 // GetWidth returns the width of the image.
-func (image *PNGImage) GetWidth() float32 {
+func (image *pngImage) GetWidth() float32 {
 	return float32(image.w)
 }
 
 // GetHeight returns the height of the image.
-func (image *PNGImage) GetHeight() float32 {
+func (image *pngImage) GetHeight() float32 {
 	return float32(image.h)
 }
 
 // GetColorType returns the color type of the image.
-func (image *PNGImage) GetColorType() int {
+func (image *pngImage) GetColorType() int {
 	return image.colorType
 }
 
 // GetBitDepth returns the bit depth of the image.
-func (image *PNGImage) GetBitDepth() int {
+func (image *pngImage) GetBitDepth() int {
 	return image.bitDepth
 }
 
 // GetData returns the image data.
-func (image *PNGImage) GetData() []byte {
+func (image *pngImage) GetData() []byte {
 	return image.deflatedImageData
 }
 
 // GetAlpha returns the image alpha data.
-func (image *PNGImage) GetAlpha() []byte {
+func (image *pngImage) GetAlpha() []byte {
 	return image.deflatedAlphaData
 }
 
-func (image *PNGImage) processPNG(reader io.Reader) []*pngChunk {
+func (image *pngImage) processPNG(reader io.Reader) []*pngChunk {
 	chunks := make([]*pngChunk, 0)
 	for {
 		chunk := image.getChunk(reader)
@@ -187,7 +187,7 @@ func (image *PNGImage) processPNG(reader io.Reader) []*pngChunk {
 // IHDR chunk, and returns the length of the decompressed image data: each row
 // is a filter type byte and the packed samples. The size comes from the file,
 // so it is checked before any buffer is allocated for the image.
-func (image *PNGImage) getImageDataLength() int {
+func (image *pngImage) getImageDataLength() int {
 	if image.w <= 0 || image.h <= 0 || image.w > math.MaxInt32 || image.h > math.MaxInt32 {
 		panic("Invalid PNG image size.")
 	}
@@ -237,7 +237,7 @@ func (image *PNGImage) getImageDataLength() int {
 	return int(length)
 }
 
-func (image *PNGImage) validatePNG(reader io.Reader) {
+func (image *pngImage) validatePNG(reader io.Reader) {
 	buf := getPNGBytes(reader, 8)
 	if ((buf[0] & 0xFF) == 0x89) &&
 		buf[1] == 0x50 &&
@@ -253,7 +253,7 @@ func (image *PNGImage) validatePNG(reader io.Reader) {
 	}
 }
 
-func (image *PNGImage) getChunk(reader io.Reader) *pngChunk {
+func (image *pngImage) getChunk(reader io.Reader) *pngChunk {
 	chunk := newPNGChunk()
 	chunk.chunkLength = getPNGUint32(reader) // The length of the data chunk.
 	if chunk.chunkLength > math.MaxInt32 {
@@ -267,7 +267,7 @@ func (image *PNGImage) getChunk(reader io.Reader) *pngChunk {
 	crc32.Update(chunk.chunkType)
 	crc32.Update(chunk.chunkData)
 	if crc32.GetValue() != chunk.chunkCRC {
-		panic("PNGImage chunk has bad CRC.")
+		panic("pngImage chunk has bad CRC.")
 	}
 	return chunk
 }
@@ -291,7 +291,7 @@ func toUint32(buf []byte, off int) uint32 {
 }
 
 // Truecolor Image with Bit Depth == 16
-func (image *PNGImage) getImageColorType2BitDepth16(buf []byte) []byte {
+func (image *pngImage) getImageColorType2BitDepth16(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -313,7 +313,7 @@ func (image *PNGImage) getImageColorType2BitDepth16(buf []byte) []byte {
 }
 
 // Truecolor Image with Bit Depth == 8
-func (image *PNGImage) getImageColorType2BitDepth8(buf []byte) []byte {
+func (image *pngImage) getImageColorType2BitDepth8(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -337,7 +337,7 @@ func (image *PNGImage) getImageColorType2BitDepth8(buf []byte) []byte {
 // Truecolor Image with Alpha Transparency
 // getImageColorType4BitDepth8 returns the gray samples; the alpha samples go
 // in the soft mask.
-func (image *PNGImage) getImageColorType4BitDepth8(buf []byte) []byte {
+func (image *pngImage) getImageColorType4BitDepth8(buf []byte) []byte {
 	image2 := make([]byte, 2*image.w*image.h)
 	filters := make([]byte, image.h)
 	bytesPerLine := 2*image.w + 1
@@ -365,7 +365,7 @@ func (image *PNGImage) getImageColorType4BitDepth8(buf []byte) []byte {
 	return gray
 }
 
-func (image *PNGImage) getImageColorType6BitDepth8(buf []byte) []byte {
+func (image *pngImage) getImageColorType6BitDepth8(buf []byte) []byte {
 	image2 := make([]byte, 4*image.w*image.h) // Image data
 
 	filters := make([]byte, image.h)
@@ -412,7 +412,7 @@ func (image *PNGImage) getImageColorType6BitDepth8(buf []byte) []byte {
 // Each value is a palette index; a PLTE chunk shall appear.
 // The filters are undone on the packed indexes, one byte per pixel whatever
 // the bit depth, before the indexes are looked up in the palette.
-func (image *PNGImage) getImageColorType3(buf []byte) []byte {
+func (image *pngImage) getImageColorType3(buf []byte) []byte {
 	bytesPerLine := (image.w*image.bitDepth + 7) / 8
 	indexes := make([]byte, bytesPerLine*image.h)
 	filters := make([]byte, image.h)
@@ -460,7 +460,7 @@ func (image *PNGImage) getImageColorType3(buf []byte) []byte {
 }
 
 // Grayscale Image with Bit Depth == 16
-func (image *PNGImage) getImageColorType0BitDepth16(buf []byte) []byte {
+func (image *pngImage) getImageColorType0BitDepth16(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -482,7 +482,7 @@ func (image *PNGImage) getImageColorType0BitDepth16(buf []byte) []byte {
 }
 
 // Grayscale Image with Bit Depth == 8
-func (image *PNGImage) getImageColorType0BitDepth8(buf []byte) []byte {
+func (image *pngImage) getImageColorType0BitDepth8(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -504,7 +504,7 @@ func (image *PNGImage) getImageColorType0BitDepth8(buf []byte) []byte {
 }
 
 // Grayscale Image with Bit Depth == 4
-func (image *PNGImage) getImageColorType0BitDepth4(buf []byte) []byte {
+func (image *pngImage) getImageColorType0BitDepth4(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -531,7 +531,7 @@ func (image *PNGImage) getImageColorType0BitDepth4(buf []byte) []byte {
 }
 
 // Grayscale Image with Bit Depth == 2
-func (image *PNGImage) getImageColorType0BitDepth2(buf []byte) []byte {
+func (image *pngImage) getImageColorType0BitDepth2(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)
@@ -558,7 +558,7 @@ func (image *PNGImage) getImageColorType0BitDepth2(buf []byte) []byte {
 }
 
 // Grayscale Image with Bit Depth == 1
-func (image *PNGImage) getImageColorType0BitDepth1(buf []byte) []byte {
+func (image *pngImage) getImageColorType0BitDepth1(buf []byte) []byte {
 	image2 := make([]byte, len(buf)-image.h)
 
 	filters := make([]byte, image.h)

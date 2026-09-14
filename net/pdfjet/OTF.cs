@@ -10,7 +10,7 @@ using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>Parses and extracts the data from TTF and OTF font files.</summary>
-public class OTF {
+internal class OTF {
     internal String fontName;
     internal String fontInfo;
     internal readonly byte[] buf;

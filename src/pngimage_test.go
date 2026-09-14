@@ -69,14 +69,14 @@ func testInflate(t *testing.T, data []byte) []byte {
 	return inflated
 }
 
-func testDecodePNG(t *testing.T, name string) *PNGImage {
+func testDecodePNG(t *testing.T, name string) *pngImage {
 	t.Helper()
 	file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	return NewPNGImage(file)
+	return newPNGImage(file)
 }
 
 func TestPNGImageDecodesThePngSuiteImages(t *testing.T) {
@@ -124,7 +124,7 @@ func TestPNGImageRejects16BitRgbaWithAMessage(t *testing.T) {
 }
 
 func TestPNGImageRejectsDataThatIsNotAPng(t *testing.T) {
-	if _, panicked := testPanic(func() { NewPNGImage(strings.NewReader("not a png file")) }); !panicked {
+	if _, panicked := testPanic(func() { newPNGImage(strings.NewReader("not a png file")) }); !panicked {
 		t.Error("did not panic")
 	}
 }
@@ -230,7 +230,7 @@ func testPanicMessage(fn func()) string {
 }
 
 func testPNGError(png []byte) string {
-	return testPanicMessage(func() { NewPNGImage(bytes.NewReader(png)) })
+	return testPanicMessage(func() { newPNGImage(bytes.NewReader(png)) })
 }
 
 func testWant(t *testing.T, want, got string) {
@@ -243,7 +243,7 @@ func testWant(t *testing.T, want, got string) {
 func TestPNGImageDecodesTheRowsOfTheImageAndIgnoresDataAfterThem(t *testing.T) {
 	rgb := []byte{1, 2, 3, 4, 5, 6}
 	for _, rows := range [][]byte{{0, 1, 2, 3, 4, 5, 6}, {0, 1, 2, 3, 4, 5, 6, 9, 9, 9}} {
-		png := NewPNGImage(bytes.NewReader(testPNG(2, 1, 8, 2, nil, compressor.Deflate(rows))))
+		png := newPNGImage(bytes.NewReader(testPNG(2, 1, 8, 2, nil, compressor.Deflate(rows))))
 		if got := testInflate(t, png.GetData()); !bytes.Equal(got, rgb) {
 			t.Errorf("samples %v", got)
 		}
@@ -298,7 +298,7 @@ func TestPNGImageReadsAStreamThatReturnsFewBytesAtATime(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	png := NewPNGImage(testSlowReader{file})
+	png := newPNGImage(testSlowReader{file})
 	if got := testCRC(testInflate(t, png.GetData())); got != "7855b9bf" {
 		t.Errorf("samples %s", got)
 	}

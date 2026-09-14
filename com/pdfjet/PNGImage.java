@@ -21,7 +21,7 @@ import java.util.zip.*;
  * <p>
  *     optipng -i0 -o7 myimage.png
  */
-public class PNGImage {
+class PNGImage {
     int w;                      // Image width in pixels
     int h;                      // Image height in pixels
 
@@ -41,7 +41,7 @@ public class PNGImage {
      * @param inputStream the inputStream.
      * @throws Exception  If an input or output exception occurred.
      */
-    public PNGImage(InputStream inputStream) throws Exception {
+    PNGImage(InputStream inputStream) throws Exception {
         validatePNG(inputStream);
 
         List<Chunk> chunks = processPNG(inputStream);
