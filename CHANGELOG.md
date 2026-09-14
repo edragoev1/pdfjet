@@ -234,8 +234,14 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   axis that always includes 0, a legend under the title, optional value labels
   at the bar ends, and grid, axis and border line settings. `setStacked(true)`
   stacks the series in each category, with the value axis rounded to the sums
-  and the value labels inside the segments. Example_39 draws a horizontal bar
-  chart and Example_40 a grouped and a stacked vertical bar chart with it.
+  and the value labels inside the segments. `addSeries(name, values, colors)`
+  gives each bar its own color, `setSubtitle` writes a subtitle in gray under
+  the title, `setValueLabelsInside(true)` writes the values in white inside
+  the bars, `setGroupingUsed(true)` groups the digits in thousands, as in
+  6,650, `setGridLineColor` colors the grid lines and an axis line width of 0
+  hides the axis lines. Example_39 draws a horizontal bar chart of the ten
+  longest rivers with these, each bar in its own color, with a color key and a
+  note under it, and Example_40 a grouped and a stacked vertical bar chart.
 - `Chart` draws only XY charts: `setXYChart` and its category mode are removed,
   bar charts are `BarChart`. `Chart` draws with the sizes of its two fonts, as
   `BarChart` does, so `setFontSize` is gone; `setAutoColors` is gone, the palette

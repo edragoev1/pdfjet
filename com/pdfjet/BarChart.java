@@ -14,15 +14,20 @@ import java.util.*;
  * Example_40 (vertical bars).
  */
 public class BarChart implements Drawable {
-    /** One series of the chart: a name, a value per category and a color. */
+    /**
+     * One series of the chart: a name, a value per category and a color, or
+     * a color per category.
+     */
     private static final class Series {
         final String name;
         final float[] values;
         final int color;
-        Series(String name, float[] values, int color) {
+        final int[] colors;     // null unless each bar has its own color
+        Series(String name, float[] values, int color, int[] colors) {
             this.name = name;
             this.values = values;
             this.color = color;
+            this.colors = colors;
         }
     }
 
@@ -34,6 +39,7 @@ public class BarChart implements Drawable {
     private float h = 200f;
 
     private String title = "";
+    private String subtitle = "";
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
@@ -47,8 +53,11 @@ public class BarChart implements Drawable {
 
     private boolean drawGridLines = true;
     private boolean drawValueLabels = false;
+    private boolean valueLabelsInside = false;
     private boolean drawLegend = true;
+    private boolean groupingUsed = false;
 
+    private int gridLineColor = Color.black;
     private float gridLineWidth = 0f;
     private String gridLineDashPattern = "[1 1] 0";
     private float axisLineWidth = 0.5f;
@@ -86,6 +95,17 @@ public class BarChart implements Drawable {
      */
     public BarChart setTitle(String title) {
         this.title = title;
+        return this;
+    }
+
+    /**
+     * Sets the subtitle, written in gray under the title in the second font.
+     *
+     * @param subtitle the subtitle.
+     * @return this BarChart object.
+     */
+    public BarChart setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
         return this;
     }
 
@@ -144,7 +164,22 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart addSeries(String name, float[] values, int color) {
-        series.add(new Series(name == null ? "" : name, values.clone(), color));
+        series.add(new Series(name == null ? "" : name, values.clone(), color, null));
+        return this;
+    }
+
+    /**
+     * Adds a series with a color per category, for a chart whose bars each
+     * have their own color. A bar past the end of the colors has the next
+     * color of the default palette.
+     *
+     * @param name the series name, shown in the legend; empty for none.
+     * @param values one value per category.
+     * @param colors one 0xRRGGBB color per category.
+     * @return this BarChart object.
+     */
+    public BarChart addSeries(String name, float[] values, int[] colors) {
+        series.add(new Series(name == null ? "" : name, values.clone(), NO_COLOR, colors.clone()));
         return this;
     }
 
@@ -246,6 +281,31 @@ public class BarChart implements Drawable {
     }
 
     /**
+     * Sets whether the value labels are written inside the bars, in white at
+     * the end of each bar, instead of next to the bar ends. A bar too short
+     * for its label gets it next to its end. The default is false.
+     *
+     * @param valueLabelsInside true to write the values inside the bars.
+     * @return this BarChart object.
+     */
+    public BarChart setValueLabelsInside(boolean valueLabelsInside) {
+        this.valueLabelsInside = valueLabelsInside;
+        return this;
+    }
+
+    /**
+     * Sets whether the labels group the digits in thousands with a comma, as
+     * in 6,650. The default is false.
+     *
+     * @param groupingUsed true to group the digits.
+     * @return this BarChart object.
+     */
+    public BarChart setGroupingUsed(boolean groupingUsed) {
+        this.groupingUsed = groupingUsed;
+        return this;
+    }
+
+    /**
      * Sets whether the legend is drawn. The legend lists the series that have
      * a name, under the title.
      *
@@ -270,6 +330,17 @@ public class BarChart implements Drawable {
     }
 
     /**
+     * Sets the color of the grid lines. The default is black.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.lightgray.
+     * @return this BarChart object.
+     */
+    public BarChart setGridLineColor(int color) {
+        this.gridLineColor = color;
+        return this;
+    }
+
+    /**
      * Sets the dash pattern of the grid lines, for example "[1 1] 0".
      *
      * @param pattern the dash pattern.
@@ -281,7 +352,7 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the width of the axis lines. The default is 0.5.
+     * Sets the width of the axis lines. The default is 0.5; 0 hides them.
      *
      * @param width the line width.
      * @return this BarChart object.
@@ -419,7 +490,7 @@ public class BarChart implements Drawable {
         // Widest labels on the value axis and next to the bars
         float widestAxisLabel = 0f;
         for (int i = 0; i <= lines; i++) {
-            String label = Chart.format(vMin + step * i, axisDigits, maxFractionDigits);
+            String label = axisLabel(vMin + step * i, axisDigits);
             widestAxisLabel = Math.max(widestAxisLabel, f2.stringWidth(label));
         }
         float widestValueLabel = 0f;
@@ -436,13 +507,15 @@ public class BarChart implements Drawable {
         }
 
         // Margins and the plot area
-        float topMargin = 2.5f * f1.getBodyHeight() + (legend ? 1.5f * bodyHeight : 0f);
+        float titleBaseline = y1 + 1.5f * f1.getBodyHeight();
+        float subtitleHeight = subtitle.isEmpty() ? 0f : bodyHeight;
+        float topMargin = 2.5f * f1.getBodyHeight() + subtitleHeight + (legend ? 1.5f * bodyHeight : 0f);
         float leftMargin = 1.5f * bodyHeight + pad + (horizontal ? widestCategory : widestAxisLabel);
         float rightMargin = pad;
         float bottomMargin = 2.5f * bodyHeight;
         if (horizontal) {
-            rightMargin += Math.max(widestAxisLabel / 2f, widestValueLabel + pad);
-        } else if (drawValueLabels && !stacked) {
+            rightMargin += Math.max(widestAxisLabel / 2f, valueLabelsInside ? 0f : widestValueLabel + pad);
+        } else if (drawValueLabels && !stacked && !valueLabelsInside) {
             topMargin += bodyHeight;
         }
         float x5 = x1 + leftMargin;
@@ -450,11 +523,16 @@ public class BarChart implements Drawable {
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
 
-        // Title, then the legend under it
+        // Title, the subtitle and then the legend under it
         page.setBrushColor(Color.black);
-        page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2f, y1 + 1.5f * f1.getBodyHeight());
+        page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2f, titleBaseline);
+        if (!subtitle.isEmpty()) {
+            page.setBrushColor(Color.dimgray);
+            page.drawString(f2, f2.getSize(), subtitle, x1 + (w - f2.stringWidth(subtitle)) / 2f,
+                    titleBaseline + subtitleHeight);
+        }
         if (legend) {
-            drawLegend(page, y1 + 1.5f * f1.getBodyHeight() + 1.5f * bodyHeight);
+            drawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
         }
 
         if (chartBorderWidth > 0f) {
@@ -467,7 +545,7 @@ public class BarChart implements Drawable {
         // Grid lines and value axis labels
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
-            String label = Chart.format(v, axisDigits, maxFractionDigits);
+            String label = axisLabel(v, axisDigits);
             if (horizontal) {
                 float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
                 if (drawGridLines) {
@@ -518,7 +596,7 @@ public class BarChart implements Drawable {
                 from = Math.min(Math.max(from, vMin), vMax);
                 to = Math.min(Math.max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
-                page.setBrushColor(s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[j % Chart.DEFAULT_PALETTE.length] : s.color);
+                page.setBrushColor(barColor(s, j, i));
                 String label = drawValueLabels ? valueLabel(s.values[i]) : null;
                 if (horizontal) {
                     float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
@@ -531,6 +609,11 @@ public class BarChart implements Drawable {
                                     Math.min(x0, x) + (Math.abs(x - x0) - f2.stringWidth(label)) / 2f,
                                     barStart + barWidth / 2f + ascent / 2f);
                         }
+                    } else if (label != null && valueLabelsInside && Math.abs(x - x0) >= f2.stringWidth(label) + pad) {
+                        page.setBrushColor(Color.white);
+                        page.drawString(f2, f2.getSize(), label,
+                                to >= base ? x - pad / 2f - f2.stringWidth(label) : x + pad / 2f,
+                                barStart + barWidth / 2f + ascent / 2f);
                     } else if (label != null) {
                         page.setBrushColor(Color.black);
                         page.drawString(f2, f2.getSize(), label,
@@ -547,6 +630,10 @@ public class BarChart implements Drawable {
                             page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
                                     (y + y0) / 2f + ascent / 2f);
                         }
+                    } else if (label != null && valueLabelsInside && Math.abs(y - y0) >= bodyHeight + pad) {
+                        page.setBrushColor(Color.white);
+                        page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
+                                to >= base ? y + ascent + pad / 2f : y - pad / 2f);
                     } else if (label != null) {
                         page.setBrushColor(Color.black);
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
@@ -558,16 +645,18 @@ public class BarChart implements Drawable {
 
         // Axis lines: along the labels and at the base of the bars
         page.setPenColor(Color.black);
-        page.setPenWidth(axisLineWidth);
         page.setDefaultStrokeDashPattern();
-        if (horizontal) {
-            float x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin);
-            page.drawLine(x5, y8, x6, y8);
-            page.drawLine(x0, y5, x0, y8);
-        } else {
-            float y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin);
-            page.drawLine(x5, y5, x5, y8);
-            page.drawLine(x5, y0, x6, y0);
+        if (axisLineWidth > 0f) {
+            page.setPenWidth(axisLineWidth);
+            if (horizontal) {
+                float x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin);
+                page.drawLine(x5, y8, x6, y8);
+                page.drawLine(x0, y5, x0, y8);
+            } else {
+                float y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin);
+                page.drawLine(x5, y5, x5, y8);
+                page.drawLine(x5, y0, x6, y0);
+            }
         }
         if (innerBorderWidth > 0f) {
             page.setPenWidth(innerBorderWidth);
@@ -607,14 +696,44 @@ public class BarChart implements Drawable {
         return false;
     }
 
+    /** Returns the color of the bar at the index: the series' own, its color for the bar, or the palette's. */
+    private int barColor(Series s, int seriesIndex, int index) {
+        if (s.colors != null && index < s.colors.length) {
+            return s.colors[index];
+        }
+        return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.length] : s.color;
+    }
+
     /** Formats the value written at the end of a bar. */
     private String valueLabel(float value) {
-        return Chart.format(value, minFractionDigits, maxFractionDigits);
+        return group(Chart.format(value, minFractionDigits, maxFractionDigits));
+    }
+
+    /** Formats a label of the value axis. */
+    private String axisLabel(float value, int digits) {
+        return group(Chart.format(value, digits, maxFractionDigits));
+    }
+
+    /** Groups the digits before the decimal point in thousands with commas, if grouping is used. */
+    private String group(String label) {
+        if (!groupingUsed) {
+            return label;
+        }
+        int start = label.startsWith("-") ? 1 : 0;
+        int end = label.indexOf('.');
+        if (end < 0) {
+            end = label.length();
+        }
+        StringBuilder sb = new StringBuilder(label);
+        for (int i = end - 3; i > start; i -= 3) {
+            sb.insert(i, ',');
+        }
+        return sb.toString();
     }
 
     /** Draws one dotted grid line. */
     private void gridLine(Page page, float xa, float ya, float xb, float yb) {
-        page.setPenColor(Color.black);
+        page.setPenColor(gridLineColor);
         page.setPenWidth(gridLineWidth);
         page.setStrokeDashPattern(gridLineDashPattern);
         page.drawLine(xa, ya, xb, yb);
@@ -639,7 +758,7 @@ public class BarChart implements Drawable {
             if (s.name.isEmpty()) {
                 continue;
             }
-            page.setBrushColor(s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[j % Chart.DEFAULT_PALETTE.length] : s.color);
+            page.setBrushColor(barColor(s, j, -1));
             page.fillRect(x, baseline - swatch, swatch, swatch);
             x += swatch + gap;
             page.setBrushColor(Color.black);

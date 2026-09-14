@@ -6,14 +6,18 @@
 package pdfjet
 
 import (
+	"strings"
+
 	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
-// barSeries is one series of a bar chart: a name, a value per category and a color.
+// barSeries is one series of a bar chart: a name, a value per category and a
+// color, or a color per category.
 type barSeries struct {
 	name   string
 	values []float32
 	color  int32
+	colors []int32 // nil unless each bar has its own color
 }
 
 // noColor marks a series drawn in the next color of the default palette.
@@ -27,6 +31,7 @@ type BarChart struct {
 	w, h   float32
 
 	title      string
+	subtitle   string
 	xAxisTitle string
 	yAxisTitle string
 
@@ -38,10 +43,13 @@ type BarChart struct {
 	groupGap   float32
 	barGap     float32
 
-	drawGridLines   bool
-	drawValueLabels bool
-	drawLegend      bool
+	drawGridLines     bool
+	drawValueLabels   bool
+	valueLabelsInside bool
+	drawLegend        bool
+	groupingUsed      bool
 
+	gridLineColor       int32
 	gridLineWidth       float32
 	gridLineDashPattern string
 	axisLineWidth       float32
@@ -77,6 +85,7 @@ func NewBarChart(f1, f2 *Font) *BarChart {
 	chart.drawGridLines = true
 	chart.drawValueLabels = false
 	chart.drawLegend = true
+	chart.gridLineColor = color.Black
 	chart.gridLineWidth = 0.0
 	chart.gridLineDashPattern = "[1 1] 0"
 	chart.axisLineWidth = 0.5
@@ -90,6 +99,12 @@ func NewBarChart(f1, f2 *Font) *BarChart {
 // SetTitle sets the chart title.
 func (chart *BarChart) SetTitle(title string) *BarChart {
 	chart.title = title
+	return chart
+}
+
+// SetSubtitle sets the subtitle, written in gray under the title in the second font.
+func (chart *BarChart) SetSubtitle(subtitle string) *BarChart {
+	chart.subtitle = subtitle
 	return chart
 }
 
@@ -128,6 +143,21 @@ func (chart *BarChart) AddSeriesWithColor(name string, values []float32, color i
 	copied := make([]float32, len(values))
 	copy(copied, values)
 	chart.series = append(chart.series, &barSeries{name: name, values: copied, color: color})
+	return chart
+}
+
+// AddSeriesWithColors adds a series with a color per category, for a chart
+// whose bars each have their own color. A bar past the end of the colors has
+// the next color of the default palette.
+// @param name the series name, shown in the legend; empty for none.
+// @param values one value per category.
+// @param colors one 0xRRGGBB color per category.
+func (chart *BarChart) AddSeriesWithColors(name string, values []float32, colors []int32) *BarChart {
+	copied := make([]float32, len(values))
+	copy(copied, values)
+	copiedColors := make([]int32, len(colors))
+	copy(copiedColors, colors)
+	chart.series = append(chart.series, &barSeries{name: name, values: copied, color: noColor, colors: copiedColors})
 	return chart
 }
 
@@ -188,6 +218,21 @@ func (chart *BarChart) SetDrawValueLabels(drawValueLabels bool) *BarChart {
 	return chart
 }
 
+// SetValueLabelsInside sets whether the value labels are written inside the
+// bars, in white at the end of each bar, instead of next to the bar ends. A
+// bar too short for its label gets it next to its end. The default is false.
+func (chart *BarChart) SetValueLabelsInside(valueLabelsInside bool) *BarChart {
+	chart.valueLabelsInside = valueLabelsInside
+	return chart
+}
+
+// SetGroupingUsed sets whether the labels group the digits in thousands with
+// a comma, as in 6,650. The default is false.
+func (chart *BarChart) SetGroupingUsed(groupingUsed bool) *BarChart {
+	chart.groupingUsed = groupingUsed
+	return chart
+}
+
 // SetDrawLegend sets whether the legend is drawn. The legend lists the series
 // that have a name, under the title.
 func (chart *BarChart) SetDrawLegend(drawLegend bool) *BarChart {
@@ -202,13 +247,20 @@ func (chart *BarChart) SetGridLineWidth(width float32) *BarChart {
 	return chart
 }
 
+// SetGridLineColor sets the color of the grid lines. The default is black.
+// @param color the color as a 0xRRGGBB value, for example color.LightGray.
+func (chart *BarChart) SetGridLineColor(color int32) *BarChart {
+	chart.gridLineColor = color
+	return chart
+}
+
 // SetGridLineDashPattern sets the dash pattern of the grid lines, for example "[1 1] 0".
 func (chart *BarChart) SetGridLineDashPattern(pattern string) *BarChart {
 	chart.gridLineDashPattern = pattern
 	return chart
 }
 
-// SetAxisLineWidth sets the width of the axis lines. The default is 0.5.
+// SetAxisLineWidth sets the width of the axis lines. The default is 0.5; 0 hides them.
 func (chart *BarChart) SetAxisLineWidth(width float32) *BarChart {
 	chart.axisLineWidth = width
 	return chart
@@ -323,7 +375,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// Widest labels on the value axis and next to the bars
 	widestAxisLabel := float32(0.0)
 	for i := 0; i <= lines; i++ {
-		label := format(vMin+step*float32(i), axisDigits, chart.maxFractionDigits)
+		label := chart.axisLabel(vMin+step*float32(i), axisDigits)
 		widestAxisLabel = max(widestAxisLabel, f2.StringWidth(f2.size, label))
 	}
 	widestValueLabel := float32(0.0)
@@ -340,7 +392,12 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 
 	// Margins and the plot area
-	topMargin := 2.5 * f1.bodyHeight
+	titleBaseline := chart.y1 + 1.5*f1.bodyHeight
+	subtitleHeight := float32(0.0)
+	if chart.subtitle != "" {
+		subtitleHeight = bodyHeight
+	}
+	topMargin := 2.5*f1.bodyHeight + subtitleHeight
 	if legend {
 		topMargin += 1.5 * bodyHeight
 	}
@@ -353,8 +410,12 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	rightMargin := pad
 	bottomMargin := 2.5 * bodyHeight
 	if chart.horizontal {
-		rightMargin += max(widestAxisLabel/2.0, widestValueLabel+pad)
-	} else if chart.drawValueLabels && !chart.stacked {
+		if chart.valueLabelsInside {
+			rightMargin += widestAxisLabel / 2.0
+		} else {
+			rightMargin += max(widestAxisLabel/2.0, widestValueLabel+pad)
+		}
+	} else if chart.drawValueLabels && !chart.stacked && !chart.valueLabelsInside {
 		topMargin += bodyHeight
 	}
 	x5 := chart.x1 + leftMargin
@@ -362,13 +423,19 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	x6 := x2 - rightMargin
 	y8 := y2 - bottomMargin
 
-	// Title, then the legend under it
+	// Title, the subtitle and then the legend under it
 	page.SetBrushColor(color.Black)
 	page.drawString(f1, f1.size, chart.title,
-		chart.x1+(chart.w-f1.StringWidth(f1.size, chart.title))/2.0, chart.y1+1.5*f1.bodyHeight,
+		chart.x1+(chart.w-f1.StringWidth(f1.size, chart.title))/2.0, titleBaseline,
 		[3]float32{0.0, 0.0, 0.0}, nil)
+	if chart.subtitle != "" {
+		page.SetBrushColor(color.DimGray)
+		page.drawString(f2, f2.size, chart.subtitle,
+			chart.x1+(chart.w-f2.StringWidth(f2.size, chart.subtitle))/2.0, titleBaseline+subtitleHeight,
+			[3]float32{0.0, 0.0, 0.0}, nil)
+	}
 	if legend {
-		chart.drawLegendOn(page, chart.y1+1.5*f1.bodyHeight+1.5*bodyHeight)
+		chart.drawLegendOn(page, titleBaseline+subtitleHeight+1.5*bodyHeight)
 	}
 
 	if chart.chartBorderWidth > 0.0 {
@@ -381,7 +448,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// Grid lines and value axis labels
 	for i := 0; i <= lines; i++ {
 		v := vMin + step*float32(i)
-		label := format(v, axisDigits, chart.maxFractionDigits)
+		label := chart.axisLabel(v, axisDigits)
 		if chart.horizontal {
 			x := x5 + (v-vMin)*(x6-x5)/(vMax-vMin)
 			if chart.drawGridLines {
@@ -459,7 +526,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			if !chart.stacked {
 				barStart = groupStart + float32(j)*barWidth*(1.0+chart.barGap)
 			}
-			page.SetBrushColor(chart.seriesColor(s, j))
+			page.SetBrushColor(chart.barColor(s, j, i))
 			label := ""
 			if chart.drawValueLabels {
 				label = chart.valueLabel(s.values[i])
@@ -475,6 +542,17 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 							min(x0, x)+(abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0,
 							barStart+barWidth/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
 					}
+				} else if chart.drawValueLabels && chart.valueLabelsInside &&
+					abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
+					page.SetBrushColor(color.White)
+					var lx float32
+					if to >= base {
+						lx = x - pad/2.0 - f2.StringWidth(f2.size, label)
+					} else {
+						lx = x + pad/2.0
+					}
+					page.drawString(f2, f2.size, label, lx, barStart+barWidth/2.0+ascent/2.0,
+						[3]float32{0.0, 0.0, 0.0}, nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var lx float32
@@ -496,6 +574,16 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 						page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0,
 							(y+y0)/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
 					}
+				} else if chart.drawValueLabels && chart.valueLabelsInside && abs32(y-y0) >= bodyHeight+pad {
+					page.SetBrushColor(color.White)
+					var ly float32
+					if to >= base {
+						ly = y + ascent + pad/2.0
+					} else {
+						ly = y - pad/2.0
+					}
+					page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0, ly,
+						[3]float32{0.0, 0.0, 0.0}, nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var ly float32
@@ -513,16 +601,18 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// Axis lines: along the labels and at the base of the bars
 	page.SetPenColor(color.Black)
-	page.SetPenWidth(chart.axisLineWidth)
 	page.SetDefaultStrokeDashPattern()
-	if chart.horizontal {
-		x0 := x5 + (base-vMin)*(x6-x5)/(vMax-vMin)
-		page.DrawLine(x5, y8, x6, y8)
-		page.DrawLine(x0, y5, x0, y8)
-	} else {
-		y0 := y8 - (base-vMin)*(y8-y5)/(vMax-vMin)
-		page.DrawLine(x5, y5, x5, y8)
-		page.DrawLine(x5, y0, x6, y0)
+	if chart.axisLineWidth > 0.0 {
+		page.SetPenWidth(chart.axisLineWidth)
+		if chart.horizontal {
+			x0 := x5 + (base-vMin)*(x6-x5)/(vMax-vMin)
+			page.DrawLine(x5, y8, x6, y8)
+			page.DrawLine(x0, y5, x0, y8)
+		} else {
+			y0 := y8 - (base-vMin)*(y8-y5)/(vMax-vMin)
+			page.DrawLine(x5, y5, x5, y8)
+			page.DrawLine(x5, y0, x6, y0)
+		}
 	}
 	if chart.innerBorderWidth > 0.0 {
 		page.SetPenWidth(chart.innerBorderWidth)
@@ -564,22 +654,51 @@ func (chart *BarChart) hasSeriesNames() bool {
 	return false
 }
 
-// seriesColor returns the color of the series at the index: its own or the palette's.
-func (chart *BarChart) seriesColor(s *barSeries, index int) int32 {
+// barColor returns the color of the bar at the index: the series' own, its
+// color for the bar, or the palette's.
+func (chart *BarChart) barColor(s *barSeries, seriesIndex, index int) int32 {
+	if s.colors != nil && index >= 0 && index < len(s.colors) {
+		return s.colors[index]
+	}
 	if s.color == noColor {
-		return defaultPalette[index%len(defaultPalette)]
+		return defaultPalette[seriesIndex%len(defaultPalette)]
 	}
 	return s.color
 }
 
 // valueLabel formats the value written at the end of a bar.
 func (chart *BarChart) valueLabel(value float32) string {
-	return format(value, chart.minFractionDigits, chart.maxFractionDigits)
+	return chart.group(format(value, chart.minFractionDigits, chart.maxFractionDigits))
+}
+
+// axisLabel formats a label of the value axis.
+func (chart *BarChart) axisLabel(value float32, digits int) string {
+	return chart.group(format(value, digits, chart.maxFractionDigits))
+}
+
+// group groups the digits before the decimal point in thousands with commas,
+// if grouping is used.
+func (chart *BarChart) group(label string) string {
+	if !chart.groupingUsed {
+		return label
+	}
+	start := 0
+	if strings.HasPrefix(label, "-") {
+		start = 1
+	}
+	end := strings.IndexByte(label, '.')
+	if end < 0 {
+		end = len(label)
+	}
+	for i := end - 3; i > start; i -= 3 {
+		label = label[:i] + "," + label[i:]
+	}
+	return label
 }
 
 // gridLine draws one dotted grid line.
 func (chart *BarChart) gridLine(page *Page, xa, ya, xb, yb float32) {
-	page.SetPenColor(color.Black)
+	page.SetPenColor(chart.gridLineColor)
 	page.SetPenWidth(chart.gridLineWidth)
 	page.SetStrokeDashPattern(chart.gridLineDashPattern)
 	page.DrawLine(xa, ya, xb, yb)
@@ -604,7 +723,7 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
 		if s.name == "" {
 			continue
 		}
-		page.SetBrushColor(chart.seriesColor(s, j))
+		page.SetBrushColor(chart.barColor(s, j, -1))
 		page.FillRect(x, baseline-swatch, swatch, swatch)
 		x += swatch + gap
 		page.SetBrushColor(color.Black)

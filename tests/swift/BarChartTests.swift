@@ -85,4 +85,21 @@ import Testing
         #expect(stacked.contains(TestSupport.hex("90")), "\(stacked)")
         #expect(stacked.contains(TestSupport.hex("75")), "\(stacked)")
     }
+
+    @Test func barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub")
+        chart.addSeries("", [6650, 12], [Color.red, Color.blue])
+        chart.setValueAxisMinMax(0, 8000, 4).setDrawValueLabels(true).setValueLabelsInside(true)
+        chart.setGroupingUsed(true).setAxisLineWidth(0).setGridLineColor(Color.lightgray)
+        let content = draw(chart, page)
+        #expect(content.contains(TestSupport.hex("6,650")), "\(content)")
+        #expect(content.contains(TestSupport.hex("8,000")), "\(content)")
+        #expect(content.contains(TestSupport.hex("sub")), "\(content)")
+        #expect(content.contains("1 0 0 rg"), "\(content)")    // the first bar
+        #expect(content.contains("0 0 1 rg"), "\(content)")    // the second bar
+        #expect(content.contains("1 1 1 rg"), "\(content)")    // the label inside the first bar
+        #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
+    }
 }

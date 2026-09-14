@@ -91,5 +91,23 @@ public class BarChartTest {
         Assert.Contains(TestSupport.Hex("90"), stacked);
         Assert.Contains(TestSupport.Hex("75"), stacked);
     }
+
+    [Fact]
+    public void BarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub");
+        chart.AddSeries("", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
+        chart.SetValueAxisMinMax(0f, 8000f, 4).SetDrawValueLabels(true).SetValueLabelsInside(true);
+        chart.SetGroupingUsed(true).SetAxisLineWidth(0f).SetGridLineColor(Color.lightgray);
+        string content = Draw(chart, page);
+        Assert.Contains(TestSupport.Hex("6,650"), content);
+        Assert.Contains(TestSupport.Hex("8,000"), content);
+        Assert.Contains(TestSupport.Hex("sub"), content);
+        Assert.Contains("1 0 0 rg", content);   // the first bar
+        Assert.Contains("0 0 1 rg", content);   // the second bar
+        Assert.Contains("1 1 1 rg", content);   // the label inside the first bar
+        Assert.Contains(TestSupport.Hex("12"), content);    // too short: next to the bar
+    }
 }
 }

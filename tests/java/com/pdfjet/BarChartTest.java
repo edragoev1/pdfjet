@@ -94,4 +94,22 @@ class BarChartTest {
         assertTrue(stacked.contains(TestSupport.hex("90")), stacked);
         assertTrue(stacked.contains(TestSupport.hex("75")), stacked);
     }
+
+    @Test
+    void barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub");
+        chart.addSeries("", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
+        chart.setValueAxisMinMax(0f, 8000f, 4).setDrawValueLabels(true).setValueLabelsInside(true);
+        chart.setGroupingUsed(true).setAxisLineWidth(0f).setGridLineColor(Color.lightgray);
+        String content = draw(chart, page);
+        assertTrue(content.contains(TestSupport.hex("6,650")), content);
+        assertTrue(content.contains(TestSupport.hex("8,000")), content);
+        assertTrue(content.contains(TestSupport.hex("sub")), content);
+        assertTrue(content.contains("1 0 0 rg"), content);     // the first bar
+        assertTrue(content.contains("0 0 1 rg"), content);     // the second bar
+        assertTrue(content.contains("1 1 1 rg"), content);     // the label inside the first bar
+        assertTrue(content.contains(TestSupport.hex("12")), content);  // too short: next to the bar
+    }
 }

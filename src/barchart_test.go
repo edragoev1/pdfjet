@@ -105,3 +105,21 @@ func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.
 		t.Errorf("labels missing from the stacked content %q", stacked)
 	}
 }
+
+func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub")
+	chart.AddSeriesWithColors("", []float32{6650, 12}, []int32{color.Red, color.Blue})
+	chart.SetValueAxisMinMax(0, 8000, 4).SetDrawValueLabels(true).SetValueLabelsInside(true)
+	chart.SetGroupingUsed(true).SetAxisLineWidth(0).SetGridLineColor(color.LightGray)
+	content := testDrawBarChart(t, chart, page)
+	// the two bars in their colors, the label inside the first bar in white
+	// and the label of the bar too short for it next to the bar
+	for _, want := range []string{
+		testHex("6,650"), testHex("8,000"), testHex("sub"), testHex("12"), "1 0 0 rg", "0 0 1 rg", "1 1 1 rg"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("%q missing from %q", want, content)
+		}
+	}
+}
