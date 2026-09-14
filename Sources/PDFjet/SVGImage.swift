@@ -24,8 +24,8 @@ public class SVGImage : Drawable {
     var uri: String?
     var key: String?
     var language: String?
-    var actualText: String = Single.space
-    var altDescription: String = Single.space
+    var actualText: String?
+    var altDescription: String?
 
     // Built once per process; avoids reflecting over ColorMap on every
     // color attribute parsed.

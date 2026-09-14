@@ -30,16 +30,19 @@ type Chart struct {
 	xAxisGridLines                 int
 	yAxisGridLines                 int
 	title                          string
+	subtitle                       string
 	xAxisTitle                     string
 	yAxisTitle                     string
 	drawHGridLines                 bool
 	drawVGridLines                 bool
 	drawXAxisLabels                bool
 	drawYAxisLabels                bool
+	gridLineColor                  int32
 	hGridLineWidth                 float32
 	vGridLineWidth                 float32
 	hGridLinePattern               string
 	vGridLinePattern               string
+	axisLineWidth                  float32
 	chartBorderWidth               float32
 	innerBorderWidth               float32
 	minFractionDigits              int
@@ -79,8 +82,10 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.drawVGridLines = true
 	chart.drawXAxisLabels = true
 	chart.drawYAxisLabels = true
+	chart.gridLineColor = color.Black
 	chart.hGridLinePattern = "[1 1] 0"
 	chart.vGridLinePattern = "[1 1] 0"
+	chart.axisLineWidth = 0.5
 	chart.chartBorderWidth = 0.0
 	chart.innerBorderWidth = 0.0
 	chart.minFractionDigits = 0
@@ -91,6 +96,12 @@ func NewChart(f1, f2 *Font) *Chart {
 // SetTitle sets the title of the chart.
 func (chart *Chart) SetTitle(title string) *Chart {
 	chart.title = title
+	return chart
+}
+
+// SetSubtitle sets the subtitle, written in gray under the title in the second font.
+func (chart *Chart) SetSubtitle(subtitle string) *Chart {
+	chart.subtitle = subtitle
 	return chart
 }
 
@@ -165,15 +176,22 @@ func (chart *Chart) SetDrawVGridLines(drawVGridLines bool) *Chart {
 	return chart
 }
 
+// SetAxisLineWidth sets the width of the axis lines, along the left and the
+// bottom sides of the plot area. The default is 0.5; 0 hides them.
+func (chart *Chart) SetAxisLineWidth(width float32) *Chart {
+	chart.axisLineWidth = width
+	return chart
+}
+
 // SetChartBorderWidth sets the width of the outer chart border. A width of 0,
-// the default, draws the thinnest line a viewer shows.
+// the default, hides it.
 func (chart *Chart) SetChartBorderWidth(width float32) *Chart {
 	chart.chartBorderWidth = width
 	return chart
 }
 
 // SetInnerBorderWidth sets the width of the plot area border. A width of 0,
-// the default, draws the thinnest line a viewer shows.
+// the default, hides it.
 func (chart *Chart) SetInnerBorderWidth(width float32) *Chart {
 	chart.innerBorderWidth = width
 	return chart
@@ -200,6 +218,12 @@ func (chart *Chart) SetHGridLineDashPattern(pattern string) *Chart {
 // SetVGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
 func (chart *Chart) SetVGridLineDashPattern(pattern string) *Chart {
 	chart.vGridLinePattern = pattern
+	return chart
+}
+
+// SetGridLineColor sets the color of the grid lines as a 0xRRGGBB value. The default is black.
+func (chart *Chart) SetGridLineColor(c int32) *Chart {
+	chart.gridLineColor = c
 	return chart
 }
 
@@ -255,20 +279,36 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.roundXAxisMinAndMaxValues()
 	chart.roundYAxisMinAndMaxValues()
 
-	// Draw chart title, then the legend under it
+	// Draw chart title, the subtitle and then the legend under it
+	titleBaseline := chart.y1 + 1.5*chart.f1.bodyHeight
+	subtitleHeight := float32(0.0)
+	if chart.subtitle != "" {
+		subtitleHeight = chart.f2.bodyHeight
+	}
 	page.SetBrushColor(color.Black)
 	page.drawString(
 		chart.f1,
 		chart.f1.GetSize(),
 		chart.title,
 		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.GetSize(), chart.title))/2),
-		chart.y1+1.5*chart.f1.bodyHeight,
+		titleBaseline,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
+	if chart.subtitle != "" {
+		page.SetBrushColor(color.DimGray)
+		page.drawString(
+			chart.f2,
+			chart.f2.GetSize(),
+			chart.subtitle,
+			chart.x1+((chart.w-chart.f2.StringWidth(chart.f2.GetSize(), chart.subtitle))/2),
+			titleBaseline+subtitleHeight,
+			[3]float32{0.0, 0.0, 0.0},
+			nil)
+	}
 	legend := chart.drawLegend && chart.hasSeriesNames()
-	topMargin := 2.5 * chart.f1.bodyHeight
+	topMargin := 2.5*chart.f1.bodyHeight + subtitleHeight
 	if legend {
-		chart.drawLegendOn(page, chart.y1+1.5*chart.f1.bodyHeight+1.5*chart.f2.bodyHeight)
+		chart.drawLegendOn(page, titleBaseline+subtitleHeight+1.5*chart.f2.bodyHeight)
 		topMargin += 1.5 * chart.f2.bodyHeight
 	}
 	leftMargin := chart.getLongestAxisYLabelWidth() + 2.0*chart.f2.bodyHeight
@@ -295,6 +335,9 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	}
 	if chart.drawVGridLines {
 		chart.drawVerticalGridLines(page)
+	}
+	if chart.axisLineWidth > 0.0 {
+		chart.drawAxisLines(page)
 	}
 
 	if chart.drawXAxisLabels {
@@ -558,7 +601,11 @@ func (chart *Chart) roundYAxisMinAndMaxValues() {
 	chart.yAxisGridLines = round.numOfGridLines
 }
 
+// drawChartBorder draws the outer chart border, unless its width is 0.
 func (chart *Chart) drawChartBorder(page *Page) {
+	if chart.chartBorderWidth <= 0.0 {
+		return
+	}
 	page.SetPenWidth(chart.chartBorderWidth)
 	page.SetPenColor(color.Black)
 	page.MoveTo(chart.x1, chart.y1)
@@ -568,7 +615,11 @@ func (chart *Chart) drawChartBorder(page *Page) {
 	page.ClosePath()
 }
 
+// drawInnerBorder draws the plot area border, unless its width is 0.
 func (chart *Chart) drawInnerBorder(page *Page) {
+	if chart.innerBorderWidth <= 0.0 {
+		return
+	}
 	page.SetPenWidth(chart.innerBorderWidth)
 	page.SetPenColor(color.Black)
 	page.MoveTo(chart.x5, chart.y5)
@@ -578,27 +629,38 @@ func (chart *Chart) drawInnerBorder(page *Page) {
 	page.ClosePath()
 }
 
+// drawAxisLines draws the axis lines along the left and the bottom sides of the plot area.
+func (chart *Chart) drawAxisLines(page *Page) {
+	page.SetPenWidth(chart.axisLineWidth)
+	page.SetPenColor(color.Black)
+	page.SetDefaultStrokeDashPattern()
+	page.DrawLine(chart.x5, chart.y5, chart.x5, chart.y8)
+	page.DrawLine(chart.x8, chart.y8, chart.x6, chart.y8)
+}
+
+// drawHorizontalGridLines draws the horizontal grid lines, one at each label.
 func (chart *Chart) drawHorizontalGridLines(page *Page) {
 	page.SetPenWidth(chart.hGridLineWidth)
-	page.SetPenColor(color.Black)
+	page.SetPenColor(chart.gridLineColor)
 	page.SetStrokeDashPattern(chart.hGridLinePattern)
 	x := chart.x8
 	y := chart.y8
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
-	for i := 0; i < chart.yAxisGridLines; i++ {
+	for i := 0; i <= chart.yAxisGridLines; i++ {
 		page.DrawLine(x, y, chart.x6, y)
 		y -= step
 	}
 }
 
+// drawVerticalGridLines draws the vertical grid lines, one at each label.
 func (chart *Chart) drawVerticalGridLines(page *Page) {
 	page.SetPenWidth(chart.vGridLineWidth)
-	page.SetPenColor(color.Black)
+	page.SetPenColor(chart.gridLineColor)
 	page.SetStrokeDashPattern(chart.vGridLinePattern)
 	x := chart.x5
 	y := chart.y5
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
-	for i := 0; i < chart.xAxisGridLines; i++ {
+	for i := 0; i <= chart.xAxisGridLines; i++ {
 		page.DrawLine(x, y, x, chart.y8)
 		x += step
 	}

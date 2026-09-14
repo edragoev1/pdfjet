@@ -38,8 +38,8 @@ public class Stamp : IDrawable {
     private MemoryStream buf = new MemoryStream();
     private List<Font> fonts = new List<Font>();
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
     private bool completed = false;
 
     /// <summary>Creates a stamp for the specified document.</summary>

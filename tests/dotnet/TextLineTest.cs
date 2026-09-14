@@ -53,5 +53,16 @@ public class TextLineTest {
         new TextLine(TestSupport.Helvetica(pdf), "Hello").SetLocation(10f, 20f).SetUnderline(true).DrawOn(underlined);
         Assert.Contains("\nS\n", TestSupport.Content(underlined));
     }
+
+    [Fact]
+    public void SetFontChangesTheFallbackFontUnlessAnotherWasSet() {
+        PDF pdf = TestSupport.NewPDF();
+        Font helvetica = TestSupport.Helvetica(pdf);
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        TextLine line = new TextLine(helvetica, "x").SetFont(courier);
+        Assert.Same(courier, line.GetFallbackFont());
+        line.SetFallbackFont(helvetica).SetFont(new Font(pdf, CoreFont.TIMES_ROMAN));
+        Assert.Same(helvetica, line.GetFallbackFont());
+    }
 }
 }

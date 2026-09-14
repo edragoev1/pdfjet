@@ -28,8 +28,8 @@ public class CheckBox implements Drawable {
     private String uri = null;
 
     private final String language = null;
-    private String altDescription = Single.space;
-    private String actualText = Single.space;
+    private String altDescription = null;
+    private String actualText = null;
 
     /**
      *  Creates a CheckBox with black check mark.

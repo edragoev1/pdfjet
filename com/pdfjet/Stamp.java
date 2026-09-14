@@ -39,8 +39,8 @@ public class Stamp implements Drawable {
     private ByteArrayOutputStream buf = new ByteArrayOutputStream();
     private List<Font> fonts = new ArrayList<Font>();
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
     private boolean completed = false;
 
     /**

@@ -46,6 +46,7 @@ public class Chart implements Drawable {
     private int yAxisGridLines = 0;
 
     private String title = "";
+    private String subtitle = "";
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
@@ -54,12 +55,14 @@ public class Chart implements Drawable {
     private boolean drawXAxisLabels = true;
     private boolean drawYAxisLabels = true;
 
-    // Grid line styling (width 0 = invisible, pattern default = dotted)
+    // Grid line styling (width 0 = the thinnest line, pattern default = dotted)
+    private int gridLineColor = Color.black;
     private float hGridLineWidth;
     private float vGridLineWidth;
     private String hGridLinePattern = "[1 1] 0";
     private String vGridLinePattern = "[1 1] 0";
 
+    private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
     private float innerBorderWidth = 0f;
 
@@ -104,6 +107,17 @@ public class Chart implements Drawable {
      */
     public Chart setTitle(String title) {
         this.title = title;
+        return this;
+    }
+
+    /**
+     * Sets the subtitle, written in gray under the title in the second font.
+     *
+     * @param subtitle the subtitle.
+     * @return this Chart object.
+     */
+    public Chart setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
         return this;
     }
 
@@ -245,8 +259,20 @@ public class Chart implements Drawable {
     }
 
     /**
+     * Sets the width of the axis lines, along the left and the bottom sides of
+     * the plot area. The default is 0.5; 0 hides them.
+     *
+     * @param width the line width.
+     * @return this Chart object.
+     */
+    public Chart setAxisLineWidth(float width) {
+        this.axisLineWidth = width;
+        return this;
+    }
+
+    /**
      * Sets the width of the outer chart border. A width of 0, the default,
-     * draws the thinnest line a viewer shows.
+     * hides it.
      *
      * @param width the border width.
      * @return this Chart object.
@@ -258,7 +284,7 @@ public class Chart implements Drawable {
 
     /**
      * Sets the width of the plot area border. A width of 0, the default,
-     * draws the thinnest line a viewer shows.
+     * hides it.
      *
      * @param width the border width.
      * @return this Chart object.
@@ -315,6 +341,17 @@ public class Chart implements Drawable {
     }
 
     /**
+     * Sets the color of the grid lines. The default is black.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.lightgray.
+     * @return this Chart object.
+     */
+    public Chart setGridLineColor(int color) {
+        this.gridLineColor = color;
+        return this;
+    }
+
+    /**
      *  Draws this chart on the specified page.
      *
      *  @param page the page to draw on.
@@ -347,21 +384,32 @@ public class Chart implements Drawable {
         roundXAxisMinAndMaxValues();
         roundYAxisMinAndMaxValues();
 
-        // Draw chart title (centered, top), then the legend under it
+        // Draw chart title (centered, top), the subtitle and then the legend under it
+        float titleBaseline = y1 + 1.5f * f1.bodyHeight;
+        float subtitleHeight = subtitle.isEmpty() ? 0f : f2.bodyHeight;
         page.setBrushColor(Color.black);
         page.drawString(
                 f1,
                 f1.getSize(),
                 title,
                 x1 + ((w - f1.stringWidth(title)) / 2),
-                y1 + 1.5f * f1.bodyHeight);
+                titleBaseline);
+        if (!subtitle.isEmpty()) {
+            page.setBrushColor(Color.dimgray);
+            page.drawString(
+                    f2,
+                    f2.getSize(),
+                    subtitle,
+                    x1 + ((w - f2.stringWidth(subtitle)) / 2),
+                    titleBaseline + subtitleHeight);
+        }
         boolean legend = drawLegend && hasSeriesNames();
         if (legend) {
-            drawLegend(page, y1 + 1.5f * f1.bodyHeight + 1.5f * f2.bodyHeight);
+            drawLegend(page, titleBaseline + subtitleHeight + 1.5f * f2.bodyHeight);
         }
 
         // Compute margins and inner plot area
-        float topMargin = 2.5f * f1.bodyHeight + (legend ? 1.5f * f2.bodyHeight : 0f);
+        float topMargin = 2.5f * f1.bodyHeight + subtitleHeight + (legend ? 1.5f * f2.bodyHeight : 0f);
         float leftMargin = getLongestAxisYLabelWidth() + 2f * f2.bodyHeight;
         float rightMargin = 2f * f2.bodyHeight;
         float bottomMargin = 2.5f * f2.bodyHeight;
@@ -383,6 +431,9 @@ public class Chart implements Drawable {
         }
         if (drawVGridLines) {
             drawVerticalGridLines(page);
+        }
+        if (axisLineWidth > 0f) {
+            drawAxisLines(page);
         }
         if (drawXAxisLabels) {
             drawXAxisLabels(page);
@@ -637,8 +688,11 @@ public class Chart implements Drawable {
         yAxisGridLines = round.numOfGridLines;
     }
 
-    /** Draws the outer chart border. */
+    /** Draws the outer chart border, unless its width is 0. */
     private void drawChartBorder(Page page) {
+        if (chartBorderWidth <= 0f) {
+            return;
+        }
         page.setPenWidth(chartBorderWidth);
         page.setPenColor(Color.black);
         page.moveTo(x1, y1);
@@ -648,8 +702,11 @@ public class Chart implements Drawable {
         page.closePath();
     }
 
-    /** Draws the inner plot area border. */
+    /** Draws the inner plot area border, unless its width is 0. */
     private void drawInnerBorder(Page page) {
+        if (innerBorderWidth <= 0f) {
+            return;
+        }
         page.setPenWidth(innerBorderWidth);
         page.setPenColor(Color.black);
         page.moveTo(x5, y5);
@@ -659,29 +716,38 @@ public class Chart implements Drawable {
         page.closePath();
     }
 
-    /** Draws horizontal grid lines across the plot area. */
+    /** Draws the axis lines along the left and the bottom sides of the plot area. */
+    private void drawAxisLines(Page page) {
+        page.setPenWidth(axisLineWidth);
+        page.setPenColor(Color.black);
+        page.setDefaultStrokeDashPattern();
+        page.drawLine(x5, y5, x5, y8);
+        page.drawLine(x8, y8, x6, y8);
+    }
+
+    /** Draws horizontal grid lines across the plot area, one at each label. */
     private void drawHorizontalGridLines(Page page) {
         page.setPenWidth(hGridLineWidth);
-        page.setPenColor(Color.black);
+        page.setPenColor(gridLineColor);
         page.setStrokeDashPattern(hGridLinePattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
-        for (int i = 0; i < yAxisGridLines; i++) {
+        for (int i = 0; i <= yAxisGridLines; i++) {
             page.drawLine(x, y, x6, y);
             y -= step;
         }
     }
 
-    /** Draws vertical grid lines across the plot area. */
+    /** Draws vertical grid lines across the plot area, one at each label. */
     private void drawVerticalGridLines(Page page) {
         page.setPenWidth(vGridLineWidth);
-        page.setPenColor(Color.black);
+        page.setPenColor(gridLineColor);
         page.setStrokeDashPattern(vGridLinePattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;
-        for (int i = 0; i < xAxisGridLines; i++) {
+        for (int i = 0; i <= xAxisGridLines; i++) {
             page.drawLine(x, y, x, y8);
             x += step;
         }

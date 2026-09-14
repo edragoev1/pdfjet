@@ -111,3 +111,35 @@ func TestChartLabelsUseAPeriod(t *testing.T) {
 		t.Errorf("labels in %q", content)
 	}
 }
+
+func TestChartTheBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf)
+	chart.AddSeries("").SetDrawPath(true).SetShape(shape.Invisible).
+		SetStrokeWidth(3).SetStrokeColor(color.Blue).
+		AddPoint(1, 1).AddPoint(2, 2)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, "l\ns\n") {
+		t.Errorf("a border width of 0 drew a border in %q", content)
+	}
+	if !strings.Contains(content, "0.5 w\n") || strings.Contains(content, "1 0 0 RG") {
+		t.Errorf("no axis lines or a red grid in %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	chart.SetChartBorderWidth(2).SetInnerBorderWidth(1).SetAxisLineWidth(0).
+		SetGridLineColor(color.Red).SetSubtitle("Subtitle")
+	chart.DrawOn(page)
+	content = testContent(page)
+	if n := strings.Count(content, "l\ns\n"); n != 2 {
+		t.Errorf("%d borders in %q", n, content)
+	}
+	if strings.Contains(content, "0.5 w\n") || !strings.Contains(content, "1 0 0 RG") {
+		t.Errorf("axis lines or no red grid in %q", content)
+	}
+	if !strings.Contains(content, testHex("Subtitle")) {
+		t.Errorf("no subtitle in %q", content)
+	}
+}

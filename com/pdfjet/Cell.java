@@ -93,11 +93,15 @@ public class Cell {
 
     /**
      * Sets the font for this cell. The font size does not change; set it with setFontSize.
+     * The fallback font changes with the font, unless a different fallback font was set.
      *
      * @param font the font.
      * @return this Cell object.
      */
     public Cell setFont(Font font) {
+        if (this.fallbackFont == this.font) {
+            this.fallbackFont = font;
+        }
         this.font = font;
         return this;
     }
@@ -492,12 +496,15 @@ public class Cell {
     }
 
     /**
-     * Sets the text color of this cell.
+     * Sets the text color of this cell. Color.transparent leaves the text color unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
      */
     public Cell setTextColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

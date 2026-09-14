@@ -22,8 +22,8 @@ public class RadioButton implements Drawable {
     private String uri = null;
 
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     /**
      *  Creates a RadioButton that is not selected.

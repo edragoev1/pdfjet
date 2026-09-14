@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/mark"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -38,8 +37,6 @@ func NewCheckBox(font *Font, label string) *CheckBox {
 	checkBox.font = font
 	checkBox.fontSize = 12.0
 	checkBox.label = label
-	checkBox.altDescription = single.Space
-	checkBox.actualText = single.Space
 	return checkBox
 }
 

@@ -70,10 +70,14 @@ public class Cell {
 
     /// <summary>
     /// Sets the font for this cell. The font size does not change; set it with SetFontSize.
+    /// The fallback font changes with the font, unless a different fallback font was set.
     /// </summary>
     /// <param name="font">the font.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetFont(Font font) {
+        if (this.fallbackFont == this.font) {
+            this.fallbackFont = font;
+        }
         this.font = font;
         return this;
     }
@@ -344,8 +348,11 @@ public class Cell {
         return Util.CopyOf(this.backgroundColor);
     }
 
-    /// <summary>Sets the text color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent leaves the text color unchanged.</summary>
     public Cell SetTextColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

@@ -70,4 +70,20 @@ import Testing
         #expect(content.contains(TestSupport.hex("one")), "\(content)")
         #expect(content.contains(TestSupport.hex("ten")), "\(content)")
     }
+
+    @Test func transparentLeavesTheTextColorUnchanged() {
+        let block = TextBlock(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        block.setTextColor(Color.blue).setTextColor(Color.transparent)
+        TestSupport.expectRGB(0, 0, 1, block.getTextColor())
+    }
+
+    @Test func setFontChangesTheFallbackFontUnlessAnotherWasSet() throws {
+        let pdf = TestSupport.newPDF()
+        let helvetica = TestSupport.helvetica(pdf)
+        let courier = try Font(pdf, CoreFont.COURIER)
+        let block = TextBlock(helvetica, "x").setFont(courier)
+        #expect(block.fallbackFont === courier)
+        block.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
+        #expect(block.fallbackFont === helvetica)
+    }
 }

@@ -221,3 +221,19 @@ func TestPDFNewPDFFileReportsAFileThatCannotBeCreated(t *testing.T) {
 		t.Error("no error")
 	}
 }
+
+func TestPDFAShapeWithoutADescriptionWritesNoAltText(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewLine(10, 10, 100, 10).DrawOn(page)
+	NewLine(10, 20, 100, 20).SetAltDescription("A rule").DrawOn(page)
+	raw := string(doc.complete())
+	if n := strings.Count(raw, "/Alt <"); n != 1 {
+		t.Errorf("%d /Alt entries", n)
+	}
+	if strings.Contains(raw, "/ActualText") {
+		t.Error("an /ActualText entry")
+	}
+}

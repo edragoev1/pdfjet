@@ -30,8 +30,8 @@ public class Image : Drawable {
     private var flipUpsideDown = false
 
     private var language: String?
-    private var altDescription: String = Single.space
-    private var actualText: String = Single.space
+    private var altDescription: String?
+    private var actualText: String?
 
     enum StreamError: Error {
         case read

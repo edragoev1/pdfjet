@@ -107,13 +107,17 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the font to use for this text line.
+    /// Sets the font to use for this text line. The fallback font changes with
+    /// it, unless a different fallback font was set.
     ///
     /// - Parameter font: the font to use.
     /// - Returns: the TextLine.
     ///
     @discardableResult
     public func setFont(_ font: Font) -> TextLine {
+        if self.fallbackFont === self.font {
+            self.fallbackFont = font
+        }
         self.font = font
         return self
     }

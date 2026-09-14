@@ -30,8 +30,8 @@ public class Image : IDrawable {
     private int degrees = 0;
     private bool flipUpsideDown = false;
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     /// <summary>
     /// Convenience constructor for the Image class.

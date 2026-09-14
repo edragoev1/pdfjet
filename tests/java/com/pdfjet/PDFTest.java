@@ -197,4 +197,18 @@ class PDFTest {
             assertFalse(raw.contains(key), key);
         }
     }
+
+    @Test
+    void aShapeWithoutADescriptionWritesNoAltText() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Line(10f, 10f, 100f, 10f).drawOn(page);
+        new Line(10f, 20f, 100f, 20f).setAltDescription("A rule").drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/Alt <").length - 1);
+        assertFalse(raw.contains("/ActualText"));
+    }
 }

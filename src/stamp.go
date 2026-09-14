@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -45,13 +44,11 @@ type Stamp struct {
 // NewStamp creates a stamp for the specified document.
 func NewStamp(pdf *PDF) *Stamp {
 	return &Stamp{
-		pdf:            pdf,
-		buf:            &bytes.Buffer{},
-		strokeWidth:    1.0,
-		scaleX:         1.0,
-		scaleY:         1.0,
-		actualText:     single.Space,
-		altDescription: single.Space,
+		pdf:         pdf,
+		buf:         &bytes.Buffer{},
+		strokeWidth: 1.0,
+		scaleX:      1.0,
+		scaleY:      1.0,
 	}
 }
 

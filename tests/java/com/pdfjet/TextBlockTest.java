@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -79,5 +80,23 @@ class TextBlockTest {
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("one")), content);
         assertTrue(content.contains(TestSupport.hex("ten")), content);
+    }
+
+    @Test
+    void transparentLeavesTheTextColorUnchanged() throws Exception {
+        TextBlock block = new TextBlock(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        block.setTextColor(Color.blue).setTextColor(Color.transparent);
+        TestSupport.assertRGB(0f, 0f, 1f, block.getTextColor());
+    }
+
+    @Test
+    void setFontChangesTheFallbackFontUnlessAnotherWasSet() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font helvetica = TestSupport.helvetica(pdf);
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        TextBlock block = new TextBlock(helvetica, "x").setFont(courier);
+        assertSame(courier, block.fallbackFont);
+        block.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
+        assertSame(helvetica, block.fallbackFont);
     }
 }

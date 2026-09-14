@@ -24,8 +24,8 @@ public class Arc : Drawable {
     private var strokeDashPattern: String? = "[] 0"
 
     private var language: String?
-    private var actualText: String = Single.space
-    private var altDescription: String = Single.space
+    private var actualText: String?
+    private var altDescription: String?
 
     private var line: Line?
 

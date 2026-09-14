@@ -60,5 +60,23 @@ public class CellTest {
         Assert.False(cell.GetBorder(Border.LEFT) || cell.GetBorder(Border.BOTTOM));
         Assert.Equal(3, cell.GetColSpan());
     }
+
+    [Fact]
+    public void TransparentLeavesTheTextColorUnchanged() {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        cell.SetTextColor(Color.blue).SetTextColor(Color.transparent);
+        TestSupport.AssertRGB(0f, 0f, 1f, cell.GetTextColor());
+    }
+
+    [Fact]
+    public void SetFontChangesTheFallbackFontUnlessAnotherWasSet() {
+        PDF pdf = TestSupport.NewPDF();
+        Font helvetica = TestSupport.Helvetica(pdf);
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        Cell cell = new Cell(helvetica, "x").SetFont(courier);
+        Assert.Same(courier, cell.GetFallbackFont());
+        cell.SetFallbackFont(helvetica).SetFont(new Font(pdf, CoreFont.TIMES_ROMAN));
+        Assert.Same(helvetica, cell.GetFallbackFont());
+    }
 }
 }

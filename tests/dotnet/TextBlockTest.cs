@@ -76,5 +76,12 @@ public class TextBlockTest {
         Assert.Contains(TestSupport.Hex("one"), content);
         Assert.Contains(TestSupport.Hex("ten"), content);
     }
+
+    [Fact]
+    public void TransparentLeavesTheTextColorUnchanged() {
+        TextBlock block = new TextBlock(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        block.SetTextColor(Color.blue).SetTextColor(Color.transparent);
+        TestSupport.AssertRGB(0f, 0f, 1f, block.GetTextColor());
+    }
 }
 }

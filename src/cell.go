@@ -89,8 +89,12 @@ func NewCell(font *Font, text string) *Cell {
 }
 
 // SetFont sets the font for this cell. The font size does not change; set it with SetFontSize.
+// The fallback font changes with the font, unless a different fallback font was set.
 //   - font: the font.
 func (cell *Cell) SetFont(font *Font) *Cell {
+	if cell.fallbackFont == cell.font {
+		cell.fallbackFont = font
+	}
 	cell.font = font
 	return cell
 }
@@ -385,10 +389,13 @@ func (cell *Cell) SetTextColorRGB(textColor [3]float32) *Cell {
 	return cell
 }
 
-// SetTextColor sets the text color.
-//   - color: the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetTextColor(color int32) *Cell {
-	cell.textColor = colorToRGB(color)
+// SetTextColor sets the text color. color.Transparent leaves the text color unchanged.
+//   - c: the color specified as 0xRRGGBB integer.
+func (cell *Cell) SetTextColor(c int32) *Cell {
+	if c == color.Transparent {
+		return cell
+	}
+	cell.textColor = colorToRGB(c)
 	return cell
 }
 

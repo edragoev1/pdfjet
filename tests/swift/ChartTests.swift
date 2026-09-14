@@ -91,4 +91,28 @@ import Testing
         #expect(content.contains(TestSupport.hex("1.25")), "\(content)")
         #expect(!content.contains(TestSupport.hex("1,25")))
     }
+
+    @Test func theBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf)
+        chart.addSeries("").setDrawPath(true).setShape(Shape.INVISIBLE)
+                .setStrokeWidth(3).setStrokeColor(Color.blue)
+                .addPoint(1, 1).addPoint(2, 2)
+        chart.drawOn(page)
+        var content = TestSupport.content(page)
+        #expect(!content.contains("l\ns\n"), "\(content)")   // a border width of 0 hides the border
+        #expect(content.contains("0.5 w\n"), "\(content)")   // the axis lines
+        #expect(!content.contains("1 0 0 RG"), "\(content)")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        chart.setChartBorderWidth(2).setInnerBorderWidth(1).setAxisLineWidth(0)
+                .setGridLineColor(Color.red).setSubtitle("Subtitle")
+        chart.drawOn(page)
+        content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "l\ns\n").count - 1 == 2, "\(content)")
+        #expect(!content.contains("0.5 w\n"), "\(content)")
+        #expect(content.contains("1 0 0 RG"), "\(content)")
+        #expect(content.contains(TestSupport.hex("Subtitle")), "\(content)")
+    }
 }

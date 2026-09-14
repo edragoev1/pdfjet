@@ -41,6 +41,7 @@ public class Chart : Drawable {
     private var yAxisGridLines = 0
 
     private var title = ""
+    private var subtitle = ""
     private var xAxisTitle = ""
     private var yAxisTitle = ""
 
@@ -49,12 +50,14 @@ public class Chart : Drawable {
     private var drawXAxisLabels = true
     private var drawYAxisLabels = true
 
+    private var gridLineColor: Int32 = Color.black
     private var hGridLineWidth: Float = 0.0
     private var vGridLineWidth: Float = 0.0
 
     private var hGridLinePattern = "[1 1] 0"
     private var vGridLinePattern = "[1 1] 0"
 
+    private var axisLineWidth: Float = 0.5
     private var chartBorderWidth: Float = 0.0
     private var innerBorderWidth: Float = 0.0
 
@@ -98,6 +101,16 @@ public class Chart : Drawable {
     @discardableResult
     public func setTitle(_ title: String) -> Chart {
         self.title = title
+        return self
+    }
+
+    /// Sets the subtitle, written in gray under the title in the second font.
+    ///
+    /// - Parameter subtitle: the subtitle.
+    /// - Returns: this Chart object.
+    @discardableResult
+    public func setSubtitle(_ subtitle: String) -> Chart {
+        self.subtitle = subtitle
         return self
     }
 
@@ -222,8 +235,16 @@ public class Chart : Drawable {
         return self
     }
 
+    /// Sets the width of the axis lines, along the left and the bottom sides of
+    /// the plot area. The default is 0.5; 0 hides them.
+    @discardableResult
+    public func setAxisLineWidth(_ width: Float) -> Chart {
+        self.axisLineWidth = width
+        return self
+    }
+
     /// Sets the width of the outer chart border. A width of 0, the default,
-    /// draws the thinnest line a viewer shows.
+    /// hides it.
     @discardableResult
     public func setChartBorderWidth(_ width: Float) -> Chart {
         self.chartBorderWidth = width
@@ -231,7 +252,7 @@ public class Chart : Drawable {
     }
 
     /// Sets the width of the plot area border. A width of 0, the default,
-    /// draws the thinnest line a viewer shows.
+    /// hides it.
     @discardableResult
     public func setInnerBorderWidth(_ width: Float) -> Chart {
         self.innerBorderWidth = width
@@ -263,6 +284,13 @@ public class Chart : Drawable {
     @discardableResult
     public func setVGridLineDashPattern(_ pattern: String) -> Chart {
         self.vGridLinePattern = pattern
+        return self
+    }
+
+    /// Sets the color of the grid lines as a 0xRRGGBB value. The default is black.
+    @discardableResult
+    public func setGridLineColor(_ color: Int32) -> Chart {
+        self.gridLineColor = color
         return self
     }
 
@@ -320,8 +348,10 @@ public class Chart : Drawable {
         roundXAxisMinAndMaxValues()
         roundYAxisMinAndMaxValues()
 
-        // Draw chart title, then the legend under it
+        // Draw chart title, the subtitle and then the legend under it
         let legend = drawLegend && hasSeriesNames()
+        let titleBaseline = y1 + 1.5 * f1!.bodyHeight
+        let subtitleHeight: Float = subtitle.isEmpty ? 0.0 : f2!.bodyHeight
         if page != nil {
             page!.setBrushColor(Color.black)
             page!.drawString(
@@ -329,13 +359,22 @@ public class Chart : Drawable {
                     f1!.getSize(),
                     title,
                     x1 + ((w - f1!.stringWidth(title)) / 2),
-                    y1 + 1.5 * f1!.bodyHeight)
+                    titleBaseline)
+            if !subtitle.isEmpty {
+                page!.setBrushColor(Color.dimgray)
+                page!.drawString(
+                        f2!,
+                        f2!.getSize(),
+                        subtitle,
+                        x1 + ((w - f2!.stringWidth(subtitle)) / 2),
+                        titleBaseline + subtitleHeight)
+            }
             if legend {
-                drawLegend(page!, y1 + 1.5 * f1!.bodyHeight + 1.5 * f2!.bodyHeight)
+                drawLegend(page!, titleBaseline + subtitleHeight + 1.5 * f2!.bodyHeight)
             }
         }
 
-        let topMargin = 2.5 * f1!.bodyHeight + (legend ? 1.5 * f2!.bodyHeight : 0.0)
+        let topMargin = 2.5 * f1!.bodyHeight + subtitleHeight + (legend ? 1.5 * f2!.bodyHeight : 0.0)
         let leftMargin = getLongestAxisYLabelWidth() + 2.0 * f2!.bodyHeight
         let rightMargin = 2.0 * f2!.bodyHeight
         let bottomMargin = 2.5 * f2!.bodyHeight
@@ -361,6 +400,9 @@ public class Chart : Drawable {
             }
             if drawVGridLines {
                 drawVerticalGridLines(page!)
+            }
+            if axisLineWidth > 0.0 {
+                drawAxisLines(page!)
             }
             if drawXAxisLabels {
                 drawXAxisLabels(page!)
@@ -601,7 +643,11 @@ public class Chart : Drawable {
         yAxisGridLines = round.numOfGridLines
     }
 
+    /// Draws the outer chart border, unless its width is 0.
     private func drawChartBorder(_ page: Page) {
+        if chartBorderWidth <= 0.0 {
+            return
+        }
         page.setPenWidth(chartBorderWidth)
         page.setPenColor(Color.black)
         page.moveTo(x1, y1)
@@ -611,7 +657,11 @@ public class Chart : Drawable {
         page.closePath()
     }
 
+    /// Draws the plot area border, unless its width is 0.
     private func drawInnerBorder(_ page: Page) {
+        if innerBorderWidth <= 0.0 {
+            return
+        }
         page.setPenWidth(innerBorderWidth)
         page.setPenColor(Color.black)
         page.moveTo(x5, y5)
@@ -621,27 +671,38 @@ public class Chart : Drawable {
         page.closePath()
     }
 
+    /// Draws the axis lines along the left and the bottom sides of the plot area.
+    private func drawAxisLines(_ page: Page) {
+        page.setPenWidth(axisLineWidth)
+        page.setPenColor(Color.black)
+        page.setDefaultStrokeDashPattern()
+        page.drawLine(x5, y5, x5, y8)
+        page.drawLine(x8, y8, x6, y8)
+    }
+
+    /// Draws the horizontal grid lines, one at each label.
     private func drawHorizontalGridLines(_ page: Page) {
         page.setPenWidth(hGridLineWidth)
-        page.setPenColor(Color.black)
+        page.setPenColor(gridLineColor)
         page.setStrokeDashPattern(hGridLinePattern)
         let x = x8
         var y = y8
         let step = (y8 - y5) / Float(yAxisGridLines)
-        for _ in 0..<yAxisGridLines {
+        for _ in 0...yAxisGridLines {
             page.drawLine(x, y, x6, y)
             y -= step
         }
     }
 
+    /// Draws the vertical grid lines, one at each label.
     private func drawVerticalGridLines(_ page: Page) {
         page.setPenWidth(vGridLineWidth)
-        page.setPenColor(Color.black)
+        page.setPenColor(gridLineColor)
         page.setStrokeDashPattern(vGridLinePattern)
         var x = x5
         let y = y5
         let step = (x6 - x5) / Float(xAxisGridLines)
-        for _ in 0..<xAxisGridLines {
+        for _ in 0...xAxisGridLines {
             page.drawLine(x, y, x, y8)
             x += step
         }

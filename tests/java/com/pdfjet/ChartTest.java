@@ -108,4 +108,29 @@ class ChartTest {
             Locale.setDefault(saved);
         }
     }
+
+    @Test
+    void theBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf);
+        chart.addSeries("").setDrawPath(true).setShape(Shape.INVISIBLE)
+                .setStrokeWidth(3f).setStrokeColor(Color.blue)
+                .addPoint(1f, 1f).addPoint(2f, 2f);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains("l\ns\n"), content);   // a border width of 0 hides the border
+        assertTrue(content.contains("0.5 w\n"), content);   // the axis lines
+        assertFalse(content.contains("1 0 0 RG"), content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart.setChartBorderWidth(2f).setInnerBorderWidth(1f).setAxisLineWidth(0f)
+                .setGridLineColor(Color.red).setSubtitle("Subtitle");
+        chart.drawOn(page);
+        content = TestSupport.content(page);
+        assertEquals(2, content.split("l\ns\n").length - 1, content);
+        assertFalse(content.contains("0.5 w\n"), content);
+        assertTrue(content.contains("1 0 0 RG"), content);
+        assertTrue(content.contains(TestSupport.hex("Subtitle")), content);
+    }
 }

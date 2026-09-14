@@ -132,7 +132,7 @@
 <header>
   <p class="eyebrow">Second audit, for the v9.0.0 release</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and then all of the drift were fixed the same day and are listed at the end. What remains is a handful of inconsistencies shared by the four ports, and a dozen names worth changing before the release.</p>
+  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs, all of the drift and then the four inconsistencies the ports shared were fixed the same day and are listed at the end. What remains is a dozen names worth changing before the release.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 533ecc67 (102 lines, 101 public types per port), a method-by-method reading of Page, PDF, the shapes, the text classes, the charts and the annotations in all four ports, and the 50 examples.</span>
     <span>14 September 2026</span>
@@ -154,7 +154,7 @@
   <thead><tr><th>Group</th><th class="num">Findings</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Drift between the ports</td><td class="num">17</td><td class="num">17</td><td>Output and error handling that depended on the port; fixed 14 September</td></tr>
-    <tr><td>Inconsistencies shared by all four ports</td><td class="num">6</td><td class="num">4</td><td>Two rules for one setting</td></tr>
+    <tr><td>Inconsistencies shared by all four ports</td><td class="num">6</td><td class="num">4</td><td>Two rules for one setting; the four fixed 14 September</td></tr>
     <tr><td>Names</td><td class="num">10</td><td class="num">6</td><td>Abbreviations, a misleading verb, one name for two things</td></tr>
     <tr><td>Left for 10.0</td><td class="num">2</td><td class="num">0</td><td>One paragraph flow, one table API</td></tr>
     <tr class="total"><td>Total</td><td class="num">35</td><td class="num">27</td><td></td></tr>
@@ -166,39 +166,7 @@
 <p>Places where a port behaved differently from the other three, in output or in how it failed. None changed the 50 examples, which is why the check did not catch them. All seventeen were fixed on 14 September; the list is under <a href="#fixed">Fixed</a>. Three points stay as the README documents them for Go, which cannot overload: <code>Page.AddBDC</code> takes the language, <code>NewParagraph()</code> takes no text line, and <code>Cell.SetBorderColorRGB</code> takes an array, so a border colour once set stays, as <code>Rect</code> and <code>TextBlock</code> do.</p>
 
 <h2 id="library">Inconsistencies shared by all four ports</h2>
-<p>These are the same in every port, so they are design choices rather than drift, but two rules for one setting is one too many.</p>
-
-<section class="item">
-  <h3>Two defaults for the accessibility text <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Rect</code>, <code>TextLine</code> and the annotations default <code>altDescription</code> and <code>actualText</code> to null; <code>Line</code>, <code>Arc</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code> and <code>RadioButton</code> default them to a single space.</p>
-  <span class="label">Suggestion</span>
-  <p>One default. Null is the honest one: no description was given.</p>
-</section>
-
-<section class="item">
-  <h3><code>Color.transparent</code> is honored by some text setters and not others <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>TextLine.setTextColor</code> and <code>setDecorationColor</code> ignore <code>Color.transparent</code>; <code>TextBlock.setTextColor</code> and <code>Cell.setTextColor</code> turn it into white, because -1 shifts into 0xFFFFFF.</p>
-  <span class="label">Suggestion</span>
-  <p>Treat <code>Color.transparent</code> the same everywhere, as the background and border setters already do.</p>
-</section>
-
-<section class="item">
-  <h3><code>setFont</code> resets the fallback font in one class of three <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>TextBlock.setFont</code> also sets the fallback font; <code>TextLine.setFont</code> and <code>Cell.setFont</code> keep the old fallback.</p>
-  <span class="label">Suggestion</span>
-  <p>Pick one rule and apply it to the three.</p>
-</section>
-
-<section class="item">
-  <h3><code>Chart</code> and <code>BarChart</code> disagree on zero and on their extras <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Chart.setChartBorderWidth(0)</code> draws the thinnest line; <code>BarChart.setChartBorderWidth(0)</code> hides the border. <code>BarChart</code> has <code>setSubtitle</code>, <code>setGridLineColor</code> and <code>setAxisLineWidth</code>; <code>Chart</code> has none and its grid is always black.</p>
-  <span class="label">Suggestion</span>
-  <p>Give <code>Chart</code> the three setters and the same meaning of zero.</p>
-</section>
+<p>These are the same in every port, so they are design choices rather than drift, but two rules for one setting is one too many. The four for 9.0.0, the accessibility text defaults, <code>Color.transparent</code> in the text setters, the fallback font of <code>setFont</code> and <code>Chart</code> against <code>BarChart</code>, were fixed on 14 September and are listed under <a href="#fixed">Fixed</a>; the two below wait for the <code>TextColumn</code> fold.</p>
 
 <section class="item">
   <h3><code>TextColumn.getHeight</code> and <code>getSize</code> <span class="chip later">10.0</span></h3>
@@ -276,7 +244,7 @@
 </section>
 
 <h2 id="fixed">Fixed on 14 September</h2>
-<p>The bugs, the crash-class drift and then the rest of the drift of this audit were fixed the same day, in the four ports, and are listed here so the page stays a record of what was found.</p>
+<p>The bugs, the crash-class drift, the rest of the drift and then the inconsistencies the four ports shared were fixed the same day, in the four ports, and are listed here so the page stays a record of what was found.</p>
 <div class="plan">
   <ul>
     <li>Java <code>BarChart.barColor</code> guards a negative index, so a named series with a color per bar draws its legend swatch; the bar chart tests now name such a series in all four ports.</li>
@@ -291,6 +259,7 @@
     <li>The font parser <code>OTF</code> and the PNG decoder <code>PNGImage</code> are internal in the four ports, as are the ICC profile bytes of Go and Swift and the Swift <code>PDFobj.dict</code> field. <code>CheckBox.xMark</code> stays public: Example_50 uses it to tick the boxes of an existing form, so it is a feature, not an internal, and the audit had it wrong.</li>
     <li>The stale white fill color of the Go link annotations in <code>Chart</code>, <code>TextBlock</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code>, <code>RadioButton</code> and <code>FileAttachment</code> is gone.</li>
     <li><strong>Drift between the ports.</strong> An empty document property or annotation title or contents writes nothing in Java, C# and Swift, as in Go. Go returns errors where it panicked: <code>NewPDFFile</code> returns <code>(*PDF, error)</code>, <code>Complete</code> and <code>AddObjects</code> return <code>error</code>, <code>SetTextRenderingMode</code> returns <code>(*Page, error)</code>, and the append functions keep the first writer error for <code>Complete</code>; <code>Page.drawPath</code> and <code>Stamp.drawPath</code> with fewer than two points paint nothing in the four ports, where two threw and two stopped the program. Go has <code>NewPDFReader()</code> for the reading-only <code>PDF()</code>, and the README lists <code>NewPDFFile</code>. C# and Swift warn on standard error. Go <code>GetMinMaxY</code> returns <code>[2]float32</code> and <code>AddObjects</code> takes the slice; Swift <code>Title.setPrefix</code> and <code>TextLine.advance</code> are <code>@discardableResult</code>, <code>addResourceObjects(from:)</code> is labelled like <code>getPageObjects(from:)</code>, and the three <code>addResource</code> forms take the objects as <code>inout</code>; C# <code>setPenColor(int)</code> and <code>setBrushColor(int)</code> call the array overloads, and the saved state stores brush then pen in the four ports. Go has <code>NewEmptyCell(font)</code>; a cell keeps its column span, borders, underline and strikeout as fields in the four ports; <code>Table.getWidth</code> of an empty table is 0 everywhere; <code>RadioButton</code> has its own <code>fontSize</code>; <code>Form</code> copies its fields and Go <code>Form.DrawOn</code> names a nil page, while Swift <code>Form</code> unwraps the page like <code>CheckBox</code> and <code>RadioButton</code>. <code>getComponents</code> returns a copy in the four ports, and <code>Font(pdf, coreFont)</code> rejects a number outside the fourteen in Java, C# and Swift (Go's core fonts are typed). Go's <code>rotateAroundCenter</code> lives with <code>Container</code>, the unused <code>annotationType</code> type and the <code>Float.MIN_VALUE</code> comments are gone, the Go doc comments list their parameters the Go way, and <code>DonutChart.java</code> and <code>Slice.java</code> start with the license.</li>
+    <li><strong>Inconsistencies shared by the four ports.</strong> <code>Line</code>, <code>Arc</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code>, <code>RadioButton</code> and <code>Stamp</code> default <code>altDescription</code> and <code>actualText</code> to none, as <code>Rect</code>, <code>TextLine</code> and the annotations do, where they were a single space: a drawing without a description writes no <code>/Alt</code> and no <code>/ActualText</code>, and its link falls back to its URI. <code>TextBlock.setTextColor</code> and <code>Cell.setTextColor</code> leave the text color unchanged for <code>Color.transparent</code>, as <code>TextLine</code> does, where they made the text white. <code>setFont</code> of <code>TextLine</code>, <code>TextBlock</code> and <code>Cell</code> changes the fallback font with the font unless a different fallback font was set, where <code>TextBlock</code> replaced a fallback that was set and the other two kept the first font as the fallback. <code>Chart</code> follows <code>BarChart</code>: a border width of 0, the default, hides the chart and plot area borders, axis lines of 0.5 run along the left and bottom sides of the plot area, a grid line is drawn at every label, and <code>setSubtitle</code>, <code>setGridLineColor</code> and <code>setAxisLineWidth</code> work as in <code>BarChart</code>. Unit tests cover the four in each port.</li>
   </ul>
 </div>
 

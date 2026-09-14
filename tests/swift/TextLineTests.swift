@@ -50,4 +50,14 @@ import Testing
         TextLine(TestSupport.helvetica(pdf), "Hello").setLocation(10, 20).setUnderline(true).drawOn(underlined)
         #expect(TestSupport.content(underlined).contains("\nS\n"))
     }
+
+    @Test func setFontChangesTheFallbackFontUnlessAnotherWasSet() throws {
+        let pdf = TestSupport.newPDF()
+        let helvetica = TestSupport.helvetica(pdf)
+        let courier = try Font(pdf, CoreFont.COURIER)
+        let line = TextLine(helvetica, "x").setFont(courier)
+        #expect(line.getFallbackFont() === courier)
+        line.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
+        #expect(line.getFallbackFont() === helvetica)
+    }
 }

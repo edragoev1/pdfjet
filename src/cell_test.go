@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
 
 func TestCellACellWithoutTextHasNoHeight(t *testing.T) {
@@ -65,5 +67,25 @@ func TestCellSetBorderChangesOneBorderAndKeepsTheColumnSpan(t *testing.T) {
 	cell.SetBorders(false)
 	if cell.GetBorder(border.Left) || cell.GetBorder(border.Bottom) || cell.GetColSpan() != 3 {
 		t.Error("SetBorders(false) kept a border or changed the colspan")
+	}
+}
+
+func TestCellTransparentLeavesTheTextColorUnchanged(t *testing.T) {
+	cell := NewCell(testHelvetica(testNewPDF()), "x")
+	cell.SetTextColor(color.Blue).SetTextColor(color.Transparent)
+	testAssertRGB(t, 0, 0, 1, cell.GetTextColor())
+}
+
+func TestCellSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) {
+	pdf := testNewPDF()
+	helvetica := testHelvetica(pdf)
+	courier := NewCoreFont(pdf, corefont.Courier())
+	cell := NewCell(helvetica, "x").SetFont(courier)
+	if cell.GetFallbackFont() != courier {
+		t.Error("the fallback font did not change with the font")
+	}
+	cell.SetFallbackFont(helvetica).SetFont(NewCoreFont(pdf, corefont.TimesRoman()))
+	if cell.GetFallbackFont() != helvetica {
+		t.Error("setting the font replaced the fallback font that was set")
 	}
 }

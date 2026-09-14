@@ -29,8 +29,8 @@ public class CheckBox : IDrawable {
     private String uri = null;
 
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     /// <summary>
     /// Creates a CheckBox with black check mark.

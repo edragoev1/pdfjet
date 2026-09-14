@@ -288,6 +288,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `TextBlock` draws the characters its font lacks in the fallback font, draws
   a text of only line breaks as one empty line, and `getHeight` returns the
   drawn height when the text is taller than the set height.
+- `setFont` of `TextLine`, `TextBlock` and `Cell` changes the fallback font
+  with the font, unless a different fallback font was set: `TextBlock`
+  replaced a fallback font that was set, and `TextLine` and `Cell` kept the
+  first font as the fallback. `Color.transparent` leaves the text color of a
+  `TextBlock` and a `Cell` unchanged, as it does for a `TextLine`, where it
+  made the text white.
 - `TextFrame` and `TextColumn` keep every setting of a line they wrap,
   including its vertical offset and its link. `TextFrame` always finishes
   flowing, and its border is black by default.
@@ -339,6 +345,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   across the stroke.
 - `Chart` handles negative, empty and flat data and its colors the same way in
   the four ports, and writes the same axis labels whatever the locale.
+- `Chart` follows the rules of `BarChart`: a chart or plot area border width
+  of 0, the default, hides the border, where it drew the thinnest line; axis
+  lines 0.5 wide run along the left and bottom sides of the plot area, and
+  `setAxisLineWidth(0)` hides them; a grid line is drawn at every label,
+  including the last; and `setSubtitle` and `setGridLineColor` work as in
+  `BarChart`. A chart that sets no widths, like the one of Example_09, has
+  axis lines instead of a frame.
 - `DonutChart` takes a value per slice instead of an angle, so the user no
   longer does the chart's arithmetic, and computes the same percentages in
   every port.
@@ -360,6 +373,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   TrueType and `.otf.stream` and `.ttf.stream` fonts, told apart by their
   first bytes, so the `Font.STREAM` flag is gone.
 - `Stamp` behaves the same in the four ports and tags the content it draws.
+- The alternate description and the actual text of `Line`, `Arc`, `Image`,
+  `SVGImage`, `CheckBox`, `RadioButton` and `Stamp` default to none, as for
+  `Rect`, `TextLine` and the annotations, where they were a single space: in a
+  PDF/UA document a drawing without a description writes no `/Alt` and no
+  `/ActualText`, and its link is described by its URI. Swift `Page.addBDC`
+  takes optional texts, as the other ports take null.
 - PNG images with row filters and palette transparency, top-down BMP images and
   SVG files are read correctly, and `Image.setFlipUpsideDown` flips an image in
   place.

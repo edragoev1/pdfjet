@@ -167,4 +167,16 @@ import Testing
             #expect(!raw.contains(key), "\(key)")
         }
     }
+
+    @Test func aShapeWithoutADescriptionWritesNoAltText() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        Line(10, 10, 100, 10).drawOn(page)
+        Line(10, 20, 100, 20).setAltDescription("A rule").drawOn(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/Alt <").count - 1 == 1)
+        #expect(!raw.contains("/ActualText"))
+    }
 }

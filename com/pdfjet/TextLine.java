@@ -123,12 +123,16 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the font to use for this text line.
+     * Sets the font to use for this text line. The fallback font changes with
+     * it, unless a different fallback font was set.
      *
      * @param font the font to use.
      * @return this TextLine.
      */
     public TextLine setFont(Font font) {
+        if (this.fallbackFont == this.font) {
+            this.fallbackFont = font;
+        }
         this.font = font;
         return this;
     }

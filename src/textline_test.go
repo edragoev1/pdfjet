@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -70,5 +71,19 @@ func TestTextLineUnderlineAddsAStrokedLine(t *testing.T) {
 	line.DrawOn(underlined)
 	if !strings.Contains(testContent(underlined), "\nS\n") {
 		t.Error("underlined text has no stroke")
+	}
+}
+
+func TestTextLineSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) {
+	pdf := testNewPDF()
+	helvetica := testHelvetica(pdf)
+	courier := NewCoreFont(pdf, corefont.Courier())
+	line := NewTextLine(helvetica, "x").SetFont(courier)
+	if line.GetFallbackFont() != courier {
+		t.Error("the fallback font did not change with the font")
+	}
+	line.SetFallbackFont(helvetica).SetFont(NewCoreFont(pdf, corefont.TimesRoman()))
+	if line.GetFallbackFont() != helvetica {
+		t.Error("setting the font replaced the fallback font that was set")
 	}
 }

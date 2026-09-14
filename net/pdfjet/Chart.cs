@@ -30,6 +30,7 @@ public class Chart : IDrawable {
     private int yAxisGridLines = 0;
 
     private String title = "";
+    private String subtitle = "";
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
@@ -38,12 +39,14 @@ public class Chart : IDrawable {
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
-    // Grid line styling (width 0 = invisible, pattern default = dotted)
+    // Grid line styling (width 0 = the thinnest line, pattern default = dotted)
+    private int gridLineColor = Color.black;
     private float hGridLineWidth = 0f;
     private float vGridLineWidth = 0f;
     private String hGridLinePattern = "[1 1] 0";
     private String vGridLinePattern = "[1 1] 0";
 
+    private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
     private float innerBorderWidth = 0f;
 
@@ -84,6 +87,14 @@ public class Chart : IDrawable {
     /// </summary>
     public Chart SetTitle(String title) {
         this.title = title;
+        return this;
+    }
+
+    /// <summary>Sets the subtitle, written in gray under the title in the second font.</summary>
+    /// <param name="subtitle">the subtitle.</param>
+    /// <returns>this Chart object.</returns>
+    public Chart SetSubtitle(String subtitle) {
+        this.subtitle = subtitle;
         return this;
     }
 
@@ -198,7 +209,15 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the width of the outer chart border. A width of 0, the default, draws the thinnest line a viewer shows.
+    ///  Sets the width of the axis lines, along the left and the bottom sides of the plot area. The default is 0.5; 0 hides them.
+    /// </summary>
+    public Chart SetAxisLineWidth(float width) {
+        this.axisLineWidth = width;
+        return this;
+    }
+
+    /// <summary>
+    ///  Sets the width of the outer chart border. A width of 0, the default, hides it.
     /// </summary>
     public Chart SetChartBorderWidth(float width) {
         this.chartBorderWidth = width;
@@ -206,7 +225,7 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the width of the plot area border. A width of 0, the default, draws the thinnest line a viewer shows.
+    ///  Sets the width of the plot area border. A width of 0, the default, hides it.
     /// </summary>
     public Chart SetInnerBorderWidth(float width) {
         this.innerBorderWidth = width;
@@ -245,6 +264,14 @@ public class Chart : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the color of the grid lines. The default is black.</summary>
+    /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
+    /// <returns>this Chart object.</returns>
+    public Chart SetGridLineColor(int color) {
+        this.gridLineColor = color;
+        return this;
+    }
+
     /// <summary>
     /// Draws this chart on the specified page.
     /// </summary>
@@ -277,21 +304,32 @@ public class Chart : IDrawable {
         RoundXAxisMinAndMaxValues();
         RoundYAxisMinAndMaxValues();
 
-        // Draw chart title (centered, top), then the legend under it
+        // Draw chart title (centered, top), the subtitle and then the legend under it
+        float titleBaseline = y1 + 1.5f * f1.GetBodyHeight(f1.GetSize());
+        float subtitleHeight = subtitle.Length == 0 ? 0f : f2.GetBodyHeight(f2.GetSize());
         page.SetBrushColor(Color.black);
         page.DrawString(
                 f1,
                 f1.GetSize(),
                 title,
                 x1 + ((w - f1.StringWidth(title)) / 2),
-                y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()));
+                titleBaseline);
+        if (subtitle.Length > 0) {
+            page.SetBrushColor(Color.dimgray);
+            page.DrawString(
+                    f2,
+                    f2.GetSize(),
+                    subtitle,
+                    x1 + ((w - f2.StringWidth(subtitle)) / 2),
+                    titleBaseline + subtitleHeight);
+        }
         bool legend = drawLegend && HasSeriesNames();
         if (legend) {
-            DrawLegend(page, y1 + 1.5f * f1.GetBodyHeight(f1.GetSize()) + 1.5f * f2.GetBodyHeight(f2.GetSize()));
+            DrawLegend(page, titleBaseline + subtitleHeight + 1.5f * f2.GetBodyHeight(f2.GetSize()));
         }
 
         // Compute margins and inner plot area
-        float topMargin = 2.5f * f1.GetBodyHeight(f1.GetSize()) + (legend ? 1.5f * f2.GetBodyHeight(f2.GetSize()) : 0f);
+        float topMargin = 2.5f * f1.GetBodyHeight(f1.GetSize()) + subtitleHeight + (legend ? 1.5f * f2.GetBodyHeight(f2.GetSize()) : 0f);
         float leftMargin = GetLongestAxisYLabelWidth() + 2f * f2.GetBodyHeight(f2.GetSize());
         float rightMargin = 2f * f2.GetBodyHeight(f2.GetSize());
         float bottomMargin = 2.5f * f2.GetBodyHeight(f2.GetSize());
@@ -313,6 +351,9 @@ public class Chart : IDrawable {
         }
         if (drawVGridLines) {
             DrawVerticalGridLines(page);
+        }
+        if (axisLineWidth > 0f) {
+            DrawAxisLines(page);
         }
 
         if (drawXAxisLabels) {
@@ -575,9 +616,12 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Draws the outer chart border.
+    ///  Draws the outer chart border, unless its width is 0.
     /// </summary>
     private void DrawChartBorder(Page page) {
+        if (chartBorderWidth <= 0f) {
+            return;
+        }
         page.SetPenWidth(chartBorderWidth);
         page.SetPenColor(Color.black);
         page.MoveTo(x1, y1);
@@ -588,9 +632,12 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Draws the inner plot area border.
+    ///  Draws the inner plot area border, unless its width is 0.
     /// </summary>
     private void DrawInnerBorder(Page page) {
+        if (innerBorderWidth <= 0f) {
+            return;
+        }
         page.SetPenWidth(innerBorderWidth);
         page.SetPenColor(Color.black);
         page.MoveTo(x5, y5);
@@ -601,32 +648,43 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Draws horizontal grid lines across the plot area.
+    ///  Draws the axis lines along the left and the bottom sides of the plot area.
+    /// </summary>
+    private void DrawAxisLines(Page page) {
+        page.SetPenWidth(axisLineWidth);
+        page.SetPenColor(Color.black);
+        page.SetDefaultStrokeDashPattern();
+        page.DrawLine(x5, y5, x5, y8);
+        page.DrawLine(x8, y8, x6, y8);
+    }
+
+    /// <summary>
+    ///  Draws horizontal grid lines across the plot area, one at each label.
     /// </summary>
     private void DrawHorizontalGridLines(Page page) {
         page.SetPenWidth(hGridLineWidth);
-        page.SetPenColor(Color.black);
+        page.SetPenColor(gridLineColor);
         page.SetStrokeDashPattern(hGridLinePattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
-        for (int i = 0; i < yAxisGridLines; i++) {
+        for (int i = 0; i <= yAxisGridLines; i++) {
             page.DrawLine(x, y, x6, y);
             y -= step;
         }
     }
 
     /// <summary>
-    ///  Draws vertical grid lines across the plot area.
+    ///  Draws vertical grid lines across the plot area, one at each label.
     /// </summary>
     private void DrawVerticalGridLines(Page page) {
         page.SetPenWidth(vGridLineWidth);
-        page.SetPenColor(Color.black);
+        page.SetPenColor(gridLineColor);
         page.SetStrokeDashPattern(vGridLinePattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;
-        for (int i = 0; i < xAxisGridLines; i++) {
+        for (int i = 0; i <= xAxisGridLines; i++) {
             page.DrawLine(x, y, x, y8);
             x += step;
         }

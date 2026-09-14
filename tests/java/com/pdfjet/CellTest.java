@@ -9,6 +9,7 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -65,5 +66,23 @@ class CellTest {
         cell.setBorders(false);
         assertFalse(cell.getBorder(Border.LEFT) || cell.getBorder(Border.BOTTOM));
         assertEquals(3, cell.getColSpan());
+    }
+
+    @Test
+    void transparentLeavesTheTextColorUnchanged() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        cell.setTextColor(Color.blue).setTextColor(Color.transparent);
+        TestSupport.assertRGB(0f, 0f, 1f, cell.getTextColor());
+    }
+
+    @Test
+    void setFontChangesTheFallbackFontUnlessAnotherWasSet() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font helvetica = TestSupport.helvetica(pdf);
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        Cell cell = new Cell(helvetica, "x").setFont(courier);
+        assertSame(courier, cell.getFallbackFont());
+        cell.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
+        assertSame(helvetica, cell.getFallbackFont());
     }
 }

@@ -22,8 +22,8 @@ public class RadioButton : Drawable {
     private var uri: String?
 
     private var language: String?
-    private var altDescription: String = Single.space
-    private var actualText: String = Single.space
+    private var altDescription: String?
+    private var actualText: String?
 
     ///
     /// Creates a RadioButton that is not selected.

@@ -35,8 +35,8 @@ public class Stamp : Drawable {
     private var buf = [UInt8]()
     private var fonts: [Font] = []
     private var language: String?
-    private var actualText: String = Single.space
-    private var altDescription: String = Single.space
+    private var actualText: String?
+    private var altDescription: String?
     private var completed = false
 
     /// Creates a stamp for the specified document.

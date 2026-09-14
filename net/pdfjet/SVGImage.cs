@@ -32,8 +32,8 @@ public class SVGImage : IDrawable {
     /// <summary>The destination key used by the GoTo action.</summary>
     protected String key = null;
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     /// <summary>
     /// Used to embed SVG images in the PDF document.

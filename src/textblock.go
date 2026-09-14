@@ -92,10 +92,13 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	return textBlock
 }
 
-// SetFont sets the font of the text. It also becomes the fallback font.
+// SetFont sets the font of the text. The fallback font changes with it, unless
+// a different fallback font was set.
 func (textBlock *TextBlock) SetFont(font *Font) *TextBlock {
+	if textBlock.fallbackFont == textBlock.font {
+		textBlock.fallbackFont = font
+	}
 	textBlock.font = font
-	textBlock.fallbackFont = font
 	return textBlock
 }
 
@@ -257,8 +260,11 @@ func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) *TextBlock {
 	return textBlock
 }
 
-// SetTextColor sets the text color as a 0xRRGGBB value.
+// SetTextColor sets the text color as a 0xRRGGBB value. color.Transparent leaves the text color unchanged.
 func (textBlock *TextBlock) SetTextColor(c int32) *TextBlock {
+	if c == color.Transparent {
+		return textBlock
+	}
 	return textBlock.SetTextColorRGB(colorToRGB(c))
 }
 

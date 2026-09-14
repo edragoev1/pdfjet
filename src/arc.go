@@ -26,8 +26,8 @@ type Arc struct {
 	strokeWidth       float32
 	strokeDashPattern string
 	language          string
-	actualText        string // = Single.space;
-	altDescription    string // = Single.space;
+	actualText        string
+	altDescription    string
 	line              *Line
 }
 

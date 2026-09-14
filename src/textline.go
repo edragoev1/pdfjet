@@ -88,11 +88,15 @@ func (textLine *TextLine) SetLocation(x, y float32) Drawable {
 	return textLine
 }
 
-// SetFont sets the font to use for this text line.
+// SetFont sets the font to use for this text line. The fallback font changes
+// with it, unless a different fallback font was set.
 //   - font: the font to use.
 //
 // Returns this TextLine.
 func (textLine *TextLine) SetFont(font *Font) *TextLine {
+	if textLine.fallbackFont == textLine.font {
+		textLine.fallbackFont = font
+	}
 	textLine.font = font
 	return textLine
 }

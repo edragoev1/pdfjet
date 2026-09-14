@@ -190,5 +190,19 @@ public class PDFTest {
             Assert.DoesNotContain(key, raw);
         }
     }
+
+    [Fact]
+    public void AShapeWithoutADescriptionWritesNoAltText() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Line(10f, 10f, 100f, 10f).DrawOn(page);
+        new Line(10f, 20f, 100f, 20f).SetAltDescription("A rule").DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, raw.Split("/Alt <").Length - 1);
+        Assert.DoesNotContain("/ActualText", raw);
+    }
 }
 }

@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -90,5 +92,25 @@ func TestTextBlockDrawOnAPageWritesEveryWord(t *testing.T) {
 	content := testContent(page)
 	if !strings.Contains(content, testHex("one")) || !strings.Contains(content, testHex("ten")) {
 		t.Errorf("words missing from %q", content)
+	}
+}
+
+func TestTextBlockTransparentLeavesTheTextColorUnchanged(t *testing.T) {
+	block := NewTextBlock(testHelvetica(testNewPDF()), "x")
+	block.SetTextColor(color.Blue).SetTextColor(color.Transparent)
+	testAssertRGB(t, 0, 0, 1, block.GetTextColor())
+}
+
+func TestTextBlockSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) {
+	pdf := testNewPDF()
+	helvetica := testHelvetica(pdf)
+	courier := NewCoreFont(pdf, corefont.Courier())
+	block := NewTextBlock(helvetica, "x").SetFont(courier)
+	if block.fallbackFont != courier {
+		t.Error("the fallback font did not change with the font")
+	}
+	block.SetFallbackFont(helvetica).SetFont(NewCoreFont(pdf, corefont.TimesRoman()))
+	if block.fallbackFont != helvetica {
+		t.Error("setting the font replaced the fallback font that was set")
 	}
 }

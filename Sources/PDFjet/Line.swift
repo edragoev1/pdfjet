@@ -23,8 +23,8 @@ public class Line : Drawable {
     private var capStyle = CapStyle.BUTT
 
     private var language: String?
-    private var actualText: String = Single.space
-    private var altDescription: String = Single.space
+    private var actualText: String?
+    private var altDescription: String?
 
     ///
     /// The default constructor.

@@ -2136,8 +2136,8 @@ public class Page {
     /// Begins marked content for a structure element when the document is PDF/UA compliant.
     public func addBDC(
             _ structure: StructElem,
-            _ actualText: String,
-            _ altDescription: String) {
+            _ actualText: String?,
+            _ altDescription: String?) {
         addBDC(structure, nil, actualText, altDescription)
     }
 
@@ -2145,8 +2145,8 @@ public class Page {
     public func addBDC(
             _ structure: StructElem,
             _ language: String?,
-            _ actualText: String,
-            _ altDescription: String) {
+            _ actualText: String?,
+            _ altDescription: String?) {
         markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 {
             let element = StructElement()

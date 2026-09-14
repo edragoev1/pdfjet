@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -55,8 +54,6 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image.fill = color.Transparent
 	image.stroke = color.Transparent
 	image.paths = make([]*svgPath, 0)
-	image.altDescription = single.Space
-	image.actualText = single.Space
 
 	decoder := xml.NewDecoder(reader)
 	for {

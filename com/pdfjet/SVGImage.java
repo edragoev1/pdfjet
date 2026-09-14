@@ -36,8 +36,8 @@ public class SVGImage implements Drawable {
     /** The destination key used by the GoTo action. */
     protected String key = null;
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     private ColorMap colorMap = null;
 

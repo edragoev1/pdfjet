@@ -70,14 +70,17 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the font of the text. It also becomes the fallback font.
+     * Sets the font of the text. The fallback font changes with it, unless a
+     * different fallback font was set.
      *
      * @param font the font.
      * @return this TextBlock object.
      */
     public TextBlock setFont(Font font) {
+        if (this.fallbackFont == this.font) {
+            this.fallbackFont = font;
+        }
         this.font = font;
-        this.fallbackFont = font;
         return this;
     }
 
@@ -281,12 +284,15 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the text color.
+     * Sets the text color. Color.transparent leaves the text color unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this TextBlock object.
      */
     public TextBlock setTextColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

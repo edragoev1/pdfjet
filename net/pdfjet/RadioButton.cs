@@ -22,8 +22,8 @@ public class RadioButton : IDrawable {
     private String label = "";
     private String uri = null;
     private String language = null;
-    private String altDescription = Single.space;
-    private String actualText = Single.space;
+    private String altDescription = null;
+    private String actualText = null;
 
     /// <summary>
     /// Creates a RadioButton that is not selected.

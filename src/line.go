@@ -10,7 +10,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -45,8 +44,6 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 	line.color = colorToRGB(color.Black)
 	line.width = 0.0
 	line.pattern = "[] 0"
-	line.actualText = single.Space
-	line.altDescription = single.Space
 	return line
 }
 

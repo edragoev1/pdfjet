@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -22,8 +21,8 @@ type RadioButton struct {
 	label          string
 	uri, key       string
 	language       string
-	altDescription string // = Single.space
-	actualText     string // = Single.space
+	altDescription string
+	actualText     string
 }
 
 // NewRadioButton creates RadioButton that is not selected.
@@ -32,8 +31,6 @@ func NewRadioButton(font *Font, label string) *RadioButton {
 	radioButton.font = font
 	radioButton.fontSize = font.GetSize()
 	radioButton.label = label
-	radioButton.altDescription = single.Space
-	radioButton.actualText = single.Space
 	return radioButton
 }
 

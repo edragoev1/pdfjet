@@ -41,8 +41,8 @@ final public class Image implements Drawable {
     private boolean flipUpsideDown = false;
 
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     /**
      * Convenience constructor for the Image class.

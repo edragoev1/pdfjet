@@ -16,7 +16,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/internal/device"
 	"github.com/edragoev1/pdfjet/v9/src/internal/imagetype"
-	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -67,8 +66,6 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 	reader = bytes.NewReader(buf)
 	image := new(Image)
 	image.pdf = pdf
-	image.altDescription = single.Space
-	image.actualText = single.Space
 
 	switch imageType {
 	case imagetype.JPG:
@@ -121,8 +118,6 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 	imageType := imageTypeOf(buf)
 	reader = bytes.NewReader(buf)
 	image := new(Image)
-	image.altDescription = single.Space
-	image.actualText = single.Space
 
 	switch imageType {
 	case imagetype.JPG:
@@ -171,8 +166,6 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image := new(Image)
 	image.pdf = pdf
-	image.altDescription = single.Space
-	image.actualText = single.Space
 
 	val, err := strconv.ParseFloat(obj.GetValue("/Width"), 32)
 	if err != nil {

@@ -23,8 +23,8 @@ public class Line : IDrawable {
     private CapStyle capStyle = CapStyle.BUTT;
 
     private String language = null;
-    private String altDescription = Single.space;
-    private String actualText = Single.space;
+    private String altDescription = null;
+    private String actualText = null;
 
     /// <summary>
     /// The default constructor.

@@ -65,12 +65,16 @@ public class Cell {
 
     /**
      * Sets the font for this cell. The font size does not change; set it with setFontSize.
+     * The fallback font changes with the font, unless a different fallback font was set.
      *
      * - Parameter font: the font.
      * - Returns: this Cell object.
      */
     @discardableResult
     public func setFont(_ font: Font) -> Cell {
+        if self.fallbackFont === self.font {
+            self.fallbackFont = font
+        }
         self.font = font
         return self
     }
@@ -372,9 +376,12 @@ public class Cell {
         return cellHeight
     }
 
-    /// Sets the text color as a 0xRRGGBB value.
+    /// Sets the text color as a 0xRRGGBB value. Color.transparent leaves the text color unchanged.
     @discardableResult
     public func setTextColor(_ color: Int32) -> Cell {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0

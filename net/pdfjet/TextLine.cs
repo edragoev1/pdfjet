@@ -100,11 +100,15 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Sets the font to use for this text line.
+    /// Sets the font to use for this text line. The fallback font changes with
+    /// it, unless a different fallback font was set.
     /// </summary>
     /// <param name="font">the font to use.</param>
     /// <returns>this TextLine.</returns>
     public TextLine SetFont(Font font) {
+        if (this.fallbackFont == this.font) {
+            this.fallbackFont = font;
+        }
         this.font = font;
         return this;
     }

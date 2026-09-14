@@ -54,4 +54,20 @@ import Testing
         #expect(!(cell.getBorder(Border.LEFT) || cell.getBorder(Border.BOTTOM)))
         #expect(cell.getColSpan() == 3)
     }
+
+    @Test func transparentLeavesTheTextColorUnchanged() {
+        let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        cell.setTextColor(Color.blue).setTextColor(Color.transparent)
+        TestSupport.expectRGB(0, 0, 1, cell.getTextColor())
+    }
+
+    @Test func setFontChangesTheFallbackFontUnlessAnotherWasSet() throws {
+        let pdf = TestSupport.newPDF()
+        let helvetica = TestSupport.helvetica(pdf)
+        let courier = try Font(pdf, CoreFont.COURIER)
+        let cell = Cell(helvetica, "x").setFont(courier)
+        #expect(cell.getFallbackFont() === courier)
+        cell.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
+        #expect(cell.getFallbackFont() === helvetica)
+    }
 }

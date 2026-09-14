@@ -25,8 +25,8 @@ public class Arc : IDrawable {
     private String strokeDashPattern = "[] 0";
 
     private String language = null;
-    private String actualText = Single.space;
-    private String altDescription = Single.space;
+    private String actualText = null;
+    private String altDescription = null;
 
     private Line line;
 

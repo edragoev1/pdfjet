@@ -103,5 +103,30 @@ public class ChartTest {
             CultureInfo.CurrentCulture = saved;
         }
     }
+
+    [Fact]
+    public void TheBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf);
+        chart.AddSeries("").SetDrawPath(true).SetShape(Shape.INVISIBLE)
+                .SetStrokeWidth(3f).SetStrokeColor(Color.blue)
+                .AddPoint(1f, 1f).AddPoint(2f, 2f);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain("l\ns\n", content);   // a border width of 0 hides the border
+        Assert.Contains("0.5 w\n", content);        // the axis lines
+        Assert.DoesNotContain("1 0 0 RG", content);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart.SetChartBorderWidth(2f).SetInnerBorderWidth(1f).SetAxisLineWidth(0f)
+                .SetGridLineColor(Color.red).SetSubtitle("Subtitle");
+        chart.DrawOn(page);
+        content = TestSupport.Content(page);
+        Assert.Equal(2, content.Split("l\ns\n").Length - 1);
+        Assert.DoesNotContain("0.5 w\n", content);
+        Assert.Contains("1 0 0 RG", content);
+        Assert.Contains(TestSupport.Hex("Subtitle"), content);
+    }
 }
 }

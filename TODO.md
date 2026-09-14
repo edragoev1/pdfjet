@@ -529,6 +529,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       Javadoc tags. Fixed in the four ports; Go keeps `AddBDC` with the
       language, `NewParagraph()` and an array `SetBorderColorRGB` by the
       documented convention.
+- ✅ **B** Second audit, inconsistencies shared by the four ports (Sep 14,
+      `api-suggestions.html`): alt text and actual text defaulting to a
+      space in seven drawables and to null in the rest; `Color.transparent`
+      making the text of a `TextBlock` or a `Cell` white; three `setFont`
+      fallback rules; `Chart` drawing a hairline for a border width of 0 and
+      lacking the subtitle, grid color and axis line settings of `BarChart`.
+      Fixed in the four ports with unit tests: the texts default to none, the
+      text setters ignore `Color.transparent`, the fallback font follows the
+      font unless another was set, and `Chart` has the `BarChart` rules and
+      setters. `TextColumn.getHeight`/`getSize` and the missing text getters
+      stay for 10.0 with the `TextColumn` fold.
 
 ### Types and signatures
 

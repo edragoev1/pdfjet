@@ -55,11 +55,14 @@ public class TextBlock : Drawable {
         self.textContent = textContent
     }
 
-    /// Sets the font of the text. It also becomes the fallback font.
+    /// Sets the font of the text. The fallback font changes with it, unless a
+    /// different fallback font was set.
     @discardableResult
     public func setFont(_ font: Font) -> TextBlock {
+        if self.fallbackFont === self.font {
+            self.fallbackFont = font
+        }
         self.font = font
-        self.fallbackFont = font
         return self
     }
 
@@ -190,9 +193,12 @@ public class TextBlock : Drawable {
         return self.borderWidth
     }
 
-    /// Sets the text color as a 0xRRGGBB value.
+    /// Sets the text color as a 0xRRGGBB value. Color.transparent leaves the text color unchanged.
     @discardableResult
     public func setTextColor(_ color: Int32) -> TextBlock {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0

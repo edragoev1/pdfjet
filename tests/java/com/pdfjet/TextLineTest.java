@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -57,5 +58,16 @@ class TextLineTest {
         Page underlined = new Page(pdf, Letter.PORTRAIT);
         new TextLine(TestSupport.helvetica(pdf), "Hello").setLocation(10f, 20f).setUnderline(true).drawOn(underlined);
         assertTrue(TestSupport.content(underlined).contains("\nS\n"));
+    }
+
+    @Test
+    void setFontChangesTheFallbackFontUnlessAnotherWasSet() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font helvetica = TestSupport.helvetica(pdf);
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        TextLine line = new TextLine(helvetica, "x").setFont(courier);
+        assertSame(courier, line.getFallbackFont());
+        line.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
+        assertSame(helvetica, line.getFallbackFont());
     }
 }
