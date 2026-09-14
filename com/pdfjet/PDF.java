@@ -843,13 +843,19 @@ final public class PDF {
         for (Page page : pages) {
             numberOfAnnotations += page.annots.size();
         }
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
+        // The page objects are written after the annotations, in the order of
+        // the pages; a merged page has the number reserved for it.
+        int index = 0;
+        for (Page page : pages) {
+            if (page.mergedDict != null) {
+                continue;
+            }
             for (Destination destination : page.destinations) {
                 destination.pageObjNumber =
-                        getObjNumber() + numberOfAnnotations + i + 1;
+                        getObjNumber() + numberOfAnnotations + index + 1;
                 destinations.put(destination.name, destination);
             }
+            index++;
         }
     }
 
@@ -857,11 +863,29 @@ final public class PDF {
         setDestinationObjNumbers();
         addAnnotDictionaries();
 
-        // Calculate the object number of the Pages object
-        pagesObjNumber = getObjNumber() + pages.size() + 1;
+        // Calculate the object number of the Pages object, which comes after
+        // the objects of the pages drawn with PDFjet.
+        int drawnPages = 0;
+        for (Page page : pages) {
+            if (page.mergedDict == null) {
+                drawnPages++;
+            }
+        }
+        pagesObjNumber = getObjNumber() + drawnPages + 1;
 
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
+            if (page.mergedDict != null) {
+                List<String> dict = new ArrayList<String>(page.mergedDict);
+                setEntry(dict, "/Parent", Arrays.asList(String.valueOf(pagesObjNumber), "0", "R"));
+                setObjOffset(page.objNumber, byteCount);
+                append(page.objNumber);
+                append(Token.NEW_OBJ);
+                appendTokens(dict);
+                append(Token.NEWLINE);
+                append(Token.END_OBJ);
+                continue;
+            }
             // Page object
             newObj();
             page.objNumber = getObjNumber();
@@ -1285,6 +1309,310 @@ final public class PDF {
             addPageContent(prevPage);
         }
         prevPage = page;
+    }
+
+    /**
+     * Adds all the pages of a document that was read with read() after the
+     * pages of this document, in their order. A PDF can merge several
+     * documents and draw pages of its own before, between and after them.
+     * <p>
+     * The merged pages keep their content, resources, annotations and links.
+     * The parts of the read document that belong to the whole document are
+     * left out: its bookmarks, form fields, tagging, named destinations and
+     * optional content settings. The objects that the pages use are written
+     * at once, so the list of objects is not needed after the call.
+     * <p>
+     * A PDF/UA or PDF/A document cannot merge pages, which were not made for
+     * its compliance, and merge cannot be used with addObjects.
+     *
+     * @param objects the objects of the document, as read() returns them.
+     * @throws Exception if an input or output exception occurred.
+     */
+    public void merge(List<PDFobj> objects) throws Exception {
+        if (completed) {
+            fail(new IllegalStateException("The PDF was already completed."));
+        }
+        if (compliance != Compliance.PDF_1_7) {
+            fail(new IllegalStateException(
+                    "Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document."));
+        }
+        if (pagesObjNumber != 0) {
+            fail(new IllegalStateException("merge and addObjects cannot be used on the same PDF."));
+        }
+        if (getPagesObject(objects) == null) {
+            fail(new IllegalArgumentException("The objects have no root /Pages object."));
+        }
+        List<PDFobj> pageObjects = getPageObjects(objects);
+        Set<Integer> mergedPages = new HashSet<Integer>();
+        for (PDFobj page : pageObjects) {
+            mergedPages.add(page.number);
+        }
+
+        // Each page and every object that it uses, found through the
+        // references, gets a number of this document before anything is
+        // written, as the objects refer to each other: a page to its
+        // annotations, and a link annotation to the page it points at.
+        Map<Integer, Integer> numbers = new HashMap<Integer, Integer>();
+        Map<Integer, List<String>> values = new HashMap<Integer, List<String>>();
+        List<PDFobj> queue = new ArrayList<PDFobj>();
+        for (PDFobj page : pageObjects) {
+            if (!numbers.containsKey(page.number)) {
+                numbers.put(page.number, reserveObjNumber());
+                queue.add(page);
+            }
+        }
+        for (int i = 0; i < queue.size(); i++) {
+            PDFobj obj = queue.get(i);
+            List<String> value = mergedValue(obj, mergedPages.contains(obj.number), objects);
+            values.put(obj.number, value);
+            for (int j = 0; j < value.size(); j++) {
+                if (isReference(value, j)) {
+                    int number = Integer.parseInt(value.get(j));
+                    if (!numbers.containsKey(number) && isMergedObject(number, objects, mergedPages)) {
+                        numbers.put(number, reserveObjNumber());
+                        queue.add(objects.get(number - 1));
+                    }
+                    j += 2;
+                }
+            }
+        }
+
+        for (PDFobj obj : queue) {
+            if (!mergedPages.contains(obj.number)) {
+                addMergedObject(obj, numbers.get(obj.number), renumbered(values.get(obj.number), numbers));
+            }
+        }
+        for (PDFobj obj : queue) {
+            if (mergedPages.contains(obj.number)) {
+                pages.add(new Page(this, numbers.get(obj.number), renumbered(values.get(obj.number), numbers)));
+            }
+        }
+    }
+
+    // The entries of a page that it can inherit from the page tree.
+    private static final String[] INHERITED = {"/Resources", "/MediaBox", "/CropBox", "/Rotate"};
+
+    // Reserves the next object number for an object written later.
+    private int reserveObjNumber() {
+        objOffset.add(0L);
+        return objOffset.size();
+    }
+
+    // Returns true when the tokens at index i are a reference: "n g R".
+    private static boolean isReference(List<String> tokens, int i) {
+        return i + 2 < tokens.size()
+                && tokens.get(i + 2).equals("R")
+                && isObjectNumber(tokens.get(i))
+                && isObjectNumber(tokens.get(i + 1));
+    }
+
+    private static boolean isObjectNumber(String token) {
+        if (token.isEmpty() || token.length() > 9) {
+            return false;
+        }
+        for (int i = 0; i < token.length(); i++) {
+            if (token.charAt(i) < '0' || token.charAt(i) > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns true for an object that the merged pages can use: not the page
+    // tree, the catalog, a page that is not merged or an object that is missing.
+    private boolean isMergedObject(int number, List<PDFobj> objects, Set<Integer> mergedPages) {
+        if (number < 1 || number > objects.size()) {
+            return false;
+        }
+        PDFobj obj = objects.get(number - 1);
+        if (obj.dict == null || obj.dict.isEmpty()) {
+            return false;
+        }
+        String type = obj.getValue("/Type");
+        if (type.equals("/Pages") || type.equals("/Catalog")) {
+            return false;
+        }
+        return !isPageObject(obj) || mergedPages.contains(number);
+    }
+
+    // Returns the value of an object that was read, without its "n g obj" and
+    // its "stream" and "endobj" keywords, with a direct /Length for a stream,
+    // and for a page with the entries it inherits and without its /Parent.
+    private static List<String> mergedValue(PDFobj obj, boolean isPage, List<PDFobj> objects) {
+        List<String> value = valueOf(obj);
+        if (obj.stream != null) {
+            setEntry(value, "/Length", Collections.singletonList(String.valueOf(obj.stream.length)));
+        }
+        if (isPage) {
+            for (String key : INHERITED) {
+                if (entryIndex(value, key) == -1) {
+                    List<String> inherited = inheritedValue(obj, key, objects);
+                    if (inherited == null && key.equals("/MediaBox")) {
+                        inherited = Arrays.asList("[", "0", "0", "612", "792", "]");    // Letter
+                    }
+                    if (inherited != null) {
+                        setEntry(value, key, inherited);
+                    }
+                }
+            }
+            removeEntry(value, "/Parent");
+        }
+        return value;
+    }
+
+    private static List<String> valueOf(PDFobj obj) {
+        List<String> dict = obj.dict;
+        int start = (dict.size() >= 3 && dict.get(2).equals("obj")) ? 3 : 0;
+        int end = dict.size();
+        if (end > start && dict.get(end - 1).equals("endobj")) {
+            end--;
+        }
+        if (end > start && dict.get(end - 1).equals("stream")) {
+            end--;
+        }
+        return new ArrayList<String>(dict.subList(start, end));
+    }
+
+    // Returns the value of the entry from the nearest node of the page tree
+    // above the page that has it, or null.
+    private static List<String> inheritedValue(PDFobj page, String key, List<PDFobj> objects) {
+        PDFobj node = page;
+        for (int depth = 0; depth < 64; depth++) {  // A loop in a broken tree ends here.
+            List<String> tokens = valueOf(node);
+            int i = entryIndex(tokens, "/Parent");
+            if (i == -1 || !isReference(tokens, i + 1)) {
+                return null;
+            }
+            int number = Integer.parseInt(tokens.get(i + 1));
+            if (number < 1 || number > objects.size() || objects.get(number - 1).dict.isEmpty()) {
+                return null;
+            }
+            node = objects.get(number - 1);
+            List<String> parent = valueOf(node);
+            int k = entryIndex(parent, key);
+            if (k != -1) {
+                return new ArrayList<String>(parent.subList(k + 1, valueEnd(parent, k + 1)));
+            }
+        }
+        return null;
+    }
+
+    // Returns the index after the value that starts at index i.
+    private static int valueEnd(List<String> tokens, int i) {
+        if (i >= tokens.size()) {
+            return tokens.size();
+        }
+        String token = tokens.get(i);
+        if (token.equals("<<") || token.equals("[")) {
+            int depth = 0;
+            for (int j = i; j < tokens.size(); j++) {
+                String t = tokens.get(j);
+                if (t.equals("<<") || t.equals("[")) {
+                    depth++;
+                } else if (t.equals(">>") || t.equals("]")) {
+                    depth--;
+                    if (depth == 0) {
+                        return j + 1;
+                    }
+                }
+            }
+            return tokens.size();
+        }
+        return isReference(tokens, i) ? i + 3 : i + 1;
+    }
+
+    // Returns the index of the key of an entry of the dictionary, not of a
+    // dictionary inside it, or -1.
+    private static int entryIndex(List<String> tokens, String key) {
+        if (tokens.isEmpty() || !tokens.get(0).equals("<<")) {
+            return -1;
+        }
+        int i = 1;
+        while (i < tokens.size() && !tokens.get(i).equals(">>")) {
+            if (tokens.get(i).equals(key)) {
+                return i;
+            }
+            i = valueEnd(tokens, i + 1);
+        }
+        return -1;
+    }
+
+    // Sets the value of an entry of the dictionary, adding the entry at its end.
+    private static void setEntry(List<String> tokens, String key, List<String> value) {
+        if (tokens.isEmpty() || !tokens.get(0).equals("<<")) {
+            return;
+        }
+        int i = entryIndex(tokens, key);
+        if (i != -1) {
+            tokens.subList(i + 1, valueEnd(tokens, i + 1)).clear();
+            tokens.addAll(i + 1, value);
+        } else {
+            int end = valueEnd(tokens, 0) - 1;     // The index of the closing >>
+            tokens.addAll(end, value);
+            tokens.add(end, key);
+        }
+    }
+
+    private static void removeEntry(List<String> tokens, String key) {
+        int i = entryIndex(tokens, key);
+        if (i != -1) {
+            tokens.subList(i, valueEnd(tokens, i + 1)).clear();
+        }
+    }
+
+    // Returns the tokens with the references renumbered for this document, a
+    // reference to an object that is not merged replaced with null, and the
+    // strings encrypted when this document is encrypted.
+    private List<String> renumbered(List<String> tokens, Map<Integer, Integer> numbers) throws Exception {
+        List<String> result = new ArrayList<String>(tokens.size());
+        for (int i = 0; i < tokens.size(); i++) {
+            String token = tokens.get(i);
+            if (isReference(tokens, i)) {
+                Integer number = numbers.get(Integer.parseInt(token));
+                if (number == null) {
+                    result.add("null");
+                } else {
+                    result.add(String.valueOf(number));
+                    result.add("0");
+                    result.add("R");
+                }
+                i += 2;
+            } else if (encryption != null
+                    && (token.startsWith("(") || (token.startsWith("<") && !token.equals("<<")))) {
+                result.add("<" + Util.toHexString(AES256.encrypt(Decryptor.toBytes(token), encryption.getKey())) + ">");
+            } else {
+                result.add(token);
+            }
+        }
+        return result;
+    }
+
+    private void addMergedObject(PDFobj obj, int number, List<String> value) throws Exception {
+        byte[] stream = obj.stream;
+        if (stream != null && encryption != null) {
+            stream = AES256.encrypt(stream, encryption.getKey());
+            setEntry(value, "/Length", Collections.singletonList(String.valueOf(stream.length)));
+        }
+        setObjOffset(number, byteCount);
+        append(number);
+        append(Token.NEW_OBJ);
+        appendTokens(value);
+        append(Token.NEWLINE);
+        if (stream != null) {
+            append(Token.STREAM);
+            append(stream);
+            append(Token.END_STREAM);
+        }
+        append(Token.END_OBJ);
+    }
+
+    private void appendTokens(List<String> tokens) throws IOException {
+        for (int i = 0; i < tokens.size(); i++) {
+            if (i > 0) {
+                append(Token.SPACE);
+            }
+            appendToken(tokens.get(i));
+        }
     }
 
     /**
@@ -2193,6 +2521,11 @@ final public class PDF {
      * @throws Exception if there is an issue.
      */
     public void addObjects(List<PDFobj> objects) throws Exception {
+        for (Page page : pages) {
+            if (page.mergedDict != null) {
+                fail(new IllegalStateException("merge and addObjects cannot be used on the same PDF."));
+            }
+        }
         PDFobj pagesObject = getPagesObject(objects);
         if (pagesObject == null) {
             throw new Exception("The objects have no root /Pages object.");

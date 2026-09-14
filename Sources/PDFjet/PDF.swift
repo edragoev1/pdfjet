@@ -814,21 +814,43 @@ public class PDF {
         for page in pages {
             numberOfAnnotations += page.annots.count
         }
-        for i in 0..<pages.count {
-            let page = pages[i]
+        // The page objects are written after the annotations, in the order of
+        // the pages; a merged page has the number reserved for it.
+        var index = 0
+        for page in pages {
+            if page.mergedDict != nil {
+                continue
+            }
             for destination in page.destinations {
-                destination.pageObjNumber = getObjNumber() + numberOfAnnotations + i + 1
+                destination.pageObjNumber = getObjNumber() + numberOfAnnotations + index + 1
                 destinations[destination.name!] = destination
             }
+            index += 1
         }
     }
 
     private func addAllPages(_ resObjNumber: Int) {
         setDestinationObjNumbers()
         addAnnotDictionaries()
-        // Calculate the object number of the Pages object
-        pagesObjNumber = getObjNumber() + pages.count + 1
+        // Calculate the object number of the Pages object, which comes after
+        // the objects of the pages drawn with PDFjet.
+        var drawnPages = 0
+        for page in pages where page.mergedDict == nil {
+            drawnPages += 1
+        }
+        pagesObjNumber = getObjNumber() + drawnPages + 1
         for (i, page) in pages.enumerated() {
+            if let mergedDict = page.mergedDict {
+                var dict = mergedDict
+                PDF.setEntry(&dict, "/Parent", [String(pagesObjNumber), "0", "R"])
+                setObjOffset(page.objNumber, byteCount)
+                append(page.objNumber)
+                append(Token.newObj)
+                appendTokens(dict)
+                append(Token.newline)
+                append(Token.endObj)
+                continue
+            }
             // Page object
             newObj()
             page.objNumber = getObjNumber()
@@ -2106,8 +2128,323 @@ public class PDF {
         }
     }
 
+    ///
+    /// Adds all the pages of a document that was read with read(from:) after
+    /// the pages of this document, in their order. A PDF can merge several
+    /// documents and draw pages of its own before, between and after them.
+    ///
+    /// The merged pages keep their content, resources, annotations and links.
+    /// The parts of the read document that belong to the whole document are
+    /// left out: its bookmarks, form fields, tagging, named destinations and
+    /// optional content settings. The objects that the pages use are written
+    /// at once, so the objects are not needed after the call.
+    ///
+    /// A PDF/UA or PDF/A document cannot merge pages, which were not made for
+    /// its compliance, and merge cannot be used with addObjects.
+    ///
+    /// - Parameter objects: the objects of the document, as read(from:) returns them.
+    /// - Throws: PDFjetError when the pages cannot be merged into this document.
+    ///
+    public func merge(_ objects: [PDFobj]) throws {
+        if completed {
+            try refuseMerge("The PDF was already completed.")
+        }
+        if compliance != Compliance.PDF_1_7 {
+            try refuseMerge("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.")
+        }
+        if pagesObjNumber != 0 {
+            try refuseMerge("merge and addObjects cannot be used on the same PDF.")
+        }
+        if getPagesObject(objects) == nil {
+            try refuseMerge("The objects have no root /Pages object.")
+        }
+        let pageObjects = getPageObjects(from: objects)
+        var mergedPages = Set<Int>()
+        for page in pageObjects {
+            mergedPages.insert(page.number)
+        }
+
+        // Each page and every object that it uses, found through the
+        // references, gets a number of this document before anything is
+        // written, as the objects refer to each other: a page to its
+        // annotations, and a link annotation to the page it points at.
+        var numbers = [Int: Int]()
+        var values = [Int: [String]]()
+        var queue = [PDFobj]()
+        for page in pageObjects {
+            if numbers[page.number] == nil {
+                numbers[page.number] = reserveObjNumber()
+                queue.append(page)
+            }
+        }
+        var i = 0
+        while i < queue.count {
+            let obj = queue[i]
+            let value = PDF.mergedValue(obj, mergedPages.contains(obj.number), objects)
+            values[obj.number] = value
+            var j = 0
+            while j < value.count {
+                if PDF.isReference(value, j) {
+                    let number = Int(value[j])!
+                    if numbers[number] == nil && isMergedObject(number, objects, mergedPages) {
+                        numbers[number] = reserveObjNumber()
+                        queue.append(objects[number - 1])
+                    }
+                    j += 2
+                }
+                j += 1
+            }
+            i += 1
+        }
+
+        for obj in queue where !mergedPages.contains(obj.number) {
+            addMergedObject(obj, numbers[obj.number]!, renumbered(values[obj.number]!, numbers))
+        }
+        for obj in queue where mergedPages.contains(obj.number) {
+            pages.append(Page(self, numbers[obj.number]!, renumbered(values[obj.number]!, numbers)))
+        }
+    }
+
+    // Records the misuse and throws it.
+    private func refuseMerge(_ message: String) throws {
+        fail(message)
+        throw PDFjetError(message: message)
+    }
+
+    // The entries of a page that it can inherit from the page tree.
+    private static let inheritedKeys = ["/Resources", "/MediaBox", "/CropBox", "/Rotate"]
+
+    // Reserves the next object number for an object written later.
+    private func reserveObjNumber() -> Int {
+        objOffset.append(0)
+        return objOffset.count
+    }
+
+    // Returns true when the tokens at index i are a reference: "n g R".
+    private static func isReference(_ tokens: [String], _ i: Int) -> Bool {
+        return i + 2 < tokens.count
+                && tokens[i + 2] == "R"
+                && isObjectNumber(tokens[i])
+                && isObjectNumber(tokens[i + 1])
+    }
+
+    private static func isObjectNumber(_ token: String) -> Bool {
+        if token.isEmpty || token.unicodeScalars.count > 9 {
+            return false
+        }
+        for scalar in token.unicodeScalars {
+            if scalar.value < 0x30 || scalar.value > 0x39 {
+                return false
+            }
+        }
+        return true
+    }
+
+    // Returns true for an object that the merged pages can use: not the page
+    // tree, the catalog, a page that is not merged or an object that is missing.
+    private func isMergedObject(_ number: Int, _ objects: [PDFobj], _ mergedPages: Set<Int>) -> Bool {
+        if number < 1 || number > objects.count {
+            return false
+        }
+        let obj = objects[number - 1]
+        if obj.dict.isEmpty {
+            return false
+        }
+        let type = obj.getValue("/Type")
+        if type == "/Pages" || type == "/Catalog" {
+            return false
+        }
+        return !isPageObject(obj) || mergedPages.contains(number)
+    }
+
+    // Returns the value of an object that was read, without its "n g obj" and
+    // its "stream" and "endobj" keywords, with a direct /Length for a stream,
+    // and for a page with the entries it inherits and without its /Parent.
+    private static func mergedValue(_ obj: PDFobj, _ isPage: Bool, _ objects: [PDFobj]) -> [String] {
+        var value = valueOf(obj)
+        if let stream = obj.stream {
+            setEntry(&value, "/Length", [String(stream.count)])
+        }
+        if isPage {
+            for key in inheritedKeys {
+                if entryIndex(value, key) == -1 {
+                    var inherited = inheritedValue(obj, key, objects)
+                    if inherited == nil && key == "/MediaBox" {
+                        inherited = ["[", "0", "0", "612", "792", "]"]  // Letter
+                    }
+                    if let inherited = inherited {
+                        setEntry(&value, key, inherited)
+                    }
+                }
+            }
+            removeEntry(&value, "/Parent")
+        }
+        return value
+    }
+
+    private static func valueOf(_ obj: PDFobj) -> [String] {
+        let dict = obj.dict
+        let start = (dict.count >= 3 && dict[2] == "obj") ? 3 : 0
+        var end = dict.count
+        if end > start && dict[end - 1] == "endobj" {
+            end -= 1
+        }
+        if end > start && dict[end - 1] == "stream" {
+            end -= 1
+        }
+        return Array(dict[start..<end])
+    }
+
+    // Returns the value of the entry from the nearest node of the page tree
+    // above the page that has it, or nil.
+    private static func inheritedValue(_ page: PDFobj, _ key: String, _ objects: [PDFobj]) -> [String]? {
+        var node = page
+        for _ in 0..<64 {   // A loop in a broken tree ends here.
+            let tokens = valueOf(node)
+            let i = entryIndex(tokens, "/Parent")
+            if i == -1 || !isReference(tokens, i + 1) {
+                return nil
+            }
+            let number = Int(tokens[i + 1])!
+            if number < 1 || number > objects.count || objects[number - 1].dict.isEmpty {
+                return nil
+            }
+            node = objects[number - 1]
+            let parent = valueOf(node)
+            let k = entryIndex(parent, key)
+            if k != -1 {
+                return Array(parent[(k + 1)..<valueEnd(parent, k + 1)])
+            }
+        }
+        return nil
+    }
+
+    // Returns the index after the value that starts at index i.
+    private static func valueEnd(_ tokens: [String], _ i: Int) -> Int {
+        if i >= tokens.count {
+            return tokens.count
+        }
+        let token = tokens[i]
+        if token == "<<" || token == "[" {
+            var depth = 0
+            for j in i..<tokens.count {
+                let t = tokens[j]
+                if t == "<<" || t == "[" {
+                    depth += 1
+                } else if t == ">>" || t == "]" {
+                    depth -= 1
+                    if depth == 0 {
+                        return j + 1
+                    }
+                }
+            }
+            return tokens.count
+        }
+        return isReference(tokens, i) ? i + 3 : i + 1
+    }
+
+    // Returns the index of the key of an entry of the dictionary, not of a
+    // dictionary inside it, or -1.
+    private static func entryIndex(_ tokens: [String], _ key: String) -> Int {
+        if tokens.isEmpty || tokens[0] != "<<" {
+            return -1
+        }
+        var i = 1
+        while i < tokens.count && tokens[i] != ">>" {
+            if tokens[i] == key {
+                return i
+            }
+            i = valueEnd(tokens, i + 1)
+        }
+        return -1
+    }
+
+    // Sets the value of an entry of the dictionary, adding the entry at its end.
+    private static func setEntry(_ tokens: inout [String], _ key: String, _ value: [String]) {
+        if tokens.isEmpty || tokens[0] != "<<" {
+            return
+        }
+        let i = entryIndex(tokens, key)
+        if i != -1 {
+            tokens.replaceSubrange((i + 1)..<valueEnd(tokens, i + 1), with: value)
+        } else {
+            let end = valueEnd(tokens, 0) - 1     // The index of the closing >>
+            tokens.insert(contentsOf: [key] + value, at: end)
+        }
+    }
+
+    private static func removeEntry(_ tokens: inout [String], _ key: String) {
+        let i = entryIndex(tokens, key)
+        if i != -1 {
+            tokens.removeSubrange(i..<valueEnd(tokens, i + 1))
+        }
+    }
+
+    // Returns the tokens with the references renumbered for this document, a
+    // reference to an object that is not merged replaced with null, and the
+    // strings encrypted when this document is encrypted.
+    private func renumbered(_ tokens: [String], _ numbers: [Int: Int]) -> [String] {
+        var result = [String]()
+        result.reserveCapacity(tokens.count)
+        var i = 0
+        while i < tokens.count {
+            let token = tokens[i]
+            if PDF.isReference(tokens, i) {
+                if let number = numbers[Int(token)!] {
+                    result.append(String(number))
+                    result.append("0")
+                    result.append("R")
+                } else {
+                    result.append("null")
+                }
+                i += 3
+                continue
+            }
+            if encryption != nil && (token.hasPrefix("(") || (token.hasPrefix("<") && token != "<<")) {
+                // Lowercase hexadecimal digits, as Java writes them.
+                result.append("<" + toHex(encrypted(Decryptor.toBytes(token))).lowercased() + ">")
+            } else {
+                result.append(token)
+            }
+            i += 1
+        }
+        return result
+    }
+
+    private func addMergedObject(_ obj: PDFobj, _ number: Int, _ value: [String]) {
+        var value = value
+        var stream = obj.stream
+        if stream != nil && encryption != nil {
+            stream = encrypted(stream!)
+            PDF.setEntry(&value, "/Length", [String(stream!.count)])
+        }
+        setObjOffset(number, byteCount)
+        append(number)
+        append(Token.newObj)
+        appendTokens(value)
+        append(Token.newline)
+        if let stream = stream {
+            append(Token.stream)
+            append(stream)
+            append(Token.endStream)
+        }
+        append(Token.endObj)
+    }
+
+    private func appendTokens(_ tokens: [String]) {
+        for (i, token) in tokens.enumerated() {
+            if i > 0 {
+                append(Token.space)
+            }
+            appendToken(token)
+        }
+    }
+
     /// - Throws: PDFError when the objects have no root /Pages object.
     public func addObjects(_ objects: [PDFobj]) throws {
+        for page in pages where page.mergedDict != nil {
+            try refuseMerge("merge and addObjects cannot be used on the same PDF.")
+        }
         guard let pagesObject = getPagesObject(objects) else {
             throw PDFError.noPagesObject
         }

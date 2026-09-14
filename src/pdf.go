@@ -825,12 +825,19 @@ func (pdf *PDF) setDestinationObjNumbers() {
 	for _, page := range pdf.pages {
 		numberOfAnnotations += len(page.annots)
 	}
-	for i, page := range pdf.pages {
+	// The page objects are written after the annotations, in the order of the
+	// pages; a merged page has the number reserved for it.
+	index := 0
+	for _, page := range pdf.pages {
+		if page.mergedDict != nil {
+			continue
+		}
 		for _, destination := range page.destinations {
 			destination.pageObjNumber =
-				pdf.getObjNumber() + numberOfAnnotations + i + 1
+				pdf.getObjNumber() + numberOfAnnotations + index + 1
 			pdf.destinations[destination.name] = destination
 		}
+		index++
 	}
 }
 
@@ -838,10 +845,28 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 	pdf.setDestinationObjNumbers()
 	pdf.addAnnotDictionaries()
 
-	// Calculate the object number of the Pages object
-	pdf.pagesObjNumber = pdf.getObjNumber() + len(pdf.pages) + 1
+	// Calculate the object number of the Pages object, which comes after the
+	// objects of the pages drawn with PDFjet.
+	drawnPages := 0
+	for _, page := range pdf.pages {
+		if page.mergedDict == nil {
+			drawnPages++
+		}
+	}
+	pdf.pagesObjNumber = pdf.getObjNumber() + drawnPages + 1
 
 	for i, page := range pdf.pages {
+		if page.mergedDict != nil {
+			dict := setDictEntry(append([]string(nil), page.mergedDict...),
+				"/Parent", []string{strconv.Itoa(pdf.pagesObjNumber), "0", "R"})
+			pdf.setObjOffset(page.objNumber, pdf.byteCount)
+			pdf.appendInteger(page.objNumber)
+			pdf.appendString(" 0 obj\n")
+			pdf.appendTokens(dict)
+			pdf.appendString("\n")
+			pdf.appendString("endobj\n")
+			continue
+		}
 		// Page object
 		pdf.newObj()
 		page.objNumber = pdf.getObjNumber()
@@ -1263,6 +1288,319 @@ func (pdf *PDF) AddPage(page *Page) {
 		pdf.addPageContent(pdf.prevPage)
 	}
 	pdf.prevPage = page
+}
+
+// Merge adds all the pages of a document that was read with Read after the
+// pages of this document, in their order. A PDF can merge several documents
+// and draw pages of its own before, between and after them.
+//
+// The merged pages keep their content, resources, annotations and links. The
+// parts of the read document that belong to the whole document are left out:
+// its bookmarks, form fields, tagging, named destinations and optional content
+// settings. The objects that the pages use are written at once, so the objects
+// are not needed after the call.
+//
+// A PDF/UA or PDF/A document cannot merge pages, which were not made for its
+// compliance, and Merge cannot be used with AddObjects: Merge records the
+// mistake and returns it as an error.
+func (pdf *PDF) Merge(objects []*PDFobj) error {
+	if pdf.completed {
+		return pdf.fail("The PDF was already completed.")
+	}
+	if pdf.compliance != compliance.PDF_1_7 {
+		return pdf.fail("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.")
+	}
+	if pdf.pagesObjNumber != 0 {
+		return pdf.fail("Merge and AddObjects cannot be used on the same PDF.")
+	}
+	if pdf.getPagesObject(objects) == nil {
+		return pdf.fail("The objects have no root /Pages object.")
+	}
+	pageObjects := pdf.GetPageObjects(objects)
+	mergedPages := make(map[int]bool)
+	for _, page := range pageObjects {
+		mergedPages[page.number] = true
+	}
+
+	// Each page and every object that it uses, found through the references,
+	// gets a number of this document before anything is written, as the
+	// objects refer to each other: a page to its annotations, and a link
+	// annotation to the page it points at.
+	numbers := make(map[int]int)
+	values := make(map[int][]string)
+	queue := make([]*PDFobj, 0)
+	for _, page := range pageObjects {
+		if _, ok := numbers[page.number]; !ok {
+			numbers[page.number] = pdf.reserveObjNumber()
+			queue = append(queue, page)
+		}
+	}
+	for i := 0; i < len(queue); i++ {
+		obj := queue[i]
+		value := mergedValue(obj, mergedPages[obj.number], objects)
+		values[obj.number] = value
+		for j := 0; j < len(value); j++ {
+			if isObjectReference(value, j) {
+				number, _ := strconv.Atoi(value[j])
+				if _, ok := numbers[number]; !ok && isMergedObject(number, objects, mergedPages) {
+					numbers[number] = pdf.reserveObjNumber()
+					queue = append(queue, objects[number-1])
+				}
+				j += 2
+			}
+		}
+	}
+
+	for _, obj := range queue {
+		if !mergedPages[obj.number] {
+			pdf.addMergedObject(obj, numbers[obj.number], pdf.renumbered(values[obj.number], numbers))
+		}
+	}
+	for _, obj := range queue {
+		if mergedPages[obj.number] {
+			pdf.pages = append(pdf.pages,
+				newMergedPage(pdf, numbers[obj.number], pdf.renumbered(values[obj.number], numbers)))
+		}
+	}
+	return nil
+}
+
+// inheritedKeys are the entries of a page that it can inherit from the page tree.
+var inheritedKeys = []string{"/Resources", "/MediaBox", "/CropBox", "/Rotate"}
+
+// reserveObjNumber reserves the next object number for an object written later.
+func (pdf *PDF) reserveObjNumber() int {
+	pdf.objOffsets = append(pdf.objOffsets, 0)
+	return len(pdf.objOffsets)
+}
+
+// isObjectReference returns true when the tokens at index i are a reference: "n g R".
+func isObjectReference(tokens []string, i int) bool {
+	return i+2 < len(tokens) &&
+		tokens[i+2] == "R" &&
+		isObjectNumberToken(tokens[i]) &&
+		isObjectNumberToken(tokens[i+1])
+}
+
+func isObjectNumberToken(token string) bool {
+	if token == "" || len(token) > 9 {
+		return false
+	}
+	for i := 0; i < len(token); i++ {
+		if token[i] < '0' || token[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// isMergedObject returns true for an object that the merged pages can use:
+// not the page tree, the catalog, a page that is not merged or an object that
+// is missing.
+func isMergedObject(number int, objects []*PDFobj, mergedPages map[int]bool) bool {
+	if number < 1 || number > len(objects) {
+		return false
+	}
+	obj := objects[number-1]
+	if obj == nil || len(obj.dict) == 0 {
+		return false
+	}
+	objType := obj.GetValue("/Type")
+	if objType == "/Pages" || objType == "/Catalog" {
+		return false
+	}
+	return !isPageObject(obj) || mergedPages[number]
+}
+
+// mergedValue returns the value of an object that was read, without its
+// "n g obj" and its "stream" and "endobj" keywords, with a direct /Length for a
+// stream, and for a page with the entries it inherits and without its /Parent.
+func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj) []string {
+	value := objectValue(obj)
+	if obj.stream != nil {
+		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(obj.stream))})
+	}
+	if isPage {
+		for _, key := range inheritedKeys {
+			if dictEntryIndex(value, key) == -1 {
+				inherited := inheritedPageValue(obj, key, objects)
+				if inherited == nil && key == "/MediaBox" {
+					inherited = []string{"[", "0", "0", "612", "792", "]"} // Letter
+				}
+				if inherited != nil {
+					value = setDictEntry(value, key, inherited)
+				}
+			}
+		}
+		value = removeDictEntry(value, "/Parent")
+	}
+	return value
+}
+
+func objectValue(obj *PDFobj) []string {
+	dict := obj.dict
+	start := 0
+	if len(dict) >= 3 && dict[2] == "obj" {
+		start = 3
+	}
+	end := len(dict)
+	if end > start && dict[end-1] == "endobj" {
+		end--
+	}
+	if end > start && dict[end-1] == "stream" {
+		end--
+	}
+	return append([]string(nil), dict[start:end]...)
+}
+
+// inheritedPageValue returns the value of the entry from the nearest node of
+// the page tree above the page that has it, or nil.
+func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj) []string {
+	node := page
+	for depth := 0; depth < 64; depth++ { // A loop in a broken tree ends here.
+		tokens := objectValue(node)
+		i := dictEntryIndex(tokens, "/Parent")
+		if i == -1 || !isObjectReference(tokens, i+1) {
+			return nil
+		}
+		number, _ := strconv.Atoi(tokens[i+1])
+		if number < 1 || number > len(objects) || objects[number-1] == nil || len(objects[number-1].dict) == 0 {
+			return nil
+		}
+		node = objects[number-1]
+		parent := objectValue(node)
+		k := dictEntryIndex(parent, key)
+		if k != -1 {
+			return append([]string(nil), parent[k+1:dictValueEnd(parent, k+1)]...)
+		}
+	}
+	return nil
+}
+
+// dictValueEnd returns the index after the value that starts at index i.
+func dictValueEnd(tokens []string, i int) int {
+	if i >= len(tokens) {
+		return len(tokens)
+	}
+	token := tokens[i]
+	if token == "<<" || token == "[" {
+		depth := 0
+		for j := i; j < len(tokens); j++ {
+			t := tokens[j]
+			if t == "<<" || t == "[" {
+				depth++
+			} else if t == ">>" || t == "]" {
+				depth--
+				if depth == 0 {
+					return j + 1
+				}
+			}
+		}
+		return len(tokens)
+	}
+	if isObjectReference(tokens, i) {
+		return i + 3
+	}
+	return i + 1
+}
+
+// dictEntryIndex returns the index of the key of an entry of the dictionary,
+// not of a dictionary inside it, or -1.
+func dictEntryIndex(tokens []string, key string) int {
+	if len(tokens) == 0 || tokens[0] != "<<" {
+		return -1
+	}
+	i := 1
+	for i < len(tokens) && tokens[i] != ">>" {
+		if tokens[i] == key {
+			return i
+		}
+		i = dictValueEnd(tokens, i+1)
+	}
+	return -1
+}
+
+// setDictEntry sets the value of an entry of the dictionary, adding the entry
+// at its end, and returns the tokens.
+func setDictEntry(tokens []string, key string, value []string) []string {
+	if len(tokens) == 0 || tokens[0] != "<<" {
+		return tokens
+	}
+	i := dictEntryIndex(tokens, key)
+	if i != -1 {
+		end := dictValueEnd(tokens, i+1)
+		result := append([]string(nil), tokens[:i+1]...)
+		result = append(result, value...)
+		return append(result, tokens[end:]...)
+	}
+	end := dictValueEnd(tokens, 0) - 1 // The index of the closing >>
+	result := append([]string(nil), tokens[:end]...)
+	result = append(result, key)
+	result = append(result, value...)
+	return append(result, tokens[end:]...)
+}
+
+func removeDictEntry(tokens []string, key string) []string {
+	i := dictEntryIndex(tokens, key)
+	if i == -1 {
+		return tokens
+	}
+	end := dictValueEnd(tokens, i+1)
+	return append(append([]string(nil), tokens[:i]...), tokens[end:]...)
+}
+
+// renumbered returns the tokens with the references renumbered for this
+// document, a reference to an object that is not merged replaced with null,
+// and the strings encrypted when this document is encrypted.
+func (pdf *PDF) renumbered(tokens []string, numbers map[int]int) []string {
+	result := make([]string, 0, len(tokens))
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
+		if isObjectReference(tokens, i) {
+			old, _ := strconv.Atoi(token)
+			if number, ok := numbers[old]; ok {
+				result = append(result, strconv.Itoa(number), "0", "R")
+			} else {
+				result = append(result, "null")
+			}
+			i += 2
+		} else if pdf.encryption != nil &&
+			(strings.HasPrefix(token, "(") || (strings.HasPrefix(token, "<") && token != "<<")) {
+			encrypted := pdf.encryption.encrypt(toBytes(token))
+			result = append(result, "<"+hex.EncodeToString(encrypted)+">")
+		} else {
+			result = append(result, token)
+		}
+	}
+	return result
+}
+
+func (pdf *PDF) addMergedObject(obj *PDFobj, number int, value []string) {
+	stream := obj.stream
+	if stream != nil && pdf.encryption != nil {
+		stream = pdf.encryption.encrypt(stream)
+		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(stream))})
+	}
+	pdf.setObjOffset(number, pdf.byteCount)
+	pdf.appendInteger(number)
+	pdf.appendString(" 0 obj\n")
+	pdf.appendTokens(value)
+	pdf.appendString("\n")
+	if stream != nil {
+		pdf.appendString("stream\n")
+		pdf.appendByteArray(stream)
+		pdf.appendString("\nendstream\n")
+	}
+	pdf.appendString("endobj\n")
+}
+
+func (pdf *PDF) appendTokens(tokens []string) {
+	for i, token := range tokens {
+		if i > 0 {
+			pdf.appendString(" ")
+		}
+		pdf.appendString(token)
+	}
 }
 
 // AddPages adds the pages to this document.
@@ -2080,6 +2418,11 @@ func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {
 // AddObjects adds the specified objects to the PDF. It returns an error when
 // they have no root /Pages object.
 func (pdf *PDF) AddObjects(objects []*PDFobj) error {
+	for _, page := range pdf.pages {
+		if page.mergedDict != nil {
+			return pdf.fail("Merge and AddObjects cannot be used on the same PDF.")
+		}
+	}
 	pagesObject := pdf.getPagesObject(objects)
 	if pagesObject == nil {
 		return errors.New("the objects have no root /Pages object")

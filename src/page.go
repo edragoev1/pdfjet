@@ -76,9 +76,10 @@ type Page struct {
 
 	mcid int
 
-	markedContentDepth int  // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
-	added              bool // True once the page is added to its PDF
-	written            bool // True once the page content is written to the PDF
+	markedContentDepth int      // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
+	added              bool     // True once the page is added to its PDF
+	written            bool     // True once the page content is written to the PDF
+	mergedDict         []string // The dictionary of a page merged from a document that was read, or nil
 }
 
 // notWritable is the message of a number a PDF cannot hold.
@@ -205,6 +206,19 @@ func (page *Page) number(value float32) []byte {
 		page.pdf.fail(notWritable)
 	}
 	return fastfloat.ToByteArray(value)
+}
+
+// newMergedPage returns a page merged from a document that was read. Its
+// dictionary is written when the PDF is completed, under the object number
+// reserved for it, and nothing can be drawn on it.
+func newMergedPage(pdf *PDF, objNumber int, mergedDict []string) *Page {
+	page := new(Page)
+	page.pdf = pdf
+	page.objNumber = objNumber
+	page.mergedDict = mergedDict
+	page.added = true
+	page.written = true
+	return page
 }
 
 // removeComments removes object dictionary comments.

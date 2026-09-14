@@ -61,6 +61,7 @@ let package = Package(
         .executableTarget(name: "Example_48", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_49", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_50", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_51", dependencies: ["PDFjet"]),
         // The unit tests, run with ./test-swift.sh or swift test.
         .testTarget(name: "PDFjetTests", dependencies: ["PDFjet"], path: "tests/swift"),
     ]

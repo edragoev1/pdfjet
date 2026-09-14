@@ -74,6 +74,9 @@ public class Page {
     private int markedContentDepth = 0;
     // True once the page is added to its PDF.
     internal bool added = false;
+    // The dictionary of a page merged from a document that was read, with the
+    // object numbers of this document, or null for a page drawn with PDFjet.
+    internal List<String> mergedDict = null;
 
     internal float rotateDegrees = 0f;
 
@@ -197,6 +200,17 @@ public class Page {
             pdf.Fail(new InvalidOperationException("The page was already written to the PDF: "
                     + "draw on a page before creating the next page or completing the PDF."));
         }
+    }
+
+    // A page merged from a document that was read. Its dictionary is written
+    // when the PDF is completed, under the object number reserved for it, and
+    // nothing can be drawn on it.
+    internal Page(PDF pdf, int objNumber, List<String> mergedDict) {
+        this.pdf = pdf;
+        this.objNumber = objNumber;
+        this.mergedDict = mergedDict;
+        this.added = true;
+        this.buf = new WrittenContent(pdf);
     }
 
     private PDFobj RemoveComments(PDFobj obj) {

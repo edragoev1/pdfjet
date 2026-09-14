@@ -171,6 +171,16 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   and Go `GetKey` is removed.
 
 ### Reading existing PDFs
+- `PDF.merge` adds all the pages of a document that was read after the pages
+  of a PDF, which can merge several documents and draw pages of its own
+  between them. The pages keep their content, resources, annotations and
+  links, with the size, rotation and resources they inherit from their page
+  tree; bookmarks, form fields, tagging, named destinations and optional
+  content settings are left out. An encrypted PDF encrypts the merged pages. A
+  PDF/UA or PDF/A document cannot merge, and `merge` cannot be combined with
+  `addObjects`. Example_51 merges three documents after a cover page; tests
+  cover the order, the inherited entries, links to merged pages, encryption
+  both ways and the refused uses, in the four ports.
 - Filter chains, encrypted PDFs, hybrid reference files and broken
   cross-reference tables are read.
 - The `/DecodeParms` predictor is applied to FlateDecode and LZWDecode streams,

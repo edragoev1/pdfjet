@@ -84,6 +84,9 @@ public class Page {
     internal var added = false
     // True once the content of the page is written to the PDF.
     internal var written = false
+    // The dictionary of a page merged from a document that was read, with the
+    // object numbers of this document, or nil for a page drawn with PDFjet.
+    internal var mergedDict: [String]?
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
@@ -160,6 +163,21 @@ public class Page {
         if markedContentDepth != 0 {
             pdf.fail("A page ends with an addBDC or addArtifactBMC that has no addEMC.")
         }
+    }
+
+    // A page merged from a document that was read. Its dictionary is written
+    // when the PDF is completed, under the object number reserved for it, and
+    // nothing can be drawn on it.
+    init(_ pdf: PDF, _ objNumber: Int, _ mergedDict: [String]) {
+        self.pdf = pdf
+        self.objNumber = objNumber
+        self.mergedDict = mergedDict
+        self.tm0 = FastFloat.toByteArray(tmx[0])
+        self.tm1 = FastFloat.toByteArray(tmx[1])
+        self.tm2 = FastFloat.toByteArray(tmx[2])
+        self.tm3 = FastFloat.toByteArray(tmx[3])
+        self.added = true
+        self.written = true
     }
 
     private static func removeComments(_ obj: PDFobj) -> PDFobj {

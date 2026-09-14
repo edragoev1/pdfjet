@@ -796,13 +796,19 @@ public class PDF {
         foreach (Page page in pages) {
             numberOfAnnotations += page.annots.Count;
         }
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
+        // The page objects are written after the annotations, in the order of
+        // the pages; a merged page has the number reserved for it.
+        int index = 0;
+        foreach (Page page in pages) {
+            if (page.mergedDict != null) {
+                continue;
+            }
             foreach (Destination destination in page.destinations) {
                 destination.pageObjNumber =
-                        GetObjNumber() + numberOfAnnotations + i + 1;
+                        GetObjNumber() + numberOfAnnotations + index + 1;
                 destinations[destination.name] = destination;
             }
+            index++;
         }
     }
 
@@ -810,11 +816,29 @@ public class PDF {
         SetDestinationObjNumbers();
         AddAnnotDictionaries();
 
-        // Calculate the object number of the Pages object
-        pagesObjNumber = GetObjNumber() + pages.Count + 1;
+        // Calculate the object number of the Pages object, which comes after
+        // the objects of the pages drawn with PDFjet.
+        int drawnPages = 0;
+        foreach (Page page in pages) {
+            if (page.mergedDict == null) {
+                drawnPages++;
+            }
+        }
+        pagesObjNumber = GetObjNumber() + drawnPages + 1;
 
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
+            if (page.mergedDict != null) {
+                List<String> dict = new List<String>(page.mergedDict);
+                SetEntry(dict, "/Parent", new List<String> { pagesObjNumber.ToString(), "0", "R" });
+                SetObjOffset(page.objNumber, byteCount);
+                Append(page.objNumber);
+                Append(Token.NewObj);
+                AppendTokens(dict);
+                Append(Token.Newline);
+                Append(Token.EndObj);
+                continue;
+            }
 
             // Page object
             NewObj();
@@ -1225,6 +1249,308 @@ public class PDF {
             AddPageContent(prevPage);
         }
         prevPage = page;
+    }
+
+    /// <summary>
+    /// Adds all the pages of a document that was read with Read after the
+    /// pages of this document, in their order. A PDF can merge several
+    /// documents and draw pages of its own before, between and after them.
+    /// </summary>
+    /// <remarks>
+    /// The merged pages keep their content, resources, annotations and links.
+    /// The parts of the read document that belong to the whole document are
+    /// left out: its bookmarks, form fields, tagging, named destinations and
+    /// optional content settings. The objects that the pages use are written
+    /// at once, so the list of objects is not needed after the call.
+    /// A PDF/UA or PDF/A document cannot merge pages, which were not made for
+    /// its compliance, and Merge cannot be used with AddObjects.
+    /// </remarks>
+    /// <param name="objects">the objects of the document, as Read returns them.</param>
+    public void Merge(List<PDFobj> objects) {
+        if (completed) {
+            Fail(new InvalidOperationException("The PDF was already completed."));
+        }
+        if (compliance != Compliance.PDF_1_7) {
+            Fail(new InvalidOperationException(
+                    "Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document."));
+        }
+        if (pagesObjNumber != 0) {
+            Fail(new InvalidOperationException("Merge and AddObjects cannot be used on the same PDF."));
+        }
+        if (GetPagesObject(objects) == null) {
+            Fail(new ArgumentException("The objects have no root /Pages object."));
+        }
+        List<PDFobj> pageObjects = GetPageObjects(objects);
+        HashSet<int> mergedPages = new HashSet<int>();
+        foreach (PDFobj page in pageObjects) {
+            mergedPages.Add(page.number);
+        }
+
+        // Each page and every object that it uses, found through the
+        // references, gets a number of this document before anything is
+        // written, as the objects refer to each other: a page to its
+        // annotations, and a link annotation to the page it points at.
+        Dictionary<int, int> numbers = new Dictionary<int, int>();
+        Dictionary<int, List<String>> values = new Dictionary<int, List<String>>();
+        List<PDFobj> queue = new List<PDFobj>();
+        foreach (PDFobj page in pageObjects) {
+            if (!numbers.ContainsKey(page.number)) {
+                numbers[page.number] = ReserveObjNumber();
+                queue.Add(page);
+            }
+        }
+        for (int i = 0; i < queue.Count; i++) {
+            PDFobj obj = queue[i];
+            List<String> value = MergedValue(obj, mergedPages.Contains(obj.number), objects);
+            values[obj.number] = value;
+            for (int j = 0; j < value.Count; j++) {
+                if (IsReference(value, j)) {
+                    int number = Int32.Parse(value[j]);
+                    if (!numbers.ContainsKey(number) && IsMergedObject(number, objects, mergedPages)) {
+                        numbers[number] = ReserveObjNumber();
+                        queue.Add(objects[number - 1]);
+                    }
+                    j += 2;
+                }
+            }
+        }
+
+        foreach (PDFobj obj in queue) {
+            if (!mergedPages.Contains(obj.number)) {
+                AddMergedObject(obj, numbers[obj.number], Renumbered(values[obj.number], numbers));
+            }
+        }
+        foreach (PDFobj obj in queue) {
+            if (mergedPages.Contains(obj.number)) {
+                pages.Add(new Page(this, numbers[obj.number], Renumbered(values[obj.number], numbers)));
+            }
+        }
+    }
+
+    // The entries of a page that it can inherit from the page tree.
+    private static readonly String[] INHERITED = {"/Resources", "/MediaBox", "/CropBox", "/Rotate"};
+
+    // Reserves the next object number for an object written later.
+    private int ReserveObjNumber() {
+        objOffset.Add(0L);
+        return objOffset.Count;
+    }
+
+    // Returns true when the tokens at index i are a reference: "n g R".
+    private static bool IsReference(List<String> tokens, int i) {
+        return i + 2 < tokens.Count
+                && tokens[i + 2].Equals("R")
+                && IsObjectNumber(tokens[i])
+                && IsObjectNumber(tokens[i + 1]);
+    }
+
+    private static bool IsObjectNumber(String token) {
+        if (token.Length == 0 || token.Length > 9) {
+            return false;
+        }
+        foreach (char ch in token) {
+            if (ch < '0' || ch > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns true for an object that the merged pages can use: not the page
+    // tree, the catalog, a page that is not merged or an object that is missing.
+    private bool IsMergedObject(int number, List<PDFobj> objects, HashSet<int> mergedPages) {
+        if (number < 1 || number > objects.Count) {
+            return false;
+        }
+        PDFobj obj = objects[number - 1];
+        if (obj.dict == null || obj.dict.Count == 0) {
+            return false;
+        }
+        String type = obj.GetValue("/Type");
+        if (type.Equals("/Pages") || type.Equals("/Catalog")) {
+            return false;
+        }
+        return !IsPageObject(obj) || mergedPages.Contains(number);
+    }
+
+    // Returns the value of an object that was read, without its "n g obj" and
+    // its "stream" and "endobj" keywords, with a direct /Length for a stream,
+    // and for a page with the entries it inherits and without its /Parent.
+    private static List<String> MergedValue(PDFobj obj, bool isPage, List<PDFobj> objects) {
+        List<String> value = ValueOf(obj);
+        if (obj.stream != null) {
+            SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString() });
+        }
+        if (isPage) {
+            foreach (String key in INHERITED) {
+                if (EntryIndex(value, key) == -1) {
+                    List<String> inherited = InheritedValue(obj, key, objects);
+                    if (inherited == null && key.Equals("/MediaBox")) {
+                        inherited = new List<String> { "[", "0", "0", "612", "792", "]" };    // Letter
+                    }
+                    if (inherited != null) {
+                        SetEntry(value, key, inherited);
+                    }
+                }
+            }
+            RemoveEntry(value, "/Parent");
+        }
+        return value;
+    }
+
+    private static List<String> ValueOf(PDFobj obj) {
+        List<String> dict = obj.dict;
+        int start = (dict.Count >= 3 && dict[2].Equals("obj")) ? 3 : 0;
+        int end = dict.Count;
+        if (end > start && dict[end - 1].Equals("endobj")) {
+            end--;
+        }
+        if (end > start && dict[end - 1].Equals("stream")) {
+            end--;
+        }
+        return dict.GetRange(start, end - start);
+    }
+
+    // Returns the value of the entry from the nearest node of the page tree
+    // above the page that has it, or null.
+    private static List<String> InheritedValue(PDFobj page, String key, List<PDFobj> objects) {
+        PDFobj node = page;
+        for (int depth = 0; depth < 64; depth++) {  // A loop in a broken tree ends here.
+            List<String> tokens = ValueOf(node);
+            int i = EntryIndex(tokens, "/Parent");
+            if (i == -1 || !IsReference(tokens, i + 1)) {
+                return null;
+            }
+            int number = Int32.Parse(tokens[i + 1]);
+            if (number < 1 || number > objects.Count || objects[number - 1].dict.Count == 0) {
+                return null;
+            }
+            node = objects[number - 1];
+            List<String> parent = ValueOf(node);
+            int k = EntryIndex(parent, key);
+            if (k != -1) {
+                return parent.GetRange(k + 1, ValueEnd(parent, k + 1) - (k + 1));
+            }
+        }
+        return null;
+    }
+
+    // Returns the index after the value that starts at index i.
+    private static int ValueEnd(List<String> tokens, int i) {
+        if (i >= tokens.Count) {
+            return tokens.Count;
+        }
+        String token = tokens[i];
+        if (token.Equals("<<") || token.Equals("[")) {
+            int depth = 0;
+            for (int j = i; j < tokens.Count; j++) {
+                String t = tokens[j];
+                if (t.Equals("<<") || t.Equals("[")) {
+                    depth++;
+                } else if (t.Equals(">>") || t.Equals("]")) {
+                    depth--;
+                    if (depth == 0) {
+                        return j + 1;
+                    }
+                }
+            }
+            return tokens.Count;
+        }
+        return IsReference(tokens, i) ? i + 3 : i + 1;
+    }
+
+    // Returns the index of the key of an entry of the dictionary, not of a
+    // dictionary inside it, or -1.
+    private static int EntryIndex(List<String> tokens, String key) {
+        if (tokens.Count == 0 || !tokens[0].Equals("<<")) {
+            return -1;
+        }
+        int i = 1;
+        while (i < tokens.Count && !tokens[i].Equals(">>")) {
+            if (tokens[i].Equals(key)) {
+                return i;
+            }
+            i = ValueEnd(tokens, i + 1);
+        }
+        return -1;
+    }
+
+    // Sets the value of an entry of the dictionary, adding the entry at its end.
+    private static void SetEntry(List<String> tokens, String key, List<String> value) {
+        if (tokens.Count == 0 || !tokens[0].Equals("<<")) {
+            return;
+        }
+        int i = EntryIndex(tokens, key);
+        if (i != -1) {
+            tokens.RemoveRange(i + 1, ValueEnd(tokens, i + 1) - (i + 1));
+            tokens.InsertRange(i + 1, value);
+        } else {
+            int end = ValueEnd(tokens, 0) - 1;     // The index of the closing >>
+            tokens.InsertRange(end, value);
+            tokens.Insert(end, key);
+        }
+    }
+
+    private static void RemoveEntry(List<String> tokens, String key) {
+        int i = EntryIndex(tokens, key);
+        if (i != -1) {
+            tokens.RemoveRange(i, ValueEnd(tokens, i + 1) - i);
+        }
+    }
+
+    // Returns the tokens with the references renumbered for this document, a
+    // reference to an object that is not merged replaced with null, and the
+    // strings encrypted when this document is encrypted.
+    private List<String> Renumbered(List<String> tokens, Dictionary<int, int> numbers) {
+        List<String> result = new List<String>(tokens.Count);
+        for (int i = 0; i < tokens.Count; i++) {
+            String token = tokens[i];
+            if (IsReference(tokens, i)) {
+                int number;
+                if (numbers.TryGetValue(Int32.Parse(token), out number)) {
+                    result.Add(number.ToString());
+                    result.Add("0");
+                    result.Add("R");
+                } else {
+                    result.Add("null");
+                }
+                i += 2;
+            } else if (encryption != null
+                    && (token.StartsWith("(") || (token.StartsWith("<") && !token.Equals("<<")))) {
+                result.Add("<" + Util.ToHexString(AES256.Encrypt(Decryptor.ToBytes(token), encryption.GetKey())) + ">");
+            } else {
+                result.Add(token);
+            }
+        }
+        return result;
+    }
+
+    private void AddMergedObject(PDFobj obj, int number, List<String> value) {
+        byte[] stream = obj.stream;
+        if (stream != null && encryption != null) {
+            stream = AES256.Encrypt(stream, encryption.GetKey());
+            SetEntry(value, "/Length", new List<String> { stream.Length.ToString() });
+        }
+        SetObjOffset(number, byteCount);
+        Append(number);
+        Append(Token.NewObj);
+        AppendTokens(value);
+        Append(Token.Newline);
+        if (stream != null) {
+            Append(Token.Stream);
+            Append(stream);
+            Append(Token.EndStream);
+        }
+        Append(Token.EndObj);
+    }
+
+    private void AppendTokens(List<String> tokens) {
+        for (int i = 0; i < tokens.Count; i++) {
+            if (i > 0) {
+                Append(Token.Space);
+            }
+            AppendToken(tokens[i]);
+        }
     }
 
     /// <summary>Adds the pages to this document.</summary>
@@ -2034,6 +2360,11 @@ public class PDF {
 
     /// <summary>Adds objects read from an existing PDF to this document.</summary>
     public void AddObjects(List<PDFobj> objects) {
+        foreach (Page page in pages) {
+            if (page.mergedDict != null) {
+                Fail(new InvalidOperationException("Merge and AddObjects cannot be used on the same PDF."));
+            }
+        }
         PDFobj pagesObject = GetPagesObject(objects);
         if (pagesObject == null) {
             throw new Exception("The objects have no root /Pages object.");

@@ -193,7 +193,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 50 examples, the same in every port. Build
+The [examples](examples) folder has 51 examples, the same in every port. Build
 a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
@@ -449,6 +449,35 @@ decrypt string* and a metadata parsing failure. Poppler and MuPDF open
 those files, and so does `PDF.read`. The Swift AES in `Cryptography.swift`
 encrypts about 40 MB per second in a release build and 1 MB per second in a
 debug build.
+
+## Merging documents
+
+`merge` adds all the pages of a document that was read after the pages of a PDF,
+in their order. A PDF can merge several documents and draw pages of its own
+before, between and after them; Example_51 puts a cover page in front of three
+documents:
+
+```java
+PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("merged.pdf")));
+Page cover = new Page(pdf, Letter.PORTRAIT);
+// ... draw the cover page
+pdf.merge(pdf.read(new FileInputStream("report.pdf")));
+pdf.merge(pdf.read(new FileInputStream("terms.pdf")));
+pdf.complete();
+```
+
+The merged pages keep their content, fonts, images, annotations and links, and
+the pages that inherit their size, rotation or resources from the page tree of
+their document get them written on the page. What belongs to the whole
+document is left out: its bookmarks, form fields, tagging, named destinations
+and optional content settings, so a link to a named destination no longer
+leads anywhere. An encrypted document is merged once `read` has decrypted it
+with its password, and an encrypted PDF encrypts the pages it merges. A PDF/UA
+or PDF/A document cannot merge pages, which were not made for its compliance,
+and `merge` cannot be combined with `addObjects`, which rewrites one document.
+The objects that the pages use are written when `merge` is called, so the list
+that `read` returned is not needed afterwards. The method is `Merge` in C# and
+Go, where it returns an `error`, and `merge` in Swift, where it throws.
 
 ## Untrusted input
 

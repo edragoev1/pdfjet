@@ -886,6 +886,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       named, and the examples import them. The core font metrics went into
       `com.pdfjet` with the public by accident fixes.
 
+### Merge (Sep 14)
+
+- ✅ **B** `PDF.merge(objects)` adds all the pages of a document that was read,
+      with drawn pages before, between and after them, in the four ports:
+      the objects the pages use are renumbered and written at once, the
+      entries a page inherits are written on it, references to the page tree,
+      the catalog and pages that are not merged become null, and the merged
+      strings and streams are encrypted when the PDF is. Example_51; the
+      examples go to 51. Split is next.
+
 ### Broken PDFs from misuse (Sep 14)
 
 - ✅ **B** A probe of 32 wrong Java programs and 6 Go programs, checked with

@@ -68,6 +68,9 @@ final public class Page {
     private int markedContentDepth = 0;
     // True once the page is added to its PDF.
     boolean added = false;
+    // The dictionary of a page merged from a document that was read, with the
+    // object numbers of this document, or null for a page drawn with PDFjet.
+    List<String> mergedDict = null;
 
     /** The rotation of this page in degrees: 0, 90, 180 or 270. */
     protected float rotateDegrees = 0f;
@@ -181,6 +184,17 @@ final public class Page {
             append(pageObj.gsNumber + 1);
             append(" gs\n");
         }
+    }
+
+    // A page merged from a document that was read. Its dictionary is written
+    // when the PDF is completed, under the object number reserved for it, and
+    // nothing can be drawn on it.
+    Page(PDF pdf, int objNumber, List<String> mergedDict) {
+        this.pdf = pdf;
+        this.objNumber = objNumber;
+        this.mergedDict = mergedDict;
+        this.added = true;
+        this.buf = new WrittenContent(pdf);
     }
 
     private PDFobj removeComments(PDFobj obj) {
