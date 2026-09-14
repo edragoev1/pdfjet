@@ -50,9 +50,9 @@ func OfBinaryFile(fileName string) []uint8 {
 	return contents
 }
 
-// GetFromReader returns all the bytes read from the reader.
+// GetFromStream returns all the bytes read from the reader.
 // It panics if the reader fails.
-func GetFromReader(reader io.Reader) []uint8 {
+func GetFromStream(reader io.Reader) []uint8 {
 	contents, err := io.ReadAll(reader)
 	if err != nil {
 		panic(err)

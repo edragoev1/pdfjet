@@ -20,8 +20,8 @@ import (
 	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
 	"github.com/edragoev1/pdfjet/v9/src/pagemode"
@@ -65,8 +65,8 @@ type PDF struct {
 	file                      *os.File
 }
 
-// OCG holds an object number and a name.
-type OCG struct {
+// ocgObject holds an object number and a name.
+type ocgObject struct {
 	objNumber int
 	name      string
 }
@@ -891,7 +891,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 	}
 }
 
-func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
+func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	pdf.newObj()
 	annot.objNumber = pdf.getObjNumber()
 	pdf.appendString("<<\n")
@@ -911,7 +911,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 	pdf.appendString("]\n")
 	pdf.appendString("/Border [0 0 0]\n")
 
-	if annot.annotationType == AnnotationFileAttachment {
+	if annot.annotationType == annotationFileAttachment {
 		pdf.appendString("/FS ")
 		pdf.appendString(strconv.Itoa(annot.fileAttachment.embeddedFile.objNumber))
 		pdf.appendString(" 0 R\n")
@@ -938,7 +938,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == AnnotationLink {
+	} else if annot.annotationType == annotationLink {
 		// PDF/UA requires a link to carry an alternate description in its
 		// Contents key.
 		description := annot.contents
@@ -985,7 +985,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 				pdf.appendString(" 0]\n")
 			}
 		}
-	} else if annot.annotationType == AnnotationPolygon {
+	} else if annot.annotationType == annotationPolygon {
 		pdf.appendString("/Vertices [ ")
 		for i := 0; i < len(annot.vertices); i += 2 {
 			pdf.appendFloat32(annot.x1 + annot.vertices[i])
@@ -1026,8 +1026,8 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == AnnotationSquare ||
-		annot.annotationType == AnnotationCircle {
+	} else if annot.annotationType == annotationSquare ||
+		annot.annotationType == annotationCircle {
 		pdf.appendString("/IC [")
 		pdf.appendFloat32(annot.fillColor[0])
 		pdf.appendString(" ")
@@ -1059,7 +1059,7 @@ func (pdf *PDF) addAnnotationObject(annot *Annotation, index int) int {
 			pdf.appendString(hex.EncodeToString(contents))
 			pdf.appendString(">\n")
 		}
-	} else if annot.annotationType == AnnotationText {
+	} else if annot.annotationType == annotationText {
 		pdf.appendString("/Name /Comment\n")
 
 		if annot.title != "" {
@@ -1118,13 +1118,13 @@ func (pdf *PDF) addAnnotDictionaries() {
 
 func (pdf *PDF) addOCProperties() {
 	if len(pdf.groups) > 0 {
-		var list []OCG
+		var list []ocgObject
 		var buf strings.Builder
 		for _, ocg := range pdf.groups {
 			buf.WriteString(" ")
 			buf.WriteString(strconv.Itoa(ocg.objNumber))
 			buf.WriteString(" 0 R")
-			list = append(list, OCG{
+			list = append(list, ocgObject{
 				objNumber: ocg.objNumber,
 				name:      ocg.name,
 			})

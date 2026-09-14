@@ -340,8 +340,8 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 			point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
 			if point.uri != "" {
 				// AddAnnotation flips y into PDF space; do not pre-flip here.
-				page.addAnnotation(&Annotation{
-					annotationType: AnnotationLink,
+				page.addAnnotation(&annotationObject{
+					annotationType: annotationLink,
 					x1:             point.x - point.r,
 					y1:             point.y - point.r,
 					x2:             point.x + point.r,

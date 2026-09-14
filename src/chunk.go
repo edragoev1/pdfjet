@@ -5,16 +5,16 @@
 
 package pdfjet
 
-// Chunk is used by the pngimage module.
-type Chunk struct {
-	ChunkLength uint32
-	ChunkType   []byte
-	ChunkData   []byte
-	ChunkCRC    uint32
+// pngChunk is used by the pngimage module.
+type pngChunk struct {
+	chunkLength uint32
+	chunkType   []byte
+	chunkData   []byte
+	chunkCRC    uint32
 }
 
-// NewChunk construct new PNG chunk.
-func NewChunk() *Chunk {
-	chunk := new(Chunk)
+// newPNGChunk construct new PNG chunk.
+func newPNGChunk() *pngChunk {
+	chunk := new(pngChunk)
 	return chunk
 }

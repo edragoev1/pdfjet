@@ -15,7 +15,7 @@ type structElement struct {
 	language       string
 	actualText     string
 	altDescription string
-	annotation     *Annotation
+	annotation     *annotationObject
 }
 
 func newStructElement() *structElement {

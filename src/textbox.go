@@ -672,8 +672,8 @@ func (textBox *TextBox) DrawOn(page *Page) [2]float32 {
 	if page != nil {
 		textBox.drawBorders(page)
 		if textBox.textDirection == direction.LeftToRight && textBox.uri != "" {
-			page.addAnnotation(&Annotation{
-				annotationType: AnnotationLink,
+			page.addAnnotation(&annotationObject{
+				annotationType: annotationLink,
 				x1:             textBox.x,
 				y1:             textBox.y,
 				x2:             textBox.x + textBox.width,

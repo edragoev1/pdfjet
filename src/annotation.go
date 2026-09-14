@@ -1,17 +1,17 @@
 package pdfjet
 
-// AnnotationType constants
+// annotationType constants
 const (
-	AnnotationLink           = "Link"
-	AnnotationFileAttachment = "FileAttachment"
-	AnnotationPolygon        = "Polygon"
-	AnnotationCircle         = "Circle"
-	AnnotationSquare         = "Square"
-	AnnotationText           = "Text"
+	annotationLink           = "Link"
+	annotationFileAttachment = "FileAttachment"
+	annotationPolygon        = "Polygon"
+	annotationCircle         = "Circle"
+	annotationSquare         = "Square"
+	annotationText           = "Text"
 )
 
-// Annotation represents a PDF annotation object.
-type Annotation struct {
+// annotationObject represents a PDF annotation object.
+type annotationObject struct {
 	objNumber      int
 	annotationType string
 	x1             float32
@@ -35,11 +35,11 @@ type Annotation struct {
 
 // setDescriptionFallback fills in the actual text and the alternative
 // description of an annotation that was created without them. The other ports
-// do this in the Annotation constructor; annotations here are built as struct
+// do this in the annotationObject constructor; annotations here are built as struct
 // literals, so Page.AddAnnotation applies it instead.
 // A link created from a destination name has no uri to fall back on,
 // so use the name itself rather than leaving the link undescribed.
-func (annotation *Annotation) setDescriptionFallback() {
+func (annotation *annotationObject) setDescriptionFallback() {
 	fallback := annotation.uri
 	if fallback == "" {
 		fallback = annotation.key

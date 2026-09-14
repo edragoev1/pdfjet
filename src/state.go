@@ -10,8 +10,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 )
 
-// State describes the collection of drawing parameters.
-type State struct {
+// savedState describes the collection of drawing parameters.
+type savedState struct {
 	pen               [3]float32
 	brush             [3]float32
 	penWidth          float32
@@ -20,15 +20,15 @@ type State struct {
 	strokeDashPattern string
 }
 
-// NewState constructs state objects.
-func NewState(
+// newSavedState constructs state objects.
+func newSavedState(
 	pen [3]float32,
 	brush [3]float32,
 	penWidth float32,
 	lineCapStyle capstyle.CapStyle,
 	lineJoinStyle joinstyle.JoinStyle,
-	strokeDashPattern string) *State {
-	state := new(State)
+	strokeDashPattern string) *savedState {
+	state := new(savedState)
 	state.pen = [3]float32{pen[0], pen[1], pen[2]}
 	state.brush = [3]float32{brush[0], brush[1], brush[2]}
 	state.penWidth = penWidth
@@ -39,31 +39,31 @@ func NewState(
 }
 
 // GetPen returns the penColor.
-func (state *State) GetPen() [3]float32 {
+func (state *savedState) getPen() [3]float32 {
 	return state.pen
 }
 
 // GetBrush returns the brushColor.
-func (state *State) GetBrush() [3]float32 {
+func (state *savedState) getBrush() [3]float32 {
 	return state.brush
 }
 
 // GetPenWidth returns the penColor width.
-func (state *State) GetPenWidth() float32 {
+func (state *savedState) getPenWidth() float32 {
 	return state.penWidth
 }
 
 // GetLineCapStyle returns the line cap style.
-func (state *State) GetLineCapStyle() capstyle.CapStyle {
+func (state *savedState) getLineCapStyle() capstyle.CapStyle {
 	return state.lineCapStyle
 }
 
 // GetLineJoinStyle returns the line join style.
-func (state *State) GetLineJoinStyle() joinstyle.JoinStyle {
+func (state *savedState) getLineJoinStyle() joinstyle.JoinStyle {
 	return state.lineJoinStyle
 }
 
 // GetStrokeDashPattern returns the line pattern.
-func (state *State) GetStrokeDashPattern() string {
+func (state *savedState) getStrokeDashPattern() string {
 	return state.strokeDashPattern
 }

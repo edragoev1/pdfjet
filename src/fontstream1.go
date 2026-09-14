@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 

@@ -125,8 +125,8 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if radioButton.uri != "" || radioButton.key != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             radioButton.x + 3*radioButton.r1,
 			y1:             radioButton.y,
 			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.font.size, radioButton.label),

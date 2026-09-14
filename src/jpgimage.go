@@ -73,32 +73,32 @@ const (
 // newJPGImage is the constructor.
 func newJPGImage(reader io.Reader) (*jpgImage, error) {
 	image := new(jpgImage)
-	image.data = content.GetFromReader(reader)
+	image.data = content.GetFromStream(reader)
 	return image.readJPGImage(image.data)
 }
 
 // GetWidth returns the width of the image.
-func (image *jpgImage) GetWidth() float32 {
+func (image *jpgImage) getWidth() float32 {
 	return float32(image.width)
 }
 
 // GetHeight returns the height of the image.
-func (image *jpgImage) GetHeight() float32 {
+func (image *jpgImage) getHeight() float32 {
 	return float32(image.height)
 }
 
 // GetFileSize returns the file size of the image.
-func (image *jpgImage) GetFileSize() uint64 {
+func (image *jpgImage) getFileSize() uint64 {
 	return uint64(len(image.data))
 }
 
 // GetColorComponents returns the color components of the image.
-func (image *jpgImage) GetColorComponents() uint8 {
+func (image *jpgImage) getColorComponents() uint8 {
 	return image.colorComponents
 }
 
 // GetData returns the image data.
-func (image *jpgImage) GetData() []byte {
+func (image *jpgImage) getData() []byte {
 	return image.data
 }
 

@@ -246,8 +246,8 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if rect.uri != "" || rect.key != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             rect.x,
 			y1:             rect.y,
 			x2:             rect.x + rect.width,

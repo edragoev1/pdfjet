@@ -16,8 +16,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
-// FontTable is used to construct font table objects.
-type FontTable struct {
+// fontTable is used to construct font table objects.
+type fontTable struct {
 	name     string
 	checkSum uint32
 	offset   int
@@ -61,7 +61,7 @@ type OTF struct {
 // NewOTF is the constructor for TTF and OTF fonts.
 func NewOTF(reader io.Reader) *OTF {
 	otf := new(OTF)
-	otf.buf = content.GetFromReader(reader)
+	otf.buf = content.GetFromStream(reader)
 	otf.unicodeToGID = make([]int, 0x10000)
 
 	// Extract the OTF metadata
@@ -79,9 +79,9 @@ func NewOTF(reader io.Reader) *OTF {
 	readUint16(otf) // Skip the entry selector.
 	readUint16(otf) // Skip the range shift.
 
-	var cmapTable *FontTable
+	var cmapTable *fontTable
 	for i := 0; i < numOfTables; i++ {
-		table := new(FontTable)
+		table := new(fontTable)
 		table.name = string(readNBytes(otf, 4))
 		table.checkSum = readUint32(otf)
 		table.offset = int(readUint32(otf))
@@ -133,7 +133,7 @@ func NewOTF(reader io.Reader) *OTF {
 	return otf
 }
 
-func getHeadTable(otf *OTF, table *FontTable) {
+func getHeadTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset + 16
 	_ = readUint16(otf) // Skip the flags
 	otf.unitsPerEm = int(readUint16(otf))
@@ -144,7 +144,7 @@ func getHeadTable(otf *OTF, table *FontTable) {
 	otf.bBoxURy = readInt16(otf)
 }
 
-func getHheaTable(otf *OTF, table *FontTable) {
+func getHheaTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset + 4
 	otf.ascent = readInt16(otf)
 	otf.descent = readInt16(otf)
@@ -152,7 +152,7 @@ func getHheaTable(otf *OTF, table *FontTable) {
 	otf.advanceWidth = make([]uint16, readUint16(otf))
 }
 
-func getOs2Table(otf *OTF, table *FontTable) {
+func getOs2Table(otf *OTF, table *fontTable) {
 	otf.index = table.offset + 64
 	otf.firstChar = rune(readUint16(otf))
 	otf.lastChar = rune(readUint16(otf))
@@ -160,7 +160,7 @@ func getOs2Table(otf *OTF, table *FontTable) {
 	otf.capHeight = int16(readUint16(otf))
 }
 
-func getNameTable(otf *OTF, table *FontTable) {
+func getNameTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset
 	otf.format = int(readUint16(otf))
 	otf.count = int(readUint16(otf))
@@ -211,7 +211,7 @@ func getNameTable(otf *OTF, table *FontTable) {
 	}
 }
 
-func getCmapTable(otf *OTF, table *FontTable) {
+func getCmapTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset
 	tableOffset := otf.index
 	otf.index += 2
@@ -298,7 +298,7 @@ func getCmapTable(otf *OTF, table *FontTable) {
 	}
 }
 
-func getHmtxTable(otf *OTF, table *FontTable) {
+func getHmtxTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset
 	for i := 0; i < len(otf.advanceWidth); i++ {
 		otf.advanceWidth[i] = readUint16(otf)
@@ -306,7 +306,7 @@ func getHmtxTable(otf *OTF, table *FontTable) {
 	}
 }
 
-func getPostTable(otf *OTF, table *FontTable) {
+func getPostTable(otf *OTF, table *fontTable) {
 	otf.index = table.offset
 	otf.postVersion = readUint32(otf)
 	otf.italicAngle = readUint32(otf)
@@ -314,7 +314,7 @@ func getPostTable(otf *OTF, table *FontTable) {
 	otf.underlineThickness = readInt16(otf)
 }
 
-func getCffTable(otf *OTF, table *FontTable) {
+func getCffTable(otf *OTF, table *fontTable) {
 	otf.cff = true
 	otf.cffOff = table.offset
 	otf.cffLen = table.length
@@ -324,7 +324,7 @@ func getCffTable(otf *OTF, table *FontTable) {
 // letters and ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase
 // and MarkToLigature lookups, and the marks that attach to other marks, like a
 // Thai tone mark above an upper vowel, from its MarkToMark lookups.
-func getGposTable(otf *OTF, table *FontTable) {
+func getGposTable(otf *OTF, table *fontTable) {
 	otf.markToMarkOffsets = make(map[int][2]int)
 	otf.markAnchors = make([]map[int][]int, 0)
 	otf.baseAnchors = make([]map[int][]int, 0)

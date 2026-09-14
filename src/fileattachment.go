@@ -67,8 +67,8 @@ func (attachment *FileAttachment) SetContents(contents string) *FileAttachment {
 
 // DrawOn draws this component on the page.
 func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
-	annotation := &Annotation{
-		annotationType: AnnotationFileAttachment,
+	annotation := &annotationObject{
+		annotationType: annotationFileAttachment,
 		x1:             attachment.x,
 		y1:             attachment.y,
 		x2:             attachment.x + attachment.h,

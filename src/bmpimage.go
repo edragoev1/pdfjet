@@ -10,8 +10,8 @@ import (
 	"io"
 	"math"
 
-	"github.com/edragoev1/pdfjet/v9/src/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
 // bmpImage describes BMP image object.
@@ -278,16 +278,16 @@ func readSignedInt(reader io.Reader) int {
 }
 
 // GetWidth returns the image width.
-func (image *bmpImage) GetWidth() float32 {
+func (image *bmpImage) getWidth() float32 {
 	return float32(image.w)
 }
 
 // GetHeight returns the image height.
-func (image *bmpImage) GetHeight() float32 {
+func (image *bmpImage) getHeight() float32 {
 	return float32(image.h)
 }
 
 // GetData returns the compressed image data.
-func (image *bmpImage) GetData() []byte {
+func (image *bmpImage) getData() []byte {
 	return image.deflated
 }

@@ -5,10 +5,10 @@
 
 package pdfjet
 
-// PathOp is used to create path objects.
+// svgPathOp is used to create path objects.
 // The path objects may consist of lines, splines or both.
 // Please see Example_02.
-type PathOp struct {
+type svgPathOp struct {
 	cmd  rune
 	x1q  float32 // Original quadratic control
 	y1q  float32 // point coordinates
@@ -21,17 +21,17 @@ type PathOp struct {
 	args []string
 }
 
-// NewPathOp creates a path operation with the specified command.
-func NewPathOp(cmd rune) *PathOp {
-	pathOp := new(PathOp)
+// newSVGPathOp creates a path operation with the specified command.
+func newSVGPathOp(cmd rune) *svgPathOp {
+	pathOp := new(svgPathOp)
 	pathOp.cmd = cmd
 	pathOp.args = make([]string, 0)
 	return pathOp
 }
 
-// NewPathOpXY creates a path operation with the specified command and point.
-func NewPathOpXY(cmd rune, x, y float32) *PathOp {
-	pathOp := new(PathOp)
+// newSVGPathOpXY creates a path operation with the specified command and point.
+func newSVGPathOpXY(cmd rune, x, y float32) *svgPathOp {
+	pathOp := new(svgPathOp)
 	pathOp.cmd = cmd
 	pathOp.x = x
 	pathOp.y = y
@@ -39,7 +39,7 @@ func NewPathOpXY(cmd rune, x, y float32) *PathOp {
 	return pathOp
 }
 
-func (path *PathOp) setCubicPoints(x1, y1, x2, y2, x, y float32) {
+func (path *svgPathOp) setCubicPoints(x1, y1, x2, y2, x, y float32) {
 	path.x1 = x1
 	path.y1 = y1
 	path.x2 = x2

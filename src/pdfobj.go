@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
-	"github.com/edragoev1/pdfjet/v9/src/decompressor"
-	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
@@ -27,7 +27,7 @@ type PDFobj struct {
 	streamOffset int      // The stream offset
 	stream       []byte   // The compressed stream
 	data         []byte   // The decompressed data
-	gsNumber     int      // Graphics State Number
+	gsNumber     int      // Graphics savedState Number
 }
 
 // newPDFobj creates an object with an empty dictionary.

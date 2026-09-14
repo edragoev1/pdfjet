@@ -21,7 +21,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
-	"github.com/edragoev1/pdfjet/v9/src/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
@@ -66,10 +66,10 @@ type Page struct {
 	lineCapStyle      capstyle.CapStyle
 	lineJoinStyle     joinstyle.JoinStyle
 	strokeDashPattern string
-	savedStates       []*State // The states that SaveGraphicsState saved
+	savedStates       []*savedState // The states that SaveGraphicsState saved
 
 	contents     []int
-	annots       []*Annotation
+	annots       []*annotationObject
 	destinations []*Destination
 	structures   []*structElement
 
@@ -893,7 +893,7 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 
 // SaveGraphicsState saves the current graphics state. Please see Example_31.
 func (page *Page) SaveGraphicsState() {
-	page.savedStates = append(page.savedStates, NewState(
+	page.savedStates = append(page.savedStates, newSavedState(
 		page.penColor, page.brushColor, page.penWidth,
 		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern))
 	page.appendString("q\n")
@@ -1806,7 +1806,7 @@ func (page *Page) AddEMC() {
 }
 
 // addAnnotation adds annotation to the page.
-func (page *Page) addAnnotation(annotation *Annotation) {
+func (page *Page) addAnnotation(annotation *annotationObject) {
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2

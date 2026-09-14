@@ -17,16 +17,16 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 )
 
-// User represents user password keys
-type User struct {
-	U  []byte
-	UE []byte
+// userKeys represents user password keys
+type userKeys struct {
+	u  []byte
+	ue []byte
 }
 
-// Owner represents owner password keys
-type Owner struct {
-	O  []byte
-	OE []byte
+// ownerKeys represents owner password keys
+type ownerKeys struct {
+	o  []byte
+	oe []byte
 }
 
 // Encryption handles PDF encryption functionality
@@ -66,7 +66,7 @@ func NewEncryption(pdf *PDF,
 		return nil, err
 	}
 
-	owner, err := enc.computeOwnerKeys(ownerPasswordBytes, user.U)
+	owner, err := enc.computeOwnerKeys(ownerPasswordBytes, user.u)
 	if err != nil {
 		return nil, err
 	}
@@ -91,20 +91,20 @@ func NewEncryption(pdf *PDF,
 	pdf.appendString("/StmF /StdCF\n")
 	pdf.appendString("/StrF /StdCF\n")
 
-	pdf.appendString("/U <") // User Key (U)
-	pdf.appendString(byteArrayToHexString(user.U))
+	pdf.appendString("/U <") // userKeys Key (U)
+	pdf.appendString(byteArrayToHexString(user.u))
 	pdf.appendString(">\n")
 
-	pdf.appendString("/O <") // Owner Key (O)
-	pdf.appendString(byteArrayToHexString(owner.O))
+	pdf.appendString("/O <") // ownerKeys Key (O)
+	pdf.appendString(byteArrayToHexString(owner.o))
 	pdf.appendString(">\n")
 
-	pdf.appendString("/UE <") // User Encryption Key (UE)
-	pdf.appendString(byteArrayToHexString(user.UE))
+	pdf.appendString("/UE <") // userKeys Encryption Key (UE)
+	pdf.appendString(byteArrayToHexString(user.ue))
 	pdf.appendString(">\n")
 
-	pdf.appendString("/OE <") // Owner Encryption Key (OE)
-	pdf.appendString(byteArrayToHexString(owner.OE))
+	pdf.appendString("/OE <") // ownerKeys Encryption Key (OE)
+	pdf.appendString(byteArrayToHexString(owner.oe))
 	pdf.appendString(">\n")
 
 	pdf.appendString("/EncryptMetadata true\n")
@@ -259,7 +259,7 @@ func byteArrayToHexString(bytes []byte) string {
 }
 
 // computeUserKeys computes user password keys (Algorithm 8)
-func (enc *Encryption) computeUserKeys(userPasswordBytes []byte) (*User, error) {
+func (enc *Encryption) computeUserKeys(userPasswordBytes []byte) (*userKeys, error) {
 	randomBytes := make([]byte, 16)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return nil, err
@@ -285,11 +285,11 @@ func (enc *Encryption) computeUserKeys(userPasswordBytes []byte) (*User, error) 
 		return nil, err
 	}
 
-	return &User{U: U, UE: UE}, nil
+	return &userKeys{u: U, ue: UE}, nil
 }
 
 // computeOwnerKeys computes owner password keys (Algorithm 9)
-func (enc *Encryption) computeOwnerKeys(ownerPasswordBytes, U []byte) (*Owner, error) {
+func (enc *Encryption) computeOwnerKeys(ownerPasswordBytes, U []byte) (*ownerKeys, error) {
 	randomBytes := make([]byte, 16)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return nil, err
@@ -315,7 +315,7 @@ func (enc *Encryption) computeOwnerKeys(ownerPasswordBytes, U []byte) (*Owner, e
 		return nil, err
 	}
 
-	return &Owner{O: O, OE: OE}, nil
+	return &ownerKeys{o: O, oe: OE}, nil
 }
 
 // concatenate combines three byte arrays

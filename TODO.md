@@ -275,6 +275,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       one query, `UserAccess.isSetIn` (Go `IsSetIn`, C# `HasFlag`), in every
       port; `getRawValue`, the C# properties, Go `Add`, `Remove` and
       `NewPermissionsFromUint32` are gone.
+- ✅ **B** Go exported twenty types the other ports hide. Fixed (Sep 14): the
+      helper packages are under `src/internal`, `embed` (unused) is gone, the
+      annotation, PNG chunk, font table, OCG, encryption key, SVG and saved
+      state types and the BMP and JPEG decoder methods are unexported, and
+      `content.GetFromReader` is `GetFromStream`. The Go-only members that
+      stay are the documented conventions: `corefont` fields and
+      `Encryption` methods the `pdfjet` package needs across packages, the
+      `AddCoreFontResource` family, `qrcode.ErrorCorrectionLevelL`, and the
+      `Paragraph` and `Title` getters that wait for the public fields item.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

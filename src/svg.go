@@ -11,13 +11,13 @@ import (
 	"strings"
 )
 
-// SVG converts SVG path data to PDF path operations.
-type SVG struct {
+// svgParser converts svgParser path data to PDF path operations.
+type svgParser struct {
 }
 
-// NewSVG creates an SVG object.
-func NewSVG() *SVG {
-	return new(SVG)
+// newSVGParser creates an svgParser object.
+func newSVGParser() *svgParser {
+	return new(svgParser)
 }
 
 func isCommand(ch rune) bool {
@@ -48,10 +48,10 @@ func isCommand(ch rune) bool {
 	return false
 }
 
-// GetOperations parses SVG path data into a list of path operations.
-func (svg *SVG) GetOperations(path string) []*PathOp {
-	operations := make([]*PathOp, 0)
-	var op = NewPathOp(' ')
+// GetOperations parses svgParser path data into a list of path operations.
+func (svg *svgParser) getOperations(path string) []*svgPathOp {
+	operations := make([]*svgPathOp, 0)
+	var op = newSVGPathOp(' ')
 	var buf = strings.Builder{}
 	var token = false
 	for _, ch := range path {
@@ -61,7 +61,7 @@ func (svg *SVG) GetOperations(path string) []*PathOp {
 				buf.Reset()
 			}
 			token = false
-			op = NewPathOp(ch)
+			op = newSVGPathOp(ch)
 			operations = append(operations, op)
 		} else if ch == ' ' || ch == ',' {
 			if token {
@@ -94,9 +94,9 @@ func (svg *SVG) GetOperations(path string) []*PathOp {
 	return operations
 }
 
-// ToPDF converts SVG path operations to PDF path operations. It panics if an
+// ToPDF converts svgParser path operations to PDF path operations. It panics if an
 // argument of an operation is not a number.
-func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
+func (svg *svgParser) toPDFOperations(list []*svgPathOp) []*svgPathOp {
 	operations, err := toPDF(list)
 	if err != nil {
 		panic(err)
@@ -104,18 +104,18 @@ func (svg *SVG) ToPDF(list []*PathOp) []*PathOp {
 	return operations
 }
 
-// toPDF converts SVG path operations to PDF path operations, and returns an
+// toPDF converts svgParser path operations to PDF path operations, and returns an
 // error if an argument of an operation is not a number.
-func toPDF(list []*PathOp) ([]*PathOp, error) {
-	operations := make([]*PathOp, 0)
-	var lastOp = NewPathOp(' ')
+func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
+	operations := make([]*svgPathOp, 0)
+	var lastOp = newSVGPathOp(' ')
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
 	for _, op := range list {
 		switch op.cmd {
 		case 'M', 'm':
 			for i := 0; i <= len(op.args)-2; i += 2 {
-				var pathOp *PathOp
+				var pathOp *svgPathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -131,16 +131,16 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 				if i == 0 {
 					x0 = float32(x)
 					y0 = float32(y)
-					pathOp = NewPathOpXY('M', float32(x), float32(y))
+					pathOp = newSVGPathOpXY('M', float32(x), float32(y))
 				} else {
-					pathOp = NewPathOpXY('L', float32(x), float32(y))
+					pathOp = newSVGPathOpXY('L', float32(x), float32(y))
 				}
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		case 'L', 'l':
 			for i := 0; i <= len(op.args)-2; i += 2 {
-				var pathOp *PathOp
+				var pathOp *svgPathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -153,13 +153,13 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 					x += float64(lastOp.x)
 					y += float64(lastOp.y)
 				}
-				pathOp = NewPathOpXY('L', float32(x), float32(y))
+				pathOp = newSVGPathOpXY('L', float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		case 'H', 'h':
 			for i := 0; i < len(op.args); i++ {
-				var pathOp *PathOp
+				var pathOp *svgPathOp
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -167,13 +167,13 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 				if op.cmd == 'h' && lastOp != nil {
 					x += float64(lastOp.x)
 				}
-				pathOp = NewPathOpXY('L', float32(x), lastOp.y)
+				pathOp = newSVGPathOpXY('L', float32(x), lastOp.y)
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		case 'V', 'v':
 			for i := 0; i < len(op.args); i++ {
-				var pathOp *PathOp
+				var pathOp *svgPathOp
 				y, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -181,13 +181,13 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 				if op.cmd == 'v' && lastOp != nil {
 					y += float64(lastOp.y)
 				}
-				pathOp = NewPathOpXY('L', lastOp.x, float32(y))
+				pathOp = newSVGPathOpXY('L', lastOp.x, float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
 			}
 		case 'Q', 'q':
 			for i := 0; i <= len(op.args)-4; i += 4 {
-				pathOp := NewPathOp('C')
+				pathOp := newSVGPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -224,7 +224,7 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 			}
 		case 'T', 't':
 			for i := 0; i <= len(op.args)-2; i += 2 {
-				pathOp := NewPathOp('C')
+				pathOp := newSVGPathOp('C')
 				x1 := lastOp.x
 				y1 := lastOp.y
 				if lastOp.cmd == 'C' {
@@ -255,7 +255,7 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 			}
 		case 'C', 'c':
 			for i := 0; i <= len(op.args)-6; i += 6 {
-				pathOp := NewPathOp('C')
+				pathOp := newSVGPathOp('C')
 				x1, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -297,7 +297,7 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 			}
 		case 'S', 's':
 			for i := 0; i <= len(op.args)-4; i += 4 {
-				pathOp := NewPathOp('C')
+				pathOp := newSVGPathOp('C')
 				x1 := lastOp.x
 				y1 := lastOp.y
 				if lastOp.cmd == 'C' {
@@ -365,7 +365,7 @@ func toPDF(list []*PathOp) ([]*PathOp, error) {
 				lastOp = addArc(&operations, lastOp, rx, ry, rotation, largeArc, sweep, x, y)
 			}
 		case 'Z', 'z':
-			pathOp := NewPathOp('Z')
+			pathOp := newSVGPathOp('Z')
 			pathOp.x = x0
 			pathOp.y = y0
 			operations = append(operations, pathOp)
@@ -381,11 +381,11 @@ func svgFloat(arg string) (float32, error) {
 }
 
 // addArc appends the cubic curves that draw the elliptical arc from the
-// current point to (x, y), as SVG 1.1 section F.6.5 describes: the arc is
+// current point to (x, y), as svgParser 1.1 section F.6.5 describes: the arc is
 // split into pieces of at most a quarter turn, each approximated by one curve.
 // It returns the last operation appended, or lastOp when the arc is empty.
-func addArc(operations *[]*PathOp, lastOp *PathOp,
-	rx, ry, rotation float32, largeArc, sweep bool, x, y float32) *PathOp {
+func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
+	rx, ry, rotation float32, largeArc, sweep bool, x, y float32) *svgPathOp {
 	x1 := lastOp.x
 	y1 := lastOp.y
 	if x1 == x && y1 == y {
@@ -394,7 +394,7 @@ func addArc(operations *[]*PathOp, lastOp *PathOp,
 	rx = float32(math.Abs(float64(rx)))
 	ry = float32(math.Abs(float64(ry)))
 	if rx == 0.0 || ry == 0.0 {
-		line := NewPathOpXY('L', x, y)
+		line := newSVGPathOpXY('L', x, y)
 		*operations = append(*operations, line)
 		return line
 	}
@@ -453,7 +453,7 @@ func addArc(operations *[]*PathOp, lastOp *PathOp,
 		if i < segments-1 {
 			p2 = onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x, p2y)
 		}
-		pathOp = NewPathOp('C')
+		pathOp = newSVGPathOp('C')
 		pathOp.setCubicPoints(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
 		*operations = append(*operations, pathOp)
 	}

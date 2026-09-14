@@ -153,8 +153,8 @@
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">3</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
     <tr><td>One way to say each thing</td><td class="num">5</td><td class="num">5</td><td>Rotation and spacing variants, drawString overloads</td></tr>
-    <tr><td>Hide what is not for users</td><td class="num">4</td><td class="num">4</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">12</td><td class="num">10</td><td></td></tr>
+    <tr><td>Hide what is not for users</td><td class="num">3</td><td class="num">3</td><td>Public fields, Java internals, chart leftovers</td></tr>
+    <tr class="total"><td>Total</td><td class="num">11</td><td class="num">9</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -271,13 +271,6 @@
   </ul>
 </section>
 
-<section class="item">
-  <h3>Go exports what the others hide <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>Twenty three exported types exist only in Go: <code>bmpImage</code>, <code>jpgImage</code>, <code>Chunk</code>, <code>code128</code>, <code>compressor</code>, <code>decompressor</code>, <code>crc32util</code>, <code>device</code>, <code>embed</code>, <code>fastfloat</code>, <code>FontTable</code>, <code>OCG</code>, <code>Owner</code>, <code>User</code>, <code>PathOp</code>, <code>SVG</code>, <code>SVGPath</code>, <code>State</code>, <code>structtype</code>, <code>shape</code>, <code>iccblackscaled</code>, <code>Annotation</code> and <code>AnnotationType</code>. Go-only methods too: <code>Paragraph.GetX1</code> and its siblings, <code>Page.AddImageResource</code>, <code>Title.GetPrefix</code>.</p>
-  <span class="label">Suggestion</span>
-  <p>Unexport them. The first table of the audit report then nearly empties.</p>
-</section>
 
 
 <section class="item">

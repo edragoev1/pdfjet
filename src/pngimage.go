@@ -11,9 +11,9 @@ import (
 	"io"
 	"math"
 
-	"github.com/edragoev1/pdfjet/v9/src/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/crc32util"
-	"github.com/edragoev1/pdfjet/v9/src/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/crc32util"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
 // PNGImage is used to embed PNG images in the PDF document.
@@ -48,31 +48,31 @@ func NewPNGImage(reader io.Reader) *PNGImage {
 	chunks := image.processPNG(reader)
 
 	for _, chunk := range chunks {
-		chunkType := string(chunk.ChunkType)
+		chunkType := string(chunk.chunkType)
 		switch chunkType {
 		case "IHDR":
-			if len(chunk.ChunkData) != 13 {
+			if len(chunk.chunkData) != 13 {
 				panic("Invalid PNG IHDR chunk.")
 			}
-			image.w = int(toUint32(chunk.ChunkData, 0)) // Width
-			image.h = int(toUint32(chunk.ChunkData, 4)) // Height
-			image.bitDepth = int(chunk.ChunkData[8])    // BitDepth
-			image.colorType = int(chunk.ChunkData[9])   // Color Type
+			image.w = int(toUint32(chunk.chunkData, 0)) // Width
+			image.h = int(toUint32(chunk.chunkData, 4)) // Height
+			image.bitDepth = int(chunk.chunkData[8])    // BitDepth
+			image.colorType = int(chunk.chunkData[9])   // Color Type
 
-			if chunk.ChunkData[12] == 1 {
+			if chunk.chunkData[12] == 1 {
 				panic("Interlaced PNG images are not supported.\n" +
 					"Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
 			}
 		case "IDAT":
-			image.iDAT = append(image.iDAT, chunk.ChunkData...)
+			image.iDAT = append(image.iDAT, chunk.chunkData...)
 		case "PLTE":
-			image.pLTE = chunk.ChunkData
+			image.pLTE = chunk.chunkData
 			if len(image.pLTE)%3 != 0 {
 				panic("Incorrect palette length.")
 			}
 		case "tRNS":
 			if image.colorType == 3 {
-				image.tRNS = chunk.ChunkData
+				image.tRNS = chunk.chunkData
 			}
 		}
 		// The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
@@ -171,11 +171,11 @@ func (image *PNGImage) GetAlpha() []byte {
 	return image.deflatedAlphaData
 }
 
-func (image *PNGImage) processPNG(reader io.Reader) []*Chunk {
-	chunks := make([]*Chunk, 0)
+func (image *PNGImage) processPNG(reader io.Reader) []*pngChunk {
+	chunks := make([]*pngChunk, 0)
 	for {
 		chunk := image.getChunk(reader)
-		if string(chunk.ChunkType) == "IEND" {
+		if string(chunk.chunkType) == "IEND" {
 			break
 		}
 		chunks = append(chunks, chunk)
@@ -253,20 +253,20 @@ func (image *PNGImage) validatePNG(reader io.Reader) {
 	}
 }
 
-func (image *PNGImage) getChunk(reader io.Reader) *Chunk {
-	chunk := NewChunk()
-	chunk.ChunkLength = getPNGUint32(reader) // The length of the data chunk.
-	if chunk.ChunkLength > math.MaxInt32 {
-		panic(fmt.Sprintf("Invalid PNG chunk length %d.", chunk.ChunkLength))
+func (image *PNGImage) getChunk(reader io.Reader) *pngChunk {
+	chunk := newPNGChunk()
+	chunk.chunkLength = getPNGUint32(reader) // The length of the data chunk.
+	if chunk.chunkLength > math.MaxInt32 {
+		panic(fmt.Sprintf("Invalid PNG chunk length %d.", chunk.chunkLength))
 	}
-	chunk.ChunkType = getPNGBytes(reader, 4)                      // The chunk type.
-	chunk.ChunkData = getPNGBytes(reader, int(chunk.ChunkLength)) // The chunk data.
-	chunk.ChunkCRC = getPNGUint32(reader)                         // CRC of the type and data chunks.
+	chunk.chunkType = getPNGBytes(reader, 4)                      // The chunk type.
+	chunk.chunkData = getPNGBytes(reader, int(chunk.chunkLength)) // The chunk data.
+	chunk.chunkCRC = getPNGUint32(reader)                         // CRC of the type and data chunks.
 
 	crc32 := crc32util.NewCRC32()
-	crc32.Update(chunk.ChunkType)
-	crc32.Update(chunk.ChunkData)
-	if crc32.GetValue() != chunk.ChunkCRC {
+	crc32.Update(chunk.chunkType)
+	crc32.Update(chunk.chunkData)
+	if crc32.GetValue() != chunk.chunkCRC {
 		panic("PNGImage chunk has bad CRC.")
 	}
 	return chunk

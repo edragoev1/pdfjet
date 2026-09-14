@@ -15,9 +15,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edragoev1/pdfjet/v9/src/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
 // PNG decoding against the PngSuite images. The samples are compared as the

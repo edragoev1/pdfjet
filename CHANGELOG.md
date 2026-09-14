@@ -48,6 +48,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `DonutChart` takes the values of its slices: `Slice(value, color, label)`,
   and the chart computes the angles and the percentages. The constructor has
   no `isDonutChart` flag; an inner radius of 0 makes a pie chart.
+- The Go port exports only what the other ports make public: the helper
+  packages `code128`, `compressor`, `crc32util`, `decompressor`, `device` and
+  `fastfloat` are under `src/internal`, the `embed` package is gone, the
+  internal annotation, PNG chunk, font table, optional content, encryption
+  key, SVG and saved state types and the BMP and JPEG decoder methods are
+  unexported, and `content.GetFromReader` is `GetFromStream`, as in the other
+  ports.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".

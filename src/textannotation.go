@@ -8,6 +8,6 @@ type TextAnnotation struct {
 // NewTextAnnotation acts as the constructor.
 func NewTextAnnotation() *TextAnnotation {
 	t := &TextAnnotation{BaseAnnotation: *newBaseAnnotation()}
-	t.BaseAnnotation.annotationType = AnnotationText
+	t.BaseAnnotation.annotationType = annotationText
 	return t
 }

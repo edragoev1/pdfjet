@@ -488,8 +488,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textLine.uri != "" || textLine.key != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             textLine.x,
 			y1:             (textLine.y + verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
 			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),

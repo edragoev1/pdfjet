@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/device"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
+	"github.com/edragoev1/pdfjet/v9/src/internal/device"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -82,14 +82,14 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 		if err != nil {
 			panic(err)
 		}
-		data := jpg.GetData()
-		image.w = jpg.GetWidth()
-		image.h = jpg.GetHeight()
-		if jpg.GetColorComponents() == 1 {
+		data := jpg.getData()
+		image.w = jpg.getWidth()
+		image.h = jpg.getHeight()
+		if jpg.getColorComponents() == 1 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, 8)
-		} else if jpg.GetColorComponents() == 3 {
+		} else if jpg.getColorComponents() == 3 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
-		} else if jpg.GetColorComponents() == 4 {
+		} else if jpg.getColorComponents() == 4 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
 		}
 	case imagetype.PNG:
@@ -110,9 +110,9 @@ func NewImage(pdf *PDF, reader io.Reader, imageType imagetype.ImageType) *Image 
 		}
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
-		data := bmp.GetData()
-		image.w = bmp.GetWidth()
-		image.h = bmp.GetHeight()
+		data := bmp.getData()
+		image.w = bmp.getWidth()
+		image.h = bmp.getHeight()
 		image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
 	}
 
@@ -134,14 +134,14 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader, imageType imagetyp
 		if err != nil {
 			panic(err)
 		}
-		data := jpg.GetData()
-		image.w = jpg.GetWidth()
-		image.h = jpg.GetHeight()
-		if jpg.GetColorComponents() == 1 {
+		data := jpg.getData()
+		image.w = jpg.getWidth()
+		image.h = jpg.getHeight()
+		if jpg.getColorComponents() == 1 {
 			image.addImageToObjects(objects, data, nil, imageType, device.Gray, 8)
-		} else if jpg.GetColorComponents() == 3 {
+		} else if jpg.getColorComponents() == 3 {
 			image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
-		} else if jpg.GetColorComponents() == 4 {
+		} else if jpg.getColorComponents() == 4 {
 			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
 		}
 	case imagetype.PNG:
@@ -162,9 +162,9 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader, imageType imagetyp
 		}
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
-		data := bmp.GetData()
-		image.w = bmp.GetWidth()
-		image.h = bmp.GetHeight()
+		data := bmp.getData()
+		image.w = bmp.getWidth()
+		image.h = bmp.getHeight()
 		image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
 	}
 
@@ -403,8 +403,8 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	if image.uri != "" || image.key != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             image.x,
 			y1:             image.y,
 			x2:             image.x + image.w,

@@ -10,7 +10,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/edragoev1/pdfjet/v9/src/compressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 )
 
 // The stream filters and predictors that reading a PDF needs, and the compressor.

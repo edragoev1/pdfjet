@@ -55,7 +55,7 @@ func TestSVGImageSingleQuotesAndLineBreaksBetweenAttributesParseLikeDoubleQuotes
 
 func TestSVGImageEllipticalArcsBecomeCubicCurves(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 A 20 20 0 0 1 50 10"/></svg>`)
-	// A half circle over the top, from (10, 10) to (50, 10) in SVG coordinates.
+	// A half circle over the top, from (10, 10) to (50, 10) in svgParser coordinates.
 	if !strings.Contains(content, "10 793.05 18.95 802 30 802 c\n41.05 802 50 793.05 50 782 c\n") {
 		t.Errorf("content %q", content)
 	}

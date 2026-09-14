@@ -97,7 +97,7 @@ func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 	}
 	b.point1 = rotateAroundCenter(b.point1, center, degrees)
 	b.point2 = rotateAroundCenter(b.point2, center, degrees)
-	if b.annotationType == AnnotationPolygon {
+	if b.annotationType == annotationPolygon {
 		for i := 0; i < len(b.vertices); i += 2 {
 			point := rotateAroundCenter(
 				[2]float32{b.vertices[i], b.vertices[i+1]},
@@ -128,7 +128,7 @@ func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
 
 // DrawOn draws the annotation on the specified page.
 func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
-	page.addAnnotation(&Annotation{
+	page.addAnnotation(&annotationObject{
 		annotationType: b.annotationType,
 		x1:             b.point1[0],
 		y1:             b.point1[1],

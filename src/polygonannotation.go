@@ -1,7 +1,7 @@
 package pdfjet
 
-// AnnotationType is the subtype of an annotation, for example AnnotationPolygon.
-type AnnotationType string
+// annotationType is the subtype of an annotation, for example annotationPolygon.
+type annotationType string
 
 // PolygonAnnotation extends BaseAnnotation to represent a polygon.
 type PolygonAnnotation struct {
@@ -11,7 +11,7 @@ type PolygonAnnotation struct {
 // NewPolygonAnnotation acts as the constructor.
 func NewPolygonAnnotation() *PolygonAnnotation {
 	p := &PolygonAnnotation{BaseAnnotation: *newBaseAnnotation()}
-	p.BaseAnnotation.annotationType = AnnotationPolygon
+	p.BaseAnnotation.annotationType = annotationPolygon
 	return p
 }
 

@@ -563,8 +563,8 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 			page.SetBrushColorRGB(cell.point.fillColor)
 		}
 		if cell.point.uri != "" {
-			page.addAnnotation(&Annotation{
-				annotationType: AnnotationLink,
+			page.addAnnotation(&annotationObject{
+				annotationType: annotationLink,
 				x1:             cell.point.x - cell.point.r,
 				y1:             cell.point.y - cell.point.r,
 				x2:             cell.point.x + cell.point.r,
@@ -660,8 +660,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	}
 
 	if cell.uri != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             xText,
 			y1:             yText - ascent,
 			x2:             xText + cell.getTextWidth(),

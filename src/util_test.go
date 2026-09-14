@@ -66,10 +66,10 @@ func (r testSlowReader) Read(p []byte) (int, error) {
 }
 
 func TestUtilGetFromStreamReadsAStreamThatReturnsFewBytesAtATime(t *testing.T) {
-	// Go has GetFromReader only, with no buffer size argument.
+	// Go has GetFromStream only, with no buffer size argument.
 	data := make([]byte, 10000)
 	rand.New(rand.NewSource(7)).Read(data)
-	if got := content.GetFromReader(testSlowReader{bytes.NewReader(data)}); !bytes.Equal(got, data) {
+	if got := content.GetFromStream(testSlowReader{bytes.NewReader(data)}); !bytes.Equal(got, data) {
 		t.Error("the bytes differ")
 	}
 }

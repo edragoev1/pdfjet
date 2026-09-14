@@ -19,7 +19,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// SVGImage is used to draw SVG images on a page.
+// SVGImage is used to draw svgParser images on a page.
 type SVGImage struct {
 	x, y, w, h     float32
 	viewBox        string
@@ -28,7 +28,7 @@ type SVGImage struct {
 	fillNone       bool // fill="none" on the svg element
 	strokeNone     bool // stroke="none" on the svg element
 	strokeWidth    float32
-	paths          []*SVGPath
+	paths          []*svgPath
 	uri            string
 	key            string
 	language       string
@@ -36,7 +36,7 @@ type SVGImage struct {
 	actualText     string
 }
 
-// NewSVGImageFromFile reads and parses an SVG image from a file.
+// NewSVGImageFromFile reads and parses an svgParser image from a file.
 // The file is fully read before parsing, so no file handle lifecycle is involved.
 func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
 	data, err := os.ReadFile(filePath)
@@ -46,7 +46,7 @@ func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
 	return NewSVGImage(bytes.NewReader(data))
 }
 
-// NewSVGImage parses an SVG image from a reader, for embedding in a PDF document.
+// NewSVGImage parses an svgParser image from a reader, for embedding in a PDF document.
 // Only the attributes of the <svg> and <path> elements are interpreted:
 // width, height, viewBox, fill, stroke, stroke-width, and d.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
@@ -54,7 +54,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	colorMap := NewColorMap()
 	image.fill = color.Transparent
 	image.stroke = color.Transparent
-	image.paths = make([]*SVGPath, 0)
+	image.paths = make([]*svgPath, 0)
 	image.altDescription = single.Space
 	image.actualText = single.Space
 
@@ -115,7 +115,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 			}
 
 		case "path":
-			path := NewSVGPath()
+			path := newSVGPath()
 			for _, attr := range start.Attr {
 				switch attr.Name.Local {
 				case "d":
@@ -152,7 +152,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	return image, nil
 }
 
-// parseDim parses an SVG dimension value such as "100".
+// parseDim parses an svgParser dimension value such as "100".
 func parseDim(value string) (float32, error) {
 	v, err := strconv.ParseFloat(strings.TrimSpace(value), 32)
 	if err != nil {
@@ -175,7 +175,7 @@ func parseFloatLenient(value string) (float32, error) {
 	return float32(v), nil
 }
 
-func (image *SVGImage) processPaths(paths []*SVGPath) error {
+func (image *SVGImage) processPaths(paths []*svgPath) error {
 	var box [4]float32
 	if image.viewBox != "" {
 		list := strings.Fields(strings.TrimSpace(image.viewBox))
@@ -194,9 +194,9 @@ func (image *SVGImage) processPaths(paths []*SVGPath) error {
 		}
 	}
 
-	svg := NewSVG()
+	svg := newSVGParser()
 	for _, path := range paths {
-		operations, err := toPDF(svg.GetOperations(path.data))
+		operations, err := toPDF(svg.getOperations(path.data))
 		if err != nil {
 			return fmt.Errorf("invalid path data %q: %w", path.data, err)
 		}
@@ -245,7 +245,7 @@ func getColor(colorMap map[string]int32, colorName string) (int32, error) {
 	return int32(color.Transparent), nil
 }
 
-// ScaleBy scales this SVG image by the specified factor.
+// ScaleBy scales this svgParser image by the specified factor.
 func (image *SVGImage) ScaleBy(factor float32) *SVGImage {
 	for _, path := range image.paths {
 		for _, op := range path.operations {
@@ -297,12 +297,12 @@ func (image *SVGImage) SetLanguage(language string) *SVGImage {
 	return image
 }
 
-// GetWidth returns the width of this SVG image.
+// GetWidth returns the width of this svgParser image.
 func (image *SVGImage) GetWidth() float32 {
 	return image.w
 }
 
-// GetHeight returns the height of this SVG image.
+// GetHeight returns the height of this svgParser image.
 func (image *SVGImage) GetHeight() float32 {
 	return image.h
 }
@@ -312,7 +312,7 @@ func isNone(value string) bool {
 	return strings.TrimSpace(value) == "none"
 }
 
-func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
+func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	// none on the path wins over the color of the svg element; a color that
 	// is not set is taken from the svg element.
 	noFill := path.fillNone || (path.fill == color.Transparent && image.fillNone)
@@ -335,7 +335,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	}
 
 	// A path whose fill is not none, with no fill and no stroke color, is
-	// filled black, as SVG fills a path black by default.
+	// filled black, as svgParser fills a path black by default.
 	if !noFill && fillColor == color.Transparent &&
 		strokeColor == color.Transparent {
 		fillColor = color.Black
@@ -392,7 +392,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 	}
 }
 
-// DrawOn draws this SVG image on the specified page.
+// DrawOn draws this svgParser image on the specified page.
 func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
@@ -400,8 +400,8 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	}
 	page.AddEMC()
 	if image.uri != "" || image.key != "" {
-		page.addAnnotation(&Annotation{
-			annotationType: AnnotationLink,
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
 			x1:             image.x,
 			y1:             image.y,
 			x2:             image.x + image.w,

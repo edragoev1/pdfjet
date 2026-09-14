@@ -53,16 +53,16 @@ func testBMP24(topDown bool) []byte {
 
 func TestBMPImageBottomUpRowsAreReadTopRowFirst(t *testing.T) {
 	bmp := newBMPImage(bytes.NewReader(testBMP24(false)))
-	if bmp.GetWidth() != 2 || bmp.GetHeight() != 2 {
-		t.Errorf("size %v x %v", bmp.GetWidth(), bmp.GetHeight())
+	if bmp.getWidth() != 2 || bmp.getHeight() != 2 {
+		t.Errorf("size %v x %v", bmp.getWidth(), bmp.getHeight())
 	}
-	if got := testInflate(t, bmp.GetData()); !bytes.Equal(got, testRGB) {
+	if got := testInflate(t, bmp.getData()); !bytes.Equal(got, testRGB) {
 		t.Errorf("samples %v", got)
 	}
 }
 
 func TestBMPImageTopDownRowsAreReadTheSame(t *testing.T) {
-	if got := testInflate(t, newBMPImage(bytes.NewReader(testBMP24(true))).GetData()); !bytes.Equal(got, testRGB) {
+	if got := testInflate(t, newBMPImage(bytes.NewReader(testBMP24(true))).getData()); !bytes.Equal(got, testRGB) {
 		t.Errorf("samples %v", got)
 	}
 }

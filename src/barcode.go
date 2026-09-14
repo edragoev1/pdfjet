@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/code128"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
+	"github.com/edragoev1/pdfjet/v9/src/internal/code128"
 )
 
 // Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
