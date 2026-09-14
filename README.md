@@ -498,9 +498,9 @@ and Go, which cannot overload, gives the other form a suffix:
 overloads, `StringWidthFB` for `stringWidth` with a fallback font,
 `DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
-`addResource` overloads of `Page` and `PDFobj`. Some setters take `r, g, b`
-floats next to the `int` color in some ports only; the `int` form is in every
-port.
+`addResource` overloads of `Page` and `PDFobj`. Every color setter takes an
+`int` like `Color.blue` or the red, green and blue components from 0 to 1 as a
+`float[]` (`[Float]` in Swift, `[3]float32` in Go, with the `RGB` suffix).
 
 Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPageDetached` for

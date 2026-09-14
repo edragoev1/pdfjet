@@ -167,6 +167,13 @@ func (point *Point) SetFillColor(fillColor int32) *Point {
 	return point
 }
 
+// SetFillColorRGB sets the fill color from red, green and blue values.
+func (point *Point) SetFillColorRGB(rgbColor [3]float32) *Point {
+	point.fillColor = rgbColor
+	point.hasFillColor = true
+	return point
+}
+
 // GetFillColor returns the fill color as red, green and blue values.
 func (point *Point) GetFillColor() [3]float32 {
 	return point.fillColor
@@ -178,6 +185,13 @@ func (point *Point) SetStrokeColor(strokeColor int32) *Point {
 	g := float32((strokeColor>>8)&0xff) / 255.0
 	b := float32((strokeColor)&0xff) / 255.0
 	point.strokeColor = [3]float32{r, g, b}
+	point.hasStrokeColor = true
+	return point
+}
+
+// SetStrokeColorRGB sets the stroke color from red, green and blue values.
+func (point *Point) SetStrokeColorRGB(rgbColor [3]float32) *Point {
+	point.strokeColor = rgbColor
 	point.hasStrokeColor = true
 	return point
 }

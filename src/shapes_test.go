@@ -5,7 +5,12 @@
 
 package pdfjet
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/color"
+)
 
 // Line, Rect, Arc, Path, RadioButton, CheckBox and CalendarMonth locations and corners.
 
@@ -52,4 +57,17 @@ func TestShapesCalendarMonthStartsAtTheOriginWithCellsFromTheDayNames(t *testing
 	// February and March 2026 start on a Sunday.
 	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 2).DrawOn(testNewPage()))
 	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 3).DrawOn(testNewPage()))
+}
+
+func TestShapesColorsAreSetAsAnIntOrAsAnArray(t *testing.T) {
+	page := testNewPage()
+	NewLine(10, 10, 50, 10).SetStrokeColor(color.Red).DrawOn(page)
+	NewLine(10, 20, 50, 20).SetStrokeColorRGB([3]float32{0, 0, 1}).DrawOn(page)
+	NewPath().Add(NewPoint(10, 30)).Add(NewPoint(50, 30)).SetStrokeColorRGB([3]float32{0, 1, 0}).DrawOn(page)
+	content := testContent(page)
+	for _, want := range []string{"1 0 0 RG", "0 0 1 RG", "0 1 0 RG"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("content lacks %q: %s", want, content)
+		}
+	}
 }

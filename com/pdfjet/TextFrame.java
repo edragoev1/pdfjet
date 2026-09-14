@@ -193,21 +193,7 @@ public class TextFrame implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        return setBorderColor(r, g, b);
-    }
-
-    /**
-     * Sets the border color and draws a border around this text frame.
-     *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this TextFrame object.
-     */
-    public TextFrame setBorderColor(float r, float g, float b) {
-        this.borderColor = new float[] {r, g, b};
-        this.border = true;
-        return this;
+        return setBorderColor(new float[] {r, g, b});
     }
 
     /**

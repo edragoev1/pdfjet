@@ -624,6 +624,21 @@ public class Table implements Drawable {
     }
 
     /**
+     * Sets the border color of every cell.
+     *
+     * @param rgbColor the color as red, green and blue components from 0.0 to 1.0.
+     * @return this Table object.
+     */
+    public Table setCellBorderColor(float[] rgbColor) {
+        for (List<Cell> row : tableData) {
+            for (Cell cell : row) {
+                cell.setBorderColor(rgbColor);
+            }
+        }
+        return this;
+    }
+
+    /**
      * Sets the width of the cell border lines.
      *
      * @param width the width of the border lines.

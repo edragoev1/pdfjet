@@ -351,12 +351,6 @@ public class TextBox : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextBox SetTextColor(float r, float g, float b) {
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextBox SetTextColor(float[] rgbColor) {
         this.textColor = Util.CopyOf(rgbColor);
@@ -405,12 +399,6 @@ public class TextBox : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /// <summary>Sets the color of the borders from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextBox SetBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }

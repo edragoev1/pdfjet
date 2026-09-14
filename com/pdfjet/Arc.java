@@ -186,19 +186,6 @@ public class Arc implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.setStrokeColor(r, g, b);
-        return this;
-    }
-
-    /**
-     * Sets the stroke color of this arc.
-     *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this Arc object.
-     */
-    public Arc setStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
@@ -224,19 +211,6 @@ public class Arc implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.setFillColor(r, g, b);
-        return this;
-    }
-
-    /**
-     * Sets the fill color of this arc.
-     *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this Arc object.
-     */
-    public Arc setFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }

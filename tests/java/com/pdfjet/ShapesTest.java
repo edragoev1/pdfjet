@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -61,5 +62,21 @@ class ShapesTest {
         // February and March 2026 start on a Sunday.
         TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 2).drawOn(page()));
         TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 3).drawOn(page()));
+    }
+
+    @Test
+    void colorsAreSetAsAnIntOrAsAnArray() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Line(10f, 10f, 50f, 10f).setStrokeColor(Color.red).drawOn(page);
+        new Line(10f, 20f, 50f, 20f).setStrokeColor(new float[] {0f, 0f, 1f}).drawOn(page);
+        Path path = new Path();
+        path.add(new Point(10f, 30f));
+        path.add(new Point(50f, 30f));
+        path.setStrokeColor(new float[] {0f, 1f, 0f}).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("1 0 0 RG"), content);
+        assertTrue(content.contains("0 0 1 RG"), content);
+        assertTrue(content.contains("0 1 0 RG"), content);
     }
 }

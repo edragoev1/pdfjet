@@ -17,7 +17,7 @@ import (
 // Please see Example_20 and Example_22.
 type Path struct {
 	points        []*Point
-	color         int32
+	color         [3]float32
 	width         float32
 	pattern       string
 	fillShape     bool
@@ -32,7 +32,7 @@ type Path struct {
 func NewPath() *Path {
 	path := new(Path)
 	path.points = []*Point{}
-	path.color = color.Black
+	path.color = colorToRGB(color.Black)
 	path.width = 0.0
 	path.pattern = "[] 0"
 	return path
@@ -86,7 +86,13 @@ func (path *Path) SetStrokeWidth(width float32) *Path {
 // @param color the color specified as an integer.
 // @return this Path object.
 func (path *Path) SetStrokeColor(color int32) *Path {
-	path.color = color
+	path.color = colorToRGB(color)
+	return path
+}
+
+// SetStrokeColorRGB sets the color of this path from red, green and blue values.
+func (path *Path) SetStrokeColorRGB(rgbColor [3]float32) *Path {
+	path.color = rgbColor
 	return path
 }
 
@@ -169,11 +175,11 @@ func (path *Path) DrawOn(page *Page) [2]float32 {
 	// A path carries no text, so it is decorative content.
 	page.AddArtifactBMC()
 	if path.fillShape {
-		page.SetBrushColor(path.color)
+		page.SetBrushColorRGB(path.color)
 		page.DrawPath(path.points, pathoperator.Fill)
 	} else {
 		page.SetPenWidth(path.width)
-		page.SetPenColor(path.color)
+		page.SetPenColorRGB(path.color)
 		page.SetStrokeDashPattern(path.pattern)
 		page.SetLineCapStyle(path.lineCapStyle)
 		page.SetLineJoinStyle(path.lineJoinStyle)

@@ -409,19 +409,6 @@ public class TextBox implements Drawable {
     /**
      * Sets the text color.
      *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this TextBox object.
-     */
-    public TextBox setTextColor(float r, float g, float b) {
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the text color.
-     *
      * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
      * @return this TextBox object.
      */
@@ -464,19 +451,6 @@ public class TextBox implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.strokeColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the stroke color of the borders.
-     *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this TextBox object.
-     */
-    public TextBox setBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }

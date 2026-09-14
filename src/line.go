@@ -21,7 +21,7 @@ type Line struct {
 	y1             float32
 	x2             float32
 	y2             float32
-	color          int32
+	color          [3]float32
 	width          float32
 	pattern        string
 	capStyle       capstyle.CapStyle
@@ -42,7 +42,7 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 	line.y1 = y1
 	line.x2 = x2
 	line.y2 = y2
-	line.color = color.Black
+	line.color = colorToRGB(color.Black)
 	line.width = 0.0
 	line.pattern = "[] 0"
 	line.actualText = single.Space
@@ -133,7 +133,13 @@ func (line *Line) SetStrokeWidth(width float32) *Line {
 // @param color the color specified as an integer.
 // @return this Line object.
 func (line *Line) SetStrokeColor(color int32) *Line {
-	line.color = color
+	line.color = colorToRGB(color)
+	return line
+}
+
+// SetStrokeColorRGB sets the color of this line from red, green and blue values.
+func (line *Line) SetStrokeColorRGB(rgbColor [3]float32) *Line {
+	line.color = rgbColor
 	return line
 }
 
@@ -187,7 +193,7 @@ func (line *Line) ScaleBy(factor float32) *Line {
 func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structtype.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
-	page.SetPenColor(line.color)
+	page.SetPenColorRGB(line.color)
 	page.SetPenWidth(line.width)
 	page.SetLineCapStyle(line.capStyle)
 	page.SetStrokeDashPattern(line.pattern)

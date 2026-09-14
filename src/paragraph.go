@@ -94,6 +94,15 @@ func (paragraph *Paragraph) SetTextColor(color int32) *Paragraph {
 	return paragraph
 }
 
+// SetTextColorRGB sets the text color of all lines in this paragraph from
+// red, green and blue values.
+func (paragraph *Paragraph) SetTextColorRGB(rgbColor [3]float32) *Paragraph {
+	for _, line := range paragraph.lines {
+		line.SetTextColorRGB(rgbColor)
+	}
+	return paragraph
+}
+
 // SetHighlightColors sets the word highlight colors of all lines in this paragraph.
 func (paragraph *Paragraph) SetHighlightColors(colorMap map[string]int32) *Paragraph {
 	for _, line := range paragraph.lines {

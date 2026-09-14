@@ -131,6 +131,21 @@ public class Container implements Drawable {
     }
 
     /**
+     * Sets the border color, drawing a border around this container.
+     *
+     * @param rgbColor the color as red, green and blue components from 0.0 to 1.0.
+     * @return this Container object.
+     */
+    public Container setBorderColor(float[] rgbColor) {
+        if (border == null) {
+            border = new Rect(0f, 0f, width, height);
+            this.add(border);
+        }
+        border.setBorderColor(rgbColor);
+        return this;
+    }
+
+    /**
      * Adds a drawable element to this container.
      *
      * @param element the element to add

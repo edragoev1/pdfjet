@@ -501,6 +501,17 @@ func (table *Table) SetCellBorderColor(color int32) *Table {
 	return table
 }
 
+// SetCellBorderColorRGB sets the color of the cell border lines from red,
+// green and blue values.
+func (table *Table) SetCellBorderColorRGB(rgbColor [3]float32) *Table {
+	for _, row := range table.tableData {
+		for _, cell := range row {
+			cell.SetBorderColorRGB(rgbColor)
+		}
+	}
+	return table
+}
+
 // SetCellBorderWidth sets the width of the cell border lines.
 // @param width the width of the border lines.
 func (table *Table) SetCellBorderWidth(width float32) *Table {

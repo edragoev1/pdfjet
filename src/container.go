@@ -101,6 +101,17 @@ func (c *Container) SetBorderColor(borderColor int32) *Container {
 	return c
 }
 
+// SetBorderColorRGB sets the color of the border around this container from
+// red, green and blue values.
+func (c *Container) SetBorderColorRGB(rgbColor [3]float32) *Container {
+	if c.border == nil {
+		c.border = NewRect(0.0, 0.0, c.Width, c.Height)
+		c.Add(c.border)
+	}
+	c.border.SetBorderColorRGB(rgbColor)
+	return c
+}
+
 // Add adds a drawable element to this container.
 //
 // element is the Drawable object to add.

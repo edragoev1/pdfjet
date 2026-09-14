@@ -213,19 +213,6 @@ public class TextLine implements Drawable {
     /**
      * Sets the text color.
      *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this TextLine object.
-     */
-    public TextLine setTextColor(float r, float g, float b) {
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the text color.
-     *
      * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
      * @return this TextLine object.
      */
@@ -259,19 +246,6 @@ public class TextLine implements Drawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.lineColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /**
-     * Sets the color of the underline and strikeout lines.
-     *
-     * @param r the red component, from 0.0 to 1.0.
-     * @param g the green component, from 0.0 to 1.0.
-     * @param b the blue component, from 0.0 to 1.0.
-     * @return this TextLine object.
-     */
-    public TextLine setDecorationColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }

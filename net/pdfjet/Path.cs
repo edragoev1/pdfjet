@@ -15,7 +15,7 @@ namespace PDFjet.NET {
 /// Please see Example_20 and Example_22.
 /// </summary>
 public class Path : IDrawable {
-    private int color = Color.black;
+    private float[] color = new float[] {0f, 0f, 0f};
     private float width = 0f;
     private String pattern = "[] 0";
     private bool fillShape = false;
@@ -99,7 +99,15 @@ public class Path : IDrawable {
     /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Path object.</returns>
     public Path SetStrokeColor(int color) {
-        this.color = color;
+        this.color = Util.ToRGB(color);
+        return this;
+    }
+
+    /// <summary>Sets the stroke color that will be used to draw this path.</summary>
+    /// <param name="rgbColor">the color as red, green and blue components from 0.0 to 1.0.</param>
+    /// <returns>this Path object.</returns>
+    public Path SetStrokeColor(float[] rgbColor) {
+        this.color = Util.CopyOf(rgbColor);
         return this;
     }
 

@@ -144,12 +144,6 @@ public class Arc : Drawable {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
-        return setStrokeColor(r, g, b)
-    }
-
-    /// Sets the stroke color from red, green and blue values between 0.0 and 1.0.
-    @discardableResult
-    public func setStrokeColor(_ r: Float, _ g: Float, _ b: Float) -> Arc {
         self.strokeColor = [r, g, b]
         return self
     }
@@ -167,12 +161,6 @@ public class Arc : Drawable {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
-        return setFillColor(r, g, b)
-    }
-
-    /// Sets the fill color from red, green and blue values between 0.0 and 1.0.
-    @discardableResult
-    public func setFillColor(_ r: Float, _ g: Float, _ b: Float) -> Arc {
         self.fillColor = [r, g, b]
         return self
     }

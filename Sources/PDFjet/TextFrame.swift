@@ -111,15 +111,7 @@ public class TextFrame : Drawable {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
-        return setBorderColor(r, g, b)
-    }
-
-    /// Sets the border color from red, green and blue values between 0.0 and 1.0 and draws a border around this text frame.
-    @discardableResult
-    public func setBorderColor(_ r: Float, _ g: Float, _ b: Float) -> TextFrame {
-        self.borderColor = [r, g, b]
-        self.border = true
-        return self
+        return setBorderColor([r, g, b])
     }
 
     /// Sets the border color from an array of red, green and blue values and draws a border around this text frame.

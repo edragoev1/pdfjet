@@ -585,6 +585,17 @@ public class Table : Drawable {
         return self
     }
 
+    /// Sets the color of the cell border lines from an array of red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setCellBorderColor(_ rgbColor: [Float]) -> Table {
+        for row in tableData {
+            for cell in row {
+                cell.setBorderColor(rgbColor)
+            }
+        }
+        return self
+    }
+
     ///
     /// Sets the width of the cell border lines.
     ///

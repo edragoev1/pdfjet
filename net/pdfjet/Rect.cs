@@ -77,12 +77,6 @@ public class Rect  : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetFillColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the fill color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Rect SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }
@@ -108,12 +102,6 @@ public class Rect  : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetBorderColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the border color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Rect SetBorderColor(float r, float g, float b) {
         this.borderColor = new float[] {r, g, b};
         return this;
     }

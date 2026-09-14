@@ -20,6 +20,11 @@ public class Util {
         return (color == null) ? null : (float[]) color.Clone();
     }
 
+    /// <summary>Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color.</summary>
+    internal static float[] ToRGB(int color) {
+        return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
+    }
+
     /// <summary>Reads the lines of a UTF-8 text file, without carriage returns.</summary>
     /// <param name="filePath">the path of the text file.</param>
     /// <returns>the lines.</returns>

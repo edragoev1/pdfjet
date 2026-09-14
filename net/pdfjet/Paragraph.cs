@@ -84,6 +84,16 @@ public class Paragraph {
         return this;
     }
 
+    /// <summary>Sets the text color of all lines in this paragraph.</summary>
+    /// <param name="rgbColor">the color as red, green and blue components from 0.0 to 1.0.</param>
+    /// <returns>this Paragraph object.</returns>
+    public Paragraph SetTextColor(float[] rgbColor) {
+        foreach (TextLine line in lines) {
+            line.SetTextColor(rgbColor);
+        }
+        return this;
+    }
+
     /// <summary>Sets the word highlight colors of all lines in this paragraph.</summary>
     public Paragraph SetHighlightColors(Dictionary<string, int> colorMap) {
         foreach (TextLine line in lines) {

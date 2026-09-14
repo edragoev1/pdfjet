@@ -20,7 +20,7 @@ public class Line implements Drawable {
     /** The y coordinate of the end point. */
     protected float y2;
 
-    private int color = Color.black;
+    private float[] color = {0f, 0f, 0f};
     private float width = 0f;
     private String pattern = "[] 0";
     private CapStyle capStyle = CapStyle.BUTT;
@@ -209,7 +209,18 @@ public class Line implements Drawable {
      *  @return this Line object.
      */
     public Line setStrokeColor(int color) {
-        this.color = color;
+        this.color = Util.toRGB(color);
+        return this;
+    }
+
+    /**
+     * Sets the color of this line.
+     *
+     * @param rgbColor the color as red, green and blue components from 0.0 to 1.0.
+     * @return this Line object.
+     */
+    public Line setStrokeColor(float[] rgbColor) {
+        this.color = Util.copyOf(rgbColor);
         return this;
     }
 

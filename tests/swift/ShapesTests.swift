@@ -54,4 +54,15 @@ import Testing
         TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 2).drawOn(page()))
         TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 3).drawOn(page()))
     }
+
+    @Test func colorsAreSetAsAnIntOrAsAnArray() {
+        let page = self.page()
+        Line(10, 10, 50, 10).setStrokeColor(Color.red).drawOn(page)
+        Line(10, 20, 50, 20).setStrokeColor([0.0, 0.0, 1.0]).drawOn(page)
+        Path().add(Point(10, 30)).add(Point(50, 30)).setStrokeColor([0.0, 1.0, 0.0]).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("1 0 0 RG"), "\(content)")
+        #expect(content.contains("0 0 1 RG"), "\(content)")
+        #expect(content.contains("0 1 0 RG"), "\(content)")
+    }
 }

@@ -112,6 +112,19 @@ public class Paragraph {
     }
 
     /**
+     * Sets the text color of every line of this paragraph.
+     *
+     * @param rgbColor the color as red, green and blue components from 0.0 to 1.0.
+     * @return this Paragraph object.
+     */
+    public Paragraph setTextColor(float[] rgbColor) {
+        for (TextLine line : lines) {
+            line.setTextColor(rgbColor);
+        }
+        return this;
+    }
+
+    /**
      * Sets the word highlight colors of all lines in this paragraph.
      *
      * @param colorMap the words and their 0xRRGGBB colors.

@@ -42,6 +42,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `Text` is removed: a `TextFrame` without a height draws the same paragraphs
   the same way, with `setBorders(true)` for the border, and
   `Text.paragraphsFromFile` is `Paragraph.paragraphsFromFile`.
+- Every color setter takes an `int` like `Color.blue` or the red, green and
+  blue components as an array, in every port; the `setColor(r, g, b)` overloads
+  of some setters in some ports are removed.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".

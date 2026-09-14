@@ -171,13 +171,6 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
-    @discardableResult
-    public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> TextBlock {
-        self.textColor = [r, g, b]
-        return self
-    }
-
     /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> TextBlock {

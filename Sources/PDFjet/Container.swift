@@ -112,6 +112,17 @@ public class Container: Drawable {
         return self
     }
 
+    /// Sets the color of the border around this container from an array of red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setBorderColor(_ rgbColor: [Float]) -> Container {
+        if border == nil {
+            border = Rect(0.0, 0.0, width, height)
+            self.add(border!)
+        }
+        border!.setBorderColor(rgbColor)
+        return self
+    }
+
     /// Adds a drawable element to this container.
     ///
     /// - Parameter element: The element to add.

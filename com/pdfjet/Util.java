@@ -30,6 +30,11 @@ public class Util {
         return (color == null) ? null : color.clone();
     }
 
+    /** Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color. */
+    static float[] toRGB(int color) {
+        return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
+    }
+
     /**
      * Reads the lines of a UTF-8 text file, without carriage returns.
      *

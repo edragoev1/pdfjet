@@ -18,8 +18,8 @@ public class CheckBox : IDrawable {
     private float y;
     private float w;
     private float h;
-    private int boxColor = Color.black;
-    private int checkColor = Color.black;
+    private float[] boxColor = new float[] {0f, 0f, 0f};
+    private float[] checkColor = new float[] {0f, 0f, 0f};
     private float penWidth;
     private float checkWidth;
     private int mark = 0;
@@ -56,7 +56,15 @@ public class CheckBox : IDrawable {
     /// <param name="boxColor">the check box color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
     public CheckBox SetBorderColor(int boxColor) {
-        this.boxColor = boxColor;
+        this.boxColor = Util.ToRGB(boxColor);
+        return this;
+    }
+
+    /// <summary>Sets the color of the check box.</summary>
+    /// <param name="rgbColor">the color as red, green and blue components from 0.0 to 1.0.</param>
+    /// <returns>this CheckBox object.</returns>
+    public CheckBox SetBorderColor(float[] rgbColor) {
+        this.boxColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -66,7 +74,15 @@ public class CheckBox : IDrawable {
     /// <param name="checkColor">the check mark color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
     public CheckBox SetCheckmarkColor(int checkColor) {
-        this.checkColor = checkColor;
+        this.checkColor = Util.ToRGB(checkColor);
+        return this;
+    }
+
+    /// <summary>Sets the color of the check mark.</summary>
+    /// <param name="rgbColor">the color as red, green and blue components from 0.0 to 1.0.</param>
+    /// <returns>this CheckBox object.</returns>
+    public CheckBox SetCheckmarkColor(float[] rgbColor) {
+        this.checkColor = Util.CopyOf(rgbColor);
         return this;
     }
 

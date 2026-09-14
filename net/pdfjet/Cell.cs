@@ -369,12 +369,6 @@ public class Cell {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetTextColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Cell SetTextColor(float r, float g, float b) {
         this.textColor = new float[] {r, g, b};
         return this;
     }
@@ -409,12 +403,6 @@ public class Cell {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        SetBorderColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Cell SetBorderColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }

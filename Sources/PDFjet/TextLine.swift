@@ -178,13 +178,6 @@ public class TextLine : Drawable {
         return self
     }
 
-    /// Sets the text color from red, green and blue values between 0.0 and 1.0.
-    @discardableResult
-    public func setTextColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
-        self.textColor = [r, g, b]
-        return self
-    }
-
     /// Sets the text color from an array of red, green and blue values.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> TextLine {
@@ -206,13 +199,6 @@ public class TextLine : Drawable {
         let r = Float(((color >> 16) & 0xff))/255.0
         let g = Float(((color >>  8) & 0xff))/255.0
         let b = Float(((color)       & 0xff))/255.0
-        self.lineColor = [r, g, b]
-        return self
-    }
-
-    /// Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.
-    @discardableResult
-    public func setDecorationColor(_ r: Float, _ g: Float, _ b: Float) -> TextLine {
         self.lineColor = [r, g, b]
         return self
     }

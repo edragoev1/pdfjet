@@ -17,7 +17,7 @@ public class Line : Drawable {
     private var x2: Float = 0.0
     private var y2: Float = 0.0
 
-    private var color = Color.black
+    private var color: [Float] = [0.0, 0.0, 0.0]
     private var width: Float = 0.0
     private var pattern: String = "[] 0"
     private var capStyle = CapStyle.BUTT
@@ -159,7 +159,14 @@ public class Line : Drawable {
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Line {
-        self.color = color
+        self.color = Util.toRGB(color)
+        return self
+    }
+
+    /// Sets the stroke color of this line from an array of red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setStrokeColor(_ rgbColor: [Float]) -> Line {
+        self.color = rgbColor
         return self
     }
 

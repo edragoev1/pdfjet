@@ -110,6 +110,18 @@ public class Container : IDrawable {
         return this;
     }
 
+    /// <summary>Sets the color of the border around this container.</summary>
+    /// <param name="rgbColor">the color as red, green and blue components from 0.0 to 1.0.</param>
+    /// <returns>this Container object.</returns>
+    public Container SetBorderColor(float[] rgbColor) {
+        if (border == null) {
+            border = new Rect(0f, 0f, width, height);
+            this.Add(border);
+        }
+        border.SetBorderColor(rgbColor);
+        return this;
+    }
+
     /// <summary>Returns the elements in this container.</summary>
     internal List<IDrawable> GetElements() {
         return this.elements;

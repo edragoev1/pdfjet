@@ -167,12 +167,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the text color from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextLine SetTextColor(float r, float g, float b) {
-        this.textColor = new float[] {r, g, b};
-        return this;
-    }
-
     /// <summary>Sets the text color from an array of red, green and blue values.</summary>
     public TextLine SetTextColor(float[] rgbColor) {
         if (rgbColor != null) {
@@ -194,12 +188,6 @@ public class TextLine : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.lineColor = new float[] {r, g, b};
-        return this;
-    }
-
-    /// <summary>Sets the color of the underline and strikeout lines from red, green and blue values between 0.0 and 1.0.</summary>
-    public TextLine SetDecorationColor(float r, float g, float b) {
         this.lineColor = new float[] {r, g, b};
         return this;
     }

@@ -237,6 +237,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       content stream). Removed (Sep 14) in the four ports; Example_03, 41 and
       49 use `TextFrame` with `setBorders(true)`, and `Text.paragraphsFromFile`
       is `Paragraph.paragraphsFromFile` (Go `ParagraphsFromFile`).
+- ✅ **B** Colours came in three forms, an `int`, three floats and an array,
+      and each class offered a different subset per port (`Line` one form in
+      Java, two in C#; `Point` two in Java, one in Go and Swift). Decided
+      Sep 14: the `int` for the everyday case and the array for any colour,
+      which is the internal representation, on every colour setter in every
+      port; no three-float overloads. Fixed: the triples are removed and the
+      array form is added where only the `int` was (`Line`, `Path`,
+      `CheckBox`, `Container`, `Paragraph`, `Table`, Go `Point`, Swift `Rect`
+      and `Page`).
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

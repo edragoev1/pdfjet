@@ -147,12 +147,6 @@ public class Arc : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.SetStrokeColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the stroke color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Arc SetStrokeColor(float r, float g, float b) {
         this.strokeColor = new float[] {r, g, b};
         return this;
     }
@@ -168,12 +162,6 @@ public class Arc : IDrawable {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        this.SetFillColor(r, g, b);
-        return this;
-    }
-
-    /// <summary>Sets the fill color from red, green and blue values between 0.0 and 1.0.</summary>
-    public Arc SetFillColor(float r, float g, float b) {
         this.fillColor = new float[] {r, g, b};
         return this;
     }

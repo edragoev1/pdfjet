@@ -13,7 +13,7 @@ import Foundation
 /// Please see Example_20 and Example_22.
 ///
 public class Path : Drawable {
-    private var color = Color.black
+    private var color: [Float] = [0.0, 0.0, 0.0]
     private var width: Float = 0.0
     private var pattern: String = "[] 0"
     private var fillShape = false
@@ -97,7 +97,14 @@ public class Path : Drawable {
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Path {
-        self.color = color
+        self.color = Util.toRGB(color)
+        return self
+    }
+
+    /// Sets the stroke color of this path from an array of red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setStrokeColor(_ rgbColor: [Float]) -> Path {
+        self.color = rgbColor
         return self
     }
 

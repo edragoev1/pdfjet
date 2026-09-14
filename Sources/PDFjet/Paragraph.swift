@@ -84,6 +84,15 @@ public class Paragraph {
         return self
     }
 
+    /// Sets the text color of all lines in this paragraph from an array of red, green and blue values between 0.0 and 1.0.
+    @discardableResult
+    public func setTextColor(_ rgbColor: [Float]) -> Paragraph {
+        for line in lines {
+            line.setTextColor(rgbColor)
+        }
+        return self
+    }
+
     /// Sets the word highlight colors of all lines in this paragraph.
     @discardableResult
     public func setHighlightColors(_ colorMap: [String: Int32]) -> Paragraph {
