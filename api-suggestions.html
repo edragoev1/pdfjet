@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDFjet API Cleanup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+  :root {
+    --paper: #f6f7f6;
+    --panel: #eceeed;
+    --ink: #1b1f1e;
+    --muted: #5c6663;
+    --rule: #d3d9d6;
+    --accent: #1f6f78;
+    --accent-ink: #ffffff;
+    --later: #8a6d3b;
+    --code-bg: #e6e9e8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #151919;
+      --panel: #1d2323;
+      --ink: #e6eae8;
+      --muted: #9aa5a1;
+      --rule: #2c3535;
+      --accent: #5fbfc8;
+      --accent-ink: #0e1a1c;
+      --later: #d2a85f;
+      --code-bg: #232b2b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #151919;
+    --panel: #1d2323;
+    --ink: #e6eae8;
+    --muted: #9aa5a1;
+    --rule: #2c3535;
+    --accent: #5fbfc8;
+    --accent-ink: #0e1a1c;
+    --later: #d2a85f;
+    --code-bg: #232b2b;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.55;
+    padding-block: 48px 96px;
+    padding-inline: 20px;
+  }
+  .page { max-width: 760px; margin-inline: auto; }
+
+  h1, h2, h3, .label, .chip, th, .meta, .toc, nav {
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  code, pre, .mono, td.mono {
+    font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    font-size: 0.88em;
+  }
+  code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; }
+
+  header { border-bottom: 1px solid var(--rule); padding-bottom: 24px; margin-bottom: 36px; }
+  .eyebrow {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin: 0 0 12px;
+  }
+  h1 { font-size: 40px; line-height: 1.1; font-weight: 600; margin: 0 0 14px; text-wrap: balance; letter-spacing: -0.01em; }
+  .lede { font-size: 20px; line-height: 1.45; margin: 0 0 18px; max-width: 62ch; }
+  .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 22px; }
+
+  h2 { font-size: 26px; font-weight: 600; margin: 56px 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+  h2 + p { margin-top: 0; }
+  h3 { font-size: 19px; font-weight: 600; margin: 0 0 8px; text-wrap: balance; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+  p { margin: 0 0 12px; max-width: 68ch; }
+
+  .item { padding: 22px 0; border-top: 1px solid var(--rule); }
+  .item:last-of-type { border-bottom: 1px solid var(--rule); }
+  .label {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    font-weight: 600; display: block; margin-bottom: 2px;
+  }
+  .touches { font-size: 14px; color: var(--muted); margin: 10px 0 0; }
+  .touches code { font-size: 0.92em; }
+
+  .chip {
+    font-size: 11px; letter-spacing: 0.06em; font-weight: 600; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; line-height: 1.6; white-space: nowrap;
+  }
+  .chip.now { background: var(--accent); color: var(--accent-ink); }
+  .chip.later { border: 1px solid var(--later); color: var(--later); }
+  .chip.done { border: 1px solid var(--rule); color: var(--muted); background: var(--panel); }
+
+  nav.toc { font-size: 14px; margin: 0 0 8px; }
+  nav.toc ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
+  nav.toc a:hover, nav.toc a:focus-visible { border-bottom-color: var(--accent); outline: none; }
+
+  .tablewrap { overflow-x: auto; margin: 14px 0 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th { text-align: left; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 10px 8px; border-bottom: 1px solid var(--ink); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: 600; border-bottom: none; }
+  .summary th:first-child, .summary td:first-child { padding-left: 0; }
+  .ports th, .ports td { white-space: nowrap; }
+
+  .plan { background: var(--panel); padding: 20px 22px; margin-top: 18px; }
+  .plan p:last-child { margin-bottom: 0; }
+  ul { padding-left: 20px; margin: 0 0 12px; max-width: 68ch; }
+  li { margin-bottom: 6px; }
+  a { color: var(--accent); }
+
+  @media (max-width: 480px) {
+    body { font-size: 16px; padding-block: 28px 64px; }
+    h1 { font-size: 30px; }
+    .lede { font-size: 18px; }
+    h2 { font-size: 22px; margin-top: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+<header>
+  <p class="eyebrow">Proposal for the v9.0.0 release plan</p>
+  <h1>PDFjet API Cleanup</h1>
+  <p class="lede">After the v9 audit the names line up across the four ports. What still makes the API hard to understand is structural: several classes do the same job, the same idea is said in more than one way, and internals are public.</p>
+  <div class="meta">
+    <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, progress at 67bcbb69, the 50 examples, the Javadoc</span>
+    <span>14 September 2026</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <ol>
+    <li><a href="#overlap">Fewer classes that overlap</a></li>
+    <li><a href="#oneway">One way to say each thing</a></li>
+    <li><a href="#hide">Hide what is not for users</a></li>
+    <li><a href="#plan">What to do in 9.0.0</a></li>
+  </ol>
+</nav>
+
+<div class="tablewrap">
+<table class="summary">
+  <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th class="num">Done</th><th>What it removes</th></tr></thead>
+  <tbody>
+    <tr><td>Fewer classes that overlap</td><td class="num">4</td><td class="num">2</td><td class="num">1 of 2 merges</td><td>Three text classes, one chart defect</td></tr>
+    <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">1</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
+    <tr><td>Hide what is not for users</td><td class="num">5</td><td class="num">5</td><td class="num">0</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
+    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">2</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="overlap">Fewer classes that overlap</h2>
+<p>The largest gains. A reader who cannot tell two classes apart cannot choose between them, whatever they are called.</p>
+
+<section class="item">
+  <h3>Seven text layout classes <span class="chip now">9.0.0, one merge left</span> <span class="chip done">Text removed in 7cd7044a</span></h3>
+  <span class="label">Finding</span>
+  <p><code>TextLine</code>, <code>CompositeTextLine</code>, <code>TextBox</code>, <code>TextBlock</code>, <code>Text</code>, <code>TextFrame</code> and <code>TextColumn</code>, plus <code>Paragraph</code>. <code>TextBox</code> and <code>TextBlock</code> share thirty setters and differ in eleven. <code>Text</code> is a <code>TextFrame</code> without a height, and its own Javadoc says so. <code>TextColumn</code> is a third paragraph flow with its own spacing names.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Class</th><th>What it is</th><th>Only it has</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">TextBox</td><td>Wrapped text in a box</td><td class="mono">setBorder, setBorders, setLineGap, setStrikeout, setTextDirection, setVerticalAlignment</td><td>16, 19, 46</td></tr>
+      <tr><td class="mono">TextBlock</td><td>Wrapped text in a box</td><td class="mono">setCornerRadius, setFallbackFontSize, setLineSpacing, setRightToLeft</td><td>01, 02, 23, 27, 31</td></tr>
+      <tr><td class="mono">Text</td><td>Paragraph flow, no height. Removed in 7cd7044a</td><td>nothing</td><td>03, 41, 49</td></tr>
+      <tr><td class="mono">TextFrame</td><td>Paragraph flow, flows to the next frame</td><td class="mono">setHeight, setBorders, hasMoreText</td><td>47</td></tr>
+      <tr><td class="mono">TextColumn</td><td>Paragraph flow</td><td class="mono">addCJKParagraph, setLineBetweenParagraphs, setTextAlignment</td><td>10, 29, 44, 49</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <span class="label">Suggestion</span>
+  <p><code>Text</code> is gone: Example_03 drawn with a <code>TextFrame</code> has the same content stream, and <code>Text.paragraphsFromFile</code> is <code>Paragraph.paragraphsFromFile</code>. Next, merge <code>TextBlock</code> into <code>TextBox</code>, a union of setters. Fold <code>TextColumn</code> into <code>TextFrame</code> once its CJK paragraphs and line between paragraphs move over. Three classes fewer in all.</p>
+  <p class="touches">Touches Example_01, 02, 03, 10, 23, 27, 29, 31, 41, 44, 47, 49 and <code>Cell.setTextBox</code>, <code>setTextBlock</code>, <code>setTextColumn</code>.</p>
+</section>
+
+<section class="item">
+  <h3>Table and BigTable are two table APIs <span class="chip later">10.0</span></h3>
+  <span class="label">Finding</span>
+  <p>One says <code>setData</code> and <code>drawOn(pdf, pages, pageSize)</code>. The other says <code>setTableData</code>, <code>setNumberOfColumns</code>, <code>setTextAlignment</code>, <code>complete</code> and <code>getPages</code>. Both draw a table over many pages.</p>
+  <span class="label">Suggestion</span>
+  <p>Give them the same names, or make streaming a mode of <code>Table</code>. At the least, <code>setData</code>, <code>setTextAlignmentInColumn</code> and <code>drawOn</code> should mean the same in both.</p>
+  <p class="touches">Touches Example_43 and the seven <code>Table</code> examples.</p>
+</section>
+
+<section class="item">
+  <h3>DonutChart takes angles, not values <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p>A <code>Slice</code> is built from degrees, so Example_25 passes 90, 72 and 108 to mean 25, 20 and 30 percent. The user does the chart's arithmetic. The constructor boolean <code>isDonutChart</code> turns a donut into a pie, which an inner radius of zero already means.</p>
+  <span class="label">Suggestion</span>
+  <p><code>addSlice(value, color, label)</code>, with the chart computing the angles and the percentages it prints. Drop the boolean; <code>setRadii(outer, 0)</code> is a pie.</p>
+  <p class="touches">Touches <code>Slice</code>, <code>DonutChart</code>, Example_25.</p>
+</section>
+
+<section class="item">
+  <h3>Chart data is a list of lists of Point <span class="chip later">10.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Point</code> carries a marker, a path role, series text, a link and even a table cell alignment. A series has no object of its own, so its colour, width and label live on its first point.</p>
+  <span class="label">Suggestion</span>
+  <p>Give <code>Chart</code> an <code>addSeries</code> like <code>BarChart</code>, with the stroke, marker and label on the series. <code>Point</code> keeps x, y and the marker. The largest change here; it can wait for the next major version.</p>
+  <p class="touches">Touches <code>Chart</code>, <code>Point</code>, <code>Cell.setMarker</code>, Example_09.</p>
+</section>
+
+<h2 id="oneway">One way to say each thing</h2>
+<p>Each of these is mechanical across the four ports, with the audit script as the check. All are breaking, so they belong in 9.0.0.</p>
+
+<section class="item">
+  <h3>Colours come in three forms <span class="chip done">Done in 67bcbb69</span></h3>
+  <span class="label">Finding</span>
+  <p>An int like <code>Color.blue</code>, three floats, or a float array. Each class offers a different subset, and the subset differs by port. The parameter counts from the audit:</p>
+  <div class="tablewrap">
+  <table class="ports">
+    <thead><tr><th>Member</th><th>Java</th><th>C#</th><th>Go</th><th>Swift</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">Line.setStrokeColor</td><td>1</td><td>1, 3</td><td>1</td><td>1</td></tr>
+      <tr><td class="mono">Point.setFillColor</td><td>1, 3</td><td>1, 3</td><td>1</td><td>1</td></tr>
+      <tr><td class="mono">TextBlock.setTextColor</td><td>1</td><td>1</td><td>1 + RGB</td><td>1, 3</td></tr>
+      <tr><td class="mono">Cell.setBorderColor</td><td>1</td><td>1, 3</td><td>1 + RGB</td><td>1, 3</td></tr>
+      <tr><td class="mono">Page.setPenColor</td><td>int, float[]</td><td>int, float[]</td><td>1 + RGB</td><td>int, [Float]</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <span class="label">Decision</span>
+  <p>Two forms on every colour setter, in every port: the int like <code>Color.blue</code> for the everyday case, and the float array for any colour, which is also the internal representation. No three-float overloads anywhere.</p>
+  <span class="label">Done</span>
+  <ul>
+    <li>Dropped the triple: twelve overloads in Java on <code>Arc</code>, <code>Point</code>, <code>Rect</code>, <code>TextBox</code>, <code>TextFrame</code> and <code>TextLine</code>; the C# ones on those plus <code>Cell</code> and <code>Line</code>; the Swift ones on those plus <code>Cell</code> and <code>TextBlock</code>. Go has none.</li>
+    <li>Added the array form where only the int existed: <code>Line</code>, <code>Path</code>, <code>CheckBox</code>, <code>Container</code>, <code>Paragraph</code> and <code>Table.setCellBorderColor</code> in every port, Go <code>Point.SetFillColorRGB</code> and <code>SetStrokeColorRGB</code>, and Swift <code>Rect</code> and <code>Page</code>.</li>
+    <li>The Go spelling stays <code>SetXxxColorRGB</code> for the array, as the port has no overloading. No example used a triple, so every example PDF is unchanged.</li>
+  </ul>
+</section>
+
+<section class="item">
+  <h3>Rotation has four spellings <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>setRotation</code> is counterclockwise and <code>setRotationClockwise</code> sits beside it on <code>Arc</code>, <code>Container</code> and <code>Stamp</code>. <code>Image</code> and <code>Page</code> have only the clockwise one. Text has <code>setTextRotation</code> in degrees, but <code>TextBox.setTextDirection</code> takes the barcode <code>Direction</code> enum for the same thing.</p>
+  <span class="label">Suggestion</span>
+  <p>One <code>setRotation(degrees)</code> with one documented direction on every shape, and <code>setTextRotation(degrees)</code> on <code>TextBox</code>. <code>Direction</code> stays with barcodes only.</p>
+</section>
+
+<section class="item">
+  <h3>Spacing has four names and two units <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>setLineGap</code>, <code>setLineSpacing</code>, <code>setParagraphGap</code> and <code>setParagraphSpacing</code>. <code>TextBlock.setLineSpacing</code> is a multiple of the body height; the others are points.</p>
+  <span class="label">Suggestion</span>
+  <p>The text merge settles this. One name and one unit for line spacing and one for paragraph spacing.</p>
+</section>
+
+<section class="item">
+  <h3>Small name pairs <span class="chip now">9.0.0</span></h3>
+  <ul>
+    <li><code>setBorderPattern</code> on <code>Rect</code>, <code>Text</code> and <code>TextFrame</code> against <code>setStrokeDashPattern</code> and <code>setGridLineDashPattern</code> everywhere else. Use <code>setBorderDashPattern</code>.</li>
+    <li><code>Container.setScaleFactor</code> and <code>setScaleFactorXY</code> against <code>scaleBy</code> on every other shape and image.</li>
+    <li><code>Chart.setDrawHGridLines</code> and <code>setHGridLineDashPattern</code> abbreviate where <code>BarChart.setDrawGridLines</code> does not.</li>
+  </ul>
+</section>
+
+<section class="item">
+  <h3>Constants that escaped the v9 typing <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Point</code> shapes are int constants and <code>StructElem</code> values are strings in Java, C# and Swift, while Go already has typed <code>shape</code> and <code>structtype</code> packages. <code>Compress.YES</code> is a boolean wearing an enum, with one caller.</p>
+  <span class="label">Suggestion</span>
+  <p>A <code>Shape</code> enum and a <code>StructElem</code> enum, as <code>CapStyle</code> and <code>Alignment</code> were done. <code>EmbeddedFile</code> takes a boolean and <code>Compress</code> goes.</p>
+</section>
+
+<section class="item">
+  <h3>Page.drawString has seven overloads <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p>Font, fallback font, size, text, position, colour, highlight colours and letter spacing in seven combinations, and Go names five variants. Thirty examples draw text with <code>TextLine</code>; four call <code>drawString</code>.</p>
+  <span class="label">Suggestion</span>
+  <p>Keep the two plain forms, font plus text plus position and the same with a size. Colour, highlights, spacing and fallback fonts go through <code>TextLine</code>, which has them already.</p>
+</section>
+
+<section class="item">
+  <h3>Java doubles every float setter <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p>Sixty five public methods exist only to accept a <code>double</code> beside the <code>float</code> version. They are a quarter of the Java overloads and none of the other ports has them.</p>
+  <span class="label">Suggestion</span>
+  <p>Drop them. Callers write <code>50f</code>, as the examples already do.</p>
+</section>
+
+<section class="item">
+  <h3>Image needs to be told its type <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Image(pdf, stream, ImageType.PNG)</code> asks for what the first bytes of the stream already say.</p>
+  <span class="label">Suggestion</span>
+  <p>Detect PNG, JPEG and BMP from the signature. <code>ImageType</code> leaves the constructor.</p>
+</section>
+
+<section class="item">
+  <h3>Permissions drift between ports <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p>C# has <code>Access</code> and <code>GetAccess</code>, <code>RawValue</code> and <code>GetRawValue</code>. Go has <code>Has</code>, <code>Add</code> and <code>Remove</code> on <code>UserAccess</code> where Java and Swift have <code>getValue</code> and <code>isSetIn</code>, and two Go constructors from an int.</p>
+  <span class="label">Suggestion</span>
+  <p>One getter and one query per port, matched in the audit like every other member.</p>
+</section>
+
+<h2 id="hide">Hide what is not for users</h2>
+<p>Everything here is visible in the generated references and in code completion, and none of it helps someone making a PDF.</p>
+
+<section class="item">
+  <h3>Public fields <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Paragraph</code> exposes six coordinates, <code>Container</code> seven layout fields, <code>Title</code> its two <code>TextLine</code> objects and <code>Slice</code> its three values. Example_03 reads the paragraph coordinates and Example_48 passes <code>title.prefix</code> to <code>Bookmark.autoNumber</code>.</p>
+  <span class="label">Suggestion</span>
+  <p>Private fields, plus the one or two getters those examples need.</p>
+</section>
+
+<section class="item">
+  <h3>Java internals <span class="chip now">9.0.0</span></h3>
+  <ul>
+    <li><code>PDF.append</code>, <code>newObj</code>, <code>endObj</code> and <code>getObjNumber</code>; <code>Encryption.getKey</code> and <code>getObjNumber</code>; the <code>AES128</code> and <code>AES256</code> classes.</li>
+    <li><code>Barcode.drawOnPageAtLocation</code>, called only by <code>Cell</code>.</li>
+    <li><code>ColorMap</code>, used only by SVG parsing; the Swift copy exists only for reflection.</li>
+    <li><code>TextUtils.printDuration</code>, used only by the examples, and the two font generator classes with <code>main</code> methods.</li>
+    <li><code>Util.readLines</code> duplicates <code>Content.ofTextFile</code>, which the examples already prefer.</li>
+  </ul>
+</section>
+
+<section class="item">
+  <h3>Go exports what the others hide <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p>Twenty three exported types exist only in Go: <code>bmpImage</code>, <code>jpgImage</code>, <code>Chunk</code>, <code>code128</code>, <code>compressor</code>, <code>decompressor</code>, <code>crc32util</code>, <code>device</code>, <code>embed</code>, <code>fastfloat</code>, <code>FontTable</code>, <code>OCG</code>, <code>Owner</code>, <code>User</code>, <code>PathOp</code>, <code>SVG</code>, <code>SVGPath</code>, <code>State</code>, <code>structtype</code>, <code>shape</code>, <code>iccblackscaled</code>, <code>Annotation</code> and <code>AnnotationType</code>. Go-only methods too: <code>Paragraph.GetX1</code> and its siblings, <code>Page.AddImageResource</code>, <code>Title.GetPrefix</code>.</p>
+  <span class="label">Suggestion</span>
+  <p>Unexport them. The first table of the audit report then nearly empties.</p>
+</section>
+
+<section class="item">
+  <h3>PDF operators as method names <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Page.addBDC</code>, <code>addEMC</code> and <code>addArtifactBMC</code> are correct and opaque. <code>Page.transform</code> with the <code>MSCALE_X</code> index constants is an Android matrix convention with no caller in the examples.</p>
+  <span class="label">Suggestion</span>
+  <p><code>beginMarkedContent</code>, <code>endMarkedContent</code> and <code>beginArtifact</code>. Keep <code>transform</code> but take six named values instead of indexed constants.</p>
+</section>
+
+<section class="item">
+  <h3>Chart leftovers <span class="chip now">9.0.0</span></h3>
+  <span class="label">Finding</span>
+  <p><code>Chart.setFontSize</code> overrides both fonts while <code>BarChart</code> uses the font sizes. <code>slope</code> and <code>intercept</code> are statistics on a chart object. <code>setAutoColors</code> has no clear meaning.</p>
+  <span class="label">Suggestion</span>
+  <p>Drop all three and match <code>BarChart</code>. Example_09 computes its trend line with two static helpers or in the example.</p>
+</section>
+
+<h2 id="plan">What to do in 9.0.0</h2>
+<div class="plan">
+  <p>The second and third groups are a few days across the four ports, with <code>audit-api.py</code> and <code>check-examples.sh</code> as the checks, and they are breaking, so they belong in this release.</p>
+  <p>Done so far: <code>Text</code> removed (7cd7044a) and the colour forms settled (67bcbb69). From the first group, the <code>TextBlock</code> into <code>TextBox</code> merge and the <code>Slice</code> value fix remain.</p>
+  <p>Leave <code>TextColumn</code>, the two tables and the chart series for 10.0. Each is a redesign, not a rename.</p>
+</div>
+</div>
+</body>
+</html>
