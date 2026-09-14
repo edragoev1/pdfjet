@@ -6,6 +6,9 @@
  */
 package com.pdfjet.encryption;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Encapsulates the user access permissions for a PDF document as specified in
  * ISO 32000-2, Table 22. Provides a type-safe interface to manipulate and query
@@ -40,25 +43,34 @@ public class Permissions {
     }
 
     /**
-     * Gets the permissions as the combination of the UserAccess values. All
-     * reserved bits are zero. Encryption sets the reserved bits that ISO 32000-2
-     * requires to be one when it writes the /P key.
+     * Returns a copy of the granted permissions. They are the /P key without its
+     * reserved bits; Encryption sets the reserved bits that ISO 32000-2 requires
+     * to be one when it writes the /P key.
      *
-     * @return the permissions flags.
+     * @return the granted UserAccess values.
      */
-    public int getAccess() {
-        return permissionsFlags;
+    public Set<UserAccess> getAccess() {
+        EnumSet<UserAccess> access = EnumSet.noneOf(UserAccess.class);
+        for (UserAccess value : UserAccess.values()) {
+            if (value != UserAccess.NONE && isGranted(value)) {
+                access.add(value);
+            }
+        }
+        return access;
     }
 
     /**
-     * Sets the permissions using the type-safe UserAccess enum values.
-     * The value is automatically masked to ensure any invalid bits are cleared.
+     * Sets the granted permissions. The permissions that are not in the set are revoked.
      *
-     * @param access the UserAccess values combined with bitwise OR.
+     * @param access the UserAccess values to grant.
      * @return this Permissions object.
      */
-    public Permissions setAccess(int access) {
-        permissionsFlags = access & VALID_BITS_MASK;
+    public Permissions setAccess(Set<UserAccess> access) {
+        permissionsFlags = 0;
+        for (UserAccess value : access) {
+            permissionsFlags |= value.getValue();
+        }
+        permissionsFlags &= VALID_BITS_MASK;
         return this;
     }
 
@@ -69,7 +81,7 @@ public class Permissions {
      * @return true if the user can print the document.
      */
     public boolean canPrint() {
-        return UserAccess.PRINT.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.PRINT);
     }
 
     /**
@@ -78,7 +90,7 @@ public class Permissions {
      * @return true if the user can modify the contents.
      */
     public boolean canModifyContents() {
-        return UserAccess.MODIFY_CONTENTS.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.MODIFY_CONTENTS);
     }
 
     /**
@@ -87,7 +99,7 @@ public class Permissions {
      * @return true if the user can copy the contents.
      */
     public boolean canCopyContents() {
-        return UserAccess.COPY_CONTENTS.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.COPY_CONTENTS);
     }
 
     /**
@@ -97,7 +109,7 @@ public class Permissions {
      * @return true if the user can modify annotations.
      */
     public boolean canModifyAnnotations() {
-        return UserAccess.MODIFY_ANNOTATIONS.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.MODIFY_ANNOTATIONS);
     }
 
     /**
@@ -106,7 +118,7 @@ public class Permissions {
      * @return true if the user can fill form fields.
      */
     public boolean canFillFormFields() {
-        return UserAccess.FILL_FORM_FIELDS.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.FILL_FORM_FIELDS);
     }
 
     /**
@@ -115,7 +127,7 @@ public class Permissions {
      * @return true if the user can extract content for accessibility.
      */
     public boolean canExtractForAccessibility() {
-        return UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
     }
 
     /**
@@ -124,7 +136,7 @@ public class Permissions {
      * @return true if the user can assemble the document.
      */
     public boolean canAssembleDocument() {
-        return UserAccess.ASSEMBLE_DOCUMENT.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.ASSEMBLE_DOCUMENT);
     }
 
     /**
@@ -133,17 +145,19 @@ public class Permissions {
      * @return true if the user can print at high quality.
      */
     public boolean canPrintHighQuality() {
-        return UserAccess.PRINT_HIGH_QUALITY.isSetIn(permissionsFlags);
+        return isGranted(UserAccess.PRINT_HIGH_QUALITY);
     }
 
     /**
      * Grants the specified permissions. The other permissions stay as they are.
      *
-     * @param permissions the permissions to grant, the UserAccess values combined with |.
+     * @param permissions the UserAccess values to grant.
      * @return this Permissions object.
      */
-    public Permissions grant(int permissions) {
-        permissionsFlags |= permissions;
+    public Permissions grant(UserAccess... permissions) {
+        for (UserAccess value : permissions) {
+            permissionsFlags |= value.getValue();
+        }
         // Re-apply mask to ensure no invalid bits were set
         permissionsFlags &= VALID_BITS_MASK;
         return this;
@@ -152,13 +166,19 @@ public class Permissions {
     /**
      * Revokes the specified permissions. The other permissions stay as they are.
      *
-     * @param permissions the permissions to revoke, the UserAccess values combined with |.
+     * @param permissions the UserAccess values to revoke.
      * @return this Permissions object.
      */
-    public Permissions revoke(int permissions) {
-        permissionsFlags &= ~permissions;
+    public Permissions revoke(UserAccess... permissions) {
+        for (UserAccess value : permissions) {
+            permissionsFlags &= ~value.getValue();
+        }
         permissionsFlags &= VALID_BITS_MASK;
         return this;
+    }
+
+    private boolean isGranted(UserAccess access) {
+        return (permissionsFlags & access.getValue()) == access.getValue();
     }
 
     /**

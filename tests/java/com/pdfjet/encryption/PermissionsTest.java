@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.EnumSet;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PermissionsTest {
@@ -29,27 +31,39 @@ class PermissionsTest {
     @Test
     void newPermissionsGrantNothing() {
         Permissions permissions = new Permissions();
-        assertEquals(0, permissions.getAccess());
+        assertTrue(permissions.getAccess().isEmpty());
         assertFalse(permissions.canPrint());
         assertFalse(permissions.canCopyContents());
     }
 
     @Test
     void grantAndRevokeChangeOnlyTheirBits() {
-        Permissions permissions = new Permissions()
-                .grant(UserAccess.PRINT.getValue() | UserAccess.COPY_CONTENTS.getValue());
-        assertEquals(20, permissions.getAccess());
+        Permissions permissions = new Permissions().grant(UserAccess.PRINT, UserAccess.COPY_CONTENTS);
+        assertEquals(EnumSet.of(UserAccess.PRINT, UserAccess.COPY_CONTENTS), permissions.getAccess());
+        assertEquals("Permissions: 0x14 (Raw Value: 20)", permissions.toString());
         assertTrue(permissions.canPrint() && permissions.canCopyContents());
-        permissions.revoke(UserAccess.PRINT.getValue());
-        assertEquals(16, permissions.getAccess());
+        permissions.revoke(UserAccess.PRINT);
+        assertEquals(EnumSet.of(UserAccess.COPY_CONTENTS), permissions.getAccess());
         assertFalse(permissions.canPrint());
         assertTrue(UserAccess.COPY_CONTENTS.isSetIn(permissions.getAccess()));
         assertFalse(UserAccess.PRINT.isSetIn(permissions.getAccess()));
+        assertTrue(UserAccess.NONE.isSetIn(permissions.getAccess()));
+    }
+
+    @Test
+    void setAccessReplacesThePermissionsAndGetAccessReturnsACopy() {
+        Permissions permissions = new Permissions().grant(UserAccess.PRINT)
+                .setAccess(EnumSet.of(UserAccess.COPY_CONTENTS, UserAccess.NONE));
+        Set<UserAccess> access = permissions.getAccess();
+        assertEquals(EnumSet.of(UserAccess.COPY_CONTENTS), access);
+        access.add(UserAccess.PRINT);
+        assertFalse(permissions.canPrint());
     }
 
     @Test
     void rawFlagsKeepOnlyTheValidBits() {
-        assertEquals(0xFFC, new Permissions(0xFFFFFFFF).getAccess());
-        assertEquals(0, new Permissions(0x3).getAccess());
+        assertEquals(EnumSet.complementOf(EnumSet.of(UserAccess.NONE)), new Permissions(0xFFFFFFFF).getAccess());
+        assertEquals("Permissions: 0xFFC (Raw Value: 4092)", new Permissions(0xFFFFFFFF).toString());
+        assertTrue(new Permissions(0x3).getAccess().isEmpty());
     }
 }

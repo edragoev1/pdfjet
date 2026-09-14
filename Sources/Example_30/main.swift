@@ -15,11 +15,11 @@ public class Example_30 {
 
         let permissions = Permissions()
         permissions.grant(
-            UserAccess.PRINT.getValue() |               // Set both to allow the user to print
-            UserAccess.PRINT_HIGH_QUALITY.getValue() |  // this document with high quality
-            // UserAccess.MODIFY_CONTENTS.getValue() |
-            // UserAccess.COPY_CONTENTS.getValue() |
-            UserAccess.ASSEMBLE_DOCUMENT.getValue())
+            UserAccess.PRINT |               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY |  // this document with high quality
+            // UserAccess.MODIFY_CONTENTS |
+            // UserAccess.COPY_CONTENTS |
+            UserAccess.ASSEMBLE_DOCUMENT)
 
         pdf.setEncryption(Encryption(pdf, passwords, permissions))
 

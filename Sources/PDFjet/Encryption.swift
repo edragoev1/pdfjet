@@ -53,14 +53,13 @@ public class Encryption {
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
         if pdf.getCompliance() == Compliance.PDF_UA_1 {
-            permissions.grant(
-                    UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.getValue())
+            permissions.grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY)
         }
 
         // The flags specifying which operations shall be permitted, with the
         // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
         // so the value is negative.
-        let p = Int(Int32(bitPattern: UInt32(permissions.getAccess()) | 0xFFFFF0C0))
+        let p = Int(Int32(bitPattern: UInt32(permissions.getAccess().getValue()) | 0xFFFFF0C0))
 
         // Algorithm 10: the Perms value.
         var perms = [UInt8](repeating: 0xFF, count: 8)   // P extended to 64 bits

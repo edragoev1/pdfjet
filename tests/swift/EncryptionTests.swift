@@ -22,7 +22,7 @@ import Testing
     private func encrypted(_ user: String, _ owner: String) throws -> [UInt8] {
         return try encrypted(Compliance.PDF_1_7,
                 Passwords().setUserPassword(user).setOwnerPassword(owner),
-                Permissions().grant(UserAccess.PRINT.getValue()))
+                Permissions().grant(UserAccess.PRINT))
     }
 
     private func accessValue(_ pdf: [UInt8], sourceLocation: SourceLocation = #_sourceLocation) throws -> Int {
@@ -81,9 +81,9 @@ import Testing
     @Test func pdfUaGrantsExtractionForAccessibility() throws {
         let pdf = try encrypted(Compliance.PDF_UA_1,
                 Passwords().setUserPassword("hello").setOwnerPassword("world"),
-                Permissions().grant(UserAccess.PRINT.getValue()))
+                Permissions().grant(UserAccess.PRINT))
         let access = try accessValue(pdf)
         #expect(access == -3388)
-        #expect(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(access))
+        #expect(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(Permissions(access).getAccess()))
     }
 }

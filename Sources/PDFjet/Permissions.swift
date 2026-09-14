@@ -36,26 +36,26 @@ public class Permissions: CustomStringConvertible {
     }
 
     ///
-    /// Gets the permissions as the combination of the UserAccess values. All
-    /// reserved bits are zero. Encryption sets the reserved bits that
-    /// ISO 32000-2 requires to be one when it writes the /P key.
+    /// Gets the granted permissions. They are the /P key without its reserved
+    /// bits; Encryption sets the reserved bits that ISO 32000-2 requires to be
+    /// one when it writes the /P key.
     ///
-    /// - Returns: the permissions flags.
+    /// - Returns: the granted permissions.
     ///
-    public func getAccess() -> Int {
-        return permissionsFlags
+    public func getAccess() -> UserAccess {
+        return UserAccess(rawValue: permissionsFlags)
     }
 
     ///
-    /// Sets the permissions using the UserAccess values. The value is
-    /// automatically masked to ensure any invalid bits are cleared.
+    /// Sets the granted permissions. The value is automatically masked to
+    /// ensure any invalid bits are cleared.
     ///
-    /// - Parameter access: the UserAccess values combined with bitwise OR.
+    /// - Parameter access: the UserAccess values combined with |.
     /// - Returns: this Permissions object.
     ///
     @discardableResult
-    public func setAccess(_ access: Int) -> Permissions {
-        permissionsFlags = access & Permissions.VALID_BITS_MASK
+    public func setAccess(_ access: UserAccess) -> Permissions {
+        permissionsFlags = access.rawValue & Permissions.VALID_BITS_MASK
         return self
     }
 
@@ -66,7 +66,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can print the document.
     ///
     public func canPrint() -> Bool {
-        return UserAccess.PRINT.isSetIn(permissionsFlags)
+        return UserAccess.PRINT.isSetIn(getAccess())
     }
 
     ///
@@ -76,7 +76,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can modify the contents.
     ///
     public func canModifyContents() -> Bool {
-        return UserAccess.MODIFY_CONTENTS.isSetIn(permissionsFlags)
+        return UserAccess.MODIFY_CONTENTS.isSetIn(getAccess())
     }
 
     ///
@@ -85,7 +85,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can copy the contents.
     ///
     public func canCopyContents() -> Bool {
-        return UserAccess.COPY_CONTENTS.isSetIn(permissionsFlags)
+        return UserAccess.COPY_CONTENTS.isSetIn(getAccess())
     }
 
     ///
@@ -95,7 +95,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can modify annotations.
     ///
     public func canModifyAnnotations() -> Bool {
-        return UserAccess.MODIFY_ANNOTATIONS.isSetIn(permissionsFlags)
+        return UserAccess.MODIFY_ANNOTATIONS.isSetIn(getAccess())
     }
 
     ///
@@ -105,7 +105,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can fill form fields.
     ///
     public func canFillFormFields() -> Bool {
-        return UserAccess.FILL_FORM_FIELDS.isSetIn(permissionsFlags)
+        return UserAccess.FILL_FORM_FIELDS.isSetIn(getAccess())
     }
 
     ///
@@ -115,7 +115,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can extract content for accessibility.
     ///
     public func canExtractForAccessibility() -> Bool {
-        return UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(permissionsFlags)
+        return UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(getAccess())
     }
 
     ///
@@ -125,7 +125,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can assemble the document.
     ///
     public func canAssembleDocument() -> Bool {
-        return UserAccess.ASSEMBLE_DOCUMENT.isSetIn(permissionsFlags)
+        return UserAccess.ASSEMBLE_DOCUMENT.isSetIn(getAccess())
     }
 
     ///
@@ -135,7 +135,7 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: true if the user can print at high quality.
     ///
     public func canPrintHighQuality() -> Bool {
-        return UserAccess.PRINT_HIGH_QUALITY.isSetIn(permissionsFlags)
+        return UserAccess.PRINT_HIGH_QUALITY.isSetIn(getAccess())
     }
 
     ///
@@ -146,8 +146,8 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: this Permissions object.
     ///
     @discardableResult
-    public func grant(_ permissions: Int) -> Permissions {
-        permissionsFlags |= permissions
+    public func grant(_ permissions: UserAccess) -> Permissions {
+        permissionsFlags |= permissions.rawValue
         // Re-apply mask to ensure no invalid bits were set
         permissionsFlags &= Permissions.VALID_BITS_MASK
         return self
@@ -161,8 +161,8 @@ public class Permissions: CustomStringConvertible {
     /// - Returns: this Permissions object.
     ///
     @discardableResult
-    public func revoke(_ permissions: Int) -> Permissions {
-        permissionsFlags &= ~permissions
+    public func revoke(_ permissions: UserAccess) -> Permissions {
+        permissionsFlags &= ~permissions.rawValue
         permissionsFlags &= Permissions.VALID_BITS_MASK
         return self
     }

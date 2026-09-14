@@ -112,14 +112,13 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Moves this text line down by the specified leading.
+     * Returns the location of this text line: the x coordinate of the start of
+     * the text and the y coordinate of its baseline.
      *
-     * @param leading the distance to move down.
-     * @return the new y coordinate.
+     * @return the x and y coordinates.
      */
-    public float advance(float leading) {
-        this.y += leading;
-        return this.y;
+    public float[] getLocation() {
+        return new float[] {this.x, this.y};
     }
 
     /**
@@ -309,19 +308,6 @@ public class TextLine implements Drawable {
      * @return the width.
      */
     public float getWidth() {
-        if (text == null) {
-            return 0f;
-        }
-        return font.stringWidth(fallbackFont, this.fontSize, text);
-    }
-
-    /**
-     * Returns the string width of the specified string.
-     *
-     * @param text the text string.
-     * @return the width.
-     */
-    public float getStringWidth(String text) {
         if (text == null) {
             return 0f;
         }

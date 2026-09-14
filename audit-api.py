@@ -22,7 +22,8 @@ class of the same name.
 A public no-arg constructor of a class that has only constants and static
 members is not reported: Java declares one for javadoc and C# has an implicit
 one. C# properties count as members, matched by name with the getters of the
-other ports.
+other ports. Swift operators, and the rawValue and init(rawValue:) of an
+OptionSet, are not members.
 
 The report has three tables: types that are not in every port, members that
 are not in every port of a type that is, and members whose numbers of
@@ -294,14 +295,18 @@ def read_swift(api, path):
                 start = text.index("(", sum(len(l) + 1 for l in lines[:i]) + len(line) - len(line.lstrip()) + m.end() - len(m.group(0)) + len(m.group(0)) - 1)
                 close = matching_paren(text, start)
                 params = text[start + 1:close]
-                mem = members.setdefault("<init>" if what == "init" else key_of(name),
-                                         Member("ctor" if what == "init" else "method", "static" in stripped))
-                mem.add("init" if what == "init" else name)
-                mem.arities.update(swift_arities(params))
+                # An operator has no name, and init(rawValue:) is what an OptionSet requires.
+                if name or (what == "init" and not params.strip().startswith("rawValue:")):
+                    mem = members.setdefault("<init>" if what == "init" else key_of(name),
+                                             Member("ctor" if what == "init" else "method", "static" in stripped))
+                    mem.add("init" if what == "init" else name)
+                    mem.arities.update(swift_arities(params))
                 skipped = text[start:close].count("\n")
                 depth += sum(l.count("{") - l.count("}") for l in lines[i:i + skipped])
                 i += skipped
                 line = lines[i]
+            elif name == "rawValue":
+                pass    # required by OptionSet
             elif "static" in stripped or what == "let":
                 members.setdefault(key_of(name), Member("const")).add(name)
             else:

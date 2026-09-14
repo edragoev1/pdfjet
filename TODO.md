@@ -32,10 +32,9 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 - ✅ **B** `Stamp.Rectangle()` and `Stamp.Draw()` were empty stubs in Go and C#,
       `rectangle()` and `draw()` in Java, `rectangle()` in Swift. Removed from
       all four ports; nothing used them.
-- ✅ S `Permissions`/`UserAccess` stay int based in Java and Swift: Java has
-      no flags enum and a Swift `OptionSet` is not an enum, so both keep the
-      enum with the bit values of the standard, combined with `|` on
-      `getValue()`. Documented in the README Port differences section.
+- ✅ S `Permissions`/`UserAccess` stayed int based in Java and Swift (Sep 13);
+      the second audit made them typed on Sep 14, see "Second audit,
+      permission types" below.
 - ✅ **B** Decide which renames from the API audit below go into 9.0.0: all
       of them, and every other change the audit lists (decided Sep 13).
       They are breaking changes, so they land before the CHANGELOG entry.
@@ -565,6 +564,20 @@ renames included (the Week 1 decision), so every item is a blocker.
       which returns the bottom right corner; `Form.setFormWidth` is `setWidth`
       and `Path.setClosePath` is `setClosed`, with their fields, in the four
       ports. Example_25 and the unit tests place the chart at the same center.
+- ✅ **B** Second audit, odd members (Sep 14, `api-suggestions.html`):
+      `TextLine.getStringWidth(text)` measured any text with the font of the
+      line, which is `Font.stringWidth`; removed from the four ports, with no
+      callers. `getWidth` measures the text of the line.
+      `TextLine.advance(leading)` moved the line down without saying so, and
+      the location of a line could not be read; `getLocation` replaces it in
+      the four ports, as in `TextBlock` and `CompositeTextLine`.
+- ✅ **B** Second audit, permission types (Sep 14, `api-suggestions.html`):
+      `Permissions` took the `UserAccess` values as an `int` in Java and Swift
+      and as a typed value in C# and Go. Java `grant` and `revoke` take
+      `UserAccess...` and `getAccess`/`setAccess` a `Set<UserAccess>`; the
+      Swift `UserAccess` is an `OptionSet` combined with `|`, as in C# and Go;
+      `isSetIn` takes the typed permissions. Example_30, the unit tests and
+      the README port note follow.
 
 ### Types and signatures
 

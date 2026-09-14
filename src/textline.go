@@ -202,11 +202,6 @@ func (textLine *TextLine) GetWidth() float32 {
 	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
 
-// GetStringWidth returns the width of the specified string.
-func (textLine *TextLine) GetStringWidth(text string) float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, text)
-}
-
 // GetHeight returns the height of this TextLine.
 // Returns the height.
 func (textLine *TextLine) GetHeight() float32 {
@@ -532,8 +527,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	return [2]float32{float32(xMax), float32(yMax)}
 }
 
-// Advance moves this text line down by the leading and returns the new y coordinate.
-func (textLine *TextLine) Advance(leading float32) float32 {
-	textLine.y += leading
-	return textLine.y
+// GetLocation returns the x coordinate of the start of the text and the y coordinate of its baseline.
+func (textLine *TextLine) GetLocation() [2]float32 {
+	return [2]float32{textLine.x, textLine.y}
 }

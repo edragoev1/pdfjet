@@ -43,7 +43,7 @@ class EncryptionTest {
     private static byte[] encrypted(String user, String owner) throws Exception {
         return encrypted(Compliance.PDF_1_7,
                 new Passwords().setUserPassword(user).setOwnerPassword(owner),
-                new Permissions().grant(UserAccess.PRINT.getValue()));
+                new Permissions().grant(UserAccess.PRINT));
     }
 
     private static int accessValue(byte[] pdf) {
@@ -114,9 +114,9 @@ class EncryptionTest {
     void pdfUaGrantsExtractionForAccessibility() throws Exception {
         byte[] pdf = encrypted(Compliance.PDF_UA_1,
                 new Passwords().setUserPassword("hello").setOwnerPassword("world"),
-                new Permissions().grant(UserAccess.PRINT.getValue()));
+                new Permissions().grant(UserAccess.PRINT));
         int access = accessValue(pdf);
         assertEquals(-3388, access);
-        assertTrue(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(access));
+        assertTrue(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(new Permissions(access).getAccess()));
     }
 }

@@ -6,10 +6,13 @@
  */
 package com.pdfjet.encryption;
 
+import java.util.Set;
+
 /**
  * Represents the user access permissions for an encrypted PDF document as defined in
  * ISO 32000-2 (PDF 2.0) Table 22. Permissions are stored as flags in a 32-bit integer,
- * whose bit positions are numbered from 1, the low-order bit.
+ * whose bit positions are numbered from 1, the low-order bit. Permissions.grant and
+ * revoke take these values, and Permissions.getAccess returns them as a set.
  */
 public enum UserAccess {
     /**
@@ -91,12 +94,12 @@ public enum UserAccess {
     }
 
     /**
-     * Checks if this permission is contained in the given flags.
+     * Checks if this permission is in the given permissions. NONE is in all of them.
      *
-     * @param flags the permissions flags.
-     * @return true if this permission is set in the flags.
+     * @param access the permissions, as Permissions.getAccess returns them.
+     * @return true if this permission is in the permissions.
      */
-    public boolean isSetIn(int flags) {
-        return (flags & value) == value;
+    public boolean isSetIn(Set<UserAccess> access) {
+        return value == 0 || access.contains(this);
     }
 }

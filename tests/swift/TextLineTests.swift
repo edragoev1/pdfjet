@@ -27,6 +27,11 @@ import Testing
         #expect(page.getContent().isEmpty)
     }
 
+    @Test func getLocationReturnsTheLocation() {
+        let line = TextLine(TestSupport.helvetica(TestSupport.newPDF()), "x").setLocation(5, 6)
+        TestSupport.expectXY(5, 6, line.getLocation())
+    }
+
     @Test func colorSettersConvertAndCopy() {
         let line = TextLine(TestSupport.helvetica(TestSupport.newPDF()), "x")
         _ = line.setTextColor(Int32(0xFF8000))

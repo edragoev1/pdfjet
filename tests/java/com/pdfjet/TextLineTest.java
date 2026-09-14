@@ -36,6 +36,13 @@ class TextLineTest {
     }
 
     @Test
+    void getLocationReturnsACopyOfTheLocation() throws Exception {
+        TextLine line = new TextLine(TestSupport.helvetica(TestSupport.newPDF()), "x").setLocation(5f, 6f);
+        line.getLocation()[1] = 60f;
+        TestSupport.assertXY(5f, 6f, line.getLocation());
+    }
+
+    @Test
     void colorSettersConvertAndCopy() throws Exception {
         TextLine line = new TextLine(TestSupport.helvetica(TestSupport.newPDF()), "x");
         line.setTextColor(0xFF8000);

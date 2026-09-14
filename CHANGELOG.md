@@ -141,7 +141,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - The `UserAccess` values are the permission bits of the standard, so code
   that passed raw integers must use them, `/P` is written with its reserved
   bits set, and `Permissions.grant` and `revoke` replace
-  `setPermissions(flags, grant)`.
+  `setPermissions(flags, grant)`. They take typed values in the four ports:
+  Java `grant(UserAccess...)` and `revoke`, with a `Set<UserAccess>` for
+  `getAccess` and `setAccess`, and in Swift a `UserAccess` option set combined
+  with `|`, where both took an `int` built from `getValue()`.
 - Java: the font name classes and the QR code, PDF417 and Data Matrix classes
   are in `com.pdfjet.fonts`, `com.pdfjet.qrcode`, `com.pdfjet.pdf417` and
   `com.pdfjet.datamatrix`; import them.
@@ -426,8 +429,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `setRotationClockwise`, and a text rotation in degrees with
   `setTextRotation`.
 - Scaling and moving: `Arc.scaleBy`, `TextParameters.setLocation`,
-  `CompositeTextLine.getLocation` and `getMinMaxY`, and `Title.setOffset` sets
-  the offset.
+  `CompositeTextLine.getLocation` and `getMinMaxY`, `TextLine.getLocation`,
+  which replaces `advance`, and `Title.setOffset` sets the offset.
 - Alignment: `Cell.setVerticalAlignment`, `Table.setTextAlignmentInColumn`,
   and `Paragraph` and `TextColumn.setTextAlignment`.
 - Text boxes: a gap is in points and a spacing a multiplier, so `setPadding`,
@@ -435,7 +438,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `Paragraph.setTextColor`, `TextLine.setDecorationColor` and
   `CheckBox.setCheckmarkColor`.
 - Duplicates are removed: `Table.getCellAtRowColumn`, `getRowAtIndex` and
-  `getColumnAtIndex`, `Font.getHeight`, `Container.addBorder`, the `Cell`
+  `getColumnAtIndex`, `Font.getHeight`, `TextLine.getStringWidth`, which is
+  `Font.stringWidth`, `Container.addBorder`, the `Cell`
   side border methods, and `TextColumn.addChineseParagraph` and
   `addJapaneseParagraph`, which are one `addCJKParagraph`.
 - Misleading names are renamed: `BaseAnnotation.setOpacity`,
@@ -527,8 +531,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   fields and `OptionalContentGroup.getComponents` returns a copy in the
   four ports; the saved graphics state stores the brush and the pen in the
   same order everywhere; C# `setPenColor(int)` and `setBrushColor(int)` call
-  the array overloads; Swift `Title.setPrefix` and `TextLine.advance` may be
-  called without using the result; Go `Form.drawOn` names a nil page, and
+  the array overloads; Swift `Title.setPrefix` may be called without using
+  the result; Go `Form.drawOn` names a nil page, and
   Go has `NewPDFReader()` for the reading-only `PDF()` constructor of the
   other ports. Go keeps `AddBDC` with the language, `NewParagraph()` and an
   array-only `Cell.SetBorderColorRGB` as documented conventions.

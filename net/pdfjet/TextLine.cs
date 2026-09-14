@@ -243,17 +243,6 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Returns the string width of the specified string.
-    /// </summary>
-    /// <returns>the width.</returns>
-    public float GetStringWidth(String text) {
-        if (text == null) {
-            return 0f;
-        }
-        return font.StringWidth(fallbackFont, this.fontSize, text);
-    }
-
-    /// <summary>
     /// Returns the height of this TextLine.
     /// </summary>
     /// <returns>the height.</returns>
@@ -467,10 +456,9 @@ public class TextLine : IDrawable {
         return this;
     }
 
-    /// <summary>Moves this text line down by the leading and returns the new y coordinate.</summary>
-    public float Advance(float leading) {
-        this.y += leading;
-        return this.y;
+    /// <summary>Returns the x coordinate of the start of the text and the y coordinate of its baseline.</summary>
+    public float[] GetLocation() {
+        return new float[] {this.x, this.y};
     }
 
     // Returns a new text line with the text and every setting of this text line,

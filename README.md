@@ -561,14 +561,15 @@ the barcode type, and throws the same messages from `init`. A mistake that
 would break the PDF is reported through `Complete` in Go and `complete()` in
 Swift; see "Mistakes that are refused".
 
-`Permissions` takes the `UserAccess` values as a typed flags value in C# (a
-`[Flags]` enum) and Go (a `UserAccess` bit set), and as an `int` in Java and
-Swift, where the values of the `UserAccess` enum are combined with `|` on
-`getValue()`, as Example_30 shows. Java has no flags enum, and a Swift
-`OptionSet` is a struct, not an enum, so both ports keep the enum with the bit
-values of the standard and the `int` that `Permissions` masks and checks. In
-all four ports `getAccess` is the `/P` entry of the encryption dictionary
-without its reserved bits, and `UserAccess.isSetIn(flags)` (Go `IsSetIn`, C#
+`Permissions` takes typed `UserAccess` values in the four ports. C# has a
+`[Flags]` enum, Go a `UserAccess` bit set and Swift an `OptionSet`, and the
+values are combined with `|`. A Java enum is not a set of flags, so Java
+`grant` and `revoke` take a list of values and `getAccess` and `setAccess` a
+`Set<UserAccess>`, as Example_30 shows. In all four ports the values are the
+permission bits of the standard (`getValue()` in Java and Swift), `getAccess`
+holds the `/P` entry of the encryption dictionary without its reserved bits,
+the constructor from an int (Go `NewPermissionsFromInt`) keeps the permission
+bits of a `/P` value, and `UserAccess.isSetIn(access)` (Go `IsSetIn`, C#
 `HasFlag`) asks whether one permission is in it.
 
 `./audit-api.py` lists the public types and members of the four ports, matches

@@ -22,25 +22,33 @@ import Testing
 
     @Test func newPermissionsGrantNothing() {
         let permissions = Permissions()
-        #expect(permissions.getAccess() == 0)
+        #expect(permissions.getAccess() == UserAccess.NONE)
         #expect(!permissions.canPrint())
         #expect(!permissions.canCopyContents())
     }
 
     @Test func grantAndRevokeChangeOnlyTheirBits() {
-        let permissions = Permissions()
-                .grant(UserAccess.PRINT.getValue() | UserAccess.COPY_CONTENTS.getValue())
-        #expect(permissions.getAccess() == 20)
+        let permissions = Permissions().grant(UserAccess.PRINT | UserAccess.COPY_CONTENTS)
+        #expect(permissions.getAccess() == UserAccess.PRINT | UserAccess.COPY_CONTENTS)
+        #expect(permissions.getAccess().getValue() == 20)
         #expect(permissions.canPrint() && permissions.canCopyContents())
-        _ = permissions.revoke(UserAccess.PRINT.getValue())
-        #expect(permissions.getAccess() == 16)
+        permissions.revoke(UserAccess.PRINT)
+        #expect(permissions.getAccess() == UserAccess.COPY_CONTENTS)
         #expect(!permissions.canPrint())
         #expect(UserAccess.COPY_CONTENTS.isSetIn(permissions.getAccess()))
         #expect(!UserAccess.PRINT.isSetIn(permissions.getAccess()))
+        #expect(UserAccess.NONE.isSetIn(permissions.getAccess()))
+    }
+
+    @Test func setAccessReplacesThePermissions() {
+        let permissions = Permissions().grant(UserAccess.PRINT)
+                .setAccess(UserAccess.COPY_CONTENTS | UserAccess.ASSEMBLE_DOCUMENT)
+        #expect(permissions.getAccess() == UserAccess.COPY_CONTENTS | UserAccess.ASSEMBLE_DOCUMENT)
+        #expect(!permissions.canPrint())
     }
 
     @Test func rawFlagsKeepOnlyTheValidBits() {
-        #expect(Permissions(0xFFFFFFFF).getAccess() == 0xFFC)
-        #expect(Permissions(0x3).getAccess() == 0)
+        #expect(Permissions(0xFFFFFFFF).getAccess().getValue() == 0xFFC)
+        #expect(Permissions(0x3).getAccess() == UserAccess.NONE)
     }
 }

@@ -247,15 +247,6 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Returns the width of the specified string.
-    ///
-    /// - Returns: the width.
-    ///
-    public func getStringWidth(_ text: String) -> Float {
-        return font!.stringWidth(fallbackFont, fontSize, text)
-    }
-
-    ///
     /// Returns the height of the text line.
     ///
     /// - Returns: the height.
@@ -498,11 +489,9 @@ public class TextLine : Drawable {
         return self
     }
 
-    /// Moves this text line down by the leading and returns the new y coordinate.
-    @discardableResult
-    public func advance(_ leading: Float) -> Float {
-        self.y += leading
-        return self.y
+    /// Returns the x coordinate of the start of the text and the y coordinate of its baseline.
+    public func getLocation() -> [Float] {
+        return [self.x, self.y]
     }
 
     /// Sets the colors used to highlight words in the text.

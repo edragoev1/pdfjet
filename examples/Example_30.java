@@ -20,11 +20,11 @@ public class Example_30 {
 
         Permissions permissions = new Permissions();
         permissions.grant(
-            UserAccess.PRINT.getValue() |               // Set both to allow the user to print
-            UserAccess.PRINT_HIGH_QUALITY.getValue() |  // this document with high quality
-            // UserAccess.MODIFY_CONTENTS.getValue() |
-            // UserAccess.COPY_CONTENTS.getValue() |
-            UserAccess.ASSEMBLE_DOCUMENT.getValue());
+            UserAccess.PRINT,               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY,  // this document with high quality
+            // UserAccess.MODIFY_CONTENTS,
+            // UserAccess.COPY_CONTENTS,
+            UserAccess.ASSEMBLE_DOCUMENT);
 
         pdf.setEncryption(new Encryption(pdf, passwords, permissions));
 

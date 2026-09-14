@@ -41,6 +41,12 @@ func TestTextLineEmptyTextDrawsNothingAndReturnsTheLocation(t *testing.T) {
 	}
 }
 
+func TestTextLineGetLocationReturnsTheLocation(t *testing.T) {
+	line := NewTextLine(testHelvetica(testNewPDF()), "x")
+	line.SetLocation(5, 6)
+	testAssertXY(t, 5, 6, line.GetLocation())
+}
+
 func TestTextLineColorSettersConvertAndCopy(t *testing.T) {
 	line := NewTextLine(testHelvetica(testNewPDF()), "x")
 	line.SetTextColor(0xFF8000)

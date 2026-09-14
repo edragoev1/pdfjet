@@ -30,6 +30,13 @@ public class TextLineTest {
     }
 
     [Fact]
+    public void GetLocationReturnsACopyOfTheLocation() {
+        TextLine line = new TextLine(TestSupport.Helvetica(TestSupport.NewPDF()), "x").SetLocation(5f, 6f);
+        line.GetLocation()[1] = 60f;
+        TestSupport.AssertXY(5f, 6f, line.GetLocation());
+    }
+
+    [Fact]
     public void ColorSettersConvertAndCopy() {
         TextLine line = new TextLine(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
         line.SetTextColor(0xFF8000);
