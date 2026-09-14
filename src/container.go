@@ -14,13 +14,13 @@ import (
 // Container represents a drawable container that can hold other drawable elements.
 // It supports positioning, scaling, and rotation.
 type Container struct {
-	X             float32    // The X coordinate of the container on the page.
-	Y             float32    // The Y coordinate of the container on the page.
-	Width         float32    // The width of the container.
-	Height        float32    // The height of the container.
-	RotateDegrees float32    // The rotation angle of the container in degrees.
-	ScaleX        float32    // The scaling factor along the X-axis.
-	ScaleY        float32    // The scaling factor along the Y-axis.
+	x             float32    // The X coordinate of the container on the page.
+	y             float32    // The Y coordinate of the container on the page.
+	width         float32    // The width of the container.
+	height        float32    // The height of the container.
+	rotateDegrees float32    // The rotation angle of the container in degrees.
+	scaleX        float32    // The scaling factor along the X-axis.
+	scaleY        float32    // The scaling factor along the Y-axis.
 	elements      []Drawable // The list of child drawable elements.
 	border        *Rect
 	parent        *Container
@@ -34,11 +34,11 @@ type Container struct {
 //   - An empty slice of drawable elements
 func NewContainer(width, height float32) *Container {
 	return &Container{
-		Width:         width,
-		Height:        height,
-		RotateDegrees: 0,
-		ScaleX:        1,
-		ScaleY:        1,
+		width:         width,
+		height:        height,
+		rotateDegrees: 0,
+		scaleX:        1,
+		scaleY:        1,
 		elements:      []Drawable{},
 	}
 }
@@ -47,8 +47,8 @@ func NewContainer(width, height float32) *Container {
 //
 // x is the horizontal coordinate and y is the vertical coordinate.
 func (c *Container) SetLocation(x, y float32) Drawable {
-	c.X = x
-	c.Y = y
+	c.x = x
+	c.y = y
 	return c
 }
 
@@ -56,7 +56,7 @@ func (c *Container) SetLocation(x, y float32) Drawable {
 //
 // degrees specifies the angle to rotate counter-clockwise.
 func (c *Container) SetRotation(degrees float64) *Container {
-	c.RotateDegrees = float32(degrees)
+	c.rotateDegrees = float32(degrees)
 	return c
 }
 
@@ -64,13 +64,13 @@ func (c *Container) SetRotation(degrees float64) *Container {
 //
 // degrees specifies the angle to rotate clockwise.
 func (c *Container) SetRotationClockwise(degrees float64) *Container {
-	c.RotateDegrees = float32(-degrees)
+	c.rotateDegrees = float32(-degrees)
 	return c
 }
 
 // GetRotationCenter returns the center of this container, which it rotates around.
 func (c *Container) GetRotationCenter() [2]float32 {
-	return [2]float32{c.X + c.Width/2.0, c.Y + c.Height/2.0}
+	return [2]float32{c.x + c.width/2.0, c.y + c.height/2.0}
 }
 
 // SetScaleFactor sets a uniform scaling factor for both X and Y axes.
@@ -86,15 +86,15 @@ func (c *Container) SetScaleFactor(factor float32) *Container {
 // sx specifies the scaling factor along the X-axis.
 // sy specifies the scaling factor along the Y-axis.
 func (c *Container) SetScaleFactorXY(sx, sy float32) *Container {
-	c.ScaleX = sx
-	c.ScaleY = sy
+	c.scaleX = sx
+	c.scaleY = sy
 	return c
 }
 
 // SetBorderColor sets the 0xRRGGBB color of the border around this container.
 func (c *Container) SetBorderColor(borderColor int32) *Container {
 	if c.border == nil {
-		c.border = NewRect(0.0, 0.0, c.Width, c.Height)
+		c.border = NewRect(0.0, 0.0, c.width, c.height)
 		c.Add(c.border)
 	}
 	c.border.SetBorderColor(borderColor)
@@ -105,7 +105,7 @@ func (c *Container) SetBorderColor(borderColor int32) *Container {
 // red, green and blue values.
 func (c *Container) SetBorderColorRGB(rgbColor [3]float32) *Container {
 	if c.border == nil {
-		c.border = NewRect(0.0, 0.0, c.Width, c.Height)
+		c.border = NewRect(0.0, 0.0, c.width, c.height)
 		c.Add(c.border)
 	}
 	c.border.SetBorderColorRGB(rgbColor)
@@ -139,13 +139,13 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 
 	// 1) Translate container to its final position
 	page.appendString("1 0 0 1 ")
-	page.appendByteArray(fastfloat.ToByteArray(c.X))
+	page.appendByteArray(fastfloat.ToByteArray(c.x))
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(-c.Y))
+	page.appendByteArray(fastfloat.ToByteArray(-c.y))
 	page.appendString(" cm\n")
 
-	cx := c.Width / 2
-	cy := c.Height / 2
+	cx := c.width / 2
+	cy := c.height / 2
 
 	// 2) Move origin to container center
 	page.appendString("1 0 0 1 ")
@@ -155,7 +155,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString(" cm\n")
 
 	// 3) Rotate around container center
-	rad := float64(c.RotateDegrees) * (math.Pi / 180.0)
+	rad := float64(c.rotateDegrees) * (math.Pi / 180.0)
 	cos := float32(math.Cos(rad))
 	sin := float32(math.Sin(rad))
 	page.appendByteArray(fastfloat.ToByteArray(cos))
@@ -168,9 +168,9 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString(" 0 0 cm\n")
 
 	// 4) Scale around container center
-	page.appendByteArray(fastfloat.ToByteArray(c.ScaleX))
+	page.appendByteArray(fastfloat.ToByteArray(c.scaleX))
 	page.appendString(" 0 0 ")
-	page.appendByteArray(fastfloat.ToByteArray(c.ScaleY))
+	page.appendByteArray(fastfloat.ToByteArray(c.scaleY))
 	page.appendString(" 0 0 cm\n")
 
 	// 5) Move origin back for child drawing
@@ -184,18 +184,18 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	for _, element := range c.elements {
 		if a, ok := element.(annotation); ok {
 			annot := a.baseAnnotation()
-			annot.point1[0] += c.X
-			annot.point1[1] += c.Y
-			annot.point2[0] += c.X
-			annot.point2[1] += c.Y
+			annot.point1[0] += c.x
+			annot.point1[1] += c.y
+			annot.point2[0] += c.x
+			annot.point2[1] += c.y
 			annot.container = c
 			if c.parent != nil {
-				annot.point1[0] += c.parent.X
-				annot.point1[1] += c.parent.Y
-				annot.point2[0] += c.parent.X
-				annot.point2[1] += c.parent.Y
+				annot.point1[0] += c.parent.x
+				annot.point1[1] += c.parent.y
+				annot.point2[0] += c.parent.x
+				annot.point2[1] += c.parent.y
 			}
-			annot.rotate(float64(-c.RotateDegrees))
+			annot.rotate(float64(-c.rotateDegrees))
 		}
 		element.DrawOn(page)
 	}
@@ -203,5 +203,5 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.RestoreGraphicsState()
 
 	// Return bottom-right position of container
-	return [2]float32{c.X + c.Width, c.Y + c.Height}
+	return [2]float32{c.x + c.width, c.y + c.height}
 }

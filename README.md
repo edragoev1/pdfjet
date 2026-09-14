@@ -537,7 +537,7 @@ functions, `corefont.Courier()`, where the other ports have
 four ports a page size is a `PageSize` that cannot be changed, with `getWidth`
 and `getHeight`; Go's is `pagesize.PageSize`, made with `pagesize.NewPageSize`
 for a size that has no package. The QR code error correction levels are
-`qrcode.ErrorCorrectionLevelL` and so on. Where Java, C# and Swift have public fields
-(`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
-(`GetX1`). `Permissions` prints through `String()` in Go and `description`
+`qrcode.ErrorCorrectionLevelL` and so on. Fields are private in every port;
+`Paragraph` and `Title` have the getters an example needs (`getX1`,
+`getPrefix`). `Permissions` prints through `String()` in Go and `description`
 in Swift where Java and C# have `toString`.

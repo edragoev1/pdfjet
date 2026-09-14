@@ -32,65 +32,65 @@ public class Example_48 {
 
         y += 30f;
         title = new Title(f1, "General", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "File Header", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "File Body", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "Cross-Reference Table", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
 
         y = 50f;
         title = new Title(f1, "File Trailer", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "Incremental Updates", x, y).SetOffset(offset);
-        Bookmark bm = toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        Bookmark bm = toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "Hello", x, y).SetOffset(offset);
-        bm = bm.AddBookmark(page, title).AutoNumber(title.prefix);
+        bm = bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "World", x, y).SetOffset(offset);
-        bm = bm.AddBookmark(page, title).AutoNumber(title.prefix);
+        bm = bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "Yahoo!!", x, y).SetOffset(offset);
-        bm.AddBookmark(page, title).AutoNumber(title.prefix);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "Test Test Test ...", x, y).SetOffset(offset);
-        bm.AddBookmark(page, title).AutoNumber(title.prefix);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         bm = bm.GetParent();
         title = new Title(f1, "Let's see ...", x, y).SetOffset(offset);
-        bm.AddBookmark(page, title).AutoNumber(title.prefix);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;
         title = new Title(f1, "One more item.", x, y).SetOffset(offset);
-        toc.AddBookmark(page, title).AutoNumber(title.prefix);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
         title.DrawOn(page);
 
         y += 30f;

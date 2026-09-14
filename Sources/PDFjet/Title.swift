@@ -9,10 +9,8 @@
 /// Please see Example_48
 ///
 public class Title : Drawable {
-    /// The prefix drawn before the title text, such as a section number.
-    public var prefix: TextLine
-    /// The title text.
-    public var textLine: TextLine
+    var prefix: TextLine
+    var textLine: TextLine
 
     private var offset: Float = 0.0
 
@@ -44,6 +42,16 @@ public class Title : Drawable {
         self.prefix.setLocation(x, y)
         self.textLine.setLocation(x + offset, y)
         return self
+    }
+
+    /// Returns the prefix drawn before the title text, such as a section number.
+    public func getPrefix() -> TextLine {
+        return prefix
+    }
+
+    /// Returns the title text.
+    public func getTextLine() -> TextLine {
+        return textLine
     }
 
     /// Draws the prefix and the title text on the specified page.

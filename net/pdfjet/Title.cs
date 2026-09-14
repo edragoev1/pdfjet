@@ -11,10 +11,8 @@ namespace PDFjet.NET {
 /// Please see Example_48
 /// </summary>
 public class Title : IDrawable {
-    /// <summary>The prefix drawn before the title text, such as a section number.</summary>
-    public TextLine prefix = null;
-    /// <summary>The title text.</summary>
-    public TextLine textLine = null;
+    internal TextLine prefix = null;
+    internal TextLine textLine = null;
 
     private float offset = 0f;
 
@@ -48,6 +46,16 @@ public class Title : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
+    }
+
+    /// <summary>Returns the prefix drawn before the title text, such as a section number.</summary>
+    public TextLine GetPrefix() {
+        return prefix;
+    }
+
+    /// <summary>Returns the title text.</summary>
+    public TextLine GetTextLine() {
+        return textLine;
     }
 
     /// <summary>Draws the prefix and the title text on the specified page.</summary>

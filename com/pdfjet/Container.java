@@ -7,20 +7,13 @@ import java.util.List;
  * A group of drawable elements that are moved, rotated and scaled together.
  */
 public class Container implements Drawable {
-    /** The x coordinate of this container on the page. */
-    public float x;
-    /** The y coordinate of this container on the page. */
-    public float y;
-    /** The width of this container. */
-    public float width;
-    /** The height of this container. */
-    public float height;
-    /** The rotation angle in degrees. */
-    public float rotateDegrees;
-    /** The horizontal scaling factor. */
-    public float scaleX;
-    /** The vertical scaling factor. */
-    public float scaleY;
+    float x;
+    float y;
+    float width;
+    float height;
+    float rotateDegrees;
+    float scaleX;
+    float scaleY;
     private List<Drawable> elements;
     private Rect border = null;
     Container parent = null;

@@ -153,8 +153,8 @@
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">3</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
     <tr><td>One way to say each thing</td><td class="num">5</td><td class="num">5</td><td>Rotation and spacing variants, drawString overloads</td></tr>
-    <tr><td>Hide what is not for users</td><td class="num">3</td><td class="num">3</td><td>Public fields, Java internals, chart leftovers</td></tr>
-    <tr class="total"><td>Total</td><td class="num">11</td><td class="num">9</td><td></td></tr>
+    <tr><td>Hide what is not for users</td><td class="num">2</td><td class="num">2</td><td>Java internals, chart leftovers</td></tr>
+    <tr class="total"><td>Total</td><td class="num">10</td><td class="num">8</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -252,13 +252,6 @@
 <h2 id="hide">Hide what is not for users</h2>
 <p>Everything here is visible in the generated references and in code completion, and none of it helps someone making a PDF.</p>
 
-<section class="item">
-  <h3>Public fields <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Paragraph</code> exposes six coordinates, <code>Container</code> seven layout fields, <code>Title</code> its two <code>TextLine</code> objects and <code>Slice</code> its three values. Example_03 reads the paragraph coordinates and Example_48 passes <code>title.prefix</code> to <code>Bookmark.autoNumber</code>.</p>
-  <span class="label">Suggestion</span>
-  <p>Private fields, plus the one or two getters those examples need.</p>
-</section>
 
 <section class="item">
   <h3>Java internals <span class="chip now">9.0.0</span></h3>

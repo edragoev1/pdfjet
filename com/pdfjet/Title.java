@@ -10,10 +10,8 @@ package com.pdfjet;
  * Please see Example_48
  */
 public class Title implements Drawable {
-    /** The prefix drawn before the title text, such as a section number. */
-    public TextLine prefix;
-    /** The title text. */
-    public TextLine textLine;
+    TextLine prefix;
+    TextLine textLine;
 
     private float offset = 0f;
 
@@ -54,6 +52,24 @@ public class Title implements Drawable {
         this.offset = offset;
         textLine.setLocation(prefix.x + offset, prefix.y);
         return this;
+    }
+
+    /**
+     * Returns the prefix drawn before the title text, such as a section number.
+     *
+     * @return the prefix text line.
+     */
+    public TextLine getPrefix() {
+        return prefix;
+    }
+
+    /**
+     * Returns the title text.
+     *
+     * @return the title text line.
+     */
+    public TextLine getTextLine() {
+        return textLine;
     }
 
     /**

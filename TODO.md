@@ -284,6 +284,11 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Encryption` methods the `pdfjet` package needs across packages, the
       `AddCoreFontResource` family, `qrcode.ErrorCorrectionLevelL`, and the
       `Paragraph` and `Title` getters that wait for the public fields item.
+- ✅ **B** Public fields: `Paragraph` exposed six coordinates, `Container` seven
+      layout fields and `Title` its two `TextLine` objects in Java, C# and
+      Swift. Fixed (Sep 14): the fields are private, `Paragraph` and `Title`
+      have the getters Go had (`getX1`, `getTextX`, `getPrefix`, ...), and
+      Example_03, 41 and 48 call them; the audit lists no Go-only getter.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

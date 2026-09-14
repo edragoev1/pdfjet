@@ -51,7 +51,7 @@ public class Example_03 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.xText - 15f, p.yText)
+                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
                         .DrawOn(page);
                 paragraphNumber++;
             }
@@ -86,9 +86,9 @@ public class Example_03 {
                 paragraphNumber = 1;
             } else {
                 new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.xText - 15f, p.yText)
+                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
                         .DrawOn(page);
-                new Line(p.x1 - 3f, p.y1, p.x1 - 3f, p.y2)
+                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
                         .SetStrokeColor(Color.navy)
                         .SetStrokeWidth(1f).DrawOn(page);
                 paragraphNumber++;

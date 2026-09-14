@@ -4,20 +4,13 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 /// <summary>A group of drawable elements that are moved, rotated and scaled together.</summary>
 public class Container : IDrawable {
-    /// <summary>The x coordinate of this container on the page.</summary>
-    public float x;
-    /// <summary>The y coordinate of this container on the page.</summary>
-    public float y;
-    /// <summary>The width of this container.</summary>
-    public float width;
-    /// <summary>The height of this container.</summary>
-    public float height;
-    /// <summary>The rotation angle in degrees.</summary>
-    public float rotateDegrees;
-    /// <summary>The horizontal scale factor.</summary>
-    public float scaleX;
-    /// <summary>The vertical scale factor.</summary>
-    public float scaleY;
+    internal float x;
+    internal float y;
+    internal float width;
+    internal float height;
+    internal float rotateDegrees;
+    internal float scaleX;
+    internal float scaleY;
     private List<IDrawable> elements;
     private Rect border = null;
     internal Container parent = null;

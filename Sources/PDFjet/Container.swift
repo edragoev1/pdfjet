@@ -5,20 +5,13 @@ import Foundation
 /// The container maintains its own position, dimensions, rotation, and scaling factors,
 /// and can draw its child elements onto a PDF `Page`.
 public class Container: Drawable {
-    /// The x coordinate of this container on the page.
-    public var x: Float
-    /// The y coordinate of this container on the page.
-    public var y: Float
-    /// The width of this container.
-    public var width: Float
-    /// The height of this container.
-    public var height: Float
-    /// The rotation angle in degrees.
-    public var rotateDegrees: Float
-    /// The horizontal scale factor.
-    public var scaleX: Float
-    /// The vertical scale factor.
-    public var scaleY: Float
+    var x: Float
+    var y: Float
+    var width: Float
+    var height: Float
+    var rotateDegrees: Float
+    var scaleX: Float
+    var scaleY: Float
     private var elements: [Drawable]
     private var border: Rect?
     /// The container that holds this container, or nil.

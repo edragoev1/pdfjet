@@ -11,18 +11,12 @@ import Foundation
 /// See the TextColumn class for more information.
 ///
 public class Paragraph {
-    /// The x coordinate where the text of this paragraph starts.
-    public var xText: Float = 0.0
-    /// The baseline y coordinate of the first line of this paragraph.
-    public var yText: Float = 0.0
-    /// The x coordinate of the top left corner of this paragraph.
-    public var x1: Float = 0.0
-    /// The y coordinate of the top left corner of this paragraph.
-    public var y1: Float = 0.0
-    /// The x coordinate where the last line of this paragraph ends.
-    public var x2: Float = 0.0
-    /// The y coordinate of the bottom of the last line of this paragraph.
-    public var y2: Float = 0.0
+    var xText: Float = 0.0
+    var yText: Float = 0.0
+    var x1: Float = 0.0
+    var y1: Float = 0.0
+    var x2: Float = 0.0
+    var y2: Float = 0.0
     var lines = [TextLine]()
     var alignment = Alignment.LEFT
     // True after setTextAlignment. Otherwise the alignment of the text column applies.
@@ -134,5 +128,35 @@ public class Paragraph {
             paragraphs.append(paragraph)
         }
         return paragraphs
+    }
+
+    /// Returns the x coordinate where the text of this paragraph starts, once a TextFrame or TextColumn has drawn it.
+    public func getTextX() -> Float {
+        return xText
+    }
+
+    /// Returns the baseline y coordinate of the first line of this paragraph, once a TextFrame or TextColumn has drawn it.
+    public func getTextY() -> Float {
+        return yText
+    }
+
+    /// Returns the x coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.
+    public func getX1() -> Float {
+        return x1
+    }
+
+    /// Returns the y coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.
+    public func getY1() -> Float {
+        return y1
+    }
+
+    /// Returns the x coordinate where the last line of this paragraph ends, once a TextFrame or TextColumn has drawn it.
+    public func getX2() -> Float {
+        return x2
+    }
+
+    /// Returns the y coordinate of the bottom of the last line of this paragraph, once a TextFrame or TextColumn has drawn it.
+    public func getY2() -> Float {
+        return y2
     }
 }   // End of Paragraph.swift

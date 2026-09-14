@@ -92,8 +92,8 @@ func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 	}
 	center := b.container.GetRotationCenter()
 	if b.container.parent != nil {
-		center[0] += b.container.parent.X
-		center[1] += b.container.parent.Y
+		center[0] += b.container.parent.x
+		center[1] += b.container.parent.y
 	}
 	b.point1 = rotateAroundCenter(b.point1, center, degrees)
 	b.point2 = rotateAroundCenter(b.point2, center, degrees)

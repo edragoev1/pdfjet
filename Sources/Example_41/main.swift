@@ -47,7 +47,7 @@ public class Example_41 {
                 paragraphNumber = 1
             } else {
                 TextLine(f2, String(paragraphNumber) + ".")
-                        .setLocation(p.xText - 15.0, p.yText)
+                        .setLocation(p.getTextX() - 15.0, p.getTextY())
                         .drawOn(page)
                 paragraphNumber += 1
             }
@@ -82,9 +82,9 @@ public class Example_41 {
                 paragraphNumber = 1
             } else {
                 TextLine(f2, String(paragraphNumber) + ".")
-                        .setLocation(p.xText - 15.0, p.yText)
+                        .setLocation(p.getTextX() - 15.0, p.getTextY())
                         .drawOn(page)
-                Line(p.x1 - 3.0, p.y1, p.x1 - 3.0, p.y2)
+                Line(p.getX1() - 3.0, p.getY1(), p.getX1() - 3.0, p.getY2())
                         .setStrokeColor(Color.navy)
                         .setStrokeWidth(1.0).drawOn(page)
                 paragraphNumber += 1

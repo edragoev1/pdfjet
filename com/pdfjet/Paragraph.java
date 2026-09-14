@@ -13,23 +13,17 @@ import java.util.*;
  * See the TextColumn class for more information.
  */
 public class Paragraph {
-    /** The x coordinate where the text of this paragraph starts. */
-    public float xText;
+    float xText;
 
-    /** The baseline y coordinate of the first line of this paragraph. */
-    public float yText;
+    float yText;
 
-    /** The x coordinate of the top left corner of this paragraph. */
-    public float x1;
+    float x1;
 
-    /** The y coordinate of the top left corner of this paragraph. */
-    public float y1;
+    float y1;
 
-    /** The x coordinate where the last line of this paragraph ends. */
-    public float x2;
+    float x2;
 
-    /** The y coordinate of the bottom of the last line of this paragraph. */
-    public float y2;
+    float y2;
 
     /** The text lines of this paragraph. */
     protected List<TextLine> lines = null;
@@ -173,5 +167,59 @@ public class Paragraph {
             paragraphs.add(paragraph);
         }
         return paragraphs;
+    }
+
+    /**
+     * Returns the x coordinate where the text of this paragraph starts, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getTextX() {
+        return xText;
+    }
+
+    /**
+     * Returns the baseline y coordinate of the first line of this paragraph, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getTextY() {
+        return yText;
+    }
+
+    /**
+     * Returns the x coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getX1() {
+        return x1;
+    }
+
+    /**
+     * Returns the y coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getY1() {
+        return y1;
+    }
+
+    /**
+     * Returns the x coordinate where the last line of this paragraph ends, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getX2() {
+        return x2;
+    }
+
+    /**
+     * Returns the y coordinate of the bottom of the last line of this paragraph, once a TextFrame or TextColumn has drawn it.
+     *
+     * @return the coordinate.
+     */
+    public float getY2() {
+        return y2;
     }
 }   // End of Paragraph.java

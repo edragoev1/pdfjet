@@ -31,65 +31,65 @@ public class Example_48 {
 
         y += 30.0
         title = Title(f1, "General", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "File Header", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "File Body", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "Cross-Reference Table", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
         y = 50.0
         title = Title(f1, "File Trailer", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "Incremental Updates", x, y).setOffset(offset)
-        var bm = toc.addBookmark(page, title).autoNumber(title.prefix)
+        var bm = toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "Hello", x, y).setOffset(offset)
-        bm = bm.addBookmark(page, title).autoNumber(title.prefix)
+        bm = bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "World", x, y).setOffset(offset)
-        bm = bm.addBookmark(page, title).autoNumber(title.prefix)
+        bm = bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "Yahoo!!", x, y).setOffset(offset)
-        bm.addBookmark(page, title).autoNumber(title.prefix)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "Test Test Test ...", x, y).setOffset(offset)
-        bm.addBookmark(page, title).autoNumber(title.prefix)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         bm = bm.getParent()!
         title = Title(f1, "Let's see ...", x, y).setOffset(offset)
-        bm.addBookmark(page, title).autoNumber(title.prefix)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
         title = Title(f1, "One more item.", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.prefix)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0

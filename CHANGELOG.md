@@ -55,6 +55,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   key, SVG and saved state types and the BMP and JPEG decoder methods are
   unexported, and `content.GetFromReader` is `GetFromStream`, as in the other
   ports.
+- The public fields of `Paragraph`, `Container` and `Title` are private in Java,
+  C# and Swift, as in Go; `Paragraph.getX1`, `getY1`, `getX2`, `getY2`,
+  `getTextX` and `getTextY` and `Title.getPrefix` and `getTextLine` are the
+  getters, in the four ports.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".

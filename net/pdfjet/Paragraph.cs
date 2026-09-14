@@ -14,18 +14,12 @@ namespace PDFjet.NET {
 /// See the TextColumn class for more information.
 /// </summary>
 public class Paragraph {
-    /// <summary>The x coordinate where the text of this paragraph starts.</summary>
-    public float xText;
-    /// <summary>The baseline y coordinate of the first line of this paragraph.</summary>
-    public float yText;
-    /// <summary>The x coordinate of the top left corner of this paragraph.</summary>
-    public float x1;
-    /// <summary>The y coordinate of the top left corner of this paragraph.</summary>
-    public float y1;
-    /// <summary>The x coordinate where the last line of this paragraph ends.</summary>
-    public float x2;
-    /// <summary>The y coordinate of the bottom of the last line of this paragraph.</summary>
-    public float y2;
+    internal float xText;
+    internal float yText;
+    internal float x1;
+    internal float y1;
+    internal float x2;
+    internal float y2;
     internal List<TextLine> lines = null;
     internal Alignment alignment = Alignment.LEFT;
     // True after SetTextAlignment. Otherwise the alignment of the text column applies.
@@ -131,6 +125,36 @@ public class Paragraph {
             paragraphs.Add(paragraph);
         }
         return paragraphs;
+    }
+
+    /// <summary>Returns the x coordinate where the text of this paragraph starts, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetTextX() {
+        return xText;
+    }
+
+    /// <summary>Returns the baseline y coordinate of the first line of this paragraph, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetTextY() {
+        return yText;
+    }
+
+    /// <summary>Returns the x coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetX1() {
+        return x1;
+    }
+
+    /// <summary>Returns the y coordinate of the top left corner of this paragraph, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetY1() {
+        return y1;
+    }
+
+    /// <summary>Returns the x coordinate where the last line of this paragraph ends, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetX2() {
+        return x2;
+    }
+
+    /// <summary>Returns the y coordinate of the bottom of the last line of this paragraph, once a TextFrame or TextColumn has drawn it.</summary>
+    public float GetY2() {
+        return y2;
     }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET
