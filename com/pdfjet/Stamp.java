@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Content that is drawn once with the path and text methods of this class,
  * written to the document as a PDF form XObject by complete, and placed on
- * pages with drawOn, at a location and a rotation.
+ * pages with drawOn, at a location, a rotation and a scale, as a Container is.
  * <p>
  * Use a Stamp for content that repeats on many pages, like a header, a footer,
  * a logo or a watermark: the content is stored once in the file, and each
@@ -34,6 +34,8 @@ public class Stamp implements Drawable {
     private float[] strokeColor;
     private float strokeWidth = 1f;
     private float rotateDegrees = 0f;
+    private float scaleX = 1f;
+    private float scaleY = 1f;
     private ByteArrayOutputStream buf = new ByteArrayOutputStream();
     private List<Font> fonts = new ArrayList<Font>();
     private String language = null;
@@ -56,7 +58,7 @@ public class Stamp implements Drawable {
      * @param height the height.
      * @return this Stamp object.
      */
-    public Stamp withSize(float width, float height) {
+    public Stamp setSize(float width, float height) {
         this.width = width;
         this.height = height;
         return this;
@@ -68,7 +70,7 @@ public class Stamp implements Drawable {
      * @param font the font.
      * @return this Stamp object.
      */
-    public Stamp withFont(Font font) {
+    public Stamp addFont(Font font) {
         fonts.add(font);
         return this;
     }
@@ -368,7 +370,7 @@ public class Stamp implements Drawable {
     /**
      * Draws text on this stamp.
      *
-     * @param font the font. Add it with withFont too.
+     * @param font the font. Add it with addFont too.
      * @param fontSize the font size.
      * @param x the x coordinate.
      * @param y the y coordinate.
@@ -401,6 +403,29 @@ public class Stamp implements Drawable {
      */
     public Stamp setRotation(float degrees) {
         this.rotateDegrees = degrees;
+        return this;
+    }
+
+    /**
+     * Scales this stamp around its center when it is placed on a page.
+     *
+     * @param factor the scale factor; 1 is the size of the stamp.
+     * @return this Stamp object.
+     */
+    public Stamp scaleBy(float factor) {
+        return scaleBy(factor, factor);
+    }
+
+    /**
+     * Scales this stamp around its center when it is placed on a page.
+     *
+     * @param sx the horizontal scale factor.
+     * @param sy the vertical scale factor.
+     * @return this Stamp object.
+     */
+    public Stamp scaleBy(float sx, float sy) {
+        this.scaleX = sx;
+        this.scaleY = sy;
         return this;
     }
 
@@ -562,6 +587,14 @@ public class Stamp implements Drawable {
         page.append(' ');
         page.append(FastFloat.toByteArray(cos));
         page.append(" 0 0 cm\n");
+
+        // SCALE: around the center, like a Container
+        if (scaleX != 1f || scaleY != 1f) {
+            page.append(scaleX);
+            page.append(" 0 0 ");
+            page.append(scaleY);
+            page.append(" 0 0 cm\n");
+        }
 
         // 2. MOVE: move the center of the object to origin
         page.append("1 0 0 1 ");

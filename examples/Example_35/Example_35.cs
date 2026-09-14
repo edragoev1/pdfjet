@@ -29,7 +29,7 @@ public class Example_35 {
         rect.SetFillColor(Color.gray);
         container.Add(rect);
 
-        var stamp = new Stamp(pdf).WithSize(400f, 400f).WithFont(f1).WithFont(f2);
+        var stamp = new Stamp(pdf).SetSize(400f, 400f).AddFont(f1).AddFont(f2);
 
         // Draw path ...
         stamp.SetFillColor(Color.lightblue)
@@ -70,6 +70,9 @@ public class Example_35 {
 
         // Rotate the stamp clockwise and draw it again
         stamp.SetRotation(-15).DrawOn(page);
+
+        // Draw the stamp again at a quarter of its size
+        stamp.SetRotation(0).ScaleBy(0.25f).SetLocation(360f, 480f).DrawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");

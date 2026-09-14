@@ -32,7 +32,7 @@ public class Example_35 {
         rect.setFillColor(Color.gray);
         container.add(rect);
 
-        Stamp stamp = new Stamp(pdf).withSize(400f, 400f).withFont(f1).withFont(f2);
+        Stamp stamp = new Stamp(pdf).setSize(400f, 400f).addFont(f1).addFont(f2);
 
         // Draw path ...
         stamp.setFillColor(Color.lightblue)
@@ -73,6 +73,9 @@ public class Example_35 {
 
         // Rotate the stamp clockwise and draw it again
         stamp.setRotation(-15).drawOn(page);
+
+        // Draw the stamp again at a quarter of its size
+        stamp.setRotation(0).scaleBy(0.25f).setLocation(360f, 480f).drawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");

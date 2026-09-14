@@ -25,7 +25,7 @@ public class Example_35 {
         rect.setFillColor(Color.gray)
         container.add(rect)
 
-        let stamp = Stamp(pdf).withSize(400.0, 400.0).withFont(f1).withFont(f2)
+        let stamp = Stamp(pdf).setSize(400.0, 400.0).addFont(f1).addFont(f2)
 
         // Draw path ...
         stamp.setFillColor(Color.lightblue)
@@ -66,6 +66,9 @@ public class Example_35 {
 
         // Rotate the stamp clockwise and draw it again
         stamp.setRotation(-15).drawOn(page)
+
+        // Draw the stamp again at a quarter of its size
+        stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 480.0).drawOn(page)
 
         // Add a text line to container
         let title = TextLine(f1, "Container")

@@ -13,7 +13,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Content that is drawn once with the path and text methods of this class,
 /// written to the document as a PDF form XObject by Complete, and placed on
-/// pages with DrawOn, at a location and a rotation.
+/// pages with DrawOn, at a location, a rotation and a scale, as a Container is.
 ///
 /// Use a Stamp for content that repeats on many pages, like a header, a footer,
 /// a logo or a watermark: the content is stored once in the file, and each
@@ -33,6 +33,8 @@ public class Stamp : IDrawable {
     private float[] strokeColor;
     private float strokeWidth = 1f;
     private float rotateDegrees = 0f;
+    private float scaleX = 1f;
+    private float scaleY = 1f;
     private MemoryStream buf = new MemoryStream();
     private List<Font> fonts = new List<Font>();
     private String language = null;
@@ -45,14 +47,14 @@ public class Stamp : IDrawable {
     }
 
     /// <summary>Sets the size of this stamp.</summary>
-    public Stamp WithSize(float width, float height) {
+    public Stamp SetSize(float width, float height) {
         this.width = width;
         this.height = height;
         return this;
     }
 
     /// <summary>Adds a font used by the text on this stamp.</summary>
-    public Stamp WithFont(Font font) {
+    public Stamp AddFont(Font font) {
         fonts.Add(font);
         return this;
     }
@@ -248,7 +250,7 @@ public class Stamp : IDrawable {
         return DrawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
     }
 
-    /// <summary>Draws text on this stamp. The font must also be added with WithFont.</summary>
+    /// <summary>Draws text on this stamp. The font must also be added with AddFont.</summary>
     public Stamp DrawText(Font font, float fontSize, float x, float y, String text) {
         Append("BT\n");
         Append("/F");
@@ -273,6 +275,18 @@ public class Stamp : IDrawable {
     /// <param name="degrees">The rotation angle in degrees.</param>
     public Stamp SetRotation(float degrees) {
         this.rotateDegrees = degrees;
+        return this;
+    }
+
+    /// <summary>Scales this stamp around its center when it is placed on a page; 1 is its size.</summary>
+    public Stamp ScaleBy(float factor) {
+        return ScaleBy(factor, factor);
+    }
+
+    /// <summary>Scales this stamp around its center when it is placed on a page.</summary>
+    public Stamp ScaleBy(float sx, float sy) {
+        this.scaleX = sx;
+        this.scaleY = sy;
         return this;
     }
 
@@ -417,6 +431,14 @@ public class Stamp : IDrawable {
         page.Append(' ');
         page.Append(FastFloat.ToByteArray(cos));
         page.Append(" 0 0 cm\n");
+
+        // SCALE: around the center, like a Container
+        if (scaleX != 1f || scaleY != 1f) {
+            page.Append(scaleX);
+            page.Append(" 0 0 ");
+            page.Append(scaleY);
+            page.Append(" 0 0 cm\n");
+        }
 
         // 2. MOVE: move the center of the object to origin
         page.Append("1 0 0 1 ");

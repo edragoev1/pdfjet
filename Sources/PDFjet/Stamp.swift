@@ -10,7 +10,7 @@ import Foundation
 ///
 /// Content that is drawn once with the path and text methods of this class,
 /// written to the document as a PDF form XObject by complete, and placed on
-/// pages with drawOn, at a location and a rotation.
+/// pages with drawOn, at a location, a rotation and a scale, as a Container is.
 ///
 /// Use a Stamp for content that repeats on many pages, like a header, a footer,
 /// a logo or a watermark: the content is stored once in the file, and each
@@ -30,6 +30,8 @@ public class Stamp : Drawable {
     private var strokeColor: [Float]?
     private var strokeWidth: Float = 1.0
     private var rotateDegrees: Float = 0
+    private var scaleX: Float = 1.0
+    private var scaleY: Float = 1.0
     private var buf = [UInt8]()
     private var fonts: [Font] = []
     private var language: String?
@@ -43,7 +45,7 @@ public class Stamp : Drawable {
 
     /// Sets the size of this stamp.
     @discardableResult
-    public func withSize(_ width: Float, _ height: Float) -> Stamp {
+    public func setSize(_ width: Float, _ height: Float) -> Stamp {
         self.width = width
         self.height = height
         return self
@@ -51,7 +53,7 @@ public class Stamp : Drawable {
 
     /// Adds a font used by the text on this stamp.
     @discardableResult
-    public func withFont(_ font: Font) -> Stamp {
+    public func addFont(_ font: Font) -> Stamp {
         fonts.append(font)
         return self
     }
@@ -264,7 +266,7 @@ public class Stamp : Drawable {
         )
     }
 
-    /// Draws text on this stamp. The font must also be added with withFont.
+    /// Draws text on this stamp. The font must also be added with addFont.
     @discardableResult
     public func drawText(
         _ font: Font,
@@ -293,6 +295,20 @@ public class Stamp : Drawable {
     @discardableResult
     public func setRotation(_ degrees: Float) -> Stamp {
         self.rotateDegrees = degrees
+        return self
+    }
+
+    /// Scales this stamp around its center when it is placed on a page; 1 is its size.
+    @discardableResult
+    public func scaleBy(_ factor: Float) -> Stamp {
+        return scaleBy(factor, factor)
+    }
+
+    /// Scales this stamp around its center when it is placed on a page.
+    @discardableResult
+    public func scaleBy(_ sx: Float, _ sy: Float) -> Stamp {
+        self.scaleX = sx
+        self.scaleY = sy
         return self
     }
 
@@ -438,6 +454,14 @@ public class Stamp : Drawable {
         page.append(" ")
         page.append(cosine)
         page.append(" 0 0 cm\n")
+
+        // SCALE: around the center, like a Container
+        if scaleX != 1.0 || scaleY != 1.0 {
+            page.append(scaleX)
+            page.append(" 0 0 ")
+            page.append(scaleY)
+            page.append(" 0 0 cm\n")
+        }
 
         // 2. MOVE: move center to origin
         page.append("1 0 0 1 ")

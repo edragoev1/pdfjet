@@ -14,7 +14,7 @@ import (
 
 // Stamp is content that is drawn once with the path and text methods of this
 // type, written to the document as a PDF form XObject by Complete, and placed
-// on pages with DrawOn, at a location and a rotation.
+// on pages with DrawOn, at a location, a rotation and a scale, as a Container is.
 //
 // Use a Stamp for content that repeats on many pages, like a header, a footer,
 // a logo or a watermark: the content is stored once in the file, and each
@@ -32,6 +32,8 @@ type Stamp struct {
 	strokeColor    [3]float32
 	strokeWidth    float32
 	rotateDegrees  float32
+	scaleX         float32
+	scaleY         float32
 	buf            *bytes.Buffer
 	fonts          []*Font
 	language       string
@@ -45,20 +47,22 @@ func NewStamp(pdf *PDF) *Stamp {
 		pdf:            pdf,
 		buf:            &bytes.Buffer{},
 		strokeWidth:    1.0,
+		scaleX:         1.0,
+		scaleY:         1.0,
 		actualText:     single.Space,
 		altDescription: single.Space,
 	}
 }
 
-// WithSize sets the size of this stamp.
-func (s *Stamp) WithSize(width, height float32) *Stamp {
+// SetSize sets the size of this stamp.
+func (s *Stamp) SetSize(width, height float32) *Stamp {
 	s.width = width
 	s.height = height
 	return s
 }
 
-// WithFont adds a font used by the text on this stamp.
-func (s *Stamp) WithFont(font *Font) *Stamp {
+// AddFont adds a font used by the text on this stamp.
+func (s *Stamp) AddFont(font *Font) *Stamp {
 	s.fonts = append(s.fonts, font)
 	return s
 }
@@ -233,7 +237,7 @@ func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
 	return s.DrawText(params.font, params.fontSize, params.x, params.y, params.text)
 }
 
-// DrawText draws text on this stamp. Add the font with WithFont too.
+// DrawText draws text on this stamp. Add the font with AddFont too.
 func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
 	s.appendString("BT\n")
 	s.appendString("/F")
@@ -255,6 +259,20 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 // SetRotation sets the rotation angle of this stamp, in degrees.
 func (s *Stamp) SetRotation(degrees float64) *Stamp {
 	s.rotateDegrees = float32(degrees)
+	return s
+}
+
+// ScaleBy scales this stamp around its center when it is placed on a page;
+// 1 is its size.
+func (s *Stamp) ScaleBy(factor float32) *Stamp {
+	return s.ScaleByWidthAndHeight(factor, factor)
+}
+
+// ScaleByWidthAndHeight scales this stamp around its center when it is placed
+// on a page.
+func (s *Stamp) ScaleByWidthAndHeight(sx, sy float32) *Stamp {
+	s.scaleX = sx
+	s.scaleY = sy
 	return s
 }
 
@@ -396,6 +414,14 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	page.appendString(" ")
 	page.appendFloat32(cos)
 	page.appendString(" 0 0 cm\n")
+
+	// SCALE: around the center, like a Container
+	if s.scaleX != 1.0 || s.scaleY != 1.0 {
+		page.appendFloat32(s.scaleX)
+		page.appendString(" 0 0 ")
+		page.appendFloat32(s.scaleY)
+		page.appendString(" 0 0 cm\n")
+	}
 
 	// 2. MOVE: move the center of the object to origin
 	page.appendString("1 0 0 1 ")

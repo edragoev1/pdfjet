@@ -331,6 +331,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   location, and `Path.setLocation` sets the offset instead of adding to it.
 
 ### Names
+- `Stamp` is set up like a `Container`: `setSize` and `addFont` replace
+  `withSize` and `withFont`, and `scaleBy` scales a placed stamp around its
+  center as `Container.scaleBy` does. Example_35 places a stamp at a quarter
+  of its size.
 - Box outlines are borders (`TextBlock`, `Cell` and `CheckBox.setBorderColor`
   and `setBorderWidth`, `Table.setCellBorderColor`,
   `TextBlock.setCornerRadius`), and lines have strokes (`Line` and `Path`

@@ -32,9 +32,9 @@ func Example35() {
 	container.Add(rect)
 
 	stamp := pdfjet.NewStamp(pdf).
-		WithSize(400.0, 400.0).
-		WithFont(f1).
-		WithFont(f2)
+		SetSize(400.0, 400.0).
+		AddFont(f1).
+		AddFont(f2)
 
 	// Draw path ...
 	stamp.SetFillColor(color.LightBlue).
@@ -76,6 +76,9 @@ func Example35() {
 
 	// Rotate the stamp clockwise and draw it again
 	stamp.SetRotation(-15).DrawOn(page)
+
+	// Draw the stamp again at a quarter of its size
+	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 480.0).DrawOn(page)
 
 	// Add a text line to container
 	title := pdfjet.NewTextLine(f1, "Container")
