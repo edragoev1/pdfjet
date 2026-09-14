@@ -258,8 +258,8 @@ footer { border-top: 1px solid var(--rule); padding-block-start: 1.25rem; font-s
 <section id="caveats">
   <h2><span class="no">9</span>Caveats</h2>
   <ul class="plain">
-    <li>One machine and one JDK; absolute times will differ elsewhere, and <span class="name-box">PDFBox</span> 4.0 may change the results.</li>
-    <li><span class="name-box">PDFBox</span>’s slow path comes from the Devanagari substitution tables in Noto Sans; with a TrueType font without them <span class="name-box">PDFBox</span> may be much faster. <span class="name-box">PDFBox</span> could not be measured with IBM Plex Sans, which it cannot embed.</li>
+    <li>One machine and one JDK; absolute times will differ elsewhere.</li>
+    <li><span class="name-box">PDFBox</span> could not be measured with IBM Plex Sans, which it cannot embed.</li>
     <li>The benchmark draws one line per call; code that draws a whole paragraph per call would make fewer calls in either library.</li>
     <li>The benchmark programs are not in the repository.</li>
   </ul>
