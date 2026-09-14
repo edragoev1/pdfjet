@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Stamp is content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.
@@ -363,7 +363,7 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 // DrawOn draws this stamp on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structtype.P, s.language, s.actualText, s.altDescription)
+	page.AddBDC(structelem.P, s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()
 
 	drawX := s.x

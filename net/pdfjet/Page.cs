@@ -76,7 +76,7 @@ public class Page {
     internal readonly List<Int32> contents = new List<Int32>();
     internal readonly List<Annotation> annots = new List<Annotation>();
     internal readonly List<Destination> destinations = new List<Destination>();
-    internal readonly List<StructElem> structures = new List<StructElem>();
+    internal readonly List<StructElement> structures = new List<StructElement>();
 
     private int mcid;
 
@@ -1670,68 +1670,68 @@ public class Page {
     /// </summary>
     /// <param name="p">the point.</param>
     public void DrawPoint(Point p) {
-        if (p.shape != Point.INVISIBLE) {
+        if (p.shape != Shape.INVISIBLE) {
             List<Point> list;
-            if (p.shape == Point.CIRCLE) {
+            if (p.shape == Shape.CIRCLE) {
                 DrawCircle(p.x, p.y, p.r, p.GetPathOperator());
-            } else if (p.shape == Point.DIAMOND) {
+            } else if (p.shape == Shape.DIAMOND) {
                 list = new List<Point>();
                 list.Add(new Point(p.x, p.y - p.r*1.2));
                 list.Add(new Point(p.x + p.r*1.2, p.y));
                 list.Add(new Point(p.x, p.y + p.r*1.2));
                 list.Add(new Point(p.x - p.r*1.2, p.y));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.BOX) {
+            } else if (p.shape == Shape.BOX) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r*0.886, p.y - p.r*0.886));
                 list.Add(new Point(p.x + p.r*0.886, p.y - p.r*0.886));
                 list.Add(new Point(p.x + p.r*0.886, p.y + p.r*0.886));
                 list.Add(new Point(p.x - p.r*0.886, p.y + p.r*0.886));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.PLUS) {
+            } else if (p.shape == Shape.PLUS) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.UP_ARROW) {
+            } else if (p.shape == Shape.UP_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 list.Add(new Point(p.x, p.y - p.r));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.DOWN_ARROW) {
+            } else if (p.shape == Shape.DOWN_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y - p.r));
                 list.Add(new Point(p.x, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.LEFT_ARROW) {
+            } else if (p.shape == Shape.LEFT_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x + p.r, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y));
                 list.Add(new Point(p.x + p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y + p.r));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.RIGHT_ARROW) {
+            } else if (p.shape == Shape.RIGHT_ARROW) {
                 list = new List<Point>();
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 list.Add(new Point(p.x + p.r, p.y));
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Point.H_DASH) {
+            } else if (p.shape == Shape.H_DASH) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
-            } else if (p.shape == Point.V_DASH) {
+            } else if (p.shape == Shape.V_DASH) {
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.X_MARK) {
+            } else if (p.shape == Shape.X_MARK) {
                 DrawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 DrawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
-            } else if (p.shape == Point.MULTIPLY) {
+            } else if (p.shape == Shape.MULTIPLY) {
                 DrawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 DrawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.STAR) {
+            } else if (p.shape == Shape.STAR) {
                 list = new List<Point>();
                 for (int i = 0; i < 10; i++) {
                     double theta = i * 36 * (Math.PI / 180.0);
@@ -2160,14 +2160,14 @@ public class Page {
     }
 
     internal void SetStructElementsPageObjNumber(int pageObjNumber) {
-        foreach (StructElem element in structures) {
+        foreach (StructElement element in structures) {
             element.pageObjNumber = pageObjNumber;
         }
     }
 
     /// <summary>Begins a marked content sequence with the structure, actual text and alternate description.</summary>
     public void AddBDC(
-            String structure,
+            StructElem structure,
             String actualText,
             String altDescription) {
         AddBDC(structure, null, actualText, altDescription);
@@ -2175,13 +2175,13 @@ public class Page {
 
     /// <summary>Begins a marked content sequence with the structure, language, actual text and alternate description.</summary>
     public void AddBDC(
-            String structure,
+            StructElem structure,
             String language,
             String actualText,
             String altDescription) {
         if (pdf.compliance == Compliance.PDF_UA_1) {
-            StructElem element = new StructElem();
-            element.structure = structure;
+            StructElement element = new StructElement();
+            element.structure = structure.Type();
             element.mcid = mcid;
             element.language = language;
             element.actualText = actualText;
@@ -2190,7 +2190,7 @@ public class Page {
             this.structures.Add(element);
 
             Append("/");
-            Append(structure);
+            Append(structure.Type());
             Append(" <</MCID ");
             Append(mcid++);
             Append(">>\n");
@@ -2366,8 +2366,8 @@ public class Page {
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);
         if (pdf.compliance == Compliance.PDF_UA_1) {
-            StructElem element = new StructElem();
-            element.structure = StructElem.LINK;
+            StructElement element = new StructElement();
+            element.structure = StructElem.LINK.Type();
             element.language = annotation.language;
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;

@@ -13,48 +13,6 @@ package com.pdfjet;
  *  Please see Example_05.
  */
 public class Point implements Drawable {
-    /** INVISIBLE point */
-    public static final int INVISIBLE = -1;
-
-    /** CIRCLE shaped point */
-    public static final int CIRCLE = 0;
-
-    /** DIAMOND shaped point */
-    public static final int DIAMOND = 1;
-
-    /** BOX shaped point */
-    public static final int BOX = 2;
-
-    /** PLUS shaped point */
-    public static final int PLUS = 3;
-
-    /** H_DASH shaped point */
-    public static final int H_DASH = 4;
-
-    /** V_DASH shaped point */
-    public static final int V_DASH = 5;
-
-    /** MULTIPLY shaped point */
-    public static final int MULTIPLY = 6;
-
-    /** STAR shaped point */
-    public static final int STAR = 7;
-
-    /** X_MARK shaped point */
-    public static final int X_MARK = 8;
-
-    /** UP_ARROW shaped point */
-    public static final int UP_ARROW = 9;
-
-    /** DOWN_ARROW shaped point */
-    public static final int DOWN_ARROW = 10;
-
-    /** LEFT_ARROW shaped point */
-    public static final int LEFT_ARROW = 11;
-
-    /** RIGHT_ARROW shaped point */
-    public static final int RIGHT_ARROW = 12;
-
     /** Control point for the c operator, which uses both control points. */
     public static final char CONTROL_POINT_C = 'c';
 
@@ -71,7 +29,7 @@ public class Point implements Drawable {
     /** The radius. */
     protected float r = 2f;
     /** The shape, one of the shape constants in this class. */
-    protected int shape = Point.CIRCLE;
+    protected Shape shape = Shape.CIRCLE;
     /** The alignment of the text relative to this point. */
     protected Alignment align = Alignment.RIGHT;
 
@@ -362,38 +320,22 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Sets the shape of this point.
+     *  Sets the shape of the marker drawn at this point.
      *
-     *  @param shape the shape of this point. Supported values:
-     *  <pre>
-     *  Point.INVISIBLE
-     *  Point.CIRCLE
-     *  Point.DIAMOND
-     *  Point.BOX
-     *  Point.PLUS
-     *  Point.H_DASH
-     *  Point.V_DASH
-     *  Point.MULTIPLY
-     *  Point.STAR
-     *  Point.X_MARK
-     *  Point.UP_ARROW
-     *  Point.DOWN_ARROW
-     *  Point.LEFT_ARROW
-     *  Point.RIGHT_ARROW
-     *  </pre>
-     * @return this Point object.
+     *  @param shape the shape, for example Shape.CIRCLE; Shape.INVISIBLE draws no marker.
+     *  @return this Point object.
      */
-    public Point setShape(int shape) {
+    public Point setShape(Shape shape) {
         this.shape = shape;
         return this;
     }
 
     /**
-     *  Returns the point shape code value.
+     *  Returns the shape of the marker drawn at this point.
      *
-     *  @return the shape code value.
+     *  @return the shape.
      */
-    public int getShape() {
+    public Shape getShape() {
         return shape;
     }
 

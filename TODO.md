@@ -255,6 +255,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       axis rounded to the sums of each category, the values above 0 up from 0
       and below 0 down, value labels inside the segments that have room.
       Example_40 draws the grouped and the stacked chart of the same data.
+- ✅ **B** Constants that escaped the v9 typing: the `Point` shapes were int
+      constants and `StructElem` string constants in Java, C# and Swift, Go's
+      `shape` and `structtype` constants were untyped, and `Compress.YES` was
+      a boolean with one caller. Fixed (Sep 14): `Shape` and `StructElem`
+      enums in the four ports (Go `shape.Shape` and `structelem.StructElem`),
+      `Point.setShape`, `TextLine.setStructureType` and `Page.addBDC` take
+      them, the structure tree record is the internal `StructElement`, and
+      `EmbeddedFile` takes a boolean; `Compress` is gone.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

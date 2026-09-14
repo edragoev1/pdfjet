@@ -70,9 +70,9 @@ class ChartTest {
 
     @Test
     void aPathSeriesKeepsItsStrokeWidthAndWritesItsText() throws Exception {
-        Point p1 = new Point(1f, 2f).setDrawPath(true).setShape(Point.INVISIBLE);
+        Point p1 = new Point(1f, 2f).setDrawPath(true).setShape(Shape.INVISIBLE);
         p1.setStrokeWidth(20f).setStrokeColor(Color.blue).setText("label");
-        Point p2 = new Point(3f, 2f).setShape(Point.INVISIBLE);
+        Point p2 = new Point(3f, 2f).setShape(Shape.INVISIBLE);
         List<Point> path = new ArrayList<Point>();
         path.add(p1);
         path.add(p2);

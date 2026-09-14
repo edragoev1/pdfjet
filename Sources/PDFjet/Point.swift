@@ -13,34 +13,6 @@
 /// Please see Example_05.
 ///
 public class Point : Drawable {
-    /// The point is not drawn.
-    public static let INVISIBLE: Int = -1
-    /// A circle.
-    public static let CIRCLE: Int = 0
-    /// A diamond.
-    public static let DIAMOND: Int = 1
-    /// A box.
-    public static let BOX: Int = 2
-    /// A plus sign.
-    public static let PLUS: Int = 3
-    /// A horizontal dash.
-    public static let H_DASH: Int = 4
-    /// A vertical dash.
-    public static let V_DASH: Int = 5
-    /// A multiplication sign.
-    public static let MULTIPLY: Int = 6
-    /// A star.
-    public static let STAR: Int = 7
-    /// An X mark.
-    public static let X_MARK: Int = 8
-    /// An up arrow.
-    public static let UP_ARROW: Int = 9
-    /// A down arrow.
-    public static let DOWN_ARROW: Int = 10
-    /// A left arrow.
-    public static let LEFT_ARROW: Int = 11
-    /// A right arrow.
-    public static let RIGHT_ARROW: Int = 12
 
     /// A control point of a curve drawn with the c operator, which uses both control points.
     public static let CONTROL_POINT_C: String = "c"
@@ -52,7 +24,7 @@ public class Point : Drawable {
     var x: Float = 0.0
     var y: Float = 0.0
     var r: Float = 2.0
-    var shape = Point.CIRCLE
+    var shape = Shape.CIRCLE
     var align = Alignment.RIGHT
 
     var fillColor: [Float]?
@@ -198,24 +170,20 @@ public class Point : Drawable {
     }
 
     ///
-    /// Sets the shape of this point.
+    /// Sets the shape of the marker drawn at this point.
     ///
-    /// - Parameter shape: the shape of this point: Point.INVISIBLE, Point.CIRCLE, Point.DIAMOND,
-    ///   Point.BOX, Point.PLUS, Point.H_DASH, Point.V_DASH, Point.MULTIPLY, Point.STAR,
-    ///   Point.X_MARK, Point.UP_ARROW, Point.DOWN_ARROW, Point.LEFT_ARROW or Point.RIGHT_ARROW.
+    /// - Parameter shape: the shape, for example Shape.CIRCLE; Shape.INVISIBLE draws no marker.
     ///
     @discardableResult
-    public func setShape(_ shape: Int) -> Point {
+    public func setShape(_ shape: Shape) -> Point {
         self.shape = shape
         return self
     }
 
     ///
-    /// Returns the point shape code value.
+    /// Returns the shape of the marker drawn at this point.
     ///
-    /// - Returns: the shape code value.
-    ///
-    public func getShape() -> Int {
+    public func getShape() -> Shape {
         return self.shape
     }
 

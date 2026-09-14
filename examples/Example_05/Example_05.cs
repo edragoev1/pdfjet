@@ -51,7 +51,7 @@ public class Example_05 {
         text.DrawOn(page);
 
         Point point = new Point(300f, 300f);
-        point.SetShape(Point.CIRCLE);
+        point.SetShape(Shape.CIRCLE);
         point.SetFillColor(Color.blue);
         point.SetRadius(37f);
         point.DrawOn(page);

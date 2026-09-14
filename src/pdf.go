@@ -60,7 +60,7 @@ type PDF struct {
 	importedExtGStates        []string
 	uuid                      string
 	prevPage                  *Page
-	structElements            []*StructElem
+	structElements            []*structElement
 	contentStreamsCompression bool
 	file                      *os.File
 }

@@ -45,7 +45,7 @@ public class PDF {
         ($0 < 16 ? "0" : "") + String($0, radix: 16)
     }.joined()
     private var prevPage: Page?
-    var structElements = [StructElem]()
+    var structElements = [StructElement]()
     private var contentStreamsCompression = true
     var encryption: Encryption?
 

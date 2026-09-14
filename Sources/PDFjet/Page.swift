@@ -52,7 +52,7 @@ public class Page {
     internal var contents = [Int]()
     internal var annots: [Annotation] = []
     internal var destinations: [Destination] = []
-    internal var structures = [StructElem]()
+    internal var structures = [StructElement]()
     internal var buf = [UInt8]()
 
     internal var cropBox: [Float]?
@@ -1469,68 +1469,68 @@ public class Page {
     /// - Parameter p: the point.
     ///
     public func drawPoint(_ p: Point) {
-        if p.shape != Point.INVISIBLE  {
+        if p.shape != Shape.INVISIBLE  {
             var list: [Point]
-            if p.shape == Point.CIRCLE {
+            if p.shape == Shape.CIRCLE {
                 drawCircle(p.x, p.y, p.r, p.getPathOperator())
-            } else if p.shape == Point.DIAMOND {
+            } else if p.shape == Shape.DIAMOND {
                 list = [Point]()
                 list.append(Point(p.x, p.y - p.r*1.2))
                 list.append(Point(p.x + p.r*1.2, p.y))
                 list.append(Point(p.x, p.y + p.r*1.2))
                 list.append(Point(p.x - p.r*1.2, p.y))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.BOX {
+            } else if p.shape == Shape.BOX {
                 list = [Point]()
                 list.append(Point(p.x - p.r*0.886, p.y - p.r*0.886))
                 list.append(Point(p.x + p.r*0.886, p.y - p.r*0.886))
                 list.append(Point(p.x + p.r*0.886, p.y + p.r*0.886))
                 list.append(Point(p.x - p.r*0.886, p.y + p.r*0.886))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.PLUS {
+            } else if p.shape == Shape.PLUS {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            } else if p.shape == Point.UP_ARROW {
+            } else if p.shape == Shape.UP_ARROW {
                 list = [Point]()
                 list.append(Point(p.x, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y + p.r))
                 list.append(Point(p.x, p.y - p.r))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.DOWN_ARROW {
+            } else if p.shape == Shape.DOWN_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y - p.r))
                 list.append(Point(p.x, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y - p.r))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.LEFT_ARROW {
+            } else if p.shape == Shape.LEFT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x + p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y))
                 list.append(Point(p.x + p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y + p.r))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.RIGHT_ARROW {
+            } else if p.shape == Shape.RIGHT_ARROW {
                 list = [Point]()
                 list.append(Point(p.x - p.r, p.y - p.r))
                 list.append(Point(p.x + p.r, p.y))
                 list.append(Point(p.x - p.r, p.y + p.r))
                 list.append(Point(p.x - p.r, p.y - p.r))
                 drawPath(list, p.getPathOperator())
-            } else if p.shape == Point.H_DASH {
+            } else if p.shape == Shape.H_DASH {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
-            } else if p.shape == Point.V_DASH {
+            } else if p.shape == Shape.V_DASH {
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            } else if p.shape == Point.X_MARK {
+            } else if p.shape == Shape.X_MARK {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r)
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r)
-            } else if p.shape == Point.MULTIPLY {
+            } else if p.shape == Shape.MULTIPLY {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r)
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r)
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y)
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r)
-            } else if p.shape == Point.STAR {
+            } else if p.shape == Shape.STAR {
                 list = [Point]()
                 for i in 0..<10 {
                     let theta = Double(i) * 36.0 * (Double.pi / 180.0)
@@ -1969,7 +1969,7 @@ public class Page {
 
     /// Begins marked content for a structure element when the document is PDF/UA compliant.
     public func addBDC(
-            _ structure: String,
+            _ structure: StructElem,
             _ actualText: String,
             _ altDescription: String) {
         addBDC(structure, nil, actualText, altDescription)
@@ -1977,13 +1977,13 @@ public class Page {
 
     /// Begins marked content in the specified language for a structure element when the document is PDF/UA compliant.
     public func addBDC(
-            _ structure: String,
+            _ structure: StructElem,
             _ language: String?,
             _ actualText: String,
             _ altDescription: String) {
         if pdf.compliance == Compliance.PDF_UA_1 {
-            let element = StructElem()
-            element.structure = structure
+            let element = StructElement()
+            element.structure = structure.rawValue
             element.mcid = mcid
             element.language = language
             element.actualText = actualText
@@ -1991,7 +1991,7 @@ public class Page {
             structures.append(element)
             pdf.structElements.append(element)
             append("/")
-            append(structure)
+            append(structure.rawValue)
             append(" <</MCID ")
             append(mcid)
             append(Token.endDictionary)
@@ -2019,8 +2019,8 @@ public class Page {
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
         if pdf.compliance == Compliance.PDF_UA_1 {
-            let element = StructElem()
-            element.structure = StructElem.LINK
+            let element = StructElement()
+            element.structure = StructElem.LINK.rawValue
             element.language = annotation.language
             element.actualText = annotation.actualText
             element.altDescription = annotation.altDescription

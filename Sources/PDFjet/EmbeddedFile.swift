@@ -14,11 +14,11 @@ public class EmbeddedFile {
     var objNumber: Int = -1
     var fileName: String?
 
-    /// Embeds the file at the specified path into the PDF.
+    /// Embeds the file at the specified path into the PDF, compressed with Flate when compress is true.
     public convenience init(
             _ pdf: PDF,
             _ filePath: String,
-            _ compress: Compress) throws {
+            _ compress: Bool) throws {
         var fileName = ""
         for scalar in filePath.unicodeScalars {
             if scalar == "/" {
@@ -39,10 +39,10 @@ public class EmbeddedFile {
             _ pdf: PDF,
             _ fileName: String,
             _ stream: InputStream,
-            _ compress: Compress) throws {
+            _ compress: Bool) throws {
         self.fileName = fileName
         var buf = try Content.getFromStream(stream)
-        if compress == Compress.YES {
+        if compress {
             var buf2 = [UInt8]()
             FlateEncode(&buf2, buf)
             buf = buf2
@@ -52,7 +52,7 @@ public class EmbeddedFile {
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
-        if compress == Compress.YES {
+        if compress {
             pdf.append("/Filter /FlateDecode\n")
         }
         pdf.append(Token.length)

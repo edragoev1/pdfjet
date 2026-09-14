@@ -27,7 +27,7 @@ final public class PDF {
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
     Map<String, Integer> states = new LinkedHashMap<String, Integer>();
     List<Stamp> stamps = new ArrayList<Stamp>();
-    List<StructElem> structElements = new ArrayList<StructElem>();
+    List<StructElement> structElements = new ArrayList<StructElement>();
     Encryption encryption = null;
 
     private int metadataObjNumber = 0;
@@ -554,7 +554,7 @@ final public class PDF {
         append(parent);
         append(" 0 R\n");
         append("/K [\n");
-        for (StructElem structElement : this.structElements) {
+        for (StructElement structElement : this.structElements) {
             append(structElement.objNumber);
             append(Token.OBJ_REF);
         }
@@ -568,7 +568,7 @@ final public class PDF {
         int structTreeRootObjNumber = getObjNumber() + 1;
         structTreeRootObjNumber += this.structElements.size();
 
-        for (StructElem element : this.structElements) {
+        for (StructElement element : this.structElements) {
             newObj();
             element.objNumber = getObjNumber();
             append("<<\n/Type /StructElem /S /");
@@ -647,7 +647,7 @@ final public class PDF {
         for (int i = 0; i < pages.size(); i++) {
             append(i);
             append(" [");
-            for (StructElem element : pages.get(i).structures) {
+            for (StructElement element : pages.get(i).structures) {
                 if (element.annotation == null) {
                     append(Token.SPACE);
                     append(element.objNumber);
@@ -659,7 +659,7 @@ final public class PDF {
         // The annotations follow, keyed by the /StructParent values handed out
         // by addAnnotDictionaries(), which continue where the pages left off.
         int structParent = pages.size();
-        for (StructElem element : this.structElements) {
+        for (StructElement element : this.structElements) {
             if (element.annotation != null) {
                 append(structParent++);
                 append(Token.SPACE);
@@ -1130,7 +1130,7 @@ final public class PDF {
 
     private void addAnnotDictionaries() throws Exception {
         int index = pages.size();
-        for (StructElem element : this.structElements) {
+        for (StructElement element : this.structElements) {
             if (element.annotation != null) {
                 index = addAnnotationObject(element.annotation, index);
                 element.annotation.structParentWritten = true;

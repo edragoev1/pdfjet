@@ -52,9 +52,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".
 - Constants have types. The Go constant packages are typed, `PathOperator`,
-  `ImageType`, `PageLayout`, `PageMode`, `ScriptPosition` and
-  `ErrorCorrectionLevel` are enums in Java, C# and Swift, and `Align` is gone:
-  every alignment is an `Alignment`.
+  `ImageType`, `PageLayout`, `PageMode`, `ScriptPosition`,
+  `ErrorCorrectionLevel`, `Shape` and `StructElem` are enums in Java, C# and
+  Swift, and `Align` is gone: every alignment is an `Alignment`. The `Point`
+  shape constants are `Shape.CIRCLE` and so on, `Point.setShape`,
+  `TextLine.setStructureType` and `Page.addBDC` take the enums, and
+  `EmbeddedFile` takes a boolean instead of `Compress` (Go `structelem`
+  replaces `structtype`, and the `compress` package is gone).
 - Errors are reported. Swift `PDF.complete()` and `PDF.addObjects` throw, Go
   `PDF.Read` and `ReadWithPassword` return an error, and the Go port panics or
   returns an error where it called `log.Fatal` or ignored the error. See

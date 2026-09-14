@@ -29,10 +29,10 @@ public class EmbeddedFile {
      *
      * @param pdf the PDF.
      * @param fileName the file name.
-     * @param compress the file if true do not compress if false.
+     * @param compress true to compress the file with Flate.
      * @throws Exception if there is an issue.
      */
-    public EmbeddedFile(PDF pdf, String fileName, Compress compress) throws Exception {
+    public EmbeddedFile(PDF pdf, String fileName, boolean compress) throws Exception {
         this(pdf, fileName.substring(fileName.lastIndexOf("/") + 1),
                 new BufferedInputStream(new FileInputStream(fileName)), compress);
     }
@@ -43,14 +43,14 @@ public class EmbeddedFile {
      * @param pdf the PDF.
      * @param fileName the file name.
      * @param stream the input stream.
-     * @param compress the file if true do not compress if false.
+     * @param compress true to compress the file with Flate.
      * @throws Exception if there is an issue.
      */
-    public EmbeddedFile(PDF pdf, String fileName, InputStream stream, Compress compress) throws Exception {
+    public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
         this.fileName = fileName;
         byte[] buf = Content.getFromStream(stream);
 
-        if (compress == Compress.YES) {
+        if (compress) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Deflater deflater = new Deflater();
             DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
@@ -67,7 +67,7 @@ public class EmbeddedFile {
         pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /EmbeddedFile\n");
-        if (compress == Compress.YES) {
+        if (compress) {
             pdf.append("/Filter /FlateDecode\n");
         }
         pdf.append(Token.LENGTH);

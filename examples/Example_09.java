@@ -50,12 +50,12 @@ final public class Example_09 {
         Point p1 = new Point(x, y);
         p1.setDrawPath(true);
         p1.setStrokeColor(Color.blue);
-        p1.setShape(Point.INVISIBLE);
+        p1.setShape(Shape.INVISIBLE);
 
         x = 1.5f;
         y = m * x + b;
         Point p2 = new Point(x, y);
-        p2.setShape(Point.INVISIBLE);
+        p2.setShape(Shape.INVISIBLE);
 
         trendLine.add(p1);
         trendLine.add(p2);
@@ -70,7 +70,7 @@ final public class Example_09 {
         List<Point> points = chart.getData().get(0);
         for (int i = 0; i < points.size(); i++) {
             Point point = points.get(i);
-            if (point.getShape() != Point.CIRCLE) {
+            if (point.getShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new ArrayList<Cell>();
 
                 point.setRadius(2f);
@@ -142,19 +142,19 @@ final public class Example_09 {
                     point.setStrokeColor(Color.gray);
 
                     if (point.getX() > 1.25f) {
-                        point.setShape(Point.RIGHT_ARROW);
+                        point.setShape(Shape.RIGHT_ARROW);
                         point.setStrokeColor(Color.black);
                     } else if (point.getY() > 80f) {
-                        point.setShape(Point.UP_ARROW);
+                        point.setShape(Shape.UP_ARROW);
                         point.setStrokeColor(Color.blue);
                     } else if (point.getText().equals("France")) {
-                        point.setShape(Point.MULTIPLY);
+                        point.setShape(Shape.MULTIPLY);
                         point.setStrokeColor(Color.green);
                     } else if (point.getText().equals("Canada")) {
-                        point.setShape(Point.BOX);
+                        point.setShape(Shape.BOX);
                         point.setStrokeColor(Color.orange);
                     } else if (point.getText().startsWith("United States")) {
-                        point.setShape(Point.STAR);
+                        point.setShape(Shape.STAR);
                         point.setStrokeColor(Color.red);
                     }
 

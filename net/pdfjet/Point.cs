@@ -14,34 +14,6 @@ namespace PDFjet.NET {
 /// Please see Example_05.
 /// </summary>
 public class Point : IDrawable {
-    /// <summary>The point is not drawn.</summary>
-    public static readonly int INVISIBLE = -1;
-    /// <summary>A circle.</summary>
-    public static readonly int CIRCLE = 0;
-    /// <summary>A diamond.</summary>
-    public static readonly int DIAMOND = 1;
-    /// <summary>A box.</summary>
-    public static readonly int BOX = 2;
-    /// <summary>A plus sign.</summary>
-    public static readonly int PLUS = 3;
-    /// <summary>A horizontal dash.</summary>
-    public static readonly int H_DASH = 4;
-    /// <summary>A vertical dash.</summary>
-    public static readonly int V_DASH = 5;
-    /// <summary>A multiplication sign.</summary>
-    public static readonly int MULTIPLY = 6;
-    /// <summary>A star.</summary>
-    public static readonly int STAR = 7;
-    /// <summary>An X mark.</summary>
-    public static readonly int X_MARK = 8;
-    /// <summary>An up arrow.</summary>
-    public static readonly int UP_ARROW = 9;
-    /// <summary>A down arrow.</summary>
-    public static readonly int DOWN_ARROW = 10;
-    /// <summary>A left arrow.</summary>
-    public static readonly int LEFT_ARROW = 11;
-    /// <summary>A right arrow.</summary>
-    public static readonly int RIGHT_ARROW = 12;
 
     // For the c operator we have both control points
     /// <summary>A control point of a curve drawn with the c operator, which uses both control points.</summary>
@@ -58,7 +30,7 @@ public class Point : IDrawable {
     internal float x;
     internal float y;
     internal float r = 2f;
-    internal int shape = Point.CIRCLE;
+    internal Shape shape = Shape.CIRCLE;
 
     internal float[] fillColor = null;
     internal float strokeWidth = 1f;
@@ -306,37 +278,14 @@ public class Point : IDrawable {
         return Util.CopyOf(this.strokeColor);
     }
 
-    /// <summary>
-    /// Sets the shape of this point.
-    /// </summary>
-    /// <param name="shape">the shape of this point. Supported values:
-    /// <code>
-    /// Point.INVISIBLE
-    /// Point.CIRCLE
-    /// Point.DIAMOND
-    /// Point.BOX
-    /// Point.PLUS
-    /// Point.H_DASH
-    /// Point.V_DASH
-    /// Point.MULTIPLY
-    /// Point.STAR
-    /// Point.X_MARK
-    /// Point.UP_ARROW
-    /// Point.DOWN_ARROW
-    /// Point.LEFT_ARROW
-    /// Point.RIGHT_ARROW
-    /// </code></param>
-    /// <returns>this Point object.</returns>
-    public Point SetShape(int shape) {
+    /// <summary>Sets the shape of the marker drawn at this point, for example Shape.CIRCLE; Shape.INVISIBLE draws no marker.</summary>
+    public Point SetShape(Shape shape) {
         this.shape = shape;
         return this;
     }
 
-    /// <summary>
-    /// Returns the point shape code value.
-    /// </summary>
-    /// <returns>the shape code value.</returns>
-    public int GetShape() {
+    /// <summary>Returns the shape of the marker drawn at this point.</summary>
+    public Shape GetShape() {
         return shape;
     }
 

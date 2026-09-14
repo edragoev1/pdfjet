@@ -5,95 +5,68 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/**
- * Defines the StructElem types.
- */
-public class StructElem {
-    // Defines standard PDF structure element tags
-    // as defined in ISO 32000-1 (PDF 1.7) and PDF/UA specifications
-
-    // Document-level structure elements
-    /// The whole document.
-    public static let DOCUMENT = "Document"
-    /// A large division of the document.
-    public static let PART = "Part"
-    /// A generic block-level element.
-    public static let DIV = "Div"
-    /// A section.
-    public static let SECT = "Sect"
-
-    // Heading elements
-    /// A level 1 heading.
-    public static let H1 = "H1"
-    /// A level 2 heading.
-    public static let H2 = "H2"
-    /// A level 3 heading.
-    public static let H3 = "H3"
-    /// A level 4 heading.
-    public static let H4 = "H4"
-    /// A level 5 heading.
-    public static let H5 = "H5"
-    /// A level 6 heading.
-    public static let H6 = "H6"
-
-    // Paragraph and text elements
-    /// A paragraph.
-    public static let P = "P"
-    /// A title.
-    public static let TITLE = "Title"
-    /// A label, such as the bullet or number of a list item.
-    public static let LBL = "Lbl"
-
-    // Inline text
-    /// A generic inline element.
-    public static let SPAN = "Span"
-    /// Emphasized text.
-    public static let EM = "Em"
-    /// Strongly emphasized text.
-    public static let STRONG = "Strong"
-
-    // Links and annotations
-    /// A link.
-    public static let LINK = "Link"
-    /// An annotation.
-    public static let ANNOT = "Annot"
-
-    // List elements
-    /// A list.
-    public static let L = "L"   // List
-    /// A list item.
-    public static let LI = "LI" // List Item
-
-    // Table elements
-    /// A table.
-    public static let TABLE = "Table"
-    /// A table row.
-    public static let TR = "TR"     // Table Row
-    /// A table header cell.
-    public static let TH = "TH"     // Table Header
-    /// A table data cell.
-    public static let TD = "TD"     // Table Data
-    /// A group of table header rows.
-    public static let THEAD = "THead" // Table Header group
-    /// A group of table body rows.
-    public static let TBODY = "TBody" // Table Body group
-    /// A group of table footer rows.
-    public static let TFOOT = "TFoot" // Table Footer group
-    /// A table caption.
-    public static let CAPTION = "Caption"
-
-    // Figure and special elements
-    /// A figure.
-    public static let FIGURE = "Figure"
-    /// Content that is not part of the document structure, such as page numbers.
-    public static let ARTIFACT = "Artifact"
-
-    var objNumber: Int?
-    var structure: String?
-    var pageObjNumber: Int?
-    var mcid = 0
-    var language: String?
-    var altDescription: String?
-    var actualText: String?
-    var annotation: Annotation?
+/// The structure element types of a tagged (PDF/UA) document, as in ISO 32000-1
+/// section 14.8.4, with the name written to the PDF as the raw value. A TextLine
+/// is a P by default; see TextLine.setStructureType.
+public enum StructElem: String {
+    /// The Document structure element.
+    case DOCUMENT = "Document"
+    /// The Part structure element.
+    case PART = "Part"
+    /// The Div structure element.
+    case DIV = "Div"
+    /// The Sect structure element.
+    case SECT = "Sect"
+    /// The H1 structure element.
+    case H1 = "H1"
+    /// The H2 structure element.
+    case H2 = "H2"
+    /// The H3 structure element.
+    case H3 = "H3"
+    /// The H4 structure element.
+    case H4 = "H4"
+    /// The H5 structure element.
+    case H5 = "H5"
+    /// The H6 structure element.
+    case H6 = "H6"
+    /// The P structure element.
+    case P = "P"
+    /// The Title structure element.
+    case TITLE = "Title"
+    /// The Lbl structure element.
+    case LBL = "Lbl"
+    /// The Span structure element.
+    case SPAN = "Span"
+    /// The Em structure element.
+    case EM = "Em"
+    /// The Strong structure element.
+    case STRONG = "Strong"
+    /// The Link structure element.
+    case LINK = "Link"
+    /// The Annot structure element.
+    case ANNOT = "Annot"
+    /// The L structure element.
+    case L = "L"
+    /// The LI structure element.
+    case LI = "LI"
+    /// The Table structure element.
+    case TABLE = "Table"
+    /// The TR structure element.
+    case TR = "TR"
+    /// The TH structure element.
+    case TH = "TH"
+    /// The TD structure element.
+    case TD = "TD"
+    /// The THead structure element.
+    case THEAD = "THead"
+    /// The TBody structure element.
+    case TBODY = "TBody"
+    /// The TFoot structure element.
+    case TFOOT = "TFoot"
+    /// The Caption structure element.
+    case CAPTION = "Caption"
+    /// The Figure structure element.
+    case FIGURE = "Figure"
+    /// The Artifact structure element.
+    case ARTIFACT = "Artifact"
 }

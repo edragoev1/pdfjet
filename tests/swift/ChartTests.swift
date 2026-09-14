@@ -55,9 +55,9 @@ import Testing
     }
 
     @Test func aPathSeriesKeepsItsStrokeWidthAndWritesItsText() {
-        let p1 = Point(1, 2).setDrawPath(true).setShape(Point.INVISIBLE)
+        let p1 = Point(1, 2).setDrawPath(true).setShape(Shape.INVISIBLE)
         p1.setStrokeWidth(20).setStrokeColor(Color.blue).setText("label")
-        let p2 = Point(3, 2).setShape(Point.INVISIBLE)
+        let p2 = Point(3, 2).setShape(Shape.INVISIBLE)
         let content = draw([[p1, p2]])
         #expect(content.contains("20 w"), "\(content)")
         #expect(content.contains(TestSupport.hex("label")), "\(content)")

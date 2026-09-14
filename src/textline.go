@@ -13,7 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // TextLine is used to create text line objects.
@@ -39,7 +39,7 @@ type TextLine struct {
 	uriLanguage        string
 	uriActualText      string
 	uriAltDescription  string
-	structureType      string
+	structureType      structelem.StructElem
 }
 
 // NewTextLine is constructor for creating text line objects.
@@ -52,7 +52,7 @@ func NewTextLine(font *Font, text string) *TextLine {
 	textLine.fontSize = font.size
 	textLine.text = text
 	textLine.altDescription = text
-	textLine.structureType = structtype.P
+	textLine.structureType = structelem.P
 	return textLine
 }
 
@@ -372,8 +372,8 @@ func (textLine *TextLine) GetURIActualText() string {
 }
 
 // SetStructureType sets the structure element type of this text line, for
-// example structtype.P or structtype.H1.
-func (textLine *TextLine) SetStructureType(structureType string) *TextLine {
+// example structelem.P or structelem.H1.
+func (textLine *TextLine) SetStructureType(structureType structelem.StructElem) *TextLine {
 	textLine.structureType = structureType
 	return textLine
 }

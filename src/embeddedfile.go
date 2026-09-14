@@ -14,7 +14,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/edragoev1/pdfjet/v9/src/compress"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
@@ -27,8 +26,8 @@ type EmbeddedFile struct {
 }
 
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
-// compressing it when compression is compress.Yes. It panics if the file cannot be opened.
-func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compression compress.Compress) *EmbeddedFile {
+// compressing it with Flate when compress is true. It panics if the file cannot be opened.
+func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFile {
 	fileName := filePath[strings.LastIndex(filePath, "/")+1:]
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -40,11 +39,11 @@ func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compression compress.Compr
 			panic("Error closing file: " + err.Error())
 		}
 	}(file)
-	return NewEmbeddedFile(pdf, fileName, bufio.NewReader(file), compression)
+	return NewEmbeddedFile(pdf, fileName, bufio.NewReader(file), compress)
 }
 
 // NewEmbeddedFile is the constructor.
-func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compression compress.Compress) *EmbeddedFile {
+func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool) *EmbeddedFile {
 	file := new(EmbeddedFile)
 	file.fileName = fileName
 
@@ -53,7 +52,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compression co
 		panic(err)
 	}
 
-	if compression == compress.Yes {
+	if compress {
 		var compressed bytes.Buffer
 		writer := zlib.NewWriter(&compressed)
 		_, err := writer.Write(buf)
@@ -76,7 +75,7 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compression co
 	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /EmbeddedFile\n")
-	if compression == compress.Yes {
+	if compress {
 		pdf.appendString("/Filter /FlateDecode\n")
 	}
 	pdf.appendString("/Length ")

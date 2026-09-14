@@ -489,7 +489,7 @@ public class TextLine : Drawable {
 
     /// Sets the structure element type, for example StructElem.P or StructElem.H1.
     @discardableResult
-    public func setStructureType(_ structureType: String) -> TextLine {
+    public func setStructureType(_ structureType: StructElem) -> TextLine {
         self.structureType = structureType
         return self
     }

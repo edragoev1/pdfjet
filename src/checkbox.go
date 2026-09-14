@@ -9,7 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/mark"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // CheckBox creates a CheckBox, which can be set checked or unchecked.
@@ -144,7 +144,7 @@ func XMarkCheckBox(page *Page, x, y, size float32) {
 //
 // @param page the Page where the CheckBox is to be drawn.
 func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structtype.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
+	page.AddBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
 
 	checkBox.w = checkBox.font.ascent
 	checkBox.h = checkBox.w

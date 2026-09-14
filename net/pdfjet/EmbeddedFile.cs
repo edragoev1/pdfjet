@@ -17,18 +17,18 @@ public class EmbeddedFile {
     internal int objNumber = -1;
     internal String fileName = null;
 
-    /// <summary>Embeds the file with the specified name into the PDF.</summary>
-    public EmbeddedFile(PDF pdf, String fileName, Compress compress) :
+    /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
+    public EmbeddedFile(PDF pdf, String fileName, bool compress) :
         this(pdf, fileName.Substring(fileName.LastIndexOf("/") + 1),
                 new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 
     /// <summary>Embeds a file read from the stream into the PDF under the specified name.</summary>
-    public EmbeddedFile(PDF pdf, String fileName, Stream stream, Compress compress) {
+    public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
         this.fileName = fileName;
         byte[] buf = Content.GetFromStream(stream);
 
-        if (compress == Compress.YES) {
+        if (compress) {
             buf = Compressor.Deflate(buf);
         }
 
@@ -39,7 +39,7 @@ public class EmbeddedFile {
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /EmbeddedFile\n");
-        if (compress == Compress.YES) {
+        if (compress) {
             pdf.Append("/Filter /FlateDecode\n");
         }
         pdf.Append(Token.Length);

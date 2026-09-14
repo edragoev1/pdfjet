@@ -11,7 +11,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // TextBlock is a block of text that wraps at its width, with an optional border, background and padding.
@@ -570,7 +570,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.AddBDC(structtype.P, textBlock.language, textBlock.textContent, "")
+	page.AddBDC(structelem.P, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
 		textBlock.fallbackFont,

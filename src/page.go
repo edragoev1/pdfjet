@@ -27,7 +27,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Page is used to create PDF page objects.
@@ -71,7 +71,7 @@ type Page struct {
 	contents     []int
 	annots       []*Annotation
 	destinations []*Destination
-	structures   []*StructElem
+	structures   []*structElement
 
 	mcid int
 }
@@ -1770,10 +1770,10 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 
 // AddBDC begins marked content for a structure element with BDC, when the
 // document is PDF/UA compliant.
-func (page *Page) AddBDC(structure, language, actualText, altDescription string) {
+func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, altDescription string) {
 	if page.pdf.compliance == compliance.PDF_UA_1 {
-		element := newStructElem()
-		element.structure = structure
+		element := newStructElement()
+		element.structure = string(structure)
 		element.mcid = page.mcid
 		element.language = language
 		element.actualText = actualText
@@ -1782,7 +1782,7 @@ func (page *Page) AddBDC(structure, language, actualText, altDescription string)
 		page.structures = append(page.structures, element)
 
 		page.appendString("/")
-		page.appendString(structure)
+		page.appendString(string(structure))
 		page.appendString(" <</MCID ")
 		page.appendInteger(page.mcid)
 		page.mcid++
@@ -1812,8 +1812,8 @@ func (page *Page) addAnnotation(annotation *Annotation) {
 	annotation.y2 = page.height - annotation.y2
 	page.annots = append(page.annots, annotation)
 	if page.pdf.compliance == compliance.PDF_UA_1 {
-		element := newStructElem()
-		element.structure = structtype.Link
+		element := newStructElement()
+		element.structure = string(structelem.Link)
 		element.language = annotation.language
 		element.actualText = annotation.actualText
 		element.altDescription = annotation.altDescription

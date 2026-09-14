@@ -783,7 +783,7 @@ public class Chart implements Drawable {
                 }
             }
             for (Point point : points) {
-                if (point.getShape() != Point.INVISIBLE) {
+                if (point.getShape() != Shape.INVISIBLE) {
                     page.setPenColor(point.strokeColor);
                     page.setPenWidth(point.strokeWidth);
                     page.setStrokeDashPattern(point.strokeDashPattern);

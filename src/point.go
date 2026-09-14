@@ -18,7 +18,7 @@ import (
 type Point struct {
 	x, y              float32
 	r                 float32
-	shape             int
+	shape             shape.Shape
 	align             alignment.Alignment
 	fillColor         [3]float32
 	hasFillColor      bool
@@ -128,32 +128,15 @@ func (point *Point) GetRadius() float32 {
 	return point.r
 }
 
-// SetShape sets the shape of this point.
-//
-// @param shape the shape of this point. Supported values:
-//
-//	shape.Invisible
-//	shape.Circle
-//	shape.Diamond
-//	shape.Box
-//	shape.Plus
-//	shape.HDash
-//	shape.VDash
-//	shape.Multiply
-//	shape.Star
-//	shape.XMark
-//	shape.UpArrow
-//	shape.DownArrow
-//	shape.LeftArrow
-//	shape.RightArrow
-func (point *Point) SetShape(shape int) *Point {
-	point.shape = shape
+// SetShape sets the shape of the marker drawn at this point, for example
+// shape.Circle; shape.Invisible draws no marker.
+func (point *Point) SetShape(pointShape shape.Shape) *Point {
+	point.shape = pointShape
 	return point
 }
 
-// GetShape returns the point shape code value.
-// @return the shape code value.
-func (point *Point) GetShape() int {
+// GetShape returns the shape of the marker drawn at this point.
+func (point *Point) GetShape() shape.Shape {
 	return point.shape
 }
 

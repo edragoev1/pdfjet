@@ -26,7 +26,7 @@ public class Example_34 {
                 "data/world-communications.txt", "|", 2, f1, f2);
 
         Point p1 = new Point();
-        p1.SetShape(Point.CIRCLE);
+        p1.SetShape(Shape.CIRCLE);
         p1.SetRadius(2f);
         p1.SetStrokeColor(Color.darkolivegreen);
         p1.SetAlignment(Alignment.RIGHT);
@@ -34,7 +34,7 @@ public class Example_34 {
         tableData[4][3].SetMarker(p1);
 
         p1 = new Point();
-        p1.SetShape(Point.DIAMOND);
+        p1.SetShape(Shape.DIAMOND);
         p1.SetRadius(2.5f);
         p1.SetStrokeColor(Color.blue);
         p1.SetAlignment(Alignment.RIGHT);
@@ -42,7 +42,7 @@ public class Example_34 {
         tableData[5][3].SetMarker(p1);
 
         p1 = new Point();
-        p1.SetShape(Point.STAR);
+        p1.SetShape(Shape.STAR);
         p1.SetRadius(3f);
         p1.SetStrokeColor(Color.red);
         p1.SetAlignment(Alignment.RIGHT);

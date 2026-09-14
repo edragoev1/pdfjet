@@ -13,8 +13,8 @@ public class Example_06 {
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO);
-        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02/Example_02.cs", Compress.YES);
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
+        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02/Example_02.cs", true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

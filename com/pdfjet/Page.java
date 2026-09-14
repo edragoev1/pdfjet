@@ -75,7 +75,7 @@ final public class Page {
     /** The destinations on this page. */
     protected final List<Destination> destinations= new ArrayList<Destination>();
     /** The structure elements on this page. */
-    protected final List<StructElem> structures = new ArrayList<StructElem>();
+    protected final List<StructElement> structures = new ArrayList<StructElement>();
 
     private int mcid = 0;
 
@@ -1718,68 +1718,68 @@ final public class Page {
      * @throws Exception  If an input or output exception occurred
      */
     public void drawPoint(Point p) throws Exception {
-        if (p.shape != Point.INVISIBLE) {
+        if (p.shape != Shape.INVISIBLE) {
             List<Point> list;
-            if (p.shape == Point.CIRCLE) {
+            if (p.shape == Shape.CIRCLE) {
                 drawCircle(p.x, p.y, p.r, p.getPathOperator());
-            } else if (p.shape == Point.DIAMOND) {
+            } else if (p.shape == Shape.DIAMOND) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x, p.y - p.r*1.2));
                 list.add(new Point(p.x + p.r*1.2, p.y));
                 list.add(new Point(p.x, p.y + p.r*1.2));
                 list.add(new Point(p.x - p.r*1.2, p.y));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.BOX) {
+            } else if (p.shape == Shape.BOX) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r*0.886, p.y - p.r*0.886));
                 list.add(new Point(p.x + p.r*0.886, p.y - p.r*0.886));
                 list.add(new Point(p.x + p.r*0.886, p.y + p.r*0.886));
                 list.add(new Point(p.x - p.r*0.886, p.y + p.r*0.886));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.PLUS) {
+            } else if (p.shape == Shape.PLUS) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.UP_ARROW) {
+            } else if (p.shape == Shape.UP_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y + p.r));
                 list.add(new Point(p.x, p.y - p.r));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.DOWN_ARROW) {
+            } else if (p.shape == Shape.DOWN_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y - p.r));
                 list.add(new Point(p.x, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.LEFT_ARROW) {
+            } else if (p.shape == Shape.LEFT_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x + p.r, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y));
                 list.add(new Point(p.x + p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y + p.r));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.RIGHT_ARROW) {
+            } else if (p.shape == Shape.RIGHT_ARROW) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 list.add(new Point(p.x + p.r, p.y));
                 list.add(new Point(p.x - p.r, p.y + p.r));
                 list.add(new Point(p.x - p.r, p.y - p.r));
                 drawPath(list, p.getPathOperator());
-            } else if (p.shape == Point.H_DASH) {
+            } else if (p.shape == Shape.H_DASH) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
-            } else if (p.shape == Point.V_DASH) {
+            } else if (p.shape == Shape.V_DASH) {
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.X_MARK) {
+            } else if (p.shape == Shape.X_MARK) {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
-            } else if (p.shape == Point.MULTIPLY) {
+            } else if (p.shape == Shape.MULTIPLY) {
                 drawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);
                 drawLine(p.x - p.r, p.y + p.r, p.x + p.r, p.y - p.r);
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
                 drawLine(p.x, p.y - p.r, p.x, p.y + p.r);
-            } else if (p.shape == Point.STAR) {
+            } else if (p.shape == Shape.STAR) {
                 list = new ArrayList<Point>();
                 for (int i = 0; i < 10; i++) {
                     double theta = i * 36 * (Math.PI / 180.0);
@@ -2297,7 +2297,7 @@ final public class Page {
     }
 
     void setStructElementsPageObjNumber(int pageObjNumber) {
-        for (StructElem element : structures) {
+        for (StructElement element : structures) {
             element.pageObjNumber = pageObjNumber;
         }
     }
@@ -2311,7 +2311,7 @@ final public class Page {
      * @param altDescription the alternative description.
      */
     public void addBDC(
-            String structure,
+            StructElem structure,
             String actualText,
             String altDescription) {
         addBDC(structure, null, actualText, altDescription);
@@ -2327,13 +2327,13 @@ final public class Page {
      * @param altDescription the alternative description.
      */
     public void addBDC(
-            String structure,
+            StructElem structure,
             String language,
             String actualText,
             String altDescription) {
         if (pdf.compliance == Compliance.PDF_UA_1) {
-            StructElem element = new StructElem();
-            element.structure = structure;
+            StructElement element = new StructElement();
+            element.structure = structure.type;
             element.mcid = this.mcid;
             element.language = language;
             element.actualText = actualText;
@@ -2342,7 +2342,7 @@ final public class Page {
             this.structures.add(element);
 
             append("/");
-            append(structure);
+            append(structure.type);
             append(" <</MCID ");
             append(mcid++);
             append(">>\n");
@@ -2373,8 +2373,8 @@ final public class Page {
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
         if (pdf.compliance == Compliance.PDF_UA_1) {
-            StructElem element = new StructElem();
-            element.structure = StructElem.LINK;
+            StructElement element = new StructElement();
+            element.structure = StructElem.LINK.type;
             element.language = annotation.language;
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;

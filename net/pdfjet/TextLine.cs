@@ -39,7 +39,7 @@ public class TextLine : IDrawable {
     private String uriActualText = null;
     private String uriAltDescription = null;
 
-    private String structureType = StructElem.P;
+    private StructElem structureType = StructElem.P;
 
     /// <summary>
     /// Constructor for creating text line objects.
@@ -463,7 +463,7 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>Sets the structure element type, for example StructElem.P or StructElem.H1.</summary>
-    public TextLine SetStructureType(String structureType) {
+    public TextLine SetStructureType(StructElem structureType) {
         this.structureType = structureType;
         return this;
     }

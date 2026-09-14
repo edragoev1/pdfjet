@@ -6,7 +6,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/compress"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -16,8 +15,8 @@ func Example06() {
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
-	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", compress.Yes)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
+	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 

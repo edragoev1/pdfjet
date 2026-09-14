@@ -10,8 +10,8 @@ public class Example_06 {
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
 
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO)
-        let file2 = try EmbeddedFile(pdf, "Sources/Example_02/main.swift", Compress.YES)
+        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
+        let file2 = try EmbeddedFile(pdf, "Sources/Example_02/main.swift", true)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

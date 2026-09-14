@@ -62,9 +62,9 @@ public class ChartTest {
 
     [Fact]
     public void APathSeriesKeepsItsStrokeWidthAndWritesItsText() {
-        Point p1 = new Point(1f, 2f).SetDrawPath(true).SetShape(Point.INVISIBLE);
+        Point p1 = new Point(1f, 2f).SetDrawPath(true).SetShape(Shape.INVISIBLE);
         p1.SetStrokeWidth(20f).SetStrokeColor(Color.blue).SetText("label");
-        Point p2 = new Point(3f, 2f).SetShape(Point.INVISIBLE);
+        Point p2 = new Point(3f, 2f).SetShape(Shape.INVISIBLE);
         List<Point> path = new List<Point> {p1, p2};
         List<List<Point>> data = new List<List<Point>> {path};
         string content = Draw(data);

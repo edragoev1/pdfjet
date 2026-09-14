@@ -153,9 +153,9 @@
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th class="num">Done</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td>Three text classes, one chart defect</td></tr>
-    <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">1</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
+    <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">2</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
     <tr><td>Hide what is not for users</td><td class="num">5</td><td class="num">5</td><td class="num">0</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">3</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">4</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -266,11 +266,11 @@
 </section>
 
 <section class="item">
-  <h3>Constants that escaped the v9 typing <span class="chip now">9.0.0</span></h3>
+  <h3>Constants that escaped the v9 typing <span class="chip done">Done in 9.0.0</span></h3>
   <span class="label">Finding</span>
   <p><code>Point</code> shapes are int constants and <code>StructElem</code> values are strings in Java, C# and Swift, while Go already has typed <code>shape</code> and <code>structtype</code> packages. <code>Compress.YES</code> is a boolean wearing an enum, with one caller.</p>
   <span class="label">Suggestion</span>
-  <p>A <code>Shape</code> enum and a <code>StructElem</code> enum, as <code>CapStyle</code> and <code>Alignment</code> were done. <code>EmbeddedFile</code> takes a boolean and <code>Compress</code> goes.</p>
+  <p>Done: a <code>Shape</code> enum and a <code>StructElem</code> enum in the four ports, as <code>CapStyle</code> and <code>Alignment</code> were done; the structure tree record behind <code>StructElem</code> is the internal <code>StructElement</code>. <code>EmbeddedFile</code> takes a boolean and <code>Compress</code> is gone.</p>
 </section>
 
 <section class="item">

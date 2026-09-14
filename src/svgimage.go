@@ -16,7 +16,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // SVGImage is used to draw SVG images on a page.
@@ -394,7 +394,7 @@ func (image *SVGImage) drawPath(path *SVGPath, page *Page) {
 
 // DrawOn draws this SVG image on the specified page.
 func (image *SVGImage) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structtype.P, image.language, image.actualText, image.altDescription)
+	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}

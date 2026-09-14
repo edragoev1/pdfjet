@@ -49,7 +49,7 @@ public class TextLine implements Drawable {
     private String uriActualText = null;
     private String uriAltDescription = null;
 
-    private String structureType = StructElem.P;
+    private StructElem structureType = StructElem.P;
 
 
     /**
@@ -605,7 +605,7 @@ public class TextLine implements Drawable {
      * @param structureType the structure element type.
      * @return this TextLine object.
      */
-    public TextLine setStructureType(String structureType) {
+    public TextLine setStructureType(StructElem structureType) {
         this.structureType = structureType;
         return this;
     }

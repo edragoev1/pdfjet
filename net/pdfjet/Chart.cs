@@ -707,7 +707,7 @@ public class Chart : IDrawable {
                 }
             }
             foreach (Point point in points) {
-                if (point.GetShape() != Point.INVISIBLE) {
+                if (point.GetShape() != Shape.INVISIBLE) {
                     page.SetPenColor(point.strokeColor);
                     page.SetPenWidth(point.strokeWidth);
                     page.SetStrokeDashPattern(point.strokeDashPattern);

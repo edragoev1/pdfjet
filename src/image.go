@@ -16,7 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/device"
 	"github.com/edragoev1/pdfjet/v9/src/imagetype"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Image describes an image object.
@@ -329,7 +329,7 @@ func (image *Image) SetLanguage(language string) *Image {
 // @param page the page to draw this image on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structtype.P, image.language, image.actualText, image.altDescription)
+	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
 
 	switch image.degrees {

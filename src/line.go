@@ -11,7 +11,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Line is used to create line objects.
@@ -191,7 +191,7 @@ func (line *Line) ScaleBy(factor float32) *Line {
 // @param page the page to draw this line on.
 // @return x and y coordinates of the bottom right corner of this component.
 func (line *Line) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structtype.P, line.language, line.actualText, line.altDescription)
+	page.AddBDC(structelem.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
 	page.SetPenColorRGB(line.color)
 	page.SetPenWidth(line.width)

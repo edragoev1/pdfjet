@@ -50,7 +50,7 @@ public class Example_05 {
         text.drawOn(page)
 
         let point = Point(300.0, 300.0)
-        _ = point.setShape(Point.CIRCLE)
+        _ = point.setShape(Shape.CIRCLE)
         _ = point.setFillColor(Color.blue)
         _ = point.setRadius(37.0)
         point.drawOn(page)

@@ -20,7 +20,7 @@ public class PDF {
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
     internal List<Stamp> stamps = new List<Stamp>();
-    internal List<StructElem> structElements = new List<StructElem>();
+    internal List<StructElement> structElements = new List<StructElement>();
     internal Compliance compliance = Compliance.PDF_1_7;
     internal Bookmark toc = null;
     internal Encryption encryption = null;
@@ -509,7 +509,7 @@ public class PDF {
         Append(parent);
         Append(Token.ObjRef);
         Append("/K [\n");
-        foreach (StructElem structElement in this.structElements) {
+        foreach (StructElement structElement in this.structElements) {
             Append(structElement.objNumber);
             Append(" 0 R\n");
         }
@@ -523,7 +523,7 @@ public class PDF {
         int structTreeRootObjNumber = GetObjNumber() + 1;
         structTreeRootObjNumber += this.structElements.Count;
 
-        foreach (StructElem element in this.structElements) {
+        foreach (StructElement element in this.structElements) {
             NewObj();
             element.objNumber = GetObjNumber();
             Append("<<\n/Type /StructElem /S /");
@@ -600,7 +600,7 @@ public class PDF {
         for (int i = 0; i < pages.Count; i++) {
             Append(i);
             Append(" [");
-            foreach (StructElem element in pages[i].structures) {
+            foreach (StructElement element in pages[i].structures) {
                 if (element.annotation == null) {
                     Append(Token.Space);
                     Append(element.objNumber);
@@ -612,7 +612,7 @@ public class PDF {
         // The annotations follow, keyed by the /StructParent values handed out
         // by AddAnnotDictionaries(), which continue where the pages left off.
         int structParent = pages.Count;
-        foreach (StructElem element in this.structElements) {
+        foreach (StructElement element in this.structElements) {
             if (element.annotation != null) {
                 Append(structParent++);
                 Append(Token.Space);
@@ -1075,7 +1075,7 @@ public class PDF {
 
     private void AddAnnotDictionaries() {
         int index = pages.Count;
-        foreach (StructElem element in this.structElements) {
+        foreach (StructElement element in this.structElements) {
             if (element.annotation != null) {
                 index = AddAnnotationObject(element.annotation, index);
                 element.annotation.structParentWritten = true;

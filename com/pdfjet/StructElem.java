@@ -6,118 +6,82 @@
  */
 package com.pdfjet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Defines the StructElem types.
+ * The structure element types of a tagged (PDF/UA) document, as in ISO 32000-1
+ * section 14.8.4. A TextLine is a P by default; see TextLine.setStructureType.
  */
-public class StructElem {
+public enum StructElem {
     // Document structure
-    /** The root of the structure tree. */
-    public static final String DOCUMENT = "Document";
-    /** A large division of the document. */
-    public static final String PART = "Part";
-    /** A generic block-level grouping. */
-    public static final String DIV = "Div";
-    /** A section. */
-    public static final String SECT = "Sect";
-
+    /** The Document structure element. */
+    DOCUMENT("Document"),
+    /** The Part structure element. */
+    PART("Part"),
+    /** The Div structure element. */
+    DIV("Div"),
+    /** The Sect structure element. */
+    SECT("Sect"),
     // Headings
-    /** Heading level 1. */
-    public static final String H1 = "H1";
-    /** Heading level 2. */
-    public static final String H2 = "H2";
-    /** Heading level 3. */
-    public static final String H3 = "H3";
-    /** Heading level 4. */
-    public static final String H4 = "H4";
-    /** Heading level 5. */
-    public static final String H5 = "H5";
-    /** Heading level 6. */
-    public static final String H6 = "H6";
-
-    // Paragraphs and text
-    /** A paragraph. */
-    public static final String P = "P";
-    /** The title of the document. */
-    public static final String TITLE = "Title";
-    /** A label, such as the bullet or number of a list item. */
-    public static final String LBL = "Lbl";
-
-    // Inline text
-    /** A generic inline grouping. */
-    public static final String SPAN = "Span";
-    /** Emphasized text. */
-    public static final String EM = "Em";
-    /** Strongly emphasized text. */
-    public static final String STRONG = "Strong";
-
-    // Links and annotations
-    /** A link. */
-    public static final String LINK = "Link";
-    /** An annotation. */
-    public static final String ANNOT = "Annot";
-
+    /** The H1 structure element. */
+    H1("H1"),
+    /** The H2 structure element. */
+    H2("H2"),
+    /** The H3 structure element. */
+    H3("H3"),
+    /** The H4 structure element. */
+    H4("H4"),
+    /** The H5 structure element. */
+    H5("H5"),
+    /** The H6 structure element. */
+    H6("H6"),
+    // Paragraphs and labels
+    /** The P structure element. */
+    P("P"),
+    /** The Title structure element. */
+    TITLE("Title"),
+    /** The Lbl structure element. */
+    LBL("Lbl"),
+    // Inline
+    /** The Span structure element. */
+    SPAN("Span"),
+    /** The Em structure element. */
+    EM("Em"),
+    /** The Strong structure element. */
+    STRONG("Strong"),
+    /** The Link structure element. */
+    LINK("Link"),
+    /** The Annot structure element. */
+    ANNOT("Annot"),
     // Lists
-    /** A list. */
-    public static final String L = "L";
-    /** A list item. */
-    public static final String LI = "LI";
-
+    /** The L structure element. */
+    L("L"),
+    /** The LI structure element. */
+    LI("LI"),
     // Tables
-    /** A table. */
-    public static final String TABLE = "Table";
-    /** A table row. */
-    public static final String TR = "TR";
-    /** A table header cell. */
-    public static final String TH = "TH";
-    /** A table data cell. */
-    public static final String TD = "TD";
-    /** The header rows of a table. */
-    public static final String THEAD = "THead";
-    /** The body rows of a table. */
-    public static final String TBODY = "TBody";
-    /** The footer rows of a table. */
-    public static final String TFOOT = "TFoot";
-    /** The caption of a table or figure. */
-    public static final String CAPTION = "Caption";
+    /** The Table structure element. */
+    TABLE("Table"),
+    /** The TR structure element. */
+    TR("TR"),
+    /** The TH structure element. */
+    TH("TH"),
+    /** The TD structure element. */
+    TD("TD"),
+    /** The THead structure element. */
+    THEAD("THead"),
+    /** The TBody structure element. */
+    TBODY("TBody"),
+    /** The TFoot structure element. */
+    TFOOT("TFoot"),
+    /** The Caption structure element. */
+    CAPTION("Caption"),
+    // Figures and artifacts
+    /** The Figure structure element. */
+    FIGURE("Figure"),
+    /** The Artifact structure element. */
+    ARTIFACT("Artifact");
 
-    // Figures
-    /** A figure. */
-    public static final String FIGURE = "Figure";
-    /** Content that is not part of the logical structure, such as page decorations. */
-    public static final String ARTIFACT = "Artifact";
+    final String type;
 
-    /** The object number of this element. */
-    protected int objNumber;
-    /** The structure type, for example "P". */
-    protected String structure = null;
-    /** The object number of the page this element is on. */
-    protected int pageObjNumber;
-    /** The marked content ID. */
-    protected int mcid = 0;
-    /** The language of the content. */
-    protected String language = null;
-    /** The actual text of the content. */
-    protected String actualText = null;
-    /** The alternate description of the content. */
-    protected String altDescription = null;
-    Annotation annotation = null;
-    /** The child elements. */
-    protected List<StructElem> kids = null;
-
-    /** The default constructor */
-    StructElem() {
-        this.kids = new ArrayList<StructElem>();
-    }
-
-    /**
-     * Adds a child structure element.
-     *
-     * @param structElem the child element.
-     */
-    void addKidStructElem(StructElem structElem) {
-        this.kids.add(structElem);
+    StructElem(String type) {
+        this.type = type;
     }
 }

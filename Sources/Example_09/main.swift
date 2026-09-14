@@ -50,12 +50,12 @@ public class Example_09 {
         let p1 = Point(x, y)
         p1.setDrawPath(true)
         p1.setStrokeColor(Color.blue)
-        p1.setShape(Point.INVISIBLE)
+        p1.setShape(Shape.INVISIBLE)
 
         x = 1.5
         y = m * x + b
         let p2 = Point(x, y)
-        p2.setShape(Point.INVISIBLE)
+        p2.setShape(Shape.INVISIBLE)
 
         trendLine.append(p1)
         trendLine.append(p2)
@@ -74,7 +74,7 @@ public class Example_09 {
         var tableData = [[Cell]]()
         let points = chart.getData()![0]
         for point in points {
-            if point.getShape() != Point.CIRCLE {
+            if point.getShape() != Shape.CIRCLE {
                 var tableRow = [Cell]()
 
                 point.setRadius(2.0)
@@ -147,19 +147,19 @@ public class Example_09 {
                 point.setStrokeColor(Color.gray)
 
                 if point.getX() > 1.25 {
-                    point.setShape(Point.RIGHT_ARROW)
+                    point.setShape(Shape.RIGHT_ARROW)
                     point.setStrokeColor(Color.black)
                 } else if point.getY() > 80.0 {
-                    point.setShape(Point.UP_ARROW)
+                    point.setShape(Shape.UP_ARROW)
                     point.setStrokeColor(Color.blue)
                 } else if point.getText() == "France" {
-                    point.setShape(Point.MULTIPLY)
+                    point.setShape(Shape.MULTIPLY)
                     point.setStrokeColor(Color.green)
                 } else if point.getText() == "Canada" {
-                    point.setShape(Point.BOX)
+                    point.setShape(Shape.BOX)
                     point.setStrokeColor(Color.orange)
                 } else if point.getText()!.hasPrefix("United States") {
-                    point.setShape(Point.STAR)
+                    point.setShape(Shape.STAR)
                     point.setStrokeColor(Color.red)
                 }
                 points.append(point)

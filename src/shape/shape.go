@@ -7,8 +7,10 @@
 package shape
 
 // Constants
+type Shape int
+
 const (
-	Invisible = iota
+	Invisible Shape = iota
 	Circle
 	Diamond
 	Box

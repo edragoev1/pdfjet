@@ -522,8 +522,8 @@ public.
 ### Constants and fields in Go
 
 Java, C# and Swift keep constants in classes; Go keeps them in packages:
-`color.Blue` for `Color.blue`, `shape.Circle` for `Point.CIRCLE`,
-`structtype.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
+`color.Blue` for `Color.blue`, `shape.Circle` for `Shape.CIRCLE`,
+`structelem.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
 `direction`, `scriptposition`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
 `pathoperator`, `imagetype`, `mark` and the font families
 (`IBMPlexSans.Regular`). The constants of a package have its type, as

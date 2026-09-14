@@ -29,7 +29,7 @@ public class Example_30 {
 
         let image = try Image(pdf, "images/ee-map.png")
 
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", Compress.NO)
+        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

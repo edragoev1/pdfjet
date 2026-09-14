@@ -49,12 +49,12 @@ public class Example_09 {
         Point p1 = new Point(x, y);
         p1.SetDrawPath(true);
         p1.SetStrokeColor(Color.blue);
-        p1.SetShape(Point.INVISIBLE);
+        p1.SetShape(Shape.INVISIBLE);
 
         x = 1.5;
         y = m * x + b;
         Point p2 = new Point(x, y);
-        p2.SetShape(Point.INVISIBLE);
+        p2.SetShape(Shape.INVISIBLE);
 
         trendline.Add(p1);
         trendline.Add(p2);
@@ -69,7 +69,7 @@ public class Example_09 {
         List<Point> points = chart.GetData()[0];
         for (int i = 0; i < points.Count; i++) {
             Point point = points[i];
-            if (point.GetShape() != Point.CIRCLE) {
+            if (point.GetShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new List<Cell>();
 
                 point.SetRadius(2f);
@@ -142,19 +142,19 @@ public class Example_09 {
                 point.SetStrokeColor(Color.gray);
 
                 if (point.GetX() > 1.25f) {
-                    point.SetShape(Point.RIGHT_ARROW);
+                    point.SetShape(Shape.RIGHT_ARROW);
                     point.SetStrokeColor(Color.black);
                 } else if (point.GetY() > 80f) {
-                    point.SetShape(Point.UP_ARROW);
+                    point.SetShape(Shape.UP_ARROW);
                     point.SetStrokeColor(Color.blue);
                 } else if (point.GetText().Equals("France")) {
-                    point.SetShape(Point.MULTIPLY);
+                    point.SetShape(Shape.MULTIPLY);
                     point.SetStrokeColor(Color.green);
                 } else if (point.GetText().Equals("Canada")) {
-                    point.SetShape(Point.BOX);
+                    point.SetShape(Shape.BOX);
                     point.SetStrokeColor(Color.orange);
                 } else if (point.GetText().StartsWith("United States")) {
-                    point.SetShape(Point.STAR);
+                    point.SetShape(Shape.STAR);
                     point.SetStrokeColor(Color.red);
                 }
 

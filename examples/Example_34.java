@@ -27,7 +27,7 @@ final public class Example_34 {
                 "data/world-communications.txt", "|", 2, f1, f2);
 
         Point p1 = new Point();
-        p1.setShape(Point.CIRCLE);
+        p1.setShape(Shape.CIRCLE);
         p1.setRadius(2f);
         p1.setStrokeColor(Color.darkolivegreen);
         p1.setAlignment(Alignment.RIGHT);
@@ -35,7 +35,7 @@ final public class Example_34 {
         tableData.get(4).get(3).setMarker(p1);
 
         p1 = new Point();
-        p1.setShape(Point.DIAMOND);
+        p1.setShape(Shape.DIAMOND);
         p1.setRadius(2.5f);
         p1.setStrokeColor(Color.blue);
         p1.setAlignment(Alignment.RIGHT);
@@ -43,7 +43,7 @@ final public class Example_34 {
         tableData.get(5).get(3).setMarker(p1);
 
         p1 = new Point();
-        p1.setShape(Point.STAR);
+        p1.setShape(Shape.STAR);
         p1.setRadius(3f);
         p1.setStrokeColor(Color.red);
         p1.setAlignment(Alignment.RIGHT);

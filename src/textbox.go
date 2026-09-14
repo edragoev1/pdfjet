@@ -13,7 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
-	"github.com/edragoev1/pdfjet/v9/src/structtype"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // TextBox is a box containing line-wrapped text.
@@ -691,7 +691,7 @@ func (textBox *TextBox) drawTextLine(page *Page, text string, xText, yText float
 	fallbackFont := textBox.fallbackFont
 	fontSize := textBox.fontSize
 
-	page.AddBDC(structtype.P, textBox.language, text, textBox.altDescription)
+	page.AddBDC(structelem.P, textBox.language, text, textBox.altDescription)
 
 	if textBox.textDirection == direction.LeftToRight {
 		page.DrawStringUsingHighlightColors(

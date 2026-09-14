@@ -6,7 +6,6 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/compress"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -40,7 +39,7 @@ func Example30() {
 
 	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", compress.No)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 

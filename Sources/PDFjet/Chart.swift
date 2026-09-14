@@ -715,7 +715,7 @@ public class Chart : Drawable {
                     }
                 }
                 for point in points {
-                    if point.getShape() != Point.INVISIBLE {
+                    if point.getShape() != Shape.INVISIBLE {
                         page.setPenColor(point.strokeColor)
                         page.setPenWidth(point.strokeWidth)
                         page.setStrokeDashPattern(point.strokeDashPattern)
