@@ -57,5 +57,25 @@ public class PageTest {
         page.DrawLine(10f, 20f, 30f, 40f);
         Assert.Contains("10 772 m\n30 752 l\nS\n", TestSupport.Content(page));
     }
+
+    [Fact]
+    public void AGoToLinkPointsAtItsDestinationOnAnotherPage() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go").SetGoToAction("there").SetLocation(50f, 50f).DrawOn(page1);
+        new Rect(10f, 10f, 20f, 20f).SetGoToAction("there").DrawOn(page1);
+        new TextLine(font, "Nowhere").SetGoToAction("missing").SetLocation(50f, 100f).DrawOn(page1);
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        page2.AddDestination("there", 30f, 100f);
+        pdf.Complete();
+        string file = TestSupport.Latin1(stream.ToArray());
+        // The text and the rect link to the destination, 100 points down page 2; the
+        // link to a destination no page has is written without a /Dest
+        Assert.Equal(2, file.Split("/Dest [").Length - 1);
+        Assert.Equal(2, file.Split("/XYZ 30 692 0]").Length - 1);
+        Assert.Equal(3, file.Split("/Subtype /Link").Length - 1);
+    }
 }
 }

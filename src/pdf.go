@@ -1152,6 +1152,22 @@ func (pdf *PDF) addOCProperties() {
 		pdf.appendString(" ] >>\n")
 		pdf.appendString("]\n")
 
+		// The groups hidden by default, for the viewers that read the
+		// configuration and not the usage of each group
+		var off strings.Builder
+		for _, ocg := range pdf.groups {
+			if !ocg.visible {
+				off.WriteString(" ")
+				off.WriteString(strconv.Itoa(ocg.objNumber))
+				off.WriteString(" 0 R")
+			}
+		}
+		if off.Len() > 0 {
+			pdf.appendString("/OFF [")
+			pdf.appendString(off.String())
+			pdf.appendString(" ]\n")
+		}
+
 		pdf.appendString("/Order [")
 		for _, ocg := range list {
 			pdf.appendString(" ")

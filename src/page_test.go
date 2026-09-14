@@ -61,3 +61,21 @@ func TestPageDrawLineWritesAStrokedPathWithTheYFlipped(t *testing.T) {
 		t.Errorf("content %q", content)
 	}
 }
+
+func TestPageAGoToLinkPointsAtItsDestinationOnAnotherPage(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page1 := NewPage(doc.pdf, testLetterPortrait())
+	NewTextLine(font, "Go").SetGoToAction("there").SetLocation(50, 50).DrawOn(page1)
+	NewRect(10, 10, 20, 20).SetGoToAction("there").DrawOn(page1)
+	NewTextLine(font, "Nowhere").SetGoToAction("missing").SetLocation(50, 100).DrawOn(page1)
+	page2 := NewPage(doc.pdf, testLetterPortrait())
+	page2.AddDestinationAt("there", 30, 100)
+	file := string(doc.complete())
+	// The text and the rect link to the destination, 100 points down page 2; the
+	// link to a destination no page has is written without a /Dest
+	if strings.Count(file, "/Dest [") != 2 || strings.Count(file, "/XYZ 30 692 0]") != 2 ||
+		strings.Count(file, "/Subtype /Link") != 3 {
+		t.Errorf("links in %q", file)
+	}
+}

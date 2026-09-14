@@ -1125,6 +1125,22 @@ public class PDF {
             Append(" ] >>\n");
             Append("]\n");
 
+            // The groups hidden by default, for the viewers that read the
+            // configuration and not the usage of each group
+            StringBuilder off = new StringBuilder();
+            foreach (OptionalContentGroup ocg in this.groups) {
+                if (!ocg.visible) {
+                    off.Append(' ');
+                    off.Append(ocg.objNumber);
+                    off.Append(" 0 R");
+                }
+            }
+            if (off.Length > 0) {
+                Append("/OFF [");
+                Append(off.ToString());
+                Append(" ]\n");
+            }
+
             Append("/Order [");
             foreach (OCG ocg in list) {
                 Append(' ');

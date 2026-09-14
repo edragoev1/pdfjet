@@ -27,7 +27,7 @@ public class OptionalContentGroup {
 
     private final PDF pdf;
     private int ocgNumber = -1;
-    private boolean visible;
+    boolean visible;
     private boolean printable;
     private boolean exportable;
     private final List<Drawable> components;

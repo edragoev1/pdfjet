@@ -1105,6 +1105,20 @@ public class PDF {
         append(" ] >>\n")
         append("]\n")
 
+        // The groups hidden by default, for the viewers that read the
+        // configuration and not the usage of each group
+        var off = String()
+        for ocg in self.groups where !ocg.visible {
+            off.append(" ")
+            off.append(String(ocg.objNumber))
+            off.append(" 0 R")
+        }
+        if !off.isEmpty {
+            append("/OFF [")
+            append(off)
+            append(" ]\n")
+        }
+
         append("/Order [")
         for ocg in list {
             append(" ")

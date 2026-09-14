@@ -1180,6 +1180,22 @@ final public class PDF {
             append(" ] >>\n");
             append("]\n");
 
+            // The groups hidden by default, for the viewers that read the
+            // configuration and not the usage of each group
+            StringBuilder off = new StringBuilder();
+            for (OptionalContentGroup ocg : this.groups) {
+                if (!ocg.visible) {
+                    off.append(' ');
+                    off.append(ocg.objNumber);
+                    off.append(" 0 R");
+                }
+            }
+            if (off.length() > 0) {
+                append("/OFF [");
+                append(off.toString());
+                append(" ]\n");
+            }
+
             append("/Order [");
             for (OCG ocg : list) {
                 append(' ');

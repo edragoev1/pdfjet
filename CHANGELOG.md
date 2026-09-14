@@ -409,6 +409,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   throws on a truncated font stream.
 
 ### Port parity
+- The default configuration of the optional content lists the hidden groups
+  in an `/OFF` array, for the viewers that read the configuration and not
+  the usage of each group, so a layer with `setVisible(false)` starts hidden
+  everywhere. Tests cover the marked content, the page properties and the
+  one object of a group drawn on several pages, and the `/Dest` of a GoTo
+  link, in the four ports.
 - A second audit of the four ports fixed the drift that could crash or
   misplace something: Java `BarChart` drew no legend swatch for a named
   series with a color per bar and threw instead; Swift `Page(pdf, pageObj)`

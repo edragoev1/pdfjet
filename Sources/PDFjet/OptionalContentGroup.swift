@@ -21,7 +21,7 @@ public class OptionalContentGroup {
 
     private var pdf: PDF
     private var ocgNumber: Int = -1
-    private var visible = false
+    var visible = false
     private var printable = false
     private var exportable = false
     private var components = [Drawable]()

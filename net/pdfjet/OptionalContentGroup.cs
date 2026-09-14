@@ -23,7 +23,7 @@ public class OptionalContentGroup {
     internal String name;
     internal int ocgNumber = -1;
 
-    private bool visible;
+    internal bool visible;
     private bool printable;
     private bool exportable;
     private List<IDrawable> components;

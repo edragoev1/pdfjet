@@ -31,6 +31,8 @@ class OptionalContentGroupTest {
         assertTrue(pdf.contains("/OCProperties"));
         assertTrue(pdf.contains("/View << /ViewState /OFF >>"));
         assertTrue(pdf.contains("/Print << /PrintState /ON >>"));
+        // The default configuration lists it too, for the viewers that do not apply the usage
+        assertTrue(pdf.contains("/OFF ["), pdf);
     }
 
     @Test
@@ -38,8 +40,36 @@ class OptionalContentGroupTest {
         String pdf = layer(true);
         assertTrue(pdf.contains("/View << /ViewState /ON >>"));
         assertFalse(pdf.contains("/ViewState /OFF"));
+        assertFalse(pdf.contains("/OFF ["));
         // Export is off unless setExportable(true) is called.
         assertTrue(pdf.contains("/Export << /ExportState /OFF >>"));
+    }
+
+    @Test
+    void aGroupWrapsItsContentInMarkedContentAndIsAPageProperty() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        OptionalContentGroup map = new OptionalContentGroup(pdf, "Map").setVisible(true);
+        map.add(new Rect(10f, 10f, 20f, 20f)).drawOn(page1);
+        OptionalContentGroup notes = new OptionalContentGroup(pdf, "Notes");
+        notes.add(new Line(0f, 0f, 10f, 10f)).drawOn(page1);
+        String content1 = TestSupport.content(page1);
+        assertTrue(content1.contains("/OC /OC1 BDC\n"), content1);
+        assertTrue(content1.contains("/OC /OC2 BDC\n"), content1);
+        assertEquals(2, content1.split("EMC").length - 1, content1);
+        // The same group on a second page is the same object
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        map.drawOn(page2);
+        assertTrue(TestSupport.content(page2).contains("/OC /OC1 BDC\n"));
+        pdf.complete();
+        String file = TestSupport.latin1(bos.toByteArray());
+        assertEquals(2, file.split("/Type /OCG").length - 1, "one object per group");
+        assertTrue(file.contains("/Properties"), file);
+        assertTrue(file.contains("/OC1 "), file);
+        assertTrue(file.contains("/OC2 "), file);
+        assertTrue(file.contains("/OCGs ["), file);
+        assertTrue(file.contains("/Order ["), file);
     }
 
     @Test
