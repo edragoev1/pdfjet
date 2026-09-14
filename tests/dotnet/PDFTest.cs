@@ -146,5 +146,36 @@ public class PDFTest {
         pdf.Complete();
         Assert.Single(new PDF().GetPageObjects(TestSupport.Read(stream.ToArray())));
     }
+
+    // A PDF with one stream whose data starts with a line feed, the byte that
+    // ends the stream keyword. Every stream of an encrypted PDF starts with a
+    // random IV, so one in 256 of them starts that way.
+    private static byte[] PdfWithStream(string data) {
+        string o1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        string o2 = "2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n";
+        string o3 = "3 0 obj\n<< /Length " + data.Length + " >>\nstream\n" + data + "\nendstream\nendobj\n";
+        string header = "%PDF-1.4\n";
+        int off1 = header.Length;
+        int off2 = off1 + o1.Length;
+        int off3 = off2 + o2.Length;
+        int xref = off3 + o3.Length;
+        string body = header + o1 + o2 + o3
+                + "xref\n0 4\n0000000000 65535 f \n"
+                + off1.ToString("D10") + " 00000 n \n" + off2.ToString("D10") + " 00000 n \n" + off3.ToString("D10") + " 00000 n \n"
+                + "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
+        return Encoding.Latin1.GetBytes(body);
+    }
+
+    [Fact]
+    public void AStreamThatStartsWithALineFeedKeepsIt() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithStream("\nHELLO"));
+        foreach (PDFobj obj in objects) {
+            if (obj.GetNumber() == 3) {
+                Assert.Equal("\nHELLO", Encoding.Latin1.GetString(obj.GetData()));
+                return;
+            }
+        }
+        Assert.Fail("object 3 not read");
+    }
 }
 }

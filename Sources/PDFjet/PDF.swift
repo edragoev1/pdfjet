@@ -1469,8 +1469,12 @@ public class PDF {
             return true
         }
         if str == "stream" {
+            // The keyword ends with CRLF or LF, and the tokenizer consumed the
+            // first of those bytes, so only the LF of a CRLF is left to skip.
+            // A data byte that is a line feed, like the first byte of the IV
+            // of an encrypted stream, stays.
             obj.streamOffset = offset
-            if offset < buffer.count && buffer[offset] == 0x0A {   // "\n"
+            if offset > 0 && buffer[offset - 1] == 0x0D && offset < buffer.count && buffer[offset] == 0x0A {
                 obj.streamOffset += 1
             }
             return true

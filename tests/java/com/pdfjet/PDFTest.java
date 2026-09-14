@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -150,5 +151,36 @@ class PDFTest {
         new Page(pdf, Letter.PORTRAIT);
         pdf.complete();
         assertEquals(1, new PDF().getPageObjects(TestSupport.read(bos.toByteArray())).size());
+    }
+
+    // A PDF with one stream whose data starts with a line feed, the byte that
+    // ends the stream keyword. Every stream of an encrypted PDF starts with a
+    // random IV, so one in 256 of them starts that way.
+    private static byte[] pdfWithStream(String data) {
+        String o1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        String o2 = "2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n";
+        String o3 = "3 0 obj\n<< /Length " + data.length() + " >>\nstream\n" + data + "\nendstream\nendobj\n";
+        String header = "%PDF-1.4\n";
+        int off1 = header.length();
+        int off2 = off1 + o1.length();
+        int off3 = off2 + o2.length();
+        int xref = off3 + o3.length();
+        String body = header + o1 + o2 + o3
+                + "xref\n0 4\n0000000000 65535 f \n"
+                + String.format("%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n", off1, off2, off3)
+                + "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
+        return body.getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    @Test
+    void aStreamThatStartsWithALineFeedKeepsIt() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithStream("\nHELLO"));
+        for (PDFobj obj : objects) {
+            if (obj.getNumber() == 3) {
+                assertEquals("\nHELLO", new String(obj.getData(), StandardCharsets.ISO_8859_1));
+                return;
+            }
+        }
+        throw new AssertionError("object 3 not read");
     }
 }

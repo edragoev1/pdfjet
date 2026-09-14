@@ -127,4 +127,33 @@ import Testing
         try memory.pdf.complete()
         #expect(TestSupport.pageObjects(try TestSupport.read(memory.bytes)).count == 1)
     }
+
+    // A PDF with one stream whose data starts with a line feed, the byte that
+    // ends the stream keyword. Every stream of an encrypted PDF starts with a
+    // random IV, so one in 256 of them starts that way.
+    private func pdfWithStream(_ data: String) -> [UInt8] {
+        let o1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+        let o2 = "2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+        let o3 = "3 0 obj\n<< /Length \(data.utf8.count) >>\nstream\n" + data + "\nendstream\nendobj\n"
+        let header = "%PDF-1.4\n"
+        let off1 = header.utf8.count
+        let off2 = off1 + o1.utf8.count
+        let off3 = off2 + o2.utf8.count
+        let xref = off3 + o3.utf8.count
+        func entry(_ offset: Int) -> String {
+            return String(format: "%010d 00000 n \n", offset)
+        }
+        let body = header + o1 + o2 + o3
+                + "xref\n0 4\n0000000000 65535 f \n" + entry(off1) + entry(off2) + entry(off3)
+                + "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
+        return Array(body.utf8)
+    }
+
+    @Test func aStreamThatStartsWithALineFeedKeepsIt() throws {
+        for obj in try TestSupport.read(pdfWithStream("\nHELLO")) where obj.getNumber() == 3 {
+            #expect(TestSupport.latin1(obj.getData()) == "\nHELLO")
+            return
+        }
+        Issue.record("object 3 not read")
+    }
 }

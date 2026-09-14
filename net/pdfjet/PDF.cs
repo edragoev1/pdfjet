@@ -1458,8 +1458,12 @@ public class PDF {
         if (str.Equals("endobj")) {
             return true;
         } else if (str.Equals("stream")) {
+            // The keyword ends with CRLF or LF, and the tokenizer consumed the
+            // first of those bytes, so only the LF of a CRLF is left to skip.
+            // A data byte that is a line feed, like the first byte of the IV
+            // of an encrypted stream, stays.
             obj.streamOffset = off;
-            if (off < buf.Length && buf[off] == '\n') {
+            if (off > 0 && buf[off - 1] == '\r' && off < buf.Length && buf[off] == '\n') {
                 obj.streamOffset += 1;
             }
             return true;

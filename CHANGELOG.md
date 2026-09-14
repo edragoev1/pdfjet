@@ -144,6 +144,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `/GS` graphics states of `setGraphicsState` correctly.
 - `PDF.addObjects` raises a clear error when the objects have no root `/Pages`
   object.
+- The reader keeps the first byte of a stream when it is a line feed. It
+  skipped one, meant for the LF of a CRLF after the `stream` keyword, after
+  the tokenizer had already consumed the LF, so one encrypted stream in 256,
+  whose random IV started with 0x0A, lost its first byte and failed to
+  decrypt. All four ports; a test reads such a stream.
 
 ### Right to left text
 - Bidi directions are resolved with the Unicode Bidirectional Algorithm, and

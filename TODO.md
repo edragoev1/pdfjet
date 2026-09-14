@@ -978,15 +978,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       on QR data that does not fit, which a test cannot catch; Swift
       `PNGImage.getAlpha` returns no bytes where Java returns null; Go and
       Swift have no public hex helper like Java `Util.toHexString`.
-- ⬜ **B** Intermittent Java test failure: `EncryptionTest.passwordsAreCutAt127Bytes`
-      failed once in about fifteen runs on Sep 14 with `DataFormatException:
-      incorrect header check` from `PDFobj.decode` while reading back the
-      encrypted PDF, and passed on every rerun. The file key, the salts and
-      the stream IVs are random per run, and the encryption code was not
-      touched that day, so some byte value trips the writer or the reader.
-      To catch it: make the test log the key, `/U`, `/O` and the first stream
-      IV when the read fails, or loop it a few hundred times with a fixed
-      `SecureRandom` seed until it reproduces.
+- ✅ **B** Intermittent Java test failure: `EncryptionTest.passwordsAreCutAt127Bytes`
+      failed once in about fifteen runs with `incorrect header check` while
+      reading back the encrypted PDF. Cause: after the `stream` keyword the
+      reader skipped one line feed, meant for the LF of a CRLF, but the
+      tokenizer had already consumed the LF that PDFjet writes, so a stream
+      whose first data byte is 0x0A lost it. Plain streams start with the zlib
+      byte 0x78; an encrypted stream starts with a random IV, so one in 256
+      failed (16 of 4000 in a loop). Fixed (Sep 14) in the four readers: only
+      the LF of a CRLF is skipped, with a test that reads a stream starting
+      with a line feed; 0 failures in 4000 runs after the fix.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
       Done on Sep 13: `check-examples.sh` is clean with the version bump,

@@ -1473,8 +1473,12 @@ func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {
 	if str == "endobj" {
 		return true
 	} else if str == "stream" {
+		// The keyword ends with CRLF or LF, and the tokenizer consumed the
+		// first of those bytes, so only the LF of a CRLF is left to skip. A
+		// data byte that is a line feed, like the first byte of the IV of an
+		// encrypted stream, stays.
 		obj.streamOffset = off
-		if off < len(buf) && buf[off] == byte('\n') {
+		if off > 0 && buf[off-1] == byte('\r') && off < len(buf) && buf[off] == byte('\n') {
 			obj.streamOffset++
 		}
 		return true

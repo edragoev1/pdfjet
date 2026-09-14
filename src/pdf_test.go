@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -158,4 +159,35 @@ func TestPDFCrossReferenceOffsetsAreTenDigits(t *testing.T) {
 	testWant(t, "9999999999", xrefOffset(9999999999))
 	testWant(t, "The PDF is too large for a cross-reference table: an object starts at byte 10000000000.",
 		testPanicMessage(func() { xrefOffset(10000000000) }))
+}
+
+// testPDFWithStream is a PDF with one stream whose data starts with a line
+// feed, the byte that ends the stream keyword. Every stream of an encrypted
+// PDF starts with a random IV, so one in 256 of them starts that way.
+func testPDFWithStream(data string) []byte {
+	o1 := "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+	o2 := "2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+	o3 := "3 0 obj\n<< /Length " + strconv.Itoa(len(data)) + " >>\nstream\n" + data + "\nendstream\nendobj\n"
+	header := "%PDF-1.4\n"
+	off1 := len(header)
+	off2 := off1 + len(o1)
+	off3 := off2 + len(o2)
+	xref := off3 + len(o3)
+	body := header + o1 + o2 + o3 +
+		"xref\n0 4\n0000000000 65535 f \n" +
+		fmt.Sprintf("%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n", off1, off2, off3) +
+		"trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n" + strconv.Itoa(xref) + "\n%%EOF\n"
+	return []byte(body)
+}
+
+func TestPDFAStreamThatStartsWithALineFeedKeepsIt(t *testing.T) {
+	for _, obj := range testRead(t, testPDFWithStream("\nHELLO")) {
+		if obj.GetNumber() == 3 {
+			if got := string(obj.GetData()); got != "\nHELLO" {
+				t.Errorf("got %q", got)
+			}
+			return
+		}
+	}
+	t.Error("object 3 not read")
 }
