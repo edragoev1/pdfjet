@@ -540,17 +540,3 @@ for a size that has no package. The QR code error correction levels are
 (`GetX1`). `Permissions` prints through `String()` in Go and `description`
 in Swift where Java and C# have `toString`; C# also keeps its `Access` and
 `RawValue` properties next to `GetAccess` and `GetRawValue`.
-
-### Helpers that are public because of packaging
-
-A few members are public in one port only because that port needs them across
-a package boundary; they are not API and can change in any release. In Java:
-`PDF.append`, `newObj`, `endObj`, `getObjNumber` and `addObjectsToPDF`, used
-by `com.pdfjet.encryption`, `Encryption.getObjNumber`, used by `PDF`,
-`Barcode.drawOnPageAtLocation`, used by `Cell`,
-and the `AES128`, `AES256` and `OTF` classes. In Go: the exported functions of
-the `encryption` package (`Encrypt`, `EncryptECB`, `EncryptK1`,
-`EncryptWithZeroIV`), the `CoreFont` fields, and the types of the helper files
-in the root package (`Annotation`, `OCG`, `State`, `OTF`, `SVG`, `SVGPath`). The Java `GenerateFontMetricsFiles` and
-`GenerateStreamFontsFiles` classes are the command line tools that make the
-font files, not library classes.
