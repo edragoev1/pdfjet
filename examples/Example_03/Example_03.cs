@@ -38,9 +38,10 @@ public class Example_03 {
                 .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
         paragraphs.Add(paragraph);
 
-        Text text = new Text(paragraphs);
+        TextFrame text = new TextFrame(paragraphs);
         text.SetLocation(70f, 50f);
         text.SetWidth(500f);
+        text.SetBorders(true);
         text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
@@ -61,7 +62,7 @@ public class Example_03 {
         colorMap["physics"] = Color.red;
         colorMap["Experimentation"] = Color.orange;
         colorMap["science"] = Color.blue;
-        paragraphs = Text.ParagraphsFromFile(f1, "data/physics.txt");
+        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
                 p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
@@ -72,9 +73,10 @@ public class Example_03 {
             }
         }
 
-        text = new Text(paragraphs);
+        text = new TextFrame(paragraphs);
         text.SetLocation(70f, 150f);
         text.SetWidth(500f);
+        text.SetBorders(true);
         text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 

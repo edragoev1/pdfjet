@@ -52,7 +52,7 @@ public class Example_49 {
         paragraphs.add(paragraph1);
         paragraphs.add(paragraph2);
 
-        Text text = new Text(paragraphs);
+        TextFrame text = new TextFrame(paragraphs);
         text.setLocation(70f, 200f);
         text.setWidth(500f);
         text.drawOn(page);

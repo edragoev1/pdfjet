@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
 // Paragraph is used to create paragraph objects.
@@ -99,4 +100,36 @@ func (paragraph *Paragraph) SetHighlightColors(colorMap map[string]int32) *Parag
 		line.SetHighlightColors(colorMap)
 	}
 	return paragraph
+}
+
+// ParagraphsFromFile reads a text file and returns its paragraphs. An empty
+// line separates the paragraphs. It panics if the file cannot be read.
+func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
+	paragraphs := make([]*Paragraph, 0)
+	paragraph := NewParagraph()
+	textLine := NewEmptyTextLine(f1)
+	sb := make([]rune, 0)
+	runes := []rune(content.OfTextFile(filePath))
+	for i := 0; i < len(runes); i++ {
+		ch := runes[i]
+		// We need at least one character after the \n\n to begin new paragraph!
+		if i < (len(runes)-2) &&
+			ch == '\n' && runes[i+1] == '\n' {
+			textLine.SetText(string(sb))
+			paragraph.Add(textLine)
+			paragraphs = append(paragraphs, paragraph)
+			paragraph = NewParagraph()
+			textLine = NewEmptyTextLine(f1)
+			sb = nil
+			i += 1
+		} else {
+			sb = append(sb, ch)
+		}
+	}
+	if len(sb) != 0 {
+		textLine.SetText(string(sb))
+		paragraph.Add(textLine)
+		paragraphs = append(paragraphs, paragraph)
+	}
+	return paragraphs
 }

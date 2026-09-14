@@ -54,7 +54,7 @@ func Example49() {
 	paragraphs = append(paragraphs, paragraph1)
 	paragraphs = append(paragraphs, paragraph2)
 
-	text := pdfjet.NewText(paragraphs)
+	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
 	text.SetLocation(70.0, 200.0)
 	text.SetWidth(500.0)
 	text.DrawOn(page)

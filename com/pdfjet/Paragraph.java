@@ -123,4 +123,42 @@ public class Paragraph {
         }
         return this;
     }
+
+    /**
+     * Reads a text file and returns its paragraphs. An empty line separates the paragraphs.
+     *
+     * @param f1 the font for the text.
+     * @param filePath the path of the text file.
+     * @return the paragraphs.
+     * @throws Exception if the file cannot be read.
+     */
+    public static List<Paragraph> paragraphsFromFile(Font f1, String filePath) throws Exception {
+        List<Paragraph> paragraphs = new ArrayList<>();
+        String contents = Content.ofTextFile(filePath);
+        Paragraph paragraph = new Paragraph();
+        TextLine textLine = new TextLine(f1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < contents.length(); i++) {
+            char ch = contents.charAt(i);
+            // We need at least one character after the \n\n to begin new paragraph!
+            if (i < (contents.length() - 2) &&
+                    ch == '\n' && contents.charAt(i + 1) == '\n') {
+                textLine.setText(sb.toString());
+                paragraph.add(textLine);
+                paragraphs.add(paragraph);
+                paragraph = new Paragraph();
+                textLine = new TextLine(f1);
+                sb.setLength(0);
+                i += 1;
+            } else {
+                sb.append(ch);
+            }
+        }
+        if (!sb.toString().isEmpty()) {
+            textLine.setText(sb.toString());
+            paragraph.add(textLine);
+            paragraphs.add(paragraph);
+        }
+        return paragraphs;
+    }
 }   // End of Paragraph.java

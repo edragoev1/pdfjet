@@ -39,6 +39,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `JISB5`.
 - Many methods and constants are renamed or removed so that one concept has
   one name in every class and port. See "Names".
+- `Text` is removed: a `TextFrame` without a height draws the same paragraphs
+  the same way, with `setBorders(true)` for the border, and
+  `Text.paragraphsFromFile` is `Paragraph.paragraphsFromFile`.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".
@@ -155,9 +158,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `TextBlock` draws the characters its font lacks in the fallback font, draws
   a text of only line breaks as one empty line, and `getHeight` returns the
   drawn height when the text is taller than the set height.
-- `Text`, `TextFrame` and `TextColumn` keep every setting of a line they wrap,
-  including its vertical offset and its link. `TextFrame` does everything
-  `Text` does and always finishes flowing, and its border is black by default.
+- `TextFrame` and `TextColumn` keep every setting of a line they wrap,
+  including its vertical offset and its link. `TextFrame` always finishes
+  flowing, and its border is black by default.
 - `TextColumn.setTextAlignment` applies to the paragraphs without an alignment
   of their own.
 - C# `CompositeTextLine` lays out its lines as Java does.
@@ -450,9 +453,6 @@ the unused `Embed` enum are removed. Highlights below; see
   at the font size it draws with (all four ports).
 - The two `Table` wrapping loops measure the same way; Go broke long tokens one
   character early.
-- Go and Swift `Text` append the space after each token instead of putting it
-  before the next one, so the styled runs of a paragraph no longer run
-  together.
 - `CompositeTextLine` applies the subscript and superscript size factors (Java,
   Swift), and C# positions the two effects with the constants it declares.
 

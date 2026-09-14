@@ -39,9 +39,10 @@ public class Example_03 {
                 .add(new TextLine(f3, "This text is using italic font.").setTextColor(Color.green));
         paragraphs.add(paragraph);
 
-        Text text = new Text(paragraphs);
+        TextFrame text = new TextFrame(paragraphs);
         text.setLocation(70f, 50f);
         text.setWidth(500f);
+        text.setBorders(true);
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 
@@ -62,7 +63,7 @@ public class Example_03 {
         colorMap.put("physics", Color.red);
         colorMap.put("Experimentation", Color.orange);
         colorMap.put("science", Color.blue);
-        paragraphs = Text.paragraphsFromFile(f1, "data/physics.txt");
+        paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
         for (Paragraph p : paragraphs) {
             if (p.startsWith("**")) {
                 p.getTextLines().get(0).setFont(f2).setFontSize(24f);
@@ -73,9 +74,10 @@ public class Example_03 {
             }
         }
 
-        text = new Text(paragraphs);
+        text = new TextFrame(paragraphs);
         text.setLocation(70f, 150f);
         text.setWidth(500f);
+        text.setBorders(true);
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 

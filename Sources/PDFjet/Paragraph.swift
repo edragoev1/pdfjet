@@ -92,4 +92,38 @@ public class Paragraph {
         }
         return self
     }
+
+    /// Reads a text file and returns its paragraphs. An empty line separates the paragraphs.
+    public static func paragraphsFromFile(_ f1: Font, _ filePath: String) throws -> [Paragraph] {
+        var paragraphs = [Paragraph]()
+        let contents = try Content.ofTextFile(filePath)
+        var paragraph = Paragraph()
+        var textLine = TextLine(f1)
+        var sb = String()
+        let scalars = Array(contents.unicodeScalars)
+        var i = 0
+        while i < scalars.count {
+            let ch = scalars[i]
+            // We need at least one character after the \n\n to begin new paragraph!
+            if i < (scalars.count - 2) &&
+                    ch == "\n" && scalars[i + 1] == "\n" {
+                textLine.setText(sb)
+                paragraph.add(textLine)
+                paragraphs.append(paragraph)
+                paragraph = Paragraph()
+                textLine = TextLine(f1)
+                sb = ""
+                i += 1
+            } else {
+                sb.append(String(ch))
+            }
+            i += 1
+        }
+        if !sb.isEmpty {
+            textLine.setText(sb)
+            paragraph.add(textLine)
+            paragraphs.append(paragraph)
+        }
+        return paragraphs
+    }
 }   // End of Paragraph.swift

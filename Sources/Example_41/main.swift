@@ -34,9 +34,10 @@ public class Example_41 {
                 .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
         paragraphs.append(paragraph)
 
-        var text = Text(paragraphs)
+        var text = TextFrame(paragraphs)
         text.setLocation(70.0, 50.0)
         text.setWidth(500.0)
+        text.setBorders(true)
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 
@@ -57,7 +58,7 @@ public class Example_41 {
         colorMap["physics"] = Color.red
         colorMap["Experimentation"] =  Color.orange
         colorMap["science"] = Color.blue
-        paragraphs = try Text.paragraphsFromFile(f1, "data/physics.txt")
+        paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
         for p in paragraphs {
             if (p.startsWith("**")) {
                 p.getTextLines()[0].setFont(f2).setFontSize(24.0)
@@ -68,9 +69,10 @@ public class Example_41 {
             }
         }
 
-        text = Text(paragraphs)
+        text = TextFrame(paragraphs)
         text.setLocation(70.0, 150.0)
         text.setWidth(500.0)
+        text.setBorders(true)
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 

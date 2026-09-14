@@ -51,7 +51,7 @@ public class Example_49 {
         paragraphs.Add(paragraph1);
         paragraphs.Add(paragraph2);
 
-        Text text = new Text(paragraphs);
+        TextFrame text = new TextFrame(paragraphs);
         text.SetLocation(70f, 200f);
         text.SetWidth(500f);
         text.DrawOn(page);

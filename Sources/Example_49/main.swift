@@ -47,7 +47,7 @@ public class Example_49 {
         paragraphs.append(paragraph1)
         paragraphs.append(paragraph2)
 
-        let text = Text(paragraphs)
+        let text = TextFrame(paragraphs)
         text.setLocation(70.0, 200.0)
         text.setWidth(500.0)
         text.drawOn(page)

@@ -16,7 +16,9 @@ import (
 // TextFrame is paragraphs of text lines, wrapped at the width of the frame,
 // with an optional border. A frame with a height draws as much of the text as
 // fits and keeps the rest for the next frame, so text flows from frame to
-// frame. A frame without a height draws all of the text, as Text does. Please
+// frame. A frame without a height draws all of the text, Drawing consumes the
+// text: a second DrawOn draws what is left, so build a new frame to draw the
+// same text again. Please
 // see Example_47.
 type TextFrame struct {
 	paragraphs       []*Paragraph
@@ -307,7 +309,7 @@ func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 }
 
 // drawLine draws the string at the current text position, with every setting of
-// the text line, including its vertical offset and link, as Text does.
+// the text line, including its vertical offset and link, as TextColumn does.
 func (tf *TextFrame) drawLine(page *Page, textLine *TextLine, str string) {
 	line := textLine.copyWithText(str)
 	line.SetLocation(tf.xText, tf.yText)

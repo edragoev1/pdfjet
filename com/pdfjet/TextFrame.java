@@ -12,7 +12,9 @@ import java.util.*;
  * Paragraphs of text lines, wrapped at the width of the frame, with an optional
  * border. A frame with a height draws as much of the text as fits and keeps the
  * rest for the next frame, so text flows from frame to frame. A frame without a
- * height draws all of the text, as Text does. Please see Example_47.
+ * height draws all of the text. Drawing consumes the text: a second drawOn draws
+ * what is left, so build a new frame to draw the same text again. Please see
+ * Example_03 and Example_47.
  */
 public class TextFrame implements Drawable {
     private final List<Paragraph> paragraphs;
@@ -405,7 +407,7 @@ public class TextFrame implements Drawable {
     }
 
     // Draws the string at the current text position, with every setting of the
-    // text line, including its vertical offset and its link, as Text does.
+    // text line, including its vertical offset and its link, as TextColumn does.
     private void drawLine(Page page, TextLine textLine, String str) throws Exception {
         textLine.copyWithText(str).setLocation(xText, yText).drawOn(page);
     }

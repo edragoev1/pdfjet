@@ -39,9 +39,10 @@ func Example41() {
 	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
 	paragraphs = append(paragraphs, paragraph)
 
-	text := pdfjet.NewText(paragraphs)
+	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
 	text.SetLocation(70.0, 50.0)
 	text.SetWidth(500.0)
+	text.SetBorders(true)
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
@@ -73,9 +74,10 @@ func Example41() {
 		}
 	}
 
-	text = pdfjet.NewText(paragraphs)
+	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
 	text.SetLocation(70.0, 150.0)
 	text.SetWidth(500.0)
+	text.SetBorders(true)
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 

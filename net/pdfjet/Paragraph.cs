@@ -4,6 +4,8 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
+using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
@@ -88,6 +90,37 @@ public class Paragraph {
             line.SetHighlightColors(colorMap);
         }
         return this;
+    }
+
+    /// <summary>Reads a text file and returns its paragraphs. An empty line separates the paragraphs.</summary>
+    public static List<Paragraph> ParagraphsFromFile(Font f1, String filePath) {
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        String contents = Content.OfTextFile(filePath);
+        Paragraph paragraph = new Paragraph();
+        TextLine textLine = new TextLine(f1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < contents.Length; i++) {
+            char ch = contents[i];
+            // We need at least one character after the \n\n to begin new paragraph!
+            if (i < (contents.Length - 2) &&
+                    ch == '\n' && contents[i + 1] == '\n') {
+                textLine.SetText(sb.ToString());
+                paragraph.Add(textLine);
+                paragraphs.Add(paragraph);
+                paragraph = new Paragraph();
+                textLine = new TextLine(f1);
+                sb.Length = 0;
+                i += 1;
+            } else {
+                sb.Append(ch);
+            }
+        }
+        if (sb.Length > 0) {
+            textLine.SetText(sb.ToString());
+            paragraph.Add(textLine);
+            paragraphs.Add(paragraph);
+        }
+        return paragraphs;
     }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET

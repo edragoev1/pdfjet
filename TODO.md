@@ -232,6 +232,11 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Chart` loses `setXYChart` and the stroke scaling, centers the titles
       at the drawn size, centers the path text across the stroke, and writes
       axis labels with the decimal places of the axis step.
+- ✅ **B** `Text` duplicated `TextFrame`: a frame without a height draws the
+      same paragraphs the same way (Example_03 drawn with either has the same
+      content stream). Removed (Sep 14) in the four ports; Example_03, 41 and
+      49 use `TextFrame` with `setBorders(true)`, and `Text.paragraphsFromFile`
+      is `Paragraph.paragraphsFromFile` (Go `ParagraphsFromFile`).
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y
