@@ -25,7 +25,8 @@ public class TextFrame : Drawable {
     private var y: Float = 0.0
     private var w: Float = 0.0
     private var h: Float = 0.0
-    private var paragraphGap: Float = 24.0
+    private var paragraphGap: Float = 0.0
+    private var hasParagraphGap = false
     private var border = false
     private var borderColor: [Float] = [0.0, 0.0, 0.0]
     private var borderWidth: Float = 0.5
@@ -47,8 +48,8 @@ public class TextFrame : Drawable {
     private var rowPlaced = false
     private var nextBaseline: Float = 0.0
 
-    /// Creates a text frame from paragraphs of text lines. The paragraphs are 24
-    /// points apart unless setParagraphGap says otherwise.
+    /// Creates a text frame from paragraphs of text lines. An empty line separates
+    /// the paragraphs unless setParagraphGap sets another gap.
     public init(_ paragraphs: [Paragraph]) {
         self.paragraphs = paragraphs
     }
@@ -57,7 +58,6 @@ public class TextFrame : Drawable {
     /// size. An empty line separates the paragraphs.
     public init(_ f1: Font, _ inputList: [String]) {
         self.paragraphs = inputList.map { Paragraph(TextLine(f1, $0)) }
-        self.paragraphGap = 2.0 * f1.getBodyHeight()
     }
 
     /// Sets the location of the top left corner of this text frame.
@@ -93,11 +93,14 @@ public class TextFrame : Drawable {
         return self.h
     }
 
-    /// Sets the vertical distance between paragraphs, from the baseline of the
-    /// last line of a paragraph to the baseline of the first line of the next.
+    /// Sets the space between paragraphs, in points, 0 or more. It is added to the
+    /// height of the last line of a paragraph, so a gap of 0 sets the paragraphs
+    /// like the lines of one paragraph and they never overlap. The default is one
+    /// empty line: the height of that last line.
     @discardableResult
     public func setParagraphGap(_ paragraphGap: Float) -> TextFrame {
         self.paragraphGap = paragraphGap
+        self.hasParagraphGap = true
         return self
     }
 
@@ -223,7 +226,11 @@ public class TextFrame : Drawable {
             }
             xText = x
             rowOpen = false
-            nextBaseline = yText + paragraphGap
+            if let lastLine = paragraph.lines.last {
+                // The next paragraph starts a line below this one, plus the gap.
+                let lineHeight = lastLine.getHeight()
+                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight)
+            }
             paragraphIndex += 1
             lineIndex = 0
         }

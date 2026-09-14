@@ -637,6 +637,6 @@ in Swift where Java and C# have `toString`.
 
 Two conventions hold in every port. A rotation is `setRotation(degrees)` and a
 positive angle turns counterclockwise, on shapes, images, pages and text alike.
-A spacing setter that takes points is a gap (`setLineGap`, `setParagraphGap`)
-and one that takes a multiple of the line is a spacing (`setLineSpacing`,
-`setParagraphSpacing`).
+A spacing setter that takes points is a gap, added to the space the text
+already takes (`TextFrame.setParagraphGap`), and one that takes a multiple of
+the line is a spacing (`setLineSpacing`, `TextColumn.setParagraphSpacing`).

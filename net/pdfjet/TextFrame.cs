@@ -28,7 +28,8 @@ public class TextFrame : IDrawable {
     private float y;
     private float w;
     private float h;
-    private float paragraphGap = 24f;
+    private float paragraphGap = 0f;
+    private bool hasParagraphGap = false;
     private bool border = false;
     private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
@@ -51,8 +52,8 @@ public class TextFrame : IDrawable {
     private float nextBaseline;
 
     /// <summary>
-    /// Creates a text frame from paragraphs of text lines. The paragraphs are 24
-    /// points apart unless SetParagraphGap says otherwise.
+    /// Creates a text frame from paragraphs of text lines. An empty line separates
+    /// the paragraphs unless SetParagraphGap sets another gap.
     /// </summary>
     public TextFrame(List<Paragraph> paragraphs) {
         this.paragraphs = paragraphs;
@@ -67,7 +68,6 @@ public class TextFrame : IDrawable {
         foreach (String text in inputList) {
             this.paragraphs.Add(new Paragraph(new TextLine(f1, text)));
         }
-        this.paragraphGap = 2f * f1.GetBodyHeight();
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -104,11 +104,14 @@ public class TextFrame : IDrawable {
     }
 
     /// <summary>
-    /// Sets the vertical distance between paragraphs, from the baseline of the
-    /// last line of a paragraph to the baseline of the first line of the next.
+    /// Sets the space between paragraphs, in points, 0 or more. It is added to the
+    /// height of the last line of a paragraph, so a gap of 0 sets the paragraphs
+    /// like the lines of one paragraph and they never overlap. The default is one
+    /// empty line: the height of that last line.
     /// </summary>
     public TextFrame SetParagraphGap(float paragraphGap) {
         this.paragraphGap = paragraphGap;
+        this.hasParagraphGap = true;
         return this;
     }
 
@@ -226,7 +229,11 @@ public class TextFrame : IDrawable {
             }
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + paragraphGap;
+            if (paragraph.lines.Count > 0) {
+                // The next paragraph starts a line below this one, plus the gap.
+                float lineHeight = paragraph.lines[paragraph.lines.Count - 1].GetHeight();
+                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight);
+            }
             paragraphIndex++;
             lineIndex = 0;
         }

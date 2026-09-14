@@ -27,7 +27,8 @@ public class TextFrame implements Drawable {
     private float y;
     private float w;
     private float h;
-    private float paragraphGap = 24f;
+    private float paragraphGap = 0f;
+    private boolean hasParagraphGap = false;
     private boolean border = false;
     private float[] borderColor = {0f, 0f, 0f};
     private float borderWidth = 0.5f;
@@ -50,8 +51,8 @@ public class TextFrame implements Drawable {
     private float nextBaseline;
 
     /**
-     * Creates a text frame from paragraphs of text lines. The paragraphs are 24
-     * points apart unless setParagraphGap says otherwise.
+     * Creates a text frame from paragraphs of text lines. An empty line separates
+     * the paragraphs unless setParagraphGap sets another gap.
      *
      * @param paragraphs the paragraphs.
      */
@@ -71,7 +72,6 @@ public class TextFrame implements Drawable {
         for (String text : inputList) {
             this.paragraphs.add(new Paragraph(new TextLine(f1, text)));
         }
-        this.paragraphGap = 2f * f1.getBodyHeight();
     }
 
     /**
@@ -129,14 +129,17 @@ public class TextFrame implements Drawable {
     }
 
     /**
-     * Sets the vertical distance between paragraphs, from the baseline of the
-     * last line of a paragraph to the baseline of the first line of the next.
+     * Sets the space between paragraphs, in points. It is added to the height of
+     * the last line of a paragraph, so a gap of 0 sets the paragraphs like the
+     * lines of one paragraph and they never overlap. The default is one empty
+     * line: the height of that last line.
      *
-     * @param paragraphGap the distance between paragraphs.
+     * @param paragraphGap the space between paragraphs, 0 or more.
      * @return this TextFrame object.
      */
     public TextFrame setParagraphGap(float paragraphGap) {
         this.paragraphGap = paragraphGap;
+        this.hasParagraphGap = true;
         return this;
     }
 
@@ -287,7 +290,11 @@ public class TextFrame implements Drawable {
             }
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + paragraphGap;
+            if (!paragraph.lines.isEmpty()) {
+                // The next paragraph starts a line below this one, plus the gap.
+                float lineHeight = paragraph.lines.get(paragraph.lines.size() - 1).getHeight();
+                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight);
+            }
             paragraphIndex++;
             lineIndex = 0;
         }

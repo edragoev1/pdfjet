@@ -26,13 +26,14 @@ import (
 // TextBlock for one run of text in one font. Please see Example_03 and
 // Example_47.
 type TextFrame struct {
-	paragraphs    []*Paragraph
-	x, y, w, h    float32
-	paragraphGap  float32
-	border        bool
-	borderColor   [3]float32
-	borderWidth   float32
-	borderPattern string
+	paragraphs      []*Paragraph
+	x, y, w, h      float32
+	paragraphGap    float32
+	hasParagraphGap bool
+	border          bool
+	borderColor     [3]float32
+	borderWidth     float32
+	borderPattern   string
 
 	// The text that is not drawn yet starts at this paragraph, at this text
 	// line of the paragraph and at this token of the text line. The tokens are
@@ -58,18 +59,15 @@ func NewTextFrame(f1 *Font, inputList []string) *TextFrame {
 	for _, text := range inputList {
 		paragraphs = append(paragraphs, NewParagraph().Add(NewTextLine(f1, text)))
 	}
-	tf := NewTextFrameFromParagraphs(paragraphs)
-	tf.paragraphGap = 2 * f1.GetBodyHeight()
-	return tf
+	return NewTextFrameFromParagraphs(paragraphs)
 }
 
 // NewTextFrameFromParagraphs creates a text frame from paragraphs of text
-// lines. The paragraphs are 24 points apart unless SetParagraphGap says
-// otherwise.
+// lines. An empty line separates the paragraphs unless SetParagraphGap sets
+// another gap.
 func NewTextFrameFromParagraphs(paragraphs []*Paragraph) *TextFrame {
 	return &TextFrame{
 		paragraphs:    paragraphs,
-		paragraphGap:  24.0,
 		borderColor:   [3]float32{0.0, 0.0, 0.0},
 		borderWidth:   0.5,
 		borderPattern: "[] 0",
@@ -106,11 +104,13 @@ func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
 }
 
-// SetParagraphGap sets the vertical distance between paragraphs, from the
-// baseline of the last line of a paragraph to the baseline of the first line
-// of the next.
+// SetParagraphGap sets the space between paragraphs, in points, 0 or more. It
+// is added to the height of the last line of a paragraph, so a gap of 0 sets
+// the paragraphs like the lines of one paragraph and they never overlap. The
+// default is one empty line: the height of that last line.
 func (tf *TextFrame) SetParagraphGap(paragraphGap float32) *TextFrame {
 	tf.paragraphGap = paragraphGap
+	tf.hasParagraphGap = true
 	return tf
 }
 
@@ -229,7 +229,15 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 		}
 		tf.xText = tf.x
 		tf.rowOpen = false
-		tf.nextBaseline = tf.yText + tf.paragraphGap
+		if len(paragraph.lines) > 0 {
+			// The next paragraph starts a line below this one, plus the gap.
+			lineHeight := paragraph.lines[len(paragraph.lines)-1].GetHeight()
+			gap := lineHeight
+			if tf.hasParagraphGap {
+				gap = tf.paragraphGap
+			}
+			tf.nextBaseline = tf.yText + lineHeight + gap
+		}
 		tf.paragraphIndex++
 		tf.lineIndex = 0
 	}
