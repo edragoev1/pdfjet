@@ -152,9 +152,9 @@
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">3</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
-    <tr><td>One way to say each thing</td><td class="num">6</td><td class="num">6</td><td>Rotation and spacing variants, drawString overloads</td></tr>
-    <tr><td>Hide what is not for users</td><td class="num">5</td><td class="num">5</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">14</td><td class="num">12</td><td></td></tr>
+    <tr><td>One way to say each thing</td><td class="num">5</td><td class="num">5</td><td>Rotation and spacing variants, drawString overloads</td></tr>
+    <tr><td>Hide what is not for users</td><td class="num">4</td><td class="num">4</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
+    <tr class="total"><td>Total</td><td class="num">12</td><td class="num">10</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -248,13 +248,6 @@
   <p>Detect PNG, JPEG and BMP from the signature. <code>ImageType</code> leaves the constructor.</p>
 </section>
 
-<section class="item">
-  <h3>Permissions drift between ports <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>C# has <code>Access</code> and <code>GetAccess</code>, <code>RawValue</code> and <code>GetRawValue</code>. Go has <code>Has</code>, <code>Add</code> and <code>Remove</code> on <code>UserAccess</code> where Java and Swift have <code>getValue</code> and <code>isSetIn</code>, and two Go constructors from an int.</p>
-  <span class="label">Suggestion</span>
-  <p>One getter and one query per port, matched in the audit like every other member.</p>
-</section>
 
 <h2 id="hide">Hide what is not for users</h2>
 <p>Everything here is visible in the generated references and in code completion, and none of it helps someone making a PDF.</p>
@@ -286,13 +279,6 @@
   <p>Unexport them. The first table of the audit report then nearly empties.</p>
 </section>
 
-<section class="item">
-  <h3>PDF operators as method names <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Page.addBDC</code>, <code>addEMC</code> and <code>addArtifactBMC</code> are correct and opaque. <code>Page.transform</code> with the <code>MSCALE_X</code> index constants is an Android matrix convention with no caller in the examples.</p>
-  <span class="label">Suggestion</span>
-  <p><code>beginMarkedContent</code>, <code>endMarkedContent</code> and <code>beginArtifact</code>. Keep <code>transform</code> but take six named values instead of indexed constants.</p>
-</section>
 
 <section class="item">
   <h3>Chart leftovers <span class="chip now">9.0.0</span></h3>

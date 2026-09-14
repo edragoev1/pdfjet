@@ -268,6 +268,13 @@ renames included (the Week 1 decision), so every item is a blocker.
       Swift and Go never had them. Fixed (Sep 14): the overloads are removed,
       the handful of methods that took only a `double` take a `float`, and the
       eight example call sites write `7f`, `1f`, `2.0f` and a `float` variable.
+- ✅ **B** Permissions drift: C# had `Access` and `GetAccess`, `RawValue` and
+      `GetRawValue` and `Can*` properties, Go had `Has`, `Add` and `Remove` on
+      `UserAccess` and two constructors from an int, Java and Swift had
+      `getValue` and `isSetIn`. Fixed (Sep 14): one getter, `getAccess`, and
+      one query, `UserAccess.isSetIn` (Go `IsSetIn`, C# `HasFlag`), in every
+      port; `getRawValue`, the C# properties, Go `Add`, `Remove` and
+      `NewPermissionsFromUint32` are gone.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

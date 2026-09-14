@@ -36,13 +36,13 @@ func TestPermissionsGrantAndRevokeChangeOnlyTheirBits(t *testing.T) {
 	if permissions.GetAccess() != 16 || permissions.CanPrint() {
 		t.Errorf("revoked %d", permissions.GetAccess())
 	}
-	if !permissions.GetAccess().Has(CopyContents) || permissions.GetAccess().Has(Print) {
-		t.Error("wrong Has")
+	if !CopyContents.IsSetIn(permissions.GetAccess()) || Print.IsSetIn(permissions.GetAccess()) {
+		t.Error("wrong IsSetIn")
 	}
 }
 
 func TestPermissionsRawFlagsKeepOnlyTheValidBits(t *testing.T) {
-	if got := NewPermissionsFromUint32(0xFFFFFFFF).GetAccess(); got != 0xFFC {
+	if got := NewPermissionsFromInt(-1).GetAccess(); got != 0xFFC {
 		t.Errorf("all bits: %d", got)
 	}
 	if got := NewPermissionsFromInt(0x3).GetAccess(); got != 0 {

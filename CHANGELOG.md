@@ -88,10 +88,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   password hashes use random salts.
 - An encrypted PDF/UA file grants the permission to extract its contents for
   accessibility.
-- `Permissions.grant` and `revoke` replace `setPermissions(flags, grant)`.
-  Java and Swift `Permissions` keep `getAccess` and lose `getRawValue`; C# and
-  Go keep `GetRawValue`, which returns the flags as an unsigned number. C# and
-  Swift `Encryption.getKey` is internal, and Go `GetKey` is removed.
+- `Permissions.grant` and `revoke` replace `setPermissions(flags, grant)`, and
+  `Permissions` has the same members in the four ports: `getAccess` is the
+  `/P` value without its reserved bits and `getRawValue` is gone, C# has the
+  `GetAccess` and `CanPrint` methods instead of properties, Go has one
+  constructor from an int and `UserAccess.IsSetIn` like Java and Swift instead
+  of `Has`, `Add` and `Remove`. C# and Swift `Encryption.getKey` is internal,
+  and Go `GetKey` is removed.
 
 ### Reading existing PDFs
 - Filter chains, encrypted PDFs, hybrid reference files and broken

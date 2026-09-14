@@ -119,7 +119,7 @@ func NewEncryption(pdf *PDF,
 	// The flags specifying which operations shall be permitted, with the
 	// reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
 	// so the value is negative.
-	p := permissions.GetRawValue() | 0xFFFFF0C0
+	p := uint32(permissions.GetAccess()) | 0xFFFFF0C0
 	pdf.appendString("/P ")
 	pdf.appendString(strconv.Itoa(int(int32(p))))
 	pdf.appendString("\n")

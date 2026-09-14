@@ -8,161 +8,103 @@ using System;
 
 namespace PDFjet.NET {
     /// <summary>
-    /// Encapsulates the user access permissions for a PDF document as specified in
-    /// ISO 32000-2, Table 22. Provides a type-safe interface to manipulate and query
-    /// the permissions flags.
+    /// The permissions of an encrypted PDF: the UserAccess flags a reader grants
+    /// the user, written to the /P entry of the encryption dictionary.
     /// </summary>
     public class Permissions {
         private uint _permissionsFlags;
 
-        /// <summary>
-        /// A mask that defines the valid bits (3-12) that can be set in the permissions flag.
-        /// Bits outside this range are reserved and must be zero.
-        /// </summary>
+        // The permission bits of the standard, positions 3 to 12.
         private const uint ValidBitsMask = 0b1111_1111_1100; // Hex: 0xFFC
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Permissions"/> class
-        /// with no permissions granted.
-        /// </summary>
+        /// <summary>Creates permissions that grant nothing.</summary>
         public Permissions() {
             _permissionsFlags = 0;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Permissions"/> class
-        /// from the raw 32-bit integer value found in the PDF encryption dictionary's /P key.
-        /// Invalid bits (outside positions 3-12) are masked out to ensure compliance.
+        /// Creates permissions from the /P value of an encryption dictionary,
+        /// keeping only its permission bits.
         /// </summary>
-        /// <param name="rawFlags">The raw integer value.</param>
-        public Permissions(int rawFlags) : this((uint)rawFlags) {
+        /// <param name="rawFlags">the /P value.</param>
+        public Permissions(int rawFlags) {
+            _permissionsFlags = (uint) rawFlags & ValidBitsMask;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Permissions"/> class
-        /// from the raw 32-bit integer value found in the PDF encryption dictionary's /P key.
-        /// Invalid bits (outside positions 3-12) are masked out to ensure compliance.
+        /// Returns the granted permissions as UserAccess flags: the /P value
+        /// without its reserved bits.
         /// </summary>
-        /// <param name="rawFlags">The raw integer value.</param>
-        public Permissions(uint rawFlags) {
-            _permissionsFlags = rawFlags & ValidBitsMask;
-        }
-
-        /// <summary>
-        /// Gets or sets the permissions using the type-safe <see cref="UserAccess"/> enum.
-        /// The getter returns the enum representation of the current flags.
-        /// The setter applies the enum value, automatically masking any invalid bits.
-        /// </summary>
-        public UserAccess Access {
-            get => (UserAccess)_permissionsFlags;
-            set => _permissionsFlags = (uint)value & ValidBitsMask;
-        }
-
-        /// <summary>
-        /// Gets the raw 32-bit integer value of the permissions flags.
-        /// All reserved bits are zero. Encryption sets the reserved bits that
-        /// ISO 32000-2 requires to be one when it writes the /P key.
-        /// </summary>
-        public uint RawValue => _permissionsFlags;
-
-        /// <summary>
-        /// Gets the permissions as <see cref="UserAccess"/> flags.
-        /// </summary>
-        /// <returns>the permissions flags.</returns>
         public UserAccess GetAccess() {
-            return Access;
+            return (UserAccess) _permissionsFlags;
         }
 
-        /// <summary>
-        /// Sets the permissions using the type-safe <see cref="UserAccess"/> enum.
-        /// The value is automatically masked to ensure any invalid bits are cleared.
-        /// </summary>
+        /// <summary>Sets the granted permissions.</summary>
         /// <param name="access">the UserAccess values combined with bitwise OR.</param>
-        /// <returns>this Permissions object.</returns>
         public Permissions SetAccess(UserAccess access) {
-            Access = access;
+            _permissionsFlags = (uint) access & ValidBitsMask;
             return this;
         }
 
-        /// <summary>
-        /// Gets the raw 32-bit integer value of the permissions flags.
-        /// All reserved bits are zero. Encryption sets the reserved bits that
-        /// ISO 32000-2 requires to be one when it writes the /P key.
-        /// </summary>
-        /// <returns>the value of the /P key.</returns>
-        public uint GetRawValue() {
-            return _permissionsFlags;
+        /// <summary>Returns true if printing is allowed.</summary>
+        public bool CanPrint() {
+            return GetAccess().HasFlag(UserAccess.PRINT);
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can print the document
-        /// (possibly at low quality, unless <see cref="CanPrintHighQuality"/> is true).
-        /// </summary>
-        public bool CanPrint => Access.HasFlag(UserAccess.PRINT);
+        /// <summary>Returns true if modifying the contents is allowed.</summary>
+        public bool CanModifyContents() {
+            return GetAccess().HasFlag(UserAccess.MODIFY_CONTENTS);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can modify the document's contents.
-        /// </summary>
-        public bool CanModifyContents => Access.HasFlag(UserAccess.MODIFY_CONTENTS);
+        /// <summary>Returns true if copying the contents is allowed.</summary>
+        public bool CanCopyContents() {
+            return GetAccess().HasFlag(UserAccess.COPY_CONTENTS);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can copy or extract content.
-        /// </summary>
-        public bool CanCopyContents => Access.HasFlag(UserAccess.COPY_CONTENTS);
+        /// <summary>Returns true if modifying the annotations is allowed.</summary>
+        public bool CanModifyAnnotations() {
+            return GetAccess().HasFlag(UserAccess.MODIFY_ANNOTATIONS);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can add or modify annotations and form fields.
-        /// This is primarily for legacy PDF support.
-        /// </summary>
-        public bool CanModifyAnnotations => Access.HasFlag(UserAccess.MODIFY_ANNOTATIONS);
+        /// <summary>Returns true if filling form fields is allowed.</summary>
+        public bool CanFillFormFields() {
+            return GetAccess().HasFlag(UserAccess.FILL_FORM_FIELDS);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can fill interactive form fields.
-        /// </summary>
-        public bool CanFillFormFields => Access.HasFlag(UserAccess.FILL_FORM_FIELDS);
+        /// <summary>Returns true if extracting the contents for accessibility is allowed.</summary>
+        public bool CanExtractForAccessibility() {
+            return GetAccess().HasFlag(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can extract content for accessibility.
-        /// </summary>
-        public bool CanExtractForAccessibility => Access.HasFlag(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
+        /// <summary>Returns true if assembling the document is allowed.</summary>
+        public bool CanAssembleDocument() {
+            return GetAccess().HasFlag(UserAccess.ASSEMBLE_DOCUMENT);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can assemble the document (manipulate pages).
-        /// </summary>
-        public bool CanAssembleDocument => Access.HasFlag(UserAccess.ASSEMBLE_DOCUMENT);
+        /// <summary>Returns true if printing in high quality is allowed.</summary>
+        public bool CanPrintHighQuality() {
+            return GetAccess().HasFlag(UserAccess.PRINT_HIGH_QUALITY);
+        }
 
-        /// <summary>
-        /// Gets a value indicating whether the user can print the document at high quality.
-        /// </summary>
-        public bool CanPrintHighQuality => Access.HasFlag(UserAccess.PRINT_HIGH_QUALITY);
-
-        /// <summary>
-        /// Grants the specified permissions. The other permissions stay as they are.
-        /// </summary>
-        /// <param name="permissions">The permissions to grant.</param>
+        /// <summary>Grants the permissions.</summary>
+        /// <param name="permissions">the UserAccess values combined with bitwise OR.</param>
         public Permissions Grant(UserAccess permissions) {
-            _permissionsFlags |= (uint)permissions;
-            // Re-apply mask to ensure no invalid bits were set by the enum value itself
+            _permissionsFlags |= (uint) permissions;
             _permissionsFlags &= ValidBitsMask;
             return this;
         }
 
-        /// <summary>
-        /// Revokes the specified permissions. The other permissions stay as they are.
-        /// </summary>
-        /// <param name="permissions">The permissions to revoke.</param>
+        /// <summary>Revokes the permissions.</summary>
+        /// <param name="permissions">the UserAccess values combined with bitwise OR.</param>
         public Permissions Revoke(UserAccess permissions) {
-            _permissionsFlags &= ~(uint)permissions;
+            _permissionsFlags &= ~(uint) permissions;
             _permissionsFlags &= ValidBitsMask;
             return this;
         }
 
-        /// <summary>
-        /// Returns a string that represents the current permissions for debugging purposes.
-        /// </summary>
-        /// <returns>A string representation of the current permissions.</returns>
+        /// <summary>Returns the permissions and their /P value.</summary>
         public override string ToString() {
-            return $"Permissions: {Access} (Raw Value: {RawValue})";
+            return $"Permissions: {GetAccess()} (Raw Value: {_permissionsFlags})";
         }
     }
 }

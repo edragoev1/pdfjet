@@ -139,7 +139,7 @@ func TestEncryptionPdfUaGrantsExtractionForAccessibility(t *testing.T) {
 	if access != -3388 {
 		t.Errorf("/P %d", access)
 	}
-	if !encryption.UserAccess(uint32(int32(access))).Has(encryption.ExtractContentsForAccessibility) {
+	if !encryption.ExtractContentsForAccessibility.IsSetIn(encryption.UserAccess(uint32(int32(access)))) {
 		t.Error("no extraction for accessibility")
 	}
 }

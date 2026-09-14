@@ -51,47 +51,37 @@ func (ua UserAccess) String() string {
 	}
 
 	var permissions []string
-	if ua.Has(Print) {
+	if Print.IsSetIn(ua) {
 		permissions = append(permissions, "Print")
 	}
-	if ua.Has(ModifyContents) {
+	if ModifyContents.IsSetIn(ua) {
 		permissions = append(permissions, "ModifyContents")
 	}
-	if ua.Has(CopyContents) {
+	if CopyContents.IsSetIn(ua) {
 		permissions = append(permissions, "CopyContents")
 	}
-	if ua.Has(ModifyAnnotations) {
+	if ModifyAnnotations.IsSetIn(ua) {
 		permissions = append(permissions, "ModifyAnnotations")
 	}
-	if ua.Has(FillFormFields) {
+	if FillFormFields.IsSetIn(ua) {
 		permissions = append(permissions, "FillFormFields")
 	}
-	if ua.Has(ExtractContentsForAccessibility) {
+	if ExtractContentsForAccessibility.IsSetIn(ua) {
 		permissions = append(permissions, "ExtractContentsForAccessibility")
 	}
-	if ua.Has(AssembleDocument) {
+	if AssembleDocument.IsSetIn(ua) {
 		permissions = append(permissions, "AssembleDocument")
 	}
-	if ua.Has(PrintHighQuality) {
+	if PrintHighQuality.IsSetIn(ua) {
 		permissions = append(permissions, "PrintHighQuality")
 	}
 
 	return strings.Join(permissions, " | ")
 }
 
-// Has checks if the specified permission is set
-func (ua UserAccess) Has(permission UserAccess) bool {
-	return ua&permission == permission
-}
-
-// Add adds the specified permission(s)
-func (ua UserAccess) Add(permission UserAccess) UserAccess {
-	return ua | permission
-}
-
-// Remove removes the specified permission(s)
-func (ua UserAccess) Remove(permission UserAccess) UserAccess {
-	return ua &^ permission
+// IsSetIn reports whether this permission is set in the flags.
+func (ua UserAccess) IsSetIn(flags UserAccess) bool {
+	return flags&ua == ua
 }
 
 // Permissions encapsulates the user access permissions for a PDF document as specified in
@@ -110,16 +100,10 @@ func NewPermissions() *Permissions {
 	return &Permissions{permissionsFlags: 0}
 }
 
-// NewPermissionsFromInt creates a new instance of Permissions from the raw 32-bit integer value
-// found in the PDF encryption dictionary's /P key. Invalid bits (outside positions 3-12) are masked out.
+// NewPermissionsFromInt creates permissions from the /P value of an encryption
+// dictionary, keeping only its permission bits.
 func NewPermissionsFromInt(rawFlags int) *Permissions {
-	return NewPermissionsFromUint32(uint32(rawFlags))
-}
-
-// NewPermissionsFromUint32 creates a new instance of Permissions from the raw 32-bit integer value
-// found in the PDF encryption dictionary's /P key. Invalid bits (outside positions 3-12) are masked out.
-func NewPermissionsFromUint32(rawFlags uint32) *Permissions {
-	return &Permissions{permissionsFlags: rawFlags & validBitsMask}
+	return &Permissions{permissionsFlags: uint32(rawFlags) & validBitsMask}
 }
 
 // GetAccess returns the permissions as UserAccess flags
@@ -133,53 +117,46 @@ func (p *Permissions) SetAccess(access UserAccess) *Permissions {
 	return p
 }
 
-// GetRawValue returns the raw 32-bit integer value of the permissions flags.
-// All reserved bits are zero. Encryption sets the reserved bits that
-// ISO 32000-2 requires to be one when it writes the /P key.
-func (p *Permissions) GetRawValue() uint32 {
-	return p.permissionsFlags
-}
-
 // CanPrint returns true if the user can print the document
 // (possibly at low quality, unless CanPrintHighQuality() is true).
 func (p *Permissions) CanPrint() bool {
-	return p.GetAccess().Has(Print)
+	return Print.IsSetIn(p.GetAccess())
 }
 
 // CanModifyContents returns true if the user can modify the document's contents.
 func (p *Permissions) CanModifyContents() bool {
-	return p.GetAccess().Has(ModifyContents)
+	return ModifyContents.IsSetIn(p.GetAccess())
 }
 
 // CanCopyContents returns true if the user can copy or extract content.
 func (p *Permissions) CanCopyContents() bool {
-	return p.GetAccess().Has(CopyContents)
+	return CopyContents.IsSetIn(p.GetAccess())
 }
 
 // CanModifyAnnotations returns true if the user can add or modify annotations and form fields.
 // This is primarily for legacy PDF support.
 func (p *Permissions) CanModifyAnnotations() bool {
-	return p.GetAccess().Has(ModifyAnnotations)
+	return ModifyAnnotations.IsSetIn(p.GetAccess())
 }
 
 // CanFillFormFields returns true if the user can fill interactive form fields.
 func (p *Permissions) CanFillFormFields() bool {
-	return p.GetAccess().Has(FillFormFields)
+	return FillFormFields.IsSetIn(p.GetAccess())
 }
 
 // CanExtractForAccessibility returns true if the user can extract content for accessibility.
 func (p *Permissions) CanExtractForAccessibility() bool {
-	return p.GetAccess().Has(ExtractContentsForAccessibility)
+	return ExtractContentsForAccessibility.IsSetIn(p.GetAccess())
 }
 
 // CanAssembleDocument returns true if the user can assemble the document (manipulate pages).
 func (p *Permissions) CanAssembleDocument() bool {
-	return p.GetAccess().Has(AssembleDocument)
+	return AssembleDocument.IsSetIn(p.GetAccess())
 }
 
 // CanPrintHighQuality returns true if the user can print the document at high quality.
 func (p *Permissions) CanPrintHighQuality() bool {
-	return p.GetAccess().Has(PrintHighQuality)
+	return PrintHighQuality.IsSetIn(p.GetAccess())
 }
 
 // Grant grants the specified permissions. The other permissions stay as they are.
@@ -199,5 +176,5 @@ func (p *Permissions) Revoke(permissions UserAccess) *Permissions {
 
 // String returns a string that represents the current permissions for debugging purposes.
 func (p *Permissions) String() string {
-	return fmt.Sprintf("Permissions: %s (Raw Value: %d)", p.GetAccess(), p.GetRawValue())
+	return fmt.Sprintf("Permissions: %s (Raw Value: %d)", p.GetAccess(), p.permissionsFlags)
 }

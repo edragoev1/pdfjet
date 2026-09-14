@@ -118,7 +118,7 @@ public class Encryption {
         // The flags specifying which operations shall be permitted, with the
         // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
         // so the value is negative.
-        uint p = permissions.RawValue | 0xFFFFF0C0;
+        uint p = (uint) permissions.GetAccess() | 0xFFFFF0C0;
         pdf.Append("/P ");
         pdf.Append(((int) p).ToString());
         pdf.Append("\n");

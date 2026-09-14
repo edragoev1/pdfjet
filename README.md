@@ -470,14 +470,14 @@ Where Java and C# throw an `Exception` with a message, Swift throws a
 returns an `error`, or panics where the function returns none.
 
 `Permissions` takes the `UserAccess` values as a typed flags value in C# (a
-`[Flags]` enum) and Go (`UserAccess` with `Has`, `Add` and `Remove`), and as an
-`int` in Java and Swift, where the values of the `UserAccess` enum are combined
-with `|` on `getValue()`, as Example_30 shows. Java has no flags enum, and a
-Swift `OptionSet` is a struct, not an enum, so both ports keep the enum with the
-bit values of the standard and the `int` that `Permissions` masks and checks.
-In all four ports the value is the `/P` entry of the encryption dictionary
-without its reserved bits, so Java and Swift `getAccess` and C# and Go
-`GetRawValue` return the same number.
+`[Flags]` enum) and Go (a `UserAccess` bit set), and as an `int` in Java and
+Swift, where the values of the `UserAccess` enum are combined with `|` on
+`getValue()`, as Example_30 shows. Java has no flags enum, and a Swift
+`OptionSet` is a struct, not an enum, so both ports keep the enum with the bit
+values of the standard and the `int` that `Permissions` masks and checks. In
+all four ports `getAccess` is the `/P` entry of the encryption dictionary
+without its reserved bits, and `UserAccess.isSetIn(flags)` (Go `IsSetIn`, C#
+`HasFlag`) asks whether one permission is in it.
 
 `./audit-api.py` lists the public types and members of the four ports, matches
 them by name without regard to case and underscores, and prints what is not in
@@ -540,5 +540,4 @@ for a size that has no package. The QR code error correction levels are
 `qrcode.ErrorCorrectionLevelL` and so on. Where Java, C# and Swift have public fields
 (`Paragraph.x1`, `Title.prefix`, `TextParameters`), Go has getters
 (`GetX1`). `Permissions` prints through `String()` in Go and `description`
-in Swift where Java and C# have `toString`; C# also keeps its `Access` and
-`RawValue` properties next to `GetAccess` and `GetRawValue`.
+in Swift where Java and C# have `toString`.

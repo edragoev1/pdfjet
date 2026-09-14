@@ -8,8 +8,8 @@ using Xunit;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Java's getAccess returns the flags as an int; C# has GetRawValue for that
-/// number, and GetAccess returns the UserAccess flags (README, Port differences).
+/// GetAccess returns the UserAccess flags, whose number is the /P value without
+/// its reserved bits, as Java's getAccess returns it as an int.
 /// </summary>
 public class PermissionsTest {
     [Fact]
@@ -28,27 +28,27 @@ public class PermissionsTest {
     [Fact]
     public void NewPermissionsGrantNothing() {
         Permissions permissions = new Permissions();
-        Assert.Equal(0u, permissions.GetRawValue());
-        Assert.False(permissions.CanPrint);
-        Assert.False(permissions.CanCopyContents);
+        Assert.Equal(0u, (uint) permissions.GetAccess());
+        Assert.False(permissions.CanPrint());
+        Assert.False(permissions.CanCopyContents());
     }
 
     [Fact]
     public void GrantAndRevokeChangeOnlyTheirBits() {
         Permissions permissions = new Permissions().Grant(UserAccess.PRINT | UserAccess.COPY_CONTENTS);
-        Assert.Equal(20u, permissions.GetRawValue());
-        Assert.True(permissions.CanPrint && permissions.CanCopyContents);
+        Assert.Equal(20u, (uint) permissions.GetAccess());
+        Assert.True(permissions.CanPrint() && permissions.CanCopyContents());
         permissions.Revoke(UserAccess.PRINT);
-        Assert.Equal(16u, permissions.GetRawValue());
-        Assert.False(permissions.CanPrint);
+        Assert.Equal(16u, (uint) permissions.GetAccess());
+        Assert.False(permissions.CanPrint());
         Assert.True(permissions.GetAccess().HasFlag(UserAccess.COPY_CONTENTS));
         Assert.False(permissions.GetAccess().HasFlag(UserAccess.PRINT));
     }
 
     [Fact]
     public void RawFlagsKeepOnlyTheValidBits() {
-        Assert.Equal(0xFFCu, new Permissions(unchecked((int) 0xFFFFFFFF)).GetRawValue());
-        Assert.Equal(0u, new Permissions(0x3).GetRawValue());
+        Assert.Equal(0xFFCu, (uint) new Permissions(unchecked((int) 0xFFFFFFFF)).GetAccess());
+        Assert.Equal(0u, (uint) new Permissions(0x3).GetAccess());
     }
 }
 }
