@@ -50,17 +50,6 @@ public class TextBlock : IDrawable {
         this.textContent = textContent;
     }
 
-    /// <summary>
-    /// Sets the location where this text block will be drawn on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left corner of the text block.</param>
-    /// <param name="y">the y coordinate of the top left corner of the text block.</param>
-    /// <returns>this TextBlock object.</returns>
-    public TextBlock SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }
@@ -121,11 +110,6 @@ public class TextBlock : IDrawable {
     }
 
     /// <summary>Sets the width of this text block and resets its height, so the height fits the text.</summary>
-    public TextBlock SetWidth(double width) {
-        return SetWidth((float) width);
-    }
-
-    /// <summary>Sets the width of this text block and resets its height, so the height fits the text.</summary>
     public TextBlock SetWidth(float width) {
         this.width = width;
         this.height = 0.0f;
@@ -135,12 +119,6 @@ public class TextBlock : IDrawable {
     /// <summary>Returns the width of this text block.</summary>
     public float GetWidth() {
         return this.width;
-    }
-
-    /// <summary>Sets the height of this text block.</summary>
-    public TextBlock SetHeight(double height) {
-        this.height = (float) height;
-        return this;
     }
 
     /// <summary>Sets the height of this text block.</summary>

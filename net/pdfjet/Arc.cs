@@ -123,16 +123,6 @@ public class Arc : IDrawable {
     /// </summary>
     /// <param name="width">the width.</param>
     /// <returns>this Arc object.</returns>
-    public Arc SetStrokeWidth(double width) {
-        this.strokeWidth = (float) width;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the width of this line.
-    /// </summary>
-    /// <param name="width">the width.</param>
-    /// <returns>this Arc object.</returns>
     public Arc SetStrokeWidth(float width) {
         this.strokeWidth = width;
         return this;
@@ -178,21 +168,9 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Rotates this arc clockwise by the specified degrees.</summary>
-    public Arc SetRotationClockwise(double degrees) {
-        this.rotateDegrees = (float) -degrees;
-        return this;
-    }
-
     /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
     public Arc SetRotation(float degrees) {
         this.rotateDegrees = degrees;
-        return this;
-    }
-
-    /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
-    public Arc SetRotation(double degrees) {
-        this.rotateDegrees = (float) degrees;
         return this;
     }
 
@@ -214,15 +192,6 @@ public class Arc : IDrawable {
     public Arc SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
-    }
-
-    /// <summary>
-    /// Scales this line by the specified factor.
-    /// </summary>
-    /// <param name="factor">the factor used to scale the line.</param>
-    /// <returns>this Arc object.</returns>
-    public Arc ScaleBy(double factor) {
-        return ScaleBy((float) factor);
     }
 
     /// <summary>

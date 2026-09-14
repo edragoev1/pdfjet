@@ -74,31 +74,16 @@ public class TextFrame : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of the top left corner of this text frame.</summary>
-    public TextFrame SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>Sets the width at which the lines wrap.</summary>
     public TextFrame SetWidth(float w) {
         this.w = w;
         return this;
     }
 
-    /// <summary>Sets the width at which the lines wrap.</summary>
-    public TextFrame SetWidth(double w) {
-        return SetWidth((float) w);
-    }
-
     /// <summary>Sets the height of this text frame. With a height of 0, the default, the frame draws all of its text.</summary>
     public TextFrame SetHeight(float h) {
         this.h = h;
         return this;
-    }
-
-    /// <summary>Sets the height of this text frame. With a height of 0, the default, the frame draws all of its text.</summary>
-    public TextFrame SetHeight(double h) {
-        return SetHeight((float) h);
     }
 
     /// <summary>Returns the width of this text frame.</summary>

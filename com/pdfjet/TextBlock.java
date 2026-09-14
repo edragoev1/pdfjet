@@ -58,18 +58,6 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the position where this text block will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text block.
-     * @param y the y coordinate of the top left corner of the text block.
-     * @return this TextBlock object.
-     */
-    public TextBlock setLocation(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
      * Sets the font of the text. It also becomes the fallback font.
      *
      * @param font the font.
@@ -183,16 +171,6 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the width of this text block and resets its height, so the height fits the text.
-     *
-     * @param w the width.
-     * @return this TextBlock object.
-     */
-    public TextBlock setWidth(double w) {
-        return setWidth((float) w);
-    }
-
-    /**
      * Sets the height of this text block.
      *
      * @param h the height.
@@ -201,16 +179,6 @@ public class TextBlock implements Drawable {
     public TextBlock setHeight(float h) {
         this.height = h;
         return this;
-    }
-
-    /**
-     * Sets the height of this text block.
-     *
-     * @param h the height.
-     * @return this TextBlock object.
-     */
-    public TextBlock setHeight(double h) {
-        return setHeight((float) h);
     }
 
     /**

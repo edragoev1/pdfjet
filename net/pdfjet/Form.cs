@@ -50,16 +50,6 @@ public class Form : IDrawable {
     }
 
     /// <summary>
-    /// Sets the location of this form on the page
-    /// </summary>
-    /// <param name="x">the horizontal location</param>
-    /// <param name="y">the vertical locations</param>
-    /// <returns>the form</returns>
-    public Form SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    /// <summary>
     /// Sets the form width
     /// </summary>
     /// <param name="formWidth">the form width</param>

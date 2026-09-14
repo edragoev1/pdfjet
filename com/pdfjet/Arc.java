@@ -160,17 +160,6 @@ public class Arc implements Drawable {
      * @param strokeWidth the width.
      * @return this Arc object.
      */
-    public Arc setStrokeWidth(double strokeWidth) {
-        this.strokeWidth = (float) strokeWidth;
-        return this;
-    }
-
-    /**
-     * Sets the width of this line.
-     *
-     * @param strokeWidth the width.
-     * @return this Arc object.
-     */
     public Arc setStrokeWidth(float strokeWidth) {
         this.strokeWidth = strokeWidth;
         return this;
@@ -238,17 +227,6 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Rotates this arc clockwise.
-     *
-     * @param degrees the rotation angle in degrees.
-     * @return this Arc object.
-     */
-    public Arc setRotationClockwise(double degrees) {
-        this.rotateDegrees = (float) -degrees;
-        return this;
-    }
-
-    /**
      * Rotates this arc counterclockwise.
      *
      * @param degrees the rotation angle in degrees.
@@ -256,17 +234,6 @@ public class Arc implements Drawable {
      */
     public Arc setRotation(float degrees) {
         this.rotateDegrees = degrees;
-        return this;
-    }
-
-    /**
-     * Rotates this arc counterclockwise.
-     *
-     * @param degrees the rotation angle in degrees.
-     * @return this Arc object.
-     */
-    public Arc setRotation(double degrees) {
-        this.rotateDegrees = (float) degrees;
         return this;
     }
 
@@ -290,16 +257,6 @@ public class Arc implements Drawable {
     public Arc setActualText(String actualText) {
         this.actualText = actualText;
         return this;
-    }
-
-    /**
-     * Scales this line by the specified factor.
-     *
-     * @param factor the factor used to scale the line.
-     * @return this Arc object.
-     */
-    public Arc scaleBy(double factor) {
-        return scaleBy((float) factor);
     }
 
     /**

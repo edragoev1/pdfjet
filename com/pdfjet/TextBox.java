@@ -110,18 +110,6 @@ public class TextBox implements Drawable {
      * @param width  the width.
      * @param height the height.
      */
-    public TextBox(Font font, String text, double width, double height) {
-        this(font, text, (float) width, (float) height);
-    }
-
-    /**
-     * Creates a text box and sets the font and the text.
-     *
-     * @param font   the font.
-     * @param text   the text.
-     * @param width  the width.
-     * @param height the height.
-     */
     public TextBox(Font font, String text, float width, float height) {
         this.font = font;
         this.fontSize = font.size;
@@ -210,34 +198,12 @@ public class TextBox implements Drawable {
     }
 
     /**
-     * Sets the location where this text box will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the text box.
-     * @param y the y coordinate of the top left corner of the text box.
-     * @return this TextBox object.
-     */
-    public TextBox setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Gets the location where this text box will be drawn on the page.
      *
      * @return the float array of x and y.
      */
     public float[] getLocation() {
         return new float[] {this.x, this.y};
-    }
-
-    /**
-     * Sets the width of this text box.
-     *
-     * @param width the specified width.
-     * @return this TextBox object.
-     */
-    public TextBox setWidth(double width) {
-        this.width = (float) width;
-        return this;
     }
 
     /**
@@ -258,16 +224,6 @@ public class TextBox implements Drawable {
      */
     public float getWidth() {
         return width;
-    }
-
-    /**
-     * Sets the height of this text box.
-     *
-     * @param height the specified height.
-     * @return this TextBox object.
-     */
-    public TextBox setHeight(double height) {
-        return setHeight((float) height);
     }
 
     /**
@@ -298,17 +254,6 @@ public class TextBox implements Drawable {
      * @param margin the margin between the text and the box
      * @return this TextBox object.
      */
-    public TextBox setPadding(double margin) {
-        this.margin = (float) margin;
-        return this;
-    }
-
-    /**
-     * Sets the margin of this text box.
-     *
-     * @param margin the margin between the text and the box
-     * @return this TextBox object.
-     */
     public TextBox setPadding(float margin) {
         this.margin = margin;
         return this;
@@ -330,17 +275,6 @@ public class TextBox implements Drawable {
      */
     public float getBorderWidth() {
         return strokeWidth;
-    }
-
-    /**
-     * Sets the spacing between lines of text.
-     *
-     * @param spacing the spacing
-     * @return this TextBox object.
-     */
-    public TextBox setLineGap(double spacing) {
-        this.spacing = (float) spacing;
-        return this;
     }
 
     /**

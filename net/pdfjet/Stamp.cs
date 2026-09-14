@@ -61,11 +61,6 @@ public class Stamp : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of the top left corner of this stamp on the page.</summary>
-    public Stamp SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>Sets the language of this stamp, used for accessibility.</summary>
     public Stamp SetLanguage(String language) {
         this.language = language;
@@ -269,8 +264,8 @@ public class Stamp : IDrawable {
     /// Sets the rotation angle.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees.</param>
-    public Stamp SetRotation(double degrees) {
-        this.rotateDegrees = (float)degrees;
+    public Stamp SetRotation(float degrees) {
+        this.rotateDegrees = degrees;
         return this;
     }
 
@@ -278,8 +273,8 @@ public class Stamp : IDrawable {
     /// Sets clockwise rotation.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
-    public Stamp SetRotationClockwise(double degrees) {
-        this.rotateDegrees = (float)-degrees;
+    public Stamp SetRotationClockwise(float degrees) {
+        this.rotateDegrees = -degrees;
         return this;
     }
 

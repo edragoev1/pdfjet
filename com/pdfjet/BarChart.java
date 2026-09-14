@@ -155,32 +155,10 @@ public class BarChart implements Drawable {
      * @param y the y coordinate.
      * @return this BarChart object.
      */
-    public BarChart setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
-     * Sets the location of the top left corner of this chart.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this BarChart object.
-     */
     public BarChart setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
-    }
-
-    /**
-     * Sets the size of this chart.
-     *
-     * @param w the width.
-     * @param h the height.
-     * @return this BarChart object.
-     */
-    public BarChart setSize(double w, double h) {
-        return setSize((float) w, (float) h);
     }
 
     /**

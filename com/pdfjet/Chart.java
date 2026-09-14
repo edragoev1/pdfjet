@@ -150,33 +150,10 @@ public class Chart implements Drawable {
         return chartData;
     }
 
-    /**
-     * Sets the location of the top left corner of this chart.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Chart object.
-     */
-    public Chart setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
     /** Sets the top-left position. Returns this for chaining. */
     public Chart setLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
-        return this;
-    }
-
-    /**
-     * Sets the size of this chart.
-     *
-     * @param w the width.
-     * @param h the height.
-     * @return this Chart object.
-     */
-    public Chart setSize(double w, double h) {
-        setSize((float) w, (float) h);
         return this;
     }
 
@@ -237,17 +214,6 @@ public class Chart implements Drawable {
      */
     public float slope(List<Point> points) {
         return (covar(points) / devsq(points) * (points.size() - 1));
-    }
-
-    /**
-     *  Calculates the intercept of a trend line (OLS). See Example_09.
-     *
-     *  @param points the list of points.
-     *  @param slope the slope.
-     *  @return the intercept.
-     */
-    public float intercept(List<Point> points, double slope) {
-        return intercept(points, (float) slope);
     }
 
     /**

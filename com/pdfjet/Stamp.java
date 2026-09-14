@@ -80,17 +80,6 @@ public class Stamp implements Drawable {
     }
 
     /**
-     * Sets the location of the top left corner of this stamp on the page.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Stamp object.
-     */
-    public Stamp setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Sets the language of this stamp, used for accessibility.
      *
      * @param language the language, for example "en-US".
@@ -403,8 +392,8 @@ public class Stamp implements Drawable {
      * @param degrees the rotation angle in degrees.
      * @return this Stamp object.
      */
-    public Stamp setRotation(double degrees) {
-        this.rotateDegrees = (float)degrees;
+    public Stamp setRotation(float degrees) {
+        this.rotateDegrees = degrees;
         return this;
     }
 
@@ -414,8 +403,8 @@ public class Stamp implements Drawable {
      * @param degrees the rotation angle in degrees, clockwise.
      * @return this Stamp object.
      */
-    public Stamp setRotationClockwise(double degrees) {
-        this.rotateDegrees = (float)-degrees;
+    public Stamp setRotationClockwise(float degrees) {
+        this.rotateDegrees = -degrees;
         return this;
     }
 

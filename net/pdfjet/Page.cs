@@ -389,10 +389,10 @@ public class Page {
     /// <param name="x2">the second point's x coordinate.</param>
     /// <param name="y2">the second point's y coordinate.</param>
     public void DrawLine(
-            double x1,
-            double y1,
-            double x2,
-            double y2) {
+            float x1,
+            float y1,
+            float x2,
+            float y2) {
         MoveTo(x1, y1);
         LineTo(x2, y2);
         StrokePath();
@@ -477,25 +477,6 @@ public class Page {
             }
             DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
         }
-    }
-
-    /// <summary>
-    /// Draws the text given by the specified string,
-    /// using the specified font and the current brush color.
-    /// The baseline of the leftmost character is at position (x, y) on the page.
-    /// </summary>
-    /// <param name="font">the font to use.</param>
-    /// <param name="fontSize">the font size.</param>
-    /// <param name="str">the string to be drawn.</param>
-    /// <param name="x">the x coordinate.</param>
-    /// <param name="y">the y coordinate.</param>
-    public void DrawString(
-            Font font,
-            double fontSize,
-            String str,
-            double x,
-            double y) {
-        DrawString(font, (float) fontSize, str, (float) x, (float) y);
     }
 
     /// <summary>Draws the string in black with its baseline at the specified location.</summary>
@@ -1331,16 +1312,6 @@ public class Page {
     /// </summary>
     /// <param name="width">the pen width.</param>
     /// <returns>this Page object.</returns>
-    public Page SetPenWidth(double width) {
-        SetPenWidth((float) width);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the pen width that will be used to draw lines and splines on this page.
-    /// </summary>
-    /// <param name="width">the pen width.</param>
-    /// <returns>this Page object.</returns>
     public Page SetPenWidth(float width) {
         this.penWidth = width;
         Append(width);
@@ -1380,16 +1351,6 @@ public class Page {
     }
 
     /// <summary>
-    /// Convenience overload that accepts double‑precision coordinates and
-    /// forwards them to the core <see cref="MoveTo(float,float)"/> method.
-    /// </summary>
-    /// <param name="x">Horizontal coordinate (double).</param>
-    /// <param name="y">Vertical coordinate (double).</param>
-    public void MoveTo(double x, double y) {
-        MoveTo((float) x, (float) y);
-    }
-
-    /// <summary>
     /// Moves the pen to the absolute point (x, y) on the page.
     /// </summary>
     /// <param name="x">Horizontal coordinate of the new position.</param>
@@ -1403,16 +1364,6 @@ public class Page {
         Append(' ');
         Append(height - y);
         Append(" m\n");
-    }
-
-    /// <summary>
-    /// Convenience overload that accepts double‑precision coordinates and
-    /// forwards them to the core <see cref="LineTo(float,float)"/> method.
-    /// </summary>
-    /// <param name="x">Horizontal coordinate (double).</param>
-    /// <param name="y">Vertical coordinate (double).</param>
-    public void LineTo(double x, double y) {
-        LineTo((float) x, (float) y);
     }
 
     /// <summary>
@@ -1455,7 +1406,7 @@ public class Page {
     /// <param name="y">Y‑coordinate of the top left corner.</param>
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
-    public void DrawRect(double x, double y, double w, double h) {
+    public void DrawRect(float x, float y, float w, float h) {
         MoveTo(x, y);
         LineTo(x + w, y);
         LineTo(x + w, y + h);
@@ -1470,7 +1421,7 @@ public class Page {
     /// <param name="y">Y‑coordinate of the top left corner.</param>
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
-    public void FillRect(double x, double y, double w, double h) {
+    public void FillRect(float x, float y, float w, float h) {
         MoveTo(x, y);
         LineTo(x + w, y);
         LineTo(x + w, y + h);
@@ -1601,17 +1552,6 @@ public class Page {
     }
 
     /// <summary>
-    /// Fills an ellipse on the page using the current brush color.
-    /// </summary>
-    /// <param name="x">the x coordinate of the center of the ellipse to be drawn.</param>
-    /// <param name="y">the y coordinate of the center of the ellipse to be drawn.</param>
-    /// <param name="r1">the horizontal radius of the ellipse to be drawn.</param>
-    /// <param name="r2">the vertical radius of the ellipse to be drawn.</param>
-    public void FillEllipse(double x, double y, double r1, double r2) {
-        DrawEllipse((float) x, (float) y, (float) r1, (float) r2, PathOperator.FILL);
-    }
-
-    /// <summary>
     /// Draws the specified circle on the page and fills it with the current brush color.
     /// </summary>
     /// <param name="x">the x coordinate of the center of the circle to be drawn.</param>
@@ -1676,17 +1616,17 @@ public class Page {
                 DrawCircle(p.x, p.y, p.r, p.GetPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new List<Point>();
-                list.Add(new Point(p.x, p.y - p.r*1.2));
-                list.Add(new Point(p.x + p.r*1.2, p.y));
-                list.Add(new Point(p.x, p.y + p.r*1.2));
-                list.Add(new Point(p.x - p.r*1.2, p.y));
+                list.Add(new Point(p.x, (float) (p.y - p.r*1.2)));
+                list.Add(new Point((float) (p.x + p.r*1.2), p.y));
+                list.Add(new Point(p.x, (float) (p.y + p.r*1.2)));
+                list.Add(new Point((float) (p.x - p.r*1.2), p.y));
                 DrawPath(list, p.GetPathOperator());
             } else if (p.shape == Shape.BOX) {
                 list = new List<Point>();
-                list.Add(new Point(p.x - p.r*0.886, p.y - p.r*0.886));
-                list.Add(new Point(p.x + p.r*0.886, p.y - p.r*0.886));
-                list.Add(new Point(p.x + p.r*0.886, p.y + p.r*0.886));
-                list.Add(new Point(p.x - p.r*0.886, p.y + p.r*0.886));
+                list.Add(new Point((float) (p.x - p.r*0.886), (float) (p.y - p.r*0.886)));
+                list.Add(new Point((float) (p.x + p.r*0.886), (float) (p.y - p.r*0.886)));
+                list.Add(new Point((float) (p.x + p.r*0.886), (float) (p.y + p.r*0.886)));
+                list.Add(new Point((float) (p.x - p.r*0.886), (float) (p.y + p.r*0.886)));
                 DrawPath(list, p.GetPathOperator());
             } else if (p.shape == Shape.PLUS) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
@@ -1738,7 +1678,7 @@ public class Page {
                     double radius = (i % 2 == 0) ? p.r*1.147 : p.r*0.38196*1.147;
                     double x = p.x + radius * Math.Sin(theta);
                     double y = p.y - radius * Math.Cos(theta);  // minus because y grows down
-                    list.Add(new Point(x, y));
+                    list.Add(new Point((float) x, (float) y));
                 }
                 DrawPath(list, p.GetPathOperator());
             }

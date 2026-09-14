@@ -215,20 +215,6 @@ public class Image : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of the top left corner of this image.</summary>
-    public Image SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    /// <summary>
-    /// Scales this image by the specified factor.
-    /// </summary>
-    /// <param name="factor">the factor used to scale the image.</param>
-    /// <returns>this Image object.</returns>
-    public Image ScaleBy(double factor) {
-        return this.ScaleBy((float) factor, (float) factor);
-    }
-
     /// <summary>
     /// Scales this image by the specified factor.
     /// </summary>

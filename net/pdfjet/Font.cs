@@ -290,15 +290,6 @@ public class Font {
     /// </summary>
     /// <param name="fontSize">specifies the size of this font.</param>
     /// <returns>the font.</returns>
-    public Font SetSize(double fontSize) {
-        return SetSize((float) fontSize);
-    }
-
-    /// <summary>
-    /// Sets the size of this font.
-    /// </summary>
-    /// <param name="fontSize">specifies the size of this font.</param>
-    /// <returns>the font.</returns>
     public Font SetSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {
@@ -461,11 +452,6 @@ public class Font {
     /// <summary>Returns the underline position at the specified font size.</summary>
     public float GetUnderlinePosition(float fontSize) {
         return -(fontUnderlinePosition * fontSize / unitsPerEm) + GetUnderlineThickness(fontSize) / 2.0f;
-    }
-
-    /// <summary>Returns how many characters of the string fit within the specified width.</summary>
-    public int GetFitChars(String str, double width) {
-        return GetFitChars(str, (float) width);
     }
 
     /// <summary>Returns how many characters of the string fit within the specified width.</summary>

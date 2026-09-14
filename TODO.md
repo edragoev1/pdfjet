@@ -263,6 +263,11 @@ renames included (the Week 1 decision), so every item is a blocker.
       `Point.setShape`, `TextLine.setStructureType` and `Page.addBDC` take
       them, the structure tree record is the internal `StructElement`, and
       `EmbeddedFile` takes a boolean; `Compress` is gone.
+- ✅ **B** Java doubled 74 float setters with a `double` overload that only
+      cast, C# 63, and the coverage was arbitrary (`Point` seven, `Cell` none);
+      Swift and Go never had them. Fixed (Sep 14): the overloads are removed,
+      the handful of methods that took only a `double` take a `float`, and the
+      eight example call sites write `7f`, `1f`, `2.0f` and a `float` variable.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

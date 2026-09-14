@@ -64,29 +64,6 @@ final public class QRCode implements Drawable {
     }
 
     /**
-     *  Sets the location where this barcode will be drawn on the page.
-     *
-     *  @param x the x coordinate of the top left corner of the barcode.
-     *  @param y the y coordinate of the top left corner of the barcode.
-     *  @return this QRCode object.
-     */
-    public QRCode setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
-     *  Sets the module length of this barcode.
-     *  The default value is 2.0f
-     *
-     *  @param moduleLength the specified module length.
-     *  @return this QRCode object.
-     */
-    public QRCode setModuleLength(double moduleLength) {
-        this.m1 = (float) moduleLength;
-        return this;
-    }
-
-    /**
      *  Sets the module length of this barcode.
      *  The default value is 2.0f
      *

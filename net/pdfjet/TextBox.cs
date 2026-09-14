@@ -97,17 +97,6 @@ public class TextBox : IDrawable {
     /// <param name="text">the text.</param>
     /// <param name="width">the width.</param>
     /// <param name="height">the height.</param>
-    public TextBox(Font font, String text, double width, double height) :
-        this(font, text, (float) width, (float) height) {
-    }
-
-    /// <summary>
-    /// Creates a text box and sets the font and the text.
-    /// </summary>
-    /// <param name="font">the font.</param>
-    /// <param name="text">the text.</param>
-    /// <param name="width">the width.</param>
-    /// <param name="height">the height.</param>
     public TextBox(Font font, String text, float width, float height) {
         this.font = font;
         this.fontSize = font.size;
@@ -159,17 +148,6 @@ public class TextBox : IDrawable {
         return text;
     }
 
-    /// <summary>
-    /// Sets the location where this text box will be drawn on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left corner of the text box.</param>
-    /// <param name="y">the y coordinate of the top left corner of the text box.</param>
-    /// <returns>this TextBox object.</returns>
-    public TextBox SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }
@@ -211,16 +189,6 @@ public class TextBox : IDrawable {
     /// </summary>
     /// <param name="width">the specified width.</param>
     /// <returns>this TextBox object.</returns>
-    public TextBox SetWidth(double width) {
-        this.width = (float) width;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the width of this text box.
-    /// </summary>
-    /// <param name="width">the specified width.</param>
-    /// <returns>this TextBox object.</returns>
     public TextBox SetWidth(float width) {
         this.width = width;
         return this;
@@ -232,14 +200,6 @@ public class TextBox : IDrawable {
     /// <returns>the text box width.</returns>
     public float GetWidth() {
         return width;
-    }
-
-    /// <summary>
-    /// Sets the height of this text box.
-    /// </summary>
-    /// <param name="height">the specified height.</param>
-    public TextBox SetHeight(double height) {
-        return SetHeight((float) height);
     }
 
     /// <summary>
@@ -265,15 +225,6 @@ public class TextBox : IDrawable {
     /// Sets the margin of this text box.
     /// </summary>
     /// <param name="margin">the margin between the text and the box</param>
-    public TextBox SetPadding(double margin) {
-        this.margin = (float) margin;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the margin of this text box.
-    /// </summary>
-    /// <param name="margin">the margin between the text and the box</param>
     public TextBox SetPadding(float margin) {
         this.margin = margin;
         return this;
@@ -293,16 +244,6 @@ public class TextBox : IDrawable {
     /// <returns>the width of the border lines.</returns>
     public float GetBorderWidth() {
         return strokeWidth;
-    }
-
-    /// <summary>
-    /// Sets the spacing between lines of text.
-    /// </summary>
-    /// <param name="spacing">the spacing</param>
-    /// <returns>this TextBox object.</returns>
-    public TextBox SetLineGap(double spacing) {
-        this.spacing = (float) spacing;
-        return this;
     }
 
     /// <summary>

@@ -95,30 +95,9 @@ public class Point implements Drawable {
      *  @param x the x coordinate of this point when drawn on the page.
      *  @param y the y coordinate of this point when drawn on the page.
      */
-    public Point(double x, double y) {
-        this((float) x, (float) y);
-    }
-
-    /**
-     *  Constructor for creating point objects.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @param y the y coordinate of this point when drawn on the page.
-     */
     public Point(float x, float y) {
         this.x = x;
         this.y = y;
-    }
-
-    /**
-     *  Constructor for creating point objects.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @param y the y coordinate of this point when drawn on the page.
-     *  @param controlPoint the type of control point.
-     */
-    public Point(double x, double y, char controlPoint) {
-        this((float) x, (float) y, controlPoint);
     }
 
     /**
@@ -148,28 +127,6 @@ public class Point implements Drawable {
     }
 
     /**
-     *  Sets the location (x, y) of this point.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @param y the y coordinate of this point when drawn on the page.
-     *  @return the location of the point.
-     */
-    public Point setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
-     *  Sets the x coordinate of this point.
-     *
-     *  @param x the x coordinate of this point when drawn on the page.
-     *  @return this Point object.
-     */
-    public Point setX(double x) {
-        this.x = (float) x;
-        return this;
-    }
-
-    /**
      *  Sets the x coordinate of this point.
      *
      *  @param x the x coordinate of this point when drawn on the page.
@@ -195,17 +152,6 @@ public class Point implements Drawable {
      *  @param y the y coordinate of this point when drawn on the page.
      *  @return this Point object.
      */
-    public Point setY(double y) {
-        this.y = (float) y;
-        return this;
-    }
-
-    /**
-     *  Sets the y coordinate of this point.
-     *
-     *  @param y the y coordinate of this point when drawn on the page.
-     *  @return this Point object.
-     */
     public Point setY(float y) {
         this.y = y;
         return this;
@@ -218,17 +164,6 @@ public class Point implements Drawable {
      */
     public float getY() {
         return y;
-    }
-
-    /**
-     *  Sets the radius of this point.
-     *
-     *  @param r the radius.
-     *  @return this Point object.
-     */
-    public Point setRadius(double r) {
-        this.r = (float) r;
-        return this;
     }
 
     /**
@@ -337,17 +272,6 @@ public class Point implements Drawable {
      */
     public Shape getShape() {
         return shape;
-    }
-
-    /**
-     *  Sets the width of the lines of this point.
-     *
-     *  @param strokeWidth the line width.
-     *  @return this Point object.
-     */
-    public Point setStrokeWidth(double strokeWidth) {
-        this.strokeWidth = (float) strokeWidth;
-        return this;
     }
 
     /**

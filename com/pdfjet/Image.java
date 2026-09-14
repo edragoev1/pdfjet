@@ -222,27 +222,6 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Sets the location of this image.
-     *
-     * @param x the x coordinate of the top left corner of the image.
-     * @param y the y coordinate of the top left corner of the image.
-     * @return the Image object.
-     */
-    public Image setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
-     * Scales this image by the specified factor.
-     *
-     * @param factor the factor used to scale the image.
-     * @return this Image object.
-     */
-    public Image scaleBy(double factor) {
-        return this.scaleBy((float) factor, (float) factor);
-    }
-
-    /**
      * Scales this image by the specified factor.
      *
      * @param factor the factor used to scale the image.

@@ -51,7 +51,7 @@ class ShapesTest {
         Page page = page();
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         RadioButton radio = new RadioButton(font, "rb");
-        radio.setLocation(1.0, 2.0);
+        radio.setLocation(1f, 2f);
         TestSupport.assertXY(45.184f, 15.872f, radio.drawOn(page));
         TestSupport.assertXY(47.188f, 15.872f, new CheckBox(font, "cb").setLocation(1f, 2f).drawOn(page));
     }

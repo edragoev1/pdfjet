@@ -41,24 +41,11 @@ public class Rect  : IDrawable {
         this.h = h;
     }
 
-    /// <summary>Creates a rectangle with its top left corner at x, y and the specified width and height.</summary>
-    public Rect(double x, double y, double w, double h) {
-        this.x = (float) x;
-        this.y = (float) y;
-        this.w = (float) w;
-        this.h = (float) h;
-    }
-
     /// <summary>Sets the location of the top left corner of this rectangle.</summary>
     public Rect SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
         return this;
-    }
-
-    /// <summary>Sets the location of the top left corner of this rectangle.</summary>
-    public Rect SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {

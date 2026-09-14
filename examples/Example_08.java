@@ -15,13 +15,13 @@ public class Example_08 {
                 new BufferedOutputStream(new FileOutputStream("Example_08.pdf")));
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        f1.setSize(7.0);
+        f1.setSize(7f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(7.0);
+        f2.setSize(7f);
 
         Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
-        f3.setSize(7.0);
+        f3.setSize(7f);
 
         Image image = new Image(pdf, "images/TeslaX.png");
         image.scaleBy(0.20f);

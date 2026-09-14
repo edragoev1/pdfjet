@@ -168,18 +168,6 @@ public class CompositeTextLine : IDrawable {
         return this;
     }
 
-    /// <summary>
-    /// Loop through all the text lines and reset their position based on
-    /// the new position set here.
-    /// </summary>
-    /// <param name="x">the x coordinate.</param>
-    /// <param name="y">the y coordinate.</param>
-    /// <returns>this CompositeTextLine object.</returns>
-    public CompositeTextLine SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }

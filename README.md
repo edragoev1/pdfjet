@@ -489,8 +489,10 @@ empty apart from the conventions below.
 
 The Java name is the reference. C# and Go use its PascalCase form
 (`setLocation`, `SetLocation`), Swift the same camelCase name with unlabelled
-arguments. Java and C# have `float` and `double` overloads of the setters,
-Swift has one form with default arguments where Java has a shorter overload,
+arguments. Coordinates and sizes are `float` in Java and C#, `Float` in Swift
+and `float32` in Go, with no `double` overloads: a Java or C# caller writes
+`50f` or casts a `double`. Swift has one form with default arguments where Java
+has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize`,
 `DrawStringUsingColor` (an `int32` color), `DrawStringUsingHighlightColors` (a

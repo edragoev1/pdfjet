@@ -40,18 +40,18 @@ public class Example_09 {
     public void AddTrendLine(Chart chart) {
         List<Point> points = chart.GetData()[0];
 
-        double m = chart.Slope(points);
-        double b = chart.Intercept(points, m);
+        float m = chart.Slope(points);
+        float b = chart.Intercept(points, m);
 
         List<Point> trendline = new List<Point>();
-        double x = 0.0;
-        double y = m * x + b;
+        float x = 0.0f;
+        float y = m * x + b;
         Point p1 = new Point(x, y);
         p1.SetDrawPath(true);
         p1.SetStrokeColor(Color.blue);
         p1.SetShape(Shape.INVISIBLE);
 
-        x = 1.5;
+        x = 1.5f;
         y = m * x + b;
         Point p2 = new Point(x, y);
         p2.SetShape(Shape.INVISIBLE);
@@ -133,12 +133,12 @@ public class Example_09 {
                 country_name = country_name.Replace(")", "_");
                 point.SetURIAction(
                         "http://pdfjet.com/country/" + country_name + ".txt");
-                point.SetX(Double.Parse(
-                        cols[5].Replace(",", "")) / population);
-                point.SetY(Double.Parse(
-                        cols[7].Replace(",", "")) / population * 100);
+                point.SetX((float) (Double.Parse(
+                        cols[5].Replace(",", "")) / population));
+                point.SetY((float) (Double.Parse(
+                        cols[7].Replace(",", "")) / population * 100));
 
-                point.SetRadius(2.0);
+                point.SetRadius(2.0f);
                 point.SetStrokeColor(Color.gray);
 
                 if (point.GetX() > 1.25f) {

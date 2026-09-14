@@ -111,17 +111,6 @@ public class CheckBox implements Drawable {
     }
 
     /**
-     *  Set the x,y location on the Page.
-     *
-     *  @param x the x coordinate on the Page.
-     *  @param y the y coordinate on the Page.
-     *  @return this CheckBox.
-     */
-    public CheckBox setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      *  Gets the height of the CheckBox.
      *
      *  @return the height.

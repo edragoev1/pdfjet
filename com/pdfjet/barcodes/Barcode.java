@@ -126,29 +126,6 @@ public class Barcode implements Drawable {
     }
 
     /**
-     * Sets the location where this barcode will be drawn on the page.
-     *
-     * @param x1 the x coordinate of the top left corner of the barcode.
-     * @param y1 the y coordinate of the top left corner of the barcode.
-     * @return this Barcode object.
-     */
-    public Barcode setLocation(double x1, double y1) {
-        return setLocation((float) x1, (float) y1);
-    }
-
-    /**
-     * Sets the module length of this barcode.
-     * The default value is 0.75
-     *
-     * @param moduleLength the specified module length.
-     * @return this Barcode object.
-     */
-    public Barcode setModuleLength(double moduleLength) {
-        this.m1 = (float) moduleLength;
-        return this;
-    }
-
-    /**
      * Sets the module length of this barcode.
      * The default value is 0.75
      *
@@ -157,19 +134,6 @@ public class Barcode implements Drawable {
      */
     public Barcode setModuleLength(float moduleLength) {
         this.m1 = moduleLength;
-        return this;
-    }
-
-    /**
-     * Sets the bar height factor.
-     * The height of the bars is the moduleLength * barHeightFactor
-     * The default value is 50.0
-     *
-     * @param barHeightFactor the specified bar height factor.
-     * @return this Barcode object.
-     */
-    public Barcode setBarHeightFactor(double barHeightFactor) {
-        this.barHeightFactor = (float) barHeightFactor;
         return this;
     }
 

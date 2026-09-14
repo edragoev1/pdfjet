@@ -69,17 +69,6 @@ public class Title implements Drawable {
         return this;
     }
 
-    /**
-     * Sets the location of this title.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Title object.
-     */
-    public Title setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
     public float[] drawOn(Page page) throws Exception {
         if (!prefix.equals("")) {
             prefix.drawOn(page);

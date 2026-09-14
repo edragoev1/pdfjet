@@ -59,26 +59,9 @@ public class Point : IDrawable {
     /// </summary>
     /// <param name="x">the x coordinate of this point when drawn on the page.</param>
     /// <param name="y">the y coordinate of this point when drawn on the page.</param>
-    public Point(double x, double y) : this((float) x, (float) y) {
-    }
-
-    /// <summary>
-    /// Constructor for creating point objects.
-    /// </summary>
-    /// <param name="x">the x coordinate of this point when drawn on the page.</param>
-    /// <param name="y">the y coordinate of this point when drawn on the page.</param>
     public Point(float x, float y) {
         this.x = x;
         this.y = y;
-    }
-
-    /// <summary>
-    /// Constructor for creating point objects.
-    /// </summary>
-    /// <param name="x">the x coordinate of this point when drawn on the page.</param>
-    /// <param name="y">the y coordinate of this point when drawn on the page.</param>
-    /// <param name="controlPoint">the control point type if this point is one of the points specifying a curve.</param>
-    public Point(double x, double y, char controlPoint) : this((float) x, (float) y, controlPoint) {
     }
 
     /// <summary>
@@ -121,17 +104,6 @@ public class Point : IDrawable {
         this.uri = point.uri;
     }
 
-    /// <summary>
-    /// Sets the position (x, y) of this point.
-    /// </summary>
-    /// <param name="x">the x coordinate of this point when drawn on the page.</param>
-    /// <param name="y">the y coordinate of this point when drawn on the page.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }
@@ -145,16 +117,6 @@ public class Point : IDrawable {
     public Point SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the x coordinate of this point.
-    /// </summary>
-    /// <param name="x">the x coordinate of this point when drawn on the page.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetX(double x) {
-        this.x = (float) x;
         return this;
     }
 
@@ -181,16 +143,6 @@ public class Point : IDrawable {
     /// </summary>
     /// <param name="y">the y coordinate of this point when drawn on the page.</param>
     /// <returns>this Point object.</returns>
-    public Point SetY(double y) {
-        this.y = (float) y;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the y coordinate of this point.
-    /// </summary>
-    /// <param name="y">the y coordinate of this point when drawn on the page.</param>
-    /// <returns>this Point object.</returns>
     public Point SetY(float y) {
         this.y = y;
         return this;
@@ -202,16 +154,6 @@ public class Point : IDrawable {
     /// <returns>the y coordinate of this point.</returns>
     public float GetY() {
         return y;
-    }
-
-    /// <summary>
-    /// Sets the radius of this point.
-    /// </summary>
-    /// <param name="r">the radius.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetRadius(double r) {
-        this.r = (float) r;
-        return this;
     }
 
     /// <summary>
@@ -287,16 +229,6 @@ public class Point : IDrawable {
     /// <summary>Returns the shape of the marker drawn at this point.</summary>
     public Shape GetShape() {
         return shape;
-    }
-
-    /// <summary>
-    /// Sets the width of the lines of this point.
-    /// </summary>
-    /// <param name="width">the line width.</param>
-    /// <returns>this Point object.</returns>
-    public Point SetStrokeWidth(double width) {
-        this.strokeWidth = (float) width;
-        return this;
     }
 
     /// <summary>

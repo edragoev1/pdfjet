@@ -48,17 +48,6 @@ public class FileAttachment implements Drawable {
     }
 
     /**
-     * Sets the location of the file attachment on the page
-     *
-     * @param x the horizontal location of the attachment
-     * @param y the vertical location of the attachment
-     * @return this FileAttachment object.
-     */
-    public FileAttachment setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Sets the icon for the attachment to be "PushPin"
      *
      * @return this FileAttachment object.

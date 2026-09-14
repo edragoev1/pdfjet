@@ -298,22 +298,6 @@ final public class Page {
      *  @param y2 the second point's y coordinate.
      */
     public void drawLine(
-            double x1,
-            double y1,
-            double x2,
-            double y2) {
-        drawLine((float) x1, (float) y1, (float) x2, (float) y2);
-    }
-
-    /**
-     *  Draws a line on the page, using the current color, between the points (x1, y1) and (x2, y2).
-     *
-     *  @param x1 the first point's x coordinate.
-     *  @param y1 the first point's y coordinate.
-     *  @param x2 the second point's x coordinate.
-     *  @param y2 the second point's y coordinate.
-     */
-    public void drawLine(
             float x1,
             float y1,
             float x2,
@@ -426,26 +410,6 @@ final public class Page {
             }
             drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
         }
-    }
-
-    /**
-     *  Draws the text given by the specified string,
-     *  using the specified font and the current brush color.
-     *  The baseline of the leftmost character is at position (x, y) on the page.
-     *
-     *  @param font the font.
-     *  @param fontSize the font size.
-     *  @param str the string.
-     *  @param x the x coordinate.
-     *  @param y the y coordinate.
-     */
-    public void drawString(
-            Font font,
-            double fontSize,
-            String str,
-            double x,
-            double y) {
-        drawString(font, (float) fontSize, str, (float) x, (float) y);
     }
 
     /**
@@ -1296,17 +1260,6 @@ final public class Page {
      * @param width the pen width.
      * @return this Page object.
      */
-    public Page setPenWidth(double width) {
-        setPenWidth((float) width);
-        return this;
-    }
-
-    /**
-     * Sets the pen width that will be used to draw lines and splines on this page.
-     *
-     * @param width the pen width.
-     * @return this Page object.
-     */
     public Page setPenWidth(float width) {
         this.penWidth = width;
         append(width);
@@ -1356,32 +1309,11 @@ final public class Page {
      * @param x the x coordinate of new pen position.
      * @param y the y coordinate of new pen position.
      */
-    public void moveTo(double x, double y) {
-        moveTo((float) x, (float) y);
-    }
-
-    /**
-     * Moves the pen to the point with coordinates (x, y) on the page.
-     *
-     * @param x the x coordinate of new pen position.
-     * @param y the y coordinate of new pen position.
-     */
     public void moveTo(float x, float y) {
         append(x);
         append(' ');
         append(height - y);
         append(" m\n");
-    }
-
-    /**
-     * Draws a line from the current pen position to the point with coordinates (x, y),
-     * using the current pen width and stroke color.
-     * Make sure you call strokePath(), closePath() or fillPath() after the last call to this method.
-     * @param x the x coordinate of the new pen position.
-     * @param y the y coordinate of the new pen position.
-     */
-    public void lineTo(double x, double y) {
-        lineTo((float) x, (float) y);
     }
 
     /**
@@ -1430,42 +1362,12 @@ final public class Page {
      * @param w the width of the rectangle to be drawn.
      * @param h the height of the rectangle to be drawn.
      */
-    public void drawRect(double x, double y, double w, double h) {
-        drawRect((float) x, (float) y, (float) w, (float) h);
-    }
-
-    /**
-     * Draws the outline of the specified rectangle on the page.
-     * The left and right edges of the rectangle are at x and x + w.
-     * The top and bottom edges are at y and y + h.
-     * The rectangle is drawn using the current pen color.
-     *
-     * @param x the x coordinate of the rectangle to be drawn.
-     * @param y the y coordinate of the rectangle to be drawn.
-     * @param w the width of the rectangle to be drawn.
-     * @param h the height of the rectangle to be drawn.
-     */
     public void drawRect(float x, float y, float w, float h) {
         moveTo(x, y);
         lineTo(x+w, y);
         lineTo(x+w, y+h);
         lineTo(x, y+h);
         closePath();
-    }
-
-    /**
-     * Fills the specified rectangle on the page.
-     * The left and right edges of the rectangle are at x and x + w.
-     * The top and bottom edges are at y and y + h.
-     * The rectangle is drawn using the current brush color.
-     *
-     * @param x the x coordinate of the rectangle to be drawn.
-     * @param y the y coordinate of the rectangle to be drawn.
-     * @param w the width of the rectangle to be drawn.
-     * @param h the height of the rectangle to be drawn.
-     */
-    public void fillRect(double x, double y, double w, double h) {
-        fillRect((float) x, (float) y, (float) w, (float) h);
     }
 
     /**
@@ -1550,41 +1452,10 @@ final public class Page {
      * @param r the radius of the circle to be drawn.
      */
     public void drawCircle(
-            double x,
-            double y,
-            double r) {
-        drawEllipse((float) x, (float) y, (float) r, (float) r, PathOperator.STROKE);
-    }
-
-    /**
-     * Draws a circle on the page.
-     * The outline of the circle is drawn using the current pen color.
-     *
-     * @param x the x coordinate of the center of the circle to be drawn.
-     * @param y the y coordinate of the center of the circle to be drawn.
-     * @param r the radius of the circle to be drawn.
-     */
-    public void drawCircle(
             float x,
             float y,
             float r) {
         drawEllipse(x, y, r, r, PathOperator.STROKE);
-    }
-
-    /**
-     * Draws the specified circle on the page and fills it with the current brush color.
-     *
-     * @param x the x coordinate of the center of the circle to be drawn.
-     * @param y the y coordinate of the center of the circle to be drawn.
-     * @param r the radius of the circle to be drawn.
-     * @param pathOperator must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.
-     */
-    public void drawCircle(
-            double x,
-            double y,
-            double r,
-            PathOperator pathOperator) {
-        drawEllipse((float) x, (float) y, (float) r, (float) r, pathOperator);
     }
 
     /**
@@ -1612,43 +1483,11 @@ final public class Page {
      * @param r2 the vertical radius of the ellipse to be drawn.
      */
     public void drawEllipse(
-            double x,
-            double y,
-            double r1,
-            double r2) {
-        drawEllipse((float) x, (float) y, (float) r1, (float) r2, PathOperator.STROKE);
-    }
-
-    /**
-     * Draws an ellipse on the page using the current pen color.
-     *
-     * @param x the x coordinate of the center of the ellipse to be drawn.
-     * @param y the y coordinate of the center of the ellipse to be drawn.
-     * @param r1 the horizontal radius of the ellipse to be drawn.
-     * @param r2 the vertical radius of the ellipse to be drawn.
-     */
-    public void drawEllipse(
             float x,
             float y,
             float r1,
             float r2) {
         drawEllipse(x, y, r1, r2, PathOperator.STROKE);
-    }
-
-    /**
-     * Fills an ellipse on the page using the current brush color.
-     *
-     * @param x the x coordinate of the center of the ellipse to be drawn.
-     * @param y the y coordinate of the center of the ellipse to be drawn.
-     * @param r1 the horizontal radius of the ellipse to be drawn.
-     * @param r2 the vertical radius of the ellipse to be drawn.
-     */
-    public void fillEllipse(
-            double x,
-            double y,
-            double r1,
-            double r2) {
-        drawEllipse((float) x, (float) y, (float) r1, (float) r2, PathOperator.FILL);
     }
 
     /**
@@ -1724,17 +1563,17 @@ final public class Page {
                 drawCircle(p.x, p.y, p.r, p.getPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new ArrayList<Point>();
-                list.add(new Point(p.x, p.y - p.r*1.2));
-                list.add(new Point(p.x + p.r*1.2, p.y));
-                list.add(new Point(p.x, p.y + p.r*1.2));
-                list.add(new Point(p.x - p.r*1.2, p.y));
+                list.add(new Point(p.x, (float) (p.y - p.r*1.2)));
+                list.add(new Point((float) (p.x + p.r*1.2), p.y));
+                list.add(new Point(p.x, (float) (p.y + p.r*1.2)));
+                list.add(new Point((float) (p.x - p.r*1.2), p.y));
                 drawPath(list, p.getPathOperator());
             } else if (p.shape == Shape.BOX) {
                 list = new ArrayList<Point>();
-                list.add(new Point(p.x - p.r*0.886, p.y - p.r*0.886));
-                list.add(new Point(p.x + p.r*0.886, p.y - p.r*0.886));
-                list.add(new Point(p.x + p.r*0.886, p.y + p.r*0.886));
-                list.add(new Point(p.x - p.r*0.886, p.y + p.r*0.886));
+                list.add(new Point((float) (p.x - p.r*0.886), (float) (p.y - p.r*0.886)));
+                list.add(new Point((float) (p.x + p.r*0.886), (float) (p.y - p.r*0.886)));
+                list.add(new Point((float) (p.x + p.r*0.886), (float) (p.y + p.r*0.886)));
+                list.add(new Point((float) (p.x - p.r*0.886), (float) (p.y + p.r*0.886)));
                 drawPath(list, p.getPathOperator());
             } else if (p.shape == Shape.PLUS) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
@@ -1786,7 +1625,7 @@ final public class Page {
                     double radius = (i % 2 == 0) ? p.r*1.147 : p.r*0.38196*1.147;
                     double x = p.x + radius * Math.sin(theta);
                     double y = p.y - radius * Math.cos(theta);  // minus because y grows down
-                    list.add(new Point(x, y));
+                    list.add(new Point((float) x, (float) y));
                 }
                 drawPath(list, p.getPathOperator());
             }

@@ -116,17 +116,6 @@ public class PDF417 : IDrawable {
         }
     }
 
-    /// <summary>
-    ///  Sets the position of this barcode on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
-    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
-    /// <returns>this PDF417 object.</returns>
-    public PDF417 SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }

@@ -39,16 +39,6 @@ public class Line : IDrawable {
     /// <param name="y1">the y coordinate of the start point.</param>
     /// <param name="x2">the x coordinate of the end point.</param>
     /// <param name="y2">the y coordinate of the end point.</param>
-    public Line(double x1, double y1, double x2, double y2) : this((float) x1, (float) y1, (float) x2, (float) y2) {
-    }
-
-    /// <summary>
-    /// Create a line object.
-    /// </summary>
-    /// <param name="x1">the x coordinate of the start point.</param>
-    /// <param name="y1">the y coordinate of the start point.</param>
-    /// <param name="x2">the x coordinate of the end point.</param>
-    /// <param name="y2">the y coordinate of the end point.</param>
     public Line(float x1, float y1, float x2, float y2) {
         this.x1 = x1;
         this.y1 = y1;
@@ -80,18 +70,6 @@ public class Line : IDrawable {
     /// <returns>this Line object.</returns>
     public Line SetStrokeDashPattern(String pattern) {
         this.pattern = pattern;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the x and y coordinates of the start point.
-    /// </summary>
-    /// <param name="x">the x coordinate of the start point.</param>
-    /// <param name="y">the y coordinate of the start point.</param>
-    /// <returns>this Line object.</returns>
-    public Line SetStartPoint(double x, double y) {
-        this.x1 = (float) x;
-        this.y1 = (float) y;
         return this;
     }
 
@@ -139,18 +117,6 @@ public class Line : IDrawable {
     /// <param name="x">the x coordinate of the end point.</param>
     /// <param name="y">the y coordinate of the end point.</param>
     /// <returns>this Line object.</returns>
-    public Line SetEndPoint(double x, double y) {
-        this.x2 = (float) x;
-        this.y2 = (float) y;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the x and y coordinates of the end point.
-    /// </summary>
-    /// <param name="x">the x coordinate of the end point.</param>
-    /// <param name="y">the y coordinate of the end point.</param>
-    /// <returns>this Line object.</returns>
     public Line SetEndPoint(float x, float y) {
         this.x2 = x;
         this.y2 = y;
@@ -163,16 +129,6 @@ public class Line : IDrawable {
     /// <returns>Point the point.</returns>
     public Point GetEndPoint() {
         return new Point(x2, y2);
-    }
-
-    /// <summary>
-    /// Sets the stroke width of this line.
-    /// </summary>
-    /// <param name="width">the width.</param>
-    /// <returns>this Line object.</returns>
-    public Line SetStrokeWidth(double width) {
-        this.width = (float) width;
-        return this;
     }
 
     /// <summary>
@@ -241,15 +197,6 @@ public class Line : IDrawable {
     public Line SetActualText(String actualText) {
         this.actualText = actualText;
         return this;
-    }
-
-    /// <summary>
-    /// Scales this line by the specified factor.
-    /// </summary>
-    /// <param name="factor">the factor used to scale the line.</param>
-    /// <returns>this Line object.</returns>
-    public Line ScaleBy(double factor) {
-        return ScaleBy((float) factor);
     }
 
     /// <summary>

@@ -92,17 +92,6 @@ public class Table : IDrawable {
     /// </summary>
     /// <param name="x">the x coordinate of the top left point of the table.</param>
     /// <param name="y">the y coordinate of the top left point of the table.</param>
-    /// <returns>this Table object.</returns>
-    public Table SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the location (x, y) of the top left corner of this table on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left point of the table.</param>
-    /// <param name="y">the y coordinate of the top left point of the table.</param>
     public Table SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
@@ -111,16 +100,6 @@ public class Table : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
-    }
-
-    /// <summary>
-    /// Sets the bottom margin for this table.
-    /// </summary>
-    /// <param name="bottomMargin">the margin.</param>
-    /// <returns>this Table object.</returns>
-    public Table SetBottomMargin(double bottomMargin) {
-        this.bottomMargin = (float) bottomMargin;
-        return this;
     }
 
     /// <summary>
@@ -345,7 +324,7 @@ public class Table : IDrawable {
     /// <param name="index">the index of specified column.</param>
     /// <param name="width">the specified width.</param>
     /// <returns>this Table object.</returns>
-    public Table SetColumnWidth(int index, double width) {
+    public Table SetColumnWidth(int index, float width) {
         foreach (List<Cell> row in tableData) {
             if (index < row.Count) {
                 row[index].SetWidth(width);

@@ -83,11 +83,6 @@ public class CalendarMonth : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of the top left corner of the calendar.</summary>
-    public CalendarMonth SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>Draws this calendar on the specified page.</summary>
     public float[] DrawOn(Page page) {
         for (int row = 0; row < 7; row++) {

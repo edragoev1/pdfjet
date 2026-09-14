@@ -133,21 +133,6 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the top-left position. Returns this for chaining.
-    /// </summary>
-    public Chart SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    /// <summary>
-    ///  Sets the chart dimensions.
-    /// </summary>
-    public Chart SetSize(double w, double h) {
-        SetSize((float) w, (float) h);
-        return this;
-    }
-
-    /// <summary>
     ///  Sets the chart dimensions.
     /// </summary>
     public Chart SetSize(float w, float h) {
@@ -189,16 +174,6 @@ public class Chart : IDrawable {
     /// <returns>the slope.</returns>
     public float Slope(List<Point> points) {
         return (Covar(points) / Devsq(points) * (points.Count - 1));
-    }
-
-    /// <summary>
-    /// Calculates the intercept of a trend line (OLS). See Example_09.
-    /// </summary>
-    /// <param name="points">the data points.</param>
-    /// <param name="slope">the pre-computed slope.</param>
-    /// <returns>the intercept.</returns>
-    public float Intercept(List<Point> points, double slope) {
-        return Intercept(points, (float) slope);
     }
 
     /// <summary>

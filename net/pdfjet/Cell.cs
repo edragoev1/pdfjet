@@ -242,8 +242,8 @@ public class Cell {
     /// </summary>
     /// <param name="width">the specified width.</param>
     /// <returns>this Cell object.</returns>
-    public Cell SetWidth(double width) {
-        this.width = (float) width;
+    public Cell SetWidth(float width) {
+        this.width = width;
         if (textBox != null) {
             textBox.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         } else if (textBlock != null) {

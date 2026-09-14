@@ -153,9 +153,9 @@
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th class="num">Done</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td>Three text classes, one chart defect</td></tr>
-    <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">2</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
+    <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">3</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
     <tr><td>Hide what is not for users</td><td class="num">5</td><td class="num">5</td><td class="num">0</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">4</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">5</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -282,11 +282,11 @@
 </section>
 
 <section class="item">
-  <h3>Java doubles every float setter <span class="chip now">9.0.0</span></h3>
+  <h3>Java doubles every float setter <span class="chip done">Done in 9.0.0</span></h3>
   <span class="label">Finding</span>
   <p>Sixty five public methods exist only to accept a <code>double</code> beside the <code>float</code> version. They are a quarter of the Java overloads and none of the other ports has them.</p>
   <span class="label">Suggestion</span>
-  <p>Drop them. Callers write <code>50f</code>, as the examples already do.</p>
+  <p>Done, in Java and C#: the overloads are gone, the few methods that took only a double take a float, and the eight example call sites that passed a double write <code>7f</code> or declare a <code>float</code>.</p>
 </section>
 
 <section class="item">

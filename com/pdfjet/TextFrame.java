@@ -83,17 +83,6 @@ public class TextFrame implements Drawable {
     }
 
     /**
-     * Sets the location of the top left corner of this text frame.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this TextFrame object.
-     */
-    public TextFrame setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Sets the width at which the lines wrap.
      *
      * @param w the width.
@@ -102,16 +91,6 @@ public class TextFrame implements Drawable {
     public TextFrame setWidth(float w) {
         this.w = w;
         return this;
-    }
-
-    /**
-     * Sets the width at which the lines wrap.
-     *
-     * @param w the width.
-     * @return this TextFrame object.
-     */
-    public TextFrame setWidth(double w) {
-        return setWidth((float) w);
     }
 
     /**
@@ -124,17 +103,6 @@ public class TextFrame implements Drawable {
     public TextFrame setHeight(float h) {
         this.h = h;
         return this;
-    }
-
-    /**
-     * Sets the height of this text frame. With a height of 0, the default, the
-     * frame draws all of its text.
-     *
-     * @param h the height.
-     * @return this TextFrame object.
-     */
-    public TextFrame setHeight(double h) {
-        return setHeight((float) h);
     }
 
     /**

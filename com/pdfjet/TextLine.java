@@ -112,17 +112,6 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the location of this text line.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this TextLine object.
-     */
-    public TextLine setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Moves this text line down by the specified leading.
      *
      * @param leading the distance to move down.
@@ -675,8 +664,8 @@ public class TextLine implements Drawable {
             double x2 = x + (lineLength * Math.cos(radians));
             double y2 = y - (lineLength * Math.sin(radians));
             page.addBDC(structureType, language, null, "Underlined text: " + text);
-            page.moveTo(x + xAdjust, y + yAdjust);
-            page.lineTo(x2 + xAdjust, y2 + yAdjust);
+            page.moveTo((float) (x + xAdjust), (float) (y + yAdjust));
+            page.lineTo((float) (x2 + xAdjust), (float) (y2 + yAdjust));
             page.strokePath();
             page.addEMC();
         }
@@ -693,8 +682,8 @@ public class TextLine implements Drawable {
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
             page.addBDC(structureType, language, null, "Strikethrough text: " + text);
-            page.moveTo(x - xAdjust, y - yAdjust);
-            page.lineTo(x2 - xAdjust, y2 - yAdjust);
+            page.moveTo((float) (x - xAdjust), (float) (y - yAdjust));
+            page.lineTo((float) (x2 - xAdjust), (float) (y2 - yAdjust));
             page.strokePath();
             page.addEMC();
         }

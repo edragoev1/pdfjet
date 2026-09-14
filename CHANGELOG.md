@@ -70,6 +70,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - Java: the font name classes and the QR code, PDF417 and Data Matrix classes
   are in `com.pdfjet.fonts`, `com.pdfjet.qrcode`, `com.pdfjet.pdf417` and
   `com.pdfjet.datamatrix`; import them.
+- The `double` overloads of the Java and C# setters are removed: every
+  coordinate and size is a `float`, so a caller writes `50f` or casts. The
+  methods that took only a `double` (`Container` and `Stamp` rotations, C#
+  `Cell.SetWidth`, `Table.SetColumnWidth`, `Page.DrawLine`, `DrawRect` and
+  `FillRect`) take a `float` too.
 - Java and C# code compiled against v8.7.0 must be recompiled.
 
 ### Encryption

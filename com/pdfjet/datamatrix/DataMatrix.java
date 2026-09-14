@@ -161,17 +161,6 @@ public final class DataMatrix implements Drawable {
     }
 
     /**
-     * Sets the location where this barcode will be drawn on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this DataMatrix object.
-     */
-    public DataMatrix setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Sets the module length of this barcode. The default value is 2.0f.
      * Leave a margin of at least one module around the barcode.
      *
@@ -181,17 +170,6 @@ public final class DataMatrix implements Drawable {
     public DataMatrix setModuleLength(float moduleLength) {
         this.m1 = moduleLength;
         return this;
-    }
-
-    /**
-     * Sets the module length of this barcode. The default value is 2.0f.
-     * Leave a margin of at least one module around the barcode.
-     *
-     * @param moduleLength the module length.
-     * @return this DataMatrix object.
-     */
-    public DataMatrix setModuleLength(double moduleLength) {
-        return setModuleLength((float) moduleLength);
     }
 
     /**

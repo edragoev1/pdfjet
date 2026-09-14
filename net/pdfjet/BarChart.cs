@@ -139,26 +139,10 @@ public class BarChart : IDrawable {
     /// <param name="x">the x coordinate.</param>
     /// <param name="y">the y coordinate.</param>
     /// <returns>this BarChart object.</returns>
-    public BarChart SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    /// <summary>Sets the location of the top left corner of this chart.</summary>
-    /// <param name="x">the x coordinate.</param>
-    /// <param name="y">the y coordinate.</param>
-    /// <returns>this BarChart object.</returns>
     public BarChart SetLocation(float x, float y) {
         this.x1 = x;
         this.y1 = y;
         return this;
-    }
-
-    /// <summary>Sets the size of this chart.</summary>
-    /// <param name="w">the width.</param>
-    /// <param name="h">the height.</param>
-    /// <returns>this BarChart object.</returns>
-    public BarChart SetSize(double w, double h) {
-        return SetSize((float) w, (float) h);
     }
 
     /// <summary>Sets the size of this chart.</summary>

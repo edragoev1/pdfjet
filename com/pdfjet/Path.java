@@ -81,17 +81,6 @@ public class Path implements Drawable {
      * @param width the stroke width.
      * @return this Path object.
      */
-    public Path setStrokeWidth(double width) {
-        this.width = (float) width;
-        return this;
-    }
-
-    /**
-     * Sets the stroke width that will be used to draw the lines and splines that are part of this path.
-     *
-     * @param width the stroke width.
-     * @return this Path object.
-     */
     public Path setStrokeWidth(float width) {
         this.width = width;
         return this;
@@ -193,27 +182,6 @@ public class Path implements Drawable {
         xBox = x;
         yBox = y;
         return this;
-    }
-
-    /**
-     * Sets the location of this path: its points are drawn offset by x and y.
-     *
-     * @param x the x offset.
-     * @param y the y offset.
-     * @return this Path object.
-     */
-    public Path setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
-     * Scales the points of this path by the specified factor.
-     *
-     * @param factor the factor used to scale the path.
-     * @return this Path object.
-     */
-    public Path scaleBy(double factor) {
-        return scaleBy((float) factor);
     }
 
     /**

@@ -77,17 +77,6 @@ public class TextColumn implements Drawable {
     }
 
     /**
-     * Sets the space between paragraphs.
-     *
-     * @param paragraphSpacing the paragraph spacing.
-     * @return this TextColumn object.
-     */
-    public TextColumn setParagraphSpacing(double paragraphSpacing) {
-        this.paragraphSpacing = (float) paragraphSpacing;
-        return this;
-    }
-
-    /**
      * Sets the position of this text column on the page.
      *
      * @param x the x coordinate of the top left corner of this text column when drawn on the page.
@@ -100,17 +89,6 @@ public class TextColumn implements Drawable {
         this.x1 = x;
         this.y1 = y;
         return this;
-    }
-
-    /**
-     * Sets the position of this text column on the page.
-     *
-     * @param x the x coordinate of the top left corner of this text column when drawn on the page.
-     * @param y the y coordinate of the top left corner of this text column when drawn on the page.
-     * @return this text column.
-     */
-    public TextColumn setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
     }
 
     /**
@@ -162,17 +140,6 @@ public class TextColumn implements Drawable {
      */
     public TextColumn setTextAlignment(Alignment alignment) {
         this.alignment = alignment;
-        return this;
-    }
-
-    /**
-     * Sets the spacing between the lines in this text column.
-     *
-     * @param lineSpacing the line spacing value.
-     * @return this TextColumn object.
-     */
-    public TextColumn setLineSpacing(double lineSpacing) {
-        this.lineSpacing = (float) lineSpacing;
         return this;
     }
 

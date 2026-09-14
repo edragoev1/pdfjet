@@ -43,21 +43,6 @@ public class Line implements Drawable {
      *  @param x2 the x coordinate of the end point.
      *  @param y2 the y coordinate of the end point.
      */
-    public Line(double x1, double y1, double x2, double y2) {
-        this.x1 = (float) x1;
-        this.y1 = (float) y1;
-        this.x2 = (float) x2;
-        this.y2 = (float) y2;
-    }
-
-    /**
-     *  Create a line object.
-     *
-     *  @param x1 the x coordinate of the start point.
-     *  @param y1 the y coordinate of the start point.
-     *  @param x2 the x coordinate of the end point.
-     *  @param y2 the y coordinate of the end point.
-     */
     public Line(float x1, float y1, float x2, float y2) {
         this.x1 = x1;
         this.y1 = y1;
@@ -91,19 +76,6 @@ public class Line implements Drawable {
      */
     public Line setStrokeDashPattern(String pattern) {
         this.pattern = pattern;
-        return this;
-    }
-
-    /**
-     *  Sets the x and y coordinates of the start point.
-     *
-     *  @param x the x coordinate of the start point.
-     *  @param y the y coordinate of the start point.
-     *  @return this Line object.
-     */
-    public Line setStartPoint(double x, double y) {
-        this.x1 = (float) x;
-        this.y1 = (float) y;
         return this;
     }
 
@@ -152,19 +124,6 @@ public class Line implements Drawable {
      *  @param y the y coordinate of the end point.
      *  @return this Line object.
      */
-    public Line setEndPoint(double x, double y) {
-        this.x2 = (float) x;
-        this.y2 = (float) y;
-        return this;
-    }
-
-    /**
-     *  Sets the x and y coordinates of the end point.
-     *
-     *  @param x the x coordinate of the end point.
-     *  @param y the y coordinate of the end point.
-     *  @return this Line object.
-     */
     public Line setEndPoint(float x, float y) {
         this.x2 = x;
         this.y2 = y;
@@ -178,17 +137,6 @@ public class Line implements Drawable {
      */
     public Point getEndPoint() {
         return new Point(x2, y2);
-    }
-
-    /**
-     *  Sets the stroke width of this line.
-     *
-     *  @param width the width.
-     *  @return this Line object.
-     */
-    public Line setStrokeWidth(double width) {
-        this.width = (float) width;
-        return this;
     }
 
     /**
@@ -265,16 +213,6 @@ public class Line implements Drawable {
     public Line setActualText(String actualText) {
         this.actualText = actualText;
         return this;
-    }
-
-    /**
-     *  Scales this line by the specified factor.
-     *
-     *  @param factor the factor used to scale the line.
-     *  @return this Line object.
-     */
-    public Line scaleBy(double factor) {
-        return scaleBy((float) factor);
     }
 
     /**

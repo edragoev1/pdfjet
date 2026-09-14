@@ -138,8 +138,8 @@ public class CalendarMonth implements Drawable {
                         page.drawEllipse(
                                 x1 + col*dx + dx/2,
                                 y1 + row*dy + (f2.getBodyHeight()/2),
-                                dx/2.5,
-                                dy/2.5);
+                                (float) (dx/2.5),
+                                (float) (dy/2.5));
                     }
                 }
             }

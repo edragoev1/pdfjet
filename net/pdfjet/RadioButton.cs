@@ -58,11 +58,6 @@ public class RadioButton : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of this radio button on the page.</summary>
-    public RadioButton SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>
     /// Selects or deselects this radio button.
     /// </summary>

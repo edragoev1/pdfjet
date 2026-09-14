@@ -149,11 +149,6 @@ public class DataMatrix : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of the top left corner of this barcode.</summary>
-    public DataMatrix SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>
     /// Sets the module length of this barcode. The default value is 2.0f.
     /// Leave a margin of at least one module around the barcode.
@@ -161,14 +156,6 @@ public class DataMatrix : IDrawable {
     public DataMatrix SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
         return this;
-    }
-
-    /// <summary>
-    /// Sets the module length of this barcode. The default value is 2.0f.
-    /// Leave a margin of at least one module around the barcode.
-    /// </summary>
-    public DataMatrix SetModuleLength(double moduleLength) {
-        return SetModuleLength((float) moduleLength);
     }
 
     /// <summary>Sets the color of the barcode as a 0xRRGGBB value.</summary>

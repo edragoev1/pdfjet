@@ -357,16 +357,6 @@ final public class Font {
      * @param fontSize specifies the size of this font.
      * @return the font.
      */
-    public Font setSize(double fontSize) {
-        return setSize((float) fontSize);
-    }
-
-    /**
-     * Sets the size of this font.
-     *
-     * @param fontSize specifies the size of this font.
-     * @return the font.
-     */
     public Font setSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {
@@ -597,19 +587,6 @@ final public class Font {
      */
     public float getBodyHeight() {
         return bodyHeight;
-    }
-
-    /**
-     * Returns the number of characters from the specified string that will fit
-     * within the specified width.
-     *
-     * @param str the specified string.
-     * @param width the specified width.
-     *
-     * @return the number of characters that will fit.
-     */
-    public int getFitChars(String str, double width) {
-        return getFitChars(str, (float) width);
     }
 
     /**

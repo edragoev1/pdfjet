@@ -61,8 +61,8 @@ public class Container : IDrawable {
     /// Sets the rotation angle.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees.</param>
-    public Container SetRotation(double degrees) {
-        this.rotateDegrees = (float)degrees;
+    public Container SetRotation(float degrees) {
+        this.rotateDegrees = degrees;
         return this;
     }
 
@@ -70,8 +70,8 @@ public class Container : IDrawable {
     /// Sets clockwise rotation.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees (clockwise).</param>
-    public Container SetRotationClockwise(double degrees) {
-        this.rotateDegrees = (float)-degrees;
+    public Container SetRotationClockwise(float degrees) {
+        this.rotateDegrees = -degrees;
         return this;
     }
 

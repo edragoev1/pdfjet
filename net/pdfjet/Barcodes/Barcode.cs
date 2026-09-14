@@ -134,26 +134,6 @@ public class Barcode : IDrawable {
     }
 
     /// <summary>
-    /// Sets the location where this barcode will be drawn on the page.
-    /// </summary>
-    /// <param name="x1">the x coordinate of the top left corner of the barcode.</param>
-    /// <param name="y1">the y coordinate of the top left corner of the barcode.</param>
-    public Barcode SetLocation(double x1, double y1) {
-        return SetLocation((float) x1, (float) y1);
-    }
-
-    /// <summary>
-    /// Sets the module length of this barcode.
-    /// The default value is 0.75
-    /// </summary>
-    /// <param name="moduleLength">the specified module length.</param>
-    /// <returns>this Barcode object.</returns>
-    public Barcode SetModuleLength(double moduleLength) {
-        this.m1 = (float) moduleLength;
-        return this;
-    }
-
-    /// <summary>
     /// Sets the module length of this barcode.
     /// The default value is 0.75f
     /// </summary>
@@ -161,18 +141,6 @@ public class Barcode : IDrawable {
     /// <returns>this Barcode object.</returns>
     public Barcode SetModuleLength(float moduleLength) {
         this.m1 = moduleLength;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the bar height factor.
-    /// The height of the bars is the moduleLength * barHeightFactor
-    /// The default value is 50.0
-    /// </summary>
-    /// <param name="barHeightFactor">the specified bar height factor.</param>
-    /// <returns>this Barcode object.</returns>
-    public Barcode SetBarHeightFactor(double barHeightFactor) {
-        this.barHeightFactor = (float) barHeightFactor;
         return this;
     }
 

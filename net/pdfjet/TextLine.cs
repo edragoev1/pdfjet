@@ -99,11 +99,6 @@ public class TextLine : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location where this text line is drawn on the page.</summary>
-    public TextLine SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>
     /// Sets the font to use for this text line.
     /// </summary>
@@ -537,8 +532,8 @@ public class TextLine : IDrawable {
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBDC(structureType, language, null, "Underlined text: " + text);
-            page.MoveTo(x + xAdjust, y + yAdjust);
-            page.LineTo(x2 + xAdjust, y2 + yAdjust);
+            page.MoveTo((float) (x + xAdjust), (float) (y + yAdjust));
+            page.LineTo((float) (x2 + xAdjust), (float) (y2 + yAdjust));
             page.StrokePath();
             page.AddEMC();
         }
@@ -555,8 +550,8 @@ public class TextLine : IDrawable {
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
             page.AddBDC(structureType, language, null, "Strikethrough text: " + text);
-            page.MoveTo(x - xAdjust, y - yAdjust);
-            page.LineTo(x2 - xAdjust, y2 - yAdjust);
+            page.MoveTo((float) (x - xAdjust), (float) (y - yAdjust));
+            page.LineTo((float) (x2 - xAdjust), (float) (y2 - yAdjust));
             page.StrokePath();
             page.AddEMC();
         }

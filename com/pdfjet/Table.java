@@ -109,29 +109,6 @@ public class Table implements Drawable {
     }
 
     /**
-     * Sets the location (x, y) of the top left corner of this table on the page.
-     *
-     * @param x the x coordinate of the top left point of the table.
-     * @param y the y coordinate of the top left point of the table.
-     * @return this Table object.
-     */
-    public Table setLocation(double x, double y) {
-        setLocation((float) x, (float) y);
-        return this;
-    }
-
-    /**
-     * Sets the bottom margin for this table.
-     *
-     * @param bottomMargin the margin.
-     * @return this Table object.
-     */
-    public Table setBottomMargin(double bottomMargin) {
-        this.bottomMargin = (float) bottomMargin;
-        return this;
-    }
-
-    /**
      * Sets the bottom margin for this table.
      *
      * @param bottomMargin the margin.

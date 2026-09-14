@@ -53,21 +53,6 @@ public class Rect implements Drawable {
     }
 
     /**
-     * Creates a rectangle.
-     *
-     * @param x the x coordinate of the top left corner.
-     * @param y the y coordinate of the top left corner.
-     * @param w the width.
-     * @param h the height.
-     */
-    public Rect(double x, double y, double w, double h) {
-        this.x = (float) x;
-        this.y = (float) y;
-        this.w = (float) w;
-        this.h = (float) h;
-    }
-
-    /**
      * Sets the location of the top left corner of this rectangle.
      *
      * @param x the x coordinate.
@@ -78,17 +63,6 @@ public class Rect implements Drawable {
         this.x = x;
         this.y = y;
         return this;
-    }
-
-    /**
-     * Sets the location of the top left corner of this rectangle.
-     *
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @return this Rect object.
-     */
-    public Rect setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
     }
 
     /**

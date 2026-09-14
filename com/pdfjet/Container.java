@@ -66,8 +66,8 @@ public class Container implements Drawable {
      * @param degrees the rotation angle in degrees
      * @return this Container object.
      */
-    public Container setRotation(double degrees) {
-        this.rotateDegrees = (float) degrees;
+    public Container setRotation(float degrees) {
+        this.rotateDegrees = degrees;
         return this;
     }
 
@@ -77,8 +77,8 @@ public class Container implements Drawable {
      * @param degrees the rotation angle in degrees (clockwise)
      * @return this Container object.
      */
-    public Container setRotationClockwise(double degrees) {
-        this.rotateDegrees = (float) -degrees;
+    public Container setRotationClockwise(float degrees) {
+        this.rotateDegrees = -degrees;
         return this;
     }
 

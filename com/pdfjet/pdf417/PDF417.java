@@ -138,17 +138,6 @@ public class PDF417 implements Drawable {
     }
 
     /**
-     * Sets the location of this barcode on the page.
-     *
-     * @param x the x coordinate of the top left corner of the barcode.
-     * @param y the y coordinate of the top left corner of the barcode.
-     * @return this Barcode2D object.
-     */
-    public PDF417 setLocation(double x, double y) {
-        return setLocation((float) x, (float) y);
-    }
-
-    /**
      * Sets the module length of this barcode, the width of its narrowest bar.
      * This changes the barcode size while preserving the aspect.
      * Use value between 0.5f and 0.75f.

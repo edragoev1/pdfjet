@@ -53,14 +53,14 @@ public class Example_11 {
 
         code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
         code.setLocation(450f, 250f);
-        code.setModuleLength(1.0);
+        code.setModuleLength(1f);
         code.setDirection(Direction.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);
 
         code = new Barcode(Barcode.EAN_13, "051234567890");   // EAN-13 without the check digit which we calculate!!
         code.setLocation(450f, 450f);
-        code.setModuleLength(1.0);
+        code.setModuleLength(1f);
         code.setDirection(Direction.BOTTOM_TO_TOP);
         code.setFont(f1);
         code.drawOn(page);

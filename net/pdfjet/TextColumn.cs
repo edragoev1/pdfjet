@@ -66,36 +66,9 @@ public class TextColumn : IDrawable {
         return this;
     }
 
-    /// <summary>
-    /// Sets the spacing between the lines in this text column.
-    /// </summary>
-    /// <param name="lineSpacing">the specified spacing value.</param>
-    /// <returns>this TextColumn object.</returns>
-    public TextColumn SetLineSpacing(double lineSpacing) {
-        this.lineSpacing = (float) lineSpacing;
-        return this;
-    }
-
     /// <summary>Sets the space between paragraphs.</summary>
     public TextColumn SetParagraphSpacing(float paragraphSpacing) {
         this.paragraphSpacing = paragraphSpacing;
-        return this;
-    }
-
-    /// <summary>Sets the space between paragraphs.</summary>
-    public TextColumn SetParagraphSpacing(double paragraphSpacing) {
-        this.paragraphSpacing = (float) paragraphSpacing;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the position of this text column on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left corner of this text column when drawn on the page.</param>
-    /// <param name="y">the y coordinate of the top left corner of this text column when drawn on the page.</param>
-    /// <returns>this TextColumn object.</returns>
-    public TextColumn SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
         return this;
     }
 

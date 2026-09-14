@@ -47,7 +47,7 @@ public class ShapesTest {
         Page page = NewPage();
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         RadioButton radio = new RadioButton(font, "rb");
-        radio.SetLocation(1.0, 2.0);
+        radio.SetLocation(1f, 2f);
         TestSupport.AssertXY(45.184f, 15.872f, radio.DrawOn(page));
         TestSupport.AssertXY(47.188f, 15.872f, new CheckBox(font, "cb").SetLocation(1f, 2f).DrawOn(page));
     }

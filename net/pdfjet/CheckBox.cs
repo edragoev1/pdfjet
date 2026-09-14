@@ -102,11 +102,6 @@ public class CheckBox : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the location of this check box on the page.</summary>
-    public CheckBox SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
     /// <summary>
     /// Gets the height of the CheckBox.
     /// </summary>

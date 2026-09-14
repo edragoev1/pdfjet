@@ -47,17 +47,6 @@ public class QRCode : IDrawable {
         this.Make(false, GetBestMaskPattern());
     }
 
-    /// <summary>
-    /// Sets the position where this barcode will be drawn on the page.
-    /// </summary>
-    /// <param name="x">the x coordinate of the top left corner of the barcode.</param>
-    /// <param name="y">the y coordinate of the top left corner of the barcode.</param>
-    /// <returns>this QRCode object.</returns>
-    public QRCode SetLocation(double x, double y) {
-        SetLocation((float) x, (float) y);
-        return this;
-    }
-
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
     }
@@ -71,17 +60,6 @@ public class QRCode : IDrawable {
     public QRCode SetLocation(float x, float y) {
         this.x = x;
         this.y = y;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the module length of this barcode.
-    /// The default value is 2.0f
-    /// </summary>
-    /// <param name="moduleLength">the specified module length.</param>
-    /// <returns>this QRCode object.</returns>
-    public QRCode SetModuleLength(double moduleLength) {
-        this.m1 = (float) moduleLength;
         return this;
     }
 

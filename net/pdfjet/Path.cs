@@ -78,16 +78,6 @@ public class Path : IDrawable {
     /// </summary>
     /// <param name="width">the stroke width.</param>
     /// <returns>this Path object.</returns>
-    public Path SetStrokeWidth(double width) {
-        this.width = (float) width;
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the stroke width that will be used to draw the lines and splines that are part of this path.
-    /// </summary>
-    /// <param name="width">the stroke width.</param>
-    /// <returns>this Path object.</returns>
     public Path SetStrokeWidth(float width) {
         this.width = width;
         return this;
@@ -182,25 +172,6 @@ public class Path : IDrawable {
         xBox = x;
         yBox = y;
         return this;
-    }
-
-    /// <summary>
-    /// Sets the location of this path: its points are drawn offset by x and y.
-    /// </summary>
-    /// <param name="x">the x offset.</param>
-    /// <param name="y">the y offset.</param>
-    /// <returns>this Path object.</returns>
-    public Path SetLocation(double x, double y) {
-        return SetLocation((float) x, (float) y);
-    }
-
-    /// <summary>
-    /// Scales the points of this path by the specified factor.
-    /// </summary>
-    /// <param name="factor">the factor used to scale the path.</param>
-    /// <returns>this Path object.</returns>
-    public Path ScaleBy(double factor) {
-        return ScaleBy((float) factor);
     }
 
     /// <summary>
