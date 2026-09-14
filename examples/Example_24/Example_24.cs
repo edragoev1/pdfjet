@@ -11,7 +11,7 @@ public class Example_24 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_24.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf, CoreFont.HELVETICA);
+        Font font = new Font(pdf, IBMPlexSans.Regular);
 
         Image image1 = new Image(pdf, "images/gr-map.jpg");
         Image image2 = new Image(pdf, "images/ee-map.png");

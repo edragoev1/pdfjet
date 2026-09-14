@@ -28,7 +28,6 @@ public class Example_30 {
 
         pdf.setEncryption(new Encryption(pdf, passwords, permissions));
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(36f);
 

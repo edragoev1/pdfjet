@@ -7,7 +7,6 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -18,7 +17,7 @@ func Example23() {
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(72.0)
 
-	f2 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(24.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())

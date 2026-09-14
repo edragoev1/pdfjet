@@ -34,7 +34,6 @@ func Example30() {
 	}
 	pdf.SetEncryption(enc)
 
-	// f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(36.0)
 

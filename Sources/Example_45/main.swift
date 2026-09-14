@@ -8,8 +8,8 @@ public class Example_45 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_45.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
 
         let page = Page(pdf, Letter.PORTRAIT)
 

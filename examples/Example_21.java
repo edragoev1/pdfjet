@@ -2,6 +2,7 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 import com.pdfjet.qrcode.*;
 
 /**
@@ -12,7 +13,7 @@ public class Example_21 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_21.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

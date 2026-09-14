@@ -12,10 +12,10 @@ public class Example_13 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_13.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(7f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.SetSize(7f);
 
         List<List<Cell>> tableData = new List<List<Cell>>();

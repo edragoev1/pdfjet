@@ -7,7 +7,7 @@ import PDFjet
 public class Example_36 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_36.pdf", append: false)!)
-        let f1 = Font(pdf, CoreFont.HELVETICA)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
 
         let image1 = try Image(pdf, "images/ee-map.png")
         let image2 = try Image(pdf, "images/spain-admin.jpg")

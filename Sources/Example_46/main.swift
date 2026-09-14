@@ -8,8 +8,8 @@ public class Example_46 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_46.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
 
         let image1 = try Image(pdf, "images/map407.png")
         image1.setLocation(10.0, 100.0)

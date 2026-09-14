@@ -2,6 +2,7 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_24.java
@@ -11,7 +12,7 @@ public class Example_24 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_24.pdf")));
 
-        Font font = new Font(pdf, CoreFont.HELVETICA);
+        Font font = new Font(pdf, IBMPlexSans.Regular);
 
         Image image1 = new Image(pdf, "images/gr-map.jpg");
         Image image2 = new Image(pdf, "images/ee-map.png");

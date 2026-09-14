@@ -8,10 +8,10 @@ public class Example_13 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_13.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(7.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(7.0)
 
         var tableData = [[Cell]]()

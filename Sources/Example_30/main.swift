@@ -23,7 +23,6 @@ public class Example_30 {
 
         pdf.setEncryption(Encryption(pdf, passwords, permissions))
 
-        // let f1 = Font(pdf, CoreFont.HELVETICA)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(36.0)
 

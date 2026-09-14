@@ -14,7 +14,7 @@ public class Example_23 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(72f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.setSize(24f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

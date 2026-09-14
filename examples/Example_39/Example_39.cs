@@ -15,16 +15,16 @@ public class Example_39 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_39.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(15f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.SetSize(9f);
 
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f3 = new Font(pdf, IBMPlexSans.Bold);
         f3.SetSize(9f);
 
-        Font f4 = new Font(pdf, CoreFont.HELVETICA);
+        Font f4 = new Font(pdf, IBMPlexSans.Regular);
         f4.SetSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

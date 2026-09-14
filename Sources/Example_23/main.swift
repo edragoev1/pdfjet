@@ -11,7 +11,7 @@ public class Example_23 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(72.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(24.0)
 
         let page = Page(pdf, Letter.PORTRAIT)

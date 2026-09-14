@@ -12,13 +12,13 @@ public class Example_03 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_03.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.SetSize(10f);
 
-        Font f3 = new Font(pdf, CoreFont.HELVETICA_OBLIQUE);
+        Font f3 = new Font(pdf, IBMPlexSans.Italic);
         f3.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

@@ -7,7 +7,7 @@ import PDFjet
 public class Example_38 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_38.pdf", append: false)!)
-        let font = Font(pdf, CoreFont.COURIER)
+        let font = try Font(pdf, IBMPlexMono.Regular)
         let page = Page(pdf, Letter.LANDSCAPE)
 
         let table = Table()

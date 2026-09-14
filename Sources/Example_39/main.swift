@@ -12,16 +12,16 @@ public class Example_39 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_39.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(15.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(9.0)
 
-        let f3 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f3 = try Font(pdf, IBMPlexSans.Bold)
         f3.setSize(9.0)
 
-        let f4 = Font(pdf, CoreFont.HELVETICA)
+        let f4 = try Font(pdf, IBMPlexSans.Regular)
         f4.setSize(8.0)
 
         let page = Page(pdf, Letter.PORTRAIT)

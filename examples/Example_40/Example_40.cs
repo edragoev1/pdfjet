@@ -16,10 +16,10 @@ public class Example_40 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(10f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.SetSize(8f);
 
         String[] months = {

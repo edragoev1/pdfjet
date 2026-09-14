@@ -405,6 +405,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   read like the Java ones.
 
 ### Build, checks and examples
+- The examples draw with the embedded IBM Plex fonts, which a PDF/UA document
+  needs, instead of the core fonts. The core fonts stay in Example_04, whose
+  CJK fonts are not embedded either, in Example_05, which shows their
+  kerning, and in Example_50, which adds one as a resource of a page of an
+  existing PDF.
 - The Build workflow builds and runs the examples of all four ports, compares
   their PDFs and content streams with Java's, checks the PDF/UA and PDF/A
   examples with veraPDF, and fails on compiler warnings and `go vet` problems.

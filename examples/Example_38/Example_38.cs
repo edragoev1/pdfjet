@@ -16,7 +16,7 @@ public class Example_38 {
 
         PDF pdf = new PDF(bos);
 
-        font = new Font(pdf, CoreFont.COURIER);
+        font = new Font(pdf, IBMPlexMono.Regular);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 

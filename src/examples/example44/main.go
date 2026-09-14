@@ -5,8 +5,8 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -14,7 +14,7 @@ import (
 func Example44() {
 	pdf := pdfjet.NewPDFFile("Example_44.pdf")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
 
 	// Chinese (Simplified) font

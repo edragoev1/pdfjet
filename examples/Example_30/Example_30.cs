@@ -26,7 +26,6 @@ public class Example_30 {
 
         pdf.SetEncryption(new Encryption(pdf, passwords, permissions));
 
-        // Font f1 = new Font(pdf, CoreFont.HELVETICA);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(36f);
 

@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 public class Example_38 {
     private Font font;
@@ -14,7 +15,7 @@ public class Example_38 {
                 new BufferedOutputStream(new FileOutputStream("Example_38.pdf"));
 
         PDF pdf = new PDF(bos);
-        font = new Font(pdf, CoreFont.COURIER);
+        font = new Font(pdf, IBMPlexMono.Regular);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
 

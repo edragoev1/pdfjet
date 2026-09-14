@@ -2,6 +2,7 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_46.java
@@ -10,8 +11,8 @@ public class Example_46 {
     public Example_46() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_46.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
 
         Image image1 = new Image(pdf, "images/map407.png");
         image1.setLocation(10f, 100f);

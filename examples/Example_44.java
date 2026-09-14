@@ -2,6 +2,7 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_44.java
@@ -11,7 +12,7 @@ public class Example_44 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_44.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);
 
         // Chinese (Simplified) font

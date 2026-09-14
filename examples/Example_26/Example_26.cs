@@ -11,7 +11,7 @@ public class Example_26 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_26.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

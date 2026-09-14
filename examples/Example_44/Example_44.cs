@@ -11,7 +11,7 @@ public class Example_44 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_44.pdf", FileMode.Create)));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);
 
         // Chinese (Simplified) font

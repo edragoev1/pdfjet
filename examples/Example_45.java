@@ -3,6 +3,7 @@ package examples;
 import java.io.*;
 import java.util.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_45.java
@@ -14,8 +15,8 @@ public class Example_45 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_45.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

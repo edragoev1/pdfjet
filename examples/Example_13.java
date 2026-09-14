@@ -3,6 +3,7 @@ package examples;
 import java.io.*;
 import java.util.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
  * Example_13.java
@@ -13,10 +14,10 @@ final public class Example_13 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_13.pdf")));
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.setSize(7f);
 
-        Font f2 = new Font(pdf, CoreFont.HELVETICA);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.setSize(7f);
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();

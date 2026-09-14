@@ -13,10 +13,10 @@ public class Example_40 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(10.0)
 
-        let f2 = Font(pdf, CoreFont.HELVETICA)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(8.0)
 
         let months = [

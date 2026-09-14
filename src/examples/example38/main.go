@@ -5,17 +5,17 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // Example38 draws a table of cells that span multiple rows and columns.
 func Example38() {
 	pdf := pdfjet.NewPDFFile("Example_38.pdf")
-	font := pdfjet.NewCoreFont(pdf, corefont.Courier())
+	font := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular)
 
 	page := pdfjet.NewPage(pdf, letter.Landscape())
 

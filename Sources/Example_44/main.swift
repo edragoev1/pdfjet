@@ -8,7 +8,7 @@ public class Example_44 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_44.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)
 
         // Chinese (Simplified) font
