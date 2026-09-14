@@ -38,15 +38,18 @@ public class QRCode : Drawable {
     ///
     /// Used to create 2D QR Code barcodes.
     ///
+    /// Throws a PDFjetError when the data does not fit the symbol at that
+    /// error correction level.
+    ///
     /// - Parameter str: the string to encode.
     /// - Parameter errorCorrectionLevel: the desired error correction level.
     ///
     public init(
             _ str: String,
-            _ errorCorrectionLevel: ErrorCorrectionLevel) {
+            _ errorCorrectionLevel: ErrorCorrectionLevel) throws {
         self.qrData = Array(str.utf8)
         self.errorCorrectionLevel = errorCorrectionLevel
-        self.make(false, getBestMaskPattern())
+        try self.make(false, try getBestMaskPattern())
     }
 
     ///
@@ -122,11 +125,11 @@ public class QRCode : Drawable {
         return self.moduleCount
     }
 
-    func getBestMaskPattern() -> Int {
+    func getBestMaskPattern() throws -> Int {
         var minLostPoint = 0
         var pattern = 0
         for i in 0..<8 {
-            make(true, i)
+            try make(true, i)
             let lostPoint = qrutil.getLostPoint(self)
             if i == 0 || minLostPoint > lostPoint {
                 minLostPoint = lostPoint
@@ -138,7 +141,7 @@ public class QRCode : Drawable {
 
     func make(
             _ test: Bool,
-            _ maskPattern: Int) {
+            _ maskPattern: Int) throws {
         modules = [[Bool?]]()
         for _ in 0..<moduleCount {
             modules!.append([Bool?](repeating: nil, count: moduleCount))
@@ -151,7 +154,7 @@ public class QRCode : Drawable {
         setupPositionAdjustPattern()
         setupTimingPattern()
         setupTypeInfo(test, maskPattern)
-        mapData(createData(errorCorrectionLevel), maskPattern)
+        mapData(try createData(errorCorrectionLevel), maskPattern)
     }
 
     private func mapData(
@@ -291,7 +294,7 @@ public class QRCode : Drawable {
         modules![moduleCount - 8][8] = !test
     }
 
-    private func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) -> [UInt8] {
+    private func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) throws -> [UInt8] {
         let rsBlocks = RSBlock.getRSBlocks(errorCorrectionLevel)
         let buffer = BitBuffer()
         buffer.put(UInt32(4), 4)
@@ -306,7 +309,7 @@ public class QRCode : Drawable {
         }
 
         if buffer.getLengthInBits() > totalDataCount * 8 {
-            fatalError("String length overflow. (" +
+            throw PDFjetError(message: "String length overflow. (" +
                     String(describing: buffer.getLengthInBits()) + ">" +
                     String(describing: (totalDataCount * 8)) + ")")
         }

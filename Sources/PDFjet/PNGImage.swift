@@ -156,8 +156,9 @@ public class PNGImage {
     }
 
     /// Returns the compressed alpha channel data.
-    public func getAlpha() -> [UInt8] {
-        return self.deflatedAlphaData
+    public func getAlpha() -> [UInt8]? {
+        // Deflated data is never empty, so no bytes means no alpha channel.
+        return self.deflatedAlphaData.isEmpty ? nil : self.deflatedAlphaData
     }
 
     // Checks the size, the bit depth and the color type of the IHDR chunk, and

@@ -87,7 +87,7 @@ public class Example_20 {
         line.setLocation(50.0, 50.0)
         line.drawOn(page)
 
-        let qr = QRCode(
+        let qr = try QRCode(
                 "https://kazuhikoarase.github.io",
                 ErrorCorrectionLevel.L)    // Low
         qr.setModuleLength(3.0)

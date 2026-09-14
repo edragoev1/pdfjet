@@ -19,7 +19,7 @@ public class Example_21 {
 
         // Please note:
         // The higher the error correction level - the shorter the string that you can encode.
-        var qr = QRCode(
+        var qr = try QRCode(
                 "https://kazuhikoarase.github.io/qrcode-generator/js/demo",
                 ErrorCorrectionLevel.L)    // Low
         qr.setModuleLength(3.0)
@@ -27,21 +27,21 @@ public class Example_21 {
         // qr.setModuleColor(Color.blue)
         qr.drawOn(page)
 
-        qr = QRCode(
+        qr = try QRCode(
                 "https://github.com/kazuhikoarase/qrcode-generator",
                 ErrorCorrectionLevel.M)    // Medium
         qr.setLocation(400.0, 100.0)
         qr.setModuleLength(3.0)
         qr.drawOn(page)
 
-        qr = QRCode(
+        qr = try QRCode(
                 "https://github.com/kazuhikoarase/jaconv",
                 ErrorCorrectionLevel.Q)    // High
         qr.setLocation(100.0, 400.0)
         qr.setModuleLength(3.0)
         qr.drawOn(page)
 
-        qr = QRCode(
+        qr = try QRCode(
                 "https://github.com/kazuhikoarase",
                 ErrorCorrectionLevel.H)    // Very High
         qr.setLocation(400.0, 400.0)

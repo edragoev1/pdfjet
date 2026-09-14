@@ -467,7 +467,10 @@ indexes, as its `unicodeScalars` view does.
 
 Where Java and C# throw an `Exception` with a message, Swift throws a
 `PDFjetError`, whose `message` and `description` are that message, and Go
-returns an `error`, or panics where the function returns none.
+returns an `error`, or panics where the function returns none. `drawOn` throws
+in Java and C# and panics in Go, but not in Swift, so the Swift `Barcode`
+initializer checks what the other ports check in `drawOn`, Code 39 text and
+the barcode type, and throws the same messages from `init`.
 
 `Permissions` takes the `UserAccess` values as a typed flags value in C# (a
 `[Flags]` enum) and Go (a `UserAccess` bit set), and as an `int` in Java and

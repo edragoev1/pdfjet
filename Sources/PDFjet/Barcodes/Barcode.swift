@@ -43,19 +43,26 @@ public class Barcode : Drawable {
     ///
     /// The constructor.
     ///
+    /// Throws a PDFjetError for a barcode type it does not draw, for UPC-A or
+    /// EAN-13 text that is not 11 or 12 digits, and for Code 39 text with a
+    /// character the code cannot encode, so that drawOn cannot fail.
+    ///
     /// - Parameter barcodeType: the type of the barcode.
     /// - Parameter text: the content string of the barcode.
     ///
     public init(
             _ barcodeType: Int,
-            _ text: String) {
+            _ text: String) throws {
         self.barcodeType = barcodeType
         self.text = text
 
         if barcodeType == Barcode.UPC_A && (text.count != 11 || !Barcode.hasOnlyDigits(text)) {
-            fatalError("UPC-A barcodes must have exactly 11 digits!")
+            throw PDFjetError(message: "UPC-A barcodes must have exactly 11 digits!")
         } else if barcodeType == Barcode.EAN_13 && (text.count != 12 || !Barcode.hasOnlyDigits(text)) {
-            fatalError("EAN-13 barcodes must have exactly 12 digits!")
+            throw PDFjetError(message: "EAN-13 barcodes must have exactly 12 digits!")
+        } else if barcodeType != Barcode.UPC_A && barcodeType != Barcode.EAN_13 &&
+                barcodeType != Barcode.CODE_128 && barcodeType != Barcode.CODE_39 {
+            throw PDFjetError(message: "Unsupported Barcode Type.")
         }
 
         for code in lCode {
@@ -106,6 +113,14 @@ public class Barcode : Drawable {
         tableB["X"] = "bWbwBwbwB"
         tableB["Y"] = "BWbwBwbwb"
         tableB["Z"] = "bWBwBwbwb"
+
+        if barcodeType == Barcode.CODE_39 {
+            let fullText = "*" + text + "*"
+            for symchar in fullText.unicodeScalars where tableB[String(symchar)] == nil {
+                throw PDFjetError(message: "The input string '" + fullText +
+                        "' contains characters that are invalid in a Code39 barcode.")
+            }
+        }
     }
 
     ///
@@ -210,31 +225,20 @@ public class Barcode : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        return drawOnPageAtLocation(page, x1, y1)
+    }
+
+    @discardableResult
+    func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+        // init accepted one of these four types.
         if barcodeType == Barcode.EAN_13 {
             return drawCodeEAN13(page, x1, y1)
         } else if barcodeType == Barcode.UPC_A {
             return drawCodeUPC(page, x1, y1)
         } else if barcodeType == Barcode.CODE_128 {
             return drawCode128(page, x1, y1)
-        } else if barcodeType == Barcode.CODE_39 {
-            return drawCode39(page, x1, y1)
         } else {
-            fatalError("Unsupported Barcode Type.")
-        }
-    }
-
-    @discardableResult
-    func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
-        if barcodeType == Barcode.EAN_13 {
-            return drawCodeEAN13(page, x1, y1)
-        } else if (barcodeType == Barcode.UPC_A) {
-            return drawCodeUPC(page, x1, y1)
-        } else if (barcodeType == Barcode.CODE_128) {
-            return drawCode128(page, x1, y1)
-        } else if (barcodeType == Barcode.CODE_39) {
             return drawCode39(page, x1, y1)
-        } else {
-            fatalError("Unsupported Barcode Type.")
         }
     }
 
@@ -527,10 +531,7 @@ public class Barcode : Drawable {
 
         var length: Float = 0.0
         for symchar in fullText.unicodeScalars {
-            guard let code = tableB[String(symchar)] else {
-                fatalError("The input string '" + fullText +
-                        "' contains characters that are invalid in a Code39 barcode.")
-            }
+            let code = tableB[String(symchar)]!    // init checked every character
             for ch in code.unicodeScalars {
                 length += (ch == "W" || ch == "B") ? 3 * m1 : m1
             }

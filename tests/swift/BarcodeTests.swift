@@ -7,11 +7,8 @@
 import Testing
 @testable import PDFjet
 
-/// Java also tests the errors for invalid Code 39 characters and wrong UPC-A
-/// and EAN-13 digit counts; Swift stops with fatalError there, which a test
-/// cannot catch.
 @Suite struct BarcodeTests {
-    @Test func drawOnReturnsTheCornerOfTheBarsAndTheTextInEveryDirection() {
+    @Test func drawOnReturnsTheCornerOfTheBarsAndTheTextInEveryDirection() throws {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let font = TestSupport.helvetica(pdf)
@@ -43,7 +40,7 @@ import Testing
             (Barcode.CODE_39, "HELLO-39", .TOP_TO_BOTTOM, true, 137.5, 219.25),
         ]
         for row in corners {
-            let barcode = Barcode(row.0, row.1).setLocation(100, 100).setDirection(row.2)
+            let barcode = try Barcode(row.0, row.1).setLocation(100, 100).setDirection(row.2)
             if row.3 {
                 _ = barcode.setFont(font)
             }
@@ -55,5 +52,19 @@ import Testing
             #expect(first == second, "\(name) drawn again")
             TestSupport.expectNear(row.3 ? 51.372 : 37.5, barcode.getHeight(), TestSupport.delta, "\(name) height")
         }
+    }
+
+    /// Java checks the Code 39 text in drawOn; the Swift drawOn cannot throw,
+    /// so the initializer checks it.
+    @Test func code39RejectsCharactersItCannotEncode() {
+        let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.CODE_39, "hello") }
+        #expect(error?.message == "The input string '*hello*' contains characters that are invalid in a Code39 barcode.")
+    }
+
+    @Test func upcAndEanNeedTheirNumberOfDigits() {
+        let upc = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.UPC_A, "123") }
+        #expect(upc?.message == "UPC-A barcodes must have exactly 11 digits!")
+        let ean = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.EAN_13, "0123456789012") }
+        #expect(ean?.message == "EAN-13 barcodes must have exactly 12 digits!")
     }
 }

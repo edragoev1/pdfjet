@@ -56,10 +56,9 @@ import Testing
             #expect(samples.count == row.5, "\(name)")
             #expect(TestSupport.crc32(samples) == row.6, "\(name)")
             if row.7 == 0 {
-                // Java returns null for no alpha; Swift returns no bytes.
-                #expect(png.getAlpha().isEmpty, "\(name)")
+                #expect(png.getAlpha() == nil, "\(name)")
             } else {
-                let alpha = try TestSupport.inflate(png.getAlpha())
+                let alpha = try TestSupport.inflate(try #require(png.getAlpha()))
                 #expect(alpha.count == row.7, "\(name)")
                 #expect(TestSupport.crc32(alpha) == row.8, "\(name)")
             }
@@ -70,7 +69,7 @@ import Testing
         // tRNS applies to palette images only; TBRN2C08 has the samples of TP1N3P08.
         let png = try decode("TBRN2C08")
         #expect(TestSupport.crc32(try TestSupport.inflate(png.getData())) == "8b0a6c2c")
-        #expect(png.getAlpha().isEmpty)
+        #expect(png.getAlpha() == nil)
     }
 
     @Test func rejects16BitRgbaWithAMessage() {
@@ -212,7 +211,7 @@ import Testing
         let gray = try TestSupport.inflate(png.getData())
         #expect(gray.count == 1024)
         #expect(TestSupport.crc32(gray) == "bfc7e22b")
-        let alpha = try TestSupport.inflate(png.getAlpha())
+        let alpha = try TestSupport.inflate(try #require(png.getAlpha()))
         #expect(alpha.count == 1024)
         #expect(TestSupport.crc32(alpha) == "fa6029ad")
     }

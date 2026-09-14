@@ -47,9 +47,7 @@ import Testing
 
     /// BMPImage reads the stream without opening it, as Image.init opens it first.
     private func stream(_ bytes: [UInt8]) -> InputStream {
-        let stream = InputStream(data: Data(bytes))
-        stream.open()
-        return stream
+        return InputStream(data: Data(bytes))
     }
 
     @Test func bottomUpRowsAreReadTopRowFirst() throws {

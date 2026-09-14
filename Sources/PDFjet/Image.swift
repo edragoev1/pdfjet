@@ -64,7 +64,6 @@ public class Image : Drawable {
     private init(_ pdf: PDF, _ bytes: [UInt8]) throws {
         let imageType = try Image.typeOf(bytes)
         let stream = InputStream(data: Data(bytes))
-        stream.open()
         if imageType == ImageType.JPG {
             let jpg = try JPGImage(stream)
             w = Float(jpg.getWidth())
@@ -83,12 +82,12 @@ public class Image : Drawable {
             if png.getColorType() == 0 {
                 addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
             } else if png.getColorType() == 4 {
-                addImage(pdf, png.getData(), png.getAlpha(), imageType, "DeviceGray", 8)
+                addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceGray", 8)
             } else {
                 if png.getBitDepth() == 16 {
                     addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceRGB", 16)
                 } else {
-                    addImage(pdf, png.getData(), png.getAlpha(), imageType, "DeviceRGB", 8)
+                    addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
                 }
             }
         } else if imageType == ImageType.BMP {
@@ -97,7 +96,6 @@ public class Image : Drawable {
             h = Float(bmp.getHeight())
             addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
         }
-        stream.close()
     }
 
     ///
@@ -113,7 +111,6 @@ public class Image : Drawable {
     private init(_ objects: inout [PDFobj], _ bytes: [UInt8]) throws {
         let imageType = try Image.typeOf(bytes)
         let stream = InputStream(data: Data(bytes))
-        stream.open()
         var data: [UInt8]
         var alpha = [UInt8]()
         if imageType == ImageType.JPG {
@@ -131,7 +128,7 @@ public class Image : Drawable {
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             data = png.getData()
-            alpha = png.getAlpha()
+            alpha = png.getAlpha() ?? [UInt8]()
             w = Float(png.getWidth())
             h = Float(png.getHeight())
             if png.getColorType() == 0 {
@@ -152,7 +149,6 @@ public class Image : Drawable {
             h = Float(bmp.getHeight())
             addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
         }
-        stream.close()
     }
 
     /// Creates an image from an image object read from an existing PDF.

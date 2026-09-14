@@ -340,8 +340,19 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 
 ### Errors
 - Swift `PDF.complete()` throws when the PDF cannot be written, and Swift
-  throws on invalid PNG, BMP, OTF and SVG data and stops with an error on QR
-  data that does not fit, `Stamp` text without a font and `Form.drawOn(nil)`.
+  throws on invalid PNG, BMP, OTF and SVG data and stops with an error on
+  `Stamp` text without a font and `Form.drawOn(nil)`.
+- The Swift `Barcode` and `QRCode` initializers throw a `PDFjetError`, as Java
+  and C# throw, where they stopped the program with `fatalError`: for UPC-A or
+  EAN-13 text that is not 11 or 12 digits, a barcode type the class does not
+  draw, Code 39 text with a character the code cannot encode, and QR data that
+  does not fit the symbol. Java, C# and Go report the Code 39 and barcode type
+  errors from `drawOn`; the Swift `Drawable.drawOn` cannot throw, so its
+  initializer checks them, with the same messages.
+- Swift `BMPImage` opens and closes its stream, as `PNGImage` and `JPGImage`
+  do, and Swift `PNGImage.getAlpha` returns `nil` for an image with no alpha
+  channel, as Java, C# and Go return null or nil. The hex helper of the ports
+  (`Util.toHexString` in Java) is internal in every port.
 - The Go port panics, or returns an error where the function returns one,
   where it exited the program with `log.Fatal`, and no longer ignores errors
   writing, compressing or encrypting a PDF or reading an image, font or
@@ -415,8 +426,8 @@ the unused `Embed` enum are removed. Highlights below; see
   a font name, and the four font name constants in the `pdfjet` package are
   gone.
 - UPC-A barcodes require exactly 11 digits and EAN-13 barcodes exactly 12.
-  Other input is rejected when the barcode is created: Java and C# throw, Go
-  calls `log.Fatal` and Swift calls `fatalError`.
+  Other input is rejected when the barcode is created: Java, C# and Swift
+  throw and Go panics.
 - Go and Swift `Cell` default to a 75pt width, like Java and C#, so tables that
   do not set their column widths lay out wider than before.
 - Java `Ellipse` is `final`, and Go `Stamp.DrawOn` returns `[2]float32`.

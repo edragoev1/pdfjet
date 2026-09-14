@@ -972,12 +972,16 @@ renames included (the Week 1 decision), so every item is a blocker.
         a PDF past 2 GiB were wrong; they are 64-bit, and an offset past the
         10 digits of a cross-reference entry fails with an error.
       Java example PDFs render the same before and after.
-- ⬜ S Port differences the tests found and left as they are: Swift
+- ✅ S Port differences the tests found and left as they are: Swift
       `BMPImage` needs an opened stream where `PNGImage` opens its own; Swift
       stops with `fatalError` on invalid Code 39, UPC-A and EAN-13 input and
       on QR data that does not fit, which a test cannot catch; Swift
       `PNGImage.getAlpha` returns no bytes where Java returns null; Go and
-      Swift have no public hex helper like Java `Util.toHexString`.
+      Swift have no public hex helper like Java `Util.toHexString`. Done:
+      Swift `BMPImage` opens its stream, `Barcode` and `QRCode` throw
+      `PDFjetError`, `getAlpha` returns `nil`, with Swift tests mirroring the
+      Java ones; the hex helper is internal in all four ports, so nothing to
+      expose.
 - ✅ **B** Intermittent Java test failure: `EncryptionTest.passwordsAreCutAt127Bytes`
       failed once in about fifteen runs with `incorrect header check` while
       reading back the encrypted PDF. Cause: after the `stream` keyword the

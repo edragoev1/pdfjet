@@ -37,8 +37,10 @@ class BMPImage {
     }
 
     // Tested with images created from GIMP
-    /// Reads a BMP image from the stream.
+    /// Reads a BMP image from the stream, which it opens and closes itself.
     public init(_ stream: InputStream) throws {
+        stream.open()
+        defer { stream.close() }
         let bm = try getBytes(stream, 2)
         // From Wikipedia
         if (Unicode.Scalar(bm[0]) == "B" && Unicode.Scalar(bm[1]) == "M") ||
