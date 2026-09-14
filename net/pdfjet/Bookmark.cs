@@ -23,11 +23,13 @@ public class Bookmark {
     private Bookmark next = null;
     private List<Bookmark> children = null;
     private Destination dest = null;
+    private PDF pdf = null;     // The document of the root bookmark
     internal int objNumber = 0;
     internal String prefix = null;
 
     /// <summary>Creates the root bookmark of the document outline.</summary>
     public Bookmark(PDF pdf) {
+        this.pdf = pdf;
         pdf.toc = this;
     }
 
@@ -48,6 +50,9 @@ public class Bookmark {
         Bookmark bm = this;
         while (bm.parent != null) {
             bm = bm.GetParent();
+        }
+        if (bm.pdf != null && page.pdf != bm.pdf) {
+            bm.pdf.Fail(new ArgumentException("The page belongs to another PDF."));
         }
         String key = bm.Next();
 

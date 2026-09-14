@@ -70,7 +70,13 @@ func getControlPoints(xc, yc, x0, y0, x3, y3 float32) [][2]float32 {
 	by := y3 - yc
 	q1 := ax*ax + ay*ay
 	q2 := q1 + ax*bx + ay*by
-	k2 := float32(4.0/3.0) * (float32(math.Sqrt(float64(2*q1*q2))) - q2) / (ax*by - ay*bx)
+	// An arc of radius zero, the center of a pie chart, or of no angle has
+	// its control points at its ends; the formula would divide 0 by 0.
+	cross := ax*by - ay*bx
+	var k2 float32
+	if cross != 0 {
+		k2 = float32(4.0/3.0) * (float32(math.Sqrt(float64(2*q1*q2))) - q2) / cross
+	}
 
 	// Control points coordinates
 	x1 := xc + ax - k2*ay

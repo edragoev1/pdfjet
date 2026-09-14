@@ -58,6 +58,10 @@ public class Encryption {
      * @throws Exception if there is an issue.
      */
     public Encryption(PDF pdf, Passwords passwords, Permissions permissions) throws Exception {
+        // The objects written before the encryption dictionary would not be encrypted.
+        if (pdf.getObjNumber() > 0) {
+            pdf.fail(new IllegalStateException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
         // === Generate a random 256-bit (32-byte) File Encryption Key ===
         this.fileEncryptionKey = new byte[32];
         SecureRandom random = new SecureRandom();

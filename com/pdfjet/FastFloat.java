@@ -3,11 +3,18 @@ package com.pdfjet;
 import java.math.BigDecimal;
 
 class FastFloat {
+    static final String NOT_WRITABLE = "A coordinate, size or width is NaN, infinite or too large for a PDF.";
+
+    // A PDF number has no exponent and no NaN or infinity, and readers keep
+    // integers in 32 bits, so a number must be finite and below 2^31.
+    static boolean isWritable(float value) {
+        return Math.abs(value) < 2147483648f;   // False for NaN and the infinities
+    }
+
     static byte[] toByteArray(float value) {
-        // Handle special cases
-        if (Float.isNaN(value)) return new byte[]{'N','a','N'};
-        if (value == Float.POSITIVE_INFINITY) return new byte[]{'I','n','f','i','n','i','t','y'};
-        if (value == Float.NEGATIVE_INFINITY) return new byte[]{'-','I','n','f','i','n','i','t','y'};
+        if (!isWritable(value)) {
+            throw new IllegalArgumentException(NOT_WRITABLE);
+        }
 
         double magnitude = Math.abs((double) value);
         if (magnitude >= 8388608.0) {

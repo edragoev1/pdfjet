@@ -53,6 +53,15 @@ public class PDF {
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
 
+    // The first misuse of the API. The call that finds it throws, and Complete()
+    // then refuses to finish the document, as the file would be broken even if
+    // the program caught the exception and carried on.
+    private String error = null;
+    // True after Complete(): the document is written and closed.
+    internal bool completed = false;
+    // The pages made for this document, added or detached.
+    internal int pagesCreated = 0;
+
     /// <summary>
     /// The default constructor - use when reading PDF files.
     /// </summary>
@@ -114,8 +123,15 @@ public class PDF {
         Append(Token.Newline);
     }
 
-    /// <summary>Sets the PDF/UA or PDF/A compliance of this document.</summary>
+    /// <summary>
+    /// Sets the PDF/UA or PDF/A compliance of this document, before any font,
+    /// image or page is added.
+    /// </summary>
     public PDF SetCompliance(Compliance compliance) {
+        // The fonts and the page content are written for the compliance.
+        if (compliance != this.compliance && (GetObjNumber() > 0 || pagesCreated > 0)) {
+            Fail(new InvalidOperationException("Set the compliance before adding fonts, images or pages to the PDF."));
+        }
         this.compliance = compliance;
         return this;
     }
@@ -125,10 +141,25 @@ public class PDF {
         return compliance;
     }
 
-    /// <summary>Sets the encryption applied to this document.</summary>
+    /// <summary>
+    /// Sets the encryption applied to this document, before any font, image or
+    /// page is added.
+    /// </summary>
     public PDF SetEncryption(Encryption encryption) {
+        // Every object after the encryption dictionary is encrypted.
+        if (encryption != null && encryption.GetObjNumber() != GetObjNumber()) {
+            Fail(new InvalidOperationException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
         this.encryption = encryption;
         return this;
+    }
+
+    // Records the first misuse of the API and throws the exception.
+    internal void Fail(Exception e) {
+        if (error == null) {
+            error = e.Message;
+        }
+        throw e;
     }
 
     internal void NewObj() {
@@ -310,9 +341,29 @@ public class PDF {
         return GetObjNumber();
     }
 
-    // Returns the text with the characters that have a meaning in XML escaped.
+    // Returns the text with the characters that have a meaning in XML escaped,
+    // and without the characters XML does not allow: the control characters
+    // other than tab, line feed and carriage return, U+FFFE, U+FFFF and
+    // unpaired surrogates, which would make the metadata unreadable.
     private static String EscapeXML(String text) {
-        return text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        StringBuilder sb = new StringBuilder(text.Length);
+        for (int i = 0; i < text.Length; i++) {
+            char ch = text[i];
+            if (char.IsHighSurrogate(ch) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) {
+                sb.Append(ch);
+                sb.Append(text[++i]);
+            } else if (ch == '&') {
+                sb.Append("&amp;");
+            } else if (ch == '<') {
+                sb.Append("&lt;");
+            } else if (ch == '>') {
+                sb.Append("&gt;");
+            } else if (ch == '\t' || ch == '\n' || ch == '\r'
+                    || (ch >= 0x20 && ch <= 0xFFFD && !char.IsSurrogate(ch))) {
+                sb.Append(ch);
+            }
+        }
+        return sb.ToString();
     }
 
     private int AddOutputIntentObject() {
@@ -829,12 +880,13 @@ public class PDF {
     }
 
     private void AddPageContent(Page page) {
+        page.CheckBalanced();
         if (contentStreamsCompression) {
             byte[] buf = Compressor.Deflate(page.buf.ToArray());
             if (encryption != null) {
                 buf = AES256.Encrypt(buf, encryption.GetKey());
             }
-            page.buf.Dispose();
+            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
 
             NewObj();
             Append(Token.BeginDictionary);
@@ -853,7 +905,7 @@ public class PDF {
             if (encryption != null) {
                 buf = AES256.Encrypt(buf, encryption.GetKey());
             }
-            page.buf.Dispose();
+            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
 
             NewObj();
             Append(Token.BeginDictionary);
@@ -865,7 +917,6 @@ public class PDF {
             Append(buf);
             Append(Token.EndStream);
             EndObj();
-            page.buf = null;    // Release the page content memory!
             page.contents.Add(GetObjNumber());
         }
     }
@@ -1159,6 +1210,16 @@ public class PDF {
         if (page == null) {
             return;
         }
+        if (completed) {
+            Fail(new InvalidOperationException("The PDF was already completed."));
+        }
+        if (page.pdf != this) {
+            Fail(new ArgumentException("The page belongs to another PDF."));
+        }
+        if (page.added) {
+            Fail(new InvalidOperationException("The page was already added to the PDF."));
+        }
+        page.added = true;
         pages.Add(page);
         if (prevPage != null) {
             AddPageContent(prevPage);
@@ -1178,9 +1239,19 @@ public class PDF {
     /// The output stream is then automatically closed.
     /// </summary>
     public void Complete() {
+        if (completed) {
+            Fail(new InvalidOperationException("Complete() was already called."));
+        }
+        if (error != null) {
+            throw new InvalidOperationException("The PDF was not completed because of an earlier error: " + error);
+        }
+        if (pages.Count == 0 && pagesObjNumber == 0) {
+            Fail(new InvalidOperationException("A PDF needs at least one page."));
+        }
         if (prevPage != null) {
             AddPageContent(prevPage);
         }
+        completed = true;
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = AddMetadataObject("", false);
             outputIntentObjNumber = AddOutputIntentObject();
@@ -1338,6 +1409,9 @@ public class PDF {
     }
 
     internal void Append(float f) {
+        if (!FastFloat.IsWritable(f)) {
+            Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
         Append(FastFloat.ToByteArray(f));
     }
 

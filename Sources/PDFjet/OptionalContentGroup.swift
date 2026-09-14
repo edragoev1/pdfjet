@@ -82,6 +82,10 @@ public class OptionalContentGroup {
     /// - Returns: the largest x and y coordinates of the bottom right corners of the drawables in this group.
     @discardableResult
     public func drawOn(_ page: Page) -> [Float] {
+        if page.pdf !== pdf {
+            page.pdf.fail("The optional content group belongs to another PDF.")
+            return [0.0, 0.0]
+        }
         var xy: [Float] = [0.0, 0.0]
         if ocgNumber == -1 {
             pdf.newObj()

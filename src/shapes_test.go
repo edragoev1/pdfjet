@@ -43,7 +43,7 @@ func TestShapesPathSetLocationSetsTheOffsetInsteadOfAddingToIt(t *testing.T) {
 
 func TestShapesRadioButtonAndCheckBoxCorners(t *testing.T) {
 	page := testNewPage()
-	font := testHelvetica(testNewPDF())
+	font := testHelvetica(page.pdf)
 	radio := NewRadioButton(font, "rb")
 	radio.SetLocation(1, 2)
 	testAssertXY(t, 45.184, 15.872, radio.DrawOn(page))
@@ -53,10 +53,11 @@ func TestShapesRadioButtonAndCheckBoxCorners(t *testing.T) {
 }
 
 func TestShapesCalendarMonthStartsAtTheOriginWithCellsFromTheDayNames(t *testing.T) {
-	font := testHelvetica(testNewPDF())
+	page := testNewPage()
+	font := testHelvetica(page.pdf)
 	// February and March 2026 start on a Sunday.
-	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 2).DrawOn(testNewPage()))
-	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 3).DrawOn(testNewPage()))
+	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 2).DrawOn(page))
+	testAssertXY(t, 252, 252, NewCalendarMonth(font, font, 2026, 3).DrawOn(page))
 }
 
 func TestShapesColorsAreSetAsAnIntOrAsAnArray(t *testing.T) {

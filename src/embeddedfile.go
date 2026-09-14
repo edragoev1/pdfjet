@@ -23,6 +23,7 @@ type EmbeddedFile struct {
 	objNumber int
 	fileName  string
 	content   []byte
+	pdf       *PDF // The PDF the file is embedded in
 }
 
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
@@ -45,6 +46,7 @@ func NewEmbeddedFileAtPath(pdf *PDF, filePath string, compress bool) *EmbeddedFi
 // NewEmbeddedFile is the constructor.
 func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool) *EmbeddedFile {
 	file := new(EmbeddedFile)
+	file.pdf = pdf
 	file.fileName = fileName
 
 	buf, err := io.ReadAll(reader)

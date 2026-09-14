@@ -64,6 +64,10 @@ final public class Page {
     private String strokeDashPattern = "[] 0";
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private final List<State> savedStates = new ArrayList<State>();
+    // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
+    private int markedContentDepth = 0;
+    // True once the page is added to its PDF.
+    boolean added = false;
 
     /** The rotation of this page in degrees: 0, 90, 180 or 270. */
     protected float rotateDegrees = 0f;
@@ -136,6 +140,14 @@ final public class Page {
         this.pdf = pdf;
         width = pageSize.getWidth();
         height = pageSize.getHeight();
+        if (pdf.completed) {
+            pdf.fail(new IllegalStateException("The PDF was already completed."));
+        }
+        // The page size limits of the PDF specification, in Annex C.
+        if (!(width >= 3f && width <= 14400f && height >= 3f && height <= 14400f)) {
+            pdf.fail(new IllegalArgumentException("A page must be from 3 to 14400 points wide and high."));
+        }
+        pdf.pagesCreated++;
         buf = new ByteArrayOutputStream(8192);
         tm0 = FastFloat.toByteArray(tmx[0]);
         tm1 = FastFloat.toByteArray(tmx[1]);
@@ -230,7 +242,49 @@ final public class Page {
      */
     public void complete(List<PDFobj> objects) {
         restoreGraphicsState();
+        checkBalanced();
         pageObj.addContent(getContent(), objects);
+    }
+
+    /**
+     * Checks that every saveGraphicsState has its restoreGraphicsState and every
+     * addBDC or addArtifactBMC its addEMC, before the page content is written.
+     */
+    void checkBalanced() {
+        if (!savedStates.isEmpty()) {
+            pdf.fail(new IllegalStateException("A page ends with a saveGraphicsState that has no restoreGraphicsState."));
+        }
+        if (markedContentDepth != 0) {
+            pdf.fail(new IllegalStateException("A page ends with an addBDC or addArtifactBMC that has no addEMC."));
+        }
+    }
+
+    /**
+     * The content of a page that was written to the PDF. Drawing on it fails,
+     * as the drawing would be lost.
+     */
+    static final class WrittenContent extends ByteArrayOutputStream {
+        private final PDF pdf;
+
+        WrittenContent(PDF pdf) {
+            super(0);
+            this.pdf = pdf;
+        }
+
+        @Override
+        public synchronized void write(int b) {
+            fail();
+        }
+
+        @Override
+        public synchronized void write(byte[] b, int off, int len) {
+            fail();
+        }
+
+        private void fail() {
+            pdf.fail(new IllegalStateException("The page was already written to the PDF: "
+                    + "draw on a page before creating the next page or completing the PDF."));
+        }
     }
 
     /**
@@ -1236,10 +1290,45 @@ final public class Page {
      * @return this Page object.
      */
     public Page setStrokeDashPattern(String strokeDashPattern) {
+        if (!isDashPattern(strokeDashPattern)) {
+            pdf.fail(new IllegalArgumentException("The dash pattern \"" + strokeDashPattern
+                    + "\" is not an array of non-negative numbers, not all zero, "
+                    + "followed by a phase, such as \"[3 3] 0\"."));
+        }
         this.strokeDashPattern = strokeDashPattern;
         append(strokeDashPattern);
         append(" d\n");
         return this;
+    }
+
+    private static final String NUMBER = "[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)";
+    private static final java.util.regex.Pattern DASH_PATTERN = java.util.regex.Pattern.compile(
+            "\\s*\\[\\s*(" + NUMBER + "(?:\\s+" + NUMBER + ")*)?\\s*\\]\\s*" + NUMBER + "\\s*");
+
+    // Returns true for a dash array of non-negative numbers, not all zero, and a
+    // phase, like "[3 3] 0"; "[] 0" is a solid line.
+    static boolean isDashPattern(String pattern) {
+        if (pattern == null) {
+            return false;
+        }
+        java.util.regex.Matcher m = DASH_PATTERN.matcher(pattern);
+        if (!m.matches()) {
+            return false;
+        }
+        String lengths = m.group(1);
+        if (lengths == null) {
+            return true;
+        }
+        boolean notAllZero = false;
+        for (String length : lengths.split("\\s+")) {
+            if (length.startsWith("-")) {
+                return false;
+            }
+            if (Double.parseDouble(length) != 0.0) {
+                notAllZero = true;
+            }
+        }
+        return notAllZero;
     }
 
     /**
@@ -1261,6 +1350,9 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenWidth(float width) {
+        if (width < 0f) {
+            pdf.fail(new IllegalArgumentException("The pen width cannot be negative."));
+        }
         this.penWidth = width;
         append(width);
         append(" w\n");
@@ -1671,10 +1763,10 @@ final public class Page {
             float cosOfAngle = (float) Math.cos(degrees * (Math.PI / 180));
             tmx = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
-        tm0 = FastFloat.toByteArray(tmx[0]);
-        tm1 = FastFloat.toByteArray(tmx[1]);
-        tm2 = FastFloat.toByteArray(tmx[2]);
-        tm3 = FastFloat.toByteArray(tmx[3]);
+        tm0 = number(tmx[0]);
+        tm1 = number(tmx[1]);
+        tm2 = number(tmx[2]);
+        tm3 = number(tmx[3]);
         return this;
     }
 
@@ -1807,6 +1899,9 @@ final public class Page {
      * @param fontSize the font size.
      */
     protected void setTextFont(Font font, float fontSize) {
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
+        }
         if (font.fontID != null) {
             append('/');
             append(font.fontID);
@@ -1930,6 +2025,9 @@ final public class Page {
      * Restores the graphics state. Please see Example_31.
      */
     public void restoreGraphicsState() {
+        if (savedStates.isEmpty()) {
+            pdf.fail(new IllegalStateException("restoreGraphicsState was called without a matching saveGraphicsState."));
+        }
         if (!savedStates.isEmpty()) {
             State state = savedStates.remove(savedStates.size() - 1);
             brushColor = state.getBrushColor();
@@ -2032,7 +2130,15 @@ final public class Page {
     }
 
     void append(float f) {
-        append(FastFloat.toByteArray(f));
+        append(number(f));
+    }
+
+    // Returns the bytes of the number, after checking that a PDF can hold it.
+    private byte[] number(float f) {
+        if (!FastFloat.isWritable(f)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        return FastFloat.toByteArray(f);
     }
 
     void append(char ch) {
@@ -2176,6 +2282,7 @@ final public class Page {
             String language,
             String actualText,
             String altDescription) {
+        markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             StructElement element = new StructElement();
             element.structure = structure.type;
@@ -2199,6 +2306,7 @@ final public class Page {
      * Begins marked content for an artifact, when the document is PDF/UA compliant.
      */
     public void addArtifactBMC() {
+        markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             append("/Artifact BMC\n");
         }
@@ -2208,6 +2316,10 @@ final public class Page {
      * Ends the current marked content, when the document is PDF/UA compliant.
      */
     public void addEMC() {
+        if (markedContentDepth == 0) {
+            pdf.fail(new IllegalStateException("addEMC was called without a matching addBDC or addArtifactBMC."));
+        }
+        markedContentDepth--;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             append("EMC\n");
         }
@@ -2507,13 +2619,13 @@ final public class Page {
         double radians = degrees * Math.PI / 180;
         float cos = (float)Math.cos(radians);
         float sin = (float)Math.sin(radians);
-        append(FastFloat.toByteArray(cos));
+        append(cos);
         append(" ");
-        append(FastFloat.toByteArray(sin));
+        append(sin);
         append(" ");
-        append(FastFloat.toByteArray(-sin));
+        append(-sin);
         append(" ");
-        append(FastFloat.toByteArray(cos));
+        append(cos);
         append(" 0 0 cm\n");
 
         append("1 0 0 1 ");

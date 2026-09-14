@@ -7,8 +7,6 @@ package pdfjet
 
 import (
 	"math"
-
-	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
 // Container is a group of drawable elements that are moved, rotated and
@@ -134,13 +132,16 @@ func (c *Container) Add(element Drawable) *Container {
 // Returns a slice containing the bottom-right position of the container.
 // Returns an error if drawing fails.
 func (c *Container) DrawOn(page *Page) [2]float32 {
+	if c.scaleX == 0 || c.scaleY == 0 {
+		return [2]float32{c.x + c.width, c.y + c.height} // Nothing to paint.
+	}
 	page.SaveGraphicsState()
 
 	// 1) Translate container to its final position
 	page.appendString("1 0 0 1 ")
-	page.appendByteArray(fastfloat.ToByteArray(c.x))
+	page.appendFloat32(c.x)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(-c.y))
+	page.appendFloat32(-c.y)
 	page.appendString(" cm\n")
 
 	cx := c.width / 2
@@ -148,35 +149,35 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 
 	// 2) Move origin to container center
 	page.appendString("1 0 0 1 ")
-	page.appendByteArray(fastfloat.ToByteArray(cx))
+	page.appendFloat32(cx)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(page.height - cy))
+	page.appendFloat32(page.height - cy)
 	page.appendString(" cm\n")
 
 	// 3) Rotate around container center
 	rad := float64(c.rotateDegrees) * (math.Pi / 180.0)
 	cos := float32(math.Cos(rad))
 	sin := float32(math.Sin(rad))
-	page.appendByteArray(fastfloat.ToByteArray(cos))
+	page.appendFloat32(cos)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(sin))
+	page.appendFloat32(sin)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(-sin))
+	page.appendFloat32(-sin)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(cos))
+	page.appendFloat32(cos)
 	page.appendString(" 0 0 cm\n")
 
 	// 4) Scale around container center
-	page.appendByteArray(fastfloat.ToByteArray(c.scaleX))
+	page.appendFloat32(c.scaleX)
 	page.appendString(" 0 0 ")
-	page.appendByteArray(fastfloat.ToByteArray(c.scaleY))
+	page.appendFloat32(c.scaleY)
 	page.appendString(" 0 0 cm\n")
 
 	// 5) Move origin back for child drawing
 	page.appendString("1 0 0 1 ")
-	page.appendByteArray(fastfloat.ToByteArray(-cx))
+	page.appendFloat32(-cx)
 	page.appendByte(' ')
-	page.appendByteArray(fastfloat.ToByteArray(-(page.height - cy)))
+	page.appendFloat32(-(page.height - cy))
 	page.appendString(" cm\n")
 
 	// 6) Draw children elements

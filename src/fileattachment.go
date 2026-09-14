@@ -67,6 +67,10 @@ func (attachment *FileAttachment) SetContents(contents string) *FileAttachment {
 
 // DrawOn draws this component on the page.
 func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
+	if attachment.embeddedFile.pdf != page.pdf {
+		page.pdf.fail("The embedded file belongs to another PDF.")
+		return [2]float32{attachment.x + attachment.h, attachment.y + attachment.h}
+	}
 	annotation := &annotationObject{
 		annotationType: annotationFileAttachment,
 		x1:             attachment.x,

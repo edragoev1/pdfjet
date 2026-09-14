@@ -161,6 +161,9 @@ public class Container : IDrawable {
     /// <returns>An array containing the bottom-right position of the container.</returns>
     /// <exception cref="System.Exception">Thrown if drawing fails.</exception>
     public float[] DrawOn(Page page) {
+        if (scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        }
         page.SaveGraphicsState();
 
         // 1) Translate container to its final position on the page
@@ -187,13 +190,13 @@ public class Container : IDrawable {
         double rad = rotateDegrees * (Math.PI / 180.0);
         float cos = (float)Math.Cos(rad);
         float sin = (float)Math.Sin(rad);
-        page.Append(FastFloat.ToByteArray(cos));
+        page.Append(cos);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(sin));
+        page.Append(sin);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(-sin));
+        page.Append(-sin);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(cos));
+        page.Append(cos);
         page.Append(" 0 0 cm\n");
 
         // 4) Scale around the container center

@@ -49,6 +49,15 @@ import Testing
         #expect(format(21600000) == "21600000")
         #expect(format(1e9) == "1000000000")
         #expect(format(-1e9) == "-1000000000")
-        #expect(format(3.4e38) == "339999995214436424907732413799364296704")
+        #expect(format(2147483520) == "2147483520")
+    }
+
+    @Test func refusesNumbersAPdfCannotHold() {
+        let values: [Float] = [.nan, .infinity, -.infinity, 2147483648, -3.4e38]
+        for value in values {
+            #expect(!FastFloat.isWritable(value))
+            #expect(format(value) == "0")
+        }
+        #expect(FastFloat.isWritable(2147483520))
     }
 }

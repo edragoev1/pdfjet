@@ -55,6 +55,15 @@ final public class PDF {
     private Page prevPage = null;
     private boolean contentStreamsCompression = true;
 
+    // The first misuse of the API. The call that finds it throws, and complete()
+    // then refuses to finish the document, as the file would be broken even if
+    // the program caught the exception and carried on.
+    private String error = null;
+    // True after complete(): the document is written and closed.
+    boolean completed = false;
+    // The pages made for this document, added or detached.
+    int pagesCreated = 0;
+
     static final Logger LOG = Logger.getLogger(PDF.class.getName());
 
     // SecureRandom is safe to share between threads.
@@ -147,6 +156,10 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setCompliance(Compliance compliance) {
+        // The fonts and the page content are written for the compliance.
+        if (compliance != this.compliance && (getObjNumber() > 0 || pagesCreated > 0)) {
+            fail(new IllegalStateException("Set the compliance before adding fonts, images or pages to the PDF."));
+        }
         this.compliance = compliance;
         return this;
     }
@@ -167,8 +180,24 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setEncryption(Encryption encryption) {
+        // Every object after the encryption dictionary is encrypted.
+        if (encryption != null && encryption.getObjNumber() != getObjNumber()) {
+            fail(new IllegalStateException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
         this.encryption = encryption;
         return this;
+    }
+
+    /**
+     * Records the first misuse of the API and throws the exception.
+     *
+     * @param e the exception that says what was wrong.
+     */
+    void fail(RuntimeException e) {
+        if (error == null) {
+            error = e.getMessage();
+        }
+        throw e;
     }
 
     /**
@@ -363,9 +392,30 @@ final public class PDF {
         return getObjNumber();
     }
 
-    // Returns the text with the characters that have a meaning in XML escaped.
+    // Returns the text with the characters that have a meaning in XML escaped,
+    // and without the characters XML does not allow: the control characters
+    // other than tab, line feed and carriage return, U+FFFE, U+FFFF and
+    // unpaired surrogates, which would make the metadata unreadable.
     private static String escapeXML(String text) {
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (Character.isHighSurrogate(ch)
+                    && i + 1 < text.length() && Character.isLowSurrogate(text.charAt(i + 1))) {
+                sb.append(ch);
+                sb.append(text.charAt(++i));
+            } else if (ch == '&') {
+                sb.append("&amp;");
+            } else if (ch == '<') {
+                sb.append("&lt;");
+            } else if (ch == '>') {
+                sb.append("&gt;");
+            } else if (ch == '\t' || ch == '\n' || ch == '\r'
+                    || (ch >= 0x20 && ch <= 0xFFFD && !Character.isSurrogate(ch))) {
+                sb.append(ch);
+            }
+        }
+        return sb.toString();
     }
 
     private int addOutputIntentObject() throws Exception {
@@ -877,6 +927,7 @@ final public class PDF {
     }
 
     private void addPageContent(Page page) throws Exception {
+        page.checkBalanced();
         if (contentStreamsCompression) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Deflater deflater = new Deflater();
@@ -885,7 +936,7 @@ final public class PDF {
             dos.write(buf, 0, buf.length);
             dos.finish();
             deflater.end();
-            page.buf = null;    // Release the page content memory!
+            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
 
             buf = baos.toByteArray();
             if (encryption != null) {
@@ -909,7 +960,7 @@ final public class PDF {
             if (encryption != null) {
                 buf = AES256.encrypt(buf, encryption.getKey());
             }
-            page.buf = null;    // Release the page content memory!
+            page.buf = new Page.WrittenContent(this);  // Release the page content memory!
 
             newObj();
             append(Token.BEGIN_DICTIONARY);
@@ -1219,6 +1270,16 @@ final public class PDF {
         if (page == null) {
             return;
         }
+        if (completed) {
+            fail(new IllegalStateException("The PDF was already completed."));
+        }
+        if (page.pdf != this) {
+            fail(new IllegalArgumentException("The page belongs to another PDF."));
+        }
+        if (page.added) {
+            fail(new IllegalStateException("The page was already added to the PDF."));
+        }
+        page.added = true;
         pages.add(page);
         if (prevPage != null) {
             addPageContent(prevPage);
@@ -1245,9 +1306,19 @@ final public class PDF {
      * @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
+        if (completed) {
+            fail(new IllegalStateException("complete() was already called."));
+        }
+        if (error != null) {
+            throw new IllegalStateException("The PDF was not completed because of an earlier error: " + error);
+        }
+        if (pages.isEmpty() && pagesObjNumber == 0) {
+            fail(new IllegalStateException("A PDF needs at least one page."));
+        }
         if (prevPage != null) {
             addPageContent(prevPage);
         }
+        completed = true;
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();
@@ -1436,6 +1507,9 @@ final public class PDF {
      * @throws IOException if writing to the output fails.
      */
     void append(float f) throws IOException {
+        if (!FastFloat.isWritable(f)) {
+            fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
         append(FastFloat.toByteArray(f));
     }
 

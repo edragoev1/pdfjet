@@ -45,7 +45,7 @@ public class ShapesTest {
     [Fact]
     public void RadioButtonAndCheckBoxCorners() {
         Page page = NewPage();
-        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Font font = TestSupport.Helvetica(page.pdf);
         RadioButton radio = new RadioButton(font, "rb");
         radio.SetLocation(1f, 2f);
         TestSupport.AssertXY(45.184f, 15.872f, radio.DrawOn(page));
@@ -54,10 +54,11 @@ public class ShapesTest {
 
     [Fact]
     public void CalendarMonthStartsAtTheOriginWithCellsFromTheDayNames() {
-        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Page page = NewPage();
+        Font font = TestSupport.Helvetica(page.pdf);
         // February and March 2026 start on a Sunday.
-        TestSupport.AssertXY(252f, 252f, new CalendarMonth(font, font, 2026, 2).DrawOn(NewPage()));
-        TestSupport.AssertXY(252f, 252f, new CalendarMonth(font, font, 2026, 3).DrawOn(NewPage()));
+        TestSupport.AssertXY(252f, 252f, new CalendarMonth(font, font, 2026, 2).DrawOn(page));
+        TestSupport.AssertXY(252f, 252f, new CalendarMonth(font, font, 2026, 3).DrawOn(page));
     }
 
     [Fact]

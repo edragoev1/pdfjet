@@ -69,6 +69,10 @@ public class FileAttachment : Drawable {
     /// Adds this attachment to the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if let file = embeddedFile, file.pdfIdentity != page!.pdf.identity {
+            page!.pdf.fail("The embedded file belongs to another PDF.")
+            return [self.x + self.h, self.y + self.h]
+        }
         let annotation = Annotation(
                 Annotation.FileAttachment,
                 x,

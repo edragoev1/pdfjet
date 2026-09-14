@@ -49,6 +49,10 @@ public class Encryption {
     /// <param name="passwords">The user and owner passwords.</param>
     /// <param name="permissions">The permissions granted to the user.</param>
     public Encryption(PDF pdf, Passwords passwords, Permissions permissions) {
+        // The objects written before the encryption dictionary would not be encrypted.
+        if (pdf.GetObjNumber() > 0) {
+            pdf.Fail(new InvalidOperationException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
         // === Generate a random 256-bit (32-byte) File Encryption Key ===
         this.fileEncryptionKey = new byte[32]; // 32 bytes for AES-256
         using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) {

@@ -41,6 +41,7 @@ public class Stamp implements Drawable {
     private String language = null;
     private String actualText = Single.space;
     private String altDescription = Single.space;
+    private boolean completed = false;
 
     /**
      * Creates a stamp for the specified document.
@@ -71,7 +72,12 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp addFont(Font font) {
-        fonts.add(font);
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
+        }
+        if (!fonts.contains(font)) {
+            fonts.add(font);
+        }
         return this;
     }
 
@@ -122,13 +128,25 @@ public class Stamp implements Drawable {
     }
 
     private void append(float value) {
+        checkNotCompleted();
+        if (!FastFloat.isWritable(value)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
         byte[] bytes = FastFloat.toByteArray(value);
         buf.write(bytes, 0, bytes.length);
     }
 
     private void append(String str) {
+        checkNotCompleted();
         byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
         buf.write(bytes, 0, bytes.length);
+    }
+
+    // The content drawn after complete() would be lost.
+    private void checkNotCompleted() {
+        if (completed) {
+            pdf.fail(new IllegalStateException("The stamp was already completed."));
+        }
     }
 
     /**
@@ -212,6 +230,9 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp setStrokeWidth(float width) {
+        if (width < 0f) {
+            pdf.fail(new IllegalArgumentException("The stroke width cannot be negative."));
+        }
         append(width);
         append(" w\n");
         this.strokeWidth = width;
@@ -370,7 +391,7 @@ public class Stamp implements Drawable {
     /**
      * Draws text on this stamp.
      *
-     * @param font the font. Add it with addFont too.
+     * @param font the font. The stamp adds it to its fonts.
      * @param fontSize the font size.
      * @param x the x coordinate.
      * @param y the y coordinate.
@@ -378,6 +399,10 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp drawText(Font font, float fontSize, float x, float y, String text) {
+        if (font.isCoreFont || font.isCJK) {
+            pdf.fail(new IllegalArgumentException("A stamp draws text with an embedded font, not a core or CJK font."));
+        }
+        addFont(font);
         append("BT\n");
         append("/F");
         append(font.objNumber);
@@ -436,15 +461,19 @@ public class Stamp implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public void complete() throws Exception {
+        if (completed) {
+            pdf.fail(new IllegalStateException("complete() was already called on the stamp."));
+        }
+        completed = true;
         pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Form\n");
 
         pdf.append("/BBox [0 0 ");
-        pdf.append(FastFloat.toByteArray(width));
+        pdf.append(width);
         pdf.append(' ');
-        pdf.append(FastFloat.toByteArray(height));
+        pdf.append(height);
         pdf.append("]\n");
 
         pdf.append("/Resources <<\n");
@@ -556,6 +585,15 @@ public class Stamp implements Drawable {
      * @return the x and y coordinates of the bottom right corner of this stamp.
      */
     public float[] drawOn(Page page) {
+        if (page.pdf != pdf) {
+            page.pdf.fail(new IllegalArgumentException("The stamp belongs to another PDF."));
+        }
+        if (!completed) {
+            page.pdf.fail(new IllegalStateException("Call complete() on the stamp before drawing it."));
+        }
+        if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
 
@@ -580,13 +618,13 @@ public class Stamp implements Drawable {
         double radians = rotateDegrees * (Math.PI / 180);
         float cos = (float)Math.cos(radians);
         float sin = (float)Math.sin(radians);
-        page.append(FastFloat.toByteArray(cos));
+        page.append(cos);
         page.append(' ');
-        page.append(FastFloat.toByteArray(sin));
+        page.append(sin);
         page.append(' ');
-        page.append(FastFloat.toByteArray(-sin));
+        page.append(-sin);
         page.append(' ');
-        page.append(FastFloat.toByteArray(cos));
+        page.append(cos);
         page.append(" 0 0 cm\n");
 
         // SCALE: around the center, like a Container

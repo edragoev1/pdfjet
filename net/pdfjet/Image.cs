@@ -18,6 +18,8 @@ namespace PDFjet.NET {
 /// </summary>
 public class Image : IDrawable {
     internal int objNumber;
+    // The PDF the image was added to, or null for an image of an existing PDF.
+    private PDF pdf;
     internal float x = 0f;  // Position of the image on the page
     internal float y = 0f;
     internal float w;       // Image width
@@ -48,6 +50,7 @@ public class Image : IDrawable {
     }
 
     private Image(PDF pdf, byte[] bytes) {
+        this.pdf = pdf;
         ImageType imageType = TypeOf(bytes);
         Stream inputStream = new MemoryStream(bytes);
         byte[] data;
@@ -148,6 +151,7 @@ public class Image : IDrawable {
     // Creates new image from an existing PDF object
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
     public Image(PDF pdf, PDFobj obj) {
+        this.pdf = pdf;
         w = float.Parse(obj.GetValue("/Width"));
         h = float.Parse(obj.GetValue("/Height"));
         pdf.NewObj();
@@ -316,6 +320,12 @@ public class Image : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        if (pdf != null && page.pdf != pdf) {
+            page.pdf.Fail(new ArgumentException("The image belongs to another PDF."));
+        }
+        if (w == 0f || h == 0f) {
+            return new float[] {x + w, y + h};  // A zero size image paints nothing.
+        }
         page.AddBDC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
 

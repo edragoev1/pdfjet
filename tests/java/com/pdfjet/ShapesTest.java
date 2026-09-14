@@ -49,7 +49,7 @@ class ShapesTest {
     @Test
     void radioButtonAndCheckBoxCorners() throws Exception {
         Page page = page();
-        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Font font = TestSupport.helvetica(page.pdf);
         RadioButton radio = new RadioButton(font, "rb");
         radio.setLocation(1f, 2f);
         TestSupport.assertXY(45.184f, 15.872f, radio.drawOn(page));
@@ -58,10 +58,11 @@ class ShapesTest {
 
     @Test
     void calendarMonthStartsAtTheOriginWithCellsFromTheDayNames() throws Exception {
-        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Page page = page();
+        Font font = TestSupport.helvetica(page.pdf);
         // February and March 2026 start on a Sunday.
-        TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 2).drawOn(page()));
-        TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 3).drawOn(page()));
+        TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 2).drawOn(page));
+        TestSupport.assertXY(252f, 252f, new CalendarMonth(font, font, 2026, 3).drawOn(page));
     }
 
     @Test

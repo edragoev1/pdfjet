@@ -20,6 +20,8 @@ import java.util.*;
 final public class Image implements Drawable {
     /** The object number of the image. */
     protected int objNumber;
+    // The PDF the image was added to, or null for an image of an existing PDF.
+    private PDF pdf;
 
     /** The x coordinate of the image on the page. */
     protected float x = 0f; // Position of the image on the page
@@ -65,6 +67,7 @@ final public class Image implements Drawable {
     }
 
     private Image(PDF pdf, byte[] bytes) throws Exception {
+        this.pdf = pdf;
         ImageType imageType = typeOf(bytes);
         InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
@@ -168,6 +171,7 @@ final public class Image implements Drawable {
      * @throws Exception if can not parse the width or height
      */
     public Image(PDF pdf, PDFobj obj) throws Exception {
+        this.pdf = pdf;
         w = Float.parseFloat(obj.getValue("/Width"));
         h = Float.parseFloat(obj.getValue("/Height"));
         pdf.newObj();
@@ -353,6 +357,12 @@ final public class Image implements Drawable {
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (pdf != null && page.pdf != pdf) {
+            page.pdf.fail(new IllegalArgumentException("The image belongs to another PDF."));
+        }
+        if (w == 0f || h == 0f) {
+            return new float[] {x + w, y + h};  // A zero size image paints nothing.
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
 

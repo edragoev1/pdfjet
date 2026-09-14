@@ -39,6 +39,7 @@ type Stamp struct {
 	language       string
 	actualText     string
 	altDescription string
+	completed      bool
 }
 
 // NewStamp creates a stamp for the specified document.
@@ -63,6 +64,15 @@ func (s *Stamp) SetSize(width, height float32) *Stamp {
 
 // AddFont adds a font used by the text on this stamp.
 func (s *Stamp) AddFont(font *Font) *Stamp {
+	if font.pdf != nil && font.pdf != s.pdf {
+		s.pdf.fail("The font belongs to another PDF.")
+		return s
+	}
+	for _, f := range s.fonts {
+		if f == font {
+			return s
+		}
+	}
 	s.fonts = append(s.fonts, font)
 	return s
 }
@@ -95,15 +105,34 @@ func (s *Stamp) SetActualText(actualText string) *Stamp {
 }
 
 func (s *Stamp) appendFloat(value float32) {
+	if !s.open() {
+		return
+	}
+	if !fastfloat.IsWritable(value) {
+		s.pdf.fail(notWritable)
+	}
 	s.buf.Write(fastfloat.ToByteArray(value))
 }
 
 func (s *Stamp) appendInt(value int) {
-	s.buf.WriteString(strconv.Itoa(value))
+	if s.open() {
+		s.buf.WriteString(strconv.Itoa(value))
+	}
 }
 
 func (s *Stamp) appendString(str string) {
-	s.buf.WriteString(str)
+	if s.open() {
+		s.buf.WriteString(str)
+	}
+}
+
+// open returns true until Complete: the content drawn after it would be lost.
+func (s *Stamp) open() bool {
+	if s.completed {
+		s.pdf.fail("The stamp was already completed.")
+		return false
+	}
+	return true
 }
 
 // SetFillColorRGB sets the fill color for the content drawn after it,
@@ -146,6 +175,10 @@ func (s *Stamp) SetStrokeColor(color int32) *Stamp {
 
 // SetStrokeWidth sets the stroke width for the content drawn after it.
 func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
+	if width < 0 {
+		s.pdf.fail("The stroke width cannot be negative.")
+		return s
+	}
 	s.appendFloat(width)
 	s.appendString(" w\n")
 	s.strokeWidth = width
@@ -239,6 +272,11 @@ func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
 
 // DrawText draws text on this stamp. Add the font with AddFont too.
 func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
+	if font.isCoreFont || font.isCJK {
+		s.pdf.fail("A stamp draws text with an embedded font, not a core or CJK font.")
+		return s
+	}
+	s.AddFont(font)
 	s.appendString("BT\n")
 	s.appendString("/F")
 	s.appendInt(font.objNumber)
@@ -279,6 +317,11 @@ func (s *Stamp) ScaleByWidthAndHeight(sx, sy float32) *Stamp {
 // Complete writes this stamp to the document as a form XObject.
 // Call it once, after drawing the content and before DrawOn.
 func (s *Stamp) Complete() {
+	if s.completed {
+		s.pdf.fail("Complete was already called on the stamp.")
+		return
+	}
+	s.completed = true
 	s.pdf.newObj()
 	s.pdf.appendByteArray(token.BeginDictionary)
 	s.pdf.appendString("/Type /XObject\n")
@@ -383,6 +426,17 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 // DrawOn draws this stamp on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
+	if page.pdf != s.pdf {
+		page.pdf.fail("The stamp belongs to another PDF.")
+		return [2]float32{s.x + s.width, s.y + s.height}
+	}
+	if !s.completed {
+		page.pdf.fail("Call Complete on the stamp before drawing it.")
+		return [2]float32{s.x + s.width, s.y + s.height}
+	}
+	if s.width == 0 || s.height == 0 || s.scaleX == 0 || s.scaleY == 0 {
+		return [2]float32{s.x + s.width, s.y + s.height} // Nothing to paint.
+	}
 	page.AddBDC(structelem.P, s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()
 

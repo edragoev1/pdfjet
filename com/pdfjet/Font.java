@@ -23,6 +23,8 @@ final public class Font {
     protected String info;
     /** The object number of the font. */
     protected int objNumber;
+    // The PDF the font was added to, or null for a font of an existing PDF.
+    PDF pdf;
     /** The resource name of a font read from an existing PDF, or null. */
     protected String fontID;
 
@@ -134,6 +136,7 @@ final public class Font {
      * @throws Exception If an input or output exception occurred
      */
     public Font(PDF pdf, int coreFont) throws Exception {
+        this.pdf = pdf;
         CoreFont font = new CoreFont(coreFont);
         this.isCoreFont = true;
         this.name = font.name;
@@ -196,6 +199,7 @@ final public class Font {
      * @throws Exception If an input or output exception occurred
      */
     public Font(PDF pdf, CJKFont font) throws Exception {
+        this.pdf = pdf;
         String fontName = null;
         if (font == CJKFont.ADOBE_MING_STD_LIGHT) { // Chinese (Traditional) font
             fontName = "AdobeMingStd-Light";
@@ -313,6 +317,7 @@ final public class Font {
      * @throws Exception If an input or output exception occurred
      */
     public Font(PDF pdf, InputStream inputStream) throws Exception {
+        this.pdf = pdf;
         InputStream stream = new BufferedInputStream(inputStream);
         if (isOpenTypeFont(stream)) {
             OpenTypeFont.register(pdf, this, stream);
@@ -342,6 +347,7 @@ final public class Font {
      * @throws Exception thrown of the font file is not found.
      */
     public Font(PDF pdf, String fontPath) throws Exception {
+        this.pdf = pdf;
         InputStream inputStream = new FileInputStream(fontPath);
         if (fontPath.endsWith(".stream")) {
             FontStream1.register(pdf, this, inputStream);

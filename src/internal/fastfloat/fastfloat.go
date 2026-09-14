@@ -6,17 +6,19 @@ import (
 	"strconv"
 )
 
-// ToByteArray converts a float32 to its byte array representation
+// IsWritable returns true for a number a PDF can hold: a PDF number has no
+// exponent and no NaN or infinity, and readers keep integers in 32 bits, so a
+// number must be finite and below 2^31.
+func IsWritable(value float32) bool {
+	return math.Abs(float64(value)) < 2147483648 // False for NaN and the infinities
+}
+
+// ToByteArray converts a float32 to its byte array representation. A value
+// that is not writable is written as 0, so a caller that did not check it
+// still writes valid syntax; the callers of the pdfjet package check it.
 func ToByteArray(value float32) []byte {
-	// Handle special cases
-	if math.IsNaN(float64(value)) {
-		return []byte("NaN")
-	}
-	if math.IsInf(float64(value), 1) {
-		return []byte("Infinity")
-	}
-	if math.IsInf(float64(value), -1) {
-		return []byte("-Infinity")
+	if !IsWritable(value) {
+		return []byte("0")
 	}
 
 	magnitude := math.Abs(float64(value))

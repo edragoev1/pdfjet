@@ -23,6 +23,8 @@ public class EmbeddedFile {
     protected int objNumber = -1;
     /** The name of the embedded file. */
     protected String fileName;
+    // The PDF the file is embedded in.
+    PDF pdf;
 
     /**
      * Embeds file with the specified name into the PDF.
@@ -47,6 +49,7 @@ public class EmbeddedFile {
      * @throws Exception if there is an issue.
      */
     public EmbeddedFile(PDF pdf, String fileName, InputStream stream, boolean compress) throws Exception {
+        this.pdf = pdf;
         this.fileName = fileName;
         byte[] buf = Content.getFromStream(stream);
 

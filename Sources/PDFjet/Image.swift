@@ -15,6 +15,8 @@ import Foundation
 ///
 public class Image : Drawable {
     var objNumber: Int?
+    // The identity of the PDF the image was added to, or nil for an image of an existing PDF.
+    var pdfIdentity: UUID?
 
     var x: Float = 0.0      // Position of the image on the page
     var y: Float = 0.0
@@ -66,6 +68,7 @@ public class Image : Drawable {
     }
 
     private init(_ pdf: PDF, _ bytes: [UInt8]) throws {
+        self.pdfIdentity = pdf.identity
         let imageType = try Image.typeOf(bytes)
         let stream = InputStream(data: Data(bytes))
         if imageType == ImageType.JPG {
@@ -158,6 +161,7 @@ public class Image : Drawable {
 
     /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
+        self.pdfIdentity = pdf.identity
         w = Float(obj.getValue("/Width"))
         h = Float(obj.getValue("/Height"))
         pdf.newObj()
@@ -332,6 +336,13 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if let identity = pdfIdentity, identity != page!.pdf.identity {
+            page!.pdf.fail("The image belongs to another PDF.")
+            return [x + w!, y + h!]
+        }
+        if w! == 0.0 || h! == 0.0 {
+            return [x + w!, y + h!]     // A zero size image paints nothing.
+        }
         page!.addBDC(StructElem.P, language, actualText, altDescription)
         page!.saveGraphicsState()
 

@@ -124,6 +124,9 @@ public class OptionalContentGroup {
      * @throws Exception if there is a problem
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page.pdf != pdf) {
+            page.pdf.fail(new IllegalArgumentException("The optional content group belongs to another PDF."));
+        }
         float[] xy = new float[] {0f, 0f};
         if (this.ocgNumber == -1) {
             pdf.newObj();

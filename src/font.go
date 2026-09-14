@@ -22,6 +22,7 @@ type Font struct {
 	info      string
 	objNumber int
 	fontID    string
+	pdf       *PDF // The PDF the font was added to, or nil for a font of an existing PDF
 
 	fileObjNumber           int // The object number of the embedded font file
 	fontDescriptorObjNumber int
@@ -81,6 +82,7 @@ const (
 //	  - coreFont: the core font, for example corefont.Helvetica().
 func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
+	font.pdf = pdf
 	font.isCoreFont = true
 	font.name = coreFont.Name
 	font.size = defaultFontSize
@@ -159,6 +161,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	}
 
 	font := new(Font)
+	font.pdf = pdf
 	font.isCJK = true
 	font.name = fontName
 	font.size = defaultFontSize
@@ -248,6 +251,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 // NewFontStream1 constructs font object from .ttf.stream and add it to the PDF
 func NewFontStream1(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
+	font.pdf = pdf
 	fontStream1(pdf, font, reader)
 	font.SetSize(defaultFontSize)
 	return font
@@ -266,6 +270,7 @@ func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
 // bytes the reader returns.
 func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
+	font.pdf = pdf
 	buffered := bufio.NewReader(reader)
 	if isOpenTypeFont(buffered) {
 		registerOpenTypeFont(pdf, font, buffered)

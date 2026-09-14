@@ -49,6 +49,17 @@ public class PDF {
     private var contentStreamsCompression = true
     var encryption: Encryption?
 
+    // The first misuse of the API. Swift records it where Java throws, and
+    // complete() then throws it, as the file would be broken.
+    var error: String?
+    // True after complete(): the document is written and closed.
+    var completed = false
+    // The pages made for this document, added or detached.
+    var pagesCreated = 0
+    // Tells this document apart from the others, for the fonts, images and
+    // embedded files, which do not keep a reference to their PDF.
+    let identity = UUID()
+
     // The OCG type that will be stored in the list/array.
     struct OCG {
         let objNumber: Int
@@ -135,6 +146,11 @@ public class PDF {
     /// Sets the PDF/UA or PDF/A compliance of this document.
     @discardableResult
     public func setCompliance(_ compliance: Compliance) -> PDF {
+        // The fonts and the page content are written for the compliance.
+        if compliance != self.compliance && (getObjNumber() > 0 || pagesCreated > 0) {
+            fail("Set the compliance before adding fonts, images or pages to the PDF.")
+            return self
+        }
         self.compliance = compliance
         return self
     }
@@ -152,6 +168,11 @@ public class PDF {
     ///
     @discardableResult
     public func setEncryption(_ encryption: Encryption) -> PDF {
+        // Every object after the encryption dictionary is encrypted.
+        if encryption.getObjNumber() != getObjNumber() {
+            fail("Set the encryption before adding fonts, images or pages to the PDF.")
+            return self
+        }
         self.encryption = encryption
         return self
     }
@@ -172,6 +193,13 @@ public class PDF {
             return ""
         }
         return toHex(encrypted(Array(str.utf8)))
+    }
+
+    /// Records the first misuse of the API, which complete() then throws.
+    func fail(_ message: String) {
+        if error == nil {
+            error = message
+        }
     }
 
     func newObj() {
@@ -347,10 +375,29 @@ public class PDF {
     }
 
     // Returns the text with the characters that have a meaning in XML escaped.
+    // Returns the text with the characters that have a meaning in XML escaped,
+    // and without the characters XML does not allow: the control characters
+    // other than tab, line feed and carriage return, U+FFFE and U+FFFF, which
+    // would make the metadata unreadable.
     private func escapeXML(_ text: String) -> String {
-        return text.replacingOccurrences(of: "&", with: "&amp;")
-                .replacingOccurrences(of: "<", with: "&lt;")
-                .replacingOccurrences(of: ">", with: "&gt;")
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            switch scalar {
+            case "&":
+                result.append(contentsOf: "&amp;".unicodeScalars)
+            case "<":
+                result.append(contentsOf: "&lt;".unicodeScalars)
+            case ">":
+                result.append(contentsOf: "&gt;".unicodeScalars)
+            case "\t", "\n", "\r":
+                result.append(scalar)
+            default:
+                if (scalar.value >= 0x20 && scalar.value <= 0xFFFD) || scalar.value >= 0x10000 {
+                    result.append(scalar)
+                }
+            }
+        }
+        return String(result)
     }
 
     func addOutputIntentObject() -> Int {
@@ -847,10 +894,12 @@ public class PDF {
     }
 
     private func addPageContent(_ page: Page) {
+        page.checkBalanced()
         if contentStreamsCompression {
             var buffer = [UInt8]()
             FlateEncode(&buffer, page.buf)
             page.buf.removeAll()   // Release the page content memory!
+            page.written = true
             buffer = encrypted(buffer)
 
             newObj()
@@ -868,6 +917,7 @@ public class PDF {
         } else {    // No compression. Used for diagnostics
             let buffer = encrypted(page.buf)
             page.buf.removeAll()   // Release the page content memory!
+            page.written = true
 
             newObj()
             append(Token.beginDictionary)
@@ -1133,6 +1183,19 @@ public class PDF {
 
     /// Adds the page to this document.
     public func addPage(_ page: Page) {
+        if completed {
+            fail("The PDF was already completed.")
+            return
+        }
+        if page.pdf !== self {
+            fail("The page belongs to another PDF.")
+            return
+        }
+        if page.added {
+            fail("The page was already added to the PDF.")
+            return
+        }
+        page.added = true
         pages.append(page)
         if prevPage != nil {
             addPageContent(prevPage!)
@@ -1154,9 +1217,26 @@ public class PDF {
     /// - Throws: an error if the PDF cannot be written to the output stream.
     ///
     public func complete() throws {
+        if completed {
+            let message = "complete() was already called."
+            fail(message)
+            throw PDFjetError(message: message)
+        }
+        if let error = error {
+            throw PDFjetError(message: "The PDF was not completed because of an earlier error: " + error)
+        }
+        if pages.isEmpty && pagesObjNumber == 0 {
+            let message = "A PDF needs at least one page."
+            fail(message)
+            throw PDFjetError(message: message)
+        }
         if prevPage != nil {
             addPageContent(prevPage!)
         }
+        if let error = error {  // Found when the last page was written.
+            throw PDFjetError(message: error)
+        }
+        completed = true
         if compliance != Compliance.PDF_1_7 {
             metadataObjNumber = addMetadataObject("", false)
             outputIntentObjNumber = addOutputIntentObject()
@@ -1339,6 +1419,10 @@ public class PDF {
     }
 
     func append(_ val: Float) {
+        if !FastFloat.isWritable(val) {
+            fail(FastFloat.NOT_WRITABLE)
+            return
+        }
         append(FastFloat.toByteArray(val))
     }
 

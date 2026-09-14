@@ -40,6 +40,7 @@ public class Stamp : IDrawable {
     private String language = null;
     private String actualText = Single.space;
     private String altDescription = Single.space;
+    private bool completed = false;
 
     /// <summary>Creates a stamp for the specified document.</summary>
     public Stamp(PDF pdf) {
@@ -55,7 +56,12 @@ public class Stamp : IDrawable {
 
     /// <summary>Adds a font used by the text on this stamp.</summary>
     public Stamp AddFont(Font font) {
-        fonts.Add(font);
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.Fail(new ArgumentException("The font belongs to another PDF."));
+        }
+        if (!fonts.Contains(font)) {
+            fonts.Add(font);
+        }
         return this;
     }
 
@@ -89,13 +95,25 @@ public class Stamp : IDrawable {
     }
 
     private void Append(float value) {
+        CheckNotCompleted();
+        if (!FastFloat.IsWritable(value)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
         byte[] bytes = FastFloat.ToByteArray(value);
         buf.Write(bytes, 0, bytes.Length);
     }
 
     private void Append(String str) {
+        CheckNotCompleted();
         byte[] bytes = Encoding.UTF8.GetBytes(str);
         buf.Write(bytes, 0, bytes.Length);
+    }
+
+    // The content drawn after Complete() would be lost.
+    private void CheckNotCompleted() {
+        if (completed) {
+            pdf.Fail(new InvalidOperationException("The stamp was already completed."));
+        }
     }
 
     /// <summary>Sets the fill color for the content drawn after it, from an array of red, green and blue values.</summary>
@@ -154,6 +172,9 @@ public class Stamp : IDrawable {
 
     /// <summary>Sets the stroke width for the content drawn after it.</summary>
     public Stamp SetStrokeWidth(float width) {
+        if (width < 0f) {
+            pdf.Fail(new ArgumentException("The stroke width cannot be negative."));
+        }
         Append(width);
         Append(" w\n");
         this.strokeWidth = width;
@@ -250,8 +271,12 @@ public class Stamp : IDrawable {
         return DrawText(parameters.font, parameters.fontSize, parameters.x, parameters.y, parameters.text);
     }
 
-    /// <summary>Draws text on this stamp. The font must also be added with AddFont.</summary>
+    /// <summary>Draws text on this stamp with an embedded font, which the stamp adds to its fonts.</summary>
     public Stamp DrawText(Font font, float fontSize, float x, float y, String text) {
+        if (font.isCoreFont || font.isCJK) {
+            pdf.Fail(new ArgumentException("A stamp draws text with an embedded font, not a core or CJK font."));
+        }
+        AddFont(font);
         Append("BT\n");
         Append("/F");
         Append(font.objNumber);
@@ -295,15 +320,19 @@ public class Stamp : IDrawable {
     /// Call it once, after drawing the content and before DrawOn.
     /// </summary>
     public void Complete() {
+        if (completed) {
+            pdf.Fail(new InvalidOperationException("Complete() was already called on the stamp."));
+        }
+        completed = true;
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /XObject\n");
         pdf.Append("/Subtype /Form\n");
 
         pdf.Append("/BBox [0 0 ");
-        pdf.Append(FastFloat.ToByteArray(width));
+        pdf.Append(width);
         pdf.Append(' ');
-        pdf.Append(FastFloat.ToByteArray(height));
+        pdf.Append(height);
         pdf.Append("]\n");
 
         pdf.Append("/Resources <<\n");
@@ -399,6 +428,15 @@ public class Stamp : IDrawable {
 
     /// <summary>Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.</summary>
     public float[] DrawOn(Page page) {
+        if (page.pdf != pdf) {
+            page.pdf.Fail(new ArgumentException("The stamp belongs to another PDF."));
+        }
+        if (!completed) {
+            page.pdf.Fail(new InvalidOperationException("Call Complete() on the stamp before drawing it."));
+        }
+        if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        }
         page.AddBDC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
 
@@ -423,13 +461,13 @@ public class Stamp : IDrawable {
         double radians = rotateDegrees * (Math.PI / 180);
         float cos = (float)Math.Cos(radians);
         float sin = (float)Math.Sin(radians);
-        page.Append(FastFloat.ToByteArray(cos));
+        page.Append(cos);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(sin));
+        page.Append(sin);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(-sin));
+        page.Append(-sin);
         page.Append(' ');
-        page.Append(FastFloat.ToByteArray(cos));
+        page.Append(cos);
         page.Append(" 0 0 cm\n");
 
         // SCALE: around the center, like a Container

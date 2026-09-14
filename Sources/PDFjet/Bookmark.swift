@@ -31,9 +31,11 @@ public class Bookmark {
     private var dest: Destination?
     var objNumber = 0
     var prefix: String?
+    private weak var pdf: PDF?  // The document of the root bookmark
 
     /// Creates the root bookmark of the document outline.
     public init(_ pdf: PDF) {
+        self.pdf = pdf
         pdf.toc = self
     }
 
@@ -56,6 +58,9 @@ public class Bookmark {
         var bm = self
         while bm.parent != nil {
             bm = bm.getParent()!
+        }
+        if let pdf = bm.pdf, page.pdf !== pdf {
+            pdf.fail("The page belongs to another PDF.")
         }
         let key = bm.goToNext()
 

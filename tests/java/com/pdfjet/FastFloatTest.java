@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +58,13 @@ class FastFloatTest {
         assertEquals("21600000", format(21600000f));
         assertEquals("1000000000", format(1e9f));
         assertEquals("-1000000000", format(-1e9f));
-        assertEquals("339999995214436424907732413799364296704", format(3.4e38f));
+        assertEquals("2147483520", format(2147483520f));
+    }
+
+    @Test
+    void refusesNumbersAPdfCannotHold() {
+        for (final float value : new float[] {Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 2147483648f, -3.4e38f}) {
+            assertThrows(IllegalArgumentException.class, () -> FastFloat.toByteArray(value));
+        }
     }
 }

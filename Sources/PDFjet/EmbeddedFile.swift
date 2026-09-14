@@ -13,6 +13,8 @@ import Foundation
 public class EmbeddedFile {
     var objNumber: Int = -1
     var fileName: String?
+    // The identity of the PDF the file is embedded in.
+    var pdfIdentity: UUID?
 
     /// Embeds the file at the specified path into the PDF, compressed with Flate when compress is true.
     public convenience init(
@@ -40,6 +42,7 @@ public class EmbeddedFile {
             _ fileName: String,
             _ stream: InputStream,
             _ compress: Bool) throws {
+        self.pdfIdentity = pdf.identity
         self.fileName = fileName
         var buf = try Content.getFromStream(stream)
         if compress {

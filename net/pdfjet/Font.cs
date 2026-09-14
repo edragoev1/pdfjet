@@ -20,6 +20,8 @@ public class Font {
     internal String info;
     internal int objNumber;
     internal String fontID;
+    // The PDF the font was added to, or null for a font of an existing PDF.
+    internal PDF pdf;
 
     // The object number of the embedded font file
     internal int fileObjNumber;
@@ -88,6 +90,7 @@ public class Font {
     /// <param name="pdf">the PDF to add this font to.</param>
     /// <param name="coreFont">the core font. Must be one the names defined in the CoreFont class.</param>
     public Font(PDF pdf, int coreFont) {
+        this.pdf = pdf;
         CoreFont font = new CoreFont(coreFont);
         this.isCoreFont = true;
         this.name = font.name;
@@ -139,6 +142,7 @@ public class Font {
     // Constructor for CJK fonts
     /// <summary>Creates a Chinese, Japanese or Korean font and adds it to the PDF.</summary>
     public Font(PDF pdf, CJKFont font) {
+        this.pdf = pdf;
         String fontName = null;
         if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
             fontName = "AdobeMingStd-Light";
@@ -247,6 +251,7 @@ public class Font {
     /// <param name="pdf">the PDF object that requires this font.</param>
     /// <param name="inputStream">the input stream to read this font from.</param>
     public Font(PDF pdf, System.IO.Stream inputStream) {
+        this.pdf = pdf;
         MemoryStream stream = new MemoryStream();
         inputStream.CopyTo(stream);
         stream.Position = 0;
@@ -276,6 +281,7 @@ public class Font {
     /// <param name="fontPath">the font path.</param>
     /// <exception cref="System.Exception">thrown if the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
+        this.pdf = pdf;
         FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
         if (fontPath.EndsWith(".stream")) {
             FontStream1.Register(pdf, this, inputStream);

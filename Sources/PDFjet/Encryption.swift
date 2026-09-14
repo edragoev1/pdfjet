@@ -23,6 +23,10 @@ public class Encryption {
     /// - Parameter permissions: the permissions granted to the user.
     ///
     public init(_ pdf: PDF, _ passwords: Passwords, _ permissions: Permissions) {
+        // The objects written before the encryption dictionary would not be encrypted.
+        if pdf.getObjNumber() > 0 {
+            pdf.fail("Set the encryption before adding fonts, images or pages to the PDF.")
+        }
         // A random 256-bit (32-byte) file encryption key.
         fileEncryptionKey = Cryptography.randomBytes(32)
 

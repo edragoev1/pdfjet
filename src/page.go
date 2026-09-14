@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -74,7 +75,14 @@ type Page struct {
 	structures   []*structElement
 
 	mcid int
+
+	markedContentDepth int  // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
+	added              bool // True once the page is added to its PDF
+	written            bool // True once the page content is written to the PDF
 }
+
+// notWritable is the message of a number a PDF cannot hold.
+const notWritable = "A coordinate, size or width is NaN, infinite or too large for a PDF."
 
 // Indices in an Android Matrix value array, for Transform.
 const (
@@ -122,6 +130,15 @@ func newPage(pdf *PDF, pageSize pagesize.PageSize, addToPDF bool) *Page {
 	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
 	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
 	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
+	if pdf.completed {
+		pdf.fail("The PDF was already completed.")
+		return page
+	}
+	// The page size limits of the PDF specification, in Annex C.
+	if !(page.width >= 3 && page.width <= 14400 && page.height >= 3 && page.height <= 14400) {
+		pdf.fail("A page must be from 3 to 14400 points wide and high.")
+	}
+	pdf.pagesCreated++
 	if addToPDF {
 		pdf.AddPage(page)
 	}
@@ -155,7 +172,39 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 // Complete completes adding content to the existing PDF.
 func (page *Page) Complete(objects *[]*PDFobj) {
 	page.RestoreGraphicsState()
+	page.checkBalanced()
 	page.pageObj.AddContent(page.getContent(), objects)
+}
+
+// checkBalanced records a SaveGraphicsState without its RestoreGraphicsState,
+// or an AddBDC or AddArtifactBMC without its AddEMC, before the page content
+// is written.
+func (page *Page) checkBalanced() {
+	if len(page.savedStates) != 0 {
+		page.pdf.fail("A page ends with a SaveGraphicsState that has no RestoreGraphicsState.")
+	}
+	if page.markedContentDepth != 0 {
+		page.pdf.fail("A page ends with an AddBDC or AddArtifactBMC that has no AddEMC.")
+	}
+}
+
+// open returns true if the page content can still be written; drawing on a
+// page that was written to the PDF would be lost.
+func (page *Page) open() bool {
+	if page.written {
+		page.pdf.fail("The page was already written to the PDF: " +
+			"draw on a page before creating the next page or completing the PDF.")
+		return false
+	}
+	return true
+}
+
+// number returns the bytes of the number, after checking that a PDF can hold it.
+func (page *Page) number(value float32) []byte {
+	if !fastfloat.IsWritable(value) {
+		page.pdf.fail(notWritable)
+	}
+	return fastfloat.ToByteArray(value)
 }
 
 // removeComments removes object dictionary comments.
@@ -872,10 +921,16 @@ var hexDigits = [16]byte{
 }
 
 func (page *Page) appendByteAsHex(b byte) {
+	if !page.open() {
+		return
+	}
 	page.buf = append(page.buf, hexDigits[(b>>4)&0xF], hexDigits[b&0xF])
 }
 
 func (page *Page) appendCodePointAsHex(codePoint int) {
+	if !page.open() {
+		return
+	}
 	if codePoint <= 0xFFFF {
 		page.buf = append(page.buf,
 			hexDigits[(codePoint>>12)&0xF],
@@ -923,6 +978,10 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 
 // RestoreGraphicsState restores the last saved graphics state. Please see Example_31.
 func (page *Page) RestoreGraphicsState() {
+	if len(page.savedStates) == 0 {
+		page.pdf.fail("RestoreGraphicsState was called without a matching SaveGraphicsState.")
+		return
+	}
 	if n := len(page.savedStates); n > 0 {
 		state := page.savedStates[n-1]
 		page.savedStates = page.savedStates[:n-1]
@@ -1163,10 +1222,44 @@ func (page *Page) SetDefaultPenWidth() *Page {
 //
 //	  - strokeDashPattern: the line dash pattern.
 func (page *Page) SetStrokeDashPattern(strokeDashPattern string) *Page {
+	if !isDashPattern(strokeDashPattern) {
+		page.pdf.fail("The dash pattern \"" + strokeDashPattern +
+			"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".")
+		return page
+	}
 	page.strokeDashPattern = strokeDashPattern
 	page.appendString(page.strokeDashPattern)
 	page.appendString(" d\n")
 	return page
+}
+
+const dashNumber = `[+-]?(?:\d+(?:\.\d*)?|\.\d+)`
+
+var dashPattern = regexp.MustCompile(`^\s*\[\s*(` + dashNumber + `(?:\s+` + dashNumber + `)*)?\s*\]\s*` + dashNumber + `\s*$`)
+
+// isDashPattern returns true for a dash array of non-negative numbers, not all
+// zero, and a phase, like "[3 3] 0"; "[] 0" is a solid line.
+func isDashPattern(pattern string) bool {
+	m := dashPattern.FindStringSubmatch(pattern)
+	if m == nil {
+		return false
+	}
+	lengths := strings.Fields(m[1])
+	if len(lengths) == 0 {
+		return true
+	}
+	notAllZero := false
+	for _, length := range lengths {
+		if strings.HasPrefix(length, "-") {
+			return false
+		}
+		if value, err := strconv.ParseFloat(length, 64); err != nil {
+			return false
+		} else if value != 0 {
+			notAllZero = true
+		}
+	}
+	return notAllZero
 }
 
 // SetDefaultStrokeDashPattern sets the default line dash pattern - solid line.
@@ -1179,6 +1272,10 @@ func (page *Page) SetDefaultStrokeDashPattern() *Page {
 
 // SetPenWidth sets the pen width that will be used to draw lines and splines on this page.
 func (page *Page) SetPenWidth(width float32) *Page {
+	if width < 0 {
+		page.pdf.fail("The pen width cannot be negative.")
+		return page
+	}
 	page.penWidth = width
 	page.appendFloat32(width)
 	page.appendString(" w\n")
@@ -1513,10 +1610,10 @@ func (page *Page) SetTextRotation(degrees int) *Page {
 		cosOfAngle := float32(math.Cos(float64(degrees) * (math.Pi / 180)))
 		page.tmx = [4]float32{cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle}
 	}
-	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
-	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
-	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
-	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
+	page.tm0 = page.number(page.tmx[0])
+	page.tm1 = page.number(page.tmx[1])
+	page.tm2 = page.number(page.tmx[2])
+	page.tm3 = page.number(page.tmx[3])
 	return page
 }
 
@@ -1608,6 +1705,9 @@ func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 
 // setTextFont sets the text font.
 func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
+	if font.pdf != nil && font.pdf != page.pdf {
+		page.pdf.fail("The font belongs to another PDF.")
+	}
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)
@@ -1782,6 +1882,7 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 // AddBDC begins marked content for a structure element with BDC, when the
 // document is PDF/UA compliant.
 func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, altDescription string) {
+	page.markedContentDepth++
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		element := newStructElement()
 		element.structure = string(structure)
@@ -1804,6 +1905,7 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 
 // AddArtifactBMC begins marked content for an artifact when the document is PDF/UA compliant.
 func (page *Page) AddArtifactBMC() {
+	page.markedContentDepth++
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		page.appendString("/Artifact BMC\n")
 	}
@@ -1811,6 +1913,11 @@ func (page *Page) AddArtifactBMC() {
 
 // AddEMC adds EMC to the page.
 func (page *Page) AddEMC() {
+	if page.markedContentDepth == 0 {
+		page.pdf.fail("AddEMC was called without a matching AddBDC or AddArtifactBMC.")
+		return
+	}
+	page.markedContentDepth--
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		page.appendString("EMC\n")
 	}
@@ -2041,23 +2148,33 @@ func (page *Page) drawTextLine(font *Font, str string, x float32, y float32) {
 }
 
 func (page *Page) appendInteger(value int) {
-	page.buf = append(page.buf, []byte(strconv.Itoa(value))...)
+	if page.open() {
+		page.buf = append(page.buf, []byte(strconv.Itoa(value))...)
+	}
 }
 
 func (page *Page) appendFloat32(value float32) {
-	page.buf = append(page.buf, fastfloat.ToByteArray(value)...)
+	if page.open() {
+		page.buf = append(page.buf, page.number(value)...)
+	}
 }
 
 func (page *Page) appendString(s1 string) {
-	page.buf = append(page.buf, s1...)
+	if page.open() {
+		page.buf = append(page.buf, s1...)
+	}
 }
 
 func (page *Page) appendByte(b byte) {
-	page.buf = append(page.buf, b)
+	if page.open() {
+		page.buf = append(page.buf, b)
+	}
 }
 
 func (page *Page) appendByteArray(a []byte) {
-	page.buf = append(page.buf, a...)
+	if page.open() {
+		page.buf = append(page.buf, a...)
+	}
 }
 
 // rotateAroundCenter rotates the coordinate system around the specified center.
@@ -2071,13 +2188,13 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	radians := float64(degrees) * math.Pi / 180
 	cos := float32(math.Cos(radians))
 	sin := float32(math.Sin(radians))
-	page.appendByteArray(fastfloat.ToByteArray(cos))
+	page.appendFloat32(cos)
 	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(sin))
+	page.appendFloat32(sin)
 	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(-sin))
+	page.appendFloat32(-sin)
 	page.appendString(" ")
-	page.appendByteArray(fastfloat.ToByteArray(cos))
+	page.appendFloat32(cos)
 	page.appendString(" 0 0 cm\n")
 
 	page.appendString("1 0 0 1 ")

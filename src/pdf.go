@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
@@ -61,7 +62,9 @@ type PDF struct {
 	importedExtGStates        []string
 	uuid                      string
 	prevPage                  *Page
-	err                       error // The first error writing to the writer; Complete returns it.
+	err                       error // The first misuse of the API or error writing to the writer; Complete returns it.
+	completed                 bool  // True after Complete.
+	pagesCreated              int   // The pages made for this document, added or detached.
 	structElements            []*structElement
 	contentStreamsCompression bool
 	file                      *os.File
@@ -142,6 +145,11 @@ func NewPDF(w *bufio.Writer) *PDF {
 
 // SetCompliance sets the PDF/UA or PDF/A compliance of this document. See the compliance package.
 func (pdf *PDF) SetCompliance(level compliance.Compliance) *PDF {
+	// The fonts and the page content are written for the compliance.
+	if level != pdf.compliance && (pdf.getObjNumber() > 0 || pdf.pagesCreated > 0) {
+		pdf.fail("Set the compliance before adding fonts, images or pages to the PDF.")
+		return pdf
+	}
 	pdf.compliance = level
 	return pdf
 }
@@ -153,6 +161,11 @@ func (pdf *PDF) GetCompliance() compliance.Compliance {
 
 // SetEncryption sets the encryption applied to this document.
 func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
+	// Every object after the encryption dictionary is encrypted.
+	if encryption != nil && encryption.getObjNumber() != pdf.getObjNumber() {
+		pdf.fail("Set the encryption before adding fonts, images or pages to the PDF.")
+		return pdf
+	}
 	pdf.encryption = encryption
 	return pdf
 }
@@ -178,6 +191,17 @@ func NewPDFReader() *PDF {
 	pdf.states = make(map[string]int)
 	pdf.stamps = make([]*Stamp, 0)
 	return pdf
+}
+
+// fail records the first misuse of the API and returns it as an error. The
+// call that finds the misuse writes nothing broken where it can, and Complete
+// refuses to finish the document, as the file would be broken.
+func (pdf *PDF) fail(message string) error {
+	err := errors.New(message)
+	if pdf.err == nil {
+		pdf.err = err
+	}
+	return err
 }
 
 func (pdf *PDF) newObj() {
@@ -352,8 +376,27 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 
 // escapeXML returns the text with the characters that have a meaning in XML
 // escaped.
+// escapeXML returns the text with the characters that have a meaning in XML
+// escaped, and without what XML does not allow: invalid UTF-8, the control
+// characters other than tab, line feed and carriage return, U+FFFE and
+// U+FFFF, which would make the metadata unreadable.
 func escapeXML(text string) string {
-	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(text)
+	var sb strings.Builder
+	for i, r := range text {
+		switch {
+		case r == utf8.RuneError && strings.HasPrefix(text[i:], "\xef\xbf\xbd") == false:
+			// Invalid UTF-8
+		case r == '&':
+			sb.WriteString("&amp;")
+		case r == '<':
+			sb.WriteString("&lt;")
+		case r == '>':
+			sb.WriteString("&gt;")
+		case r == '\t' || r == '\n' || r == '\r' || (r >= 0x20 && r != 0xFFFE && r != 0xFFFF):
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
 }
 
 func (pdf *PDF) addOutputIntentObject() int {
@@ -865,6 +908,8 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 }
 
 func (pdf *PDF) addPageContent(page *Page) {
+	page.checkBalanced()
+	page.written = true
 	if pdf.contentStreamsCompression {
 		compressed := compressor.Deflate(page.buf)
 		if pdf.encryption != nil {
@@ -1200,6 +1245,19 @@ func (pdf *PDF) AddPage(page *Page) {
 	if page == nil {
 		return
 	}
+	if pdf.completed {
+		pdf.fail("The PDF was already completed.")
+		return
+	}
+	if page.pdf != pdf {
+		pdf.fail("The page belongs to another PDF.")
+		return
+	}
+	if page.added {
+		pdf.fail("The page was already added to the PDF.")
+		return
+	}
+	page.added = true
 	pdf.pages = append(pdf.pages, page)
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
@@ -1217,9 +1275,22 @@ func (pdf *PDF) AddPages(pages []*Page) {
 // Complete writes the rest of the PDF, flushes the bufio.Writer and closes the
 // file that NewPDFFile opened. It returns the first error writing the document.
 func (pdf *PDF) Complete() error {
+	if pdf.completed {
+		return pdf.fail("Complete was already called.")
+	}
+	if pdf.err != nil {
+		return errors.New("The PDF was not completed because of an earlier error: " + pdf.err.Error())
+	}
+	if len(pdf.pages) == 0 && pdf.pagesObjNumber == 0 {
+		return pdf.fail("A PDF needs at least one page.")
+	}
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
+		if pdf.err != nil {
+			return pdf.err
+		}
 	}
+	pdf.completed = true
 	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
@@ -2389,6 +2460,9 @@ func (pdf *PDF) appendInteger(value int) {
 }
 
 func (pdf *PDF) appendFloat32(f float32) {
+	if !fastfloat.IsWritable(f) {
+		pdf.fail(notWritable)
+	}
 	pdf.appendByteArray(fastfloat.ToByteArray(f))
 }
 

@@ -51,6 +51,19 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `CheckBox.setFontSize` never did. An empty `setTitle`, `setAuthor`,
   `setSubject`, `setKeywords` or `setCreator`, and an empty annotation title
   or contents, write nothing in the four ports.
+- A program that uses the API in a way that would write a broken PDF fails,
+  and `complete()` then refuses to finish the document: a NaN, infinite or
+  too large number, a malformed dash pattern, a negative pen width,
+  `saveGraphicsState` and `restoreGraphicsState` or `addBDC` and `addEMC` out
+  of pairs (counted whatever the compliance), drawing on a page that was
+  written, a page added twice, after `complete()` or to another PDF, a second
+  `complete()`, no pages, a font, image, stamp, optional content group,
+  embedded file or bookmark page of another PDF, a stamp drawn before its
+  `complete()` or with core font text, encryption or compliance set after a
+  font, image or page, and a page under 3 or over 14,400 points. Java and C#
+  throw at the call; Go and Swift record the first mistake, which `Complete`
+  returns and `complete()` throws. See "Mistakes that are refused" in the
+  README.
 - Many methods and constants are renamed or removed so that one concept has
   one name in every class and port. See "Names".
 - `Text` is removed: a `TextFrame` without a height draws the same paragraphs
@@ -434,6 +447,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   Swift, where the failure came later in `stringWidth`. C# and Swift write
   the out-of-range colour warning to standard error, as Java's logger and Go
   do, instead of the program's output.
+- The number writer no longer writes `NaN` or `Infinity`, which viewers
+  reject, and a pie chart, a `DonutChart` with an inner radius of 0, no
+  longer writes NaN for its center. The XMP metadata leaves out the
+  characters XML does not allow, which made it unreadable. An image, stamp or
+  container scaled to 0 draws nothing instead of a singular matrix. Stamp
+  text adds its font to the stamp's resources, where a font left out of
+  `addFont` was a missing resource, and `addFont` adds a font once.
 
 ### Port parity
 - The default configuration of the optional content lists the hidden groups

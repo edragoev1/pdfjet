@@ -25,11 +25,13 @@ type Bookmark struct {
 	dest       *Destination
 	objNumber  int
 	prefix     string
+	pdf        *PDF // The document of the root bookmark
 }
 
 // NewBookmark creates new bookmark.
 func NewBookmark(pdf *PDF) *Bookmark {
 	bookmark := new(Bookmark)
+	bookmark.pdf = pdf
 	pdf.toc = bookmark
 	return bookmark
 }
@@ -49,6 +51,9 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 	bm := bookmark
 	for bm.parent != nil {
 		bm = bm.GetParent()
+	}
+	if bm.pdf != nil && page.pdf != bm.pdf {
+		bm.pdf.fail("The page belongs to another PDF.")
 	}
 	key := bm.getNext()
 	whitespace := regexp.MustCompile(`\s+`)

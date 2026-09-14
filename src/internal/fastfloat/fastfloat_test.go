@@ -55,5 +55,14 @@ func TestFastFloatWritesLargeNumbersWithAllTheirDigits(t *testing.T) {
 	testFormat(t, "21600000", 21600000)
 	testFormat(t, "1000000000", 1e9)
 	testFormat(t, "-1000000000", -1e9)
-	testFormat(t, "339999995214436424907732413799364296704", 3.4e38)
+	testFormat(t, "2147483520", 2147483520)
+}
+
+func TestFastFloatRefusesNumbersAPdfCannotHold(t *testing.T) {
+	for _, value := range []float32{float32(math.NaN()), float32(math.Inf(1)), float32(math.Inf(-1)), 2147483648, -3.4e38} {
+		if IsWritable(value) {
+			t.Errorf("%v is writable", value)
+		}
+		testFormat(t, "0", value)
+	}
 }

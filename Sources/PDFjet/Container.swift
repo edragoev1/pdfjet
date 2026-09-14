@@ -159,6 +159,9 @@ public class Container: Drawable {
     /// - Parameter page: The `Page` to draw on.
     /// - Returns: An array containing the bottom-right position of the container.
     public func drawOn(_ page: Page?) -> [Float] {
+        if scaleX == 0.0 || scaleY == 0.0 {
+            return [self.x + width, self.y + height]    // Nothing to paint.
+        }
         page!.saveGraphicsState()
 
         page!.append("1 0 0 1 ")
@@ -179,13 +182,13 @@ public class Container: Drawable {
         let rad = rotateDegrees * Float.pi / 180.0
         let cosVal = cos(rad)
         let sinVal = sin(rad)
-        page!.append(FastFloat.toByteArray(cosVal))
+        page!.append(cosVal)
         page!.append(Token.space)
-        page!.append(FastFloat.toByteArray(sinVal))
+        page!.append(sinVal)
         page!.append(Token.space)
-        page!.append(FastFloat.toByteArray(-sinVal))
+        page!.append(-sinVal)
         page!.append(Token.space)
-        page!.append(FastFloat.toByteArray(cosVal))
+        page!.append(cosVal)
         page!.append(" 0 0 cm\n")
 
         page!.append(scaleX)

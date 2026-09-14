@@ -37,6 +37,7 @@ public class Stamp : Drawable {
     private var language: String?
     private var actualText: String = Single.space
     private var altDescription: String = Single.space
+    private var completed = false
 
     /// Creates a stamp for the specified document.
     public init(_ pdf: PDF) {
@@ -54,7 +55,13 @@ public class Stamp : Drawable {
     /// Adds a font used by the text on this stamp.
     @discardableResult
     public func addFont(_ font: Font) -> Stamp {
-        fonts.append(font)
+        if let identity = font.pdfIdentity, identity != pdf.identity {
+            pdf.fail("The font belongs to another PDF.")
+            return self
+        }
+        if !fonts.contains(where: { $0 === font }) {
+            fonts.append(font)
+        }
         return self
     }
 
@@ -152,6 +159,10 @@ public class Stamp : Drawable {
     /// Sets the stroke width for the content drawn after it.
     @discardableResult
     public func setStrokeWidth(_ width: Float) -> Stamp {
+        if width < 0.0 {
+            pdf.fail("The stroke width cannot be negative.")
+            return self
+        }
         append(width)
         append(" w\n")
         self.strokeWidth = width
@@ -266,7 +277,7 @@ public class Stamp : Drawable {
         )
     }
 
-    /// Draws text on this stamp. The font must also be added with addFont.
+    /// Draws text on this stamp with an embedded font, which the stamp adds to its fonts.
     @discardableResult
     public func drawText(
         _ font: Font,
@@ -275,6 +286,11 @@ public class Stamp : Drawable {
         _ y: Float,
         _ text: String
     ) -> Stamp {
+        if font.isCoreFont || font.isCJK {
+            pdf.fail("A stamp draws text with an embedded font, not a core or CJK font.")
+            return self
+        }
+        addFont(font)
         append("BT\n")
         append("/F\(font.objNumber)")
         append(" ")
@@ -317,15 +333,21 @@ public class Stamp : Drawable {
     /// Call it once, after drawing the content and before drawOn.
     ///
     public func complete() throws {
+        if completed {
+            let message = "complete() was already called on the stamp."
+            pdf.fail(message)
+            throw PDFjetError(message: message)
+        }
+        completed = true
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Form\n")
 
         pdf.append("/BBox [0 0 ")
-        pdf.append(FastFloat.toByteArray(width))
+        pdf.append(width)
         pdf.append(" ")
-        pdf.append(FastFloat.toByteArray(height))
+        pdf.append(height)
         pdf.append("]\n")
 
         pdf.append("/Resources <<\n")
@@ -421,6 +443,17 @@ public class Stamp : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
+        if page.pdf !== pdf {
+            page.pdf.fail("The stamp belongs to another PDF.")
+            return [self.x + width, self.y + height]
+        }
+        if !completed {
+            page.pdf.fail("Call complete() on the stamp before drawing it.")
+            return [self.x + width, self.y + height]
+        }
+        if width == 0.0 || height == 0.0 || scaleX == 0.0 || scaleY == 0.0 {
+            return [self.x + width, self.y + height]    // Nothing to paint.
+        }
 
         page.addBDC(StructElem.P, language, actualText, altDescription)
         page.saveGraphicsState()
@@ -480,10 +513,30 @@ public class Stamp : Drawable {
     }
 
     private func append(_ value: Float) {
+        if !notCompleted() {
+            return
+        }
+        if !FastFloat.isWritable(value) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+            return
+        }
         self.buf.append(contentsOf: FastFloat.toByteArray(value))
     }
 
     private func append(_ str: String) {
+        if !notCompleted() {
+            return
+        }
         self.buf.append(contentsOf: str.utf8)
+    }
+
+    // The content drawn after complete() would be lost: records the misuse and
+    // returns false after complete().
+    private func notCompleted() -> Bool {
+        if completed {
+            pdf.fail("The stamp was already completed.")
+            return false
+        }
+        return true
     }
 }

@@ -1,16 +1,19 @@
 import Foundation
 
 struct FastFloat {
+    static let NOT_WRITABLE = "A coordinate, size or width is NaN, infinite or too large for a PDF."
+
+    // A PDF number has no exponent and no NaN or infinity, and readers keep
+    // integers in 32 bits, so a number must be finite and below 2^31.
+    static func isWritable(_ value: Float) -> Bool {
+        return abs(value) < 2147483648.0    // False for NaN and the infinities
+    }
+
     static func toByteArray(_ value: Float) -> [UInt8] {
-        // Handle special cases
-        if value.isNaN {
-            return Array("NaN".utf8)
-        }
-        if value == .infinity {
-            return Array("Infinity".utf8)
-        }
-        if value == -.infinity {
-            return Array("-Infinity".utf8)
+        // The callers check isWritable and record the misuse; a number that is
+        // not writable still gives valid syntax.
+        if !isWritable(value) {
+            return Array("0".utf8)
         }
 
         let magnitude = abs(Double(value))

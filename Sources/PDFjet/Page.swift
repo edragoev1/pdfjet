@@ -78,6 +78,12 @@ public class Page {
     private var strokeDashPattern: String = "[] 0"
     // The states that saveGraphicsState saved and restoreGraphicsState restores.
     private var savedStates = [State]()
+    // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
+    private var markedContentDepth = 0
+    // True once the page is added to its PDF.
+    internal var added = false
+    // True once the content of the page is written to the PDF.
+    internal var written = false
     private var mcid = 0
     private let hexadecimal = Hexadecimal()
 
@@ -106,6 +112,14 @@ public class Page {
         self.tm1 = FastFloat.toByteArray(tmx[1])
         self.tm2 = FastFloat.toByteArray(tmx[2])
         self.tm3 = FastFloat.toByteArray(tmx[3])
+        if pdf.completed {
+            pdf.fail("The PDF was already completed.")
+        }
+        // The page size limits of the PDF specification, in Annex C.
+        if !(width >= 3.0 && width <= 14400.0 && height >= 3.0 && height <= 14400.0) {
+            pdf.fail("A page must be from 3 to 14400 points wide and high.")
+        }
+        pdf.pagesCreated += 1
         if addPageToPDF {
             pdf.addPage(self)
         }
@@ -133,7 +147,19 @@ public class Page {
     /// Finishes a page read from an existing PDF by adding its new content to the objects.
     public func complete(_ objects: inout [PDFobj]) {
         restoreGraphicsState()
+        checkBalanced()
         pageObj!.addContent(&self.buf, &objects)
+    }
+
+    /// Checks that every saveGraphicsState has its restoreGraphicsState and every
+    /// addBDC or addArtifactBMC its addEMC, before the page content is written.
+    func checkBalanced() {
+        if !savedStates.isEmpty {
+            pdf.fail("A page ends with a saveGraphicsState that has no restoreGraphicsState.")
+        }
+        if markedContentDepth != 0 {
+            pdf.fail("A page ends with an addBDC or addArtifactBMC that has no addEMC.")
+        }
     }
 
     private static func removeComments(_ obj: PDFobj) -> PDFobj {
@@ -978,14 +1004,16 @@ public class Page {
 
     /// Restores the last saved graphics state. Please see Example_31.
     public func restoreGraphicsState() {
-        if let state = savedStates.popLast() {
-            penColor = state.getPen()
-            brushColor = state.getBrush()
-            penWidth = state.getPenWidth()
-            lineCapStyle = state.getLineCapStyle()
-            lineJoinStyle = state.getLineJoinStyle()
-            strokeDashPattern = state.getLinePattern()
+        guard let state = savedStates.popLast() else {
+            pdf.fail("restoreGraphicsState was called without a matching saveGraphicsState.")
+            return
         }
+        penColor = state.getPen()
+        brushColor = state.getBrush()
+        penWidth = state.getPenWidth()
+        lineCapStyle = state.getLineCapStyle()
+        lineJoinStyle = state.getLineJoinStyle()
+        strokeDashPattern = state.getLinePattern()
         append("Q\n")
     }
 
@@ -1166,10 +1194,90 @@ public class Page {
     ///
     @discardableResult
     public func setStrokeDashPattern(_ pattern: String) -> Page {
+        if !Page.isDashPattern(pattern) {
+            pdf.fail("The dash pattern \"" + pattern + "\" is not an array of non-negative numbers, " +
+                    "not all zero, followed by a phase, such as \"[3 3] 0\".")
+            return self
+        }
         self.strokeDashPattern = pattern
         append(self.strokeDashPattern)
         append(" d\n")
         return self
+    }
+
+    // Returns true for a dash array of non-negative numbers, not all zero, and a
+    // phase, like "[3 3] 0"; "[] 0" is a solid line. The numbers are separated
+    // by white space.
+    static func isDashPattern(_ pattern: String) -> Bool {
+        let bytes = Array(pattern.utf8)
+        var i = 0
+        func isSpace(_ b: UInt8) -> Bool {
+            return b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0B || b == 0x0C || b == 0x0D
+        }
+        func skipSpaces() {
+            while i < bytes.count && isSpace(bytes[i]) {
+                i += 1
+            }
+        }
+        func isDigit() -> Bool {
+            return i < bytes.count && bytes[i] >= 0x30 && bytes[i] <= 0x39
+        }
+        // Reads a number, [+-]?(digits(.digits?)?|.digits), or returns nil.
+        func number() -> [UInt8]? {
+            let start = i
+            if i < bytes.count && (bytes[i] == 0x2B || bytes[i] == 0x2D) {
+                i += 1
+            }
+            var digits = 0
+            while isDigit() {
+                i += 1
+                digits += 1
+            }
+            if i < bytes.count && bytes[i] == 0x2E {
+                i += 1
+                while isDigit() {
+                    i += 1
+                    digits += 1
+                }
+            }
+            if digits == 0 {
+                i = start
+                return nil
+            }
+            return Array(bytes[start..<i])
+        }
+
+        skipSpaces()
+        guard i < bytes.count && bytes[i] == 0x5B else {    // [
+            return false
+        }
+        i += 1
+        var notAllZero = false
+        var lengths = 0
+        skipSpaces()
+        while i < bytes.count && bytes[i] != 0x5D {         // ]
+            guard let length = number(), length[0] != 0x2D else {
+                return false
+            }
+            if length.contains(where: { $0 >= 0x31 && $0 <= 0x39 }) {
+                notAllZero = true
+            }
+            lengths += 1
+            if i < bytes.count && bytes[i] != 0x5D && !isSpace(bytes[i]) {
+                return false
+            }
+            skipSpaces()
+        }
+        guard i < bytes.count else {
+            return false
+        }
+        i += 1
+        skipSpaces()
+        guard number() != nil else {
+            return false
+        }
+        skipSpaces()
+        return i == bytes.count && (lengths == 0 || notAllZero)
     }
 
     ///
@@ -1190,6 +1298,10 @@ public class Page {
     ///
     @discardableResult
     public func setPenWidth(_ width: Float) -> Page {
+        if width < 0.0 {
+            pdf.fail("The pen width cannot be negative.")
+            return self
+        }
         self.penWidth = width
         append(width)
         append(" w\n")
@@ -1588,10 +1700,10 @@ public class Page {
             let cosOfAngle = Float(cos(Double(degrees) * (Double.pi / 180.0)))
             self.tmx = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
-        self.tm0 = FastFloat.toByteArray(tmx[0])
-        self.tm1 = FastFloat.toByteArray(tmx[1])
-        self.tm2 = FastFloat.toByteArray(tmx[2])
-        self.tm3 = FastFloat.toByteArray(tmx[3])
+        self.tm0 = number(tmx[0])
+        self.tm1 = number(tmx[1])
+        self.tm2 = number(tmx[2])
+        self.tm3 = number(tmx[3])
         return self
     }
 
@@ -1725,6 +1837,9 @@ public class Page {
     }
 
     internal func setTextFont(_ font: Font, _ fontSize: Float) {
+        if let identity = font.pdfIdentity, identity != pdf.identity {
+            pdf.fail("The font belongs to another PDF.")
+        }
         if font.fontID != nil {
             append("/")
             append(font.fontID!)
@@ -1892,6 +2007,10 @@ public class Page {
     }
 
     func append(_ str: String) {
+        if written {
+            failWritten()
+            return
+        }
         self.buf.append(contentsOf: str.utf8)
     }
 
@@ -1904,16 +2023,42 @@ public class Page {
     }
 
     func append(_ val: Float) {
+        if !FastFloat.isWritable(val) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+            return
+        }
         append(FastFloat.toByteArray(val))
     }
 
     func append(_ byte: UInt8) {
+        if written {
+            failWritten()
+            return
+        }
         self.buf.append(byte)
     }
 
     /// Appends the bytes to the content stream of this page.
     func append(_ buffer: [UInt8]) {
+        if written {
+            failWritten()
+            return
+        }
         self.buf.append(contentsOf: buffer)
+    }
+
+    // The drawing on a page whose content was written to the PDF would be lost.
+    private func failWritten() {
+        pdf.fail("The page was already written to the PDF: " +
+                "draw on a page before creating the next page or completing the PDF.")
+    }
+
+    // Returns the bytes of the number, after checking that a PDF can hold it.
+    private func number(_ value: Float) -> [UInt8] {
+        if !FastFloat.isWritable(value) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+        }
+        return FastFloat.toByteArray(value)
     }
 
     private func drawWord(
@@ -1984,6 +2129,7 @@ public class Page {
             _ language: String?,
             _ actualText: String,
             _ altDescription: String) {
+        markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 {
             let element = StructElement()
             element.structure = structure.rawValue
@@ -2005,6 +2151,7 @@ public class Page {
 
     /// Begins marked content for an artifact when the document is PDF/UA compliant.
     public func addArtifactBMC() {
+        markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 {
             append("/Artifact BMC\n")
         }
@@ -2012,6 +2159,11 @@ public class Page {
 
     /// Ends the current marked content when the document is PDF/UA compliant.
     public func addEMC() {
+        if markedContentDepth == 0 {
+            pdf.fail("addEMC was called without a matching addBDC or addArtifactBMC.")
+            return
+        }
+        markedContentDepth -= 1
         if pdf.compliance == Compliance.PDF_UA_1 {
             append("EMC\n")
         }
@@ -2316,13 +2468,13 @@ public class Page {
         let radians = Double(degrees) * Double.pi / 180
         let cosValue = Float(cos(radians))
         let sinValue = Float(sin(radians))
-        append(FastFloat.toByteArray(cosValue))
+        append(cosValue)
         append(Token.space)
-        append(FastFloat.toByteArray(sinValue))
+        append(sinValue)
         append(Token.space)
-        append(FastFloat.toByteArray(-sinValue))
+        append(-sinValue)
         append(Token.space)
-        append(FastFloat.toByteArray(cosValue))
+        append(cosValue)
         append(" 0 0 cm\n")
 
         append("1 0 0 1 ")

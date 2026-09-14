@@ -54,7 +54,14 @@ public class FastFloatTest {
         Assert.Equal("21600000", Format(21600000f));
         Assert.Equal("1000000000", Format(1e9f));
         Assert.Equal("-1000000000", Format(-1e9f));
-        Assert.Equal("339999995214436424907732413799364296704", Format(3.4e38f));
+        Assert.Equal("2147483520", Format(2147483520f));
+    }
+
+    [Fact]
+    public void RefusesNumbersAPdfCannotHold() {
+        foreach (float value in new float[] {float.NaN, float.PositiveInfinity, float.NegativeInfinity, 2147483648f, -3.4e38f}) {
+            Assert.Throws<System.ArgumentException>(() => FastFloat.ToByteArray(value));
+        }
     }
 }
 }

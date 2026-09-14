@@ -67,7 +67,10 @@ public class DonutChart : Drawable {
         let by = y3 - yc
         let q1 = ax*ax + ay*ay
         let q2 = q1 + ax*bx + ay*by
-        let k2 = 4.0/3.0 * (sqrt(2.0*q1*q2) - q2) / (ax*by - ay*bx)
+        let cross = ax*by - ay*bx
+        // An arc of radius zero, the center of a pie chart, or of no angle has
+        // its control points at its ends; the formula would divide 0 by 0.
+        let k2: Float = (cross == 0.0) ? 0.0 : 4.0/3.0 * (sqrt(2.0*q1*q2) - q2) / cross
 
         // Control points coordinates
         let x1 = xc + ax - k2*ay

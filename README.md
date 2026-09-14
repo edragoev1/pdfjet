@@ -465,6 +465,39 @@ A PDF that the libraries write can be up to 9,999,999,999 bytes long, the
 largest offset that an entry of a cross-reference table holds; a larger one
 fails with an error.
 
+## Mistakes that are refused
+
+PDFjet does not write a broken PDF when a program uses the API the wrong way.
+The call that finds the mistake fails with a message that names it, and
+`complete()` then refuses to finish the document, even when the program caught
+the exception and carried on. These mistakes are refused:
+
+- a coordinate, size or width that is NaN, infinite, or 2^31 or more;
+- a dash pattern that is not an array of non-negative numbers, not all zero,
+  followed by a phase, such as `"[3 3] 0"`, and a negative pen width;
+- a `restoreGraphicsState` without its `saveGraphicsState`, an `addEMC` without
+  its `addBDC` or `addArtifactBMC`, and a page that ends with one still open;
+- drawing on a page after the next page was created or the PDF was completed,
+  adding a page twice, after `complete()` or to another PDF, calling
+  `complete()` twice, and completing a PDF that has no pages;
+- a font, image, stamp, optional content group, embedded file or bookmark page
+  that belongs to another PDF, a stamp drawn before its own `complete()`, and
+  stamp text in a core or CJK font;
+- `setEncryption` or `setCompliance` after a font, an image or a page was added;
+- a page smaller than 3 or larger than 14,400 points, the limits of the PDF
+  specification.
+
+Characters that XML does not allow are left out of the XMP metadata, and an
+image, stamp or container scaled to nothing draws nothing.
+
+Java throws an `IllegalArgumentException` for a bad value and an
+`IllegalStateException` for a call at the wrong time; C# throws an
+`ArgumentException` and an `InvalidOperationException`. Go and Swift record the
+first mistake and carry on, leaving out what they can, and `Complete` returns
+the mistake as an error, or `complete()` throws it; a Go function that already
+returns an error, or a Swift function that already throws, reports it at once
+as well.
+
 ## Port differences
 
 Public setters return the object they were called on, so calls can be chained.
@@ -494,7 +527,9 @@ Where Java and C# throw an `Exception` with a message, Swift throws a
 returns an `error`, or panics where the function returns none. `drawOn` throws
 in Java and C# and panics in Go, but not in Swift, so the Swift `Barcode`
 initializer checks what the other ports check in `drawOn`, Code 39 text and
-the barcode type, and throws the same messages from `init`.
+the barcode type, and throws the same messages from `init`. A mistake that
+would break the PDF is reported through `Complete` in Go and `complete()` in
+Swift; see "Mistakes that are refused".
 
 `Permissions` takes the `UserAccess` values as a typed flags value in C# (a
 `[Flags]` enum) and Go (a `UserAccess` bit set), and as an `int` in Java and

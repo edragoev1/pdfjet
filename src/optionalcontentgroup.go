@@ -84,6 +84,10 @@ func (ocg *OptionalContentGroup) SetExportable(exportable bool) *OptionalContent
 // returns the largest x and y coordinates of their bottom right corners.
 func (ocg *OptionalContentGroup) DrawOn(page *Page) [2]float32 {
 	xy := [2]float32{0.0, 0.0}
+	if page.pdf != ocg.pdf {
+		page.pdf.fail("The optional content group belongs to another PDF.")
+		return xy
+	}
 	if ocg.ocgNumber == -1 {
 		ocg.pdf.newObj()
 		ocg.pdf.appendByteArray(token.BeginDictionary)

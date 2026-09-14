@@ -185,6 +185,9 @@ public class Container implements Drawable {
      * @throws Exception if drawing fails
      */
     public float[] drawOn(Page page) throws Exception {
+        if (scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        }
         page.saveGraphicsState();
 
         page.append("1 0 0 1 ");
@@ -205,13 +208,13 @@ public class Container implements Drawable {
         double rad = rotateDegrees * (Math.PI / 180.0);
         float cos = (float)Math.cos(rad);
         float sin = (float)Math.sin(rad);
-        page.append(FastFloat.toByteArray(cos));
+        page.append(cos);
         page.append(' ');
-        page.append(FastFloat.toByteArray(sin));
+        page.append(sin);
         page.append(' ');
-        page.append(FastFloat.toByteArray(-sin));
+        page.append(-sin);
         page.append(' ');
-        page.append(FastFloat.toByteArray(cos));
+        page.append(cos);
         page.append(" 0 0 cm\n");
 
         page.append(scaleX);

@@ -14,6 +14,8 @@ public class Font {
     var name: String = ""
     var info: String = ""
     var objNumber = 0
+    // The identity of the PDF the font was added to, or nil for a font of an existing PDF.
+    var pdfIdentity: UUID?
     var fontID: String?
 
     // The object number of the embedded font file
@@ -85,6 +87,7 @@ public class Font {
     /// - Throws: PDFjetError when the number is not one of the fourteen core fonts.
     ///
     public init(_ pdf: PDF, _ coreFont: Int) throws {
+        self.pdfIdentity = pdf.identity
         let font = try CoreFont(coreFont)
         self.isCoreFont = true
         self.name = font.name!
@@ -141,6 +144,7 @@ public class Font {
     /// - Parameter font: the Chinese, Japanese or Korean font. Please see Example_04.
     ///
     public init(_ pdf: PDF, _ font: CJKFont) {
+        self.pdfIdentity = pdf.identity
         var fontName: String?
         if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
             fontName = "AdobeMingStd-Light"
@@ -250,6 +254,7 @@ public class Font {
     /// - Parameter stream: the input stream to read this font from.
     ///
     public init(_ pdf: PDF, _ stream: InputStream) throws {
+        self.pdfIdentity = pdf.identity
         let bytes = try Content.getFromStream(stream)
         if Font.isOpenTypeFont(bytes) {
             try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
@@ -279,6 +284,7 @@ public class Font {
     /// - Throws: an error if the font cannot be read.
     ///
     public init(_ pdf: PDF, _ fontPath: String) throws {
+        self.pdfIdentity = pdf.identity
         guard FileManager.default.fileExists(atPath: fontPath),
                 let inputStream = InputStream(fileAtPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)

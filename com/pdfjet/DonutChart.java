@@ -85,7 +85,10 @@ public class DonutChart implements Drawable {
         float by = y3 - yc;
         float q1 = ax * ax + ay * ay;
         float q2 = q1 + ax * bx + ay * by;
-        float k2 = (float) (4.0 / 3.0 * (Math.sqrt(2.0 * q1 * q2) - q2) / (ax * by - ay * bx));
+        float cross = ax * by - ay * bx;
+        // An arc of radius zero, the center of a pie chart, or of no angle has
+        // its control points at its ends; the formula would divide 0 by 0.
+        float k2 = (cross == 0f) ? 0f : (float) (4.0 / 3.0 * (Math.sqrt(2.0 * q1 * q2) - q2) / cross);
 
         // Control points coordinates
         float x1 = xc + ax - k2 * ay;

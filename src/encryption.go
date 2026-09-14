@@ -39,6 +39,10 @@ type Encryption struct {
 // NewEncryption creates a new encryption dictionary and adds it to the PDF
 func NewEncryption(pdf *PDF,
 	passwords *encryption.Passwords, permissions *encryption.Permissions) (*Encryption, error) {
+	// The objects written before the encryption dictionary would not be encrypted.
+	if pdf.getObjNumber() > 0 {
+		return nil, pdf.fail("Set the encryption before adding fonts, images or pages to the PDF.")
+	}
 	enc := &Encryption{}
 
 	// Generate a random 256-bit (32-byte) File Encryption Key

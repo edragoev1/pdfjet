@@ -16,6 +16,8 @@ namespace PDFjet.NET {
 public class EmbeddedFile {
     internal int objNumber = -1;
     internal String fileName = null;
+    // The PDF the file is embedded in.
+    internal PDF pdf;
 
     /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
@@ -25,6 +27,7 @@ public class EmbeddedFile {
 
     /// <summary>Embeds a file read from the stream into the PDF under the specified name.</summary>
     public EmbeddedFile(PDF pdf, String fileName, Stream stream, bool compress) {
+        this.pdf = pdf;
         this.fileName = fileName;
         byte[] buf = Content.GetFromStream(stream);
 

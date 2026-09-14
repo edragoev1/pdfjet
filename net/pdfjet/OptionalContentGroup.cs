@@ -79,6 +79,9 @@ public class OptionalContentGroup {
     /// <summary>Draws this group and its drawables on the specified page.</summary>
     /// <returns>the largest x and y coordinates of the bottom right corners of the drawables in this group.</returns>
     public float[] DrawOn(Page page) {
+        if (page.pdf != pdf) {
+            page.pdf.Fail(new ArgumentException("The optional content group belongs to another PDF."));
+        }
         float[] xy = new float[] {0f, 0f};
         if (this.ocgNumber == -1) {
             pdf.NewObj();

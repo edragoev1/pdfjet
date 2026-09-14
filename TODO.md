@@ -886,6 +886,21 @@ renames included (the Week 1 decision), so every item is a blocker.
       named, and the examples import them. The core font metrics went into
       `com.pdfjet` with the public by accident fixes.
 
+### Broken PDFs from misuse (Sep 14)
+
+- ✅ **B** A probe of 32 wrong Java programs and 6 Go programs, checked with
+      poppler, mutool, veraPDF and a strict content-stream check, found 16
+      that wrote a broken or invalid PDF without an error: NaN and infinite
+      numbers, raw dash patterns, unpaired q/Q and BDC/EMC, fonts, images and
+      pages of another PDF, uncompleted stamps, late encryption and
+      compliance, no pages, control characters in the XMP metadata, page
+      sizes outside 3 to 14,400, negative pen widths and numbers too large for
+      a PDF. Go lost drawing on a written page silently and wrote a page
+      added twice twice. Fixed in the four ports: the call fails (Java, C#) or
+      records the mistake (Go, Swift), and `complete()` refuses to finish the
+      document; MisuseTest in each port. The pie chart NaN and stamp text
+      without `addFont` were fixed on the way.
+
 ## Week 4 (Oct 2–11): parity audit, docs, release
 
 - ✅ **B** Public API audit across the four ports: `audit-api.py` lists the

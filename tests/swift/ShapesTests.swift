@@ -41,7 +41,7 @@ import Testing
     @Test func radioButtonAndCheckBoxCorners() {
         // Java tests setLocation(double, double) here; Swift has the Float form only.
         let page = page()
-        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let font = TestSupport.helvetica(page.pdf)
         let radio = RadioButton(font, "rb")
         _ = radio.setLocation(1, 2)
         TestSupport.expectXY(45.184, 15.872, radio.drawOn(page))
@@ -49,10 +49,11 @@ import Testing
     }
 
     @Test func calendarMonthStartsAtTheOriginWithCellsFromTheDayNames() {
-        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let page = page()
+        let font = TestSupport.helvetica(page.pdf)
         // February and March 2026 start on a Sunday.
-        TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 2).drawOn(page()))
-        TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 3).drawOn(page()))
+        TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 2).drawOn(page))
+        TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 3).drawOn(page))
     }
 
     @Test func colorsAreSetAsAnIntOrAsAnArray() {

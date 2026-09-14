@@ -29,6 +29,7 @@ public class Bookmark {
     private Bookmark next = null;
     private List<Bookmark> children = null;
     private Destination dest = null;
+    private PDF pdf = null;     // The document of the root bookmark
 
     /**
      * Creates a bookmark.
@@ -36,6 +37,7 @@ public class Bookmark {
      * @param pdf the PDF.
      */
     public Bookmark(PDF pdf) {
+        this.pdf = pdf;
         pdf.toc = this;
     }
 
@@ -65,6 +67,9 @@ public class Bookmark {
         Bookmark bm = this;
         while (bm.parent != null) {
             bm = bm.getParent();
+        }
+        if (bm.pdf != null && page.pdf != bm.pdf) {
+            bm.pdf.fail(new IllegalArgumentException("The page belongs to another PDF."));
         }
         String key = bm.next();
         Bookmark bookmark2 = new Bookmark(

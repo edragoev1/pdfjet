@@ -28,6 +28,7 @@ import (
 // Please see Example_03 and Example_24.
 type Image struct {
 	objNumber      int
+	pdf            *PDF    // The PDF the image was added to, or nil for an image of an existing PDF
 	x              float32 // Position of the image on the page
 	y              float32
 	w              float32 // Image width
@@ -65,6 +66,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 	imageType := imageTypeOf(buf)
 	reader = bytes.NewReader(buf)
 	image := new(Image)
+	image.pdf = pdf
 	image.altDescription = single.Space
 	image.actualText = single.Space
 
@@ -168,6 +170,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 // NewImageFromPDFobj constructs new image from an existing PDF object.
 func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image := new(Image)
+	image.pdf = pdf
 	image.altDescription = single.Space
 	image.actualText = single.Space
 
@@ -326,6 +329,13 @@ func (image *Image) SetLanguage(language string) *Image {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
+	if image.pdf != nil && page.pdf != image.pdf {
+		page.pdf.fail("The image belongs to another PDF.")
+		return [2]float32{image.x + image.w, image.y + image.h}
+	}
+	if image.w == 0 || image.h == 0 {
+		return [2]float32{image.x + image.w, image.y + image.h} // A zero size image paints nothing.
+	}
 	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
 

@@ -67,6 +67,9 @@ public class FileAttachment : IDrawable {
 
     /// <summary>Adds this attachment to the specified page.</summary>
     public float[] DrawOn(Page page) {
+        if (embeddedFile.pdf != page.pdf) {
+            page.pdf.Fail(new ArgumentException("The embedded file belongs to another PDF."));
+        }
         Annotation annotation = new Annotation(
                 Annotation.FileAttachment,
                 x,

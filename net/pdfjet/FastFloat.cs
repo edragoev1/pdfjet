@@ -4,16 +4,17 @@ using System.Text;
 
 namespace PDFjet.NET {
 internal static class FastFloat {
+    internal const String NOT_WRITABLE = "A coordinate, size or width is NaN, infinite or too large for a PDF.";
+
+    // A PDF number has no exponent and no NaN or infinity, and readers keep
+    // integers in 32 bits, so a number must be finite and below 2^31.
+    internal static bool IsWritable(float value) {
+        return Math.Abs(value) < 2147483648f;   // False for NaN and the infinities
+    }
+
     internal static byte[] ToByteArray(float value) {
-        // Handle special cases
-        if (float.IsNaN(value)) {
-            return new byte[] { (byte)'N', (byte)'a', (byte)'N' };
-        }
-        if (float.IsPositiveInfinity(value)) {
-            return new byte[] { (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
-        }
-        if (float.IsNegativeInfinity(value)) {
-            return new byte[] { (byte)'-', (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
+        if (!IsWritable(value)) {
+            throw new ArgumentException(NOT_WRITABLE);
         }
 
         double magnitude = Math.Abs((double) value);

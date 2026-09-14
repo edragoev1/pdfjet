@@ -70,6 +70,10 @@ public class Page {
     internal String strokeDashPattern = "[] 0";
     // The states that SaveGraphicsState saved and RestoreGraphicsState restores.
     private readonly List<State> savedStates = new List<State>();
+    // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet.
+    private int markedContentDepth = 0;
+    // True once the page is added to its PDF.
+    internal bool added = false;
 
     internal float rotateDegrees = 0f;
 
@@ -112,6 +116,14 @@ public class Page {
         this.pdf = pdf;
         this.width = pageSize.GetWidth();
         this.height = pageSize.GetHeight();
+        if (pdf.completed) {
+            pdf.Fail(new InvalidOperationException("The PDF was already completed."));
+        }
+        // The page size limits of the PDF specification, in Annex C.
+        if (!(width >= 3f && width <= 14400f && height >= 3f && height <= 14400f)) {
+            pdf.Fail(new ArgumentException("A page must be from 3 to 14400 points wide and high."));
+        }
+        pdf.pagesCreated++;
         this.buf = new MemoryStream(8192);
         this.tm0 = FastFloat.ToByteArray(tmx[0]);
         this.tm1 = FastFloat.ToByteArray(tmx[1]);
@@ -145,7 +157,46 @@ public class Page {
     /// <summary>Finishes a page read from an existing PDF by adding its new content to the objects.</summary>
     public void Complete(List<PDFobj> objects) {
         RestoreGraphicsState();
+        CheckBalanced();
         pageObj.AddContent(GetContent(), objects);
+    }
+
+    // Checks that every SaveGraphicsState has its RestoreGraphicsState and every
+    // AddBDC or AddArtifactBMC its AddEMC, before the page content is written.
+    internal void CheckBalanced() {
+        if (savedStates.Count > 0) {
+            pdf.Fail(new InvalidOperationException("A page ends with a SaveGraphicsState that has no RestoreGraphicsState."));
+        }
+        if (markedContentDepth != 0) {
+            pdf.Fail(new InvalidOperationException("A page ends with an AddBDC or AddArtifactBMC that has no AddEMC."));
+        }
+    }
+
+    // The content of a page that was written to the PDF. Drawing on it fails,
+    // as the drawing would be lost.
+    internal sealed class WrittenContent : MemoryStream {
+        private readonly PDF pdf;
+
+        internal WrittenContent(PDF pdf) : base(0) {
+            this.pdf = pdf;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) {
+            Fail();
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer) {
+            Fail();
+        }
+
+        public override void WriteByte(byte value) {
+            Fail();
+        }
+
+        private void Fail() {
+            pdf.Fail(new InvalidOperationException("The page was already written to the PDF: "
+                    + "draw on a page before creating the next page or completing the PDF."));
+        }
     }
 
     private PDFobj RemoveComments(PDFobj obj) {
@@ -1275,10 +1326,47 @@ public class Page {
     /// <param name="strokeDashPattern">the stroke dash pattern.</param>
     /// <returns>this Page object.</returns>
     public Page SetStrokeDashPattern(String strokeDashPattern) {
+        if (!IsDashPattern(strokeDashPattern)) {
+            pdf.Fail(new ArgumentException("The dash pattern \"" + strokeDashPattern
+                    + "\" is not an array of non-negative numbers, not all zero, "
+                    + "followed by a phase, such as \"[3 3] 0\"."));
+        }
         this.strokeDashPattern = strokeDashPattern;
         Append(strokeDashPattern);
         Append(" d\n");
         return this;
+    }
+
+    private const String WS = "[ \\t\\n\\f\\r\\v]";
+    private const String NUMBER = "[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)";
+    private static readonly System.Text.RegularExpressions.Regex DASH_PATTERN =
+            new System.Text.RegularExpressions.Regex(
+                    "^" + WS + "*\\[" + WS + "*(" + NUMBER + "(?:" + WS + "+" + NUMBER + ")*)?" + WS + "*\\]" + WS + "*" + NUMBER + WS + "*\\z");
+
+    // Returns true for a dash array of non-negative numbers, not all zero, and a
+    // phase, like "[3 3] 0"; "[] 0" is a solid line.
+    internal static bool IsDashPattern(String pattern) {
+        if (pattern == null) {
+            return false;
+        }
+        System.Text.RegularExpressions.Match m = DASH_PATTERN.Match(pattern);
+        if (!m.Success) {
+            return false;
+        }
+        String lengths = m.Groups[1].Value.Trim();
+        if (lengths.Length == 0) {
+            return true;
+        }
+        bool notAllZero = false;
+        foreach (String length in System.Text.RegularExpressions.Regex.Split(lengths, WS + "+")) {
+            if (length.StartsWith("-")) {
+                return false;
+            }
+            if (Double.Parse(length, System.Globalization.CultureInfo.InvariantCulture) != 0.0) {
+                notAllZero = true;
+            }
+        }
+        return notAllZero;
     }
 
     /// <summary>
@@ -1298,6 +1386,9 @@ public class Page {
     /// <param name="width">the pen width.</param>
     /// <returns>this Page object.</returns>
     public Page SetPenWidth(float width) {
+        if (width < 0f) {
+            pdf.Fail(new ArgumentException("The pen width cannot be negative."));
+        }
         this.penWidth = width;
         Append(width);
         Append(" w\n");
@@ -1705,10 +1796,10 @@ public class Page {
             float cosOfAngle = (float) Math.Cos(degrees * (Math.PI / 180));
             tmx = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
-        tm0 = FastFloat.ToByteArray(tmx[0]);
-        tm1 = FastFloat.ToByteArray(tmx[1]);
-        tm2 = FastFloat.ToByteArray(tmx[2]);
-        tm3 = FastFloat.ToByteArray(tmx[3]);
+        tm0 = Number(tmx[0]);
+        tm1 = Number(tmx[1]);
+        tm2 = Number(tmx[2]);
+        tm3 = Number(tmx[3]);
         return this;
     }
 
@@ -1832,6 +1923,9 @@ public class Page {
 
     /// <summary>Sets the font and font size used to draw text.</summary>
     internal Page SetTextFont(Font font, float fontSize) {
+        if (font.pdf != null && font.pdf != pdf) {
+            pdf.Fail(new ArgumentException("The font belongs to another PDF."));
+        }
         if (font.fontID != null) {
             Append('/');
             Append(font.fontID);
@@ -1949,6 +2043,9 @@ public class Page {
     /// Restores the graphics state. Please see Example_31.
     /// </summary>
     public void RestoreGraphicsState() {
+        if (savedStates.Count == 0) {
+            pdf.Fail(new InvalidOperationException("RestoreGraphicsState was called without a matching SaveGraphicsState."));
+        }
         if (savedStates.Count > 0) {
             State state = savedStates[savedStates.Count - 1];
             savedStates.RemoveAt(savedStates.Count - 1);
@@ -1986,7 +2083,15 @@ public class Page {
     }
 
     internal void Append(float f) {
-        Append(FastFloat.ToByteArray(f));
+        Append(Number(f));
+    }
+
+    // Returns the bytes of the number, after checking that a PDF can hold it.
+    private byte[] Number(float f) {
+        if (!FastFloat.IsWritable(f)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        return FastFloat.ToByteArray(f);
     }
 
     internal void Append(char ch) {
@@ -2107,6 +2212,7 @@ public class Page {
             String language,
             String actualText,
             String altDescription) {
+        markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             StructElement element = new StructElement();
             element.structure = structure.Type();
@@ -2128,6 +2234,7 @@ public class Page {
 
     /// <summary>Begins an artifact marked content sequence.</summary>
     public void AddArtifactBMC() {
+        markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             Append("/Artifact BMC\n");
         }
@@ -2135,6 +2242,10 @@ public class Page {
 
     /// <summary>Ends the current marked content sequence.</summary>
     public void AddEMC() {
+        if (markedContentDepth == 0) {
+            pdf.Fail(new InvalidOperationException("AddEMC was called without a matching AddBDC or AddArtifactBMC."));
+        }
+        markedContentDepth--;
         if (pdf.compliance == Compliance.PDF_UA_1) {
             Append("EMC\n");
         }
@@ -2273,13 +2384,13 @@ public class Page {
         double radians = degrees * Math.PI / 180;
         float cos = (float)Math.Cos(radians);
         float sin = (float)Math.Sin(radians);
-        Append(FastFloat.ToByteArray(cos));
+        Append(cos);
         Append(" ");
-        Append(FastFloat.ToByteArray(sin));
+        Append(sin);
         Append(" ");
-        Append(FastFloat.ToByteArray(-sin));
+        Append(-sin);
         Append(" ");
-        Append(FastFloat.ToByteArray(cos));
+        Append(cos);
         Append(" 0 0 cm\n");
 
         Append("1 0 0 1 ");
