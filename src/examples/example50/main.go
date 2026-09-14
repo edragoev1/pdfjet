@@ -14,7 +14,18 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
 
-// Example50 shows how to fill in an existing PDF form.
+// Example50 fills in the fields of an existing PDF form: it reads the PDF, adds an image,
+// two fonts read from files and the core font Helvetica as resources of a page,
+// and writes the text on that page.
+//
+// The core font is added with AddCoreFontResource(font, objects), which writes a
+// font dictionary that names the font and nothing else. The advantage is that
+// the page grows by a few hundred bytes and needs no font file, which suits a
+// stamp or a field value added to a document that already exists. The
+// disadvantages are those of every font that is not embedded: the viewer draws
+// the text with its own Helvetica, only the WinAnsi characters can be drawn,
+// and the document cannot claim PDF/A or PDF/UA compliance. The two embedded
+// fonts of this example show the alternative.
 func Example50(fileName string) {
 	pdf := pdfjet.NewPDFFile("Example_50.pdf")
 

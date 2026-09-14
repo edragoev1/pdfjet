@@ -5,6 +5,19 @@ import com.pdfjet.*;
 
 /**
  * Example_05.java
+ *
+ * Draws text at every angle around a point, and the words "WAVE AWAY" with and
+ * without kerning, in the core font Helvetica-Bold, which is not embedded.
+ *
+ * A core font is one of the fourteen fonts every PDF viewer has, so the
+ * document carries no font program: it is small, it is written fast, and the
+ * kerning pairs and the widths of the font are built into the library, which
+ * is what setKernPairs shows. The disadvantages: the viewer draws the text with
+ * its own version of the font, so the look differs a little between viewers;
+ * only the WinAnsi characters can be drawn, so no Cyrillic, Greek or CJK text;
+ * and a document with a font that is not embedded cannot claim PDF/A or PDF/UA
+ * compliance. For those, use an embedded font like IBM Plex Sans, as the
+ * other examples do.
  */
 public class Example_05 {
     public Example_05() throws Exception {
