@@ -5,9 +5,9 @@
 
 package pdfjet
 
-// NewColorMap Please see:
+// newColorMap Please see:
 // https://www.w3.org/TR/css-color-3/#svg-color
-func NewColorMap() map[string]int32 {
+func newColorMap() map[string]int32 {
 	color := make(map[string]int32)
 	color["transparent"] = -1
 	color["none"] = -1

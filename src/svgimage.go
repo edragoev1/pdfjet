@@ -51,7 +51,7 @@ func NewSVGImageFromFile(filePath string) (*SVGImage, error) {
 // width, height, viewBox, fill, stroke, stroke-width, and d.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
-	colorMap := NewColorMap()
+	colorMap := newColorMap()
 	image.fill = color.Transparent
 	image.stroke = color.Transparent
 	image.paths = make([]*svgPath, 0)

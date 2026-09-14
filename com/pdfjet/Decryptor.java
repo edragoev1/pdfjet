@@ -14,7 +14,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.pdfjet.encryption.AES128;
 
 /**
  * Decrypts the strings and streams of a PDF that is encrypted with the

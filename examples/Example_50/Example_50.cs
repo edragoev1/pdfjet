@@ -176,6 +176,6 @@ public class Example_50 {
         // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
         // new Example_50("50", "../specifications/ISO_32000-2_2017(en).PDF");
         long time1 = sw.ElapsedMilliseconds;
-        TextUtils.PrintDuration("Example_50", time0, time1);
+        Console.WriteLine("Example_50 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_50.cs

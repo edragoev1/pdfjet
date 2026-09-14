@@ -303,6 +303,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       bytes and `ImageType` is internal; the gap (points) and spacing (multiple)
       rule documented. Only Example_32 draws differently: `TextLine` sets the
       color before each line.
+- ✅ **B** Java internals (Sep 14): `PDF.append`, `newObj`, `endObj` and
+      `getObjNumber` package-private, with `Encryption` and the AES classes
+      moved to `com.pdfjet` so they can be; `ColorMap` and `Util` internal in
+      the four ports; `Barcode.drawOnPageAtLocation` removed; `TextUtils`
+      removed, the examples print their duration themselves; the two font
+      generators in `util/` with their scripts; `Util.readLines` is
+      `Content.linesOfTextFile`. The audit report is 103 lines, from 261 at
+      the start of the day.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

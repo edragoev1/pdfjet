@@ -26,7 +26,7 @@ public class Example_32 {
         float x = 50f;
         float y = 50f;
         float leading = font.getBodyHeight();
-        List<String> lines = Util.readLines("examples/Example_02.java");
+        List<String> lines = Content.linesOfTextFile("examples/Example_02.java");
         for (String line : lines) {
             new TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page);
             y += leading;
@@ -43,6 +43,6 @@ public class Example_32 {
         long time0 = System.currentTimeMillis();
         new Example_32();
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_32", time0, time1);
+        System.out.println("Example_32 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_32.java

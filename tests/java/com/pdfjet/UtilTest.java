@@ -47,7 +47,7 @@ class UtilTest {
     @Test
     void readLinesDropsAByteOrderMarkAndKeepsEmptyLines() throws Exception {
         File file = write("lines.txt", "﻿a\n\nb".getBytes(StandardCharsets.UTF_8));
-        assertEquals(Arrays.asList("a", "", "b"), Util.readLines(file.getPath()));
+        assertEquals(Arrays.asList("a", "", "b"), Content.linesOfTextFile(file.getPath()));
     }
 
     @Test

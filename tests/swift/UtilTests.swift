@@ -55,7 +55,7 @@ import Testing
 
     @Test func readLinesDropsAByteOrderMarkAndKeepsEmptyLines() throws {
         let path = try write("lines.txt", Array("\u{FEFF}a\n\nb".utf8))
-        #expect(try Util.readLines(path) == ["a", "", "b"])
+        #expect(try Content.linesOfTextFile(path) == ["a", "", "b"])
     }
 
     @Test func readingAMissingFileThrows() {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -62,5 +63,5 @@ func main() {
 	// Example37("../../eBooks/Bluebook.pdf")
 	// Example37("../../eBooks/Orangebook.pdf")
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_37", time0, time1)
+	fmt.Printf("Example_37 => %d ms\n", time1-time0)
 }

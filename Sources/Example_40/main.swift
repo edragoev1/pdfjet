@@ -58,4 +58,4 @@ public class Example_40 {
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_40()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-TextUtils.printDuration("Example_40", time0, time1)
+print("Example_40 => \(time1 - time0) ms")

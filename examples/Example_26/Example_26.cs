@@ -80,6 +80,6 @@ public class Example_26 {
         new Example_26();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        TextUtils.PrintDuration("Example_26", time0, time1);
+        Console.WriteLine("Example_26 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_26.cs

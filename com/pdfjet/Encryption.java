@@ -4,7 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet.encryption;
+package com.pdfjet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import com.pdfjet.*;
+import com.pdfjet.encryption.*;
 
 /**
  * Encrypts a PDF with 256-bit AES as defined in ISO 32000-2 (PDF 2.0).
@@ -166,7 +166,7 @@ public class Encryption {
      *
      * @return a copy of the 32-byte file encryption key.
      */
-    public byte[] getKey() {
+    byte[] getKey() {
         return fileEncryptionKey.clone(); // Return copy for safety
     }
 
@@ -175,7 +175,7 @@ public class Encryption {
      *
      * @return the object number.
      */
-    public int getObjNumber() {
+    int getObjNumber() {
         return objNumber;
     }
 

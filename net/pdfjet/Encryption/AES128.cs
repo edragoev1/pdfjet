@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>AES-128 encryption used when computing the encryption dictionary.</summary>
-public class AES128 {
+internal class AES128 {
     /// <summary>
     /// Encrypts <paramref name="K1"/> with AES‑128‑CBC, **no padding**.
     /// </summary>

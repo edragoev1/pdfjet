@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -210,7 +211,7 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example09()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_09", time0, time1)
+	fmt.Printf("Example_09 => %d ms\n", time1-time0)
 }
 
 // The slope and intercept of the ordinary least squares trend line of the points.

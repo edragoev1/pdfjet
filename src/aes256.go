@@ -3,7 +3,7 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-package encryption
+package pdfjet
 
 import (
 	"crypto/aes"
@@ -13,8 +13,8 @@ import (
 	"io"
 )
 
-// AES256 provides methods for AES-256 encryption in various modes.
-type AES256 struct{}
+// aes256 provides methods for AES-256 encryption in various modes.
+type aes256 struct{}
 
 // EncryptWithZeroIV encrypts a 32-byte File Encryption Key (FEK) with AES-256-CBC,
 // using a zero IV and no padding.
@@ -22,7 +22,7 @@ type AES256 struct{}
 // fileEncryptionKey: 32-byte FEK to encrypt.
 // key: 32-byte key used for AES-256 encryption.
 // Returns: The encrypted 32-byte File Encryption Key.
-func (a *AES256) EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
+func (a *aes256) encryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
 	if fileEncryptionKey == nil || len(fileEncryptionKey) != 32 {
 		return nil, errors.New("file Encryption Key must be 32 bytes long")
 	}
@@ -53,7 +53,7 @@ func (a *AES256) EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error
 // data: The data to be encrypted.
 // key: The 32-byte encryption key for AES-256.
 // Returns: A byte array containing the IV prepended to the AES-256-CBC encrypted data.
-func (a *AES256) Encrypt(data, key []byte) ([]byte, error) {
+func (a *aes256) encrypt(data, key []byte) ([]byte, error) {
 	if key == nil || len(key) != 32 {
 		return nil, errors.New("the encryption key must be 32 bytes long")
 	}
@@ -71,7 +71,7 @@ func (a *AES256) Encrypt(data, key []byte) ([]byte, error) {
 	}
 
 	// Pad the data to be a multiple of the block size
-	paddedData := pkcs7Pad(data, aes.BlockSize)
+	paddedData := aesPkcs7Pad(data, aes.BlockSize)
 
 	// Encrypt the data
 	ciphertext := make([]byte, len(iv)+len(paddedData))
@@ -89,7 +89,7 @@ func (a *AES256) Encrypt(data, key []byte) ([]byte, error) {
 // data: The data to be encrypted.
 // key: The 32-byte encryption key for AES-256.
 // Returns: The encrypted data.
-func (a *AES256) EncryptECB(data, key []byte) ([]byte, error) {
+func (a *aes256) encryptECB(data, key []byte) ([]byte, error) {
 	if key == nil || len(key) != 32 {
 		return nil, errors.New("the encryption key must be 32 bytes long")
 	}
@@ -114,8 +114,8 @@ func (a *AES256) EncryptECB(data, key []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-// pkcs7Pad pads the data to the specified block size using PKCS#7 padding.
-func pkcs7Pad(data []byte, blockSize int) []byte {
+// aesPkcs7Pad pads the data to the specified block size using PKCS#7 padding.
+func aesPkcs7Pad(data []byte, blockSize int) []byte {
 	padding := blockSize - (len(data) % blockSize)
 	padText := make([]byte, padding)
 	for i := range padText {
@@ -125,19 +125,19 @@ func pkcs7Pad(data []byte, blockSize int) []byte {
 }
 
 // EncryptWithZeroIV helper function for backward compatibility - static method style
-func EncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
-	aes256 := &AES256{}
-	return aes256.EncryptWithZeroIV(fileEncryptionKey, key)
+func aesEncryptWithZeroIV(fileEncryptionKey, key []byte) ([]byte, error) {
+	aes256 := &aes256{}
+	return aes256.encryptWithZeroIV(fileEncryptionKey, key)
 }
 
 // Encrypt encrypts data with AES-256 in CBC mode using a random IV, which is prepended to the result.
-func Encrypt(data, key []byte) ([]byte, error) {
-	aes256 := &AES256{}
-	return aes256.Encrypt(data, key)
+func aesEncrypt(data, key []byte) ([]byte, error) {
+	aes256 := &aes256{}
+	return aes256.encrypt(data, key)
 }
 
 // EncryptECB encrypts data with AES-256 in ECB mode without padding.
-func EncryptECB(data, key []byte) ([]byte, error) {
-	aes256 := &AES256{}
-	return aes256.EncryptECB(data, key)
+func aesEncryptECB(data, key []byte) ([]byte, error) {
+	aes256 := &aes256{}
+	return aes256.encryptECB(data, key)
 }

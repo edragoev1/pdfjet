@@ -77,6 +77,14 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `TextFrame.setParagraphGap`) and one that takes a multiple is a spacing
   (`TextBlock.setLineSpacing`, `TextColumn.setLineSpacing` and
   `setParagraphSpacing`); the doc comments say which.
+- The Java internals are internal: `PDF.append`, `newObj`, `endObj` and
+  `getObjNumber` are package-private, `Encryption` moves to `com.pdfjet` with
+  the AES classes package-private (`Passwords`, `Permissions` and `UserAccess`
+  stay in `com.pdfjet.encryption`), `ColorMap` and `Util` are internal in
+  every port, `Barcode.drawOnPageAtLocation` is gone (`setLocation` then
+  `drawOn`), `TextUtils` is gone and the examples print their own duration,
+  and the font generators live in `util/` with their scripts, outside the
+  library. `Util.readLines` is `Content.linesOfTextFile`.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".
@@ -211,8 +219,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `TextColumn.setTextAlignment` applies to the paragraphs without an alignment
   of their own.
 - C# `CompositeTextLine` lays out its lines as Java does.
-- `Content.ofTextFile`, and so `Util.readLines`, drops a byte order mark, and
-  `Text.readLines` moves to `Util.readLines` (Go `util.ReadLines`).
+- `Content.ofTextFile` drops a byte order mark, and the lines of a text file
+  come from `Content.linesOfTextFile` (Go `content.LinesOfTextFile`), which
+  replaces `Text.readLines` and `Util.readLines`.
 
 ### Charts and calendars
 - New `BarChart` in the four ports: categories on one axis, the bars of the

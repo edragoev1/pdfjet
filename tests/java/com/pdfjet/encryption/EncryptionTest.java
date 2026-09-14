@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.pdfjet.Compliance;
 import com.pdfjet.CoreFont;
+import com.pdfjet.Encryption;
 import com.pdfjet.Font;
 import com.pdfjet.Letter;
 import com.pdfjet.PDF;

@@ -12,7 +12,7 @@ public class Example_12 {
         let font = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let lines = try Util.readLines("data/Example_12.java")
+        let lines = try Content.linesOfTextFile("data/Example_12.java")
         var buf = String()
         for line in lines {
             buf.append(line)
@@ -35,4 +35,4 @@ public class Example_12 {
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_12()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-TextUtils.printDuration("Example_12", time0, time1)
+print("Example_12 => \(time1 - time0) ms")

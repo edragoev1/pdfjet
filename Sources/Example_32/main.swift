@@ -20,7 +20,7 @@ public class Example_32 {
         let x: Float = 50.0
         var y: Float = 50.0
         let leading = font.getBodyHeight()
-        let lines = try Util.readLines("examples/Example_02.java")
+        let lines = try Content.linesOfTextFile("examples/Example_02.java")
         for line in lines {
             TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page)
             y += leading
@@ -37,4 +37,4 @@ public class Example_32 {
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_32()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-TextUtils.printDuration("Example_32", time0, time1)
+print("Example_32 => \(time1 - time0) ms")

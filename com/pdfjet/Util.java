@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Utility methods.
  */
-public class Util {
+class Util {
     /** The default constructor */
     Util() {
     }
@@ -33,30 +33,6 @@ public class Util {
     /** Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color. */
     static float[] toRGB(int color) {
         return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
-    }
-
-    /**
-     * Reads the lines of a UTF-8 text file, without carriage returns.
-     *
-     * @param filePath the path of the text file.
-     * @return the lines.
-     * @throws IOException if the file cannot be read.
-     */
-    public static List<String> readLines(String filePath) throws IOException {
-        List<String> lines = new ArrayList<>();
-        StringBuilder buffer = new StringBuilder();
-        for (char ch : Content.ofTextFile(filePath).toCharArray()) {
-            if (ch == '\n') {
-                lines.add(buffer.toString());
-                buffer.setLength(0);
-            } else {
-                buffer.append(ch);
-            }
-        }
-        if (buffer.length() > 0) {
-            lines.add(buffer.toString());
-        }
-        return lines;
     }
 
     /**

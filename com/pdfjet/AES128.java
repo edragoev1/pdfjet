@@ -4,7 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet.encryption;
+package com.pdfjet;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -14,7 +14,7 @@ import java.security.GeneralSecurityException;
 /**
  * AES-128 encryption used when computing the encryption dictionary.
  */
-public class AES128 {
+class AES128 {
     private AES128() {
     }
 

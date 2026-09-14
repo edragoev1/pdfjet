@@ -131,7 +131,7 @@
 <header>
   <p class="eyebrow">Proposal for the v9.0.0 release plan</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">After the v9 audit the names line up across the four ports. What is left is structural: a few classes still do the same job, and some internals are public.</p>
+  <p class="lede">After the v9 audit the names line up across the four ports and the internals are hidden. What is left is structural: three places where two classes still do the same job.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, the 50 examples, the Javadoc. The items done so far are removed; this is what is left.</span>
     <span>14 September 2026</span>
@@ -141,7 +141,6 @@
 <nav class="toc" aria-label="Sections">
   <ol>
     <li><a href="#overlap">Fewer classes that overlap</a></li>
-    <li><a href="#hide">Hide what is not for users</a></li>
     <li><a href="#plan">What to do in 9.0.0</a></li>
   </ol>
 </nav>
@@ -151,8 +150,7 @@
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Fewer classes that overlap</td><td class="num">3</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
-    <tr><td>Hide what is not for users</td><td class="num">1</td><td class="num">1</td><td>Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">4</td><td class="num">2</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">3</td><td class="num">1</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -208,27 +206,14 @@
 
 
 
-<h2 id="hide">Hide what is not for users</h2>
-<p>Everything here is visible in the generated references and in code completion, and none of it helps someone making a PDF.</p>
 
-
-<section class="item">
-  <h3>Java internals <span class="chip now">9.0.0</span></h3>
-  <ul>
-    <li><code>PDF.append</code>, <code>newObj</code>, <code>endObj</code> and <code>getObjNumber</code>; <code>Encryption.getKey</code> and <code>getObjNumber</code>; the <code>AES128</code> and <code>AES256</code> classes.</li>
-    <li><code>Barcode.drawOnPageAtLocation</code>, called only by <code>Cell</code>.</li>
-    <li><code>ColorMap</code>, used only by SVG parsing; the Swift copy exists only for reflection.</li>
-    <li><code>TextUtils.printDuration</code>, used only by the examples, and the two font generator classes with <code>main</code> methods.</li>
-    <li><code>Util.readLines</code> duplicates <code>Content.ofTextFile</code>, which the examples already prefer.</li>
-  </ul>
-</section>
 
 
 
 
 <h2 id="plan">What to do in 9.0.0</h2>
 <div class="plan">
-  <p>Two items are left for this release, the <code>TextBlock</code> into <code>TextBox</code> merge and the Java internals; the two table APIs and the chart series wait for 10.0.</p>
+  <p>One item is left for this release, the <code>TextBlock</code> into <code>TextBox</code> merge; the two table APIs and the chart series wait for 10.0.</p>
   <p>Leave <code>TextColumn</code>, the two tables and the chart series for 10.0. Each is a redesign, not a rename.</p>
 </div>
 </div>

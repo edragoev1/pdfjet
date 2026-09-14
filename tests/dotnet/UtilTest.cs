@@ -42,7 +42,7 @@ public sealed class UtilTest : IDisposable {
     [Fact]
     public void ReadLinesDropsAByteOrderMarkAndKeepsEmptyLines() {
         string file = tempDir.Write("lines.txt", Encoding.UTF8.GetBytes("﻿a\n\nb"));
-        Assert.Equal(new List<string> {"a", "", "b"}, Util.ReadLines(file));
+        Assert.Equal(new List<string> {"a", "", "b"}, Content.LinesOfTextFile(file));
     }
 
     [Fact]

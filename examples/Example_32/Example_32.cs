@@ -26,7 +26,7 @@ public class Example_32 {
         float x = 50f;
         float y = 50f;
         float leading = font.GetBodyHeight();
-        List<String> lines = Util.ReadLines("examples/Example_02.java");
+        List<String> lines = Content.LinesOfTextFile("examples/Example_02.java");
         foreach (String line in lines) {
             new TextLine(font, line).SetTextColor(grayColor).SetHighlightColors(colors).SetLocation(x, y).DrawOn(page);
             y += leading;
@@ -45,6 +45,6 @@ public class Example_32 {
         new Example_32();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        TextUtils.PrintDuration("Example_32", time0, time1);
+        Console.WriteLine("Example_32 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_32.cs

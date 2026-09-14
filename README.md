@@ -513,11 +513,9 @@ coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
 `Table.SetData(data, headerRows)` and `Page.AddBDC` with the language.
 `content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and
 `ReadWithPassword` take the whole PDF as a `[]byte` where the other ports read
-it from a stream. Java's `PDF` keeps
-`append`, `newObj`, `endObj` and `getObjNumber` public, which the other ports
-keep internal: the `com.pdfjet.encryption` package writes the encryption
-dictionary with them, and Java has no visibility between package-private and
-public.
+it from a stream. Java's `Encryption` is in `com.pdfjet`, next to `PDF`, so the
+two share their package-private members; `Passwords`, `Permissions` and
+`UserAccess` are in `com.pdfjet.encryption`.
 
 ### Constants and fields in Go
 

@@ -6,6 +6,7 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Text;
 
 namespace PDFjet.NET {
@@ -65,6 +66,25 @@ public class Content {
     }
 
     /// <summary>Returns all the bytes read from the stream.</summary>
+    /// <summary>Returns the lines of a UTF-8 text file, without a byte order mark and without the line separators; an empty line is an empty string.</summary>
+    public static List<String> LinesOfTextFile(String fileName) {
+        List<String> lines = new List<String>();
+        String contents = OfTextFile(fileName);
+        StringBuilder buffer = new StringBuilder();
+        foreach (char ch in contents) {
+            if (ch == '\n') {
+                lines.Add(buffer.ToString());
+                buffer.Length = 0;
+            } else {
+                buffer.Append(ch);
+            }
+        }
+        if (buffer.Length > 0) {
+            lines.Add(buffer.ToString());
+        }
+        return lines;
+    }
+
     public static byte[] GetFromStream(Stream stream) {
         return GetFromStream(stream, 4096);
     }

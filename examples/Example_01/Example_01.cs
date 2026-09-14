@@ -84,6 +84,6 @@ public class Example_01 {
         sw.Stop();
 
         // Print the execution duration
-        TextUtils.PrintDuration("Example_01", time0, time1);
+        Console.WriteLine("Example_01 => " + (time1 - time0) + " ms");
     }
 }

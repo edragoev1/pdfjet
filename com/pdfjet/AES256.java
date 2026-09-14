@@ -4,7 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet.encryption;
+package com.pdfjet;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -16,7 +16,7 @@ import java.security.GeneralSecurityException;
 /**
  * AES-256 encryption of the file encryption key and of the strings and streams in an encrypted PDF.
  */
-public class AES256 {
+class AES256 {
     private AES256() {
     }
 

@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>Utility methods.</summary>
-public class Util {
+internal class Util {
     /// <summary>
     /// Returns a copy of the color, or null if the color is null, so that the caller
     /// cannot change the color of an object by writing into the array it passed or got back.
@@ -23,27 +23,6 @@ public class Util {
     /// <summary>Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color.</summary>
     internal static float[] ToRGB(int color) {
         return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
-    }
-
-    /// <summary>Reads the lines of a UTF-8 text file, without carriage returns.</summary>
-    /// <param name="filePath">the path of the text file.</param>
-    /// <returns>the lines.</returns>
-    public static List<String> ReadLines(String filePath) {
-        List<String> lines = new List<String>();
-        String contents = Content.OfTextFile(filePath);
-        StringBuilder buffer = new StringBuilder();
-        foreach (char ch in contents) {
-            if (ch == '\n') {
-                lines.Add(buffer.ToString());
-                buffer.Length = 0;
-            } else {
-                buffer.Append(ch);
-            }
-        }
-        if (buffer.Length > 0) {
-            lines.Add(buffer.ToString());
-        }
-        return lines;
     }
 
     internal static string ToHexString(byte[] data) {

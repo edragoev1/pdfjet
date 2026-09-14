@@ -203,29 +203,6 @@ public class Barcode implements Drawable {
         }
     }
 
-    /**
-     * Draws this barcode on the specified page at the specified location.
-     *
-     * @param page the specified page.
-     * @param x1 the x coordinate of the barcode.
-     * @param y1 the y coordinate of the barcode.
-     * @return x and y coordinates of the bottom right corner of this component.
-     * @throws Exception  If an input or output exception occurred
-     */
-    public float[] drawOnPageAtLocation(Page page, float x1, float y1) throws Exception {
-        if (barcodeType == Barcode.EAN_13) {
-            return drawCodeEAN13(page, x1, y1);
-        } else if (barcodeType == Barcode.UPC_A) {
-            return drawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_128) {
-            return drawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_39) {
-            return drawCode39(page, x1, y1);
-        } else {
-            throw new Exception("Unsupported Barcode Type.");
-        }
-    }
-
     private float[] drawCodeUPC(Page page, float x1, float y1) throws Exception {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally

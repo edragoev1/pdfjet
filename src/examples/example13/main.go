@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,9 +10,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // Example13 draws a table that spans multiple pages.
@@ -25,7 +26,7 @@ func Example13() {
 	f2.SetSize(7.0)
 
 	tableData := make([][]*pdfjet.Cell, 0)
-	lines := util.ReadLines("data/winter-2009.txt")
+	lines := content.LinesOfTextFile("data/winter-2009.txt")
 	for _, line := range lines {
 		row := make([]*pdfjet.Cell, 0)
 		for _, column := range strings.Split(line, "|") {
@@ -132,5 +133,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example13()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_13", time0, time1)
+	fmt.Printf("Example_13 => %d ms\n", time1-time0)
 }

@@ -814,12 +814,12 @@ public class Cell {
             try {
                 if (getTextAlignment() == Alignment.RIGHT) {
                     float barcodeWidth = barcode.drawOn(null)[0];
-                    barcode.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding);
+                    barcode.setLocation((x + w) - (barcodeWidth + rightPadding), y + topPadding).drawOn(page);
                 } else if (getTextAlignment() == Alignment.CENTER) {
                     float barcodeWidth = barcode.drawOn(null)[0];
-                    barcode.drawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
+                    barcode.setLocation((x + w/2f) - barcodeWidth/2f, y + topPadding).drawOn(page);
                 } else {
-                    barcode.drawOnPageAtLocation(page, x + leftPadding, y + topPadding);
+                    barcode.setLocation(x + leftPadding, y + topPadding).drawOn(page);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

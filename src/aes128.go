@@ -4,7 +4,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root.
 
 // Package encryption implements the AES encryption of PDF documents.
-package encryption
+package pdfjet
 
 import (
 	"crypto/aes"
@@ -12,8 +12,8 @@ import (
 	"errors"
 )
 
-// AES128 provides methods for AES-128 encryption.
-type AES128 struct{}
+// aes128 provides methods for AES-128 encryption.
+type aes128 struct{}
 
 // EncryptK1 encrypts K1 with AES-128-CBC, no padding.
 //
@@ -21,7 +21,7 @@ type AES128 struct{}
 // key: Exactly 16 bytes – the AES-128 key.
 // iv: Exactly 16 bytes – the initialization vector.
 // Returns: The ciphertext.
-func (a *AES128) EncryptK1(K1, key, iv []byte) ([]byte, error) {
+func (a *aes128) encryptK1(K1, key, iv []byte) ([]byte, error) {
 	// ---------- basic argument validation ----------
 	if K1 == nil || len(K1) == 0 {
 		return nil, errors.New("K1 cannot be null or empty")
@@ -55,7 +55,7 @@ func (a *AES128) EncryptK1(K1, key, iv []byte) ([]byte, error) {
 }
 
 // EncryptK1 helper function for backward compatibility.
-func EncryptK1(K1, key, iv []byte) ([]byte, error) {
-	aes128 := &AES128{}
-	return aes128.EncryptK1(K1, key, iv)
+func aesEncryptK1(K1, key, iv []byte) ([]byte, error) {
+	aes128 := &aes128{}
+	return aes128.encryptK1(K1, key, iv)
 }

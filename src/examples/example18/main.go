@@ -58,5 +58,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example18()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_18", time0, time1)
+	fmt.Printf("Example_18 => %d ms\n", time1-time0)
 }

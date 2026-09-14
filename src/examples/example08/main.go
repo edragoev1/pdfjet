@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -66,5 +67,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example08()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_08", time0, time1)
+	fmt.Printf("Example_08 => %d ms\n", time1-time0)
 }

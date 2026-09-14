@@ -15,7 +15,6 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
-	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // content and util: reading text and binary files and readers.
@@ -38,7 +37,7 @@ func TestUtilOfTextFileReadsUtf8AndDropsAByteOrderMark(t *testing.T) {
 
 func TestUtilReadLinesDropsAByteOrderMarkAndKeepsEmptyLines(t *testing.T) {
 	path := testWriteFile(t, "lines.txt", []byte("\uFEFFa\n\nb"))
-	if got := util.ReadLines(path); !reflect.DeepEqual(got, []string{"a", "", "b"}) {
+	if got := content.LinesOfTextFile(path); !reflect.DeepEqual(got, []string{"a", "", "b"}) {
 		t.Errorf("got %q", got)
 	}
 }

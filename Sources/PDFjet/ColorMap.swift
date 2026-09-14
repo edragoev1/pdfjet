@@ -12,7 +12,7 @@
  *
  * NOTE: We need this class in addition to Color.swift because the Swift reflection does not work with static variables.
  */
-public class ColorMap {
+class ColorMap {
     /// The color named "transparent"
     public let transparent: Int32 = -1
     /// The color named "none"

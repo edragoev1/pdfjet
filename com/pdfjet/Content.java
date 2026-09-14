@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.io.*;
+import java.util.*;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -95,5 +96,30 @@ public class Content {
      */
     public static byte[] getFromStream(InputStream stream) throws Exception {
         return getFromStream(stream, 4096);
+    }
+
+    /**
+     * Returns the lines of a UTF-8 text file, without a byte order mark and
+     * without the line separators. An empty line is an empty string.
+     *
+     * @param fileName the path of the file.
+     * @return the lines.
+     * @throws IOException if the file cannot be read.
+     */
+    public static List<String> linesOfTextFile(String fileName) throws IOException {
+        List<String> lines = new ArrayList<String>();
+        StringBuilder buffer = new StringBuilder();
+        for (char ch : ofTextFile(fileName).toCharArray()) {
+            if (ch == '\n') {
+                lines.add(buffer.toString());
+                buffer.setLength(0);
+            } else {
+                buffer.append(ch);
+            }
+        }
+        if (buffer.length() > 0) {
+            lines.add(buffer.toString());
+        }
+        return lines;
     }
 }

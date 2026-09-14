@@ -9,6 +9,7 @@ package content
 import (
 	"io"
 	"os"
+	"strings"
 )
 
 // OfTextFile returns the contents of the specified text file.
@@ -58,4 +59,24 @@ func GetFromStream(reader io.Reader) []uint8 {
 		panic(err)
 	}
 	return contents
+}
+
+// LinesOfTextFile returns the lines of a UTF-8 text file, without a byte order
+// mark and without the line separators. An empty line is an empty string. It
+// panics if the file cannot be read.
+func LinesOfTextFile(fileName string) []string {
+	lines := make([]string, 0)
+	var buffer strings.Builder
+	for _, ch := range OfTextFile(fileName) {
+		if ch == '\n' {
+			lines = append(lines, buffer.String())
+			buffer.Reset()
+		} else {
+			buffer.WriteRune(ch)
+		}
+	}
+	if buffer.Len() > 0 {
+		lines = append(lines, buffer.String())
+	}
+	return lines
 }

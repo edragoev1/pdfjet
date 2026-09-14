@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -64,5 +65,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example31()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_31", time0, time1)
+	fmt.Printf("Example_31 => %d ms\n", time1-time0)
 }

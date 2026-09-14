@@ -55,6 +55,6 @@ class Example_37 {
         // new Example_37("../../eBooks/Bluebook.pdf");
         // new Example_37("../../eBooks/Orangebook.pdf");
         long time1 = sw.ElapsedMilliseconds;
-        TextUtils.PrintDuration("Example_37", time0, time1);
+        Console.WriteLine("Example_37 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_37.cs

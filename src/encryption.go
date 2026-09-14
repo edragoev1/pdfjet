@@ -135,7 +135,7 @@ func NewEncryption(pdf *PDF,
 	}
 
 	// Encrypt permissions block
-	encryptedPermsBlock, err := encryption.EncryptECB(perms, enc.fileEncryptionKey)
+	encryptedPermsBlock, err := aesEncryptECB(perms, enc.fileEncryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func NewEncryption(pdf *PDF,
 // encrypt encrypts the data with the file encryption key. It panics if the
 // data cannot be encrypted.
 func (enc *Encryption) encrypt(data []byte) []byte {
-	encrypted, err := encryption.Encrypt(data, enc.fileEncryptionKey)
+	encrypted, err := aesEncrypt(data, enc.fileEncryptionKey)
 	if err != nil {
 		panic(err)
 	}
@@ -188,7 +188,7 @@ func (enc *Encryption) computeHash(password, salt, U []byte) ([]byte, error) {
 		tempIV := make([]byte, 16)
 		copy(tempIV, currentK[16:32])
 
-		E, err := encryption.EncryptK1(K1, tempKey, tempIV)
+		E, err := aesEncryptK1(K1, tempKey, tempIV)
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +280,7 @@ func (enc *Encryption) computeUserKeys(userPasswordBytes []byte) (*userKeys, err
 		return nil, err
 	}
 
-	UE, err := encryption.EncryptWithZeroIV(enc.fileEncryptionKey, hash)
+	UE, err := aesEncryptWithZeroIV(enc.fileEncryptionKey, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (enc *Encryption) computeOwnerKeys(ownerPasswordBytes, U []byte) (*ownerKey
 		return nil, err
 	}
 
-	OE, err := encryption.EncryptWithZeroIV(enc.fileEncryptionKey, hash)
+	OE, err := aesEncryptWithZeroIV(enc.fileEncryptionKey, hash)
 	if err != nil {
 		return nil, err
 	}

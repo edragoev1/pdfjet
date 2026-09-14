@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pdf417"
-	"github.com/edragoev1/pdfjet/v9/src/util"
 )
 
 // Example12 constructs and draws PDF417 barcode.
@@ -20,7 +21,7 @@ func Example12() {
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	lines := util.ReadLines("data/Example_12.java")
+	lines := content.LinesOfTextFile("data/Example_12.java")
 	var buf strings.Builder
 	for _, line := range lines {
 		buf.WriteString(line)
@@ -44,5 +45,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example12()
 	time1 := time.Now().UnixMilli()
-	pdfjet.PrintDuration("Example_12", time0, time1)
+	fmt.Printf("Example_12 => %d ms\n", time1-time0)
 }

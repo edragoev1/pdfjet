@@ -81,6 +81,6 @@ public class Example_04 {
         long time0 = System.currentTimeMillis();
         new Example_04();
         long time1 = System.currentTimeMillis();
-        TextUtils.printDuration("Example_04", time0, time1);
+        System.out.println("Example_04 => " + (time1 - time0) + " ms");
     }
 }   // End of Example_04.java

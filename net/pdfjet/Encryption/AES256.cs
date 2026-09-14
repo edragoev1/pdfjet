@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>AES-256 encryption of the file encryption key and of the strings and streams in an encrypted PDF.</summary>
-public class AES256 {
+internal class AES256 {
     /// <summary>
     /// Encrypts a 32‑byte File Encryption Key (FEK) with AES‑256‑CBC,
     /// using a zero IV and no padding.

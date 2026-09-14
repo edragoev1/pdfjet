@@ -17,7 +17,7 @@ public class Example_12 {
         Font font = new Font(pdf, IBMPlexSans.Regular);
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<String> lines = Util.ReadLines("data/Example_12.java");
+        List<String> lines = Content.LinesOfTextFile("data/Example_12.java");
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);
@@ -43,6 +43,6 @@ public class Example_12 {
         new Example_12();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        TextUtils.PrintDuration("Example_12", time0, time1);
+        Console.WriteLine("Example_12 => " + (time1 - time0) + " ms");
     }
 }

@@ -61,4 +61,24 @@ public class Content {
     public static func getFromStream( _ stream: InputStream) throws -> [UInt8] {
         try self.getFromStream(stream, 4096)
     }
+
+    /// Returns the lines of a UTF-8 text file, without a byte order mark and
+    /// without the line separators. An empty line is an empty string.
+    public static func linesOfTextFile(_ fileName: String) throws -> [String] {
+        var lines = [String]()
+        let contents = try ofTextFile(fileName)
+        var buffer = String()
+        for scalar in contents.unicodeScalars {
+            if scalar == "\n" {
+                lines.append(buffer)
+                buffer = ""
+            } else {
+                buffer.append(String(scalar))
+            }
+        }
+        if !buffer.isEmpty {
+            lines.append(buffer)
+        }
+        return lines
+    }
 }   // End of Content.swift

@@ -176,7 +176,7 @@ final public class PDF {
      *
      * @throws IOException if writing to the output fails.
      */
-    public void newObj() throws IOException {
+    void newObj() throws IOException {
         objOffset.add(byteCount);
         append(objOffset.size());
         append(Token.NEW_OBJ);
@@ -187,7 +187,7 @@ final public class PDF {
      *
      * @throws IOException if writing to the output fails.
      */
-    public void endObj() throws IOException {
+    void endObj() throws IOException {
         append(Token.END_OBJ);
     }
 
@@ -196,7 +196,7 @@ final public class PDF {
      *
      * @return the object number.
      */
-    public int getObjNumber() {
+    int getObjNumber() {
         return objOffset.size();
     }
 
@@ -1403,7 +1403,7 @@ final public class PDF {
      * @param num the number.
      * @throws IOException if writing to the output fails.
      */
-    public void append(int num) throws IOException {
+    void append(int num) throws IOException {
         append(Integer.toString(num));
     }
 
@@ -1413,7 +1413,7 @@ final public class PDF {
      * @param f the number.
      * @throws IOException if writing to the output fails.
      */
-    public void append(float f) throws IOException {
+    void append(float f) throws IOException {
         append(FastFloat.toByteArray(f));
     }
 
@@ -1423,7 +1423,7 @@ final public class PDF {
      * @param str the string.
      * @throws IOException if writing to the output fails.
      */
-    public void append(String str) throws IOException {
+    void append(String str) throws IOException {
         byte[] buf = str.getBytes(StandardCharsets.UTF_8);
         os.write(buf);
         byteCount += buf.length;
@@ -1435,7 +1435,7 @@ final public class PDF {
      * @param ch the character.
      * @throws IOException if writing to the output fails.
      */
-    public void append(char ch) throws IOException {
+    void append(char ch) throws IOException {
         os.write((byte) ch);
         byteCount += 1;
     }
@@ -1446,7 +1446,7 @@ final public class PDF {
      * @param b the byte.
      * @throws IOException if writing to the output fails.
      */
-    public void append(byte b) throws IOException {
+    void append(byte b) throws IOException {
         os.write(b);
         byteCount += 1;
     }
@@ -1457,7 +1457,7 @@ final public class PDF {
      * @param buf the bytes.
      * @throws IOException if writing to the output fails.
      */
-    public void append(byte[] buf) throws IOException {
+    void append(byte[] buf) throws IOException {
         os.write(buf, 0, buf.length);
         byteCount += buf.length;
     }
@@ -1470,7 +1470,7 @@ final public class PDF {
      * @param len the number of bytes to write.
      * @throws IOException if writing to the output fails.
      */
-    public void append(byte[] buf, int off, int len) throws IOException {
+    void append(byte[] buf, int off, int len) throws IOException {
         os.write(buf, off, len);
         byteCount += len;
     }
@@ -1481,7 +1481,7 @@ final public class PDF {
      * @param baos the stream.
      * @throws IOException if writing to the output fails.
      */
-    public void append(ByteArrayOutputStream baos) throws IOException {
+    void append(ByteArrayOutputStream baos) throws IOException {
         baos.writeTo(os);
         byteCount += baos.size();
     }
