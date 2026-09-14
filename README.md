@@ -289,6 +289,23 @@ the examples run on Java 8 whichever JDK builds them, and any API newer than
 Java 8 is rejected. Java 8's `javac` has no `--release` option, so the scripts
 leave it out there; that `javac` builds Java 8 class files anyway.
 
+## Which class to use
+
+PDFjet has several classes that draw text and two that group content. Each
+has one job:
+
+| Class | Use it for |
+|---|---|
+| `TextLine` | One line of text in one font: a title, a label, a value. It does not wrap. |
+| `TextBlock` | One run of text in one font that wraps at its width: a note, a table cell, a paragraph in a box. It breaks words that do not fit, wraps right to left and Thai text, highlights keywords, and can be cut to a height with the lines aligned to the top, center or bottom. |
+| `TextColumn` | Paragraphs of `TextLine` objects that differ in font, size or color, drawn in one place: an article page with bold or colored words, justified paragraphs, CJK paragraphs, or a rotated column. |
+| `TextFrame` | Paragraphs that continue from one frame to the next: the columns of an article or the pages of a long text. `hasMoreText` says whether a next frame is needed. |
+| `Container` | A group of drawable elements, shapes, text, images, annotations and other containers, that are moved, rotated and scaled together and drawn into a page. |
+| `Stamp` | Content that repeats on many pages, like a header, a footer or a watermark. It is written once as a form XObject and each placement is a single operator, so the file stays small. |
+
+`Table` and `BigTable` draw tables, with a `TextBlock` in a cell when the
+cell text needs wrapping. Example_01, 10, 16, 19, 35 and 47 show these classes.
+
 ## Right to left text
 
 `Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text

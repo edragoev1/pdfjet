@@ -433,6 +433,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   libraries.
 
 ### Documentation
+- The class comments of `TextBlock`, `TextColumn`, `TextFrame`, `Container`
+  and `Stamp` say what each is for and which of the others to use instead,
+  and the README has a "Which class to use" table for the text and grouping
+  classes.
 - The C# API reference is built by DocFX and published under `dotnet/`, next
   to the Java, Go and Swift references, and the Swift reference is published
   again.

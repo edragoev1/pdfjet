@@ -16,10 +16,15 @@ import (
 // TextFrame is paragraphs of text lines, wrapped at the width of the frame,
 // with an optional border. A frame with a height draws as much of the text as
 // fits and keeps the rest for the next frame, so text flows from frame to
-// frame. A frame without a height draws all of the text, Drawing consumes the
+// frame. A frame without a height draws all of the text. Drawing consumes the
 // text: a second DrawOn draws what is left, so build a new frame to draw the
-// same text again. Please
-// see Example_47.
+// same text again.
+//
+// Use a TextFrame for text that continues from one frame to the next: the
+// columns of an article, or the pages of a long text. Use a TextColumn to
+// draw paragraphs in one place, with justified text or a rotation, and a
+// TextBlock for one run of text in one font. Please see Example_03 and
+// Example_47.
 type TextFrame struct {
 	paragraphs       []*Paragraph
 	x, y, w, h       float32

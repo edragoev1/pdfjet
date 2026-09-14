@@ -11,8 +11,15 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Content that is drawn once, written as a PDF form XObject, and placed on pages with DrawOn.
-/// Please see Example_35.
+/// Content that is drawn once with the path and text methods of this class,
+/// written to the document as a PDF form XObject by Complete, and placed on
+/// pages with DrawOn, at a location and a rotation.
+///
+/// Use a Stamp for content that repeats on many pages, like a header, a footer,
+/// a logo or a watermark: the content is stored once in the file, and each
+/// placement adds a few bytes to the page. Use a Container to group drawable
+/// elements, like Rect, TextLine and Image, that are moved, rotated and scaled
+/// together on one page. Please see Example_35.
 /// </summary>
 public class Stamp : IDrawable {
     internal int objNumber;

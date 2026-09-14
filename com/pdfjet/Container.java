@@ -4,7 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A group of drawable elements that are moved, rotated and scaled together.
+ * A group of drawable elements that are moved, rotated and scaled together:
+ * shapes, text, images, annotations and nested containers. The elements are
+ * drawn into the page on every drawOn.
+ * <p>
+ * Use a Container to lay out a group once and place it on a page, or to
+ * rotate and scale elements that have no rotation of their own. Use a Stamp
+ * for content that repeats on many pages, like a header, a footer or a
+ * watermark: it is written once as a form XObject and each placement is a
+ * single operator. Please see Example_06 and Example_35.
  */
 public class Container implements Drawable {
     float x;

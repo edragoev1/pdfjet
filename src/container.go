@@ -11,8 +11,15 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
-// Container represents a drawable container that can hold other drawable elements.
-// It supports positioning, scaling, and rotation.
+// Container is a group of drawable elements that are moved, rotated and
+// scaled together: shapes, text, images, annotations and nested containers.
+// The elements are drawn into the page on every DrawOn.
+//
+// Use a Container to lay out a group once and place it on a page, or to
+// rotate and scale elements that have no rotation of their own. Use a Stamp
+// for content that repeats on many pages, like a header, a footer or a
+// watermark: it is written once as a form XObject and each placement is a
+// single operator. Please see Example_06 and Example_35.
 type Container struct {
 	x             float32    // The X coordinate of the container on the page.
 	y             float32    // The Y coordinate of the container on the page.

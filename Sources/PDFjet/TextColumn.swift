@@ -7,9 +7,16 @@
 import Foundation
 
 ///
-/// Used to create text column objects and draw them on a page.
+/// A column of paragraphs, each a list of TextLine objects that can differ in
+/// font, size and color, aligned left, right, center or justified, with a line
+/// spacing, a paragraph spacing, an optional line between the paragraphs and a
+/// rotation. It draws all of its paragraphs where it is placed.
 ///
-/// Please see Example_10, Example_29, Example_44 and Example_49.
+/// Use a TextColumn for an article or a page of mixed text: bold or colored
+/// words in a paragraph, justified paragraphs, CJK paragraphs, a rotated
+/// column. Use a TextBlock for one run of text in one font, and a TextFrame
+/// when the text must continue from one frame to the next, across columns or
+/// pages. Please see Example_10, Example_29, Example_44 and Example_49.
 ///
 public class TextColumn : Drawable {
     var alignment = Alignment.LEFT

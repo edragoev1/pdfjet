@@ -14,7 +14,14 @@ namespace PDFjet.NET {
 /// A block of text that wraps at its width, with an optional border, background
 /// and padding. Without a height the block is as tall as its text; with one the
 /// text that does not fit is cut, and the lines are aligned to the top, the
-/// center or the bottom of the block. See Example_01, 16 and 19.
+/// center or the bottom of the block.
+///
+/// Use a TextBlock for one run of text in one font: a label, a note, a table
+/// cell or a paragraph in a box. It breaks words that do not fit on a line,
+/// wraps right to left and Thai text, highlights keywords and can be cut to a
+/// height. Use a TextColumn for paragraphs of TextLine objects that differ in
+/// font or color, for justified text or for a rotated column, and a TextFrame
+/// for text that flows from one frame to the next. See Example_01, 16 and 19.
 /// </summary>
 public class TextBlock : IDrawable {
     internal float x;
