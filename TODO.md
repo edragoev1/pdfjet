@@ -246,6 +246,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       array form is added where only the `int` was (`Line`, `Path`,
       `CheckBox`, `Container`, `Paragraph`, `Table`, Go `Point`, Swift `Rect`
       and `Page`).
+- ✅ **B** `DonutChart` took an angle per slice, so Example_25 passed 90, 72
+      and 108 to mean 25, 20 and 30 percent, and a constructor flag made a
+      pie. Fixed (Sep 14): `Slice(value, color, label)` and the chart computes
+      the angles and percentages; an inner radius of 0 is a pie; the `Slice`
+      fields are hidden; Example_25 draws the same PDF; tests in the four ports.
+- ✅ S `BarChart.setStacked`: the series stacked in each category, the value
+      axis rounded to the sums of each category, the values above 0 up from 0
+      and below 0 down, value labels inside the segments that have room.
+      Example_40 draws the grouped and the stacked chart of the same data.
 - ✅ **B** `CalendarMonth`: Swift takes the weekday of day 0, so a month that
       starts on a Sunday is a row low (`CalendarMonth.swift:39`); Go lays the
       calendar out differently and places the header with `x1` as the y

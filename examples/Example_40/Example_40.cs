@@ -6,8 +6,8 @@ using PDFjet.NET;
 /**
  * Example_40.cs
  *
- * Draws a bar chart with vertical bars: two series grouped by month, with a
- * legend under the title.
+ * Draws two bar charts with vertical bars from the same data: the two series
+ * grouped by month, and the same series stacked, with a legend under each title.
  */
 public class Example_40 {
     public Example_40() {
@@ -22,24 +22,37 @@ public class Example_40 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.SetSize(8f);
 
+        String[] months = {
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        float[] units2025 = {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f};
+        float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
+
         BarChart chart = new BarChart(f1, f2);
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);
         chart.SetTitle("Units sold by month");
         chart.SetXAxisTitle("Month");
         chart.SetYAxisTitle("Units");
-        chart.SetCategories(
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-        chart.AddSeries("2025",
-                new float[] {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f},
-                Color.seagreen);
-        chart.AddSeries("2026",
-                new float[] {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f},
-                Color.indianred);
+        chart.SetCategories(months);
+        chart.AddSeries("2025", units2025, Color.seagreen);
+        chart.AddSeries("2026", units2026, Color.indianred);
         chart.SetGroupGap(0.4f);
         chart.SetBarGap(0.1f);
         chart.DrawOn(page);
+
+        BarChart stacked = new BarChart(f1, f2);
+        stacked.SetLocation(70f, 400f);
+        stacked.SetSize(500f, 300f);
+        stacked.SetTitle("Units sold by month, stacked");
+        stacked.SetXAxisTitle("Month");
+        stacked.SetYAxisTitle("Units");
+        stacked.SetCategories(months);
+        stacked.AddSeries("2025", units2025, Color.seagreen);
+        stacked.AddSeries("2026", units2026, Color.indianred);
+        stacked.SetStacked(true);
+        stacked.SetDrawValueLabels(true);
+        stacked.DrawOn(page);
 
         pdf.Complete();
     }

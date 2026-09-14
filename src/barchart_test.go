@@ -87,3 +87,21 @@ func TestBarChartAManualAxisRangeIsUsedAsGiven(t *testing.T) {
 		t.Error("NaN in the content")
 	}
 }
+
+func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetCategories("a", "b")
+	chart.AddSeries("", []float32{20, 75}).AddSeries("", []float32{30, 10})
+	grouped := testDrawBarChart(t, chart, page)
+	if strings.Contains(grouped, testHex("90")) {
+		t.Errorf("90 in the grouped content %q", grouped)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	chart.SetStacked(true).SetDrawValueLabels(true)
+	stacked := testDrawBarChart(t, chart, page)
+	if !strings.Contains(stacked, testHex("90")) || !strings.Contains(stacked, testHex("75")) {
+		t.Errorf("labels missing from the stacked content %q", stacked)
+	}
+}

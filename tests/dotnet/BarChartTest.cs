@@ -75,5 +75,21 @@ public class BarChartTest {
         Assert.Contains(TestSupport.Hex("3"), content);
         Assert.DoesNotContain("NaN", content);
     }
+
+    [Fact]
+    public void StackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetCategories("a", "b");
+        chart.AddSeries("", new float[] {20f, 75f}).AddSeries("", new float[] {30f, 10f});
+        string grouped = Draw(chart, page);
+        Assert.DoesNotContain(TestSupport.Hex("90"), grouped);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart.SetStacked(true).SetDrawValueLabels(true);
+        string stacked = Draw(chart, page);
+        Assert.Contains(TestSupport.Hex("90"), stacked);
+        Assert.Contains(TestSupport.Hex("75"), stacked);
+    }
 }
 }

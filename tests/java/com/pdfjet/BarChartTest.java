@@ -78,4 +78,20 @@ class BarChartTest {
         assertTrue(content.contains(TestSupport.hex("3")), content);
         assertFalse(content.contains("NaN"));
     }
+
+    @Test
+    void stackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setCategories("a", "b");
+        chart.addSeries("", new float[] {20f, 75f}).addSeries("", new float[] {30f, 10f});
+        String grouped = draw(chart, page);
+        assertFalse(grouped.contains(TestSupport.hex("90")), grouped);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart.setStacked(true).setDrawValueLabels(true);
+        String stacked = draw(chart, page);
+        assertTrue(stacked.contains(TestSupport.hex("90")), stacked);
+        assertTrue(stacked.contains(TestSupport.hex("75")), stacked);
+    }
 }

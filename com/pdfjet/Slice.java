@@ -8,26 +8,24 @@ package com.pdfjet;
  */
 
 /**
- * Represents a single slice in a Donut or Pie chart.
+ * A slice of a DonutChart: a value, a color and a label. The slice's share
+ * of the sum of the values of the chart sets its angle.
  */
 public class Slice {
-    /** The angle of the slice in degrees. */
-    public float angle = 0.0f;
-    /** The color of the slice as a 0xRRGGBB value. */
-    public int color = 0;
-    /** The label drawn next to the slice. */
-    public String text = "";
+    final float value;
+    final int color;
+    final String text;
 
     /**
      * Creates a slice.
      *
-     * @param angle the angle of the slice in degrees.
-     * @param color the color as a 0xRRGGBB value.
+     * @param value the value of the slice, above 0; the chart draws its share of the sum.
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @param text the label drawn next to the slice.
      */
-    public Slice(float angle, int color, String text) {
-        this.angle = angle;
+    public Slice(float value, int color, String text) {
+        this.value = value;
         this.color = color;
-        this.text = text;
+        this.text = text == null ? "" : text;
     }
 }

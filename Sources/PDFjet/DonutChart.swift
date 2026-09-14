@@ -7,9 +7,9 @@
 import Foundation
 
 ///
-/// Used to create Donut chart objects and draw them on a page
-///
-/// Please see Example_25.swift
+/// A donut or pie chart: each slice is its value's share of the sum of the
+/// values, with a label next to it and its percentage inside it. A chart with
+/// an inner radius of 0 is a pie chart. See Example_25.
 ///
 public class DonutChart : Drawable {
     var f1: Font?
@@ -19,19 +19,16 @@ public class DonutChart : Drawable {
     var r1: Float = 0.0
     var r2: Float = 0.0
     var slices: [Slice]?
-    var isDonutChart = true
 
     ///
-    /// Creates a donut chart or a pie chart.
+    /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
     ///
     /// - Parameter f1: the font for the slice labels, or nil to draw no labels.
     /// - Parameter f2: the font for the percentages drawn inside the slices, or nil to draw no percentages.
-    /// - Parameter isDonutChart: true for a donut chart, false for a pie chart.
     ///
-    public init(_ f1: Font?, _ f2: Font?, _ isDonutChart: Bool) {
+    public init(_ f1: Font?, _ f2: Font?) {
         self.f1 = f1
         self.f2 = f2
-        self.isDonutChart = isDonutChart
         self.slices = [Slice]()
     }
 
@@ -43,7 +40,7 @@ public class DonutChart : Drawable {
         return self
     }
 
-    /// Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
+    /// Sets the outer and inner radius of this chart. An inner radius of 0 makes a pie chart.
     @discardableResult
     public func setRadii(_ outerRadius: Float, _ innerRadius: Float) -> DonutChart {
         self.r1 = outerRadius
@@ -211,29 +208,39 @@ public class DonutChart : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let page = page!
-        if slices == nil || slices!.isEmpty {
+        // The slices with a value above 0 share the circle
+        var total: Float = 0.0
+        for slice in slices! {
+            if slice.value > 0.0 {
+                total += slice.value
+            }
+        }
+        if total <= 0.0 {
             return [xc + r1, yc + r1]
         }
-        let innerR: Float = isDonutChart ? r2 : 0.0
         var angle: Float = 0.0
         for slice in slices! {
+            if slice.value <= 0.0 {
+                continue
+            }
+            let sweep = slice.value * 360.0 / total
             angle = drawSlice(
                     page, slice.color,
                     xc, yc,
-                    r1, innerR,
-                    angle, angle + slice.angle)
+                    r1, r2,
+                    angle, angle + sweep)
             drawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
-                    angle - slice.angle, angle)
-            // In drawOn, after drawSlice and drawLinePointer:
-            if f2 != nil && slice.angle >= 15.0 {
-                let pct = Int(slice.angle / 360.0 * 100.0)
+                    angle - sweep, angle)
+            // The percentage fits inside a slice of 15 degrees or more
+            if f2 != nil && sweep >= 15.0 {
+                let pct = Int((slice.value * 100.0 / total).rounded(.toNearestOrAwayFromZero))
                 let label = TextLine(f2!, "\(pct)%")
                 label.setTextColor(Color.white)
-                let midAngle = angle - slice.angle / 2.0 - 90.0
-                let midR = (r1 + innerR) / 2.0
+                let midAngle = angle - sweep / 2.0 - 90.0
+                let midR = (r1 + r2) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
                 label.setLocation(
                         pos[0] - f2!.stringWidth("\(pct)%") / 2.0,

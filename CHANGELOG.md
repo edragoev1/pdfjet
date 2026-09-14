@@ -45,6 +45,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - Every color setter takes an `int` like `Color.blue` or the red, green and
   blue components as an array, in every port; the `setColor(r, g, b)` overloads
   of some setters in some ports are removed.
+- `DonutChart` takes the values of its slices: `Slice(value, color, label)`,
+  and the chart computes the angles and the percentages. The constructor has
+  no `isDonutChart` flag; an inner radius of 0 makes a pie chart.
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. See "Charts and calendars".
@@ -174,8 +177,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - New `BarChart` in the four ports: categories on one axis, the bars of the
   series grouped inside each category, vertical or horizontal, with a value
   axis that always includes 0, a legend under the title, optional value labels
-  at the bar ends, and grid, axis and border line settings. Example_39 and
-  Example_40 draw a horizontal and a grouped vertical bar chart with it.
+  at the bar ends, and grid, axis and border line settings. `setStacked(true)`
+  stacks the series in each category, with the value axis rounded to the sums
+  and the value labels inside the segments. Example_39 draws a horizontal bar
+  chart and Example_40 a grouped and a stacked vertical bar chart with it.
 - `Chart` draws only XY charts: `setXYChart` and its category mode are removed,
   bar charts are `BarChart`. Stroke widths are page units and are no longer
   scaled by the plot to chart width ratio, so a path is as wide as it was set.
@@ -186,7 +191,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   across the stroke.
 - `Chart` handles negative, empty and flat data and its colors the same way in
   the four ports, and writes the same axis labels whatever the locale.
-- `DonutChart` computes the same percentages in every port.
+- `DonutChart` takes a value per slice instead of an angle, so the user no
+  longer does the chart's arithmetic, and computes the same percentages in
+  every port.
 - `CalendarMonth` lays out the calendar as Java does in the four ports.
 
 ### PDF, pages and drawing

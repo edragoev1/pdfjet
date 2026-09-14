@@ -34,6 +34,7 @@ public class BarChart : Drawable {
     private var series = [Series]()
 
     private var horizontal = false
+    private var stacked = false
     private var groupGap: Float = 0.3
     private var barGap: Float = 0.0
 
@@ -115,6 +116,18 @@ public class BarChart : Drawable {
     ///
     @discardableResult
     public func setCategories(_ categories: String...) -> BarChart {
+        return setCategories(categories)
+    }
+
+    ///
+    /// Sets the categories, one per group of bars, in the order they are drawn:
+    /// left to right in a vertical chart, top to bottom in a horizontal one.
+    ///
+    /// - Parameter categories: the category labels.
+    /// - Returns: this BarChart object.
+    ///
+    @discardableResult
+    public func setCategories(_ categories: [String]) -> BarChart {
         self.categories = categories
         return self
     }
@@ -186,6 +199,20 @@ public class BarChart : Drawable {
     }
 
     ///
+    /// Sets whether the series are stacked: one bar per category, with the
+    /// value of each series as a segment of it. The values above 0 stack up
+    /// from 0 and the values below 0 stack down. The default is grouped bars.
+    ///
+    /// - Parameter stacked: true for stacked bars.
+    /// - Returns: this BarChart object.
+    ///
+    @discardableResult
+    public func setStacked(_ stacked: Bool) -> BarChart {
+        self.stacked = stacked
+        return self
+    }
+
+    ///
     /// Sets the gap between the groups of bars as a fraction of the category
     /// slot, from 0.0 to below 1.0. The default is 0.3.
     ///
@@ -224,7 +251,8 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets whether the value of each bar is written at its end.
+    /// Sets whether the value of each bar is written at its end, or, in a
+    /// stacked chart, inside each segment that has room for it.
     ///
     /// - Parameter drawValueLabels: true to write the values.
     /// - Returns: this BarChart object.
@@ -378,10 +406,25 @@ public class BarChart : Drawable {
         } else {
             var lo: Float = 0.0
             var hi: Float = 0.0
-            for s in series {
-                for v in s.values {
-                    lo = Swift.min(lo, v)
-                    hi = Swift.max(hi, v)
+            if stacked {
+                // The sums of the values above and below 0 in each category
+                for i in 0..<n {
+                    var up: Float = 0.0
+                    var down: Float = 0.0
+                    for s in series {
+                        if i < s.values.count {
+                            if s.values[i] >= 0.0 { up += s.values[i] } else { down += s.values[i] }
+                        }
+                    }
+                    lo = Swift.min(lo, down)
+                    hi = Swift.max(hi, up)
+                }
+            } else {
+                for s in series {
+                    for v in s.values {
+                        lo = Swift.min(lo, v)
+                        hi = Swift.max(hi, v)
+                    }
                 }
             }
             if hi == lo { hi = lo + 1.0 }
@@ -428,7 +471,7 @@ public class BarChart : Drawable {
         let bottomMargin = 2.5 * bodyHeight
         if horizontal {
             rightMargin += Swift.max(widestAxisLabel / 2.0, widestValueLabel + pad)
-        } else if drawValueLabels {
+        } else if drawValueLabels && !stacked {
             topMargin += bodyHeight
         }
         let x5 = x1 + leftMargin
@@ -473,7 +516,7 @@ public class BarChart : Drawable {
         let m = series.count
         let slot = (horizontal ? (y8 - y5) : (x6 - x5)) / Float(n)
         let groupWidth = slot * (1.0 - groupGap)
-        let barWidth = m == 0 ? groupWidth : groupWidth / (Float(m) + Float(m - 1) * barGap)
+        let barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (Float(m) + Float(m - 1) * barGap)
         for i in 0..<n {
             let slotStart = (horizontal ? y5 : x5) + Float(i) * slot
             let groupStart = slotStart + slot * groupGap / 2.0
@@ -486,34 +529,57 @@ public class BarChart : Drawable {
                 page.drawString(f2, f2.getSize(), category, slotStart + (slot - f2.stringWidth(category)) / 2.0,
                         y8 + bodyHeight)
             }
+            var up: Float = 0.0      // the stacked values above 0 so far
+            var down: Float = 0.0    // the stacked values below 0 so far
             for j in 0..<m {
                 let s = series[j]
                 if i >= s.values.count {
                     continue
                 }
-                let v = Swift.min(Swift.max(s.values[i], vMin), vMax)
-                let barStart = groupStart + Float(j) * barWidth * (1.0 + barGap)
+                // A bar runs from the base to its value; a segment of a stack
+                // from the sum of the segments before it to that sum plus its value
+                var from = base
+                var to = s.values[i]
+                if stacked {
+                    if to >= 0.0 { from = up; up += to } else { from = down; down += to }
+                    to = from + s.values[i]
+                }
+                from = Swift.min(Swift.max(from, vMin), vMax)
+                to = Swift.min(Swift.max(to, vMin), vMax)
+                let barStart = stacked ? groupStart : groupStart + Float(j) * barWidth * (1.0 + barGap)
                 page.setBrushColor(s.color == BarChart.NO_COLOR ? Chart.DEFAULT_PALETTE[j % Chart.DEFAULT_PALETTE.count] : s.color)
+                let label: String? = drawValueLabels ? valueLabel(s.values[i]) : nil
                 if horizontal {
-                    let x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin)
-                    let x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
+                    let x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin)
+                    let x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin)
                     page.fillRect(Swift.min(x0, x), barStart, abs(x - x0), barWidth)
-                    if drawValueLabels {
-                        let label = valueLabel(s.values[i])
+                    if let label = label, stacked {
+                        if abs(x - x0) >= f2.stringWidth(label) + pad {
+                            page.setBrushColor(Color.black)
+                            page.drawString(f2, f2.getSize(), label,
+                                    Swift.min(x0, x) + (abs(x - x0) - f2.stringWidth(label)) / 2.0,
+                                    barStart + barWidth / 2.0 + ascent / 2.0)
+                        }
+                    } else if let label = label {
                         page.setBrushColor(Color.black)
                         page.drawString(f2, f2.getSize(), label,
-                                v >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label),
+                                to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label),
                                 barStart + barWidth / 2.0 + ascent / 2.0)
                     }
                 } else {
-                    let y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin)
-                    let y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
+                    let y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin)
+                    let y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin)
                     page.fillRect(barStart, Swift.min(y0, y), barWidth, abs(y - y0))
-                    if drawValueLabels {
-                        let label = valueLabel(s.values[i])
+                    if let label = label, stacked {
+                        if abs(y - y0) >= bodyHeight {
+                            page.setBrushColor(Color.black)
+                            page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
+                                    (y + y0) / 2.0 + ascent / 2.0)
+                        }
+                    } else if let label = label {
                         page.setBrushColor(Color.black)
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
-                                v >= base ? y - pad / 2.0 : y + ascent + pad / 2.0)
+                                to >= base ? y - pad / 2.0 : y + ascent + pad / 2.0)
                     }
                 }
             }

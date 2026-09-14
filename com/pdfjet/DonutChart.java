@@ -12,9 +12,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Used to create Donut chart objects and draw them on a page.
- *
- * Please see Example_25.java
+ * A donut or pie chart: each slice is its value's share of the sum of the
+ * values, with a label next to it and its percentage inside it. A chart with
+ * an inner radius of 0 is a pie chart. See Example_25.
  */
 public class DonutChart implements Drawable {
     Font f1;
@@ -24,19 +24,16 @@ public class DonutChart implements Drawable {
     float r1 = 0.0f;
     float r2 = 0.0f;
     List<Slice> slices;
-    boolean isDonutChart = true;
 
     /**
-     * Creates a donut chart or a pie chart.
+     * Creates a donut chart. With an inner radius of 0 it is a pie chart.
      *
      * @param f1 the font for the slice labels.
      * @param f2 the font for the percentages drawn inside the slices.
-     * @param isDonutChart true for a donut chart, false for a pie chart.
      */
-    public DonutChart(Font f1, Font f2, boolean isDonutChart) {
+    public DonutChart(Font f1, Font f2) {
         this.f1 = f1;
         this.f2 = f2;
-        this.isDonutChart = isDonutChart;
         this.slices = new ArrayList<>();
     }
 
@@ -57,7 +54,7 @@ public class DonutChart implements Drawable {
      * Sets the outer and inner radius of this chart.
      *
      * @param outerRadius the outer radius.
-     * @param innerRadius the inner radius. A pie chart ignores it.
+     * @param innerRadius the inner radius; 0 for a pie chart.
      * @return this DonutChart object.
      */
     public DonutChart setRadii(float outerRadius, float innerRadius) {
@@ -230,30 +227,40 @@ public class DonutChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
-        if (slices == null || slices.isEmpty()) {
+        // The slices with a value above 0 share the circle
+        float total = 0.0f;
+        for (Slice slice : slices) {
+            if (slice.value > 0.0f) {
+                total += slice.value;
+            }
+        }
+        if (total <= 0.0f) {
             return new float[] {xc + r1, yc + r1};
         }
-        float innerR = isDonutChart ? r2 : 0.0f;
         float angle = 0.0f;
         for (Slice slice : slices) {
+            if (slice.value <= 0.0f) {
+                continue;
+            }
+            float sweep = slice.value * 360.0f / total;
             angle = drawSlice(
                     page, slice.color,
                     xc, yc,
-                    r1, innerR,
-                    angle, angle + slice.angle);
+                    r1, r2,
+                    angle, angle + sweep);
             drawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
-                    angle - slice.angle, angle);
-            // In drawOn, after drawSlice and drawLinePointer:
-            if (f2 != null && slice.angle >= 15.0f) {
-                int pct = (int) (slice.angle / 360.0f * 100.0f);
+                    angle - sweep, angle);
+            // The percentage fits inside a slice of 15 degrees or more
+            if (f2 != null && sweep >= 15.0f) {
+                int pct = Math.round(slice.value * 100.0f / total);
                 String pctStr = pct + "%";
                 TextLine label = new TextLine(f2, pctStr);
                 label.setTextColor(Color.white);
-                float midAngle = angle - slice.angle / 2.0f - 90.0f;
-                float midR = (r1 + innerR) / 2.0f;
+                float midAngle = angle - sweep / 2.0f - 90.0f;
+                float midR = (r1 + r2) / 2.0f;
                 float[] pos = getPoint(xc, yc, midR, midAngle);
                 label.setLocation(
                         pos[0] - f2.stringWidth(pctStr) / 2.0f,

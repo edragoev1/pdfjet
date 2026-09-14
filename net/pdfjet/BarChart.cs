@@ -41,6 +41,7 @@ public class BarChart : IDrawable {
     private readonly List<Series> series = new List<Series>();
 
     private bool horizontal = false;
+    private bool stacked = false;
     private float groupGap = 0.3f;
     private float barGap = 0f;
 
@@ -179,6 +180,18 @@ public class BarChart : IDrawable {
     }
 
     /// <summary>
+    /// Sets whether the series are stacked: one bar per category, with the
+    /// value of each series as a segment of it. The values above 0 stack up
+    /// from 0 and the values below 0 stack down. The default is grouped bars.
+    /// </summary>
+    /// <param name="stacked">true for stacked bars.</param>
+    /// <returns>this BarChart object.</returns>
+    public BarChart SetStacked(bool stacked) {
+        this.stacked = stacked;
+        return this;
+    }
+
+    /// <summary>
     /// Sets the gap between the groups of bars as a fraction of the category
     /// slot, from 0.0 to below 1.0. The default is 0.3.
     /// </summary>
@@ -208,7 +221,10 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Sets whether the value of each bar is written at its end.</summary>
+    /// <summary>
+    /// Sets whether the value of each bar is written at its end, or, in a
+    /// stacked chart, inside each segment that has room for it.
+    /// </summary>
     /// <param name="drawValueLabels">true to write the values.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetDrawValueLabels(bool drawValueLabels) {
@@ -323,10 +339,25 @@ public class BarChart : IDrawable {
         } else {
             float lo = 0f;
             float hi = 0f;
-            foreach (Series s in series) {
-                foreach (float v in s.values) {
-                    lo = Math.Min(lo, v);
-                    hi = Math.Max(hi, v);
+            if (stacked) {
+                // The sums of the values above and below 0 in each category
+                for (int i = 0; i < n; i++) {
+                    float up = 0f;
+                    float down = 0f;
+                    foreach (Series s in series) {
+                        if (i < s.values.Length) {
+                            if (s.values[i] >= 0f) { up += s.values[i]; } else { down += s.values[i]; }
+                        }
+                    }
+                    lo = Math.Min(lo, down);
+                    hi = Math.Max(hi, up);
+                }
+            } else {
+                foreach (Series s in series) {
+                    foreach (float v in s.values) {
+                        lo = Math.Min(lo, v);
+                        hi = Math.Max(hi, v);
+                    }
                 }
             }
             if (hi == lo) { hi = lo + 1f; }
@@ -373,7 +404,7 @@ public class BarChart : IDrawable {
         float bottomMargin = 2.5f * bodyHeight;
         if (horizontal) {
             rightMargin += Math.Max(widestAxisLabel / 2f, widestValueLabel + pad);
-        } else if (drawValueLabels) {
+        } else if (drawValueLabels && !stacked) {
             topMargin += bodyHeight;
         }
         float x5 = x1 + leftMargin;
@@ -418,7 +449,7 @@ public class BarChart : IDrawable {
         int m = series.Count;
         float slot = (horizontal ? (y8 - y5) : (x6 - x5)) / n;
         float groupWidth = slot * (1f - groupGap);
-        float barWidth = m == 0 ? groupWidth : groupWidth / (m + (m - 1) * barGap);
+        float barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (m + (m - 1) * barGap);
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
@@ -431,34 +462,57 @@ public class BarChart : IDrawable {
                 page.DrawString(f2, f2.GetSize(), category, slotStart + (slot - f2.StringWidth(category)) / 2f,
                         y8 + bodyHeight);
             }
+            float up = 0f;      // the stacked values above 0 so far
+            float down = 0f;    // the stacked values below 0 so far
             for (int j = 0; j < m; j++) {
                 Series s = series[j];
                 if (i >= s.values.Length) {
                     continue;
                 }
-                float v = Math.Min(Math.Max(s.values[i], vMin), vMax);
-                float barStart = groupStart + j * barWidth * (1f + barGap);
+                // A bar runs from the base to its value; a segment of a stack
+                // from the sum of the segments before it to that sum plus its value
+                float from = baseValue;
+                float to = s.values[i];
+                if (stacked) {
+                    if (to >= 0f) { from = up; up += to; } else { from = down; down += to; }
+                    to = from + s.values[i];
+                }
+                from = Math.Min(Math.Max(from, vMin), vMax);
+                to = Math.Min(Math.Max(to, vMin), vMax);
+                float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
                 page.SetBrushColor(s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[j % Chart.DEFAULT_PALETTE.Length] : s.color);
+                String label = drawValueLabels ? ValueLabel(s.values[i]) : null;
                 if (horizontal) {
-                    float x0 = x5 + (baseValue - vMin) * (x6 - x5) / (vMax - vMin);
-                    float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin);
                     page.FillRect(Math.Min(x0, x), barStart, Math.Abs(x - x0), barWidth);
-                    if (drawValueLabels) {
-                        String label = ValueLabel(s.values[i]);
+                    if (label != null && stacked) {
+                        if (Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
+                            page.SetBrushColor(Color.black);
+                            page.DrawString(f2, f2.GetSize(), label,
+                                    Math.Min(x0, x) + (Math.Abs(x - x0) - f2.StringWidth(label)) / 2f,
+                                    barStart + barWidth / 2f + ascent / 2f);
+                        }
+                    } else if (label != null) {
                         page.SetBrushColor(Color.black);
                         page.DrawString(f2, f2.GetSize(), label,
-                                v >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label),
+                                to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label),
                                 barStart + barWidth / 2f + ascent / 2f);
                     }
                 } else {
-                    float y0 = y8 - (baseValue - vMin) * (y8 - y5) / (vMax - vMin);
-                    float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin);
                     page.FillRect(barStart, Math.Min(y0, y), barWidth, Math.Abs(y - y0));
-                    if (drawValueLabels) {
-                        String label = ValueLabel(s.values[i]);
+                    if (label != null && stacked) {
+                        if (Math.Abs(y - y0) >= bodyHeight) {
+                            page.SetBrushColor(Color.black);
+                            page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
+                                    (y + y0) / 2f + ascent / 2f);
+                        }
+                    } else if (label != null) {
                         page.SetBrushColor(Color.black);
                         page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
-                                v >= baseValue ? y - pad / 2f : y + ascent + pad / 2f);
+                                to >= baseValue ? y - pad / 2f : y + ascent + pad / 2f);
                     }
                 }
             }

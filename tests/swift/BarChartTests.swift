@@ -70,4 +70,19 @@ import Testing
         #expect(content.contains(TestSupport.hex("3")), "\(content)")
         #expect(!content.contains("NaN"))
     }
+
+    @Test func stackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setCategories("a", "b")
+        chart.addSeries("", [20, 75]).addSeries("", [30, 10])
+        let grouped = draw(chart, page)
+        #expect(!grouped.contains(TestSupport.hex("90")), "\(grouped)")
+
+        page = Page(pdf, Letter.PORTRAIT)
+        chart.setStacked(true).setDrawValueLabels(true)
+        let stacked = draw(chart, page)
+        #expect(stacked.contains(TestSupport.hex("90")), "\(stacked)")
+        #expect(stacked.contains(TestSupport.hex("75")), "\(stacked)")
+    }
 }

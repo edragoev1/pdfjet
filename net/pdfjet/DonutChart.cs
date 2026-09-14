@@ -9,9 +9,9 @@ using System.Linq;
 
 namespace PDFjet.NET {
     /// <summary>
-    /// Used to create Donut chart objects and draw them on a page.
-    ///
-    /// Please see Example_25.cs
+    /// A donut or pie chart: each slice is its value's share of the sum of the
+    /// values, with a label next to it and its percentage inside it. A chart with
+    /// an inner radius of 0 is a pie chart. See Example_25.
     /// </summary>
     public class DonutChart : IDrawable {
         private readonly Font f1;
@@ -21,18 +21,15 @@ namespace PDFjet.NET {
         private float r1;
         private float r2;
         private readonly List<Slice> slices;
-        private readonly bool isDonutChart;
 
         /// <summary>
-        /// Creates a donut chart or a pie chart.
+        /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
         /// </summary>
         /// <param name="f1">the font for the slice labels.</param>
         /// <param name="f2">the font for the percentages drawn inside the slices.</param>
-        /// <param name="isDonutChart">true for a donut chart, false for a pie chart.</param>
-        public DonutChart(Font f1, Font f2, bool isDonutChart) {
+        public DonutChart(Font f1, Font f2) {
             this.f1 = f1;
             this.f2 = f2;
-            this.isDonutChart = isDonutChart;
             this.slices = new List<Slice>();
         }
 
@@ -47,7 +44,7 @@ namespace PDFjet.NET {
             return SetLocation(x, y);
         }
 
-        /// <summary>Sets the outer and inner radius of this chart. A pie chart ignores the inner radius.</summary>
+        /// <summary>Sets the outer and inner radius of this chart; an inner radius of 0 makes a pie chart.</summary>
         public DonutChart SetRadii(float outerRadius, float innerRadius) {
             this.r1 = outerRadius;
             this.r2 = innerRadius;
@@ -209,31 +206,41 @@ namespace PDFjet.NET {
         /// <returns>x and y coordinates of the bottom right corner of the outer circle
         /// of this chart. The slice labels can extend past it.</returns>
         public float[] DrawOn(Page page) {
-            if (slices == null || slices.Count == 0) {
+            // The slices with a value above 0 share the circle
+            float total = 0.0f;
+            foreach (Slice slice in slices) {
+                if (slice.value > 0.0f) {
+                    total += slice.value;
+                }
+            }
+            if (total <= 0.0f) {
                 return new float[] {xc + r1, yc + r1};
             }
-            float innerR = isDonutChart ? r2 : 0.0f;
             float angle = 0.0f;
             foreach (Slice slice in slices) {
+                if (slice.value <= 0.0f) {
+                    continue;
+                }
+                float sweep = slice.value * 360.0f / total;
                 angle = DrawSlice(
                     page, slice.color,
                     xc, yc,
-                    r1, innerR,
-                    angle, angle + slice.angle);
+                    r1, r2,
+                    angle, angle + sweep);
                 DrawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
-                    angle - slice.angle, angle);
+                    angle - sweep, angle);
 
-                // Percent label inside the slice
-                if (f2 != null && slice.angle >= 15.0f) {
-                    int pct = (int)(slice.angle / 360.0f * 100.0f);
+                // The percentage fits inside a slice of 15 degrees or more
+                if (f2 != null && sweep >= 15.0f) {
+                    int pct = (int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero);
                     string pctStr = pct + "%";
                     TextLine label = new TextLine(f2, pctStr);
                     label.SetTextColor(Color.white);
-                    float midAngle = angle - slice.angle / 2.0f - 90.0f;
-                    float midR = (r1 + innerR) / 2.0f;
+                    float midAngle = angle - sweep / 2.0f - 90.0f;
+                    float midR = (r1 + r2) / 2.0f;
                     var (posX, posY) = GetPoint(xc, yc, midR, midAngle);
                     label.SetLocation(
                         posX - f2.StringWidth(pctStr) / 2.0f,

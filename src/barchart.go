@@ -34,6 +34,7 @@ type BarChart struct {
 	series     []*barSeries
 
 	horizontal bool
+	stacked    bool
 	groupGap   float32
 	barGap     float32
 
@@ -152,6 +153,14 @@ func (chart *BarChart) SetHorizontal(horizontal bool) *BarChart {
 	return chart
 }
 
+// SetStacked sets whether the series are stacked: one bar per category, with
+// the value of each series as a segment of it. The values above 0 stack up
+// from 0 and the values below 0 stack down. The default is grouped bars.
+func (chart *BarChart) SetStacked(stacked bool) *BarChart {
+	chart.stacked = stacked
+	return chart
+}
+
 // SetGroupGap sets the gap between the groups of bars as a fraction of the
 // category slot, from 0.0 to below 1.0. The default is 0.3.
 func (chart *BarChart) SetGroupGap(gap float32) *BarChart {
@@ -172,7 +181,8 @@ func (chart *BarChart) SetDrawGridLines(drawGridLines bool) *BarChart {
 	return chart
 }
 
-// SetDrawValueLabels sets whether the value of each bar is written at its end.
+// SetDrawValueLabels sets whether the value of each bar is written at its end,
+// or, in a stacked chart, inside each segment that has room for it.
 func (chart *BarChart) SetDrawValueLabels(drawValueLabels bool) *BarChart {
 	chart.drawValueLabels = drawValueLabels
 	return chart
@@ -263,10 +273,29 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	} else {
 		lo := float32(0.0)
 		hi := float32(0.0)
-		for _, s := range chart.series {
-			for _, v := range s.values {
-				lo = min(lo, v)
-				hi = max(hi, v)
+		if chart.stacked {
+			// The sums of the values above and below 0 in each category
+			for i := 0; i < n; i++ {
+				up := float32(0.0)
+				down := float32(0.0)
+				for _, s := range chart.series {
+					if i < len(s.values) {
+						if s.values[i] >= 0.0 {
+							up += s.values[i]
+						} else {
+							down += s.values[i]
+						}
+					}
+				}
+				lo = min(lo, down)
+				hi = max(hi, up)
+			}
+		} else {
+			for _, s := range chart.series {
+				for _, v := range s.values {
+					lo = min(lo, v)
+					hi = max(hi, v)
+				}
 			}
 		}
 		if hi == lo {
@@ -325,7 +354,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	bottomMargin := 2.5 * bodyHeight
 	if chart.horizontal {
 		rightMargin += max(widestAxisLabel/2.0, widestValueLabel+pad)
-	} else if chart.drawValueLabels {
+	} else if chart.drawValueLabels && !chart.stacked {
 		topMargin += bodyHeight
 	}
 	x5 := chart.x1 + leftMargin
@@ -380,7 +409,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 	groupWidth := slot * (1.0 - chart.groupGap)
 	barWidth := groupWidth
-	if m != 0 {
+	if m != 0 && !chart.stacked {
 		barWidth = groupWidth / (float32(m) + float32(m-1)*chart.barGap)
 	}
 	for i := 0; i < n; i++ {
@@ -403,23 +432,53 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			page.drawString(f2, f2.size, category, slotStart+(slot-f2.StringWidth(f2.size, category))/2.0,
 				y8+bodyHeight, [3]float32{0.0, 0.0, 0.0}, nil)
 		}
+		up := float32(0.0)   // the stacked values above 0 so far
+		down := float32(0.0) // the stacked values below 0 so far
 		for j := 0; j < m; j++ {
 			s := chart.series[j]
 			if i >= len(s.values) {
 				continue
 			}
-			v := min(max(s.values[i], vMin), vMax)
-			barStart := groupStart + float32(j)*barWidth*(1.0+chart.barGap)
+			// A bar runs from the base to its value; a segment of a stack
+			// from the sum of the segments before it to that sum plus its value
+			from := base
+			to := s.values[i]
+			if chart.stacked {
+				if to >= 0.0 {
+					from = up
+					up += to
+				} else {
+					from = down
+					down += to
+				}
+				to = from + s.values[i]
+			}
+			from = min(max(from, vMin), vMax)
+			to = min(max(to, vMin), vMax)
+			barStart := groupStart
+			if !chart.stacked {
+				barStart = groupStart + float32(j)*barWidth*(1.0+chart.barGap)
+			}
 			page.SetBrushColor(chart.seriesColor(s, j))
+			label := ""
+			if chart.drawValueLabels {
+				label = chart.valueLabel(s.values[i])
+			}
 			if chart.horizontal {
-				x0 := x5 + (base-vMin)*(x6-x5)/(vMax-vMin)
-				x := x5 + (v-vMin)*(x6-x5)/(vMax-vMin)
+				x0 := x5 + (from-vMin)*(x6-x5)/(vMax-vMin)
+				x := x5 + (to-vMin)*(x6-x5)/(vMax-vMin)
 				page.FillRect(min(x0, x), barStart, abs32(x-x0), barWidth)
-				if chart.drawValueLabels {
-					label := chart.valueLabel(s.values[i])
+				if chart.drawValueLabels && chart.stacked {
+					if abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
+						page.SetBrushColor(color.Black)
+						page.drawString(f2, f2.size, label,
+							min(x0, x)+(abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0,
+							barStart+barWidth/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+					}
+				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var lx float32
-					if v >= base {
+					if to >= base {
 						lx = x + pad/2.0
 					} else {
 						lx = x - pad/2.0 - f2.StringWidth(f2.size, label)
@@ -428,14 +487,19 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 						[3]float32{0.0, 0.0, 0.0}, nil)
 				}
 			} else {
-				y0 := y8 - (base-vMin)*(y8-y5)/(vMax-vMin)
-				y := y8 - (v-vMin)*(y8-y5)/(vMax-vMin)
+				y0 := y8 - (from-vMin)*(y8-y5)/(vMax-vMin)
+				y := y8 - (to-vMin)*(y8-y5)/(vMax-vMin)
 				page.FillRect(barStart, min(y0, y), barWidth, abs32(y-y0))
-				if chart.drawValueLabels {
-					label := chart.valueLabel(s.values[i])
+				if chart.drawValueLabels && chart.stacked {
+					if abs32(y-y0) >= bodyHeight {
+						page.SetBrushColor(color.Black)
+						page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0,
+							(y+y0)/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+					}
+				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var ly float32
-					if v >= base {
+					if to >= base {
 						ly = y - pad/2.0
 					} else {
 						ly = y + ascent + pad/2.0

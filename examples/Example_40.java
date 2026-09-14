@@ -6,8 +6,8 @@ import com.pdfjet.*;
 /**
  * Example_40.java
  *
- * Draws a bar chart with vertical bars: two series grouped by month, with a
- * legend under the title.
+ * Draws two bar charts with vertical bars from the same data: the two series
+ * grouped by month, and the same series stacked, with a legend under each title.
  */
 final public class Example_40 {
     public Example_40() throws Exception {
@@ -22,24 +22,37 @@ final public class Example_40 {
         Font f2 = new Font(pdf, CoreFont.HELVETICA);
         f2.setSize(8f);
 
+        String[] months = {
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        float[] units2025 = {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f};
+        float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
+
         BarChart chart = new BarChart(f1, f2);
         chart.setLocation(70f, 50f);
         chart.setSize(500f, 300f);
         chart.setTitle("Units sold by month");
         chart.setXAxisTitle("Month");
         chart.setYAxisTitle("Units");
-        chart.setCategories(
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-        chart.addSeries("2025",
-                new float[] {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f},
-                Color.seagreen);
-        chart.addSeries("2026",
-                new float[] {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f},
-                Color.indianred);
+        chart.setCategories(months);
+        chart.addSeries("2025", units2025, Color.seagreen);
+        chart.addSeries("2026", units2026, Color.indianred);
         chart.setGroupGap(0.4f);
         chart.setBarGap(0.1f);
         chart.drawOn(page);
+
+        BarChart stacked = new BarChart(f1, f2);
+        stacked.setLocation(70f, 400f);
+        stacked.setSize(500f, 300f);
+        stacked.setTitle("Units sold by month, stacked");
+        stacked.setXAxisTitle("Month");
+        stacked.setYAxisTitle("Units");
+        stacked.setCategories(months);
+        stacked.addSeries("2025", units2025, Color.seagreen);
+        stacked.addSeries("2026", units2026, Color.indianred);
+        stacked.setStacked(true);
+        stacked.setDrawValueLabels(true);
+        stacked.drawOn(page);
 
         pdf.complete();
     }

@@ -7,20 +7,23 @@
 using System;
 
 namespace PDFjet.NET {
-/// <summary>A single slice of a donut or pie chart.</summary>
+/// <summary>
+/// A slice of a DonutChart: a value, a color and a label. The slice's share
+/// of the sum of the values of the chart sets its angle.
+/// </summary>
 public class Slice {
-    /// <summary>The angle of the slice in degrees.</summary>
-    public float angle = 0.0f;
-    /// <summary>The color of the slice as a 0xRRGGBB value.</summary>
-    public int color = 0;
-    /// <summary>The label drawn next to the slice.</summary>
-    public String text = "";
+    internal readonly float value;
+    internal readonly int color;
+    internal readonly String text;
 
-    /// <summary>Creates a slice with the angle in degrees, the 0xRRGGBB color and the label.</summary>
-    public Slice(float angle, int color, String text) {
-        this.angle = angle;
+    /// <summary>Creates a slice.</summary>
+    /// <param name="value">the value of the slice, above 0; the chart draws its share of the sum.</param>
+    /// <param name="color">the color as a 0xRRGGBB value, for example Color.blue.</param>
+    /// <param name="text">the label drawn next to the slice.</param>
+    public Slice(float value, int color, String text) {
+        this.value = value;
         this.color = color;
-        this.text = text;
+        this.text = text == null ? "" : text;
     }
 }
 }

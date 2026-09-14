@@ -14,28 +14,27 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
-// DonutChart is used to create donut chart objects and draw them on a page.
-//
-// Please see Example_25.go
+// DonutChart is a donut or pie chart: each slice is its value's share of the
+// sum of the values, with a label next to it and its percentage inside it. A
+// chart with an inner radius of 0 is a pie chart. See Example_25.
 type DonutChart struct {
-	f1           *Font
-	f2           *Font
-	xc           float32
-	yc           float32
-	r1           float32
-	r2           float32
-	slices       []*Slice
-	isDonutChart bool
+	f1     *Font
+	f2     *Font
+	xc     float32
+	yc     float32
+	r1     float32
+	r2     float32
+	slices []*Slice
 }
 
-// NewDonutChart creates a new DonutChart.
-// Pass isDonutChart=false to render a pie chart (no inner radius).
-func NewDonutChart(f1, f2 *Font, isDonutChart bool) *DonutChart {
+// NewDonutChart creates a donut chart with f1 as the font for the slice labels
+// and f2 as the font for the percentages drawn inside the slices. With an inner
+// radius of 0 it is a pie chart.
+func NewDonutChart(f1, f2 *Font) *DonutChart {
 	return &DonutChart{
-		f1:           f1,
-		f2:           f2,
-		isDonutChart: isDonutChart,
-		slices:       make([]*Slice, 0),
+		f1:     f1,
+		f2:     f2,
+		slices: make([]*Slice, 0),
 	}
 }
 
@@ -48,7 +47,7 @@ func (dc *DonutChart) SetLocation(xc, yc float32) Drawable {
 	return dc
 }
 
-// SetRadii sets the outer and inner radius of this chart. A pie chart ignores the inner radius.
+// SetRadii sets the outer and inner radius of this chart; an inner radius of 0 makes a pie chart.
 func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 	dc.r1 = outerRadius
 	dc.r2 = innerRadius
@@ -220,38 +219,44 @@ func (dc *DonutChart) drawLinePointer(
 // It returns the x and y coordinates of the bottom right corner of the outer
 // circle of this chart. The slice labels can extend past it.
 func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
-	if len(dc.slices) == 0 {
-		return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
+	// The slices with a value above 0 share the circle
+	total := float32(0.0)
+	for _, slice := range dc.slices {
+		if slice.value > 0.0 {
+			total += slice.value
+		}
 	}
-
-	var innerR float32
-	if dc.isDonutChart {
-		innerR = dc.r2
+	if total <= 0.0 {
+		return [2]float32{dc.xc + dc.r1, dc.yc + dc.r1}
 	}
 
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
+		if slice.value <= 0.0 {
+			continue
+		}
+		sweep := slice.value * 360.0 / total
 		angle = dc.drawSlice(
-			page, slice.Color,
+			page, slice.color,
 			dc.xc, dc.yc,
-			dc.r1, innerR,
-			angle, angle+slice.Angle,
+			dc.r1, dc.r2,
+			angle, angle+sweep,
 		)
 		dc.drawLinePointer(
-			page, slice.Text,
+			page, slice.text,
 			dc.xc, dc.yc,
 			dc.r1,
-			angle-slice.Angle, angle,
+			angle-sweep, angle,
 		)
 
-		// Percent label inside the slice
-		if dc.f2 != nil && slice.Angle >= 15.0 {
-			pct := int(slice.Angle / 360.0 * 100.0)
+		// The percentage fits inside a slice of 15 degrees or more
+		if dc.f2 != nil && sweep >= 15.0 {
+			pct := int(math.Floor(float64(slice.value*100.0/total) + 0.5))
 			pctStr := fmt.Sprintf("%d%%", pct)
 			label := NewTextLine(dc.f2, pctStr)
 			label.SetTextColor(color.White)
-			midAngle := angle - slice.Angle/2.0 - 90.0
-			midR := (dc.r1 + innerR) / 2.0
+			midAngle := angle - sweep/2.0 - 90.0
+			midR := (dc.r1 + dc.r2) / 2.0
 			pos := getPoint(dc.xc, dc.yc, midR, midAngle)
 			label.SetLocation(
 				pos[0]-dc.f2.StringWidth(dc.f2.size, pctStr)/2.0,

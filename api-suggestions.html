@@ -134,7 +134,7 @@
   <h1>PDFjet API Cleanup</h1>
   <p class="lede">After the v9 audit the names line up across the four ports. What still makes the API hard to understand is structural: several classes do the same job, the same idea is said in more than one way, and internals are public.</p>
   <div class="meta">
-    <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, progress at 67bcbb69, the 50 examples, the Javadoc</span>
+    <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, the 50 examples, the Javadoc; progress as of 14 September 2026</span>
     <span>14 September 2026</span>
   </div>
 </header>
@@ -152,10 +152,10 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th class="num">Done</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Fewer classes that overlap</td><td class="num">4</td><td class="num">2</td><td class="num">1 of 2 merges</td><td>Three text classes, one chart defect</td></tr>
+    <tr><td>Fewer classes that overlap</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td>Three text classes, one chart defect</td></tr>
     <tr><td>One way to say each thing</td><td class="num">9</td><td class="num">9</td><td class="num">1</td><td>Colour, rotation and spacing variants, 65 Java overloads</td></tr>
     <tr><td>Hide what is not for users</td><td class="num">5</td><td class="num">5</td><td class="num">0</td><td>Public fields, 23 Go-only types, Java internals</td></tr>
-    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">2</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">18</td><td class="num">16</td><td class="num">3</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -194,11 +194,11 @@
 </section>
 
 <section class="item">
-  <h3>DonutChart takes angles, not values <span class="chip now">9.0.0</span></h3>
+  <h3>DonutChart takes angles, not values <span class="chip done">Done in 9.0.0</span></h3>
   <span class="label">Finding</span>
   <p>A <code>Slice</code> is built from degrees, so Example_25 passes 90, 72 and 108 to mean 25, 20 and 30 percent. The user does the chart's arithmetic. The constructor boolean <code>isDonutChart</code> turns a donut into a pie, which an inner radius of zero already means.</p>
   <span class="label">Suggestion</span>
-  <p><code>addSlice(value, color, label)</code>, with the chart computing the angles and the percentages it prints. Drop the boolean; <code>setRadii(outer, 0)</code> is a pie.</p>
+  <p>Done: <code>Slice(value, color, label)</code>, with the chart computing the angles and the percentages it prints. The boolean is gone; <code>setRadii(outer, 0)</code> is a pie. Example_25 draws the same PDF from the values 25, 20, 30, 15 and 10. <code>BarChart.setStacked</code> landed with it, so the bar charts are grouped or stacked.</p>
   <p class="touches">Touches <code>Slice</code>, <code>DonutChart</code>, Example_25.</p>
 </section>
 
@@ -354,7 +354,7 @@
 <h2 id="plan">What to do in 9.0.0</h2>
 <div class="plan">
   <p>The second and third groups are a few days across the four ports, with <code>audit-api.py</code> and <code>check-examples.sh</code> as the checks, and they are breaking, so they belong in this release.</p>
-  <p>Done so far: <code>Text</code> removed (7cd7044a) and the colour forms settled (67bcbb69). From the first group, the <code>TextBlock</code> into <code>TextBox</code> merge and the <code>Slice</code> value fix remain.</p>
+  <p>Done so far: <code>Text</code> removed (7cd7044a) and the colour forms settled (67bcbb69). The <code>Slice</code> value fix is in too. From the first group, the <code>TextBlock</code> into <code>TextBox</code> merge remains.</p>
   <p>Leave <code>TextColumn</code>, the two tables and the chart series for 10.0. Each is a redesign, not a rename.</p>
 </div>
 </div>
