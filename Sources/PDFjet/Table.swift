@@ -241,8 +241,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setTextAlignment(alignment)
-                if cell.textBox != nil {
-                    cell.textBox!.setTextAlignment(alignment)
+                if cell.textBlock != nil {
+                    cell.textBlock!.setTextAlignment(alignment)
                 }
             }
         }
@@ -261,8 +261,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setTextColor(color)
-                if cell.textBox != nil {
-                    cell.textBox!.setTextColor(color)
+                if cell.textBlock != nil {
+                    cell.textBlock!.setTextColor(color)
                 }
             }
         }
@@ -281,8 +281,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setFont(font).setFontSize(font.size)
-                if cell.textBox != nil {
-                    cell.textBox!.font = font
+                if cell.textBlock != nil {
+                    cell.textBlock!.font = font
                 }
             }
         }
@@ -301,8 +301,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.setTextColor(color)
-                if cell.textBox != nil {
-                    cell.textBox!.setTextColor(color)
+                if cell.textBlock != nil {
+                    cell.textBlock!.setTextColor(color)
                 }
             }
         }
@@ -321,8 +321,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.setFont(font).setFontSize(font.size)
-                if cell.textBox != nil {
-                    cell.textBox!.font = font
+                if cell.textBlock != nil {
+                    cell.textBlock!.font = font
                 }
             }
         }
@@ -656,10 +656,10 @@ public class Table : Drawable {
             for i in 0..<row.count {
                 let cell = row[i]
                 if cell.getColSpan() == 1 {
-                    if cell.textBox != nil {
-                        let tokens = (cell.textBox!.text ?? "").splitOnWhitespace()
+                    if cell.textBlock != nil {
+                        let tokens = cell.textBlock!.textContent.splitOnWhitespace()
                         for token in tokens {
-                            var tokenWidth = cell.textBox!.font.stringWidth(cell.textBox!.fallbackFont, token)
+                            var tokenWidth = cell.textBlock!.font.stringWidth(cell.textBlock!.fallbackFont, token)
                             tokenWidth += cell.leftPadding + cell.rightPadding
                             if tokenWidth > maxColWidths[i] {
                                 maxColWidths[i] = tokenWidth

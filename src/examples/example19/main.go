@@ -12,7 +12,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example19 uses the TextBox component.
+// Example19 uses the TextBlock component to draw text next to images.
 func Example19() {
 	pdf := pdfjet.NewPDFFile("Example_19.pdf")
 
@@ -37,23 +37,22 @@ func Example19() {
 	image1.ScaleBy(0.3)
 	image1.DrawOn(page)
 
-	textBox := pdfjet.NewTextBoxWithText(f1, content.OfTextFile("data/calculus-short.txt"))
-	textBox.SetLocation(x2, y1)
-	textBox.SetWidth(w2)
-	textBox.SetBorders(true)
-	xy := textBox.DrawOn(page)
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/calculus-short.txt"))
+	textBlock.SetLocation(x2, y1)
+	textBlock.SetWidth(w2)
+	textBlock.SetBorderColor(color.Black)
+	xy := textBlock.DrawOn(page)
 
 	// Draw the second image
 	image2.SetLocation(x1, xy[1]+10.0)
 	image2.ScaleBy(0.1)
 	image2.DrawOn(page)
 
-	textBox = pdfjet.NewTextBox(f1)
-	textBox.SetText(content.OfTextFile("data/physics.txt"))
-	textBox.SetLocation(x2, xy[1]+10.0)
-	textBox.SetWidth(w2)
-	textBox.SetBorders(true)
-	xy = textBox.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/physics.txt"))
+	textBlock.SetLocation(x2, xy[1]+10.0)
+	textBlock.SetWidth(w2)
+	textBlock.SetBorderColor(color.Black)
+	xy = textBlock.DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
 	rect.SetBorderColor(color.Black)

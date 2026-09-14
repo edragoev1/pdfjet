@@ -18,19 +18,53 @@ import Testing
         TestSupport.expectXY(x[0], x[1], TextBlock(font, "").setLocation(0, 0).drawOn(nil))
     }
 
-    @Test func wrappedTextMakesTheBlockTallerThanItsSetHeight() {
+    @Test func withoutAHeightTheBlockIsAsTallAsItsText() {
         let font = TestSupport.helvetica(TestSupport.newPDF())
-        let block = TextBlock(font, tenWords).setLocation(0, 0).setSize(60, 10)
+        let block = TextBlock(font, tenWords).setLocation(0, 0).setWidth(60)
         // Six lines of 13.872 points.
         TestSupport.expectXY(60, 83.232, block.drawOn(nil))
         TestSupport.expectNear(83.232, block.getHeight())
         #expect(block.getWidth() == 60)
     }
 
+    @Test func aHeightCutsTheTextThatDoesNotFitAndAlignsTheRest() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let block = TextBlock(font, tenWords).setLocation(0, 0).setSize(60, 30)
+        // Two of the six lines fit
+        TestSupport.expectXY(60, 30, block.drawOn(nil))
+        #expect(block.getHeight() == 30)
+        var page = Page(pdf, Letter.PORTRAIT)
+        block.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("...")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("ten")), "\(content)")
+
+        // Aligned to the bottom of a block 10 points taller than its two lines,
+        // the text sits where a block without a height draws it 10 points lower
+        page = Page(pdf, Letter.PORTRAIT)
+        block.setSize(60, 2 * 13.872 + 10).setVerticalAlignment(Alignment.BOTTOM).drawOn(page)
+        let bottom = TestSupport.content(page)
+        page = Page(pdf, Letter.PORTRAIT)
+        TextBlock(font, "one two three four").setLocation(0, 10).setWidth(60).drawOn(page)
+        let lower = TestSupport.content(page)
+        let start = lower.range(of: "1 0 0 1 0 ")!.lowerBound
+        let textMatrix = String(lower[start..<lower.range(of: " Tm\n")!.upperBound])
+        #expect(bottom.contains(textMatrix), "\(textMatrix) missing from \(bottom)")
+    }
+
+    @Test func strikeoutDrawsALineThroughEachLine() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextBlock(TestSupport.helvetica(pdf), "one\ntwo").setLocation(0, 0).setStrikeout(true).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: " l\n").count - 1 == 2, "\(content)")
+    }
+
     @Test func drawOnAPageWritesEveryWord() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        let xy = TextBlock(TestSupport.helvetica(pdf), tenWords).setLocation(0, 0).setSize(60, 10).drawOn(page)
+        let xy = TextBlock(TestSupport.helvetica(pdf), tenWords).setLocation(0, 0).setWidth(60).drawOn(page)
         TestSupport.expectXY(60, 83.232, xy)
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("one")), "\(content)")

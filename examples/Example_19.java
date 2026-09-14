@@ -6,7 +6,7 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_19.java
- * Using the TextBox component.
+ * Using the TextBlock component to draw text next to images.
  */
 public class Example_19 {
     public Example_19() throws Exception {
@@ -34,23 +34,22 @@ public class Example_19 {
         image1.scaleBy(0.3f);
         image1.drawOn(page);
 
-        TextBox textBox = new TextBox(f1, Content.ofTextFile("data/calculus-short.txt"));
-        textBox.setLocation(x2, y1);
-        textBox.setWidth(w2);
-        textBox.setBorders(true);
-        float[] xy = textBox.drawOn(page);
+        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/calculus-short.txt"));
+        textBlock.setLocation(x2, y1);
+        textBlock.setWidth(w2);
+        textBlock.setBorderColor(Color.black);
+        float[] xy = textBlock.drawOn(page);
 
         // Draw the second image
         image2.setLocation(x1, xy[1] + 10f);
         image2.scaleBy(0.1f);
         image2.drawOn(page);
 
-        textBox = new TextBox(f1);
-        textBox.setText(Content.ofTextFile("data/physics.txt"));
-        textBox.setLocation(x2, xy[1] + 10f);
-        textBox.setWidth(w2);
-        textBox.setBorders(true);
-        xy = textBox.drawOn(page);
+        textBlock = new TextBlock(f1, Content.ofTextFile("data/physics.txt"));
+        textBlock.setLocation(x2, xy[1] + 10f);
+        textBlock.setWidth(w2);
+        textBlock.setBorderColor(Color.black);
+        xy = textBlock.drawOn(page);
 
         Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
         rect.setBorderColor(Color.black);

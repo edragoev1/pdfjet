@@ -62,8 +62,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - One rotation: every rotation setter is `setRotation(degrees)` and positive
   angles turn counterclockwise, as `setTextRotation` always did. The
   `setRotationClockwise` of `Arc`, `Container`, `Stamp`, `Image` and `Page` is
-  gone (`setRotation(-45)` turns clockwise), and `TextBox.setTextDirection`
-  is `setTextRotation(0, 90 or 270)`; `Direction` stays with barcodes.
+  gone (`setRotation(-45)` turns clockwise); `Direction` stays with barcodes.
 - One dash pattern name: `Rect` and `TextFrame.setBorderPattern` are
   `setBorderDashPattern`, like `setStrokeDashPattern` and
   `setGridLineDashPattern`. `Container.setScaleFactor` and `setScaleFactorXY`
@@ -73,8 +72,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   and `TextLine` is the way to draw colored or highlighted text (Example_32).
 - `Image` reads the type of an image from its first bytes: the constructors take
   the stream alone, and `ImageType` is internal.
-- A spacing setter that takes points is a gap (`TextBox.setLineGap`,
-  `TextFrame.setParagraphGap`) and one that takes a multiple is a spacing
+- A spacing setter that takes points is a gap (`TextFrame.setParagraphGap`)
+  and one that takes a multiple is a spacing
   (`TextBlock.setLineSpacing`, `TextColumn.setLineSpacing` and
   `setParagraphSpacing`); the doc comments say which.
 - The Java internals are internal: `PDF.append`, `newObj`, `endObj` and
@@ -85,6 +84,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `drawOn`), `TextUtils` is gone and the examples print their own duration,
   and the font generators live in `util/` with their scripts, outside the
   library. `Util.readLines` is `Content.linesOfTextFile`.
+- `TextBox` is removed: `TextBlock` draws a wrapped text box, with a fixed
+  height, vertical alignment and strikeout added from `TextBox`, and a cell
+  holds a `TextBlock` (`Cell.setTextBox` is gone). See "Text".
 - `Chart.setXYChart` is removed with its category mode; bar charts are drawn
   with the new `BarChart`. `Chart` axis labels with whole number steps have no
   decimal places. `Chart.setData` and `getData` are gone: a chart is built
@@ -197,10 +199,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `Table.drawOn(null)` measures a table without changing what a later `drawOn`
   draws, where that draw crashed.
 - `rightAlignNumbers` right-aligns the same texts in the four ports, the
-  column setters change the `TextBox` of a cell, as in Java, and
+  column setters change the `TextBlock` of a cell, as in Java, and
   `Cell.setBorders(true)` and `Table.setCellBorders(true)` turn the four
   borders on in every port.
-- `Cell.setTextBox`, `setTextBlock` and `setTextColumn` clear the cell text;
+- `Cell.setTextBlock` and `setTextColumn` clear the cell text;
   `Cell.setFont` sets only the font, while `Table.setFontInRow` and
   `setFontInColumn` set the font and its size; the text of a cell is measured
   at the cell's font size with the fallback font; a justified cell draws its
@@ -215,10 +217,20 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 
 ### Text
-- `TextBox`: measuring a text box that grows to fit its text, as
-  `Cell.getHeight` does, no longer fixes its height; underline and strikeout
-  are drawn in the text color; `setBorder` takes a flag, so a border can be
-  removed.
+- `TextBox` is removed; `TextBlock` is the one wrapped text box. It gains
+  what only `TextBox` had: a set height is the height of the block, the lines
+  that do not fit are cut and the last line that fits ends with "...", and
+  `setVerticalAlignment` aligns the lines to the top, the center or the bottom
+  of the block; `setStrikeout` strikes the text out; and the getters
+  `getLocation`, `getPadding`, `getBorderWidth`, `getTextColor`,
+  `getBorderColor`, `getTextAlignment`, `getVerticalAlignment`,
+  `getUnderline` and `getStrikeout`. A `TextBlock` without a height is as
+  tall as its text, as before. The per-side borders, the text rotation and the
+  line gap in points of `TextBox` are not carried over: `setBorderColor` draws
+  the four borders, and `setLineSpacing` takes a multiple. `Cell.setTextBox`
+  and `getTextBox` are gone with it; a cell holds a `TextBlock`. The
+  highlight colors of a `TextBlock` match the keywords ignoring case, as
+  documented: a page looks a word up as written and then in lower case.
 - `TextBlock` draws the characters its font lacks in the fallback font, draws
   a text of only line breaks as one empty line, and `getHeight` returns the
   drawn height when the text is taller than the set height.
@@ -319,7 +331,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   location, and `Path.setLocation` sets the offset instead of adding to it.
 
 ### Names
-- Box outlines are borders (`TextBox`, `Cell` and `CheckBox.setBorderColor`
+- Box outlines are borders (`TextBlock`, `Cell` and `CheckBox.setBorderColor`
   and `setBorderWidth`, `Table.setCellBorderColor`,
   `TextBlock.setCornerRadius`), and lines have strokes (`Line` and `Path`
   `setStrokeWidth`, `setStrokeColor` and `setStrokeDashPattern`,
@@ -520,7 +532,7 @@ the unused `Embed` enum are removed. Highlights below; see
 - `Rect`, `Path` and the backgrounds and borders a `Cell` draws are marked as
   artifacts, so tagged documents with rectangles, paths or tables pass PDF/UA
   rule 7.1-3 (all four ports). PDF417 bars are artifacts in C#, Go and Swift,
-  as they were in Java, and the C# `TextBox` tags its text.
+  as they were in Java.
 - Link annotations are written with a `/Contents` entry, and a link made with
   `setGoToAction` uses the destination name as its description.
 - In encrypted documents the XMP metadata and ICC profile streams are encrypted
@@ -550,8 +562,6 @@ the unused `Embed` enum are removed. Highlights below; see
 - `Page.drawString` with a fallback font advanced past each run at the font's
   own size in Go and Swift, so the runs were misplaced when the drawn size
   differed.
-- `TextBox` wraps its text at the font size it draws with; after `setFontSize`
-  the text could overflow the box (all four ports).
 - `TextLine` measures its width, its bottom-right corner and its link rectangle
   at the font size it draws with (all four ports).
 - The two `Table` wrapping loops measure the same way; Go broke long tokens one
@@ -560,10 +570,7 @@ the unused `Embed` enum are removed. Highlights below; see
   Swift), and C# positions the two effects with the constants it declares.
 
 ### Port parity
-- `TextBox` is ported to Go and Swift: wrapping for word-separated and CJK
-  text, fixed-height and grow-to-fit layouts, vertical and horizontal
-  alignment, the four borders, underline and strikeout, the text directions
-  and the link annotation. Go gets a `border` package.
+- Go gets a `border` package for the borders of a `Cell`.
 - Go and Swift `Cell` can hold a text column, a text box and a composite text
   line, like Java.
 - Java `RadioButton` draws its label, as the other ports already did.

@@ -19,7 +19,6 @@ public class Cell {
     var barcode: Barcode?
     var textBlock: TextBlock?
     var textColumn: TextColumn?
-    var textBox: TextBox?
     var point: Point?
     private var markerAlignment = Alignment.RIGHT
     var compositeTextLine: CompositeTextLine?
@@ -238,9 +237,7 @@ public class Cell {
     @discardableResult
     public func setWidth(_ width: Float) -> Cell {
         self.width = width
-        if self.textBox != nil {
-            self.textBox!.setWidth(self.width - (self.leftPadding + self.rightPadding))
-        } else if self.textBlock != nil {
+        if self.textBlock != nil {
             self.textBlock!.setWidth(self.width - (self.leftPadding + self.rightPadding))
         }
         return self
@@ -263,23 +260,6 @@ public class Cell {
     ///
     public func getTextColumn() -> TextColumn? {
         return self.textColumn
-    }
-
-    ///
-    /// Sets the text box that this cell holds and clears the cell text.
-    ///
-    @discardableResult
-    public func setTextBox(_ textBox: TextBox) -> Cell {
-        self.textBox = textBox
-        self.text = nil
-        return self
-    }
-
-    ///
-    /// Returns the text box that this cell holds.
-    ///
-    public func getTextBox() -> TextBox? {
-        return self.textBox
     }
 
     /// Sets the text block drawn in this cell and clears the cell text.
@@ -389,10 +369,7 @@ public class Cell {
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
-        if textBox != nil {
-            textBox!.setWidth(width)
-            cellHeight = (textBox!.drawOn(nil)[1] - textBox!.y) + topPadding + bottomPadding
-        } else if textBlock != nil {
+        if textBlock != nil {
             textBlock!.setWidth(width)
             cellHeight = (textBlock!.drawOn(nil)[1] - textBlock!.y) + topPadding + bottomPadding
         } else if textColumn != nil {
@@ -666,10 +643,6 @@ public class Cell {
 
         if text != nil && text != "" {
             drawText(page, x, y, w, h)
-        } else if textBox != nil {
-            textBox!.setLocation(x + leftPadding, y + topPadding)
-            textBox!.setWidth(w - (leftPadding + rightPadding))
-            textBox!.drawOn(page)
         } else if textBlock != nil {
             textBlock!.setLocation(x + leftPadding, y + topPadding)
             textBlock!.setWidth(w - (leftPadding + rightPadding))

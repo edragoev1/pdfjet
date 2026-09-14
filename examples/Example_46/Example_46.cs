@@ -38,9 +38,8 @@ public class Example_46 {
         group.SetPrintable(true);
         group.DrawOn(page);
 
-        TextBox textBox = new TextBox(f1);
+        TextBlock textBox = new TextBlock(f1, "Blue Layer Text");
         // textBox.SetFontSize(16f);
-        textBox.SetText("Blue Layer Text");
         textBox.SetLocation(10f, 130f);
 
         Line line = new Line();

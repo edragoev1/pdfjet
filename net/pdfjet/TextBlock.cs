@@ -10,17 +10,22 @@ using System.Globalization;
 using System.Text;
 
 namespace PDFjet.NET {
-/// <summary>A block of text that wraps at its width, with an optional border, background and padding.</summary>
+/// <summary>
+/// A block of text that wraps at its width, with an optional border, background
+/// and padding. Without a height the block is as tall as its text; with one the
+/// text that does not fit is cut, and the lines are aligned to the top, the
+/// center or the bottom of the block. See Example_01, 16 and 19.
+/// </summary>
 public class TextBlock : IDrawable {
     internal float x;
     internal float y;
     private float width;
     private float height;
-    private Font font;
-    private Font fallbackFont;
+    internal Font font;
+    internal Font fallbackFont;
     private float fontSize = 12f;
     private float fallbackFontSize = 0f;    // 0 is the font size
-    private string textContent;
+    internal string textContent;
     private float lineSpacing = 1.0f;
     private Dictionary<string, int> keywordHighlightColors;
     private float textPadding = 0.0f;
@@ -32,10 +37,12 @@ public class TextBlock : IDrawable {
     private float borderCornerRadius = 0.0f;
 
     private Alignment textAlignment = Alignment.LEFT;
+    private Alignment verticalAlignment = Alignment.TOP;
 
     private string language = null;
     private string uri = null;
     private bool underline = false;
+    private bool strikeout = false;
     private bool rightToLeft = false;
 
     /// <summary>Creates a text block with the specified font and text.</summary>
@@ -102,7 +109,16 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the size of this text block.</summary>
+    /// <summary>Returns the x and y coordinates of the top left corner of this text block.</summary>
+    public float[] GetLocation() {
+        return new float[] {this.x, this.y};
+    }
+
+    /// <summary>
+    /// Sets the size of this text block. With a height above 0 the block is that tall: the lines
+    /// that do not fit are cut, the last line that fits ends with "...", and the lines are aligned
+    /// by the vertical alignment. A height of 0 is the height of the text.
+    /// </summary>
     public TextBlock SetSize(float width, float height) {
         this.width = width;
         this.height = height;
@@ -121,7 +137,11 @@ public class TextBlock : IDrawable {
         return this.width;
     }
 
-    /// <summary>Sets the height of this text block.</summary>
+    /// <summary>
+    /// Sets the height of this text block. With a height above 0 the block is that tall: the lines
+    /// that do not fit are cut, the last line that fits ends with "...", and the lines are aligned
+    /// by the vertical alignment. A height of 0 is the height of the text.
+    /// </summary>
     public TextBlock SetHeight(float height) {
         this.height = height;
         return this;
@@ -129,11 +149,14 @@ public class TextBlock : IDrawable {
 
     /// <summary>
     /// Returns the height of this text block as it is drawn: the height set with SetHeight or SetSize,
-    /// or the height of the text and padding when that is taller.
+    /// or the height of the text and padding without one.
     /// </summary>
     public float GetHeight() {
+        if (this.height > 0f) {
+            return this.height;
+        }
         float leading = (this.font.GetAscent(fontSize) + this.font.GetDescent(fontSize)) * this.lineSpacing;
-        return MathF.Max(this.height, GetTextLines().Length * leading + 2 * this.textPadding);
+        return GetTextLines().Length * leading + 2 * this.textPadding;
     }
 
     /// <summary>Sets the radius of the border corners.</summary>
@@ -148,10 +171,20 @@ public class TextBlock : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the space between the text and the border.</summary>
+    public float GetPadding() {
+        return this.textPadding;
+    }
+
     /// <summary>Sets the border width.</summary>
     public TextBlock SetBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
+    }
+
+    /// <summary>Returns the border width.</summary>
+    public float GetBorderWidth() {
+        return this.borderWidth;
     }
 
     /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
@@ -192,6 +225,11 @@ public class TextBlock : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the border color, or null.</summary>
+    public float[] GetBorderColor() {
+        return Util.CopyOf(this.borderColor);
+    }
+
     /// <summary>Sets the line spacing as a multiple of the font's body height.</summary>
     public TextBlock SetLineSpacing(float lineSpacing) {
         this.lineSpacing = lineSpacing;
@@ -213,10 +251,34 @@ public class TextBlock : IDrawable {
         return this;
     }
 
+    /// <summary>Returns the text color.</summary>
+    public float[] GetTextColor() {
+        return Util.CopyOf(this.textColor);
+    }
+
     /// <summary>Sets the horizontal alignment of the text.</summary>
     public TextBlock SetTextAlignment(Alignment textAlignment) {
         this.textAlignment = textAlignment;
         return this;
+    }
+
+    /// <summary>Returns the horizontal alignment of the text.</summary>
+    public Alignment GetTextAlignment() {
+        return this.textAlignment;
+    }
+
+    /// <summary>
+    /// Sets the vertical alignment of the text in a block with a height: Alignment.TOP, the default,
+    /// Alignment.CENTER or Alignment.BOTTOM.
+    /// </summary>
+    public TextBlock SetVerticalAlignment(Alignment verticalAlignment) {
+        this.verticalAlignment = verticalAlignment;
+        return this;
+    }
+
+    /// <summary>Returns the vertical alignment of the text.</summary>
+    public Alignment GetVerticalAlignment() {
+        return this.verticalAlignment;
     }
 
     /// <summary>Sets the URI opened when this text block is clicked.</summary>
@@ -472,6 +534,49 @@ public class TextBlock : IDrawable {
         return this;
     }
 
+    /// <summary>Returns whether the text is underlined.</summary>
+    public bool GetUnderline() {
+        return this.underline;
+    }
+
+    /// <summary>Sets whether the text is struck out.</summary>
+    public TextBlock SetStrikeout(bool strikeout) {
+        this.strikeout = strikeout;
+        return this;
+    }
+
+    /// <summary>Returns whether the text is struck out.</summary>
+    public bool GetStrikeout() {
+        return this.strikeout;
+    }
+
+    /// <summary>
+    /// Returns the lines that fit in the height: all of them when the block has
+    /// no height, else the first lines, with the last of them ending in "...".
+    /// </summary>
+    private TextLine[] LinesThatFit(TextLine[] textLines, float leading) {
+        int fit = (int) Math.Floor((this.height - 2 * this.textPadding) / leading);
+        if (fit < 1) {
+            fit = 1;    // At least one line is drawn
+        }
+        if (fit >= textLines.Length) {
+            return textLines;
+        }
+        TextLine[] lines = new TextLine[fit];
+        Array.Copy(textLines, lines, fit);
+        String last = lines[fit - 1].text;
+        // The offsets of the code points, to drop the last three
+        List<int> offsets = new List<int>();
+        for (int i = 0; i < last.Length; i += Util.CharCount(last, i)) {
+            offsets.Add(i);
+        }
+        if (offsets.Count > 3) {
+            last = last.Substring(0, offsets[offsets.Count - 3]);
+        }
+        lines[fit - 1] = new TextLine(font, last + "...");
+        return lines;
+    }
+
     // The offsets are from the left edge of the text, inside the padding.
     private void RightAlignText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
@@ -495,13 +600,31 @@ public class TextBlock : IDrawable {
         }
     }
 
+    private void StrikeoutText(TextLine[] textLines) {
+        foreach (TextLine textLine in textLines) {
+            textLine.strikeout = true;
+        }
+    }
+
     /// <summary>Draws this text block on the specified page.</summary>
     public float[] DrawOn(Page page) {
         float ascent = this.font.GetAscent(fontSize);
         float descent = this.font.GetDescent(fontSize);
         float leading = (ascent + descent) * this.lineSpacing;
         TextLine[] textLines = GetTextLines();
-        float blockHeight = MathF.Max(this.height, textLines.Length * leading + 2 * this.textPadding);
+        float blockHeight = textLines.Length * leading + 2 * this.textPadding;
+        float yText = this.y + this.textPadding;
+        if (this.height > 0f) {
+            // The block is as tall as set; the lines that do not fit are cut
+            textLines = LinesThatFit(textLines, leading);
+            blockHeight = this.height;
+            float textHeight = textLines.Length * leading;
+            if (verticalAlignment == Alignment.CENTER) {
+                yText = this.y + (this.height - textHeight) / 2f;
+            } else if (verticalAlignment == Alignment.BOTTOM) {
+                yText = this.y + this.height - this.textPadding - textHeight;
+            }
+        }
         if (page == null) {
             return new float[] {this.x + this.width, this.y + blockHeight};
         }
@@ -515,6 +638,9 @@ public class TextBlock : IDrawable {
         }
         if (underline) {
             UnderlineText(textLines);
+        }
+        if (strikeout) {
+            StrikeoutText(textLines);
         }
 
         if (borderColor != null || fillColor != null) {
@@ -538,7 +664,7 @@ public class TextBlock : IDrawable {
             GetFallbackFontSize(),
             textLines,
             this.x + this.textPadding,
-            this.y + this.textPadding,
+            yText,
             leading,
             this.textColor,
             this.keywordHighlightColors,

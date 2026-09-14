@@ -21,7 +21,6 @@ type Cell struct {
 	hasText           bool // Java's null text is a cell without text, which is 0 tall
 	textBlock         *TextBlock
 	textColumn        *TextColumn
-	textBox           *TextBox
 	compositeTextLine *CompositeTextLine
 	image             *Image
 	barcode           *Barcode
@@ -202,19 +201,6 @@ func (cell *Cell) GetTextColumn() *TextColumn {
 	return cell.textColumn
 }
 
-// SetTextBox sets the text box drawn in this cell and clears the cell text.
-func (cell *Cell) SetTextBox(textBox *TextBox) *Cell {
-	cell.textBox = textBox
-	cell.text = ""
-	cell.hasText = false
-	return cell
-}
-
-// GetTextBox returns the text box that this cell holds.
-func (cell *Cell) GetTextBox() *TextBox {
-	return cell.textBox
-}
-
 // GetTextBlock returns the text block drawn in this cell.
 func (cell *Cell) GetTextBlock() *TextBlock {
 	return cell.textBlock
@@ -224,9 +210,7 @@ func (cell *Cell) GetTextBlock() *TextBlock {
 // @param width the specified width.
 func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
-	if cell.textBox != nil {
-		cell.textBox.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
-	} else if cell.textBlock != nil {
+	if cell.textBlock != nil {
 		cell.textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
 	}
 	return cell
@@ -300,10 +284,7 @@ func (cell *Cell) SetPadding(padding float32) *Cell {
 // @return the cell height.
 func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
-	if cell.textBox != nil {
-		cell.textBox.SetWidth(width)
-		cellHeight = (cell.textBox.DrawOn(nil)[1] - cell.textBox.y) + cell.topPadding + cell.bottomPadding
-	} else if cell.textBlock != nil {
+	if cell.textBlock != nil {
 		cell.textBlock.SetWidth(width)
 		cellHeight = (cell.textBlock.DrawOn(nil)[1] - cell.textBlock.y) + cell.topPadding + cell.bottomPadding
 	} else if cell.textColumn != nil {
@@ -523,10 +504,6 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 	if cell.text != "" {
 		cell.drawText(page, x, y, w, h)
-	} else if cell.textBox != nil {
-		cell.textBox.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textBox.SetWidth(w - (cell.leftPadding + cell.rightPadding))
-		cell.textBox.DrawOn(page)
 	} else if cell.textBlock != nil {
 		cell.textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		cell.textBlock.SetWidth(w - (cell.leftPadding + cell.rightPadding))

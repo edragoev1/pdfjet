@@ -26,7 +26,6 @@ public class Cell {
     /** The barcode drawn in this cell. */
     protected Barcode barcode;
     /** The text box drawn in this cell. */
-    protected TextBox textBox;
     /** The text block drawn in this cell. */
     protected TextBlock textBlock;
     /** The text column drawn in this cell. */
@@ -258,18 +257,6 @@ public class Cell {
     }
 
     /**
-     * Sets the text box drawn inside this cell and clears the cell text.
-     *
-     * @param textBox the text box.
-     * @return this Cell object.
-     */
-    public Cell setTextBox(TextBox textBox) {
-        this.textBox = textBox;
-        this.text = null;
-        return this;
-    }
-
-    /**
      * Sets the text block drawn inside this cell and clears the cell text.
      *
      * @param textBlock the text block.
@@ -321,9 +308,7 @@ public class Cell {
      */
     public Cell setWidth(float width) {
         this.width = width;
-        if (textBox != null) {
-            textBox.setWidth(this.width - (this.leftPadding + this.rightPadding));
-        } else if (textBlock != null) {
+        if (textBlock != null) {
             textBlock.setWidth(this.width - (this.leftPadding + this.rightPadding));
         }
         return this;
@@ -495,10 +480,7 @@ public class Cell {
      */
     public float getHeight(float width) throws Exception {
         float cellHeight = 0f;
-        if (textBox != null) {
-            textBox.setWidth(width);
-            cellHeight = (textBox.drawOn(null)[1] - textBox.y) + topPadding + bottomPadding;
-        } else if (textBlock != null) {
+        if (textBlock != null) {
             textBlock.setWidth(width);
             cellHeight = (textBlock.drawOn(null)[1] - textBlock.y) + topPadding + bottomPadding;
         } else if (textColumn != null) {
@@ -793,10 +775,6 @@ public class Cell {
 
         if (text != null && !text.equals("")) {
             drawText(page, x, y, w, h);
-        } else if (textBox != null) {
-            textBox.setLocation(x + leftPadding, y + topPadding);
-            textBox.setWidth(w - (leftPadding + rightPadding));
-            textBox.drawOn(page);
         } else if (textBlock != null) {
             textBlock.setLocation(x + leftPadding, y + topPadding);
             textBlock.setWidth(w - (leftPadding + rightPadding));
@@ -997,14 +975,5 @@ public class Cell {
         page.lineTo(x + getTextWidth(), y - ascent/3f);
         page.strokePath();
         page.addEMC();
-    }
-
-    /**
-     * Returns the text box.
-     *
-     * @return the text box.
-     */
-    public TextBox getTextBox() {
-        return textBox;
     }
 }   // End of Cell.java

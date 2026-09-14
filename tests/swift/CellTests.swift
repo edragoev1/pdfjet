@@ -25,16 +25,11 @@ import Testing
         TestSupport.expectNear(31.744, cell.getHeight(100))
     }
 
-    @Test func settingATextBlockOrTextBoxClearsTheText() {
+    @Test func settingATextBlockClearsTheText() {
         let font = TestSupport.helvetica(TestSupport.newPDF())
         let withBlock = Cell(font, "text")
         _ = withBlock.setTextBlock(TextBlock(font, "block"))
         #expect(withBlock.getText() == nil)
-
-        let withBox = Cell(font, "text")
-        _ = withBox.setTextBox(TextBox(font, "box"))
-        let text = withBox.getText()
-        #expect(text == nil || text!.isEmpty, "text: \(String(describing: text))")
     }
 
     @Test func aNewCellHasTopAndLeftBordersAndSpansOneColumn() {

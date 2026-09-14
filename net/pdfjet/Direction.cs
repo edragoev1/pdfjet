@@ -6,10 +6,10 @@
  */
 
 /*
- * Used to specify the text writing direction in TextBox.cs
+ * The direction a Barcode is drawn in.
  */
 namespace PDFjet.NET {
-/// <summary>Used to specify the text direction in TextBox.</summary>
+/// <summary>The direction a Barcode is drawn in.</summary>
 public enum Direction {
     /// <summary>The text runs from left to right.</summary>
     LEFT_TO_RIGHT,

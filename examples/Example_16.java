@@ -36,27 +36,20 @@ public class Example_16 {
 
         String englishText = Content.ofTextFile("data/languages/english.txt");
         // f1.setSize(14f);
-        TextBox textBox = new TextBox(f1, englishText);
-        // textBox.setLocation(50f, 50f);
-        // textBox.setLocation(50f, 100f);
-        textBox.setLocation(100f, 50f);
-        textBox.setWidth(400f);
-        // If no height is specified the height will be calculated based on the text.
-        textBox.setHeight(450f);
-        // textBox.setTextRotation(90);     // bottom to top
-        // textBox.setTextRotation(270);    // top to bottom
-
-        textBox.setVerticalAlignment(Alignment.TOP);
-        // textBox.setVerticalAlignment(Alignment.BOTTOM);
-        // textBox.setVerticalAlignment(Alignment.CENTER);
-
-        // textBox.setTextAlignment(Alignment.CENTER);
-        // textBox.setHeight(400f);
-
-        textBox.setBackgroundColor(Color.whitesmoke);
-        textBox.setHighlightColors(colors);
-        textBox.setBorders(true);
-        float[] xy = textBox.drawOn(page);
+        TextBlock textBlock = new TextBlock(f1, englishText);
+        textBlock.setLocation(100f, 50f);
+        textBlock.setWidth(400f);
+        // With a height the text that does not fit is cut; without one the
+        // block is as tall as its text.
+        textBlock.setHeight(450f);
+        textBlock.setVerticalAlignment(Alignment.TOP);
+        // textBlock.setVerticalAlignment(Alignment.BOTTOM);
+        // textBlock.setVerticalAlignment(Alignment.CENTER);
+        // textBlock.setTextAlignment(Alignment.CENTER);
+        textBlock.setBackgroundColor(Color.whitesmoke);
+        textBlock.setHighlightColors(colors);
+        textBlock.setBorderColor(Color.black);
+        float[] xy = textBlock.drawOn(page);
 
         page.setGraphicsState(new GraphicsState()); // Reset GS
         // page.restoreGraphicsState();

@@ -131,9 +131,9 @@
 <header>
   <p class="eyebrow">Proposal for the v9.0.0 release plan</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">After the v9 audit and the cleanup that followed it, the names line up across the four ports, every constant has a type, colours and rotations are said one way, and the internals are hidden. What is left is structural: two places where two classes still do the same job.</p>
+  <p class="lede">After the v9 audit and the cleanup that followed it, the names line up across the four ports, every constant has a type, colours and rotations are said one way, and the internals are hidden. What is left is structural: two places where two classes still do the same job, both for 10.0.</p>
   <div class="meta">
-    <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, the 50 examples, the Javadoc. Sixteen of the eighteen suggestions landed on 14 September and are removed from this page, the chart series among them: <code>Chart.addSeries</code> returns a <code>Series</code> with the line and the marker, and <code>Point</code> keeps its coordinates, marker and link. The audit report went from 261 lines to 103. The port differences the tests had found are fixed too: Swift <code>Barcode</code> and <code>QRCode</code> throw where they stopped the program, <code>BMPImage</code> opens its own stream and <code>PNGImage.getAlpha</code> returns nil. This is what is left.</span>
+    <span>Basis: <code>audit-api.py --dump</code> at 58b4ad0b, the 50 examples, the Javadoc. Seventeen of the eighteen suggestions landed on 14 September and are removed from this page, the chart series and the text box merge among them: <code>TextBox</code> is gone and <code>TextBlock</code> has its fixed height, vertical alignment and strikeout; <code>Chart.addSeries</code> returns a <code>Series</code> with the line and the marker, and <code>Point</code> keeps its coordinates, marker and link. The audit report went from 261 lines to 103. The port differences the tests had found are fixed too: Swift <code>Barcode</code> and <code>QRCode</code> throw where they stopped the program, <code>BMPImage</code> opens its own stream and <code>PNGImage.getAlpha</code> returns nil. This is what is left.</span>
     <span>14 September 2026</span>
   </div>
 </header>
@@ -141,7 +141,7 @@
 <nav class="toc" aria-label="Sections">
   <ol>
     <li><a href="#overlap">Fewer classes that overlap</a></li>
-    <li><a href="#plan">What to do in 9.0.0</a></li>
+    <li><a href="#plan">What is left for 10.0</a></li>
   </ol>
 </nav>
 
@@ -149,8 +149,8 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Suggestions</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Fewer classes that overlap</td><td class="num">2</td><td class="num">1</td><td>Two text classes, one table API</td></tr>
-    <tr class="total"><td>Total</td><td class="num">2</td><td class="num">1</td><td></td></tr>
+    <tr><td>Fewer classes that overlap</td><td class="num">2</td><td class="num">0</td><td>One paragraph flow, one table API</td></tr>
+    <tr class="total"><td>Total</td><td class="num">2</td><td class="num">0</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -159,23 +159,22 @@
 <p>The largest gains. A reader who cannot tell two classes apart cannot choose between them, whatever they are called.</p>
 
 <section class="item">
-  <h3>Six text layout classes <span class="chip now">9.0.0, one merge</span></h3>
+  <h3>Six text layout classes <span class="chip later">10.0</span></h3>
   <span class="label">Finding</span>
-  <p><code>TextLine</code>, <code>CompositeTextLine</code>, <code>TextBox</code>, <code>TextBlock</code>, <code>TextFrame</code> and <code>TextColumn</code>, plus <code>Paragraph</code>. <code>TextBox</code> and <code>TextBlock</code> share thirty setters and differ in eleven. <code>TextColumn</code> is a second paragraph flow beside <code>TextFrame</code>, with its own spacing names.</p>
+  <p><code>TextLine</code>, <code>CompositeTextLine</code>, <code>TextBlock</code>, <code>TextFrame</code> and <code>TextColumn</code>, plus <code>Paragraph</code>. <code>TextBox</code> was a second wrapped text box beside <code>TextBlock</code>; it is removed on 14 September, and <code>TextBlock</code> took its fixed height with truncation, its vertical alignment and its strikeout. <code>TextColumn</code> is still a second paragraph flow beside <code>TextFrame</code>, with its own spacing names.</p>
   <div class="tablewrap">
   <table>
     <thead><tr><th>Class</th><th>What it is</th><th>Only it has</th><th>Examples</th></tr></thead>
     <tbody>
-      <tr><td class="mono">TextBox</td><td>Wrapped text in a box</td><td class="mono">setBorder, setBorders, setLineGap, setStrikeout, setTextRotation, setVerticalAlignment</td><td>16, 19, 46</td></tr>
-      <tr><td class="mono">TextBlock</td><td>Wrapped text in a box</td><td class="mono">setCornerRadius, setFallbackFontSize, setLineSpacing, setRightToLeft</td><td>01, 02, 23, 27, 31</td></tr>
+      <tr><td class="mono">TextBlock</td><td>Wrapped text in a box</td><td class="mono">setCornerRadius, setFallbackFontSize, setRightToLeft, setVerticalAlignment, setStrikeout</td><td>01, 02, 16, 19, 23, 27, 31, 46</td></tr>
       <tr><td class="mono">TextFrame</td><td>Paragraph flow, flows to the next frame</td><td class="mono">setHeight, setBorders, hasMoreText</td><td>47</td></tr>
       <tr><td class="mono">TextColumn</td><td>Paragraph flow</td><td class="mono">addCJKParagraph, setLineBetweenParagraphs, setTextAlignment</td><td>10, 29, 44, 49</td></tr>
     </tbody>
   </table>
   </div>
   <span class="label">Suggestion</span>
-  <p>Merge <code>TextBlock</code> into <code>TextBox</code> now, a union of setters. Fold <code>TextColumn</code> into <code>TextFrame</code> once its CJK paragraphs and line between paragraphs move over. Two classes fewer.</p>
-  <p class="touches">Touches Example_01, 02, 10, 23, 27, 29, 31, 44, 49 and <code>Cell.setTextBox</code>, <code>setTextBlock</code>, <code>setTextColumn</code>.</p>
+  <p>Fold <code>TextColumn</code> into <code>TextFrame</code> once its CJK paragraphs and line between paragraphs move over. One class fewer.</p>
+  <p class="touches">Touches Example_10, 29, 44, 49 and <code>Cell.setTextColumn</code>.</p>
 </section>
 
 <section class="item">
@@ -203,10 +202,9 @@
 
 
 
-<h2 id="plan">What to do in 9.0.0</h2>
+<h2 id="plan">What is left for 10.0</h2>
 <div class="plan">
-  <p>One item is left for this release, the <code>TextBlock</code> into <code>TextBox</code> merge; the two table APIs wait for 10.0.</p>
-  <p>Leave <code>TextColumn</code> and the two tables for 10.0. Each is a redesign, not a rename.</p>
+  <p>Nothing is left for this release. The <code>TextColumn</code> fold and the two table APIs wait for 10.0: each is a redesign, not a rename.</p>
 </div>
 </div>
 </body>

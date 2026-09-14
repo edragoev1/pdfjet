@@ -13,7 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example16 draws a text box with highlighted keywords.
+// Example16 draws a text block with highlighted keywords.
 func Example16() {
 	pdf := pdfjet.NewPDFFile("Example_16.pdf")
 	pdf.SetCompliance(compliance.PDF_UA_1)
@@ -40,27 +40,20 @@ func Example16() {
 
 	englishText := content.OfTextFile("data/languages/english.txt")
 	// f1.SetSize(14.0)
-	textBox := pdfjet.NewTextBoxWithText(f1, englishText)
-	// textBox.SetLocation(50.0, 50.0)
-	// textBox.SetLocation(50.0, 100.0)
-	textBox.SetLocation(100.0, 50.0)
-	textBox.SetWidth(400.0)
-	// If no height is specified the height will be calculated based on the text.
-	textBox.SetHeight(450.0)
-	// textBox.SetTextRotation(90)  // bottom to top
-	// textBox.SetTextRotation(270) // top to bottom
-
-	textBox.SetVerticalAlignment(alignment.Top)
-	// textBox.SetVerticalAlignment(alignment.Bottom)
-	// textBox.SetVerticalAlignment(alignment.Center)
-
-	// textBox.SetTextAlignment(alignment.Center)
-	// textBox.SetHeight(400.0)
-
-	textBox.SetBackgroundColor(color.WhiteSmoke)
-	textBox.SetHighlightColors(colors)
-	textBox.SetBorders(true)
-	xy := textBox.DrawOn(page)
+	textBlock := pdfjet.NewTextBlock(f1, englishText)
+	textBlock.SetLocation(100.0, 50.0)
+	textBlock.SetWidth(400.0)
+	// With a height the text that does not fit is cut; without one the
+	// block is as tall as its text.
+	textBlock.SetHeight(450.0)
+	textBlock.SetVerticalAlignment(alignment.Top)
+	// textBlock.SetVerticalAlignment(alignment.Bottom)
+	// textBlock.SetVerticalAlignment(alignment.Center)
+	// textBlock.SetTextAlignment(alignment.Center)
+	textBlock.SetBackgroundColor(color.WhiteSmoke)
+	textBlock.SetHighlightColors(colors)
+	textBlock.SetBorderColor(color.Black)
+	xy := textBlock.DrawOn(page)
 
 	page.SetGraphicsState(pdfjet.NewGraphicsState()) // Reset GS
 	// page.RestoreGraphicsState()

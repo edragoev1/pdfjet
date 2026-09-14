@@ -29,15 +29,11 @@ public class CellTest {
     }
 
     [Fact]
-    public void SettingATextBlockOrTextBoxClearsTheText() {
+    public void SettingATextBlockClearsTheText() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         Cell withBlock = new Cell(font, "text");
         withBlock.SetTextBlock(new TextBlock(font, "block"));
         Assert.Null(withBlock.GetText());
-
-        Cell withBox = new Cell(font, "text");
-        withBox.SetTextBox(new TextBox(font, "box"));
-        Assert.True(string.IsNullOrEmpty(withBox.GetText()), "text: " + withBox.GetText());
     }
 
     [Fact]

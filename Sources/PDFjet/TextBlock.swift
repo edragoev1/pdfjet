@@ -6,7 +6,10 @@
  */
 import Foundation
 
-/// A block of text that wraps at its width, with an optional border, background and padding.
+/// A block of text that wraps at its width, with an optional border, background
+/// and padding. Without a height the block is as tall as its text; with one the
+/// text that does not fit is cut, and the lines are aligned to the top, the
+/// center or the bottom of the block. See Example_01, 16 and 19.
 public class TextBlock : Drawable {
     internal var x: Float = 0.0
     internal var y: Float = 0.0
@@ -28,7 +31,9 @@ public class TextBlock : Drawable {
     private var language: String?
     private var uri: String?
     private var textAlignment: Alignment = Alignment.LEFT
+    private var verticalAlignment: Alignment = Alignment.TOP
     private var underline: Bool = false
+    private var strikeout: Bool = false
     private var rightToLeft: Bool = false
 
     private var lineSpacing: Float = 1.0
@@ -98,7 +103,15 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the size of this text block.
+    /// Returns the x and y coordinates of the top left corner of this text block.
+    public func getLocation() -> [Float] {
+        return [self.x, self.y]
+    }
+
+    /// Sets the size of this text block. With a height above 0 the block is
+    /// that tall: the lines that do not fit are cut, the last line that fits
+    /// ends with "...", and the lines are aligned by the vertical alignment.
+    /// A height of 0 is the height of the text.
     @discardableResult
     public func setSize(_ w: Float, _ h: Float) -> TextBlock {
         self.width = w
@@ -114,7 +127,10 @@ public class TextBlock : Drawable {
         return self
     }
 
-    /// Sets the height of this text block.
+    /// Sets the height of this text block. With a height above 0 the block is
+    /// that tall: the lines that do not fit are cut, the last line that fits
+    /// ends with "...", and the lines are aligned by the vertical alignment.
+    /// A height of 0 is the height of the text.
     @discardableResult
     public func setHeight(_ h: Float) -> TextBlock {
         self.height = h
@@ -127,10 +143,13 @@ public class TextBlock : Drawable {
     }
 
     /// Returns the height of this text block as it is drawn: the height set with setHeight or setSize,
-    /// or the height of the text and padding when that is taller.
+    /// or the height of the text and padding without one.
     public func getHeight() -> Float {
+        if height > 0.0 {
+            return height
+        }
         let leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing
-        return max(height, Float(getTextLines().count) * leading + 2 * textPadding)
+        return Float(getTextLines().count) * leading + 2 * textPadding
     }
 
     /// Sets the radius of the border corners.
@@ -147,11 +166,21 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Returns the space between the text and the border.
+    public func getPadding() -> Float {
+        return self.textPadding
+    }
+
     /// Sets the border width.
     @discardableResult
     public func setBorderWidth(_ borderWidth: Float) -> TextBlock {
         self.borderWidth = borderWidth
         return self
+    }
+
+    /// Returns the border width.
+    public func getBorderWidth() -> Float {
+        return self.borderWidth
     }
 
     /// Sets the text color as a 0xRRGGBB value.
@@ -169,6 +198,11 @@ public class TextBlock : Drawable {
     public func setTextColor(_ textColor: [Float]) -> TextBlock {
         self.textColor = textColor
         return self
+    }
+
+    /// Returns the text color.
+    public func getTextColor() -> [Float] {
+        return self.textColor
     }
 
     /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
@@ -218,6 +252,11 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Returns the border color, or nil if there is none.
+    public func getBorderColor() -> [Float]? {
+        return self.borderColor
+    }
+
     ///
     /// Sets the colors used to highlight the specified keywords.
     /// The keywords are matched ignoring case.
@@ -246,6 +285,24 @@ public class TextBlock : Drawable {
     public func setTextAlignment(_ alignment: Alignment) -> TextBlock {
         self.textAlignment = alignment
         return self
+    }
+
+    /// Returns the horizontal alignment of the text.
+    public func getTextAlignment() -> Alignment {
+        return self.textAlignment
+    }
+
+    /// Sets the vertical alignment of the text in a block with a height:
+    /// Alignment.TOP, the default, Alignment.CENTER or Alignment.BOTTOM.
+    @discardableResult
+    public func setVerticalAlignment(_ alignment: Alignment) -> TextBlock {
+        self.verticalAlignment = alignment
+        return self
+    }
+
+    /// Returns the vertical alignment of the text.
+    public func getVerticalAlignment() -> Alignment {
+        return self.verticalAlignment
     }
 
     /// Sets the language of the text, for example "he", "ar" or "fa", as a BCP 47
@@ -499,6 +556,42 @@ public class TextBlock : Drawable {
         return self
     }
 
+    /// Returns whether the text is underlined.
+    public func getUnderline() -> Bool {
+        return self.underline
+    }
+
+    /// Strikes out the text of this text block.
+    @discardableResult
+    public func setStrikeout(_ strikeout: Bool) -> TextBlock {
+        self.strikeout = strikeout
+        return self
+    }
+
+    /// Returns whether the text is struck out.
+    public func getStrikeout() -> Bool {
+        return self.strikeout
+    }
+
+    // Returns the lines that fit in the height: all of them when the block has
+    // no height, else the first lines, with the last of them ending in "...".
+    private func linesThatFit(_ textLines: [TextLine], _ leading: Float) -> [TextLine] {
+        var fit = Int(((height - 2 * textPadding) / leading).rounded(.down))
+        if fit < 1 {
+            fit = 1     // At least one line is drawn
+        }
+        if fit >= textLines.count {
+            return textLines
+        }
+        var lines = Array(textLines[..<fit])
+        var last = Array(lines[fit - 1].text!.unicodeScalars)
+        if last.count > 3 {
+            last.removeLast(3)
+        }
+        lines[fit - 1] = TextLine(font, TextBlock.string(last[...]) + "...")
+        return lines
+    }
+
     // The offsets are from the left edge of the text, inside the padding.
     private func rightAlignText(_ textLines: [TextLine]) {
         let textAreaWidth = self.width - 2 * self.textPadding
@@ -520,14 +613,32 @@ public class TextBlock : Drawable {
         }
     }
 
+    private func strikeoutText(_ textLines: [TextLine]) {
+        for textLine in textLines {
+            textLine.strikeout = true
+        }
+    }
+
     /// Draws this text block on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         let ascent = font.getAscent(fontSize)
         let descent = font.getDescent(fontSize)
         let leading = (ascent + descent) * lineSpacing
-        let textLines = getTextLines()
-        let blockHeight = max(height, Float(textLines.count) * leading + 2 * textPadding)
+        var textLines = getTextLines()
+        var blockHeight = Float(textLines.count) * leading + 2 * textPadding
+        var yText = y + textPadding
+        if height > 0.0 {
+            // The block is as tall as set; the lines that do not fit are cut
+            textLines = linesThatFit(textLines, leading)
+            blockHeight = height
+            let textHeight = Float(textLines.count) * leading
+            if verticalAlignment == Alignment.CENTER {
+                yText = y + (height - textHeight) / 2.0
+            } else if verticalAlignment == Alignment.BOTTOM {
+                yText = y + height - textPadding - textHeight
+            }
+        }
         if page == nil {
             return [x + width, y + blockHeight]
         }
@@ -542,6 +653,9 @@ public class TextBlock : Drawable {
         }
         if underline {
             underlineText(textLines)
+        }
+        if strikeout {
+            strikeoutText(textLines)
         }
 
         if self.borderColor != nil || self.fillColor != nil {
@@ -565,7 +679,7 @@ public class TextBlock : Drawable {
             getFallbackFontSize(),
             textLines,
             x + textPadding,
-            y + textPadding,
+            yText,
             leading,
             textColor,
             keywordHighlightColors,

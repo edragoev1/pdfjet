@@ -32,15 +32,11 @@ func TestCellTheCellFontSizeSetsTheHeight(t *testing.T) {
 	testNear(t, "height", 31.744, cell.GetHeight(100), testDelta)
 }
 
-func TestCellSettingATextBlockOrTextBoxClearsTheText(t *testing.T) {
+func TestCellSettingATextBlockClearsTheText(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	withBlock := NewCell(font, "text").SetTextBlock(NewTextBlock(font, "block"))
 	if withBlock.GetText() != "" {
 		t.Errorf("text block: text %q", withBlock.GetText())
-	}
-	withBox := NewCell(font, "text").SetTextBox(NewTextBoxWithText(font, "box"))
-	if withBox.GetText() != "" {
-		t.Errorf("text box: text %q", withBox.GetText())
 	}
 }
 

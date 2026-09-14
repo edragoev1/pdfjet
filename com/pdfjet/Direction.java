@@ -7,7 +7,7 @@
 package com.pdfjet;
 
 /**
- * Used to specify the text direction in TextBox.
+ * The direction a Barcode is drawn in.
  */
 public enum Direction {
     /** The text runs from left to right. */

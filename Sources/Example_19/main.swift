@@ -3,7 +3,7 @@ import PDFjet
 
 /**
  * Example_19.swift
- * Using the TextBox component.
+ * Using the TextBlock component to draw text next to images.
  */
 public class Example_19 {
     public init() throws {
@@ -31,23 +31,22 @@ public class Example_19 {
         image1.scaleBy(0.3)
         image1.drawOn(page)
 
-        var textBox = TextBox(f1, try Content.ofTextFile("data/calculus-short.txt"))
-        textBox.setLocation(x2, y1)
-        textBox.setWidth(w2)
-        textBox.setBorders(true)
-        var xy = textBox.drawOn(page)
+        var textBlock = TextBlock(f1, try Content.ofTextFile("data/calculus-short.txt"))
+        textBlock.setLocation(x2, y1)
+        textBlock.setWidth(w2)
+        textBlock.setBorderColor(Color.black)
+        var xy = textBlock.drawOn(page)
 
         // Draw the second image
         image2.setLocation(x1, xy[1] + 10.0)
         image2.scaleBy(0.1)
         image2.drawOn(page)
 
-        textBox = TextBox(f1)
-        textBox.setText(try Content.ofTextFile("data/physics.txt"))
-        textBox.setLocation(x2, xy[1] + 10.0)
-        textBox.setWidth(w2)
-        textBox.setBorders(true)
-        xy = textBox.drawOn(page)
+        textBlock = TextBlock(f1, try Content.ofTextFile("data/physics.txt"))
+        textBlock.setLocation(x2, xy[1] + 10.0)
+        textBlock.setWidth(w2)
+        textBlock.setBorderColor(Color.black)
+        xy = textBlock.drawOn(page)
 
         let rect = Rect(xy[0], xy[1], 20.0, 20.0)
         rect.setBorderColor(Color.black)

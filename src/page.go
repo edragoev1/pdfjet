@@ -1726,7 +1726,13 @@ func (page *Page) appendPoint(point *Point) {
 
 func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, colors map[string]int32) {
 	if buf.Len() > 0 {
-		if brushColor, ok := colors[buf.String()]; ok {
+		// A keyword is matched as written, or ignoring case when the map
+		// holds it in lower case, as TextBlock.SetHighlightColors does
+		brushColor, ok := colors[buf.String()]
+		if !ok {
+			brushColor, ok = colors[strings.ToLower(buf.String())]
+		}
+		if ok {
 			page.SetBrushColor(brushColor)
 		} else {
 			page.SetBrushColorRGB(brush)
@@ -2147,17 +2153,26 @@ func (page *Page) drawTextBlock(
 	}
 
 	yLine := y + font.GetBodyHeightAt(fontSize)
+	yStrike := y + font.GetAscentAt(fontSize) - font.GetBodyHeightAt(fontSize)/4.0
 	for _, textLine := range textLines {
-		if textLine.underline {
+		if textLine.underline || textLine.strikeout {
 			width := font.StringWidth(fontSize, textLine.text)
 			if hasFallbackFont {
 				width = font.stringWidthFBSizes(fallbackFont, fontSize, fallbackFontSize, textLine.text)
 			}
-			page.MoveTo(x+textLine.xOffset, yLine)
-			page.LineTo(x+textLine.xOffset+width, yLine)
-			page.StrokePath()
+			if textLine.underline {
+				page.MoveTo(x+textLine.xOffset, yLine)
+				page.LineTo(x+textLine.xOffset+width, yLine)
+				page.StrokePath()
+			}
+			if textLine.strikeout {
+				page.MoveTo(x+textLine.xOffset, yStrike)
+				page.LineTo(x+textLine.xOffset+width, yStrike)
+				page.StrokePath()
+			}
 		}
 		yLine += leading
+		yStrike += leading
 	}
 }
 

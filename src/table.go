@@ -217,8 +217,8 @@ func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextAlignment(textAlignment)
-			if cell.textBox != nil {
-				cell.textBox.SetTextAlignment(textAlignment)
+			if cell.textBlock != nil {
+				cell.textBlock.SetTextAlignment(textAlignment)
 			}
 		}
 	}
@@ -233,8 +233,8 @@ func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextColor(color)
-			if cell.textBox != nil {
-				cell.textBox.SetTextColor(color)
+			if cell.textBlock != nil {
+				cell.textBlock.SetTextColor(color)
 			}
 		}
 	}
@@ -249,8 +249,8 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetFont(font).SetFontSize(font.size)
-			if cell.textBox != nil {
-				cell.textBox.font = font
+			if cell.textBlock != nil {
+				cell.textBlock.font = font
 			}
 		}
 	}
@@ -265,8 +265,8 @@ func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 		row := table.tableData[index]
 		for _, cell := range row {
 			cell.SetTextColor(color)
-			if cell.textBox != nil {
-				cell.textBox.SetTextColor(color)
+			if cell.textBlock != nil {
+				cell.textBlock.SetTextColor(color)
 			}
 		}
 	}
@@ -281,8 +281,8 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 		row := table.tableData[index]
 		for _, cell := range row {
 			cell.SetFont(font).SetFontSize(font.size)
-			if cell.textBox != nil {
-				cell.textBox.font = font
+			if cell.textBlock != nil {
+				cell.textBlock.font = font
 			}
 		}
 	}
@@ -565,11 +565,11 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]
 			if cell.GetColSpan() == 1 {
-				if cell.textBox != nil {
-					tokens := splitOnWhitespace(cell.textBox.text)
+				if cell.textBlock != nil {
+					tokens := splitOnWhitespace(cell.textBlock.textContent)
 					for _, token := range tokens {
-						tokenWidth := cell.textBox.font.StringWidthFB(
-							cell.textBox.fallbackFont, cell.textBox.font.size, token)
+						tokenWidth := cell.textBlock.font.StringWidthFB(
+							cell.textBlock.fallbackFont, cell.textBlock.font.size, token)
 						tokenWidth += cell.leftPadding + cell.rightPadding
 						if tokenWidth > maxColWidths[i] {
 							maxColWidths[i] = tokenWidth

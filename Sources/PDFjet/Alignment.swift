@@ -7,7 +7,7 @@
 
 /**
  * Used to specify the horizontal and vertical alignment, for example of the
- * text in a Cell, TextBox, TextBlock, Paragraph or TextColumn.
+ * text in a Cell, TextBlock, Paragraph or TextColumn.
  */
 public enum Alignment {
     /// Aligns to the left.

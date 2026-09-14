@@ -14,7 +14,10 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// TextBlock is a block of text that wraps at its width, with an optional border, background and padding.
+// TextBlock is a block of text that wraps at its width, with an optional
+// border, background and padding. Without a height the block is as tall as its
+// text; with one the text that does not fit is cut, and the lines are aligned
+// to the top, the center or the bottom of the block. See Example_01, 16 and 19.
 type TextBlock struct {
 	x            float32
 	y            float32
@@ -41,9 +44,20 @@ type TextBlock struct {
 	language               string
 	uri                    string
 	textAlignment          alignment.Alignment
+	verticalAlignment      alignment.Alignment
 	underline              bool
+	strikeout              bool
 	keywordHighlightColors map[string]int32
 	rightToLeft            bool
+}
+
+// colorToRGB returns the red, green and blue components, from 0.0 to 1.0, of
+// a 0xRRGGBB color.
+func colorToRGB(c int32) [3]float32 {
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
+	return [3]float32{r, g, b}
 }
 
 // NewTextBlock creates a text block and sets the font and the text.
@@ -63,6 +77,7 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock.textColor = [3]float32{0.0, 0.0, 0.0}
 	textBlock.textPadding = 0.0
 	textBlock.textAlignment = alignment.Left
+	textBlock.verticalAlignment = alignment.Top
 
 	textBlock.borderWidth = 0.5
 	textBlock.borderCornerRadius = 0.0
@@ -119,7 +134,15 @@ func (textBlock *TextBlock) SetLocation(x, y float32) Drawable {
 	return textBlock
 }
 
-// SetSize sets the width and height of this text block.
+// GetLocation returns the x and y coordinates of the top left corner of this text block.
+func (textBlock *TextBlock) GetLocation() [2]float32 {
+	return [2]float32{textBlock.x, textBlock.y}
+}
+
+// SetSize sets the width and height of this text block. With a height above 0
+// the block is that tall: the lines that do not fit are cut, the last line that
+// fits ends with "...", and the lines are aligned by the vertical alignment. A
+// height of 0 is the height of the text.
 func (textBlock *TextBlock) SetSize(w, h float32) *TextBlock {
 	textBlock.width = w
 	textBlock.height = h
@@ -134,7 +157,10 @@ func (textBlock *TextBlock) SetWidth(w float32) *TextBlock {
 	return textBlock
 }
 
-// SetHeight sets the height of this text block.
+// SetHeight sets the height of this text block. With a height above 0 the
+// block is that tall: the lines that do not fit are cut, the last line that
+// fits ends with "...", and the lines are aligned by the vertical alignment. A
+// height of 0 is the height of the text.
 func (textBlock *TextBlock) SetHeight(h float32) *TextBlock {
 	textBlock.height = h
 	return textBlock
@@ -146,13 +172,16 @@ func (textBlock *TextBlock) GetWidth() float32 {
 }
 
 // GetHeight returns the height of this text block as it is drawn: the height
-// set with SetHeight or SetSize, or the height of the text and padding when that
-// is taller.
+// set with SetHeight or SetSize, or the height of the text and padding without
+// one.
 func (textBlock *TextBlock) GetHeight() float32 {
+	if textBlock.height > 0.0 {
+		return textBlock.height
+	}
 	ascent := textBlock.font.GetAscentAt(textBlock.fontSize)
 	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
-	return max(textBlock.height, float32(len(textBlock.getTextLines()))*leading+2*textBlock.textPadding)
+	return float32(len(textBlock.getTextLines()))*leading + 2*textBlock.textPadding
 }
 
 // SetCornerRadius sets the border corner radius.
@@ -167,10 +196,20 @@ func (textBlock *TextBlock) SetPadding(padding float32) *TextBlock {
 	return textBlock
 }
 
+// GetPadding returns the padding between the text and the border.
+func (textBlock *TextBlock) GetPadding() float32 {
+	return textBlock.textPadding
+}
+
 // SetBorderWidth sets the border width.
 func (textBlock *TextBlock) SetBorderWidth(borderWidth float32) *TextBlock {
 	textBlock.borderWidth = borderWidth
 	return textBlock
+}
+
+// GetBorderWidth returns the border width.
+func (textBlock *TextBlock) GetBorderWidth() float32 {
+	return textBlock.borderWidth
 }
 
 // SetBorderColor sets the border color as a 0xRRGGBB value. color.Transparent removes the border.
@@ -190,6 +229,15 @@ func (textBlock *TextBlock) SetBorderColorRGB(borderColor [3]float32) *TextBlock
 	return textBlock
 }
 
+// GetBorderColor returns a copy of the border color, or nil if none was set.
+func (textBlock *TextBlock) GetBorderColor() *[3]float32 {
+	if !textBlock.hasBorderColor {
+		return nil
+	}
+	borderColor := textBlock.borderColor
+	return &borderColor
+}
+
 // SetLineSpacing sets the line spacing as a multiple of the font's body height.
 func (textBlock *TextBlock) SetLineSpacing(lineSpacing float32) *TextBlock {
 	textBlock.lineSpacing = lineSpacing
@@ -205,6 +253,11 @@ func (textBlock *TextBlock) SetTextColorRGB(textColor [3]float32) *TextBlock {
 // SetTextColor sets the text color as a 0xRRGGBB value.
 func (textBlock *TextBlock) SetTextColor(c int32) *TextBlock {
 	return textBlock.SetTextColorRGB(colorToRGB(c))
+}
+
+// GetTextColor returns the text color as red, green and blue components, from 0.0 to 1.0.
+func (textBlock *TextBlock) GetTextColor() [3]float32 {
+	return textBlock.textColor
 }
 
 // SetBackgroundColor sets the background color as a 0xRRGGBB value. color.Transparent removes the background.
@@ -237,6 +290,23 @@ func (textBlock *TextBlock) GetBackgroundColor() *[3]float32 {
 func (textBlock *TextBlock) SetTextAlignment(textAlignment alignment.Alignment) *TextBlock {
 	textBlock.textAlignment = textAlignment
 	return textBlock
+}
+
+// GetTextAlignment returns the horizontal alignment of the text.
+func (textBlock *TextBlock) GetTextAlignment() alignment.Alignment {
+	return textBlock.textAlignment
+}
+
+// SetVerticalAlignment sets the vertical alignment of the text in a block with
+// a height: alignment.Top, the default, alignment.Center or alignment.Bottom.
+func (textBlock *TextBlock) SetVerticalAlignment(verticalAlignment alignment.Alignment) *TextBlock {
+	textBlock.verticalAlignment = verticalAlignment
+	return textBlock
+}
+
+// GetVerticalAlignment returns the vertical alignment of the text.
+func (textBlock *TextBlock) GetVerticalAlignment() alignment.Alignment {
+	return textBlock.verticalAlignment
 }
 
 // SetLanguage sets the language of the text, for example "he", "ar" or "fa",
@@ -506,10 +576,53 @@ func (textBlock *TextBlock) SetUnderline(underline bool) *TextBlock {
 	return textBlock
 }
 
+// GetUnderline returns whether the text is underlined.
+func (textBlock *TextBlock) GetUnderline() bool {
+	return textBlock.underline
+}
+
+// SetStrikeout strikes out the text of this text block.
+func (textBlock *TextBlock) SetStrikeout(strikeout bool) *TextBlock {
+	textBlock.strikeout = strikeout
+	return textBlock
+}
+
+// GetStrikeout returns whether the text is struck out.
+func (textBlock *TextBlock) GetStrikeout() bool {
+	return textBlock.strikeout
+}
+
 func (textBlock *TextBlock) underlineText(textLines []*TextLine) {
 	for _, textLine := range textLines {
 		textLine.underline = true
 	}
+}
+
+func (textBlock *TextBlock) strikeoutText(textLines []*TextLine) {
+	for _, textLine := range textLines {
+		textLine.strikeout = true
+	}
+}
+
+// linesThatFit returns the lines that fit in the height: all of them when the
+// block has no height, else the first lines, with the last of them ending in
+// "...".
+func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32) []*TextLine {
+	fit := int((textBlock.height - 2*textBlock.textPadding) / leading)
+	if fit < 1 {
+		fit = 1 // At least one line is drawn
+	}
+	if fit >= len(textLines) {
+		return textLines
+	}
+	lines := make([]*TextLine, fit)
+	copy(lines, textLines)
+	last := []rune(lines[fit-1].text)
+	if len(last) > 3 {
+		last = last[:len(last)-3]
+	}
+	lines[fit-1] = NewTextLine(textBlock.font, string(last)+"...")
+	return lines
 }
 
 // rightAlignText sets the offsets from the left edge of the text, inside the
@@ -539,7 +652,19 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
 	textLines := textBlock.getTextLines()
-	blockHeight := max(textBlock.height, float32(len(textLines))*leading+2*textBlock.textPadding)
+	blockHeight := float32(len(textLines))*leading + 2*textBlock.textPadding
+	yText := textBlock.y + textBlock.textPadding
+	if textBlock.height > 0.0 {
+		// The block is as tall as set; the lines that do not fit are cut
+		textLines = textBlock.linesThatFit(textLines, leading)
+		blockHeight = textBlock.height
+		textHeight := float32(len(textLines)) * leading
+		if textBlock.verticalAlignment == alignment.Center {
+			yText = textBlock.y + (textBlock.height-textHeight)/2.0
+		} else if textBlock.verticalAlignment == alignment.Bottom {
+			yText = textBlock.y + textBlock.height - textBlock.textPadding - textHeight
+		}
+	}
 	if page == nil {
 		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
@@ -555,6 +680,9 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	}
 	if textBlock.underline {
 		textBlock.underlineText(textLines)
+	}
+	if textBlock.strikeout {
+		textBlock.strikeoutText(textLines)
 	}
 
 	if textBlock.hasBorderColor || textBlock.hasFillColor {
@@ -578,7 +706,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		textBlock.getFallbackFontSize(),
 		textLines,
 		textBlock.x+textBlock.textPadding,
-		textBlock.y+textBlock.textPadding,
+		yText,
 		leading,
 		textBlock.textColor,
 		textBlock.keywordHighlightColors,

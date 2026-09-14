@@ -12,18 +12,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A block of text that wraps at its width, with an optional border, background and padding.
+ * A block of text that wraps at its width, with an optional border, background
+ * and padding. Without a height the block is as tall as its text; with one the
+ * text that does not fit is cut, and the lines are aligned to the top, the
+ * center or the bottom of the block. See Example_01, 16 and 19.
  */
 public class TextBlock implements Drawable {
     float x;
     float y;
     private float width;
     private float height;
-    private Font font;
-    private Font fallbackFont;
+    Font font;
+    Font fallbackFont;
     private float fontSize = 12f;
     private float fallbackFontSize = 0f;    // 0 is the font size
-    private String textContent;
+    String textContent;
     private float lineSpacing = 1.0f;
     private float[] textColor;
     private Map<String, Integer> keywordHighlightColors;
@@ -36,7 +39,9 @@ public class TextBlock implements Drawable {
     private String language;
     private String uri;
     private Alignment textAlignment;
+    private Alignment verticalAlignment = Alignment.TOP;
     private boolean underline;
+    private boolean strikeout;
     private boolean rightToLeft;
 
     /**
@@ -146,10 +151,21 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the size of this text block.
+     * Returns the location of the top left corner of this text block.
+     *
+     * @return the x and y coordinates.
+     */
+    public float[] getLocation() {
+        return new float[] {this.x, this.y};
+    }
+
+    /**
+     * Sets the size of this text block. With a height above 0 the block is
+     * that tall: the lines that do not fit are cut, the last line that fits
+     * ends with "...", and the lines are aligned by the vertical alignment.
      *
      * @param w the width.
-     * @param h the height.
+     * @param h the height, or 0 for the height of the text.
      * @return this TextBlock object.
      */
     public TextBlock setSize(float w, float h) {
@@ -171,9 +187,11 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the height of this text block.
+     * Sets the height of this text block. With a height above 0 the block is
+     * that tall: the lines that do not fit are cut, the last line that fits
+     * ends with "...", and the lines are aligned by the vertical alignment.
      *
-     * @param h the height.
+     * @param h the height, or 0 for the height of the text.
      * @return this TextBlock object.
      */
     public TextBlock setHeight(float h) {
@@ -192,14 +210,16 @@ public class TextBlock implements Drawable {
 
     /**
      * Returns the height of this text block as it is drawn: the height set with
-     * setHeight or setSize, or the height of the text and padding when that is
-     * taller.
+     * setHeight or setSize, or the height of the text and padding without one.
      *
      * @return the height.
      */
     public float getHeight() {
+        if (this.height > 0f) {
+            return this.height;
+        }
         float leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing;
-        return Math.max(this.height, getTextLines().length * leading + 2 * this.textPadding);
+        return getTextLines().length * leading + 2 * this.textPadding;
     }
 
     /**
@@ -225,6 +245,15 @@ public class TextBlock implements Drawable {
     }
 
     /**
+     * Returns the space between the text and the border.
+     *
+     * @return the padding.
+     */
+    public float getPadding() {
+        return this.textPadding;
+    }
+
+    /**
      * Sets the border width.
      *
      * @param borderWidth the border width.
@@ -233,6 +262,15 @@ public class TextBlock implements Drawable {
     public TextBlock setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
         return this;
+    }
+
+    /**
+     * Returns the border width.
+     *
+     * @return the border width.
+     */
+    public float getBorderWidth() {
+        return this.borderWidth;
     }
 
     /**
@@ -258,6 +296,15 @@ public class TextBlock implements Drawable {
     public TextBlock setTextColor(float[] rgbColor) {
         this.textColor = Util.copyOf(rgbColor);
         return this;
+    }
+
+    /**
+     * Returns the text color.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0.
+     */
+    public float[] getTextColor() {
+        return Util.copyOf(this.textColor);
     }
 
     /**
@@ -287,6 +334,15 @@ public class TextBlock implements Drawable {
     public TextBlock setBorderColor(float[] rgbColor) {
         this.borderColor = Util.copyOf(rgbColor);
         return this;
+    }
+
+    /**
+     * Returns the border color.
+     *
+     * @return the red, green and blue components, from 0.0 to 1.0, or null.
+     */
+    public float[] getBorderColor() {
+        return Util.copyOf(this.borderColor);
     }
 
     /**
@@ -347,6 +403,36 @@ public class TextBlock implements Drawable {
     public TextBlock setTextAlignment(Alignment textAlignment) {
         this.textAlignment = textAlignment;
         return this;
+    }
+
+    /**
+     * Returns the horizontal alignment of the text.
+     *
+     * @return the alignment.
+     */
+    public Alignment getTextAlignment() {
+        return this.textAlignment;
+    }
+
+    /**
+     * Sets the vertical alignment of the text in a block with a height:
+     * Alignment.TOP, the default, Alignment.CENTER or Alignment.BOTTOM.
+     *
+     * @param verticalAlignment the alignment.
+     * @return this TextBlock object.
+     */
+    public TextBlock setVerticalAlignment(Alignment verticalAlignment) {
+        this.verticalAlignment = verticalAlignment;
+        return this;
+    }
+
+    /**
+     * Returns the vertical alignment of the text.
+     *
+     * @return the alignment.
+     */
+    public Alignment getVerticalAlignment() {
+        return this.verticalAlignment;
     }
 
     /**
@@ -622,6 +708,58 @@ public class TextBlock implements Drawable {
         return this;
     }
 
+    /**
+     * Returns whether the text is underlined.
+     *
+     * @return true if the text is underlined.
+     */
+    public boolean getUnderline() {
+        return this.underline;
+    }
+
+    /**
+     * Sets whether the text is struck out.
+     *
+     * @param strikeout true to strike out the text.
+     * @return this TextBlock object.
+     */
+    public TextBlock setStrikeout(boolean strikeout) {
+        this.strikeout = strikeout;
+        return this;
+    }
+
+    /**
+     * Returns whether the text is struck out.
+     *
+     * @return true if the text is struck out.
+     */
+    public boolean getStrikeout() {
+        return this.strikeout;
+    }
+
+    /**
+     * Returns the lines that fit in the height: all of them when the block has
+     * no height, else the first lines, with the last of them ending in "...".
+     */
+    private TextLine[] linesThatFit(TextLine[] textLines, float leading) {
+        int fit = (int) Math.floor((this.height - 2 * this.textPadding) / leading);
+        if (fit < 1) {
+            fit = 1;    // At least one line is drawn
+        }
+        if (fit >= textLines.length) {
+            return textLines;
+        }
+        TextLine[] lines = new TextLine[fit];
+        System.arraycopy(textLines, 0, lines, 0, fit);
+        String last = lines[fit - 1].text;
+        int count = last.codePointCount(0, last.length());
+        if (count > 3) {
+            last = last.substring(0, last.offsetByCodePoints(0, count - 3));
+        }
+        lines[fit - 1] = new TextLine(font, last + "...");
+        return lines;
+    }
+
     // The offsets are from the left edge of the text, inside the padding.
     private void rightAlignText(TextLine[] textLines) {
         float textAreaWidth = this.width - 2 * this.textPadding;
@@ -643,6 +781,12 @@ public class TextBlock implements Drawable {
         }
     }
 
+    private void strikeoutText(TextLine[] textLines) {
+        for (TextLine textLine : textLines) {
+            textLine.strikeout = true;
+        }
+    }
+
     /**
      * Draws this text block on the specified page.
      *
@@ -655,7 +799,19 @@ public class TextBlock implements Drawable {
         float descent = this.font.getDescent(fontSize);
         float leading = (ascent + descent) * this.lineSpacing;
         TextLine[] textLines = getTextLines();
-        float blockHeight = Math.max(this.height, textLines.length * leading + 2 * this.textPadding);
+        float blockHeight = textLines.length * leading + 2 * this.textPadding;
+        float yText = this.y + this.textPadding;
+        if (this.height > 0f) {
+            // The block is as tall as set; the lines that do not fit are cut
+            textLines = linesThatFit(textLines, leading);
+            blockHeight = this.height;
+            float textHeight = textLines.length * leading;
+            if (verticalAlignment == Alignment.CENTER) {
+                yText = this.y + (this.height - textHeight) / 2f;
+            } else if (verticalAlignment == Alignment.BOTTOM) {
+                yText = this.y + this.height - this.textPadding - textHeight;
+            }
+        }
         if (page == null) {
             return new float[] {this.x + this.width, this.y + blockHeight};
         }
@@ -669,6 +825,9 @@ public class TextBlock implements Drawable {
         }
         if (underline) {
             underlineText(textLines);
+        }
+        if (strikeout) {
+            strikeoutText(textLines);
         }
 
         if (borderColor != null || fillColor != null) {
@@ -692,7 +851,7 @@ public class TextBlock implements Drawable {
             getFallbackFontSize(),
             textLines,
             this.x + this.textPadding,
-            this.y + this.textPadding,
+            yText,
             leading,
             this.textColor,
             keywordHighlightColors,

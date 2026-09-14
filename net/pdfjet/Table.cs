@@ -234,8 +234,8 @@ public class Table : IDrawable {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.SetTextAlignment(alignment);
-                if (cell.textBox != null) {
-                    cell.textBox.SetTextAlignment(alignment);
+                if (cell.textBlock != null) {
+                    cell.textBlock.SetTextAlignment(alignment);
                 }
             }
         }
@@ -253,8 +253,8 @@ public class Table : IDrawable {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.SetTextColor(color);
-                if (cell.textBox != null) {
-                    cell.textBox.SetTextColor(color);
+                if (cell.textBlock != null) {
+                    cell.textBlock.SetTextColor(color);
                 }
             }
         }
@@ -272,8 +272,8 @@ public class Table : IDrawable {
             if (index < row.Count) {
                 Cell cell = row[index];
                 cell.SetFont(font).SetFontSize(font.GetSize());
-                if (cell.textBox != null) {
-                    cell.textBox.font = font;
+                if (cell.textBlock != null) {
+                    cell.textBlock.font = font;
                 }
             }
         }
@@ -291,8 +291,8 @@ public class Table : IDrawable {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
                 cell.SetTextColor(color);
-                if (cell.textBox != null) {
-                    cell.textBox.SetTextColor(color);
+                if (cell.textBlock != null) {
+                    cell.textBlock.SetTextColor(color);
                 }
             }
         }
@@ -310,8 +310,8 @@ public class Table : IDrawable {
             List<Cell> row = tableData[index];
             foreach (Cell cell in row) {
                 cell.SetFont(font).SetFontSize(font.GetSize());
-                if (cell.textBox != null) {
-                    cell.textBox.font = font;
+                if (cell.textBlock != null) {
+                    cell.textBlock.font = font;
                 }
             }
         }
@@ -625,10 +625,10 @@ public class Table : IDrawable {
             for (int i = 0; i < row.Count; i++) {
                 Cell cell = row[i];
                 if (cell.GetColSpan() == 1) {
-                    if (cell.textBox != null) {
-                        String[] tokens = Util.SplitOnWhitespace(cell.textBox.text);
+                    if (cell.textBlock != null) {
+                        String[] tokens = Util.SplitOnWhitespace(cell.textBlock.textContent);
                         foreach (String token in tokens) {
-                            float tokenWidth = cell.textBox.font.StringWidth(cell.textBox.fallbackFont, token);
+                            float tokenWidth = cell.textBlock.font.StringWidth(cell.textBlock.fallbackFont, token);
                             tokenWidth += cell.leftPadding + cell.rightPadding;
                             if (tokenWidth > maxColWidths[i]) {
                                 maxColWidths[i] = tokenWidth;

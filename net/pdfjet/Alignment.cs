@@ -8,7 +8,7 @@
 namespace PDFjet.NET {
     /// <summary>
     /// Used to specify the horizontal and vertical alignment, for example of the
-    /// text in a Cell, TextBox, TextBlock, Paragraph or TextColumn.
+    /// text in a Cell, TextBlock, Paragraph or TextColumn.
     /// </summary>
     public enum Alignment {
         /// <summary>Aligns to the left.</summary>

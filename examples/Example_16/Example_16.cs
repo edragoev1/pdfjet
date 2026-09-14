@@ -35,27 +35,20 @@ public class Example_16 {
 
         String englishText = Content.OfTextFile("data/languages/english.txt");
         // f1.SetSize(14f);
-        TextBox textBox = new TextBox(f1, englishText);
-        // textBox.SetLocation(50f, 50f);
-        // textBox.SetLocation(50f, 100f);
-        textBox.SetLocation(100f, 50f);
-        textBox.SetWidth(400f);
-        // If no height is specified the height will be calculated based on the text.
-        textBox.SetHeight(450f);
-        // textBox.SetTextRotation(90);     // bottom to top
-        // textBox.SetTextRotation(270);    // top to bottom
-
-        textBox.SetVerticalAlignment(Alignment.TOP);
-        // textBox.SetVerticalAlignment(Alignment.BOTTOM);
-        // textBox.SetVerticalAlignment(Alignment.CENTER);
-
-        // textBox.SetTextAlignment(Alignment.CENTER);
-        // textBox.SetHeight(400f);
-
-        textBox.SetBackgroundColor(Color.whitesmoke);
-        textBox.SetHighlightColors(colors);
-        textBox.SetBorders(true);
-        float[] xy = textBox.DrawOn(page);
+        TextBlock textBlock = new TextBlock(f1, englishText);
+        textBlock.SetLocation(100f, 50f);
+        textBlock.SetWidth(400f);
+        // With a height the text that does not fit is cut; without one the
+        // block is as tall as its text.
+        textBlock.SetHeight(450f);
+        textBlock.SetVerticalAlignment(Alignment.TOP);
+        // textBlock.SetVerticalAlignment(Alignment.BOTTOM);
+        // textBlock.SetVerticalAlignment(Alignment.CENTER);
+        // textBlock.SetTextAlignment(Alignment.CENTER);
+        textBlock.SetBackgroundColor(Color.whitesmoke);
+        textBlock.SetHighlightColors(colors);
+        textBlock.SetBorderColor(Color.black);
+        float[] xy = textBlock.DrawOn(page);
 
         page.SetGraphicsState(new GraphicsState()); // Reset GS
         // page.RestoreGraphicsState();

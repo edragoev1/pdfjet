@@ -35,16 +35,11 @@ class CellTest {
     }
 
     @Test
-    void settingATextBlockOrTextBoxClearsTheText() throws Exception {
+    void settingATextBlockClearsTheText() throws Exception {
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         Cell withBlock = new Cell(font, "text");
         withBlock.setTextBlock(new TextBlock(font, "block"));
         assertNull(withBlock.getText());
-
-        Cell withBox = new Cell(font, "text");
-        withBox.setTextBox(new TextBox(font, "box"));
-        String text = withBox.getText();
-        assertTrue(text == null || text.isEmpty(), "text: " + text);
     }
 
     @Test

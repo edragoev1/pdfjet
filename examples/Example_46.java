@@ -36,9 +36,8 @@ public class Example_46 {
         group.setPrintable(true);
         group.drawOn(page);
 
-        TextBox textBox = new TextBox(f1);
+        TextBlock textBox = new TextBlock(f1, "Blue Layer Text");
         // textBox.setFontSize(16f);
-        textBox.setText("Blue Layer Text");
         textBox.setLocation(10f, 130f);
 
         Line line = new Line();

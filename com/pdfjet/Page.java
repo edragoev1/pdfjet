@@ -2093,8 +2093,14 @@ final public class Page {
             Font font, StringBuilder buf, float[] color, Map<String, Integer> highlightColors) {
         if (buf.length() > 0) {
             String str = buf.toString();
-            if (highlightColors.containsKey(str)) {
-                setBrushColor(highlightColors.get(str));
+            // A keyword is matched as written, or ignoring case when the map
+            // holds it in lower case, as TextBlock.setHighlightColors does
+            Integer highlight = highlightColors.get(str);
+            if (highlight == null) {
+                highlight = highlightColors.get(str.toLowerCase());
+            }
+            if (highlight != null) {
+                setBrushColor(highlight);
             } else {
                 setBrushColor(color);
             }
@@ -2592,16 +2598,25 @@ final public class Page {
         }
 
         float yLine = y + font.getBodyHeight(fontSize);
+        float yStrike = y + font.getAscent(fontSize) - font.getBodyHeight(fontSize) / 4f;
         for (TextLine textLine : textLines) {
-            if (textLine.underline) {
+            if (textLine.underline || textLine.strikeout) {
                 float width = hasFallbackFont ?
                         font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.stringWidth(fontSize, textLine.text);
-                moveTo(x + textLine.xOffset, yLine);
-                lineTo(x + textLine.xOffset + width, yLine);
-                strokePath();
+                if (textLine.underline) {
+                    moveTo(x + textLine.xOffset, yLine);
+                    lineTo(x + textLine.xOffset + width, yLine);
+                    strokePath();
+                }
+                if (textLine.strikeout) {
+                    moveTo(x + textLine.xOffset, yStrike);
+                    lineTo(x + textLine.xOffset + width, yStrike);
+                    strokePath();
+                }
             }
             yLine += leading;
+            yStrike += leading;
         }
     }
 

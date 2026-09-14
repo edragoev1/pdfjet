@@ -6,7 +6,7 @@
  */
 
 ///
-/// Used to specify the text writing direction in TextBox.swift
+/// The direction a Barcode is drawn in.
 ///
 public enum Direction : Int {
     case LEFT_TO_RIGHT = 0

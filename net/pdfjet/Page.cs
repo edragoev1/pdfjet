@@ -2059,8 +2059,12 @@ public class Page {
             Dictionary<String, Int32> highlightColors) {
         if (buf.Length > 0) {
             String str = buf.ToString();
-            if (highlightColors.ContainsKey(str)) {
-                SetBrushColor(highlightColors[str]);
+            // A keyword is matched as written, or ignoring case when the map
+            // holds it in lower case, as TextBlock.SetHighlightColors does
+            int highlight;
+            if (highlightColors.TryGetValue(str, out highlight) ||
+                    highlightColors.TryGetValue(str.ToLower(), out highlight)) {
+                SetBrushColor(highlight);
             } else {
                 SetBrushColor(color);
             }
@@ -2376,16 +2380,25 @@ public class Page {
         }
 
         float yLine = y + font.GetBodyHeight(fontSize);
+        float yStrike = y + font.GetAscent(fontSize) - font.GetBodyHeight(fontSize) / 4f;
         foreach (TextLine textLine in textLines) {
-            if (textLine.underline) {
+            if (textLine.underline || textLine.strikeout) {
                 float width = hasFallbackFont ?
                         font.StringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.StringWidth(fontSize, textLine.text);
-                MoveTo(x + textLine.xOffset, yLine);
-                LineTo(x + textLine.xOffset + width, yLine);
-                StrokePath();
+                if (textLine.underline) {
+                    MoveTo(x + textLine.xOffset, yLine);
+                    LineTo(x + textLine.xOffset + width, yLine);
+                    StrokePath();
+                }
+                if (textLine.strikeout) {
+                    MoveTo(x + textLine.xOffset, yStrike);
+                    LineTo(x + textLine.xOffset + width, yStrike);
+                    StrokePath();
+                }
             }
             yLine += leading;
+            yStrike += leading;
         }
     }
 

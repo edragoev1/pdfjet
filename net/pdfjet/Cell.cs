@@ -18,7 +18,6 @@ public class Cell {
     internal String text;
     internal Image image;
     internal Barcode barcode;
-    internal TextBox textBox;
     internal TextBlock textBlock;
     internal TextColumn textColumn;
     internal Point point;
@@ -207,13 +206,6 @@ public class Cell {
         return this.compositeTextLine;
     }
 
-    /// <summary>Sets the text box drawn in this cell and clears the cell text.</summary>
-    public Cell SetTextBox(TextBox textBox) {
-        this.textBox = textBox;
-        this.text = null;
-        return this;
-    }
-
     /// <summary>Sets the text block drawn in this cell and clears the cell text.</summary>
     public Cell SetTextBlock(TextBlock textBlock) {
         this.textBlock = textBlock;
@@ -247,9 +239,7 @@ public class Cell {
     /// <returns>this Cell object.</returns>
     public Cell SetWidth(float width) {
         this.width = width;
-        if (textBox != null) {
-            textBox.SetWidth(this.width - (this.leftPadding + this.rightPadding));
-        } else if (textBlock != null) {
+        if (textBlock != null) {
             textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         }
         return this;
@@ -327,10 +317,7 @@ public class Cell {
     /// <returns>the cell height.</returns>
     public float GetHeight(float width) {
         float cellHeight = 0f;
-        if (textBox != null) {
-            textBox.SetWidth(width);
-            cellHeight = (textBox.DrawOn(null)[1] - textBox.y) + topPadding + bottomPadding;
-        } else if (textBlock != null) {
+        if (textBlock != null) {
             textBlock.SetWidth(width);
             cellHeight = (textBlock.DrawOn(null)[1] - textBlock.y) + topPadding + bottomPadding;
         } else if (textColumn != null) {
@@ -587,10 +574,6 @@ public class Cell {
 
         if (text != null && !text.Equals("")) {
             DrawText(page, x, y, w, h);
-        } else if (textBox != null) {
-            textBox.SetLocation(x + leftPadding, y + topPadding);
-            textBox.SetWidth(w - (leftPadding + rightPadding));
-            textBox.DrawOn(page);
         } else if (textBlock != null) {
             textBlock.SetLocation(x + leftPadding, y + topPadding);
             textBlock.SetWidth(w - (leftPadding + rightPadding));
@@ -791,11 +774,6 @@ public class Cell {
         page.LineTo(x + GetTextWidth(), y - ascent/3f);
         page.StrokePath();
         page.AddEMC();
-    }
-
-    /// <summary>Returns the text box drawn in this cell.</summary>
-    public TextBox GetTextBox() {
-        return this.textBox;
     }
 
     /// <summary>Returns the text block drawn in this cell.</summary>

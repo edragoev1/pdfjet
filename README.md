@@ -507,7 +507,7 @@ and Go, which cannot overload, gives the other form a suffix:
 
 Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPageDetached` for
-`Page.DETACHED`, `NewTableFromFile`, `NewTextBoxWithText`, `NewTextBoxWithSize`, and `NewFont`,
+`Page.DETACHED`, `NewTableFromFile`, and `NewFont`,
 `NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
 `NewFontStream2` for the overloads of the `Font` constructor. Where the other ports have an overload with fewer
 arguments, Go has the full form only: `NewCell(font, text)`,

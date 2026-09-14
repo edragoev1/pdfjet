@@ -5,7 +5,7 @@ using PDFjet.NET;
 
 /**
  * Example_19.cs
- * Using the TextBox component.
+ * Using the TextBlock component to draw text next to images.
  */
 public class Example_19 {
     public Example_19() {
@@ -33,23 +33,22 @@ public class Example_19 {
         image1.ScaleBy(0.3f);
         image1.DrawOn(page);
 
-        TextBox textBox = new TextBox(f1, Content.OfTextFile("data/calculus-short.txt"));
-        textBox.SetLocation(x2, y1);
-        textBox.SetWidth(w2);
-        textBox.SetBorders(true);
-        float[] xy = textBox.DrawOn(page);
+        TextBlock textBlock = new TextBlock(f1, Content.OfTextFile("data/calculus-short.txt"));
+        textBlock.SetLocation(x2, y1);
+        textBlock.SetWidth(w2);
+        textBlock.SetBorderColor(Color.black);
+        float[] xy = textBlock.DrawOn(page);
 
         // Draw the second image
         image2.SetLocation(x1, xy[1] + 10f);
         image2.ScaleBy(0.1f);
         image2.DrawOn(page);
 
-        textBox = new TextBox(f1);
-        textBox.SetText(Content.OfTextFile("data/physics.txt"));
-        textBox.SetLocation(x2, xy[1] + 10f);
-        textBox.SetWidth(w2);
-        textBox.SetBorders(true);
-        xy = textBox.DrawOn(page);
+        textBlock = new TextBlock(f1, Content.OfTextFile("data/physics.txt"));
+        textBlock.SetLocation(x2, xy[1] + 10f);
+        textBlock.SetWidth(w2);
+        textBlock.SetBorderColor(Color.black);
+        xy = textBlock.DrawOn(page);
 
         Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
         rect.SetBorderColor(Color.black);

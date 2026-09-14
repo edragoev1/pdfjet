@@ -257,8 +257,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setTextAlignment(alignment);
-                if (cell.textBox != null) {
-                    cell.textBox.setTextAlignment(alignment);
+                if (cell.textBlock != null) {
+                    cell.textBlock.setTextAlignment(alignment);
                 }
             }
         }
@@ -277,8 +277,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setTextColor(color);
-                if (cell.textBox != null) {
-                    cell.textBox.setTextColor(color);
+                if (cell.textBlock != null) {
+                    cell.textBlock.setTextColor(color);
                 }
             }
         }
@@ -297,8 +297,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setFont(font).setFontSize(font.getSize());
-                if (cell.textBox != null) {
-                    cell.textBox.font = font;
+                if (cell.textBlock != null) {
+                    cell.textBlock.font = font;
                 }
             }
         }
@@ -317,8 +317,8 @@ public class Table implements Drawable {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
                 cell.setTextColor(color);
-                if (cell.textBox != null) {
-                    cell.textBox.setTextColor(color);
+                if (cell.textBlock != null) {
+                    cell.textBlock.setTextColor(color);
                 }
             }
         }
@@ -337,8 +337,8 @@ public class Table implements Drawable {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
                 cell.setFont(font).setFontSize(font.getSize());
-                if (cell.textBox != null) {
-                    cell.textBox.font = font;
+                if (cell.textBlock != null) {
+                    cell.textBlock.font = font;
                 }
             }
         }
@@ -676,10 +676,10 @@ public class Table implements Drawable {
             for (int i = 0; i < row.size(); i++) {
                 Cell cell = row.get(i);
                 if (cell.getColSpan() == 1) {
-                    if (cell.textBox != null) {
-                        String[] tokens = Util.splitOnWhitespace(cell.textBox.text);
+                    if (cell.textBlock != null) {
+                        String[] tokens = Util.splitOnWhitespace(cell.textBlock.textContent);
                         for (String token : tokens) {
-                            float tokenWidth = cell.textBox.font.stringWidth(cell.textBox.fallbackFont, token);
+                            float tokenWidth = cell.textBlock.font.stringWidth(cell.textBlock.fallbackFont, token);
                             tokenWidth += cell.leftPadding + cell.rightPadding;
                             if (tokenWidth > maxColWidths[i]) {
                                 maxColWidths[i] = tokenWidth;

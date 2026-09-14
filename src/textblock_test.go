@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -28,8 +29,8 @@ func TestTextBlockANewlineIsOneEmptyLine(t *testing.T) {
 	testAssertXY(t, x[0], x[1], testMeasureBlock(font, ""))
 }
 
-func TestTextBlockWrappedTextMakesTheBlockTallerThanItsSetHeight(t *testing.T) {
-	block := NewTextBlock(testHelvetica(testNewPDF()), testTenWords).SetSize(60, 10)
+func TestTextBlockWithoutAHeightTheBlockIsAsTallAsItsText(t *testing.T) {
+	block := NewTextBlock(testHelvetica(testNewPDF()), testTenWords).SetWidth(60)
 	block.SetLocation(0, 0)
 	// Six lines of 13.872 points.
 	testAssertXY(t, 60, 83.232, block.DrawOn(nil))
@@ -37,10 +38,53 @@ func TestTextBlockWrappedTextMakesTheBlockTallerThanItsSetHeight(t *testing.T) {
 	testNear(t, "width", 60, block.GetWidth(), 0)
 }
 
+func TestTextBlockAHeightCutsTheTextThatDoesNotFitAndAlignsTheRest(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	block := NewTextBlock(font, testTenWords).SetSize(60, 30)
+	block.SetLocation(0, 0)
+	// Two of the six lines fit
+	testAssertXY(t, 60, 30, block.DrawOn(nil))
+	testNear(t, "height", 30, block.GetHeight(), 0)
+	page := NewPage(pdf, testLetterPortrait())
+	block.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("...")) || strings.Contains(content, testHex("ten")) {
+		t.Errorf("cut text in %q", content)
+	}
+
+	// Aligned to the bottom of a block 10 points taller than its two lines,
+	// the text sits where a block without a height draws it 10 points lower
+	page = NewPage(pdf, testLetterPortrait())
+	block.SetSize(60, 2*13.872+10).SetVerticalAlignment(alignment.Bottom).DrawOn(page)
+	bottom := testContent(page)
+	page = NewPage(pdf, testLetterPortrait())
+	lowerBlock := NewTextBlock(font, "one two three four").SetWidth(60)
+	lowerBlock.SetLocation(0, 10)
+	lowerBlock.DrawOn(page)
+	lower := testContent(page)
+	start := strings.Index(lower, "1 0 0 1 0 ")
+	textMatrix := lower[start : strings.Index(lower, " Tm\n")+4]
+	if !strings.Contains(bottom, textMatrix) {
+		t.Errorf("%q missing from %q", textMatrix, bottom)
+	}
+}
+
+func TestTextBlockStrikeoutDrawsALineThroughEachLine(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	block := NewTextBlock(testHelvetica(pdf), "one\ntwo").SetStrikeout(true)
+	block.SetLocation(0, 0)
+	block.DrawOn(page)
+	if lines := strings.Count(testContent(page), " l\n"); lines != 2 {
+		t.Errorf("%d lines in %q", lines, testContent(page))
+	}
+}
+
 func TestTextBlockDrawOnAPageWritesEveryWord(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, letter.Portrait())
-	block := NewTextBlock(testHelvetica(pdf), testTenWords).SetSize(60, 10)
+	block := NewTextBlock(testHelvetica(pdf), testTenWords).SetWidth(60)
 	block.SetLocation(0, 0)
 	testAssertXY(t, 60, 83.232, block.DrawOn(page))
 	content := testContent(page)

@@ -31,27 +31,20 @@ public class Example_16 {
 
         let englishText = try Content.ofTextFile("data/languages/english.txt")
         // f1.setSize(14.0)
-        let textBox = TextBox(f1, englishText)
-        // textBox.setLocation(50.0, 50.0)
-        // textBox.setLocation(50.0, 100.0)
-        textBox.setLocation(100.0, 50.0)
-        textBox.setWidth(400.0)
-        // If no height is specified the height will be calculated based on the text.
-        textBox.setHeight(450.0)
-        // textBox.setTextRotation(90)     // bottom to top
-        // textBox.setTextRotation(270)    // top to bottom
-
-        textBox.setVerticalAlignment(Alignment.TOP)
-        // textBox.setVerticalAlignment(Alignment.BOTTOM)
-        // textBox.setVerticalAlignment(Alignment.CENTER)
-
-        // textBox.setTextAlignment(Alignment.CENTER)
-        // textBox.setHeight(400.0)
-
-        textBox.setBackgroundColor(Color.whitesmoke)
-        textBox.setHighlightColors(colors)
-        textBox.setBorders(true)
-        let xy = textBox.drawOn(page)
+        let textBlock = TextBlock(f1, englishText)
+        textBlock.setLocation(100.0, 50.0)
+        textBlock.setWidth(400.0)
+        // With a height the text that does not fit is cut; without one the
+        // block is as tall as its text.
+        textBlock.setHeight(450.0)
+        textBlock.setVerticalAlignment(Alignment.TOP)
+        // textBlock.setVerticalAlignment(Alignment.BOTTOM)
+        // textBlock.setVerticalAlignment(Alignment.CENTER)
+        // textBlock.setTextAlignment(Alignment.CENTER)
+        textBlock.setBackgroundColor(Color.whitesmoke)
+        textBlock.setHighlightColors(colors)
+        textBlock.setBorderColor(Color.black)
+        let xy = textBlock.drawOn(page)
 
         page.setGraphicsState(GraphicsState())      // Reset GS
         // page.restoreGraphicsState()

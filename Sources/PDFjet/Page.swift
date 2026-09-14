@@ -1921,8 +1921,10 @@ public class Page {
             _ textColor: [Float],
             _ highlightColors: [String : Int32]) {
         if str != "" {
-            if highlightColors[str] != nil {
-                setBrushColor(highlightColors[str]!)
+            // A keyword is matched as written, or ignoring case when the map
+            // holds it in lower case, as TextBlock.setHighlightColors does
+            if let highlight = highlightColors[str] ?? highlightColors[str.lowercased()] {
+                setBrushColor(highlight)
             } else {
                 setBrushColor(textColor)
             }
@@ -2388,16 +2390,25 @@ public class Page {
         }
 
         var yLine = y + font.getBodyHeight(fontSize)
+        var yStrike = y + font.getAscent(fontSize) - font.getBodyHeight(fontSize) / 4.0
         for textLine in textLines {
-            if textLine.underline {
+            if textLine.underline || textLine.strikeout {
                 let width = hasFallbackFont ?
                         font.stringWidth(fallbackFont, fontSize, fallbackFontSize, textLine.text) :
                         font.stringWidth(fontSize, textLine.text)
-                moveTo(x + textLine.xOffset, yLine)
-                lineTo(x + textLine.xOffset + width, yLine)
-                strokePath()
+                if textLine.underline {
+                    moveTo(x + textLine.xOffset, yLine)
+                    lineTo(x + textLine.xOffset + width, yLine)
+                    strokePath()
+                }
+                if textLine.strikeout {
+                    moveTo(x + textLine.xOffset, yStrike)
+                    lineTo(x + textLine.xOffset + width, yStrike)
+                    strokePath()
+                }
             }
             yLine += leading
+            yStrike += leading
         }
     }
 
