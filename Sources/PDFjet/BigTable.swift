@@ -168,23 +168,9 @@ public class BigTable {
         page!.setPenColor(original)
     }
 
+    // A number is right-aligned, as Table.rightAlignNumbers aligns it.
     private func getAlignment(_ str: String) -> Alignment {
-        var buf = ""
-        if str.hasPrefix("(") && str.hasSuffix(")") {
-            buf = String(str.dropFirst().dropLast())
-        } else {
-            buf = str
-        }
-        var cleaned = ""
-        for ch in buf {
-            if ch != "." && ch != "," && ch != "'" {
-                cleaned.append(ch)
-            }
-        }
-        if Double(cleaned) != nil {
-            return Alignment.RIGHT
-        }
-        return Alignment.LEFT
+        return Table.isNumber(str) ? Alignment.RIGHT : Alignment.LEFT
     }
 
     ///

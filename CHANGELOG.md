@@ -406,6 +406,19 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   throws on a truncated font stream.
 
 ### Port parity
+- A second audit of the four ports fixed the drift that could crash or
+  misplace something: Java `BarChart` drew no legend swatch for a named
+  series with a color per bar and threw instead; Swift `Page(pdf, pageObj)`
+  read the page size before stripping comments; `Title` tested the prefix
+  object instead of its text; a polygon annotation without vertices crashed
+  when rotated; Swift `Image` crashed on a missing file, rounded its link
+  rectangle and passed an alpha channel for gray and 16-bit images read from
+  an existing PDF; `Cell.setBorder` let stray bits reach the underline and
+  strikeout flags in Java and C#; `CompositeTextLine.getLocation` handed out
+  its own array in Java and C#; Go `OptionalContentGroup.Clear` aliased the
+  old list; `BigTable` aligned numbers with each language's float parser
+  where `Table.isNumber` now decides in all four ports, and Go `BigTable`
+  takes an empty delimiter and long lines as `Table` does.
 - `audit-api.py` lists the public types and members of the four ports and what
   is not in every port; the first run found some 60 types and 400 members, and
   the report now shows the port differences the README documents.

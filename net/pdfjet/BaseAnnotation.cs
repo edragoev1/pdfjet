@@ -87,7 +87,7 @@ public abstract class BaseAnnotation : IDrawable {
         }
         point1 = Container.RotateAroundCenter(point1, center, degrees);
         point2 = Container.RotateAroundCenter(point2, center, degrees);
-        if (annotationType.Equals(Annotation.Polygon)) {
+        if (annotationType.Equals(Annotation.Polygon) && vertices != null) {
             for (int i = 0; i < vertices.Length; i += 2) {
                 float[] point = Container.RotateAroundCenter(
                     new float[] {vertices[i], vertices[i + 1]}, new float[] {0f, 0f}, degrees);

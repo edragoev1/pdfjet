@@ -205,7 +205,6 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
 			y2:             checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
 			title:          "",
 			contents:       "",

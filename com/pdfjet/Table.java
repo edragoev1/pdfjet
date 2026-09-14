@@ -183,7 +183,7 @@ public class Table implements Drawable {
     // Returns true if the text, without its periods, commas and apostrophes and
     // the parentheses around it, is an optional sign, ASCII digits and an
     // optional exponent, with optional spaces before and after.
-    private static boolean isNumber(String text) {
+    static boolean isNumber(String text) {
         String str = text;
         if (str.length() >= 2 && str.charAt(0) == '(' && str.charAt(str.length() - 1) == ')') {
             str = str.substring(1, str.length() - 1);

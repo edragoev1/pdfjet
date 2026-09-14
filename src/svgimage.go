@@ -407,7 +407,6 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 			x2:             image.x + image.w,
 			y2:             image.y + image.h,
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
 			title:          "",
 			contents:       "",

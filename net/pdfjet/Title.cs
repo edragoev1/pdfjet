@@ -60,7 +60,7 @@ public class Title : IDrawable {
 
     /// <summary>Draws the prefix and the title text on the specified page.</summary>
     public float[] DrawOn(Page page) {
-        if (!prefix.Equals("")) {
+        if (!string.IsNullOrEmpty(prefix.GetText())) {
             prefix.DrawOn(page);
         }
         return textLine.DrawOn(page);

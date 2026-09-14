@@ -100,7 +100,7 @@ class BarChartTest {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub");
-        chart.addSeries("", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
+        chart.addSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
         chart.setValueAxisMinMax(0f, 8000f, 4).setDrawValueLabels(true).setValueLabelsInside(true);
         chart.setGroupingUsed(true).setAxisLineWidth(0f).setGridLineColor(Color.lightgray);
         String content = draw(chart, page);

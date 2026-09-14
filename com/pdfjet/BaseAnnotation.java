@@ -121,7 +121,7 @@ public abstract class BaseAnnotation implements Drawable {
         }
         point1 = Container.rotateAroundCenter(point1, center, degrees);
         point2 = Container.rotateAroundCenter(point2, center, degrees);
-        if (annotationType.equals(Annotation.Polygon)) {
+        if (annotationType.equals(Annotation.Polygon) && vertices != null) {
             for (int i = 0; i < vertices.length; i += 2) {
                 float[] point = Container.rotateAroundCenter(
                     new float[] {vertices[i], vertices[i + 1]}, new float[] {0f, 0f}, degrees);

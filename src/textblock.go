@@ -730,7 +730,6 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 			x2:             textBlock.x + textBlock.width,
 			y2:             textBlock.y + blockHeight,
 			vertices:       nil,
-			fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 			transparency:   0.0,
 			title:          "",
 			contents:       "",

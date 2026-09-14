@@ -226,7 +226,7 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the x and y coordinates of this composite text line.</returns>
     public float[] GetLocation() {
-        return position;
+        return new float[] {position[0], position[1]};
     }
 
     /// <summary>

@@ -167,7 +167,7 @@ public class Table : IDrawable {
     // Returns true if the text, without its periods, commas and apostrophes and
     // the parentheses around it, is an optional sign, ASCII digits and an
     // optional exponent, with optional spaces before and after.
-    private static bool IsNumber(String text) {
+    internal static bool IsNumber(String text) {
         String str = text;
         if (str.Length >= 2 && str[0] == '(' && str[str.Length - 1] == ')') {
             str = str.Substring(1, str.Length - 2);

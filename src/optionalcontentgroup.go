@@ -52,7 +52,7 @@ func (ocg *OptionalContentGroup) Add(drawable Drawable) *OptionalContentGroup {
 
 // Clear removes all drawable components from this optional content group.
 func (ocg *OptionalContentGroup) Clear() *OptionalContentGroup {
-	ocg.components = ocg.components[:0]
+	ocg.components = make([]Drawable, 0)
 	return ocg
 }
 

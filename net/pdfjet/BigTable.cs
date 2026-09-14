@@ -162,22 +162,9 @@ namespace PDFjet.NET {
             page.SetPenColor(original);
         }
 
+        // A number is right-aligned, as Table.RightAlignNumbers aligns it.
         private Alignment GetAlignment(string str) {
-            System.Text.StringBuilder buf = new System.Text.StringBuilder();
-            if (str.StartsWith("(") && str.EndsWith(")")) {
-                str = str.Substring(1, str.Length - 2);
-            }
-            foreach (char ch in str) {
-                if (ch != '.' && ch != ',' && ch != '\'') {
-                    buf.Append(ch);
-                }
-            }
-            try {
-                double.Parse(buf.ToString());
-                return Alignment.RIGHT;
-            } catch (FormatException) {
-                return Alignment.LEFT;
-            }
+            return Table.IsNumber(str) ? Alignment.RIGHT : Alignment.LEFT;
         }
 
         /// <summary>

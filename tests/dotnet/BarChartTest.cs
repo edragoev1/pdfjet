@@ -97,7 +97,7 @@ public class BarChartTest {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub");
-        chart.AddSeries("", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
+        chart.AddSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
         chart.SetValueAxisMinMax(0f, 8000f, 4).SetDrawValueLabels(true).SetValueLabelsInside(true);
         chart.SetGroupingUsed(true).SetAxisLineWidth(0f).SetGridLineColor(Color.lightgray);
         string content = Draw(chart, page);

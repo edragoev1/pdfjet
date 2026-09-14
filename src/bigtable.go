@@ -9,8 +9,8 @@ package pdfjet
 
 import (
 	"bufio"
+	"math"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -182,21 +182,21 @@ func (bt *BigTable) drawTheVerticalLines() {
 	bt.page.SetPenColorRGB(original)
 }
 
+// getAlignment right-aligns a number, as Table.RightAlignNumbers aligns it.
 func (bt *BigTable) getAlignment(str string) alignment.Alignment {
-	var buf strings.Builder
-	if strings.HasPrefix(str, "(") && strings.HasSuffix(str, ")") {
-		str = str[1 : len(str)-1]
-	}
-	for i := 0; i < len(str); i++ {
-		ch := str[i]
-		if ch != '.' && ch != ',' && ch != '\'' {
-			buf.WriteByte(ch)
-		}
-	}
-	if _, err := strconv.ParseFloat(buf.String(), 64); err == nil {
+	if isNumber(str) {
 		return alignment.Right
 	}
 	return alignment.Left
+}
+
+// splitFields splits a line at the delimiter; with no delimiter the line is
+// one field, as in the other ports.
+func (bt *BigTable) splitFields(line string) []string {
+	if bt.delimiter == "" {
+		return []string{line}
+	}
+	return strings.Split(line, bt.delimiter)
 }
 
 // newDataScanner returns a scanner of the lines of the data file, which is
@@ -206,7 +206,9 @@ func newDataScanner(file *os.File) *bufio.Scanner {
 	if bom, err := reader.Peek(3); err == nil && string(bom) == "\uFEFF" {
 		_, _ = reader.Discard(3)
 	}
-	return bufio.NewScanner(reader)
+	scanner := bufio.NewScanner(reader)
+	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
+	return scanner
 }
 
 // SetTableData sets the table data from the file, with the fields of each line
@@ -235,7 +237,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 	rowNumber := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, bt.delimiter)
+		fields := bt.splitFields(line)
 		if len(fields) < bt.numberOfColumns {
 			continue
 		}
@@ -294,7 +296,7 @@ func (bt *BigTable) Complete() error {
 	scanner := newDataScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		fields := strings.Split(line, bt.delimiter)
+		fields := bt.splitFields(line)
 		if len(fields) < bt.numberOfColumns {
 			continue
 		}

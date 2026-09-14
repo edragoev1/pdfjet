@@ -86,7 +86,7 @@ public class Title implements Drawable {
     }
 
     public float[] drawOn(Page page) throws Exception {
-        if (!prefix.equals("")) {
+        if (prefix.getText() != null && !prefix.getText().isEmpty()) {
             prefix.drawOn(page);
         }
         return textLine.drawOn(page);

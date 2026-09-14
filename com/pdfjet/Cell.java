@@ -618,6 +618,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBorder(int border, boolean visible) {
+        border &= Border.ALL;    // Only the border bits
         if (visible) {
             this.properties |= border;
         } else {

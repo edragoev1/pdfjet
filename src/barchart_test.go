@@ -110,7 +110,7 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub")
-	chart.AddSeriesWithColors("", []float32{6650, 12}, []int32{color.Red, color.Blue})
+	chart.AddSeriesWithColors("rivers", []float32{6650, 12}, []int32{color.Red, color.Blue})
 	chart.SetValueAxisMinMax(0, 8000, 4).SetDrawValueLabels(true).SetValueLabelsInside(true)
 	chart.SetGroupingUsed(true).SetAxisLineWidth(0).SetGridLineColor(color.LightGray)
 	content := testDrawBarChart(t, chart, page)

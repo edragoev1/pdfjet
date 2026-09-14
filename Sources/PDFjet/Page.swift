@@ -114,15 +114,14 @@ public class Page {
     /// Creates a page from a page object read from an existing PDF.
     public init(_ pdf: PDF, _ pageObj: PDFobj) {
         self.pdf = pdf
-        self.pageObj = pageObj
-        let pageSize = pageObj.getPageSize()
+        self.pageObj = Page.removeComments(pageObj)
+        let pageSize = self.pageObj!.getPageSize()
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
         self.tm0 = FastFloat.toByteArray(tmx[0])
         self.tm1 = FastFloat.toByteArray(tmx[1])
         self.tm2 = FastFloat.toByteArray(tmx[2])
         self.tm3 = FastFloat.toByteArray(tmx[3])
-        self.pageObj = removeComments(self.pageObj!)
         saveGraphicsState()
         if pageObj.gsNumber != -1 {
             append("/GS")
@@ -137,7 +136,7 @@ public class Page {
         pageObj!.addContent(&self.buf, &objects)
     }
 
-    private func removeComments(_ obj: PDFobj) -> PDFobj {
+    private static func removeComments(_ obj: PDFobj) -> PDFobj {
         var list = [String]()
         var comment: Bool = false
         for token in obj.dict {

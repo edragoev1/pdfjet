@@ -48,7 +48,11 @@ public class Image : Drawable {
     /// - Parameter filePath: the path to the image file.
     ///
     public convenience init(_ pdf: PDF, _ filePath: String) throws {
-        try self.init(pdf, InputStream(fileAtPath: filePath)!)
+        guard let stream = InputStream(fileAtPath: filePath),
+                FileManager.default.fileExists(atPath: filePath) else {
+            throw PDFjetError(message: "File not found: " + filePath)
+        }
+        try self.init(pdf, stream)
     }
 
     ///
@@ -129,15 +133,16 @@ public class Image : Drawable {
             let png = try PNGImage(stream)
             data = png.getData()
             alpha = png.getAlpha() ?? [UInt8]()
+            var noAlpha = [UInt8]()
             w = Float(png.getWidth())
             h = Float(png.getHeight())
             if png.getColorType() == 0 {
-                addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", png.getBitDepth())
+                addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceGray", png.getBitDepth())
             } else if png.getColorType() == 4 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", 8)
             } else {
                 if png.getBitDepth() == 16 {
-                    addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 16)
+                    addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceRGB", 16)
                 } else {
                     addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
                 }
@@ -402,10 +407,10 @@ public class Image : Drawable {
         if uri != nil || key != nil {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
-                    x.rounded(),
-                    y.rounded(),
-                    (x + w!).rounded(),
-                    (y + h!).rounded(),
+                    x,
+                    y,
+                    x + w!,
+                    y + h!,
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency

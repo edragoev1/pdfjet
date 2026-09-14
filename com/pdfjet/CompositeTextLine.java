@@ -226,7 +226,7 @@ public class CompositeTextLine implements Drawable {
      *  @return the position of this composite text line.
      */
     public float[] getLocation() {
-        return position;
+        return new float[] {position[0], position[1]};
     }
 
     /**

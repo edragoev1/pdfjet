@@ -440,6 +440,7 @@ public class Cell {
     /// <param name="visible">true to show the border, false to hide it.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorder(uint border, bool visible) {
+        border &= Border.ALL;    // Only the border bits
         if (visible) {
             this.properties |= border;
         } else {

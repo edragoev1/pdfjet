@@ -60,7 +60,7 @@ func (title *Title) SetLocation(x, y float32) Drawable {
 
 // DrawOn draws the title.
 func (title *Title) DrawOn(page *Page) [2]float32 {
-	if title.prefix != nil {
+	if title.prefix.text != "" {
 		title.prefix.DrawOn(page)
 	}
 	return title.textLine.DrawOn(page)

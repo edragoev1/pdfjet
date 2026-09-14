@@ -330,7 +330,6 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 					x2:             point.x + point.r,
 					y2:             point.y + point.r,
 					vertices:       nil,
-					fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 					transparency:   0.0,
 					title:          "",
 					contents:       "",

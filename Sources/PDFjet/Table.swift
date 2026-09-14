@@ -169,7 +169,7 @@ public class Table : Drawable {
     // Returns true if the text, without its periods, commas and apostrophes and
     // the parentheses around it, is an optional sign, ASCII digits and an
     // optional exponent, with optional spaces before and after.
-    private static func isNumber(_ text: String) -> Bool {
+    static func isNumber(_ text: String) -> Bool {
         var scalars = [Unicode.Scalar](text.unicodeScalars)
         if scalars.count >= 2 && scalars[0] == "(" && scalars[scalars.count - 1] == ")" {
             scalars = [Unicode.Scalar](scalars[1..<(scalars.count - 1)])

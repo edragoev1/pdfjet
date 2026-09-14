@@ -698,7 +698,7 @@ public class BarChart implements Drawable {
 
     /** Returns the color of the bar at the index: the series' own, its color for the bar, or the palette's. */
     private int barColor(Series s, int seriesIndex, int index) {
-        if (s.colors != null && index < s.colors.length) {
+        if (s.colors != null && index >= 0 && index < s.colors.length) {
             return s.colors[index];
         }
         return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.length] : s.color;

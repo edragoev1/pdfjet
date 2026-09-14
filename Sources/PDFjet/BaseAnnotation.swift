@@ -84,7 +84,7 @@ public class BaseAnnotation: Drawable {
         }
         point1 = Container.rotateAroundCenter(point1, center, degrees)
         point2 = Container.rotateAroundCenter(point2, center, degrees)
-        if annotationType == Annotation.Polygon {
+        if annotationType == Annotation.Polygon && vertices != nil {
             var i = 0
             while i < vertices!.count {
                 let point = Container.rotateAroundCenter(

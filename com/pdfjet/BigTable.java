@@ -195,23 +195,9 @@ public class BigTable {
         page.setPenColor(original);
     }
 
+    // A number is right-aligned, as Table.rightAlignNumbers aligns it.
     private Alignment getAlignment(String str) {
-        StringBuilder buf = new StringBuilder();
-        if (str.startsWith("(") && str.endsWith(")")) {
-            str = str.substring(1, str.length() - 1);
-        }
-        for (int i = 0; i < str.length(); i++) {
-            char ch = str.charAt(i);
-            if (ch != '.' && ch != ',' && ch != '\'') {
-                buf.append(ch);
-            }
-        }
-        try {
-            Double.parseDouble(buf.toString());
-            return Alignment.RIGHT; // Align Right
-        } catch (NumberFormatException nfe) {
-        }
-        return Alignment.LEFT;      // Align Left
+        return Table.isNumber(str) ? Alignment.RIGHT : Alignment.LEFT;
     }
 
     // Splits the line at the delimiter, which is not a regular expression,

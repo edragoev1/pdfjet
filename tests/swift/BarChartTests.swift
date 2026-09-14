@@ -90,7 +90,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub")
-        chart.addSeries("", [6650, 12], [Color.red, Color.blue])
+        chart.addSeries("rivers", [6650, 12], [Color.red, Color.blue])
         chart.setValueAxisMinMax(0, 8000, 4).setDrawValueLabels(true).setValueLabelsInside(true)
         chart.setGroupingUsed(true).setAxisLineWidth(0).setGridLineColor(Color.lightgray)
         let content = draw(chart, page)

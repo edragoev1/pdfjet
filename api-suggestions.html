@@ -132,7 +132,7 @@
 <header>
   <p class="eyebrow">Second audit, for the v9.0.0 release</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs, two dozen places where one port does something the others do not, and a dozen names worth changing before the release.</p>
+  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and the drift that could crash or misplace something were fixed the same day and are listed at the end. What remains is drift in error handling and signatures, a few internals still public, and a dozen names worth changing before the release.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 533ecc67 (102 lines, 101 public types per port), a method-by-method reading of Page, PDF, the shapes, the text classes, the charts and the annotations in all four ports, and the 50 examples.</span>
     <span>14 September 2026</span>
@@ -141,11 +141,11 @@
 
 <nav class="toc" aria-label="Sections">
   <ol>
-    <li><a href="#bugs">Bugs a port has and the others do not</a></li>
     <li><a href="#drift">Drift between the ports</a></li>
     <li><a href="#library">Inconsistencies shared by all four ports</a></li>
     <li><a href="#public">Internals that are still public</a></li>
     <li><a href="#names">Names</a></li>
+    <li><a href="#fixed">Fixed on 14 September</a></li>
     <li><a href="#later">Left for 10.0</a></li>
   </ol>
 </nav>
@@ -154,43 +154,15 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Findings</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Bugs a port has and the others do not</td><td class="num">3</td><td class="num">3</td><td>A crash, a wrong page size, a check that never fails</td></tr>
-    <tr><td>Drift between the ports</td><td class="num">24</td><td class="num">24</td><td>Output and error handling that depend on the port</td></tr>
+    <tr><td>Drift between the ports</td><td class="num">17</td><td class="num">17</td><td>Output and error handling that depend on the port</td></tr>
     <tr><td>Inconsistencies shared by all four ports</td><td class="num">6</td><td class="num">4</td><td>Two rules for one setting</td></tr>
     <tr><td>Internals that are still public</td><td class="num">5</td><td class="num">5</td><td>Parsers, profiles and fields in the public API</td></tr>
     <tr><td>Names</td><td class="num">10</td><td class="num">6</td><td>Abbreviations, a misleading verb, one name for two things</td></tr>
     <tr><td>Left for 10.0</td><td class="num">2</td><td class="num">0</td><td>One paragraph flow, one table API</td></tr>
-    <tr class="total"><td>Total</td><td class="num">50</td><td class="num">42</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">40</td><td class="num">32</td><td></td></tr>
   </tbody>
 </table>
 </div>
-
-<h2 id="bugs">Bugs a port has and the others do not</h2>
-<p>Each of these is a line or two. They came out of the drift reading, and none is covered by an example or a test today.</p>
-
-<section class="item">
-  <h3>Java <code>BarChart</code> crashes on a named series with colors per bar <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>barColor</code> in <code>BarChart.java</code> checks only <code>index &lt; s.colors.length</code>; the legend calls it with an index of -1 to get the swatch color, so a series added with <code>addSeries(name, values, colors)</code> and a name throws <code>ArrayIndexOutOfBoundsException</code>. C#, Go and Swift also check <code>index &gt;= 0</code> and fall back to the series or palette color. Example_39 passes an empty name, so it never hits it.</p>
-  <span class="label">Suggestion</span>
-  <p>Add the <code>index &gt;= 0</code> guard to Java and a test that names such a series.</p>
-</section>
-
-<section class="item">
-  <h3>Swift <code>Page(pdf, pageObj)</code> reads the page size before it strips comments <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>Java, C# and Go call <code>removeComments</code> on the page object first and then <code>getPageSize</code>. Swift reads the size from the original object and strips the comments afterwards, so a <code>%</code> comment before <code>/MediaBox</code> in an existing PDF gives a different size in Swift.</p>
-  <span class="label">Suggestion</span>
-  <p>Strip first, as the other ports do.</p>
-</section>
-
-<section class="item">
-  <h3><code>Title.drawOn</code> compares a <code>TextLine</code> with a string <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>Java and C# write <code>if (!prefix.equals(""))</code> where <code>prefix</code> is a <code>TextLine</code>, so the test is always true; Go tests the pointer for nil, also always true; only Swift tests the text. The output agrees because <code>TextLine.drawOn</code> returns early on empty text, but the check is dead code in three ports.</p>
-  <span class="label">Suggestion</span>
-  <p>Test <code>prefix.getText()</code> in all four, or drop the check.</p>
-</section>
 
 <h2 id="drift">Drift between the ports</h2>
 <p>Places where a port behaves differently from the other three, in output or in how it fails. None changes the 50 examples, which is why the check does not catch them.</p>
@@ -219,21 +191,7 @@
   <p>Add a Go constructor for reading, and either add <code>PDF(path)</code> to the other ports or list <code>NewPDFFile</code> under the documented Go conveniences.</p>
 </section>
 
-<section class="item">
-  <h3>A polygon annotation without vertices crashes in three ports <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>BaseAnnotation.rotate</code> dereferences the vertices; Java and C# throw a null reference, Swift unwraps nil, Go loops over nothing. Reached through a <code>Container</code> that rotates a <code>PolygonAnnotation</code> with no <code>setVertices</code> call.</p>
-  <span class="label">Suggestion</span>
-  <p>Guard the nil, or reject the empty polygon in <code>drawOn</code> in all four.</p>
-</section>
 
-<section class="item">
-  <h3>Getters that hand out the object's own array <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>CompositeTextLine.getLocation</code> in Java and C# returns the internal <code>position</code> array, so a caller can move the line by writing into it; Go and Swift return a copy, and every other getter in the library copies.</p>
-  <span class="label">Suggestion</span>
-  <p>Return a clone.</p>
-</section>
 
 <section class="item">
   <h3>Warnings go to different places <span class="chip now">9.0.0</span></h3>
@@ -265,36 +223,32 @@
   <span class="label">Finding</span>
   <ul>
     <li>Go <code>NewCell(font, text)</code> is the only <code>Cell</code> constructor, and it always marks the cell as having text, so an empty string makes a cell one font height tall where <code>Cell(font)</code> in the other ports makes a cell of height zero.</li>
-    <li><code>Cell.setBorder</code> in Java and C# ORs the whole value into the properties word, so a stray bit turns underline or strikeout on; Go and Swift honor the four border bits only. Swift <code>getProperties</code> reports top and left whatever <code>setBorder</code> set. Four ports, four layouts of the same flags.</li>
+    <li>Swift <code>Cell.getProperties</code> reports top and left whatever <code>setBorder</code> set; the four ports lay the same flags out four ways.</li>
     <li>Go <code>Cell.SetBorderColorRGB</code> cannot clear the color; the other ports take null.</li>
     <li>Swift <code>Table.getWidth</code> returns 0 for an empty table; the others fail on the first row.</li>
-    <li><code>BigTable.getAlignment</code> decides "is this a number" with each language's float parser, so <code>" 12"</code> is right-aligned in Java and C# and left-aligned in Swift and Go, and C# depends on the culture; <code>Table.isNumber</code> is hand written and agrees everywhere. Go <code>BigTable</code> splits a line into characters on an empty delimiter and keeps the 64 KB scanner buffer that <code>Table</code> raises.</li>
     <li><code>RadioButton.setFontSize</code> resizes the shared <code>Font</code> in every port; <code>CheckBox</code> stores its own size.</li>
     <li>Swift <code>Form</code> copies the fields list; the other ports keep the caller's, so a field added later shows in three ports. Go <code>Form.DrawOn</code> has no nil page check where the others fail with a message.</li>
     <li>Swift handles a nil page three ways: <code>CalendarMonth</code> skips the drawing, <code>CheckBox</code> and <code>RadioButton</code> unwrap, <code>Form</code> stops the program.</li>
   </ul>
   <span class="label">Suggestion</span>
-  <p>A Go constructor for a cell without text; border bits masked with <code>Border.ALL</code> and one representation of the flags; a shared <code>isNumber</code>; a <code>fontSize</code> field on <code>RadioButton</code>; one nil page rule in Swift.</p>
+  <p>A Go constructor for a cell without text; one representation of the flags; a <code>fontSize</code> field on <code>RadioButton</code>; one nil page rule in Swift.</p>
 </section>
 
 <section class="item">
   <h3>Images and groups <span class="chip now">9.0.0</span></h3>
   <span class="label">Finding</span>
   <ul>
-    <li>Swift <code>Image.drawOn</code> rounds the link rectangle to whole points; the others pass the floats, so a Swift link can be off by half a point.</li>
-    <li>Swift <code>Image(pdf, path)</code> unwraps the stream of a missing file and crashes; Java throws, and Swift <code>EmbeddedFile</code> guards the same case.</li>
-    <li>Swift <code>Image(objects, bytes)</code> passes the alpha channel for a gray or 16-bit image; the other constructor and the other ports pass none.</li>
-    <li><code>OptionalContentGroup.getComponents</code> returns a copy in Swift and the live list elsewhere; Go <code>Clear</code> reslices to zero, so a slice handed out earlier sees later additions.</li>
+    <li><code>OptionalContentGroup.getComponents</code> returns a copy in Swift and the live list elsewhere.</li>
     <li><code>CoreFont(int)</code> checks the number in no port; a bad value fails later in <code>stringWidth</code>.</li>
   </ul>
   <span class="label">Suggestion</span>
-  <p>Drop the rounding, guard the missing file, pass no alpha, allocate a new list in Go, and reject a core font number outside the fourteen.</p>
+  <p>Return the live list or a copy in all four, and reject a core font number outside the fourteen.</p>
 </section>
 
 <section class="item">
   <h3>Stale lines and comments <span class="chip document">Tidy</span></h3>
   <span class="label">Finding</span>
-  <p>Go <code>Chart</code> and <code>TextBlock</code> pass a white fill color to their link annotations, which the writer ignores; Go <code>rotateAroundCenter</code> lives in the annotation file while the other ports keep it on <code>Container</code>; Go has an unused <code>annotationType</code>; Go doc comments still say <code>Float.MIN_VALUE</code> and carry Javadoc <code>@param</code> tags; the Go comment on <code>rotate</code> names the wrong center; <code>DonutChart.java</code> and <code>Slice.java</code> put the package line before the license.</p>
+  <p>Go <code>rotateAroundCenter</code> lives in the annotation file while the other ports keep it on <code>Container</code>; Go has an unused <code>annotationType</code>; Go doc comments still say <code>Float.MIN_VALUE</code> and carry Javadoc <code>@param</code> tags; the Go comment on <code>rotate</code> names the wrong center; <code>DonutChart.java</code> and <code>Slice.java</code> put the package line before the license.</p>
 </section>
 
 <h2 id="library">Inconsistencies shared by all four ports</h2>
@@ -423,6 +377,23 @@
   <span class="label">Finding</span>
   <p><code>Permissions.grant</code> and <code>setAccess</code> take the <code>UserAccess</code> values as an <code>int</code> in Java and Swift and as a typed flags value in C# and Go, and the port note in the README says so. It is the last place a value has two types across the ports.</p>
 </section>
+
+<h2 id="fixed">Fixed on 14 September</h2>
+<p>The bugs and the crash-class drift of this audit were fixed the same day, in the four ports, and are listed here so the page stays a record of what was found.</p>
+<div class="plan">
+  <ul>
+    <li>Java <code>BarChart.barColor</code> guards a negative index, so a named series with a color per bar draws its legend swatch; the bar chart tests now name such a series in all four ports.</li>
+    <li>Swift <code>Page(pdf, pageObj)</code> strips the comments before it reads the page size, as the other ports do.</li>
+    <li><code>Title.drawOn</code> tests the prefix text in Java, C# and Go, as Swift did.</li>
+    <li><code>BaseAnnotation.rotate</code> skips the vertices of a polygon that has none, in Java, C# and Swift.</li>
+    <li>Swift <code>Image(pdf, path)</code> throws a <code>PDFjetError</code> for a missing file; <code>Image(objects, bytes)</code> passes no alpha channel for a gray or 16-bit image; <code>Image.drawOn</code> no longer rounds its link rectangle.</li>
+    <li><code>Cell.setBorder</code> in Java and C# masks the value with <code>Border.ALL</code>, so no stray bit reaches the underline and strikeout flags.</li>
+    <li><code>CompositeTextLine.getLocation</code> returns a copy in Java and C#.</li>
+    <li>Go <code>OptionalContentGroup.Clear</code> allocates a new list, so a slice handed out earlier no longer sees later additions.</li>
+    <li><code>BigTable</code> aligns a number with the same <code>Table.isNumber</code> test in the four ports, instead of each language's float parser; Go <code>BigTable</code> treats an empty delimiter as one field per line and reads lines longer than 64 KB, as <code>Table</code> does.</li>
+    <li>The stale white fill color of the Go link annotations in <code>Chart</code>, <code>TextBlock</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code>, <code>RadioButton</code> and <code>FileAttachment</code> is gone.</li>
+  </ul>
+</div>
 
 <h2 id="later">Left for 10.0</h2>
 <div class="plan">

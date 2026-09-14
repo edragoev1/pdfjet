@@ -74,7 +74,6 @@ func (attachment *FileAttachment) DrawOn(page *Page) [2]float32 {
 		x2:             attachment.x + attachment.h,
 		y2:             attachment.y + attachment.h,
 		vertices:       nil,
-		fillColor:      [3]float32{1.0, 1.0, 1.0}, // White color
 		transparency:   0.0,
 		title:          "",
 		contents:       "",
