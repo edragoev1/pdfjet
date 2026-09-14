@@ -36,10 +36,8 @@ func Example10() {
 	image1.ScaleBy(0.75)
 	image1.DrawOn(page)
 
-	rotate := 0
-	// rotate := 90
-	// rotate := 270
-	column := pdfjet.NewTextColumn(rotate)
+	// To rotate the column, add it to a Container and rotate that; see Example_35.
+	column := pdfjet.NewTextColumn()
 	column.SetLineSpacing(1.3)      // 1.3 x font height
 	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
 
@@ -113,27 +111,19 @@ func Example10() {
 	column.AddParagraph(p4)
 	column.AddParagraph(p5)
 
-	if rotate == 0 {
-		column.SetLocation(90.0, 300.0)
-	} else if rotate == 90 {
-		column.SetLocation(90.0, 780.0)
-	} else if rotate == 270 {
-		column.SetLocation(550.0, 310.0)
-	}
+	column.SetLocation(90.0, 300.0)
 
 	columnWidth := float32(470.0)
 	column.SetWidth(columnWidth)
 	column.SetHeight(100.0)
 	xy := column.DrawOn(page)
 
-	if rotate == 0 {
-		line := pdfjet.NewLine(
-			xy[0],
-			xy[1],
-			xy[0]+columnWidth,
-			xy[1])
-		line.DrawOn(page)
-	}
+	line := pdfjet.NewLine(
+		xy[0],
+		xy[1],
+		xy[0]+columnWidth,
+		xy[1])
+	line.DrawOn(page)
 
 	pdf.Complete()
 }

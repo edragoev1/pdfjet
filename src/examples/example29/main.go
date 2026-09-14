@@ -25,7 +25,7 @@ func Example29() {
 	paragraph2 := pdfjet.NewParagraph()
 	paragraph2.Add(pdfjet.NewTextLine(font, content.OfTextFile("data/languages/greek.txt")))
 
-	column := pdfjet.NewTextColumn(0)
+	column := pdfjet.NewTextColumn()
 	column.SetLocation(50.0, 50.0)
 	column.SetWidth(400.0)
 	column.AddParagraph(paragraph1)

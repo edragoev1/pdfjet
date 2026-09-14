@@ -11,20 +11,19 @@ import java.util.*;
 /**
  * A column of paragraphs, each a list of TextLine objects that can differ in
  * font, size and color, aligned left, right, center or justified, with a line
- * spacing, a paragraph spacing, an optional line between the paragraphs and a
- * rotation. It draws all of its paragraphs where it is placed.
+ * spacing, a paragraph spacing and an optional line between the paragraphs.
+ * It draws all of its paragraphs where it is placed, top down; to rotate a
+ * column, add it to a Container and rotate that.
  * <p>
  * Use a TextColumn for an article or a page of mixed text: bold or colored
- * words in a paragraph, justified paragraphs, CJK paragraphs, a rotated
- * column. Use a TextBlock for one run of text in one font, and a TextFrame
- * when the text must continue from one frame to the next, across columns or
- * pages. Please see Example_10, Example_29, Example_44 and Example_49.
+ * words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
+ * for one run of text in one font, and a TextFrame when the text must
+ * continue from one frame to the next, across columns or pages. Please see
+ * Example_10, Example_29, Example_44 and Example_49.
  */
 public class TextColumn implements Drawable {
     /** The text alignment. */
     protected Alignment alignment = Alignment.LEFT;
-    /** The rotation in degrees: 0, 90 or 270. */
-    protected int rotate;
     /** The x coordinate of the top left corner. */
     protected float x;  // This variable is set in the beginning and only reset after the drawOn
     /** The y coordinate of the top left corner. */
@@ -42,22 +41,6 @@ public class TextColumn implements Drawable {
      *  Create a text column object.
      */
     public TextColumn() {
-        this.paragraphs = new ArrayList<Paragraph>();
-    }
-
-    /**
-     * Create a text column object and set the rotation angle.
-     *
-     * @param rotateByDegrees the specified rotation angle in degrees.
-     * @throws Exception  If an input or output exception occurred
-     */
-    public TextColumn(int rotateByDegrees) throws Exception {
-        this.rotate = rotateByDegrees;
-        if (rotate == 0 || rotate == 90 || rotate == 270) {
-        } else {
-            throw new Exception(
-                    "Invalid rotation angle. Please use 0, 90 or 270 degrees.");
-        }
         this.paragraphs = new ArrayList<Paragraph>();
     }
 
@@ -212,14 +195,9 @@ public class TextColumn implements Drawable {
         }
         // Restore the original location
         setLocation(this.x, this.y);
-        // A column with a height reaches at least that far from its location, in
-        // the direction its lines advance: down, or right or left when rotated.
-        if (rotate == 0 && y + h > xy[1]) {
+        // A column with a height reaches at least that far down from its location
+        if (y + h > xy[1]) {
             xy[1] = y + h;
-        } else if (rotate == 90 && x + h > xy[0]) {
-            xy[0] = x + h;
-        } else if (rotate == 270 && x - h < xy[0]) {
-            xy[0] = x - h;
         }
         return xy;
     }
@@ -237,13 +215,7 @@ public class TextColumn implements Drawable {
                 maxAscent = line.font.getAscent(line.fontSize);
             }
         }
-        if (rotate == 0) {
-            y1 += maxAscent;
-        } else if (rotate == 90) {
-            x1 += maxAscent;
-        } else if (rotate == 270) {
-            x1 -= maxAscent;
-        }
+        y1 += maxAscent;
 
         float runLength = 0f;
         for (TextLine line : paragraph.lines) {
@@ -277,30 +249,14 @@ public class TextColumn implements Drawable {
     }
 
     private float[] moveToNextLine(float lineHeight) {
-        if (rotate == 0) {
-            this.x1 = x;
-            this.y1 += lineHeight;
-        } else if (rotate == 90) {
-            this.x1 += lineHeight;
-            this.y1 = y;
-        } else if (rotate == 270) {
-            this.x1 -= lineHeight;
-            this.y1 = y;
-        }
+        this.x1 = x;
+        this.y1 += lineHeight;
         return new float[] {x1, y1};
     }
 
     private float[] moveToNextParagraph(float paragraphSpacing) {
-        if (rotate == 0) {
-            x1 = x;
-            y1 += paragraphSpacing;
-        } else if (rotate == 90) {
-            x1 += paragraphSpacing;
-            y1 = y;
-        } else if (rotate == 270) {
-            x1 -= paragraphSpacing;
-            y1 = y;
-        }
+        x1 = x;
+        y1 += paragraphSpacing;
         return new float[] {x1, y1};
     }
 
@@ -315,19 +271,8 @@ public class TextColumn implements Drawable {
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for (TextLine textLine : list) {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
-                if (rotate == 0) {
-                    textLine.setTextRotation(0);
-                    textLine.drawOn(page);
-                    x1 += textLine.getWidth() + dx;
-                } else if (rotate == 90) {
-                    textLine.setTextRotation(90);
-                    textLine.drawOn(page);
-                    y1 -= textLine.getWidth() + dx;
-                } else if (rotate == 270) {
-                    textLine.setTextRotation(270);
-                    textLine.drawOn(page);
-                    y1 += textLine.getWidth() + dx;
-                }
+                textLine.drawOn(page);
+                x1 += textLine.getWidth() + dx;
             }
         } else {
             drawNonJustifiedLine(page, list, alignment);
@@ -341,39 +286,16 @@ public class TextColumn implements Drawable {
         }
 
         if (alignment == Alignment.CENTER) {
-            if (rotate == 0) {
-                x1 = x + ((w - runLength) / 2);
-            } else if (rotate == 90) {
-                y1 = y - ((w - runLength) / 2);
-            } else if (rotate == 270) {
-                y1 = y + ((w - runLength) / 2);
-            }
+            x1 = x + ((w - runLength) / 2);
         } else if (alignment == Alignment.RIGHT) {
-            if (rotate == 0) {
-                x1 = x + (w - runLength);
-            } else if (rotate == 90) {
-                y1 = y - (w - runLength);
-            } else if (rotate == 270) {
-                y1 = y + (w - runLength);
-            }
+            x1 = x + (w - runLength);
         }
 
         // Each token draws its own link annotation when the line has a URI or GoTo action.
         for (TextLine textLine : list) {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
-            if (rotate == 0) {
-                textLine.setTextRotation(0);
-                textLine.drawOn(page);
-                x1 += textLine.getWidth();
-            } else if (rotate == 90) {
-                textLine.setTextRotation(90);
-                textLine.drawOn(page);
-                y1 -= textLine.getWidth();
-            } else if (rotate == 270) {
-                textLine.setTextRotation(270);
-                textLine.drawOn(page);
-                y1 += textLine.getWidth();
-            }
+            textLine.drawOn(page);
+            x1 += textLine.getWidth();
         }
     }
 

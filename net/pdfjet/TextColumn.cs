@@ -12,18 +12,18 @@ namespace PDFjet.NET {
 /// <summary>
 /// A column of paragraphs, each a list of TextLine objects that can differ in
 /// font, size and color, aligned left, right, center or justified, with a line
-/// spacing, a paragraph spacing, an optional line between the paragraphs and a
-/// rotation. It draws all of its paragraphs where it is placed.
+/// spacing, a paragraph spacing and an optional line between the paragraphs.
+/// It draws all of its paragraphs where it is placed, top down; to rotate a
+/// column, add it to a Container and rotate that.
 ///
 /// Use a TextColumn for an article or a page of mixed text: bold or colored
-/// words in a paragraph, justified paragraphs, CJK paragraphs, a rotated
-/// column. Use a TextBlock for one run of text in one font, and a TextFrame
-/// when the text must continue from one frame to the next, across columns or
-/// pages. Please see Example_10, Example_29, Example_44 and Example_49.
+/// words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
+/// for one run of text in one font, and a TextFrame when the text must
+/// continue from one frame to the next, across columns or pages. Please see
+/// Example_10, Example_29, Example_44 and Example_49.
 /// </summary>
 public class TextColumn : IDrawable {
     internal Alignment alignment = Alignment.LEFT;
-    internal int rotate;
     internal float x;   // This variable is set in the beginning and only reset after the DrawOn
     internal float y;   // This variable is set in the beginning and only reset after the DrawOn
     internal float w;
@@ -39,20 +39,6 @@ public class TextColumn : IDrawable {
     /// Create a text column object.
     /// </summary>
     public TextColumn() {
-        this.paragraphs = new List<Paragraph>();
-    }
-
-    /// <summary>
-    /// Create a text column object and set the rotation angle.
-    /// </summary>
-    /// <param name="rotateByDegrees">the specified rotation angle in degrees.</param>
-    public TextColumn(int rotateByDegrees) {
-        this.rotate = rotateByDegrees;
-        if (rotate == 0 || rotate == 90 || rotate == 270) {
-        } else {
-            throw new Exception(
-                    "Invalid rotation angle. Please use 0, 90 or 270 degrees.");
-        }
         this.paragraphs = new List<Paragraph>();
     }
 
@@ -176,14 +162,9 @@ public class TextColumn : IDrawable {
         }
         // Restore the original location
         SetLocation(this.x, this.y);
-        // A column with a height reaches at least that far from its location, in
-        // the direction its lines advance: down, or right or left when rotated.
-        if (rotate == 0 && y + h > xy[1]) {
+        // A column with a height reaches at least that far down from its location
+        if (y + h > xy[1]) {
             xy[1] = y + h;
-        } else if (rotate == 90 && x + h > xy[0]) {
-            xy[0] = x + h;
-        } else if (rotate == 270 && x - h < xy[0]) {
-            xy[0] = x - h;
         }
         return xy;
     }
@@ -201,13 +182,7 @@ public class TextColumn : IDrawable {
                 maxAscent = line.font.GetAscent(line.fontSize);
             }
         }
-        if (rotate == 0) {
-            y1 += maxAscent;
-        } else if (rotate == 90) {
-            x1 += maxAscent;
-        } else if (rotate == 270) {
-            x1 -= maxAscent;
-        }
+        y1 += maxAscent;
 
         float runLength = 0f;
         foreach (TextLine line in paragraph.lines) {
@@ -240,30 +215,14 @@ public class TextColumn : IDrawable {
     }
 
     private float[] MoveToNextLine(float lineHeight) {
-        if (rotate == 0) {
-            x1 = x;
-            y1 += lineHeight;
-        } else if (rotate == 90) {
-            x1 += lineHeight;
-            y1 = y;
-        } else if (rotate == 270) {
-            x1 -= lineHeight;
-            y1 = y;
-        }
+        x1 = x;
+        y1 += lineHeight;
         return new float[] {x1, y1};
     }
 
     private float[] MoveToNextParagraph(float paragraphSpacing) {
-        if (rotate == 0) {
-            x1 = x;
-            y1 += paragraphSpacing;
-        } else if (rotate == 90) {
-            x1 += paragraphSpacing;
-            y1 = y;
-        } else if (rotate == 270) {
-            x1 -= paragraphSpacing;
-            y1 = y;
-        }
+        x1 = x;
+        y1 += paragraphSpacing;
         return new float[] {x1, y1};
     }
 
@@ -278,19 +237,8 @@ public class TextColumn : IDrawable {
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             foreach (TextLine textLine in list) {
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
-                if (rotate == 0) {
-                    textLine.SetTextRotation(0);
-                    textLine.DrawOn(page);
-                    x1 += textLine.GetWidth() + dx;
-                } else if (rotate == 90) {
-                    textLine.SetTextRotation(90);
-                    textLine.DrawOn(page);
-                    y1 -= textLine.GetWidth() + dx;
-                } else if (rotate == 270) {
-                    textLine.SetTextRotation(270);
-                    textLine.DrawOn(page);
-                    y1 += textLine.GetWidth() + dx;
-                }
+                textLine.DrawOn(page);
+                x1 += textLine.GetWidth() + dx;
             }
         } else {
             DrawNonJustifiedLine(page, list, alignment);
@@ -304,39 +252,16 @@ public class TextColumn : IDrawable {
         }
 
         if (alignment == Alignment.CENTER) {
-            if (rotate == 0) {
-                x1 = x + ((w - runLength) / 2);
-            } else if (rotate == 90) {
-                y1 = y - ((w - runLength) / 2);
-            } else if (rotate == 270) {
-                y1 = y + ((w - runLength) / 2);
-            }
+            x1 = x + ((w - runLength) / 2);
         } else if (alignment == Alignment.RIGHT) {
-            if (rotate == 0) {
-                x1 = x + (w - runLength);
-            } else if (rotate == 90) {
-                y1 = y - (w - runLength);
-            } else if (rotate == 270) {
-                y1 = y + (w - runLength);
-            }
+            x1 = x + (w - runLength);
         }
 
         // Each token draws its own link annotation when the line has a URI or GoTo action.
         foreach (TextLine textLine in list) {
             textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
-            if (rotate == 0) {
-                textLine.SetTextRotation(0);
-                textLine.DrawOn(page);
-                x1 += textLine.GetWidth();
-            } else if (rotate == 90) {
-                textLine.SetTextRotation(90);
-                textLine.DrawOn(page);
-                y1 -= textLine.GetWidth();
-            } else if (rotate == 270) {
-                textLine.SetTextRotation(270);
-                textLine.DrawOn(page);
-                y1 += textLine.GetWidth();
-            }
+            textLine.DrawOn(page);
+            x1 += textLine.GetWidth();
         }
     }
 

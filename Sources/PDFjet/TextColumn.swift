@@ -9,18 +9,18 @@ import Foundation
 ///
 /// A column of paragraphs, each a list of TextLine objects that can differ in
 /// font, size and color, aligned left, right, center or justified, with a line
-/// spacing, a paragraph spacing, an optional line between the paragraphs and a
-/// rotation. It draws all of its paragraphs where it is placed.
+/// spacing, a paragraph spacing and an optional line between the paragraphs.
+/// It draws all of its paragraphs where it is placed, top down; to rotate a
+/// column, add it to a Container and rotate that.
 ///
 /// Use a TextColumn for an article or a page of mixed text: bold or colored
-/// words in a paragraph, justified paragraphs, CJK paragraphs, a rotated
-/// column. Use a TextBlock for one run of text in one font, and a TextFrame
-/// when the text must continue from one frame to the next, across columns or
-/// pages. Please see Example_10, Example_29, Example_44 and Example_49.
+/// words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
+/// for one run of text in one font, and a TextFrame when the text must
+/// continue from one frame to the next, across columns or pages. Please see
+/// Example_10, Example_29, Example_44 and Example_49.
 ///
 public class TextColumn : Drawable {
     var alignment = Alignment.LEFT
-    var rotate = 0
 
     private var x: Float = 0.0      // This variable is set in the beginning and only reset after the drawOn
     var y: Float = 0.0              // This variable is set in the beginning and only reset after the drawOn
@@ -37,21 +37,6 @@ public class TextColumn : Drawable {
     /// Create a text column object.
     ///
     public init() {
-        self.paragraphs = [Paragraph]()
-    }
-
-    ///
-    /// Create a text column object and set the rotation angle.
-    ///
-    /// - Parameter rotateByDegrees: the specified rotation angle in degrees.
-    ///
-    public init(_ rotateByDegrees: Int) {
-        if rotateByDegrees != 0 &&
-                rotateByDegrees != 90 &&
-                rotateByDegrees != 270 {
-            fatalError("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
-        }
-        self.rotate = rotateByDegrees
         self.paragraphs = [Paragraph]()
     }
 
@@ -192,14 +177,9 @@ public class TextColumn : Drawable {
         }
         // Restore the original location
         setLocation(self.x, self.y)
-        // A column with a height reaches at least that far from its location, in
-        // the direction its lines advance: down, or right or left when rotated.
-        if rotate == 0 && y + h > xy[1] {
+        // A column with a height reaches at least that far down from its location
+        if y + h > xy[1] {
             xy[1] = y + h
-        } else if rotate == 90 && x + h > xy[0] {
-            xy[0] = x + h
-        } else if rotate == 270 && x - h < xy[0] {
-            xy[0] = x - h
         }
         return xy
     }
@@ -217,13 +197,7 @@ public class TextColumn : Drawable {
                 maxAscent = line.font!.getAscent(line.fontSize)
             }
         }
-        if rotate == 0 {
-            self.y1 += maxAscent
-        } else if rotate == 90 {
-            self.x1 += maxAscent
-        } else if rotate == 270 {
-            self.x1 -= maxAscent
-        }
+        self.y1 += maxAscent
 
         var runLength: Float = 0.0
         for line in paragraph.lines {
@@ -255,30 +229,14 @@ public class TextColumn : Drawable {
 
     @discardableResult
     private func moveToNextLine(_ lineHeight: Float) -> [Float] {
-        if rotate == 0 {
-            x1 = x
-            y1 += lineHeight
-        } else if rotate == 90 {
-            x1 += lineHeight
-            y1 = y
-        } else if rotate == 270 {
-            x1 -= lineHeight
-            y1 = y
-        }
+        x1 = x
+        y1 += lineHeight
         return [x1, y1]
     }
 
     private func moveToNextParagraph(_ paragraphSpacing: Float) -> [Float] {
-        if rotate == 0 {
-            x1 = x
-            y1 += paragraphSpacing
-        } else if rotate == 90 {
-            x1 += paragraphSpacing
-            y1 = y
-        } else if rotate == 270 {
-            x1 -= paragraphSpacing
-            y1 = y
-        }
+        x1 = x
+        y1 += paragraphSpacing
         return [x1, y1]
     }
 
@@ -293,16 +251,8 @@ public class TextColumn : Drawable {
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for textLine in list {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
-                if rotate == 0 {
-                    textLine.setTextRotation(0).drawOn(page)
-                    x1 += textLine.getWidth() + dx
-                } else if rotate == 90 {
-                    textLine.setTextRotation(90).drawOn(page)
-                    y1 -= textLine.getWidth() + dx
-                } else if rotate == 270 {
-                    textLine.setTextRotation(270).drawOn(page)
-                    y1 += textLine.getWidth() + dx
-                }
+                textLine.drawOn(page)
+                x1 += textLine.getWidth() + dx
             }
         } else {
             drawNonJustifiedLine(page, list, alignment)
@@ -316,36 +266,16 @@ public class TextColumn : Drawable {
         }
 
         if alignment == Alignment.CENTER {
-            if rotate == 0 {
-                x1 = x + ((w - runLength) / 2)
-            } else if rotate == 90 {
-                y1 = y - ((w - runLength) / 2)
-            } else if rotate == 270 {
-                y1 = y + ((w - runLength) / 2)
-            }
+            x1 = x + ((w - runLength) / 2)
         } else if alignment == Alignment.RIGHT {
-            if rotate == 0 {
-                x1 = x + (w - runLength)
-            } else if rotate == 90 {
-                y1 = y - (w - runLength)
-            } else if rotate == 270 {
-                y1 = y + (w - runLength)
-            }
+            x1 = x + (w - runLength)
         }
 
         // Each token draws its own link annotation when the line has a URI or GoTo action.
         for textLine in list {
             textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
-            if rotate == 0 {
-                textLine.setTextRotation(0).drawOn(page)
-                x1 += textLine.getWidth()
-            } else if rotate == 90 {
-                textLine.setTextRotation(90).drawOn(page)
-                y1 -= textLine.getWidth()
-            } else if rotate == 270 {
-                textLine.setTextRotation(270).drawOn(page)
-                y1 += textLine.getWidth()
-            }
+            textLine.drawOn(page)
+            x1 += textLine.getWidth()
         }
     }
 

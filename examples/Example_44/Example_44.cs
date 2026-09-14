@@ -20,8 +20,7 @@ public class Example_44 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        int rotate = 0;
-        TextColumn column = new TextColumn(rotate);
+        TextColumn column = new TextColumn();
         column.SetLocation(70f, 70f);
         column.SetWidth(500f);
         column.SetLineSpacing(1.5f);        // 1.5 x font height

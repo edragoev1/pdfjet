@@ -21,8 +21,7 @@ public class Example_44 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        int rotate = 0;
-        TextColumn column = new TextColumn(rotate);
+        TextColumn column = new TextColumn();
         column.setLocation(70f, 70f);
         column.setWidth(500f);
         column.setLineSpacing(1.5f);        // 1.5 x font height

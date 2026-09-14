@@ -28,10 +28,8 @@ public class Example_10 {
         image1.scaleBy(0.75)
         image1.drawOn(page)
 
-        let rotate = 0
-        // let rotate = 90
-        // let rotate = 270
-        let column = TextColumn(rotate)
+        // To rotate the column, add it to a Container and rotate that; see Example_35.
+        let column = TextColumn()
         column.setLineSpacing(1.3)      // 1.3 x font height
         column.setParagraphSpacing(1.0) // 1.0 x line spacing
 
@@ -105,29 +103,19 @@ public class Example_10 {
         column.addParagraph(p4)
         column.addParagraph(p5)
 
-        // The other branches are commented out because Swift reports them as
-        // never executed with rotate == 0, and the build treats warnings as errors.
-        if rotate == 0 {
-            column.setLocation(90.0, 300.0)
-        } /* else if rotate == 90 {
-            column.setLocation(90.0, 780.0)
-        } else if rotate == 270 {
-            column.setLocation(550.0, 310.0)
-        } */
+        column.setLocation(90.0, 300.0)
 
         let columnWidth: Float = 470.0
         column.setWidth(columnWidth)
         column.setHeight(100.0)
         let xy = column.drawOn(page)
 
-        if rotate == 0 {
-            let line = Line(
-                    xy[0],
-                    xy[1],
-                    xy[0] + columnWidth,
-                    xy[1])
-            line.drawOn(page)
-        }
+        let line = Line(
+                xy[0],
+                xy[1],
+                xy[0] + columnWidth,
+                xy[1])
+        line.drawOn(page)
 
         try pdf.complete()
     }

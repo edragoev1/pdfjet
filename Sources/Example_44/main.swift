@@ -17,8 +17,7 @@ public class Example_44 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let rotate = 0
-        let column = TextColumn(rotate)
+        let column = TextColumn()
         column.setLocation(70.0, 70.0)
         column.setWidth(500.0)
         column.setLineSpacing(1.5)      // 1.5 x font height

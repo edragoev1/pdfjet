@@ -44,7 +44,7 @@ func Example49() {
 		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
 		SetTextAlignment(alignment.Right)
 
-	column := pdfjet.NewTextColumn(0)
+	column := pdfjet.NewTextColumn()
 	column.AddParagraph(paragraph1)
 	column.AddParagraph(paragraph2)
 	column.SetLocation(70.0, 150.0)

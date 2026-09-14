@@ -32,10 +32,8 @@ public class Example_10 {
         image1.ScaleBy(0.75f);
         image1.DrawOn(page);
 
-        int rotate = 0;
-        // int rotate = 90;
-        // int rotate = 270;
-        TextColumn column = new TextColumn(rotate);
+        // To rotate the column, add it to a Container and rotate that; see Example_35.
+        TextColumn column = new TextColumn();
         column.SetLineSpacing(1.3f);        // 1.3 x font height
         column.SetParagraphSpacing(1.0f);   // 1.0 x line spacing
 
@@ -109,27 +107,19 @@ public class Example_10 {
         column.AddParagraph(p4);
         column.AddParagraph(p5);
 
-        if (rotate == 0) {
-            column.SetLocation(90f, 300f);
-        } else if (rotate == 90) {
-            column.SetLocation(90f, 780f);
-        } else if (rotate == 270) {
-            column.SetLocation(550f, 310f);
-        }
+        column.SetLocation(90f, 300f);
 
         float columnWidth = 470f;
         column.SetWidth(columnWidth);
         column.SetHeight(100f);
         float[] xy = column.DrawOn(page);
 
-        if (rotate == 0) {
-            Line line = new Line(
-                    xy[0],
-                    xy[1],
-                    xy[0] + columnWidth,
-                    xy[1]);
-            line.DrawOn(page);
-        }
+        Line line = new Line(
+                xy[0],
+                xy[1],
+                xy[0] + columnWidth,
+                xy[1]);
+        line.DrawOn(page);
 
         pdf.Complete();
     }

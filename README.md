@@ -529,7 +529,7 @@ overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPa
 `NewFontStream2` for the overloads of the `Font` constructor. Where the other ports have an overload with fewer
 arguments, Go has the full form only: `NewCell(font, text)`,
 `NewLine`, `NewRect` and `NewPoint` with their
-coordinates, `NewParagraph()`, `NewTextColumn(rotation)`,
+coordinates, `NewParagraph()`,
 `Table.SetData(data, headerRows)` and `Page.AddBDC` with the language.
 `content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and
 `ReadWithPassword` take the whole PDF as a `[]byte` where the other ports read

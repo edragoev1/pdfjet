@@ -14,18 +14,17 @@ import (
 
 // TextColumn is a column of paragraphs, each a list of TextLine objects that
 // can differ in font, size and color, aligned left, right, center or
-// justified, with a line spacing, a paragraph spacing, an optional line
-// between the paragraphs and a rotation. It draws all of its paragraphs where
-// it is placed.
+// justified, with a line spacing, a paragraph spacing and an optional line
+// between the paragraphs. It draws all of its paragraphs where it is placed,
+// top down; to rotate a column, add it to a Container and rotate that.
 //
 // Use a TextColumn for an article or a page of mixed text: bold or colored
-// words in a paragraph, justified paragraphs, CJK paragraphs, a rotated
-// column. Use a TextBlock for one run of text in one font, and a TextFrame
-// when the text must continue from one frame to the next, across columns or
-// pages. Please see Example_10, Example_29, Example_44 and Example_49.
+// words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
+// for one run of text in one font, and a TextFrame when the text must
+// continue from one frame to the next, across columns or pages. Please see
+// Example_10, Example_29, Example_44 and Example_49.
 type TextColumn struct {
 	alignment             alignment.Alignment
-	rotate                int
 	x                     float32 // This variable is set in the beginning and only reset after the DrawOn
 	y                     float32 // This variable is set in the beginning and only reset after the DrawOn
 	w                     float32
@@ -38,18 +37,13 @@ type TextColumn struct {
 	lineBetweenParagraphs bool
 }
 
-// NewTextColumn creates a text column object with the specified rotation angle
-// in degrees: 0, 90 or 270. It panics for any other angle.
-func NewTextColumn(rotateByDegrees int) *TextColumn {
+// NewTextColumn creates a text column object.
+func NewTextColumn() *TextColumn {
 	textColumn := new(TextColumn)
 	textColumn.alignment = alignment.Left
 	textColumn.lineSpacing = 1.0
 	textColumn.paragraphSpacing = 1.0
-	textColumn.rotate = rotateByDegrees
 	textColumn.lineBetweenParagraphs = false
-	if rotateByDegrees != 0 && rotateByDegrees != 90 && rotateByDegrees != 270 {
-		panic("Invalid rotation angle. Please use 0, 90 or 270 degrees.")
-	}
 	textColumn.paragraphs = make([]*Paragraph, 0)
 	return textColumn
 }
@@ -141,14 +135,9 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	}
 	// Restore the original location
 	textColumn.SetLocation(textColumn.x, textColumn.y)
-	// A column with a height reaches at least that far from its location, in
-	// the direction its lines advance: down, or right or left when rotated.
-	if textColumn.rotate == 0 && textColumn.y+textColumn.h > xy[1] {
+	// A column with a height reaches at least that far down from its location
+	if textColumn.y+textColumn.h > xy[1] {
 		xy[1] = textColumn.y + textColumn.h
-	} else if textColumn.rotate == 90 && textColumn.x+textColumn.h > xy[0] {
-		xy[0] = textColumn.x + textColumn.h
-	} else if textColumn.rotate == 270 && textColumn.x-textColumn.h < xy[0] {
-		xy[0] = textColumn.x - textColumn.h
 	}
 	return xy
 }
@@ -169,13 +158,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 			maxAscent = line.font.GetAscentAt(line.fontSize)
 		}
 	}
-	if textColumn.rotate == 0 {
-		textColumn.y1 += maxAscent
-	} else if textColumn.rotate == 90 {
-		textColumn.x1 += maxAscent
-	} else if textColumn.rotate == 270 {
-		textColumn.x1 -= maxAscent
-	}
+	textColumn.y1 += maxAscent
 
 	var runLength float32
 	for _, line := range paragraph.lines {
@@ -207,30 +190,14 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 }
 
 func (textColumn *TextColumn) moveToNextLine(lineHeight float32) [2]float32 {
-	if textColumn.rotate == 0 {
-		textColumn.x1 = textColumn.x
-		textColumn.y1 += lineHeight
-	} else if textColumn.rotate == 90 {
-		textColumn.x1 += lineHeight
-		textColumn.y1 = textColumn.y
-	} else if textColumn.rotate == 270 {
-		textColumn.x1 -= lineHeight
-		textColumn.y1 = textColumn.y
-	}
+	textColumn.x1 = textColumn.x
+	textColumn.y1 += lineHeight
 	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
 func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) [2]float32 {
-	if textColumn.rotate == 0 {
-		textColumn.x1 = textColumn.x
-		textColumn.y1 += paragraphSpacing
-	} else if textColumn.rotate == 90 {
-		textColumn.x1 += paragraphSpacing
-		textColumn.y1 = textColumn.y
-	} else if textColumn.rotate == 270 {
-		textColumn.x1 -= paragraphSpacing
-		textColumn.y1 = textColumn.y
-	}
+	textColumn.x1 = textColumn.x
+	textColumn.y1 += paragraphSpacing
 	return [2]float32{textColumn.x1, textColumn.y1}
 }
 
@@ -244,19 +211,8 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 		// Each token draws its own link annotation when the line has a URI or GoTo action.
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-			if textColumn.rotate == 0 {
-				textLine.SetTextRotation(0)
-				textLine.DrawOn(page)
-				textColumn.x1 += textLine.GetWidth() + dx
-			} else if textColumn.rotate == 90 {
-				textLine.SetTextRotation(90)
-				textLine.DrawOn(page)
-				textColumn.y1 -= textLine.GetWidth() + dx
-			} else if textColumn.rotate == 270 {
-				textLine.SetTextRotation(270)
-				textLine.DrawOn(page)
-				textColumn.y1 += textLine.GetWidth() + dx
-			}
+			textLine.DrawOn(page)
+			textColumn.x1 += textLine.GetWidth() + dx
 		}
 	} else {
 		textColumn.drawNonJustifiedLine(page, textLines, textAlignment)
@@ -270,39 +226,16 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	}
 
 	if textAlignment == alignment.Center {
-		if textColumn.rotate == 0 {
-			textColumn.x1 = textColumn.x + ((textColumn.w - runLength) / 2)
-		} else if textColumn.rotate == 90 {
-			textColumn.y1 = textColumn.y - ((textColumn.w - runLength) / 2)
-		} else if textColumn.rotate == 270 {
-			textColumn.y1 = textColumn.y + ((textColumn.w - runLength) / 2)
-		}
+		textColumn.x1 = textColumn.x + ((textColumn.w - runLength) / 2)
 	} else if textAlignment == alignment.Right {
-		if textColumn.rotate == 0 {
-			textColumn.x1 = textColumn.x + (textColumn.w - runLength)
-		} else if textColumn.rotate == 90 {
-			textColumn.y1 = textColumn.y - (textColumn.w - runLength)
-		} else if textColumn.rotate == 270 {
-			textColumn.y1 = textColumn.y + (textColumn.w - runLength)
-		}
+		textColumn.x1 = textColumn.x + (textColumn.w - runLength)
 	}
 
 	// Each token draws its own link annotation when the line has a URI or GoTo action.
 	for _, textLine := range textLines {
 		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
-		if textColumn.rotate == 0 {
-			textLine.SetTextRotation(0)
-			textLine.DrawOn(page)
-			textColumn.x1 += textLine.GetWidth()
-		} else if textColumn.rotate == 90 {
-			textLine.SetTextRotation(90)
-			textLine.DrawOn(page)
-			textColumn.y1 -= textLine.GetWidth()
-		} else if textColumn.rotate == 270 {
-			textLine.SetTextRotation(270)
-			textLine.DrawOn(page)
-			textColumn.y1 += textLine.GetWidth()
-		}
+		textLine.DrawOn(page)
+		textColumn.x1 += textLine.GetWidth()
 	}
 }
 

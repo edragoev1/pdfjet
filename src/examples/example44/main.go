@@ -23,8 +23,7 @@ func Example44() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	rotate := 0
-	column := pdfjet.NewTextColumn(rotate)
+	column := pdfjet.NewTextColumn()
 	column.SetLocation(70.0, 70.0)
 	column.SetWidth(500.0)
 	column.SetLineSpacing(1.5)      // 1.5 x font height

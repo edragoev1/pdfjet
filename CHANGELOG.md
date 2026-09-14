@@ -217,6 +217,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 
 ### Text
+- `TextColumn` no longer rotates: the constructor that took 0, 90 or 270
+  degrees is gone, with the code that laid the lines out sideways, and the
+  Go `NewTextColumn` takes no argument. A column that must be rotated goes
+  in a `Container` or a `Stamp`, which rotate anything they hold by any
+  angle, as Example_35 shows.
 - `TextBox` is removed; `TextBlock` is the one wrapped text box. It gains
   what only `TextBox` had: a set height is the height of the block, the lines
   that do not fit are cut and the last line that fits ends with "...", and
