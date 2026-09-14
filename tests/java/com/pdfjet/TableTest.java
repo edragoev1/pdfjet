@@ -122,4 +122,28 @@ class TableTest {
     void anEmptyTableHasNoWidth() throws Exception {
         assertEquals(0f, new Table().getWidth(), 0f);
     }
+
+    @Test
+    void anEmptyTableDrawsNothing() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TestSupport.assertXY(20f, 30f, new Table().setLocation(20f, 30f).drawOn(page));
+        TestSupport.assertXY(20f, 30f, new Table().setLocation(20f, 30f).drawOn((Page) null));
+        List<Page> pages = new ArrayList<Page>();
+        TestSupport.assertXY(20f, 30f, new Table().setLocation(20f, 30f).drawOn(pdf, pages, Letter.PORTRAIT));
+        assertEquals(0, pages.size());
+        Table empty = new Table().setData(new ArrayList<List<Cell>>(), 1);
+        empty.autoAdjustColumnWidths().rightAlignNumbers();
+        TestSupport.assertXY(0f, 0f, empty.drawOn(page));
+        assertEquals("", TestSupport.content(page));
+    }
+
+    @Test
+    void moreHeaderRowsThanRowsDrawsTheRows() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        float[] expected = new Table().setData(rows(font, 2, 1), 1).setLocation(20f, 20f).drawOn((Page) null);
+        float[] xy = new Table().setData(rows(font, 2, 1), 5).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.assertXY(expected[0], expected[1], xy);
+    }
 }

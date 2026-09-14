@@ -341,3 +341,13 @@ func TestMisuseAZeroSizeImageStampOrContainerDrawsNothing(t *testing.T) {
 		t.Error(page.pdf.err)
 	}
 }
+
+func TestMisuseStampTextNeedsAFont(t *testing.T) {
+	pdf := testNewPDF()
+	NewStamp(pdf).SetSize(100, 50).DrawTextUsingParams(NewTextParameters().SetText("Paid"))
+	testRecorded(t, pdf, "Stamp text needs a font and a text.")
+
+	pdf2 := testNewPDF()
+	NewStamp(pdf2).SetSize(100, 50).DrawTextUsingParams(nil)
+	testRecorded(t, pdf2, "Stamp text needs a font and a text.")
+}

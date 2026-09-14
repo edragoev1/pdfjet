@@ -95,4 +95,26 @@ import Testing
     @Test func anEmptyTableHasNoWidth() {
         #expect(Table().getWidth() == 0)
     }
+
+    @Test func anEmptyTableDrawsNothing() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        TestSupport.expectXY(20, 30, Table().setLocation(20, 30).drawOn(page))
+        TestSupport.expectXY(20, 30, Table().setLocation(20, 30).drawOn(nil))
+        var pages = [Page]()
+        TestSupport.expectXY(20, 30, Table().setLocation(20, 30).drawOn(pdf, &pages, Letter.PORTRAIT))
+        #expect(pages.isEmpty)
+        let empty = Table().setData([[Cell]](), 1)
+        empty.autoAdjustColumnWidths().rightAlignNumbers()
+        TestSupport.expectXY(0, 0, empty.drawOn(page))
+        #expect(TestSupport.content(page) == "")
+    }
+
+    @Test func moreHeaderRowsThanRowsDrawsTheRows() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let expected = Table().setData(rows(font, 2, 1), 1).setLocation(20, 20).drawOn(nil)
+        let xy = Table().setData(rows(font, 2, 1), 5).setLocation(20, 20).drawOn(Page(pdf, Letter.PORTRAIT))
+        TestSupport.expectXY(expected[0], expected[1], xy)
+    }
 }

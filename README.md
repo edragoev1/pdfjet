@@ -482,7 +482,7 @@ the exception and carried on. These mistakes are refused:
   `complete()` twice, and completing a PDF that has no pages;
 - a font, image, stamp, optional content group, embedded file or bookmark page
   that belongs to another PDF, a stamp drawn before its own `complete()`, and
-  stamp text in a core or CJK font;
+  stamp text without a font or a text, or in a core or CJK font;
 - `setEncryption` or `setCompliance` after a font, an image or a page was added;
 - a page smaller than 3 or larger than 14,400 points, the limits of the PDF
   specification.

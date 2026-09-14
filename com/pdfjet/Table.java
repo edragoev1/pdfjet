@@ -152,6 +152,9 @@ public class Table implements Drawable {
 
     // Adds empty cells to the rows that are shorter than the first row.
     private void addCellsToCompleteTheGrid() {
+        if (tableData.isEmpty() || tableData.get(0).isEmpty()) {
+            return;
+        }
         int numOfColumns = tableData.get(0).size();
         Font font = tableData.get(0).get(0).font;
         for (List<Cell> row : tableData) {
@@ -423,6 +426,9 @@ public class Table implements Drawable {
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (tableData.isEmpty()) {
+            return new float[] {x1, y1};    // An empty table draws nothing.
+        }
         wrapAroundCellText();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
@@ -440,6 +446,9 @@ public class Table implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
+        if (tableData.isEmpty()) {
+            return new float[] {x1, y1};    // An empty table needs no page.
+        }
         wrapAroundCellText();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
@@ -460,7 +469,7 @@ public class Table implements Drawable {
         if (pageNumber == 1 && firstPageTopMargin > 0f) {
             y = firstPageTopMargin;
         }
-        for (int i = 0; i < numOfHeaderRows; i++) {
+        for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
             List<Cell> row = tableData.get(i);
             float h = getMaxCellHeight(row);
             int j = 0;
@@ -634,7 +643,7 @@ public class Table implements Drawable {
     // Sets the right border on all cells in the last column.
     private void setRightBorderOnLastColumn() {
         for (List<Cell> row : tableData) {
-            if (row.get(0).getBorder(Border.LEFT) == false) {
+            if (!row.isEmpty() && row.get(0).getBorder(Border.LEFT) == false) {
                 return;
             }
         }
@@ -646,12 +655,17 @@ public class Table implements Drawable {
                 cell = row.get(i);
                 i += cell.getColSpan();
             }
-            cell.setBorder(Border.RIGHT, true);
+            if (cell != null) {
+                cell.setBorder(Border.RIGHT, true);
+            }
         }
     }
 
     // Sets the bottom border on all cells in the last row.
     private void setBottomBorderOnLastRow() {
+        if (tableData.isEmpty()) {
+            return;
+        }
         List<Cell> firstRow = tableData.get(0);
         for (Cell cell : firstRow) {
             if (cell.getBorder(Border.TOP) == false) {
@@ -672,6 +686,9 @@ public class Table implements Drawable {
      * @return this Table object.
      */
     public Table autoAdjustColumnWidths() {
+        if (tableData.isEmpty()) {
+            return this;
+        }
         float[] maxColWidths = new float[tableData.get(0).size()];
         for (List<Cell> row : tableData) {
             for (int i = 0; i < row.size(); i++) {

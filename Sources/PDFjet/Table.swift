@@ -139,6 +139,9 @@ public class Table : Drawable {
 
     // Adds empty cells to the rows that are shorter than the first row.
     private func addCellsToCompleteTheGrid() {
+        if tableData.isEmpty || tableData[0].isEmpty {
+            return
+        }
         let numOfColumns = tableData[0].count
         let font = tableData[0][0].font
         for i in 0..<tableData.count {
@@ -407,6 +410,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if tableData.isEmpty {
+            return [x1, y1]     // An empty table draws nothing.
+        }
         wrapAroundCellText()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
@@ -425,6 +431,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
+        if tableData.isEmpty {
+            return [x1, y1]     // An empty table needs no page.
+        }
         wrapAroundCellText()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
@@ -445,7 +454,7 @@ public class Table : Drawable {
         if pageNumber == 1 && firstPageTopMargin > 0.0 {
             y = firstPageTopMargin
         }
-        for i in 0..<numOfHeaderRows {
+        for i in 0..<min(numOfHeaderRows, tableData.count) {
             let row = tableData[i]
             let h = getMaxCellHeight(row)
             var j = 0
@@ -614,7 +623,7 @@ public class Table : Drawable {
     // Sets the right border on all cells in the last column.
     private func setRightBorderOnLastColumn() {
         for row in tableData {
-            if row[0].getBorder(Border.LEFT) == false {
+            if !row.isEmpty && row[0].getBorder(Border.LEFT) == false {
                 return
             }
         }
@@ -626,12 +635,15 @@ public class Table : Drawable {
                 cell = row[i]
                 i += Int(cell!.getColSpan())
             }
-            cell!.setBorder(Border.RIGHT, true)
+            cell?.setBorder(Border.RIGHT, true)
         }
     }
 
     // Sets the bottom border on all cells in the last row.
     private func setBottomBorderOnLastRow() {
+        if tableData.isEmpty {
+            return
+        }
         let firstRow = tableData[0]
         for cell in firstRow {
             if cell.getBorder(Border.TOP) == false {
@@ -651,6 +663,9 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func autoAdjustColumnWidths() -> Table {
+        if tableData.isEmpty {
+            return self
+        }
         var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
         for row in tableData {
             for i in 0..<row.count {

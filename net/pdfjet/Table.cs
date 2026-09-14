@@ -138,6 +138,9 @@ public class Table : IDrawable {
 
     // Adds empty cells to the rows that are shorter than the first row.
     private void AddCellsToCompleteTheGrid() {
+        if (tableData.Count == 0 || tableData[0].Count == 0) {
+            return;
+        }
         int numOfColumns = tableData[0].Count;
         Font font = tableData[0][0].font;
         foreach (List<Cell> row in tableData) {
@@ -385,6 +388,9 @@ public class Table : IDrawable {
     /// <param name="page">the page to draw this table on.</param>
     /// <returns>Point the point on the page where to draw the next component.</returns>
     public float[] DrawOn(Page page) {
+        if (tableData.Count == 0) {
+            return new float[] {x1, y1};    // An empty table draws nothing.
+        }
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
@@ -400,6 +406,9 @@ public class Table : IDrawable {
     /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
     /// <returns>the x and y coordinates below the table on the last page.</returns>
     public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
+        if (tableData.Count == 0) {
+            return new float[] {x1, y1};    // An empty table needs no page.
+        }
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
@@ -420,7 +429,7 @@ public class Table : IDrawable {
         if (pageNumber == 1 && firstPageTopMargin > 0f) {
             y = firstPageTopMargin;
         }
-        for (int i = 0; i < numOfHeaderRows; i++) {
+        for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
             List<Cell> row = tableData[i];
             float h = GetMaxCellHeight(row);
             int j = 0;
@@ -584,7 +593,7 @@ public class Table : IDrawable {
     // Sets the right border on all cells in the last column.
     private void SetRightBorderOnLastColumn() {
         foreach (List<Cell> row in tableData) {
-            if (row[0].GetBorder(Border.LEFT) == false) {
+            if (row.Count > 0 && row[0].GetBorder(Border.LEFT) == false) {
                 return;
             }
         }
@@ -596,12 +605,17 @@ public class Table : IDrawable {
                 cell = row[i];
                 i += cell.GetColSpan();
             }
-            cell.SetBorder(Border.RIGHT, true);
+            if (cell != null) {
+                cell.SetBorder(Border.RIGHT, true);
+            }
         }
     }
 
     // Sets the bottom border on all cells in the last row.
     private void SetBottomBorderOnLastRow() {
+        if (tableData.Count == 0) {
+            return;
+        }
         List<Cell> firstRow = tableData[0];
         foreach (Cell cell in firstRow) {
             if (cell.GetBorder(Border.TOP) == false) {
@@ -621,6 +635,9 @@ public class Table : IDrawable {
     /// </summary>
     /// <returns>this Table object.</returns>
     public Table AutoAdjustColumnWidths() {
+        if (tableData.Count == 0) {
+            return this;
+        }
         float[] maxColWidths = new float[tableData[0].Count];
         foreach (List<Cell> row in tableData) {
             for (int i = 0; i < row.Count; i++) {

@@ -399,6 +399,9 @@ public class Stamp implements Drawable {
      * @return this Stamp object.
      */
     public Stamp drawText(Font font, float fontSize, float x, float y, String text) {
+        if (font == null || text == null) {
+            pdf.fail(new IllegalArgumentException("Stamp text needs a font and a text."));
+        }
         if (font.isCoreFont || font.isCJK) {
             pdf.fail(new IllegalArgumentException("A stamp draws text with an embedded font, not a core or CJK font."));
         }

@@ -107,5 +107,29 @@ public sealed class TableTest : IDisposable {
     public void AnEmptyTableHasNoWidth() {
         Assert.Equal(0f, new Table().GetWidth());
     }
+
+    [Fact]
+    public void AnEmptyTableDrawsNothing() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TestSupport.AssertXY(20f, 30f, new Table().SetLocation(20f, 30f).DrawOn(page));
+        TestSupport.AssertXY(20f, 30f, new Table().SetLocation(20f, 30f).DrawOn((Page) null));
+        List<Page> pages = new List<Page>();
+        TestSupport.AssertXY(20f, 30f, new Table().SetLocation(20f, 30f).DrawOn(pdf, pages, Letter.PORTRAIT));
+        Assert.Empty(pages);
+        Table empty = new Table().SetData(new List<List<Cell>>(), 1);
+        empty.AutoAdjustColumnWidths().RightAlignNumbers();
+        TestSupport.AssertXY(0f, 0f, empty.DrawOn(page));
+        Assert.Equal("", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void MoreHeaderRowsThanRowsDrawsTheRows() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        float[] expected = new Table().SetData(Rows(font, 2, 1), 1).SetLocation(20f, 20f).DrawOn((Page) null);
+        float[] xy = new Table().SetData(Rows(font, 2, 1), 5).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.AssertXY(expected[0], expected[1], xy);
+    }
 }
 }

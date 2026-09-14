@@ -130,3 +130,31 @@ func TestTableRightAlignNumbersRightAlignsOnlyNumbers(t *testing.T) {
 func TestTableAnEmptyTableHasNoWidth(t *testing.T) {
 	testNear(t, "width", 0, NewTable().GetWidth(), 0)
 }
+
+func TestTableAnEmptyTableDrawsNothing(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	testAssertXY(t, 20, 30, NewTable().SetLocation(20, 30).DrawOn(page))
+	testAssertXY(t, 20, 30, NewTable().SetLocation(20, 30).DrawOn(nil))
+	table := NewTable()
+	table.SetLocation(20, 30)
+	pages := make([]*Page, 0)
+	testAssertXY(t, 20, 30, table.DrawOnPages(pdf, &pages, letter.Portrait()))
+	if len(pages) != 0 {
+		t.Errorf("pages %d", len(pages))
+	}
+	empty := NewTable().SetData(make([][]*Cell, 0), 1)
+	empty.AutoAdjustColumnWidths().RightAlignNumbers()
+	testAssertXY(t, 0, 0, empty.DrawOn(page))
+	if got := testContent(page); got != "" {
+		t.Errorf("content %q", got)
+	}
+}
+
+func TestTableMoreHeaderRowsThanRowsDrawsTheRows(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	expected := NewTable().SetData(testRows(font, 2, 1), 1).SetLocation(20, 20).DrawOn(nil)
+	xy := NewTable().SetData(testRows(font, 2, 1), 5).SetLocation(20, 20).DrawOn(NewPage(pdf, letter.Portrait()))
+	testAssertXY(t, expected[0], expected[1], xy)
+}

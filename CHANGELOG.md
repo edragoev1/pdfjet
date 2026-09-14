@@ -59,7 +59,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   written, a page added twice, after `complete()` or to another PDF, a second
   `complete()`, no pages, a font, image, stamp, optional content group,
   embedded file or bookmark page of another PDF, a stamp drawn before its
-  `complete()` or with core font text, encryption or compliance set after a
+  `complete()`, stamp text without a font or text or in a core font,
+  encryption or compliance set after a
   font, image or page, and a page under 3 or over 14,400 points. Java and C#
   throw at the call; Go and Swift record the first mistake, which `Complete`
   returns and `complete()` throws. See "Mistakes that are refused" in the
@@ -246,7 +247,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three
-  failed on the missing first row. A cell keeps its column span, four
+  failed on the missing first row. An empty table draws nothing, and
+  `drawOn(pdf, pages, pageSize)` adds no page for it, where every port failed
+  on the missing first row, as `setData` and `autoAdjustColumnWidths` did with
+  no rows; a table with more header rows than rows draws the rows it has. A cell keeps its column span, four
   borders, underline and strikeout as fields in the four ports, so the
   Swift flags no longer report borders that `setBorder` turned off, and Go
   has `NewEmptyCell(font)` for the `Cell(font)` of the other ports.
@@ -421,7 +425,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 ### Errors
 - Swift `PDF.complete()` throws when the PDF cannot be written, and Swift
   throws on invalid PNG, BMP, OTF and SVG data and stops with an error on
-  `Stamp` text without a font and `Form.drawOn(nil)`.
+  `Form.drawOn(nil)`.
 - The Swift `Barcode` and `QRCode` initializers throw a `PDFjetError`, as Java
   and C# throw, where they stopped the program with `fatalError`: for UPC-A or
   EAN-13 text that is not 11 or 12 digits, a barcode type the class does not

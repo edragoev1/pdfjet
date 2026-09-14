@@ -273,6 +273,9 @@ public class Stamp : IDrawable {
 
     /// <summary>Draws text on this stamp with an embedded font, which the stamp adds to its fonts.</summary>
     public Stamp DrawText(Font font, float fontSize, float x, float y, String text) {
+        if (font == null || text == null) {
+            pdf.Fail(new ArgumentException("Stamp text needs a font and a text."));
+        }
         if (font.isCoreFont || font.isCJK) {
             pdf.Fail(new ArgumentException("A stamp draws text with an embedded font, not a core or CJK font."));
         }

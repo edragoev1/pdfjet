@@ -267,11 +267,20 @@ func (s *Stamp) FillRect(x, y, w, h float32) *Stamp {
 
 // DrawTextUsingParams draws text using the font, font size, location and text in the parameters.
 func (s *Stamp) DrawTextUsingParams(params *TextParameters) *Stamp {
+	if params == nil {
+		s.pdf.fail("Stamp text needs a font and a text.")
+		return s
+	}
 	return s.DrawText(params.font, params.fontSize, params.x, params.y, params.text)
 }
 
-// DrawText draws text on this stamp. Add the font with AddFont too.
+// DrawText draws text on this stamp with an embedded font, which the stamp
+// adds to its fonts.
 func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp {
+	if font == nil {
+		s.pdf.fail("Stamp text needs a font and a text.")
+		return s
+	}
 	if font.isCoreFont || font.isCJK {
 		s.pdf.fail("A stamp draws text with an embedded font, not a core or CJK font.")
 		return s

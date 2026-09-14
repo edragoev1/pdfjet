@@ -248,6 +248,18 @@ class MisuseTest {
     }
 
     @Test
+    void stampTextNeedsAFontAndAText() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
+        final Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
+        for (final TextParameters parameters : new TextParameters[] {
+                new TextParameters().setText("Paid"), new TextParameters().setFont(TestSupport.helvetica(pdf))}) {
+            assertEquals("Stamp text needs a font and a text.", fails(IllegalArgumentException.class, new Executable() {
+                public void execute() throws Throwable { stamp.drawText(parameters); }
+            }));
+        }
+    }
+
+    @Test
     void stampTextAddsItsFont() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PDF pdf = new PDF(bos);

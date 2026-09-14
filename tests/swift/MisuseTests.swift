@@ -184,6 +184,16 @@ import Testing
         #expect(other.error == nil)
     }
 
+    @Test func stampTextNeedsAFontAndAText() {
+        let pdf = TestSupport.newPDF()
+        _ = Stamp(pdf).setSize(100, 50).drawText(TextParameters().setText("Paid"))
+        #expect(pdf.error == "Stamp text needs a font and a text.")
+
+        let pdf2 = TestSupport.newPDF()
+        _ = Stamp(pdf2).setSize(100, 50).drawText(TextParameters().setFont(TestSupport.helvetica(pdf2)))
+        #expect(pdf2.error == "Stamp text needs a font and a text.")
+    }
+
     @Test func aStampIsCompletedOnceBeforeItIsDrawn() throws {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)

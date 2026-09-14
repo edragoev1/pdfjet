@@ -184,6 +184,17 @@ public class MisuseTest {
     }
 
     [Fact]
+    public void StampTextNeedsAFontAndAText() {
+        PDF pdf = TestSupport.NewPDF();
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
+        foreach (TextParameters parameters in new TextParameters[] {
+                new TextParameters().SetText("Paid"), new TextParameters().SetFont(TestSupport.Helvetica(pdf))}) {
+            Assert.Equal("Stamp text needs a font and a text.",
+                    Assert.Throws<ArgumentException>(() => stamp.DrawText(parameters)).Message);
+        }
+    }
+
+    [Fact]
     public void AStampIsCompletedOnceBeforeItIsDrawn() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

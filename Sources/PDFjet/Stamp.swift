@@ -265,7 +265,8 @@ public class Stamp : Drawable {
     @discardableResult
     public func drawText(_ parameters: TextParameters) -> Stamp {
         guard let font = parameters.font, let text = parameters.text else {
-            fatalError("The font and the text of the TextParameters must be set.")
+            pdf.fail("Stamp text needs a font and a text.")
+            return self
         }
 
         return drawText(

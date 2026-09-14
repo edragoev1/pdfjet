@@ -126,6 +126,9 @@ func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) *Table {
 // addCellsToCompleteTheGrid adds empty cells to the rows that are shorter
 // than the first row.
 func (table *Table) addCellsToCompleteTheGrid() {
+	if len(table.tableData) == 0 || len(table.tableData[0]) == 0 {
+		return
+	}
 	numOfColumns := len(table.tableData[0])
 	font := table.tableData[0][0].font
 	for i, row := range table.tableData {
@@ -349,6 +352,9 @@ func (table *Table) GetColumn(index int) []*Cell {
 //
 // Returns Point the point on the page where to draw the next component.
 func (table *Table) DrawOn(page *Page) [2]float32 {
+	if len(table.tableData) == 0 {
+		return [2]float32{table.x1, table.y1} // An empty table draws nothing.
+	}
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
@@ -359,6 +365,9 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 // The pages are created detached and added to the list; add them to the PDF afterwards.
 // It returns the x and y coordinates below the table on the last page.
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
+	if len(table.tableData) == 0 {
+		return [2]float32{table.x1, table.y1} // An empty table needs no page.
+	}
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
@@ -381,7 +390,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	if pageNumber == 1 && table.firstPageTopMargin > 0.0 {
 		y = table.firstPageTopMargin
 	}
-	for i := 0; i < table.numOfHeaderRows; i++ {
+	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
 		row := table.tableData[i]
 		h := table.getMaxCellHeight(row)
 		for j := 0; j < len(row); {
@@ -533,7 +542,7 @@ func (table *Table) SetCellBorderWidth(width float32) *Table {
 // Sets the right border on all cells in the last column.
 func (table *Table) setRightBorderOnLastColumn() {
 	for _, row := range table.tableData {
-		if !row[0].leftBorder {
+		if len(row) > 0 && !row[0].leftBorder {
 			return
 		}
 	}
@@ -545,12 +554,17 @@ func (table *Table) setRightBorderOnLastColumn() {
 			cell = row[i]
 			i += cell.GetColSpan()
 		}
-		cell.rightBorder = true
+		if cell != nil {
+			cell.rightBorder = true
+		}
 	}
 }
 
 // Sets the bottom border on all cells in the last row.
 func (table *Table) setBottomBorderOnLastRow() {
+	if len(table.tableData) == 0 {
+		return
+	}
 	firstRow := table.tableData[0]
 	for _, cell := range firstRow {
 		if !cell.topBorder {
@@ -567,6 +581,9 @@ func (table *Table) setBottomBorderOnLastRow() {
 // AutoAdjustColumnWidths adjusts the widths of all columns so that they are just wide enough to
 // hold the text without truncation.
 func (table *Table) AutoAdjustColumnWidths() *Table {
+	if len(table.tableData) == 0 {
+		return table
+	}
 	maxColWidths := make([]float32, len(table.tableData[0]))
 	for _, row := range table.tableData {
 		for i := 0; i < len(row); i++ {
