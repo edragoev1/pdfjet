@@ -37,6 +37,20 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   take one, and the Go page sizes are functions such as `letter.Portrait()`.
   `B5` is the ISO 216 B5 of 499 by 709 points; the Japanese B5 it was is
   `JISB5`.
+- Go returns errors where it panicked: `NewPDFFile` returns `(*PDF, error)`,
+  `Complete` and `AddObjects` return `error`, `AddObjects` takes the slice
+  of objects and `SetTextRenderingMode` returns `(*Page, error)`.
+  `CompositeTextLine.GetMinMaxY` returns `[2]float32` like every other Go
+  coordinate pair. Swift `Font(pdf, coreFont)` and `Page.addResource(coreFont,
+  &objects)` throw, `Page.addResource` and `PDFobj.addResource` take the
+  objects as `inout` for a font and an image too, and
+  `PDF.addResourceObjects(from:)` has the label of `getPageObjects(from:)`.
+- `Page.drawPath` and `Stamp.drawPath` with fewer than two points paint
+  nothing, where Java and C# threw and Go and Swift stopped the program. `RadioButton.setFontSize`
+  sets the size of the label and no longer resizes the shared `Font`, as
+  `CheckBox.setFontSize` never did. An empty `setTitle`, `setAuthor`,
+  `setSubject`, `setKeywords` or `setCreator`, and an empty annotation title
+  or contents, write nothing in the four ports.
 - Many methods and constants are renamed or removed so that one concept has
   one name in every class and port. See "Names".
 - `Text` is removed: a `TextFrame` without a height draws the same paragraphs
@@ -218,6 +232,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   nothing, is removed.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
+- `Table.getWidth` of an empty table is 0 in the four ports, where three
+  failed on the missing first row. A cell keeps its column span, four
+  borders, underline and strikeout as fields in the four ports, so the
+  Swift flags no longer report borders that `setBorder` turned off, and Go
+  has `NewEmptyCell(font)` for the `Cell(font)` of the other ports.
 
 ### Text
 - `TextColumn` no longer rotates: the constructor that took 0, 90 or 270
@@ -407,6 +426,14 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   embedded file.
 - `Content.ofBinaryFile` and `Content.ofTextFile` report a missing file, and C#
   throws on a truncated font stream.
+- The Go port no longer panics on an output file that cannot be created, a
+  writer that fails, objects without a root `/Pages`, or a text rendering
+  mode outside 0 to 7: the functions return the error. Its append functions
+  keep the first error of the writer for `Complete` to return. `Font(pdf,
+  coreFont)` rejects a number outside the fourteen core fonts in Java, C# and
+  Swift, where the failure came later in `stringWidth`. C# and Swift write
+  the out-of-range colour warning to standard error, as Java's logger and Go
+  do, instead of the program's output.
 
 ### Port parity
 - The default configuration of the optional content lists the hidden groups
@@ -434,6 +461,15 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - The defaults, the copies that colour getters return and setters keep, and
   the errors are the same in the four ports, and the C#, Go and Swift examples
   read like the Java ones.
+- The remaining drift of the second audit is gone: `Form` copies its list of
+  fields and `OptionalContentGroup.getComponents` returns a copy in the
+  four ports; the saved graphics state stores the brush and the pen in the
+  same order everywhere; C# `setPenColor(int)` and `setBrushColor(int)` call
+  the array overloads; Swift `Title.setPrefix` and `TextLine.advance` may be
+  called without using the result; Go `Form.drawOn` names a nil page, and
+  Go has `NewPDFReader()` for the reading-only `PDF()` constructor of the
+  other ports. Go keeps `AddBDC` with the language, `NewParagraph()` and an
+  array-only `Cell.SetBorderColorRGB` as documented conventions.
 
 ### Build, checks and examples
 - The examples draw with the embedded IBM Plex fonts, which a PDF/UA document
@@ -475,6 +511,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `go run`, so it needs no install.
 - The README documents the port differences, `PageSize` and right to left
   text.
+- The Go doc comments list their parameters the Go way instead of with
+  Javadoc `@param` and `@return` tags, `rotateAroundCenter` lives with
+  `Container` in Go as in the other ports, and the Java `DonutChart` and
+  `Slice` start with the license like every other file.
 
 ## v8.7.0 — 2026-09-10
 

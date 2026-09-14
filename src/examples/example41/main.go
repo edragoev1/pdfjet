@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -13,7 +14,10 @@ import (
 
 // Example41 draws paragraphs of styled text with the Text component on Letter paper.
 func Example41() {
-	pdf := pdfjet.NewPDFFile("Example_41.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_41.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
@@ -96,7 +100,9 @@ func Example41() {
 		}
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

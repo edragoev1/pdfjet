@@ -74,4 +74,22 @@ import Testing
         #expect(file.components(separatedBy: "/XYZ 30 692 0]").count - 1 == 2, "\(file)")
         #expect(file.components(separatedBy: "/Subtype /Link").count - 1 == 3, "\(file)")
     }
+
+    @Test func aPathWithFewerThanTwoPointsPaintsNothing() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        var path = [Point]()
+        page.drawPath(path, PathOperator.STROKE)
+        path.append(Point(10, 10))
+        page.drawPath(path, PathOperator.STROKE)
+        #expect(TestSupport.content(page) == "")
+    }
+
+    @Test func aRadioButtonFontSizeLeavesTheFontAlone() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        RadioButton(font, "Yes").setLocation(50, 50).setFontSize(20).drawOn(page)
+        #expect(font.getSize() == 12)
+        #expect(TestSupport.content(page).contains(" 20 Tf\n"), "\(TestSupport.content(page))")
+    }
 }

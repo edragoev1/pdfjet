@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -60,6 +61,7 @@ type PDF struct {
 	importedExtGStates        []string
 	uuid                      string
 	prevPage                  *Page
+	err                       error // The first error writing to the writer; Complete returns it.
 	structElements            []*structElement
 	contentStreamsCompression bool
 	file                      *os.File
@@ -155,14 +157,26 @@ func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
 	return pdf
 }
 
-// NewPDFFile creates a PDF document that is written to the file at the specified path.
-func NewPDFFile(filePath string) *PDF {
+// NewPDFFile creates a PDF document that is written to the file at the
+// specified path. Complete closes the file.
+func NewPDFFile(filePath string) (*PDF, error) {
 	file, err := os.Create(filePath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	pdf := NewPDF(bufio.NewWriter(file))
 	pdf.file = file
+	return pdf, nil
+}
+
+// NewPDFReader creates a PDF that only reads existing documents with Read and
+// ReadWithPassword, like the PDF() constructor of the other ports. Use NewPDF
+// or NewPDFFile to write a document.
+func NewPDFReader() *PDF {
+	pdf := new(PDF)
+	pdf.destinations = make(map[string]*Destination)
+	pdf.states = make(map[string]int)
+	pdf.stamps = make([]*Stamp, 0)
 	return pdf
 }
 
@@ -1200,8 +1214,9 @@ func (pdf *PDF) AddPages(pages []*Page) {
 	}
 }
 
-// Complete writes the PDF to the bufio.Writer and calls the Flush method.
-func (pdf *PDF) Complete() {
+// Complete writes the rest of the PDF, flushes the bufio.Writer and closes the
+// file that NewPDFFile opened. It returns the first error writing the document.
+func (pdf *PDF) Complete() error {
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
 	}
@@ -1282,16 +1297,18 @@ func (pdf *PDF) Complete() {
 	pdf.appendString("\n")
 	pdf.appendString("%%EOF\n")
 
+	if pdf.err != nil {
+		return pdf.err
+	}
 	if err := pdf.writer.Flush(); err != nil {
-		panic(err)
+		return err
 	}
 	// The file that NewPDFFile created is closed, as the other ports close
 	// their output stream.
 	if pdf.file != nil {
-		if err := pdf.file.Close(); err != nil {
-			panic(err)
-		}
+		return pdf.file.Close()
 	}
+	return nil
 }
 
 // SetLanguage sets the "Language" document property of the PDF file.
@@ -1377,8 +1394,9 @@ func contains(slice []string, text string) bool {
 // Read returns a list of objects of type PDFobj read from input stream.
 // An encrypted PDF is decrypted when it opens without a password. It returns
 // an error if the PDF needs a password or cannot be read.
-// @param inputStream the PDF input stream.
-// @return List<PDFobj> the list of PDF objects.
+//   - inputStream: the PDF input stream.
+//
+// Returns List<PDFobj> the list of PDF objects.
 func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 	return pdf.ReadWithPassword(buf, "")
 }
@@ -1388,9 +1406,10 @@ func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 // PDF is decrypted with the password, which is its user or its owner
 // password. It returns an error if the password is not correct or the PDF
 // cannot be read.
-// @param buf the bytes of the PDF.
-// @param password the user or owner password of the PDF.
-// @return List<PDFobj> the list of PDF objects.
+//   - buf: the bytes of the PDF.
+//   - password: the user or owner password of the PDF.
+//
+// Returns List<PDFobj> the list of PDF objects.
 func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj, err error) {
 	// The code that reads a malformed PDF panics where the Java port throws,
 	// like a Flate stream that cannot be inflated; the panic is the error.
@@ -1987,19 +2006,20 @@ func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {
 	return numOfChildren
 }
 
-// AddObjects adds the specified objects to the PDF. It panics if they have no
-// root /Pages object.
-func (pdf *PDF) AddObjects(objects *[]*PDFobj) {
-	pagesObject := pdf.getPagesObject(*objects)
+// AddObjects adds the specified objects to the PDF. It returns an error when
+// they have no root /Pages object.
+func (pdf *PDF) AddObjects(objects []*PDFobj) error {
+	pagesObject := pdf.getPagesObject(objects)
 	if pagesObject == nil {
-		panic("The objects have no root /Pages object.")
+		return errors.New("the objects have no root /Pages object")
 	}
 	objNumber, err := strconv.Atoi(pagesObject.dict[0])
 	if err != nil {
-		panic(err)
+		return err
 	}
 	pdf.pagesObjNumber = objNumber
 	pdf.addObjectsToPDF(objects)
+	return nil
 }
 
 func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
@@ -2313,11 +2333,11 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 			unique = append(unique, obj)
 		}
 	}
-	pdf.addObjectsToPDF(&unique)
+	pdf.addObjectsToPDF(unique)
 }
 
-func (pdf *PDF) addObjectsToPDF(objects *[]*PDFobj) {
-	for _, obj := range *objects {
+func (pdf *PDF) addObjectsToPDF(objects []*PDFobj) {
+	for _, obj := range objects {
 		if obj.offset == 0 {
 			// Create new object.
 			pdf.setObjOffset(obj.number, pdf.byteCount)
@@ -2372,27 +2392,22 @@ func (pdf *PDF) appendFloat32(f float32) {
 	pdf.appendByteArray(fastfloat.ToByteArray(f))
 }
 
+// The append functions keep the first error of the writer for Complete to
+// return, as the other ports let the exception of their stream propagate.
 func (pdf *PDF) appendString(s string) {
-	buf := []byte(s)
-	_, err := pdf.writer.Write(buf)
-	if err != nil {
-		panic(err)
-	}
-	pdf.byteCount += int64(len(buf))
+	pdf.appendByteArray([]byte(s))
 }
 
 func (pdf *PDF) appendByte(b byte) {
-	err := pdf.writer.WriteByte(b)
-	if err != nil {
-		panic(err)
+	if err := pdf.writer.WriteByte(b); err != nil && pdf.err == nil {
+		pdf.err = err
 	}
 	pdf.byteCount++
 }
 
 func (pdf *PDF) appendByteArray(buf []byte) {
-	_, err := pdf.writer.Write(buf)
-	if err != nil {
-		panic(err)
+	if _, err := pdf.writer.Write(buf); err != nil && pdf.err == nil {
+		pdf.err = err
 	}
 	pdf.byteCount += int64(len(buf))
 }

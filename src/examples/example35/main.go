@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example35 draws a stamp and a hierarchy of nested containers.
 func Example35() {
-	pdf := pdfjet.NewPDFFile("Example_35.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_35.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
@@ -139,7 +143,9 @@ func Example35() {
 	container5.SetRotation(-90)
 	container5.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

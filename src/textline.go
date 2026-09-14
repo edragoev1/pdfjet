@@ -43,8 +43,8 @@ type TextLine struct {
 }
 
 // NewTextLine is constructor for creating text line objects.
-// @param font the font to use.
-// @param text the text.
+//   - font: the font to use.
+//   - text: the text.
 func NewTextLine(font *Font, text string) *TextLine {
 	textLine := new(TextLine)
 	textLine.font = font
@@ -57,14 +57,15 @@ func NewTextLine(font *Font, text string) *TextLine {
 }
 
 // NewEmptyTextLine is constructor for creating empty text line objects.
-// @param font the font to use.
+//   - font: the font to use.
 func NewEmptyTextLine(font *Font) *TextLine {
 	return NewTextLine(font, "")
 }
 
 // SetText sets the text.
-// @param text the text.
-// @return this TextLine.
+//   - text: the text.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetText(text string) *TextLine {
 	textLine.text = text
 	textLine.altDescription = text
@@ -77,9 +78,10 @@ func (textLine *TextLine) GetText() string {
 }
 
 // SetLocation sets the location where this text line will be drawn on the page.
-// @param x the x coordinate of the text line.
-// @param y the y coordinate of the text line.
-// @return this TextLine.
+//   - x: the x coordinate of the text line.
+//   - y: the y coordinate of the text line.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetLocation(x, y float32) Drawable {
 	textLine.x = x
 	textLine.y = y
@@ -87,22 +89,24 @@ func (textLine *TextLine) SetLocation(x, y float32) Drawable {
 }
 
 // SetFont sets the font to use for this text line.
-// @param font the font to use.
-// @return this TextLine.
+//   - font: the font to use.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetFont(font *Font) *TextLine {
 	textLine.font = font
 	return textLine
 }
 
 // GetFont gets the font to use for this text line.
-// @return font the font to use.
+// Returns font the font to use.
 func (textLine *TextLine) GetFont() *Font {
 	return textLine.font
 }
 
 // SetFontSize sets the font size to use for this text line.
-// @param fontSize the fontSize to use.
-// @return this TextLine.
+//   - fontSize: the fontSize to use.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetFontSize(fontSize float32) *TextLine {
 	textLine.fontSize = fontSize
 	return textLine
@@ -114,15 +118,16 @@ func (textLine *TextLine) GetFontSize() float32 {
 }
 
 // SetFallbackFont sets the fallback font.
-// @param fallbackFont the fallback font.
-// @return this TextLine.
+//   - fallbackFont: the fallback font.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetFallbackFont(fallbackFont *Font) *TextLine {
 	textLine.fallbackFont = fallbackFont
 	return textLine
 }
 
 // GetFallbackFont returns the fallback font.
-// @return the fallback font.
+// Returns the fallback font.
 func (textLine *TextLine) GetFallbackFont() *Font {
 	return textLine.fallbackFont
 }
@@ -176,19 +181,19 @@ func (textLine *TextLine) GetTextColor() [3]float32 {
 }
 
 // GetDestinationX returns the x coordinate of the destination.
-// @return the x coordinate of the destination.
+// Returns the x coordinate of the destination.
 func (textLine *TextLine) GetDestinationX() float32 {
 	return textLine.x
 }
 
 // GetDestinationY returns the y coordinate of the destination.
-// @return the y coordinate of the destination.
+// Returns the y coordinate of the destination.
 func (textLine *TextLine) GetDestinationY() float32 {
 	return textLine.y - textLine.fontSize
 }
 
 // GetWidth returns the width of this TextLine.
-// @return the width.
+// Returns the width.
 func (textLine *TextLine) GetWidth() float32 {
 	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
@@ -199,79 +204,84 @@ func (textLine *TextLine) GetStringWidth(text string) float32 {
 }
 
 // GetHeight returns the height of this TextLine.
-// @return the height.
+// Returns the height.
 func (textLine *TextLine) GetHeight() float32 {
 	return textLine.font.GetBodyHeightAt(textLine.fontSize)
 }
 
 // SetURIAction sets the URI for the "click text line" action.
-// @param uri the URI
-// @return this TextLine.
+//   - uri: the URI
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetURIAction(uri string) *TextLine {
 	textLine.uri = uri
 	return textLine
 }
 
 // GetURIAction returns the action URI.
-// @return the action URI.
+// Returns the action URI.
 func (textLine *TextLine) GetURIAction() string {
 	return textLine.uri
 }
 
 // SetGoToAction sets the destination key for the action.
-// @param key the destination name.
-// @return this TextLine.
+//   - key: the destination name.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetGoToAction(key string) *TextLine {
 	textLine.key = key
 	return textLine
 }
 
 // GetGoToAction returns the GoTo action string.
-// @return the GoTo action string.
+// Returns the GoTo action string.
 func (textLine *TextLine) GetGoToAction() string {
 	return textLine.key
 }
 
 // SetUnderline sets the underline variable.
 // If the value of the underline variable is 'true' - the text is underlined.
-// @param underline the underline flag.
-// @return this TextLine.
+//   - underline: the underline flag.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetUnderline(underline bool) *TextLine {
 	textLine.underline = underline
 	return textLine
 }
 
 // GetUnderline returns the underline flag.
-// @return the underline flag.
+// Returns the underline flag.
 func (textLine *TextLine) GetUnderline() bool {
 	return textLine.underline
 }
 
 // SetStrikeout sets the strike variable.
 // If the value of the strike variable is 'true' - a strike line is drawn through the text.
-// @param strikeout the strikeout flag.
-// @return this TextLine.
+//   - strikeout: the strikeout flag.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetStrikeout(strikeout bool) *TextLine {
 	textLine.strikeout = strikeout
 	return textLine
 }
 
 // GetStrikeout returns the strikeout flag.
-// @return the strikeout flag.
+// Returns the strikeout flag.
 func (textLine *TextLine) GetStrikeout() bool {
 	return textLine.strikeout
 }
 
 // SetTextRotation sets the direction in which to draw the text.
-// @param degrees the number of degrees.
-// @return this TextLine.
+//   - degrees: the number of degrees.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetTextRotation(degrees int) *TextLine {
 	textLine.degrees = degrees
 	return textLine
 }
 
 // GetTextRotation returns the text direction.
-// @return the text direction.
+// Returns the text direction.
 func (textLine *TextLine) GetTextRotation() int {
 	return textLine.degrees
 }
@@ -286,7 +296,7 @@ func (textLine *TextLine) SetScriptPosition(scriptPosition scriptposition.Script
 }
 
 // GetScriptPosition returns the script position.
-// @return the script position.
+// Returns the script position.
 func (textLine *TextLine) GetScriptPosition() scriptposition.ScriptPosition {
 	return textLine.scriptPosition
 }
@@ -326,8 +336,9 @@ func (textLine *TextLine) GetLanguage() string {
 }
 
 // SetAltDescription sets the alternate description of this text line.
-// @param altDescription the alternate description of the text line.
-// @return this TextLine.
+//   - altDescription: the alternate description of the text line.
+//
+// Returns this TextLine.
 func (textLine *TextLine) SetAltDescription(altDescription string) *TextLine {
 	textLine.altDescription = altDescription
 	return textLine

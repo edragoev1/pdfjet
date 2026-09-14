@@ -1393,9 +1393,9 @@ final public class Page {
      * Draws a path consisting of multiple points using the specified path operator.
      * The path can include straight line segments and Bézier curve segments controlled by control points.
      *
-     * @param path the list of points defining the path. Must contain at least 2 points.
+     * @param path the list of points defining the path. Fewer than two points paint nothing.
      * @param pathOperator the path painting operator to apply (e.g., PathOperator.STROKE, PathOperator.FILL)
-     * @throws Exception if the path contains fewer than 2 points
+     * @throws Exception if an input or output exception occurred
      *
      * <pre>
      * {@code
@@ -1418,7 +1418,7 @@ final public class Page {
      */
     public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
-            throw new Exception("The Path object must contain at least 2 points");
+            return; // A path needs two points to paint anything.
         }
         Point point = path.get(0);
         moveTo(point.x, point.y);

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -15,7 +16,10 @@ import (
 
 // Example16 draws a text block with highlighted keywords.
 func Example16() {
-	pdf := pdfjet.NewPDFFile("Example_16.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_16.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Text block with highlighted keywords")
 
@@ -62,7 +66,9 @@ func Example16() {
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

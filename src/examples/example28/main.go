@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -11,7 +12,10 @@ import (
 
 // Example28 shows how to use the NotoSansSymbols font.
 func Example28() {
-	pdf := pdfjet.NewPDFFile("Example_28.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_28.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
 	f1.SetSize(28.0)
@@ -55,7 +59,9 @@ func Example28() {
 	drawLineOfText(page, f1, x, y, 0x26E2, 0x26FE)
 	y += dy
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func drawLineOfText(page *pdfjet.Page, f1 *pdfjet.Font, x, y float32, c1, c2 int) {

@@ -75,5 +75,13 @@ public class OptionalContentGroupTest {
         Assert.Empty(group.Clear().GetComponents());
         Assert.Equal("Layer", group.GetName());
     }
+
+    [Fact]
+    public void GetComponentsReturnsACopy() {
+        OptionalContentGroup group = new OptionalContentGroup(TestSupport.NewPDF(), "Layer");
+        group.Add(new Rect(0f, 0f, 1f, 1f));
+        group.GetComponents().Clear();
+        Assert.Single(group.GetComponents());
+    }
 }
 }

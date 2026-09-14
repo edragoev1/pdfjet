@@ -355,11 +355,11 @@ public class Stamp : IDrawable {
 
     /// <summary>
     /// Draws a path through the points. Control points define Bézier curves.
-    /// Throws an exception if the path has fewer than 2 points.
+    /// Fewer than two points paint nothing.
     /// </summary>
     public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
-            throw new Exception("The Path object must contain at least 2 points");
+            return; // A path needs two points to paint anything.
         }
         Point point = path[0];
         MoveTo(point.x, point.y);

@@ -8,6 +8,9 @@ package pdfjet
 import (
 	"strings"
 	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 )
 
 func TestPageANewPageTracksTheDefaultGraphicsState(t *testing.T) {
@@ -77,5 +80,37 @@ func TestPageAGoToLinkPointsAtItsDestinationOnAnotherPage(t *testing.T) {
 	if strings.Count(file, "/Dest [") != 2 || strings.Count(file, "/XYZ 30 692 0]") != 2 ||
 		strings.Count(file, "/Subtype /Link") != 3 {
 		t.Errorf("links in %q", file)
+	}
+}
+
+func TestPageAPathWithFewerThanTwoPointsPaintsNothing(t *testing.T) {
+	page := testNewPage()
+	path := make([]*Point, 0)
+	page.DrawPath(path, pathoperator.Stroke)
+	path = append(path, NewPoint(10, 10))
+	page.DrawPath(path, pathoperator.Stroke)
+	if got := testContent(page); got != "" {
+		t.Errorf("content %q", got)
+	}
+}
+
+func TestPageSetTextRenderingModeRejectsAModeOutsideTheRange(t *testing.T) {
+	page := testNewPage()
+	if _, err := page.SetTextRenderingMode(3); err != nil {
+		t.Error(err)
+	}
+	if _, err := page.SetTextRenderingMode(8); err == nil {
+		t.Error("no error for mode 8")
+	}
+}
+
+func TestPageARadioButtonFontSizeLeavesTheFontAlone(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewRadioButton(font, "Yes").SetFontSize(20).SetLocation(50, 50).DrawOn(page)
+	testNear(t, "font size", 12, font.GetSize(), 0)
+	if !strings.Contains(testContent(page), " 20 Tf\n") {
+		t.Errorf("content %q", testContent(page))
 	}
 }

@@ -32,10 +32,10 @@ type Line struct {
 
 // NewLine creates a line object.
 //
-// @param x1 the x coordinate of the start point.
-// @param y1 the y coordinate of the start point.
-// @param x2 the x coordinate of the end point.
-// @param y2 the y coordinate of the end point.
+//   - x1: the x coordinate of the start point.
+//   - y1: the y coordinate of the start point.
+//   - x2: the x coordinate of the end point.
+//   - y2: the y coordinate of the end point.
 func NewLine(x1, y1, x2, y2 float32) *Line {
 	line := new(Line)
 	line.x1 = x1
@@ -59,27 +59,29 @@ func NewLine(x1, y1, x2, y2 float32) *Line {
 //
 // Examples of line dash patterns:
 //
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
+//		"[Array] Phase"     Appearance          Description
+//		_______________     _________________   ____________________________________
 //
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//		"[] 0"              -----------------   Solid line
+//		"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//		"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//		"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//		"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//		"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
-// @param pattern the line dash pattern.
-// @return this Line object.
+//	  - pattern: the line dash pattern.
+//
+// Returns this Line object.
 func (line *Line) SetStrokeDashPattern(pattern string) *Line {
 	line.pattern = pattern
 	return line
 }
 
 // SetStartPoint sets the x and y coordinates of the start point.
-// @param x the x coordinate of the start point.
-// @param y the y coordinate of the start point.
-// @return this Line object.
+//   - x: the x coordinate of the start point.
+//   - y: the y coordinate of the start point.
+//
+// Returns this Line object.
 func (line *Line) SetStartPoint(x, y float32) *Line {
 	line.x1 = x
 	line.y1 = y
@@ -88,9 +90,10 @@ func (line *Line) SetStartPoint(x, y float32) *Line {
 
 // SetLocation moves this line so that it starts at the specified point. The end
 // point moves with it.
-// @param x the x coordinate of the start point.
-// @param y the y coordinate of the start point.
-// @return this Line object.
+//   - x: the x coordinate of the start point.
+//   - y: the y coordinate of the start point.
+//
+// Returns this Line object.
 func (line *Line) SetLocation(x, y float32) Drawable {
 	line.x2 += x - line.x1
 	line.y2 += y - line.y1
@@ -100,15 +103,16 @@ func (line *Line) SetLocation(x, y float32) Drawable {
 }
 
 // GetStartPoint returns the start point of this line.
-// @return Point the point.
+// Returns Point the point.
 func (line *Line) GetStartPoint() *Point {
 	return NewPoint(line.x1, line.y1)
 }
 
 // SetEndPoint sets the x and y coordinates of the end point.
-// @param x the x coordinate of the end point.
-// @param y the y coordinate of the end point.
-// @return this Line object.
+//   - x: the x coordinate of the end point.
+//   - y: the y coordinate of the end point.
+//
+// Returns this Line object.
 func (line *Line) SetEndPoint(x, y float32) *Line {
 	line.x2 = x
 	line.y2 = y
@@ -116,22 +120,24 @@ func (line *Line) SetEndPoint(x, y float32) *Line {
 }
 
 // GetEndPoint returns the end point of this line.
-// @return Point the point.
+// Returns Point the point.
 func (line *Line) GetEndPoint() *Point {
 	return NewPoint(line.x2, line.y2)
 }
 
 // SetStrokeWidth sets the stroke width of this line.
-// @param width the width.
-// @return this Line object.
+//   - width: the width.
+//
+// Returns this Line object.
 func (line *Line) SetStrokeWidth(width float32) *Line {
 	line.width = width
 	return line
 }
 
 // SetStrokeColor sets the stroke color of this line.
-// @param color the color specified as an integer.
-// @return this Line object.
+//   - color: the color specified as an integer.
+//
+// Returns this Line object.
 func (line *Line) SetStrokeColor(color int32) *Line {
 	line.color = colorToRGB(color)
 	return line
@@ -144,31 +150,34 @@ func (line *Line) SetStrokeColorRGB(rgbColor [3]float32) *Line {
 }
 
 // SetLineCapStyle sets the line cap style.
-// @param style the cap style of the current line. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
-// @return this Line object.
+//   - style: the cap style of the current line. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
+//
+// Returns this Line object.
 func (line *Line) SetLineCapStyle(style capstyle.CapStyle) *Line {
 	line.capStyle = style
 	return line
 }
 
 // GetLineCapStyle returns the line cap style.
-// @return the cap style.
+// Returns the cap style.
 func (line *Line) GetLineCapStyle() capstyle.CapStyle {
 	return line.capStyle
 }
 
 // SetAltDescription sets the alternate description of this line.
 //
-// @param altDescription the alternate description of the line.
-// @return this Line.
+//   - altDescription: the alternate description of the line.
+//
+// Returns this Line.
 func (line *Line) SetAltDescription(altDescription string) *Line {
 	line.altDescription = altDescription
 	return line
 }
 
 // SetActualText sets the actual text for this line.
-// @param actualText the actual text for the line.
-// @return this Line.
+//   - actualText: the actual text for the line.
+//
+// Returns this Line.
 func (line *Line) SetActualText(actualText string) *Line {
 	line.actualText = actualText
 	return line
@@ -176,8 +185,9 @@ func (line *Line) SetActualText(actualText string) *Line {
 
 // ScaleBy scales this line by the specified factor.
 //
-// @param factor the factor used to scale the line.
-// @return this Line object.
+//   - factor: the factor used to scale the line.
+//
+// Returns this Line object.
 func (line *Line) ScaleBy(factor float32) *Line {
 	line.x1 *= factor
 	line.x2 *= factor
@@ -188,8 +198,9 @@ func (line *Line) ScaleBy(factor float32) *Line {
 
 // DrawOn draws this line on the specified page.
 //
-// @param page the page to draw this line on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this line on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (line *Line) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()

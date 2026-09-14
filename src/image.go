@@ -58,8 +58,8 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 }
 
 // NewImage the main constructor for the Image class.
-// @param pdf the PDF to which we add this image.
-// @param inputStream the input stream to read the image from.
+//   - pdf: the PDF to which we add this image.
+//   - inputStream: the input stream to read the image from.
 func NewImage(pdf *PDF, reader io.Reader) *Image {
 	buf := content.GetFromStream(reader)
 	imageType := imageTypeOf(buf)
@@ -112,8 +112,8 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 }
 
 // NewImageForObjects adds this image to the existing PDF objects.
-// @param objects the map to which we add this image.
-// @param inputStream the input stream to read the image from.
+//   - objects: the map to which we add this image.
+//   - inputStream: the input stream to read the image from.
 func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 	buf := content.GetFromStream(reader)
 	imageType := imageTypeOf(buf)
@@ -233,8 +233,8 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 
 // SetLocation sets the location of this image on the page to (x, y).
 //
-// @param x the x coordinate of the top left corner of the image.
-// @param y the y coordinate of the top left corner of the image.
+//   - x: the x coordinate of the top left corner of the image.
+//   - y: the y coordinate of the top left corner of the image.
 func (image *Image) SetLocation(x, y float32) Drawable {
 	image.x = x
 	image.y = y
@@ -242,7 +242,7 @@ func (image *Image) SetLocation(x, y float32) Drawable {
 }
 
 // ScaleBy scales this image by the specified factor.
-// @param factor the factor used to scale the image.
+//   - factor: the factor used to scale the image.
 func (image *Image) ScaleBy(factor float32) *Image {
 	image.w *= factor
 	image.h *= factor
@@ -253,8 +253,8 @@ func (image *Image) ScaleBy(factor float32) *Image {
 //
 // Author: Pieter Libin, pieter@emweb.be
 //
-// @param widthFactor the factor used to scale the width of the image
-// @param heightFactor the factor used to scale the height of the image
+//   - widthFactor: the factor used to scale the width of the image
+//   - heightFactor: the factor used to scale the height of the image
 func (image *Image) ScaleByWidthAndHeight(widthFactor, heightFactor float32) *Image {
 	image.w *= widthFactor
 	image.h *= heightFactor
@@ -274,14 +274,14 @@ func (image *Image) ResizeHeight(height float32) *Image {
 }
 
 // SetURIAction sets the URI for the "click box" action.
-// @param uri the URI
+//   - uri: the URI
 func (image *Image) SetURIAction(uri string) *Image {
 	image.uri = uri
 	return image
 }
 
 // SetGoToAction sets the destination key for the action.
-// @param key the destination name.
+//   - key: the destination name.
 func (image *Image) SetGoToAction(key string) *Image {
 	image.key = key
 	return image
@@ -298,16 +298,18 @@ func (image *Image) SetRotation(degrees int) *Image {
 }
 
 // SetAltDescription sets the alternate description of this image.
-// @param altDescription the alternate description of the image.
-// @return this Image.
+//   - altDescription: the alternate description of the image.
+//
+// Returns this Image.
 func (image *Image) SetAltDescription(altDescription string) *Image {
 	image.altDescription = altDescription
 	return image
 }
 
 // SetActualText sets the actual text for this image.
-// @param actualText the actual text for the image.
-// @return this Image.
+//   - actualText: the actual text for the image.
+//
+// Returns this Image.
 func (image *Image) SetActualText(actualText string) *Image {
 	image.actualText = actualText
 	return image
@@ -320,8 +322,9 @@ func (image *Image) SetLanguage(language string) *Image {
 }
 
 // DrawOn draws this image on the specified page.
-// @param page the page to draw this image on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this image on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
@@ -420,14 +423,14 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 // GetWidth returns the width of this image when drawn on the page.
 // The scaling is taken into account.
-// @return w - the width of this image.
+// Returns w - the width of this image.
 func (image *Image) GetWidth() float32 {
 	return image.w
 }
 
 // GetHeight returns the height of this image when drawn on the page.
 // The scaling is taken into account.
-// @return h - the height of this image.
+// Returns h - the height of this image.
 func (image *Image) GetHeight() float32 {
 	return image.h
 }

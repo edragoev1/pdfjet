@@ -27,7 +27,7 @@ type Form struct {
 // NewForm constructs new form object.
 func NewForm(fields []*Field) *Form {
 	form := new(Form)
-	form.fields = fields
+	form.fields = append([]*Field(nil), fields...) // A copy, as in the other ports.
 	form.labelFontSize = 9.0
 	form.valueFontSize = 9.0
 	form.formWidth = 500.0
@@ -112,10 +112,13 @@ func (form *Form) SetValueColorRGB(color [3]float32) *Form {
 }
 
 // DrawOn draws the form on the specified page.
-// @param page the page to draw form on.
-// @return x and y coordinates of the bottom right corner of form component.
+//   - page: the page to draw form on.
+//
+// Returns x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) [2]float32 {
-
+	if page == nil {
+		panic("The page cannot be nil.")
+	}
 	yField := float32(0.0)
 	xOffset := float32(3.0)
 	for i, field := range form.fields {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 
 // Example32 draws highlighted source code using the draw string method and a color map.
 func Example32() {
-	pdf := pdfjet.NewPDFFile("Example_32.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_32.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
 	font.SetSize(10.0)
@@ -38,7 +42,9 @@ func Example32() {
 		}
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

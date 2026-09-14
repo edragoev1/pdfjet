@@ -16,8 +16,8 @@ class State {
 
     /// Creates a snapshot of the pen and brush colors, pen width, line cap and join styles and dash pattern.
     public init(
-            _ pen: [Float],
             _ brush: [Float],
+            _ pen: [Float],
             _ penWidth: Float,
             _ lineCapStyle: CapStyle,
             _ lineJoinStyle: JoinStyle,

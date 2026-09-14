@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 
 // Example26 draws check boxes and radio buttons.
 func Example26() {
-	pdf := pdfjet.NewPDFFile("Example_26.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(10.0)
@@ -75,7 +79,9 @@ func Example26() {
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

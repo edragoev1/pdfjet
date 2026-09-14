@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -14,7 +15,10 @@ import (
 
 // Example19 uses the TextBlock component to draw text next to images.
 func Example19() {
-	pdf := pdfjet.NewPDFFile("Example_19.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_19.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
@@ -58,7 +62,9 @@ func Example19() {
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

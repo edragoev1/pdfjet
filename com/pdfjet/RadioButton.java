@@ -17,6 +17,7 @@ public class RadioButton implements Drawable {
     private float r2;
     private float penWidth;
     private Font font;
+    private float fontSize;
     private String label = "";
     private String uri = null;
 
@@ -32,17 +33,18 @@ public class RadioButton implements Drawable {
      */
     public RadioButton(Font font, String label) {
         this.font = font;
+        this.fontSize = font.getSize();
         this.label = label;
     }
 
     /**
-     *  Sets the font size to use for this text line.
+     *  Sets the size of the label text. The font keeps its own size.
      *
      *  @param fontSize the fontSize to use.
      *  @return this RadioButton.
      */
     public RadioButton setFontSize(float fontSize) {
-        this.font.setSize(fontSize);
+        this.fontSize = fontSize;
         return this;
     }
 
@@ -113,7 +115,7 @@ public class RadioButton implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         page.addBDC(StructElem.P, language, actualText, altDescription);
 
-        this.r1 = font.getAscent()/2;
+        this.r1 = font.getAscent(fontSize)/2;
         this.r2 = r1/2;
         this.penWidth = r1/10;
 
@@ -130,7 +132,7 @@ public class RadioButton implements Drawable {
 
         // A linked label is blue.
         float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
-        page.drawString(font, font.getSize(), label, x + 3*r1, y + font.getAscent(), textColor, null);
+        page.drawString(font, fontSize, label, x + 3*r1, y + font.getAscent(fontSize), textColor, null);
         page.setPenWidth(0f);
         page.setBrushColor(Color.black);
 
@@ -141,8 +143,8 @@ public class RadioButton implements Drawable {
                     Annotation.Link,
                     x + 3*r1,
                     y,
-                    x + 3*r1 + font.stringWidth(label),
-                    y + font.getBodyHeight(),
+                    x + 3*r1 + font.stringWidth(fontSize, label),
+                    y + font.getBodyHeight(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -155,6 +157,6 @@ public class RadioButton implements Drawable {
                     altDescription));
         }
 
-        return new float[] { x + 6*r1 + font.stringWidth(label), y + font.bodyHeight };
+        return new float[] { x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
     }
 }   // End of RadioButton.java

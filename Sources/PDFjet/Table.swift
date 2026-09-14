@@ -723,8 +723,7 @@ public class Table : Drawable {
                     cell2.setBorderWidth(cell.getBorderWidth())
                     cell2.setBorderColor(cell.getBorderColor())
                     cell2.setTextColor(cell.getTextColor())
-                    // The column span.
-                    cell2.setProperties(cell.getProperties())
+                    cell2.setColSpan(cell.getColSpan())
                     cell2.setTextAlignment(cell.getTextAlignment())
                     cell2.setBorder(Border.TOP, cell.getBorder(Border.TOP))
                     cell2.setBorder(Border.BOTTOM, cell.getBorder(Border.BOTTOM))

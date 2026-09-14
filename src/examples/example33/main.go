@@ -11,7 +11,10 @@ import (
 
 // Example33 draws SVG images on the page.
 func Example33() error {
-	pdf := pdfjet.NewPDFFile("Example_33.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_33.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	page := pdfjet.NewPage(pdf, a4.Portrait())
 
@@ -85,7 +88,9 @@ func Example33() error {
 	image.SetLocation(xy[0], 670.0)
 	image.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 
 	return nil
 }

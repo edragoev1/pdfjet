@@ -13,7 +13,10 @@ import (
 
 // Example30 encrypts the PDF and attaches embedded files to a page.
 func Example30() {
-	pdf := pdfjet.NewPDFFile("Example_30.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_30.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// pdf.SetCompliance(compliance.PDF_UA_1)
 
 	passwords := encryption.NewPasswords()
@@ -61,7 +64,9 @@ func Example30() {
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -1,8 +1,5 @@
 package pdfjet
 
-// annotationType is the subtype of an annotation, for example annotationPolygon.
-type annotationType string
-
 // PolygonAnnotation extends BaseAnnotation to represent a polygon.
 type PolygonAnnotation struct {
 	BaseAnnotation

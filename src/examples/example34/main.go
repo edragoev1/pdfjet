@@ -20,7 +20,10 @@ import (
 
 // Example34 draws a table that spans multiple pages.
 func Example34() {
-	pdf := pdfjet.NewPDFFile("Example_34.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_34.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_A_1B)
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
@@ -77,7 +80,9 @@ func Example34() {
 		pdf.AddPage(page)
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getData(fileName, delimiter string, numOfHeaderRows int, f1, f2 *pdfjet.Font) [][]*pdfjet.Cell {

@@ -120,17 +120,24 @@ go get github.com/edragoev1/pdfjet/v9@latest
 package main
 
 import (
+	"log"
+
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 func main() {
-	pdf := pdfjet.NewPDFFile("hello.pdf")
+	pdf, err := pdfjet.NewPDFFile("hello.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(18)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").SetLocation(50, 100).DrawOn(page)
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 
@@ -526,11 +533,17 @@ Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPageDetached` for
 `Page.DETACHED`, `NewTableFromFile`, and `NewFont`,
 `NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
-`NewFontStream2` for the overloads of the `Font` constructor. Where the other ports have an overload with fewer
-arguments, Go has the full form only: `NewCell(font, text)`,
+`NewFontStream2` for the overloads of the `Font` constructor, and
+`NewEmptyCell(font)` and `NewEmptyTextLine(font)` for `Cell(font)` and
+`TextLine(font)`. Where the other ports have an overload with fewer
+arguments, Go has the full form only:
 `NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`,
 `Table.SetData(data, headerRows)` and `Page.AddBDC` with the language.
+The `PDF` constructors are `NewPDF(writer)`, `NewPDFFile(path)`, which opens
+the file and returns an error when it cannot, and `NewPDFReader()` for the
+`PDF()` of the other ports that only reads documents; `Complete` returns the
+first error writing the document, where the other ports throw it.
 `content.GetFromReader` is `Content.getFromStream`, and Go's `PDF.Read` and
 `ReadWithPassword` take the whole PDF as a `[]byte` where the other ports read
 it from a stream. Java's `Encryption` is in `com.pdfjet`, next to `PDF`, so the

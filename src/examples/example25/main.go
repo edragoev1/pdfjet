@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -11,7 +12,10 @@ import (
 
 // Example25 draws a donut chart.
 func Example25() {
-	pdf := pdfjet.NewPDFFile("Example_25.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_25.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
@@ -31,7 +35,9 @@ func Example25() {
 	chart.AddSlice(pdfjet.NewSlice(10.0, 0xCAAA2F, "Lemons"))  // dark gold
 	chart.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

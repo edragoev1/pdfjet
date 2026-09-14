@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -15,7 +16,10 @@ import (
 
 // Example12 constructs and draws PDF417 barcode.
 func Example12() {
-	pdf := pdfjet.NewPDFFile("Example_12.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_12.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("PDF417 barcode example")
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -38,7 +42,9 @@ func Example12() {
 	textLine.SetLocation(100.0, 40.0)
 	textLine.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

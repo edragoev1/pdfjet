@@ -10,15 +10,15 @@ package pdfjet
 // @author Mark Paxton, Evgeni Dragoev
 type Drawable interface {
 	// DrawOn draws the component implementing this interface on the PDF page.
-	// @param page the page to draw on.
-	// @return x and y coordinates of the bottom right corner of this component.
+	//   - page: the page to draw on.
+	// Returns x and y coordinates of the bottom right corner of this component.
 	DrawOn(page *Page) [2]float32
 
 	// SetLocation sets the location of the component on the page.
 	// It returns the component as a Drawable, so in a chain of setter calls
 	// SetLocation goes last, right before DrawOn.
-	// @param x the x coordinate of the top left corner of the component.
-	// @param y the y coordinate of the top left corner of the component.
-	// @return this component.
+	//   - x: the x coordinate of the top left corner of the component.
+	//   - y: the y coordinate of the top left corner of the component.
+	// Returns this component.
 	SetLocation(x, y float32) Drawable
 }

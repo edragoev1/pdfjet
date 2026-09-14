@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 // Example18
 // This example shows how to write "Page X of N" footer on every page.
 func Example18() {
-	pdf := pdfjet.NewPDFFile("Example_18.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_18.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	fontSize := float32(14.0)
@@ -51,7 +55,9 @@ func Example18() {
 	}
 	pdf.AddPages(pages)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

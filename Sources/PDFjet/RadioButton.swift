@@ -17,6 +17,7 @@ public class RadioButton : Drawable {
     private var r2: Float = 0.0
     private var penWidth: Float = 0.0
     private var font: Font
+    private var fontSize: Float
     private var label: String = ""
     private var uri: String?
 
@@ -29,18 +30,19 @@ public class RadioButton : Drawable {
     ///
     public init(_ font: Font, _ label: String) {
         self.font = font
+        self.fontSize = font.getSize()
         self.label = label
     }
 
     ///
-    /// Sets the font size to use for this text line.
+    /// Sets the size of the label text. The font keeps its own size.
     ///
     /// - Parameter fontSize: the fontSize to use.
     /// - Returns: this RadioButton.
     ///
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> RadioButton {
-        self.font.setSize(fontSize)
+        self.fontSize = fontSize
         return self
     }
 
@@ -116,7 +118,7 @@ public class RadioButton : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         page!.addBDC(StructElem.P, language, actualText, altDescription)
 
-        self.r1 = font.getAscent()/2
+        self.r1 = font.getAscent(fontSize)/2
         self.r2 = r1/2
         self.penWidth = r1/10
 
@@ -133,7 +135,7 @@ public class RadioButton : Drawable {
 
         // A linked label is blue.
         let textColor: [Float] = (uri != nil) ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
-        page!.drawString(font, font.getSize(), label, x + 3*r1, y + font.ascent, textColor, nil)
+        page!.drawString(font, fontSize, label, x + 3*r1, y + font.getAscent(fontSize), textColor, nil)
         page!.setPenWidth(0.0)
         page!.setBrushColor(Color.black)
 
@@ -144,8 +146,8 @@ public class RadioButton : Drawable {
                     Annotation.Link,
                     x + 3*r1,
                     y,
-                    x + 3*r1 + font.stringWidth(label),
-                    y + font.getBodyHeight(),
+                    x + 3*r1 + font.stringWidth(fontSize, label),
+                    y + font.getBodyHeight(fontSize),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Transparency
@@ -158,6 +160,6 @@ public class RadioButton : Drawable {
                     altDescription))
         }
 
-        return [x + 6*r1 + font.stringWidth(label), y + font.bodyHeight]
+        return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
     }
 }   // End of RadioButton.swift

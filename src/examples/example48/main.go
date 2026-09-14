@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example48 adds bookmarks to a PDF.
 func Example48() {
-	pdf := pdfjet.NewPDFFile("Example_48.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_48.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("The structure of a PDF file")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -98,7 +102,9 @@ func Example48() {
 	toc.AddBookmark(page, title)
 	title.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

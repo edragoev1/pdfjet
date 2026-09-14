@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.InputStream;
@@ -71,5 +72,12 @@ class FontTest {
         } finally {
             in.close();
         }
+    }
+
+    @Test
+    void aCoreFontNumberOutsideTheFourteenIsRejected() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        assertThrows(IllegalArgumentException.class, () -> new Font(pdf, 0));
+        assertThrows(IllegalArgumentException.class, () -> new Font(pdf, 15));
     }
 }

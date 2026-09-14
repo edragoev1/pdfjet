@@ -117,4 +117,9 @@ class TableTest {
         assertEquals(Alignment.RIGHT, table.getCellAt(4, 0).getTextAlignment());
         assertFalse(table.getCellAt(0, 0).getTextAlignment() == Alignment.RIGHT);
     }
+
+    @Test
+    void anEmptyTableHasNoWidth() throws Exception {
+        assertEquals(0f, new Table().getWidth(), 0f);
+    }
 }

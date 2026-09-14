@@ -15,7 +15,10 @@ import (
 
 // Example37 opens an existing PDF, adds a font resource and writes on every page.
 func Example37(fileName string) {
-	pdf := pdfjet.NewPDFFile("Example_37.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_37.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	objects, err := pdf.Read(content.OfBinaryFile(fileName))
 	if err != nil {
 		log.Fatal(err)
@@ -47,9 +50,13 @@ func Example37(fileName string) {
 
 		page.Complete(&objects) // The graphics stack is unwinded automatically
 	}
-	pdf.AddObjects(&objects)
+	if err := pdf.AddObjects(objects); err != nil {
+		log.Fatal(err)
+	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

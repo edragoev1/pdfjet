@@ -177,5 +177,18 @@ public class PDFTest {
         }
         Assert.Fail("object 3 not read");
     }
+
+    [Fact]
+    public void AnEmptyDocumentPropertyIsNotWritten() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.SetTitle("").SetAuthor("").SetSubject("").SetKeywords("").SetCreator("");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        foreach (string key in new string[] {"/Title", "/Author", "/Subject", "/Keywords", "/Creator"}) {
+            Assert.DoesNotContain(key, raw);
+        }
+    }
 }
 }

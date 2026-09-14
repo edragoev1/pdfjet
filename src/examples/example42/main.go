@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example42 uses the Form and Field classes to create a form.
 func Example42() {
-	pdf := pdfjet.NewPDFFile("Example_42.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_42.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -53,7 +57,9 @@ func Example42() {
 	rect.SetBorderColor(color.Blue)
 	rect.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

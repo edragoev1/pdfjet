@@ -132,7 +132,7 @@
 <header>
   <p class="eyebrow">Second audit, for the v9.0.0 release</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and the drift that could crash or misplace something were fixed the same day and are listed at the end. What remains is drift in error handling and signatures, and a dozen names worth changing before the release.</p>
+  <p class="lede">The eighteen suggestions of the first audit are done or parked for 10.0. This second pass read the four ports class by class for code drift, for what is still public by accident, and for names that say the wrong thing. It found three bugs and two dozen places where one port does something the others do not; the bugs and then all of the drift were fixed the same day and are listed at the end. What remains is a handful of inconsistencies shared by the four ports, and a dozen names worth changing before the release.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 533ecc67 (102 lines, 101 public types per port), a method-by-method reading of Page, PDF, the shapes, the text classes, the charts and the annotations in all four ports, and the 50 examples.</span>
     <span>14 September 2026</span>
@@ -153,7 +153,7 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Findings</th><th class="num">For 9.0.0</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Drift between the ports</td><td class="num">17</td><td class="num">17</td><td>Output and error handling that depend on the port</td></tr>
+    <tr><td>Drift between the ports</td><td class="num">17</td><td class="num">17</td><td>Output and error handling that depended on the port; fixed 14 September</td></tr>
     <tr><td>Inconsistencies shared by all four ports</td><td class="num">6</td><td class="num">4</td><td>Two rules for one setting</td></tr>
     <tr><td>Names</td><td class="num">10</td><td class="num">6</td><td>Abbreviations, a misleading verb, one name for two things</td></tr>
     <tr><td>Left for 10.0</td><td class="num">2</td><td class="num">0</td><td>One paragraph flow, one table API</td></tr>
@@ -163,91 +163,7 @@
 </div>
 
 <h2 id="drift">Drift between the ports</h2>
-<p>Places where a port behaves differently from the other three, in output or in how it fails. None changes the 50 examples, which is why the check does not catch them.</p>
-
-<section class="item">
-  <h3>Empty strings are written by three ports and skipped by Go <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>PDF.setTitle("")</code> and the other metadata setters write <code>/Title &lt;FEFF&gt;</code> and an empty XMP element in Java, C# and Swift; Go, which cannot tell unset from empty, writes nothing. The annotation writer does the same with an empty title or contents: <code>/T &lt;&gt;</code> in three ports, nothing in Go, while the <code>FileAttachment</code> branch already skips empties everywhere.</p>
-  <span class="label">Suggestion</span>
-  <p>Skip empty strings in the nullable ports too. An empty Info entry or annotation title serves no one.</p>
-</section>
-
-<section class="item">
-  <h3>Go and Swift stop the program where the others throw <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>The port rule is that Go returns an <code>error</code> where a function returns one and Swift throws <code>PDFjetError</code>. <code>Page.drawPath</code> and <code>drawPoint</code> panic in Go and call <code>fatalError</code> in Swift; <code>Page.setTextRenderingMode</code> panics in Go; Go <code>PDF.AddObjects</code> panics when the PDF has no <code>/Pages</code>, <code>Complete</code> panics when the stream cannot be flushed, and <code>NewPDFFile</code> panics when the file cannot be created, while <code>Read</code> in the same file returns an <code>error</code>.</p>
-  <span class="label">Suggestion</span>
-  <p><code>DrawPath</code>, <code>DrawPoint</code>, <code>AddObjects</code> and <code>Complete</code> return <code>error</code>, <code>NewPDFFile</code> returns <code>(*PDF, error)</code>; Swift <code>drawPath</code> and <code>drawPoint</code> throw.</p>
-</section>
-
-<section class="item">
-  <h3>Go has no reader-only <code>PDF</code>, and a file constructor the others lack <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>Java, C# and Swift have a <code>PDF()</code> constructor for reading an existing document. Go has only <code>NewPDF(writer)</code>, which writes the header at once, so the Go examples open an output file just to call <code>Read</code>. Go alone has <code>NewPDFFile(path)</code>, which opens and closes the file.</p>
-  <span class="label">Suggestion</span>
-  <p>Add a Go constructor for reading, and either add <code>PDF(path)</code> to the other ports or list <code>NewPDFFile</code> under the documented Go conveniences.</p>
-</section>
-
-
-
-<section class="item">
-  <h3>Warnings go to different places <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p>An out-of-range RGB component is reported through the logger in Java, to stderr in Go, and to stdout in C# and Swift, where it lands in the program's output.</p>
-  <span class="label">Suggestion</span>
-  <p>Route the C# and Swift warnings to stderr or the port's logger.</p>
-</section>
-
-<section class="item">
-  <h3>Small shape and signature differences <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <ul>
-    <li>Go <code>CompositeTextLine.GetMinMaxY</code> returns <code>[]float32</code>; every other coordinate pair in Go is <code>[2]float32</code>.</li>
-    <li>Go <code>PDF.AddObjects</code> takes <code>*[]*PDFobj</code> and never uses the pointer; <code>GetPageObjects</code> and <code>AddResourceObjects</code> take the slice.</li>
-    <li>Go has <code>AddBDC</code> only in its four-argument form, so every caller passes <code>""</code> for the language; the other ports have the three-argument form too.</li>
-    <li>Go <code>Paragraph</code> has no constructor from a <code>TextLine</code>; the others do.</li>
-    <li>Swift <code>Title.setPrefix</code> and <code>TextLine.advance</code> lack <code>@discardableResult</code>, so a plain call warns.</li>
-    <li>Swift <code>PDF</code> labels <code>read(from:)</code> and <code>getPageObjects(from:)</code> but not <code>addObjects(_:)</code> or <code>addResourceObjects(_:)</code>.</li>
-    <li>Swift <code>Page.addResource</code> takes <code>inout [PDFobj]</code> for a core font and a plain array for an image or a font.</li>
-    <li>C# <code>Page.setPenColor(int)</code> and <code>setBrushColor(int)</code> repeat the array overload instead of calling it, and the saved graphics state stores pen and brush in the opposite order in Go and Swift from Java and C#: same bytes today, two things to keep in step.</li>
-  </ul>
-  <span class="label">Suggestion</span>
-  <p>Align each with the majority port; none changes output.</p>
-</section>
-
-<section class="item">
-  <h3>Tables, cells and forms <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <ul>
-    <li>Go <code>NewCell(font, text)</code> is the only <code>Cell</code> constructor, and it always marks the cell as having text, so an empty string makes a cell one font height tall where <code>Cell(font)</code> in the other ports makes a cell of height zero.</li>
-    <li>Swift <code>Cell.getProperties</code> reports top and left whatever <code>setBorder</code> set; the four ports lay the same flags out four ways.</li>
-    <li>Go <code>Cell.SetBorderColorRGB</code> cannot clear the color; the other ports take null.</li>
-    <li>Swift <code>Table.getWidth</code> returns 0 for an empty table; the others fail on the first row.</li>
-    <li><code>RadioButton.setFontSize</code> resizes the shared <code>Font</code> in every port; <code>CheckBox</code> stores its own size.</li>
-    <li>Swift <code>Form</code> copies the fields list; the other ports keep the caller's, so a field added later shows in three ports. Go <code>Form.DrawOn</code> has no nil page check where the others fail with a message.</li>
-    <li>Swift handles a nil page three ways: <code>CalendarMonth</code> skips the drawing, <code>CheckBox</code> and <code>RadioButton</code> unwrap, <code>Form</code> stops the program.</li>
-  </ul>
-  <span class="label">Suggestion</span>
-  <p>A Go constructor for a cell without text; one representation of the flags; a <code>fontSize</code> field on <code>RadioButton</code>; one nil page rule in Swift.</p>
-</section>
-
-<section class="item">
-  <h3>Images and groups <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <ul>
-    <li><code>OptionalContentGroup.getComponents</code> returns a copy in Swift and the live list elsewhere.</li>
-    <li><code>CoreFont(int)</code> checks the number in no port; a bad value fails later in <code>stringWidth</code>.</li>
-  </ul>
-  <span class="label">Suggestion</span>
-  <p>Return the live list or a copy in all four, and reject a core font number outside the fourteen.</p>
-</section>
-
-<section class="item">
-  <h3>Stale lines and comments <span class="chip document">Tidy</span></h3>
-  <span class="label">Finding</span>
-  <p>Go <code>rotateAroundCenter</code> lives in the annotation file while the other ports keep it on <code>Container</code>; Go has an unused <code>annotationType</code>; Go doc comments still say <code>Float.MIN_VALUE</code> and carry Javadoc <code>@param</code> tags; the Go comment on <code>rotate</code> names the wrong center; <code>DonutChart.java</code> and <code>Slice.java</code> put the package line before the license.</p>
-</section>
+<p>Places where a port behaved differently from the other three, in output or in how it failed. None changed the 50 examples, which is why the check did not catch them. All seventeen were fixed on 14 September; the list is under <a href="#fixed">Fixed</a>. Three points stay as the README documents them for Go, which cannot overload: <code>Page.AddBDC</code> takes the language, <code>NewParagraph()</code> takes no text line, and <code>Cell.SetBorderColorRGB</code> takes an array, so a border colour once set stays, as <code>Rect</code> and <code>TextBlock</code> do.</p>
 
 <h2 id="library">Inconsistencies shared by all four ports</h2>
 <p>These are the same in every port, so they are design choices rather than drift, but two rules for one setting is one too many.</p>
@@ -360,7 +276,7 @@
 </section>
 
 <h2 id="fixed">Fixed on 14 September</h2>
-<p>The bugs and the crash-class drift of this audit were fixed the same day, in the four ports, and are listed here so the page stays a record of what was found.</p>
+<p>The bugs, the crash-class drift and then the rest of the drift of this audit were fixed the same day, in the four ports, and are listed here so the page stays a record of what was found.</p>
 <div class="plan">
   <ul>
     <li>Java <code>BarChart.barColor</code> guards a negative index, so a named series with a color per bar draws its legend swatch; the bar chart tests now name such a series in all four ports.</li>
@@ -374,6 +290,7 @@
     <li><code>BigTable</code> aligns a number with the same <code>Table.isNumber</code> test in the four ports, instead of each language's float parser; Go <code>BigTable</code> treats an empty delimiter as one field per line and reads lines longer than 64 KB, as <code>Table</code> does.</li>
     <li>The font parser <code>OTF</code> and the PNG decoder <code>PNGImage</code> are internal in the four ports, as are the ICC profile bytes of Go and Swift and the Swift <code>PDFobj.dict</code> field. <code>CheckBox.xMark</code> stays public: Example_50 uses it to tick the boxes of an existing form, so it is a feature, not an internal, and the audit had it wrong.</li>
     <li>The stale white fill color of the Go link annotations in <code>Chart</code>, <code>TextBlock</code>, <code>Image</code>, <code>SVGImage</code>, <code>CheckBox</code>, <code>RadioButton</code> and <code>FileAttachment</code> is gone.</li>
+    <li><strong>Drift between the ports.</strong> An empty document property or annotation title or contents writes nothing in Java, C# and Swift, as in Go. Go returns errors where it panicked: <code>NewPDFFile</code> returns <code>(*PDF, error)</code>, <code>Complete</code> and <code>AddObjects</code> return <code>error</code>, <code>SetTextRenderingMode</code> returns <code>(*Page, error)</code>, and the append functions keep the first writer error for <code>Complete</code>; <code>Page.drawPath</code> and <code>Stamp.drawPath</code> with fewer than two points paint nothing in the four ports, where two threw and two stopped the program. Go has <code>NewPDFReader()</code> for the reading-only <code>PDF()</code>, and the README lists <code>NewPDFFile</code>. C# and Swift warn on standard error. Go <code>GetMinMaxY</code> returns <code>[2]float32</code> and <code>AddObjects</code> takes the slice; Swift <code>Title.setPrefix</code> and <code>TextLine.advance</code> are <code>@discardableResult</code>, <code>addResourceObjects(from:)</code> is labelled like <code>getPageObjects(from:)</code>, and the three <code>addResource</code> forms take the objects as <code>inout</code>; C# <code>setPenColor(int)</code> and <code>setBrushColor(int)</code> call the array overloads, and the saved state stores brush then pen in the four ports. Go has <code>NewEmptyCell(font)</code>; a cell keeps its column span, borders, underline and strikeout as fields in the four ports; <code>Table.getWidth</code> of an empty table is 0 everywhere; <code>RadioButton</code> has its own <code>fontSize</code>; <code>Form</code> copies its fields and Go <code>Form.DrawOn</code> names a nil page, while Swift <code>Form</code> unwraps the page like <code>CheckBox</code> and <code>RadioButton</code>. <code>getComponents</code> returns a copy in the four ports, and <code>Font(pdf, coreFont)</code> rejects a number outside the fourteen in Java, C# and Swift (Go's core fonts are typed). Go's <code>rotateAroundCenter</code> lives with <code>Container</code>, the unused <code>annotationType</code> type and the <code>Float.MIN_VALUE</code> comments are gone, the Go doc comments list their parameters the Go way, and <code>DonutChart.java</code> and <code>Slice.java</code> start with the license.</li>
   </ul>
 </div>
 

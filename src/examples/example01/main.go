@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -14,7 +15,10 @@ import (
 
 // Example01 demonstrates creating a PDF with multilingual text blocks
 func Example01() {
-	pdf := pdfjet.NewPDFFile("Example_01.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_01.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	// pdf.SetCompliance(compliance.PDF_A_1A)
 	// pdf.SetCompliance(compliance.PDF_A_1B)
@@ -71,7 +75,9 @@ func Example01() {
 	textBlock.DrawOn(page)
 
 	// Complete the PDF file
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -39,8 +39,9 @@ func NewPath() *Path {
 }
 
 // Add adds a point to this path.
-// @param point the point to add.
-// @return this Path object.
+//   - point: the point to add.
+//
+// Returns this Path object.
 func (path *Path) Add(point *Point) *Path {
 	path.points = append(path.points, point)
 	return path
@@ -57,34 +58,37 @@ func (path *Path) Add(point *Point) *Path {
 //
 // Examples of line dash patterns:
 //
-//	"[Array] Phase"     Appearance          Description
-//	_______________     _________________   ____________________________________
+//		"[Array] Phase"     Appearance          Description
+//		_______________     _________________   ____________________________________
 //
-//	"[] 0"              -----------------   Solid line
-//	"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//		"[] 0"              -----------------   Solid line
+//		"[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//		"[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//		"[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//		"[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//		"[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
-// @param pattern the line dash pattern.
-// @return this Path object.
+//	  - pattern: the line dash pattern.
+//
+// Returns this Path object.
 func (path *Path) SetStrokeDashPattern(pattern string) *Path {
 	path.pattern = pattern
 	return path
 }
 
 // SetStrokeWidth sets the stroke width that will be used to draw the lines and splines that are part of this path.
-// @param width the stroke width.
-// @return this Path object.
+//   - width: the stroke width.
+//
+// Returns this Path object.
 func (path *Path) SetStrokeWidth(width float32) *Path {
 	path.width = width
 	return path
 }
 
 // SetStrokeColor sets the stroke color that will be used to draw this path.
-// @param color the color specified as an integer.
-// @return this Path object.
+//   - color: the color specified as an integer.
+//
+// Returns this Path object.
 func (path *Path) SetStrokeColor(color int32) *Path {
 	path.color = colorToRGB(color)
 	return path
@@ -97,53 +101,58 @@ func (path *Path) SetStrokeColorRGB(rgbColor [3]float32) *Path {
 }
 
 // SetClosePath sets whether a line is drawn from the last point of this path back to the first.
-// @param closePath true to close the path.
-// @return this Path object.
+//   - closePath: true to close the path.
+//
+// Returns this Path object.
 func (path *Path) SetClosePath(closePath bool) *Path {
 	path.closePath = closePath
 	return path
 }
 
 // SetFillShape sets whether the shape of this path is filled with the stroke color instead of stroked.
-// @param fillShape true to fill the shape.
-// @return this Path object.
+//   - fillShape: true to fill the shape.
+//
+// Returns this Path object.
 func (path *Path) SetFillShape(fillShape bool) *Path {
 	path.fillShape = fillShape
 	return path
 }
 
 // SetLineCapStyle sets the line cap style.
-// @param style the cap style of this path. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
-// @return this Path object.
+//   - style: the cap style of this path. Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
+//
+// Returns this Path object.
 func (path *Path) SetLineCapStyle(style capstyle.CapStyle) *Path {
 	path.lineCapStyle = style
 	return path
 }
 
 // GetLineCapStyle returns the line cap style for this path.
-// @return the line cap style for this path.
+// Returns the line cap style for this path.
 func (path *Path) GetLineCapStyle() capstyle.CapStyle {
 	return path.lineCapStyle
 }
 
 // SetLineJoinStyle sets the line join style.
-// @param style the line join style. Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
-// @return this Path object.
+//   - style: the line join style. Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
+//
+// Returns this Path object.
 func (path *Path) SetLineJoinStyle(style joinstyle.JoinStyle) *Path {
 	path.lineJoinStyle = style
 	return path
 }
 
 // GetLineJoinStyle returns the line join style.
-// @return the line join style.
+// Returns the line join style.
 func (path *Path) GetLineJoinStyle() joinstyle.JoinStyle {
 	return path.lineJoinStyle
 }
 
 // SetLocation sets the location of this path: its points are drawn offset by x and y.
-// @param x the x offset.
-// @param y the y offset.
-// @return this Path object.
+//   - x: the x offset.
+//   - y: the y offset.
+//
+// Returns this Path object.
 func (path *Path) SetLocation(x, y float32) Drawable {
 	path.xBox = x
 	path.yBox = y
@@ -151,8 +160,9 @@ func (path *Path) SetLocation(x, y float32) Drawable {
 }
 
 // ScaleBy scales the points of this path by the specified factor.
-// @param factor the factor used to scale the path.
-// @return this Path object.
+//   - factor: the factor used to scale the path.
+//
+// Returns this Path object.
 func (path *Path) ScaleBy(factor float32) *Path {
 	for _, point := range path.points {
 		point.x *= factor
@@ -164,8 +174,9 @@ func (path *Path) ScaleBy(factor float32) *Path {
 // DrawOn draws this path on the specified page. If fillShape is set the shape is
 // filled with the stroke color; otherwise the path is stroked with its
 // width, dash pattern, cap style and join style.
-// @param page the page to draw this path on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this path on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (path *Path) DrawOn(page *Page) [2]float32 {
 	for _, point := range path.points {
 		point.x += path.xBox

@@ -553,9 +553,10 @@ public class Table implements Drawable {
      */
     public float getWidth() {
         float tableWidth = 0f;
-        List<Cell> row = tableData.get(0);
-        for (Cell cell : row) {
-            tableWidth += cell.getWidth();
+        if (!tableData.isEmpty()) {
+            for (Cell cell : tableData.get(0)) {
+                tableWidth += cell.getWidth();
+            }
         }
         return tableWidth;
     }
@@ -745,8 +746,13 @@ public class Table implements Drawable {
                     cell2.setBorderWidth(cell.getBorderWidth());
                     cell2.setBorderColor(cell.getBorderColor());
                     cell2.setTextColor(cell.getTextColor());
-                    // The column span, borders, underline and strikeout.
-                    cell2.setProperties(cell.getProperties());
+                    cell2.setColSpan(cell.getColSpan());
+                    cell2.setBorder(Border.TOP, cell.getBorder(Border.TOP));
+                    cell2.setBorder(Border.BOTTOM, cell.getBorder(Border.BOTTOM));
+                    cell2.setBorder(Border.LEFT, cell.getBorder(Border.LEFT));
+                    cell2.setBorder(Border.RIGHT, cell.getBorder(Border.RIGHT));
+                    cell2.setUnderline(cell.getUnderline());
+                    cell2.setStrikeout(cell.getStrikeout());
                     cell2.setTextAlignment(cell.getTextAlignment());
                     cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);

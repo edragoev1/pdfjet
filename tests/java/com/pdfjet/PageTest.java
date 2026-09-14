@@ -9,6 +9,8 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class PageTest {
@@ -81,5 +83,25 @@ class PageTest {
         assertEquals(2, file.split("/Dest \\[").length - 1, file);
         assertEquals(2, file.split("/XYZ 30 692 0\\]").length - 1, file);
         assertEquals(3, file.split("/Subtype /Link").length - 1, file);
+    }
+
+    @Test
+    void aPathWithFewerThanTwoPointsPaintsNothing() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        List<Point> path = new ArrayList<Point>();
+        page.drawPath(path, PathOperator.STROKE);
+        path.add(new Point(10f, 10f));
+        page.drawPath(path, PathOperator.STROKE);
+        assertEquals("", TestSupport.content(page));
+    }
+
+    @Test
+    void aRadioButtonFontSizeLeavesTheFontAlone() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new RadioButton(font, "Yes").setLocation(50f, 50f).setFontSize(20f).drawOn(page);
+        assertEquals(12f, font.getSize(), 0f);
+        assertTrue(TestSupport.content(page).contains(" 20 Tf\n"), TestSupport.content(page));
     }
 }

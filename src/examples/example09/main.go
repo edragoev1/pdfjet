@@ -28,7 +28,10 @@ type country struct {
 // that links to a page about the country, with the trend line of the points,
 // and a table of the countries with a marker of their own.
 func Example09() {
-	pdf := pdfjet.NewPDFFile("Example_09.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_09.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(8.0)
@@ -57,7 +60,9 @@ func Example09() {
 	f2.SetSize(7.0)
 	addTableToChart(page, countries, f1, f2)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // addTrendLine calculates and adds the trend line of the countries to the chart.

@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -76,6 +77,26 @@ public class PageTest {
         Assert.Equal(2, file.Split("/Dest [").Length - 1);
         Assert.Equal(2, file.Split("/XYZ 30 692 0]").Length - 1);
         Assert.Equal(3, file.Split("/Subtype /Link").Length - 1);
+    }
+
+    [Fact]
+    public void APathWithFewerThanTwoPointsPaintsNothing() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        List<Point> path = new List<Point>();
+        page.DrawPath(path, PathOperator.STROKE);
+        path.Add(new Point(10f, 10f));
+        page.DrawPath(path, PathOperator.STROKE);
+        Assert.Equal("", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void ARadioButtonFontSizeLeavesTheFontAlone() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new RadioButton(font, "Yes").SetLocation(50f, 50f).SetFontSize(20f).DrawOn(page);
+        Assert.Equal(12f, font.GetSize());
+        Assert.Contains(" 20 Tf\n", TestSupport.Content(page));
     }
 }
 }

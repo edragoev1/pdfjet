@@ -198,6 +198,10 @@ public class CoreFont {
             this.underlineThickness = ZapfDingbats.underlineThickness;
             this.metrics = ZapfDingbats.metrics;
             break;
+
+            default:
+            throw new ArgumentException(
+                    "Invalid core font number: " + coreFont + ". Use a constant of the CoreFont class.");
         }
     }
 }

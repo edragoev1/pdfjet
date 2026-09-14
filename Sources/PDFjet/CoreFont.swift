@@ -47,7 +47,8 @@ public class CoreFont {
     var metrics: [[Int16]]?
 
     /// Loads the metrics of the specified standard font, for example CoreFont.HELVETICA.
-    public init(_ coreFont: Int) {
+    /// - Throws: PDFjetError when the number is not one of the fourteen core fonts.
+    public init(_ coreFont: Int) throws {
         if coreFont == CoreFont.COURIER {
             self.name = Courier.name
             self.bBoxLLx = Courier.bBoxLLx
@@ -174,6 +175,9 @@ public class CoreFont {
             self.underlinePosition = ZapfDingbats.underlinePosition
             self.underlineThickness = ZapfDingbats.underlineThickness
             self.metrics = ZapfDingbats.metrics
+        } else {
+            throw PDFjetError(message:
+                    "Invalid core font number: \(coreFont). Use a constant of the CoreFont class.")
         }
     }
 }

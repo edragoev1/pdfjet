@@ -43,7 +43,9 @@ func testNewDoc() *testDoc {
 
 // complete completes the PDF and returns its bytes.
 func (doc *testDoc) complete() []byte {
-	doc.pdf.Complete()
+	if err := doc.pdf.Complete(); err != nil {
+		panic(err)
+	}
 	if err := doc.writer.Flush(); err != nil {
 		panic(err)
 	}

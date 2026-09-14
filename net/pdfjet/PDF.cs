@@ -986,7 +986,7 @@ public class PDF {
             Append(annot.transparency);
             Append("\n");
 
-            if (annot.title != null) {
+            if (!String.IsNullOrEmpty(annot.title)) {
                 byte[] title = Encoding.UTF8.GetBytes(annot.title);
                 if (encryption != null) {
                     title = AES256.Encrypt(title, encryption.GetKey());
@@ -996,7 +996,7 @@ public class PDF {
                 Append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (!String.IsNullOrEmpty(annot.contents)) {
                 byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
                 if (encryption != null) {
                     contents = AES256.Encrypt(contents, encryption.GetKey());
@@ -1019,7 +1019,7 @@ public class PDF {
             Append(annot.transparency);
             Append("\n");
 
-            if (annot.title != null) {
+            if (!String.IsNullOrEmpty(annot.title)) {
                 byte[] title = Encoding.UTF8.GetBytes(annot.title);
                 if (encryption != null) {
                     title = AES256.Encrypt(title, encryption.GetKey());
@@ -1029,7 +1029,7 @@ public class PDF {
                 Append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (!String.IsNullOrEmpty(annot.contents)) {
                 byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
                 if (encryption != null) {
                     contents = AES256.Encrypt(contents, encryption.GetKey());
@@ -1041,7 +1041,7 @@ public class PDF {
         } else if (annot.annotationType.Equals(Annotation.Text)) {
             Append("/Name /Comment\n");
 
-            if (annot.title != null) {
+            if (!String.IsNullOrEmpty(annot.title)) {
                 byte[] title = Encoding.UTF8.GetBytes(annot.title);
                 if (encryption != null) {
                     title = AES256.Encrypt(title, encryption.GetKey());
@@ -1051,7 +1051,7 @@ public class PDF {
                 Append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (!String.IsNullOrEmpty(annot.contents)) {
                 byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
                 if (encryption != null) {
                     contents = AES256.Encrypt(contents, encryption.GetKey());
@@ -1268,8 +1268,14 @@ public class PDF {
     /// </summary>
     /// <param name="title">The title of this document.</param>
     /// <returns>this PDF object.</returns>
+    // An empty document property is the same as one that was never set: it is
+    // not written, as in the Go port, which cannot tell the two apart.
+    private static String NullIfEmpty(String text) {
+        return (text != null && text.Length == 0) ? null : text;
+    }
+
     public PDF SetTitle(String title) {
-        this.title = title;
+        this.title = NullIfEmpty(title);
         return this;
     }
 
@@ -1289,7 +1295,7 @@ public class PDF {
     /// <param name="author">The author of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetAuthor(String author) {
-        this.author = author;
+        this.author = NullIfEmpty(author);
         return this;
     }
 
@@ -1299,19 +1305,19 @@ public class PDF {
     /// <param name="subject">The subject of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetSubject(String subject) {
-        this.subject = subject;
+        this.subject = NullIfEmpty(subject);
         return this;
     }
 
     /// <summary>Sets the keywords in the document metadata.</summary>
     public PDF SetKeywords(String keywords) {
-        this.keywords = keywords;
+        this.keywords = NullIfEmpty(keywords);
         return this;
     }
 
     /// <summary>Sets the creator in the document metadata.</summary>
     public PDF SetCreator(String creator) {
-        this.creator = creator;
+        this.creator = NullIfEmpty(creator);
         return this;
     }
 

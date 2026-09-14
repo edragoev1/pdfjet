@@ -339,10 +339,11 @@ func (s *Stamp) appendPoint(point *Point) {
 }
 
 // DrawPath draws a path through the points. Control points define Bézier curves.
-// It panics if the path has fewer than 2 points or ends with an unconsumed control point.
+// Fewer than two points paint nothing. It panics if the path ends with an
+// unconsumed control point.
 func (s *Stamp) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
-		panic("The Path object must contain at least 2 points")
+		return // A path needs two points to paint anything.
 	}
 	point := path[0]
 	s.MoveTo(point.x, point.y)

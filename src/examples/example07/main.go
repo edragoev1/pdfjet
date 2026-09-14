@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -13,7 +14,10 @@ import (
 
 // Example07 shows how to create a PDF/A-3B compliant document.
 func Example07() {
-	pdf := pdfjet.NewPDFFile("Example_07.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_07.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_A_3B)
 	pdf.SetTitle("PDF/A-3B compliant PDF")
 
@@ -68,7 +72,9 @@ func Example07() {
 	textLine.SetLocation(xPos, 34.0)
 	textLine.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

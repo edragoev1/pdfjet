@@ -34,24 +34,14 @@ public class Cell {
     internal float strokeWidth;
     internal float[] strokeColor;
 
-    internal int colspan = 1;
-
-    // Cell properties
-    // Colspan:
-    // bits 0 to 15
-    // Border:
-    // bit 16 - top
-    // bit 17 - bottom
-    // bit 18 - left
-    // bit 19 - right
-    // Not used:
-    // bits 20 and 21
-    // Text Decoration:
-    // bit 22 - underline
-    // bit 23 - strikeout
-    // Future use:
-    // bits 24 to 31
-    private uint properties = 0x00050001;   // Set only left and top borders!
+    private int colspan = 1;
+    // Only the top and left borders are drawn unless SetBorder says otherwise.
+    private bool topBorder = true;
+    private bool bottomBorder = false;
+    private bool leftBorder = true;
+    private bool rightBorder = false;
+    private bool underline = false;
+    private bool strikeout = false;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
     private Alignment valign = Alignment.TOP;
@@ -408,14 +398,6 @@ public class Cell {
         return Util.CopyOf(this.strokeColor);
     }
 
-    internal void SetProperties(uint properties) {
-        this.properties = properties;
-    }
-
-    internal uint GetProperties() {
-        return this.properties;
-    }
-
     /// <summary>
     /// Sets the column span private variable.
     /// </summary>
@@ -440,11 +422,17 @@ public class Cell {
     /// <param name="visible">true to show the border, false to hide it.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorder(uint border, bool visible) {
-        border &= Border.ALL;    // Only the border bits
-        if (visible) {
-            this.properties |= border;
-        } else {
-            this.properties &= (~border & 0x00FFFFFF);
+        if ((border & Border.TOP) != 0) {
+            this.topBorder = visible;
+        }
+        if ((border & Border.BOTTOM) != 0) {
+            this.bottomBorder = visible;
+        }
+        if ((border & Border.LEFT) != 0) {
+            this.leftBorder = visible;
+        }
+        if ((border & Border.RIGHT) != 0) {
+            this.rightBorder = visible;
         }
         return this;
     }
@@ -454,7 +442,10 @@ public class Cell {
     /// </summary>
     /// <returns>the cell border object.</returns>
     public bool GetBorder(uint border) {
-        return (this.properties & border) != 0;
+        return ((border & Border.TOP) != 0 && topBorder) ||
+                ((border & Border.BOTTOM) != 0 && bottomBorder) ||
+                ((border & Border.LEFT) != 0 && leftBorder) ||
+                ((border & Border.RIGHT) != 0 && rightBorder);
     }
 
     /// <summary>
@@ -463,12 +454,7 @@ public class Cell {
     /// <param name="borders">true or false.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorders(bool borders) {
-        if (borders) {
-            this.properties |= 0x000F0000;
-        } else {
-            this.properties &= 0x00F0FFFF;
-        }
-        return this;
+        return SetBorder(Border.ALL, borders);
     }
 
     /// <summary>
@@ -516,32 +502,24 @@ public class Cell {
     /// <param name="underline">the underline flag.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetUnderline(bool underline) {
-        if (underline) {
-            this.properties |= 0x00400000;
-        } else {
-            this.properties &= 0x00BFFFFF;
-        }
+        this.underline = underline;
         return this;
     }
 
     /// <summary>Returns true if the text is underlined.</summary>
     public bool GetUnderline() {
-        return (properties & 0x00400000) != 0;
+        return this.underline;
     }
 
     /// <summary>Sets whether the text is struck out.</summary>
     public Cell SetStrikeout(bool strikeout) {
-        if (strikeout) {
-            this.properties |= 0x00800000;
-        } else {
-            this.properties &= 0x007FFFFF;
-        }
+        this.strikeout = strikeout;
         return this;
     }
 
     /// <summary>Returns true if the text is struck out.</summary>
     public bool GetStrikeout() {
-        return (properties & 0x00800000) != 0;
+        return this.strikeout;
     }
 
     /// <summary>Sets the URI opened when this cell is clicked.</summary>
@@ -603,7 +581,7 @@ public class Cell {
                     barcode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
                 }
             } catch (Exception e) {
-                Console.WriteLine(e.ToString());
+                Console.Error.WriteLine(e.ToString());
             }
         }
 

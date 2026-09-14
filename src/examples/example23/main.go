@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example23 shows the ascent, descent and baseline of the text in a TextBlock.
 func Example23() {
-	pdf := pdfjet.NewPDFFile("Example_23.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_23.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(72.0)
@@ -107,7 +111,9 @@ func Example23() {
 	rect.SetBorderColor(color.Black)
 	rect.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

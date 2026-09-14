@@ -173,18 +173,20 @@ public class Page {
     }
 
     /// Adds a core font to the resources of this page and returns the font.
-    public func addResource(_ coreFont: Int, _ objects: inout [PDFobj]) -> Font {
-        return pageObj!.addResource(coreFont, &objects)
+    /// The objects are the objects of the document, which get the font object.
+    /// - Throws: PDFjetError when the number is not one of the fourteen core fonts.
+    public func addResource(_ coreFont: Int, _ objects: inout [PDFobj]) throws -> Font {
+        return try pageObj!.addResource(coreFont, &objects)
     }
 
-    /// Adds an image to the resources of this page.
-    public func addResource(_ image: Image, _ objects: [PDFobj]) {
-        pageObj!.addResource(image, objects)
+    /// Adds an image to the resources of this page. The objects are the objects of the document.
+    public func addResource(_ image: Image, _ objects: inout [PDFobj]) {
+        pageObj!.addResource(image, &objects)
     }
 
-    /// Adds a font to the resources of this page.
-    public func addResource(_ font: Font, _ objects: [PDFobj]) {
-        pageObj!.addResource(font, objects)
+    /// Adds a font to the resources of this page. The objects are the objects of the document.
+    public func addResource(_ font: Font, _ objects: inout [PDFobj]) {
+        pageObj!.addResource(font, &objects)
     }
 
     /// Returns the content stream of this page.
@@ -945,7 +947,7 @@ public class Page {
     /// Saves the current graphics state. Please see Example_31.
     public func saveGraphicsState() {
         savedStates.append(State(
-                penColor, brushColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern))
+                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern))
         append("q\n")
     }
 
@@ -1011,7 +1013,7 @@ public class Page {
         if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
                 rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
                 rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
-            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
+            FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
             return self
         }
         penColor = rgbColor
@@ -1053,7 +1055,7 @@ public class Page {
         if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
                 rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
                 rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
-            print("Warning: RGB color values must be between 0f and 1f. Ignoring request.")
+            FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
             return self
         }
         brushColor = rgbColor
@@ -1328,7 +1330,7 @@ public class Page {
             _ path: [Point],
             _ pathOperator: PathOperator) {
         if path.count < 2 {
-            fatalError("The Path object must contain at least 2 points")
+            return // A path needs two points to paint anything.
         }
         var point = path[0]
         moveTo(point.x, point.y)

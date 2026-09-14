@@ -644,10 +644,11 @@ func ReorderVisually(str string) string {
 // are shaped in the context of the whole string, so a word that is broken
 // between two lines keeps its joined forms at the break when each line is
 // made this way.
-// @param str the input string.
-// @param from the byte index of the first character to return.
-// @param to the byte index after the last character to return.
-// @return the reordered part of the string.
+//   - str: the input string.
+//   - from: the byte index of the first character to return.
+//   - to: the byte index after the last character to return.
+//
+// Returns the reordered part of the string.
 func ReorderVisuallyPart(str string, from, to int) string {
 	// Work with code points (runes) so that supplementary characters
 	// are handled correctly. The explicit embedding, override and isolate

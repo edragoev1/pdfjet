@@ -204,3 +204,19 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	// Return bottom-right position of container
 	return [2]float32{c.x + c.width, c.y + c.height}
 }
+
+// rotateAroundCenter rotates a point around a center by the given degrees and
+// returns the rotated point.
+func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
+	radians := degrees * math.Pi / 180.0
+	cos := float32(math.Cos(radians))
+	sin := float32(math.Sin(radians))
+
+	dx := point[0] - center[0]
+	dy := point[1] - center[1]
+
+	return [2]float32{
+		center[0] + (dx*cos - dy*sin),
+		center[1] + (dx*sin + dy*cos),
+	}
+}

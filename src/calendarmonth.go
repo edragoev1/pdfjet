@@ -25,10 +25,10 @@ type CalendarMonth struct {
 }
 
 // NewCalendarMonth creates a calendar for the specified month.
-// @param f1 the header font.
-// @param f2 the body font.
-// @param year the year.
-// @param month the month, from 1 to 12.
+//   - f1: the header font.
+//   - f2: the body font.
+//   - year: the year.
+//   - month: the month, from 1 to 12.
 func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
 	calendarMonth := new(CalendarMonth)
 	calendarMonth.f1 = f1

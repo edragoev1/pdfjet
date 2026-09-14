@@ -40,10 +40,10 @@ public class Example_50 {
         let page = Page(pdf, pages[0])
         // page.invertYAxis()
 
-        page.addResource(image, objects)
-        page.addResource(f1, objects)
-        page.addResource(f2, objects)
-        let f3 = page.addResource(CoreFont.HELVETICA, &objects).setSize(12.0)
+        page.addResource(image, &objects)
+        page.addResource(f1, &objects)
+        page.addResource(f2, &objects)
+        let f3 = try page.addResource(CoreFont.HELVETICA, &objects).setSize(12.0)
 
         image.drawOn(page)
 

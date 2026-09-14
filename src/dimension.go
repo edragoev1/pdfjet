@@ -13,8 +13,8 @@ type Dimension struct {
 
 // NewDimension Constructor for creating dimension objects.
 //
-// @param width the width.
-// @param height the height.
+//   - width: the width.
+//   - height: the height.
 func NewDimension(width, height float32) *Dimension {
 	dimension := new(Dimension)
 	dimension.w = width

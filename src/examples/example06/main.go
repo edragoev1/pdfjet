@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example06 shows how to attach files and annotations to a page.
 func Example06() {
-	pdf := pdfjet.NewPDFFile("Example_06.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_06.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
@@ -89,7 +93,9 @@ func Example06() {
 
 	container.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -73,12 +73,12 @@ const (
 //
 // Examples:
 //
-//	font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
-//	font2 := pdfjet.NewCoreFont(pdf, corefont.TimesItalic())
-//	font3 := pdfjet.NewCoreFont(pdf, corefont.ZapfDingbats())
+//		font1 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+//		font2 := pdfjet.NewCoreFont(pdf, corefont.TimesItalic())
+//		font3 := pdfjet.NewCoreFont(pdf, corefont.ZapfDingbats())
 //
-// @param pdf the PDF to add this font to.
-// @param coreFont the core font, for example corefont.Helvetica().
+//	  - pdf: the PDF to add this font to.
+//	  - coreFont: the core font, for example corefont.Helvetica().
 func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font := new(Font)
 	font.isCoreFont = true
@@ -143,8 +143,8 @@ func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 // NewCJKFont is the constructor for CJK - Chinese, Japanese and Korean fonts.
 // Please see Example_04.
 //
-// @param pdf the PDF to add this font to.
-// @param cjkFont the font. Please see Example_04.
+//   - pdf: the PDF to add this font to.
+//   - cjkFont: the font. Please see Example_04.
 func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	var fontName string
 	switch cjkFont {

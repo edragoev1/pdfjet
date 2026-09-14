@@ -73,7 +73,7 @@ public class OptionalContentGroup {
 
     /// <summary>Returns the drawables in this group.</summary>
     public List<IDrawable> GetComponents() {
-        return components;
+        return new List<IDrawable>(components);
     }
 
     /// <summary>Draws this group and its drawables on the specified page.</summary>

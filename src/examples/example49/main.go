@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -14,7 +15,10 @@ import (
 
 // Example49 draws paragraphs that mix several text styles.
 func Example49() {
-	pdf := pdfjet.NewPDFFile("Example_49.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_49.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Paragraphs with mixed text styles")
 
@@ -67,7 +71,9 @@ func Example49() {
 	textLine.SetUnderline(true)
 	textLine.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

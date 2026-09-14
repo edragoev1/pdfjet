@@ -384,8 +384,8 @@ public final class PDFobj {
     /// - Returns: the font.
     public final func addResource(
             _ coreFont: Int,
-            _ objects: inout [PDFobj]) -> Font {
-        let font = Font(coreFont)
+            _ objects: inout [PDFobj]) throws -> Font {
+        let font = try Font(coreFont)
         font.fontID = font.name.replacingOccurrences(of: "-", with: "_").uppercased()
 
         let obj = PDFobj()
@@ -539,7 +539,7 @@ public final class PDFobj {
     /// - Parameter objects: the objects of the PDF.
     public final func addResource(
             _ image: Image,
-            _ objects: [PDFobj]) {
+            _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = dict[i + 1]
@@ -560,7 +560,7 @@ public final class PDFobj {
     /// - Parameter objects: the objects of the PDF.
     public final func addResource(
             _ font: Font,
-            _ objects: [PDFobj]) {
+            _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = dict[i + 1]

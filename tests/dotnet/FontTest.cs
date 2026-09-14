@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.IO;
 using Xunit;
 
@@ -66,6 +67,13 @@ public class FontTest {
             Assert.Equal("IBMPlexSans", font.GetName());
             TestSupport.AssertNear(28.32f, font.StringWidth(12f, "Hello"), 0.001f);
         }
+    }
+
+    [Fact]
+    public void ACoreFontNumberOutsideTheFourteenIsRejected() {
+        PDF pdf = TestSupport.NewPDF();
+        Assert.Throws<ArgumentException>(() => new Font(pdf, 0));
+        Assert.Throws<ArgumentException>(() => new Font(pdf, 15));
     }
 }
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +16,10 @@ import (
 
 // Example14 draws Data Matrix barcodes.
 func Example14() {
-	pdf := pdfjet.NewPDFFile("Example_14.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_14.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
@@ -59,7 +63,9 @@ func Example14() {
 	caption.SetLocation(300.0, xy[1]+20.0)
 	caption.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

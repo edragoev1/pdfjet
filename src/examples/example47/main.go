@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -14,7 +15,10 @@ import (
 
 // Example47 flows text through columns using the TextFrame class.
 func Example47() {
-	pdf := pdfjet.NewPDFFile("Example_47.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_47.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Text flowing through columns")
 
@@ -62,7 +66,9 @@ func Example47() {
 		y = 50.0
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

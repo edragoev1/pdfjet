@@ -12,7 +12,7 @@ public class Example_20 {
         let objects = try pdf.read(
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
 
-        pdf.addResourceObjects(objects)
+        pdf.addResourceObjects(from: objects)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(18.0)

@@ -39,8 +39,8 @@ const (
 )
 
 // NewBarcode constructs barcode objects.
-// @param barcodeType the type of the barcode.
-// @param text the content string of the barcode.
+//   - barcodeType: the type of the barcode.
+//   - text: the content string of the barcode.
 func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode := new(Barcode)
 	barcode.barcodeType = barcodeType
@@ -127,8 +127,8 @@ func reverseString(str string) string {
 }
 
 // SetLocation sets the location where this barcode will be drawn on the page.
-// @param x1 the x coordinate of the top left corner of the barcode.
-// @param y1 the y coordinate of the top left corner of the barcode.
+//   - x1: the x coordinate of the top left corner of the barcode.
+//   - y1: the y coordinate of the top left corner of the barcode.
 func (barcode *Barcode) SetLocation(x1, y1 float32) Drawable {
 	barcode.x1 = x1
 	barcode.y1 = y1
@@ -151,14 +151,14 @@ func (barcode *Barcode) SetBarHeightFactor(barHeightFactor float32) *Barcode {
 }
 
 // SetDirection sets the direction in which this barcode is drawn.
-// @param direction the specified direction.
+//   - direction: the specified direction.
 func (barcode *Barcode) SetDirection(direction direction.Direction) *Barcode {
 	barcode.direction = direction
 	return barcode
 }
 
 // SetFont sets the font to be used with this barcode.
-// @param font the specified font.
+//   - font: the specified font.
 func (barcode *Barcode) SetFont(font *Font) *Barcode {
 	barcode.font = font
 	return barcode

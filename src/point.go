@@ -30,8 +30,8 @@ type Point struct {
 }
 
 // NewPoint constructor for creating point objects.
-// @param x the x coordinate of this point when drawn on the page.
-// @param y the y coordinate of this point when drawn on the page.
+//   - x: the x coordinate of this point when drawn on the page.
+//   - y: the y coordinate of this point when drawn on the page.
 func NewPoint(x, y float32) *Point {
 	point := new(Point)
 	point.controlPoint = 0
@@ -45,8 +45,8 @@ func NewPoint(x, y float32) *Point {
 }
 
 // NewControlPointC creates a "c" type control point for cubic Bézier curves.
-// @param x the x coordinate of this point.
-// @param y the y coordinate of this point.
+//   - x: the x coordinate of this point.
+//   - y: the y coordinate of this point.
 func NewControlPointC(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.controlPoint = 'c'
@@ -54,8 +54,8 @@ func NewControlPointC(x, y float32) *Point {
 }
 
 // NewControlPointV creates a "v" type control point for cubic Bézier curves.
-// @param x the x coordinate of this point.
-// @param y the y coordinate of this point.
+//   - x: the x coordinate of this point.
+//   - y: the y coordinate of this point.
 func NewControlPointV(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.controlPoint = 'v'
@@ -63,8 +63,8 @@ func NewControlPointV(x, y float32) *Point {
 }
 
 // NewControlPointY creates a "y" type control point for cubic Bézier curves.
-// @param x the x coordinate of this point.
-// @param y the y coordinate of this point.
+//   - x: the x coordinate of this point.
+//   - y: the y coordinate of this point.
 func NewControlPointY(x, y float32) *Point {
 	point := NewPoint(x, y)
 	point.controlPoint = 'y'
@@ -78,8 +78,8 @@ func copyPoint(point *Point) *Point {
 }
 
 // SetLocation sets the location (x, y) of this point.
-// @param x the x coordinate of this point when drawn on the page.
-// @param y the y coordinate of this point when drawn on the page.
+//   - x: the x coordinate of this point when drawn on the page.
+//   - y: the y coordinate of this point when drawn on the page.
 func (point *Point) SetLocation(x, y float32) Drawable {
 	point.x = x
 	point.y = y
@@ -87,40 +87,40 @@ func (point *Point) SetLocation(x, y float32) Drawable {
 }
 
 // SetX sets the x coordinate of this point.
-// @param x the x coordinate of this point when drawn on the page.
+//   - x: the x coordinate of this point when drawn on the page.
 func (point *Point) SetX(x float32) *Point {
 	point.x = x
 	return point
 }
 
 // GetX returns the x coordinate of this point.
-// @return the x coordinate of this point.
+// Returns the x coordinate of this point.
 func (point *Point) GetX() float32 {
 	return point.x
 }
 
 // SetY sets the y coordinate of this point.
-// @param y the y coordinate of this point when drawn on the page.
+//   - y: the y coordinate of this point when drawn on the page.
 func (point *Point) SetY(y float32) *Point {
 	point.y = y
 	return point
 }
 
 // GetY returns the y coordinate of this point.
-// @return the y coordinate of this point.
+// Returns the y coordinate of this point.
 func (point *Point) GetY() float32 {
 	return point.y
 }
 
 // SetRadius sets the radius of this point.
-// @param r the radius.
+//   - r: the radius.
 func (point *Point) SetRadius(r float32) *Point {
 	point.r = r
 	return point
 }
 
 // GetRadius returns the radius of this point.
-// @return the radius of this point.
+// Returns the radius of this point.
 func (point *Point) GetRadius() float32 {
 	return point.r
 }
@@ -188,27 +188,28 @@ func (point *Point) SetStrokeWidth(strokeWidth float32) *Point {
 }
 
 // GetStrokeWidth returns the width of the lines used to draw this point.
-// @return the stroke width.
+// Returns the stroke width.
 func (point *Point) GetStrokeWidth() float32 {
 	return point.strokeWidth
 }
 
 // SetURIAction sets the URI of the link opened by a click on this point.
-// @param uri the URI.
+//   - uri: the URI.
 func (point *Point) SetURIAction(uri string) *Point {
 	point.uri = uri
 	return point
 }
 
 // GetURIAction returns the URI of the link opened by a click on this point.
-// @return the URI, or "".
+// Returns the URI, or "".
 func (point *Point) GetURIAction() string {
 	return point.uri
 }
 
 // DrawOn draws this point on the specified page.
-// @param page the page to draw this point on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this point on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (point *Point) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{point.x + point.r, point.y + point.r}

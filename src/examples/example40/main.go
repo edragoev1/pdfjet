@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -14,7 +15,10 @@ import (
 // two series grouped by month, and the same series stacked, with a legend
 // under each title.
 func Example40() {
-	pdf := pdfjet.NewPDFFile("Example_40.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_40.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
@@ -56,7 +60,9 @@ func Example40() {
 	stacked.SetLocation(70.0, 400.0)
 	stacked.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -126,3 +126,7 @@ func TestTableRightAlignNumbersRightAlignsOnlyNumbers(t *testing.T) {
 		t.Error("the header is right aligned")
 	}
 }
+
+func TestTableAnEmptyTableHasNoWidth(t *testing.T) {
+	testNear(t, "width", 0, NewTable().GetWidth(), 0)
+}

@@ -31,10 +31,10 @@ type Rect struct {
 }
 
 // NewRect creates new Rect object.
-// @param x the x coordinate of the top left corner of this rect when drawn on the page.
-// @param y the y coordinate of the top left corner of this rect when drawn on the page.
-// @param w the width of this rect.
-// @param h the height of this rect.
+//   - x: the x coordinate of the top left corner of this rect when drawn on the page.
+//   - y: the y coordinate of the top left corner of this rect when drawn on the page.
+//   - w: the width of this rect.
+//   - h: the height of this rect.
 func NewRect(x, y, w, h float32) *Rect {
 	rect := new(Rect)
 	rect.x = x
@@ -47,8 +47,8 @@ func NewRect(x, y, w, h float32) *Rect {
 }
 
 // SetLocation sets the location of this rect on the page.
-// @param x the x coordinate of the top left corner of this rect when drawn on the page.
-// @param y the y coordinate of the top left corner of this rect when drawn on the page.
+//   - x: the x coordinate of the top left corner of this rect when drawn on the page.
+//   - y: the y coordinate of the top left corner of this rect when drawn on the page.
 func (rect *Rect) SetLocation(x, y float32) Drawable {
 	rect.x = x
 	rect.y = y
@@ -56,8 +56,8 @@ func (rect *Rect) SetLocation(x, y float32) Drawable {
 }
 
 // SetSize sets the size of this rect.
-// @param w the width of this rect.
-// @param h the height of this rect.
+//   - w: the width of this rect.
+//   - h: the height of this rect.
 func (rect *Rect) SetSize(w, h float32) *Rect {
 	rect.width = w
 	rect.height = h
@@ -120,14 +120,14 @@ func (rect *Rect) SetCornerRadius(cornerRadius float32) *Rect {
 }
 
 // SetURIAction sets the URI for the "click rect" action.
-// @param uri the URI
+//   - uri: the URI
 func (rect *Rect) SetURIAction(uri string) *Rect {
 	rect.uri = uri
 	return rect
 }
 
 // SetGoToAction sets the destination key for the action.
-// @param key the destination name.
+//   - key: the destination name.
 func (rect *Rect) SetGoToAction(key string) *Rect {
 	rect.key = key
 	return rect
@@ -135,23 +135,25 @@ func (rect *Rect) SetGoToAction(key string) *Rect {
 
 // SetLanguage sets the language of this rect, used for accessibility.
 // When it is not set, the language of the document is used.
-// @param language the language, for example "en-US".
+//   - language: the language, for example "en-US".
 func (rect *Rect) SetLanguage(language string) *Rect {
 	rect.language = language
 	return rect
 }
 
 // SetAltDescription sets the alternate description of this rect.
-// @param altDescription the alternate description of the rect.
-// @return this Rect.
+//   - altDescription: the alternate description of the rect.
+//
+// Returns this Rect.
 func (rect *Rect) SetAltDescription(altDescription string) *Rect {
 	rect.altDescription = altDescription
 	return rect
 }
 
 // SetActualText sets the actual text for this rect.
-// @param actualText the actual text for the rect.
-// @return this Rect.
+//   - actualText: the actual text for the rect.
+//
+// Returns this Rect.
 func (rect *Rect) SetActualText(actualText string) *Rect {
 	rect.actualText = actualText
 	return rect
@@ -159,7 +161,7 @@ func (rect *Rect) SetActualText(actualText string) *Rect {
 
 // ScaleBy scales the width, height and corner radius of this rect by the
 // specified factor. The location does not change.
-// @param factor the factor used to scale the rect.
+//   - factor: the factor used to scale the rect.
 func (rect *Rect) ScaleBy(factor float32) *Rect {
 	rect.width *= factor
 	rect.height *= factor
@@ -168,8 +170,9 @@ func (rect *Rect) ScaleBy(factor float32) *Rect {
 }
 
 // DrawOn draws this rect on the specified page.
-// @param page the page to draw this rect on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this rect on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{rect.x + rect.width, rect.y + rect.height}

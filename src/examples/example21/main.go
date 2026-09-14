@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example21 uses QR code 2D barcodes.
 func Example21() {
-	pdf := pdfjet.NewPDFFile("Example_21.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_21.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
@@ -54,7 +58,9 @@ func Example21() {
 	qr.SetModuleLength(3.0)
 	qr.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

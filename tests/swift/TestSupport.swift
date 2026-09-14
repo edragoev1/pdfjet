@@ -42,7 +42,7 @@ enum TestSupport {
     }
 
     static func helvetica(_ pdf: PDF) -> Font {
-        return Font(pdf, CoreFont.HELVETICA)
+        return try! Font(pdf, CoreFont.HELVETICA) // The number is valid.
     }
 
     static func latin1(_ bytes: [UInt8]) -> String {

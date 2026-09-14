@@ -91,4 +91,8 @@ import Testing
         #expect(table.getCellAt(4, 0).getTextAlignment() == Alignment.RIGHT)
         #expect(table.getCellAt(0, 0).getTextAlignment() != Alignment.RIGHT)
     }
+
+    @Test func anEmptyTableHasNoWidth() {
+        #expect(Table().getWidth() == 0)
+    }
 }

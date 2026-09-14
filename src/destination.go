@@ -15,9 +15,9 @@ type Destination struct {
 
 // newDestination creates a destination on a page for Page.AddDestination.
 //
-// @param name the name of this destination object.
-// @param xPosition the x coordinate of the top left corner.
-// @param yPosition the y coordinate of the top left corner.
+//   - name: the name of this destination object.
+//   - xPosition: the x coordinate of the top left corner.
+//   - yPosition: the y coordinate of the top left corner.
 func newDestination(name string, xPosition float32, yPosition float32) *Destination {
 	destination := new(Destination)
 	destination.name = name

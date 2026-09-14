@@ -30,7 +30,7 @@ public class Form implements Drawable {
      * @param fields the fields contained in this form
      */
     public Form(List<Field> fields) {
-        this.fields = fields;
+        this.fields = new ArrayList<Field>(fields);
     }
 
     /**

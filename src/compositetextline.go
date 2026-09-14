@@ -58,14 +58,14 @@ func (composite *CompositeTextLine) GetFontSize() float32 {
 }
 
 // SetSuperscriptFactor sets the superscript factor for this composite text line.
-// @param superscript the superscript size factor.
+//   - superscript: the superscript size factor.
 func (composite *CompositeTextLine) SetSuperscriptFactor(superscript float32) *CompositeTextLine {
 	composite.superscriptSizeFactor = superscript
 	return composite
 }
 
 // GetSuperscriptFactor gets the superscript factor for this text line.
-// @return superscript the superscript size factor.
+// Returns superscript the superscript size factor.
 func (composite *CompositeTextLine) GetSuperscriptFactor() float32 {
 	return composite.superscriptSizeFactor
 }
@@ -73,7 +73,7 @@ func (composite *CompositeTextLine) GetSuperscriptFactor() float32 {
 /**
  *  Sets the subscript factor for this composite text line.
  *
- *  @param subscript the subscript size factor.
+ *   - subscript: the subscript size factor.
  */
 func (composite *CompositeTextLine) SetSubscriptFactor(subscript float32) *CompositeTextLine {
 	composite.subscriptSizeFactor = subscript
@@ -81,13 +81,13 @@ func (composite *CompositeTextLine) SetSubscriptFactor(subscript float32) *Compo
 }
 
 // GetSubscriptFactor gets the subscript factor for this text line.
-// @return subscript the subscript size factor.
+// Returns subscript the subscript size factor.
 func (composite *CompositeTextLine) GetSubscriptFactor() float32 {
 	return composite.subscriptSizeFactor
 }
 
 // SetSuperscriptPosition sets the superscript position for this composite text line.
-// @param superscriptPosition the superscript position.
+//   - superscriptPosition: the superscript position.
 func (composite *CompositeTextLine) SetSuperscriptPosition(superscriptPosition float32) *CompositeTextLine {
 	composite.superscriptPosition = superscriptPosition
 	return composite
@@ -99,14 +99,14 @@ func (composite *CompositeTextLine) GetSuperscriptPosition() float32 {
 }
 
 // SetSubscriptPosition sets the subscript position for this composite text line.
-// @param subscriptPosition the subscript position.
+//   - subscriptPosition: the subscript position.
 func (composite *CompositeTextLine) SetSubscriptPosition(subscriptPosition float32) *CompositeTextLine {
 	composite.subscriptPosition = subscriptPosition
 	return composite
 }
 
 // GetSubscriptPosition gets the subscript position for this text line.
-// @return subscriptPosition the subscript position.
+// Returns subscriptPosition the subscript position.
 func (composite *CompositeTextLine) GetSubscriptPosition() float32 {
 	return composite.subscriptPosition
 }
@@ -116,7 +116,7 @@ func (composite *CompositeTextLine) GetSubscriptPosition() float32 {
 // Set the position of the component to the starting stored as current position
 // Set the size and offset based on effects
 // Set the new current position
-// @param component the component.
+//   - component: the component.
 func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeTextLine {
 	if textLine.GetScriptPosition() == scriptposition.Superscript {
 		if composite.fontSize > 0.0 {
@@ -147,8 +147,8 @@ func (composite *CompositeTextLine) AddComponent(textLine *TextLine) *CompositeT
 
 // SetLocation loops through all the text lines and reset their location based on
 // the new location set here.
-// @param x the x coordinate.
-// @param y the y coordinate.
+//   - x: the x coordinate.
+//   - y: the y coordinate.
 func (composite *CompositeTextLine) SetLocation(x, y float32) Drawable {
 	composite.position[composite.x] = x
 	composite.position[composite.y] = y
@@ -182,7 +182,7 @@ func (composite *CompositeTextLine) GetLocation() [2]float32 {
 }
 
 // GetTextLine return the nth entry in the TextLine array.
-// @param index the index of the nth element.
+//   - index: the index of the nth element.
 func (composite *CompositeTextLine) GetTextLine(index int) *TextLine {
 	if len(composite.textLines) == 0 {
 		return nil
@@ -200,8 +200,8 @@ func (composite *CompositeTextLine) GetNumberOfTextLines() int {
 
 // GetMinMaxY returns the vertical coordinates of the top left and bottom right corners
 // of the bounding box of this composite text line.
-// @return the array containing the vertical coordinates.
-func (composite *CompositeTextLine) GetMinMaxY() []float32 {
+// Returns the array containing the vertical coordinates.
+func (composite *CompositeTextLine) GetMinMaxY() [2]float32 {
 	minValue := composite.position[composite.y]
 	maxValue := composite.position[composite.y]
 	var cur float32
@@ -229,7 +229,7 @@ func (composite *CompositeTextLine) GetMinMaxY() []float32 {
 		}
 	}
 
-	return []float32{minValue, maxValue}
+	return [2]float32{minValue, maxValue}
 }
 
 // GetHeight returns the height of this CompositeTextLine.
@@ -244,8 +244,9 @@ func (composite *CompositeTextLine) GetWidth() float32 {
 }
 
 // DrawOn draws this line on the specified page.
-// @param page the page to draw this line on.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the page to draw this line on.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (composite *CompositeTextLine) DrawOn(page *Page) [2]float32 {
 	var xMax float64
 	var yMax float64

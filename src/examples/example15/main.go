@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -15,7 +16,10 @@ import (
 
 // Example15 draws a table whose cells hold composite text lines.
 func Example15() {
-	pdf := pdfjet.NewPDFFile("Example_15.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_15.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("PDF/UA compliant PDF")
 
@@ -82,7 +86,9 @@ func Example15() {
 		pdf.AddPage(page)
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

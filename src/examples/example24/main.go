@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -11,7 +12,10 @@ import (
 
 // Example24 draws a JPEG, a PNG and a BMP image.
 func Example24() {
-	pdf := pdfjet.NewPDFFile("Example_24.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_24.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
@@ -39,7 +43,9 @@ func Example24() {
 	point = textLine3.DrawOn(page)
 	image3.ScaleBy(0.75).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

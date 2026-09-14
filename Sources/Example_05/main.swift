@@ -21,7 +21,7 @@ public class Example_05 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_05.pdf", append: false)!)
 
-        let f1 = Font(pdf, CoreFont.HELVETICA_BOLD)
+        let f1 = try Font(pdf, CoreFont.HELVETICA_BOLD)
         f1.setItalic(true)
 
         let page = Page(pdf, Letter.PORTRAIT)

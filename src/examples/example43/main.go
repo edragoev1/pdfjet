@@ -12,7 +12,10 @@ import (
 
 // Example43 draws a very large table across thousands of pages.
 func Example43() {
-	pdf := pdfjet.NewPDFFile("Example_43.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_43.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
@@ -28,8 +31,8 @@ func Example43() {
 	f2.SetSize(9.0)
 
 	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape())
-	table.SetNumberOfColumns(9)                 // The order of the
-	_, err := table.SetTableData(fileName, ",") // these statements
+	table.SetNumberOfColumns(9)                // The order of the
+	_, err = table.SetTableData(fileName, ",") // these statements
 	if err != nil {
 		log.Printf("Failed to load table data: %v", err)
 		return
@@ -49,7 +52,9 @@ func Example43() {
 		pdf.AddPage(page)
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -55,22 +55,14 @@ public class Cell {
     /** The stroke color as an RGB array. */
     protected float[] strokeColor;
 
-    // Cell properties
-    // Colspan:
-    // bits 0 to 15
-    // Border:
-    // bit 16 - top
-    // bit 17 - bottom
-    // bit 18 - left
-    // bit 19 - right
-    // Not used:
-    // bits 20 and 21
-    // Text Decoration:
-    // bit 22 - underline
-    // bit 23 - strikeout
-    // Future use:
-    // bits 24 to 31
-    private int properties = 0x00050001;    // Set only left and top borders!
+    private int colspan = 1;
+    // Only the top and left borders are drawn unless setBorder says otherwise.
+    private boolean topBorder = true;
+    private boolean bottomBorder = false;
+    private boolean leftBorder = true;
+    private boolean rightBorder = false;
+    private boolean underline = false;
+    private boolean strikeout = false;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
     private Alignment valign = Alignment.TOP;
@@ -572,32 +564,13 @@ public class Cell {
     }
 
     /**
-     * Sets the properties bit field: colspan, borders and text decoration.
-     *
-     * @param properties the properties.
-     */
-    protected void setProperties(int properties) {
-        this.properties = properties;
-    }
-
-    /**
-     * Returns the properties bit field: colspan, borders and text decoration.
-     *
-     * @return the properties.
-     */
-    protected int getProperties() {
-        return this.properties;
-    }
-
-    /**
      * Sets the column span private variable.
      *
      * @param colspan the specified column span value.
      * @return this Cell object.
      */
     public Cell setColSpan(int colspan) {
-        this.properties &= 0x00FF0000;
-        this.properties |= (colspan & 0x0000FFFF);
+        this.colspan = colspan;
         return this;
     }
 
@@ -607,7 +580,7 @@ public class Cell {
      * @return the column span value.
      */
     public int getColSpan() {
-        return (this.properties & 0x0000FFFF);
+        return this.colspan;
     }
 
     /**
@@ -618,11 +591,17 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBorder(int border, boolean visible) {
-        border &= Border.ALL;    // Only the border bits
-        if (visible) {
-            this.properties |= border;
-        } else {
-            this.properties &= (~border & 0x00FFFFFF);
+        if ((border & Border.TOP) != 0) {
+            this.topBorder = visible;
+        }
+        if ((border & Border.BOTTOM) != 0) {
+            this.bottomBorder = visible;
+        }
+        if ((border & Border.LEFT) != 0) {
+            this.leftBorder = visible;
+        }
+        if ((border & Border.RIGHT) != 0) {
+            this.rightBorder = visible;
         }
         return this;
     }
@@ -634,7 +613,10 @@ public class Cell {
      * @return the cell border object.
      */
     public boolean getBorder(int border) {
-        return (this.properties & border) != 0;
+        return ((border & Border.TOP) != 0 && topBorder) ||
+                ((border & Border.BOTTOM) != 0 && bottomBorder) ||
+                ((border & Border.LEFT) != 0 && leftBorder) ||
+                ((border & Border.RIGHT) != 0 && rightBorder);
     }
 
     /**
@@ -643,12 +625,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBorders(boolean borders) {
-        if (borders) {
-            this.properties |= 0x000F0000;
-        } else {
-            this.properties &= 0x00F0FFFF;
-        }
-        return this;
+        return setBorder(Border.ALL, borders);
     }
 
     /**
@@ -702,11 +679,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setUnderline(boolean underline) {
-        if (underline) {
-            this.properties |= 0x00400000;
-        } else {
-            this.properties &= 0x00BFFFFF;
-        }
+        this.underline = underline;
         return this;
     }
 
@@ -716,7 +689,7 @@ public class Cell {
      * @return the underline text parameter.
      */
     public boolean getUnderline() {
-        return (properties & 0x00400000) != 0;
+        return this.underline;
     }
 
     /**
@@ -726,11 +699,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setStrikeout(boolean strikeout) {
-        if (strikeout) {
-            this.properties |= 0x00800000;
-        } else {
-            this.properties &= 0x007FFFFF;
-        }
+        this.strikeout = strikeout;
         return this;
     }
 
@@ -740,7 +709,7 @@ public class Cell {
      * @return the strikeout text parameter.
      */
     public boolean getStrikeout() {
-        return (properties & 0x00800000) != 0;
+        return this.strikeout;
     }
 
     /**

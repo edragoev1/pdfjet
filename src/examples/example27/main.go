@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -15,7 +16,10 @@ import (
 
 // Example27 draws Thai, Hebrew, Arabic and Persian text.
 func Example27() {
-	pdf := pdfjet.NewPDFFile("Example_27.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_27.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Thai, Hebrew, Arabic and Persian text")
 
@@ -159,7 +163,9 @@ func Example27() {
 	textBlock.SetLanguage("fa")
 	textBlock.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

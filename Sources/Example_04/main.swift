@@ -25,7 +25,7 @@ public class Example_04 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_04.pdf", append: false)!)
 
-        let f0 = Font(pdf, CoreFont.COURIER)
+        let f0 = try Font(pdf, CoreFont.COURIER)
         f0.setSize(14.0)
 
         // Chinese (Traditional) font

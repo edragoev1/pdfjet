@@ -30,7 +30,7 @@ public class Form : IDrawable {
     /// </summary>
     /// <param name="fields">the fields contained in this form</param>
     public Form(List<Field> fields) {
-        this.fields = fields;
+        this.fields = new List<Field>(fields);
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {

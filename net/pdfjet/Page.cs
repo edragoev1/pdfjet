@@ -1086,14 +1086,7 @@ public class Page {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(Token.Space);
-        Append(g);
-        Append(Token.Space);
-        Append(b);
-        Append(" rg\n");
-        this.brushColor = new float[] {r, g, b};
-        return this;
+        return SetBrushColor(new float[] {r, g, b});
     }
 
     /// <summary>
@@ -1109,7 +1102,7 @@ public class Page {
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            Console.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
+            Console.Error.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
             return this; // Early exit if out of range
         }
 
@@ -1147,15 +1140,7 @@ public class Page {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
-        Append(r);
-        Append(Token.Space);
-        Append(g);
-        Append(Token.Space);
-        Append(b);
-        Append(" RG\n");
-        // Set the pen color
-        this.penColor = new float[] {r, g, b};
-        return this;
+        return SetPenColor(new float[] {r, g, b});
     }
 
     /// <summary>
@@ -1175,7 +1160,7 @@ public class Page {
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
             rgbColor[2] < 0f || rgbColor[2] > 1f) {
-            Console.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
+            Console.Error.WriteLine("Warning: RGB color values must be between 0f and 1f. Ignoring request.");
             return this; // Early exit if out of range
         }
 
@@ -1434,9 +1419,8 @@ public class Page {
     /// Supports both straight line segments and Bézier curve segments with control points.
     /// </summary>
     /// <param name="path">The list of points defining the path. The first point sets the starting position,
-    /// subsequent points define line segments or curve control points. Must contain at least 2 points.</param>
+    /// subsequent points define line segments or curve control points. Fewer than two points paint nothing.</param>
     /// <param name="pathOperator">The path painting operator to apply, for example PathOperator.STROKE or PathOperator.FILL.</param>
-    /// <exception cref="System.Exception">Thrown when the path contains fewer than 2 points.</exception>
     /// <remarks>
     /// <para>
     /// The method processes points as follows:
@@ -1489,7 +1473,7 @@ public class Page {
     /// <seealso cref="PathOperator"/>
     public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
-            throw new Exception("The Path object must contain at least 2 points");
+            return; // A path needs two points to paint anything.
         }
         Point point = path[0];
         MoveTo(point.x, point.y);

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example46 draws optional content groups - PDF layers.
 func Example46() {
-	pdf := pdfjet.NewPDFFile("Example_46.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_46.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -63,7 +67,9 @@ func Example46() {
 	group.Add(line)
 	group.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

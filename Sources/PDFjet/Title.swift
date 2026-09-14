@@ -23,6 +23,7 @@ public class Title : Drawable {
     }
 
     /// Sets the prefix text.
+    @discardableResult
     public func setPrefix(_ text: String) -> Title {
         prefix.setText(text)
         return self

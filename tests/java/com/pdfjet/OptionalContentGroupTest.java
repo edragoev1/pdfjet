@@ -80,4 +80,12 @@ class OptionalContentGroupTest {
         assertEquals(0, group.clear().getComponents().size());
         assertEquals("Layer", group.getName());
     }
+
+    @Test
+    void getComponentsReturnsACopy() throws Exception {
+        OptionalContentGroup group = new OptionalContentGroup(TestSupport.newPDF(), "Layer");
+        group.add(new Rect(0f, 0f, 1f, 1f));
+        group.getComponents().clear();
+        assertEquals(1, group.getComponents().size());
+    }
 }

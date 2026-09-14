@@ -18,6 +18,7 @@ type RadioButton struct {
 	x, y, r1, r2   float32
 	penWidth       float32
 	font           *Font
+	fontSize       float32
 	label          string
 	uri, key       string
 	language       string
@@ -29,24 +30,24 @@ type RadioButton struct {
 func NewRadioButton(font *Font, label string) *RadioButton {
 	radioButton := new(RadioButton)
 	radioButton.font = font
+	radioButton.fontSize = font.GetSize()
 	radioButton.label = label
 	radioButton.altDescription = single.Space
 	radioButton.actualText = single.Space
 	return radioButton
 }
 
-// SetFontSize sets the font size to use for this text line.
-// @param fontSize the fontSize to use.
-// @return this RadioButton.
+// SetFontSize sets the size of the label text. The font keeps its own size.
 func (radioButton *RadioButton) SetFontSize(fontSize float32) *RadioButton {
-	radioButton.font.SetSize(fontSize)
+	radioButton.fontSize = fontSize
 	return radioButton
 }
 
 // SetLocation sets the x,y location on the Page.
-// @param x the x coordinate on the Page.
-// @param y the y coordinate on the Page.
-// @return this RadioButton.
+//   - x: the x coordinate on the Page.
+//   - y: the y coordinate on the Page.
+//
+// Returns this RadioButton.
 func (radioButton *RadioButton) SetLocation(x, y float32) Drawable {
 	radioButton.x = x
 	radioButton.y = y
@@ -54,44 +55,49 @@ func (radioButton *RadioButton) SetLocation(x, y float32) Drawable {
 }
 
 // SetURIAction sets the URI for the "click text line" action.
-// @param uri the URI.
-// @return this RadioButton.
+//   - uri: the URI.
+//
+// Returns this RadioButton.
 func (radioButton *RadioButton) SetURIAction(uri string) *RadioButton {
 	radioButton.uri = uri
 	return radioButton
 }
 
 // Select selects or deselects this radio button.
-// @param selected the selection flag.
-// @return this RadioButton.
+//   - selected: the selection flag.
+//
+// Returns this RadioButton.
 func (radioButton *RadioButton) Select(selected bool) *RadioButton {
 	radioButton.selected = selected
 	return radioButton
 }
 
 // SetAltDescription sets the alternate description of this radio button.
-// @param altDescription the alternate description of the radio button.
-// @return this RadioButton.
+//   - altDescription: the alternate description of the radio button.
+//
+// Returns this RadioButton.
 func (radioButton *RadioButton) SetAltDescription(altDescription string) *RadioButton {
 	radioButton.altDescription = altDescription
 	return radioButton
 }
 
 // SetActualText sets the actual text for this radio button.
-// @param actualText the actual text for the radio button.
-// @return this RadioButton.
+//   - actualText: the actual text for the radio button.
+//
+// Returns this RadioButton.
 func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 	radioButton.actualText = actualText
 	return radioButton
 }
 
 // DrawOn draws this RadioButton on the specified Page.
-// @param page the Page where the RadioButton is to be drawn.
-// @return x and y coordinates of the bottom right corner of this component.
+//   - page: the Page where the RadioButton is to be drawn.
+//
+// Returns x and y coordinates of the bottom right corner of this component.
 func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 
-	radioButton.r1 = radioButton.font.GetAscent() / 2
+	radioButton.r1 = radioButton.font.GetAscentAt(radioButton.fontSize) / 2
 	radioButton.r2 = radioButton.r1 / 2
 	radioButton.penWidth = radioButton.r1 / 10
 
@@ -116,8 +122,8 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		textColor = [3]float32{0.0, 0.0, 1.0}
 	}
 	page.drawString(
-		radioButton.font, radioButton.font.GetSize(), radioButton.label,
-		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.ascent,
+		radioButton.font, radioButton.fontSize, radioButton.label,
+		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.GetAscentAt(radioButton.fontSize),
 		textColor, nil)
 	page.SetPenWidth(0.0)
 	page.SetBrushColor(color.Black)
@@ -129,8 +135,8 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 			annotationType: annotationLink,
 			x1:             radioButton.x + 3*radioButton.r1,
 			y1:             radioButton.y,
-			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
-			y2:             radioButton.y + radioButton.font.bodyHeight,
+			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
+			y2:             radioButton.y + radioButton.font.GetBodyHeightAt(radioButton.fontSize),
 			vertices:       nil,
 			transparency:   0.0,
 			title:          "",
@@ -144,6 +150,6 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	}
 
 	return [2]float32{
-		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.font.size, radioButton.label),
-		radioButton.y + radioButton.font.bodyHeight}
+		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
+		radioButton.y + radioButton.font.GetBodyHeightAt(radioButton.fontSize)}
 }

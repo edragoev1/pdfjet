@@ -98,8 +98,8 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 }
 
 // SetLocation sets the location (x, y) of the top left corner of table on the page.
-// @param x the x coordinate of the top left point of the table.
-// @param y the y coordinate of the top left point of the table.
+//   - x: the x coordinate of the top left point of the table.
+//   - y: the y coordinate of the top left point of the table.
 func (table *Table) SetLocation(x, y float32) Drawable {
 	table.x1 = x
 	table.y1 = y
@@ -107,7 +107,7 @@ func (table *Table) SetLocation(x, y float32) Drawable {
 }
 
 // SetBottomMargin sets the bottom margin for table.
-// @param bottomMargin the margin.
+//   - bottomMargin: the margin.
 func (table *Table) SetBottomMargin(bottomMargin float32) *Table {
 	table.bottomMargin = bottomMargin
 	return table
@@ -209,8 +209,9 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 
 // SetTextAlignmentInColumn sets the text alignment in the specified column.
 //
-// @param index the index of the specified column.
-// @param alignment the specified alignment.
+//   - index: the index of the specified column.
+//   - alignment: the specified alignment.
+//
 // Supported values: alignment.Left, alignment.Right, alignment.Center and alignment.Justify.
 func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.Alignment) *Table {
 	for _, row := range table.tableData {
@@ -226,8 +227,8 @@ func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.
 }
 
 // SetTextColorInColumn sets the color of the text in the specified column.
-// @param index the index of the specified column.
-// @param color the color specified as an integer.
+//   - index: the index of the specified column.
+//   - color: the color specified as an integer.
 func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
@@ -242,8 +243,8 @@ func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 }
 
 // SetFontInColumn sets the font and the font size of the cells in the specified column.
-// @param index the column index.
-// @param font the font.
+//   - index: the column index.
+//   - font: the font.
 func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
@@ -258,8 +259,8 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 }
 
 // SetTextColorInRow sets the color of the text in the specified row.
-// @param index the index of the specified row.
-// @param color the color specified as an integer.
+//   - index: the index of the specified row.
+//   - color: the color specified as an integer.
 func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
@@ -274,8 +275,8 @@ func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 }
 
 // SetFontInRow sets the font and the font size of the cells in the specified row.
-// @param index the row index.
-// @param font the font.
+//   - index: the row index.
+//   - font: the font.
 func (table *Table) SetFontInRow(index int, font *Font) *Table {
 	if index < len(table.tableData) {
 		row := table.tableData[index]
@@ -290,8 +291,8 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 }
 
 // SetColumnWidth sets the width of the column with the specified index.
-// @param index the index of specified column.
-// @param width the specified width.
+//   - index: the index of specified column.
+//   - width: the specified width.
 func (table *Table) SetColumnWidth(index int, width float32) *Table {
 	for _, row := range table.tableData {
 		if index < len(row) {
@@ -302,16 +303,18 @@ func (table *Table) SetColumnWidth(index int, width float32) *Table {
 }
 
 // GetColumnWidth returns the column width of the column at the specified index.
-// @param index the index of the column.
-// @return the width of the column.
+//   - index: the index of the column.
+//
+// Returns the width of the column.
 func (table *Table) GetColumnWidth(index int) float32 {
 	return table.GetCellAt(0, index).GetWidth()
 }
 
 // GetCellAt returns the cell at the specified row and column.
-// @param row the specified row.
-// @param col the specified column.
-// @return the cell at the specified row and column.
+//   - row: the specified row.
+//   - col: the specified column.
+//
+// Returns the cell at the specified row and column.
 func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
 	if rowIndex >= 0 {
 		return table.tableData[rowIndex][colIndex]
@@ -320,15 +323,17 @@ func (table *Table) GetCellAt(rowIndex, colIndex int) *Cell {
 }
 
 // GetRow returns a list of cells for the specified row.
-// @param index the index of the specified row.
-// @return the list of cells.
+//   - index: the index of the specified row.
+//
+// Returns the list of cells.
 func (table *Table) GetRow(index int) []*Cell {
 	return table.tableData[index]
 }
 
 // GetColumn returns a list of cells for the specified column.
-// @param index the index of the specified column.
-// @return the list of cells.
+//   - index: the index of the specified column.
+//
+// Returns the list of cells.
 func (table *Table) GetColumn(index int) []*Cell {
 	column := make([]*Cell, 0)
 	for _, row := range table.tableData {
@@ -340,8 +345,9 @@ func (table *Table) GetColumn(index int) []*Cell {
 }
 
 // DrawOn draws this table on the specified page.
-// @param page the page to draw this table on.
-// @return Point the point on the page where to draw the next component.
+//   - page: the page to draw this table on.
+//
+// Returns Point the point on the page where to draw the next component.
 func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
@@ -460,12 +466,13 @@ func (table *Table) hasMoreData() bool {
 }
 
 // GetWidth returns the width of the table when drawn on a page.
-// @return the width of the table.
+// Returns the width of the table.
 func (table *Table) GetWidth() float32 {
 	var tableWidth float32
-	row := table.tableData[0]
-	for _, cell := range row {
-		tableWidth += cell.GetWidth()
+	if len(table.tableData) > 0 {
+		for _, cell := range table.tableData[0] {
+			tableWidth += cell.GetWidth()
+		}
 	}
 	return tableWidth
 }
@@ -491,7 +498,7 @@ func (table *Table) SetCellBorders(borders bool) *Table {
 }
 
 // SetCellBorderColor sets the color of the cell border lines.
-// @param color the color of the cell border lines.
+//   - color: the color of the cell border lines.
 func (table *Table) SetCellBorderColor(color int32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {
@@ -513,7 +520,7 @@ func (table *Table) SetCellBorderColorRGB(rgbColor [3]float32) *Table {
 }
 
 // SetCellBorderWidth sets the width of the cell border lines.
-// @param width the width of the border lines.
+//   - width: the width of the border lines.
 func (table *Table) SetCellBorderWidth(width float32) *Table {
 	for _, row := range table.tableData {
 		for _, cell := range row {

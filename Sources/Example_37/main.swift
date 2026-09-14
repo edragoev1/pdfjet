@@ -26,7 +26,7 @@ public class Example_37 {
             pageObj.setGraphicsState(gs, &objects)
 
             let page = Page(pdf, pageObj)
-            page.addResource(f1, objects)
+            page.addResource(f1, &objects)
             page.setBrushColor(Color.blue)
             // page.drawString(f1, "Hello, World!", 50.0, 200.0)
             text.drawOn(page)

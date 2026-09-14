@@ -516,6 +516,19 @@ renames included (the Week 1 decision), so every item is a blocker.
       clearly in the four ports (Swift throws); the four ports read top-down
       BMP images. Go `GetPageObjects` still dereferences nil without a
       `/Pages` root, as Java does.
+- ✅ **B** Second audit drift (Sep 14, `api-suggestions.html`): empty document
+      properties and annotation strings written by three ports; Go and Swift
+      stopping the program in `drawPath`, `SetTextRenderingMode`,
+      `AddObjects`, `Complete` and `NewPDFFile`; no reading-only Go `PDF`;
+      C# and Swift warnings on stdout; Go `GetMinMaxY` slice, `AddObjects`
+      pointer, Swift labels and `inout`, missing `@discardableResult`, C#
+      colour setters, saved state order; Go `NewCell` only, four cell flag
+      layouts, Swift `Table.getWidth`, `RadioButton.setFontSize` resizing the
+      font, `Form` fields not copied, nil page handling; `getComponents`
+      copies, unchecked core font number; stale Go comments and the
+      Javadoc tags. Fixed in the four ports; Go keeps `AddBDC` with the
+      language, `NewParagraph()` and an array `SetBorderColorRGB` by the
+      documented convention.
 
 ### Types and signatures
 

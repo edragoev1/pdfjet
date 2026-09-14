@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -10,7 +11,10 @@ import (
 
 // Example17 is a test case for PNG images.
 func Example17() {
-	pdf := pdfjet.NewPDFFile("Example_17.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_17.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG")
 	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG")
@@ -244,7 +248,9 @@ func Example17() {
 	image55.SetLocation(100.0, 500.0)
 	image55.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

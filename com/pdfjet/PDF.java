@@ -1041,7 +1041,7 @@ final public class PDF {
             append(annot.transparency);
             append("\n");
 
-            if (annot.title != null) {
+            if (annot.title != null && !annot.title.isEmpty()) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     title = AES256.encrypt(title, encryption.getKey());
@@ -1051,7 +1051,7 @@ final public class PDF {
                 append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (annot.contents != null && !annot.contents.isEmpty()) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     contents = AES256.encrypt(contents, encryption.getKey());
@@ -1074,7 +1074,7 @@ final public class PDF {
             append(annot.transparency);
             append("\n");
 
-            if (annot.title != null) {
+            if (annot.title != null && !annot.title.isEmpty()) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     title = AES256.encrypt(title, encryption.getKey());
@@ -1084,7 +1084,7 @@ final public class PDF {
                 append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (annot.contents != null && !annot.contents.isEmpty()) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     contents = AES256.encrypt(contents, encryption.getKey());
@@ -1096,7 +1096,7 @@ final public class PDF {
         } else if (annot.annotationType.equals(Annotation.Text)) {
             append("/Name /Comment\n");
 
-            if (annot.title != null) {
+            if (annot.title != null && !annot.title.isEmpty()) {
                 byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     title = AES256.encrypt(title, encryption.getKey());
@@ -1106,7 +1106,7 @@ final public class PDF {
                 append(">\n");
             }
 
-            if (annot.contents != null) {
+            if (annot.contents != null && !annot.contents.isEmpty()) {
                 byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
                 if (encryption != null) {
                     contents = AES256.encrypt(contents, encryption.getKey());
@@ -1339,13 +1339,19 @@ final public class PDF {
         return this;
     }
 
+    // An empty document property is the same as one that was never set: it is
+    // not written, as in the Go port, which cannot tell the two apart.
+    private static String nullIfEmpty(String text) {
+        return (text != null && text.isEmpty()) ? null : text;
+    }
+
     /**
-     *  Set the "Title" document property of the PDF file.
+     *  Set the "Title" document property of the PDF file. An empty title is not written.
      *  @param title The title of this document.
      *  @return this PDF object.
      */
     public PDF setTitle(String title) {
-        this.title = title;
+        this.title = nullIfEmpty(title);
         return this;
     }
 
@@ -1355,7 +1361,7 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setAuthor(String author) {
-        this.author = author;
+        this.author = nullIfEmpty(author);
         return this;
     }
 
@@ -1365,7 +1371,7 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setSubject(String subject) {
-        this.subject = subject;
+        this.subject = nullIfEmpty(subject);
         return this;
     }
 
@@ -1376,7 +1382,7 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setKeywords(String keywords) {
-        this.keywords = keywords;
+        this.keywords = nullIfEmpty(keywords);
         return this;
     }
 
@@ -1387,7 +1393,7 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setCreator(String creator) {
-        this.creator = creator;
+        this.creator = nullIfEmpty(creator);
         return this;
     }
 

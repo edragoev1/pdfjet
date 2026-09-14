@@ -1,8 +1,6 @@
 package pdfjet
 
-import (
-	"math"
-)
+import ()
 
 // BaseAnnotation represents a base annotation in a PDF document.
 type BaseAnnotation struct {
@@ -85,7 +83,8 @@ func (b *BaseAnnotation) SetContents(contents string) *BaseAnnotation {
 	return b
 }
 
-// rotate rotates the annotation around its center by the given degrees.
+// rotate rotates the annotation by the given degrees around the center of
+// the container that holds it; the vertices of a polygon rotate around the origin.
 func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 	if b.container == nil {
 		return b
@@ -109,21 +108,6 @@ func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 		}
 	}
 	return b
-}
-
-// rotateAroundCenter is a helper function to rotate a point around a center.
-func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
-	radians := degrees * math.Pi / 180.0
-	cos := float32(math.Cos(radians))
-	sin := float32(math.Sin(radians))
-
-	dx := point[0] - center[0]
-	dy := point[1] - center[1]
-
-	return [2]float32{
-		center[0] + (dx*cos - dy*sin),
-		center[1] + (dx*sin + dy*cos),
-	}
 }
 
 // DrawOn draws the annotation on the specified page.

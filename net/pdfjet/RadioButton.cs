@@ -18,6 +18,7 @@ public class RadioButton : IDrawable {
     private float r2;
     private float penWidth;
     private Font font = null;
+    private float fontSize;
     private String label = "";
     private String uri = null;
     private String language = null;
@@ -29,16 +30,17 @@ public class RadioButton : IDrawable {
     /// </summary>
     public RadioButton(Font font, String label) {
         this.font = font;
+        this.fontSize = font.GetSize();
         this.label = label;
     }
 
     /// <summary>
-    /// Sets the font size to use for this text line.
+    /// Sets the size of the label text. The font keeps its own size.
     /// </summary>
     /// <param name="fontSize">the fontSize to use.</param>
     /// <returns>this RadioButton.</returns>
     public RadioButton SetFontSize(float fontSize) {
-        this.font.SetSize(fontSize);
+        this.fontSize = fontSize;
         return this;
     }
 
@@ -106,7 +108,7 @@ public class RadioButton : IDrawable {
     public float[] DrawOn(Page page) {
         page.AddBDC(StructElem.P, language, actualText, altDescription);
 
-        this.r1 = font.GetAscent()/2;
+        this.r1 = font.GetAscent(fontSize)/2;
         this.r2 = r1/2;
         this.penWidth = r1/10;
 
@@ -123,7 +125,7 @@ public class RadioButton : IDrawable {
 
         // A linked label is blue.
         float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
-        page.DrawString(font, font.GetSize(), label, x + 3*r1, y + font.GetAscent(), textColor, null);
+        page.DrawString(font, fontSize, label, x + 3*r1, y + font.GetAscent(fontSize), textColor, null);
         page.SetPenWidth(0f);
         page.SetBrushColor(Color.black);
 
@@ -134,8 +136,8 @@ public class RadioButton : IDrawable {
                     Annotation.Link,
                     x + 3*r1,
                     y,
-                    x + 3*r1 + font.StringWidth(label),
-                    y + font.GetBodyHeight(),
+                    x + 3*r1 + font.StringWidth(fontSize, label),
+                    y + font.GetBodyHeight(fontSize),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Transparency
@@ -148,7 +150,7 @@ public class RadioButton : IDrawable {
                     altDescription));
         }
 
-        return new float[] { x + 6*r1 + font.StringWidth(label), y + font.GetBodyHeight() };
+        return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
     }
 }   // End of RadioButton.cs
 }   // End of namespace PDFjet.NET

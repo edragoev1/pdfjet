@@ -27,7 +27,10 @@ import (
 // and the document cannot claim PDF/A or PDF/UA compliance. The two embedded
 // fonts of this example show the alternative.
 func Example50(fileName string) {
-	pdf := pdfjet.NewPDFFile("Example_50.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_50.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	buf, err := os.ReadFile(fileName)
 	if err != nil {
@@ -191,9 +194,13 @@ func Example50(fileName string) {
 	// Male Checkbox 2
 	// pdfjet.XMarkCheckBox(page, 535.5, 536.5, 7.0)
 	page.Complete(&objects)
-	pdf.AddObjects(&objects)
+	if err := pdf.AddObjects(objects); err != nil {
+		log.Fatal(err)
+	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func stripSpacesAndDashes(str string) string {

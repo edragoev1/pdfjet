@@ -44,16 +44,18 @@ func NewCheckBox(font *Font, label string) *CheckBox {
 }
 
 // SetFontSize sets the font size to use for checkBox text line.
-// @param fontSize the fontSize to use.
-// @return the CheckBox.
+//   - fontSize: the fontSize to use.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
 	checkBox.fontSize = fontSize
 	return checkBox
 }
 
 // SetBorderColor sets the color of the checkbox.
-// @param boxColor the checkbox color specified as an 0xRRGGBB integer.
-// @return the CheckBox.
+//   - boxColor: the checkbox color specified as an 0xRRGGBB integer.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetBorderColor(boxColor int32) *CheckBox {
 	checkBox.boxColor = colorToRGB(boxColor)
 	return checkBox
@@ -66,8 +68,9 @@ func (checkBox *CheckBox) SetBorderColorRGB(rgbColor [3]float32) *CheckBox {
 }
 
 // SetCheckmarkColor sets the color of the check mark.
-// @param checkColor the check mark color specified as an 0xRRGGBB integer.
-// @return the CheckBox.
+//   - checkColor: the check mark color specified as an 0xRRGGBB integer.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetCheckmarkColor(checkColor int32) *CheckBox {
 	checkBox.checkColor = colorToRGB(checkColor)
 	return checkBox
@@ -80,9 +83,10 @@ func (checkBox *CheckBox) SetCheckmarkColorRGB(rgbColor [3]float32) *CheckBox {
 }
 
 // SetLocation sets the x,y location on the Page.
-// @param x the x coordinate on the Page.
-// @param y the y coordinate on the Page.
-// @return the CheckBox.
+//   - x: the x coordinate on the Page.
+//   - y: the y coordinate on the Page.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetLocation(x, y float32) Drawable {
 	checkBox.x = x
 	checkBox.y = y
@@ -106,24 +110,27 @@ func (checkBox *CheckBox) Check(checkMark mark.Mark) *CheckBox {
 }
 
 // SetURIAction sets the URI for the "click text line" action.
-// @param uri the URI.
-// @return the CheckBox.
+//   - uri: the URI.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetURIAction(uri string) *CheckBox {
 	checkBox.uri = uri
 	return checkBox
 }
 
 // SetAltDescription sets the alternate description of checkBox check box.
-// @param altDescription the alternate description of the checkbox.
-// @return the Checkbox.
+//   - altDescription: the alternate description of the checkbox.
+//
+// Returns the Checkbox.
 func (checkBox *CheckBox) SetAltDescription(altDescription string) *CheckBox {
 	checkBox.altDescription = altDescription
 	return checkBox
 }
 
 // SetActualText sets the actual text for checkBox check box.
-// @param actualText the actual text for the checkbox.
-// @return the CheckBox.
+//   - actualText: the actual text for the checkbox.
+//
+// Returns the CheckBox.
 func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 	checkBox.actualText = actualText
 	return checkBox
@@ -142,7 +149,7 @@ func XMarkCheckBox(page *Page, x, y, size float32) {
 
 // DrawOn draws the CheckBox on the specified Page.
 //
-// @param page the Page where the CheckBox is to be drawn.
+//   - page: the Page where the CheckBox is to be drawn.
 func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
 

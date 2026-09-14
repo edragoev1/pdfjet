@@ -56,9 +56,10 @@ func (ocg *OptionalContentGroup) Clear() *OptionalContentGroup {
 	return ocg
 }
 
-// GetComponents returns the drawable components in this optional content group.
+// GetComponents returns a copy of the list of drawable components in this
+// optional content group.
 func (ocg *OptionalContentGroup) GetComponents() []Drawable {
-	return ocg.components
+	return append([]Drawable(nil), ocg.components...)
 }
 
 // SetVisible sets the visibility of the group.

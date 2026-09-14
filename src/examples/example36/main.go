@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -11,7 +12,10 @@ import (
 
 // Example36 shows how you can add pages to PDF in random order.
 func Example36() {
-	pdf := pdfjet.NewPDFFile("Example_36.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_36.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
@@ -40,7 +44,9 @@ func Example36() {
 	pdf.AddPage(page2)
 	pdf.AddPage(page1)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

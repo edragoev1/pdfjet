@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 
 // Example22 adds "Destinations" and "Go To" actions.
 func Example22() {
-	pdf := pdfjet.NewPDFFile("Example_22.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_22.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Internal links and destinations")
 
@@ -77,7 +81,9 @@ func Example22() {
 	image.SetGoToAction("dest#1")
 	image.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

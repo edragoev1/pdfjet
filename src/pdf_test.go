@@ -148,7 +148,9 @@ func TestPDFCompleteFlushesTheWriter(t *testing.T) {
 	// and closes the file that NewPDFFile made.
 	doc := testNewDoc()
 	NewPage(doc.pdf, letter.Portrait())
-	doc.pdf.Complete()
+	if err := doc.pdf.Complete(); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.HasSuffix(doc.buf.String(), "%%EOF\n") {
 		t.Error("the writer was not flushed")
 	}
@@ -190,4 +192,32 @@ func TestPDFAStreamThatStartsWithALineFeedKeepsIt(t *testing.T) {
 		}
 	}
 	t.Error("object 3 not read")
+}
+
+func TestPDFAnEmptyDocumentPropertyIsNotWritten(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetTitle("").SetAuthor("").SetSubject("").SetKeywords("").SetCreator("")
+	NewPage(doc.pdf, letter.Portrait())
+	raw := string(doc.complete())
+	for _, key := range []string{"/Title", "/Author", "/Subject", "/Keywords", "/Creator"} {
+		if strings.Contains(raw, key) {
+			t.Errorf("%s was written", key)
+		}
+	}
+}
+
+func TestPDFNewPDFReaderReadsADocument(t *testing.T) {
+	objects, err := NewPDFReader().Read(testDocument(letter.Portrait(), a4.Portrait()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pages := NewPDFReader().GetPageObjects(objects); len(pages) != 2 {
+		t.Errorf("pages %d", len(pages))
+	}
+}
+
+func TestPDFNewPDFFileReportsAFileThatCannotBeCreated(t *testing.T) {
+	if _, err := NewPDFFile("/no/such/directory/out.pdf"); err == nil {
+		t.Error("no error")
+	}
 }

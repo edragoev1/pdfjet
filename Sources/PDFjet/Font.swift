@@ -82,9 +82,10 @@ public class Font {
     ///
     /// - Parameter pdf: the PDF to add this font to.
     /// - Parameter coreFont: the core font. Must be one the names defined in the CoreFont class.
+    /// - Throws: PDFjetError when the number is not one of the fourteen core fonts.
     ///
-    public init(_ pdf: PDF, _ coreFont: Int) {
-        let font = CoreFont(coreFont)
+    public init(_ pdf: PDF, _ coreFont: Int) throws {
+        let font = try CoreFont(coreFont)
         self.isCoreFont = true
         self.name = font.name!
         self.bBoxLLx = font.bBoxLLx!
@@ -116,8 +117,8 @@ public class Font {
     }
 
     // Used by PDFobj
-    init(_ coreFont: Int) {
-        let font = CoreFont(coreFont)
+    init(_ coreFont: Int) throws {
+        let font = try CoreFont(coreFont)
         self.isCoreFont = true
         self.name = font.name!
         self.bBoxLLx = font.bBoxLLx!

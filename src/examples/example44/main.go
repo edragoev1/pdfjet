@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example44 draws a text column that contains English and Chinese paragraphs.
 func Example44() {
-	pdf := pdfjet.NewPDFFile("Example_44.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_44.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
@@ -37,7 +41,9 @@ func Example44() {
 	column.AddCJKParagraph(f2, chinese)
 	column.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

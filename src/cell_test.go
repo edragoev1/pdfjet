@@ -12,10 +12,8 @@ import (
 )
 
 func TestCellACellWithoutTextHasNoHeight(t *testing.T) {
-	// Java makes the cell with a null text; a Go cell has no text when its
-	// hasText flag is false, as after SetImage.
-	cell := NewCell(testHelvetica(testNewPDF()), "")
-	cell.hasText = false
+	// Java's Cell(font) is NewEmptyCell in Go.
+	cell := NewEmptyCell(testHelvetica(testNewPDF()))
 	testNear(t, "height", 0, cell.GetHeight(100), 0)
 }
 

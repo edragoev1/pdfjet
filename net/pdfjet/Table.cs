@@ -509,9 +509,10 @@ public class Table : IDrawable {
     /// <returns>the width of this table.</returns>
     public float GetWidth() {
         float tableWidth = 0f;
-        List<Cell> row = tableData[0];
-        foreach (Cell cell in row) {
-            tableWidth += cell.GetWidth();
+        if (tableData.Count > 0) {
+            foreach (Cell cell in tableData[0]) {
+                tableWidth += cell.GetWidth();
+            }
         }
         return tableWidth;
     }
@@ -694,9 +695,13 @@ public class Table : IDrawable {
                     cell2.SetBorderWidth(cell.GetBorderWidth());
                     cell2.SetBorderColor(cell.GetBorderColor());
                     cell2.SetTextColor(cell.GetTextColor());
-                    // The borders, underline and strikeout.
-                    cell2.SetProperties(cell.GetProperties());
                     cell2.SetColSpan(cell.GetColSpan());
+                    cell2.SetBorder(Border.TOP, cell.GetBorder(Border.TOP));
+                    cell2.SetBorder(Border.BOTTOM, cell.GetBorder(Border.BOTTOM));
+                    cell2.SetBorder(Border.LEFT, cell.GetBorder(Border.LEFT));
+                    cell2.SetBorder(Border.RIGHT, cell.GetBorder(Border.RIGHT));
+                    cell2.SetUnderline(cell.GetUnderline());
+                    cell2.SetStrikeout(cell.GetStrikeout());
                     cell2.SetTextAlignment(cell.GetTextAlignment());
                     cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);

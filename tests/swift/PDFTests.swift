@@ -156,4 +156,15 @@ import Testing
         }
         Issue.record("object 3 not read")
     }
+
+    @Test func anEmptyDocumentPropertyIsNotWritten() throws {
+        let memory = MemoryPDF()
+        _ = memory.pdf.setTitle("").setAuthor("").setSubject("").setKeywords("").setCreator("")
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        for key in ["/Title", "/Author", "/Subject", "/Keywords", "/Creator"] {
+            #expect(!raw.contains(key), "\(key)")
+        }
+    }
 }

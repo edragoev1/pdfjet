@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -182,5 +183,18 @@ class PDFTest {
             }
         }
         throw new AssertionError("object 3 not read");
+    }
+
+    @Test
+    void anEmptyDocumentPropertyIsNotWritten() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setTitle("").setAuthor("").setSubject("").setKeywords("").setCreator("");
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        for (String key : new String[] {"/Title", "/Author", "/Subject", "/Keywords", "/Creator"}) {
+            assertFalse(raw.contains(key), key);
+        }
     }
 }

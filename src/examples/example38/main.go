@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -14,7 +15,10 @@ import (
 
 // Example38 draws a table of cells that span multiple rows and columns.
 func Example38() {
-	pdf := pdfjet.NewPDFFile("Example_38.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_38.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular)
 
 	page := pdfjet.NewPage(pdf, letter.Landscape())
@@ -25,7 +29,9 @@ func Example38() {
 	table.SetLocation(50.0, 50.0)
 	table.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 /**

@@ -53,10 +53,18 @@ type Cell struct {
 	strikeout bool
 }
 
+// NewEmptyCell creates a cell without text, like Cell(font) in the other ports.
+// It is 0 tall until it gets text, an image or a barcode.
+func NewEmptyCell(font *Font) *Cell {
+	cell := NewCell(font, "")
+	cell.hasText = false
+	return cell
+}
+
 // NewCell creates a cell object and sets the font and the cell text.
 // The font is also the fallback font until SetFallbackFont changes it.
-// @param font the font.
-// @param text the text.
+//   - font: the font.
+//   - text: the text.
 func NewCell(font *Font, text string) *Cell {
 	cell := new(Cell)
 	cell.markerAlignment = alignment.Right
@@ -81,33 +89,33 @@ func NewCell(font *Font, text string) *Cell {
 }
 
 // SetFont sets the font for this cell. The font size does not change; set it with SetFontSize.
-// @param font the font.
+//   - font: the font.
 func (cell *Cell) SetFont(font *Font) *Cell {
 	cell.font = font
 	return cell
 }
 
 // GetFont returns the font used by this cell.
-// @return the font.
+// Returns the font.
 func (cell *Cell) GetFont() *Font {
 	return cell.font
 }
 
 // SetFallbackFont sets the fallback font for this cell.
-// @param fallbackFont the fallback font.
+//   - fallbackFont: the fallback font.
 func (cell *Cell) SetFallbackFont(fallbackFont *Font) *Cell {
 	cell.fallbackFont = fallbackFont
 	return cell
 }
 
 // GetFallbackFont returns the fallback font used by this cell.
-// @return the fallback font.
+// Returns the fallback font.
 func (cell *Cell) GetFallbackFont() *Font {
 	return cell.fallbackFont
 }
 
 // SetText sets the cell text.
-// @param text the cell text.
+//   - text: the cell text.
 func (cell *Cell) SetText(text string) *Cell {
 	cell.text = text
 	cell.hasText = true
@@ -154,8 +162,8 @@ func (cell *Cell) GetBarcode() *Barcode {
 // SetMarker sets the marker drawn in this cell: a Point, placed at the left or
 // the right of the cell and centered vertically.
 // See the Point class and Example_09 for more information.
-// @param point the point.
-// @param align alignment.Left or alignment.Right.
+//   - point: the point.
+//   - align: alignment.Left or alignment.Right.
 func (cell *Cell) SetMarker(point *Point, align alignment.Alignment) *Cell {
 	cell.point = point
 	cell.markerAlignment = align
@@ -207,7 +215,7 @@ func (cell *Cell) GetTextBlock() *TextBlock {
 }
 
 // SetWidth sets the width of this cell.
-// @param width the specified width.
+//   - width: the specified width.
 func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
 	if cell.textBlock != nil {
@@ -217,13 +225,13 @@ func (cell *Cell) SetWidth(width float32) *Cell {
 }
 
 // GetWidth returns the cell width.
-// @return the cell width.
+// Returns the cell width.
 func (cell *Cell) GetWidth() float32 {
 	return cell.width
 }
 
 // SetTopPadding sets the top padding of this cell.
-// @param padding the top padding.
+//   - padding: the top padding.
 func (cell *Cell) SetTopPadding(padding float32) *Cell {
 	cell.topPadding = padding
 	return cell
@@ -235,7 +243,7 @@ func (cell *Cell) GetTopPadding() float32 {
 }
 
 // SetBottomPadding sets the bottom padding of this cell.
-// @param padding the bottom padding.
+//   - padding: the bottom padding.
 func (cell *Cell) SetBottomPadding(padding float32) *Cell {
 	cell.bottomPadding = padding
 	return cell
@@ -247,7 +255,7 @@ func (cell *Cell) GetBottomPadding() float32 {
 }
 
 // SetLeftPadding sets the left padding of this cell.
-// @param padding the left padding.
+//   - padding: the left padding.
 func (cell *Cell) SetLeftPadding(padding float32) *Cell {
 	cell.leftPadding = padding
 	return cell
@@ -259,7 +267,7 @@ func (cell *Cell) GetLeftPadding() float32 {
 }
 
 // SetRightPadding sets the right padding of this cell.
-// @param padding the right padding.
+//   - padding: the right padding.
 func (cell *Cell) SetRightPadding(padding float32) *Cell {
 	cell.rightPadding = padding
 	return cell
@@ -271,7 +279,7 @@ func (cell *Cell) GetRightPadding() float32 {
 }
 
 // SetPadding sets the top, bottom, left and right paddings of this cell.
-// @param padding the right padding.
+//   - padding: the right padding.
 func (cell *Cell) SetPadding(padding float32) *Cell {
 	cell.topPadding = padding
 	cell.bottomPadding = padding
@@ -281,7 +289,7 @@ func (cell *Cell) SetPadding(padding float32) *Cell {
 }
 
 // GetHeight returns the cell height.
-// @return the cell height.
+// Returns the cell height.
 func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
 	if cell.textBlock != nil {
@@ -340,7 +348,7 @@ func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
 }
 
 // SetBorderColor sets the color of the cell borders.
-// @param color the color specified as 0xRRGGBB integer.
+//   - color: the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetBorderColor(color int32) *Cell {
 	cell.strokeColor = colorToRGB(color)
 	cell.hasStrokeColor = true
@@ -357,15 +365,16 @@ func (cell *Cell) GetBorderColor() *[3]float32 {
 }
 
 // SetBorderWidth sets the width of the cell borders.
-// @param strokeWidth the width of the cell borders.
-// @return this Cell object.
+//   - strokeWidth: the width of the cell borders.
+//
+// Returns this Cell object.
 func (cell *Cell) SetBorderWidth(strokeWidth float32) *Cell {
 	cell.strokeWidth = strokeWidth
 	return cell
 }
 
 // GetBorderWidth returns the width of the cell borders.
-// @return the width of the cell borders.
+// Returns the width of the cell borders.
 func (cell *Cell) GetBorderWidth() float32 {
 	return cell.strokeWidth
 }
@@ -377,7 +386,7 @@ func (cell *Cell) SetTextColorRGB(textColor [3]float32) *Cell {
 }
 
 // SetTextColor sets the text color.
-// @param color the color specified as 0xRRGGBB integer.
+//   - color: the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetTextColor(color int32) *Cell {
 	cell.textColor = colorToRGB(color)
 	return cell
@@ -389,21 +398,21 @@ func (cell *Cell) GetTextColor() [3]float32 {
 }
 
 // SetColSpan sets the number of columns this cell spans.
-// @param colspan the specified column span value.
+//   - colspan: the specified column span value.
 func (cell *Cell) SetColSpan(colspan int) *Cell {
 	cell.colspan = colspan
 	return cell
 }
 
 // GetColSpan returns the number of columns this cell spans.
-// @return the column span value.
+// Returns the column span value.
 func (cell *Cell) GetColSpan() int {
 	return cell.colspan
 }
 
 // SetBorder sets whether the specified borders are drawn.
-// @param b the borders, for example border.Top | border.Bottom.
-// @param visible true to draw the borders.
+//   - b: the borders, for example border.Top | border.Bottom.
+//   - visible: true to draw the borders.
 func (cell *Cell) SetBorder(b uint32, visible bool) *Cell {
 	if b&border.Top != 0 {
 		cell.topBorder = visible
@@ -421,7 +430,7 @@ func (cell *Cell) SetBorder(b uint32, visible bool) *Cell {
 }
 
 // GetBorder returns true if any of the specified borders is drawn.
-// @param b the borders, for example border.Top.
+//   - b: the borders, for example border.Top.
 func (cell *Cell) GetBorder(b uint32) bool {
 	return (b&border.Top != 0 && cell.topBorder) ||
 		(b&border.Bottom != 0 && cell.bottomBorder) ||
@@ -435,7 +444,8 @@ func (cell *Cell) SetBorders(visible bool) *Cell {
 }
 
 // SetTextAlignment sets the cell text alignment.
-// @param alignment the alignment code.
+//   - alignment: the alignment code.
+//
 // Supported values: alignment.Left, alignment.Right, alignment.Center and
 // alignment.Justify, which draws the single line of cell text left aligned.
 func (cell *Cell) SetTextAlignment(textAlignment alignment.Alignment) *Cell {
@@ -444,13 +454,14 @@ func (cell *Cell) SetTextAlignment(textAlignment alignment.Alignment) *Cell {
 }
 
 // GetTextAlignment returns the text alignment.
-// @return the text horizontal alignment code.
+// Returns the text horizontal alignment code.
 func (cell *Cell) GetTextAlignment() alignment.Alignment {
 	return cell.textAlignment
 }
 
 // SetVerticalAlignment sets the cell text vertical alignment.
-// @param alignment the alignment code.
+//   - alignment: the alignment code.
+//
 // Supported values: alignment.Top, alignment.Center and alignment.Bottom.
 func (cell *Cell) SetVerticalAlignment(valign alignment.Alignment) *Cell {
 	cell.valign = valign
@@ -458,34 +469,34 @@ func (cell *Cell) SetVerticalAlignment(valign alignment.Alignment) *Cell {
 }
 
 // GetVerticalAlignment returns the cell text vertical alignment.
-// @return the vertical alignment code.
+// Returns the vertical alignment code.
 func (cell *Cell) GetVerticalAlignment() alignment.Alignment {
 	return cell.valign
 }
 
 // SetUnderline sets the underline text parameter.
 // If the value of the underline variable is 'true' - the text is underlined.
-// @param underline the underline text parameter.
+//   - underline: the underline text parameter.
 func (cell *Cell) SetUnderline(underline bool) *Cell {
 	cell.underline = underline
 	return cell
 }
 
 // GetUnderline returns the underline text parameter.
-// @return the underline text parameter.
+// Returns the underline text parameter.
 func (cell *Cell) GetUnderline() bool {
 	return cell.underline
 }
 
 // SetStrikeout sets the strikeout text parameter.
-// @param strikeout the strikeout text parameter.
+//   - strikeout: the strikeout text parameter.
 func (cell *Cell) SetStrikeout(strikeout bool) *Cell {
 	cell.strikeout = strikeout
 	return cell
 }
 
 // GetStrikeout returns the strikeout text parameter.
-// @return the strikeout text parameter.
+// Returns the strikeout text parameter.
 func (cell *Cell) GetStrikeout() bool {
 	return cell.strikeout
 }

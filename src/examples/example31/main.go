@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 
 // Example31 draws Devanagari text and fills rectangles through a transparent graphics state.
 func Example31() {
-	pdf := pdfjet.NewPDFFile("Example_31.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_31.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
 	f1.SetSize(15.0)
@@ -58,7 +62,9 @@ func Example31() {
 	page.SetBrushColor(0x00003865)
 	page.FillRect(50.0, 550.0, 200.0, 200.0)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

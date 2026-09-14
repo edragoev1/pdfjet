@@ -80,7 +80,7 @@ public class OptionalContentGroup {
      * @return the list of drawable objects.
      */
     public List<Drawable> getComponents() {
-        return components;
+        return new ArrayList<Drawable>(components);
     }
 
     /**

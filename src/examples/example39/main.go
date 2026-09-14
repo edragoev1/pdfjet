@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -13,7 +14,10 @@ import (
 // in its own color with its length written inside it, under a title and a
 // subtitle, and a color key and a source note under the chart.
 func Example39() {
-	pdf := pdfjet.NewPDFFile("Example_39.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_39.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(15.0)
@@ -77,7 +81,9 @@ func Example39() {
 	pdfjet.NewTextLine(f4, note).
 		SetTextColor(0x999999).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 520.0).DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

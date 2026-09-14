@@ -56,4 +56,10 @@ import Testing
         #expect(font.getName() == "IBMPlexSans")
         TestSupport.expectNear(28.32, font.stringWidth(12, "Hello"), 0.001)
     }
+
+    @Test func aCoreFontNumberOutsideTheFourteenIsRejected() {
+        let pdf = TestSupport.newPDF()
+        #expect(throws: PDFjetError.self) { try Font(pdf, 0) }
+        #expect(throws: PDFjetError.self) { try Font(pdf, 15) }
+    }
 }

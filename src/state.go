@@ -22,8 +22,8 @@ type savedState struct {
 
 // newSavedState constructs state objects.
 func newSavedState(
-	pen [3]float32,
 	brush [3]float32,
+	pen [3]float32,
 	penWidth float32,
 	lineCapStyle capstyle.CapStyle,
 	lineJoinStyle joinstyle.JoinStyle,

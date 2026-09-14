@@ -14,7 +14,7 @@ import Testing
         _ = memory.pdf.setTitle("Encrypted title")
         _ = memory.pdf.setEncryption(Encryption(memory.pdf, passwords, permissions))
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        TextLine(Font(memory.pdf, CoreFont.HELVETICA), "Secret text").setLocation(50, 50).drawOn(page)
+        TextLine(try Font(memory.pdf, CoreFont.HELVETICA), "Secret text").setLocation(50, 50).drawOn(page)
         try memory.pdf.complete()
         return memory.bytes
     }

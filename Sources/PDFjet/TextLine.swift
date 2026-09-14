@@ -495,6 +495,7 @@ public class TextLine : Drawable {
     }
 
     /// Moves this text line down by the leading and returns the new y coordinate.
+    @discardableResult
     public func advance(_ leading: Float) -> Float {
         self.y += leading
         return self.y

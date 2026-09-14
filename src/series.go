@@ -40,8 +40,8 @@ func newSeries(name string) *Series {
 }
 
 // AddPoint adds a point with the marker of this series.
-// @param x the x value.
-// @param y the y value.
+//   - x: the x value.
+//   - y: the y value.
 func (series *Series) AddPoint(x, y float32) *Series {
 	series.points = append(series.points, NewPoint(x, y).SetShape(series.shape).SetRadius(series.radius))
 	return series
@@ -63,7 +63,7 @@ func (series *Series) SetDrawPath(drawPath bool) *Series {
 
 // SetStrokeColor sets the color of the line and of the markers that have no
 // color of their own. Without it the series has the next color of the palette.
-// @param color the color as a 0xRRGGBB value, for example color.Blue.
+//   - color: the color as a 0xRRGGBB value, for example color.Blue.
 func (series *Series) SetStrokeColor(color int32) *Series {
 	r := float32((color>>16)&0xff) / 255.0
 	g := float32((color>>8)&0xff) / 255.0

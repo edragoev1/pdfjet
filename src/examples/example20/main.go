@@ -15,7 +15,10 @@ import (
 
 // Example20 reads a logo in PDF format and draws it on a new PDF document.
 func Example20() {
-	pdf := pdfjet.NewPDFFile("Example_20.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_20.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
@@ -108,7 +111,9 @@ func Example20() {
 	qr.SetLocation(50.0, 200.0)
 	qr.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

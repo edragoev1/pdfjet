@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -25,7 +26,10 @@ import (
 // compliance. For those, use an embedded font like IBMPlexSans, as the
 // other examples do.
 func Example05() {
-	pdf := pdfjet.NewPDFFile("Example_05.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_05.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
 	f1.SetItalic(true)
@@ -101,7 +105,9 @@ func Example05() {
 	// ellipse.SetRotation(45.0)
 	ellipse.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

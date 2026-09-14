@@ -33,28 +33,12 @@ public class Cell {
     var strokeWidth: Float = 0.0
     var strokeColor: [Float]?
 
-    // Cell properties
-    // Colspan:
-    // bits 0 to 15
-    // Border:
-    // bit 16 - top
-    // bit 17 - bottom
-    // bit 18 - left
-    // bit 19 - right
-    // Not used:
-    // bits 20 and 21
-    // Text Decoration:
-    // bit 22 - underline
-    // bit 23 - strikeout
-    // Future use:
-    // bits 24 to 31
-    private var properties: UInt32 = 0x00050001 // Set only left and top borders!
+    private var colspan: Int = 1
     private var uri: String?
     private var textAlignment = Alignment.LEFT
     private var valign = Alignment.TOP
 
-    // Java's Cell defaults its properties to 0x00050001 - only the top and
-    // left borders are on.
+    // Only the top and left borders are drawn unless setBorder says otherwise.
     internal var topBorder: Bool = true
     internal var bottomBorder: Bool = false
     internal var leftBorder: Bool = true
@@ -471,14 +455,6 @@ public class Cell {
         return self.strokeWidth
     }
 
-    func setProperties(_ properties: UInt32) {
-        self.properties = properties
-    }
-
-    func getProperties() -> UInt32 {
-        return self.properties
-    }
-
     /**
      * Sets the column span private variable.
      *
@@ -487,8 +463,7 @@ public class Cell {
      */
     @discardableResult
     public func setColSpan(_ colspan: Int) -> Cell {
-        self.properties &= 0x00FF0000
-        self.properties |= (UInt32(colspan) & 0x0000FFFF)
+        self.colspan = colspan
         return self
     }
 
@@ -498,7 +473,7 @@ public class Cell {
      * - Returns: the column span value.
      */
     public func getColSpan() -> Int {
-        return Int(self.properties & 0x0000FFFF)
+        return self.colspan
     }
 
     /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.

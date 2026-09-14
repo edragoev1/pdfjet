@@ -25,10 +25,8 @@ type Chart struct {
 	h                              float32
 	x1, x2, x3, x4, x5, x6, x7, x8 float32
 	y1, y2, y3, y4, y5, y6, y7, y8 float32
-	xMax                           float32 // = Float.MIN_VALUE
-	xMin                           float32 // = Float.MAX_VALUE
-	yMax                           float32 // = Float.MIN_VALUE
-	yMin                           float32 // = Float.MAX_VALUE
+	xMax, xMin                     float32 // The range of the data, set when it is drawn.
+	yMax, yMin                     float32
 	xAxisGridLines                 int
 	yAxisGridLines                 int
 	title                          string
@@ -61,8 +59,8 @@ var defaultPalette = [...]int32{
 }
 
 // NewChart creates XY chart objects.
-// @param f1 the font used for the chart title.
-// @param f2 the font used for the X and Y axis titles.
+//   - f1: the font used for the chart title.
+//   - f2: the font used for the X and Y axis titles.
 func NewChart(f1, f2 *Font) *Chart {
 	chart := new(Chart)
 	chart.f1 = f1
@@ -111,7 +109,7 @@ func (chart *Chart) SetYAxisTitle(title string) *Chart {
 // AddSeries adds a series and returns it, to add its points and set its line
 // and marker. A series without a stroke color has the next color of the
 // palette. The legend lists the series that have a name.
-// @param name the series name, shown in the legend; empty for none.
+//   - name: the series name, shown in the legend; empty for none.
 func (chart *Chart) AddSeries(name string) *Series {
 	series := newSeries(name)
 	chart.series = append(chart.series, series)
@@ -226,7 +224,7 @@ func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) *Chart {
 }
 
 // DrawOn draws chart on the specified page.
-// @param page the page to draw chart on.
+//   - page: the page to draw chart on.
 func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Guard against null or empty data
 	if !chart.hasPoints() {

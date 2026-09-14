@@ -49,9 +49,10 @@ func (title *Title) SetOffset(offset float32) *Title {
 
 // SetLocation sets the location of the prefix; the title text keeps its offset
 // from it.
-// @param x the x coordinate.
-// @param y the y coordinate.
-// @return this Title.
+//   - x: the x coordinate.
+//   - y: the y coordinate.
+//
+// Returns this Title.
 func (title *Title) SetLocation(x, y float32) Drawable {
 	title.prefix.SetLocation(x, y)
 	title.textLine.SetLocation(x+title.offset, y)

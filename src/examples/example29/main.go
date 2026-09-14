@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example29 draws a table whose cell holds a text column.
 func Example29() {
-	pdf := pdfjet.NewPDFFile("Example_29.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_29.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	font.SetSize(15.0)
@@ -44,7 +48,9 @@ func Example29() {
 	table.SetLocation(50.0, 50.0)
 	table.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

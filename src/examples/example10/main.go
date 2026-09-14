@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -14,7 +15,10 @@ import (
 
 // Example10 shows how to lay out paragraphs in a text column.
 func Example10() {
-	pdf := pdfjet.NewPDFFile("Example_10.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_10.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	image1 := pdfjet.NewImageFromFile(pdf, "images/sz-map.png")
 
@@ -125,7 +129,9 @@ func Example10() {
 		xy[1])
 	line.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

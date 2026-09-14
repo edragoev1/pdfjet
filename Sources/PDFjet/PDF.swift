@@ -990,13 +990,13 @@ public class PDF {
             append(annot.transparency)
             append("\n")
 
-            if let title = annot.title {
+            if let title = annot.title, !title.isEmpty {
                 append("/T <")
                 append(toHexString(title))
                 append(">\n")
             }
 
-            if let contents = annot.contents {
+            if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
                 append(toHexString(contents))
                 append(">\n")
@@ -1015,26 +1015,26 @@ public class PDF {
             append(annot.transparency)
             append("\n")
 
-            if let title = annot.title {
+            if let title = annot.title, !title.isEmpty {
                 append("/T <")
                 append(toHexString(title))
                 append(">\n")
             }
 
-            if let contents = annot.contents {
+            if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
                 append(toHexString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Text {
             append("/Name /Comment\n")
-            if let title = annot.title {
+            if let title = annot.title, !title.isEmpty {
                 append("/T <")
                 append(toHexString(title))
                 append(">\n")
             }
 
-            if let contents = annot.contents {
+            if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
                 append(toHexString(contents))
                 append(">\n")
@@ -1257,8 +1257,10 @@ public class PDF {
     /// - Parameter title: The title of this document.
     ///
     @discardableResult
+    // An empty document property is the same as one that was never set: it is
+    // not written, as in the Go port, which cannot tell the two apart.
     public func setTitle(_ title: String) -> PDF {
-        self.title = title
+        self.title = title.isEmpty ? nil : title
         return self
     }
 
@@ -1268,7 +1270,7 @@ public class PDF {
     ///
     @discardableResult
     public func setAuthor(_ author: String) -> PDF {
-        self.author = author
+        self.author = author.isEmpty ? nil : author
         return self
     }
 
@@ -1278,7 +1280,7 @@ public class PDF {
     ///
     @discardableResult
     public func setSubject(_ subject: String) -> PDF {
-        self.subject = subject
+        self.subject = subject.isEmpty ? nil : subject
         return self
     }
 
@@ -1288,7 +1290,7 @@ public class PDF {
     ///
     @discardableResult
     public func setKeywords(_ keywords: String) -> PDF {
-        self.keywords = keywords
+        self.keywords = keywords.isEmpty ? nil : keywords
         return self
     }
 
@@ -1298,7 +1300,7 @@ public class PDF {
     ///
     @discardableResult
     public func setCreator(_ creator: String) -> PDF {
-        self.creator = creator
+        self.creator = creator.isEmpty ? nil : creator
         return self
     }
 
@@ -2311,7 +2313,7 @@ public class PDF {
     }
 
     /// Adds the fonts, images and graphics states used by the pages to this document.
-    public func addResourceObjects(_ objects: [PDFobj]) {
+    public func addResourceObjects(from objects: [PDFobj]) {
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)

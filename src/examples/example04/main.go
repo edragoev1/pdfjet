@@ -30,7 +30,10 @@ import (
 //
 // See: pdfjet.NewCJKFont
 func Example04() {
-	pdf := pdfjet.NewPDFFile("Example_04.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_04.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f0 := pdfjet.NewCoreFont(pdf, corefont.Courier())
 	f0.SetSize(14.0)
@@ -90,7 +93,9 @@ func Example04() {
 		log.Fatal(err)
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

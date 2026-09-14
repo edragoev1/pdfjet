@@ -99,12 +99,16 @@ func NewPageDetached(pdf *PDF, pageSize pagesize.PageSize) *Page {
 // NewPage constructs page object and adds it to the PDF document.
 //
 // Please note:
+//
 //   - The coordinate (0.0, 0.0) is the top left corner of the page.
+//
 //   - Page sizes are in points; 1 point is 1/72 inch.
 //
-// @param pdf the pdf object.
-// @param pageSize the page size of this page.
-// @param addPageToPDF boolean flag.
+//   - pdf: the pdf object.
+//
+//   - pageSize: the page size of this page.
+//
+//   - addPageToPDF: boolean flag.
 func newPage(pdf *PDF, pageSize pagesize.PageSize, addToPDF bool) *Page {
 	page := new(Page)
 	page.pdf = pdf
@@ -196,16 +200,16 @@ func (page *Page) getContent() []byte {
 }
 
 // AddDestination adds destination to this page.
-// @param name The destination name.
-// @param yPosition The vertical position of the destination on this page.
+//   - name: The destination name.
+//   - yPosition: The vertical position of the destination on this page.
 func (page *Page) AddDestination(name string, yPosition float32) *Destination {
 	return page.AddDestinationAt(name, 0.0, yPosition)
 }
 
 // AddDestinationAt adds destination to this page.
-// @param name The destination name.
-// @param xPosition The horizontal position of the destination on this page.
-// @param yPosition The vertical position of the destination on this page.
+//   - name: The destination name.
+//   - xPosition: The horizontal position of the destination on this page.
+//   - yPosition: The vertical position of the destination on this page.
 func (page *Page) AddDestinationAt(name string, xPosition, yPosition float32) *Destination {
 	dest := newDestination(name, xPosition, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
@@ -289,10 +293,10 @@ func (page *Page) drawStringUsingHighlightColors(
 // using the specified font and the current brush color.
 // The baseline of the leftmost character is at position (x, y) on the page.
 //
-// @param font the font to use.
-// @param str the string to be drawn.
-// @param x the x coordinate.
-// @param y the y coordinate.
+//   - font: the font to use.
+//   - str: the string to be drawn.
+//   - x: the x coordinate.
+//   - y: the y coordinate.
 func (page *Page) drawString(
 	font *Font, fontSize float32, str string, x, y float32, brush [3]float32, colors map[string]int32) {
 	if str == "" {
@@ -894,13 +898,13 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 // SaveGraphicsState saves the current graphics state. Please see Example_31.
 func (page *Page) SaveGraphicsState() {
 	page.savedStates = append(page.savedStates, newSavedState(
-		page.penColor, page.brushColor, page.penWidth,
+		page.brushColor, page.penColor, page.penWidth,
 		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern))
 	page.appendString("q\n")
 }
 
 // SetGraphicsState sets the graphics state. Please see Example_31.
-// @param gs the graphics state to use.
+//   - gs: the graphics state to use.
 func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 	// The alphas are written like the other numbers of the PDF: with a
 	// dot whatever the locale, at most two decimals and no exponent.
@@ -998,7 +1002,7 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 // red, green, and blue components of the pen color, each in the range
 // [0.0, 1.0].
 //
-// @return: A [3]float32 array representing the pen color in RGB format.
+// Returns a [3]float32 array with the pen color in RGB format.
 //
 //	The array contains values in the range [0.0, 1.0] corresponding to
 //	the red, green, and blue color components.
@@ -1072,7 +1076,7 @@ func (page *Page) SetBrushColorRGB(rgbColor [3]float32) *Page {
 // red, green, and blue components of the brush color, each in the range
 // [0.0, 1.0].
 //
-// @return: A [3]float32 array representing the brush color in RGB format.
+// Returns a [3]float32 array with the brush color in RGB format.
 //
 //	The array contains values in the range [0.0, 1.0] corresponding to
 //	the red, green, and blue color components.
@@ -1083,10 +1087,10 @@ func (page *Page) GetBrushColor() [3]float32 {
 // SetPenColorCMYK sets the color for stroking operations using CMYK.
 // The pen color is used when drawing lines and splines.
 //
-// @param c the cyan component is float value from 0.0 to 1.0.
-// @param m the magenta component is float value from 0.0 to 1.0.
-// @param y the yellow component is float value from 0.0 to 1.0.
-// @param k the black component is float value from 0.0 to 1.0.
+//   - c: the cyan component is float value from 0.0 to 1.0.
+//   - m: the magenta component is float value from 0.0 to 1.0.
+//   - y: the yellow component is float value from 0.0 to 1.0.
+//   - k: the black component is float value from 0.0 to 1.0.
 func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(c)
 	page.appendString(" ")
@@ -1102,10 +1106,10 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 
 // SetBrushColorCMYK sets the color for brush operations using CMYK.
 // This is the color used when drawing regular text and filling shapes.
-// @param c the cyan component is float value from 0.0 to 1.0.
-// @param m the magenta component is float value from 0.0 to 1.0.
-// @param y the yellow component is float value from 0.0 to 1.0.
-// @param k the black component is float value from 0.0 to 1.0.
+//   - c: the cyan component is float value from 0.0 to 1.0.
+//   - m: the magenta component is float value from 0.0 to 1.0.
+//   - y: the yellow component is float value from 0.0 to 1.0.
+//   - k: the black component is float value from 0.0 to 1.0.
 func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(c)
 	page.appendString(" ")
@@ -1147,17 +1151,17 @@ func (page *Page) SetDefaultPenWidth() *Page {
 //
 // Examples of line dash patterns:
 //
-//	"[Array] Phase"     Appearance          Description
-//	 _______________     _________________   ____________________________________
+//		"[Array] Phase"     Appearance          Description
+//		 _______________     _________________   ____________________________________
 //
-//	 "[] 0"              -----------------   Solid line
-//	 "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
-//	 "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
-//	 "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
-//	 "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
-//	 "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
+//		 "[] 0"              -----------------   Solid line
+//		 "[3] 0"             ---   ---   ---     3 units on, 3 units off, ...
+//		 "[2] 1"             -  --  --  --  --   1 on, 2 off, 2 on, 2 off, ...
+//		 "[2 1] 0"           -- -- -- -- -- --   2 on, 1 off, 2 on, 1 off, ...
+//		 "[3 5] 6"             ---     ---       2 off, 3 on, 5 off, 3 on, 5 off, ...
+//		 "[2 3] 11"          -   --   --   --    1 on, 3 off, 2 on, 3 off, 2 on, ...
 //
-// @param strokeDashPattern the line dash pattern.
+//	  - strokeDashPattern: the line dash pattern.
 func (page *Page) SetStrokeDashPattern(strokeDashPattern string) *Page {
 	page.strokeDashPattern = strokeDashPattern
 	page.appendString(page.strokeDashPattern)
@@ -1206,8 +1210,8 @@ func (page *Page) SetLineJoinStyle(style joinstyle.JoinStyle) *Page {
 
 // MoveTo moves the pen to the point with coordinates (x, y) on the page.
 //
-// @param x the x coordinate of new pen position.
-// @param y the y coordinate of new pen position.
+//   - x: the x coordinate of new pen position.
+//   - y: the y coordinate of new pen position.
 func (page *Page) MoveTo(x, y float32) {
 	page.appendFloat32(x)
 	page.appendString(" ")
@@ -1244,10 +1248,10 @@ func (page *Page) FillPath() {
 // The left and right edges of the rectangle are at x and x + w.
 // The top and bottom edges are at y and y + h.
 // The rectangle is drawn using the current pen color.
-// @param x the x coordinate of the rectangle to be drawn.
-// @param y the y coordinate of the rectangle to be drawn.
-// @param w the width of the rectangle to be drawn.
-// @param h the height of the rectangle to be drawn.
+//   - x: the x coordinate of the rectangle to be drawn.
+//   - y: the y coordinate of the rectangle to be drawn.
+//   - w: the width of the rectangle to be drawn.
+//   - h: the height of the rectangle to be drawn.
 func (page *Page) DrawRect(x, y, w, h float32) {
 	page.MoveTo(x, y)
 	page.LineTo(x+w, y)
@@ -1260,10 +1264,10 @@ func (page *Page) DrawRect(x, y, w, h float32) {
 // The left and right edges of the rectangle are at x and x + w.
 // The top and bottom edges are at y and y + h.
 // The rectangle is drawn using the current brush color.
-// @param x the x coordinate of the rectangle to be drawn.
-// @param y the y coordinate of the rectangle to be drawn.
-// @param w the width of the rectangle to be drawn.
-// @param h the height of the rectangle to be drawn.
+//   - x: the x coordinate of the rectangle to be drawn.
+//   - y: the y coordinate of the rectangle to be drawn.
+//   - w: the width of the rectangle to be drawn.
+//   - h: the height of the rectangle to be drawn.
 func (page *Page) FillRect(x, y, w, h float32) {
 	page.MoveTo(x, y)
 	page.LineTo(x+w, y)
@@ -1275,14 +1279,14 @@ func (page *Page) FillRect(x, y, w, h float32) {
 // DrawPath draws a path consisting of multiple points using the specified path operator.
 // The path can include both straight lines and Bézier curves defined by control points.
 //
-// path: A slice of Points that defines the path. Must contain at least 2 points.
+// path: A slice of Points that defines the path. Fewer than two points paint nothing.
 // pathOperator: The PDF path painting operator to apply, for example pathoperator.Stroke or pathoperator.Fill.
 //
 // The method starts at the first point and processes subsequent points as either
 // line segments or curve control points based on their controlPoint field.
 func (page *Page) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
-		panic("The Path object must contain at least 2 points.")
+		return // A path needs two points to paint anything.
 	}
 	point := path[0]
 	page.MoveTo(point.x, point.y)
@@ -1311,47 +1315,47 @@ func (page *Page) DrawPath(path []*Point, pathOperator pathoperator.PathOperator
 //
 // The outline of the circle is drawn using the current pen color.
 //
-// @param x the x coordinate of the center of the circle to be drawn.
-// @param y the y coordinate of the center of the circle to be drawn.
-// @param r the radius of the circle to be drawn.
+//   - x: the x coordinate of the center of the circle to be drawn.
+//   - y: the y coordinate of the center of the circle to be drawn.
+//   - r: the radius of the circle to be drawn.
 func (page *Page) DrawCircle(x, y, r float32) {
 	page.drawEllipse(x, y, r, r, pathoperator.Stroke)
 }
 
 // DrawCircleUsingPathOperator draws the specified circle on the page using the path operator.
 //
-// @param x the x coordinate of the center of the circle to be drawn.
-// @param y the y coordinate of the center of the circle to be drawn.
-// @param r the radius of the circle to be drawn.
-// @param pathOperator the path operator, for example pathoperator.Stroke or pathoperator.Fill.
+//   - x: the x coordinate of the center of the circle to be drawn.
+//   - y: the y coordinate of the center of the circle to be drawn.
+//   - r: the radius of the circle to be drawn.
+//   - pathOperator: the path operator, for example pathoperator.Stroke or pathoperator.Fill.
 func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator pathoperator.PathOperator) {
 	page.drawEllipse(x, y, r, r, pathOperator)
 }
 
 // DrawEllipse draws an ellipse on the page using the current pen color.
-// @param x the x coordinate of the center of the ellipse to be drawn.
-// @param y the y coordinate of the center of the ellipse to be drawn.
-// @param r1 the horizontal radius of the ellipse to be drawn.
-// @param r2 the vertical radius of the ellipse to be drawn.
+//   - x: the x coordinate of the center of the ellipse to be drawn.
+//   - y: the y coordinate of the center of the ellipse to be drawn.
+//   - r1: the horizontal radius of the ellipse to be drawn.
+//   - r2: the vertical radius of the ellipse to be drawn.
 func (page *Page) DrawEllipse(x, y, r1, r2 float32) {
 	page.drawEllipse(x, y, r1, r2, pathoperator.Stroke)
 }
 
 // FillEllipse fills an ellipse on the page using the current brush color.
-// @param x the x coordinate of the center of the ellipse to be drawn.
-// @param y the y coordinate of the center of the ellipse to be drawn.
-// @param r1 the horizontal radius of the ellipse to be drawn.
-// @param r2 the vertical radius of the ellipse to be drawn.
+//   - x: the x coordinate of the center of the ellipse to be drawn.
+//   - y: the y coordinate of the center of the ellipse to be drawn.
+//   - r1: the horizontal radius of the ellipse to be drawn.
+//   - r2: the vertical radius of the ellipse to be drawn.
 func (page *Page) FillEllipse(x, y, r1, r2 float32) {
 	page.drawEllipse(x, y, r1, r2, pathoperator.Fill)
 }
 
 // drawEllipse draws an ellipse on the page and fills it using the current brush color.
-// @param x the x coordinate of the center of the ellipse to be drawn.
-// @param y the y coordinate of the center of the ellipse to be drawn.
-// @param r1 the horizontal radius of the ellipse to be drawn.
-// @param r2 the vertical radius of the ellipse to be drawn.
-// @param pathOperator the path operator.
+//   - x: the x coordinate of the center of the ellipse to be drawn.
+//   - y: the y coordinate of the center of the ellipse to be drawn.
+//   - r1: the horizontal radius of the ellipse to be drawn.
+//   - r2: the vertical radius of the ellipse to be drawn.
+//   - pathOperator: the path operator.
 func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator pathoperator.PathOperator) {
 	// The best 4-spline magic number
 	var m4 float32 = 0.55228
@@ -1384,7 +1388,7 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator pathoperator.Pa
 }
 
 // DrawPoint draws a point on the page using the current pen color.
-// @param p the point.
+//   - p: the point.
 func (page *Page) DrawPoint(p *Point) {
 	if p.shape != shape.Invisible {
 		var list []*Point
@@ -1468,13 +1472,14 @@ func (page *Page) DrawPoint(p *Point) {
 // Example usage:
 //
 //	page.SetTextRenderingMode(3)
-func (page *Page) SetTextRenderingMode(mode int) *Page {
-	if mode >= 0 && mode <= 7 {
-		page.renderingMode = mode
-	} else {
-		panic("Invalid text rendering mode: " + fmt.Sprint(mode))
+//
+// It returns an error when the mode is not 0 to 7.
+func (page *Page) SetTextRenderingMode(mode int) (*Page, error) {
+	if mode < 0 || mode > 7 {
+		return page, fmt.Errorf("invalid text rendering mode: %d", mode)
 	}
-	return page
+	page.renderingMode = mode
+	return page, nil
 }
 
 // SetTextRotation sets the rotation, in degrees, of the text drawn on the page.
@@ -1591,9 +1596,9 @@ func (page *Page) AddArcToPath(
 //
 // Author: Pieter Libin, pieter@emweb.be
 //
-// @param p1 first control point
-// @param p2 second control point
-// @param p3 end point
+//   - p1: first control point
+//   - p2: second control point
+//   - p3: end point
 func (page *Page) BezierCurveTo(p1, p2, p3 *Point) {
 	page.appendPoint(p1)
 	page.appendPoint(p2)
@@ -1668,10 +1673,10 @@ func (page *Page) ClipRect(x, y, w, h float32) {
 
 // SetCropBox sets the page CropBox.
 // See page 77 of the PDF32000_2008.pdf specification.
-// @param upperLeftX the top left X coordinate of the CropBox.
-// @param upperLeftY the top left Y coordinate of the CropBox.
-// @param lowerRightX the bottom right X coordinate of the CropBox.
-// @param lowerRightY the bottom right Y coordinate of the CropBox.
+//   - upperLeftX: the top left X coordinate of the CropBox.
+//   - upperLeftY: the top left Y coordinate of the CropBox.
+//   - lowerRightX: the bottom right X coordinate of the CropBox.
+//   - lowerRightY: the bottom right Y coordinate of the CropBox.
 func (page *Page) SetCropBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.cropBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
 	return page
@@ -1679,10 +1684,10 @@ func (page *Page) SetCropBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY fl
 
 // SetBleedBox sets the page BleedBox.
 // See page 77 of the PDF32000_2008.pdf specification.
-// @param upperLeftX the top left X coordinate of the BleedBox.
-// @param upperLeftY the top left Y coordinate of the BleedBox.
-// @param lowerRightX the bottom right X coordinate of the BleedBox.
-// @param lowerRightY the bottom right Y coordinate of the BleedBox.
+//   - upperLeftX: the top left X coordinate of the BleedBox.
+//   - upperLeftY: the top left Y coordinate of the BleedBox.
+//   - lowerRightX: the bottom right X coordinate of the BleedBox.
+//   - lowerRightY: the bottom right Y coordinate of the BleedBox.
 func (page *Page) SetBleedBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.bleedBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
 	return page
@@ -1690,10 +1695,10 @@ func (page *Page) SetBleedBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY f
 
 // SetTrimBox sets the page TrimBox.
 // See page 77 of the PDF32000_2008.pdf specification.
-// @param upperLeftX the top left X coordinate of the TrimBox.
-// @param upperLeftY the top left Y coordinate of the TrimBox.
-// @param lowerRightX the bottom right X coordinate of the TrimBox.
-// @param lowerRightY the bottom right Y coordinate of the TrimBox.
+//   - upperLeftX: the top left X coordinate of the TrimBox.
+//   - upperLeftY: the top left Y coordinate of the TrimBox.
+//   - lowerRightX: the bottom right X coordinate of the TrimBox.
+//   - lowerRightY: the bottom right Y coordinate of the TrimBox.
 func (page *Page) SetTrimBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.trimBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
 	return page
@@ -1701,10 +1706,10 @@ func (page *Page) SetTrimBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY fl
 
 // SetArtBox sets the page ArtBox.
 // See page 77 of the PDF32000_2008.pdf specification.
-// @param upperLeftX the top left X coordinate of the ArtBox.
-// @param upperLeftY the top left Y coordinate of the ArtBox.
-// @param lowerRightX the bottom right X coordinate of the ArtBox.
-// @param lowerRightY the bottom right Y coordinate of the ArtBox.
+//   - upperLeftX: the top left X coordinate of the ArtBox.
+//   - upperLeftY: the top left Y coordinate of the ArtBox.
+//   - lowerRightX: the bottom right X coordinate of the ArtBox.
+//   - lowerRightY: the bottom right Y coordinate of the ArtBox.
 func (page *Page) SetArtBox(upperLeftX, upperLeftY, lowerRightX, lowerRightY float32) *Page {
 	page.artBox = []float32{upperLeftX, upperLeftY, lowerRightX, lowerRightY}
 	return page

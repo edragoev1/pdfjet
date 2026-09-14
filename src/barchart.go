@@ -70,8 +70,8 @@ type BarChart struct {
 }
 
 // NewBarChart creates a bar chart.
-// @param f1 the font for the chart title.
-// @param f2 the font for the axis titles, the labels and the legend.
+//   - f1: the font for the chart title.
+//   - f2: the font for the axis titles, the labels and the legend.
 func NewBarChart(f1, f2 *Font) *BarChart {
 	chart := new(BarChart)
 	chart.f1 = f1
@@ -129,16 +129,16 @@ func (chart *BarChart) SetCategories(categories ...string) *BarChart {
 }
 
 // AddSeries adds a series drawn in the next color of the default palette.
-// @param name the series name, shown in the legend; empty for none.
-// @param values one value per category.
+//   - name: the series name, shown in the legend; empty for none.
+//   - values: one value per category.
 func (chart *BarChart) AddSeries(name string, values []float32) *BarChart {
 	return chart.AddSeriesWithColor(name, values, noColor)
 }
 
 // AddSeriesWithColor adds a series drawn in the specified color.
-// @param name the series name, shown in the legend; empty for none.
-// @param values one value per category.
-// @param color the bar color as a 0xRRGGBB value, for example color.Blue.
+//   - name: the series name, shown in the legend; empty for none.
+//   - values: one value per category.
+//   - color: the bar color as a 0xRRGGBB value, for example color.Blue.
 func (chart *BarChart) AddSeriesWithColor(name string, values []float32, color int32) *BarChart {
 	copied := make([]float32, len(values))
 	copy(copied, values)
@@ -149,9 +149,9 @@ func (chart *BarChart) AddSeriesWithColor(name string, values []float32, color i
 // AddSeriesWithColors adds a series with a color per category, for a chart
 // whose bars each have their own color. A bar past the end of the colors has
 // the next color of the default palette.
-// @param name the series name, shown in the legend; empty for none.
-// @param values one value per category.
-// @param colors one 0xRRGGBB color per category.
+//   - name: the series name, shown in the legend; empty for none.
+//   - values: one value per category.
+//   - colors: one 0xRRGGBB color per category.
 func (chart *BarChart) AddSeriesWithColors(name string, values []float32, colors []int32) *BarChart {
 	copied := make([]float32, len(values))
 	copy(copied, values)
@@ -248,7 +248,7 @@ func (chart *BarChart) SetGridLineWidth(width float32) *BarChart {
 }
 
 // SetGridLineColor sets the color of the grid lines. The default is black.
-// @param color the color as a 0xRRGGBB value, for example color.LightGray.
+//   - color: the color as a 0xRRGGBB value, for example color.LightGray.
 func (chart *BarChart) SetGridLineColor(color int32) *BarChart {
 	chart.gridLineColor = color
 	return chart
@@ -297,9 +297,9 @@ func (chart *BarChart) SetMaximumFractionDigits(maxFractionDigits int) *BarChart
 
 // SetValueAxisMinMax sets the range and the number of grid lines of the value
 // axis. Without it the range is computed from the data and always includes 0.
-// @param min the value at the start of the axis.
-// @param max the value at the end of the axis.
-// @param gridLines the number of grid lines, at least 1.
+//   - min: the value at the start of the axis.
+//   - max: the value at the end of the axis.
+//   - gridLines: the number of grid lines, at least 1.
 func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarChart {
 	chart.min = min
 	chart.max = max

@@ -102,5 +102,10 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(Alignment.RIGHT, table.GetCellAt(4, 0).GetTextAlignment());
         Assert.NotEqual(Alignment.RIGHT, table.GetCellAt(0, 0).GetTextAlignment());
     }
+
+    [Fact]
+    public void AnEmptyTableHasNoWidth() {
+        Assert.Equal(0f, new Table().GetWidth());
+    }
 }
 }

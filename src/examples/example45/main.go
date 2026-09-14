@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -11,7 +12,10 @@ import (
 
 // Example45 uses the Form and Field classes with the core fonts.
 func Example45() {
-	pdf := pdfjet.NewPDFFile("Example_45.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_45.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
@@ -45,7 +49,9 @@ func Example45() {
 		SetLocation(50.0, 50.0).
 		DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

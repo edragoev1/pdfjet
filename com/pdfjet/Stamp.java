@@ -506,11 +506,12 @@ public class Stamp implements Drawable {
      *
      * @param path the points. Control points define Bézier curves.
      * @param pathOperator the path operator, for example PathOperator.STROKE.
-     * @throws Exception if the path has fewer than 2 points or ends with an unconsumed control point.
+     * Fewer than two points paint nothing.
+     * @throws Exception if the path ends with an unconsumed control point.
      */
     public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
-            throw new Exception("The Path object must contain at least 2 points");
+            return; // A path needs two points to paint anything.
         }
         Point point = path.get(0);
         moveTo(point.x, point.y);

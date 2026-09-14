@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -12,7 +13,10 @@ import (
 
 // Example11 tests the one dimensional barcodes.
 func Example11() {
-	pdf := pdfjet.NewPDFFile("Example_11.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_11.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
 
@@ -65,7 +69,9 @@ func Example11() {
 	code.SetFont(f1)
 	code.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

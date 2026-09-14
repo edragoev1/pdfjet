@@ -87,3 +87,13 @@ func TestOptionalContentGroupClearRemovesTheDrawables(t *testing.T) {
 		t.Errorf("name %q", group.GetName())
 	}
 }
+
+func TestOptionalContentGroupGetComponentsReturnsACopy(t *testing.T) {
+	group := NewOptionalContentGroup(testNewPDF(), "Layer")
+	group.Add(NewRect(0, 0, 1, 1))
+	components := group.GetComponents()
+	components[0] = nil
+	if group.GetComponents()[0] == nil {
+		t.Error("GetComponents returned the live list")
+	}
+}

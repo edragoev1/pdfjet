@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -22,7 +23,10 @@ import (
 // 4. Position text blocks on the page
 func Example02() {
 	// Initialize new PDF document that will be saved as Example_02.pdf
-	pdf := pdfjet.NewPDFFile("Example_02.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_02.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
 	f1.SetSize(14.0)
@@ -66,7 +70,9 @@ func Example02() {
 	_ = textBlock.DrawOn(page)
 
 	// Finalize the PDF document
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,10 @@ import (
 
 // Example13 draws a table that spans multiple pages.
 func Example13() {
-	pdf := pdfjet.NewPDFFile("Example_13.pdf")
+	pdf, err := pdfjet.NewPDFFile("Example_13.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(7.0)
@@ -112,7 +116,9 @@ func Example13() {
 		pdf.AddPage(page)
 	}
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func blankOutColumn(table *pdfjet.Table, index int) {
