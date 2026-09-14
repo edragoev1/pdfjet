@@ -970,6 +970,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       on QR data that does not fit, which a test cannot catch; Swift
       `PNGImage.getAlpha` returns no bytes where Java returns null; Go and
       Swift have no public hex helper like Java `Util.toHexString`.
+- ⬜ **B** Intermittent Java test failure: `EncryptionTest.passwordsAreCutAt127Bytes`
+      failed once in about fifteen runs on Sep 14 with `DataFormatException:
+      incorrect header check` from `PDFobj.decode` while reading back the
+      encrypted PDF, and passed on every rerun. The file key, the salts and
+      the stream IVs are random per run, and the encryption code was not
+      touched that day, so some byte value trips the writer or the reader.
+      To catch it: make the test log the key, `/U`, `/O` and the first stream
+      IV when the read fails, or loop it a few hundred times with a fixed
+      `SecureRandom` seed until it reproduces.
 - ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
       Done on Sep 13: `check-examples.sh` is clean with the version bump,
