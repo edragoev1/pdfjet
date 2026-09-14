@@ -2146,6 +2146,43 @@ public class PDF {
     /// - Throws: PDFjetError when the pages cannot be merged into this document.
     ///
     public func merge(_ objects: [PDFobj]) throws {
+        try checkMerge(objects)
+        mergePages(objects, getPageObjects(from: objects))
+    }
+
+    ///
+    /// Adds the listed pages of a document that was read with read(from:)
+    /// after the pages of this document, in the order they are listed. A
+    /// document is split by merging each part of it into a PDF of its own: the
+    /// objects that read(from:) returned can be merged into any number of PDFs.
+    ///
+    /// The pages are merged as merge(objects) merges all of them, and a link to
+    /// a page that is not merged leads nowhere. A page number that the document
+    /// does not have, or one that is listed twice, is refused.
+    ///
+    /// - Parameter objects: the objects of the document, as read(from:) returns them.
+    /// - Parameter pageNumbers: the numbers of the pages, counted from 1.
+    /// - Throws: PDFjetError when the pages cannot be merged into this document.
+    ///
+    public func merge(_ objects: [PDFobj], _ pageNumbers: [Int]) throws {
+        try checkMerge(objects)
+        let pageObjects = getPageObjects(from: objects)
+        var listed = [PDFobj]()
+        var seen = Set<Int>()
+        for number in pageNumbers {
+            if number < 1 || number > pageObjects.count {
+                try refuseMerge("The document has no page \(number).")
+            }
+            if !seen.insert(number).inserted {
+                try refuseMerge("Page \(number) is listed twice.")
+            }
+            listed.append(pageObjects[number - 1])
+        }
+        mergePages(objects, listed)
+    }
+
+    // Refuses a merge that would break this document.
+    private func checkMerge(_ objects: [PDFobj]) throws {
         if completed {
             try refuseMerge("The PDF was already completed.")
         }
@@ -2158,7 +2195,10 @@ public class PDF {
         if getPagesObject(objects) == nil {
             try refuseMerge("The objects have no root /Pages object.")
         }
-        let pageObjects = getPageObjects(from: objects)
+    }
+
+    // Adds the pages, in their order, and every object that they use.
+    private func mergePages(_ objects: [PDFobj], _ pageObjects: [PDFobj]) {
         var mergedPages = Set<Int>()
         for page in pageObjects {
             mergedPages.insert(page.number)

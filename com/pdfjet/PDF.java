@@ -1329,6 +1329,43 @@ final public class PDF {
      * @throws Exception if an input or output exception occurred.
      */
     public void merge(List<PDFobj> objects) throws Exception {
+        checkMerge(objects);
+        mergePages(objects, getPageObjects(objects));
+    }
+
+    /**
+     * Adds the listed pages of a document that was read with read() after the
+     * pages of this document, in the order they are listed. A document is
+     * split by merging each part of it into a PDF of its own: the objects that
+     * read() returned can be merged into any number of PDFs.
+     * <p>
+     * The pages are merged as merge(objects) merges all of them, and a link to
+     * a page that is not merged leads nowhere. A page number that the document
+     * does not have, or one that is listed twice, is refused.
+     *
+     * @param objects the objects of the document, as read() returns them.
+     * @param pageNumbers the numbers of the pages, counted from 1.
+     * @throws Exception if an input or output exception occurred.
+     */
+    public void merge(List<PDFobj> objects, int... pageNumbers) throws Exception {
+        checkMerge(objects);
+        List<PDFobj> pageObjects = getPageObjects(objects);
+        List<PDFobj> listed = new ArrayList<PDFobj>();
+        Set<Integer> seen = new HashSet<Integer>();
+        for (int number : pageNumbers) {
+            if (number < 1 || number > pageObjects.size()) {
+                fail(new IllegalArgumentException("The document has no page " + number + "."));
+            }
+            if (!seen.add(number)) {
+                fail(new IllegalArgumentException("Page " + number + " is listed twice."));
+            }
+            listed.add(pageObjects.get(number - 1));
+        }
+        mergePages(objects, listed);
+    }
+
+    // Refuses a merge that would break this document.
+    private void checkMerge(List<PDFobj> objects) {
         if (completed) {
             fail(new IllegalStateException("The PDF was already completed."));
         }
@@ -1342,7 +1379,10 @@ final public class PDF {
         if (getPagesObject(objects) == null) {
             fail(new IllegalArgumentException("The objects have no root /Pages object."));
         }
-        List<PDFobj> pageObjects = getPageObjects(objects);
+    }
+
+    // Adds the pages, in their order, and every object that they use.
+    private void mergePages(List<PDFobj> objects, List<PDFobj> pageObjects) throws Exception {
         Set<Integer> mergedPages = new HashSet<Integer>();
         for (PDFobj page : pageObjects) {
             mergedPages.add(page.number);

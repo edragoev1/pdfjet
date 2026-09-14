@@ -185,6 +185,67 @@ func TestMergeLinksPointAtTheMergedPages(t *testing.T) {
 	testReferencesResolve(t, objects)
 }
 
+func TestMergeMergesTheListedPagesInTheirOrder(t *testing.T) {
+	doc := testNewDoc()
+	if err := doc.pdf.MergePages(testRead(t, testMergeDocument("A1", "A2", "A3")), 3, 1); err != nil {
+		t.Fatal(err)
+	}
+	objects := testRead(t, doc.complete())
+	testContainsAll(t, testPageContents(objects), "A3", "A1")
+	testReferencesResolve(t, objects)
+}
+
+func TestMergeSplitsADocumentIntoOnePDFPerPage(t *testing.T) {
+	source := testRead(t, testMergeDocument("A1", "A2", "A3"))
+	for i := 1; i <= 3; i++ {
+		part := testNewDoc()
+		if err := part.pdf.MergePages(source, i); err != nil {
+			t.Fatal(err)
+		}
+		objects := testRead(t, part.complete())
+		testContainsAll(t, testPageContents(objects), "A"+strconv.Itoa(i))
+		testReferencesResolve(t, objects)
+	}
+}
+
+func TestMergeALinkToAPageThatIsNotMergedLeadsNowhere(t *testing.T) {
+	source := testNewDoc()
+	page1 := NewPage(source.pdf, letter.Portrait())
+	NewTextLine(testHelvetica(source.pdf), "Go").SetGoToAction("there").SetLocation(50, 50).DrawOn(page1)
+	page2 := NewPage(source.pdf, letter.Portrait())
+	page2.AddDestinationAt("there", 30, 100)
+	sourceBytes := source.complete()
+
+	doc := testNewDoc()
+	if err := doc.pdf.MergePages(testRead(t, sourceBytes), 1); err != nil {
+		t.Fatal(err)
+	}
+	objects := testRead(t, doc.complete())
+	if pages := testNewPDF().GetPageObjects(objects); len(pages) != 1 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	var link *PDFobj
+	for _, obj := range objects {
+		if obj.GetValue("/Subtype") == "/Link" {
+			link = obj
+		}
+	}
+	if link == nil {
+		t.Fatal("no link annotation")
+	}
+	dest := -1
+	for i, token := range link.dict {
+		if token == "/Dest" {
+			dest = i
+			break
+		}
+	}
+	if dest == -1 || dest+2 >= len(link.dict) || link.dict[dest+1] != "[" || link.dict[dest+2] != "null" {
+		t.Errorf("the /Dest of %v does not lead nowhere", link.dict)
+	}
+	testReferencesResolve(t, objects)
+}
+
 func TestMergeAnEncryptedDocumentMergesThePagesEncrypted(t *testing.T) {
 	doc := testNewDoc()
 	enc, err := NewEncryption(doc.pdf, encryption.NewPasswords(), encryption.NewPermissions())
@@ -286,4 +347,9 @@ func TestMergeMergeIsRefusedWhereItWouldBreakTheDocument(t *testing.T) {
 
 	empty := testNewDoc()
 	testMergeError(t, empty.pdf.Merge([]*PDFobj{}), "The objects have no root /Pages object.")
+
+	split := testNewDoc()
+	testMergeError(t, split.pdf.MergePages(objects, 0), "The document has no page 0.")
+	testMergeError(t, split.pdf.MergePages(objects, 2), "The document has no page 2.")
+	testMergeError(t, split.pdf.MergePages(objects, 1, 1), "Page 1 is listed twice.")
 }

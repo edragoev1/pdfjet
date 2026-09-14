@@ -1304,6 +1304,45 @@ func (pdf *PDF) AddPage(page *Page) {
 // compliance, and Merge cannot be used with AddObjects: Merge records the
 // mistake and returns it as an error.
 func (pdf *PDF) Merge(objects []*PDFobj) error {
+	if err := pdf.checkMerge(objects); err != nil {
+		return err
+	}
+	pdf.mergePages(objects, pdf.GetPageObjects(objects))
+	return nil
+}
+
+// MergePages adds the listed pages of a document that was read with Read after
+// the pages of this document, in the order they are listed. A document is split
+// by merging each part of it into a PDF of its own: the objects that Read
+// returned can be merged into any number of PDFs.
+//
+// The pages are merged as Merge merges all of them, and a link to a page that
+// is not merged leads nowhere. A page number that the document does not have,
+// or one that is listed twice, is refused: MergePages records the mistake and
+// returns it as an error.
+func (pdf *PDF) MergePages(objects []*PDFobj, pageNumbers ...int) error {
+	if err := pdf.checkMerge(objects); err != nil {
+		return err
+	}
+	pageObjects := pdf.GetPageObjects(objects)
+	listed := make([]*PDFobj, 0, len(pageNumbers))
+	seen := make(map[int]bool)
+	for _, number := range pageNumbers {
+		if number < 1 || number > len(pageObjects) {
+			return pdf.fail("The document has no page " + strconv.Itoa(number) + ".")
+		}
+		if seen[number] {
+			return pdf.fail("Page " + strconv.Itoa(number) + " is listed twice.")
+		}
+		seen[number] = true
+		listed = append(listed, pageObjects[number-1])
+	}
+	pdf.mergePages(objects, listed)
+	return nil
+}
+
+// checkMerge refuses a merge that would break this document.
+func (pdf *PDF) checkMerge(objects []*PDFobj) error {
 	if pdf.completed {
 		return pdf.fail("The PDF was already completed.")
 	}
@@ -1316,7 +1355,11 @@ func (pdf *PDF) Merge(objects []*PDFobj) error {
 	if pdf.getPagesObject(objects) == nil {
 		return pdf.fail("The objects have no root /Pages object.")
 	}
-	pageObjects := pdf.GetPageObjects(objects)
+	return nil
+}
+
+// mergePages adds the pages, in their order, and every object that they use.
+func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
 	mergedPages := make(map[int]bool)
 	for _, page := range pageObjects {
 		mergedPages[page.number] = true
@@ -1362,7 +1405,6 @@ func (pdf *PDF) Merge(objects []*PDFobj) error {
 				newMergedPage(pdf, numbers[obj.number], pdf.renumbered(values[obj.number], numbers)))
 		}
 	}
-	return nil
 }
 
 // inheritedKeys are the entries of a page that it can inherit from the page tree.

@@ -1267,6 +1267,42 @@ public class PDF {
     /// </remarks>
     /// <param name="objects">the objects of the document, as Read returns them.</param>
     public void Merge(List<PDFobj> objects) {
+        CheckMerge(objects);
+        MergePages(objects, GetPageObjects(objects));
+    }
+
+    /// <summary>
+    /// Adds the listed pages of a document that was read with Read after the
+    /// pages of this document, in the order they are listed. A document is
+    /// split by merging each part of it into a PDF of its own: the objects that
+    /// Read returned can be merged into any number of PDFs.
+    /// </summary>
+    /// <remarks>
+    /// The pages are merged as Merge(objects) merges all of them, and a link to
+    /// a page that is not merged leads nowhere. A page number that the document
+    /// does not have, or one that is listed twice, is refused.
+    /// </remarks>
+    /// <param name="objects">the objects of the document, as Read returns them.</param>
+    /// <param name="pageNumbers">the numbers of the pages, counted from 1.</param>
+    public void Merge(List<PDFobj> objects, params int[] pageNumbers) {
+        CheckMerge(objects);
+        List<PDFobj> pageObjects = GetPageObjects(objects);
+        List<PDFobj> listed = new List<PDFobj>();
+        HashSet<int> seen = new HashSet<int>();
+        foreach (int number in pageNumbers) {
+            if (number < 1 || number > pageObjects.Count) {
+                Fail(new ArgumentException("The document has no page " + number + "."));
+            }
+            if (!seen.Add(number)) {
+                Fail(new ArgumentException("Page " + number + " is listed twice."));
+            }
+            listed.Add(pageObjects[number - 1]);
+        }
+        MergePages(objects, listed);
+    }
+
+    // Refuses a merge that would break this document.
+    private void CheckMerge(List<PDFobj> objects) {
         if (completed) {
             Fail(new InvalidOperationException("The PDF was already completed."));
         }
@@ -1280,7 +1316,10 @@ public class PDF {
         if (GetPagesObject(objects) == null) {
             Fail(new ArgumentException("The objects have no root /Pages object."));
         }
-        List<PDFobj> pageObjects = GetPageObjects(objects);
+    }
+
+    // Adds the pages, in their order, and every object that they use.
+    private void MergePages(List<PDFobj> objects, List<PDFobj> pageObjects) {
         HashSet<int> mergedPages = new HashSet<int>();
         foreach (PDFobj page in pageObjects) {
             mergedPages.Add(page.number);

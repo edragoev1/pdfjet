@@ -193,7 +193,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 50 examples, the same in every port. Build
+The [examples](examples) folder has 51 examples, the same in every port. Build
 a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
@@ -479,6 +479,32 @@ The objects that the pages use are written when `merge` is called, so the list
 that `read` returned is not needed afterwards. The method is `Merge` in C# and
 Go, where it returns an `error`, and `merge` in Swift, where it throws.
 
+## Splitting documents
+
+`merge` with page numbers adds the listed pages of a document that was read,
+counted from 1, in the order they are listed. A document is split by merging
+each part of it into a PDF of its own, as the objects that `read` returned can
+be merged into any number of PDFs. Example_51 writes each page of a document to
+a PDF of its own, and all of its pages in reverse order to one more:
+
+```java
+List<PDFobj> objects = new PDF().read(new FileInputStream("report.pdf"));
+
+PDF summary = new PDF(new BufferedOutputStream(new FileOutputStream("summary.pdf")));
+summary.merge(objects, 1, 2);
+summary.complete();
+
+PDF appendix = new PDF(new BufferedOutputStream(new FileOutputStream("appendix.pdf")));
+appendix.merge(objects, 3, 4, 5);
+appendix.complete();
+```
+
+The listed pages are merged as `merge` merges a whole document, and a link to a
+page that is not in the same PDF leads nowhere. A page number that the document
+does not have, or one that is listed twice, is refused. The method is
+`Merge(objects, params int[] pageNumbers)` in C#, `MergePages(objects,
+pageNumbers...)` in Go and `merge(objects, pageNumbers)` with an array in Swift.
+
 ## Untrusted input
 
 The libraries read PDFs, images and fonts that can come from anywhere, so the
@@ -589,7 +615,8 @@ has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize` and
 `DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthFB` for `stringWidth` with a fallback font,
-`DrawCircleUsingPathOperator` for `drawCircle` with an operator, and
+`DrawCircleUsingPathOperator` for `drawCircle` with an operator, `MergePages`
+for `merge` with page numbers, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
 `addResource` overloads of `Page` and `PDFobj`. Every color setter takes an
 `int` like `Color.blue` or the red, green and blue components from 0 to 1 as a

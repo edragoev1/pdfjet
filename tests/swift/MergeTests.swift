@@ -147,6 +147,53 @@ import Testing
         expectReferencesResolve(objects)
     }
 
+    @Test func mergesTheListedPagesInTheirOrder() throws {
+        let memory = MemoryPDF()
+        try memory.pdf.merge(TestSupport.read(document("A1", "A2", "A3")), [3, 1])
+        try memory.pdf.complete()
+        let objects = try TestSupport.read(memory.bytes)
+        let contents = pageContents(objects)
+        try #require(contents.count == 2)
+        #expect(contents[0].contains(TestSupport.hex("A3")))
+        #expect(contents[1].contains(TestSupport.hex("A1")))
+        expectReferencesResolve(objects)
+    }
+
+    @Test func splitsADocumentIntoOnePDFPerPage() throws {
+        let source = try TestSupport.read(document("A1", "A2", "A3"))
+        for i in 1...3 {
+            let part = MemoryPDF()
+            try part.pdf.merge(source, [i])
+            try part.pdf.complete()
+            let objects = try TestSupport.read(part.bytes)
+            let contents = pageContents(objects)
+            try #require(contents.count == 1)
+            #expect(contents[0].contains(TestSupport.hex("A\(i)")))
+            expectReferencesResolve(objects)
+        }
+    }
+
+    @Test func aLinkToAPageThatIsNotMergedLeadsNowhere() throws {
+        let source = MemoryPDF()
+        let page1 = Page(source.pdf, Letter.PORTRAIT)
+        TextLine(TestSupport.helvetica(source.pdf), "Go").setGoToAction("there").setLocation(50, 50).drawOn(page1)
+        let page2 = Page(source.pdf, Letter.PORTRAIT)
+        page2.addDestination("there", 30, 100)
+        try source.pdf.complete()
+
+        let memory = MemoryPDF()
+        try memory.pdf.merge(TestSupport.read(source.bytes), [1])
+        try memory.pdf.complete()
+
+        let objects = try TestSupport.read(memory.bytes)
+        #expect(PDF().getPageObjects(from: objects).count == 1)
+        let link = try #require(objects.last(where: { $0.getValue("/Subtype") == "/Link" }))
+        let dest = try #require(link.dict.firstIndex(of: "/Dest"))
+        #expect(link.dict[dest + 1] == "[")
+        #expect(link.dict[dest + 2] == "null")
+        expectReferencesResolve(objects)
+    }
+
     @Test func anEncryptedDocumentMergesThePagesEncrypted() throws {
         let memory = MemoryPDF()
         _ = memory.pdf.setEncryption(Encryption(memory.pdf, Passwords(), Permissions()))
@@ -224,6 +271,17 @@ import Testing
         let empty = MemoryPDF()
         expectMessage("The objects have no root /Pages object.") {
             try empty.pdf.merge([PDFobj]())
+        }
+
+        let split = MemoryPDF()
+        expectMessage("The document has no page 0.") {
+            try split.pdf.merge(objects, [0])
+        }
+        expectMessage("The document has no page 2.") {
+            try split.pdf.merge(objects, [2])
+        }
+        expectMessage("Page 1 is listed twice.") {
+            try split.pdf.merge(objects, [1, 1])
         }
     }
 }

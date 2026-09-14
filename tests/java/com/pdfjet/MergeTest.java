@@ -157,6 +157,66 @@ class MergeTest {
     }
 
     @Test
+    void mergesTheListedPagesInTheirOrder() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.merge(TestSupport.read(document("A1", "A2", "A3")), 3, 1);
+        pdf.complete();
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        List<String> contents = pageContents(objects);
+        assertEquals(2, contents.size());
+        assertTrue(contents.get(0).contains(TestSupport.hex("A3")), contents.get(0));
+        assertTrue(contents.get(1).contains(TestSupport.hex("A1")), contents.get(1));
+        assertReferencesResolve(objects);
+    }
+
+    @Test
+    void splitsADocumentIntoOnePDFPerPage() throws Exception {
+        List<PDFobj> source = TestSupport.read(document("A1", "A2", "A3"));
+        for (int i = 1; i <= 3; i++) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF part = new PDF(bos);
+            part.merge(source, i);
+            part.complete();
+            List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+            List<String> contents = pageContents(objects);
+            assertEquals(1, contents.size());
+            assertTrue(contents.get(0).contains(TestSupport.hex("A" + i)), contents.get(0));
+            assertReferencesResolve(objects);
+        }
+    }
+
+    @Test
+    void aLinkToAPageThatIsNotMergedLeadsNowhere() throws Exception {
+        ByteArrayOutputStream source = new ByteArrayOutputStream();
+        PDF pdf1 = new PDF(source);
+        Page page1 = new Page(pdf1, Letter.PORTRAIT);
+        new TextLine(TestSupport.helvetica(pdf1), "Go").setGoToAction("there").setLocation(50f, 50f).drawOn(page1);
+        Page page2 = new Page(pdf1, Letter.PORTRAIT);
+        page2.addDestination("there", 30f, 100f);
+        pdf1.complete();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.merge(TestSupport.read(source.toByteArray()), 1);
+        pdf.complete();
+
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        assertEquals(1, new PDF().getPageObjects(objects).size());
+        PDFobj link = null;
+        for (PDFobj obj : objects) {
+            if (obj.getValue("/Subtype").equals("/Link")) {
+                link = obj;
+            }
+        }
+        assertNotNull(link);
+        int dest = link.dict.indexOf("/Dest");
+        assertEquals("[", link.dict.get(dest + 1));
+        assertEquals("null", link.dict.get(dest + 2));
+        assertReferencesResolve(objects);
+    }
+
+    @Test
     void anEncryptedDocumentMergesThePagesEncrypted() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
@@ -238,5 +298,13 @@ class MergeTest {
         assertEquals("The objects have no root /Pages object.",
                 assertThrows(IllegalArgumentException.class,
                         () -> empty.merge(new ArrayList<PDFobj>())).getMessage());
+
+        final PDF split = new PDF(new ByteArrayOutputStream());
+        assertEquals("The document has no page 0.",
+                assertThrows(IllegalArgumentException.class, () -> split.merge(objects, 0)).getMessage());
+        assertEquals("The document has no page 2.",
+                assertThrows(IllegalArgumentException.class, () -> split.merge(objects, 2)).getMessage());
+        assertEquals("Page 1 is listed twice.",
+                assertThrows(IllegalArgumentException.class, () -> split.merge(objects, 1, 1)).getMessage());
     }
 }

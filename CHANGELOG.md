@@ -185,6 +185,15 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `addObjects`. Example_41 merges three documents after a cover page; tests
   cover the order, the inherited entries, links to merged pages, encryption
   both ways and the refused uses, in the four ports.
+- `PDF.merge(objects, pageNumbers)` (Go `MergePages`) merges the listed pages
+  of a document that was read, in the order they are listed, so a document is
+  split by merging each part of it into a PDF of its own; the objects that
+  `read` returned can be merged into any number of PDFs. A link to a page that
+  is left out leads nowhere, and a page number the document does not have or
+  one listed twice is refused. Example_51 writes each page of a document to a
+  PDF of its own and all of its pages in reverse order to one more; tests cover
+  the order, the split, links to pages left out and the refused page numbers,
+  in the four ports.
 - Filter chains, encrypted PDFs, hybrid reference files and broken
   cross-reference tables are read.
 - The `/DecodeParms` predictor is applied to FlateDecode and LZWDecode streams,
@@ -539,7 +548,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 
 ### Build, checks and examples
 - Example_41 was a copy of Example_03 and is removed; the merge example that was
-  Example_51 is Example_41, so the examples are numbered 1 to 50.
+  Example_51 is Example_41, so the examples were numbered 1 to 50. Example_51
+  is new: it splits a document.
 - The examples draw with the embedded IBM Plex fonts, which a PDF/UA document
   needs, instead of the core fonts. The core fonts stay in Example_04, whose
   CJK fonts are not embedded either, in Example_05, which shows their

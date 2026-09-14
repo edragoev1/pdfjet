@@ -944,6 +944,16 @@ renames included (the Week 1 decision), so every item is a blocker.
       the catalog and pages that are not merged become null, and the merged
       strings and streams are encrypted when the PDF is. Example_41; the
       examples go to 51. Split is next.
+- ✅ **B** Split (Sep 14): `PDF.merge(objects, pageNumbers)` (Go `MergePages`,
+      Swift `merge(objects, [pageNumbers])`) merges the listed pages of a
+      document that was read, in the order listed, in the four ports; merging
+      each part of a document into a PDF of its own splits it, and the objects
+      that were read can be merged into any number of PDFs. A link to a page
+      left out becomes null; a page the document does not have or a page
+      listed twice is refused. Example_51 writes each page of `wirth.pdf` to
+      a PDF of its own and all of its pages in reverse order to
+      Example_51.pdf; the scripts, workflows and example pages count 51
+      examples. Tests in each port.
 
 ### Broken PDFs from misuse (Sep 14)
 

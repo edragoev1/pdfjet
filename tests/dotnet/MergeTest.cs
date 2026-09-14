@@ -150,6 +150,66 @@ public class MergeTest {
     }
 
     [Fact]
+    public void MergesTheListedPagesInTheirOrder() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.Merge(TestSupport.Read(Document("A1", "A2", "A3")), 3, 1);
+        pdf.Complete();
+        List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+        List<string> contents = PageContents(objects);
+        Assert.Equal(2, contents.Count);
+        Assert.Contains(TestSupport.Hex("A3"), contents[0]);
+        Assert.Contains(TestSupport.Hex("A1"), contents[1]);
+        AssertReferencesResolve(objects);
+    }
+
+    [Fact]
+    public void SplitsADocumentIntoOnePDFPerPage() {
+        List<PDFobj> source = TestSupport.Read(Document("A1", "A2", "A3"));
+        for (int i = 1; i <= 3; i++) {
+            MemoryStream stream = new MemoryStream();
+            PDF part = new PDF(stream);
+            part.Merge(source, i);
+            part.Complete();
+            List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+            List<string> contents = PageContents(objects);
+            Assert.Single(contents);
+            Assert.Contains(TestSupport.Hex("A" + i), contents[0]);
+            AssertReferencesResolve(objects);
+        }
+    }
+
+    [Fact]
+    public void ALinkToAPageThatIsNotMergedLeadsNowhere() {
+        MemoryStream source = new MemoryStream();
+        PDF pdf1 = new PDF(source);
+        Page page1 = new Page(pdf1, Letter.PORTRAIT);
+        new TextLine(TestSupport.Helvetica(pdf1), "Go").SetGoToAction("there").SetLocation(50f, 50f).DrawOn(page1);
+        Page page2 = new Page(pdf1, Letter.PORTRAIT);
+        page2.AddDestination("there", 30f, 100f);
+        pdf1.Complete();
+
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.Merge(TestSupport.Read(source.ToArray()), 1);
+        pdf.Complete();
+
+        List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+        Assert.Single(new PDF().GetPageObjects(objects));
+        PDFobj link = null;
+        foreach (PDFobj obj in objects) {
+            if (obj.GetValue("/Subtype") == "/Link") {
+                link = obj;
+            }
+        }
+        Assert.NotNull(link);
+        int dest = link.dict.IndexOf("/Dest");
+        Assert.Equal("[", link.dict[dest + 1]);
+        Assert.Equal("null", link.dict[dest + 2]);
+        AssertReferencesResolve(objects);
+    }
+
+    [Fact]
     public void AnEncryptedDocumentMergesThePagesEncrypted() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
@@ -230,6 +290,14 @@ public class MergeTest {
         PDF empty = new PDF(new MemoryStream());
         Assert.Equal("The objects have no root /Pages object.",
                 Assert.Throws<ArgumentException>(() => empty.Merge(new List<PDFobj>())).Message);
+
+        PDF split = new PDF(new MemoryStream());
+        Assert.Equal("The document has no page 0.",
+                Assert.Throws<ArgumentException>(() => split.Merge(objects, 0)).Message);
+        Assert.Equal("The document has no page 2.",
+                Assert.Throws<ArgumentException>(() => split.Merge(objects, 2)).Message);
+        Assert.Equal("Page 1 is listed twice.",
+                Assert.Throws<ArgumentException>(() => split.Merge(objects, 1, 1)).Message);
     }
 }
 }   // End of namespace PDFjet.NET
