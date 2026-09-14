@@ -90,7 +90,7 @@ ol.numbered strong { font-weight: 600; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 caption { text-align: left; font-weight: 600; padding-block-end: 0.5rem; }
 th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
-thead th { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+thead th { font-size: calc(0.75rem + 1pt); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); white-space: nowrap; }
 tbody th { font-weight: 400; white-space: nowrap; }
 td.num, th.num { text-align: right; font-family: var(--mono); font-size: 0.85rem; white-space: nowrap; }
 tr.jet th { box-shadow: inset 3px 0 0 var(--jet); }
@@ -106,8 +106,8 @@ dl.configs { margin: 0; display: grid; grid-template-columns: max-content 1fr; g
 dl.configs dt { font-weight: 600; }
 dl.configs dd { margin: 0; color: var(--muted); }
 code { font-family: var(--mono); font-size: 0.85em; }
-.name-jet { color: var(--jet); font-weight: 600; }
-.name-box { color: var(--box); font-weight: 600; }
+.name-jet { color: var(--jet); font-weight: 600; text-transform: none; }
+.name-box { color: var(--box); font-weight: 600; text-transform: none; }
 .note { font-size: 0.9rem; color: var(--muted); }
 footer { border-top: 1px solid var(--rule); padding-block-start: 1.25rem; font-size: 0.8125rem; color: var(--muted); }
 @media print {
@@ -150,7 +150,6 @@ footer { border-top: 1px solid var(--rule); padding-block-start: 1.25rem; font-s
   <h2><span class="no">1</span>Summary</h2>
   <p><span class="name-box">PDFBox</span> is a toolbox for PDF files that already exist: it extracts text, renders pages to images, prints, splits and merges, fills forms, signs, and validates PDF/A-1b. For creating documents it offers a low-level drawing API.</p>
   <p><span class="name-jet">PDFjet</span> is a document generator: tables, text blocks, charts, barcodes, SVG, accessible (PDF/UA) and archival (PDF/A) output, in four languages with the same API and the same output. It is a tenth of <span class="name-box">PDFBox</span>’s size and has no dependencies. Writing the same 500-page multilingual document with an embedded font, <span class="name-jet">PDFjet</span> took 72&nbsp;ms in Java and <span class="name-box">PDFBox</span> 21,269&nbsp;ms.</p>
-  <p>The strongest positioning is not “a smaller <span class="name-box">PDFBox</span>” but “the document generator for teams that ship in Java, C#, Go and Swift”, with <span class="name-box">PDFBox</span> left to the jobs of editing existing files.</p>
 </section>
 
 <section id="advantages">
@@ -199,7 +198,7 @@ footer { border-top: 1px solid var(--rule); padding-block-start: 1.25rem; font-s
     <h3>5.2 By document length</h3>
     <div class="table-wrap"><table class=""><caption>Time</caption><thead><tr><th scope="col">Configuration</th><th scope="col" class="num">50 pages</th><th scope="col" class="num">100 pages</th><th scope="col" class="num">200 pages</th><th scope="col" class="num">500 pages</th></tr></thead><tbody><tr class="jet"><th scope="row"><span class="name-jet">PDFjet</span> Java, IBM Plex Sans</th><td class="num">11 ms</td><td class="num">18 ms</td><td class="num">31 ms</td><td class="num">72 ms</td></tr><tr class="jet"><th scope="row"><span class="name-jet">PDFjet</span> Java, Noto Sans</th><td class="num">13 ms</td><td class="num">18 ms</td><td class="num">33 ms</td><td class="num">73 ms</td></tr><tr class="box"><th scope="row"><span class="name-box">PDFBox</span>, Noto Sans subset</th><td class="num">2,209 ms</td><td class="num">4,293 ms</td><td class="num">8,363 ms</td><td class="num">21,269 ms</td></tr><tr class="box"><th scope="row"><span class="name-box">PDFBox</span>, Noto Sans full</th><td class="num">1,969 ms</td><td class="num">4,066 ms</td><td class="num">8,102 ms</td><td class="num">20,883 ms</td></tr></tbody></table></div>
     <div class="table-wrap"><table class=""><caption>File size, bytes</caption><thead><tr><th scope="col">Configuration</th><th scope="col" class="num">50 pages</th><th scope="col" class="num">100 pages</th><th scope="col" class="num">200 pages</th><th scope="col" class="num">500 pages</th></tr></thead><tbody><tr class="jet"><th scope="row"><span class="name-jet">PDFjet</span> Java, IBM Plex Sans</th><td class="num">112,783</td><td class="num">163,654</td><td class="num">265,523</td><td class="num">571,768</td></tr><tr class="jet"><th scope="row"><span class="name-jet">PDFjet</span> Java, Noto Sans</th><td class="num">394,896</td><td class="num">445,160</td><td class="num">545,853</td><td class="num">848,576</td></tr><tr class="box"><th scope="row"><span class="name-box">PDFBox</span>, Noto Sans subset</th><td class="num">50,256</td><td class="num">91,994</td><td class="num">175,441</td><td class="num">426,467</td></tr><tr class="box"><th scope="row"><span class="name-box">PDFBox</span>, Noto Sans full</th><td class="num">352,314</td><td class="num">393,898</td><td class="num">477,297</td><td class="num">728,346</td></tr></tbody></table></div>
-    <p><span class="name-jet">PDFjet</span> is about 290 times faster at 500 pages, with about a thousandth of the allocations. <span class="name-box">PDFBox</span>’s time grows with the number of text calls: about 0.7&nbsp;ms and 1.3&nbsp;MB allocated for each line of text. Stack samples of the <span class="name-box">PDFBox</span> thread show where: <code>PDAbstractContentStream.applyGSUBRules</code> runs fontbox’s <code>GsubWorkerForDevanagari</code>, which compiles regular expressions (<code>GlyphArraySplitterRegexImpl</code>, <code>CompoundCharacterTokenizer</code>) for every <code>showText</code> call, because Noto Sans has Devanagari substitution tables. The speed of <span class="name-box">PDFBox</span> with an embedded font therefore depends on the tables in the font; with Noto Sans, the widely used free font for Latin, Greek and Cyrillic, it takes this path whether or not it subsets.</p>
+    <p><span class="name-jet">PDFjet</span> is about 290 times faster at 500 pages, with about a thousandth of the allocations. <span class="name-box">PDFBox</span>’s time grows with the number of text calls: about 0.7&nbsp;ms and 1.3&nbsp;MB allocated for each line of text. The speed of <span class="name-box">PDFBox</span> with an embedded font therefore depends on the tables in the font; with Noto Sans, the widely used free font for Latin, Greek and Cyrillic, it takes this path whether or not it subsets.</p>
   </div>
 
   <div class="stack">
