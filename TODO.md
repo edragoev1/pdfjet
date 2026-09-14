@@ -551,9 +551,9 @@ renames included (the Week 1 decision), so every item is a blocker.
       Internal, so no caller changes.
 - ✅ **B** `TextFrame.setParagraphGap` was the distance from baseline to
       baseline, so a gap smaller than the line overlapped the text. It is the
-      space added to the height of the last line of a paragraph, one empty
-      line by default in both constructors, in the four ports with a unit
-      test. Example_10 (`TextColumn`) does not change; the `TextColumn` and
+      space from the bottom of the text of a paragraph to the top of the text
+      of the next, one empty line in the size of the next paragraph by default
+      in both constructors, in the four ports with unit tests. Example_10 (`TextColumn`) does not change; the `TextColumn` and
       `TextFrame` paragraph spacings stay two until the 10.0 fold.
 
 ### Types and signatures

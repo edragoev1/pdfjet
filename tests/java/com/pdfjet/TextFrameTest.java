@@ -33,4 +33,17 @@ class TextFrameTest {
         assertEquals(line, paragraphDistance(0f), TestSupport.DELTA);
         assertEquals(line + 10f, paragraphDistance(10f), TestSupport.DELTA);
     }
+
+    @Test
+    void theDefaultGapIsAnEmptyLineOfTheNextParagraph() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph heading = new Paragraph(new TextLine(font, "Heading").setFontSize(24f));
+        Paragraph body = new Paragraph(new TextLine(font, "body"));
+        new TextFrame(Arrays.asList(heading, body)).setLocation(10f, 10f).setWidth(300f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+        // The heading, then one empty line in the size of the body text
+        assertEquals(font.getBodyHeight(24f) + font.getBodyHeight(font.getSize()),
+                body.getY1() - heading.getY1(), TestSupport.DELTA);
+    }
 }

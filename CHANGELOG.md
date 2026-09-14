@@ -294,12 +294,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   first font as the fallback. `Color.transparent` leaves the text color of a
   `TextBlock` and a `Cell` unchanged, as it does for a `TextLine`, where it
   made the text white.
-- `TextFrame.setParagraphGap` is the space between paragraphs, added to the
-  height of the last line of a paragraph, so a gap of 0 sets the paragraphs
-  like consecutive lines and they never overlap. It was the distance from
-  baseline to baseline, so a gap smaller than the line overlapped the text.
-  The default is one empty line in both constructors, where the frame made
-  from paragraphs used 24 points.
+- `TextFrame.setParagraphGap` is the space between paragraphs, from the
+  bottom of the text of a paragraph to the top of the text of the next, so
+  paragraphs never overlap. It was the distance from baseline to baseline, so
+  a gap smaller than the line overlapped the text. The default is one empty
+  line in the size of the next paragraph in both constructors, where the
+  frame made from paragraphs used 24 points, so a heading is not followed by
+  an empty line of its own size.
 - `TextFrame` and `TextColumn` keep every setting of a line they wrap,
   including its vertical offset and its link. `TextFrame` always finishes
   flowing, and its border is black by default.

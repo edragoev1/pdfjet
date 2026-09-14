@@ -50,6 +50,7 @@ public class TextFrame : IDrawable {
     private bool rowOpen;
     private bool rowPlaced;
     private float nextBaseline;
+    private bool startsParagraph;   // The next row starts a paragraph
 
     /// <summary>
     /// Creates a text frame from paragraphs of text lines. An empty line separates
@@ -104,10 +105,10 @@ public class TextFrame : IDrawable {
     }
 
     /// <summary>
-    /// Sets the space between paragraphs, in points, 0 or more. It is added to the
-    /// height of the last line of a paragraph, so a gap of 0 sets the paragraphs
-    /// like the lines of one paragraph and they never overlap. The default is one
-    /// empty line: the height of that last line.
+    /// Sets the space between paragraphs, in points, 0 or more: from the bottom of
+    /// the text of a paragraph to the top of the text of the next, so paragraphs
+    /// never overlap. The default is one empty line in the size of the next
+    /// paragraph, so a heading is not followed by an empty line of its own size.
     /// </summary>
     public TextFrame SetParagraphGap(float paragraphGap) {
         this.paragraphGap = paragraphGap;
@@ -199,6 +200,7 @@ public class TextFrame : IDrawable {
         xText = x;
         rowOpen = false;
         rowPlaced = false;
+        startsParagraph = false;
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
             Paragraph paragraph = paragraphs[paragraphIndex];
@@ -230,9 +232,10 @@ public class TextFrame : IDrawable {
             xText = x;
             rowOpen = false;
             if (paragraph.lines.Count > 0) {
-                // The next paragraph starts a line below this one, plus the gap.
-                float lineHeight = paragraph.lines[paragraph.lines.Count - 1].GetHeight();
-                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight);
+                // The next paragraph starts below the descent of this one, after the gap.
+                TextLine lastLine = paragraph.lines[paragraph.lines.Count - 1];
+                nextBaseline = yText + lastLine.font.GetDescent(lastLine.fontSize);
+                startsParagraph = true;
             }
             paragraphIndex++;
             lineIndex = 0;
@@ -244,7 +247,15 @@ public class TextFrame : IDrawable {
     // top of the frame. Returns false when the row does not fit in the height of
     // the frame. The first row of a frame always fits, so the text keeps flowing.
     private bool OpenRow(TextLine textLine) {
-        float baseline = rowPlaced ? nextBaseline : y + textLine.font.GetAscent(textLine.fontSize);
+        float baseline = y + textLine.font.GetAscent(textLine.fontSize);
+        if (rowPlaced) {
+            baseline = nextBaseline;
+            if (startsParagraph) {
+                // The gap, one empty line of this text by default, then its ascent.
+                float gap = hasParagraphGap ? paragraphGap : textLine.GetHeight();
+                baseline += gap + textLine.font.GetAscent(textLine.fontSize);
+            }
+        }
         if (h > 0f && rowPlaced &&
                 (baseline + textLine.font.GetDescent(textLine.fontSize)) > (y + h)) {
             return false;
@@ -253,6 +264,7 @@ public class TextFrame : IDrawable {
         yText = baseline;
         rowOpen = true;
         rowPlaced = true;
+        startsParagraph = false;
         return true;
     }
 

@@ -46,10 +46,11 @@ type TextFrame struct {
 	// The row of text being drawn: where the text goes next, whether the row
 	// can take more text, whether the frame has a row yet, and where the next
 	// row goes.
-	xText, yText float32
-	rowOpen      bool
-	rowPlaced    bool
-	nextBaseline float32
+	xText, yText    float32
+	rowOpen         bool
+	rowPlaced       bool
+	nextBaseline    float32
+	startsParagraph bool // The next row starts a paragraph
 }
 
 // NewTextFrame creates a text frame from strings, one paragraph each, in the
@@ -104,10 +105,11 @@ func (tf *TextFrame) GetHeight() float32 {
 	return tf.h
 }
 
-// SetParagraphGap sets the space between paragraphs, in points, 0 or more. It
-// is added to the height of the last line of a paragraph, so a gap of 0 sets
-// the paragraphs like the lines of one paragraph and they never overlap. The
-// default is one empty line: the height of that last line.
+// SetParagraphGap sets the space between paragraphs, in points, 0 or more:
+// from the bottom of the text of a paragraph to the top of the text of the
+// next, so paragraphs never overlap. The default is one empty line in the size
+// of the next paragraph, so a heading is not followed by an empty line of its
+// own size.
 func (tf *TextFrame) SetParagraphGap(paragraphGap float32) *TextFrame {
 	tf.paragraphGap = paragraphGap
 	tf.hasParagraphGap = true
@@ -199,6 +201,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.xText = tf.x
 	tf.rowOpen = false
 	tf.rowPlaced = false
+	tf.startsParagraph = false
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
 		paragraph := tf.paragraphs[tf.paragraphIndex]
@@ -230,13 +233,10 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 		tf.xText = tf.x
 		tf.rowOpen = false
 		if len(paragraph.lines) > 0 {
-			// The next paragraph starts a line below this one, plus the gap.
-			lineHeight := paragraph.lines[len(paragraph.lines)-1].GetHeight()
-			gap := lineHeight
-			if tf.hasParagraphGap {
-				gap = tf.paragraphGap
-			}
-			tf.nextBaseline = tf.yText + lineHeight + gap
+			// The next paragraph starts below the descent of this one, after the gap.
+			lastLine := paragraph.lines[len(paragraph.lines)-1]
+			tf.nextBaseline = tf.yText + lastLine.font.GetDescentAt(lastLine.fontSize)
+			tf.startsParagraph = true
 		}
 		tf.paragraphIndex++
 		tf.lineIndex = 0
@@ -252,6 +252,14 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 	baseline := tf.y + textLine.font.GetAscentAt(textLine.fontSize)
 	if tf.rowPlaced {
 		baseline = tf.nextBaseline
+		if tf.startsParagraph {
+			// The gap, one empty line of this text by default, then its ascent.
+			gap := textLine.GetHeight()
+			if tf.hasParagraphGap {
+				gap = tf.paragraphGap
+			}
+			baseline += gap + textLine.font.GetAscentAt(textLine.fontSize)
+		}
 	}
 	if tf.h > 0 && tf.rowPlaced &&
 		(baseline+textLine.font.GetDescentAt(textLine.fontSize)) > (tf.y+tf.h) {
@@ -261,6 +269,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 	tf.yText = baseline
 	tf.rowOpen = true
 	tf.rowPlaced = true
+	tf.startsParagraph = false
 	return true
 }
 

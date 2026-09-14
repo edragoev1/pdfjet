@@ -30,5 +30,18 @@ public class TextFrameTest {
         TestSupport.AssertNear(line, ParagraphDistance(0f), TestSupport.DELTA);
         TestSupport.AssertNear(line + 10f, ParagraphDistance(10f), TestSupport.DELTA);
     }
+
+    [Fact]
+    public void TheDefaultGapIsAnEmptyLineOfTheNextParagraph() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph heading = new Paragraph(new TextLine(font, "Heading").SetFontSize(24f));
+        Paragraph body = new Paragraph(new TextLine(font, "body"));
+        new TextFrame(new List<Paragraph> {heading, body}).SetLocation(10f, 10f).SetWidth(300f)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+        // The heading, then one empty line in the size of the body text
+        TestSupport.AssertNear(font.GetBodyHeight(24f) + font.GetBodyHeight(font.GetSize()),
+                body.GetY1() - heading.GetY1(), TestSupport.DELTA);
+    }
 }
 }

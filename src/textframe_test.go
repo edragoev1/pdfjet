@@ -31,3 +31,16 @@ func TestTextFrameTheGapIsAddedToTheLineSoParagraphsNeverOverlap(t *testing.T) {
 	testNear(t, "gap 0", line, testParagraphDistance(0), testDelta)
 	testNear(t, "gap 10", line+10, testParagraphDistance(10), testDelta)
 }
+
+func TestTextFrameTheDefaultGapIsAnEmptyLineOfTheNextParagraph(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	heading := NewParagraph().Add(NewTextLine(font, "Heading").SetFontSize(24))
+	body := NewParagraph().Add(NewTextLine(font, "body"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{heading, body}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	// The heading, then one empty line in the size of the body text
+	want := font.GetBodyHeightAt(24) + font.GetBodyHeightAt(font.GetSize())
+	testNear(t, "distance", want, body.GetY1()-heading.GetY1(), testDelta)
+}

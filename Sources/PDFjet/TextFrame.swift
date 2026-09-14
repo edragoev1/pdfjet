@@ -47,6 +47,7 @@ public class TextFrame : Drawable {
     private var rowOpen = false
     private var rowPlaced = false
     private var nextBaseline: Float = 0.0
+    private var startsParagraph = false     // The next row starts a paragraph
 
     /// Creates a text frame from paragraphs of text lines. An empty line separates
     /// the paragraphs unless setParagraphGap sets another gap.
@@ -93,10 +94,10 @@ public class TextFrame : Drawable {
         return self.h
     }
 
-    /// Sets the space between paragraphs, in points, 0 or more. It is added to the
-    /// height of the last line of a paragraph, so a gap of 0 sets the paragraphs
-    /// like the lines of one paragraph and they never overlap. The default is one
-    /// empty line: the height of that last line.
+    /// Sets the space between paragraphs, in points, 0 or more: from the bottom of
+    /// the text of a paragraph to the top of the text of the next, so paragraphs
+    /// never overlap. The default is one empty line in the size of the next
+    /// paragraph, so a heading is not followed by an empty line of its own size.
     @discardableResult
     public func setParagraphGap(_ paragraphGap: Float) -> TextFrame {
         self.paragraphGap = paragraphGap
@@ -196,6 +197,7 @@ public class TextFrame : Drawable {
         xText = x
         rowOpen = false
         rowPlaced = false
+        startsParagraph = false
         var bottom = y
         while paragraphIndex < paragraphs.count {
             let paragraph = paragraphs[paragraphIndex]
@@ -227,9 +229,9 @@ public class TextFrame : Drawable {
             xText = x
             rowOpen = false
             if let lastLine = paragraph.lines.last {
-                // The next paragraph starts a line below this one, plus the gap.
-                let lineHeight = lastLine.getHeight()
-                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight)
+                // The next paragraph starts below the descent of this one, after the gap.
+                nextBaseline = yText + lastLine.font!.getDescent(lastLine.fontSize)
+                startsParagraph = true
             }
             paragraphIndex += 1
             lineIndex = 0
@@ -241,7 +243,15 @@ public class TextFrame : Drawable {
     // top of the frame. Returns false when the row does not fit in the height of
     // the frame. The first row of a frame always fits, so the text keeps flowing.
     private func openRow(_ textLine: TextLine) -> Bool {
-        let baseline = rowPlaced ? nextBaseline : y + textLine.font!.getAscent(textLine.fontSize)
+        var baseline = y + textLine.font!.getAscent(textLine.fontSize)
+        if rowPlaced {
+            baseline = nextBaseline
+            if startsParagraph {
+                // The gap, one empty line of this text by default, then its ascent.
+                let gap = hasParagraphGap ? paragraphGap : textLine.getHeight()
+                baseline += gap + textLine.font!.getAscent(textLine.fontSize)
+            }
+        }
         if h > 0.0 && rowPlaced &&
                 (baseline + textLine.font!.getDescent(textLine.fontSize)) > (y + h) {
             return false
@@ -250,6 +260,7 @@ public class TextFrame : Drawable {
         yText = baseline
         rowOpen = true
         rowPlaced = true
+        startsParagraph = false
         return true
     }
 

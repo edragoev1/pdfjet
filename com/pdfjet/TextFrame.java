@@ -49,6 +49,7 @@ public class TextFrame implements Drawable {
     private boolean rowOpen;
     private boolean rowPlaced;
     private float nextBaseline;
+    private boolean startsParagraph;    // The next row starts a paragraph
 
     /**
      * Creates a text frame from paragraphs of text lines. An empty line separates
@@ -129,10 +130,10 @@ public class TextFrame implements Drawable {
     }
 
     /**
-     * Sets the space between paragraphs, in points. It is added to the height of
-     * the last line of a paragraph, so a gap of 0 sets the paragraphs like the
-     * lines of one paragraph and they never overlap. The default is one empty
-     * line: the height of that last line.
+     * Sets the space between paragraphs, in points: from the bottom of the text
+     * of a paragraph to the top of the text of the next, so paragraphs never
+     * overlap. The default is one empty line in the size of the next paragraph,
+     * so a heading is not followed by an empty line of its own size.
      *
      * @param paragraphGap the space between paragraphs, 0 or more.
      * @return this TextFrame object.
@@ -260,6 +261,7 @@ public class TextFrame implements Drawable {
         xText = x;
         rowOpen = false;
         rowPlaced = false;
+        startsParagraph = false;
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
             Paragraph paragraph = paragraphs.get(paragraphIndex);
@@ -291,9 +293,10 @@ public class TextFrame implements Drawable {
             xText = x;
             rowOpen = false;
             if (!paragraph.lines.isEmpty()) {
-                // The next paragraph starts a line below this one, plus the gap.
-                float lineHeight = paragraph.lines.get(paragraph.lines.size() - 1).getHeight();
-                nextBaseline = yText + lineHeight + (hasParagraphGap ? paragraphGap : lineHeight);
+                // The next paragraph starts below the descent of this one, after the gap.
+                TextLine lastLine = paragraph.lines.get(paragraph.lines.size() - 1);
+                nextBaseline = yText + lastLine.font.getDescent(lastLine.fontSize);
+                startsParagraph = true;
             }
             paragraphIndex++;
             lineIndex = 0;
@@ -305,7 +308,15 @@ public class TextFrame implements Drawable {
     // top of the frame. Returns false when the row does not fit in the height of
     // the frame. The first row of a frame always fits, so the text keeps flowing.
     private boolean openRow(TextLine textLine) {
-        float baseline = rowPlaced ? nextBaseline : y + textLine.font.getAscent(textLine.fontSize);
+        float baseline = y + textLine.font.getAscent(textLine.fontSize);
+        if (rowPlaced) {
+            baseline = nextBaseline;
+            if (startsParagraph) {
+                // The gap, one empty line of this text by default, then its ascent.
+                float gap = hasParagraphGap ? paragraphGap : textLine.getHeight();
+                baseline += gap + textLine.font.getAscent(textLine.fontSize);
+            }
+        }
         if (h > 0f && rowPlaced &&
                 (baseline + textLine.font.getDescent(textLine.fontSize)) > (y + h)) {
             return false;
@@ -314,6 +325,7 @@ public class TextFrame implements Drawable {
         yText = baseline;
         rowOpen = true;
         rowPlaced = true;
+        startsParagraph = false;
         return true;
     }
 
