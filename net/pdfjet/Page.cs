@@ -598,6 +598,15 @@ public class Page {
             Append(tmx[2] + skew);
             Append(' ');
             Append(tmx[3]);
+            Append(' ');
+            Append(x);
+            Append(' ');
+            Append(height - y);
+            Append(" Tm\n");
+        } else if (tmx[0] == 1f && tmx[1] == 0f && tmx[2] == 0f && tmx[3] == 1f) {
+            // BT sets the line matrix to the identity, which is the text matrix
+            // here, so Td puts the text where Tm would, in fewer bytes.
+            SetTextLocation(x, y);
         } else {
             Append(tm0);
             Append(' ');
@@ -606,12 +615,12 @@ public class Page {
             Append(tm2);
             Append(' ');
             Append(tm3);
+            Append(' ');
+            Append(x);
+            Append(' ');
+            Append(height - y);
+            Append(" Tm\n");
         }
-        Append(' ');
-        Append(x);
-        Append(' ');
-        Append(height - y);
-        Append(" Tm\n");
 
         if (highlightColors == null) {
             SetBrushColor(textColor);

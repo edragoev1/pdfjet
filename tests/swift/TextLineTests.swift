@@ -14,7 +14,7 @@ import Testing
         let line = TextLine(TestSupport.helvetica(pdf), "Hello (x)").setLocation(10, 20)
         let xy = line.drawOn(page)
         let content = TestSupport.content(page)
-        #expect(content.contains("1 0 0 1 10 772 Tm\n"), "\(content)")
+        #expect(content.contains("10 772 Td\n"), "\(content)")
         #expect(content.contains("[<" + TestSupport.hex("Hello (x)") + ">] TJ\n"), "\(content)")
         TestSupport.expectNear(44.664, line.getWidth(), 0.001)
         TestSupport.expectNear(10 + line.getWidth(), xy[0])

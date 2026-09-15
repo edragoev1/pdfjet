@@ -386,6 +386,16 @@ func (page *Page) drawString(
 		page.appendFloat32(page.tmx[2] + skew)
 		page.appendString(" ")
 		page.appendFloat32(page.tmx[3])
+		page.appendString(" ")
+		page.appendFloat32(x)
+		page.appendString(" ")
+		page.appendFloat32(page.height - y)
+		page.appendString(" Tm\n")
+	} else if page.tmx[0] == 1.0 && page.tmx[1] == 0.0 &&
+		page.tmx[2] == 0.0 && page.tmx[3] == 1.0 {
+		// BT sets the line matrix to the identity, which is the text matrix
+		// here, so Td puts the text where Tm would, in fewer bytes.
+		page.setTextLocation(x, y)
 	} else {
 		page.appendByteArray(page.tm0)
 		page.appendString(" ")
@@ -394,12 +404,12 @@ func (page *Page) drawString(
 		page.appendByteArray(page.tm2)
 		page.appendString(" ")
 		page.appendByteArray(page.tm3)
+		page.appendString(" ")
+		page.appendFloat32(x)
+		page.appendString(" ")
+		page.appendFloat32(page.height - y)
+		page.appendString(" Tm\n")
 	}
-	page.appendString(" ")
-	page.appendFloat32(x)
-	page.appendString(" ")
-	page.appendFloat32(page.height - y)
-	page.appendString(" Tm\n")
 
 	if colors == nil {
 		page.SetBrushColorRGB(brush)

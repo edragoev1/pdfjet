@@ -20,8 +20,8 @@ func TestTextLineDrawOnWritesTheTextAsHexAtTheFlippedY(t *testing.T) {
 	line.SetLocation(10, 20)
 	xy := line.DrawOn(page)
 	content := testContent(page)
-	if !strings.Contains(content, "1 0 0 1 10 772 Tm\n") {
-		t.Errorf("no text matrix in %q", content)
+	if !strings.Contains(content, "10 772 Td\n") {
+		t.Errorf("no text location in %q", content)
 	}
 	if !strings.Contains(content, "[<"+testHex("Hello (x)")+">] TJ\n") {
 		t.Errorf("no text in %q", content)

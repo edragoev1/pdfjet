@@ -15,7 +15,7 @@ public class TextLineTest {
         TextLine line = new TextLine(TestSupport.Helvetica(pdf), "Hello (x)").SetLocation(10f, 20f);
         float[] xy = line.DrawOn(page);
         string content = TestSupport.Content(page);
-        Assert.Contains("1 0 0 1 10 772 Tm\n", content);
+        Assert.Contains("10 772 Td\n", content);
         Assert.Contains("[<" + TestSupport.Hex("Hello (x)") + ">] TJ\n", content);
         TestSupport.AssertNear(44.664f, line.GetWidth(), 0.001f);
         TestSupport.AssertNear(10f + line.GetWidth(), xy[0], TestSupport.DELTA);

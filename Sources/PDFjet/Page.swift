@@ -449,6 +449,16 @@ public class Page {
             append(self.tmx[2] + skew)
             append(Token.space)
             append(self.tmx[3])
+            append(Token.space)
+            append(x)
+            append(Token.space)
+            append(self.height - y)
+            append(" Tm\n")
+        } else if self.tmx[0] == 1.0 && self.tmx[1] == 0.0 &&
+                self.tmx[2] == 0.0 && self.tmx[3] == 1.0 {
+            // BT sets the line matrix to the identity, which is the text matrix
+            // here, so Td puts the text where Tm would, in fewer bytes.
+            setTextLocation(x, y)
         } else {
             append(self.tm0)
             append(Token.space)
@@ -457,12 +467,12 @@ public class Page {
             append(self.tm2)
             append(Token.space)
             append(self.tm3)
+            append(Token.space)
+            append(x)
+            append(Token.space)
+            append(self.height - y)
+            append(" Tm\n")
         }
-        append(Token.space)
-        append(x)
-        append(Token.space)
-        append(self.height - y)
-        append(" Tm\n")
 
         if highlightColors == nil {
             setBrushColor(textColor)

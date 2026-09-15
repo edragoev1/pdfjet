@@ -21,7 +21,7 @@ class TextLineTest {
         TextLine line = new TextLine(TestSupport.helvetica(pdf), "Hello (x)").setLocation(10f, 20f);
         float[] xy = line.drawOn(page);
         String content = TestSupport.content(page);
-        assertTrue(content.contains("1 0 0 1 10 772 Tm\n"), content);
+        assertTrue(content.contains("10 772 Td\n"), content);
         assertTrue(content.contains("[<" + TestSupport.hex("Hello (x)") + ">] TJ\n"), content);
         assertEquals(44.664f, line.getWidth(), 0.001f);
         assertEquals(10f + line.getWidth(), xy[0], TestSupport.DELTA);
