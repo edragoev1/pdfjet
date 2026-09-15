@@ -35,13 +35,13 @@ func (attachment *FileAttachment) SetLocation(x, y float32) Drawable {
 	return attachment
 }
 
-// SetIconPushpin sets the pushpin icon.
-func (attachment *FileAttachment) SetIconPushpin() *FileAttachment {
+// SetIconPushPin sets the "PushPin" icon.
+func (attachment *FileAttachment) SetIconPushPin() *FileAttachment {
 	attachment.icon = "PushPin"
 	return attachment
 }
 
-// SetIconPaperclip sets the paper clip icon.
+// SetIconPaperclip sets the "Paperclip" icon.
 func (attachment *FileAttachment) SetIconPaperclip() *FileAttachment {
 	attachment.icon = "Paperclip"
 	return attachment

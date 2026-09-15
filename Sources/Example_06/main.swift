@@ -18,7 +18,7 @@ public class Example_06 {
         // File attachment functionality
         var attachment = FileAttachment(file1)
         attachment.setLocation(100.0, 600.0)
-        attachment.setIconPushpin()
+        attachment.setIconPushPin()
         attachment.setTitle("Attached File: " + file1.getFileName())
         attachment.setContents(
                 "Right mouse click on the icon to save the attached file.")

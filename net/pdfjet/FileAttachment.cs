@@ -31,13 +31,13 @@ public class FileAttachment : IDrawable {
         return this;
     }
 
-    /// <summary>Uses the pushpin icon.</summary>
-    public FileAttachment SetIconPushpin() {
+    /// <summary>Uses the "PushPin" icon.</summary>
+    public FileAttachment SetIconPushPin() {
         this.icon = "PushPin";
         return this;
     }
 
-    /// <summary>Uses the paperclip icon.</summary>
+    /// <summary>Uses the "Paperclip" icon.</summary>
     public FileAttachment SetIconPaperclip() {
         this.icon = "Paperclip";
         return this;

@@ -800,7 +800,7 @@ renames included (the Week 1 decision), so every item is a blocker.
       Fixed: `Table.setData` is `setTableData` in the four ports, and the
       six `Table` examples (09, 13, 15, 29, 34, 38), the unit tests and
       the README Go note use it. The rest of one table API is left for
-      10.0 in api-suggestions.html.
+      10.0.
 
 ### Names: misleading, redundant or dead
 
@@ -936,6 +936,13 @@ renames included (the Week 1 decision), so every item is a blocker.
       (the full form only), `StringWidthUsingFallbackFont` replaces
       `StringWidthFB`, and `CheckBox.drawXMark` (Go `DrawXMark`) replaces
       `xMark` in the four ports, with Example_50.
+
+- ✅ **B** The private key generator of `Bookmark` is `next` in Java, `Next`
+      in C#, `getNext` in Go and `goToNext` in Swift;
+      `FileAttachment.setIconPushpin` writes `PushPin` next to `Paperclip`.
+      Fixed: `nextKey` (C# `NextKey`) in the four ports, and
+      `setIconPushPin` (C# and Go `SetIconPushPin`) is back to its 8.7.0
+      name, which spells the icon as the PDF does, like `setIconPaperclip`.
 
 ### Names in one port
 

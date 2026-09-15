@@ -31,14 +31,14 @@ public class FileAttachment : Drawable {
         return self
     }
 
-    /// Uses the pushpin icon.
+    /// Uses the "PushPin" icon.
     @discardableResult
-    public func setIconPushpin() -> FileAttachment {
+    public func setIconPushPin() -> FileAttachment {
         self.icon = "PushPin"
         return self
     }
 
-    /// Uses the paperclip icon.
+    /// Uses the "Paperclip" icon.
     @discardableResult
     public func setIconPaperclip() -> FileAttachment {
         self.icon = "Paperclip"

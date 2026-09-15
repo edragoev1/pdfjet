@@ -71,7 +71,7 @@ public class Bookmark {
         if (bm.pdf != null && page.pdf != bm.pdf) {
             bm.pdf.fail(new IllegalArgumentException("The page belongs to another PDF."));
         }
-        String key = bm.next();
+        String key = bm.nextKey();
         Bookmark bookmark2 = new Bookmark(
                 page,
                 title.textLine.destinationY(),
@@ -228,7 +228,7 @@ public class Bookmark {
         return this.dest;
     }
 
-    private String next() {
+    private String nextKey() {
         destNumber++;
         return "dest#" + destNumber;
     }

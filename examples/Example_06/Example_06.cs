@@ -21,7 +21,7 @@ public class Example_06 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(file1);
         attachment.SetLocation(100f, 600f);
-        attachment.SetIconPushpin();
+        attachment.SetIconPushPin();
         attachment.SetTitle("Attached File: " + file1.GetFileName());
         attachment.SetContents(
                 "Right mouse click on the icon to save the attached file.");

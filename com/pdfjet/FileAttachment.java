@@ -52,7 +52,7 @@ public class FileAttachment implements Drawable {
      *
      * @return this FileAttachment object.
      */
-    public FileAttachment setIconPushpin() {
+    public FileAttachment setIconPushPin() {
         this.icon = "PushPin";
         return this;
     }

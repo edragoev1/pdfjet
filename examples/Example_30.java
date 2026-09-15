@@ -48,7 +48,7 @@ public class Example_30 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(file1);
         attachment.setLocation(100f, 550f);
-        attachment.setIconPushpin();
+        attachment.setIconPushPin();
         attachment.setIconSize(24f);
         attachment.setTitle("Attached File: " + file1.getFileName());
         attachment.setContents(

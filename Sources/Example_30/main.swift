@@ -43,7 +43,7 @@ public class Example_30 {
         // File attachment functionality
         let attachment = FileAttachment(file1)
         attachment.setLocation(100.0, 550.0)
-        attachment.setIconPushpin()
+        attachment.setIconPushPin()
         attachment.setIconSize(24.0)
         attachment.setTitle("Attached File: " + file1.getFileName())
         attachment.setContents(

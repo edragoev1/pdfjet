@@ -21,7 +21,7 @@ public class Example_06 {
         // File attachment functionality
         FileAttachment attachment = new FileAttachment(file1);
         attachment.setLocation(100f, 600f);
-        attachment.setIconPushpin();
+        attachment.setIconPushPin();
         attachment.setTitle("Attached File: " + file1.getFileName());
         attachment.setContents(
                 "Right mouse click on the icon to save the attached file.");

@@ -54,7 +54,7 @@ public class Bookmark {
         if (bm.pdf != null && page.pdf != bm.pdf) {
             bm.pdf.Fail(new ArgumentException("The page belongs to another PDF."));
         }
-        String key = bm.Next();
+        String key = bm.NextKey();
 
         Bookmark bookmark = new Bookmark(
                 page, title.textLine.DestinationY(), key, Regex.Replace(title.textLine.text, @"\s+"," "));
@@ -161,7 +161,7 @@ public class Bookmark {
         return this.dest;
     }
 
-    private String Next() {
+    private String NextKey() {
         ++destNumber;
         return "dest#" + destNumber.ToString();
     }

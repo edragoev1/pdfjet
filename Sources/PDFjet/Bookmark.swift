@@ -62,7 +62,7 @@ public class Bookmark {
         if let pdf = bm.pdf, page.pdf !== pdf {
             pdf.fail("The page belongs to another PDF.")
         }
-        let key = bm.goToNext()
+        let key = bm.nextKey()
 
         let bookmark = Bookmark(page, title.textLine.destinationY(), key,
                 title.textLine.text!.replacingOccurrences(
@@ -170,7 +170,7 @@ public class Bookmark {
         return self.dest
     }
 
-    private func goToNext() -> String {
+    private func nextKey() -> String {
         destNumber += 1
         return "dest#" + String(destNumber)
     }

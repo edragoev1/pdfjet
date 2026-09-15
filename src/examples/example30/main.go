@@ -57,7 +57,7 @@ func Example30() {
 	// File attachment functionality
 	attachment := pdfjet.NewFileAttachment(file1)
 	attachment.SetLocation(100.0, 550.0)
-	attachment.SetIconPushpin()
+	attachment.SetIconPushPin()
 	attachment.SetIconSize(24.0)
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
 	attachment.SetContents(

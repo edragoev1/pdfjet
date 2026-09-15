@@ -55,7 +55,7 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 	if bm.pdf != nil && page.pdf != bm.pdf {
 		bm.pdf.fail("The page belongs to another PDF.")
 	}
-	key := bm.getNext()
+	key := bm.nextKey()
 	whitespace := regexp.MustCompile(`\s+`)
 	bookmark2 := NewBookmarkAt(
 		page,
@@ -177,7 +177,7 @@ func (bookmark *Bookmark) getDestination() *Destination {
 	return bookmark.dest
 }
 
-func (bookmark *Bookmark) getNext() string {
+func (bookmark *Bookmark) nextKey() string {
 	bookmark.destNumber++
 	return "dest#" + strconv.Itoa(bookmark.destNumber)
 }

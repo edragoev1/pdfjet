@@ -458,7 +458,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   side border methods, and `TextColumn.addChineseParagraph` and
   `addJapaneseParagraph`, which are one `addCJKParagraph`.
 - Misleading names are renamed: `BaseAnnotation.setOpacity`,
-  `FileAttachment.setContents` and `setIconPushpin`, `DonutChart.setRadii`,
+  `FileAttachment.setContents`, `DonutChart.setRadii`,
   `Bookmark.getDestinationName`, `Table.autoAdjustColumnWidths`,
   `Cell.setMarker`, `Page.addBDC`,
   `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHorizontalGridLines`
