@@ -17,13 +17,15 @@ benchmarks/run.sh              # both benchmarks, about 25 minutes
 benchmarks/run.sh text         # the text document only, about 10 minutes
 benchmarks/run.sh table        # Example_43 only, about 13 minutes
 benchmarks/run.sh all --quick  # a short run that checks that everything works
+TABLE_CONFIGS="jet jet-page" benchmarks/run.sh table   # some of the table configurations
 ```
 
 It needs a JDK (21 was used), Maven (`MVN=/path/to/mvn` when it is not on the
 path), curl and GNU time, and mutool for the checks of the sample files. PDFBox
 cannot embed the OpenType (CFF) IBM Plex Sans in `fonts/`, so `run.sh`
 downloads IBM's TrueType build of it into `build/fonts`. Nothing else should run
-on the machine meanwhile. `build/` is not tracked.
+on the machine meanwhile. Each run writes its own `build/results-<date>-<time>.log`,
+and `build/` is not tracked.
 
 ## Method
 
@@ -47,10 +49,16 @@ on the machine meanwhile. `build/` is not tracked.
   to the `Document` before its rows, flushed every 50 rows, with header cells,
   and with immediate flushing off so that the "Page i of N" footers can be added
   before the document is closed.
-- In `BigTableBench`, iText and PDFBox draw through one driver that follows
-  `BigTable` step by step: two passes over the file, column widths measured from
-  every field with the header font, the same row pitch (from PDFjet's metrics of
-  IBM Plex Sans), shading, lines, headers and footers.
+- In `BigTableBench`, PDFjet's `Page` (`jet-page`), iText's `PdfCanvas` and
+  PDFBox draw through one driver that follows `BigTable` step by step: two
+  passes over the file, column widths measured from every field with the header
+  font, the same row pitch (from PDFjet's metrics of IBM Plex Sans), shading,
+  lines, headers and footers. Like `BigTable`, they keep every page until the
+  footers are drawn at the end.
+- `jet-page-stream` and `it-canvas-stream` take the number of pages from the
+  first pass and draw each footer with its page, so that each page is written
+  when the next one starts: PDFjet adds each page to the PDF as it is created,
+  and iText flushes the previous page.
 - The sample files are checked for their page count, their text (with mutool)
   and the last footer.
 
@@ -88,12 +96,22 @@ PDFBox 3,845,317 bytes.
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File |
 |---|---:|---:|---:|---:|---:|---:|
-| PDFjet `BigTable` | 1,945 ms | 2,433 ms | 1,308 MB | 860 MB | 256 MB | 12.3 MB |
-| iText `PdfCanvas` | 2,030 ms | 2,607 ms | 1,109 MB | 810 MB | 256 MB | 11.8 MB |
+| PDFjet `BigTable` | 2,011 ms | 2,422 ms | 1,308 MB | 861 MB | 256 MB | 12.3 MB |
+| PDFjet `Page` | 2,165 ms | 2,605 ms | 1,460 MB | 809 MB | 256 MB | 12.7 MB |
+| iText `PdfCanvas` | 2,025 ms | 2,662 ms | 1,109 MB | 814 MB | 256 MB | 11.8 MB |
 | iText `Table` | 35,341 ms | 37,559 ms | 47,121 MB | 7,008 MB | 8 GB | 21.6 MB |
 | PDFBox, content stream | 12,507 ms | 13,280 ms | 25,302 MB | 459 MB | 128 MB | 11.9 MB |
+| PDFjet `Page`, page by page | 2,089 ms | 2,447 ms | 1,460 MB | 391 MB | 32 MB | 12.7 MB |
+| iText `PdfCanvas`, page by page | 2,028 ms | 2,554 ms | 1,133 MB | 404 MB | 32 MB | 11.8 MB |
 
-All four files have 2,546 pages and end with "Page 2546 of 2546".
+All seven files have 2,546 pages and end with "Page 2546 of 2546". Pages 1,
+1273 and 2546 drawn on PDFjet's `Page`, kept or page by page, render the same as
+`BigTable`'s at 72 dpi, pixel for pixel.
+
+The PDFjet and `PdfCanvas` rows were measured in one session at 6c15ef9e, whose
+library is that of 5c0ca7e1. The iText `Table` and PDFBox rows are from an
+earlier session the same day, in which `BigTable` took 1,945 ms and `PdfCanvas`
+2,030 ms.
 
 ### What the numbers say
 
@@ -101,14 +119,22 @@ All four files have 2,546 pages and end with "Page 2546 of 2546".
   is faster on shorter ones and allocates half as much, with a lower peak, a
   faster start and a jar a fifteenth of the size. PDFBox is 290 times slower on
   the text document with Noto Sans, whose Devanagari substitution rules it
-  applies to every line, and 6.4 times slower on the table.
-- On the table, PDFjet is the fastest, and iText's own `Table` is 18 times
-  slower than PDFjet and needs an 8 GB heap.
-- PDFjet does not lead on memory for the table. `BigTable` keeps all its pages
-  until the footers are drawn, and a page that has not been added to the PDF
-  holds its content uncompressed: 97.5 MB for the 2,546 pages, against 11.6 MB
-  compressed. PDFBox compresses each page as it is closed and finishes in half
-  the heap. Compressing a detached page's content when it is finished is the fix.
+  applies to every line, and 6.2 times slower on the table.
+- On the table, `BigTable` and iText's `PdfCanvas` are level (2,011 and
+  2,025 ms), and iText's own `Table` is 18 times slower and needs an 8 GB heap.
+- Drawn with the same calls, PDFjet is behind iText: on `Page` the table takes
+  7% longer than on `PdfCanvas` and allocates 32% more; page by page, 3% longer
+  and 29% more. For each string, `Page.drawString` writes a text matrix and the
+  text color and makes two arrays for the color, where `BigTable` writes only a
+  position, which makes `BigTable` 7% faster than the same drawing on `Page`.
+- Memory for the table depends on keeping the pages, not on the library. With
+  every page kept for the footers, PDFjet and iText need a 256 MB heap: a PDFjet
+  page that has not been added to the PDF holds its content uncompressed, 97.5 MB
+  for the 2,546 pages against 11.6 MB compressed, and PDFBox, which compresses
+  each page as it is closed, finishes in 128 MB. Written page by page, PDFjet and
+  iText finish in 32 MB. For `BigTable`, whose pages are kept for the footers,
+  the proposed fix is to compress a detached page's content when it is finished;
+  it has not been measured.
 
 ## Caveats
 

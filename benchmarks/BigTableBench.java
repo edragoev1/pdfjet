@@ -10,13 +10,19 @@ import java.util.*;
  * page, the header on every page, and "Page i of N" footers.
  *
  * Configurations:
- *   jet        Example_43 as it is, with BigTable
- *   it-canvas  iText drawing the same table with PdfCanvas
- *   it-layout  iText's own Table in large-table mode
- *   box        PDFBox drawing the same table with PDPageContentStream
+ *   jet               Example_43 as it is, with BigTable
+ *   jet-page          PDFjet drawing the same table on its Page, as iText does with PdfCanvas
+ *   it-canvas         iText drawing the same table with PdfCanvas
+ *   it-layout         iText's own Table in large-table mode
+ *   box               PDFBox drawing the same table with PDPageContentStream
+ *   jet-page-stream   jet-page with each page written when the next one starts
+ *   it-canvas-stream  it-canvas with each page flushed when the next one starts
  *
- * iText and PDFBox draw through one driver that follows BigTable step by step,
- * with the geometry that PDFjet's metrics of IBM Plex Sans give.
+ * jet-page, iText and PDFBox draw through one driver that follows BigTable step
+ * by step, with the geometry that PDFjet's metrics of IBM Plex Sans give. The
+ * first three keep every page until the footers are drawn at the end; the two
+ * stream configurations take the number of pages from the first pass and draw
+ * each footer with its page.
  *
  * Usage: BigTableBench bench|cold <config> <csv>
  *        BigTableBench sample <config> <csv> <pdf>
@@ -88,7 +94,7 @@ public class BigTableBench {
     // What a library draws with. y grows downward from the top of the page.
     interface Surface {
         float width(boolean header, String text) throws Exception;
-        void newPage() throws Exception;
+        void newPage(int number, int pages) throws Exception;
         void fill(float x1, float y1, float x2, float y2) throws Exception;
         void line(float x1, float y1, float x2, float y2) throws Exception;
         void text(boolean header, String text, float x, float y) throws Exception;
@@ -99,6 +105,8 @@ public class BigTableBench {
         final float[] widths = new float[COLUMNS];
         final boolean[] right = new boolean[COLUMNS];
         final float[] v = new float[COLUMNS + 1];
+        int rows;
+        int pages;
     }
 
     // The first pass over the file, as in BigTable.setTableData.
@@ -129,6 +137,21 @@ public class BigTableBench {
         for (int i = 0; i < COLUMNS; i++) {
             c.v[i + 1] = c.v[i] + c.widths[i];
         }
+        // The rows under the header, and the pages that draw() will break them into.
+        c.rows = row - 1;
+        float yText = 0f;
+        boolean startNewPage = true;
+        for (int i = 0; i < c.rows; i++) {
+            if (startNewPage) {
+                c.pages++;
+                yText = A1 + D1 + A2;
+                startNewPage = false;
+            }
+            yText += D2 + A2;
+            if (yText > H - BOTTOM) {
+                startNewPage = true;
+            }
+        }
         return c;
     }
 
@@ -148,8 +171,8 @@ public class BigTableBench {
                     continue;
                 }
                 if (!started || startNewPage) {
-                    s.newPage();
                     pages++;
+                    s.newPage(pages, c.pages);
                     yText = A1;
                     highlight[0] = true;
                     row(s, c, c.header, true, yText, highlight);
@@ -169,6 +192,9 @@ public class BigTableBench {
             }
         }
         verticals(s, c, yText);
+        if (pages != c.pages) {
+            throw new IllegalStateException(pages + " pages drawn, " + c.pages + " counted");
+        }
         return pages;
     }
 
@@ -223,12 +249,69 @@ public class BigTableBench {
         return pages.size();
     }
 
+    // The same table drawn on PDFjet's Page through the driver, with the calls
+    // that BigTable makes. Without stream, the pages are detached and kept for
+    // the footers, as BigTable keeps them.
+    static int jetPage(String file, OutputStream os, boolean stream) throws Exception {
+        com.pdfjet.PDF pdf = new com.pdfjet.PDF(os);
+        pdf.setTitle(TITLE);
+        com.pdfjet.Font f1 = new com.pdfjet.Font(pdf, ROOT + com.pdfjet.fonts.IBMPlexSans.SemiBold);
+        f1.setSize(10f);
+        com.pdfjet.Font f2 = new com.pdfjet.Font(pdf, ROOT + com.pdfjet.fonts.IBMPlexSans.Regular);
+        f2.setSize(9f);
+        List<com.pdfjet.Page> kept = new ArrayList<>();
+        com.pdfjet.Page[] page = {null};
+        Surface s = new Surface() {
+            public float width(boolean header, String text) {
+                return header ? f1.stringWidth(text) : f2.stringWidth(text);
+            }
+            public void newPage(int number, int pages) throws Exception {
+                page[0] = new com.pdfjet.Page(pdf, com.pdfjet.Letter.LANDSCAPE, stream);
+                page[0].setPenWidth(0f);
+                if (stream) {
+                    page[0].addFooter(new com.pdfjet.TextLine(f1, "Page " + number + " of " + pages));
+                } else {
+                    kept.add(page[0]);
+                }
+            }
+            public void fill(float x1, float y1, float x2, float y2) {
+                page[0].setBrushColor(0xF0F0F0);
+                page[0].fillRect(x1, y1, x2 - x1, y2 - y1);
+                page[0].setBrushColor(0x000000);
+            }
+            public void line(float x1, float y1, float x2, float y2) {
+                page[0].setPenColor(0xB0B0B0);
+                page[0].drawLine(x1, y1, x2, y2);
+            }
+            public void text(boolean header, String text, float x, float y) {
+                page[0].drawString(header ? f1 : f2, header ? 10f : 9f, text, x, y);
+            }
+        };
+        int pages = draw(file, s);
+        for (int i = 0; i < kept.size(); i++) {
+            com.pdfjet.Page p = kept.get(i);
+            p.addFooter(new com.pdfjet.TextLine(f1, "Page " + (i + 1) + " of " + pages));
+            pdf.addPage(p);
+        }
+        pdf.complete();
+        return pages;
+    }
+
     static com.itextpdf.kernel.font.PdfFont itextFont(String path) throws IOException {
         return com.itextpdf.kernel.font.PdfFontFactory.createFont(path, com.itextpdf.io.font.PdfEncodings.IDENTITY_H,
                 com.itextpdf.kernel.font.PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED);
     }
 
-    static int itextCanvas(String file, OutputStream os) throws Exception {
+    static void itextFooter(com.itextpdf.kernel.pdf.canvas.PdfCanvas cs, com.itextpdf.kernel.font.PdfFont f1,
+            int number, int pages) {
+        String footer = "Page " + number + " of " + pages;
+        cs.beginText().setFontAndSize(f1, 10f).moveText((W - f1.getWidth(footer, 10f)) / 2, A1)
+                .showText(footer).endText();
+    }
+
+    // Without stream, the pages are kept open for the footers; with stream,
+    // each page is flushed when the next one starts.
+    static int itextCanvas(String file, OutputStream os, boolean stream) throws Exception {
         com.itextpdf.kernel.pdf.PdfDocument pdf =
                 new com.itextpdf.kernel.pdf.PdfDocument(new com.itextpdf.kernel.pdf.PdfWriter(os));
         pdf.getDocumentInfo().setTitle(TITLE);
@@ -239,13 +322,19 @@ public class BigTableBench {
             public float width(boolean header, String text) {
                 return header ? f1.getWidth(text, 10f) : f2.getWidth(text, 9f);
             }
-            public void newPage() {
+            public void newPage(int number, int pages) {
                 if (cs[0] != null) {
                     cs[0].release();
+                    if (stream) {
+                        pdf.getPage(number - 1).flush();
+                    }
                 }
                 cs[0] = new com.itextpdf.kernel.pdf.canvas.PdfCanvas(
                         pdf.addNewPage(com.itextpdf.kernel.geom.PageSize.LETTER.rotate()));
                 cs[0].setLineWidth(0f);
+                if (stream) {
+                    itextFooter(cs[0], f1, number, pages);
+                }
             }
             public void fill(float x1, float y1, float x2, float y2) {
                 cs[0].setFillColorRgb(FILL, FILL, FILL).rectangle(x1, H - y2, x2 - x1, y2 - y1).fill()
@@ -261,11 +350,10 @@ public class BigTableBench {
         };
         int pages = draw(file, s);
         cs[0].release();
-        for (int i = 1; i <= pages; i++) {
-            String footer = "Page " + i + " of " + pages;
-            new com.itextpdf.kernel.pdf.canvas.PdfCanvas(pdf.getPage(i))
-                    .beginText().setFontAndSize(f1, 10f).moveText((W - f1.getWidth(footer, 10f)) / 2, A1)
-                    .showText(footer).endText().release();
+        for (int i = 1; !stream && i <= pages; i++) {
+            com.itextpdf.kernel.pdf.canvas.PdfCanvas fc = new com.itextpdf.kernel.pdf.canvas.PdfCanvas(pdf.getPage(i));
+            itextFooter(fc, f1, i, pages);
+            fc.release();
         }
         pdf.close();
         return pages;
@@ -304,7 +392,7 @@ public class BigTableBench {
         doc.setMargins(0f, 0f, BOTTOM, 0f);
         Columns c = measure(file, new Surface() {
             public float width(boolean header, String text) { return f1.getWidth(text, 10f); }
-            public void newPage() {}
+            public void newPage(int number, int pages) {}
             public void fill(float x1, float y1, float x2, float y2) {}
             public void line(float x1, float y1, float x2, float y2) {}
             public void text(boolean header, String text, float x, float y) {}
@@ -360,7 +448,7 @@ public class BigTableBench {
                 public float width(boolean header, String text) throws IOException {
                     return header ? f1.getStringWidth(text) / 1000f * 10f : f2.getStringWidth(text) / 1000f * 9f;
                 }
-                public void newPage() throws IOException {
+                public void newPage(int number, int pages) throws IOException {
                     if (cs[0] != null) {
                         cs[0].close();
                     }
@@ -414,7 +502,10 @@ public class BigTableBench {
         int pages;
         switch (config) {
         case "jet": pages = jet(csv, os); break;
-        case "it-canvas": pages = itextCanvas(csv, os); break;
+        case "jet-page": pages = jetPage(csv, os, false); break;
+        case "jet-page-stream": pages = jetPage(csv, os, true); break;
+        case "it-canvas": pages = itextCanvas(csv, os, false); break;
+        case "it-canvas-stream": pages = itextCanvas(csv, os, true); break;
         case "it-layout": pages = itextLayout(csv, os); break;
         case "box": pages = pdfbox(csv, os); break;
         default: throw new IllegalArgumentException(config);

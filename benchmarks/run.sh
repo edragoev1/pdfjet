@@ -18,7 +18,7 @@ WHAT=${1:-all}
 QUICK=${2:-}
 MVN=${MVN:-mvn}
 mkdir -p "$B/lib" "$B/fonts" "$B/pdf"
-LOG="$B/results-$(date +%Y-%m-%d).log"
+LOG="$B/results-$(date +%Y-%m-%d-%H%M).log"
 
 # The PDFjet library from this checkout, without the examples.
 rm -rf "$B/jet-classes" "$B/classes"
@@ -86,7 +86,7 @@ peak() {
     fi
 
     if [ "$WHAT" = all ] || [ "$WHAT" = table ]; then
-        CONFIGS="jet it-canvas it-layout box"
+        CONFIGS=${TABLE_CONFIGS:-"jet jet-page it-canvas it-layout box jet-page-stream it-canvas-stream"}
         CSV="$ROOT/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
         if [ -n "$QUICK" ]; then CSV="$ROOT/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"
