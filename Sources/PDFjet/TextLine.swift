@@ -20,6 +20,7 @@ public class TextLine : Drawable {
     var text: String?
     private var uri: String?
     private var key: String?
+    private var destination: String?
 
     var isLastToken: Bool = false
     var xOffset: Float = 0.0
@@ -219,21 +220,9 @@ public class TextLine : Drawable {
         return self.decorationColor
     }
 
-    ///
-    /// Returns the x coordinate of the destination.
-    ///
-    /// - Returns: the x coordinate of the destination.
-    ///
-    public func getDestinationX() -> Float {
-        return x
-    }
-
-    ///
-    /// Returns the y coordinate of the destination.
-    ///
-    /// - Returns: the y coordinate of the destination.
-    ///
-    public func getDestinationY() -> Float {
+    // The y coordinate of the destination of the line, a font size above the
+    // baseline, which drawOn and Bookmark use.
+    func destinationY() -> Float {
         return y - fontSize
     }
 
@@ -286,6 +275,29 @@ public class TextLine : Drawable {
     public func setGoToAction(_ key: String?) -> TextLine {
         self.key = key
         return self
+    }
+
+    ///
+    /// Sets the name of a destination that drawOn adds to the page, a font size
+    /// above the baseline, so that a GoTo action with the name, which
+    /// setGoToAction sets, goes to this line.
+    ///
+    /// - Parameter name: the destination name, or nil for none.
+    /// - Returns: the TextLine.
+    ///
+    @discardableResult
+    public func setDestination(_ name: String?) -> TextLine {
+        self.destination = name
+        return self
+    }
+
+    ///
+    /// Returns the name of the destination that drawOn adds to the page.
+    ///
+    /// - Returns: the destination name, or nil.
+    ///
+    public func getDestination() -> String? {
+        return self.destination
     }
 
     ///
@@ -545,6 +557,9 @@ public class TextLine : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         if page == nil || text == nil || text == "" {
             return [x, y]
+        }
+        if let destination {
+            _ = page!.addDestination(destination, destinationY())
         }
 
         let verticalOffset = getVerticalOffset()

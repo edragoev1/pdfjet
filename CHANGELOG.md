@@ -460,6 +460,9 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
   enum instead of `Effect`, `Form.setWidth`, `Path.setClosed`, and Go
   `DrawStringUsingHighlightColors`.
+- `TextLine.setDestination(name)` replaces `getDestinationX` and
+  `getDestinationY`: `drawOn` adds the destination to the page a font size
+  above the baseline, the other end of `setGoToAction`. Example_22 uses it.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

@@ -34,6 +34,7 @@ type TextLine struct {
 	verticalOffset     float32
 	explicitOffset     bool // True after SetVerticalOffset
 	uri, key           string
+	destination        string
 	language           string
 	altDescription     string
 	uriLanguage        string
@@ -184,15 +185,9 @@ func (textLine *TextLine) GetTextColor() [3]float32 {
 	return textLine.textColor
 }
 
-// GetDestinationX returns the x coordinate of the destination.
-// Returns the x coordinate of the destination.
-func (textLine *TextLine) GetDestinationX() float32 {
-	return textLine.x
-}
-
-// GetDestinationY returns the y coordinate of the destination.
-// Returns the y coordinate of the destination.
-func (textLine *TextLine) GetDestinationY() float32 {
+// destinationY returns the y coordinate of the destination of the line, a font
+// size above the baseline, which DrawOn and Bookmark use.
+func (textLine *TextLine) destinationY() float32 {
 	return textLine.y - textLine.fontSize
 }
 
@@ -230,6 +225,23 @@ func (textLine *TextLine) GetURIAction() string {
 func (textLine *TextLine) SetGoToAction(key string) *TextLine {
 	textLine.key = key
 	return textLine
+}
+
+// SetDestination sets the name of a destination that DrawOn adds to the page, a
+// font size above the baseline, so that a GoTo action with the name, which
+// SetGoToAction sets, goes to this line.
+//   - name: the destination name, or "" for none.
+//
+// Returns this TextLine.
+func (textLine *TextLine) SetDestination(name string) *TextLine {
+	textLine.destination = name
+	return textLine
+}
+
+// GetDestination returns the name of the destination that DrawOn adds to the
+// page, or "".
+func (textLine *TextLine) GetDestination() string {
+	return textLine.destination
 }
 
 // GetGoToAction returns the GoTo action string.
@@ -434,6 +446,9 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if page == nil || textLine.text == "" {
 		return [2]float32{textLine.x, textLine.y}
+	}
+	if textLine.destination != "" {
+		page.AddDestination(textLine.destination, textLine.destinationY())
 	}
 
 	verticalOffset := textLine.GetVerticalOffset()

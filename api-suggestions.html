@@ -137,8 +137,8 @@
   <thead><tr><th>Group</th><th class="num">Findings</th><th>What it removes</th></tr></thead>
   <tbody>
     <tr><td>Abbreviations</td><td class="num">3</td><td>The only abbreviated setters and constants, and a Go constant that repeats its type name</td></tr>
-    <tr><td>Odd members</td><td class="num">6</td><td>Names that hide what a member does, two setters for one value, and names that differ between the ports</td></tr>
-    <tr class="total"><td>Total</td><td class="num">9</td><td></td></tr>
+    <tr><td>Odd members</td><td class="num">5</td><td>Names that hide what a member does, two setters for one value, and names that differ between the ports</td></tr>
+    <tr class="total"><td>Total</td><td class="num">8</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -158,7 +158,6 @@
   <h3>Odd members <span class="chip now">9.0.0</span></h3>
   <span class="label">Finding</span>
   <ul>
-    <li><code>TextLine.getDestinationX</code> and <code>getDestinationY</code> are where a GoTo destination for the line goes; nothing in the name says so. <code>getDestinationX</code> returns x and nothing calls it; <code>getDestinationY</code> is a font size above the baseline, passed to <code>Page.addDestination</code> by <code>Bookmark</code> and Example_22.</li>
     <li><code>Arc.setSweepDegreesCW</code> and <code>setSweepDegreesCCW</code> are two setters for one signed angle, in a library where every other angle is counterclockwise and positive.</li>
     <li><code>Page.drawCircle</code> takes a <code>PathOperator</code> while <code>drawEllipse</code> has a <code>fillEllipse</code> twin, and <code>drawRectRoundCorners</code> has neither an operator nor a fill twin.</li>
     <li><code>Page.transform(float[])</code> takes the six values at Android <code>Matrix</code> indices, exposed as <code>MSCALE_X</code> and friends.</li>
@@ -166,7 +165,7 @@
     <li>The private key generator of <code>Bookmark</code> is <code>next</code> in Java, <code>Next</code> in C#, <code>getNext</code> in Go and <code>goToNext</code> in Swift; <code>FileAttachment.setIconPushpin</code> writes <code>PushPin</code> next to <code>Paperclip</code>.</li>
   </ul>
   <span class="label">Suggestion</span>
-  <p><code>TextLine.setDestination(name)</code>, the other end of <code>setGoToAction(key)</code>, which adds the destination a font size above the baseline when the line is drawn, in place of the two getters; one <code>setSweep(degrees)</code>, counterclockwise; <code>fillRectRoundCorners</code> or a <code>PathOperator</code> on all three; <code>transform(a, b, c, d, e, f)</code> in PDF order.</p>
+  <p>One <code>setSweep(degrees)</code>, counterclockwise; <code>fillRectRoundCorners</code> or a <code>PathOperator</code> on all three; <code>transform(a, b, c, d, e, f)</code> in PDF order.</p>
 </section>
 </div>
 </body>

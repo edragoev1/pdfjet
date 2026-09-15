@@ -33,6 +33,7 @@ public class TextLine : IDrawable {
 
     private String uri;
     private String key;
+    private String destination;
     private String language = null;
     private String altDescription = null;
     private String uriLanguage = null;
@@ -215,19 +216,9 @@ public class TextLine : IDrawable {
         return this.colorMap;
     }
 
-    /// <summary>
-    /// Returns the x coordinate of the destination.
-    /// </summary>
-    /// <returns>the x coordinate of the destination.</returns>
-    public float GetDestinationX() {
-        return x;
-    }
-
-    /// <summary>
-    /// Returns the y coordinate of the destination.
-    /// </summary>
-    /// <returns>the y coordinate of the destination.</returns>
-    public float GetDestinationY() {
+    // The y coordinate of the destination of the line, a font size above the
+    // baseline, which DrawOn and Bookmark use.
+    internal float DestinationY() {
         return y - this.fontSize;
     }
 
@@ -276,6 +267,26 @@ public class TextLine : IDrawable {
     public TextLine SetGoToAction(String key) {
         this.key = key;
         return this;
+    }
+
+    /// <summary>
+    /// Sets the name of a destination that DrawOn adds to the page, a font size
+    /// above the baseline, so that a GoTo action with the name, which
+    /// SetGoToAction sets, goes to this line.
+    /// </summary>
+    /// <param name="name">the destination name, or null for none.</param>
+    /// <returns>this TextLine.</returns>
+    public TextLine SetDestination(String name) {
+        this.destination = name;
+        return this;
+    }
+
+    /// <summary>
+    /// Returns the name of the destination that DrawOn adds to the page.
+    /// </summary>
+    /// <returns>the destination name, or null.</returns>
+    public String GetDestination() {
+        return this.destination;
     }
 
     /// <summary>
@@ -498,6 +509,9 @@ public class TextLine : IDrawable {
     public float[] DrawOn(Page page) {
         if (page == null || text == null || text.Equals("")) {
             return new float[] {x, y};
+        }
+        if (destination != null) {
+            page.AddDestination(destination, DestinationY());
         }
 
         float verticalOffset = GetVerticalOffset();

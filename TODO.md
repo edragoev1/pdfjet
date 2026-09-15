@@ -891,6 +891,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       and `Encryption.getKey` is internal in C# and Swift and removed from Go,
       which never called it; Java keeps it public for the `com.pdfjet`
       package.
+- ✅ **B** `TextLine.getDestinationX` and `getDestinationY` say nothing of a
+      GoTo destination; `getDestinationX` has no caller, and
+      `getDestinationY` is a font size above the baseline that `Bookmark`
+      and Example_22 pass to `Page.addDestination`.
+      Fixed: `TextLine.setDestination(name)` and `getDestination`, in the
+      four ports: `drawOn` adds the destination to the page, and measuring
+      adds none. The getters are gone; `Bookmark` computes the same point,
+      and Example_22 uses `setDestination`.
 
 ### Names in one port
 

@@ -75,6 +75,23 @@ import Testing
         #expect(file.components(separatedBy: "/Subtype /Link").count - 1 == 3, "\(file)")
     }
 
+    @Test func aTextLineAddsItsDestinationWhenItIsDrawn() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page1 = Page(memory.pdf, Letter.PORTRAIT)
+        TextLine(font, "Go").setGoToAction("there").setLocation(50, 50).drawOn(page1)
+        let page2 = Page(memory.pdf, Letter.PORTRAIT)
+        let target = TextLine(font, "There").setDestination("there")
+        target.setLocation(30, 100 + font.getSize())
+        target.drawOn(page2)
+        try memory.pdf.complete()
+        let file = TestSupport.latin1(memory.bytes)
+        // The destination is at the left edge of page 2, a font size above the baseline.
+        #expect(target.getDestination() == "there")
+        #expect(file.components(separatedBy: "/Dest [").count - 1 == 1, "\(file)")
+        #expect(file.components(separatedBy: "/XYZ 0 692 0]").count - 1 == 1, "\(file)")
+    }
+
     @Test func aPathWithFewerThanTwoPointsPaintsNothing() {
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
         var path = [Point]()

@@ -57,9 +57,9 @@ public class Bookmark {
         String key = bm.Next();
 
         Bookmark bookmark = new Bookmark(
-                page, title.textLine.GetDestinationY(), key, Regex.Replace(title.textLine.text, @"\s+"," "));
+                page, title.textLine.DestinationY(), key, Regex.Replace(title.textLine.text, @"\s+"," "));
         bookmark.parent = this;
-        bookmark.dest = page.AddDestination(key, title.textLine.GetDestinationY());
+        bookmark.dest = page.AddDestination(key, title.textLine.DestinationY());
         if (children == null) {
             children = new List<Bookmark>();
         } else {

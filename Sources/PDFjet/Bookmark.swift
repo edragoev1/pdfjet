@@ -64,11 +64,11 @@ public class Bookmark {
         }
         let key = bm.goToNext()
 
-        let bookmark = Bookmark(page, title.textLine.getDestinationY(), key,
+        let bookmark = Bookmark(page, title.textLine.destinationY(), key,
                 title.textLine.text!.replacingOccurrences(
                         of: "[ \\t\\n\\x0B\\f\\r]+", with: " ", options: .regularExpression))
         bookmark.parent = self
-        bookmark.dest = page.addDestination(key, title.textLine.getDestinationY())
+        bookmark.dest = page.addDestination(key, title.textLine.destinationY())
         if children == nil {
             children = [Bookmark]()
         } else {

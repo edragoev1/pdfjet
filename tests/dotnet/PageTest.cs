@@ -80,6 +80,25 @@ public class PageTest {
     }
 
     [Fact]
+    public void ATextLineAddsItsDestinationWhenItIsDrawn() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go").SetGoToAction("there").SetLocation(50f, 50f).DrawOn(page1);
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        TextLine target = new TextLine(font, "There").SetDestination("there");
+        target.SetLocation(30f, 100f + font.GetSize());
+        target.DrawOn(page2);
+        pdf.Complete();
+        string file = TestSupport.Latin1(stream.ToArray());
+        // The destination is at the left edge of page 2, a font size above the baseline.
+        Assert.Equal("there", target.GetDestination());
+        Assert.Equal(1, file.Split("/Dest [").Length - 1);
+        Assert.Equal(1, file.Split("/XYZ 0 692 0]").Length - 1);
+    }
+
+    [Fact]
     public void APathWithFewerThanTwoPointsPaintsNothing() {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         List<Point> path = new List<Point>();

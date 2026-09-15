@@ -25,22 +25,22 @@ public class Example_22 {
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #2 -> Go to Destination #3.");
         text.SetGoToAction("dest#3");
+        text.SetDestination("dest#2");
         text.SetLocation(90f, 550f);
-        page.AddDestination("dest#2", text.GetDestinationY());
         text.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #3 -> Go to Destination #4.");
         text.SetGoToAction("dest#4");
+        text.SetDestination("dest#3");
         text.SetLocation(90f, 700f);
-        page.AddDestination("dest#3", text.GetDestinationY());
         text.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #4 -> Go to Destination #1.");
         text.SetGoToAction("dest#1");
+        text.SetDestination("dest#4");
         text.SetLocation(90f, 100f);
-        page.AddDestination("dest#4", text.GetDestinationY());
         text.DrawOn(page);
 
         text = new TextLine(f1, "Page #4 -> Go to Destination #2.");

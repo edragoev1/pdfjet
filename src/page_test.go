@@ -83,6 +83,23 @@ func TestPageAGoToLinkPointsAtItsDestinationOnAnotherPage(t *testing.T) {
 	}
 }
 
+func TestPageATextLineAddsItsDestinationWhenItIsDrawn(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page1 := NewPage(doc.pdf, testLetterPortrait())
+	NewTextLine(font, "Go").SetGoToAction("there").SetLocation(50, 50).DrawOn(page1)
+	page2 := NewPage(doc.pdf, testLetterPortrait())
+	target := NewTextLine(font, "There").SetDestination("there")
+	target.SetLocation(30, 100+font.size)
+	target.DrawOn(page2)
+	file := string(doc.complete())
+	// The destination is at the left edge of page 2, a font size above the baseline.
+	if target.GetDestination() != "there" || strings.Count(file, "/Dest [") != 1 ||
+		strings.Count(file, "/XYZ 0 692 0]") != 1 {
+		t.Errorf("destination in %q", file)
+	}
+}
+
 func TestPageAPathWithFewerThanTwoPointsPaintsNothing(t *testing.T) {
 	page := testNewPage()
 	path := make([]*Point, 0)

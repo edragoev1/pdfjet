@@ -43,6 +43,7 @@ public class TextLine implements Drawable {
 
     private String uri;
     private String key;
+    private String destination;
     private String language = null;
     private String altDescription = null;
     private String uriLanguage = null;
@@ -284,21 +285,9 @@ public class TextLine implements Drawable {
         return this.colorMap;
     }
 
-    /**
-     * Returns the x coordinate of the destination.
-     *
-     * @return the x coordinate of the destination.
-     */
-    public float getDestinationX() {
-        return x;
-    }
-
-    /**
-     * Returns the y coordinate of the destination.
-     *
-     * @return the y coordinate of the destination.
-     */
-    public float getDestinationY() {
+    // The y coordinate of the destination of the line, a font size above the
+    // baseline, which drawOn and Bookmark use.
+    float destinationY() {
         return y - this.fontSize;
     }
 
@@ -352,6 +341,28 @@ public class TextLine implements Drawable {
     public TextLine setGoToAction(String key) {
         this.key = key;
         return this;
+    }
+
+    /**
+     * Sets the name of a destination that drawOn adds to the page, a font size
+     * above the baseline, so that a GoTo action with the name, which
+     * setGoToAction sets, goes to this line.
+     *
+     * @param name the destination name, or null for none.
+     * @return this TextLine.
+     */
+    public TextLine setDestination(String name) {
+        this.destination = name;
+        return this;
+    }
+
+    /**
+     * Returns the name of the destination that drawOn adds to the page.
+     *
+     * @return the destination name, or null.
+     */
+    public String getDestination() {
+        return this.destination;
     }
 
     /**
@@ -628,6 +639,9 @@ public class TextLine implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         if (page == null || text == null || text.equals("")) {
             return new float[] {x, y};
+        }
+        if (destination != null) {
+            page.addDestination(destination, destinationY());
         }
 
         float verticalOffset = getVerticalOffset();

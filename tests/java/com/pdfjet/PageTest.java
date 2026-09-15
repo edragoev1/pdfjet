@@ -86,6 +86,25 @@ class PageTest {
     }
 
     @Test
+    void aTextLineAddsItsDestinationWhenItIsDrawn() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go").setGoToAction("there").setLocation(50f, 50f).drawOn(page1);
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        TextLine target = new TextLine(font, "There").setDestination("there");
+        target.setLocation(30f, 100f + font.getSize());
+        target.drawOn(page2);
+        pdf.complete();
+        String file = TestSupport.latin1(bos.toByteArray());
+        // The destination is at the left edge of page 2, a font size above the baseline.
+        assertEquals("there", target.getDestination());
+        assertEquals(1, file.split("/Dest \\[").length - 1, file);
+        assertEquals(1, file.split("/XYZ 0 692 0\\]").length - 1, file);
+    }
+
+    @Test
     void aPathWithFewerThanTwoPointsPaintsNothing() throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         List<Point> path = new ArrayList<Point>();

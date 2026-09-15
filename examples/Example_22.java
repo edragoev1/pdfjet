@@ -26,22 +26,22 @@ public class Example_22 {
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #2 -> Go to Destination #3.");
         text.setGoToAction("dest#3");
+        text.setDestination("dest#2");
         text.setLocation(90f, 550f);
-        page.addDestination("dest#2", text.getDestinationY());
         text.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #3 -> Go to Destination #4.");
         text.setGoToAction("dest#4");
+        text.setDestination("dest#3");
         text.setLocation(90f, 700f);
-        page.addDestination("dest#3", text.getDestinationY());
         text.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
         text = new TextLine(f1, "Page #4 -> Go to Destination #1.");
         text.setGoToAction("dest#1");
+        text.setDestination("dest#4");
         text.setLocation(90f, 100f);
-        page.addDestination("dest#4", text.getDestinationY());
         text.drawOn(page);
 
         text = new TextLine(f1, "Page #4 -> Go to Destination #2.");

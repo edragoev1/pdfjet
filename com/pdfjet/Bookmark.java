@@ -74,11 +74,11 @@ public class Bookmark {
         String key = bm.next();
         Bookmark bookmark2 = new Bookmark(
                 page,
-                title.textLine.getDestinationY(),
+                title.textLine.destinationY(),
                 key,
                 title.textLine.text.replaceAll("\\s+", " "));
         bookmark2.parent = this;
-        bookmark2.dest = page.addDestination(key, title.textLine.getDestinationY());
+        bookmark2.dest = page.addDestination(key, title.textLine.destinationY());
         if (children == null) {
             children = new ArrayList<Bookmark>();
         } else {

@@ -59,11 +59,11 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 	whitespace := regexp.MustCompile(`\s+`)
 	bookmark2 := NewBookmarkAt(
 		page,
-		title.textLine.GetDestinationY(),
+		title.textLine.destinationY(),
 		key,
 		whitespace.ReplaceAllString(title.textLine.text, " "))
 	bookmark2.parent = bookmark
-	bookmark2.dest = page.AddDestination(key, title.textLine.GetDestinationY())
+	bookmark2.dest = page.AddDestination(key, title.textLine.destinationY())
 	if bookmark.children == nil {
 		bookmark.children = make([]*Bookmark, 0)
 	} else {
