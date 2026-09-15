@@ -1146,13 +1146,15 @@ renames included (the Week 1 decision), so every item is a blocker.
       failed (16 of 4000 in a loop). Fixed (Sep 14) in the four readers: only
       the LF of a CRLF is skipped, with a test that reads a stream starting
       with a line feed; 0 failures in 4000 runs after the fix.
-- ⬜ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
+- ✅ **B** `check-examples.sh` clean, `go vet` clean, Swift builds with
       warnings as errors, Windows workflow run from the Actions tab and green.
       Done on Sep 13: `check-examples.sh` is clean with the version bump,
       `go vet ./src/...` is clean, `build-swift.sh` builds with
       `-warnings-as-errors`, and the Build and Documentation workflows passed
-      on 017d197b. Left: the Windows workflow last ran on Sep 11 (4c626820),
-      before the API audit fixes; run it again from the Actions tab.
+      on 017d197b. The Windows workflow passed on Sep 15 (5c0ca7e1) in the
+      four ports, after its Java job had failed on fb16f69d: `build-java.cmd`
+      and `run-java.cmd` still compiled `com\pdfjet\corefonts`, which
+      b240cf09 had moved into `com\pdfjet`.
 - ⬜ **B** Manual viewer pass: Acrobat Reader on Windows opens Example_30 with
       `hello` and `world`, shows print allowed and copy denied, and opens the
       PDF/UA and PDF/A examples without warnings. Same files in Preview,
