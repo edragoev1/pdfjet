@@ -953,29 +953,33 @@ final public class PDF {
     private void addPageContent(Page page) throws Exception {
         page.checkBalanced();
         if (contentStreamsCompression) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            // Page content usually compresses to less than an eighth of its size.
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(page.buf.size() / 8 + 64);
             Deflater deflater = new Deflater();
-            DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
-            byte[] buf = page.buf.toByteArray();
-            dos.write(buf, 0, buf.length);
+            DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater, 8192);
+            page.buf.writeTo(dos);      // The content, without a copy of it
             dos.finish();
             deflater.end();
             page.buf = new Page.WrittenContent(this);  // Release the page content memory!
 
-            buf = baos.toByteArray();
+            byte[] encrypted = null;
             if (encryption != null) {
-                buf = AES256.encrypt(buf, encryption.getKey());
+                encrypted = AES256.encrypt(baos.toByteArray(), encryption.getKey());
             }
 
             newObj();
             append(Token.BEGIN_DICTIONARY);
             append("/Filter /FlateDecode\n");
             append(Token.LENGTH);
-            append(buf.length);
+            append(encrypted != null ? encrypted.length : baos.size());
             append(Token.NEWLINE);
             append(Token.END_DICTIONARY);
             append(Token.STREAM);
-            append(buf);
+            if (encrypted != null) {
+                append(encrypted);
+            } else {
+                append(baos);       // The compressed content, without a copy of it
+            }
             append(Token.END_STREAM);
             endObj();
             page.contents.add(getObjNumber());

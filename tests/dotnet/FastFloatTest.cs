@@ -58,6 +58,15 @@ public class FastFloatTest {
     }
 
     [Fact]
+    public void WritesIntoABufferAfterWhatItHolds() {
+        byte[] buffer = new byte[2 + FastFloat.MAX_LENGTH];
+        buffer[0] = (byte) '1';
+        buffer[1] = (byte) ' ';
+        Assert.Equal(FastFloat.MAX_LENGTH, FastFloat.Write(-2147483520f, new System.Span<byte>(buffer, 2, FastFloat.MAX_LENGTH)));
+        Assert.Equal("1 -2147483520", TestSupport.Latin1(buffer));
+    }
+
+    [Fact]
     public void RefusesNumbersAPdfCannotHold() {
         foreach (float value in new float[] {float.NaN, float.PositiveInfinity, float.NegativeInfinity, 2147483648f, -3.4e38f}) {
             Assert.Throws<System.ArgumentException>(() => FastFloat.ToByteArray(value));

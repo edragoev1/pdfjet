@@ -62,6 +62,15 @@ class FastFloatTest {
     }
 
     @Test
+    void writesIntoABufferAfterWhatItHolds() {
+        byte[] buffer = new byte[2 + FastFloat.MAX_LENGTH];
+        buffer[0] = '1';
+        buffer[1] = ' ';
+        assertEquals(buffer.length, FastFloat.write(-2147483520f, buffer, 2));
+        assertEquals("1 -2147483520", TestSupport.latin1(buffer));
+    }
+
+    @Test
     void refusesNumbersAPdfCannotHold() {
         for (final float value : new float[] {Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 2147483648f, -3.4e38f}) {
             assertThrows(IllegalArgumentException.class, () -> FastFloat.toByteArray(value));

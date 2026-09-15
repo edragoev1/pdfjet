@@ -906,7 +906,8 @@ public class PDF {
     private void AddPageContent(Page page) {
         page.CheckBalanced();
         if (contentStreamsCompression) {
-            byte[] buf = Compressor.Deflate(page.buf.ToArray());
+            // The content, without a copy of it
+            byte[] buf = Compressor.Deflate(page.buf.GetBuffer(), 0, (int) page.buf.Length);
             if (encryption != null) {
                 buf = AES256.Encrypt(buf, encryption.GetKey());
             }

@@ -1,6 +1,7 @@
 package com.pdfjet;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 
 class FastFloat {
     static final String NOT_WRITABLE = "A coordinate, size or width is NaN, infinite or too large for a PDF.";
@@ -11,7 +12,17 @@ class FastFloat {
         return Math.abs(value) < 2147483648f;   // False for NaN and the infinities
     }
 
+    // The most bytes a writable number takes: -2147483520, or -8388607.99.
+    static final int MAX_LENGTH = 11;
+
     static byte[] toByteArray(float value) {
+        byte[] bytes = new byte[MAX_LENGTH];
+        return Arrays.copyOf(bytes, write(value, bytes, 0));
+    }
+
+    // Writes the number into the buffer at the position, where the buffer
+    // must have MAX_LENGTH bytes, and returns the position after the number.
+    static int write(float value, byte[] buffer, int pos) {
         if (!isWritable(value)) {
             throw new IllegalArgumentException(NOT_WRITABLE);
         }
@@ -20,7 +31,9 @@ class FastFloat {
         if (magnitude >= 8388608.0) {
             // A float of 2^23 or more is a whole number: write all its digits
             String digits = new BigDecimal(magnitude).toBigInteger().toString();
-            return ((value < 0f ? "-" : "") + digits).getBytes();
+            byte[] bytes = ((value < 0f ? "-" : "") + digits).getBytes();
+            System.arraycopy(bytes, 0, buffer, pos, bytes.length);
+            return pos + bytes.length;
         }
 
         // Round to 2 decimal places, halves away from zero. A float times 100
@@ -45,27 +58,23 @@ class FastFloat {
         if (decimalDigits > 0) {
             fractionDigits = (decimalDigits % 10 == 0) ? 1 : 2;
         }
-        int totalLength = (negative ? 1 : 0) + intDigits + (fractionDigits > 0 ? 1 + fractionDigits : 0);
-
-        byte[] result = new byte[totalLength];
-        int pos = 0;
 
         // Add sign
-        if (negative) result[pos++] = '-';
+        if (negative) buffer[pos++] = '-';
 
         // Add integer part
-        pos = writeInt(integerPart, result, pos, intDigits);
+        pos = writeInt(integerPart, buffer, pos, intDigits);
 
         // Add decimal part if needed
         if (fractionDigits > 0) {
-            result[pos++] = '.';
-            result[pos++] = (byte)('0' + decimalDigits / 10);
+            buffer[pos++] = '.';
+            buffer[pos++] = (byte)('0' + decimalDigits / 10);
             if (fractionDigits > 1) {
-                result[pos++] = (byte)('0' + decimalDigits % 10);
+                buffer[pos++] = (byte)('0' + decimalDigits % 10);
             }
         }
 
-        return result;
+        return pos;
     }
 
     private static int writeInt(int value, byte[] buffer, int pos, int digits) {

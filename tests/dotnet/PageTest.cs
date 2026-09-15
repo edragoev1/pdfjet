@@ -53,6 +53,27 @@ public class PageTest {
     }
 
     [Fact]
+    public void AppendWritesStringsInUtf8AndIntegersAndNumbersInDecimal() {
+        string euros = new string('€', 256);
+        string digits = string.Concat(System.Linq.Enumerable.Repeat("0123456789", 1000)) + "é";
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.Append("BT é≠\U0001F600 ");
+        page.Append(-2147483648);
+        page.Append(' ');
+        page.Append(2147483647);
+        page.Append(' ');
+        page.Append(-8388607.5f);
+        page.Append(' ');
+        page.Append(0.125f);
+        page.Append(' ');
+        page.Append(euros);
+        page.Append(' ');
+        page.Append(digits);
+        string expected = "BT é≠\U0001F600 -2147483648 2147483647 -8388607.5 0.13 " + euros + " " + digits;
+        Assert.Equal(System.Text.Encoding.UTF8.GetBytes(expected), page.GetContent());
+    }
+
+    [Fact]
     public void DrawLineWritesAStrokedPathWithTheYFlipped() {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         page.DrawLine(10f, 20f, 30f, 40f);

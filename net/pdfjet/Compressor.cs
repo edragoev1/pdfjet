@@ -15,7 +15,8 @@ class Compressor {
     }
 
     internal static byte[] Deflate(byte[] data, int off, int len) {
-        using var ms = new MemoryStream();
+        // Page content usually compresses to less than an eighth of its size.
+        using var ms = new MemoryStream(len / 8 + 64);
         using (var zlib = new ZLibStream(ms, CompressionMode.Compress, leaveOpen: true)) {
             zlib.Write(data, off, len);
         }

@@ -151,7 +151,7 @@ final public class Page {
             pdf.fail(new IllegalArgumentException("A page must be from 3 to 14400 points wide and high."));
         }
         pdf.pagesCreated++;
-        buf = new ByteArrayOutputStream(8192);
+        buf = new ContentBuffer(8192);
         tm0 = FastFloat.toByteArray(tmx[0]);
         tm1 = FastFloat.toByteArray(tmx[1]);
         tm2 = FastFloat.toByteArray(tmx[2]);
@@ -173,7 +173,7 @@ final public class Page {
         PageSize pageSize = pageObj.getPageSize();
         width = pageSize.getWidth();
         height = pageSize.getHeight();
-        buf = new ByteArrayOutputStream(8192);
+        buf = new ContentBuffer(8192);
         tm0 = FastFloat.toByteArray(tmx[0]);
         tm1 = FastFloat.toByteArray(tmx[1]);
         tm2 = FastFloat.toByteArray(tmx[2]);
@@ -274,10 +274,91 @@ final public class Page {
     }
 
     /**
+     * The content of a page. Its writes are not synchronized, as those of
+     * ByteArrayOutputStream are, and it writes strings and numbers into its
+     * array without making an array for each.
+     */
+    static class ContentBuffer extends ByteArrayOutputStream {
+        ContentBuffer(int size) {
+            super(size);
+        }
+
+        // Makes room for the bytes, doubling the array as ByteArrayOutputStream does.
+        private void reserve(int minCapacity) {
+            if (minCapacity < 0) {
+                throw new OutOfMemoryError();
+            }
+            if (minCapacity > buf.length) {
+                int capacity = buf.length << 1;
+                buf = Arrays.copyOf(buf, capacity < minCapacity ? minCapacity : capacity);
+            }
+        }
+
+        @Override
+        public void write(int b) {
+            reserve(count + 1);
+            buf[count++] = (byte) b;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            if (off < 0 || off > b.length || len < 0 || len > b.length - off) {
+                throw new IndexOutOfBoundsException();
+            }
+            reserve(count + len);
+            System.arraycopy(b, off, buf, count, len);
+            count += len;
+        }
+
+        // Writes the string as UTF-8, as getBytes does. The characters of an
+        // ASCII string, as the operators are, go straight into the array.
+        void writeString(String str) {
+            int length = str.length();
+            reserve(count + length);
+            for (int i = 0; i < length; i++) {
+                char ch = str.charAt(i);
+                if (ch >= 0x80) {
+                    byte[] rest = str.substring(i).getBytes(StandardCharsets.UTF_8);
+                    write(rest, 0, rest.length);
+                    return;
+                }
+                buf[count++] = (byte) ch;
+            }
+        }
+
+        // Writes the integer in decimal, as Integer.toString does.
+        void writeInt(int n) {
+            if (n < 0) {
+                if (n == Integer.MIN_VALUE) {
+                    writeString(Integer.toString(n));
+                    return;
+                }
+                write('-');
+                n = -n;
+            }
+            int digits = 1;
+            for (int v = n; v >= 10; v /= 10) {
+                digits++;
+            }
+            reserve(count + digits);
+            for (int i = count + digits - 1; i >= count; i--) {
+                buf[i] = (byte) ('0' + n % 10);
+                n /= 10;
+            }
+            count += digits;
+        }
+
+        void writeFloat(float f) {
+            reserve(count + FastFloat.MAX_LENGTH);
+            count = FastFloat.write(f, buf, count);
+        }
+    }
+
+    /**
      * The content of a page that was written to the PDF. Drawing on it fails,
      * as the drawing would be lost.
      */
-    static final class WrittenContent extends ByteArrayOutputStream {
+    static final class WrittenContent extends ContentBuffer {
         private final PDF pdf;
 
         WrittenContent(PDF pdf) {
@@ -286,12 +367,27 @@ final public class Page {
         }
 
         @Override
-        public synchronized void write(int b) {
+        public void write(int b) {
             fail();
         }
 
         @Override
-        public synchronized void write(byte[] b, int off, int len) {
+        public void write(byte[] b, int off, int len) {
+            fail();
+        }
+
+        @Override
+        void writeString(String str) {
+            fail();
+        }
+
+        @Override
+        void writeInt(int n) {
+            fail();
+        }
+
+        @Override
+        void writeFloat(float f) {
             fail();
         }
 
@@ -2155,18 +2251,18 @@ final public class Page {
     }
 
     void append(String str) {
-        try {
-            buf.write(str.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-        }
+        ((ContentBuffer) buf).writeString(str);
     }
 
     void append(int n) {
-        append(Integer.toString(n));
+        ((ContentBuffer) buf).writeInt(n);
     }
 
     void append(float f) {
-        append(number(f));
+        if (!FastFloat.isWritable(f)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        ((ContentBuffer) buf).writeFloat(f);
     }
 
     // Returns the bytes of the number, after checking that a PDF can hold it.

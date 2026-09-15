@@ -58,6 +58,15 @@ func TestFastFloatWritesLargeNumbersWithAllTheirDigits(t *testing.T) {
 	testFormat(t, "2147483520", 2147483520)
 }
 
+func TestFastFloatAppendsAfterWhatTheSliceHolds(t *testing.T) {
+	if got := string(Append([]byte("1 "), -2147483520)); got != "1 -2147483520" {
+		t.Errorf("want %q, got %q", "1 -2147483520", got)
+	}
+	if n := len(ToByteArray(-2147483520)); n != MaxLength {
+		t.Errorf("want %d bytes, got %d", MaxLength, n)
+	}
+}
+
 func TestFastFloatRefusesNumbersAPdfCannotHold(t *testing.T) {
 	for _, value := range []float32{float32(math.NaN()), float32(math.Inf(1)), float32(math.Inf(-1)), 2147483648, -3.4e38} {
 		if IsWritable(value) {

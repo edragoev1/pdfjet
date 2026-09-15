@@ -2077,7 +2077,11 @@ public class Page {
             pdf.fail(FastFloat.NOT_WRITABLE)
             return
         }
-        append(FastFloat.toByteArray(val))
+        if written {
+            failWritten()
+            return
+        }
+        FastFloat.append(val, to: &self.buf)
     }
 
     func append(_ byte: UInt8) {

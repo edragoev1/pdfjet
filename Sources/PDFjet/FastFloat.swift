@@ -3,6 +3,9 @@ import Foundation
 struct FastFloat {
     static let NOT_WRITABLE = "A coordinate, size or width is NaN, infinite or too large for a PDF."
 
+    // The most bytes a writable number takes: -2147483520, or -8388607.99.
+    static let maxLength = 11
+
     // A PDF number has no exponent and no NaN or infinity, and readers keep
     // integers in 32 bits, so a number must be finite and below 2^31.
     static func isWritable(_ value: Float) -> Bool {
@@ -10,17 +13,27 @@ struct FastFloat {
     }
 
     static func toByteArray(_ value: Float) -> [UInt8] {
+        var result = [UInt8]()
+        result.reserveCapacity(maxLength)
+        append(value, to: &result)
+        return result
+    }
+
+    // Appends the text of the number to the buffer, as toByteArray writes it.
+    static func append(_ value: Float, to buffer: inout [UInt8]) {
         // The callers check isWritable and record the misuse; a number that is
         // not writable still gives valid syntax.
         if !isWritable(value) {
-            return Array("0".utf8)
+            buffer.append(UInt8(ascii: "0"))
+            return
         }
 
         let magnitude = abs(Double(value))
         if magnitude >= 8388608.0 {
             // A float of 2^23 or more is a whole number: write all its digits
             let digits = String(format: "%.0f", magnitude)
-            return Array(((value < 0 ? "-" : "") + digits).utf8)
+            buffer.append(contentsOf: ((value < 0 ? "-" : "") + digits).utf8)
+            return
         }
 
         // Round to 2 decimal places, halves away from zero. A float times 100
@@ -47,35 +60,28 @@ struct FastFloat {
         if decimalDigits > 0 {
             fractionDigits = (decimalDigits % 10 == 0) ? 1 : 2
         }
-        let totalLength = (isNegative ? 1 : 0) + intDigits + (fractionDigits > 0 ? 1 + fractionDigits : 0)
-
-        var result = [UInt8](repeating: 0, count: totalLength)
-        var pos = 0
 
         // Add sign
         if isNegative {
-            result[pos] = UInt8(ascii: "-")
-            pos += 1
+            buffer.append(UInt8(ascii: "-"))
         }
 
         // Add integer part
-        pos = writeInt(integerPart, into: &result, at: pos, digits: intDigits)
+        let start = buffer.count
+        buffer.append(contentsOf: repeatElement(UInt8(ascii: "0"), count: intDigits))
+        writeInt(integerPart, into: &buffer, at: start, digits: intDigits)
 
         // Add decimal part if needed
         if fractionDigits > 0 {
-            result[pos] = UInt8(ascii: ".")
-            pos += 1
-            result[pos] = UInt8(ascii: "0") + UInt8(decimalDigits / 10)
-            pos += 1
+            buffer.append(UInt8(ascii: "."))
+            buffer.append(UInt8(ascii: "0") + UInt8(decimalDigits / 10))
             if fractionDigits > 1 {
-                result[pos] = UInt8(ascii: "0") + UInt8(decimalDigits % 10)
+                buffer.append(UInt8(ascii: "0") + UInt8(decimalDigits % 10))
             }
         }
-
-        return result
     }
 
-    private static func writeInt(_ value: Int, into buffer: inout [UInt8], at pos: Int, digits: Int) -> Int {
+    private static func writeInt(_ value: Int, into buffer: inout [UInt8], at pos: Int, digits: Int) {
         var value = value
         var position = pos + digits - 1
         for _ in 0..<digits {
@@ -83,6 +89,5 @@ struct FastFloat {
             value /= 10
             position -= 1
         }
-        return pos + digits
     }
 }

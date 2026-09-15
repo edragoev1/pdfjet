@@ -2192,13 +2192,16 @@ func (page *Page) drawTextLine(font *Font, str string, x float32, y float32) {
 
 func (page *Page) appendInteger(value int) {
 	if page.open() {
-		page.buf = append(page.buf, []byte(strconv.Itoa(value))...)
+		page.buf = strconv.AppendInt(page.buf, int64(value), 10)
 	}
 }
 
 func (page *Page) appendFloat32(value float32) {
 	if page.open() {
-		page.buf = append(page.buf, page.number(value)...)
+		if !fastfloat.IsWritable(value) {
+			page.pdf.fail(notWritable)
+		}
+		page.buf = fastfloat.Append(page.buf, value)
 	}
 }
 

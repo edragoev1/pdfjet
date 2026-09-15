@@ -29,6 +29,8 @@ var writerPool = sync.Pool{
 // Deflate deflates the input data.
 func Deflate(buf []byte) []byte {
 	var deflated bytes.Buffer
+	// Page content usually compresses to less than an eighth of its size.
+	deflated.Grow(len(buf)/8 + 64)
 	writer := writerPool.Get().(*zlib.Writer)
 	writer.Reset(&deflated)
 	if _, err := writer.Write(buf); err != nil {

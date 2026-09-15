@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// MaxLength is the most bytes a writable number takes: -2147483520, or -8388607.99.
+const MaxLength = 11
+
 // IsWritable returns true for a number a PDF can hold: a PDF number has no
 // exponent and no NaN or infinity, and readers keep integers in 32 bits, so a
 // number must be finite and below 2^31.
@@ -17,18 +20,23 @@ func IsWritable(value float32) bool {
 // that is not writable is written as 0, so a caller that did not check it
 // still writes valid syntax; the callers of the pdfjet package check it.
 func ToByteArray(value float32) []byte {
+	return Append(make([]byte, 0, MaxLength), value)
+}
+
+// Append appends the text of the float32, as ToByteArray writes it, to dst and
+// returns the extended slice.
+func Append(dst []byte, value float32) []byte {
 	if !IsWritable(value) {
-		return []byte("0")
+		return append(dst, '0')
 	}
 
 	magnitude := math.Abs(float64(value))
 	if magnitude >= 8388608 {
 		// A float of 2^23 or more is a whole number: write all its digits
-		digits := strconv.FormatFloat(magnitude, 'f', 0, 64)
 		if value < 0 {
-			return []byte("-" + digits)
+			dst = append(dst, '-')
 		}
-		return []byte(digits)
+		return strconv.AppendFloat(dst, magnitude, 'f', 0, 64)
 	}
 
 	// Round to 2 decimal places, halves away from zero. A float times 100
@@ -56,38 +64,32 @@ func ToByteArray(value float32) []byte {
 			fractionDigits = 1
 		}
 	}
-	totalLength := intDigits
-	if negative {
-		totalLength++
-	}
-	if fractionDigits > 0 {
-		totalLength += 1 + fractionDigits
-	}
 
-	result := make([]byte, totalLength)
+	var text [MaxLength]byte
 	pos := 0
 
 	// Add sign
 	if negative {
-		result[pos] = '-'
+		text[pos] = '-'
 		pos++
 	}
 
 	// Add integer part
-	pos = writeInt(integerPart, result, pos, intDigits)
+	pos = writeInt(integerPart, text[:], pos, intDigits)
 
 	// Add decimal part if needed
 	if fractionDigits > 0 {
-		result[pos] = '.'
+		text[pos] = '.'
 		pos++
-		result[pos] = byte('0' + decimalDigits/10)
+		text[pos] = byte('0' + decimalDigits/10)
 		pos++
 		if fractionDigits > 1 {
-			result[pos] = byte('0' + decimalDigits%10)
+			text[pos] = byte('0' + decimalDigits%10)
+			pos++
 		}
 	}
 
-	return result
+	return append(dst, text[:pos]...)
 }
 
 func writeInt(value int, buffer []byte, pos int, digits int) int {

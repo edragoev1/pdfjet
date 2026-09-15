@@ -52,6 +52,13 @@ import Testing
         #expect(format(2147483520) == "2147483520")
     }
 
+    @Test func appendsAfterWhatTheBufferHolds() {
+        var buffer = Array("1 ".utf8)
+        FastFloat.append(-2147483520, to: &buffer)
+        #expect(TestSupport.latin1(buffer) == "1 -2147483520")
+        #expect(FastFloat.toByteArray(-2147483520).count == FastFloat.maxLength)
+    }
+
     @Test func refusesNumbersAPdfCannotHold() {
         let values: [Float] = [.nan, .infinity, -.infinity, 2147483648, -3.4e38]
         for value in values {

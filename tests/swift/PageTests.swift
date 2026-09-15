@@ -50,6 +50,26 @@ import Testing
         #expect(page.getContent()[0] != UInt8(ascii: "X"))
     }
 
+    @Test func appendWritesStringsInUtf8AndIntegersAndNumbersInDecimal() {
+        let euros = String(repeating: "\u{20AC}", count: 256)
+        let digits = String(repeating: "0123456789", count: 1000) + "\u{E9}"
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.append("BT \u{E9}\u{2260}\u{1F600} ")
+        page.append(-2147483648 as Int)
+        page.append(UInt8(ascii: " "))
+        page.append(2147483647 as Int)
+        page.append(UInt8(ascii: " "))
+        page.append(Float(-8388607.5))
+        page.append(UInt8(ascii: " "))
+        page.append(Float(0.125))
+        page.append(UInt8(ascii: " "))
+        page.append(euros)
+        page.append(UInt8(ascii: " "))
+        page.append(digits)
+        let expected = "BT \u{E9}\u{2260}\u{1F600} -2147483648 2147483647 -8388607.5 0.13 " + euros + " " + digits
+        #expect(page.getContent() == Array(expected.utf8))
+    }
+
     @Test func drawLineWritesAStrokedPathWithTheYFlipped() {
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
         page.drawLine(10, 20, 30, 40)

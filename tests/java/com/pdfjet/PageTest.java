@@ -6,9 +6,11 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,6 +58,34 @@ class PageTest {
         page.drawLine(0f, 0f, 10f, 10f);
         page.getContent()[0] = 'X';
         assertTrue(TestSupport.content(page).charAt(0) != 'X');
+    }
+
+    @Test
+    void appendWritesStringsInUtf8AndIntegersAndNumbersInDecimal() throws Exception {
+        StringBuilder euros = new StringBuilder();
+        for (int i = 0; i < 256; i++) {
+            euros.append('€');
+        }
+        StringBuilder digits = new StringBuilder();     // Longer than the page's first buffer
+        for (int i = 0; i < 1000; i++) {
+            digits.append("0123456789");
+        }
+        digits.append('é');
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.append("BT é≠😀 ");
+        page.append(-2147483648);
+        page.append(' ');
+        page.append(2147483647);
+        page.append(' ');
+        page.append(-8388607.5f);
+        page.append(' ');
+        page.append(0.125f);
+        page.append(' ');
+        page.append(euros.toString());
+        page.append(' ');
+        page.append(digits.toString());
+        String expected = "BT é≠😀 -2147483648 2147483647 -8388607.5 0.13 " + euros + " " + digits;
+        assertArrayEquals(expected.getBytes(StandardCharsets.UTF_8), page.getContent());
     }
 
     @Test

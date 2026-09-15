@@ -20,6 +20,28 @@ func TestPageANewPageTracksTheDefaultGraphicsState(t *testing.T) {
 	testAssertRGB(t, 0, 0, 0, page.GetBrushColor())
 }
 
+func TestPageAppendWritesStringsInUtf8AndIntegersAndNumbersInDecimal(t *testing.T) {
+	euros := strings.Repeat("€", 256)
+	digits := strings.Repeat("0123456789", 1000) + "é"
+	page := testNewPage()
+	page.appendString("BT é≠\U0001F600 ")
+	page.appendInteger(-2147483648)
+	page.appendByte(' ')
+	page.appendInteger(2147483647)
+	page.appendByte(' ')
+	page.appendFloat32(-8388607.5)
+	page.appendByte(' ')
+	page.appendFloat32(0.125)
+	page.appendByte(' ')
+	page.appendString(euros)
+	page.appendByte(' ')
+	page.appendString(digits)
+	want := "BT é≠\U0001F600 -2147483648 2147483647 -8388607.5 0.13 " + euros + " " + digits
+	if got := string(page.buf); got != want {
+		t.Errorf("content of %d bytes differs from the %d bytes wanted", len(got), len(want))
+	}
+}
+
 func TestPageCmykSettersWriteCmykAndTrackTheRgbOfTheStandard(t *testing.T) {
 	page := testNewPage()
 	page.SetPenColorCMYK(0, 1, 1, 0)

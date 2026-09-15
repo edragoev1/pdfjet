@@ -2107,16 +2107,29 @@ public class Page {
     }
 
     internal void Append(String str) {
-        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(str);
-        buf.Write(bytes, 0, bytes.Length);
+        if (str.Length <= 256) {
+            // An operator or a short string is encoded on the stack, without
+            // an array of its own. A char takes at most 3 bytes in UTF-8.
+            Span<byte> bytes = stackalloc byte[str.Length * 3];
+            buf.Write(bytes.Slice(0, System.Text.Encoding.UTF8.GetBytes(str, bytes)));
+        } else {
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(str);
+            buf.Write(bytes, 0, bytes.Length);
+        }
     }
 
     internal void Append(int num) {
-        Append(num.ToString());
+        Span<byte> digits = stackalloc byte[11];
+        num.TryFormat(digits, out int length, default, System.Globalization.CultureInfo.InvariantCulture);
+        buf.Write(digits.Slice(0, length));
     }
 
     internal void Append(float f) {
-        Append(Number(f));
+        if (!FastFloat.IsWritable(f)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
+        Span<byte> bytes = stackalloc byte[FastFloat.MAX_LENGTH];
+        buf.Write(bytes.Slice(0, FastFloat.Write(f, bytes)));
     }
 
     // Returns the bytes of the number, after checking that a PDF can hold it.
