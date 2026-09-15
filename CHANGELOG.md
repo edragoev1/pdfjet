@@ -557,9 +557,6 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   old list; `BigTable` aligned numbers with each language's float parser
   where `Table.isNumber` now decides in all four ports, and Go `BigTable`
   takes an empty delimiter and long lines as `Table` does.
-- `audit-api.py` lists the public types and members of the four ports and what
-  is not in every port; the first run found some 60 types and 400 members, and
-  the report now shows the port differences the README documents.
 - The defaults, the copies that colour getters return and setters keep, and
   the errors are the same in the four ports, and the C#, Go and Swift examples
   read like the Java ones.

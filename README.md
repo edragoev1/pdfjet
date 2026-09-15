@@ -598,12 +598,6 @@ the constructor from an int (Go `NewPermissionsFromInt`) keeps the permission
 bits of a `/P` value, and `UserAccess.isSetIn(access)` (Go `IsSetIn`, C#
 `HasFlag`) asks whether one permission is in it.
 
-`./audit-api.py` lists the public types and members of the four ports, matches
-them by name without regard to case and underscores, and prints what is not in
-every port and what takes a different number of parameters, so a change to a
-public signature can be checked against the other three ports. Its report is
-empty apart from the conventions below.
-
 ### Names, overloads and constructors
 
 The Java name is the reference. C# and Go use its PascalCase form
