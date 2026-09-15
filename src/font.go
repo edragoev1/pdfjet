@@ -352,62 +352,36 @@ func (font *Font) SetKernPairs(kernPairs bool) *Font {
 	return font
 }
 
-// GetAscent returns the ascent of this font at its current size.
-func (font *Font) GetAscent() float32 {
-	return font.ascent
-}
-
-// GetDescent returns the descent of this font at its current size.
-func (font *Font) GetDescent() float32 {
-	return font.descent
-}
-
-// GetAscentAt returns the ascent of this font at the specified font size.
-func (font *Font) GetAscentAt(fontSize float32) float32 {
+// GetAscent returns the ascent of this font at the font size.
+func (font *Font) GetAscent(fontSize float32) float32 {
 	if font.isCJK {
 		return fontSize
 	}
 	return float32(font.fontAscent) * fontSize / float32(font.unitsPerEm)
 }
 
-// GetDescentAt returns the descent of this font at the specified font size.
-func (font *Font) GetDescentAt(fontSize float32) float32 {
+// GetDescent returns the descent of this font at the font size.
+func (font *Font) GetDescent(fontSize float32) float32 {
 	if font.isCJK {
 		return fontSize / 4
 	}
 	return -float32(font.fontDescent) * fontSize / float32(font.unitsPerEm)
 }
 
-// GetBodyHeight returns the height of the body of the font at its current size.
-func (font *Font) GetBodyHeight() float32 {
-	return font.bodyHeight
+// GetBodyHeight returns the height of the body of the font at the font size.
+func (font *Font) GetBodyHeight(fontSize float32) float32 {
+	return font.GetAscent(fontSize) + font.GetDescent(fontSize)
 }
 
-// GetBodyHeightAt returns the height of the body of the font
-// at the specified font size.
-func (font *Font) GetBodyHeightAt(fontSize float32) float32 {
-	return font.GetAscentAt(fontSize) + font.GetDescentAt(fontSize)
-}
-
-// GetUnderlineThickness returns the underline thickness at the current font size.
-func (font *Font) GetUnderlineThickness() float32 {
-	return font.underlineThickness
-}
-
-// GetUnderlinePosition returns the underline position at the current font size.
-func (font *Font) GetUnderlinePosition() float32 {
-	return font.underlinePosition
-}
-
-// GetUnderlineThicknessAt returns the underline thickness at the specified font size.
-func (font *Font) GetUnderlineThicknessAt(fontSize float32) float32 {
+// GetUnderlineThickness returns the underline thickness at the font size.
+func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
 	return float32(font.fontUnderlineThickness) * fontSize / float32(font.unitsPerEm)
 }
 
-// GetUnderlinePositionAt returns the underline position at the specified font size.
-func (font *Font) GetUnderlinePositionAt(fontSize float32) float32 {
+// GetUnderlinePosition returns the underline position at the font size.
+func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
 	return -(float32(font.fontUnderlinePosition) * fontSize / float32(font.unitsPerEm)) +
-		font.GetUnderlineThicknessAt(fontSize)/2.0
+		font.GetUnderlineThickness(fontSize)/2.0
 }
 
 // GetFitChars returns the number of characters from the specified text string
@@ -554,8 +528,8 @@ func (font *Font) hasGlyph(c rune) bool {
 	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
 }
 
-// StringWidthFB returns the width of text string drawn using main and fallback fonts.
-func (font *Font) StringWidthFB(fallbackFont *Font, fontSize float32, text string) float32 {
+// StringWidthUsingFallbackFont returns the width of text string drawn using main and fallback fonts.
+func (font *Font) StringWidthUsingFallbackFont(fallbackFont *Font, fontSize float32, text string) float32 {
 	return font.stringWidthFBSizes(fallbackFont, fontSize, fontSize, text)
 }
 

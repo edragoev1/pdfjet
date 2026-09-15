@@ -136,34 +136,34 @@ public class Example_50 {
         page.DrawString(f1, f1.GetSize(), "2016-08-07", x + 475f, 651f);
 
         // Female Checkbox 1
-        // CheckBox.XMark(page, 477.5f, 197.5f, 7f);
+        // CheckBox.DrawXMark(page, 477.5f, 197.5f, 7f);
 
         // Male Checkbox 1
-        CheckBox.XMark(page, 534.5f, 197.5f, 7f);
+        CheckBox.DrawXMark(page, 534.5f, 197.5f, 7f);
 
         // Married
-        CheckBox.XMark(page, 34.5f, 424f, 7f);
+        CheckBox.DrawXMark(page, 34.5f, 424f, 7f);
 
         // Living common-law
-        // CheckBox.XMark(page, 121.5f, 424f, 7f);
+        // CheckBox.DrawXMark(page, 121.5f, 424f, 7f);
 
         // Widowed
-        // CheckBox.XMark(page, 235.5f, 424f, 7f);
+        // CheckBox.DrawXMark(page, 235.5f, 424f, 7f);
 
         // Divorced
-        // CheckBox.XMark(page, 325.5f, 424f, 7f);
+        // CheckBox.DrawXMark(page, 325.5f, 424f, 7f);
 
         // Separated
-        // CheckBox.XMark(page, 415.5f, 424f, 7f);
+        // CheckBox.DrawXMark(page, 415.5f, 424f, 7f);
 
         // Single
-        // CheckBox.XMark(page, 505.5f, 424f, 7f);
+        // CheckBox.DrawXMark(page, 505.5f, 424f, 7f);
 
         // Female Checkbox 2
-        CheckBox.XMark(page, 478.5f, 536.5f, 7f);
+        CheckBox.DrawXMark(page, 478.5f, 536.5f, 7f);
 
         // Male Checkbox 2
-        // CheckBox.XMark(page, 535.5f, 536.5f, 7f);
+        // CheckBox.DrawXMark(page, 535.5f, 536.5f, 7f);
         page.Complete(objects);
         pdf.AddObjects(objects);
 

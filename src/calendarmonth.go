@@ -113,7 +113,7 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 					page.SetPenColor(color.Blue)
 					page.DrawEllipse(
 						calendarMonth.x1+float32(col)*calendarMonth.dx+calendarMonth.dx/2,
-						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.GetBodyHeight()/2,
+						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.GetBodyHeight(calendarMonth.f2.size)/2,
 						calendarMonth.dx/2.5,
 						calendarMonth.dy/2.5)
 				}

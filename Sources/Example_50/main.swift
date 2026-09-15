@@ -133,34 +133,34 @@ public class Example_50 {
         page.drawString(f1, f1.getSize(), "2016-08-07", x + 475.0, 651.0)
 
         // Female Checkbox 1
-        // CheckBox.xMark(page, 477.5, 197.5, 7.0)
+        // CheckBox.drawXMark(page, 477.5, 197.5, 7.0)
 
         // Male Checkbox 1
-        CheckBox.xMark(page, 534.5, 197.5, 7.0)
+        CheckBox.drawXMark(page, 534.5, 197.5, 7.0)
 
         // Married
-        CheckBox.xMark(page, 34.5, 424.0, 7.0)
+        CheckBox.drawXMark(page, 34.5, 424.0, 7.0)
 
         // Living common-law
-        // CheckBox.xMark(page, 121.5, 424.0, 7.0)
+        // CheckBox.drawXMark(page, 121.5, 424.0, 7.0)
 
         // Widowed
-        // CheckBox.xMark(page, 235.5, 424.0, 7.0)
+        // CheckBox.drawXMark(page, 235.5, 424.0, 7.0)
 
         // Divorced
-        // CheckBox.xMark(page, 325.5, 424.0, 7.0)
+        // CheckBox.drawXMark(page, 325.5, 424.0, 7.0)
 
         // Separated
-        // CheckBox.xMark(page, 415.5, 424.0, 7.0)
+        // CheckBox.drawXMark(page, 415.5, 424.0, 7.0)
 
         // Single
-        // CheckBox.xMark(page, 505.5, 424.0, 7.0)
+        // CheckBox.drawXMark(page, 505.5, 424.0, 7.0)
 
         // Female Checkbox 2
-        CheckBox.xMark(page, 478.5, 536.5, 7.0)
+        CheckBox.drawXMark(page, 478.5, 536.5, 7.0)
 
         // Male Checkbox 2
-        // CheckBox.xMark(page, 535.5, 536.5, 7.0)
+        // CheckBox.drawXMark(page, 535.5, 536.5, 7.0)
         page.complete(&objects)
         try pdf.addObjects(objects)
 

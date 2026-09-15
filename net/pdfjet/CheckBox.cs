@@ -156,7 +156,7 @@ public class CheckBox : IDrawable {
     }
 
     /// <summary>Draws a blue X mark of the specified size at the specified location.</summary>
-    public static void XMark(Page page, float x, float y, float size) {
+    public static void DrawXMark(Page page, float x, float y, float size) {
         page.SetPenColor(Color.blue);
         page.SetPenWidth(size / 5);
         page.MoveTo(x, y);

@@ -480,6 +480,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `drawCircle(x, y, r, PathOperator)` (Go `DrawCircleUsingPathOperator`), and
   `drawRoundedRect` and `fillRoundedRect` replace `drawRectRoundCorners`.
   `drawPath` keeps its `PathOperator`.
+- Go names follow the rules of the Go port: `Font.GetAscent`, `GetDescent`,
+  `GetBodyHeight`, `GetUnderlinePosition` and `GetUnderlineThickness` take the
+  font size, as Go has the full form only, in place of the `At` forms and
+  the forms without arguments; `StringWidthUsingFallbackFont` replaces
+  `StringWidthFB`. `CheckBox.drawXMark` (Go `DrawXMark`) replaces
+  `CheckBox.xMark` (Go `XMarkCheckBox`), in the four ports.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

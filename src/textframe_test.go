@@ -26,7 +26,8 @@ func testParagraphDistance(gap float32) float32 {
 }
 
 func TestTextFrameTheGapIsAddedToTheLineSoParagraphsNeverOverlap(t *testing.T) {
-	line := testHelvetica(testNewPDF()).GetBodyHeight()
+	helvetica := testHelvetica(testNewPDF())
+	line := helvetica.GetBodyHeight(helvetica.GetSize())
 	testNear(t, "default", 2*line, testParagraphDistance(-1), testDelta) // one empty line
 	testNear(t, "gap 0", line, testParagraphDistance(0), testDelta)
 	testNear(t, "gap 10", line+10, testParagraphDistance(10), testDelta)
@@ -41,6 +42,6 @@ func TestTextFrameTheDefaultGapIsAnEmptyLineOfTheNextParagraph(t *testing.T) {
 	frame.SetLocation(10, 10)
 	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
 	// The heading, then one empty line in the size of the body text
-	want := font.GetBodyHeightAt(24) + font.GetBodyHeightAt(font.GetSize())
+	want := font.GetBodyHeight(24) + font.GetBodyHeight(font.GetSize())
 	testNear(t, "distance", want, body.GetY1()-heading.GetY1(), testDelta)
 }

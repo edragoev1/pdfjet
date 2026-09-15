@@ -286,7 +286,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 
 		fontSize := barcode.font.GetSize()
 		barcode.font.SetSize(10)
-		yText := y1 + h + barcode.font.GetBodyHeight()
+		yText := y1 + h + barcode.font.GetBodyHeight(barcode.font.size)
 		gap := barcode.font.StringWidth(barcode.font.size, " ")
 
 		left = x1 - gap - barcode.font.StringWidth(barcode.font.size, firstDigit)
@@ -364,7 +364,7 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 		textLine.SetTextRotation(-90)
 	}
 	textLine.DrawOn(page)
-	return [2]float32{x + barcode.font.StringWidth(barcode.font.size, text), y + barcode.font.GetDescent()}
+	return [2]float32{x + barcode.font.StringWidth(barcode.font.size, text), y + barcode.font.GetDescent(barcode.font.size)}
 }
 
 func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
@@ -573,7 +573,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 
 		fontSize := barcode.font.GetSize()
 		barcode.font.SetSize(10)
-		yText := y1 + h + barcode.font.GetBodyHeight()
+		yText := y1 + h + barcode.font.GetBodyHeight(barcode.font.size)
 		gap := barcode.font.StringWidth(barcode.font.size, " ")
 
 		left = x1 - gap - barcode.font.StringWidth(barcode.font.size, firstDigit)
@@ -629,5 +629,5 @@ func (barcode *Barcode) GetHeight() float32 {
 	if barcode.font == nil {
 		return barcode.m1 * barcode.barHeightFactor
 	}
-	return barcode.m1*barcode.barHeightFactor + barcode.font.GetBodyHeight()
+	return barcode.m1*barcode.barHeightFactor + barcode.font.GetBodyHeight(barcode.font.size)
 }

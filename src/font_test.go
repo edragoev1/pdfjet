@@ -39,9 +39,9 @@ func TestFontKerningPairsNarrowTheText(t *testing.T) {
 
 func TestFontCoreFontVerticalMetrics(t *testing.T) {
 	font := testHelvetica(testNewPDF())
-	testNear(t, "ascent", 11.172, font.GetAscentAt(12), 0.001)
-	testNear(t, "descent", 2.7, font.GetDescentAt(12), 0.001)
-	testNear(t, "body height", 13.872, font.GetBodyHeightAt(12), 0.001)
+	testNear(t, "ascent", 11.172, font.GetAscent(12), 0.001)
+	testNear(t, "descent", 2.7, font.GetDescent(12), 0.001)
+	testNear(t, "body height", 13.872, font.GetBodyHeight(12), 0.001)
 }
 
 func TestFontGetFitCharsCountsTheCharactersThatFit(t *testing.T) {

@@ -31,7 +31,7 @@ func Example32() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	x := float32(50.0)
 	y := float32(50.0)
-	leading := font.GetBodyHeight()
+	leading := font.GetBodyHeight(font.GetSize())
 	lines := content.LinesOfTextFile("examples/Example_02.java")
 	for _, line := range lines {
 		pdfjet.NewTextLine(font, line).SetTextColorRGB(grayColor).SetHighlightColors(colors).SetLocation(x, y).DrawOn(page)

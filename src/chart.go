@@ -669,7 +669,7 @@ func (chart *Chart) drawVerticalGrid(page *Page) {
 // drawXAxisLabelsOn draws the X axis labels.
 func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 	x := chart.x5
-	y := chart.y8 + chart.f2.GetBodyHeight()
+	y := chart.y8 + chart.f2.GetBodyHeight(chart.f2.size)
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)
 	valueStep := (chart.xMax - chart.xMin) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)

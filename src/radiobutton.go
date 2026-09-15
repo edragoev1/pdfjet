@@ -93,7 +93,7 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 
-	radioButton.r1 = radioButton.font.GetAscentAt(radioButton.fontSize) / 2
+	radioButton.r1 = radioButton.font.GetAscent(radioButton.fontSize) / 2
 	radioButton.r2 = radioButton.r1 / 2
 	radioButton.penWidth = radioButton.r1 / 10
 
@@ -119,7 +119,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	}
 	page.drawString(
 		radioButton.font, radioButton.fontSize, radioButton.label,
-		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.GetAscentAt(radioButton.fontSize),
+		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.GetAscent(radioButton.fontSize),
 		textColor, nil)
 	page.SetPenWidth(0.0)
 	page.SetBrushColor(color.Black)
@@ -132,7 +132,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 			x1:             radioButton.x + 3*radioButton.r1,
 			y1:             radioButton.y,
 			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
-			y2:             radioButton.y + radioButton.font.GetBodyHeightAt(radioButton.fontSize),
+			y2:             radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize),
 			vertices:       nil,
 			opacity:        0.0,
 			title:          "",
@@ -147,5 +147,5 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 
 	return [2]float32{
 		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
-		radioButton.y + radioButton.font.GetBodyHeightAt(radioButton.fontSize)}
+		radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize)}
 }

@@ -194,13 +194,13 @@ func (textLine *TextLine) destinationY() float32 {
 // GetWidth returns the width of this TextLine.
 // Returns the width.
 func (textLine *TextLine) GetWidth() float32 {
-	return textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
 }
 
 // GetHeight returns the height of this TextLine.
 // Returns the height.
 func (textLine *TextLine) GetHeight() float32 {
-	return textLine.font.GetBodyHeightAt(textLine.fontSize)
+	return textLine.font.GetBodyHeight(textLine.fontSize)
 }
 
 // SetURIAction sets the URI for the "click text line" action.
@@ -330,9 +330,9 @@ func (textLine *TextLine) GetVerticalOffset() float32 {
 		return textLine.verticalOffset
 	}
 	if textLine.scriptPosition == scriptposition.Superscript {
-		return -textLine.font.GetBodyHeightAt(textLine.fontSize) / 2.0
+		return -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
 	} else if textLine.scriptPosition == scriptposition.Subscript {
-		return textLine.font.GetBodyHeightAt(textLine.fontSize) / 3.0
+		return textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
 	}
 	return 0.0
 }
@@ -478,13 +478,13 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
 	radians := math.Pi * float64(-textLine.degrees) / 180.0
 	if textLine.underline {
-		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
+		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)
-		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+		lineLength := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
-		underlinePosition := float64(textLine.font.GetUnderlinePositionAt(textLine.fontSize))
+		underlinePosition := float64(textLine.font.GetUnderlinePosition(textLine.fontSize))
 		xAdjust := underlinePosition * math.Sin(radians)
 		yAdjust := underlinePosition*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
@@ -497,13 +497,13 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	}
 
 	if textLine.strikeout {
-		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
+		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)
-		lineLength := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+		lineLength := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
 		if textLine.isLastToken {
-			lineLength -= textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, single.Space)
+			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
-		bodyHeight := float64(textLine.font.GetBodyHeightAt(textLine.fontSize))
+		bodyHeight := float64(textLine.font.GetBodyHeight(textLine.fontSize))
 		xAdjust := (bodyHeight / 4.0) * math.Sin(radians)
 		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
@@ -519,9 +519,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
 			x1:             textLine.x,
-			y1:             (textLine.y + verticalOffset) - textLine.font.GetAscentAt(textLine.fontSize),
-			x2:             textLine.x + textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             (textLine.y + verticalOffset) + textLine.font.GetDescentAt(textLine.fontSize),
+			y1:             (textLine.y + verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
+			x2:             textLine.x + textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text),
+			y2:             (textLine.y + verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
 			vertices:       nil,
 			opacity:        0.0,
 			title:          "",
@@ -536,7 +536,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextRotation(0)
 
-	length := textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	length := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(
 		float64(textLine.y+verticalOffset),

@@ -188,8 +188,8 @@ func (textBlock *TextBlock) GetHeight() float32 {
 	if textBlock.height > 0.0 {
 		return textBlock.height
 	}
-	ascent := textBlock.font.GetAscentAt(textBlock.fontSize)
-	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
+	ascent := textBlock.font.GetAscent(textBlock.fontSize)
+	descent := textBlock.font.GetDescent(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
 	return float32(len(textBlock.getTextLines()))*leading + 2*textBlock.textPadding
 }
@@ -661,8 +661,8 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 // DrawOn draws this text block on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
-	ascent := textBlock.font.GetAscentAt(textBlock.fontSize)
-	descent := textBlock.font.GetDescentAt(textBlock.fontSize)
+	ascent := textBlock.font.GetAscent(textBlock.fontSize)
+	descent := textBlock.font.GetDescent(textBlock.fontSize)
 	leading := (ascent + descent) * textBlock.lineSpacing
 	textLines := textBlock.getTextLines()
 	blockHeight := float32(len(textLines))*leading + 2*textBlock.textPadding

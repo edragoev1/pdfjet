@@ -614,7 +614,7 @@ and `float32` in Go, with no `double` overloads: a Java or C# caller writes
 has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize` and
-`DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthFB` for `stringWidth` with a fallback font,
+`DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthUsingFallbackFont` for `stringWidth` with a fallback font,
 `MergePages`
 for `merge` with page numbers, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
@@ -632,7 +632,9 @@ overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPa
 arguments, Go has the full form only:
 `NewLine`, `NewRect` and `NewPoint` with their
 coordinates, `NewParagraph()`,
-`Table.SetTableData(data, headerRows)` and `Page.AddBDC` with the language.
+`Table.SetTableData(data, headerRows)`, `Page.AddBDC` with the language, and
+`Font.GetAscent`, `GetDescent`, `GetBodyHeight`, `GetUnderlinePosition` and
+`GetUnderlineThickness` with the font size.
 The `PDF` constructors are `NewPDF(writer)`, `NewPDFFile(path)`, which opens
 the file and returns an error when it cannot, and `NewPDFReader()` for the
 `PDF()` of the other ports that only reads documents; `Complete` returns the

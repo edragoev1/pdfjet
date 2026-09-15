@@ -928,6 +928,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       `DrawCircleUsingPathOperator`), and `drawRoundedRect` and
       `fillRoundedRect` replace `drawRectRoundCorners`. `drawPath` keeps its
       operator; `RadioButton` fills its dot with `fillCircle`.
+- ✅ **B** Go `Font.GetAscentAt`, `GetDescentAt`, `GetBodyHeightAt` and
+      `StringWidthFB` use `At` and `FB` suffixes where the other Go overloads
+      use a type suffix like `RGB`; Go `XMarkCheckBox` reads as a type.
+      Fixed: Go `Font.GetAscent`, `GetDescent`, `GetBodyHeight`,
+      `GetUnderlinePosition` and `GetUnderlineThickness` take the font size
+      (the full form only), `StringWidthUsingFallbackFont` replaces
+      `StringWidthFB`, and `CheckBox.drawXMark` (Go `DrawXMark`) replaces
+      `xMark` in the four ports, with Example_50.
 
 ### Names in one port
 

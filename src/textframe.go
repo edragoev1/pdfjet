@@ -213,7 +213,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 			if tf.tokens == nil {
 				if tf.lineIndex == 0 {
 					paragraph.x1 = tf.x
-					paragraph.y1 = tf.yText - textLine.font.GetAscentAt(textLine.fontSize)
+					paragraph.y1 = tf.yText - textLine.font.GetAscent(textLine.fontSize)
 					paragraph.xText = tf.xText
 					paragraph.yText = tf.yText
 				}
@@ -224,7 +224,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 				return bottom
 			}
 			paragraph.x2 = tf.xText
-			paragraph.y2 = tf.yText + textLine.font.GetDescentAt(textLine.fontSize)
+			paragraph.y2 = tf.yText + textLine.font.GetDescent(textLine.fontSize)
 			bottom = paragraph.y2
 			tf.tokens = nil
 			tf.tokenIndex = 0
@@ -235,7 +235,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 		if len(paragraph.lines) > 0 {
 			// The next paragraph starts below the descent of this one, after the gap.
 			lastLine := paragraph.lines[len(paragraph.lines)-1]
-			tf.nextBaseline = tf.yText + lastLine.font.GetDescentAt(lastLine.fontSize)
+			tf.nextBaseline = tf.yText + lastLine.font.GetDescent(lastLine.fontSize)
 			tf.startsParagraph = true
 		}
 		tf.paragraphIndex++
@@ -249,7 +249,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 // height of the frame. The first row of a frame always fits, so the text keeps
 // flowing.
 func (tf *TextFrame) openRow(textLine *TextLine) bool {
-	baseline := tf.y + textLine.font.GetAscentAt(textLine.fontSize)
+	baseline := tf.y + textLine.font.GetAscent(textLine.fontSize)
 	if tf.rowPlaced {
 		baseline = tf.nextBaseline
 		if tf.startsParagraph {
@@ -258,11 +258,11 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 			if tf.hasParagraphGap {
 				gap = tf.paragraphGap
 			}
-			baseline += gap + textLine.font.GetAscentAt(textLine.fontSize)
+			baseline += gap + textLine.font.GetAscent(textLine.fontSize)
 		}
 	}
 	if tf.h > 0 && tf.rowPlaced &&
-		(baseline+textLine.font.GetDescentAt(textLine.fontSize)) > (tf.y+tf.h) {
+		(baseline+textLine.font.GetDescent(textLine.fontSize)) > (tf.y+tf.h) {
 		return false
 	}
 	tf.xText = tf.x
@@ -286,8 +286,8 @@ func (tf *TextFrame) drawTokens(page *Page, textLine *TextLine) bool {
 			return false
 		}
 		token := tf.tokens[tf.tokenIndex]
-		runLength := font.StringWidthFB(fallbackFont, fontSize, buf.String())
-		tokenWidth := font.StringWidthFB(fallbackFont, fontSize, token+single.Space)
+		runLength := font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
+		tokenWidth := font.StringWidthUsingFallbackFont(fallbackFont, fontSize, token+single.Space)
 		if (runLength + tokenWidth) < ((tf.x + tf.w) - tf.xText) {
 			buf.WriteString(token)
 			buf.WriteString(single.Space)
@@ -311,7 +311,7 @@ func (tf *TextFrame) drawTokens(page *Page, textLine *TextLine) bool {
 		tf.nextBaseline = tf.yText + textLine.GetHeight()
 	}
 	tf.drawLine(page, textLine, buf.String())
-	tf.xText += font.StringWidthFB(fallbackFont, fontSize, buf.String())
+	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
 	return true
 }
 
@@ -322,7 +322,7 @@ func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 	end := size
 	for end < len(token) {
 		_, size = utf8.DecodeRuneInString(token[end:])
-		if textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, token[:end+size]) >= tf.w {
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:end+size]) >= tf.w {
 			break
 		}
 		end += size
@@ -348,7 +348,7 @@ func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 	}
 	var buf strings.Builder
 	for _, ch := range textLine.text {
-		if textLine.font.StringWidthFB(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) < tf.w {
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) < tf.w {
 			buf.WriteRune(ch)
 		} else {
 			if buf.Len() > 0 {

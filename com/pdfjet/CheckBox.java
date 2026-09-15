@@ -181,7 +181,7 @@ public class CheckBox implements Drawable {
      *  @param size the size of the X mark.
      *  @throws Exception if there is an issue.
      */
-    public static void xMark(Page page, float x, float y, float size) throws Exception {
+    public static void drawXMark(Page page, float x, float y, float size) throws Exception {
         page.setPenColor(Color.blue);
         page.setPenWidth(size / 5);
         page.moveTo(x, y);

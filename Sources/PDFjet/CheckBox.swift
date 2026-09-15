@@ -163,7 +163,7 @@ public class CheckBox : Drawable {
     }
 
     /// Draws a blue X mark of the specified size at the specified location.
-    public static func xMark(_ page: Page, _ x: Float, _ y: Float, _ size: Float) {
+    public static func drawXMark(_ page: Page, _ x: Float, _ y: Float, _ size: Float) {
         page.setPenColor(Color.blue)
         page.setPenWidth(size / 5)
         page.moveTo(x, y)

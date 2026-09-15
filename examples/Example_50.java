@@ -131,34 +131,34 @@ class Example_50 {
         page.drawString(f1, f1.getSize(), "2016-08-07", x + 475f, 651f);
 
         // Female Checkbox 1
-        // CheckBox.xMark(page, 477.5f, 197.5f, 7f);
+        // CheckBox.drawXMark(page, 477.5f, 197.5f, 7f);
 
         // Male Checkbox 1
-        CheckBox.xMark(page, 534.5f, 197.5f, 7f);
+        CheckBox.drawXMark(page, 534.5f, 197.5f, 7f);
 
         // Married
-        CheckBox.xMark(page, 34.5f, 424f, 7f);
+        CheckBox.drawXMark(page, 34.5f, 424f, 7f);
 
         // Living common-law
-        // CheckBox.xMark(page, 121.5f, 424f, 7f);
+        // CheckBox.drawXMark(page, 121.5f, 424f, 7f);
 
         // Widowed
-        // CheckBox.xMark(page, 235.5f, 424f, 7f);
+        // CheckBox.drawXMark(page, 235.5f, 424f, 7f);
 
         // Divorced
-        // CheckBox.xMark(page, 325.5f, 424f, 7f);
+        // CheckBox.drawXMark(page, 325.5f, 424f, 7f);
 
         // Separated
-        // CheckBox.xMark(page, 415.5f, 424f, 7f);
+        // CheckBox.drawXMark(page, 415.5f, 424f, 7f);
 
         // Single
-        // CheckBox.xMark(page, 505.5f, 424f, 7f);
+        // CheckBox.drawXMark(page, 505.5f, 424f, 7f);
 
         // Female Checkbox 2
-        CheckBox.xMark(page, 478.5f, 536.5f, 7f);
+        CheckBox.drawXMark(page, 478.5f, 536.5f, 7f);
 
         // Male Checkbox 2
-        // CheckBox.xMark(page, 535.5f, 536.5f, 7f);
+        // CheckBox.drawXMark(page, 535.5f, 536.5f, 7f);
 
         page.complete(objects);
 

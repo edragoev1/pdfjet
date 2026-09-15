@@ -35,7 +35,7 @@ func Example46() {
 
 	textLine = pdfjet.NewTextLine(f2, "http://www.openstreetmap.org/copyright")
 	textLine.SetURIAction("http://www.openstreetmap.org/copyright")
-	textLine.SetLocation(10.0, xy[1]+f2.GetBodyHeight())
+	textLine.SetLocation(10.0, xy[1]+f2.GetBodyHeight(f2.GetSize()))
 	textLine.DrawOn(page)
 
 	group := pdfjet.NewOptionalContentGroup(pdf, "Map")

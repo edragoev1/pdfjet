@@ -2105,20 +2105,20 @@ func (page *Page) Transform(values []float32) {
 
 // AddHeader adds header to this page.
 func (page *Page) AddHeader(textLine *TextLine) [2]float32 {
-	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.GetAscentAt(textLine.fontSize))
+	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.GetAscent(textLine.fontSize))
 }
 
 // AddHeaderOffsetBy adds header to this page offset by the specified value.
 func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, offset)
 	xy := textLine.DrawOn(page)
-	xy[1] += textLine.font.GetDescentAt(textLine.fontSize)
+	xy[1] += textLine.font.GetDescent(textLine.fontSize)
 	return xy
 }
 
 // AddFooter adds footer to this page.
 func (page *Page) AddFooter(textLine *TextLine) [2]float32 {
-	return page.AddFooterOffsetBy(textLine, textLine.font.GetAscentAt(textLine.fontSize))
+	return page.AddFooterOffsetBy(textLine, textLine.font.GetAscent(textLine.fontSize))
 }
 
 // AddFooterOffsetBy adds footer to this page offset by the specified value.
@@ -2293,7 +2293,7 @@ func (page *Page) drawTextBlock(
 		page.appendString("1 0 0 1 ")
 		page.appendFloat32(x + textLine.xOffset)
 		page.appendString(" ")
-		page.appendFloat32(page.height - (yText + font.GetAscentAt(fontSize)))
+		page.appendFloat32(page.height - (yText + font.GetAscent(fontSize)))
 		page.appendString(" Tm\n")
 		if hasFallbackFont {
 			page.drawTextBlockLine(font, fallbackFont, fontSize, fallbackFontSize, textLine.text, textColor, highlightColors)
@@ -2317,8 +2317,8 @@ func (page *Page) drawTextBlock(
 		page.appendString("EMC\n")
 	}
 
-	yLine := y + font.GetBodyHeightAt(fontSize)
-	yStrike := y + font.GetAscentAt(fontSize) - font.GetBodyHeightAt(fontSize)/4.0
+	yLine := y + font.GetBodyHeight(fontSize)
+	yStrike := y + font.GetAscent(fontSize) - font.GetBodyHeight(fontSize)/4.0
 	for _, textLine := range textLines {
 		if textLine.underline || textLine.strikeout {
 			width := font.StringWidth(fontSize, textLine.text)

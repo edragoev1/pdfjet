@@ -133,8 +133,8 @@ func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 	return checkBox
 }
 
-// XMarkCheckBox draws a blue X mark of the specified size at x, y.
-func XMarkCheckBox(page *Page, x, y, size float32) {
+// DrawXMark draws a blue X mark of the specified size at x, y.
+func DrawXMark(page *Page, x, y, size float32) {
 	page.SetPenColor(color.Blue)
 	page.SetPenWidth(size / 5)
 	page.MoveTo(x, y)
@@ -193,7 +193,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	}
 	page.drawString(
 		checkBox.font, checkBox.fontSize, checkBox.label,
-		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscentAt(checkBox.fontSize),
+		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscent(checkBox.fontSize),
 		textColor, nil)
 	page.SetPenWidth(0.0)
 	page.SetPenColor(color.Black)
@@ -207,7 +207,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 			x1:             checkBox.x + 3.0*checkBox.w/2.0,
 			y1:             checkBox.y,
 			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
-			y2:             checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
+			y2:             checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize),
 			vertices:       nil,
 			opacity:        0.0,
 			title:          "",
@@ -222,6 +222,6 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 
 	return [2]float32{
 		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
-		checkBox.y + checkBox.font.GetBodyHeightAt(checkBox.fontSize),
+		checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize),
 	}
 }

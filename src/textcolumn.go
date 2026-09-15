@@ -154,8 +154,8 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 		if (line.GetHeight() * textColumn.lineSpacing) > lineHeight {
 			lineHeight = line.GetHeight() * textColumn.lineSpacing
 		}
-		if line.font.GetAscentAt(line.fontSize) > maxAscent {
-			maxAscent = line.font.GetAscentAt(line.fontSize)
+		if line.font.GetAscent(line.fontSize) > maxAscent {
+			maxAscent = line.font.GetAscent(line.fontSize)
 		}
 	}
 	textColumn.y1 += maxAscent

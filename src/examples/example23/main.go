@@ -50,7 +50,7 @@ func Example23() {
 
 	descentText := pdfjet.NewTextLine(f2, "Descent")
 	descentText.SetFontSize(18.0)
-	descentText.SetLocation(x1-85.0, y1+f1.GetAscent()+15.0)
+	descentText.SetLocation(x1-85.0, y1+f1.GetAscent(f1.GetSize())+15.0)
 	descentText.DrawOn(page)
 
 	// Line beside the text ascent
@@ -58,7 +58,7 @@ func Example23() {
 		x1-10.0,
 		y1,
 		x1-10.0,
-		y1+f1.GetAscent())
+		y1+f1.GetAscent(f1.GetSize()))
 	blueLine.SetStrokeColor(color.Blue)
 	blueLine.SetStrokeWidth(3.0)
 	blueLine.DrawOn(page)
@@ -66,32 +66,32 @@ func Example23() {
 	// Line beside the text descent
 	redLine := pdfjet.NewLine(
 		x1-10.0,
-		y1+f1.GetAscent(),
+		y1+f1.GetAscent(f1.GetSize()),
 		x1-10.0,
-		y1+f1.GetAscent()+f1.GetDescent())
+		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
 	redLine.SetStrokeColor(color.Red)
 	redLine.SetStrokeWidth(3.0)
 	redLine.DrawOn(page)
 
 	baseLine := pdfjet.NewLine(
 		x1,
-		y1+f1.GetAscent(),
+		y1+f1.GetAscent(f1.GetSize()),
 		xy[0],
-		y1+f1.GetAscent())
+		y1+f1.GetAscent(f1.GetSize()))
 	baseLine.DrawOn(page)
 
 	descentLine := pdfjet.NewLine(
 		x1,
-		y1+(f1.GetAscent()+f1.GetDescent()),
+		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())),
 		xy[0],
-		y1+(f1.GetAscent()+f1.GetDescent()))
+		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())))
 	descentLine.DrawOn(page)
 
 	ascentLine := pdfjet.NewLine(
 		x1,
-		y1+f1.GetBodyHeight()+f1.GetAscent(),
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()),
 		xy[0],
-		y1+f1.GetBodyHeight()+f1.GetAscent())
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()))
 	ascentLine.DrawOn(page)
 
 	p1 := pdfjet.NewPoint(x1, y1)

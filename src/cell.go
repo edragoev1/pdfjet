@@ -306,9 +306,9 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	} else if cell.barcode != nil {
 		cellHeight = cell.barcode.GetHeight() + cell.topPadding + cell.bottomPadding
 	} else if cell.hasText {
-		fontHeight := cell.font.GetBodyHeightAt(cell.fontSize)
-		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeightAt(cell.fontSize) > fontHeight {
-			fontHeight = cell.fallbackFont.GetBodyHeightAt(cell.fontSize)
+		fontHeight := cell.font.GetBodyHeight(cell.fontSize)
+		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeight(cell.fontSize) > fontHeight {
+			fontHeight = cell.fallbackFont.GetBodyHeight(cell.fontSize)
 		}
 		cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
 	}
@@ -616,7 +616,7 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 
 // drawText draws the cell text, or the composite text line, and its link.
 func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
-	ascent := cell.font.GetAscentAt(cell.fontSize)
+	ascent := cell.font.GetAscent(cell.fontSize)
 	var yText float32
 	switch cell.valign {
 	case alignment.Top:
@@ -665,7 +665,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 			x1:             xText,
 			y1:             yText - ascent,
 			x2:             xText + cell.getTextWidth(),
-			y2:             yText + cell.font.GetDescentAt(cell.fontSize),
+			y2:             yText + cell.font.GetDescent(cell.fontSize),
 			vertices:       nil,
 			uri:            cell.uri,
 		})
@@ -678,14 +678,14 @@ func (cell *Cell) getTextWidth() float32 {
 	if cell.compositeTextLine != nil {
 		return cell.compositeTextLine.GetWidth()
 	}
-	return cell.font.StringWidthFB(cell.fallbackFont, cell.fontSize, cell.text)
+	return cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)
 }
 
 // underlineText underlines the cell text.
 func (cell *Cell) underlineText(page *Page, x, y float32) {
-	descent := cell.font.GetDescentAt(cell.fontSize)
+	descent := cell.font.GetDescent(cell.fontSize)
 	page.AddBDC("P", "", "underline", "underline")
-	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
+	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y+descent)
 	page.LineTo(x+cell.getTextWidth(), y+descent)
 	page.StrokePath()
@@ -694,9 +694,9 @@ func (cell *Cell) underlineText(page *Page, x, y float32) {
 
 // strikeoutText strikes out the cell text.
 func (cell *Cell) strikeoutText(page *Page, x, y float32) {
-	ascent := cell.font.GetAscentAt(cell.fontSize)
+	ascent := cell.font.GetAscent(cell.fontSize)
 	page.AddBDC("P", "", "strike out", "strike out")
-	page.SetPenWidth(cell.font.GetUnderlineThicknessAt(cell.fontSize))
+	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)
 	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)
 	page.StrokePath()
