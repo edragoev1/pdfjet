@@ -348,9 +348,9 @@ public class Barcode implements Drawable {
         float[] xy = bars.turn(x, y);
         textLine.setLocation(xy[0], xy[1]);
         if (direction == Direction.TOP_TO_BOTTOM) {
-            textLine.setTextRotation(270);
+            textLine.setTextRotation(-270);
         } else if (direction == Direction.BOTTOM_TO_TOP) {
-            textLine.setTextRotation(90);
+            textLine.setTextRotation(-90);
         }
         textLine.drawOn(page);
         return new float[] {x + font.stringWidth(str), y + font.getDescent()};

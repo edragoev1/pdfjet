@@ -73,21 +73,19 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the angle in degrees where this arc starts.</summary>
+    /// <summary>Sets the angle in degrees where this arc starts, clockwise from the 3 o'clock direction, as every angle in PDFjet turns.</summary>
     public Arc SetStartAngle(float angle) {
         this.startAngle = angle;
         return this;
     }
 
-    /// <summary>Sets how many degrees this arc sweeps clockwise from its start angle.</summary>
-    public Arc SetSweepDegreesCW(float sweepDegrees) {
-        this.sweepDegrees = sweepDegrees;
-        return this;
-    }
-
-    /// <summary>Sets how many degrees this arc sweeps counterclockwise from its start angle.</summary>
-    public Arc SetSweepDegreesCCW(float sweepDegrees) {
-        this.sweepDegrees = -sweepDegrees;
+    /// <summary>
+    /// Sets how many degrees this arc sweeps from its start angle: clockwise for
+    /// a positive angle, as every angle in PDFjet turns, and counterclockwise
+    /// for a negative angle.
+    /// </summary>
+    public Arc SetSweep(float degrees) {
+        this.sweepDegrees = degrees;
         return this;
     }
 
@@ -162,9 +160,10 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Rotates this arc counterclockwise by the specified degrees.</summary>
+    /// <summary>Rotates this arc clockwise by the specified degrees, as every rotation in PDFjet turns.</summary>
     public Arc SetRotation(float degrees) {
-        this.rotateDegrees = degrees;
+        // The rotation of the page turns counterclockwise.
+        this.rotateDegrees = -degrees;
         return this;
     }
 

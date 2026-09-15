@@ -105,6 +105,24 @@ class PageTest {
     }
 
     @Test
+    void positiveAnglesTurnClockwise() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        // y grows downward, so text turned a quarter clockwise runs down the page
+        // and text turned a quarter counterclockwise runs up from its location.
+        float[] down = new TextLine(font, "Down").setTextRotation(90).setLocation(100f, 100f).drawOn(page);
+        float[] up = new TextLine(font, "Up").setTextRotation(-90).setLocation(300f, 100f).drawOn(page);
+        assertTrue(down[1] > 100f + font.stringWidth("Down") / 2f, "down " + down[1]);
+        assertEquals(100f, up[1], 0.01f);
+        page.setRotation(90);
+        pdf.complete();
+        String file = TestSupport.latin1(bos.toByteArray());
+        assertTrue(file.contains("/Rotate 90"), "no /Rotate 90");
+    }
+
+    @Test
     void aPathWithFewerThanTwoPointsPaintsNothing() throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         List<Point> path = new ArrayList<Point>();

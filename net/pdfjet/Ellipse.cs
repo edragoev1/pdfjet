@@ -15,7 +15,7 @@ public class Ellipse : Arc {
     /// </summary>
     public Ellipse() : base() {
         SetStartAngle(0f);
-        SetSweepDegreesCW(360f);
+        SetSweep(360f);
     }
 }
 }

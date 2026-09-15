@@ -94,7 +94,8 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Sets the angle where this arc starts.
+     * Sets the angle where this arc starts, clockwise from the 3 o'clock
+     * direction, as every angle in PDFjet turns.
      *
      * @param angle the start angle in degrees.
      * @return this Arc object.
@@ -105,24 +106,15 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Sets how far this arc sweeps clockwise from its start angle.
+     * Sets how far this arc sweeps from its start angle: clockwise for a
+     * positive angle, as every angle in PDFjet turns, and counterclockwise for
+     * a negative angle.
      *
-     * @param sweepDegrees the sweep angle in degrees.
+     * @param degrees the sweep angle in degrees.
      * @return this Arc object.
      */
-    public final Arc setSweepDegreesCW(float sweepDegrees) {
-        this.sweepDegrees = sweepDegrees;
-        return this;
-    }
-
-    /**
-     * Sets how far this arc sweeps counterclockwise from its start angle.
-     *
-     * @param sweepDegrees the sweep angle in degrees.
-     * @return this Arc object.
-     */
-    public final Arc setSweepDegreesCCW(float sweepDegrees) {
-        this.sweepDegrees = -sweepDegrees;
+    public final Arc setSweep(float degrees) {
+        this.sweepDegrees = degrees;
         return this;
     }
 
@@ -216,13 +208,14 @@ public class Arc implements Drawable {
     }
 
     /**
-     * Rotates this arc counterclockwise.
+     * Rotates this arc clockwise, as every rotation in PDFjet turns.
      *
      * @param degrees the rotation angle in degrees.
      * @return this Arc object.
      */
     public Arc setRotation(float degrees) {
-        this.rotateDegrees = degrees;
+        // The rotation of the page turns counterclockwise.
+        this.rotateDegrees = -degrees;
         return this;
     }
 

@@ -354,9 +354,10 @@ public class TextLine : Drawable {
     }
 
     ///
-    /// Sets the direction in which to draw the text.
+    /// Sets the rotation of the text. A positive angle turns clockwise, as every
+    /// rotation in PDFjet turns, and a negative angle counterclockwise.
     ///
-    /// - Parameter degrees: the number of degrees.
+    /// - Parameter degrees: the angle in degrees.
     /// - Returns: the TextLine.
     ///
     @discardableResult
@@ -573,8 +574,9 @@ public class TextLine : Drawable {
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
-        // The trigonometry is done in double precision, as in the other ports.
-        let radians = Double.pi * Double(degrees) / 180.0
+        // The trigonometry is done in double precision, as in the other ports, and
+        // turns counterclockwise, where the rotation turns clockwise.
+        let radians = Double.pi * Double(-degrees) / 180.0
         if underline {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(decorationColor)

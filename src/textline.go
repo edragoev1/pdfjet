@@ -282,8 +282,10 @@ func (textLine *TextLine) GetStrikeout() bool {
 	return textLine.strikeout
 }
 
-// SetTextRotation sets the direction in which to draw the text.
-//   - degrees: the number of degrees.
+// SetTextRotation sets the rotation of the text. A positive angle turns
+// clockwise, as every rotation in PDFjet turns, and a negative angle
+// counterclockwise.
+//   - degrees: the angle in degrees.
 //
 // Returns this TextLine.
 func (textLine *TextLine) SetTextRotation(degrees int) *TextLine {
@@ -473,7 +475,8 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		textLine.colorMap)
 	page.AddEMC()
 
-	radians := math.Pi * float64(textLine.degrees) / 180.0
+	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
+	radians := math.Pi * float64(-textLine.degrees) / 180.0
 	if textLine.underline {
 		page.SetPenWidth(textLine.font.GetUnderlineThicknessAt(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)

@@ -621,7 +621,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// Axis titles
 	page.SetBrushColor(color.Black)
-	page.SetTextRotation(90)
+	page.SetTextRotation(-90)
 	page.drawString(f2, f2.size, chart.yAxisTitle, chart.x1+bodyHeight,
 		y8-((y8-y5)-f2.StringWidth(f2.size, chart.yAxisTitle))/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
 	page.SetTextRotation(0)

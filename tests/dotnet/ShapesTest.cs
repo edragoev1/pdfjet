@@ -30,7 +30,7 @@ public class ShapesTest {
 
     [Fact]
     public void ArcDrawOnReturnsTheBottomRightCornerOfItsCircle() {
-        Arc arc = new Arc().SetLocation(100f, 100f).SetRadius(20f).SetStartAngle(0f).SetSweepDegreesCW(90f);
+        Arc arc = new Arc().SetLocation(100f, 100f).SetRadius(20f).SetStartAngle(0f).SetSweep(90f);
         TestSupport.AssertXY(120f, 120f, arc.DrawOn(NewPage()));
     }
 

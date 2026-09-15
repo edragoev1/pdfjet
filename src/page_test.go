@@ -100,6 +100,27 @@ func TestPageATextLineAddsItsDestinationWhenItIsDrawn(t *testing.T) {
 	}
 }
 
+func TestPagePositiveAnglesTurnClockwise(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	// y grows downward, so text turned a quarter clockwise runs down the page
+	// and text turned a quarter counterclockwise runs up from its location.
+	down := NewTextLine(font, "Down").SetTextRotation(90).SetLocation(100, 100).DrawOn(page)
+	up := NewTextLine(font, "Up").SetTextRotation(-90).SetLocation(300, 100).DrawOn(page)
+	if down[1] <= 100+font.StringWidth(font.size, "Down")/2 {
+		t.Errorf("down %v", down[1])
+	}
+	if up[1] < 99.99 || up[1] > 100.01 {
+		t.Errorf("up %v", up[1])
+	}
+	page.SetRotation(90)
+	file := string(doc.complete())
+	if !strings.Contains(file, "/Rotate 90") {
+		t.Errorf("no /Rotate 90")
+	}
+}
+
 func TestPageAPathWithFewerThanTwoPointsPaintsNothing(t *testing.T) {
 	page := testNewPage()
 	path := make([]*Point, 0)

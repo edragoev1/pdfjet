@@ -62,10 +62,10 @@ public class Example_35 {
         stamp.setLocation(50.0, 50.0).drawOn(page)
 
         // Rotate the stamp counter clockwise and draw it again
-        stamp.setRotation(15).drawOn(page)
+        stamp.setRotation(-15).drawOn(page)
 
         // Rotate the stamp clockwise and draw it again
-        stamp.setRotation(-15).drawOn(page)
+        stamp.setRotation(15).drawOn(page)
 
         // Draw the stamp again at a quarter of its size
         stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 480.0).drawOn(page)
@@ -78,7 +78,7 @@ public class Example_35 {
         // Nested container #1
         let nested1 = Container(200.0, 200.0)
         nested1.setLocation(0.0, 0.0)
-        nested1.setRotation(30)
+        nested1.setRotation(-30)
         nested1.scaleBy(0.8)
 
         let innerRect = Rect(0.0, 0.0, 200.0, 200.0)
@@ -94,7 +94,7 @@ public class Example_35 {
         // Nested container #2
         let nested2 = Container(100.0, 100.0)
         nested2.setLocation(250.0, 250.0)
-        nested2.setRotation(45)
+        nested2.setRotation(-45)
 
         let smallRect = Rect(0.0, 0.0, 100.0, 100.0)
         smallRect.setFillColor(Color.red)
@@ -106,7 +106,7 @@ public class Example_35 {
 
         container.add(nested2)
 
-        container.setRotation(-45)
+        container.setRotation(45)
         // Draw the entire hierarchy on the page
         _ = container.drawOn(page)
 
@@ -126,7 +126,7 @@ public class Example_35 {
         container5.setLocation(50.0, 600.0)
         _ = container5.drawOn(page)
 
-        container5.setRotation(-90)
+        container5.setRotation(90)
         _ = container5.drawOn(page)
 
         try pdf.complete()

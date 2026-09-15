@@ -283,13 +283,13 @@ func (image *Image) SetGoToAction(key string) *Image {
 	return image
 }
 
-// SetRotation rotates this image counterclockwise by 0, 90, 180 or 270 degrees,
-// as every rotation in PDFjet turns. It panics on any other angle.
+// SetRotation rotates this image clockwise by 0, 90, 180 or 270 degrees, as every
+// rotation in PDFjet turns. It panics on any other angle.
 func (image *Image) SetRotation(degrees int) *Image {
 	if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
 		panic("The rotation angle must be 0, 90, 180 or 270")
 	}
-	image.degrees = (360 - degrees) % 360
+	image.degrees = degrees
 	return image
 }
 

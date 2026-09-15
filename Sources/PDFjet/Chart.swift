@@ -449,7 +449,7 @@ public class Chart : Drawable {
 
             // Draw the Y axis title
             page!.setBrushColor(Color.black)
-            page!.setTextRotation(90)
+            page!.setTextRotation(-90)
             page!.drawString(
                     f2!,
                     f2!.getSize(),

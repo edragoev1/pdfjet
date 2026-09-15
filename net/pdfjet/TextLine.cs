@@ -336,9 +336,10 @@ public class TextLine : IDrawable {
     }
 
     /// <summary>
-    /// Sets the direction in which to draw the text.
+    /// Sets the rotation of the text. A positive angle turns clockwise, as every
+    /// rotation in PDFjet turns, and a negative angle counterclockwise.
     /// </summary>
-    /// <param name="degrees">the number of degrees.</param>
+    /// <param name="degrees">the angle in degrees.</param>
     /// <returns>this TextLine.</returns>
     public TextLine SetTextRotation(int degrees) {
         this.degrees = degrees;
@@ -525,7 +526,8 @@ public class TextLine : IDrawable {
         page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();
 
-        double radians = Math.PI * degrees / 180.0;
+        // The trigonometry turns counterclockwise, where the rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
         if (underline) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
             page.SetPenColor(decorationColor);

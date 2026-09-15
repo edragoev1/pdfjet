@@ -302,7 +302,7 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Rotates this image counterclockwise, as every rotation in PDFjet turns.
+     * Rotates this image clockwise, as every rotation in PDFjet turns.
      *
      * @param degrees the angle: 0, 90, 180 or 270.
      * @return this Image object.
@@ -312,7 +312,7 @@ final public class Image implements Drawable {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
             throw new Exception("The rotation angle must be 0, 90, 180 or 270");
         }
-        this.degrees = (360 - degrees) % 360;
+        this.degrees = degrees;
         return this;
     }
 

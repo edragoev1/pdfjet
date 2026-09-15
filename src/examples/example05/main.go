@@ -39,7 +39,7 @@ func Example05() {
 	text := pdfjet.NewTextLine(f1, "")
 	text.SetLocation(300.0, 300.0)
 	for i := 0; i < 360; i += 15 {
-		text.SetTextRotation(i)
+		text.SetTextRotation(-i)
 		text.SetUnderline(true)
 		// text.setStrikeLine(true);
 		text.SetText("             Hello, World -- " + strconv.Itoa(i) + " degrees.")
@@ -84,11 +84,11 @@ func Example05() {
 	arc.SetRadiusX(75.0)
 	arc.SetRadiusY(75.0)
 	arc.SetStartAngle(0.0)
-	arc.SetSweepDegreesCW(270.0)
-	// arc.SetSweepDegreesCCW(270.0)
+	arc.SetSweep(270.0)
+	// arc.SetSweep(-270.0)
 	// arc.ScaleBy(2.0)
 	// arc.SetRotationClockwise(90.0)
-	// arc.SetRotation(90.0)
+	// arc.SetRotation(-90.0)
 	arc.SetStrokeWidth(5.0)
 	arc.SetStrokeColor(color.Blue)
 	arc.DrawOn(page)
@@ -101,8 +101,8 @@ func Example05() {
 	ellipse.SetStrokeWidth(1.5)
 	ellipse.SetStrokeColor(color.Blue)
 	ellipse.ScaleBy(0.5)
-	ellipse.SetRotation(-45.0)
-	// ellipse.SetRotation(45.0)
+	ellipse.SetRotation(45.0)
+	// ellipse.SetRotation(-45.0)
 	ellipse.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

@@ -66,7 +66,7 @@ func Example49() {
 
 	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
 	textLine.SetLocation(100.0, 300.0)
-	textLine.SetTextRotation(30)
+	textLine.SetTextRotation(-30)
 	textLine.SetVerticalOffset(50.0)
 	textLine.SetUnderline(true)
 	textLine.DrawOn(page)

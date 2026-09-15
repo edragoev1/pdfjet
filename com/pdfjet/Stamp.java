@@ -424,13 +424,15 @@ public class Stamp implements Drawable {
     }
 
     /**
-     * Sets the rotation angle of this stamp.
+     * Rotates this stamp around its center: clockwise for a positive angle, as
+     * every rotation in PDFjet turns, and counterclockwise for a negative angle.
      *
      * @param degrees the rotation angle in degrees.
      * @return this Stamp object.
      */
     public Stamp setRotation(float degrees) {
-        this.rotateDegrees = degrees;
+        // The rotation of the page turns counterclockwise.
+        this.rotateDegrees = -degrees;
         return this;
     }
 

@@ -59,7 +59,7 @@ public class Example_49 {
 
         TextLine textLine = new TextLine(f1, "Hello, World!");
         textLine.setLocation(100f, 300f);
-        textLine.setTextRotation(30);
+        textLine.setTextRotation(-30);
         textLine.setVerticalOffset(50f);
         textLine.setUnderline(true);
         textLine.drawOn(page);

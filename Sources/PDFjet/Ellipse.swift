@@ -14,6 +14,6 @@ public final class Ellipse : Arc {
     public override init() {
         super.init()
         _ = setStartAngle(0.0)
-        _ = setSweepDegreesCW(360.0)
+        _ = setSweep(360.0)
     }
 }   // End of Ellipse.swift

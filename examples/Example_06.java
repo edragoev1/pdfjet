@@ -50,7 +50,7 @@ public class Example_06 {
         Container container = new Container(400f, 400f);
         container.setLocation(100f, 100f);
         container.setBorderColor(Color.black);
-        container.setRotation(-90);
+        container.setRotation(90);
 
         Rect rect = new Rect(0f, 0f, 25f, 25f);
         rect.setBorderColor(Color.black);

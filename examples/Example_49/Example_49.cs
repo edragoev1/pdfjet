@@ -58,7 +58,7 @@ public class Example_49 {
 
         TextLine textLine = new TextLine(f1, "Hello, World!");
         textLine.SetLocation(100f, 300f);
-        textLine.SetTextRotation(30);
+        textLine.SetTextRotation(-30);
         textLine.SetVerticalOffset(50f);
         textLine.SetUnderline(true);
         textLine.DrawOn(page);

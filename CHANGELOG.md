@@ -88,10 +88,16 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   C# and Swift, as in Go; `Paragraph.getX1`, `getY1`, `getX2`, `getY2`,
   `getTextX` and `getTextY` and `Title.getPrefix` and `getTextLine` are the
   getters, in the four ports.
-- One rotation: every rotation setter is `setRotation(degrees)` and positive
-  angles turn counterclockwise, as `setTextRotation` always did. The
-  `setRotationClockwise` of `Arc`, `Container`, `Stamp`, `Image` and `Page` is
-  gone (`setRotation(-45)` turns clockwise); `Direction` stays with barcodes.
+- One rotation: every rotation setter is `setRotation(degrees)`, text turns
+  with `setTextRotation`, and a positive angle turns clockwise, as on a
+  screen, because y grows downward on a PDFjet page; a negative angle turns
+  counterclockwise. `Arc.setStartAngle` counts clockwise from 3 o'clock, and
+  `Arc.setSweep` replaces `setSweepDegreesCW` and `setSweepDegreesCCW`. The v8
+  `setRotationClockwise`, `setRotationCounterClockwise`,
+  `setRotateDegreesCW` and `CCW`, `Image.rotateClockwise` and
+  `setTextDirection` are gone. `Container.setRotation` and
+  `Stamp.setRotation` turned counterclockwise in v8, so negate their angles.
+  `Direction` stays with barcodes.
 - One dash pattern name: `Rect` and `TextFrame.setBorderPattern` are
   `setBorderDashPattern`, like `setStrokeDashPattern` and
   `setGridLineDashPattern`. `Container.setScaleFactor` and `setScaleFactorXY`
@@ -434,9 +440,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `setStrokeWidth`, `setStrokeColor` and `setStrokeDashPattern`,
   `Line.setLineCapStyle`, `Form.setStrokeWidth`). `Page` keeps pen and brush,
   with `setDefaultPenWidth`.
-- An angle is set with `setRotation`, counter-clockwise, or
-  `setRotationClockwise`, and a text rotation in degrees with
-  `setTextRotation`.
+- An angle is set with `setRotation`, clockwise, a text rotation in degrees
+  with `setTextRotation`, and the sweep of an arc with `Arc.setSweep`.
 - Scaling and moving: `Arc.scaleBy`, `TextParameters.setLocation`,
   `CompositeTextLine.getLocation` and `getMinMaxY`, `TextLine.getLocation`,
   which replaces `advance`, and `Title.setOffset` sets the offset.

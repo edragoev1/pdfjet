@@ -99,6 +99,24 @@ public class PageTest {
     }
 
     [Fact]
+    public void PositiveAnglesTurnClockwise() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        // y grows downward, so text turned a quarter clockwise runs down the page
+        // and text turned a quarter counterclockwise runs up from its location.
+        float[] down = new TextLine(font, "Down").SetTextRotation(90).SetLocation(100f, 100f).DrawOn(page);
+        float[] up = new TextLine(font, "Up").SetTextRotation(-90).SetLocation(300f, 100f).DrawOn(page);
+        Assert.True(down[1] > 100f + font.StringWidth("Down") / 2f, "down " + down[1]);
+        Assert.Equal(100f, up[1], 0.01f);
+        page.SetRotation(90);
+        pdf.Complete();
+        string file = TestSupport.Latin1(stream.ToArray());
+        Assert.Contains("/Rotate 90", file);
+    }
+
+    [Fact]
     public void APathWithFewerThanTwoPointsPaintsNothing() {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         List<Point> path = new List<Point>();

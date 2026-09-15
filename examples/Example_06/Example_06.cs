@@ -50,7 +50,7 @@ public class Example_06 {
         Container container = new Container(400f, 400f);
         container.SetLocation(100f, 100f);
         container.SetBorderColor(Color.black);
-        container.SetRotation(-90);
+        container.SetRotation(90);
 
         Rect rect = new Rect(0f, 0f, 25f, 25f);
         rect.SetBorderColor(Color.black);

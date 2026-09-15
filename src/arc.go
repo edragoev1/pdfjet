@@ -71,21 +71,18 @@ func (arc *Arc) SetRadius(r float32) *Arc {
 	return arc
 }
 
-// SetStartAngle sets the angle in degrees where this arc starts.
+// SetStartAngle sets the angle in degrees where this arc starts, clockwise from
+// the 3 o'clock direction, as every angle in PDFjet turns.
 func (arc *Arc) SetStartAngle(angle float32) *Arc {
 	arc.startAngle = angle
 	return arc
 }
 
-// SetSweepDegreesCW sets how many degrees this arc sweeps clockwise from its start angle.
-func (arc *Arc) SetSweepDegreesCW(sweepDegrees float32) *Arc {
-	arc.sweepDegrees = sweepDegrees
-	return arc
-}
-
-// SetSweepDegreesCCW sets how many degrees this arc sweeps counterclockwise from its start angle.
-func (arc *Arc) SetSweepDegreesCCW(sweepDegrees float32) *Arc {
-	arc.sweepDegrees = -sweepDegrees
+// SetSweep sets how far this arc sweeps from its start angle, in degrees:
+// clockwise for a positive angle, as every angle in PDFjet turns, and
+// counterclockwise for a negative angle.
+func (arc *Arc) SetSweep(degrees float32) *Arc {
+	arc.sweepDegrees = degrees
 	return arc
 }
 
@@ -125,9 +122,11 @@ func (arc *Arc) SetFillColorRGB(rgbColor [3]float32) *Arc {
 	return arc
 }
 
-// SetRotation rotates this arc counterclockwise by the specified degrees.
+// SetRotation rotates this arc by the specified degrees, clockwise, as every
+// rotation in PDFjet turns.
 func (arc *Arc) SetRotation(degrees float32) *Arc {
-	arc.rotateDegrees = degrees
+	// The rotation of the page turns counterclockwise.
+	arc.rotateDegrees = -degrees
 	return arc
 }
 

@@ -696,7 +696,7 @@ public class BarChart : Drawable {
 
         // Axis titles
         page.setBrushColor(Color.black)
-        page.setTextRotation(90)
+        page.setTextRotation(-90)
         page.drawString(f2, f2.getSize(), yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2.0)
         page.setTextRotation(0)
         page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0)

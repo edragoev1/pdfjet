@@ -417,9 +417,10 @@ public class TextLine implements Drawable {
     }
 
     /**
-     * Sets the direction in which to draw the text.
+     * Sets the rotation of the text. A positive angle turns clockwise, as every
+     * rotation in PDFjet turns, and a negative angle counterclockwise.
      *
-     * @param degrees the number of degrees.
+     * @param degrees the angle in degrees.
      * @return this TextLine.
      */
     public TextLine setTextRotation(int degrees) {
@@ -655,7 +656,8 @@ public class TextLine implements Drawable {
         page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();
 
-        double radians = Math.PI * degrees / 180.0;
+        // The trigonometry turns counterclockwise, where the rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
         if (underline) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
             page.setPenColor(decorationColor);

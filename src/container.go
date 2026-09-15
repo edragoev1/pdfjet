@@ -57,11 +57,12 @@ func (c *Container) SetLocation(x, y float32) Drawable {
 	return c
 }
 
-// SetRotation sets the rotation angle of the container in degrees.
-//
-// degrees specifies the angle to rotate counter-clockwise.
+// SetRotation rotates this container around its center: clockwise for a positive
+// angle, as every rotation in PDFjet turns, and counterclockwise for a negative
+// angle.
 func (c *Container) SetRotation(degrees float64) *Container {
-	c.rotateDegrees = float32(degrees)
+	// The rotation of the page turns counterclockwise.
+	c.rotateDegrees = float32(-degrees)
 	return c
 }
 

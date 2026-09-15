@@ -15,6 +15,6 @@ public final class Ellipse extends Arc {
      */
     public Ellipse() {
         setStartAngle(0f);
-        setSweepDegreesCW(360f);
+        setSweep(360f);
     }
 }

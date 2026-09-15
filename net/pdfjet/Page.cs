@@ -371,14 +371,14 @@ public class Page {
         watermark.SetLocation(
                 (float) (offset * Math.Cos(angle)),
                 (this.height - (float) (offset * Math.Sin(angle))));
-        watermark.SetTextRotation((int) (angle * (180.0 / Math.PI)));
+        watermark.SetTextRotation(-(int) (angle * (180.0 / Math.PI)));
         watermark.DrawOn(this);
     }
 
-    /// <summary>Rotates this page counterclockwise when it is displayed, by 0, 90, 180 or 270 degrees; other angles are ignored.</summary>
+    /// <summary>Rotates this page clockwise when it is displayed, as every rotation in PDFjet turns and as /Rotate does, by 0, 90, 180 or 270 degrees; other angles are ignored.</summary>
     public Page SetRotation(int degrees) {
         if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
-            this.rotateDegrees = (360 - degrees) % 360;
+            this.rotateDegrees = degrees;
         }
         return this;
     }
@@ -1789,12 +1789,17 @@ public class Page {
     }
 
     /// <summary>
-    /// Sets the text direction.
+    /// Sets the rotation of the text that is drawn next. A positive angle turns
+    /// clockwise, as every rotation in PDFjet turns, and a negative angle
+    /// counterclockwise.
     /// </summary>
     /// <param name="degrees">the angle.</param>
     /// <returns>this Page object.</returns>
     public Page SetTextRotation(int degrees) {
+        // The text matrix turns counterclockwise, as PDF does.
+        degrees = -degrees;
         if (degrees > 360) degrees %= 360;
+        if (degrees < 0) degrees = degrees % 360 + 360;
         if (degrees == 0) {
             tmx = new float[] {1f,  0f,  0f,  1f};
         } else if (degrees == 90) {

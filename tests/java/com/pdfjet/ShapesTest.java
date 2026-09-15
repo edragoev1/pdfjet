@@ -34,7 +34,7 @@ class ShapesTest {
 
     @Test
     void arcDrawOnReturnsTheBottomRightCornerOfItsCircle() throws Exception {
-        Arc arc = new Arc().setLocation(100f, 100f).setRadius(20f).setStartAngle(0f).setSweepDegreesCW(90f);
+        Arc arc = new Arc().setLocation(100f, 100f).setRadius(20f).setStartAngle(0f).setSweep(90f);
         TestSupport.assertXY(120f, 120f, arc.drawOn(page()));
     }
 

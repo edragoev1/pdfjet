@@ -359,9 +359,9 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 	xy := bars.turn(x, y)
 	textLine.SetLocation(xy[0], xy[1])
 	if barcode.direction == direction.TopToBottom {
-		textLine.SetTextRotation(270)
+		textLine.SetTextRotation(-270)
 	} else if barcode.direction == direction.BottomToTop {
-		textLine.SetTextRotation(90)
+		textLine.SetTextRotation(-90)
 	}
 	textLine.DrawOn(page)
 	return [2]float32{x + barcode.font.StringWidth(barcode.font.size, text), y + barcode.font.GetDescent()}

@@ -61,11 +61,14 @@ public class Container : IDrawable {
     }
 
     /// <summary>
-    /// Sets the rotation angle.
+    /// Rotates this container around its center: clockwise for a positive
+    /// angle, as every rotation in PDFjet turns, and counterclockwise for a
+    /// negative angle.
     /// </summary>
     /// <param name="degrees">The rotation angle in degrees.</param>
     public Container SetRotation(float degrees) {
-        this.rotateDegrees = degrees;
+        // The rotation of the page turns counterclockwise.
+        this.rotateDegrees = -degrees;
         return this;
     }
 

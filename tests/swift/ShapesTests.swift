@@ -27,7 +27,7 @@ import Testing
     }
 
     @Test func arcDrawOnReturnsTheBottomRightCornerOfItsCircle() {
-        let arc = Arc().setLocation(100, 100).setRadius(20).setStartAngle(0).setSweepDegreesCW(90)
+        let arc = Arc().setLocation(100, 100).setRadius(20).setStartAngle(0).setSweep(90)
         TestSupport.expectXY(120, 120, arc.drawOn(page()))
     }
 

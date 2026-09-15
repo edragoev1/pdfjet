@@ -16,6 +16,6 @@ func NewEllipse() *Ellipse {
 	ellipse := new(Ellipse)
 	ellipse.Arc = *NewArc()
 	ellipse.SetStartAngle(0.0)
-	ellipse.SetSweepDegreesCW(360.0)
+	ellipse.SetSweep(360.0)
 	return ellipse
 }

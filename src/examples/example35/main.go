@@ -76,10 +76,10 @@ func Example35() {
 	stamp.SetLocation(50.0, 50.0).DrawOn(page)
 
 	// Rotate the stamp counter clockwise and draw it again
-	stamp.SetRotation(15).DrawOn(page)
+	stamp.SetRotation(-15).DrawOn(page)
 
 	// Rotate the stamp clockwise and draw it again
-	stamp.SetRotation(-15).DrawOn(page)
+	stamp.SetRotation(15).DrawOn(page)
 
 	// Draw the stamp again at a quarter of its size
 	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 480.0).DrawOn(page)
@@ -92,7 +92,7 @@ func Example35() {
 	// Nested container #1
 	nested1 := pdfjet.NewContainer(200.0, 200.0)
 	nested1.SetLocation(0.0, 0.0)
-	nested1.SetRotation(30)
+	nested1.SetRotation(-30)
 	nested1.ScaleBy(0.8)
 
 	innerRect := pdfjet.NewRect(0.0, 0.0, 200.0, 200.0)
@@ -108,7 +108,7 @@ func Example35() {
 	// Nested container #2
 	nested2 := pdfjet.NewContainer(100.0, 100.0)
 	nested2.SetLocation(250.0, 250.0)
-	nested2.SetRotation(45)
+	nested2.SetRotation(-45)
 
 	smallRect := pdfjet.NewRect(0.0, 0.0, 100.0, 100.0)
 	smallRect.SetFillColor(color.Red)
@@ -120,7 +120,7 @@ func Example35() {
 
 	container.Add(nested2)
 
-	container.SetRotation(-45)
+	container.SetRotation(45)
 	// Draw the entire hierarchy on the page
 	container.DrawOn(page)
 
@@ -140,7 +140,7 @@ func Example35() {
 	container5.SetLocation(50.0, 600.0)
 	container5.DrawOn(page)
 
-	container5.SetRotation(-90)
+	container5.SetRotation(90)
 	container5.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

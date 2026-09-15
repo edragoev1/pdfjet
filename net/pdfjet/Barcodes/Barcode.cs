@@ -363,9 +363,9 @@ public class Barcode : IDrawable {
         float[] xy = bars.Turn(x, y);
         textLine.SetLocation(xy[0], xy[1]);
         if (direction == Direction.TOP_TO_BOTTOM) {
-            textLine.SetTextRotation(270);
+            textLine.SetTextRotation(-270);
         } else if (direction == Direction.BOTTOM_TO_TOP) {
-            textLine.SetTextRotation(90);
+            textLine.SetTextRotation(-90);
         }
         textLine.DrawOn(page);
         return new float[] {x + font.StringWidth(str), y + font.GetDescent(font.GetSize())};

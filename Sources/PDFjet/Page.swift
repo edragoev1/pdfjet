@@ -1693,15 +1693,21 @@ public class Page {
     }
 
     ///
-    /// Sets the text direction.
+    /// Sets the rotation of the text that is drawn next. A positive angle turns
+    /// clockwise, as every rotation in PDFjet turns, and a negative angle
+    /// counterclockwise.
     ///
     /// - Parameter angleInDegrees: the angle in degrees.
     ///
     @discardableResult
     public func setTextRotation(_ angleInDegrees: Int) -> Page {
-        var degrees: Int = angleInDegrees
+        // The text matrix turns counterclockwise, as PDF does.
+        var degrees: Int = -angleInDegrees
         if degrees > 360 {
             degrees %= 360
+        }
+        if degrees < 0 {
+            degrees = degrees % 360 + 360
         }
         if degrees == 0 {
             self.tmx = [ 1.0,  0.0,  0.0,  1.0 ]
@@ -2320,15 +2326,16 @@ public class Page {
         watermark.setLocation(
                 Float(Double(offset) * cos(angle)),
                 self.height - Float(Double(offset) * sin(angle)))
-        watermark.setTextRotation(Int(angle * (180.0 / Double.pi)))
+        watermark.setTextRotation(-Int(angle * (180.0 / Double.pi)))
         watermark.drawOn(self)
     }
 
-    /// Rotates this page counterclockwise when it is displayed, by 0, 90, 180 or 270 degrees; other angles are ignored.
+    /// Rotates this page clockwise when it is displayed, as every rotation in PDFjet turns and as /Rotate does,
+    /// by 0, 90, 180 or 270 degrees; other angles are ignored.
     @discardableResult
     public func setRotation(_ degrees: Int) -> Page {
         if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
-            self.rotateDegrees = Float((360 - degrees) % 360)
+            self.rotateDegrees = Float(degrees)
         }
         return self
     }

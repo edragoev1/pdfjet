@@ -72,24 +72,19 @@ public class Arc : Drawable {
         return self
     }
 
-    /// Sets the angle in degrees where this arc starts.
+    /// Sets the angle in degrees where this arc starts, clockwise from the 3 o'clock direction,
+    /// as every angle in PDFjet turns.
     @discardableResult
     public func setStartAngle(_ angle: Float) -> Arc {
         self.startAngle = angle
         return self
     }
 
-    /// Sets how many degrees this arc sweeps clockwise from its start angle.
+    /// Sets how many degrees this arc sweeps from its start angle: clockwise for a positive angle,
+    /// as every angle in PDFjet turns, and counterclockwise for a negative angle.
     @discardableResult
-    public func setSweepDegreesCW(_ sweepDegrees: Float) -> Arc {
-        self.sweepDegrees = sweepDegrees
-        return self
-    }
-
-    /// Sets how many degrees this arc sweeps counterclockwise from its start angle.
-    @discardableResult
-    public func setSweepDegreesCCW(_ sweepDegrees: Float) -> Arc {
-        self.sweepDegrees = -sweepDegrees
+    public func setSweep(_ degrees: Float) -> Arc {
+        self.sweepDegrees = degrees
         return self
     }
 
@@ -172,10 +167,11 @@ public class Arc : Drawable {
         return self
     }
 
-    /// Rotates this arc counterclockwise by the specified degrees.
+    /// Rotates this arc clockwise by the specified degrees, as every rotation in PDFjet turns.
     @discardableResult
     public func setRotation(_ degrees: Float) -> Arc {
-        self.rotateDegrees = degrees
+        // The rotation of the page turns counterclockwise.
+        self.rotateDegrees = -degrees
         return self
     }
 

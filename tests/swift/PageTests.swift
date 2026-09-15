@@ -92,6 +92,22 @@ import Testing
         #expect(file.components(separatedBy: "/XYZ 0 692 0]").count - 1 == 1, "\(file)")
     }
 
+    @Test func positiveAnglesTurnClockwise() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        // y grows downward, so text turned a quarter clockwise runs down the page
+        // and text turned a quarter counterclockwise runs up from its location.
+        let down = TextLine(font, "Down").setTextRotation(90).setLocation(100, 100).drawOn(page)
+        let up = TextLine(font, "Up").setTextRotation(-90).setLocation(300, 100).drawOn(page)
+        #expect(down[1] > 100 + font.stringWidth("Down") / 2, "down \(down[1])")
+        #expect(abs(up[1] - 100) < 0.01, "up \(up[1])")
+        page.setRotation(90)
+        try memory.pdf.complete()
+        let file = TestSupport.latin1(memory.bytes)
+        #expect(file.contains("/Rotate 90"), "no /Rotate 90")
+    }
+
     @Test func aPathWithFewerThanTwoPointsPaintsNothing() {
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
         var path = [Point]()

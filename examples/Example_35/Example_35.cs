@@ -66,10 +66,10 @@ public class Example_35 {
         stamp.SetLocation(50f, 50f).DrawOn(page);
 
         // Rotate the stamp counter clockwise and draw it again
-        stamp.SetRotation(15).DrawOn(page);
+        stamp.SetRotation(-15).DrawOn(page);
 
         // Rotate the stamp clockwise and draw it again
-        stamp.SetRotation(-15).DrawOn(page);
+        stamp.SetRotation(15).DrawOn(page);
 
         // Draw the stamp again at a quarter of its size
         stamp.SetRotation(0).ScaleBy(0.25f).SetLocation(360f, 480f).DrawOn(page);
@@ -82,7 +82,7 @@ public class Example_35 {
         // Nested container #1
         Container nested1 = new Container(200f, 200f);
         nested1.SetLocation(0f, 0f);
-        nested1.SetRotation(30);
+        nested1.SetRotation(-30);
         nested1.ScaleBy(0.8f);
 
         Rect innerRect = new Rect(0f, 0f, 200f, 200f);
@@ -98,7 +98,7 @@ public class Example_35 {
         // Nested container #2
         Container nested2 = new Container(100f, 100f);
         nested2.SetLocation(250f, 250f);
-        nested2.SetRotation(45);
+        nested2.SetRotation(-45);
 
         Rect smallRect = new Rect(0f, 0f, 100f, 100f);
         smallRect.SetFillColor(Color.red);
@@ -110,7 +110,7 @@ public class Example_35 {
 
         container.Add(nested2);
 
-        container.SetRotation(-45);
+        container.SetRotation(45);
         // Draw the entire hierarchy on the page
         container.DrawOn(page);
 
@@ -130,7 +130,7 @@ public class Example_35 {
         container5.SetLocation(50f, 600f);
         container5.DrawOn(page);
 
-        container5.SetRotation(-90);
+        container5.SetRotation(90);
         container5.DrawOn(page);
 
         pdf.Complete();

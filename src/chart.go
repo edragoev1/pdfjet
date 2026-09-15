@@ -388,7 +388,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 
 	// Draw the Y axis title
 	page.SetBrushColor(color.Black)
-	page.SetTextRotation(90)
+	page.SetTextRotation(-90)
 	page.drawString(
 		chart.f2,
 		chart.f2.GetSize(),

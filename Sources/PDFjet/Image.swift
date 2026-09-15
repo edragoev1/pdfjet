@@ -282,13 +282,13 @@ public class Image : Drawable {
         return self
     }
 
-    /// Rotates this image counterclockwise by 0, 90, 180 or 270 degrees, as every rotation in PDFjet turns.
+    /// Rotates this image clockwise by 0, 90, 180 or 270 degrees, as every rotation in PDFjet turns.
     @discardableResult
     public func setRotation(_ degrees: Int) throws -> Image {
         if degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270 {
             throw ImageError.rotation("The rotation angle must be 0, 90, 180 or 270")
         }
-        self.degrees = (360 - degrees) % 360
+        self.degrees = degrees
         return self
     }
 

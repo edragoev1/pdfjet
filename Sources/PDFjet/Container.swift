@@ -55,12 +55,14 @@ public class Container: Drawable {
         return self
     }
 
-    /// Sets the rotation angle.
+    /// Rotates this container around its center: clockwise for a positive angle, as every rotation
+    /// in PDFjet turns, and counterclockwise for a negative angle.
     ///
     /// - Parameter degrees: The rotation angle in degrees.
     @discardableResult
     public func setRotation(_ degrees: Double) -> Container {
-        self.rotateDegrees = Float(degrees)
+        // The rotation of the page turns counterclockwise.
+        self.rotateDegrees = Float(-degrees)
         return self
     }
 

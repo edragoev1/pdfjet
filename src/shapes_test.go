@@ -29,7 +29,7 @@ func TestShapesRectScaleByKeepsTheLocation(t *testing.T) {
 }
 
 func TestShapesArcDrawOnReturnsTheBottomRightCornerOfItsCircle(t *testing.T) {
-	arc := NewArc().SetRadius(20).SetStartAngle(0).SetSweepDegreesCW(90)
+	arc := NewArc().SetRadius(20).SetStartAngle(0).SetSweep(90)
 	arc.SetLocation(100, 100)
 	testAssertXY(t, 120, 120, arc.DrawOn(testNewPage()))
 }

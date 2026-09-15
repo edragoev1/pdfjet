@@ -300,9 +300,12 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 	return s
 }
 
-// SetRotation sets the rotation angle of this stamp, in degrees.
+// SetRotation rotates this stamp around its center: clockwise for a positive
+// angle, as every rotation in PDFjet turns, and counterclockwise for a negative
+// angle.
 func (s *Stamp) SetRotation(degrees float64) *Stamp {
-	s.rotateDegrees = float32(degrees)
+	// The rotation of the page turns counterclockwise.
+	s.rotateDegrees = float32(-degrees)
 	return s
 }
 

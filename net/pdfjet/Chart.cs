@@ -403,7 +403,7 @@ public class Chart : IDrawable {
 
         // Draw Y axis title (rotated 90 degrees)
         page.SetBrushColor(Color.black);
-        page.SetTextRotation(90);
+        page.SetTextRotation(-90);
         page.DrawString(
                 f2,
                 f2.GetSize(),

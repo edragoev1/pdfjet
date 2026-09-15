@@ -602,7 +602,7 @@ public class BarChart : IDrawable {
 
         // Axis titles
         page.SetBrushColor(Color.black);
-        page.SetTextRotation(90);
+        page.SetTextRotation(-90);
         page.DrawString(f2, f2.GetSize(), yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2f);
         page.SetTextRotation(0);
         page.DrawString(f2, f2.GetSize(), xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);

@@ -483,7 +483,7 @@ public class Chart implements Drawable {
 
         // Draw Y axis title (rotated 90 degrees)
         page.setBrushColor(Color.black);
-        page.setTextRotation(90);
+        page.setTextRotation(-90);
         page.drawString(
                 f2,
                 f2.getSize(),

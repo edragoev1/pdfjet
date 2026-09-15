@@ -308,10 +308,12 @@ public class Stamp : Drawable {
         return self
     }
 
-    /// Sets the rotation angle of this stamp in degrees.
+    /// Rotates this stamp around its center: clockwise for a positive angle, as every rotation in
+    /// PDFjet turns, and counterclockwise for a negative angle.
     @discardableResult
     public func setRotation(_ degrees: Float) -> Stamp {
-        self.rotateDegrees = degrees
+        // The rotation of the page turns counterclockwise.
+        self.rotateDegrees = -degrees
         return self
     }
 

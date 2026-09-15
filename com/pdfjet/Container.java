@@ -62,13 +62,16 @@ public class Container implements Drawable {
     }
 
     /**
-     * Sets the rotation angle.
+     * Rotates this container around its center: clockwise for a positive
+     * angle, as every rotation in PDFjet turns, and counterclockwise for a
+     * negative angle.
      *
-     * @param degrees the rotation angle in degrees
+     * @param degrees the rotation angle in degrees.
      * @return this Container object.
      */
     public Container setRotation(float degrees) {
-        this.rotateDegrees = degrees;
+        // The rotation of the page turns counterclockwise.
+        this.rotateDegrees = -degrees;
         return this;
     }
 

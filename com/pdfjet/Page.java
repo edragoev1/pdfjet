@@ -1755,13 +1755,18 @@ final public class Page {
     }
 
     /**
-     *  Sets the text direction.
+     * Sets the rotation of the text that is drawn next. A positive angle turns
+     * clockwise, as every rotation in PDFjet turns, and a negative angle
+     * counterclockwise.
      *
-     *  @param degrees the angle.
-     *  @return this Page object.
+     * @param degrees the angle.
+     * @return this Page object.
      */
     public Page setTextRotation(int degrees) {
+        // The text matrix turns counterclockwise, as PDF does.
+        degrees = -degrees;
         if (degrees > 360) degrees %= 360;
+        if (degrees < 0) degrees = degrees % 360 + 360;
         if (degrees == 0) {
             tmx = new float[] { 1f,  0f,  0f,  1f};
         } else if (degrees == 90) {
@@ -2446,20 +2451,20 @@ final public class Page {
         watermark.setLocation(
                 (float) (offset * Math.cos(angle)),
                 (this.height - (float) (offset * Math.sin(angle))));
-        watermark.setTextRotation((int) (angle * (180.0 / Math.PI)));
+        watermark.setTextRotation(-(int) (angle * (180.0 / Math.PI)));
         watermark.drawOn(this);
     }
 
     /**
-     * Rotates this page counterclockwise when it is displayed, as every
-     * rotation in PDFjet turns. Other angles are ignored.
+     * Rotates this page clockwise when it is displayed, as every rotation in
+     * PDFjet turns and as /Rotate does. Other angles are ignored.
      *
      * @param degrees the angle: 0, 90, 180 or 270.
      * @return this Page object.
      */
     public Page setRotation(int degrees) {
         if (degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270) {
-            this.rotateDegrees = (360 - degrees) % 360;
+            this.rotateDegrees = degrees;
         }
         return this;
     }

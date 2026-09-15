@@ -1593,9 +1593,9 @@ func (page *Page) SetTextRenderingMode(mode int) (*Page, error) {
 	return page, nil
 }
 
-// SetTextRotation sets the rotation, in degrees, of the text drawn on the page.
-// The direction is specified as an angle in degrees (0-360).
-// If the degree value is greater than 360, it will be normalized to the range [0, 360).
+// SetTextRotation sets the rotation, in degrees, of the text that is drawn next.
+// A positive angle turns clockwise, as every rotation in PDFjet turns, and a
+// negative angle counterclockwise.
 //
 // Parameters:
 //
@@ -1605,8 +1605,13 @@ func (page *Page) SetTextRenderingMode(mode int) (*Page, error) {
 //
 //	page.SetTextRotation(90)
 func (page *Page) SetTextRotation(degrees int) *Page {
+	// The text matrix turns counterclockwise, as PDF does.
+	degrees = -degrees
 	if degrees > 360 {
 		degrees %= 360
+	}
+	if degrees < 0 {
+		degrees = degrees%360 + 360
 	}
 	switch degrees {
 	case 0:
@@ -2017,7 +2022,7 @@ func (page *Page) AddWatermark(font *Font, text string) {
 	watermark.SetLocation(
 		float32(float64(offset)*math.Cos(angle)),
 		page.height-float32(float64(offset)*math.Sin(angle)))
-	watermark.SetTextRotation((int)(angle * (180.0 / math.Pi)))
+	watermark.SetTextRotation(-(int)(angle * (180.0 / math.Pi)))
 	watermark.DrawOn(page)
 }
 
@@ -2026,11 +2031,12 @@ func (page *Page) GetContent() []byte {
 	return slices.Clone(page.buf)
 }
 
-// SetRotation rotates this page counterclockwise when it is displayed, by 0, 90,
-// 180 or 270 degrees, as every rotation in PDFjet turns. Other angles are ignored.
+// SetRotation rotates this page clockwise when it is displayed, by 0, 90, 180 or
+// 270 degrees, as every rotation in PDFjet turns and as /Rotate does. Other
+// angles are ignored.
 func (page *Page) SetRotation(degrees int) *Page {
 	if degrees == 0 || degrees == 90 || degrees == 180 || degrees == 270 {
-		page.rotateDegrees = float32((360 - degrees) % 360)
+		page.rotateDegrees = float32(degrees)
 	}
 	return page
 }

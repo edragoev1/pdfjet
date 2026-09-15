@@ -912,6 +912,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       and `VerticalDash`); and a Go `errorcorrectionlevel` package with `L`,
       `M`, `Q` and `H`, as `ErrorCorrectionLevel.L` in the other ports.
       Go Example_20 and 21 and the QR code tests use it.
+- ✅ **B** `Arc.setSweepDegreesCW` and `setSweepDegreesCCW` are two setters for
+      one signed angle, where every other angle turned counterclockwise.
+      Fixed (decided Sep 15): a positive angle turns clockwise everywhere,
+      as y grows downward on a PDFjet page: `setRotation` of `Arc`,
+      `Container`, `Stamp`, `Image` and `Page`, `setTextRotation` of
+      `TextLine` and `Page`, and `Arc.setStartAngle` and the new `setSweep`.
+      The internal rotations and Example_05, 06, 35 and 49 negate their
+      angles, so the PDFs are unchanged.
 
 ### Names in one port
 
