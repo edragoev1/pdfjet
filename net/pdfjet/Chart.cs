@@ -34,17 +34,17 @@ public class Chart : IDrawable {
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
-    private bool drawHGridLines = true;
-    private bool drawVGridLines = true;
+    private bool drawHorizontalGridLines = true;
+    private bool drawVerticalGridLines = true;
     private bool drawXAxisLabels = true;
     private bool drawYAxisLabels = true;
 
     // Grid line styling (width 0 = the thinnest line, pattern default = dotted)
     private int gridLineColor = Color.black;
-    private float hGridLineWidth = 0f;
-    private float vGridLineWidth = 0f;
-    private String hGridLineDashPattern = "[1 1] 0";
-    private String vGridLineDashPattern = "[1 1] 0";
+    private float horizontalGridLineWidth = 0f;
+    private float verticalGridLineWidth = 0f;
+    private String horizontalGridLineDashPattern = "[1 1] 0";
+    private String verticalGridLineDashPattern = "[1 1] 0";
 
     private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
@@ -181,16 +181,16 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Toggles drawing of horizontal grid lines.
     /// </summary>
-    public Chart SetDrawHGridLines(bool drawHGridLines) {
-        this.drawHGridLines = drawHGridLines;
+    public Chart SetDrawHorizontalGridLines(bool drawHorizontalGridLines) {
+        this.drawHorizontalGridLines = drawHorizontalGridLines;
         return this;
     }
 
     /// <summary>
     ///  Toggles drawing of vertical grid lines.
     /// </summary>
-    public Chart SetDrawVGridLines(bool drawVGridLines) {
-        this.drawVGridLines = drawVGridLines;
+    public Chart SetDrawVerticalGridLines(bool drawVerticalGridLines) {
+        this.drawVerticalGridLines = drawVerticalGridLines;
         return this;
     }
 
@@ -233,34 +233,34 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Sets the width of the horizontal grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawHGridLines(false) hides them.
+    ///  Sets the width of the horizontal grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawHorizontalGridLines(false) hides them.
     /// </summary>
-    public Chart SetHGridLineWidth(float width) {
-        this.hGridLineWidth = width;
+    public Chart SetHorizontalGridLineWidth(float width) {
+        this.horizontalGridLineWidth = width;
         return this;
     }
 
     /// <summary>
-    ///  Sets the width of the vertical grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawVGridLines(false) hides them.
+    ///  Sets the width of the vertical grid lines. A width of 0 draws the thinnest line a viewer shows; SetDrawVerticalGridLines(false) hides them.
     /// </summary>
-    public Chart SetVGridLineWidth(float width) {
-        this.vGridLineWidth = width;
+    public Chart SetVerticalGridLineWidth(float width) {
+        this.verticalGridLineWidth = width;
         return this;
     }
 
     /// <summary>
     ///  Sets the horizontal grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
-    public Chart SetHGridLineDashPattern(String pattern) {
-        this.hGridLineDashPattern = pattern;
+    public Chart SetHorizontalGridLineDashPattern(String pattern) {
+        this.horizontalGridLineDashPattern = pattern;
         return this;
     }
 
     /// <summary>
     ///  Sets the vertical grid line dash pattern (e.g. "[1 1] 0").
     /// </summary>
-    public Chart SetVGridLineDashPattern(String pattern) {
-        this.vGridLineDashPattern = pattern;
+    public Chart SetVerticalGridLineDashPattern(String pattern) {
+        this.verticalGridLineDashPattern = pattern;
         return this;
     }
 
@@ -346,11 +346,11 @@ public class Chart : IDrawable {
         DrawChartBorder(page);
         DrawInnerBorder(page);
 
-        if (drawHGridLines) {
-            DrawHorizontalGridLines(page);
+        if (drawHorizontalGridLines) {
+            DrawHorizontalGrid(page);
         }
-        if (drawVGridLines) {
-            DrawVerticalGridLines(page);
+        if (drawVerticalGridLines) {
+            DrawVerticalGrid(page);
         }
         if (axisLineWidth > 0f) {
             DrawAxisLines(page);
@@ -661,10 +661,10 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Draws horizontal grid lines across the plot area, one at each label.
     /// </summary>
-    private void DrawHorizontalGridLines(Page page) {
-        page.SetPenWidth(hGridLineWidth);
+    private void DrawHorizontalGrid(Page page) {
+        page.SetPenWidth(horizontalGridLineWidth);
         page.SetPenColor(gridLineColor);
-        page.SetStrokeDashPattern(hGridLineDashPattern);
+        page.SetStrokeDashPattern(horizontalGridLineDashPattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -677,10 +677,10 @@ public class Chart : IDrawable {
     /// <summary>
     ///  Draws vertical grid lines across the plot area, one at each label.
     /// </summary>
-    private void DrawVerticalGridLines(Page page) {
-        page.SetPenWidth(vGridLineWidth);
+    private void DrawVerticalGrid(Page page) {
+        page.SetPenWidth(verticalGridLineWidth);
         page.SetPenColor(gridLineColor);
-        page.SetStrokeDashPattern(vGridLineDashPattern);
+        page.SetStrokeDashPattern(verticalGridLineDashPattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;

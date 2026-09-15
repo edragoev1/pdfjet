@@ -7,6 +7,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
 )
@@ -31,7 +32,7 @@ func Example21() {
 	// The higher the error correction level - the shorter the string that you can encode.
 	qr := qrcode.NewQRCode(
 		"https://kazuhikoarase.github.io/qrcode-generator/js/demo",
-		qrcode.ErrorCorrectionLevelL) // Low
+		errorcorrectionlevel.L) // Low
 	qr.SetModuleLength(3.0)
 	qr.SetLocation(100.0, 100.0)
 	// qr.SetModuleColor(color.Blue)
@@ -39,21 +40,21 @@ func Example21() {
 
 	qr = qrcode.NewQRCode(
 		"https://github.com/kazuhikoarase/qrcode-generator",
-		qrcode.ErrorCorrectionLevelM) // Medium
+		errorcorrectionlevel.M) // Medium
 	qr.SetLocation(400.0, 100.0)
 	qr.SetModuleLength(3.0)
 	qr.DrawOn(page)
 
 	qr = qrcode.NewQRCode(
 		"https://github.com/kazuhikoarase/jaconv",
-		qrcode.ErrorCorrectionLevelQ) // High
+		errorcorrectionlevel.Q) // High
 	qr.SetLocation(100.0, 400.0)
 	qr.SetModuleLength(3.0)
 	qr.DrawOn(page)
 
 	qr = qrcode.NewQRCode(
 		"https://github.com/kazuhikoarase",
-		qrcode.ErrorCorrectionLevelH) // Very High
+		errorcorrectionlevel.H) // Very High
 	qr.SetLocation(400.0, 400.0)
 	qr.SetModuleLength(3.0)
 	qr.DrawOn(page)

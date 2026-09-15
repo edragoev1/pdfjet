@@ -13,16 +13,18 @@
 //
 // Modified and adapted for use in PDFjet by PDFjet Software
 
-package qrcode
+// Package errorcorrectionlevel defines the error correction levels of a QR code.
+package errorcorrectionlevel
 
 // ErrorCorrectionLevel is the error correction level of a QR code. The values
 // are the bits of the level in the format information.
 type ErrorCorrectionLevel int
 
-// QRCode error correction levels.
+// L, M, Q and H are the error correction levels of a QR code, as
+// ErrorCorrectionLevel.L and so on in the other ports.
 const (
-	ErrorCorrectionLevelL ErrorCorrectionLevel = 1 // Recovers about 7% of the data
-	ErrorCorrectionLevelM ErrorCorrectionLevel = 0 // Recovers about 15% of the data
-	ErrorCorrectionLevelQ ErrorCorrectionLevel = 3 // Recovers about 25% of the data
-	ErrorCorrectionLevelH ErrorCorrectionLevel = 2 // Recovers about 30% of the data
+	L ErrorCorrectionLevel = 1 // Recovers about 7% of the data
+	M ErrorCorrectionLevel = 0 // Recovers about 15% of the data
+	Q ErrorCorrectionLevel = 3 // Recovers about 25% of the data
+	H ErrorCorrectionLevel = 2 // Recovers about 30% of the data
 )

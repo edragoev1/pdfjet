@@ -9,6 +9,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
 )
@@ -106,7 +107,7 @@ func Example20() {
 
 	qr := qrcode.NewQRCode(
 		"https://kazuhikoarase.github.io",
-		qrcode.ErrorCorrectionLevelL) // Low
+		errorcorrectionlevel.L) // Low
 	qr.SetModuleLength(3.0)
 	qr.SetLocation(50.0, 200.0)
 	qr.DrawOn(page)

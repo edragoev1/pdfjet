@@ -899,6 +899,19 @@ renames included (the Week 1 decision), so every item is a blocker.
       four ports: `drawOn` adds the destination to the page, and measuring
       adds none. The getters are gone; `Bookmark` computes the same point,
       and Example_22 uses `setDestination`.
+- ✅ **B** Abbreviations: `Chart.setDrawHGridLines`, `setDrawVGridLines`,
+      `setHGridLineWidth`, `setVGridLineWidth`, `setHGridLineDashPattern` and
+      `setVGridLineDashPattern` are the only abbreviated setters,
+      `Shape.H_DASH` and `V_DASH` the only abbreviated constants, and Go
+      `qrcode.ErrorCorrectionLevelL` repeats its type name.
+      Fixed: `setDrawHorizontalGridLines`, `setDrawVerticalGridLines`,
+      `setHorizontalGridLineWidth`, `setVerticalGridLineWidth`,
+      `setHorizontalGridLineDashPattern` and
+      `setVerticalGridLineDashPattern`, with the fields named alike;
+      `Shape.HORIZONTAL_DASH` and `VERTICAL_DASH` (Go `shape.HorizontalDash`
+      and `VerticalDash`); and a Go `errorcorrectionlevel` package with `L`,
+      `M`, `Q` and `H`, as `ErrorCorrectionLevel.L` in the other ports.
+      Go Example_20 and 21 and the QR code tests use it.
 
 ### Names in one port
 

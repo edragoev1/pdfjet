@@ -50,17 +50,17 @@ public class Chart implements Drawable {
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
-    private boolean drawHGridLines = true;
-    private boolean drawVGridLines = true;
+    private boolean drawHorizontalGridLines = true;
+    private boolean drawVerticalGridLines = true;
     private boolean drawXAxisLabels = true;
     private boolean drawYAxisLabels = true;
 
     // Grid line styling (width 0 = the thinnest line, pattern default = dotted)
     private int gridLineColor = Color.black;
-    private float hGridLineWidth;
-    private float vGridLineWidth;
-    private String hGridLineDashPattern = "[1 1] 0";
-    private String vGridLineDashPattern = "[1 1] 0";
+    private float horizontalGridLineWidth;
+    private float verticalGridLineWidth;
+    private String horizontalGridLineDashPattern = "[1 1] 0";
+    private String verticalGridLineDashPattern = "[1 1] 0";
 
     private float axisLineWidth = 0.5f;
     private float chartBorderWidth = 0f;
@@ -217,22 +217,22 @@ public class Chart implements Drawable {
     /**
      * Sets whether the horizontal grid lines are drawn.
      *
-     * @param drawHGridLines true to draw them.
+     * @param drawHorizontalGridLines true to draw them.
      * @return this Chart object.
      */
-    public Chart setDrawHGridLines(boolean drawHGridLines) {
-        this.drawHGridLines = drawHGridLines;
+    public Chart setDrawHorizontalGridLines(boolean drawHorizontalGridLines) {
+        this.drawHorizontalGridLines = drawHorizontalGridLines;
         return this;
     }
 
     /**
      * Sets whether the vertical grid lines are drawn.
      *
-     * @param drawVGridLines true to draw them.
+     * @param drawVerticalGridLines true to draw them.
      * @return this Chart object.
      */
-    public Chart setDrawVGridLines(boolean drawVGridLines) {
-        this.drawVGridLines = drawVGridLines;
+    public Chart setDrawVerticalGridLines(boolean drawVerticalGridLines) {
+        this.drawVerticalGridLines = drawVerticalGridLines;
         return this;
     }
 
@@ -296,25 +296,25 @@ public class Chart implements Drawable {
 
     /**
      * Sets the width of the horizontal grid lines. A width of 0 draws the thinnest
-     * line a viewer shows; setDrawHGridLines(false) hides them.
+     * line a viewer shows; setDrawHorizontalGridLines(false) hides them.
      *
      * @param width the line width.
      * @return this Chart object.
      */
-    public Chart setHGridLineWidth(float width) {
-        this.hGridLineWidth = width;
+    public Chart setHorizontalGridLineWidth(float width) {
+        this.horizontalGridLineWidth = width;
         return this;
     }
 
     /**
      * Sets the width of the vertical grid lines. A width of 0 draws the thinnest
-     * line a viewer shows; setDrawVGridLines(false) hides them.
+     * line a viewer shows; setDrawVerticalGridLines(false) hides them.
      *
      * @param width the line width.
      * @return this Chart object.
      */
-    public Chart setVGridLineWidth(float width) {
-        this.vGridLineWidth = width;
+    public Chart setVerticalGridLineWidth(float width) {
+        this.verticalGridLineWidth = width;
         return this;
     }
 
@@ -324,8 +324,8 @@ public class Chart implements Drawable {
      * @param pattern the dash pattern.
      * @return this Chart object.
      */
-    public Chart setHGridLineDashPattern(String pattern) {
-        this.hGridLineDashPattern = pattern;
+    public Chart setHorizontalGridLineDashPattern(String pattern) {
+        this.horizontalGridLineDashPattern = pattern;
         return this;
     }
 
@@ -335,8 +335,8 @@ public class Chart implements Drawable {
      * @param pattern the dash pattern.
      * @return this Chart object.
      */
-    public Chart setVGridLineDashPattern(String pattern) {
-        this.vGridLineDashPattern = pattern;
+    public Chart setVerticalGridLineDashPattern(String pattern) {
+        this.verticalGridLineDashPattern = pattern;
         return this;
     }
 
@@ -426,11 +426,11 @@ public class Chart implements Drawable {
         drawChartBorder(page);
         drawInnerBorder(page);
 
-        if (drawHGridLines) {
-            drawHorizontalGridLines(page);
+        if (drawHorizontalGridLines) {
+            drawHorizontalGrid(page);
         }
-        if (drawVGridLines) {
-            drawVerticalGridLines(page);
+        if (drawVerticalGridLines) {
+            drawVerticalGrid(page);
         }
         if (axisLineWidth > 0f) {
             drawAxisLines(page);
@@ -726,10 +726,10 @@ public class Chart implements Drawable {
     }
 
     /** Draws horizontal grid lines across the plot area, one at each label. */
-    private void drawHorizontalGridLines(Page page) {
-        page.setPenWidth(hGridLineWidth);
+    private void drawHorizontalGrid(Page page) {
+        page.setPenWidth(horizontalGridLineWidth);
         page.setPenColor(gridLineColor);
-        page.setStrokeDashPattern(hGridLineDashPattern);
+        page.setStrokeDashPattern(horizontalGridLineDashPattern);
         float x = x8;
         float y = y8;
         float step = (y8 - y5) / yAxisGridLines;
@@ -740,10 +740,10 @@ public class Chart implements Drawable {
     }
 
     /** Draws vertical grid lines across the plot area, one at each label. */
-    private void drawVerticalGridLines(Page page) {
-        page.setPenWidth(vGridLineWidth);
+    private void drawVerticalGrid(Page page) {
+        page.setPenWidth(verticalGridLineWidth);
         page.setPenColor(gridLineColor);
-        page.setStrokeDashPattern(vGridLineDashPattern);
+        page.setStrokeDashPattern(verticalGridLineDashPattern);
         float x = x5;
         float y = y5;
         float step = (x6 - x5) / xAxisGridLines;

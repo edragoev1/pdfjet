@@ -456,13 +456,20 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `FileAttachment.setContents` and `setIconPushpin`, `DonutChart.setRadii`,
   `Bookmark.getDestinationName`, `Table.autoAdjustColumnWidths`,
   `Cell.setMarker`, `Page.addBDC`,
-  `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHGridLines` and
-  `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
+  `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHorizontalGridLines`
+  and `setDrawVerticalGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
   enum instead of `Effect`, `Form.setWidth`, `Path.setClosed`, and Go
   `DrawStringUsingHighlightColors`.
 - `TextLine.setDestination(name)` replaces `getDestinationX` and
   `getDestinationY`: `drawOn` adds the destination to the page a font size
   above the baseline, the other end of `setGoToAction`. Example_22 uses it.
+- Abbreviations are spelled out: the `Chart` grid line setters are
+  `setHorizontalGridLineWidth`, `setVerticalGridLineWidth`,
+  `setHorizontalGridLineDashPattern` and `setVerticalGridLineDashPattern`;
+  `Shape.H_DASH` and `V_DASH` are `HORIZONTAL_DASH` and `VERTICAL_DASH` (Go
+  `shape.HorizontalDash` and `VerticalDash`); and the Go QR code levels are
+  `errorcorrectionlevel.L`, `M`, `Q` and `H`, as `ErrorCorrectionLevel.L` in
+  the other ports.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

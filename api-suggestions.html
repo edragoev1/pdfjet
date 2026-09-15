@@ -118,7 +118,7 @@
 <header>
   <p class="eyebrow">Open items for the v9.0.0 release</p>
   <h1>PDFjet API Cleanup</h1>
-  <p class="lede">What the API audit found that is still to be done for 9.0.0: the abbreviated names and the odd members. Items are removed from this page when they are done.</p>
+  <p class="lede">What the API audit found that is still to be done for 9.0.0: the odd members. Items are removed from this page when they are done.</p>
   <div class="meta">
     <span>Basis: <code>audit-api.py --dump</code> at 533ecc67 (102 lines, 101 public types per port), a method-by-method reading of Page, PDF, the shapes, the text classes, the charts and the annotations in all four ports, and the 50 examples.</span>
     <span>15 September 2026</span>
@@ -127,7 +127,6 @@
 
 <nav class="toc" aria-label="Sections">
   <ol>
-    <li><a href="#abbreviations">Abbreviations</a></li>
     <li><a href="#odd-members">Odd members</a></li>
   </ol>
 </nav>
@@ -136,23 +135,14 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Findings</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Abbreviations</td><td class="num">3</td><td>The only abbreviated setters and constants, and a Go constant that repeats its type name</td></tr>
     <tr><td>Odd members</td><td class="num">5</td><td>Names that hide what a member does, two setters for one value, and names that differ between the ports</td></tr>
-    <tr class="total"><td>Total</td><td class="num">8</td><td></td></tr>
+    <tr class="total"><td>Total</td><td class="num">5</td><td></td></tr>
   </tbody>
 </table>
 </div>
 
 <h2 id="names">Names</h2>
 <p>The names that still say the wrong thing, or say one thing two ways.</p>
-
-<section class="item" id="abbreviations">
-  <h3>Abbreviations <span class="chip now">9.0.0</span></h3>
-  <span class="label">Finding</span>
-  <p><code>Chart.setDrawHGridLines</code>, <code>setDrawVGridLines</code>, <code>setHGridLineWidth</code>, <code>setVGridLineWidth</code>, <code>setHGridLineDashPattern</code> and <code>setVGridLineDashPattern</code> are the only abbreviated setters in the library; <code>BarChart</code> spells out <code>setGridLineWidth</code>. <code>Shape.H_DASH</code> and <code>V_DASH</code> are the only abbreviated constants. Go <code>qrcode.ErrorCorrectionLevelL</code> repeats the type name where every other Go constant is <code>package.Name</code>, like <code>alignment.Left</code>.</p>
-  <span class="label">Suggestion</span>
-  <p><code>setDrawHorizontalGridLines</code> and the like, <code>Shape.HORIZONTAL_DASH</code> and <code>VERTICAL_DASH</code>, and a Go <code>errorcorrectionlevel</code> package with <code>L</code>, <code>M</code>, <code>Q</code> and <code>H</code>.</p>
-</section>
 
 <section class="item" id="odd-members">
   <h3>Odd members <span class="chip now">9.0.0</span></h3>

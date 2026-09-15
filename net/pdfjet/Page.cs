@@ -1748,9 +1748,9 @@ public class Page {
                 list.Add(new Point(p.x - p.r, p.y + p.r));
                 list.Add(new Point(p.x - p.r, p.y - p.r));
                 DrawPath(list, p.GetPathOperator());
-            } else if (p.shape == Shape.H_DASH) {
+            } else if (p.shape == Shape.HORIZONTAL_DASH) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
-            } else if (p.shape == Shape.V_DASH) {
+            } else if (p.shape == Shape.VERTICAL_DASH) {
                 DrawLine(p.x, p.y - p.r, p.x, p.y + p.r);
             } else if (p.shape == Shape.X_MARK) {
                 DrawLine(p.x - p.r, p.y - p.r, p.x + p.r, p.y + p.r);

@@ -15,6 +15,8 @@
 
 package qrcode
 
+import "github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
+
 // qrRSBlock describes the qrRSBlock object.
 type qrRSBlock struct {
 	totalCount int
@@ -37,7 +39,7 @@ func (rsblock *qrRSBlock) getTotalCount() int {
 	return rsblock.totalCount
 }
 
-func (rsblock *qrRSBlock) getRSBlocks(errorCorrectionLevel ErrorCorrectionLevel) []*qrRSBlock {
+func (rsblock *qrRSBlock) getRSBlocks(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) []*qrRSBlock {
 	rsBlock := rsblock.getRsBlockTable(errorCorrectionLevel)
 	length := len(rsBlock) / 3
 	list := make([]*qrRSBlock, 0)
@@ -52,24 +54,24 @@ func (rsblock *qrRSBlock) getRSBlocks(errorCorrectionLevel ErrorCorrectionLevel)
 	return list
 }
 
-func (rsblock *qrRSBlock) getRsBlockTable(errorCorrectionLevel ErrorCorrectionLevel) []int {
+func (rsblock *qrRSBlock) getRsBlockTable(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) []int {
 	buf := make([]int, 0)
-	if errorCorrectionLevel == ErrorCorrectionLevelL {
+	if errorCorrectionLevel == errorcorrectionlevel.L {
 		buf = append(buf, 1)
 		buf = append(buf, 100)
 		buf = append(buf, 80)
 		return buf
-	} else if errorCorrectionLevel == ErrorCorrectionLevelM {
+	} else if errorCorrectionLevel == errorcorrectionlevel.M {
 		buf = append(buf, 2)
 		buf = append(buf, 50)
 		buf = append(buf, 32)
 		return buf
-	} else if errorCorrectionLevel == ErrorCorrectionLevelQ {
+	} else if errorCorrectionLevel == errorcorrectionlevel.Q {
 		buf = append(buf, 2)
 		buf = append(buf, 50)
 		buf = append(buf, 24)
 		return buf
-	} else if errorCorrectionLevel == ErrorCorrectionLevelH {
+	} else if errorCorrectionLevel == errorcorrectionlevel.H {
 		buf = append(buf, 4)
 		buf = append(buf, 25)
 		buf = append(buf, 9)

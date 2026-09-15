@@ -18,9 +18,9 @@ public enum Shape {
     /// <summary>A plus sign.</summary>
     PLUS,
     /// <summary>A horizontal dash.</summary>
-    H_DASH,
+    HORIZONTAL_DASH,
     /// <summary>A vertical dash.</summary>
-    V_DASH,
+    VERTICAL_DASH,
     /// <summary>A multiplication sign.</summary>
     MULTIPLY,
     /// <summary>A star.</summary>

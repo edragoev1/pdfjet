@@ -33,15 +33,15 @@ type Chart struct {
 	subtitle                       string
 	xAxisTitle                     string
 	yAxisTitle                     string
-	drawHGridLines                 bool
-	drawVGridLines                 bool
+	drawHorizontalGridLines        bool
+	drawVerticalGridLines          bool
 	drawXAxisLabels                bool
 	drawYAxisLabels                bool
 	gridLineColor                  int32
-	hGridLineWidth                 float32
-	vGridLineWidth                 float32
-	hGridLineDashPattern           string
-	vGridLineDashPattern           string
+	horizontalGridLineWidth        float32
+	verticalGridLineWidth          float32
+	horizontalGridLineDashPattern  string
+	verticalGridLineDashPattern    string
 	axisLineWidth                  float32
 	chartBorderWidth               float32
 	innerBorderWidth               float32
@@ -78,13 +78,13 @@ func NewChart(f1, f2 *Font) *Chart {
 
 	chart.series = make([]*Series, 0)
 	chart.drawLegend = true
-	chart.drawHGridLines = true
-	chart.drawVGridLines = true
+	chart.drawHorizontalGridLines = true
+	chart.drawVerticalGridLines = true
 	chart.drawXAxisLabels = true
 	chart.drawYAxisLabels = true
 	chart.gridLineColor = color.Black
-	chart.hGridLineDashPattern = "[1 1] 0"
-	chart.vGridLineDashPattern = "[1 1] 0"
+	chart.horizontalGridLineDashPattern = "[1 1] 0"
+	chart.verticalGridLineDashPattern = "[1 1] 0"
 	chart.axisLineWidth = 0.5
 	chart.chartBorderWidth = 0.0
 	chart.innerBorderWidth = 0.0
@@ -164,15 +164,15 @@ func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) *Chart {
 	return chart
 }
 
-// SetDrawHGridLines sets whether to draw horizontal grid lines on the chart.
-func (chart *Chart) SetDrawHGridLines(drawHGridLines bool) *Chart {
-	chart.drawHGridLines = drawHGridLines
+// SetDrawHorizontalGridLines sets whether to draw horizontal grid lines on the chart.
+func (chart *Chart) SetDrawHorizontalGridLines(drawHorizontalGridLines bool) *Chart {
+	chart.drawHorizontalGridLines = drawHorizontalGridLines
 	return chart
 }
 
-// SetDrawVGridLines sets whether to draw vertical grid lines on the chart.
-func (chart *Chart) SetDrawVGridLines(drawVGridLines bool) *Chart {
-	chart.drawVGridLines = drawVGridLines
+// SetDrawVerticalGridLines sets whether to draw vertical grid lines on the chart.
+func (chart *Chart) SetDrawVerticalGridLines(drawVerticalGridLines bool) *Chart {
+	chart.drawVerticalGridLines = drawVerticalGridLines
 	return chart
 }
 
@@ -197,27 +197,27 @@ func (chart *Chart) SetInnerBorderWidth(width float32) *Chart {
 	return chart
 }
 
-// SetHGridLineWidth sets the width of the horizontal grid lines.
-func (chart *Chart) SetHGridLineWidth(width float32) *Chart {
-	chart.hGridLineWidth = width
+// SetHorizontalGridLineWidth sets the width of the horizontal grid lines.
+func (chart *Chart) SetHorizontalGridLineWidth(width float32) *Chart {
+	chart.horizontalGridLineWidth = width
 	return chart
 }
 
-// SetVGridLineWidth sets the width of the vertical grid lines.
-func (chart *Chart) SetVGridLineWidth(width float32) *Chart {
-	chart.vGridLineWidth = width
+// SetVerticalGridLineWidth sets the width of the vertical grid lines.
+func (chart *Chart) SetVerticalGridLineWidth(width float32) *Chart {
+	chart.verticalGridLineWidth = width
 	return chart
 }
 
-// SetHGridLineDashPattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetHGridLineDashPattern(pattern string) *Chart {
-	chart.hGridLineDashPattern = pattern
+// SetHorizontalGridLineDashPattern sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetHorizontalGridLineDashPattern(pattern string) *Chart {
+	chart.horizontalGridLineDashPattern = pattern
 	return chart
 }
 
-// SetVGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
-func (chart *Chart) SetVGridLineDashPattern(pattern string) *Chart {
-	chart.vGridLineDashPattern = pattern
+// SetVerticalGridLineDashPattern sets the vertical grid line dash pattern, e.g. "[1 1] 0".
+func (chart *Chart) SetVerticalGridLineDashPattern(pattern string) *Chart {
+	chart.verticalGridLineDashPattern = pattern
 	return chart
 }
 
@@ -330,11 +330,11 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.drawChartBorder(page)
 	chart.drawInnerBorder(page)
 
-	if chart.drawHGridLines {
-		chart.drawHorizontalGridLines(page)
+	if chart.drawHorizontalGridLines {
+		chart.drawHorizontalGrid(page)
 	}
-	if chart.drawVGridLines {
-		chart.drawVerticalGridLines(page)
+	if chart.drawVerticalGridLines {
+		chart.drawVerticalGrid(page)
 	}
 	if chart.axisLineWidth > 0.0 {
 		chart.drawAxisLines(page)
@@ -638,11 +638,11 @@ func (chart *Chart) drawAxisLines(page *Page) {
 	page.DrawLine(chart.x8, chart.y8, chart.x6, chart.y8)
 }
 
-// drawHorizontalGridLines draws the horizontal grid lines, one at each label.
-func (chart *Chart) drawHorizontalGridLines(page *Page) {
-	page.SetPenWidth(chart.hGridLineWidth)
+// drawHorizontalGrid draws the horizontal grid lines, one at each label.
+func (chart *Chart) drawHorizontalGrid(page *Page) {
+	page.SetPenWidth(chart.horizontalGridLineWidth)
 	page.SetPenColor(chart.gridLineColor)
-	page.SetStrokeDashPattern(chart.hGridLineDashPattern)
+	page.SetStrokeDashPattern(chart.horizontalGridLineDashPattern)
 	x := chart.x8
 	y := chart.y8
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
@@ -652,11 +652,11 @@ func (chart *Chart) drawHorizontalGridLines(page *Page) {
 	}
 }
 
-// drawVerticalGridLines draws the vertical grid lines, one at each label.
-func (chart *Chart) drawVerticalGridLines(page *Page) {
-	page.SetPenWidth(chart.vGridLineWidth)
+// drawVerticalGrid draws the vertical grid lines, one at each label.
+func (chart *Chart) drawVerticalGrid(page *Page) {
+	page.SetPenWidth(chart.verticalGridLineWidth)
 	page.SetPenColor(chart.gridLineColor)
-	page.SetStrokeDashPattern(chart.vGridLineDashPattern)
+	page.SetStrokeDashPattern(chart.verticalGridLineDashPattern)
 	x := chart.x5
 	y := chart.y5
 	step := (chart.x6 - chart.x5) / float32(chart.xAxisGridLines)

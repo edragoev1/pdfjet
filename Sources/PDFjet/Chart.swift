@@ -45,17 +45,17 @@ public class Chart : Drawable {
     private var xAxisTitle = ""
     private var yAxisTitle = ""
 
-    private var drawHGridLines = true
-    private var drawVGridLines = true
+    private var drawHorizontalGridLines = true
+    private var drawVerticalGridLines = true
     private var drawXAxisLabels = true
     private var drawYAxisLabels = true
 
     private var gridLineColor: Int32 = Color.black
-    private var hGridLineWidth: Float = 0.0
-    private var vGridLineWidth: Float = 0.0
+    private var horizontalGridLineWidth: Float = 0.0
+    private var verticalGridLineWidth: Float = 0.0
 
-    private var hGridLineDashPattern = "[1 1] 0"
-    private var vGridLineDashPattern = "[1 1] 0"
+    private var horizontalGridLineDashPattern = "[1 1] 0"
+    private var verticalGridLineDashPattern = "[1 1] 0"
 
     private var axisLineWidth: Float = 0.5
     private var chartBorderWidth: Float = 0.0
@@ -223,15 +223,15 @@ public class Chart : Drawable {
 
     /** Toggles drawing of horizontal grid lines. */
     @discardableResult
-    public func setDrawHGridLines(_ drawHGridLines: Bool) -> Chart {
-        self.drawHGridLines = drawHGridLines
+    public func setDrawHorizontalGridLines(_ drawHorizontalGridLines: Bool) -> Chart {
+        self.drawHorizontalGridLines = drawHorizontalGridLines
         return self
     }
 
     /** Toggles drawing of vertical grid lines. */
     @discardableResult
-    public func setDrawVGridLines(_ drawVGridLines: Bool) -> Chart {
-        self.drawVGridLines = drawVGridLines
+    public func setDrawVerticalGridLines(_ drawVerticalGridLines: Bool) -> Chart {
+        self.drawVerticalGridLines = drawVerticalGridLines
         return self
     }
 
@@ -261,29 +261,29 @@ public class Chart : Drawable {
 
     /// Sets the width of the horizontal grid lines.
     @discardableResult
-    public func setHGridLineWidth(_ width: Float) -> Chart {
-        self.hGridLineWidth = width
+    public func setHorizontalGridLineWidth(_ width: Float) -> Chart {
+        self.horizontalGridLineWidth = width
         return self
     }
 
     /// Sets the width of the vertical grid lines.
     @discardableResult
-    public func setVGridLineWidth(_ width: Float) -> Chart {
-        self.vGridLineWidth = width
+    public func setVerticalGridLineWidth(_ width: Float) -> Chart {
+        self.verticalGridLineWidth = width
         return self
     }
 
     /// Sets the horizontal grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
-    public func setHGridLineDashPattern(_ pattern: String) -> Chart {
-        self.hGridLineDashPattern = pattern
+    public func setHorizontalGridLineDashPattern(_ pattern: String) -> Chart {
+        self.horizontalGridLineDashPattern = pattern
         return self
     }
 
     /// Sets the vertical grid line dash pattern, e.g. "[1 1] 0".
     @discardableResult
-    public func setVGridLineDashPattern(_ pattern: String) -> Chart {
-        self.vGridLineDashPattern = pattern
+    public func setVerticalGridLineDashPattern(_ pattern: String) -> Chart {
+        self.verticalGridLineDashPattern = pattern
         return self
     }
 
@@ -395,11 +395,11 @@ public class Chart : Drawable {
             drawChartBorder(page!)
             drawInnerBorder(page!)
 
-            if drawHGridLines {
-                drawHorizontalGridLines(page!)
+            if drawHorizontalGridLines {
+                drawHorizontalGrid(page!)
             }
-            if drawVGridLines {
-                drawVerticalGridLines(page!)
+            if drawVerticalGridLines {
+                drawVerticalGrid(page!)
             }
             if axisLineWidth > 0.0 {
                 drawAxisLines(page!)
@@ -681,10 +681,10 @@ public class Chart : Drawable {
     }
 
     /// Draws the horizontal grid lines, one at each label.
-    private func drawHorizontalGridLines(_ page: Page) {
-        page.setPenWidth(hGridLineWidth)
+    private func drawHorizontalGrid(_ page: Page) {
+        page.setPenWidth(horizontalGridLineWidth)
         page.setPenColor(gridLineColor)
-        page.setStrokeDashPattern(hGridLineDashPattern)
+        page.setStrokeDashPattern(horizontalGridLineDashPattern)
         let x = x8
         var y = y8
         let step = (y8 - y5) / Float(yAxisGridLines)
@@ -695,10 +695,10 @@ public class Chart : Drawable {
     }
 
     /// Draws the vertical grid lines, one at each label.
-    private func drawVerticalGridLines(_ page: Page) {
-        page.setPenWidth(vGridLineWidth)
+    private func drawVerticalGrid(_ page: Page) {
+        page.setPenWidth(verticalGridLineWidth)
         page.setPenColor(gridLineColor)
-        page.setStrokeDashPattern(vGridLineDashPattern)
+        page.setStrokeDashPattern(verticalGridLineDashPattern)
         var x = x5
         let y = y5
         let step = (x6 - x5) / Float(xAxisGridLines)

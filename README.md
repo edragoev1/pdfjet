@@ -649,7 +649,7 @@ Java, C# and Swift keep constants in classes; Go keeps them in packages:
 `color.Blue` for `Color.blue`, `shape.Circle` for `Shape.CIRCLE`,
 `structelem.P` for `StructElem.P`, `border.Top`, `compliance.PDF_UA_1`,
 `direction`, `scriptposition`, `capstyle`, `joinstyle`, `pagelayout`, `pagemode`,
-`pathoperator`, `mark` and the font families
+`pathoperator`, `mark`, `errorcorrectionlevel` and the font families
 (`IBMPlexSans.Regular`). The constants of a package have its type, as
 `alignment.Alignment` and `pathoperator.PathOperator`, so a plain `int` or
 `string` variable does not compile where one is expected. The core fonts are
@@ -658,8 +658,7 @@ functions, `corefont.Courier()`, where the other ports have
 `Letter.PORTRAIT`, because a caller can assign to a Go package variable. In all
 four ports a page size is a `PageSize` that cannot be changed, with `getWidth`
 and `getHeight`; Go's is `pagesize.PageSize`, made with `pagesize.NewPageSize`
-for a size that has no package. The QR code error correction levels are
-`qrcode.ErrorCorrectionLevelL` and so on. Fields are private in every port;
+for a size that has no package. Fields are private in every port;
 `Paragraph` and `Title` have the getters an example needs (`getX1`,
 `getPrefix`). `Permissions` prints through `String()` in Go and `description`
 in Swift where Java and C# have `toString`.

@@ -18,9 +18,9 @@ public enum Shape {
     /// A plus sign.
     case PLUS
     /// A horizontal dash.
-    case H_DASH
+    case HORIZONTAL_DASH
     /// A vertical dash.
-    case V_DASH
+    case VERTICAL_DASH
     /// A multiplication sign.
     case MULTIPLY
     /// A star.

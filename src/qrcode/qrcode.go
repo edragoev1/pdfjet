@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 )
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
@@ -28,7 +29,7 @@ type QRCode struct {
 	pad1                 int
 	modules              [][]*bool
 	moduleCount          int
-	errorCorrectionLevel ErrorCorrectionLevel
+	errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel
 	x                    float32
 	y                    float32
 	qrData               []byte
@@ -39,7 +40,7 @@ type QRCode struct {
 // NewQRCode is used to create 2D QR Code barcodes.
 // @param str the string to encode.
 // @param errorCorrectionLevel the desired error correction level.
-func NewQRCode(str string, errorCorrectionLevel ErrorCorrectionLevel) *QRCode {
+func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) *QRCode {
 	qrcode := new(QRCode)
 	qrcode.pad0 = 0xEC
 	qrcode.pad1 = 0x11
@@ -262,7 +263,7 @@ func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
 	qrcode.modules[qrcode.moduleCount-8][8] = &value
 }
 
-func (qrcode *QRCode) createData(errorCorrectionLevel ErrorCorrectionLevel) []byte {
+func (qrcode *QRCode) createData(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) []byte {
 	rsblock := new(qrRSBlock)
 	rsBlocks := rsblock.getRSBlocks(errorCorrectionLevel)
 

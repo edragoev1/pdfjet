@@ -1545,9 +1545,9 @@ func (page *Page) DrawPoint(p *Point) {
 			list = append(list, NewPoint(p.x-p.r, p.y+p.r))
 			list = append(list, NewPoint(p.x-p.r, p.y-p.r))
 			page.DrawPath(list, p.pathOperator)
-		case shape.HDash:
+		case shape.HorizontalDash:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
-		case shape.VDash:
+		case shape.VerticalDash:
 			page.DrawLine(p.x, p.y-p.r, p.x, p.y+p.r)
 		case shape.XMark:
 			page.DrawLine(p.x-p.r, p.y-p.r, p.x+p.r, p.y+p.r)

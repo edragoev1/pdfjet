@@ -15,8 +15,8 @@ const (
 	Diamond
 	Box
 	Plus
-	HDash
-	VDash
+	HorizontalDash
+	VerticalDash
 	Multiply
 	Star
 	XMark

@@ -21,9 +21,9 @@ public enum Shape {
     /** A plus sign. */
     PLUS,
     /** A horizontal dash. */
-    H_DASH,
+    HORIZONTAL_DASH,
     /** A vertical dash. */
-    V_DASH,
+    VERTICAL_DASH,
     /** A multiplication sign. */
     MULTIPLY,
     /** A star. */
