@@ -55,7 +55,7 @@ class TableTest {
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("row0")));
         assertTrue(content.contains(TestSupport.hex("row1")));
-        assertEquals(42, table.getRowsDrawn());
+        assertEquals(42, table.getRowsRendered());
     }
 
     @Test

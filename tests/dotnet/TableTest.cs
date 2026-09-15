@@ -48,7 +48,7 @@ public sealed class TableTest : IDisposable {
         string content = TestSupport.Content(page);
         Assert.Contains(TestSupport.Hex("row0"), content);
         Assert.Contains(TestSupport.Hex("row1"), content);
-        Assert.Equal(42, table.GetRowsDrawn());
+        Assert.Equal(42, table.GetRowsRendered());
     }
 
     [Fact]

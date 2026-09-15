@@ -21,7 +21,7 @@ type Table struct {
 	tableData       [][]*Cell
 	numOfHeaderRows int
 	// The index of the next row to draw, or -1 when all rows are drawn.
-	drawn              int
+	rendered           int
 	x1, y1             float32
 	firstPageTopMargin float32
 	bottomMargin       float32
@@ -32,7 +32,7 @@ func NewTable() *Table {
 	table := new(Table)
 	table.tableData = make([][]*Cell, 0)
 	table.numOfHeaderRows = 1
-	table.drawn = 1
+	table.rendered = 1
 	return table
 }
 
@@ -118,7 +118,7 @@ func (table *Table) SetBottomMargin(bottomMargin float32) *Table {
 func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Table {
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
-	table.drawn = numOfHeaderRows
+	table.rendered = numOfHeaderRows
 	table.addCellsToCompleteTheGrid()
 	return table
 }
@@ -422,7 +422,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	x := xy[0]
 	y := xy[1]
-	index := table.drawn
+	index := table.rendered
 	if index == -1 {
 		index = len(table.tableData)
 	}
@@ -430,7 +430,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		row := table.tableData[index]
 		h := table.getMaxCellHeight(row)
 		if page != nil && (y+h) > (page.height-table.bottomMargin) {
-			table.drawn = index
+			table.rendered = index
 			return [2]float32{x, y}
 		}
 		for i := 0; i < len(row); {
@@ -452,7 +452,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		index++
 	}
 	if page != nil {
-		table.drawn = -1 // We are done!
+		table.rendered = -1 // We are done!
 	}
 	return [2]float32{x, y}
 }
@@ -471,7 +471,7 @@ func (table *Table) getMaxCellHeight(row []*Cell) float32 {
 
 // hasMoreData returns true if the table contains more data that needs to be drawn on a page.
 func (table *Table) hasMoreData() bool {
-	return table.drawn != -1
+	return table.rendered != -1
 }
 
 // GetWidth returns the width of the table when drawn on a page.
@@ -486,12 +486,12 @@ func (table *Table) GetWidth() float32 {
 	return tableWidth
 }
 
-// GetRowsDrawn returns the number of rows below the header rows that are
+// GetRowsRendered returns the number of rows below the header rows that are
 // drawn so far, counting each line of wrapped cell text as a row, or -1 when
 // all rows are drawn.
-func (table *Table) GetRowsDrawn() int {
-	if table.drawn != -1 {
-		return table.drawn - table.numOfHeaderRows
+func (table *Table) GetRowsRendered() int {
+	if table.rendered != -1 {
+		return table.rendered - table.numOfHeaderRows
 	}
 	return -1
 }
@@ -682,8 +682,8 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 			numOfHeaderRows2 = len(tableData2)
 		}
 	}
-	if table.drawn != -1 {
-		table.drawn += numOfHeaderRows2 - table.numOfHeaderRows
+	if table.rendered != -1 {
+		table.rendered += numOfHeaderRows2 - table.numOfHeaderRows
 	}
 	table.numOfHeaderRows = numOfHeaderRows2
 	return tableData2

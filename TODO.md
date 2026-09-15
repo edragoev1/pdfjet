@@ -891,10 +891,6 @@ renames included (the Week 1 decision), so every item is a blocker.
       and `Encryption.getKey` is internal in C# and Swift and removed from Go,
       which never called it; Java keeps it public for the `com.pdfjet`
       package.
-- ✅ **B** `Table.getRowsRendered` says "rendered" where the library says
-      "drawn".
-      Fixed: it is `getRowsDrawn` in the four ports, and the field behind
-      it is `drawn`; the unit tests use it, and no example calls it.
 
 ### Names in one port
 

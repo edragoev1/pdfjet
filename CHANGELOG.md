@@ -458,8 +458,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `Cell.setMarker`, `Page.addBDC`,
   `addArcToPath` and `addCircularArcToPath`, `Chart.setDrawHGridLines` and
   `setDrawVGridLines`, `TextLine.setScriptPosition` with the `ScriptPosition`
-  enum instead of `Effect`, `Form.setWidth`, `Path.setClosed`,
-  `Table.getRowsDrawn`, and Go `DrawStringUsingHighlightColors`.
+  enum instead of `Effect`, `Form.setWidth`, `Path.setClosed`, and Go
+  `DrawStringUsingHighlightColors`.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

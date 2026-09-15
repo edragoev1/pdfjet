@@ -38,7 +38,7 @@ import Testing
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("row0")))
         #expect(content.contains(TestSupport.hex("row1")))
-        #expect(table.getRowsDrawn() == 42)
+        #expect(table.getRowsRendered() == 42)
     }
 
     @Test func headerRowsRepeatOnEveryPage() {

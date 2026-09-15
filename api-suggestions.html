@@ -185,7 +185,7 @@
 </section>
 
 <h2 id="names">Names</h2>
-<p>The names that still say the wrong thing, or say one thing two ways. The fields that disagreed with their setters, the names with two meanings, <code>TextLine.getStringWidth</code> and <code>advance</code>, and the permissions that took an <code>int</code> in two ports were fixed on 14 September and are listed under <a href="#fixed">Fixed</a>. <code>Table.getRowsRendered</code> is <code>getRowsDrawn</code> since 15 September, as the library says "drawn".</p>
+<p>The names that still say the wrong thing, or say one thing two ways. The fields that disagreed with their setters, the names with two meanings, <code>TextLine.getStringWidth</code> and <code>advance</code>, and the permissions that took an <code>int</code> in two ports were fixed on 14 September and are listed under <a href="#fixed">Fixed</a>.</p>
 
 <section class="item">
   <h3>Abbreviations <span class="chip now">9.0.0</span></h3>
@@ -203,11 +203,12 @@
     <li><code>Arc.setSweepDegreesCW</code> and <code>setSweepDegreesCCW</code> are two setters for one signed angle, in a library where every other angle is counterclockwise and positive.</li>
     <li><code>Page.drawCircle</code> takes a <code>PathOperator</code> while <code>drawEllipse</code> has a <code>fillEllipse</code> twin, and <code>drawRectRoundCorners</code> has neither an operator nor a fill twin.</li>
     <li><code>Page.transform(float[])</code> takes the six values at Android <code>Matrix</code> indices, exposed as <code>MSCALE_X</code> and friends.</li>
+    <li><code>Table.getRowsRendered</code> says "rendered" where the library says "drawn".</li>
     <li>Go <code>Font.GetAscentAt</code>, <code>GetDescentAt</code>, <code>GetBodyHeightAt</code> and <code>StringWidthFB</code> use <code>At</code> and <code>FB</code> suffixes where the other Go overloads use a type suffix like <code>RGB</code>; Go <code>XMarkCheckBox</code> reads as a type.</li>
     <li>The private key generator of <code>Bookmark</code> is <code>next</code> in Java, <code>Next</code> in C#, <code>getNext</code> in Go and <code>goToNext</code> in Swift; <code>FileAttachment.setIconPushpin</code> writes <code>PushPin</code> next to <code>Paperclip</code>.</li>
   </ul>
   <span class="label">Suggestion</span>
-  <p><code>TextLine.setDestination(name)</code>, the other end of <code>setGoToAction(key)</code>, which adds the destination a font size above the baseline when the line is drawn, in place of the two getters; one <code>setSweep(degrees)</code>, counterclockwise; <code>fillRectRoundCorners</code> or a <code>PathOperator</code> on all three; <code>transform(a, b, c, d, e, f)</code> in PDF order.</p>
+  <p><code>TextLine.setDestination(name)</code>, the other end of <code>setGoToAction(key)</code>, which adds the destination a font size above the baseline when the line is drawn, in place of the two getters; one <code>setSweep(degrees)</code>, counterclockwise; <code>fillRectRoundCorners</code> or a <code>PathOperator</code> on all three; <code>transform(a, b, c, d, e, f)</code> in PDF order; <code>getRowsDrawn</code>.</p>
 </section>
 
 <section class="item">

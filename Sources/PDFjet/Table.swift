@@ -15,7 +15,7 @@ public class Table : Drawable {
     private var tableData: [[Cell]]
     private var numOfHeaderRows = 1
     // The index of the next row to draw, or -1 when all rows are drawn.
-    private var drawn = 1
+    private var rendered = 1
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var firstPageTopMargin: Float = 0.0
@@ -132,7 +132,7 @@ public class Table : Drawable {
     public func setTableData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) -> Table {
         self.tableData = tableData
         self.numOfHeaderRows = numOfHeaderRows
-        self.drawn = numOfHeaderRows
+        self.rendered = numOfHeaderRows
         addCellsToCompleteTheGrid()
         return self
     }
@@ -486,12 +486,12 @@ public class Table : Drawable {
     private func drawTableRows(_ page: Page?, _ xy: [Float]) -> [Float] {
         var x = xy[0]
         var y = xy[1]
-        var index = (drawn == -1) ? tableData.count : drawn
+        var index = (rendered == -1) ? tableData.count : rendered
         while index < tableData.count {
             let row = tableData[index]
             let h = getMaxCellHeight(row)
             if page != nil && (y + h) > (page!.height - bottomMargin) {
-                drawn = index
+                rendered = index
                 return [x, y]
             }
             var i = 0
@@ -514,7 +514,7 @@ public class Table : Drawable {
             index += 1
         }
         if page != nil {
-            drawn = -1   // We are done!
+            rendered = -1   // We are done!
         }
         return [x, y]
     }
@@ -536,7 +536,7 @@ public class Table : Drawable {
     /// Returns true if the table contains more data that needs to be drawn on a page.
     ///
     private func hasMoreData() -> Bool {
-        return self.drawn != -1
+        return self.rendered != -1
     }
 
     ///
@@ -560,10 +560,10 @@ public class Table : Drawable {
     /// counting each line of wrapped cell text as a row, or -1 when all rows
     /// are drawn.
     ///
-    /// - Returns: the number of drawn rows.
+    /// - Returns: the number of rendered rows.
     ///
-    public func getRowsDrawn() -> Int {
-        return drawn == -1 ? drawn : drawn - numOfHeaderRows
+    public func getRowsRendered() -> Int {
+        return rendered == -1 ? rendered : rendered - numOfHeaderRows
     }
 
     ///
@@ -758,8 +758,8 @@ public class Table : Drawable {
                 numOfHeaderRows2 = tableData2.count
             }
         }
-        if drawn != -1 {
-            drawn += numOfHeaderRows2 - numOfHeaderRows
+        if rendered != -1 {
+            rendered += numOfHeaderRows2 - numOfHeaderRows
         }
         numOfHeaderRows = numOfHeaderRows2
         return tableData2
