@@ -66,7 +66,7 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.setData(tableData, 2);
+        table.setTableData(tableData, 2);
         table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
         table.autoAdjustColumnWidths();

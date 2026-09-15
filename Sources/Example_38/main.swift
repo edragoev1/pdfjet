@@ -11,7 +11,7 @@ public class Example_38 {
         let page = Page(pdf, Letter.LANDSCAPE)
 
         let table = Table()
-        table.setData(createTableData(font))
+        table.setTableData(createTableData(font))
         table.setBottomMargin(10.0)
         table.setLocation(50.0, 50.0)
         table.drawOn(page)

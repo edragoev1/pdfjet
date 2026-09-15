@@ -39,7 +39,7 @@ public class Example_29 {
         tableData.add(row);
 
         Table table = new Table();
-        table.setData(tableData);
+        table.setTableData(tableData);
         table.setLocation(50f, 50f);
         table.drawOn(page);
 

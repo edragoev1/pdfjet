@@ -34,7 +34,7 @@ func testRows(font *Font, count, columns int) [][]*Cell {
 
 func TestTableMeasuringAndDrawingReturnTheSameCorner(t *testing.T) {
 	pdf := testNewPDF()
-	table := NewTable().SetData(testRows(testHelvetica(pdf), 5, 3), 1)
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 5, 3), 1)
 	table.SetLocation(20, 20)
 	testAssertXY(t, 20, 109.36, table.DrawOn(nil))
 	testAssertXY(t, 20, 109.36, table.DrawOn(NewPage(pdf, letter.Portrait())))
@@ -42,7 +42,7 @@ func TestTableMeasuringAndDrawingReturnTheSameCorner(t *testing.T) {
 
 func TestTableMeasuringFirstStillDrawsEveryRowOnThePage(t *testing.T) {
 	pdf := testNewPDF()
-	table := NewTable().SetData(testRows(testHelvetica(pdf), 60, 1), 1)
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 60, 1), 1)
 	table.SetLocation(20, 20)
 	table.DrawOn(nil)
 	page := NewPage(pdf, letter.Portrait())
@@ -58,7 +58,7 @@ func TestTableMeasuringFirstStillDrawsEveryRowOnThePage(t *testing.T) {
 
 func TestTableHeaderRowsRepeatOnEveryPage(t *testing.T) {
 	pdf := testNewPDF()
-	table := NewTable().SetData(testRows(testHelvetica(pdf), 60, 1), 1)
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 60, 1), 1)
 	table.SetLocation(20, 20)
 	pages := make([]*Page, 0)
 	testAssertXY(t, 20, 341.696, table.DrawOnPages(pdf, &pages, letter.Portrait()))
@@ -100,7 +100,7 @@ func TestTableTheFileConstructorDropsAByteOrderMarkAndPadsShortRows(t *testing.T
 }
 
 func TestTableGetCellAtGetRowAndGetColumnAgree(t *testing.T) {
-	table := NewTable().SetData(testRows(testHelvetica(testNewPDF()), 4, 3), 1)
+	table := NewTable().SetTableData(testRows(testHelvetica(testNewPDF()), 4, 3), 1)
 	if table.GetCellAt(2, 1) != table.GetRow(2)[1] || table.GetCellAt(2, 1) != table.GetColumn(1)[2] {
 		t.Error("different cells")
 	}
@@ -115,7 +115,7 @@ func TestTableRightAlignNumbersRightAlignsOnlyNumbers(t *testing.T) {
 	for _, text := range []string{"header", "-1.5e3", "12a", "+7", "3."} {
 		data = append(data, []*Cell{NewCell(font, text)})
 	}
-	table := NewTable().SetData(data, 1).RightAlignNumbers()
+	table := NewTable().SetTableData(data, 1).RightAlignNumbers()
 	want := []alignment.Alignment{alignment.Right, alignment.Left, alignment.Right, alignment.Right}
 	for i, w := range want {
 		if got := table.GetCellAt(i+1, 0).GetTextAlignment(); got != w {
@@ -143,7 +143,7 @@ func TestTableAnEmptyTableDrawsNothing(t *testing.T) {
 	if len(pages) != 0 {
 		t.Errorf("pages %d", len(pages))
 	}
-	empty := NewTable().SetData(make([][]*Cell, 0), 1)
+	empty := NewTable().SetTableData(make([][]*Cell, 0), 1)
 	empty.AutoAdjustColumnWidths().RightAlignNumbers()
 	testAssertXY(t, 0, 0, empty.DrawOn(page))
 	if got := testContent(page); got != "" {
@@ -154,7 +154,7 @@ func TestTableAnEmptyTableDrawsNothing(t *testing.T) {
 func TestTableMoreHeaderRowsThanRowsDrawsTheRows(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
-	expected := NewTable().SetData(testRows(font, 2, 1), 1).SetLocation(20, 20).DrawOn(nil)
-	xy := NewTable().SetData(testRows(font, 2, 1), 5).SetLocation(20, 20).DrawOn(NewPage(pdf, letter.Portrait()))
+	expected := NewTable().SetTableData(testRows(font, 2, 1), 1).SetLocation(20, 20).DrawOn(nil)
+	xy := NewTable().SetTableData(testRows(font, 2, 1), 5).SetLocation(20, 20).DrawOn(NewPage(pdf, letter.Portrait()))
 	testAssertXY(t, expected[0], expected[1], xy)
 }

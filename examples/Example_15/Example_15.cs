@@ -63,7 +63,7 @@ public class Example_15 {
         }
 
         Table table = new Table();
-        table.SetData(tableData, 2);
+        table.SetTableData(tableData, 2);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
         table.AutoAdjustColumnWidths();

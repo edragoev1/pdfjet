@@ -24,14 +24,14 @@ import Testing
     @Test func measuringAndDrawingReturnTheSameCorner() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
-        let table = Table().setData(rows(font, 5, 3), 1).setLocation(20, 20)
+        let table = Table().setTableData(rows(font, 5, 3), 1).setLocation(20, 20)
         TestSupport.expectXY(20, 109.36, table.drawOn(nil))
         TestSupport.expectXY(20, 109.36, table.drawOn(Page(pdf, Letter.PORTRAIT)))
     }
 
     @Test func measuringFirstStillDrawsEveryRowOnThePage() {
         let pdf = TestSupport.newPDF()
-        let table = Table().setData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20, 20)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20, 20)
         _ = table.drawOn(nil)
         let page = Page(pdf, Letter.PORTRAIT)
         _ = table.drawOn(page)
@@ -43,7 +43,7 @@ import Testing
 
     @Test func headerRowsRepeatOnEveryPage() {
         let pdf = TestSupport.newPDF()
-        let table = Table().setData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20, 20)
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20, 20)
         var pages = [Page]()
         TestSupport.expectXY(20, 341.696, table.drawOn(pdf, &pages, Letter.PORTRAIT))
         #expect(pages.count == 2)
@@ -72,7 +72,7 @@ import Testing
     }
 
     @Test func getCellAtGetRowAndGetColumnAgree() {
-        let table = Table().setData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1)
+        let table = Table().setTableData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1)
         #expect(table.getCellAt(2, 1) === table.getRow(2)[1])
         #expect(table.getCellAt(2, 1) === table.getColumn(1)[2])
         #expect(table.getCellAt(2, 1).getText() == "r2c1")
@@ -84,7 +84,7 @@ import Testing
         for text in ["header", "-1.5e3", "12a", "+7", "3."] {
             data.append([Cell(font, text)])
         }
-        let table = Table().setData(data, 1).rightAlignNumbers()
+        let table = Table().setTableData(data, 1).rightAlignNumbers()
         #expect(table.getCellAt(1, 0).getTextAlignment() == Alignment.RIGHT)
         #expect(table.getCellAt(2, 0).getTextAlignment() == Alignment.LEFT)
         #expect(table.getCellAt(3, 0).getTextAlignment() == Alignment.RIGHT)
@@ -104,7 +104,7 @@ import Testing
         var pages = [Page]()
         TestSupport.expectXY(20, 30, Table().setLocation(20, 30).drawOn(pdf, &pages, Letter.PORTRAIT))
         #expect(pages.isEmpty)
-        let empty = Table().setData([[Cell]](), 1)
+        let empty = Table().setTableData([[Cell]](), 1)
         empty.autoAdjustColumnWidths().rightAlignNumbers()
         TestSupport.expectXY(0, 0, empty.drawOn(page))
         #expect(TestSupport.content(page) == "")
@@ -113,8 +113,8 @@ import Testing
     @Test func moreHeaderRowsThanRowsDrawsTheRows() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
-        let expected = Table().setData(rows(font, 2, 1), 1).setLocation(20, 20).drawOn(nil)
-        let xy = Table().setData(rows(font, 2, 1), 5).setLocation(20, 20).drawOn(Page(pdf, Letter.PORTRAIT))
+        let expected = Table().setTableData(rows(font, 2, 1), 1).setLocation(20, 20).drawOn(nil)
+        let xy = Table().setTableData(rows(font, 2, 1), 5).setLocation(20, 20).drawOn(Page(pdf, Letter.PORTRAIT))
         TestSupport.expectXY(expected[0], expected[1], xy)
     }
 }

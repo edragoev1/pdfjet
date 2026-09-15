@@ -20,7 +20,7 @@ public class Example_38 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         Table table = new Table();
-        table.setData(createTableData());
+        table.setTableData(createTableData());
         table.setBottomMargin(10f);
         table.setLocation(50f, 50f);
         table.drawOn(page);

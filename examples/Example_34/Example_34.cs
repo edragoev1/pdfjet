@@ -46,7 +46,7 @@ public class Example_34 {
         p1.SetURIAction("https://en.wikipedia.org/wiki/United_States");
         tableData[6][3].SetMarker(p1, Alignment.RIGHT);
 
-        table.SetData(tableData, 2);
+        table.SetTableData(tableData, 2);
         table.SetBottomMargin(15f);
         table.SetLocation(70f, 30f);
         table.SetTextColorInRow(6, Color.blue);

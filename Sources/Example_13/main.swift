@@ -29,7 +29,7 @@ public class Example_13 {
         }
 
         let table = Table()
-        table.setData(tableData, 2)
+        table.setTableData(tableData, 2)
         table.setLocation(100.0, 50.0)
         table.setBottomMargin(10.0)
 

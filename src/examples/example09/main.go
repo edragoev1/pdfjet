@@ -103,7 +103,7 @@ func addTableToChart(page *pdfjet.Page, countries []*country, f1, f2 *pdfjet.Fon
 		}
 	}
 
-	table.SetData(tableData, 0)
+	table.SetTableData(tableData, 0)
 	table.AutoAdjustColumnWidths()
 	table.SetCellBorderWidth(0.2)
 	table.SetLocation(70.0, 360.0)

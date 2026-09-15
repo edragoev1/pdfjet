@@ -40,7 +40,7 @@ func Example13() {
 	}
 
 	table := pdfjet.NewTable()
-	table.SetData(tableData, 2)
+	table.SetTableData(tableData, 2)
 	table.SetLocation(100.0, 50.0)
 	table.SetBottomMargin(10.0)
 

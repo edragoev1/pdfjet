@@ -248,7 +248,7 @@
 <h2 id="later">Left for 10.0</h2>
 <div class="plan">
   <p><strong>Fold <code>TextColumn</code> into <code>TextFrame</code></strong> once its CJK paragraphs, its line between paragraphs and its alignment move over. That also settles <code>getSize</code>, <code>Dimension</code>, the two paragraph spacings and the missing getters above. Touches Example_10, 29, 44, 49 and <code>Cell.setTextColumn</code>.</p>
-  <p><strong>One table API.</strong> <code>Table</code> says <code>setData</code> and <code>drawOn(pdf, pages, pageSize)</code>; <code>BigTable</code> says <code>setTableData</code>, <code>setNumberOfColumns</code>, <code>setTextAlignment</code>, <code>complete</code> and <code>getPages</code>. Give them the same names, or make streaming a mode of <code>Table</code>. Touches Example_43 and the seven <code>Table</code> examples.</p>
+  <p><strong>One table API.</strong> <code>Table.setData</code> is <code>setTableData</code> since 15 September, the name <code>BigTable</code> uses, in the four ports, the six <code>Table</code> examples, the unit tests and the README. The rest still differs: <code>Table</code> says <code>drawOn(pdf, pages, pageSize)</code>; <code>BigTable</code> says <code>setNumberOfColumns</code>, <code>setTextAlignment</code>, <code>complete</code> and <code>getPages</code>. Give them the same names, or make streaming a mode of <code>Table</code>. Touches Example_43 and the <code>Table</code> examples.</p>
   <p><code>Stamp</code> keeps its own drawing API by decision: the form XObject is the point, and the API that fills it is a small cost.</p>
 </div>
 </div>

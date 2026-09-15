@@ -117,8 +117,8 @@ public class Table : IDrawable {
     /// </summary>
     /// <param name="tableData">the table data.</param>
     /// <returns>this Table object.</returns>
-    public Table SetData(List<List<Cell>> tableData) {
-        return SetData(tableData, 0);
+    public Table SetTableData(List<List<Cell>> tableData) {
+        return SetTableData(tableData, 0);
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ public class Table : IDrawable {
     /// <param name="tableData">the table data.</param>
     /// <param name="numOfHeaderRows">the number of header rows in this data.</param>
     /// <returns>this Table object.</returns>
-    public Table SetData(List<List<Cell>> tableData, int numOfHeaderRows) {
+    public Table SetTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;

@@ -796,6 +796,11 @@ renames included (the Week 1 decision), so every item is a blocker.
       on the bars, not on the bars and the gap after the last character.
       `drawOn` returns the bottom right corner of the bars and the text of
       every barcode in every direction, with or without a font.
+- ✅ **B** Table data: `Table.setData` against `BigTable.setTableData`.
+      Fixed: `Table.setData` is `setTableData` in the four ports, and the
+      six `Table` examples (09, 13, 15, 29, 34, 38), the unit tests and
+      the README Go note use it. The rest of one table API is left for
+      10.0 in api-suggestions.html.
 
 ### Names: misleading, redundant or dead
 

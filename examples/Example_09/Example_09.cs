@@ -95,7 +95,7 @@ public class Example_09 {
                 tableData.Add(tableRow);
             }
         }
-        table.SetData(tableData);
+        table.SetTableData(tableData);
         table.AutoAdjustColumnWidths();
         table.SetCellBorderWidth(0.2f);
         table.SetLocation(70f, 360f);

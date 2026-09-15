@@ -56,7 +56,7 @@ public class Example_15 {
         }
 
         let table = Table()
-        table.setData(tableData, 2)
+        table.setTableData(tableData, 2)
         table.setBottomMargin(15.0)
         table.setLocation(70.0, 30.0)
         table.autoAdjustColumnWidths()

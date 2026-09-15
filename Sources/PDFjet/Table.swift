@@ -117,8 +117,8 @@ public class Table : Drawable {
     /// - Parameter tableData: the table data.
     ///
     @discardableResult
-    public func setData(_ tableData: [[Cell]]) -> Table {
-        return setData(tableData, 0)
+    public func setTableData(_ tableData: [[Cell]]) -> Table {
+        return setTableData(tableData, 0)
     }
 
     ///
@@ -129,7 +129,7 @@ public class Table : Drawable {
     /// - Parameter numOfHeaderRows: the number of header rows in this data.
     ///
     @discardableResult
-    public func setData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) -> Table {
+    public func setTableData(_ tableData: [[Cell]], _ numOfHeaderRows: Int) -> Table {
         self.tableData = tableData
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows

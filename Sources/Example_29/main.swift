@@ -34,7 +34,7 @@ public class Example_29 {
         tableData.append(row)
 
         let table = Table()
-        table.setData(tableData)
+        table.setTableData(tableData)
         table.setLocation(50.0, 50.0)
         table.drawOn(page)
 

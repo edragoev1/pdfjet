@@ -130,8 +130,8 @@ public class Table implements Drawable {
      * @param tableData the table data.
      * @return this Table object.
      */
-    public Table setData(List<List<Cell>> tableData) {
-        return setData(tableData, 0);
+    public Table setTableData(List<List<Cell>> tableData) {
+        return setTableData(tableData, 0);
     }
 
     /**
@@ -142,7 +142,7 @@ public class Table implements Drawable {
      * @param numOfHeaderRows the number of header rows in this data.
      * @return this Table object.
      */
-    public Table setData(List<List<Cell>> tableData, int numOfHeaderRows) {
+    public Table setTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
         this.rendered = numOfHeaderRows;

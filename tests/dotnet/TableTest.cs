@@ -33,7 +33,7 @@ public sealed class TableTest : IDisposable {
     public void MeasuringAndDrawingReturnTheSameCorner() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        Table table = new Table().SetData(Rows(font, 5, 3), 1).SetLocation(20f, 20f);
+        Table table = new Table().SetTableData(Rows(font, 5, 3), 1).SetLocation(20f, 20f);
         TestSupport.AssertXY(20f, 109.36f, table.DrawOn((Page) null));
         TestSupport.AssertXY(20f, 109.36f, table.DrawOn(new Page(pdf, Letter.PORTRAIT)));
     }
@@ -41,7 +41,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void MeasuringFirstStillDrawsEveryRowOnThePage() {
         PDF pdf = TestSupport.NewPDF();
-        Table table = new Table().SetData(Rows(TestSupport.Helvetica(pdf), 60, 1), 1).SetLocation(20f, 20f);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 1), 1).SetLocation(20f, 20f);
         table.DrawOn((Page) null);
         Page page = new Page(pdf, Letter.PORTRAIT);
         table.DrawOn(page);
@@ -54,7 +54,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void HeaderRowsRepeatOnEveryPage() {
         PDF pdf = TestSupport.NewPDF();
-        Table table = new Table().SetData(Rows(TestSupport.Helvetica(pdf), 60, 1), 1).SetLocation(20f, 20f);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 1), 1).SetLocation(20f, 20f);
         List<Page> pages = new List<Page>();
         TestSupport.AssertXY(20f, 341.696f, table.DrawOn(pdf, pages, Letter.PORTRAIT));
         Assert.Equal(2, pages.Count);
@@ -82,7 +82,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void GetCellAtGetRowAndGetColumnAgree() {
-        Table table = new Table().SetData(Rows(TestSupport.Helvetica(TestSupport.NewPDF()), 4, 3), 1);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(TestSupport.NewPDF()), 4, 3), 1);
         Assert.Same(table.GetCellAt(2, 1), table.GetRow(2)[1]);
         Assert.Same(table.GetCellAt(2, 1), table.GetColumn(1)[2]);
         Assert.Equal("r2c1", table.GetCellAt(2, 1).GetText());
@@ -95,7 +95,7 @@ public sealed class TableTest : IDisposable {
         foreach (string text in new[] {"header", "-1.5e3", "12a", "+7", "3."}) {
             data.Add(new List<Cell> {new Cell(font, text)});
         }
-        Table table = new Table().SetData(data, 1).RightAlignNumbers();
+        Table table = new Table().SetTableData(data, 1).RightAlignNumbers();
         Assert.Equal(Alignment.RIGHT, table.GetCellAt(1, 0).GetTextAlignment());
         Assert.Equal(Alignment.LEFT, table.GetCellAt(2, 0).GetTextAlignment());
         Assert.Equal(Alignment.RIGHT, table.GetCellAt(3, 0).GetTextAlignment());
@@ -117,7 +117,7 @@ public sealed class TableTest : IDisposable {
         List<Page> pages = new List<Page>();
         TestSupport.AssertXY(20f, 30f, new Table().SetLocation(20f, 30f).DrawOn(pdf, pages, Letter.PORTRAIT));
         Assert.Empty(pages);
-        Table empty = new Table().SetData(new List<List<Cell>>(), 1);
+        Table empty = new Table().SetTableData(new List<List<Cell>>(), 1);
         empty.AutoAdjustColumnWidths().RightAlignNumbers();
         TestSupport.AssertXY(0f, 0f, empty.DrawOn(page));
         Assert.Equal("", TestSupport.Content(page));
@@ -127,8 +127,8 @@ public sealed class TableTest : IDisposable {
     public void MoreHeaderRowsThanRowsDrawsTheRows() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
-        float[] expected = new Table().SetData(Rows(font, 2, 1), 1).SetLocation(20f, 20f).DrawOn((Page) null);
-        float[] xy = new Table().SetData(Rows(font, 2, 1), 5).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] expected = new Table().SetTableData(Rows(font, 2, 1), 1).SetLocation(20f, 20f).DrawOn((Page) null);
+        float[] xy = new Table().SetTableData(Rows(font, 2, 1), 5).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         TestSupport.AssertXY(expected[0], expected[1], xy);
     }
 }

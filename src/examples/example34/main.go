@@ -59,7 +59,7 @@ func Example34() {
 	p1.SetURIAction("https://en.wikipedia.org/wiki/United_States")
 	tableData[6][3].SetMarker(p1, alignment.Right)
 
-	table.SetData(tableData, 2)
+	table.SetTableData(tableData, 2)
 	table.SetBottomMargin(15.0)
 	table.SetLocation(70.0, 30.0)
 	table.SetTextColorInRow(6, color.Blue)

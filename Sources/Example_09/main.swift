@@ -89,7 +89,7 @@ public class Example_09 {
                 tableData.append(tableRow)
             }
         }
-        table.setData(tableData)
+        table.setTableData(tableData)
         table.autoAdjustColumnWidths()
         table.setCellBorderWidth(0.2)
         table.setLocation(70.0, 360.0)

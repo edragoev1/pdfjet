@@ -38,7 +38,7 @@ public class Example_29 {
         tableData.Add(row);
 
         Table table = new Table();
-        table.SetData(tableData);
+        table.SetTableData(tableData);
         table.SetLocation(50f, 50f);
         table.DrawOn(page);
 

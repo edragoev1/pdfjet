@@ -40,7 +40,7 @@ class TableTest {
     void measuringAndDrawingReturnTheSameCorner() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        Table table = new Table().setData(rows(font, 5, 3), 1).setLocation(20f, 20f);
+        Table table = new Table().setTableData(rows(font, 5, 3), 1).setLocation(20f, 20f);
         TestSupport.assertXY(20f, 109.36f, table.drawOn((Page) null));
         TestSupport.assertXY(20f, 109.36f, table.drawOn(new Page(pdf, Letter.PORTRAIT)));
     }
@@ -48,7 +48,7 @@ class TableTest {
     @Test
     void measuringFirstStillDrawsEveryRowOnThePage() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Table table = new Table().setData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20f, 20f);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20f, 20f);
         table.drawOn((Page) null);
         Page page = new Page(pdf, Letter.PORTRAIT);
         table.drawOn(page);
@@ -61,7 +61,7 @@ class TableTest {
     @Test
     void headerRowsRepeatOnEveryPage() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Table table = new Table().setData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20f, 20f);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20f, 20f);
         List<Page> pages = new ArrayList<Page>();
         TestSupport.assertXY(20f, 341.696f, table.drawOn(pdf, pages, Letter.PORTRAIT));
         assertEquals(2, pages.size());
@@ -95,7 +95,7 @@ class TableTest {
 
     @Test
     void getCellAtGetRowAndGetColumnAgree() throws Exception {
-        Table table = new Table().setData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1);
         assertSame(table.getCellAt(2, 1), table.getRow(2).get(1));
         assertSame(table.getCellAt(2, 1), table.getColumn(1).get(2));
         assertEquals("r2c1", table.getCellAt(2, 1).getText());
@@ -110,7 +110,7 @@ class TableTest {
             row.add(new Cell(font, text));
             data.add(row);
         }
-        Table table = new Table().setData(data, 1).rightAlignNumbers();
+        Table table = new Table().setTableData(data, 1).rightAlignNumbers();
         assertEquals(Alignment.RIGHT, table.getCellAt(1, 0).getTextAlignment());
         assertEquals(Alignment.LEFT, table.getCellAt(2, 0).getTextAlignment());
         assertEquals(Alignment.RIGHT, table.getCellAt(3, 0).getTextAlignment());
@@ -132,7 +132,7 @@ class TableTest {
         List<Page> pages = new ArrayList<Page>();
         TestSupport.assertXY(20f, 30f, new Table().setLocation(20f, 30f).drawOn(pdf, pages, Letter.PORTRAIT));
         assertEquals(0, pages.size());
-        Table empty = new Table().setData(new ArrayList<List<Cell>>(), 1);
+        Table empty = new Table().setTableData(new ArrayList<List<Cell>>(), 1);
         empty.autoAdjustColumnWidths().rightAlignNumbers();
         TestSupport.assertXY(0f, 0f, empty.drawOn(page));
         assertEquals("", TestSupport.content(page));
@@ -142,8 +142,8 @@ class TableTest {
     void moreHeaderRowsThanRowsDrawsTheRows() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
-        float[] expected = new Table().setData(rows(font, 2, 1), 1).setLocation(20f, 20f).drawOn((Page) null);
-        float[] xy = new Table().setData(rows(font, 2, 1), 5).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] expected = new Table().setTableData(rows(font, 2, 1), 1).setLocation(20f, 20f).drawOn((Page) null);
+        float[] xy = new Table().setTableData(rows(font, 2, 1), 5).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
         TestSupport.assertXY(expected[0], expected[1], xy);
     }
 }

@@ -35,7 +35,7 @@ public class Example_13 {
         reader.Close();
 
         Table table = new Table();
-        table.SetData(tableData, 2);
+        table.SetTableData(tableData, 2);
         table.SetLocation(100f, 50f);
         table.SetBottomMargin(10f);
 

@@ -113,9 +113,9 @@ func (table *Table) SetBottomMargin(bottomMargin float32) *Table {
 	return table
 }
 
-// SetData sets the table data and specifies the number of header rows in table data.
+// SetTableData sets the table data and specifies the number of header rows in table data.
 // The header rows are drawn again at the top of every page.
-func (table *Table) SetData(tableData [][]*Cell, numOfHeaderRows int) *Table {
+func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Table {
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows

@@ -96,7 +96,7 @@ final public class Example_09 {
                 tableData.add(tableRow);
             }
         }
-        table.setData(tableData);
+        table.setTableData(tableData);
         table.autoAdjustColumnWidths();
         table.setCellBorderWidth(0.2f);
         table.setLocation(70f, 360f);

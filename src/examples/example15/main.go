@@ -73,7 +73,7 @@ func Example15() {
 	}
 
 	table := pdfjet.NewTable()
-	table.SetData(tableData, 2)
+	table.SetTableData(tableData, 2)
 	table.SetBottomMargin(15.0)
 	table.SetLocation(70.0, 30.0)
 	table.AutoAdjustColumnWidths()

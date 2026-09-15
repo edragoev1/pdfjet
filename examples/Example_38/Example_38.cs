@@ -21,7 +21,7 @@ public class Example_38 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         Table table = new Table();
-        table.SetData(CreateTableData());
+        table.SetTableData(CreateTableData());
         table.SetBottomMargin(10f);
         table.SetLocation(50f, 50f);
         table.DrawOn(page);

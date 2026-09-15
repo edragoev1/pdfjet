@@ -47,7 +47,7 @@ final public class Example_34 {
         p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
         tableData.get(6).get(3).setMarker(p1, Alignment.RIGHT);
 
-        table.setData(tableData, 2);
+        table.setTableData(tableData, 2);
         table.setBottomMargin(15f);
         table.setLocation(70f, 30f);
         table.setTextColorInRow(6, Color.blue);

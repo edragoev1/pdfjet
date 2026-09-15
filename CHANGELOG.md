@@ -272,7 +272,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `Table.getWidth` of an empty table is 0 in the four ports, where three
   failed on the missing first row. An empty table draws nothing, and
   `drawOn(pdf, pages, pageSize)` adds no page for it, where every port failed
-  on the missing first row, as `setData` and `autoAdjustColumnWidths` did with
+  on the missing first row, as `setTableData` and `autoAdjustColumnWidths` did with
   no rows; a table with more header rows than rows draws the rows it has. A cell keeps its column span, four
   borders, underline and strikeout as fields in the four ports, so the
   Swift flags no longer report borders that `setBorder` turned off, and Go
@@ -442,6 +442,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   which replaces `advance`, and `Title.setOffset` sets the offset.
 - Alignment: `Cell.setVerticalAlignment`, `Table.setTextAlignmentInColumn`,
   and `Paragraph` and `TextColumn.setTextAlignment`.
+- Table data: `Table.setData` is `setTableData`, the name `BigTable` uses.
 - Text boxes: a gap is in points and a spacing a multiplier, so `setPadding`,
   `setLineGap`, `setParagraphGap` and `setHighlightColors`;
   `Paragraph.setTextColor`, `TextLine.setDecorationColor` and
