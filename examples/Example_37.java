@@ -53,6 +53,6 @@ class Example_37 {
         // new Example_37("../../eBooks/Bluebook.pdf");
         // new Example_37("../../eBooks/Orangebook.pdf");
         long time1 = System.currentTimeMillis();
-        System.out.println("Example_37 => " + (time1 - time0) + " ms");
+        System.out.printf("Example_37 => %4d ms%n", time1 - time0);
     }
 }   // End of Example_37.java

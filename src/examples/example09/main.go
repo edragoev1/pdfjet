@@ -204,7 +204,7 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example09()
 	time1 := time.Now().UnixMilli()
-	fmt.Printf("Example_09 => %d ms\n", time1-time0)
+	fmt.Printf("Example_09 => %4d ms\n", time1-time0)
 }
 
 // The slope and intercept of the ordinary least squares trend line of the points.

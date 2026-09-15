@@ -85,6 +85,6 @@ public class Example_01 {
         long time0 = System.currentTimeMillis();
         new Example_01();  // Create the PDF
         long time1 = System.currentTimeMillis();
-        System.out.println("Example_01 => " + (time1 - time0) + " ms");  // Print the duration of the process
+        System.out.printf("Example_01 => %4d ms%n", time1 - time0);  // Print the duration of the process
     }
 }   // End of Example_01.java

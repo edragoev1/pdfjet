@@ -70,5 +70,5 @@ func main() {
 	// Example37("../../eBooks/Bluebook.pdf")
 	// Example37("../../eBooks/Orangebook.pdf")
 	time1 := time.Now().UnixMilli()
-	fmt.Printf("Example_37 => %d ms\n", time1-time0)
+	fmt.Printf("Example_37 => %4d ms\n", time1-time0)
 }

@@ -55,4 +55,4 @@ public class Example_21 {
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_21()
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
-print("Example_21 => \(time1 - time0) ms")
+print("Example_21 => \(String(format: "%4lld", time1 - time0)) ms")

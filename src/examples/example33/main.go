@@ -102,5 +102,5 @@ func main() {
 		log.Fatal(err)
 	}
 	time1 := time.Now().UnixMilli()
-	fmt.Printf("Example_33 => %d ms\n", time1-time0)
+	fmt.Printf("Example_33 => %4d ms\n", time1-time0)
 }

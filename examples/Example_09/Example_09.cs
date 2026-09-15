@@ -207,6 +207,6 @@ public class Example_09 {
         new Example_09();
         long time1 = sw.ElapsedMilliseconds;
         sw.Stop();
-        Console.WriteLine("Example_09 => " + (time1 - time0) + " ms");
+        Console.WriteLine($"Example_09 => {time1 - time0,4} ms");
     }
 }   // End of Example_09.cs

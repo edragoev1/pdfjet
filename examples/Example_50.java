@@ -185,6 +185,6 @@ class Example_50 {
         // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
         // new Example_50("50", "../specifications/ISO_32000-2_2017(en).PDF");
         long time1 = System.currentTimeMillis();
-        System.out.println("Example_50 => " + (time1 - time0) + " ms");
+        System.out.printf("Example_50 => %4d ms%n", time1 - time0);
     }
 }   // End of Example_50.java

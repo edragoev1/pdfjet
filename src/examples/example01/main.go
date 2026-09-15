@@ -84,5 +84,5 @@ func main() {
 	time0 := time.Now().UnixMilli()
 	Example01()
 	time1 := time.Now().UnixMilli()
-	fmt.Printf("Example_01 => %d ms\n", time1-time0)
+	fmt.Printf("Example_01 => %4d ms\n", time1-time0)
 }

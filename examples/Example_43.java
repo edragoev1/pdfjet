@@ -47,6 +47,6 @@ public class Example_43 {
         long time0 = System.currentTimeMillis();
         new Example_43();
         long time1 = System.currentTimeMillis();
-        System.out.println("Example_43 => " + (time1 - time0) + " ms");
+        System.out.printf("Example_43 => %4d ms%n", time1 - time0);
     }
 }   // End of Example_43.java

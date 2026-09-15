@@ -70,4 +70,4 @@ public class Example_01 {
 let time0 = Int64(Date().timeIntervalSince1970 * 1000) // Record start time
 _ = try Example_01()  // Create the PDF
 let time1 = Int64(Date().timeIntervalSince1970 * 1000) // Record end time
-print("Example_01 => \(time1 - time0) ms")    // Print the execution duration
+print("Example_01 => \(String(format: "%4lld", time1 - time0)) ms")    // Print the execution duration
