@@ -1641,14 +1641,13 @@ public class Page {
     }
 
     /// <summary>
-    /// Draws the specified circle on the page and fills it with the current brush color.
+    /// Fills a circle on the page using the current brush color.
     /// </summary>
-    /// <param name="x">the x coordinate of the center of the circle to be drawn.</param>
-    /// <param name="y">the y coordinate of the center of the circle to be drawn.</param>
-    /// <param name="r">the radius of the circle to be drawn.</param>
-    /// <param name="pathOperator">must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.</param>
-    public void DrawCircle(float x, float y, float r, PathOperator pathOperator) {
-        DrawEllipse(x, y, r, r, pathOperator);
+    /// <param name="x">the x coordinate of the center of the circle to be filled.</param>
+    /// <param name="y">the y coordinate of the center of the circle to be filled.</param>
+    /// <param name="r">the radius of the circle to be filled.</param>
+    public void FillCircle(float x, float y, float r) {
+        DrawEllipse(x, y, r, r, PathOperator.FILL);
     }
 
     /// <summary>
@@ -1702,7 +1701,7 @@ public class Page {
         if (p.shape != Shape.INVISIBLE) {
             List<Point> list;
             if (p.shape == Shape.CIRCLE) {
-                DrawCircle(p.x, p.y, p.r, p.GetPathOperator());
+                DrawEllipse(p.x, p.y, p.r, p.r, p.GetPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new List<Point>();
                 list.Add(new Point(p.x, (float) (p.y - p.r*1.2)));
@@ -1962,15 +1961,30 @@ public class Page {
     // Code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // <<
-    /// <summary>Draws a rectangle with rounded corners.</summary>
+    /// <summary>Draws the outline of a rectangle with rounded corners using the current pen color.</summary>
     /// <param name="x">the x coordinate of the top left corner.</param>
     /// <param name="y">the y coordinate of the top left corner.</param>
     /// <param name="w">the width.</param>
     /// <param name="h">the height.</param>
     /// <param name="r1">the horizontal radius of the corners.</param>
     /// <param name="r2">the vertical radius of the corners.</param>
-    /// <param name="pathOperator">the path operator, for example PathOperator.STROKE or PathOperator.FILL.</param>
-    public void DrawRectRoundCorners(
+    public void DrawRoundedRect(float x, float y, float w, float h, float r1, float r2) {
+        DrawRoundedRect(x, y, w, h, r1, r2, PathOperator.STROKE);
+    }
+
+    /// <summary>Fills a rectangle with rounded corners using the current brush color.</summary>
+    /// <param name="x">the x coordinate of the top left corner.</param>
+    /// <param name="y">the y coordinate of the top left corner.</param>
+    /// <param name="w">the width.</param>
+    /// <param name="h">the height.</param>
+    /// <param name="r1">the horizontal radius of the corners.</param>
+    /// <param name="r2">the vertical radius of the corners.</param>
+    public void FillRoundedRect(float x, float y, float w, float h, float r1, float r2) {
+        DrawRoundedRect(x, y, w, h, r1, r2, PathOperator.FILL);
+    }
+
+    // Draws a rectangle with rounded corners with the path operator.
+    private void DrawRoundedRect(
             float x,
             float y,
             float w,

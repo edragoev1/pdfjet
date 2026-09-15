@@ -117,6 +117,20 @@ import Testing
         #expect(TestSupport.content(page) == "")
     }
 
+    @Test func theShapesAreDrawnOrFilled() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.drawCircle(50, 50, 10)
+        page.fillCircle(50, 50, 10)
+        page.drawRoundedRect(10, 10, 100, 50, 5, 5)
+        page.fillRoundedRect(10, 10, 100, 50, 5, 5)
+        // A drawn shape is stroked with S, and a filled one filled with f.
+        let painted = TestSupport.content(page)
+                .split(whereSeparator: { $0 == " " || $0 == "\n" })
+                .map(String.init)
+                .filter { $0 == "S" || $0 == "f" }
+        #expect(painted == ["S", "f", "S", "f"])
+    }
+
     @Test func aRadioButtonFontSizeLeavesTheFontAlone() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

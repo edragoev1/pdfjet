@@ -615,7 +615,7 @@ has a shorter overload,
 and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize` and
 `DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthFB` for `stringWidth` with a fallback font,
-`DrawCircleUsingPathOperator` for `drawCircle` with an operator, `MergePages`
+`MergePages`
 for `merge` with page numbers, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
 `addResource` overloads of `Page` and `PDFobj`. Every color setter takes an

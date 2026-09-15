@@ -130,7 +130,7 @@ public class RadioButton : Drawable {
         page!.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r1)
 
         if self.selected {
-            page!.drawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.FILL)
+            page!.fillCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2)
         }
 
         // A linked label is blue.

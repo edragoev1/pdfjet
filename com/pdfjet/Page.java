@@ -1565,19 +1565,17 @@ final public class Page {
     }
 
     /**
-     * Draws the specified circle on the page and fills it with the current brush color.
+     * Fills a circle on the page using the current brush color.
      *
-     * @param x the x coordinate of the center of the circle to be drawn.
-     * @param y the y coordinate of the center of the circle to be drawn.
-     * @param r the radius of the circle to be drawn.
-     * @param pathOperator must be PathOperator.STROKE, PathOperator.CLOSE_AND_STROKE or PathOperator.FILL.
+     * @param x the x coordinate of the center of the circle to be filled.
+     * @param y the y coordinate of the center of the circle to be filled.
+     * @param r the radius of the circle to be filled.
      */
-    public void drawCircle(
+    public void fillCircle(
             float x,
             float y,
-            float r,
-            PathOperator pathOperator) {
-        drawEllipse(x, y, r, r, pathOperator);
+            float r) {
+        drawEllipse(x, y, r, r, PathOperator.FILL);
     }
 
     /**
@@ -1666,7 +1664,7 @@ final public class Page {
         if (p.shape != Shape.INVISIBLE) {
             List<Point> list;
             if (p.shape == Shape.CIRCLE) {
-                drawCircle(p.x, p.y, p.r, p.getPathOperator());
+                drawEllipse(p.x, p.y, p.r, p.r, p.getPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new ArrayList<Point>();
                 list.add(new Point(p.x, (float) (p.y - p.r*1.2)));
@@ -1938,7 +1936,7 @@ final public class Page {
     // Dominique Andre Gunia <contact@dgunia.de>
     // <<
     /**
-     * Draws a rectangle with rounded corners.
+     * Draws the outline of a rectangle with rounded corners using the current pen color.
      *
      * @param x the x coordinate of the top left corner.
      * @param y the y coordinate of the top left corner.
@@ -1946,10 +1944,29 @@ final public class Page {
      * @param h the height.
      * @param r1 the horizontal radius of the corners.
      * @param r2 the vertical radius of the corners.
-     * @param pathOperator the path operator, for example PathOperator.STROKE or PathOperator.FILL.
      * @throws Exception if the path cannot be drawn.
      */
-    public void drawRectRoundCorners(
+    public void drawRoundedRect(float x, float y, float w, float h, float r1, float r2) throws Exception {
+        drawRoundedRect(x, y, w, h, r1, r2, PathOperator.STROKE);
+    }
+
+    /**
+     * Fills a rectangle with rounded corners using the current brush color.
+     *
+     * @param x the x coordinate of the top left corner.
+     * @param y the y coordinate of the top left corner.
+     * @param w the width.
+     * @param h the height.
+     * @param r1 the horizontal radius of the corners.
+     * @param r2 the vertical radius of the corners.
+     * @throws Exception if the path cannot be drawn.
+     */
+    public void fillRoundedRect(float x, float y, float w, float h, float r1, float r2) throws Exception {
+        drawRoundedRect(x, y, w, h, r1, r2, PathOperator.FILL);
+    }
+
+    // Draws a rectangle with rounded corners with the path operator.
+    private void drawRoundedRect(
             float x, float y, float w, float h, float r1, float r2, PathOperator pathOperator)
         throws Exception {
         // The best 4-spline magic number

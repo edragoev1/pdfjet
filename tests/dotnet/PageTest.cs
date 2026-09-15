@@ -127,6 +127,23 @@ public class PageTest {
     }
 
     [Fact]
+    public void TheShapesAreDrawnOrFilled() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.DrawCircle(50f, 50f, 10f);
+        page.FillCircle(50f, 50f, 10f);
+        page.DrawRoundedRect(10f, 10f, 100f, 50f, 5f, 5f);
+        page.FillRoundedRect(10f, 10f, 100f, 50f, 5f, 5f);
+        // A drawn shape is stroked with S, and a filled one filled with f.
+        List<string> painted = new List<string>();
+        foreach (string token in TestSupport.Content(page).Split((char[]) null, System.StringSplitOptions.RemoveEmptyEntries)) {
+            if (token == "S" || token == "f") {
+                painted.Add(token);
+            }
+        }
+        Assert.Equal(new List<string> {"S", "f", "S", "f"}, painted);
+    }
+
+    [Fact]
     public void ARadioButtonFontSizeLeavesTheFontAlone() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

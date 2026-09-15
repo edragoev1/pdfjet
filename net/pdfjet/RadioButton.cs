@@ -120,7 +120,7 @@ public class RadioButton : IDrawable {
         page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r1);
 
         if (this.selected) {
-            page.DrawCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2, PathOperator.FILL);
+            page.FillCircle(x + r1 + penWidth, yBox + r1 + penWidth, r2);
         }
 
         // A linked label is blue.

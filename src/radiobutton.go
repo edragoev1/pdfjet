@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -108,9 +107,9 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		yBox+radioButton.r1+radioButton.penWidth, radioButton.r1)
 
 	if radioButton.selected {
-		page.DrawCircleUsingPathOperator(
+		page.FillCircle(
 			radioButton.x+radioButton.r1+radioButton.penWidth,
-			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2, pathoperator.Fill)
+			yBox+radioButton.r1+radioButton.penWidth, radioButton.r2)
 	}
 
 	// A linked label is blue.

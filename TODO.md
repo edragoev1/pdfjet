@@ -920,6 +920,14 @@ renames included (the Week 1 decision), so every item is a blocker.
       `TextLine` and `Page`, and `Arc.setStartAngle` and the new `setSweep`.
       The internal rotations and Example_05, 06, 35 and 49 negate their
       angles, so the PDFs are unchanged.
+- ✅ **B** `Page.drawCircle` takes a `PathOperator` while `drawEllipse` has a
+      `fillEllipse` twin, and `drawRectRoundCorners` takes an operator and has
+      no fill twin.
+      Fixed: the fixed shapes are drawn or filled, in the four ports:
+      `fillCircle` replaces `drawCircle(x, y, r, PathOperator)` (Go
+      `DrawCircleUsingPathOperator`), and `drawRoundedRect` and
+      `fillRoundedRect` replace `drawRectRoundCorners`. `drawPath` keeps its
+      operator; `RadioButton` fills its dot with `fillCircle`.
 
 ### Names in one port
 

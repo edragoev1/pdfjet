@@ -1433,14 +1433,13 @@ func (page *Page) DrawCircle(x, y, r float32) {
 	page.drawEllipse(x, y, r, r, pathoperator.Stroke)
 }
 
-// DrawCircleUsingPathOperator draws the specified circle on the page using the path operator.
+// FillCircle fills a circle on the page using the current brush color.
 //
-//   - x: the x coordinate of the center of the circle to be drawn.
-//   - y: the y coordinate of the center of the circle to be drawn.
-//   - r: the radius of the circle to be drawn.
-//   - pathOperator: the path operator, for example pathoperator.Stroke or pathoperator.Fill.
-func (page *Page) DrawCircleUsingPathOperator(x, y, r float32, pathOperator pathoperator.PathOperator) {
-	page.drawEllipse(x, y, r, r, pathOperator)
+//   - x: the x coordinate of the center of the circle to be filled.
+//   - y: the y coordinate of the center of the circle to be filled.
+//   - r: the radius of the circle to be filled.
+func (page *Page) FillCircle(x, y, r float32) {
+	page.drawEllipse(x, y, r, r, pathoperator.Fill)
 }
 
 // DrawEllipse draws an ellipse on the page using the current pen color.
@@ -1741,10 +1740,34 @@ func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 	return page
 }
 
-// DrawRectRoundCorners draws rectangle with rounded corners.
+// DrawRoundedRect draws the outline of a rectangle with rounded corners using the
+// current pen color.
+//   - x: the x coordinate of the top left corner.
+//   - y: the y coordinate of the top left corner.
+//   - w: the width.
+//   - h: the height.
+//   - r1: the horizontal radius of the corners.
+//   - r2: the vertical radius of the corners.
+func (page *Page) DrawRoundedRect(x, y, w, h, r1, r2 float32) {
+	page.drawRoundedRect(x, y, w, h, r1, r2, pathoperator.Stroke)
+}
+
+// FillRoundedRect fills a rectangle with rounded corners using the current brush
+// color.
+//   - x: the x coordinate of the top left corner.
+//   - y: the y coordinate of the top left corner.
+//   - w: the width.
+//   - h: the height.
+//   - r1: the horizontal radius of the corners.
+//   - r2: the vertical radius of the corners.
+func (page *Page) FillRoundedRect(x, y, w, h, r1, r2 float32) {
+	page.drawRoundedRect(x, y, w, h, r1, r2, pathoperator.Fill)
+}
+
+// drawRoundedRect draws a rectangle with rounded corners with the path operator.
 // Code provided by:
 // Dominique Andre Gunia <contact@dgunia.de>
-func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation pathoperator.PathOperator) {
+func (page *Page) drawRoundedRect(x, y, w, h, r1, r2 float32, pathOperator pathoperator.PathOperator) {
 	// The best 4-spline magic number
 	var m4 float32 = 0.55228
 
@@ -1772,7 +1795,7 @@ func (page *Page) DrawRectRoundCorners(x, y, w, h, r1, r2 float32, operation pat
 	list = append(list, NewPoint(x+r1, y))
 	list = append(list, NewPoint(x+w-r1, y))
 
-	page.DrawPath(list, operation)
+	page.DrawPath(list, pathOperator)
 }
 
 // ClipPath clips the path.

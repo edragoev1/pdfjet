@@ -135,8 +135,8 @@
 <table class="summary">
   <thead><tr><th>Group</th><th class="num">Findings</th><th>What it removes</th></tr></thead>
   <tbody>
-    <tr><td>Odd members</td><td class="num">4</td><td>Names that hide what a member does, two setters for one value, and names that differ between the ports</td></tr>
-    <tr class="total"><td>Total</td><td class="num">4</td><td></td></tr>
+    <tr><td>Odd members</td><td class="num">3</td><td>Names that hide what a member does, two setters for one value, and names that differ between the ports</td></tr>
+    <tr class="total"><td>Total</td><td class="num">3</td><td></td></tr>
   </tbody>
 </table>
 </div>
@@ -148,13 +148,12 @@
   <h3>Odd members <span class="chip now">9.0.0</span></h3>
   <span class="label">Finding</span>
   <ul>
-    <li><code>Page.drawCircle</code> takes a <code>PathOperator</code> while <code>drawEllipse</code> has a <code>fillEllipse</code> twin, and <code>drawRectRoundCorners</code> has neither an operator nor a fill twin.</li>
     <li><code>Page.transform(float[])</code> takes the six values at Android <code>Matrix</code> indices, exposed as <code>MSCALE_X</code> and friends.</li>
     <li>Go <code>Font.GetAscentAt</code>, <code>GetDescentAt</code>, <code>GetBodyHeightAt</code> and <code>StringWidthFB</code> use <code>At</code> and <code>FB</code> suffixes where the other Go overloads use a type suffix like <code>RGB</code>; Go <code>XMarkCheckBox</code> reads as a type.</li>
     <li>The private key generator of <code>Bookmark</code> is <code>next</code> in Java, <code>Next</code> in C#, <code>getNext</code> in Go and <code>goToNext</code> in Swift; <code>FileAttachment.setIconPushpin</code> writes <code>PushPin</code> next to <code>Paperclip</code>.</li>
   </ul>
   <span class="label">Suggestion</span>
-  <p><code>fillRectRoundCorners</code> or a <code>PathOperator</code> on all three; <code>transform(a, b, c, d, e, f)</code> in PDF order.</p>
+  <p><code>transform(a, b, c, d, e, f)</code> in PDF order.</p>
 </section>
 </div>
 </body>

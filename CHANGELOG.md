@@ -475,6 +475,11 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `shape.HorizontalDash` and `VerticalDash`); and the Go QR code levels are
   `errorcorrectionlevel.L`, `M`, `Q` and `H`, as `ErrorCorrectionLevel.L` in
   the other ports.
+- The fixed shapes of `Page` are drawn or filled, as `drawRect` and
+  `fillRect` and `drawEllipse` and `fillEllipse` are: `fillCircle` replaces
+  `drawCircle(x, y, r, PathOperator)` (Go `DrawCircleUsingPathOperator`), and
+  `drawRoundedRect` and `fillRoundedRect` replace `drawRectRoundCorners`.
+  `drawPath` keeps its `PathOperator`.
 - Dead members are removed or reachable: `FileAttachment` takes no `PDF`,
   `Slice` has no tooltip, `BaseAnnotation` is abstract, the `Destination`
   constructors are internal, and `Image.setLanguage`, the `SVGImage` link and

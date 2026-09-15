@@ -132,6 +132,24 @@ func TestPageAPathWithFewerThanTwoPointsPaintsNothing(t *testing.T) {
 	}
 }
 
+func TestPageTheShapesAreDrawnOrFilled(t *testing.T) {
+	page := testNewPage()
+	page.DrawCircle(50, 50, 10)
+	page.FillCircle(50, 50, 10)
+	page.DrawRoundedRect(10, 10, 100, 50, 5, 5)
+	page.FillRoundedRect(10, 10, 100, 50, 5, 5)
+	// A drawn shape is stroked with S, and a filled one filled with f.
+	painted := []string{}
+	for _, token := range strings.Fields(testContent(page)) {
+		if token == "S" || token == "f" {
+			painted = append(painted, token)
+		}
+	}
+	if strings.Join(painted, " ") != "S f S f" {
+		t.Errorf("operators %v in %q", painted, testContent(page))
+	}
+}
+
 func TestPageSetTextRenderingModeRejectsAModeOutsideTheRange(t *testing.T) {
 	page := testNewPage()
 	if _, err := page.SetTextRenderingMode(3); err != nil {

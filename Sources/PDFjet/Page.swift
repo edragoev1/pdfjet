@@ -1502,19 +1502,17 @@ public class Page {
     }
 
     ///
-    /// Draws the specified circle on the page and fills it with the current brush color.
+    /// Fills a circle on the page using the current brush color.
     ///
-    /// - Parameter x: the x coordinate of the center of the circle to be drawn.
-    /// - Parameter y: the y coordinate of the center of the circle to be drawn.
-    /// - Parameter r: the radius of the circle to be drawn.
-    /// - Parameter pathOperator: the path operator, for example PathOperator.STROKE or PathOperator.FILL.
+    /// - Parameter x: the x coordinate of the center of the circle to be filled.
+    /// - Parameter y: the y coordinate of the center of the circle to be filled.
+    /// - Parameter r: the radius of the circle to be filled.
     ///
-    public func drawCircle(
+    public func fillCircle(
             _ x: Float,
             _ y: Float,
-            _ r: Float,
-            _ pathOperator: PathOperator) {
-        drawEllipse(x, y, r, r, pathOperator)
+            _ r: Float) {
+        drawEllipse(x, y, r, r, PathOperator.FILL)
     }
 
     ///
@@ -1603,7 +1601,7 @@ public class Page {
         if p.shape != Shape.INVISIBLE  {
             var list: [Point]
             if p.shape == Shape.CIRCLE {
-                drawCircle(p.x, p.y, p.r, p.getPathOperator())
+                drawEllipse(p.x, p.y, p.r, p.r, p.getPathOperator())
             } else if p.shape == Shape.DIAMOND {
                 list = [Point]()
                 list.append(Point(p.x, p.y - p.r*1.2))
@@ -1880,8 +1878,36 @@ public class Page {
     // Original code provided by:
     // Dominique Andre Gunia <contact@dgunia.de>
     // >>
-    /// Draws a rectangle with rounded corners.
-    public func drawRectRoundCorners(
+    ///
+    /// Draws the outline of a rectangle with rounded corners using the current pen color.
+    ///
+    /// - Parameter x: the x coordinate of the top left corner.
+    /// - Parameter y: the y coordinate of the top left corner.
+    /// - Parameter w: the width.
+    /// - Parameter h: the height.
+    /// - Parameter r1: the horizontal radius of the corners.
+    /// - Parameter r2: the vertical radius of the corners.
+    ///
+    public func drawRoundedRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float, _ r1: Float, _ r2: Float) {
+        drawRoundedRect(x, y, w, h, r1, r2, PathOperator.STROKE)
+    }
+
+    ///
+    /// Fills a rectangle with rounded corners using the current brush color.
+    ///
+    /// - Parameter x: the x coordinate of the top left corner.
+    /// - Parameter y: the y coordinate of the top left corner.
+    /// - Parameter w: the width.
+    /// - Parameter h: the height.
+    /// - Parameter r1: the horizontal radius of the corners.
+    /// - Parameter r2: the vertical radius of the corners.
+    ///
+    public func fillRoundedRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float, _ r1: Float, _ r2: Float) {
+        drawRoundedRect(x, y, w, h, r1, r2, PathOperator.FILL)
+    }
+
+    // Draws a rectangle with rounded corners with the path operator.
+    private func drawRoundedRect(
             _ x: Float,
             _ y: Float,
             _ w: Float,

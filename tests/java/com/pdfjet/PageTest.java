@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +131,23 @@ class PageTest {
         path.add(new Point(10f, 10f));
         page.drawPath(path, PathOperator.STROKE);
         assertEquals("", TestSupport.content(page));
+    }
+
+    @Test
+    void theShapesAreDrawnOrFilled() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.drawCircle(50f, 50f, 10f);
+        page.fillCircle(50f, 50f, 10f);
+        page.drawRoundedRect(10f, 10f, 100f, 50f, 5f, 5f);
+        page.fillRoundedRect(10f, 10f, 100f, 50f, 5f, 5f);
+        // A drawn shape is stroked with S, and a filled one filled with f.
+        List<String> painted = new ArrayList<String>();
+        for (String token : TestSupport.content(page).split("\\s+")) {
+            if (token.equals("S") || token.equals("f")) {
+                painted.add(token);
+            }
+        }
+        assertEquals(Arrays.asList("S", "f", "S", "f"), painted);
     }
 
     @Test
