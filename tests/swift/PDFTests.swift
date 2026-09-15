@@ -41,7 +41,14 @@ import Testing
         let raw = TestSupport.latin1(bytes)
         let header = try #require(raw.firstMatch(of: /xref\n0 (\d+)\n/))
         let count = Int(header.1)!
-        let entries = raw.utf8.distance(from: raw.startIndex, to: header.range.upperBound)
+        // The table holds byte offsets, and startxref is the byte offset of the
+        // table, so the entries are found from it: a String index counts
+        // characters, which are not bytes once the file holds a byte above 127.
+        let startxref = try #require(raw.firstMatch(of: /startxref\n(\d+)\n%%EOF\n$/))
+        let xref = Int(startxref.1)!
+        let tableHeader = Array("xref\n0 \(count)\n".utf8)
+        #expect(Array(bytes[xref..<(xref + tableHeader.count)]) == tableHeader)
+        let entries = xref + tableHeader.count
         for number in 1..<count {
             let entry = TestSupport.latin1(Array(bytes[(entries + 20 * number)..<(entries + 20 * number + 20)]))
             if Array(entry)[17] == "n" {
@@ -50,9 +57,6 @@ import Testing
                 #expect(object.hasPrefix("\(number) 0 obj"), "object \(number) at \(offset)")
             }
         }
-        let startxref = try #require(raw.firstMatch(of: /startxref\n(\d+)\n%%EOF\n$/))
-        let xref = Int(startxref.1)!
-        #expect(TestSupport.latin1(Array(bytes[xref..<(xref + 5)])) == "xref\n")
     }
 
     @Test func documentIdsAreRandomAndDifferent() throws {
