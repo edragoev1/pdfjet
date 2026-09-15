@@ -22,7 +22,7 @@ public class Table implements Drawable {
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
     // The index of the next row to draw, or -1 when all rows are drawn.
-    private int rendered = 1;
+    private int drawn = 1;
     private float x1;
     private float y1;
     private float firstPageTopMargin;
@@ -145,7 +145,7 @@ public class Table implements Drawable {
     public Table setTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
-        this.rendered = numOfHeaderRows;
+        this.drawn = numOfHeaderRows;
         addCellsToCompleteTheGrid();
         return this;
     }
@@ -500,12 +500,12 @@ public class Table implements Drawable {
     private float[] drawTableRows(Page page, float[] xy) throws Exception {
         float x = xy[0];
         float y = xy[1];
-        int index = (rendered == -1) ? tableData.size() : rendered;
+        int index = (drawn == -1) ? tableData.size() : drawn;
         while (index < tableData.size()) {
             List<Cell> row = tableData.get(index);
             float h = getMaxCellHeight(row);
             if (page != null && (y + h) > (page.height - bottomMargin)) {
-                rendered = index;
+                drawn = index;
                 return new float[] {x, y};
             }
             int i = 0;
@@ -527,7 +527,7 @@ public class Table implements Drawable {
             index++;
         }
         if (page != null) {
-            rendered = -1; // We are done!
+            drawn = -1; // We are done!
         }
         return new float[] {x, y};
     }
@@ -552,7 +552,7 @@ public class Table implements Drawable {
      * @return whether the table has more data to be drawn on a page.
      */
     private boolean hasMoreData() {
-        return rendered != -1;
+        return drawn != -1;
     }
 
     /**
@@ -575,10 +575,10 @@ public class Table implements Drawable {
      * counting each line of wrapped cell text as a row, or -1 when all rows
      * are drawn.
      *
-     * @return the number of rendered rows.
+     * @return the number of drawn rows.
      */
-    public int getRowsRendered() {
-        return rendered == -1 ? rendered : rendered - numOfHeaderRows;
+    public int getRowsDrawn() {
+        return drawn == -1 ? drawn : drawn - numOfHeaderRows;
     }
 
     /**
@@ -782,8 +782,8 @@ public class Table implements Drawable {
                 numOfHeaderRows2 = tableData2.size();
             }
         }
-        if (rendered != -1) {
-            rendered += numOfHeaderRows2 - numOfHeaderRows;
+        if (drawn != -1) {
+            drawn += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
         return tableData2;

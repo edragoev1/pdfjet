@@ -51,8 +51,8 @@ func TestTableMeasuringFirstStillDrawsEveryRowOnThePage(t *testing.T) {
 	if !strings.Contains(content, testHex("row0")) || !strings.Contains(content, testHex("row1")) {
 		t.Error("the first rows were not drawn")
 	}
-	if got := table.GetRowsRendered(); got != 42 {
-		t.Errorf("rows rendered %d", got)
+	if got := table.GetRowsDrawn(); got != 42 {
+		t.Errorf("rows drawn %d", got)
 	}
 }
 

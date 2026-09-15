@@ -19,7 +19,7 @@ public class Table : IDrawable {
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
     // The index of the next row to draw, or -1 when all rows are drawn.
-    private int rendered = 1;
+    private int drawn = 1;
     private float x1;
     private float y1;
     private float firstPageTopMargin;
@@ -131,7 +131,7 @@ public class Table : IDrawable {
     public Table SetTableData(List<List<Cell>> tableData, int numOfHeaderRows) {
         this.tableData = tableData;
         this.numOfHeaderRows = numOfHeaderRows;
-        this.rendered = numOfHeaderRows;
+        this.drawn = numOfHeaderRows;
         AddCellsToCompleteTheGrid();
         return this;
     }
@@ -460,12 +460,12 @@ public class Table : IDrawable {
     private float[] DrawTableRows(Page page, float[] xy) {
         float x = xy[0];
         float y = xy[1];
-        int index = (rendered == -1) ? tableData.Count : rendered;
+        int index = (drawn == -1) ? tableData.Count : drawn;
         while (index < tableData.Count) {
             List<Cell> row = tableData[index];
             float h = GetMaxCellHeight(row);
             if (page != null && (y + h) > (page.height - bottomMargin)) {
-                rendered = index;
+                drawn = index;
                 return new float[] {x, y};
             }
             int i = 0;
@@ -487,7 +487,7 @@ public class Table : IDrawable {
             index++;
         }
         if (page != null) {
-            rendered = -1; // We are done!
+            drawn = -1; // We are done!
         }
         return new float[] {x, y};
     }
@@ -509,7 +509,7 @@ public class Table : IDrawable {
     /// Returns true if the table contains more data that needs to be drawn on a page.
     /// </summary>
     private bool HasMoreData() {
-        return rendered != -1;
+        return drawn != -1;
     }
 
     /// <summary>
@@ -531,9 +531,9 @@ public class Table : IDrawable {
     /// counting each line of wrapped cell text as a row, or -1 when all rows
     /// are drawn.
     /// </summary>
-    /// <returns>the number of rendered rows.</returns>
-    public int GetRowsRendered() {
-        return rendered == -1 ? rendered : rendered - numOfHeaderRows;
+    /// <returns>the number of drawn rows.</returns>
+    public int GetRowsDrawn() {
+        return drawn == -1 ? drawn : drawn - numOfHeaderRows;
     }
 
     /// <summary>
@@ -731,8 +731,8 @@ public class Table : IDrawable {
                 numOfHeaderRows2 = tableData2.Count;
             }
         }
-        if (rendered != -1) {
-            rendered += numOfHeaderRows2 - numOfHeaderRows;
+        if (drawn != -1) {
+            drawn += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
         return tableData2;
