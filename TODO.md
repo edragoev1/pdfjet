@@ -215,7 +215,7 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 - ⬜ **B** Code freeze on Oct 15: fixes only, each with its check.
 - ⬜ **B** Tag `v9.0.0` on Oct 21 and build the Java and .NET archives
-      (`package-java.sh`, `package-dotnet.sh`).
+      (`.packaging/package-java.sh`, `.packaging/package-dotnet.sh`).
 - ⬜ **B** From a scratch module: `go list -m github.com/edragoev1/pdfjet/v9@v9.0.0`
       and `go get github.com/edragoev1/pdfjet/v9@v9.0.0` build and write a PDF.
 - ⬜ **B** A scratch Swift package resolves PDFjet from the tag and writes a PDF.
