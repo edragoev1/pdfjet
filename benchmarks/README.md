@@ -9,7 +9,7 @@ programs, the method and the results that `jet-vs-box.html` quotes.
 | `BigTableBench.java` | Example_43: a 2,546-page table from a 124,716-row CSV file |
 | `pom.xml` | iText Core 9.7.1 and PDFBox 3.0.8, which `run.sh` copies into `build/lib` |
 | `run.sh` | Builds PDFjet from this checkout and the benchmarks, runs them and writes `build/results-<date>-<time>.log` |
-| `results/` | The logs of the runs; the results below are from `2026-09-15-7c4988ad.log` |
+| `results/` | The logs of the runs; the results below are from `2026-09-15-312697d5.log` |
 
 ## Running
 
@@ -65,72 +65,73 @@ and `build/` is not tracked.
 
 ## Results, 15 September 2026
 
-AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, PDFjet at 7c4988ad, in one run with
-nothing else running. Its log is `results/2026-09-15-7c4988ad.log`.
+AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, PDFjet at 312697d5, in one run with
+nothing else running. Its log is `results/2026-09-15-312697d5.log`.
 
 ### The text document, 500 pages
 
 | Configuration | Time | File | Allocated | Peak memory |
 |---|---:|---:|---:|---:|
-| PDFjet, IBM Plex Sans | 59 ms | 571,768 bytes | 26 MB | 88 MB |
-| PDFjet, Noto Sans | 62 ms | 848,576 bytes | 29 MB | 86 MB |
-| iText, IBM Plex Sans subset | 73 ms | 501,395 bytes | 74 MB | 135 MB |
-| iText, IBM Plex Sans full | 75 ms | 537,005 bytes | 79 MB | 140 MB |
-| iText, Noto Sans subset | 74 ms | 496,442 bytes | 71 MB | 138 MB |
+| PDFjet, IBM Plex Sans | 58 ms | 567,688 bytes | 26 MB | 85 MB |
+| PDFjet, Noto Sans | 60 ms | 843,926 bytes | 29 MB | 85 MB |
+| iText, IBM Plex Sans subset | 74 ms | 501,395 bytes | 74 MB | 133 MB |
+| iText, IBM Plex Sans full | 76 ms | 537,005 bytes | 79 MB | 140 MB |
+| iText, Noto Sans subset | 74 ms | 496,442 bytes | 71 MB | 134 MB |
 | iText, Noto Sans full | 98 ms | 807,159 bytes | 81 MB | 137 MB |
-| PDFBox, Noto Sans subset | 20,923 ms | 426,467 bytes | 38,262 MB | 383 MB |
-| PDFBox, Noto Sans full | 19,944 ms | 728,346 bytes | 38,241 MB | 384 MB |
+| PDFBox, Noto Sans subset | 21,963 ms | 426,467 bytes | 38,357 MB | 384 MB |
+| PDFBox, Noto Sans full | 19,546 ms | 728,346 bytes | 38,288 MB | 384 MB |
 
 With each page flushed when the next one starts, iText peaked at 125 MB with
 IBM Plex Sans and 133 MB with Noto Sans.
 
 | Time by length | 50 pages | 100 pages | 200 pages | 500 pages |
 |---|---:|---:|---:|---:|
-| PDFjet, IBM Plex Sans | 8 ms | 15 ms | 22 ms | 59 ms |
-| iText, IBM Plex Sans subset | 12 ms | 24 ms | 50 ms | 73 ms |
-| PDFBox, Noto Sans subset | 2,133 ms | 4,367 ms | 8,340 ms | 20,923 ms |
+| PDFjet, IBM Plex Sans | 8 ms | 14 ms | 23 ms | 58 ms |
+| iText, IBM Plex Sans subset | 14 ms | 26 ms | 48 ms | 74 ms |
+| PDFBox, Noto Sans subset | 2,148 ms | 4,421 ms | 8,438 ms | 21,963 ms |
 
-First document in a new JVM, 20 pages: PDFjet 88 ms, iText 213 ms, PDFBox 1,282 ms.
-Jars with their dependencies: PDFjet 392,236 bytes, iText 5,752,771 bytes,
+First document in a new JVM, 20 pages: PDFjet 87 ms, iText 213 ms, PDFBox 1,285 ms.
+Jars with their dependencies: PDFjet 392,297 bytes, iText 5,752,771 bytes,
 PDFBox 3,845,317 bytes.
 
 ### Example_43, 2,546 pages
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File |
 |---|---:|---:|---:|---:|---:|---:|
-| PDFjet `BigTable` | 1,727 ms | 2,183 ms | 759 MB | 751 MB | 256 MB | 12.3 MB |
-| PDFjet `Page` | 1,856 ms | 2,287 ms | 816 MB | 756 MB | 256 MB | 12.7 MB |
-| iText `PdfCanvas` | 2,065 ms | 2,648 ms | 1,109 MB | 822 MB | 256 MB | 11.8 MB |
-| iText `Table` | 33,992 ms | 36,869 ms | 47,245 MB | 7,265 MB | 8 GB | 21.6 MB |
-| PDFBox, content stream | 12,381 ms | 13,343 ms | 25,200 MB | 545 MB | 128 MB | 11.9 MB |
-| PDFjet `Page`, page by page | 1,843 ms | 2,159 ms | 816 MB | 394 MB | 32 MB | 12.7 MB |
-| iText `PdfCanvas`, page by page | 2,037 ms | 2,602 ms | 1,133 MB | 407 MB | 32 MB | 11.8 MB |
+| PDFjet `BigTable` | 1,729 ms | 2,159 ms | 759 MB | 745 MB | 256 MB | 12.3 MB |
+| PDFjet `Page` | 1,797 ms | 2,232 ms | 815 MB | 754 MB | 256 MB | 12.6 MB |
+| iText `PdfCanvas` | 2,023 ms | 2,668 ms | 1,109 MB | 809 MB | 256 MB | 11.8 MB |
+| iText `Table` | 34,245 ms | 36,752 ms | 47,236 MB | 7,107 MB | 8 GB | 21.6 MB |
+| PDFBox, content stream | 12,351 ms | 13,193 ms | 25,200 MB | 454 MB | 128 MB | 11.9 MB |
+| PDFjet `Page`, page by page | 1,775 ms | 2,127 ms | 815 MB | 385 MB | 32 MB | 12.6 MB |
+| iText `PdfCanvas`, page by page | 2,039 ms | 2,561 ms | 1,133 MB | 405 MB | 32 MB | 11.8 MB |
 
 All seven files have 2,546 pages and end with "Page 2546 of 2546". Pages 1,
 1273 and 2546 drawn on PDFjet's `Page`, kept or page by page, render the same as
 `BigTable`'s at 72 dpi, pixel for pixel.
 
-Before 7c4988ad, which writes page content without an array for each string and
-number, a run at d963a7c8 (`results/2026-09-15-d963a7c8.log`) measured the text
-document at 71 ms and 36 MB, `BigTable` at 1,930 ms and 1,282 MB, and `Page` at
-2,128 ms and 1,460 MB.
+Before 312697d5, which places a string with Td where the text matrix is the
+identity, a run at 7c4988ad (`results/2026-09-15-7c4988ad.log`) measured the text
+document at 59 ms and 571,768 bytes, `BigTable` at 1,727 ms, and `Page` at
+1,856 ms and 12,666,944 bytes. Before that, a run at d963a7c8
+(`results/2026-09-15-d963a7c8.log`) measured the text document at 71 ms and
+36 MB allocated, `BigTable` at 1,930 ms and `Page` at 2,128 ms.
 
 ### What the numbers say
 
-- PDFjet is faster than iText's low-level API at every length: 59 against 73 ms
-  for 500 pages and 15 against 24 ms for 100. It allocates about a third as much,
+- PDFjet is faster than iText's low-level API at every length: 58 against 74 ms
+  for 500 pages and 14 against 26 ms for 100. It allocates about a third as much,
   with a lower peak, a faster start and a jar a fifteenth of the size. PDFBox is
-  about 340 times slower on the text document with Noto Sans, whose Devanagari
-  substitution rules it applies to every line, and 7.2 times slower on the table.
-- On the table, `BigTable` takes 16% less time than iText's `PdfCanvas` (1,727
-  against 2,065 ms), and iText's own `Table` is 20 times slower and needs an 8 GB
+  about 370 times slower on the text document with Noto Sans, whose Devanagari
+  substitution rules it applies to every line, and 7.1 times slower on the table.
+- On the table, `BigTable` takes 15% less time than iText's `PdfCanvas` (1,729
+  against 2,023 ms), and iText's own `Table` is 20 times slower and needs an 8 GB
   heap.
 - Drawn with the same calls, PDFjet is ahead of iText too: on `Page` the table
-  takes 10% less time than on `PdfCanvas` and allocates 26% less; page by page,
-  10% less time and 28% less. `BigTable` takes 7% less time than the same drawing
-  on `Page`: for each string, `Page.drawString` writes a text matrix and the text
-  color and makes two arrays for the color, where `BigTable` writes only a
-  position.
+  takes 11% less time than on `PdfCanvas` and allocates 27% less; page by page,
+  13% less time and 28% less. `BigTable` takes 4% less time than the same drawing
+  on `Page`: both write only a position for each string, but `Page.drawString`
+  also writes the text color and makes two arrays for it.
 - Memory for the table depends on keeping the pages, not on the library. With
   every page kept for the footers, PDFjet and iText need a 256 MB heap: a PDFjet
   page that has not been added to the PDF holds its content uncompressed, 97.5 MB
