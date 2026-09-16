@@ -15,10 +15,6 @@ internal final class FlateEncode {
     // positions instead of the last one only.
     private var head: [Int32]
     private var prev: [Int32]
-    // The bytes are collected here and handed to the output a block at a time.
-    // Appending them one by one costs a uniqueness and a capacity check each.
-    private var block: UnsafeMutablePointer<UInt8>
-    private var used = 0
 
     private static let WINDOW = 32768       // The distance a match can reach back
     private static let WINDOW_MASK = 32767
@@ -26,7 +22,6 @@ internal final class FlateEncode {
     private static let MAX_MATCH = 258
     private static let MAX_CHAIN = 32       // Earlier positions tried per match
     private static let NICE_MATCH = 258     // Long enough to stop looking
-    private static let BLOCK = 1 << 16
 
     /// Compresses the input into zlib format and writes the result to the output.
     @discardableResult
@@ -38,8 +33,6 @@ internal final class FlateEncode {
         let BUFSIZE = MASK + 1  // 2^16 bytes
         head = [Int32](repeating: -1, count: Int(BUFSIZE))
         prev = [Int32](repeating: -1, count: FlateEncode.WINDOW)
-        block = UnsafeMutablePointer<UInt8>.allocate(capacity: FlateEncode.BLOCK)
-        defer { block.deallocate() }
         output.reserveCapacity(output.count + input.count / 2 + 64)
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
         writeCode(&output, UInt32(0x03), 3)         // BTYPE | BFINAL
@@ -74,9 +67,8 @@ internal final class FlateEncode {
         }
         writeCode(&output, UInt32(0), 7)            // END-OF-BLOCK
         if bitsInBuffer > 0 {
-            emit(UInt8(bitBuffer), &output)
+            output.append(UInt8(bitBuffer))
         }
-        flush(&output)
         addAdler32(&output, input)
     }
 
@@ -143,25 +135,9 @@ internal final class FlateEncode {
         bitBuffer |= UInt32(code) << bitsInBuffer
         bitsInBuffer += nBits
         while bitsInBuffer >= 8 {
-            emit(UInt8(bitBuffer & 0xFF), &output)
+            output.append(UInt8(bitBuffer & 0xFF))
             bitBuffer >>= 8
             bitsInBuffer -= 8
-        }
-    }
-
-    // Puts the byte in the block, and hands the block to the output when full.
-    private func emit(_ byte: UInt8, _ output: inout [UInt8]) {
-        block[used] = byte
-        used += 1
-        if used == FlateEncode.BLOCK {
-            flush(&output)
-        }
-    }
-
-    private func flush(_ output: inout [UInt8]) {
-        if used > 0 {
-            output.append(contentsOf: UnsafeBufferPointer(start: block, count: used))
-            used = 0
         }
     }
 
