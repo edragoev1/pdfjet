@@ -1,3 +1,8 @@
+// helveticaoblique.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
 package corefont
 
 // HelveticaOblique returns the core font.

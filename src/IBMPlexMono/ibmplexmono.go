@@ -1,3 +1,8 @@
+// ibmplexmono.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
 // Package IBMPlexMono provides the paths to the IBM Plex Mono fonts.
 package IBMPlexMono
 

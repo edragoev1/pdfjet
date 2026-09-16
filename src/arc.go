@@ -1,3 +1,8 @@
+// arc.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
 package pdfjet
 
 import (
@@ -5,13 +10,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 )
-
-/**
- * arc.go
- *
- * Copyright (c) 2026 PDFjet Software
- * Licensed under the MIT License. See LICENSE file in the project root.
- */
 
 // Arc is used to create arc objects.
 type Arc struct {

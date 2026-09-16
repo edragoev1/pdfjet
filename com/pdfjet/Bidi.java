@@ -1,15 +1,14 @@
-package com.pdfjet;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 /*
  * Bidi.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+package com.pdfjet;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Provides BIDI processing for Arabic, Persian, Urdu and Hebrew.

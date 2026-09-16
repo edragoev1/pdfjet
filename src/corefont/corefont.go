@@ -1,3 +1,8 @@
+// corefont.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
 // Package corefont defines the metrics of the 14 standard PDF fonts.
 package corefont
 

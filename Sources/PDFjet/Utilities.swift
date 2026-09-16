@@ -1,3 +1,10 @@
+/**
+ * Utilities.swift
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
 extension String {
     /// Returns this string without leading and trailing characters with a code
     /// point of U+0020 or below, like String.trim in Java. Unlike

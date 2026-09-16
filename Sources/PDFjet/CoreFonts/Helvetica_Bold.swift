@@ -1,3 +1,10 @@
+/**
+ * Helvetica_Bold.swift
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
 ///
 /// The metrics of Helvetica-Bold, one of the 14 standard PDF fonts.
 /// The values are in thousandths of the font size.

@@ -1,3 +1,10 @@
+/**
+ * PathOperator.swift
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
 /// The operators that paint a path, for example in Page.drawPath.
 public enum PathOperator: String {
     case STROKE = "S"                         // Stroke the path

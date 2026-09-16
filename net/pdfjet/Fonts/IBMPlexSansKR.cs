@@ -1,3 +1,9 @@
+/*
+ * IBMPlexSansKR.cs
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
 namespace PDFjet.NET {
         /// <summary>
         /// The IBM Plex Sans KR fonts. Each constant is the path of a font file in the

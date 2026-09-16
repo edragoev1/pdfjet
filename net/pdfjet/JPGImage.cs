@@ -1,6 +1,12 @@
 /*
  * JPGImage.cs
  *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+/*
+ * JPGImage.cs
+ *
  * The authors make NO WARRANTY or representation, either express or implied,
  * with respect to this software, its quality, accuracy, merchantability, or
  * fitness for a particular purpose. This software is provided "AS IS", and you,

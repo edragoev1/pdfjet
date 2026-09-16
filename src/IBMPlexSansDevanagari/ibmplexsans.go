@@ -1,3 +1,8 @@
+// ibmplexsans.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
 // Package IBMPlexSansDevanagari provides the paths to the IBM Plex Sans Devanagari fonts.
 package IBMPlexSansDevanagari
 
