@@ -253,7 +253,7 @@ class BigTableTest {
         pdf = TestSupport.newPDF();
         font = TestSupport.helvetica(pdf);
         draw(new BigTable(pdf, font, font, Letter.PORTRAIT)
-                .setNumberOfColumns(3).setTableData(HEADER, ClosingIterator::new));
+                .setNumberOfColumns(3).setTableData(HEADER, () -> new ClosingIterator()));
         assertEquals(2, closed[0]);
     }
 
