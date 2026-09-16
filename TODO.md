@@ -134,8 +134,8 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 - ⬜ **B** CHANGELOG and README for everything weeks 1 and 2 add or change;
       record the new benchmark numbers in `benchmarks/README.md`.
-- ⬜ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
-      7c15442d, in a commit of its own.
+- ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
+      7c15442d, in a commit of its own. Done (Sep 16).
 - ⬜ S License headers, in a commit with nothing else in it: 45 library files
       carry theirs after the `package`, `using` and `import` lines (15 each in
       Java, C# and Go: the 14 core font classes, plus `Bidi` in Java and C#

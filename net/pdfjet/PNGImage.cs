@@ -605,12 +605,5 @@ internal class PNGImage {
         Array.Copy(array2, 0, joinedArray, array1.Length, array2.Length);
         return joinedArray;
     }
-
-    private static void WriteInt(int i, Stream os) {
-        os.WriteByte((byte) (i >> 24));
-        os.WriteByte((byte) (i >> 16));
-        os.WriteByte((byte) (i >>  8));
-        os.WriteByte((byte) (i >>  0));
-    }
 }   // End of PNGImage.cs
 }   // End of namespace PDFjet.NET
