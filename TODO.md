@@ -1065,7 +1065,10 @@ renames included (the Week 1 decision), so every item is a blocker.
       C#, 2.5% in Java and 8.5% in Swift against f72b9f08; since Sep 16 every
       field is a substring of the line, and Swift reads the line as UTF-8
       bytes rather than as an array of `Character`, so Go, C# and Java are
-      back at their f72b9f08 times and Swift is a third under its own.
+      back at their f72b9f08 times and Swift is a third under its own. The
+      table benchmark at 3ebd321b
+      (`benchmarks/results/2026-09-16-3ebd321b-table.log`) has `BigTable` at
+      1,703 ms and 761 MB, under its f72b9f08 figures.
 - ⬜ Decide whether a quoted field may hold a line break, which means
       reading on until the quotes balance rather than a line at a time.
       Today it may not, in the four ports; the choice is to implement it or
