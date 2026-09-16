@@ -186,10 +186,12 @@ above (`results/2026-09-16-d2f5d4cb.log`). It was first measured at 542b3dbf
 - Drawn with the same calls, PDFjet is ahead of iText too: on `Page` the table
   takes 24% less time than on `PdfCanvas` and allocates 43% less; page by page,
   25% less time and 45% less.
-- Since d2f5d4cb the same drawing on `Page` is 5% faster than `BigTable`, 1,584
-  against 1,671 ms, and writes the smaller file, 11.5 against 12.1 MB: the
+- At d2f5d4cb the same drawing on `Page` was 5% faster than `BigTable`, 1,584
+  against 1,671 ms, and wrote the smaller file, 11.5 against 12.1 MB: the
   driver fills each shaded row with `fillRect`, which is now one `re`, where
-  `BigTable` still fills it with a path of four operators. `BigTable` also
+  `BigTable` filled it with a path of four operators. The commit after it fills
+  the rows of `BigTable` with one `re` too, which takes Example_43 from 12.1 to
+  11.7 MB and 1 to 2% off its time in the four ports; it is not in this run. `BigTable` also
   allocates more, 778 against 628 MB, as it reads the quoted fields of its
   file as RFC 4180 does, which the driver does not.
 - Memory depends on keeping the pages, not on the library. A page that has not

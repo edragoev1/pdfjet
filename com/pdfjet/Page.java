@@ -1651,10 +1651,17 @@ final public class Page {
      * @param h the height of the rectangle to be drawn.
      */
     public void fillRect(float x, float y, float w, float h) {
-        float left = x;
-        float right = x + w;
-        float top = height - y;
-        float bottom = height - (y + h);
+        fillRectBetween(x, y, x + w, y + h);
+    }
+
+    // Fills the rectangle between the corners (x1, y1) and (x2, y2), for a
+    // caller that has the corners, so its edges are not rounded from a width
+    // and a height.
+    void fillRectBetween(float x1, float y1, float x2, float y2) {
+        float left = x1;
+        float right = x2;
+        float top = height - y1;
+        float bottom = height - y2;
         if (Math.abs(left) < 100000f && Math.abs(right) < 100000f
                 && Math.abs(top) < 100000f && Math.abs(bottom) < 100000f) {
             // One re operator, where four path operators drew the rectangle.
@@ -1662,22 +1669,22 @@ final public class Page {
             // and the height are their differences, so the edges stay where
             // the path put them; below 100000 a float holds hundredths
             // closely enough to be written back as the same hundredths.
-            int x1 = FastFloat.toHundredths(left);
-            int y1 = FastFloat.toHundredths(bottom);
-            append(x1 / 100f);
+            int xLeft = FastFloat.toHundredths(left);
+            int yBottom = FastFloat.toHundredths(bottom);
+            append(xLeft / 100f);
             append(' ');
-            append(y1 / 100f);
+            append(yBottom / 100f);
             append(' ');
-            append((FastFloat.toHundredths(right) - x1) / 100f);
+            append((FastFloat.toHundredths(right) - xLeft) / 100f);
             append(' ');
-            append((FastFloat.toHundredths(top) - y1) / 100f);
+            append((FastFloat.toHundredths(top) - yBottom) / 100f);
             append(" re\nf\n");
         } else {
             // Outside the page by far, or NaN, which moveTo refuses.
-            moveTo(x, y);
-            lineTo(x+w, y);
-            lineTo(x+w, y+h);
-            lineTo(x, y+h);
+            moveTo(x1, y1);
+            lineTo(x2, y1);
+            lineTo(x2, y2);
+            lineTo(x1, y2);
             fillPath();
         }
     }

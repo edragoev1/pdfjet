@@ -139,6 +139,7 @@ class BigTableTest {
     void theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws Exception {
         String defaults = drawSmall(TestSupport.newPDF(), table -> {});
         assertTrue(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"));
+        assertTrue(defaults.contains(" re\nf\n"), defaults);    // A shaded row is one rectangle
 
         String colored = drawSmall(TestSupport.newPDF(),
                 table -> table.setShadingColor(0xFF0000).setBorderColor(new float[] {0f, 0f, 1f}));

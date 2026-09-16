@@ -157,6 +157,9 @@ func TestBigTableTheShadingAndTheBorderColorsCanBeChangedOrLeftOut(t *testing.T)
 	if !strings.Contains(defaults, "0.94 0.94 0.94 rg\n") || !strings.Contains(defaults, "0.69 0.69 0.69 RG\n") {
 		t.Error("the default colors are missing")
 	}
+	if !strings.Contains(defaults, " re\nf\n") { // A shaded row is one rectangle
+		t.Error("the shading is not a rectangle")
+	}
 
 	colored := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {
 		table.SetShadingColor(0xFF0000).SetBorderColorRGB([3]float32{0, 0, 1})

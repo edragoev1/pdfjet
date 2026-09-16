@@ -121,6 +121,7 @@ public sealed class BigTableTest : IDisposable {
         string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
         Assert.Contains("0.94 0.94 0.94 rg\n", defaults);
         Assert.Contains("0.69 0.69 0.69 RG\n", defaults);
+        Assert.Contains(" re\nf\n", defaults);     // A shaded row is one rectangle
 
         string colored = DrawSmall(TestSupport.NewPDF(),
                 table => table.SetShadingColor(0xFF0000).SetBorderColor(new float[] {0f, 0f, 1f}));

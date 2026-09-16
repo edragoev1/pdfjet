@@ -1472,32 +1472,39 @@ public class Page {
             _ y: Float,
             _ w: Float,
             _ h: Float) {
-        let left = x
-        let right = x + w
-        let top = height - y
-        let bottom = height - (y + h)
+        fillRectBetween(x, y, x + w, y + h)
+    }
+
+    // Fills the rectangle between the corners (x1, y1) and (x2, y2), for a
+    // caller that has the corners, so its edges are not rounded from a width
+    // and a height.
+    func fillRectBetween(_ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) {
+        let left = x1
+        let right = x2
+        let top = height - y1
+        let bottom = height - y2
         if abs(left) < 100000.0 && abs(right) < 100000.0 && abs(top) < 100000.0 && abs(bottom) < 100000.0 {
             // One re operator, where four path operators drew the rectangle.
             // The corners are rounded as the path wrote them, and the width
             // and the height are their differences, so the edges stay where
             // the path put them; below 100000 a float holds hundredths
             // closely enough to be written back as the same hundredths.
-            let x1 = FastFloat.toHundredths(left)
-            let y1 = FastFloat.toHundredths(bottom)
-            append(Float(x1) / 100.0)
+            let xLeft = FastFloat.toHundredths(left)
+            let yBottom = FastFloat.toHundredths(bottom)
+            append(Float(xLeft) / 100.0)
             append(Token.space)
-            append(Float(y1) / 100.0)
+            append(Float(yBottom) / 100.0)
             append(Token.space)
-            append(Float(FastFloat.toHundredths(right) - x1) / 100.0)
+            append(Float(FastFloat.toHundredths(right) - xLeft) / 100.0)
             append(Token.space)
-            append(Float(FastFloat.toHundredths(top) - y1) / 100.0)
+            append(Float(FastFloat.toHundredths(top) - yBottom) / 100.0)
             append(" re\nf\n")
         } else {
             // Outside the page by far, or NaN, which moveTo refuses.
-            moveTo(x, y)
-            lineTo(x + w, y)
-            lineTo(x + w, y + h)
-            lineTo(x, y + h)
+            moveTo(x1, y1)
+            lineTo(x2, y1)
+            lineTo(x2, y2)
+            lineTo(x1, y2)
             fillPath()
         }
     }

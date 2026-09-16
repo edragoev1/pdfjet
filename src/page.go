@@ -1408,33 +1408,40 @@ func (page *Page) DrawRect(x, y, w, h float32) {
 //   - w: the width of the rectangle to be drawn.
 //   - h: the height of the rectangle to be drawn.
 func (page *Page) FillRect(x, y, w, h float32) {
-	left := x
-	right := x + w
-	top := page.height - y
-	bottom := page.height - (y + h)
+	page.fillRectBetween(x, y, x+w, y+h)
+}
+
+// fillRectBetween fills the rectangle between the corners (x1, y1) and
+// (x2, y2), for a caller that has the corners, so its edges are not rounded
+// from a width and a height.
+func (page *Page) fillRectBetween(x1, y1, x2, y2 float32) {
+	left := x1
+	right := x2
+	top := page.height - y1
+	bottom := page.height - y2
 	if abs32(left) < 100000 && abs32(right) < 100000 && abs32(top) < 100000 && abs32(bottom) < 100000 {
 		// One re operator, where four path operators drew the rectangle. The
 		// corners are rounded as the path wrote them, and the width and the
 		// height are their differences, so the edges stay where the path put
 		// them; below 100000 a float holds hundredths closely enough to be
 		// written back as the same hundredths.
-		x1 := fastfloat.ToHundredths(left)
-		y1 := fastfloat.ToHundredths(bottom)
-		page.appendFloat32(float32(x1) / 100)
+		xLeft := fastfloat.ToHundredths(left)
+		yBottom := fastfloat.ToHundredths(bottom)
+		page.appendFloat32(float32(xLeft) / 100)
 		page.appendByte(' ')
-		page.appendFloat32(float32(y1) / 100)
+		page.appendFloat32(float32(yBottom) / 100)
 		page.appendByte(' ')
-		page.appendFloat32(float32(fastfloat.ToHundredths(right)-x1) / 100)
+		page.appendFloat32(float32(fastfloat.ToHundredths(right)-xLeft) / 100)
 		page.appendByte(' ')
-		page.appendFloat32(float32(fastfloat.ToHundredths(top)-y1) / 100)
+		page.appendFloat32(float32(fastfloat.ToHundredths(top)-yBottom) / 100)
 		page.appendString(" re\nf\n")
 		return
 	}
 	// Outside the page by far, or NaN, which MoveTo refuses.
-	page.MoveTo(x, y)
-	page.LineTo(x+w, y)
-	page.LineTo(x+w, y+h)
-	page.LineTo(x, y+h)
+	page.MoveTo(x1, y1)
+	page.LineTo(x2, y1)
+	page.LineTo(x2, y2)
+	page.LineTo(x1, y2)
 	page.FillPath()
 }
 

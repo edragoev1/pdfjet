@@ -1539,10 +1539,17 @@ public class Page {
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
     public void FillRect(float x, float y, float w, float h) {
-        float left = x;
-        float right = x + w;
-        float top = height - y;
-        float bottom = height - (y + h);
+        FillRectBetween(x, y, x + w, y + h);
+    }
+
+    // Fills the rectangle between the corners (x1, y1) and (x2, y2), for a
+    // caller that has the corners, so its edges are not rounded from a width
+    // and a height.
+    internal void FillRectBetween(float x1, float y1, float x2, float y2) {
+        float left = x1;
+        float right = x2;
+        float top = height - y1;
+        float bottom = height - y2;
         if (Math.Abs(left) < 100000f && Math.Abs(right) < 100000f
                 && Math.Abs(top) < 100000f && Math.Abs(bottom) < 100000f) {
             // One re operator, where four path operators drew the rectangle.
@@ -1550,22 +1557,22 @@ public class Page {
             // and the height are their differences, so the edges stay where
             // the path put them; below 100000 a float holds hundredths
             // closely enough to be written back as the same hundredths.
-            int x1 = FastFloat.ToHundredths(left);
-            int y1 = FastFloat.ToHundredths(bottom);
-            Append(x1 / 100f);
+            int xLeft = FastFloat.ToHundredths(left);
+            int yBottom = FastFloat.ToHundredths(bottom);
+            Append(xLeft / 100f);
             Append(' ');
-            Append(y1 / 100f);
+            Append(yBottom / 100f);
             Append(' ');
-            Append((FastFloat.ToHundredths(right) - x1) / 100f);
+            Append((FastFloat.ToHundredths(right) - xLeft) / 100f);
             Append(' ');
-            Append((FastFloat.ToHundredths(top) - y1) / 100f);
+            Append((FastFloat.ToHundredths(top) - yBottom) / 100f);
             Append(" re\nf\n");
         } else {
             // Outside the page by far, or NaN, which MoveTo refuses.
-            MoveTo(x, y);
-            LineTo(x + w, y);
-            LineTo(x + w, y + h);
-            LineTo(x, y + h);
+            MoveTo(x1, y1);
+            LineTo(x2, y1);
+            LineTo(x2, y2);
+            LineTo(x1, y2);
             FillPath();
         }
     }

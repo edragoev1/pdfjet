@@ -300,11 +300,8 @@ namespace PDFjet.NET {
         private void HighlightRow(Page page, Font font, float[] color) {
             float[] original = page.GetBrushColor();
             page.SetBrushColor(color);
-            page.MoveTo(vertLines[0], this.yText - font.ascent);
-            page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
-            page.LineTo(vertLines[this.numberOfColumns], this.yText + font.descent);
-            page.LineTo(vertLines[0], this.yText + font.descent);
-            page.FillPath();
+            page.FillRectBetween(vertLines[0], this.yText - font.ascent,
+                    vertLines[this.numberOfColumns], this.yText + font.descent);
             page.SetBrushColor(original);
         }
 

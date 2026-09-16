@@ -157,7 +157,9 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       ports and `Table` are recorded in the three READMEs and
       `jet-vs-box.html`. Left: the text document of `benchmarks/run.sh text`,
       to be rerun on a freshly rebooted, idle machine, as iText and PDFBox came
-      out 6 to 22% slower than before on the busy one.
+      out 6 to 22% slower than before on the busy one. After that run
+      `BigTable` began filling its rows with one `re` (11.7 MB and 1 to 2%
+      faster), so rerun `benchmarks/run.sh table` with it.
 - ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
       7c15442d, in a commit of its own. Done (Sep 16).
 - ✅ S License headers, in a commit with nothing else in it: 45 library files

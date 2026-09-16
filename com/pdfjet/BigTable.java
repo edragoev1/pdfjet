@@ -339,11 +339,8 @@ public class BigTable {
     private void highlightRow(Page page, Font font, float[] color) {
         float[] original = page.getBrushColor();
         page.setBrushColor(color);
-        page.moveTo(vertLines[0], this.yText - font.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText + font.descent);
-        page.lineTo(vertLines[0], this.yText + font.descent);
-        page.fillPath();
+        page.fillRectBetween(vertLines[0], this.yText - font.ascent,
+                vertLines[this.numberOfColumns], this.yText + font.descent);
         page.setBrushColor(original);
     }
 

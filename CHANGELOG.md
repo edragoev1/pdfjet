@@ -447,7 +447,8 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   21.18 MB instead of 25.23 MB, less than iText's 21.6 MB, in 4.5 s instead of
   5.8 s; Example_43 is 2% smaller and 2 to 7% faster in the four ports, and the
   example PDFs render the same, apart from MuPDF anti-aliasing the edges of
-  some filled rectangles by a few levels.
+  some filled rectangles by a few levels. `BigTable` fills its shaded rows the
+  same way, which takes Example_43 from 12.1 to 11.7 MB.
 - Every PDF gets an `/Info` dictionary with its producer, creation date and
   the properties set with `setTitle`, `setAuthor`, `setSubject`, `setKeywords`
   and `setCreator`, and every PDF gets its own ID: 16 random bytes from the

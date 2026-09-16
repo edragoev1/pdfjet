@@ -286,11 +286,8 @@ public class BigTable {
     private func highlightRow(page: Page, font: Font, color: [Float]) {
         let original = page.getBrushColor()
         page.setBrushColor(color)
-        page.moveTo(vertLines[0], self.yText - font.ascent)
-        page.lineTo(vertLines[numberOfColumns], self.yText - font.ascent)
-        page.lineTo(vertLines[numberOfColumns], self.yText + font.descent)
-        page.lineTo(vertLines[0], self.yText + font.descent)
-        page.fillPath()
+        page.fillRectBetween(vertLines[0], self.yText - font.ascent,
+                vertLines[numberOfColumns], self.yText + font.descent)
         page.setBrushColor(original)
     }
 

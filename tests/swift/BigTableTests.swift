@@ -112,6 +112,7 @@ import Testing
     @Test func theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws {
         let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
         #expect(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"))
+        #expect(defaults.contains(" re\nf\n"))    // A shaded row is one rectangle
 
         let colored = try drawSmall(TestSupport.newPDF()) { table in
             table.setShadingColor(Int32(0xFF0000)).setBorderColor([Float(0), 0, 1])
