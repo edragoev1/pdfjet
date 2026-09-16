@@ -1,0 +1,115 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-15T23:45:59-04:00
+4ee4e7cb Read the quoted fields of a data file as RFC 4180 does, in the four ports
+== text: Latin, Greek and Cyrillic, 60 lines per page
+jet-plex 50 pages: median 8 ms (min 8, max 12, 7 runs), 112362 bytes, 4 MB allocated
+jet-noto 50 pages: median 11 ms (min 9, max 11, 7 runs), 394455 bytes, 7 MB allocated
+box-noto-subset 50 pages: median 2188 ms (min 2135, max 2193, 7 runs), 50256 bytes, 3842 MB allocated
+box-noto-full 50 pages: median 2056 ms (min 2047, max 2096, 7 runs), 352314 bytes, 3829 MB allocated
+it-plex-subset 50 pages: median 13 ms (min 11, max 19, 7 runs), 67798 bytes, 8 MB allocated
+it-plex-full 50 pages: median 20 ms (min 15, max 22, 7 runs), 103409 bytes, 13 MB allocated
+it-noto-subset 50 pages: median 16 ms (min 14, max 17, 7 runs), 71506 bytes, 8 MB allocated
+it-noto-full 50 pages: median 37 ms (min 35, max 49, 7 runs), 382224 bytes, 17 MB allocated
+jet-plex 100 pages: median 14 ms (min 12, max 15, 7 runs), 162795 bytes, 7 MB allocated
+jet-noto 100 pages: median 15 ms (min 12, max 18, 7 runs), 444256 bytes, 9 MB allocated
+box-noto-subset 100 pages: median 4298 ms (min 4207, max 4316, 7 runs), 91994 bytes, 7688 MB allocated
+box-noto-full 100 pages: median 4144 ms (min 4116, max 4155, 7 runs), 393898 bytes, 7672 MB allocated
+it-plex-subset 100 pages: median 26 ms (min 23, max 28, 7 runs), 115994 bytes, 15 MB allocated
+it-plex-full 100 pages: median 31 ms (min 30, max 33, 7 runs), 151604 bytes, 21 MB allocated
+it-noto-subset 100 pages: median 27 ms (min 20, max 31, 7 runs), 118734 bytes, 15 MB allocated
+it-noto-full 100 pages: median 53 ms (min 43, max 60, 7 runs), 429451 bytes, 24 MB allocated
+jet-plex 200 pages: median 22 ms (min 20, max 27, 7 runs), 263865 bytes, 12 MB allocated
+jet-noto 200 pages: median 27 ms (min 23, max 30, 7 runs), 543999 bytes, 14 MB allocated
+box-noto-subset 200 pages: median 8685 ms (min 8675, max 8710, 3 runs), 175441 bytes, 15305 MB allocated
+box-noto-full 200 pages: median 7903 ms (min 7895, max 7905, 3 runs), 477297 bytes, 15303 MB allocated
+it-plex-subset 200 pages: median 47 ms (min 46, max 48, 7 runs), 212372 bytes, 30 MB allocated
+it-plex-full 200 pages: median 53 ms (min 39, max 58, 7 runs), 247982 bytes, 36 MB allocated
+it-noto-subset 200 pages: median 51 ms (min 36, max 52, 7 runs), 213169 bytes, 29 MB allocated
+it-noto-full 200 pages: median 73 ms (min 62, max 75, 7 runs), 523886 bytes, 39 MB allocated
+jet-plex 500 pages: median 59 ms (min 53, max 60, 7 runs), 567688 bytes, 26 MB allocated
+jet-noto 500 pages: median 61 ms (min 55, max 65, 7 runs), 843926 bytes, 29 MB allocated
+box-noto-subset 500 pages: median 21323 ms (min 21317, max 21369, 3 runs), 426467 bytes, 38309 MB allocated
+box-noto-full 500 pages: median 20237 ms (min 20086, max 20238, 3 runs), 728346 bytes, 38251 MB allocated
+it-plex-subset 500 pages: median 72 ms (min 70, max 114, 7 runs), 501395 bytes, 74 MB allocated
+it-plex-full 500 pages: median 76 ms (min 75, max 117, 7 runs), 537005 bytes, 79 MB allocated
+it-noto-subset 500 pages: median 74 ms (min 72, max 112, 7 runs), 496442 bytes, 71 MB allocated
+it-noto-full 500 pages: median 97 ms (min 96, max 143, 7 runs), 807159 bytes, 81 MB allocated
+== text: first document in a new JVM, 20 pages
+jet-plex cold 20 pages: 86 ms, 82236 bytes
+jet-noto cold 20 pages: 93 ms, 364701 bytes
+box-noto-subset cold 20 pages: 1289 ms, 25350 bytes
+box-noto-full cold 20 pages: 1269 ms, 327302 bytes
+it-plex-subset cold 20 pages: 213 ms, 39014 bytes
+it-plex-full cold 20 pages: 224 ms, 74624 bytes
+it-noto-subset cold 20 pages: 234 ms, 43290 bytes
+it-noto-full cold 20 pages: 271 ms, 354008 bytes
+== text: peak memory, one 500-page document, JVM defaults, median of 3
+jet-plex peak 84564 KB
+jet-noto peak 85540 KB
+box-noto-subset peak 391068 KB
+box-noto-full peak 389408 KB
+it-plex-subset peak 135096 KB
+it-plex-full peak 139236 KB
+it-noto-subset peak 137200 KB
+it-noto-full peak 139404 KB
+it-plex-subset-flush peak 129224 KB
+it-noto-subset-flush peak 136300 KB
+== text: 3-page samples
+jet-plex: 65210 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+jet-noto: 347886 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+box-noto-subset: 11303 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+box-noto-full: 313186 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+it-plex-subset: 22731 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+it-plex-full: 58341 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+it-noto-subset: 27341 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+it-noto-full: 338059 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+== table: Example_43, Electric_Vehicle_Population_Data.csv
+jet: median 1761 ms (min 1758, max 1762, 7 runs), 2546 pages, 12335377 bytes, 809 MB allocated
+jet-page: median 1791 ms (min 1777, max 2036, 7 runs), 2546 pages, 12584928 bytes, 816 MB allocated
+it-canvas: median 2014 ms (min 2007, max 2215, 7 runs), 2546 pages, 11808631 bytes, 1109 MB allocated
+it-layout: median 34314 ms (min 33610, max 34378, 3 runs), 2546 pages, 21601806 bytes, 47185 MB allocated
+box: median 12503 ms (min 12468, max 12584, 3 runs), 2546 pages, 11906309 bytes, 25226 MB allocated
+jet-page-stream: median 1775 ms (min 1774, max 1776, 7 runs), 2546 pages, 12598113 bytes, 815 MB allocated
+it-canvas-stream: median 2032 ms (min 2027, max 2036, 7 runs), 2546 pages, 11814639 bytes, 1133 MB allocated
+== table: first run in a new JVM
+jet cold: 2109 ms, 2546 pages, 12335377 bytes
+jet-page cold: 2216 ms, 2546 pages, 12584928 bytes
+it-canvas cold: 2650 ms, 2546 pages, 11808631 bytes
+it-layout cold: 36543 ms, 2546 pages, 21601806 bytes
+box cold: 13355 ms, 2546 pages, 11906309 bytes
+jet-page-stream cold: 2095 ms, 2546 pages, 12598113 bytes
+it-canvas-stream cold: 2588 ms, 2546 pages, 11814639 bytes
+== table: peak memory, JVM defaults, median of 3
+jet peak 400548 KB
+jet-page peak 774312 KB
+it-canvas peak 831700 KB
+it-layout peak 7351652 KB
+box peak 471072 KB
+jet-page-stream peak 390408 KB
+it-canvas-stream peak 414748 KB
+== table: smallest heap that finishes, of 32m 64m 128m 256m 512m 1g 2g 4g 8g
+jet: 32m
+jet-page: 256m
+it-canvas: 256m
+it-layout: 8g
+box: 128m
+jet-page-stream: 32m
+it-canvas-stream: 32m
+== table: samples
+jet sample: 2546 pages, 2122 ms
+jet: 12335377 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page sample: 2546 pages, 2226 ms
+jet-page: 12584928 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-canvas sample: 2546 pages, 2680 ms
+it-canvas: 11808631 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-layout sample: 2546 pages, 36845 ms
+it-layout: 21601806 bytes, 2546 pages, last footer: Page 2546 of 2546
+box sample: 2546 pages, 13467 ms
+box: 11906309 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page-stream sample: 2546 pages, 2121 ms
+jet-page-stream: 12598113 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-canvas-stream sample: 2546 pages, 2540 ms
+it-canvas-stream: 11814639 bytes, 2546 pages, last footer: Page 2546 of 2546
+2026-09-16T00:09:07-04:00
