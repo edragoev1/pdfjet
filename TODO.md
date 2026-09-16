@@ -1027,6 +1027,39 @@ renames included (the Week 1 decision), so every item is a blocker.
       document; MisuseTest in each port. The pie chart NaN and stamp text
       without `addFont` were fixed on the way.
 
+## Performance (Sep 18–Oct 1)
+
+- ⬜ **B** Swift compression, by improving `FlateEncode` rather than replacing
+      it: no zlib, and the fixed-Huffman block stays. It keeps one position per
+      hash in a 64K table, so a collision or a repeat further back than the
+      last one is a missed match, and it takes the first match it finds instead
+      of the longest. Its files are larger than the other ports', and the gap
+      grows with how repetitive the content is: Example_43 is 22,863,030 bytes
+      against 12,335,377 in Java and C# (1.85x), Example_12 1.22x, Example_01
+      1.02x, Example_51 the same. The Example_43 binary also takes 4,480 ms in
+      Swift against 2,310 ms in C# and 938 ms in Go, though not all of that is
+      the compression. In order: keep a short chain of earlier positions per
+      bucket and take the longest match among them; add lazy matching, where a
+      literal is written when position i+1 starts a longer match; then
+      `reserveCapacity` on the output and `withUnsafeBufferPointer` over the
+      input in `getMatchIndex` and `writeCode`, which buy speed and no size.
+      Measure the files again once the match finding is fixed, and decide then
+      whether anything larger is worth doing. The content streams must still
+      match Java's in CI, which compares them decoded, so the output stays a
+      valid deflate stream throughout.
+- ⬜ **B** `Table` performance. The caller builds the whole grid and hands it
+      over, `setTableData(List<List<Cell>>)`, so Example_43's data would be
+      about 1.1 million `Cell` objects before a page is drawn and the memory
+      scales with the rows; `BigTable` avoids this by reading the file itself.
+      `Table` has never been measured at that scale. iText's `Table` needed
+      34,969 ms and an 8,192 MB heap for the same table, and PDFjet's may land
+      near it or worse. Measure first: a `jet-table` configuration in
+      `benchmarks/BigTableBench.java` that builds the same 9 columns as cells
+      and draws them with `Table` on the same CSV. If the rows have to arrive
+      incrementally, as `BigTable` reads its file, the method for it belongs in
+      9.0.0: adding it later would leave two ways of giving a table its data,
+      and the second one would arrive in a minor release.
+
 ## Week 4 (Oct 2–11): parity audit, docs, release
 
 - ✅ **B** Public API audit across the four ports: `audit-api.py` lists the
@@ -1496,4 +1529,3 @@ renames included (the Week 1 decision), so every item is a blocker.
   words and can move a bracket at a line end.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-  
