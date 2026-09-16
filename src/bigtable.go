@@ -9,6 +9,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -42,6 +43,10 @@ type BigTable struct {
 	delimiter       string
 	numberOfColumns int
 	startNewPage    bool
+	dataRows        int // The rows under the header, counted by SetTableData
+	pageCount       int // The pages they take, counted by Complete
+	pageNumber      int // The page being drawn
+	footerDrawn     bool
 }
 
 // NewBigTable creates a new BigTable instance
@@ -90,39 +95,75 @@ func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 	return bt
 }
 
-// GetPages returns the generated pages
+// GetPages returns the pages, which Complete has already added to the PDF.
 func (bt *BigTable) GetPages() []*Page {
 	return bt.pages
 }
 
+// newPage creates the next page. It is added to the PDF right away, so the
+// content of the page before it is compressed and written, and its memory freed.
+func (bt *BigTable) newPage() {
+	bt.page = NewPage(bt.pdf, bt.pageSize)
+	bt.pages = append(bt.pages, bt.page)
+	bt.pageNumber++
+	bt.footerDrawn = false
+	bt.page.SetPenWidth(0.0)
+	bt.yText = bt.y + bt.f1.ascent
+	bt.highlight = true
+	bt.drawFieldsAndLine(bt.headerFields, bt.f1)
+	bt.yText += bt.f1.descent + bt.f2.ascent
+	bt.startNewPage = false
+}
+
+// drawFooter draws the footer of the page that was just finished, once. The
+// page is finished before the next one is created, so it is written complete.
+func (bt *BigTable) drawFooter() {
+	if !bt.footerDrawn {
+		footer := NewTextLine(bt.f1, fmt.Sprintf("Page %d of %d", bt.pageNumber, bt.pageCount))
+		bt.page.AddFooter(footer)
+		bt.footerDrawn = true
+	}
+}
+
+// countPages counts the pages the rows take, as drawTextAndLine breaks them, so
+// that the "Page i of N" footer of a page can be drawn before the next page is
+// created. The location and the bottom margin are set after SetTableData, so the
+// pages are counted when the table is drawn.
+func (bt *BigTable) countPages() int {
+	pageHeight := bt.pageSize.GetHeight()
+	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
+	yPos := yTop
+	count := 1
+	newPage := false
+	for i := 0; i < bt.dataRows; i++ {
+		if newPage {
+			count++
+			yPos = yTop
+			newPage = false
+		}
+		yPos += bt.f2.descent + bt.f2.ascent
+		if yPos > (pageHeight - bt.bottomMargin) {
+			newPage = true
+		}
+	}
+	return count
+}
+
 func (bt *BigTable) drawTextAndLine(fields []string) error {
 	if bt.page == nil { // First page
-		bt.page = NewPageDetached(bt.pdf, bt.pageSize)
-		bt.pages = append(bt.pages, bt.page)
-		bt.page.SetPenWidth(0.0)
-		bt.yText = bt.y + bt.f1.ascent
-		bt.highlight = true
-		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += bt.f1.descent + bt.f2.ascent
-		bt.startNewPage = false
+		bt.newPage()
 		return nil
 	}
 
 	if bt.startNewPage { // New page
-		bt.page = NewPageDetached(bt.pdf, bt.pageSize)
-		bt.pages = append(bt.pages, bt.page)
-		bt.page.SetPenWidth(0.0)
-		bt.yText = bt.y + bt.f1.ascent
-		bt.highlight = true
-		bt.drawFieldsAndLine(bt.headerFields, bt.f1)
-		bt.yText += bt.f1.descent + bt.f2.ascent
-		bt.startNewPage = false
+		bt.newPage()
 	}
 
 	bt.drawFieldsAndLine(fields, bt.f2)
 	bt.yText += bt.f2.descent + bt.f2.ascent
 	if bt.yText > (bt.page.height - bt.bottomMargin) {
 		bt.drawTheVerticalLines()
+		bt.drawFooter()
 		bt.startNewPage = true
 	}
 
@@ -264,6 +305,10 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
+	bt.dataRows = 0
+	if rowNumber > 0 {
+		bt.dataRows = rowNumber - 1 // Without the header
+	}
 
 	bt.setVertLines()
 	return bt, nil
@@ -280,8 +325,11 @@ func (bt *BigTable) setVertLines() {
 	}
 }
 
-// Complete finishes the table and writes all data
+// Complete draws the rows read from the data file, then the vertical lines,
+// with a "Page i of N" footer on every page. The pages are added to the PDF as
+// they are drawn, so the document does not hold them all.
 func (bt *BigTable) Complete() error {
+	bt.pageCount = bt.countPages()
 	file, err := os.Open(bt.fileName)
 	if err != nil {
 		return err
@@ -310,5 +358,6 @@ func (bt *BigTable) Complete() error {
 	}
 
 	bt.drawTheVerticalLines()
+	bt.drawFooter()
 	return nil
 }

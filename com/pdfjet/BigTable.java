@@ -33,6 +33,10 @@ public class BigTable {
     private String delimiter;
     private int numberOfColumns;    // Total column count
     private boolean startNewPage = true;
+    private int dataRows;           // The rows under the header, counted by setTableData
+    private int pageCount;          // The pages they take, counted by complete()
+    private int pageNumber;         // The page being drawn
+    private boolean footerDrawn;
 
     /**
      * Creates a table and sets the fonts and page size.
@@ -101,7 +105,7 @@ public class BigTable {
     }
 
     /**
-     * Returns the pages.
+     * Returns the pages, which complete() has already added to the PDF.
      *
      * @return the pages.
      */
@@ -109,35 +113,70 @@ public class BigTable {
         return pages;
     }
 
+    // Creates the next page. It is added to the PDF right away, so the content
+    // of the page before it is compressed and written, and its memory freed.
+    private void newPage() throws Exception {
+        page = new Page(pdf, pageSize);
+        pages.add(page);
+        pageNumber++;
+        footerDrawn = false;
+        page.setPenWidth(0f);
+        this.yText = this.y + f1.ascent;
+        this.highlightRow = true;
+        drawFieldsAndLine(headerFields, f1);
+        this.yText += f1.descent + f2.ascent;
+        startNewPage = false;
+    }
+
+    // Draws the footer of the page that was just finished, once. The page is
+    // finished before the next one is created, so it is written complete.
+    private void drawFooter() throws Exception {
+        if (!footerDrawn) {
+            page.addFooter(new TextLine(f1, "Page " + pageNumber + " of " + pageCount));
+            footerDrawn = true;
+        }
+    }
+
     private void drawTextAndLine(String[] fields) throws Exception {
         if (page == null) {     // The first page
-            page = new Page(pdf, pageSize, Page.DETACHED);
-            pages.add(page);
-            page.setPenWidth(0f);
-            this.yText = this.y + f1.ascent;
-            this.highlightRow = true;
-            drawFieldsAndLine(headerFields, f1);
-            this.yText += f1.descent + f2.ascent;
-            startNewPage = false;
+            newPage();
             return;
         }
         if (startNewPage) {     // Create new page
-            page = new Page(pdf, pageSize, Page.DETACHED);
-            pages.add(page);
-            page.setPenWidth(0f);
-            this.yText = this.y + f1.ascent;
-            this.highlightRow = true;
-            drawFieldsAndLine(headerFields, f1);
-            this.yText += f1.descent + f2.ascent;
-            startNewPage = false;
+            newPage();
         }
 
         drawFieldsAndLine(fields, f2);
         this.yText += f2.descent + f2.ascent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
             drawTheVerticalLines();
+            drawFooter();
             startNewPage = true;
         }
+    }
+
+    // Counts the pages the rows take, as drawTextAndLine breaks them, so that
+    // the "Page i of N" footer of a page can be drawn before the next page is
+    // created. The location and the bottom margin are set after setTableData,
+    // so the pages are counted when the table is drawn.
+    private int countPages() {
+        float pageHeight = pageSize.getHeight();
+        float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
+        float yPos = yTop;
+        int count = 1;
+        boolean newPage = false;
+        for (int i = 0; i < this.dataRows; i++) {
+            if (newPage) {
+                count++;
+                yPos = yTop;
+                newPage = false;
+            }
+            yPos += f2.descent + f2.ascent;
+            if (yPos > (pageHeight - this.bottomMargin)) {
+                newPage = true;
+            }
+        }
+        return count;
     }
 
     private void drawFieldsAndLine(String[] fields, Font font) {
@@ -262,6 +301,7 @@ public class BigTable {
                 rowNumber++;
             }
         }
+        this.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0;     // Without the header
 
         setVertLines();
         return this;
@@ -295,11 +335,15 @@ public class BigTable {
     }
 
     /**
-     * Draws the rows read from the data file, then the vertical lines. Call it after the last row has been added.
+     * Draws the rows read from the data file, then the vertical lines, with a
+     * "Page i of N" footer on every page. The pages are added to the PDF as
+     * they are drawn, so the document does not hold them all. Call it after
+     * the location, the bottom margin and the data file have been set.
      *
      * @throws Exception if the data file cannot be read or drawing fails.
      */
     public void complete() throws Exception {
+        this.pageCount = countPages();
         try (BufferedReader reader = openDataFile()) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -311,5 +355,6 @@ public class BigTable {
             }
         }
         drawTheVerticalLines();
+        drawFooter();
     }
 }

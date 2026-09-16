@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -31,13 +30,6 @@ public class Example_43 {
         table.SetLocation(0f, 0f);          // is
         table.SetBottomMargin(20f);         // very
         table.Complete();                   // important!
-
-        List<Page> pages = table.GetPages();
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
-            pdf.AddPage(page);
-        }
 
         pdf.Complete();
     }

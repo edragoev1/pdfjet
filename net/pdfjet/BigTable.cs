@@ -28,6 +28,10 @@ namespace PDFjet.NET {
         private string delimiter;
         private int numberOfColumns;
         private bool startNewPage = true;
+        private int dataRows;           // The rows under the header, counted by SetTableData
+        private int pageCount;          // The pages they take, counted by Complete
+        private int pageNumber;         // The page being drawn
+        private bool footerDrawn;
 
         /// <summary>
         /// Creates a table with the specified fonts and page size.
@@ -72,40 +76,75 @@ namespace PDFjet.NET {
             return this;
         }
 
-        /// <summary>Returns the pages created for this table.</summary>
+        /// <summary>Returns the pages, which Complete has already added to the PDF.</summary>
         public List<Page> GetPages() {
             return pages;
         }
 
+        // Creates the next page. It is added to the PDF right away, so the content
+        // of the page before it is compressed and written, and its memory freed.
+        private void NewPage() {
+            page = new Page(pdf, pageSize);
+            pages.Add(page);
+            pageNumber++;
+            footerDrawn = false;
+            page.SetPenWidth(0f);
+            this.yText = this.y + f1.ascent;
+            this.highlightRow = true;
+            DrawFieldsAndLine(headerFields, f1);
+            this.yText += f1.descent + f2.ascent;
+            startNewPage = false;
+        }
+
+        // Draws the footer of the page that was just finished, once. The page is
+        // finished before the next one is created, so it is written complete.
+        private void DrawFooter() {
+            if (!footerDrawn) {
+                page.AddFooter(new TextLine(f1, "Page " + pageNumber + " of " + pageCount));
+                footerDrawn = true;
+            }
+        }
+
         private void DrawTextAndLine(string[] fields) {
             if (page == null) {
-                page = new Page(pdf, pageSize, Page.DETACHED);
-                pages.Add(page);
-                page.SetPenWidth(0f);
-                this.yText = this.y + f1.ascent;
-                this.highlightRow = true;
-                DrawFieldsAndLine(headerFields, f1);
-                this.yText += f1.descent + f2.ascent;
-                startNewPage = false;
+                NewPage();
                 return;
             }
             if (startNewPage) {
-                page = new Page(pdf, pageSize, Page.DETACHED);
-                pages.Add(page);
-                page.SetPenWidth(0f);
-                this.yText = this.y + f1.ascent;
-                this.highlightRow = true;
-                DrawFieldsAndLine(headerFields, f1);
-                this.yText += f1.descent + f2.ascent;
-                startNewPage = false;
+                NewPage();
             }
 
             DrawFieldsAndLine(fields, f2);
             this.yText += f2.ascent + f2.descent;
             if (this.yText > (this.page.GetHeight() - this.bottomMargin)) {
                 DrawTheVerticalLines();
+                DrawFooter();
                 startNewPage = true;
             }
+        }
+
+        // Counts the pages the rows take, as DrawTextAndLine breaks them, so that
+        // the "Page i of N" footer of a page can be drawn before the next page is
+        // created. The location and the bottom margin are set after SetTableData,
+        // so the pages are counted when the table is drawn.
+        private int CountPages() {
+            float pageHeight = pageSize.GetHeight();
+            float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
+            float yPos = yTop;
+            int count = 1;
+            bool newPage = false;
+            for (int i = 0; i < this.dataRows; i++) {
+                if (newPage) {
+                    count++;
+                    yPos = yTop;
+                    newPage = false;
+                }
+                yPos += f2.ascent + f2.descent;
+                if (yPos > (pageHeight - this.bottomMargin)) {
+                    newPage = true;
+                }
+            }
+            return count;
         }
 
         private void DrawFieldsAndLine(string[] fields, Font font) {
@@ -213,6 +252,7 @@ namespace PDFjet.NET {
                     rowNumber++;
                 }
             }
+            this.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0;     // Without the header
 
             SetVertLines();
             return this;
@@ -238,8 +278,13 @@ namespace PDFjet.NET {
             return reader;
         }
 
-        /// <summary>Draws the rows read from the data file, then the vertical lines.</summary>
+        /// <summary>
+        /// Draws the rows read from the data file, then the vertical lines, with a
+        /// "Page i of N" footer on every page. The pages are added to the PDF as they
+        /// are drawn, so the document does not hold them all.
+        /// </summary>
         public void Complete() {
+            this.pageCount = CountPages();
             using (StreamReader reader = OpenDataFile()) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
@@ -251,6 +296,7 @@ namespace PDFjet.NET {
                 }
             }
             DrawTheVerticalLines();
+            DrawFooter();
         }
     }
 }

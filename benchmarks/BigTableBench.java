@@ -238,15 +238,10 @@ public class BigTableBench {
         table.setTableData(file, ",");
         table.setLocation(0f, 0f);
         table.setBottomMargin(20f);
-        table.complete();
-        List<com.pdfjet.Page> pages = table.getPages();
-        for (int i = 0; i < pages.size(); i++) {
-            com.pdfjet.Page page = pages.get(i);
-            page.addFooter(new com.pdfjet.TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
+        table.complete();       // Adds the pages to the PDF, with their footers
+        int pages = table.getPages().size();
         pdf.complete();
-        return pages.size();
+        return pages;
     }
 
     // The same table drawn on PDFjet's Page through the driver, with the calls

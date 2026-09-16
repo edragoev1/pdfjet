@@ -30,6 +30,10 @@ public class BigTable {
     private var delimiter: String = ""
     private var numberOfColumns: Int = 0
     private var startNewPage: Bool = true
+    private var dataRows: Int = 0       // The rows under the header, counted by setTableData
+    private var pageCount: Int = 0      // The pages they take, counted by complete
+    private var pageNumber: Int = 0     // The page being drawn
+    private var footerDrawn: Bool = false
 
     ///
     /// Creates a table with the specified fonts and page size.
@@ -79,38 +83,73 @@ public class BigTable {
         return self
     }
 
-    /// Returns the pages created for this table.
+    /// Returns the pages, which complete has already added to the PDF.
     public func getPages() -> [Page] {
         return pages
     }
 
+    // Creates the next page. It is added to the PDF right away, so the content
+    // of the page before it is compressed and written, and its memory freed.
+    private func newPage() {
+        page = Page(pdf, pageSize)
+        pages.append(page!)
+        pageNumber += 1
+        footerDrawn = false
+        page!.setPenWidth(0.0)
+        self.yText = self.y + f1.ascent
+        self.highlightRow = true
+        drawFieldsAndLine(fields: headerFields, font: f1)
+        self.yText += f1.descent + f2.ascent
+        startNewPage = false
+    }
+
+    // Draws the footer of the page that was just finished, once. The page is
+    // finished before the next one is created, so it is written complete.
+    private func drawFooter() {
+        if !footerDrawn {
+            page!.addFooter(TextLine(f1, "Page \(pageNumber) of \(pageCount)"))
+            footerDrawn = true
+        }
+    }
+
+    // Counts the pages the rows take, as drawTextAndLine breaks them, so that
+    // the "Page i of N" footer of a page can be drawn before the next page is
+    // created. The location and the bottom margin are set after setTableData,
+    // so the pages are counted when the table is drawn.
+    private func countPages() -> Int {
+        let pageHeight = pageSize.getHeight()
+        let yTop = self.y + f1.ascent + f1.descent + f2.ascent
+        var yPos = yTop
+        var count = 1
+        var isNewPage = false
+        for _ in 0..<self.dataRows {
+            if isNewPage {
+                count += 1
+                yPos = yTop
+                isNewPage = false
+            }
+            yPos += f2.descent + f2.ascent
+            if yPos > (pageHeight - self.bottomMargin) {
+                isNewPage = true
+            }
+        }
+        return count
+    }
+
     private func drawTextAndLine(fields: [String], font: Font) throws {
         if page == nil {
-            page = Page(pdf, pageSize, Page.DETACHED)
-            pages.append(page!)
-            page!.setPenWidth(0.0)
-            self.yText = self.y + f1.ascent
-            self.highlightRow = true
-            drawFieldsAndLine(fields: headerFields, font: f1)
-            self.yText += f1.descent + f2.ascent
-            startNewPage = false
+            newPage()
             return
         }
         if startNewPage {
-            page = Page(pdf, pageSize, Page.DETACHED)
-            pages.append(page!)
-            page!.setPenWidth(0.0)
-            self.yText = self.y + f1.ascent
-            self.highlightRow = true
-            drawFieldsAndLine(fields: headerFields, font: f1)
-            self.yText += f1.descent + f2.ascent
-            startNewPage = false
+            newPage()
         }
 
         drawFieldsAndLine(fields: fields, font: f2)
         self.yText += f2.descent + f2.ascent
         if self.yText > (page!.height - self.bottomMargin) {
             drawTheVerticalLines()
+            drawFooter()
             startNewPage = true
         }
     }
@@ -215,6 +254,7 @@ public class BigTable {
             }
             rowNumber += 1
         }
+        self.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0      // Without the header
 
         setVertLines()
         return self
@@ -230,8 +270,11 @@ public class BigTable {
         }
     }
 
-    /// Draws the rows read from the data file, then the vertical lines.
+    /// Draws the rows read from the data file, then the vertical lines, with a
+    /// "Page i of N" footer on every page. The pages are added to the PDF as
+    /// they are drawn, so the document does not hold them all.
     public func complete() throws {
+        self.pageCount = countPages()
         try enumerateFileLines(self.fileName) { line in
             let fields = line.components(separatedBy: self.delimiter)
             if fields.count < self.numberOfColumns {
@@ -240,6 +283,7 @@ public class BigTable {
             try self.drawTextAndLine(fields: fields, font: self.f2)
         }
         drawTheVerticalLines()
+        drawFooter()
     }
 }
 

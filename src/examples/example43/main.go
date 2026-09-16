@@ -45,13 +45,6 @@ func Example43() {
 		return
 	}
 
-	pages := table.GetPages()
-	for i, page := range pages {
-		footer := pdfjet.NewTextLine(f1, fmt.Sprintf("Page %d of %d", i+1, len(pages)))
-		page.AddFooter(footer)
-		pdf.AddPage(page)
-	}
-
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

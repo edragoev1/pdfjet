@@ -33,13 +33,6 @@ public class Example_43 {
         table.setBottomMargin(20f);         // very
         table.complete();                   // important!
 
-        List<Page> pages = table.getPages();
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
-
         pdf.complete();
     }
 

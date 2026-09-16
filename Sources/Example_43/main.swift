@@ -28,13 +28,6 @@ public class Example_43 {
         table.setBottomMargin(20.0)             // very
         try table.complete()                    // important!
 
-        let pages = table.getPages()
-        for i in 0..<pages.count {
-            let page = pages[i]
-            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
-            pdf.addPage(page)
-        }
-
         try pdf.complete()
     }
 }   // End of Example_43.swift
