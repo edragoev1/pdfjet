@@ -55,11 +55,24 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       the columns `2, 0`, in that order, skipping a row without a third field,
       and a negative index is refused. Example_43 is identical in the four
       ports and its time unchanged, run from the same directory.
-- ⬜ **B** The knobs of a `BigTable`: setters for the shading colour, the rule
+- ✅ **B** The knobs of a `BigTable`: setters for the shading colour, the rule
       colour and the padding, and a way to turn the "Page i of N" footer off
       or give it a text and a font of its own.
-- ⬜ Example_43 stays byte-identical in the four ports, and its printed time
-      does not regress; tests for the new API in the four ports.
+      Done (Sep 16): `setShadingColor` and `setBorderColor`, each with an
+      `int` and a `float[]` form (`RGB` suffix in Go), where
+      `Color.transparent` or null leaves the shading or the lines out;
+      `setPadding`, which refuses a negative value and can follow
+      `setTableData`, as the widths are kept without it; and
+      `setFooter(text, font)`, a template with `{page}` and `{pages}` (the
+      user's choice over a callback), where a null or empty text leaves the
+      footer out and a null font is the header font. Three more tests per
+      port. C# first looked 2.5% slower on Example_43, but the old
+      `BigTable.cs` built in the repository was just as slow as the new
+      one, so the gap came from the build folder; Swift built both ways in
+      the repository is within 25 ms.
+- ✅ Example_43 stays byte-identical in the four ports, and its printed time
+      does not regress; tests for the new API in the four ports. Checked
+      after each of the three items above.
 
 ## Week 2 (Sep 24–30): `Table` data and delimited files
 

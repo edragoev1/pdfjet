@@ -26,8 +26,10 @@ public class BigTable {
     private var bottomMargin: Float = 20.0
     private var padding: Float = 2.0
     private var highlightRow: Bool = true
-    private var highlightColor: Int32 = 0xF0F0F0
-    private var penColor: Int32 = 0xB0B0B0
+    private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
+    private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
+    private var footerText: String? = "Page {page} of {pages}"
+    private var footerFont: Font?                               // nil for the header font
     private var rows: (() -> AnyIterator<[String]>)?
     private var readError: Error?       // The error opening the data file, if any
     private var columns: [Int] = []         // The fields drawn, in the order they are drawn
@@ -107,6 +109,71 @@ public class BigTable {
         return self
     }
 
+    /// Sets the color of every other row, starting with the header, as a 0xRRGGBB value.
+    /// Color.transparent turns the shading off.
+    @discardableResult
+    public func setShadingColor(_ color: Int32) -> BigTable {
+        self.shadingColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        return self
+    }
+
+    /// Sets the color of every other row, starting with the header, from its red, green and
+    /// blue values from 0 to 1. nil turns the shading off.
+    @discardableResult
+    public func setShadingColor(_ color: [Float]?) -> BigTable {
+        self.shadingColor = color
+        return self
+    }
+
+    /// Sets the color of the lines between the rows and the columns and around the table, as a
+    /// 0xRRGGBB value. Color.transparent leaves the lines out.
+    @discardableResult
+    public func setBorderColor(_ color: Int32) -> BigTable {
+        self.borderColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        return self
+    }
+
+    /// Sets the color of the lines between the rows and the columns and around the table from
+    /// its red, green and blue values from 0 to 1. nil leaves the lines out.
+    @discardableResult
+    public func setBorderColor(_ color: [Float]?) -> BigTable {
+        self.borderColor = color
+        return self
+    }
+
+    /// Sets the space between the text of a column and the lines on its left and right. It is
+    /// 2 points by default. A negative padding is recorded on the PDF as misuse, and the
+    /// padding is left as it was.
+    @discardableResult
+    public func setPadding(_ padding: Float) -> BigTable {
+        if padding < 0.0 {
+            pdf.fail("The padding cannot be negative.")
+            return self
+        }
+        self.padding = padding
+        if !vertLines.isEmpty {
+            setVertLines()
+        }
+        return self
+    }
+
+    ///
+    /// Sets the footer drawn at the bottom of every page, centered. In the text, {page} stands
+    /// for the number of the page and {pages} for the number of pages. The footer is
+    /// "Page {page} of {pages}" in the header font by default. A nil or empty text leaves the
+    /// footer out.
+    ///
+    /// - Parameter text: the text, for example "Seite {page} von {pages}".
+    /// - Parameter font: the font, or nil for the header font.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setFooter(_ text: String?, _ font: Font?) -> BigTable {
+        self.footerText = text
+        self.footerFont = font
+        return self
+    }
+
     /// Sets the bottom margin.
     @discardableResult
     public func setBottomMargin(_ bottomMargin: Float) -> BigTable {
@@ -137,10 +204,13 @@ public class BigTable {
     // Draws the footer of the page that was just finished, once. The page is
     // finished before the next one is created, so it is written complete.
     private func drawFooter() {
-        if !footerDrawn {
-            page!.addFooter(TextLine(f1, "Page \(pageNumber) of \(pageCount)"))
-            footerDrawn = true
+        if !footerDrawn, let footerText = footerText, !footerText.isEmpty {
+            let text = footerText
+                    .replacingOccurrences(of: "{page}", with: String(pageNumber))
+                    .replacingOccurrences(of: "{pages}", with: String(pageCount))
+            page!.addFooter(TextLine(footerFont ?? f1, text))
         }
+        footerDrawn = true
     }
 
     // Counts the pages the rows take, as drawTextAndLine breaks them, so that
@@ -183,18 +253,23 @@ public class BigTable {
 
     private func drawFieldsAndLine(fields: [String], font: Font) {
         if self.highlightRow {
-            highlightRow(page: page!, font: font, color: highlightColor)
+            if let shadingColor = shadingColor {
+                highlightRow(page: page!, font: font, color: shadingColor)
+            }
             self.highlightRow = false
         } else {
             self.highlightRow = true
         }
 
-        let original = page!.getPenColor()
-        page!.setPenColor(penColor)
-        page!.moveTo(vertLines[0], self.yText - font.ascent)
-        page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent)
-        page!.strokePath()
-        page!.setPenColor(original)
+        // The line above the text
+        if let borderColor = borderColor {
+            let original = page!.getPenColor()
+            page!.setPenColor(borderColor)
+            page!.moveTo(vertLines[0], self.yText - font.ascent)
+            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent)
+            page!.strokePath()
+            page!.setPenColor(original)
+        }
         page!.setBrushColor(Color.black)
 
         for i in 0..<numberOfColumns {
@@ -207,7 +282,7 @@ public class BigTable {
         }
     }
 
-    private func highlightRow(page: Page, font: Font, color: Int32) {
+    private func highlightRow(page: Page, font: Font, color: [Float]) {
         let original = page.getBrushColor()
         page.setBrushColor(color)
         page.moveTo(vertLines[0], self.yText - font.ascent)
@@ -219,8 +294,11 @@ public class BigTable {
     }
 
     private func drawTheVerticalLines() {
+        guard let borderColor = borderColor else {
+            return
+        }
         let original = page!.getPenColor()
-        page!.setPenColor(penColor)
+        page!.setPenColor(borderColor)
         for i in 0...numberOfColumns {
             page!.drawLine(
                 vertLines[i],
@@ -232,6 +310,10 @@ public class BigTable {
         page!.lineTo(vertLines[numberOfColumns], self.yText - f2.ascent)
         page!.strokePath()
         page!.setPenColor(original)
+    }
+
+    private static func rgb(_ color: Int32) -> [Float] {
+        return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]
     }
 
     // A number is right-aligned, as Table.rightAlignNumbers aligns it.
@@ -331,30 +413,31 @@ public class BigTable {
         return self
     }
 
-    // Widens the columns to fit the fields of a row.
+    // Widens the columns to fit the fields of a row. The widths are those of
+    // the text, and setVertLines adds the padding, so it can be set later.
     private func measure(_ fields: [String]) {
         for i in 0..<numberOfColumns {
-            let width = f1.stringWidth(fields[columns[i]]) + 2 * padding
+            let width = f1.stringWidth(fields[columns[i]])
             if width > widths[i] {
                 widths[i] = width
             }
         }
     }
 
-    // Sets the x coordinates of the vertical lines from the location and the column widths.
+    // Sets the x coordinates of the vertical lines from the location, the
+    // column widths and the padding.
     private func setVertLines() {
         var vertLineX = self.x
         vertLines[0] = vertLineX
         for i in 0..<widths.count {
-            vertLineX += widths[i]
+            vertLineX += widths[i] + 2 * padding
             vertLines[i + 1] = vertLineX
         }
     }
 
-    /// Draws the rows, then the vertical lines, with a "Page i of N" footer on every
-    /// page. The pages are added to the PDF as they are drawn, so the document does not
-    /// hold them all. It throws if the data file cannot be opened. A table without data
-    /// draws nothing.
+    /// Draws the rows, then the vertical lines, with the footer on every page. The pages are
+    /// added to the PDF as they are drawn, so the document does not hold them all. It throws
+    /// if the data file cannot be opened. A table without data draws nothing.
     public func complete() throws {
         guard let rows = self.rows else {
             return

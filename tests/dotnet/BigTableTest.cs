@@ -105,6 +105,62 @@ public sealed class BigTableTest : IDisposable {
         Assert.Equal("A column index cannot be negative.", e.Message);
     }
 
+    // A table of the first five rows on one page, drawn after the change.
+    private static string DrawSmall(PDF pdf, Action<BigTable> change) {
+        Font font = TestSupport.Helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(Header, Rows().GetRange(0, 5));
+        change(table);
+        List<Page> pages = Draw(table);
+        Assert.Single(pages);
+        return TestSupport.Content(pages[0]);
+    }
+
+    [Fact]
+    public void TheShadingAndTheBorderColorsCanBeChangedOrLeftOut() {
+        string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.Contains("0.94 0.94 0.94 rg\n", defaults);
+        Assert.Contains("0.69 0.69 0.69 RG\n", defaults);
+
+        string colored = DrawSmall(TestSupport.NewPDF(),
+                table => table.SetShadingColor(0xFF0000).SetBorderColor(new float[] {0f, 0f, 1f}));
+        Assert.Contains("1 0 0 rg\n", colored);
+        Assert.Contains("0 0 1 RG\n", colored);
+        Assert.DoesNotContain("0.94 0.94 0.94 rg", colored);
+        Assert.DoesNotContain("0.69 0.69 0.69 RG", colored);
+
+        string plain = DrawSmall(TestSupport.NewPDF(),
+                table => table.SetShadingColor(Color.transparent).SetBorderColor((float[]) null));
+        Assert.DoesNotContain("\nf\n", plain);
+        Assert.DoesNotContain("\nS\n", plain);
+        Assert.Contains(TestSupport.Hex("n4"), plain);
+    }
+
+    [Fact]
+    public void ThePaddingCanBeSetAfterTheData() {
+        string content = DrawSmall(TestSupport.NewPDF(), table => table.SetPadding(10f));
+        Assert.Contains("BT\n20 ", content);    // The location is 10, 10
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        ArgumentException e = Assert.Throws<ArgumentException>(
+                () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetPadding(-1f));
+        Assert.Equal("The padding cannot be negative.", e.Message);
+    }
+
+    [Fact]
+    public void TheFooterCanHaveItsOwnTextAndFontOrBeLeftOut() {
+        PDF pdf = TestSupport.NewPDF();
+        Font big = TestSupport.Helvetica(pdf).SetSize(20f);
+        string custom = DrawSmall(pdf, table => table.SetFooter("{page}/{pages}", big));
+        Assert.Contains(TestSupport.Hex("1/1"), custom);
+        Assert.Contains(" 20 Tf\n", custom);
+
+        string none = DrawSmall(TestSupport.NewPDF(), table => table.SetFooter(null, null));
+        string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.StartsWith(none, defaults);
+        Assert.True(defaults.Length > none.Length);
+    }
+
     [Fact]
     public void TheRowsAreReadTwiceAndDisposed() {
         List<string[]> rows = Rows();

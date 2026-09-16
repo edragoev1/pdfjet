@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -26,8 +27,10 @@ namespace PDFjet.NET {
         private float bottomMargin = 20.0f;
         private float padding = 2.0f;
         private bool highlightRow = true;
-        private int highlightColor = 0xF0F0F0;
-        private int penColor = 0xB0B0B0;
+        private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
+        private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
+        private string footerText = "Page {page} of {pages}";
+        private Font footerFont;                        // null for the header font
         private IEnumerable<string[]> rows;
         private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
         private int numberOfColumns;            // The length of columns
@@ -104,6 +107,82 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>
+        /// Sets the color of every other row, starting with the header. Color.transparent turns
+        /// the shading off.
+        /// </summary>
+        /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetShadingColor(int color) {
+            this.shadingColor = (color == Color.transparent) ? null : Rgb(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color of every other row, starting with the header, from its red, green and
+        /// blue values from 0 to 1. null turns the shading off.
+        /// </summary>
+        /// <param name="color">the red, green and blue values.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetShadingColor(float[] color) {
+            this.shadingColor = Util.CopyOf(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color of the lines between the rows and the columns and around the table.
+        /// Color.transparent leaves the lines out.
+        /// </summary>
+        /// <param name="color">the color as a 0xRRGGBB value, for example Color.gray.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetBorderColor(int color) {
+            this.borderColor = (color == Color.transparent) ? null : Rgb(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color of the lines between the rows and the columns and around the table from
+        /// its red, green and blue values from 0 to 1. null leaves the lines out.
+        /// </summary>
+        /// <param name="color">the red, green and blue values.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetBorderColor(float[] color) {
+            this.borderColor = Util.CopyOf(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the space between the text of a column and the lines on its left and right. It is
+        /// 2 points by default.
+        /// </summary>
+        /// <param name="padding">the padding.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetPadding(float padding) {
+            if (padding < 0f) {
+                pdf.Fail(new ArgumentException("The padding cannot be negative."));
+            }
+            this.padding = padding;
+            if (this.vertLines != null) {
+                SetVertLines();
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the footer drawn at the bottom of every page, centered. In the text, {page} stands
+        /// for the number of the page and {pages} for the number of pages. The footer is
+        /// "Page {page} of {pages}" in the header font by default. A null or empty text leaves the
+        /// footer out.
+        /// </summary>
+        /// <param name="text">the text, for example "Seite {page} von {pages}".</param>
+        /// <param name="font">the font, or null for the header font.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetFooter(string text, Font font) {
+            this.footerText = text;
+            this.footerFont = font;
+            return this;
+        }
+
         /// <summary>Sets the bottom margin.</summary>
         public BigTable SetBottomMargin(float bottomMargin) {
             this.bottomMargin = bottomMargin;
@@ -133,10 +212,13 @@ namespace PDFjet.NET {
         // Draws the footer of the page that was just finished, once. The page is
         // finished before the next one is created, so it is written complete.
         private void DrawFooter() {
-            if (!footerDrawn) {
-                page.AddFooter(new TextLine(f1, "Page " + pageNumber + " of " + pageCount));
-                footerDrawn = true;
+            if (!footerDrawn && !string.IsNullOrEmpty(footerText)) {
+                string text = footerText
+                        .Replace("{page}", pageNumber.ToString(CultureInfo.InvariantCulture))
+                        .Replace("{pages}", pageCount.ToString(CultureInfo.InvariantCulture));
+                page.AddFooter(new TextLine(footerFont ?? f1, text));
             }
+            footerDrawn = true;
         }
 
         private void DrawTextAndLine(string[] fields) {
@@ -179,19 +261,23 @@ namespace PDFjet.NET {
 
         private void DrawFieldsAndLine(string[] fields, Font font) {
             if (this.highlightRow) {
-                HighlightRow(page, font, highlightColor);
+                if (shadingColor != null) {
+                    HighlightRow(page, font, shadingColor);
+                }
                 this.highlightRow = false;
             } else {
                 this.highlightRow = true;
             }
 
-        // Draw the line above the text.
-            float[] original = page.GetPenColor();
-            page.SetPenColor(penColor);
-            page.MoveTo(vertLines[0], this.yText - font.ascent);
-            page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
-            page.StrokePath();
-            page.SetPenColor(original);
+            // Draw the line above the text.
+            if (borderColor != null) {
+                float[] original = page.GetPenColor();
+                page.SetPenColor(borderColor);
+                page.MoveTo(vertLines[0], this.yText - font.ascent);
+                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
+                page.StrokePath();
+                page.SetPenColor(original);
+            }
             page.SetBrushColor(Color.black);
 
             for (int i = 0; i < this.numberOfColumns; i++) {
@@ -204,7 +290,7 @@ namespace PDFjet.NET {
             }
         }
 
-        private void HighlightRow(Page page, Font font, int color) {
+        private void HighlightRow(Page page, Font font, float[] color) {
             float[] original = page.GetBrushColor();
             page.SetBrushColor(color);
             page.MoveTo(vertLines[0], this.yText - font.ascent);
@@ -216,8 +302,11 @@ namespace PDFjet.NET {
         }
 
         private void DrawTheVerticalLines() {
+            if (borderColor == null) {
+                return;
+            }
             float[] original = page.GetPenColor();
-            page.SetPenColor(penColor);
+            page.SetPenColor(borderColor);
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 page.DrawLine(
                     vertLines[i],
@@ -229,6 +318,11 @@ namespace PDFjet.NET {
             page.LineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
             page.StrokePath();
             page.SetPenColor(original);
+        }
+
+        private static float[] Rgb(int color) {
+            return new float[] {
+                ((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
         }
 
         // A number is right-aligned, as Table.RightAlignNumbers aligns it.
@@ -297,22 +391,24 @@ namespace PDFjet.NET {
             return this;
         }
 
-        // Widens the columns to fit the fields of a row.
+        // Widens the columns to fit the fields of a row. The widths are those of
+        // the text, and SetVertLines adds the padding, so it can be set later.
         private void Measure(string[] fields) {
             for (int i = 0; i < this.numberOfColumns; i++) {
-                float width = f1.StringWidth(fields[columns[i]]) + 2 * this.padding;
+                float width = f1.StringWidth(fields[columns[i]]);
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }
             }
         }
 
-        // Sets the x coordinates of the vertical lines from the location and the column widths.
+        // Sets the x coordinates of the vertical lines from the location, the
+        // column widths and the padding.
         private void SetVertLines() {
             float vertLineX = this.x;
             this.vertLines[0] = vertLineX;
             for (int i = 0; i < widths.Length; i++) {
-                vertLineX += this.widths[i];
+                vertLineX += this.widths[i] + 2 * this.padding;
                 this.vertLines[i + 1] = vertLineX;
             }
         }
@@ -341,7 +437,7 @@ namespace PDFjet.NET {
         }
 
         /// <summary>
-        /// Draws the rows, then the vertical lines, with a "Page i of N" footer on every page.
+        /// Draws the rows, then the vertical lines, with the footer on every page.
         /// The pages are added to the PDF as they are drawn, so the document does not hold them
         /// all. Call it after the location, the bottom margin and the table data have been set.
         /// </summary>

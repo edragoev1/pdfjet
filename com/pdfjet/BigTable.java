@@ -32,8 +32,10 @@ public class BigTable {
     private float bottomMargin = 20.0f;
     private float padding = 2.0f;
     private boolean highlightRow = true;
-    private int highlightColor = 0xF0F0F0;
-    private int penColor = 0xB0B0B0;
+    private float[] shadingColor = rgb(0xF0F0F0);   // null for no shading
+    private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
+    private String footerText = "Page {page} of {pages}";
+    private Font footerFont;                        // null for the header font
     private Iterable<String[]> rows;
     private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
     private int numberOfColumns;            // The length of columns
@@ -129,6 +131,89 @@ public class BigTable {
     }
 
     /**
+     * Sets the color of every other row, starting with the header.
+     * Color.transparent turns the shading off.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.lightgray.
+     * @return this BigTable object.
+     */
+    public BigTable setShadingColor(int color) {
+        this.shadingColor = (color == Color.transparent) ? null : rgb(color);
+        return this;
+    }
+
+    /**
+     * Sets the color of every other row, starting with the header, from its
+     * red, green and blue values from 0 to 1. null turns the shading off.
+     *
+     * @param color the red, green and blue values.
+     * @return this BigTable object.
+     */
+    public BigTable setShadingColor(float[] color) {
+        this.shadingColor = Util.copyOf(color);
+        return this;
+    }
+
+    /**
+     * Sets the color of the lines between the rows and the columns and around
+     * the table. Color.transparent leaves the lines out.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.gray.
+     * @return this BigTable object.
+     */
+    public BigTable setBorderColor(int color) {
+        this.borderColor = (color == Color.transparent) ? null : rgb(color);
+        return this;
+    }
+
+    /**
+     * Sets the color of the lines between the rows and the columns and around
+     * the table from its red, green and blue values from 0 to 1. null leaves
+     * the lines out.
+     *
+     * @param color the red, green and blue values.
+     * @return this BigTable object.
+     */
+    public BigTable setBorderColor(float[] color) {
+        this.borderColor = Util.copyOf(color);
+        return this;
+    }
+
+    /**
+     * Sets the space between the text of a column and the lines on its left
+     * and right. It is 2 points by default.
+     *
+     * @param padding the padding.
+     * @return this BigTable object.
+     */
+    public BigTable setPadding(float padding) {
+        if (padding < 0f) {
+            pdf.fail(new IllegalArgumentException("The padding cannot be negative."));
+        }
+        this.padding = padding;
+        if (this.vertLines != null) {
+            setVertLines();
+        }
+        return this;
+    }
+
+    /**
+     * Sets the footer drawn at the bottom of every page, centered. In the
+     * text, {page} stands for the number of the page and {pages} for the
+     * number of pages. The footer is "Page {page} of {pages}" in the header
+     * font by default. A null or empty text leaves the footer out.
+     *
+     * @param text the text, for example "Seite {page} von {pages}".
+     * @param font the font, or null for the header font.
+     * @return this BigTable object.
+     */
+    public BigTable setFooter(String text, Font font) {
+        this.footerText = text;
+        this.footerFont = font;
+        return this;
+    }
+
+    /**
      * Sets the bottom margin.
      *
      * @param bottomMargin the bottom margin.
@@ -166,10 +251,13 @@ public class BigTable {
     // Draws the footer of the page that was just finished, once. The page is
     // finished before the next one is created, so it is written complete.
     private void drawFooter() throws Exception {
-        if (!footerDrawn) {
-            page.addFooter(new TextLine(f1, "Page " + pageNumber + " of " + pageCount));
-            footerDrawn = true;
+        if (!footerDrawn && footerText != null && !footerText.isEmpty()) {
+            String text = footerText
+                    .replace("{page}", String.valueOf(pageNumber))
+                    .replace("{pages}", String.valueOf(pageCount));
+            page.addFooter(new TextLine((footerFont != null) ? footerFont : f1, text));
         }
+        footerDrawn = true;
     }
 
     private void drawTextAndLine(String[] fields) throws Exception {
@@ -212,19 +300,23 @@ public class BigTable {
 
     private void drawFieldsAndLine(String[] fields, Font font) {
         if (this.highlightRow) {
-            highlightRow(page, font, highlightColor);
+            if (shadingColor != null) {
+                highlightRow(page, font, shadingColor);
+            }
             this.highlightRow = false;
         } else {
             this.highlightRow = true;
         }
 
         // Draw the line above the text.
-        float[] original = page.getPenColor();
-        page.setPenColor(penColor);
-        page.moveTo(vertLines[0], this.yText - font.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
-        page.strokePath();
-        page.setPenColor(original);
+        if (borderColor != null) {
+            float[] original = page.getPenColor();
+            page.setPenColor(borderColor);
+            page.moveTo(vertLines[0], this.yText - font.ascent);
+            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
+            page.strokePath();
+            page.setPenColor(original);
+        }
         page.setBrushColor(Color.black);
 
         for (int i = 0; i < this.numberOfColumns; i++) {
@@ -237,7 +329,7 @@ public class BigTable {
         }
     }
 
-    private void highlightRow(Page page, Font font, int color) {
+    private void highlightRow(Page page, Font font, float[] color) {
         float[] original = page.getBrushColor();
         page.setBrushColor(color);
         page.moveTo(vertLines[0], this.yText - font.ascent);
@@ -249,8 +341,11 @@ public class BigTable {
     }
 
     private void drawTheVerticalLines() {
+        if (borderColor == null) {
+            return;
+        }
         float[] original = page.getPenColor();
-        page.setPenColor(penColor);
+        page.setPenColor(borderColor);
         for (int i = 0; i <= this.numberOfColumns; i++) {
             page.drawLine(
                     vertLines[i],
@@ -263,6 +358,11 @@ public class BigTable {
         page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
         page.strokePath();
         page.setPenColor(original);
+    }
+
+    private static float[] rgb(int color) {
+        return new float[] {
+                ((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};
     }
 
     // A number is right-aligned, as Table.rightAlignNumbers aligns it.
@@ -357,10 +457,11 @@ public class BigTable {
         return this;
     }
 
-    // Widens the columns to fit the fields of a row.
+    // Widens the columns to fit the fields of a row. The widths are those of
+    // the text, and setVertLines adds the padding, so it can be set later.
     private void measure(String[] fields) {
         for (int i = 0; i < this.numberOfColumns; i++) {
-            float width = f1.stringWidth(fields[columns[i]]) + 2*this.padding;
+            float width = f1.stringWidth(fields[columns[i]]);
             if (width > widths[i]) {
                 this.widths[i] = width;
             }
@@ -450,19 +551,19 @@ public class BigTable {
         }
     }
 
-    // Sets the x coordinates of the vertical lines from the location and the column widths.
+    // Sets the x coordinates of the vertical lines from the location, the
+    // column widths and the padding.
     private void setVertLines() {
         float vertLineX = this.x;
         this.vertLines[0] = vertLineX;
         for (int i = 0; i < widths.length; i++) {
-            vertLineX += this.widths[i];
+            vertLineX += this.widths[i] + 2*this.padding;
             this.vertLines[i + 1] = vertLineX;
         }
     }
 
     /**
-     * Draws the rows, then the vertical lines, with a "Page i of N" footer on
-     * every page. The pages are added to the PDF as they are drawn, so the
+     * Draws the rows, then the vertical lines, with the footer on every page. The pages are added to the PDF as they are drawn, so the
      * document does not hold them all. Call it after the location, the bottom
      * margin and the table data have been set.
      *

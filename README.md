@@ -320,7 +320,11 @@ and once to draw them, keeps none of them and writes each page when it is full,
 so its memory stays flat; Example_43 draws 2,546 pages that way.
 `setColumns(3, 0, 11)` draws the fourth, first and twelfth fields of every row
 and of the header, in that order, where `setNumberOfColumns(n)` draws the first
-n.
+n. `setShadingColor` and `setBorderColor` change the colors of every other row
+and of the lines, or leave them out with `Color.transparent`, `setPadding` sets
+the space on each side of the text, and `setFooter("Seite {page} von {pages}",
+font)` replaces the "Page {page} of {pages}" footer, or leaves it out with a
+null text.
 
 ## Right to left text
 

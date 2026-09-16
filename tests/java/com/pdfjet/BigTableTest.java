@@ -123,6 +123,56 @@ class BigTableTest {
         assertEquals("A column index cannot be negative.", e.getMessage());
     }
 
+    // A table of the first five rows on one page, drawn after the change.
+    private static String drawSmall(PDF pdf, java.util.function.Consumer<BigTable> change) throws Exception {
+        Font font = TestSupport.helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, rows().subList(0, 5));
+        change.accept(table);
+        List<Page> pages = draw(table);
+        assertEquals(1, pages.size());
+        return TestSupport.content(pages.get(0));
+    }
+
+    @Test
+    void theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws Exception {
+        String defaults = drawSmall(TestSupport.newPDF(), table -> {});
+        assertTrue(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"));
+
+        String colored = drawSmall(TestSupport.newPDF(),
+                table -> table.setShadingColor(0xFF0000).setBorderColor(new float[] {0f, 0f, 1f}));
+        assertTrue(colored.contains("1 0 0 rg\n") && colored.contains("0 0 1 RG\n"));
+        assertTrue(!colored.contains("0.94 0.94 0.94 rg") && !colored.contains("0.69 0.69 0.69 RG"));
+
+        String plain = drawSmall(TestSupport.newPDF(),
+                table -> table.setShadingColor(Color.transparent).setBorderColor((float[]) null));
+        assertTrue(!plain.contains("\nf\n") && !plain.contains("\nS\n"));
+        assertTrue(plain.contains(TestSupport.hex("n4")));
+    }
+
+    @Test
+    void thePaddingCanBeSetAfterTheData() throws Exception {
+        String content = drawSmall(TestSupport.newPDF(), table -> table.setPadding(10f));
+        assertTrue(content.contains("BT\n20 "), content);    // The location is 10, 10
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> new BigTable(pdf, font, font, Letter.PORTRAIT).setPadding(-1f));
+        assertEquals("The padding cannot be negative.", e.getMessage());
+    }
+
+    @Test
+    void theFooterCanHaveItsOwnTextAndFontOrBeLeftOut() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
+        final Font big = TestSupport.helvetica(pdf).setSize(20f);
+        String custom = drawSmall(pdf, table -> table.setFooter("{page}/{pages}", big));
+        assertTrue(custom.contains(TestSupport.hex("1/1")) && custom.contains(" 20 Tf\n"));
+
+        String none = drawSmall(TestSupport.newPDF(), table -> table.setFooter(null, null));
+        String defaults = drawSmall(TestSupport.newPDF(), table -> {});
+        assertTrue(defaults.startsWith(none) && defaults.length() > none.length());
+    }
+
     @Test
     void theRowsAreReadTwiceAndClosed() throws Exception {
         final List<String[]> rows = rows();

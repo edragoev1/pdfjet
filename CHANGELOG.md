@@ -285,6 +285,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   they are drawn, so the columns of a file or a query can be picked and
   reordered without rewriting it; `setNumberOfColumns(n)` draws the first n
   fields, as before. A row without a field for every index is skipped.
+- `BigTable.setShadingColor`, `setBorderColor`, `setPadding` and `setFooter`
+  set the color of every other row, the color of the lines, the space on each
+  side of the text and the footer, which were fixed. `Color.transparent` or
+  null leaves the shading or the lines out, and the footer is a text in which
+  `{page}` and `{pages}` stand for the page number and the page count, in a
+  font of its own, or none with a null or empty text.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three

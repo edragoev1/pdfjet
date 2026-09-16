@@ -97,6 +97,55 @@ import Testing
         #expect(pdf.error == "A column index cannot be negative.")
     }
 
+    /// Draws a table of the first five rows on one page, after the change, and
+    /// returns the content of the page.
+    private func drawSmall(_ pdf: PDF, _ change: (BigTable) -> Void) throws -> String {
+        let font = TestSupport.helvetica(pdf)
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(header, Array(rows()[0..<5]))
+        change(table)
+        let pages = try draw(table)
+        #expect(pages.count == 1)
+        return TestSupport.content(pages[0])
+    }
+
+    @Test func theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws {
+        let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"))
+
+        let colored = try drawSmall(TestSupport.newPDF()) { table in
+            table.setShadingColor(Int32(0xFF0000)).setBorderColor([Float(0), 0, 1])
+        }
+        #expect(colored.contains("1 0 0 rg\n") && colored.contains("0 0 1 RG\n"))
+        #expect(!colored.contains("0.94 0.94 0.94 rg") && !colored.contains("0.69 0.69 0.69 RG"))
+
+        let plain = try drawSmall(TestSupport.newPDF()) { table in
+            table.setShadingColor(Color.transparent).setBorderColor(nil)
+        }
+        #expect(!plain.contains("\nf\n") && !plain.contains("\nS\n"))
+        #expect(plain.contains(TestSupport.hex("n4")))
+    }
+
+    @Test func thePaddingCanBeSetAfterTheData() throws {
+        let content = try drawSmall(TestSupport.newPDF()) { table in table.setPadding(10) }
+        #expect(content.contains("BT\n20 "))     // The location is 10, 10
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        BigTable(pdf, font, font, Letter.PORTRAIT).setPadding(-1)
+        #expect(pdf.error == "The padding cannot be negative.")
+    }
+
+    @Test func theFooterCanHaveItsOwnTextAndFontOrBeLeftOut() throws {
+        let pdf = TestSupport.newPDF()
+        let big = TestSupport.helvetica(pdf).setSize(20)
+        let custom = try drawSmall(pdf) { table in table.setFooter("{page}/{pages}", big) }
+        #expect(custom.contains(TestSupport.hex("1/1")) && custom.contains(" 20 Tf\n"))
+
+        let none = try drawSmall(TestSupport.newPDF()) { table in table.setFooter(nil, nil) }
+        let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(defaults.hasPrefix(none) && defaults.count > none.count)
+    }
+
     @Test func theRowsAreReadTwice() throws {
         let rows = self.rows()
         final class Counter {

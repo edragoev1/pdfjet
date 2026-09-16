@@ -9,10 +9,11 @@ package pdfjet
 
 import (
 	"bufio"
-	"fmt"
 	"iter"
 	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -39,8 +40,12 @@ type BigTable struct {
 	bottomMargin    float32
 	padding         float32
 	highlight       bool
-	highlightColor  int32
-	penColor        int32
+	shadingColor    [3]float32
+	hasShading      bool // false for no shading
+	borderColor     [3]float32
+	hasBorder       bool // false for no lines
+	footerText      string
+	footerFont      *Font // nil for the header font
 	rows            iter.Seq[[]string]
 	readErr         error // The error reading the data file, if any
 	columns         []int // The fields drawn, in the order they are drawn
@@ -56,18 +61,21 @@ type BigTable struct {
 // NewBigTable creates a new BigTable instance
 func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize pagesize.PageSize) *BigTable {
 	return &BigTable{
-		pdf:            pdf,
-		f1:             f1,
-		f2:             f2,
-		pageSize:       pageSize,
-		pages:          make([]*Page, 0),
-		bottomMargin:   20.0,
-		padding:        2.0,
-		highlight:      true,
-		highlightColor: 0xF0F0F0,
-		penColor:       0xB0B0B0,
-		startNewPage:   true,
-		alignment:      make([]alignment.Alignment, 0),
+		pdf:          pdf,
+		f1:           f1,
+		f2:           f2,
+		pageSize:     pageSize,
+		pages:        make([]*Page, 0),
+		bottomMargin: 20.0,
+		padding:      2.0,
+		highlight:    true,
+		shadingColor: colorToRGB(0xF0F0F0),
+		hasShading:   true,
+		borderColor:  colorToRGB(0xB0B0B0),
+		hasBorder:    true,
+		footerText:   "Page {page} of {pages}",
+		startNewPage: true,
+		alignment:    make([]alignment.Alignment, 0),
 	}
 }
 
@@ -120,6 +128,64 @@ func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) 
 	return bt
 }
 
+// SetShadingColor sets the color of every other row, starting with the header,
+// as a 0xRRGGBB value. color.Transparent turns the shading off.
+func (bt *BigTable) SetShadingColor(c int32) *BigTable {
+	bt.hasShading = c != color.Transparent
+	bt.shadingColor = colorToRGB(c)
+	return bt
+}
+
+// SetShadingColorRGB sets the color of every other row, starting with the
+// header, from its red, green and blue values from 0 to 1.
+func (bt *BigTable) SetShadingColorRGB(rgb [3]float32) *BigTable {
+	bt.shadingColor = rgb
+	bt.hasShading = true
+	return bt
+}
+
+// SetBorderColor sets the color of the lines between the rows and the columns
+// and around the table, as a 0xRRGGBB value. color.Transparent leaves the lines
+// out.
+func (bt *BigTable) SetBorderColor(c int32) *BigTable {
+	bt.hasBorder = c != color.Transparent
+	bt.borderColor = colorToRGB(c)
+	return bt
+}
+
+// SetBorderColorRGB sets the color of the lines between the rows and the
+// columns and around the table from its red, green and blue values from 0 to 1.
+func (bt *BigTable) SetBorderColorRGB(rgb [3]float32) *BigTable {
+	bt.borderColor = rgb
+	bt.hasBorder = true
+	return bt
+}
+
+// SetPadding sets the space between the text of a column and the lines on its
+// left and right. It is 2 points by default. A negative padding is recorded on
+// the PDF as misuse, and the padding is left as it was.
+func (bt *BigTable) SetPadding(padding float32) *BigTable {
+	if padding < 0 {
+		bt.pdf.fail("The padding cannot be negative.")
+		return bt
+	}
+	bt.padding = padding
+	if bt.vertLines != nil {
+		bt.setVertLines()
+	}
+	return bt
+}
+
+// SetFooter sets the footer drawn at the bottom of every page, centered. In the
+// text, {page} stands for the number of the page and {pages} for the number of
+// pages. The footer is "Page {page} of {pages}" in the header font by default.
+// An empty text leaves the footer out, and a nil font is the header font.
+func (bt *BigTable) SetFooter(text string, font *Font) *BigTable {
+	bt.footerText = text
+	bt.footerFont = font
+	return bt
+}
+
 // SetBottomMargin sets the bottom margin
 func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 	bt.bottomMargin = bottomMargin
@@ -149,11 +215,16 @@ func (bt *BigTable) newPage() {
 // drawFooter draws the footer of the page that was just finished, once. The
 // page is finished before the next one is created, so it is written complete.
 func (bt *BigTable) drawFooter() {
-	if !bt.footerDrawn {
-		footer := NewTextLine(bt.f1, fmt.Sprintf("Page %d of %d", bt.pageNumber, bt.pageCount))
-		bt.page.AddFooter(footer)
-		bt.footerDrawn = true
+	if !bt.footerDrawn && bt.footerText != "" {
+		text := strings.ReplaceAll(bt.footerText, "{page}", strconv.Itoa(bt.pageNumber))
+		text = strings.ReplaceAll(text, "{pages}", strconv.Itoa(bt.pageCount))
+		font := bt.footerFont
+		if font == nil {
+			font = bt.f1
+		}
+		bt.page.AddFooter(NewTextLine(font, text))
 	}
+	bt.footerDrawn = true
 }
 
 // countPages counts the pages the rows take, as drawTextAndLine breaks them, so
@@ -196,18 +267,23 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 
 func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	if bt.highlight {
-		bt.highlightRow(bt.page, font, bt.highlightColor)
+		if bt.hasShading {
+			bt.highlightRow(bt.page, font, bt.shadingColor)
+		}
 		bt.highlight = false
 	} else {
 		bt.highlight = true
 	}
 
-	original := bt.page.GetPenColor()
-	bt.page.SetPenColor(bt.penColor)
-	bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
-	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
-	bt.page.StrokePath()
-	bt.page.SetPenColorRGB(original)
+	// The line above the text
+	if bt.hasBorder {
+		original := bt.page.GetPenColor()
+		bt.page.SetPenColorRGB(bt.borderColor)
+		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
+		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
+		bt.page.StrokePath()
+		bt.page.SetPenColorRGB(original)
+	}
 	bt.page.SetBrushColor(color.Black)
 
 	for i := 0; i < bt.numberOfColumns; i++ {
@@ -220,9 +296,9 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	}
 }
 
-func (bt *BigTable) highlightRow(page *Page, font *Font, color int32) {
+func (bt *BigTable) highlightRow(page *Page, font *Font, rgb [3]float32) {
 	original := page.GetBrushColor()
-	page.SetBrushColor(color)
+	page.SetBrushColorRGB(rgb)
 	page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
 	page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
 	page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText+font.descent)
@@ -232,8 +308,11 @@ func (bt *BigTable) highlightRow(page *Page, font *Font, color int32) {
 }
 
 func (bt *BigTable) drawTheVerticalLines() {
+	if !bt.hasBorder {
+		return
+	}
 	original := bt.page.GetPenColor()
-	bt.page.SetPenColor(bt.penColor)
+	bt.page.SetPenColorRGB(bt.borderColor)
 	for i := 0; i <= bt.numberOfColumns; i++ {
 		bt.page.DrawLine(
 			bt.vertLines[i],
@@ -369,29 +448,30 @@ func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigT
 	return bt
 }
 
-// measure widens the columns to fit the fields of a row.
+// measure widens the columns to fit the fields of a row. The widths are those
+// of the text, and setVertLines adds the padding, so it can be set later.
 func (bt *BigTable) measure(fields []string) {
 	for i := 0; i < bt.numberOfColumns; i++ {
-		width := bt.f1.StringWidth(bt.f1.size, fields[bt.columns[i]]) + 2*bt.padding
+		width := bt.f1.StringWidth(bt.f1.size, fields[bt.columns[i]])
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}
 	}
 }
 
-// setVertLines sets the x coordinates of the vertical lines from the location
-// and the column widths.
+// setVertLines sets the x coordinates of the vertical lines from the location,
+// the column widths and the padding.
 func (bt *BigTable) setVertLines() {
 	vertLineX := bt.x
 	bt.vertLines[0] = vertLineX
 	for i := 0; i < len(bt.widths); i++ {
-		vertLineX += bt.widths[i]
+		vertLineX += bt.widths[i] + 2*bt.padding
 		bt.vertLines[i+1] = vertLineX
 	}
 }
 
-// Complete draws the rows, then the vertical lines, with a "Page i of N" footer
-// on every page. The pages are added to the PDF as they are drawn, so the
+// Complete draws the rows, then the vertical lines, with the footer on every
+// page. The pages are added to the PDF as they are drawn, so the
 // document does not hold them all. It returns an error if the data file cannot
 // be read. A table without data draws nothing.
 func (bt *BigTable) Complete() error {

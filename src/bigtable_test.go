@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -134,6 +135,75 @@ func TestBigTableANegativeColumnIndexIsRefused(t *testing.T) {
 	font := testHelvetica(pdf)
 	NewBigTable(pdf, font, font, letter.Portrait()).SetColumns(1, -1)
 	testRecorded(t, pdf, "A column index cannot be negative.")
+}
+
+// testDrawSmallBigTable draws a table of the first five rows on one page, after
+// the change, and returns the content of the page.
+func testDrawSmallBigTable(t *testing.T, pdf *PDF, change func(*BigTable)) string {
+	t.Helper()
+	font := testHelvetica(pdf)
+	table := NewBigTable(pdf, font, font, letter.Portrait()).
+		SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(testBigTableRows()[:5]))
+	change(table)
+	pages := testDrawBigTable(t, table)
+	if len(pages) != 1 {
+		t.Fatalf("pages: %d", len(pages))
+	}
+	return testContent(pages[0])
+}
+
+func TestBigTableTheShadingAndTheBorderColorsCanBeChangedOrLeftOut(t *testing.T) {
+	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
+	if !strings.Contains(defaults, "0.94 0.94 0.94 rg\n") || !strings.Contains(defaults, "0.69 0.69 0.69 RG\n") {
+		t.Error("the default colors are missing")
+	}
+
+	colored := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {
+		table.SetShadingColor(0xFF0000).SetBorderColorRGB([3]float32{0, 0, 1})
+	})
+	if !strings.Contains(colored, "1 0 0 rg\n") || !strings.Contains(colored, "0 0 1 RG\n") {
+		t.Error("the colors that were set are missing")
+	}
+	if strings.Contains(colored, "0.94 0.94 0.94 rg") || strings.Contains(colored, "0.69 0.69 0.69 RG") {
+		t.Error("the default colors are still drawn")
+	}
+
+	plain := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {
+		table.SetShadingColor(color.Transparent).SetBorderColor(color.Transparent)
+	})
+	if strings.Contains(plain, "\nf\n") || strings.Contains(plain, "\nS\n") {
+		t.Error("shading or lines are drawn")
+	}
+	if !strings.Contains(plain, testHex("n4")) {
+		t.Error("the last row was not drawn")
+	}
+}
+
+func TestBigTableThePaddingCanBeSetAfterTheData(t *testing.T) {
+	content := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetPadding(10) })
+	if !strings.Contains(content, "BT\n20 ") { // The location is 10, 10
+		t.Errorf("content %q", content)
+	}
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	NewBigTable(pdf, font, font, letter.Portrait()).SetPadding(-1)
+	testRecorded(t, pdf, "The padding cannot be negative.")
+}
+
+func TestBigTableTheFooterCanHaveItsOwnTextAndFontOrBeLeftOut(t *testing.T) {
+	pdf := testNewPDF()
+	big := testHelvetica(pdf)
+	big.SetSize(20)
+	custom := testDrawSmallBigTable(t, pdf, func(table *BigTable) { table.SetFooter("{page}/{pages}", big) })
+	if !strings.Contains(custom, testHex("1/1")) || !strings.Contains(custom, " 20 Tf\n") {
+		t.Error("the footer text or font is missing")
+	}
+
+	none := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetFooter("", nil) })
+	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
+	if !strings.HasPrefix(defaults, none) || len(defaults) <= len(none) {
+		t.Error("the footer was not left out")
+	}
 }
 
 func TestBigTableTheRowsAreReadTwice(t *testing.T) {
