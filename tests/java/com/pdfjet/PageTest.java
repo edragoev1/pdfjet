@@ -49,6 +49,80 @@ class PageTest {
     }
 
     @Test
+    void aColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.setBrushColor(Color.black);    // Written, as a new page has written no color
+        page.setBrushColor(Color.black);
+        page.setPenColor(Color.red);
+        page.setPenColor(new float[] {1f, 0f, 0f});
+        page.setPenWidth(0f);
+        page.setDefaultPenWidth();
+        assertEquals("0 0 0 rg\n1 0 0 RG\n0 w\n", TestSupport.content(page));
+    }
+
+    @Test
+    void qAndQKeepWhatTheContentHasWritten() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.setBrushColor(Color.black);
+        page.saveGraphicsState();
+        page.setBrushColor(Color.blue);
+        page.setBrushColor(Color.blue);
+        page.restoreGraphicsState();
+        page.setBrushColor(Color.black);    // Q restored black
+        page.setBrushColor(Color.blue);
+        assertEquals("0 0 0 rg\nq\n0 0 1 rg\nQ\n0 0 1 rg\n", TestSupport.content(page));
+    }
+
+    @Test
+    void anRgbColorAfterACmykColorIsWritten() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.setBrushColor(Color.black);
+        page.setBrushColorCMYK(0f, 0f, 0f, 1f);
+        page.setBrushColor(Color.black);
+        assertEquals("0 0 0 rg\n0 0 0 1 k\n0 0 0 rg\n", TestSupport.content(page));
+    }
+
+    @Test
+    void theFontOfTheTextIsWrittenWhenItChanges() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a").setLocation(10f, 20f).drawOn(page);
+        new TextLine(font, "b").setLocation(10f, 40f).drawOn(page);
+        new TextLine(font, "c").setFontSize(14f).setLocation(10f, 60f).drawOn(page);
+        page.saveGraphicsState();
+        new TextLine(font, "d").setLocation(10f, 80f).drawOn(page);
+        page.restoreGraphicsState();
+        new TextLine(font, "e").setFontSize(14f).setLocation(10f, 100f).drawOn(page);
+        String content = TestSupport.content(page);
+        List<String> fonts = new ArrayList<String>();
+        for (String line : content.split("\n")) {
+            if (line.endsWith(" Tf")) {
+                fonts.add(line.substring(line.indexOf(' ') + 1));
+            }
+        }
+        assertEquals(Arrays.asList("12 Tf", "14 Tf", "12 Tf"), fonts, content);
+    }
+
+    @Test
+    void fillRectWritesOneRectangleWithTheEdgesOfThePath() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.fillRect(10f, 20f, 30f, 40f);
+        assertEquals("10 732 30 40 re\nf\n", TestSupport.content(page));
+
+        // A path wrote the top edge at 792 and the bottom one at 791.99, where
+        // rounding the height alone would make it 0.
+        page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.fillRect(0f, 0.004f, 1f, 0.004f);
+        assertEquals("0 791.99 1 0.01 re\nf\n", TestSupport.content(page));
+
+        // Far outside the page the rectangle is still a path.
+        page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.fillRect(200000f, 0f, 10f, 10f);
+        assertEquals("200000 792 m\n200010 792 l\n200010 782 l\n200000 782 l\nf\n", TestSupport.content(page));
+    }
+
+    @Test
     void gettersReturnCopies() throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         page.getPenColor()[0] = 1f;

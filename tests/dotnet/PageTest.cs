@@ -41,6 +41,80 @@ public class PageTest {
     }
 
     [Fact]
+    public void AColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.SetBrushColor(Color.black);    // Written, as a new page has written no color
+        page.SetBrushColor(Color.black);
+        page.SetPenColor(Color.red);
+        page.SetPenColor(new float[] {1f, 0f, 0f});
+        page.SetPenWidth(0f);
+        page.SetDefaultPenWidth();
+        Assert.Equal("0 0 0 rg\n1 0 0 RG\n0 w\n", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void QAndQKeepWhatTheContentHasWritten() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.SetBrushColor(Color.black);
+        page.SaveGraphicsState();
+        page.SetBrushColor(Color.blue);
+        page.SetBrushColor(Color.blue);
+        page.RestoreGraphicsState();
+        page.SetBrushColor(Color.black);    // Q restored black
+        page.SetBrushColor(Color.blue);
+        Assert.Equal("0 0 0 rg\nq\n0 0 1 rg\nQ\n0 0 1 rg\n", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void AnRgbColorAfterACmykColorIsWritten() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.SetBrushColor(Color.black);
+        page.SetBrushColorCMYK(0f, 0f, 0f, 1f);
+        page.SetBrushColor(Color.black);
+        Assert.Equal("0 0 0 rg\n0 0 0 1 k\n0 0 0 rg\n", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void TheFontOfTheTextIsWrittenWhenItChanges() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a").SetLocation(10f, 20f).DrawOn(page);
+        new TextLine(font, "b").SetLocation(10f, 40f).DrawOn(page);
+        new TextLine(font, "c").SetFontSize(14f).SetLocation(10f, 60f).DrawOn(page);
+        page.SaveGraphicsState();
+        new TextLine(font, "d").SetLocation(10f, 80f).DrawOn(page);
+        page.RestoreGraphicsState();
+        new TextLine(font, "e").SetFontSize(14f).SetLocation(10f, 100f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        List<string> fonts = new List<string>();
+        foreach (string line in content.Split('\n')) {
+            if (line.EndsWith(" Tf")) {
+                fonts.Add(line.Substring(line.IndexOf(' ') + 1));
+            }
+        }
+        Assert.Equal(new List<string> {"12 Tf", "14 Tf", "12 Tf"}, fonts);
+    }
+
+    [Fact]
+    public void FillRectWritesOneRectangleWithTheEdgesOfThePath() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.FillRect(10f, 20f, 30f, 40f);
+        Assert.Equal("10 732 30 40 re\nf\n", TestSupport.Content(page));
+
+        // A path wrote the top edge at 792 and the bottom one at 791.99, where
+        // rounding the height alone would make it 0.
+        page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.FillRect(0f, 0.004f, 1f, 0.004f);
+        Assert.Equal("0 791.99 1 0.01 re\nf\n", TestSupport.Content(page));
+
+        // Far outside the page the rectangle is still a path.
+        page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.FillRect(200000f, 0f, 10f, 10f);
+        Assert.Equal("200000 792 m\n200010 792 l\n200010 782 l\n200000 782 l\nf\n", TestSupport.Content(page));
+    }
+
+    [Fact]
     public void GettersReturnCopies() {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         page.GetPenColor()[0] = 1f;

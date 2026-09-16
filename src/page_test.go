@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 )
@@ -190,5 +191,86 @@ func TestPageARadioButtonFontSizeLeavesTheFontAlone(t *testing.T) {
 	testNear(t, "font size", 12, font.GetSize(), 0)
 	if !strings.Contains(testContent(page), " 20 Tf\n") {
 		t.Errorf("content %q", testContent(page))
+	}
+}
+
+func TestPageAColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain(t *testing.T) {
+	page := testNewPage()
+	page.SetBrushColor(color.Black) // Written, as a new page has written no color
+	page.SetBrushColor(color.Black)
+	page.SetPenColor(color.Red)
+	page.SetPenColorRGB([3]float32{1, 0, 0})
+	page.SetPenWidth(0)
+	page.SetDefaultPenWidth()
+	if got := testContent(page); got != "0 0 0 rg\n1 0 0 RG\n0 w\n" {
+		t.Errorf("content %q", got)
+	}
+}
+
+func TestPageQAndQKeepWhatTheContentHasWritten(t *testing.T) {
+	page := testNewPage()
+	page.SetBrushColor(color.Black)
+	page.SaveGraphicsState()
+	page.SetBrushColor(color.Blue)
+	page.SetBrushColor(color.Blue)
+	page.RestoreGraphicsState()
+	page.SetBrushColor(color.Black) // Q restored black
+	page.SetBrushColor(color.Blue)
+	if got := testContent(page); got != "0 0 0 rg\nq\n0 0 1 rg\nQ\n0 0 1 rg\n" {
+		t.Errorf("content %q", got)
+	}
+}
+
+func TestPageAnRgbColorAfterACmykColorIsWritten(t *testing.T) {
+	page := testNewPage()
+	page.SetBrushColor(color.Black)
+	page.SetBrushColorCMYK(0, 0, 0, 1)
+	page.SetBrushColor(color.Black)
+	if got := testContent(page); got != "0 0 0 rg\n0 0 0 1 k\n0 0 0 rg\n" {
+		t.Errorf("content %q", got)
+	}
+}
+
+func TestPageTheFontOfTheTextIsWrittenWhenItChanges(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "a").SetLocation(10, 20).DrawOn(page)
+	NewTextLine(font, "b").SetLocation(10, 40).DrawOn(page)
+	NewTextLine(font, "c").SetFontSize(14).SetLocation(10, 60).DrawOn(page)
+	page.SaveGraphicsState()
+	NewTextLine(font, "d").SetLocation(10, 80).DrawOn(page)
+	page.RestoreGraphicsState()
+	NewTextLine(font, "e").SetFontSize(14).SetLocation(10, 100).DrawOn(page)
+	content := testContent(page)
+	fonts := make([]string, 0)
+	for _, line := range strings.Split(content, "\n") {
+		if strings.HasSuffix(line, " Tf") {
+			fonts = append(fonts, line[strings.Index(line, " ")+1:])
+		}
+	}
+	if strings.Join(fonts, ",") != "12 Tf,14 Tf,12 Tf" {
+		t.Errorf("fonts %q in %q", fonts, content)
+	}
+}
+
+func TestPageFillRectWritesOneRectangleWithTheEdgesOfThePath(t *testing.T) {
+	page := testNewPage()
+	page.FillRect(10, 20, 30, 40)
+	if got := testContent(page); got != "10 732 30 40 re\nf\n" {
+		t.Errorf("content %q", got)
+	}
+	// A path wrote the top edge at 792 and the bottom one at 791.99, where
+	// rounding the height alone would make it 0.
+	page = testNewPage()
+	page.FillRect(0, 0.004, 1, 0.004)
+	if got := testContent(page); got != "0 791.99 1 0.01 re\nf\n" {
+		t.Errorf("content %q", got)
+	}
+	// Far outside the page the rectangle is still a path.
+	page = testNewPage()
+	page.FillRect(200000, 0, 10, 10)
+	if got := testContent(page); got != "200000 792 m\n200010 792 l\n200010 782 l\n200000 782 l\nf\n" {
+		t.Errorf("content %q", got)
 	}
 }

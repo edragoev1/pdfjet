@@ -54,6 +54,16 @@ public class Page {
 
     private float[] brushColor = {0f, 0f, 0f};
     private float[] penColor = {0f, 0f, 0f};
+    // True when the content has set the brush or the pen to the RGB color above,
+    // so setting it again writes nothing. False on a new page, whose colors are
+    // not written yet, and after a CMYK color. The pen width and the font of the
+    // text are kept the same way, and q and Q save and restore all of them, as
+    // they save and restore the graphics state of the PDF.
+    private bool brushColorWritten = false;
+    private bool penColorWritten = false;
+    private bool penWidthWritten = false;
+    private Font writtenFont = null;        // The font of the last Tf, or null
+    private float writtenFontSize = 0f;
 
     private float[] tmx = {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
@@ -1177,7 +1187,11 @@ public class Page {
         }
 
         // Now set the brush color, to a copy that the caller cannot change
+        if (brushColorWritten && brushColor[0] == rgbColor[0] && brushColor[1] == rgbColor[1] && brushColor[2] == rgbColor[2]) {
+            return this;    // The content is drawn with this color already
+        }
         this.brushColor = (float[]) rgbColor.Clone();
+        brushColorWritten = true;
 
         // Proceed with setting the color (example)
         Append(rgbColor[0]);
@@ -1235,7 +1249,11 @@ public class Page {
         }
 
         // Now set the pen color, to a copy that the caller cannot change
+        if (penColorWritten && penColor[0] == rgbColor[0] && penColor[1] == rgbColor[1] && penColor[2] == rgbColor[2]) {
+            return this;    // The content is drawn with this color already
+        }
         this.penColor = (float[]) rgbColor.Clone();
+        penColorWritten = true;
 
         // Proceed with setting the color (example)
         Append(rgbColor[0]);
@@ -1276,6 +1294,7 @@ public class Page {
         Append(k);
         Append(" k\n");
         brushColor = CmykToRGB(c, m, y, k);
+        brushColorWritten = false;
         return this;
     }
 
@@ -1298,6 +1317,7 @@ public class Page {
         Append(k);
         Append(" K\n");
         penColor = CmykToRGB(c, m, y, k);
+        penColorWritten = false;
         return this;
     }
 
@@ -1316,9 +1336,7 @@ public class Page {
     /// </summary>
     /// <returns>this Page object.</returns>
     public Page SetDefaultPenWidth() {
-        this.penWidth = 0f;
-        Append("0 w\n");
-        return this;
+        return SetPenWidth(0f);
     }
 
     /// <summary>
@@ -1408,7 +1426,11 @@ public class Page {
         if (width < 0f) {
             pdf.Fail(new ArgumentException("The pen width cannot be negative."));
         }
+        if (penWidthWritten && width == this.penWidth) {
+            return this;    // The content is drawn with this width already
+        }
         this.penWidth = width;
+        penWidthWritten = true;
         Append(width);
         Append(" w\n");
         return this;
@@ -1517,11 +1539,35 @@ public class Page {
     /// <param name="w">Rectangle width.</param>
     /// <param name="h">Rectangle height.</param>
     public void FillRect(float x, float y, float w, float h) {
-        MoveTo(x, y);
-        LineTo(x + w, y);
-        LineTo(x + w, y + h);
-        LineTo(x, y + h);
-        FillPath();           // close and fill
+        float left = x;
+        float right = x + w;
+        float top = height - y;
+        float bottom = height - (y + h);
+        if (Math.Abs(left) < 100000f && Math.Abs(right) < 100000f
+                && Math.Abs(top) < 100000f && Math.Abs(bottom) < 100000f) {
+            // One re operator, where four path operators drew the rectangle.
+            // The corners are rounded as the path wrote them, and the width
+            // and the height are their differences, so the edges stay where
+            // the path put them; below 100000 a float holds hundredths
+            // closely enough to be written back as the same hundredths.
+            int x1 = FastFloat.ToHundredths(left);
+            int y1 = FastFloat.ToHundredths(bottom);
+            Append(x1 / 100f);
+            Append(' ');
+            Append(y1 / 100f);
+            Append(' ');
+            Append((FastFloat.ToHundredths(right) - x1) / 100f);
+            Append(' ');
+            Append((FastFloat.ToHundredths(top) - y1) / 100f);
+            Append(" re\nf\n");
+        } else {
+            // Outside the page by far, or NaN, which MoveTo refuses.
+            MoveTo(x, y);
+            LineTo(x + w, y);
+            LineTo(x + w, y + h);
+            LineTo(x, y + h);
+            FillPath();
+        }
     }
 
     /// <summary>
@@ -1949,6 +1995,12 @@ public class Page {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.Fail(new ArgumentException("The font belongs to another PDF."));
         }
+        this.textFontSize = fontSize;
+        if (writtenFont == font && writtenFontSize == fontSize) {
+            return this;    // The text is drawn in this font already
+        }
+        writtenFont = font;
+        writtenFontSize = fontSize;
         if (font.fontID != null) {
             Append('/');
             Append(font.fontID);
@@ -1959,7 +2011,6 @@ public class Page {
         Append(Token.Space);
         Append(fontSize);
         Append(" Tf\n");
-        this.textFontSize = fontSize;
         return this;
     }
 
@@ -2047,8 +2098,9 @@ public class Page {
     /// Saves the graphics state. Please see Example_31.
     /// </summary>
     public void SaveGraphicsState() {
-        savedStates.Add(new State(
-                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern));
+        savedStates.Add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
+                penWidth, penWidthWritten, writtenFont, writtenFontSize,
+                lineCapStyle, lineJoinStyle, strokeDashPattern));
         Append("q\n");
     }
 
@@ -2088,8 +2140,13 @@ public class Page {
             State state = savedStates[savedStates.Count - 1];
             savedStates.RemoveAt(savedStates.Count - 1);
             brushColor = state.GetBrushColor();
+            brushColorWritten = state.GetBrushColorWritten();
             penColor = state.GetPenColor();
+            penColorWritten = state.GetPenColorWritten();
             penWidth = state.GetPenWidth();
+            penWidthWritten = state.GetPenWidthWritten();
+            writtenFont = state.GetWrittenFont();
+            writtenFontSize = state.GetWrittenFontSize();
             lineCapStyle = state.GetLineCapStyle();
             lineJoinStyle = state.GetLineJoinStyle();
             strokeDashPattern = state.GetStrokeDashPattern();

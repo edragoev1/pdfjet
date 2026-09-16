@@ -44,13 +44,7 @@ func Append(dst []byte, value float32) []byte {
 		return strconv.AppendFloat(dst, magnitude, 'f', 0, 64)
 	}
 
-	// Round to 2 decimal places, halves away from zero. A float times 100
-	// is exact in a float64, so the exact value of the float is rounded.
-	scaled := magnitude * 100
-	hundredths := int(scaled)
-	if scaled-float64(hundredths) >= 0.5 {
-		hundredths++
-	}
+	hundredths := roundedHundredths(magnitude)
 
 	// A value that rounds to zero, like -0.001 and -0.0, is written 0
 	negative := value < 0 && hundredths > 0
@@ -103,4 +97,27 @@ func writeInt(value int, buffer []byte, pos int, digits int) int {
 		value /= 10
 	}
 	return pos + digits
+}
+
+// roundedHundredths returns the number of hundredths that Append writes for a
+// magnitude below 2^23: rounded to 2 decimal places, halves away from zero. A
+// float times 100 is exact in a float64, so the exact value of the float is
+// rounded.
+func roundedHundredths(magnitude float64) int {
+	scaled := magnitude * 100
+	hundredths := int(scaled)
+	if scaled-float64(hundredths) >= 0.5 {
+		hundredths++
+	}
+	return hundredths
+}
+
+// ToHundredths returns the value that Append writes, in hundredths, with its
+// sign, for a value whose magnitude is below 2^23.
+func ToHundredths(value float32) int {
+	hundredths := roundedHundredths(math.Abs(float64(value)))
+	if value < 0 {
+		return -hundredths
+	}
+	return hundredths
 }

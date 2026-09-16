@@ -76,13 +76,6 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 ## Week 2 (Sep 24–30): `Table` data and delimited files
 
-- ⬜ **B** Decide whether the rows of a `Table` may arrive incrementally, as
-      `BigTable` reads its file. Today the caller builds the whole grid
-      (`setTableData(List<List<Cell>>)`); at Example_43's size `Table` takes
-      5,038 ms and a 1 GB heap against `BigTable`'s 1,778 ms and 32 MB
-      (`benchmarks/results/2026-09-16-542b3dbf-table.log`). If yes, the method
-      lands in 9.0.0, so there are never two ways of giving a table its data
-      arriving in different releases.
 - ✅ **B** One content field in `Cell`. `image`, `barcode`, `textBlock` and
       `textColumn` are four fields that are meant to exclude each other, but
       each setter clears only the cell text, and `drawOn` and `getHeight` try
@@ -134,10 +127,27 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       looks at every field for line breaks only in rows from memory, so
       Example_43 is identical and as fast in the four ports: a first version
       that looked at every field cost Go 6% and Swift 3%.
-- ⬜ S `Table` writes 25.2 MB where iText's writes 21.6, because `Cell` sets
+- ✅ **B** `Table` writes 25.2 MB where iText's writes 21.6, because `Cell` sets
       the brush and the pen for every cell (2,027 `rg` and `RG` on the sample's
       first page against iText's 675). Skip the operators when the colour has
       not changed.
+      Done (Sep 16), made a blocker by the user, in `Page` in the four ports.
+      Colours alone took the benchmark to 24.54 MB, as iText's content is not
+      shorter but compresses better; with the pen width and the font also
+      written only when they change it was 24.10 MB, and with `fillRect` as
+      one `re` 21.18 MB, which the user chose. What the content has set is
+      saved and restored with q and Q, and a CMYK colour clears it; `re`
+      writes the width and height as differences of the rounded corners, so
+      the edges stay where the path put them, and a rectangle beyond 100,000
+      points is still a path. The example PDFs render the same in Poppler; in
+      MuPDF the `re` rectangles of Example_13, 15, 38, 39 and 40 differ by a
+      few levels at the edges. Five `Page` tests per port. `check-examples.sh`
+      is clean. Found on the way: compiling `BigTableBench.java` by
+      hand against a directory of library classes let javac compile the
+      library sources of the repository into the output too, where they
+      shadow the build being measured; `benchmarks/run.sh` compiles against
+      the jar and is not affected. The recorded benchmark numbers are stale
+      now (Week 3 item).
 
 ## Week 3 (Oct 1–7): cleanups and documentation
 

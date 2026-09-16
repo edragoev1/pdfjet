@@ -53,6 +53,16 @@ type Page struct {
 
 	penColor   [3]float32
 	brushColor [3]float32
+	// True when the content has set the brush or the pen to the RGB color above,
+	// so setting it again writes nothing. False on a new page, whose colors are
+	// not written yet, and after a CMYK color. The pen width and the font of the
+	// text are kept the same way, and q and Q save and restore all of them, as
+	// they save and restore the graphics state of the PDF.
+	brushColorWritten bool
+	penColorWritten   bool
+	penWidthWritten   bool
+	writtenFont       *Font // The font of the last Tf, or nil
+	writtenFontSize   float32
 
 	tmx [4]float32
 	// The bytes of the text matrix, written for every string while the page
@@ -972,7 +982,8 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 // SaveGraphicsState saves the current graphics state. Please see Example_31.
 func (page *Page) SaveGraphicsState() {
 	page.savedStates = append(page.savedStates, newSavedState(
-		page.brushColor, page.penColor, page.penWidth,
+		page.brushColor, page.brushColorWritten, page.penColor, page.penColorWritten,
+		page.penWidth, page.penWidthWritten, page.writtenFont, page.writtenFontSize,
 		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern))
 	page.appendString("q\n")
 }
@@ -1005,8 +1016,13 @@ func (page *Page) RestoreGraphicsState() {
 		state := page.savedStates[n-1]
 		page.savedStates = page.savedStates[:n-1]
 		page.penColor = state.pen
+		page.penColorWritten = state.penWritten
 		page.brushColor = state.brush
+		page.brushColorWritten = state.brushWritten
 		page.penWidth = state.penWidth
+		page.penWidthWritten = state.penWidthWritten
+		page.writtenFont = state.writtenFont
+		page.writtenFontSize = state.writtenFontSize
 		page.lineCapStyle = state.lineCapStyle
 		page.lineJoinStyle = state.lineJoinStyle
 		page.strokeDashPattern = state.strokeDashPattern
@@ -1062,10 +1078,12 @@ func (page *Page) SetPenColorRGB(rgbColor [3]float32) *Page {
 		return page // Early exit if out of range
 	}
 
-	// Now set the pen color
+	if page.penColorWritten && page.penColor == rgbColor {
+		return page // The content is drawn with this color already
+	}
 	page.penColor = rgbColor
+	page.penColorWritten = true
 
-	// Proceed with setting the color (example)
 	page.appendFloat32(rgbColor[0])
 	page.appendString(" ")
 	page.appendFloat32(rgbColor[1])
@@ -1136,10 +1154,12 @@ func (page *Page) SetBrushColorRGB(rgbColor [3]float32) *Page {
 		return page // Early exit if out of range
 	}
 
-	// Now set the brush color
+	if page.brushColorWritten && page.brushColor == rgbColor {
+		return page // The content is drawn with this color already
+	}
 	page.brushColor = rgbColor
+	page.brushColorWritten = true
 
-	// Proceed with setting the color (example)
 	page.appendFloat32(rgbColor[0])
 	page.appendString(" ")
 	page.appendFloat32(rgbColor[1])
@@ -1179,6 +1199,7 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(k)
 	page.appendString(" K\n")
 	page.penColor = cmykToRGB(c, m, y, k)
+	page.penColorWritten = false
 	return page
 }
 
@@ -1198,6 +1219,7 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.appendFloat32(k)
 	page.appendString(" k\n")
 	page.brushColor = cmykToRGB(c, m, y, k)
+	page.brushColorWritten = false
 	return page
 }
 
@@ -1214,10 +1236,7 @@ func cmykToRGB(c, m, y, k float32) [3]float32 {
 // SetDefaultPenWidth sets the line width to the default.
 // The default is the finest line width.
 func (page *Page) SetDefaultPenWidth() *Page {
-	page.penWidth = 0.0
-	page.appendFloat32(0.0)
-	page.appendString(" w\n")
-	return page
+	return page.SetPenWidth(0.0)
 }
 
 // SetStrokeDashPattern the stroke dash pattern controls the pattern of dashes and gaps used to stroke paths.
@@ -1295,7 +1314,11 @@ func (page *Page) SetPenWidth(width float32) *Page {
 		page.pdf.fail("The pen width cannot be negative.")
 		return page
 	}
+	if page.penWidthWritten && width == page.penWidth {
+		return page // The content is drawn with this width already
+	}
 	page.penWidth = width
+	page.penWidthWritten = true
 	page.appendFloat32(width)
 	page.appendString(" w\n")
 	return page
@@ -1385,6 +1408,29 @@ func (page *Page) DrawRect(x, y, w, h float32) {
 //   - w: the width of the rectangle to be drawn.
 //   - h: the height of the rectangle to be drawn.
 func (page *Page) FillRect(x, y, w, h float32) {
+	left := x
+	right := x + w
+	top := page.height - y
+	bottom := page.height - (y + h)
+	if abs32(left) < 100000 && abs32(right) < 100000 && abs32(top) < 100000 && abs32(bottom) < 100000 {
+		// One re operator, where four path operators drew the rectangle. The
+		// corners are rounded as the path wrote them, and the width and the
+		// height are their differences, so the edges stay where the path put
+		// them; below 100000 a float holds hundredths closely enough to be
+		// written back as the same hundredths.
+		x1 := fastfloat.ToHundredths(left)
+		y1 := fastfloat.ToHundredths(bottom)
+		page.appendFloat32(float32(x1) / 100)
+		page.appendByte(' ')
+		page.appendFloat32(float32(y1) / 100)
+		page.appendByte(' ')
+		page.appendFloat32(float32(fastfloat.ToHundredths(right)-x1) / 100)
+		page.appendByte(' ')
+		page.appendFloat32(float32(fastfloat.ToHundredths(top)-y1) / 100)
+		page.appendString(" re\nf\n")
+		return
+	}
+	// Outside the page by far, or NaN, which MoveTo refuses.
 	page.MoveTo(x, y)
 	page.LineTo(x+w, y)
 	page.LineTo(x+w, y+h)
@@ -1731,6 +1777,12 @@ func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 	if font.pdf != nil && font.pdf != page.pdf {
 		page.pdf.fail("The font belongs to another PDF.")
 	}
+	page.textFontSize = fontSize
+	if page.writtenFont == font && page.writtenFontSize == fontSize {
+		return page // The text is drawn in this font already
+	}
+	page.writtenFont = font
+	page.writtenFontSize = fontSize
 	if font.fontID != "" {
 		page.appendByte('/')
 		page.appendString(font.fontID)
@@ -1741,7 +1793,6 @@ func (page *Page) setTextFont(font *Font, fontSize float32) *Page {
 	page.appendByte(token.Space)
 	page.appendFloat32(fontSize)
 	page.appendString(" Tf\n")
-	page.textFontSize = fontSize
 	return page
 }
 

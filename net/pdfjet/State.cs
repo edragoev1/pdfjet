@@ -9,24 +9,39 @@ using System;
 namespace PDFjet.NET {
 class State {
     private float[] brushColor;
+    private bool brushColorWritten;
     private float[] penColor;
+    private bool penColorWritten;
     private float penWidth;
+    private bool penWidthWritten;
+    private Font writtenFont;
+    private float writtenFontSize;
     private CapStyle lineCapStyle;
     private JoinStyle lineJoinStyle;
     private String strokeDashPattern;
 
     public State(
             float[] brushColor,
+            bool brushColorWritten,
             float[] penColor,
+            bool penColorWritten,
             float penWidth,
+            bool penWidthWritten,
+            Font writtenFont,
+            float writtenFontSize,
             CapStyle lineCapStyle,
             JoinStyle lineJoinStyle,
             String strokeDashPattern) {
         // Copies of the colors, so the saved state does not change with the
         // arrays of the page after it is saved.
         this.brushColor = new float[] { brushColor[0], brushColor[1], brushColor[2] };
+        this.brushColorWritten = brushColorWritten;
         this.penColor = new float[] { penColor[0], penColor[1], penColor[2] };
+        this.penColorWritten = penColorWritten;
         this.penWidth = penWidth;
+        this.penWidthWritten = penWidthWritten;
+        this.writtenFont = writtenFont;
+        this.writtenFontSize = writtenFontSize;
         this.lineCapStyle = lineCapStyle;
         this.lineJoinStyle = lineJoinStyle;
         this.strokeDashPattern = strokeDashPattern;
@@ -38,6 +53,26 @@ class State {
 
     public float[] GetPenColor() {
         return (float[]) penColor.Clone();
+    }
+
+    public bool GetBrushColorWritten() {
+        return brushColorWritten;
+    }
+
+    public bool GetPenColorWritten() {
+        return penColorWritten;
+    }
+
+    public bool GetPenWidthWritten() {
+        return penWidthWritten;
+    }
+
+    public Font GetWrittenFont() {
+        return writtenFont;
+    }
+
+    public float GetWrittenFontSize() {
+        return writtenFontSize;
     }
 
     public float GetPenWidth() {

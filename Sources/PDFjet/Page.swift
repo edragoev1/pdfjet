@@ -73,6 +73,16 @@ public class Page {
 
     private var penColor: [Float] = [0.0, 0.0, 0.0]
     private var brushColor: [Float] = [0.0, 0.0, 0.0]
+    // True when the content has set the brush or the pen to the RGB color above,
+    // so setting it again writes nothing. False on a new page, whose colors are
+    // not written yet, and after a CMYK color. The pen width and the font of the
+    // text are kept the same way, and q and Q save and restore all of them, as
+    // they save and restore the graphics state of the PDF.
+    private var brushColorWritten = false
+    private var penColorWritten = false
+    private var penWidthWritten = false
+    private var writtenFont: Font?          // The font of the last Tf, or nil
+    private var writtenFontSize: Float = 0.0
 
     private var penWidth: Float = 1.0   // The PDF default, as no w is written first
 
@@ -991,8 +1001,9 @@ public class Page {
 
     /// Saves the current graphics state. Please see Example_31.
     public func saveGraphicsState() {
-        savedStates.append(State(
-                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern))
+        savedStates.append(State(brushColor, brushColorWritten, penColor, penColorWritten,
+                penWidth, penWidthWritten, writtenFont, writtenFontSize,
+                lineCapStyle, lineJoinStyle, strokeDashPattern))
         append("q\n")
     }
 
@@ -1028,8 +1039,13 @@ public class Page {
             return
         }
         penColor = state.getPen()
+        penColorWritten = state.getPenWritten()
         brushColor = state.getBrush()
+        brushColorWritten = state.getBrushWritten()
         penWidth = state.getPenWidth()
+        penWidthWritten = state.getPenWidthWritten()
+        writtenFont = state.getWrittenFont()
+        writtenFontSize = state.getWrittenFontSize()
         lineCapStyle = state.getLineCapStyle()
         lineJoinStyle = state.getLineJoinStyle()
         strokeDashPattern = state.getLinePattern()
@@ -1063,7 +1079,11 @@ public class Page {
             FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
             return self
         }
+        if penColorWritten && penColor[0] == rgbColor[0] && penColor[1] == rgbColor[1] && penColor[2] == rgbColor[2] {
+            return self     // The content is drawn with this color already
+        }
         penColor = rgbColor
+        penColorWritten = true
         append(rgbColor[0])
         append(Token.space)
         append(rgbColor[1])
@@ -1105,7 +1125,11 @@ public class Page {
             FileHandle.standardError.write(Data("Warning: RGB color values must be between 0f and 1f. Ignoring request.\n".utf8))
             return self
         }
+        if brushColorWritten && brushColor[0] == rgbColor[0] && brushColor[1] == rgbColor[1] && brushColor[2] == rgbColor[2] {
+            return self     // The content is drawn with this color already
+        }
         brushColor = rgbColor
+        brushColorWritten = true
         append(rgbColor[0])
         append(Token.space)
         append(rgbColor[1])
@@ -1141,6 +1165,7 @@ public class Page {
         append(k)
         append(" K\n")
         penColor = Page.cmykToRGB(c, m, y, k)
+        penColorWritten = false
         return self
     }
 
@@ -1165,6 +1190,7 @@ public class Page {
         append(k)
         append(" k\n")
         brushColor = Page.cmykToRGB(c, m, y, k)
+        brushColorWritten = false
         return self
     }
 
@@ -1183,9 +1209,7 @@ public class Page {
     ///
     @discardableResult
     public func setDefaultPenWidth() -> Page {
-        self.penWidth = 0.0
-        append("0 w\n")
-        return self
+        return setPenWidth(0.0)
     }
 
     ///
@@ -1321,7 +1345,11 @@ public class Page {
             pdf.fail("The pen width cannot be negative.")
             return self
         }
+        if penWidthWritten && width == self.penWidth {
+            return self     // The content is drawn with this width already
+        }
         self.penWidth = width
+        penWidthWritten = true
         append(width)
         append(" w\n")
         return self
@@ -1444,11 +1472,34 @@ public class Page {
             _ y: Float,
             _ w: Float,
             _ h: Float) {
-        moveTo(x, y)
-        lineTo(x + w, y)
-        lineTo(x + w, y + h)
-        lineTo(x, y + h)
-        fillPath()
+        let left = x
+        let right = x + w
+        let top = height - y
+        let bottom = height - (y + h)
+        if abs(left) < 100000.0 && abs(right) < 100000.0 && abs(top) < 100000.0 && abs(bottom) < 100000.0 {
+            // One re operator, where four path operators drew the rectangle.
+            // The corners are rounded as the path wrote them, and the width
+            // and the height are their differences, so the edges stay where
+            // the path put them; below 100000 a float holds hundredths
+            // closely enough to be written back as the same hundredths.
+            let x1 = FastFloat.toHundredths(left)
+            let y1 = FastFloat.toHundredths(bottom)
+            append(Float(x1) / 100.0)
+            append(Token.space)
+            append(Float(y1) / 100.0)
+            append(Token.space)
+            append(Float(FastFloat.toHundredths(right) - x1) / 100.0)
+            append(Token.space)
+            append(Float(FastFloat.toHundredths(top) - y1) / 100.0)
+            append(" re\nf\n")
+        } else {
+            // Outside the page by far, or NaN, which moveTo refuses.
+            moveTo(x, y)
+            lineTo(x + w, y)
+            lineTo(x + w, y + h)
+            lineTo(x, y + h)
+            fillPath()
+        }
     }
 
     ///
@@ -1863,6 +1914,12 @@ public class Page {
         if let identity = font.pdfIdentity, identity != pdf.identity {
             pdf.fail("The font belongs to another PDF.")
         }
+        self.textFontSize = fontSize
+        if writtenFont === font && writtenFontSize == fontSize {
+            return          // The text is drawn in this font already
+        }
+        writtenFont = font
+        writtenFontSize = fontSize
         if font.fontID != nil {
             append("/")
             append(font.fontID!)
@@ -1873,7 +1930,6 @@ public class Page {
         append(Token.space)
         append(fontSize)
         append(" Tf\n")
-        self.textFontSize = fontSize
     }
 
     // Original code provided by:

@@ -36,6 +36,70 @@ import Testing
         #expect(TestSupport.content(page).hasSuffix("q\n3 w\n0 1 0 RG\nQ\n"), "\(TestSupport.content(page))")
     }
 
+    @Test func aColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.setBrushColor(Color.black)     // Written, as a new page has written no color
+        page.setBrushColor(Color.black)
+        page.setPenColor(Color.red)
+        page.setPenColor([Float(1), 0, 0])
+        page.setPenWidth(0)
+        page.setDefaultPenWidth()
+        #expect(TestSupport.content(page) == "0 0 0 rg\n1 0 0 RG\n0 w\n")
+    }
+
+    @Test func qAndQKeepWhatTheContentHasWritten() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.setBrushColor(Color.black)
+        page.saveGraphicsState()
+        page.setBrushColor(Color.blue)
+        page.setBrushColor(Color.blue)
+        page.restoreGraphicsState()
+        page.setBrushColor(Color.black)     // Q restored black
+        page.setBrushColor(Color.blue)
+        #expect(TestSupport.content(page) == "0 0 0 rg\nq\n0 0 1 rg\nQ\n0 0 1 rg\n")
+    }
+
+    @Test func anRgbColorAfterACmykColorIsWritten() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.setBrushColor(Color.black)
+        page.setBrushColorCMYK(0, 0, 0, 1)
+        page.setBrushColor(Color.black)
+        #expect(TestSupport.content(page) == "0 0 0 rg\n0 0 0 1 k\n0 0 0 rg\n")
+    }
+
+    @Test func theFontOfTheTextIsWrittenWhenItChanges() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "a").setLocation(10, 20).drawOn(page)
+        TextLine(font, "b").setLocation(10, 40).drawOn(page)
+        TextLine(font, "c").setFontSize(14).setLocation(10, 60).drawOn(page)
+        page.saveGraphicsState()
+        TextLine(font, "d").setLocation(10, 80).drawOn(page)
+        page.restoreGraphicsState()
+        TextLine(font, "e").setFontSize(14).setLocation(10, 100).drawOn(page)
+        let content = TestSupport.content(page)
+        let fonts = content.split(separator: "\n").filter { $0.hasSuffix(" Tf") }.map { String($0.split(separator: " ", maxSplits: 1)[1]) }
+        #expect(fonts == ["12 Tf", "14 Tf", "12 Tf"], "\(content)")
+    }
+
+    @Test func fillRectWritesOneRectangleWithTheEdgesOfThePath() {
+        var page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.fillRect(10, 20, 30, 40)
+        #expect(TestSupport.content(page) == "10 732 30 40 re\nf\n")
+
+        // A path wrote the top edge at 792 and the bottom one at 791.99, where
+        // rounding the height alone would make it 0.
+        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.fillRect(0, 0.004, 1, 0.004)
+        #expect(TestSupport.content(page) == "0 791.99 1 0.01 re\nf\n")
+
+        // Far outside the page the rectangle is still a path.
+        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.fillRect(200000, 0, 10, 10)
+        #expect(TestSupport.content(page) == "200000 792 m\n200010 792 l\n200010 782 l\n200000 782 l\nf\n")
+    }
+
     @Test func gettersReturnCopies() {
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
         var pen = page.getPenColor()

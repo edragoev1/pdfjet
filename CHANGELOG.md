@@ -437,6 +437,17 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 - `CalendarMonth` lays out the calendar as Java does in the four ports.
 
 ### PDF, pages and drawing
+- A page writes a brush color, a pen color, a pen width or a font only when it
+  changes, where every setting wrote its operator again: the colors and the
+  width of every table cell and the font of every text line were written
+  again and again. What the content has set is saved and restored with the
+  graphics state, and a CMYK color or a page read from a document starts it
+  over. `fillRect` writes one `re` operator instead of a path of four, with
+  the edges where the path put them. `Table` drawing Example_43's data writes
+  21.18 MB instead of 25.23 MB, less than iText's 21.6 MB, in 4.5 s instead of
+  5.8 s; Example_43 is 2% smaller and 2 to 7% faster in the four ports, and the
+  example PDFs render the same, apart from MuPDF anti-aliasing the edges of
+  some filled rectangles by a few levels.
 - Every PDF gets an `/Info` dictionary with its producer, creation date and
   the properties set with `setTitle`, `setAuthor`, `setSubject`, `setKeywords`
   and `setCreator`, and every PDF gets its own ID: 16 random bytes from the

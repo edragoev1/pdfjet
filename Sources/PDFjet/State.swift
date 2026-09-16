@@ -8,8 +8,13 @@ import Foundation
 
 class State {
     private var pen: [Float]
+    private var penWritten: Bool
     private var brush: [Float]
+    private var brushWritten: Bool
     private var penWidth: Float
+    private var penWidthWritten: Bool
+    private var writtenFont: Font?
+    private var writtenFontSize: Float
     private var lineCapStyle: CapStyle
     private var lineJoinStyle: JoinStyle
     private var linePattern: String
@@ -17,14 +22,24 @@ class State {
     /// Creates a snapshot of the pen and brush colors, pen width, line cap and join styles and dash pattern.
     public init(
             _ brush: [Float],
+            _ brushWritten: Bool,
             _ pen: [Float],
+            _ penWritten: Bool,
             _ penWidth: Float,
+            _ penWidthWritten: Bool,
+            _ writtenFont: Font?,
+            _ writtenFontSize: Float,
             _ lineCapStyle: CapStyle,
             _ lineJoinStyle: JoinStyle,
             _ linePattern: String) {
         self.pen = [pen[0], pen[1], pen[2]]
         self.brush = [brush[0], brush[1], brush[2]]
+        self.penWritten = penWritten
+        self.brushWritten = brushWritten
         self.penWidth = penWidth
+        self.penWidthWritten = penWidthWritten
+        self.writtenFont = writtenFont
+        self.writtenFontSize = writtenFontSize
         self.lineCapStyle = lineCapStyle
         self.lineJoinStyle = lineJoinStyle
         self.linePattern = linePattern
@@ -41,6 +56,26 @@ class State {
     }
 
     /// Returns the pen width.
+    public func getPenWritten() -> Bool {
+        return self.penWritten
+    }
+
+    public func getBrushWritten() -> Bool {
+        return self.brushWritten
+    }
+
+    public func getPenWidthWritten() -> Bool {
+        return self.penWidthWritten
+    }
+
+    public func getWrittenFont() -> Font? {
+        return self.writtenFont
+    }
+
+    public func getWrittenFontSize() -> Float {
+        return self.writtenFontSize
+    }
+
     public func getPenWidth() -> Float {
         return self.penWidth
     }

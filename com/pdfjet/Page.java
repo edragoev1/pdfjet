@@ -48,6 +48,16 @@ final public class Page {
 
     private float[] brushColor = {0f, 0f, 0f};
     private float[] penColor = {0f, 0f, 0f};
+    // True when the content has set the brush or the pen to the RGB color above,
+    // so setting it again writes nothing. False on a new page, whose colors are
+    // not written yet, and after a CMYK color. The pen width and the font of the
+    // text are kept the same way, and q and Q save and restore all of them, as
+    // they save and restore the graphics state of the PDF.
+    private boolean brushColorWritten = false;
+    private boolean penColorWritten = false;
+    private boolean penWidthWritten = false;
+    private Font writtenFont = null;        // The font of the last Tf, or null
+    private float writtenFontSize = 0f;
 
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
@@ -1272,10 +1282,13 @@ final public class Page {
             return this; // Early exit if out of range
         }
 
+        if (brushColorWritten && brushColor[0] == rgbColor[0] && brushColor[1] == rgbColor[1] && brushColor[2] == rgbColor[2]) {
+            return this;    // The content is drawn with this color already
+        }
         // Now set the brush color, to a copy that the caller cannot change
         brushColor = rgbColor.clone();
+        brushColorWritten = true;
 
-        // Proceed with setting the color (example)
         append(rgbColor[0]);
         append(Token.SPACE);
         append(rgbColor[1]);
@@ -1333,10 +1346,13 @@ final public class Page {
             return this; // Early exit if out of range
         }
 
+        if (penColorWritten && penColor[0] == rgbColor[0] && penColor[1] == rgbColor[1] && penColor[2] == rgbColor[2]) {
+            return this;    // The content is drawn with this color already
+        }
         // Now set the pen color, to a copy that the caller cannot change
         penColor = rgbColor.clone();
+        penColorWritten = true;
 
-        // Proceed with setting the color (example)
         append(rgbColor[0]);
         append(Token.SPACE);
         append(rgbColor[1]);
@@ -1376,6 +1392,7 @@ final public class Page {
         append(k);
         append(" k\n");
         brushColor = cmykToRGB(c, m, y, k);
+        brushColorWritten = false;
         return this;
     }
 
@@ -1399,6 +1416,7 @@ final public class Page {
         append(k);
         append(" K\n");
         penColor = cmykToRGB(c, m, y, k);
+        penColorWritten = false;
         return this;
     }
 
@@ -1418,10 +1436,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setDefaultPenWidth() {
-        this.penWidth = 0f;
-        append(0f);
-        append(" w\n");
-        return this;
+        return setPenWidth(0f);
     }
 
     /**
@@ -1511,7 +1526,11 @@ final public class Page {
         if (width < 0f) {
             pdf.fail(new IllegalArgumentException("The pen width cannot be negative."));
         }
+        if (penWidthWritten && width == this.penWidth) {
+            return this;    // The content is drawn with this width already
+        }
         this.penWidth = width;
+        penWidthWritten = true;
         append(width);
         append(" w\n");
         return this;
@@ -1632,11 +1651,35 @@ final public class Page {
      * @param h the height of the rectangle to be drawn.
      */
     public void fillRect(float x, float y, float w, float h) {
-        moveTo(x, y);
-        lineTo(x+w, y);
-        lineTo(x+w, y+h);
-        lineTo(x, y+h);
-        fillPath();
+        float left = x;
+        float right = x + w;
+        float top = height - y;
+        float bottom = height - (y + h);
+        if (Math.abs(left) < 100000f && Math.abs(right) < 100000f
+                && Math.abs(top) < 100000f && Math.abs(bottom) < 100000f) {
+            // One re operator, where four path operators drew the rectangle.
+            // The corners are rounded as the path wrote them, and the width
+            // and the height are their differences, so the edges stay where
+            // the path put them; below 100000 a float holds hundredths
+            // closely enough to be written back as the same hundredths.
+            int x1 = FastFloat.toHundredths(left);
+            int y1 = FastFloat.toHundredths(bottom);
+            append(x1 / 100f);
+            append(' ');
+            append(y1 / 100f);
+            append(' ');
+            append((FastFloat.toHundredths(right) - x1) / 100f);
+            append(' ');
+            append((FastFloat.toHundredths(top) - y1) / 100f);
+            append(" re\nf\n");
+        } else {
+            // Outside the page by far, or NaN, which moveTo refuses.
+            moveTo(x, y);
+            lineTo(x+w, y);
+            lineTo(x+w, y+h);
+            lineTo(x, y+h);
+            fillPath();
+        }
     }
 
     /**
@@ -2063,6 +2106,12 @@ final public class Page {
         if (font.pdf != null && font.pdf != pdf) {
             pdf.fail(new IllegalArgumentException("The font belongs to another PDF."));
         }
+        this.textFontSize = fontSize;
+        if (writtenFont == font && writtenFontSize == fontSize) {
+            return;         // The text is drawn in this font already
+        }
+        writtenFont = font;
+        writtenFontSize = fontSize;
         if (font.fontID != null) {
             append('/');
             append(font.fontID);
@@ -2073,7 +2122,6 @@ final public class Page {
         append(Token.SPACE);
         append(fontSize);
         append(" Tf\n");
-        this.textFontSize = fontSize;
     }
 
     // Code provided by:
@@ -2170,8 +2218,9 @@ final public class Page {
      * Saves the graphics state. Please see Example_31.
      */
     public void saveGraphicsState() {
-        savedStates.add(new State(
-                brushColor, penColor, penWidth, lineCapStyle, lineJoinStyle, strokeDashPattern));
+        savedStates.add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
+                penWidth, penWidthWritten, writtenFont, writtenFontSize,
+                lineCapStyle, lineJoinStyle, strokeDashPattern));
         append("q\n");
     }
 
@@ -2211,8 +2260,13 @@ final public class Page {
         if (!savedStates.isEmpty()) {
             State state = savedStates.remove(savedStates.size() - 1);
             brushColor = state.getBrushColor();
+            brushColorWritten = state.getBrushColorWritten();
             penColor = state.getPenColor();
+            penColorWritten = state.getPenColorWritten();
             penWidth = state.getPenWidth();
+            penWidthWritten = state.getPenWidthWritten();
+            writtenFont = state.getWrittenFont();
+            writtenFontSize = state.getWrittenFontSize();
             lineCapStyle = state.getLineCapStyle();
             lineJoinStyle = state.getLineJoinStyle();
             strokeDashPattern = state.getStrokeDashPattern();

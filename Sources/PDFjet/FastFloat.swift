@@ -42,13 +42,7 @@ struct FastFloat {
             return
         }
 
-        // Round to 2 decimal places, halves away from zero. A float times 100
-        // is exact in a Double, so the exact value of the float is rounded.
-        let scaled = magnitude * 100.0
-        var hundredths = Int(scaled)
-        if scaled - Double(hundredths) >= 0.5 {
-            hundredths += 1
-        }
+        let hundredths = roundedHundredths(magnitude)
 
         // A value that rounds to zero, like -0.001 and -0.0, is written 0
         let isNegative = value < 0 && hundredths > 0
@@ -85,6 +79,25 @@ struct FastFloat {
                 buffer.append(UInt8(ascii: "0") + UInt8(decimalDigits % 10))
             }
         }
+    }
+
+    // Returns the number of hundredths that append writes for a magnitude below
+    // 2^23: rounded to 2 decimal places, halves away from zero. A float times
+    // 100 is exact in a Double, so the exact value of the float is rounded.
+    private static func roundedHundredths(_ magnitude: Double) -> Int {
+        let scaled = magnitude * 100.0
+        var hundredths = Int(scaled)
+        if scaled - Double(hundredths) >= 0.5 {
+            hundredths += 1
+        }
+        return hundredths
+    }
+
+    // Returns the value that append writes, in hundredths, with its sign, for
+    // a value whose magnitude is below 2^23.
+    static func toHundredths(_ value: Float) -> Int {
+        let hundredths = roundedHundredths(abs(Double(value)))
+        return (value < 0) ? -hundredths : hundredths
     }
 
     private static func writeInt(_ value: Int, into buffer: inout [UInt8], at pos: Int, digits: Int) {

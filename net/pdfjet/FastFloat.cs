@@ -40,13 +40,7 @@ internal static class FastFloat {
             return Encoding.ASCII.GetBytes((value < 0f ? "-" : "") + digits, buffer);
         }
 
-        // Round to 2 decimal places, halves away from zero. A float times 100
-        // is exact in a double, so the exact value of the float is rounded.
-        double scaled = magnitude * 100.0;
-        int hundredths = (int) scaled;
-        if (scaled - hundredths >= 0.5) {
-            hundredths++;
-        }
+        int hundredths = RoundedHundredths(magnitude);
 
         // A value that rounds to zero, like -0.001 and -0.0, is written 0
         bool negative = value < 0f && hundredths > 0;
@@ -83,6 +77,25 @@ internal static class FastFloat {
         }
 
         return pos;
+    }
+
+    // Returns the number of hundredths that Write writes for a magnitude below
+    // 2^23: rounded to 2 decimal places, halves away from zero. A float times
+    // 100 is exact in a double, so the exact value of the float is rounded.
+    private static int RoundedHundredths(double magnitude) {
+        double scaled = magnitude * 100.0;
+        int hundredths = (int) scaled;
+        if (scaled - hundredths >= 0.5) {
+            hundredths++;
+        }
+        return hundredths;
+    }
+
+    // Returns the value that Write writes, in hundredths, with its sign, for
+    // a value whose magnitude is below 2^23.
+    internal static int ToHundredths(float value) {
+        int hundredths = RoundedHundredths(Math.Abs((double) value));
+        return (value < 0f) ? -hundredths : hundredths;
     }
 
     private static int WriteInt(int value, Span<byte> buffer, int pos, int digits) {
