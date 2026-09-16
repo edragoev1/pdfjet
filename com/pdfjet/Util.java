@@ -103,27 +103,33 @@ class Util {
         if (delimiter.isEmpty()) {
             return new String[] {line};
         }
+        // Every field is a substring of the line, as String.split makes them;
+        // the one further copy is of a quoted field that holds a doubled quote.
+        // BigTable reads every line of its file through here.
         List<String> fields = new ArrayList<String>();
-        StringBuilder field = new StringBuilder();
         int i = 0;
         while (true) {
             if (i < line.length() && line.charAt(i) == '"') {
                 i++;                            // The quote that opens the field
+                int start = i;
                 while (true) {
                     int quote = line.indexOf('"', i);
                     if (quote == -1) {
                         throw new IllegalArgumentException(
                                 "A quoted field is not closed on this line of the data file: " + excerpt(line));
                     }
-                    field.append(line, i, quote);
                     i = quote + 1;
                     if (i < line.length() && line.charAt(i) == '"') {
-                        field.append('"');      // Two quotes stand for one
-                        i++;
+                        i++;                    // Two quotes stand for one; the closing quote is the first single one
                     } else {
                         break;                  // The quote that closes the field
                     }
                 }
+                // The text between the quotes, where every quote is doubled.
+                // JDK 8's String.replace compiles a Pattern, so it runs only
+                // for a field that holds one.
+                String field = line.substring(start, i - 1);
+                fields.add(field.indexOf("\"\"") == -1 ? field : field.replace("\"\"", "\""));
                 if (i < line.length() && !line.startsWith(delimiter, i)) {
                     throw new IllegalArgumentException(
                             "A quoted field is followed by text on this line of the data file: " + excerpt(line));
@@ -131,15 +137,11 @@ class Util {
             } else {
                 int end = line.indexOf(delimiter, i);
                 if (end == -1) {
-                    field.append(line, i, line.length());
-                    i = line.length();
-                } else {
-                    field.append(line, i, end);
-                    i = end;
+                    end = line.length();
                 }
+                fields.add(line.substring(i, end));
+                i = end;
             }
-            fields.add(field.toString());
-            field.setLength(0);
             if (i == line.length()) {
                 break;
             }

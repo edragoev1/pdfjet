@@ -27,47 +27,53 @@ class Util {
         if delimiter.isEmpty {
             return [line]
         }
-        let characters = Array(line)
-        let separator = Array(delimiter)
+        // The line is read as its UTF-8 bytes, which is where components(
+        // separatedBy:) was: a quote is ASCII, and a UTF-8 sequence, the
+        // delimiter included, matches only where a character starts. A field
+        // is decoded from its bytes; the one further copy is of a quoted field
+        // that holds a doubled quote. BigTable reads every line of its file
+        // through here.
+        let bytes = Array(line.utf8)
+        let separator = Array(delimiter.utf8)
+        let quote = UInt8(ascii: "\"")
         var fields = [String]()
-        var field = [Character]()
         var i = 0
         while true {
-            if i < characters.count && characters[i] == "\"" {
+            if i < bytes.count && bytes[i] == quote {
                 i += 1                              // The quote that opens the field
+                let start = i
                 while true {
-                    guard let quote = Util.indexOf(characters, "\"", i) else {
+                    guard let next = Util.indexOf(bytes, quote, i) else {
                         fatalError("A quoted field is not closed on this line of the data file: "
                                 + Util.excerpt(line))
                     }
-                    field.append(contentsOf: characters[i..<quote])
-                    i = quote + 1
-                    if i < characters.count && characters[i] == "\"" {
-                        field.append("\"")          // Two quotes stand for one
-                        i += 1
+                    i = next + 1
+                    if i < bytes.count && bytes[i] == quote {
+                        i += 1                      // Two quotes stand for one; the closing quote is the first single one
                     } else {
                         break                       // The quote that closes the field
                     }
                 }
-                if i < characters.count && !Util.startsWith(characters, separator, i) {
+                // The text between the quotes, where every quote is doubled.
+                let field = String(decoding: bytes[start..<(i - 1)], as: UTF8.self)
+                fields.append(field.contains("\"\"") ? field.replacingOccurrences(of: "\"\"", with: "\"") : field)
+                if i < bytes.count && !Util.startsWith(bytes, separator, i) {
                     fatalError("A quoted field is followed by text on this line of the data file: "
                             + Util.excerpt(line))
                 }
             } else {
                 var end = i
-                while end < characters.count && !Util.startsWith(characters, separator, end) {
+                while end < bytes.count && !Util.startsWith(bytes, separator, end) {
                     end += 1
                 }
-                field.append(contentsOf: characters[i..<end])
+                fields.append(String(decoding: bytes[i..<end], as: UTF8.self))
                 i = end
             }
-            fields.append(String(field))
-            field.removeAll(keepingCapacity: true)
-            if i == characters.count {
+            if i == bytes.count {
                 break
             }
             i += separator.count                    // Step over the delimiter
-            if i == characters.count {              // The line ends on a delimiter
+            if i == bytes.count {                   // The line ends on a delimiter
                 fields.append("")
                 break
             }
@@ -75,10 +81,10 @@ class Util {
         return fields
     }
 
-    private static func indexOf(_ characters: [Character], _ ch: Character, _ from: Int) -> Int? {
+    private static func indexOf(_ bytes: [UInt8], _ byte: UInt8, _ from: Int) -> Int? {
         var i = from
-        while i < characters.count {
-            if characters[i] == ch {
+        while i < bytes.count {
+            if bytes[i] == byte {
                 return i
             }
             i += 1
@@ -86,11 +92,11 @@ class Util {
         return nil
     }
 
-    private static func startsWith(_ characters: [Character], _ separator: [Character], _ at: Int) -> Bool {
-        if at + separator.count > characters.count {
+    private static func startsWith(_ bytes: [UInt8], _ separator: [UInt8], _ at: Int) -> Bool {
+        if at + separator.count > bytes.count {
             return false
         }
-        for k in 0..<separator.count where characters[at + k] != separator[k] {
+        for k in 0..<separator.count where bytes[at + k] != separator[k] {
             return false
         }
         return true

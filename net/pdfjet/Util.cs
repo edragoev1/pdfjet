@@ -83,27 +83,36 @@ internal class Util {
         if (delimiter.Length == 0) {
             return new String[] {line};
         }
+        // A line without a quote is what String.Split reads: the same fields,
+        // the empty ones included, by its vectorized single-separator path.
+        // BigTable reads every line of its file through here.
+        if (line.IndexOf('"') == -1) {
+            return line.Split(delimiter, StringSplitOptions.None);
+        }
+        // Otherwise every field is a substring of the line, as String.Split
+        // makes them; the one further copy is of a quoted field that holds a
+        // doubled quote.
         List<String> fields = new List<String>();
-        StringBuilder field = new StringBuilder();
         int i = 0;
         while (true) {
             if (i < line.Length && line[i] == '"') {
                 i++;                            // The quote that opens the field
+                int start = i;
                 while (true) {
                     int quote = line.IndexOf('"', i);
                     if (quote == -1) {
                         throw new ArgumentException(
                                 "A quoted field is not closed on this line of the data file: " + Excerpt(line));
                     }
-                    field.Append(line, i, quote - i);
                     i = quote + 1;
                     if (i < line.Length && line[i] == '"') {
-                        field.Append('"');      // Two quotes stand for one
-                        i++;
+                        i++;                    // Two quotes stand for one; the closing quote is the first single one
                     } else {
                         break;                  // The quote that closes the field
                     }
                 }
+                // The text between the quotes, where every quote is doubled.
+                fields.Add(line.Substring(start, i - 1 - start).Replace("\"\"", "\""));
                 if (i < line.Length && String.CompareOrdinal(line, i, delimiter, 0, delimiter.Length) != 0) {
                     throw new ArgumentException(
                             "A quoted field is followed by text on this line of the data file: " + Excerpt(line));
@@ -111,15 +120,11 @@ internal class Util {
             } else {
                 int end = line.IndexOf(delimiter, i, StringComparison.Ordinal);
                 if (end == -1) {
-                    field.Append(line, i, line.Length - i);
-                    i = line.Length;
-                } else {
-                    field.Append(line, i, end - i);
-                    i = end;
+                    end = line.Length;
                 }
+                fields.Add(line.Substring(i, end - i));
+                i = end;
             }
-            fields.Add(field.ToString());
-            field.Length = 0;
             if (i == line.Length) {
                 break;
             }

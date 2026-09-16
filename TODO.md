@@ -1060,7 +1060,12 @@ renames included (the Week 1 decision), so every item is a blocker.
       reads as 12 columns with its en dash and its Korean text intact. It cost
       `BigTable` 754 MB and 1,726 ms at f72b9f08 against 809 MB and 1,761 ms
       now, because the driver of the other benchmark configurations still
-      splits on commas; see `benchmarks/README.md`.
+      splits on commas; see `benchmarks/README.md`. The parser also copied
+      every field through a builder, which cost Example_43 21% in Go, 11% in
+      C#, 2.5% in Java and 8.5% in Swift against f72b9f08; since Sep 16 every
+      field is a substring of the line, and Swift reads the line as UTF-8
+      bytes rather than as an array of `Character`, so Go, C# and Java are
+      back at their f72b9f08 times and Swift is a third under its own.
 - ⬜ Decide whether a quoted field may hold a line break, which means
       reading on until the quotes balance rather than a line at a time.
       Today it may not, in the four ports; the choice is to implement it or

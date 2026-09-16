@@ -144,46 +144,47 @@ func isJavaWhitespace(r rune) bool {
 // inside it is part of the text. A field that does not start with a quote
 // keeps any quotes it holds. The quotes around a field are not part of it.
 // A file that cannot be read this way is refused rather than guessed at.
+//
+// Every field is a slice of the line, as strings.Split makes them; the one
+// copy is of a quoted field that holds a doubled quote. BigTable reads every
+// line of its file through here.
 func splitDelimited(line, delimiter string) []string {
 	if delimiter == "" {
 		return []string{line}
 	}
-	fields := make([]string, 0)
-	var field strings.Builder
+	fields := make([]string, 0, strings.Count(line, delimiter)+1)
 	i := 0
 	for {
 		if i < len(line) && line[i] == '"' {
 			i++ // The quote that opens the field
+			start := i
 			for {
 				quote := strings.IndexByte(line[i:], '"')
 				if quote == -1 {
 					panic("A quoted field is not closed on this line of the data file: " + excerptOfLine(line))
 				}
-				quote += i
-				field.WriteString(line[i:quote])
-				i = quote + 1
+				i += quote + 1
 				if i < len(line) && line[i] == '"' {
-					field.WriteByte('"') // Two quotes stand for one
-					i++
+					i++ // Two quotes stand for one; the closing quote is the first single one
 				} else {
 					break // The quote that closes the field
 				}
 			}
+			// The text between the quotes, where every quote is doubled.
+			fields = append(fields, strings.ReplaceAll(line[start:i-1], `""`, `"`))
 			if i < len(line) && !strings.HasPrefix(line[i:], delimiter) {
 				panic("A quoted field is followed by text on this line of the data file: " + excerptOfLine(line))
 			}
 		} else {
 			end := strings.Index(line[i:], delimiter)
 			if end == -1 {
-				field.WriteString(line[i:])
-				i = len(line)
+				end = len(line)
 			} else {
-				field.WriteString(line[i : i+end])
-				i += end
+				end += i
 			}
+			fields = append(fields, line[i:end])
+			i = end
 		}
-		fields = append(fields, field.String())
-		field.Reset()
 		if i == len(line) {
 			break
 		}
