@@ -312,6 +312,12 @@ has one job:
 
 `Table` and `BigTable` draw tables, with a `TextBlock` in a cell when the
 cell text needs wrapping. Example_01, 10, 16, 19, 35 and 47 show these classes.
+`BigTable` is for tables of any length: it reads its rows from a delimited
+file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
+`IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go
+(`SetTableRows`). It goes through the rows twice, once to measure the columns
+and once to draw them, keeps none of them and writes each page when it is full,
+so its memory stays flat; Example_43 draws 2,546 pages that way.
 
 ## Right to left text
 
@@ -610,7 +616,8 @@ and Go, which cannot overload, gives the other form a suffix:
 `SetTextColorRGB` for `setTextColor(float[])`, `DrawStringUsingFontSize` and
 `DrawStringUsingSpacing` for the `drawString` overloads, `StringWidthUsingFallbackFont` for `stringWidth` with a fallback font,
 `MergePages`
-for `merge` with page numbers, and
+for `merge` with page numbers, `SetTableRows` for the `BigTable.setTableData`
+that takes a header and rows, and
 `AddCoreFontResource`, `AddFontResource` and `AddImageResource` for the
 `addResource` overloads of `Page` and `PDFobj`. Every color setter takes an
 `int` like `Color.blue` or the red, green and blue components from 0 to 1 as a

@@ -6,7 +6,9 @@
  */
 import Foundation
 
-/// A table for large amounts of data, read row by row from a delimited text file.
+/// A table for large amounts of data, read row by row from a delimited text file or
+/// from a sequence. Each page is written as soon as it is full, so the memory stays
+/// flat however many rows there are.
 public class BigTable {
     private let pdf: PDF
     private let f1: Font
@@ -26,8 +28,8 @@ public class BigTable {
     private var highlightRow: Bool = true
     private var highlightColor: Int32 = 0xF0F0F0
     private var penColor: Int32 = 0xB0B0B0
-    private var fileName: String = ""
-    private var delimiter: String = ""
+    private var rows: (() -> AnyIterator<[String]>)?
+    private var readError: Error?       // The error opening the data file, if any
     private var numberOfColumns: Int = 0
     private var startNewPage: Bool = true
     private var dataRows: Int = 0       // The rows under the header, counted by setTableData
@@ -136,11 +138,7 @@ public class BigTable {
         return count
     }
 
-    private func drawTextAndLine(fields: [String], font: Font) throws {
-        if page == nil {
-            newPage()
-            return
-        }
+    private func drawTextAndLine(fields: [String]) {
         if startNewPage {
             newPage()
         }
@@ -214,6 +212,9 @@ public class BigTable {
 
     ///
     /// Reads the data file to set the column widths, the column alignment and the header fields.
+    /// The file is read as UTF-8. Its first line with at least as many fields as the table has
+    /// columns is the header, and the lines after it are the rows. A quoted field is read as
+    /// RFC 4180 reads it, so a delimiter inside one is text.
     ///
     /// - Parameter fileName: the data file.
     /// - Parameter delimiter: the field delimiter.
@@ -221,43 +222,95 @@ public class BigTable {
     ///
     @discardableResult
     public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {
-        self.fileName = fileName
-        self.delimiter = delimiter
+        let columns = numberOfColumns
+        var header = [String]()
+        let lines = try DataFileRows(fileName, delimiter)
+        while let fields = lines.next() {
+            if fields.count >= columns {
+                header = fields
+                break
+            }
+        }
+
+        readError = nil
+        setTableData(header) { [weak self] in
+            do {
+                let rows = try DataFileRows(fileName, delimiter)
+                // The rows start after the header.
+                while let fields = rows.next(), fields.count < columns {
+                }
+                return AnyIterator(rows)
+            } catch {
+                self?.readError = error
+                return AnyIterator { nil }
+            }
+        }
+        if let error = readError {
+            throw error
+        }
+        return self
+    }
+
+    ///
+    /// Sets the column widths, the column alignment and the header fields from rows that are
+    /// not in a file: the results of a query, or an array of objects. The rows are iterated
+    /// twice, once here to measure the columns and once by complete to draw them, and neither
+    /// keeps them, so the sequence must be one that can be iterated more than once, such as an
+    /// array, a lazy map of one, or a sequence whose `makeIterator` runs the query again. A row
+    /// with fewer fields than the table has columns is skipped, as a short line of a file is.
+    /// A header with fewer fields than the table has columns is recorded on the PDF as misuse,
+    /// and the table is left without data.
+    ///
+    /// - Parameter header: the header fields, at least as many as the columns.
+    /// - Parameter rows: the fields of each row, in the order they are drawn.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setTableData<Rows: Sequence>(
+            _ header: [String], _ rows: Rows) -> BigTable where Rows.Element == [String] {
+        return setTableData(header) { AnyIterator(rows.makeIterator()) }
+    }
+
+    @discardableResult
+    private func setTableData(_ header: [String], _ rows: @escaping () -> AnyIterator<[String]>) -> BigTable {
+        if header.count < numberOfColumns {
+            pdf.fail("The header has fewer fields than the table has columns.")
+            return self
+        }
+        self.rows = rows
         self.vertLines = [Float](repeating: 0.0, count: numberOfColumns + 1)
-        self.headerFields = [String](repeating: "", count: numberOfColumns)
+        self.headerFields = Array(header[0..<numberOfColumns])
         self.widths = [Float](repeating: 0.0, count: numberOfColumns)
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
+        measure(header)
         var rowNumber = 0
-        try enumerateFileLines(fileName) { line in
-            let fields = Util.split(line, self.delimiter)
-            if fields.count < self.numberOfColumns {
-                return
+        for fields in IteratorSequence(rows()) {
+            if fields.count < numberOfColumns {
+                continue
             }
-
-            if rowNumber == 0 {
-                for i in 0..<self.numberOfColumns {
-                    self.headerFields[i] = fields[i]
+            if rowNumber == 0 {     // Determine alignment from first data row
+                for i in 0..<numberOfColumns {
+                    alignment[i] = getAlignment(fields[i])
                 }
             }
-            if rowNumber == 1 {
-                for i in 0..<self.numberOfColumns {
-                    self.alignment[i] = self.getAlignment(fields[i])
-                }
-            }
-            for i in 0..<self.numberOfColumns {
-                let field = fields[i]
-                let width = self.f1.stringWidth(field) + 2 * self.padding
-                if width > self.widths[i] {
-                    self.widths[i] = width
-                }
-            }
+            measure(fields)
             rowNumber += 1
         }
-        self.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0      // Without the header
+        self.dataRows = rowNumber
 
         setVertLines()
         return self
+    }
+
+    // Widens the columns to fit the fields of a row.
+    private func measure(_ fields: [String]) {
+        for i in 0..<numberOfColumns {
+            let width = f1.stringWidth(fields[i]) + 2 * padding
+            if width > widths[i] {
+                widths[i] = width
+            }
+        }
     }
 
     // Sets the x coordinates of the vertical lines from the location and the column widths.
@@ -270,60 +323,93 @@ public class BigTable {
         }
     }
 
-    /// Draws the rows read from the data file, then the vertical lines, with a
-    /// "Page i of N" footer on every page. The pages are added to the PDF as
-    /// they are drawn, so the document does not hold them all.
+    /// Draws the rows, then the vertical lines, with a "Page i of N" footer on every
+    /// page. The pages are added to the PDF as they are drawn, so the document does not
+    /// hold them all. It throws if the data file cannot be opened. A table without data
+    /// draws nothing.
     public func complete() throws {
+        guard let rows = self.rows else {
+            return
+        }
         self.pageCount = countPages()
-        try enumerateFileLines(self.fileName) { line in
-            let fields = Util.split(line, self.delimiter)
-            if fields.count < self.numberOfColumns {
-                return
+        readError = nil
+        newPage()
+        for fields in IteratorSequence(rows()) {
+            if fields.count < numberOfColumns {
+                continue
             }
-            try self.drawTextAndLine(fields: fields, font: self.f2)
+            drawTextAndLine(fields: fields)
+        }
+        if let error = readError {
+            throw error
         }
         drawTheVerticalLines()
         drawFooter()
     }
 }
 
-// Calls the handler with each line of the file. Bytes that are not valid UTF-8
-// are replaced with U+FFFD, as the Java and C# readers do.
-private func enumerateFileLines(_ fileName: String, _ handler: (String) throws -> Void) throws {
-    let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
-    defer { file.closeFile() }
+// The fields of the lines of a data file, split at the delimiter, reading the
+// quoted fields as RFC 4180 does. The file is read as UTF-8, after the byte order
+// mark at its start, if there is one, and bytes that are not valid UTF-8 are
+// replaced with U+FFFD, as the Java and C# readers do.
+private final class DataFileRows: IteratorProtocol {
+    private let file: FileHandle
+    private let delimiter: String
+    private var buffer = Data()
+    private var atStart = true
+    private var atEnd = false
 
-    var buffer = Data()
-    var atStart = true
-
-    while true {
-        let chunk = file.readData(ofLength: 8192)
-        if chunk.isEmpty { break }
-        buffer.append(chunk)
-        if atStart {
-            // A byte order mark at the start of the file is not part of the text.
-            if buffer.starts(with: [0xEF, 0xBB, 0xBF]) {
-                buffer.removeSubrange(0..<3)
-            }
-            atStart = false
-        }
-
-        while let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-            var lineData = buffer.prefix(upTo: nl)
-            buffer.removeSubrange(0...nl)
-            if lineData.last == UInt8(ascii: "\r") {
-                lineData = lineData.dropLast()
-            }
-
-            // Decoded as the other ports do: String(data:encoding:) would drop
-            // a byte order mark at the start of every line, and skip a line
-            // that is not valid UTF-8 where the others draw U+FFFD.
-            try handler(String(decoding: lineData, as: UTF8.self))
-        }
+    init(_ fileName: String, _ delimiter: String) throws {
+        self.file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
+        self.delimiter = delimiter
     }
 
-    // Last line without newline
-    if !buffer.isEmpty {
-        try handler(String(decoding: buffer, as: UTF8.self))
+    deinit {
+        file.closeFile()
+    }
+
+    func next() -> [String]? {
+        guard let line = nextLine() else {
+            return nil
+        }
+        return Util.split(line, delimiter)
+    }
+
+    private func nextLine() -> String? {
+        while true {
+            if let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
+                var lineData = buffer.prefix(upTo: nl)
+                buffer.removeSubrange(0...nl)
+                if lineData.last == UInt8(ascii: "\r") {
+                    lineData = lineData.dropLast()
+                }
+                // Decoded as the other ports do: String(data:encoding:) would drop
+                // a byte order mark at the start of every line, and skip a line
+                // that is not valid UTF-8 where the others draw U+FFFD.
+                return String(decoding: lineData, as: UTF8.self)
+            }
+            if atEnd {
+                // The last line, without a newline
+                if buffer.isEmpty {
+                    return nil
+                }
+                let line = String(decoding: buffer, as: UTF8.self)
+                buffer.removeAll()
+                return line
+            }
+            let chunk = file.readData(ofLength: 8192)
+            if chunk.isEmpty {
+                atEnd = true
+                continue
+            }
+            buffer.append(chunk)
+            if atStart {
+                // A byte order mark at the start of the file is not part of the text.
+                if buffer.starts(with: [0xEF, 0xBB, 0xBF]) {
+                    buffer.removeSubrange(0..<3)
+                }
+                atStart = false
+            }
+        }
     }
 }

@@ -1,14 +1,19 @@
 package com.pdfjet;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Use this class if you have a lot of data.
+ * Use this class if you have a lot of data. The rows are read from a
+ * delimited text file, or from an Iterable, one at a time, and each page is
+ * written as soon as it is full, so the memory stays flat however many rows
+ * there are.
  */
 public class BigTable {
     private final PDF pdf;
@@ -29,8 +34,7 @@ public class BigTable {
     private boolean highlightRow = true;
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
-    private String fileName;
-    private String delimiter;
+    private Iterable<String[]> rows;
     private int numberOfColumns;    // Total column count
     private boolean startNewPage = true;
     private int dataRows;           // The rows under the header, counted by setTableData
@@ -138,10 +142,6 @@ public class BigTable {
     }
 
     private void drawTextAndLine(String[] fields) throws Exception {
-        if (page == null) {     // The first page
-            newPage();
-            return;
-        }
         if (startNewPage) {     // Create new page
             newPage();
         }
@@ -239,15 +239,12 @@ public class BigTable {
         return Table.isNumber(str) ? Alignment.RIGHT : Alignment.LEFT;
     }
 
-    // Splits the line at the delimiter, which is not a regular expression,
-    // keeping the empty fields at the end of the line and reading the quoted
-    // fields as RFC 4180 does, as the other ports do.
-    private String[] split(String line) {
-        return Util.split(line, delimiter);
-    }
-
     /**
-     * Sets the column widths, the column alignment and header fields.
+     * Sets the column widths, the column alignment and header fields from a
+     * delimited text file, read as UTF-8. Its first line with at least as
+     * many fields as the table has columns is the header, and the lines after
+     * it are the rows. A quoted field is read as RFC 4180 reads it, so a
+     * delimiter inside one is text.
      *
      * @param fileName the file name.
      * @param delimiter the delimiter.
@@ -255,63 +252,175 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setTableData(String fileName, String delimiter) throws IOException {
-        this.fileName = fileName;
-        this.delimiter = delimiter;
+        int columns = this.numberOfColumns;
+        try {
+            String[] header = new String[0];
+            try (DataFileRows lines = DataFileRows.open(fileName, delimiter, columns, false)) {
+                while (lines.hasNext()) {
+                    String[] fields = lines.next();
+                    if (fields.length >= columns) {
+                        header = fields;
+                        break;
+                    }
+                }
+            }
+            return setTableData(header, () -> {
+                try {
+                    return DataFileRows.open(fileName, delimiter, columns, true);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+    }
+
+    /**
+     * Sets the column widths, the column alignment and header fields from
+     * rows that are not in a file: the results of a query, or a list of
+     * objects. The rows are iterated twice, once here to measure the columns
+     * and once by complete() to draw them, and neither keeps them, so an
+     * Iterable whose iterator() runs the query again, or maps the objects to
+     * fields as it goes, keeps the memory flat. An iterator that is Closeable
+     * is closed when the table is done with it. A row with fewer fields than
+     * the table has columns is skipped, as a short line of a file is.
+     *
+     * @param header the header fields, at least as many as the columns.
+     * @param rows the fields of each row, in the order they are drawn.
+     * @return this BigTable object.
+     */
+    public BigTable setTableData(String[] header, Iterable<String[]> rows) {
+        if (header.length < this.numberOfColumns) {
+            pdf.fail(new IllegalArgumentException(
+                    "The header has fewer fields than the table has columns."));
+        }
+        this.rows = rows;
         this.vertLines = new float[this.numberOfColumns + 1];
         this.headerFields = new String[this.numberOfColumns];
         this.widths = new float[this.numberOfColumns];
         this.alignment = new Alignment[this.numberOfColumns];
 
+        for (int i = 0; i < this.numberOfColumns; i++) {
+            headerFields[i] = header[i];
+        }
+        measure(header);
         int rowNumber = 0;
-        try (BufferedReader reader = openDataFile()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = split(line);
+        Iterator<String[]> iterator = rows.iterator();
+        try {
+            while (iterator.hasNext()) {
+                String[] fields = iterator.next();
                 if (fields.length < this.numberOfColumns) {
                     continue;
                 }
-
-                if (rowNumber == 0) {
-                    for (int i = 0; i < this.numberOfColumns; i++) {
-                        headerFields[i] = fields[i];
-                    }
-                }
-                if (rowNumber == 1) {    // Determine alignment from first data row
+                if (rowNumber == 0) {    // Determine alignment from first data row
                     for (int i = 0; i < this.numberOfColumns; i++) {
                         alignment[i] = getAlignment(fields[i]);
                     }
                 }
-                for (int i = 0; i < this.numberOfColumns; i++) {
-                    String field = fields[i];
-                    float width = f1.stringWidth(field) + 2*this.padding;
-                    if (width > widths[i]) {
-                        this.widths[i] = width;
-                    }
-                }
+                measure(fields);
                 rowNumber++;
             }
+        } finally {
+            close(iterator);
         }
-        this.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0;     // Without the header
+        this.dataRows = rowNumber;
 
         setVertLines();
         return this;
     }
 
-    // Opens the data file, which is read as UTF-8, after the byte order mark
-    // at its start, if there is one.
-    private BufferedReader openDataFile() throws IOException {
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(this.fileName), StandardCharsets.UTF_8));
-        try {
-            reader.mark(1);
-            if (reader.read() != '\uFEFF') {
-                reader.reset();
+    // Widens the columns to fit the fields of a row.
+    private void measure(String[] fields) {
+        for (int i = 0; i < this.numberOfColumns; i++) {
+            float width = f1.stringWidth(fields[i]) + 2*this.padding;
+            if (width > widths[i]) {
+                this.widths[i] = width;
             }
-        } catch (IOException e) {
-            reader.close();
-            throw e;
         }
-        return reader;
+    }
+
+    private static void close(Iterator<String[]> iterator) {
+        if (iterator instanceof Closeable) {
+            try {
+                ((Closeable) iterator).close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    // The fields of the lines of a data file, read as UTF-8, after the byte
+    // order mark at its start, if there is one. The lines are split at the
+    // delimiter, which is not a regular expression, keeping the empty fields
+    // at the end of a line and reading the quoted fields as RFC 4180 does, as
+    // the other ports do. An iterator cannot throw an IOException, so it
+    // throws an UncheckedIOException, and setTableData and complete() throw
+    // its cause.
+    private static final class DataFileRows implements Iterator<String[]>, Closeable {
+        private final BufferedReader reader;
+        private final String delimiter;
+        private String[] next;
+
+        private DataFileRows(BufferedReader reader, String delimiter) {
+            this.reader = reader;
+            this.delimiter = delimiter;
+        }
+
+        // With skipHeader, the rows start after the header: the first line
+        // with at least as many fields as the table has columns.
+        static DataFileRows open(String fileName, String delimiter, int columns, boolean skipHeader)
+                throws IOException {
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
+            DataFileRows rows = new DataFileRows(reader, delimiter);
+            try {
+                reader.mark(1);
+                if (reader.read() != '\uFEFF') {
+                    reader.reset();
+                }
+                rows.advance();
+                if (skipHeader) {
+                    while (rows.next != null && rows.next.length < columns) {
+                        rows.advance();
+                    }
+                    rows.advance();
+                }
+            } catch (IOException | RuntimeException e) {
+                reader.close();
+                throw e;
+            }
+            return rows;
+        }
+
+        private void advance() {
+            try {
+                String line = reader.readLine();
+                next = (line == null) ? null : Util.split(line, delimiter);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public String[] next() {
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
+            String[] fields = next;
+            advance();
+            return fields;
+        }
+
+        @Override
+        public void close() throws IOException {
+            reader.close();
+        }
     }
 
     // Sets the x coordinates of the vertical lines from the location and the column widths.
@@ -325,24 +434,29 @@ public class BigTable {
     }
 
     /**
-     * Draws the rows read from the data file, then the vertical lines, with a
-     * "Page i of N" footer on every page. The pages are added to the PDF as
-     * they are drawn, so the document does not hold them all. Call it after
-     * the location, the bottom margin and the data file have been set.
+     * Draws the rows, then the vertical lines, with a "Page i of N" footer on
+     * every page. The pages are added to the PDF as they are drawn, so the
+     * document does not hold them all. Call it after the location, the bottom
+     * margin and the table data have been set.
      *
      * @throws Exception if the data file cannot be read or drawing fails.
      */
     public void complete() throws Exception {
         this.pageCount = countPages();
-        try (BufferedReader reader = openDataFile()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = split(line);
+        newPage();
+        Iterator<String[]> iterator = rows.iterator();
+        try {
+            while (iterator.hasNext()) {
+                String[] fields = iterator.next();
                 if (fields.length < this.numberOfColumns) {
                     continue;
                 }
                 this.drawTextAndLine(fields);
             }
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } finally {
+            close(iterator);
         }
         drawTheVerticalLines();
         drawFooter();

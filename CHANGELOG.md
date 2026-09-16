@@ -273,6 +273,14 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   empty fields at the end of a line. `BigTable` splits lines at the delimiter
   literally, `setLocation` sets the location, and `setLanguage`, which did
   nothing, is removed.
+- `BigTable.setTableData(header, rows)` takes the rows from memory, the
+  results of a query or a list of objects, where they had to be written to a
+  file first: an `Iterable<String[]>` in Java, an `IEnumerable<string[]>` in
+  C#, a `Sequence` of `[String]` in Swift and an `iter.Seq[[]string]` in Go,
+  where it is `SetTableRows`. The rows are gone through twice, once to measure
+  and once to draw, and none is kept. The file form reads its first line as the
+  header and hands the lines after it to the same code, and a header with fewer
+  fields than the table has columns is refused.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three

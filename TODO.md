@@ -24,12 +24,24 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 
 These add public API, so they must land in 9.0.0 rather than a minor release.
 
-- ⬜ **B** Rows from memory in a `BigTable`, not only from a file. Rows from a
+- ✅ **B** Rows from memory in a `BigTable`, not only from a file. Rows from a
       query or a list of objects have to be written to a temporary file today.
       Take them from a callback or an iterator that yields one row of fields
       at a time, asked for twice, as `setTableData` and `complete` read the
       file twice (measure, then draw). The file API stays, written in terms of
       the new one. Nothing may collect the rows: memory stays flat.
+      Done (Sep 16): `setTableData(header, rows)` with the header as its own
+      argument (the user's choice), taking an `Iterable<String[]>` in Java
+      (a `Closeable` iterator is closed), an `IEnumerable<string[]>` in C#, a
+      `Sequence` of `[String]` in Swift and `SetTableRows(header,
+      iter.Seq[[]string])` in Go. The file form reads the header from the
+      first line with enough fields and passes the lines after it as the
+      rows. A short header throws in Java and C# and is recorded on the PDF in
+      Go and Swift. Three tests per port: memory and file draw the same last
+      page, the rows are gone through twice, a short header is refused.
+      Example_43 is identical in the four ports, and its time is unchanged
+      when both builds run from the same directory: Java 2,090 ms, C# about
+      2,430 (`setTableData` maybe 20 ms slower), Go 990, Swift 3,100.
 - ⬜ **B** Choosing and ordering the columns of a `BigTable`.
       `setNumberOfColumns(9)` draws the first nine fields of every line; take
       the indexes to draw, in the order they are drawn, and keep

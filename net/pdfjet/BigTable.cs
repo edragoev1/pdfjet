@@ -4,7 +4,11 @@ using System.IO;
 using System.Text;
 
 namespace PDFjet.NET {
-    /// <summary>A table for large amounts of data, read row by row from a delimited text file.</summary>
+    /// <summary>
+    /// A table for large amounts of data, read row by row from a delimited text file or
+    /// from an IEnumerable. Each page is written as soon as it is full, so the memory
+    /// stays flat however many rows there are.
+    /// </summary>
     public class BigTable {
         private readonly PDF pdf;
         private readonly Font f1;
@@ -24,8 +28,7 @@ namespace PDFjet.NET {
         private bool highlightRow = true;
         private int highlightColor = 0xF0F0F0;
         private int penColor = 0xB0B0B0;
-        private string fileName;
-        private string delimiter;
+        private IEnumerable<string[]> rows;
         private int numberOfColumns;
         private bool startNewPage = true;
         private int dataRows;           // The rows under the header, counted by SetTableData
@@ -106,10 +109,6 @@ namespace PDFjet.NET {
         }
 
         private void DrawTextAndLine(string[] fields) {
-            if (page == null) {
-                NewPage();
-                return;
-            }
             if (startNewPage) {
                 NewPage();
             }
@@ -208,52 +207,77 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Reads the data file to set the column widths, the column alignment and the header fields.
+        /// The file is read as UTF-8. Its first line with at least as many fields as the table has
+        /// columns is the header, and the lines after it are the rows. A quoted field is read as
+        /// RFC 4180 reads it, so a delimiter inside one is text.
         /// </summary>
         /// <param name="fileName">the data file.</param>
         /// <param name="delimiter">the field delimiter.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetTableData(string fileName, string delimiter) {
-            this.fileName = fileName;
-            this.delimiter = delimiter;
+            int columns = this.numberOfColumns;
+            string[] header = new string[0];
+            foreach (string[] fields in ReadDataFile(fileName, delimiter, columns, false)) {
+                if (fields.Length >= columns) {
+                    header = fields;
+                    break;
+                }
+            }
+            return SetTableData(header, ReadDataFile(fileName, delimiter, columns, true));
+        }
+
+        /// <summary>
+        /// Sets the column widths, the column alignment and the header fields from rows that are
+        /// not in a file: the results of a query, or a list of objects. The rows are enumerated
+        /// twice, once here to measure the columns and once by Complete to draw them, and neither
+        /// keeps them, so an IEnumerable that runs the query again, or maps the objects to fields
+        /// as it goes, keeps the memory flat. A row with fewer fields than the table has columns
+        /// is skipped, as a short line of a file is.
+        /// </summary>
+        /// <param name="header">the header fields, at least as many as the columns.</param>
+        /// <param name="rows">the fields of each row, in the order they are drawn.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetTableData(string[] header, IEnumerable<string[]> rows) {
+            if (header.Length < this.numberOfColumns) {
+                pdf.Fail(new ArgumentException("The header has fewer fields than the table has columns."));
+            }
+            this.rows = rows;
             this.vertLines = new float[this.numberOfColumns + 1];
             this.headerFields = new string[this.numberOfColumns];
             this.widths = new float[this.numberOfColumns];
             this.alignment = new Alignment[this.numberOfColumns];
 
-            int rowNumber = 0;
-            using (StreamReader reader = OpenDataFile()) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    // The quoted fields are read as RFC 4180 does, so a
-                    // delimiter inside one is text and not a column break.
-                    string[] fields = Util.Split(line, this.delimiter);
-                    if (fields.Length < this.numberOfColumns) {
-                        continue;
-                    }
-                    if (rowNumber == 0) {
-                        for (int i = 0; i < this.numberOfColumns; i++) {
-                            headerFields[i] = fields[i];
-                        }
-                    }
-                    if (rowNumber == 1) {
-                        for (int i = 0; i < this.numberOfColumns; i++) {
-                            alignment[i] = GetAlignment(fields[i]);
-                        }
-                    }
-                    for (int i = 0; i < this.numberOfColumns; i++) {
-                        string field = fields[i];
-                        float width = f1.StringWidth(field) + 2 * this.padding;
-                        if (width > widths[i]) {
-                            this.widths[i] = width;
-                        }
-                    }
-                    rowNumber++;
-                }
+            for (int i = 0; i < this.numberOfColumns; i++) {
+                headerFields[i] = header[i];
             }
-            this.dataRows = (rowNumber > 0) ? rowNumber - 1 : 0;     // Without the header
+            Measure(header);
+            int rowNumber = 0;
+            foreach (string[] fields in rows) {
+                if (fields.Length < this.numberOfColumns) {
+                    continue;
+                }
+                if (rowNumber == 0) {   // Determine alignment from first data row
+                    for (int i = 0; i < this.numberOfColumns; i++) {
+                        alignment[i] = GetAlignment(fields[i]);
+                    }
+                }
+                Measure(fields);
+                rowNumber++;
+            }
+            this.dataRows = rowNumber;
 
             SetVertLines();
             return this;
+        }
+
+        // Widens the columns to fit the fields of a row.
+        private void Measure(string[] fields) {
+            for (int i = 0; i < this.numberOfColumns; i++) {
+                float width = f1.StringWidth(fields[i]) + 2 * this.padding;
+                if (width > widths[i]) {
+                    this.widths[i] = width;
+                }
+            }
         }
 
         // Sets the x coordinates of the vertical lines from the location and the column widths.
@@ -266,32 +290,43 @@ namespace PDFjet.NET {
             }
         }
 
-        // Opens the data file, which is read as UTF-8 only, as in the other ports,
-        // after the byte order mark at its start, if there is one.
-        private StreamReader OpenDataFile() {
-            StreamReader reader = new StreamReader(this.fileName, new UTF8Encoding(false), false);
-            if (reader.Peek() == '\uFEFF') {
-                reader.Read();
+        // Yields the fields of the lines of the data file, which is read as UTF-8
+        // only, as in the other ports, after the byte order mark at its start, if
+        // there is one. The quoted fields are read as RFC 4180 does, so a delimiter
+        // inside one is text and not a column break. With skipHeader, the rows
+        // start after the header: the first line with at least as many fields as
+        // the table has columns.
+        private static IEnumerable<string[]> ReadDataFile(
+                string fileName, string delimiter, int columns, bool skipHeader) {
+            using (StreamReader reader = new StreamReader(fileName, new UTF8Encoding(false), false)) {
+                if (reader.Peek() == '\uFEFF') {
+                    reader.Read();
+                }
+                string line;
+                while ((line = reader.ReadLine()) != null) {
+                    string[] fields = Util.Split(line, delimiter);
+                    if (skipHeader) {
+                        skipHeader = fields.Length < columns;
+                        continue;
+                    }
+                    yield return fields;
+                }
             }
-            return reader;
         }
 
         /// <summary>
-        /// Draws the rows read from the data file, then the vertical lines, with a
-        /// "Page i of N" footer on every page. The pages are added to the PDF as they
-        /// are drawn, so the document does not hold them all.
+        /// Draws the rows, then the vertical lines, with a "Page i of N" footer on every page.
+        /// The pages are added to the PDF as they are drawn, so the document does not hold them
+        /// all. Call it after the location, the bottom margin and the table data have been set.
         /// </summary>
         public void Complete() {
             this.pageCount = CountPages();
-            using (StreamReader reader = OpenDataFile()) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    string[] fields = Util.Split(line, this.delimiter);
-                    if (fields.Length < this.numberOfColumns) {
-                        continue;
-                    }
-                    this.DrawTextAndLine(fields);
+            NewPage();
+            foreach (string[] fields in rows) {
+                if (fields.Length < this.numberOfColumns) {
+                    continue;
                 }
+                this.DrawTextAndLine(fields);
             }
             DrawTheVerticalLines();
             DrawFooter();

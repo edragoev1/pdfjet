@@ -10,6 +10,7 @@ package pdfjet
 import (
 	"bufio"
 	"fmt"
+	"iter"
 	"math"
 	"os"
 
@@ -18,7 +19,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
-// BigTable represents a table for handling large amounts of data in PDF
+// BigTable is a table for large amounts of data, read row by row from a
+// delimited text file or from an iterator. Each page is written as soon as it
+// is full, so the memory stays flat however many rows there are.
 type BigTable struct {
 	pdf             *PDF
 	f1              *Font
@@ -38,8 +41,8 @@ type BigTable struct {
 	highlight       bool
 	highlightColor  int32
 	penColor        int32
-	fileName        string
-	delimiter       string
+	rows            iter.Seq[[]string]
+	readErr         error // The error reading the data file, if any
 	numberOfColumns int
 	startNewPage    bool
 	dataRows        int // The rows under the header, counted by SetTableData
@@ -148,12 +151,7 @@ func (bt *BigTable) countPages() int {
 	return count
 }
 
-func (bt *BigTable) drawTextAndLine(fields []string) error {
-	if bt.page == nil { // First page
-		bt.newPage()
-		return nil
-	}
-
+func (bt *BigTable) drawTextAndLine(fields []string) {
 	if bt.startNewPage { // New page
 		bt.newPage()
 	}
@@ -165,8 +163,6 @@ func (bt *BigTable) drawTextAndLine(fields []string) error {
 		bt.drawFooter()
 		bt.startNewPage = true
 	}
-
-	return nil
 }
 
 func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
@@ -230,12 +226,6 @@ func (bt *BigTable) getAlignment(str string) alignment.Alignment {
 	return alignment.Left
 }
 
-// splitFields splits a line at the delimiter, reading the quoted fields as RFC
-// 4180 does; with no delimiter the line is one field, as in the other ports.
-func (bt *BigTable) splitFields(line string) []string {
-	return splitDelimited(line, bt.delimiter)
-}
-
 // newDataScanner returns a scanner of the lines of the data file, which is
 // read as UTF-8, after the byte order mark at its start, if there is one.
 func newDataScanner(file *os.File) *bufio.Scanner {
@@ -248,20 +238,14 @@ func newDataScanner(file *os.File) *bufio.Scanner {
 	return scanner
 }
 
-// SetTableData sets the table data from the file, with the fields of each line
-// separated by the delimiter. It returns the table, or an error if the file
-// cannot be read.
-func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) {
-	bt.fileName = fileName
-	bt.delimiter = delimiter
-	bt.vertLines = make([]float32, bt.numberOfColumns+1)
-	bt.headerFields = make([]string, bt.numberOfColumns)
-	bt.widths = make([]float32, bt.numberOfColumns)
-	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
-
+// scanDataFile calls yield with the fields of each line of the data file until
+// it returns false. A line is split at the delimiter, reading the quoted fields
+// as RFC 4180 does; with no delimiter the line is one field, as in the other
+// ports.
+func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
 	file, err := os.Open(fileName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -271,43 +255,101 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 	}(file)
 
 	scanner := newDataScanner(file)
-	rowNumber := 0
 	for scanner.Scan() {
-		line := scanner.Text()
-		fields := bt.splitFields(line)
+		if !yield(splitDelimited(scanner.Text(), delimiter)) {
+			return nil
+		}
+	}
+	return scanner.Err()
+}
+
+// SetTableData sets the table data from the file, which is read as UTF-8. Its
+// first line with at least as many fields as the table has columns is the
+// header, and the lines after it are the rows. It returns the table, or an
+// error if the file cannot be read.
+func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) {
+	columns := bt.numberOfColumns
+	header := []string{}
+	err := scanDataFile(fileName, delimiter, func(fields []string) bool {
+		if len(fields) >= columns {
+			header = fields
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	rows := func(yield func([]string) bool) {
+		inHeader := true
+		err := scanDataFile(fileName, delimiter, func(fields []string) bool {
+			if inHeader {
+				inHeader = len(fields) < columns
+				return true
+			}
+			return yield(fields)
+		})
+		if err != nil {
+			bt.readErr = err
+		}
+	}
+	bt.SetTableRows(header, rows)
+	if bt.readErr != nil {
+		return nil, bt.readErr
+	}
+	return bt, nil
+}
+
+// SetTableRows sets the table data from rows that are not in a file: the
+// results of a query, or a slice of objects. The rows are iterated twice, once
+// here to measure the columns and once by Complete to draw them, and neither
+// keeps them, so an iterator that runs the query again, or maps the objects to
+// fields as it goes, keeps the memory flat. A row with fewer fields than the
+// table has columns is skipped, as a short line of a file is. A header with
+// fewer fields than the table has columns is recorded on the PDF as misuse, and
+// the table is left without data.
+func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigTable {
+	if len(header) < bt.numberOfColumns {
+		bt.pdf.fail("The header has fewer fields than the table has columns.")
+		return bt
+	}
+	bt.rows = rows
+	bt.readErr = nil
+	bt.vertLines = make([]float32, bt.numberOfColumns+1)
+	bt.headerFields = make([]string, bt.numberOfColumns)
+	bt.widths = make([]float32, bt.numberOfColumns)
+	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
+
+	copy(bt.headerFields, header)
+	bt.measure(header)
+	rowNumber := 0
+	for fields := range rows {
 		if len(fields) < bt.numberOfColumns {
 			continue
 		}
-		if rowNumber == 0 {
-			for i := 0; i < bt.numberOfColumns; i++ {
-				bt.headerFields[i] = fields[i]
-			}
-		}
-		if rowNumber == 1 {
+		if rowNumber == 0 { // Determine alignment from first data row
 			for i := 0; i < bt.numberOfColumns; i++ {
 				bt.alignment[i] = bt.getAlignment(fields[i])
 			}
 		}
-		for i := 0; i < bt.numberOfColumns; i++ {
-			field := fields[i]
-			width := bt.f1.StringWidth(bt.f1.size, field) + 2*bt.padding
-			if width > bt.widths[i] {
-				bt.widths[i] = width
-			}
-		}
+		bt.measure(fields)
 		rowNumber++
 	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	bt.dataRows = 0
-	if rowNumber > 0 {
-		bt.dataRows = rowNumber - 1 // Without the header
-	}
+	bt.dataRows = rowNumber
 
 	bt.setVertLines()
-	return bt, nil
+	return bt
+}
+
+// measure widens the columns to fit the fields of a row.
+func (bt *BigTable) measure(fields []string) {
+	for i := 0; i < bt.numberOfColumns; i++ {
+		width := bt.f1.StringWidth(bt.f1.size, fields[i]) + 2*bt.padding
+		if width > bt.widths[i] {
+			bt.widths[i] = width
+		}
+	}
 }
 
 // setVertLines sets the x coordinates of the vertical lines from the location
@@ -321,36 +363,25 @@ func (bt *BigTable) setVertLines() {
 	}
 }
 
-// Complete draws the rows read from the data file, then the vertical lines,
-// with a "Page i of N" footer on every page. The pages are added to the PDF as
-// they are drawn, so the document does not hold them all.
+// Complete draws the rows, then the vertical lines, with a "Page i of N" footer
+// on every page. The pages are added to the PDF as they are drawn, so the
+// document does not hold them all. It returns an error if the data file cannot
+// be read. A table without data draws nothing.
 func (bt *BigTable) Complete() error {
-	bt.pageCount = bt.countPages()
-	file, err := os.Open(bt.fileName)
-	if err != nil {
-		return err
+	if bt.rows == nil {
+		return nil
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			panic("failed to close file: " + err.Error())
-		}
-	}(file)
-
-	scanner := newDataScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := bt.splitFields(line)
+	bt.pageCount = bt.countPages()
+	bt.readErr = nil
+	bt.newPage()
+	for fields := range bt.rows {
 		if len(fields) < bt.numberOfColumns {
 			continue
 		}
-		if err := bt.drawTextAndLine(fields); err != nil {
-			return err
-		}
+		bt.drawTextAndLine(fields)
 	}
-
-	if err := scanner.Err(); err != nil {
-		return err
+	if bt.readErr != nil {
+		return bt.readErr
 	}
 
 	bt.drawTheVerticalLines()
