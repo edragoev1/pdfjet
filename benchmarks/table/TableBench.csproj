@@ -4,7 +4,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <StartupObject>TableBench</StartupObject>
+    <!-- Only the one source file: a PDFjet.dll under build/ would otherwise be a
+         candidate that .NET prefers to the HintPath below, and a stale one
+         would be measured. -->
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TableBench.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="PDFjet">
       <HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>

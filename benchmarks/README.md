@@ -9,7 +9,7 @@ programs, the method and the results that `jet-vs-box.html` quotes.
 | `BigTableBench.java` | Example_43: a 2,546-page table from a 124,716-row CSV file |
 | `pom.xml` | iText Core 9.7.1 and PDFBox 3.0.8, which `run.sh` copies into `build/lib` |
 | `run.sh` | Builds PDFjet from this checkout and the benchmarks, runs them and writes `build/results-<date>-<time>.log` |
-| `results/` | The logs of the runs; the text document below is from `2026-09-15-4ee4e7cb.log` and the table from `2026-09-16-3ebd321b-table.log` |
+| `results/` | The logs of the runs; the text document below is from `2026-09-15-4ee4e7cb.log` and the table from `2026-09-16-d2f5d4cb.log` |
 
 ## Running
 
@@ -68,12 +68,15 @@ and `build/` is not tracked.
 - The sample files are checked for their page count, their text (with mutool)
   and the last footer.
 
-## Results, 15 September 2026
+## Results, 15 and 16 September 2026
 
-AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, with nothing else running.
-The text document is one run at 4ee4e7cb on a freshly rebooted machine,
-`results/2026-09-15-4ee4e7cb.log`; the table is one run of the table benchmark
-at 3ebd321b on 16 September, `results/2026-09-16-3ebd321b-table.log`.
+AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1. The text document is
+one run at 4ee4e7cb on a freshly rebooted machine with nothing else running,
+`results/2026-09-15-4ee4e7cb.log`. The table is from a run of both benchmarks
+at d2f5d4cb on 16 September, `results/2026-09-16-d2f5d4cb.log`, on a machine
+that had not been rebooted; iText and PDFBox, whose code did not change, came
+within 2.5% of their 3ebd321b figures on the table, but 6 to 22% slower on the
+short runs of the text document, so that part of the run is not quoted here.
 
 ### The text document, 500 pages
 
@@ -107,58 +110,65 @@ PDFBox 3,845,317 bytes.
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File |
 |---|---:|---:|---:|---:|---:|---:|
-| PDFjet `BigTable` | 1,703 ms | 2,065 ms | 761 MB | 389 MB | 32 MB | 12.3 MB |
-| PDFjet `Page` | 1,800 ms | 2,219 ms | 815 MB | 759 MB | 256 MB | 12.6 MB |
-| iText `PdfCanvas` | 2,046 ms | 2,678 ms | 1,109 MB | 835 MB | 256 MB | 11.8 MB |
-| iText `Table` | 35,304 ms | 36,965 ms | 47,220 MB | 7,104 MB | 8,192 MB | 21.6 MB |
-| PDFBox, content stream | 12,370 ms | 13,387 ms | 25,124 MB | 467 MB | 128 MB | 11.9 MB |
-| PDFjet `Page`, page by page | 1,744 ms | 2,083 ms | 815 MB | 384 MB | 32 MB | 12.6 MB |
-| iText `PdfCanvas`, page by page | 2,020 ms | 2,551 ms | 1,107 MB | 405 MB | 32 MB | 11.8 MB |
+| PDFjet `BigTable` | 1,671 ms | 2,099 ms | 778 MB | 389 MB | 32 MB | 12.1 MB |
+| PDFjet `Page` | 1,584 ms | 1,945 ms | 628 MB | 466 MB | 128 MB | 11.5 MB |
+| iText `PdfCanvas` | 2,096 ms | 2,639 ms | 1,109 MB | 817 MB | 256 MB | 11.8 MB |
+| iText `Table` | 35,966 ms | 37,052 ms | 47,197 MB | 7,015 MB | 8,192 MB | 21.6 MB |
+| PDFBox, content stream | 12,635 ms | 13,439 ms | 25,200 MB | 457 MB | 128 MB | 11.9 MB |
+| PDFjet `Page`, page by page | 1,588 ms | 1,913 ms | 628 MB | 375 MB | 32 MB | 11.5 MB |
+| iText `PdfCanvas`, page by page | 2,130 ms | 2,579 ms | 1,133 MB | 407 MB | 32 MB | 11.8 MB |
 
-All seven files have 2,546 pages and end with "Page 2546 of 2546", and every
-sample file is the same size as at f72b9f08. Pages 1, 1273 and 2546 drawn on
-PDFjet's `Page`, kept or page by page, render the same as `BigTable`'s at
-72 dpi, pixel for pixel.
+All seven files have 2,546 pages and end with "Page 2546 of 2546". The iText and
+PDFBox files are the same size as at 3ebd321b. PDFjet's are smaller: d2f5d4cb
+writes a color, a pen width or a font only when it changes and fills a
+rectangle with one `re` operator, which took `BigTable` from 12.3 to 12.1 MB
+and `Page` from 12.6 to 11.5 MB. Pages 1, 1273 and 2546 drawn on PDFjet's
+`Page`, kept or page by page, render the same as `BigTable`'s at 72 dpi, pixel
+for pixel.
 
-Earlier runs of the same programs: 4ee4e7cb, the run the text document is
-from, where `BigTable` read its file with the first RFC 4180 parser, at 1,761
-ms and 809 MB, and every other configuration came within 3% of the run above
-(`results/2026-09-15-4ee4e7cb.log`); f72b9f08, which counts the pages of a
-`BigTable` and writes each one as it is finished, so that `BigTable` needs a
-32 MB heap rather than 256 (`results/2026-09-15-f72b9f08.log`); 312697d5, which
-places a string with `Td` (`results/2026-09-15-312697d5.log`); 7c4988ad, which
-writes page content without an array for each string and number, and measured
-the text document at 59 ms (`results/2026-09-15-7c4988ad.log`); and d963a7c8
-before all three, at 71 ms (`results/2026-09-15-d963a7c8.log`).
+Earlier runs of the same programs: 3ebd321b, the table before d2f5d4cb, where
+`BigTable` took 1,703 ms and 761 MB, `Page` 1,800 ms and 815 MB in a 256 MB
+heap, and `Table` 5,099 ms and 2,255 MB in a 1,024 MB heap
+(`results/2026-09-16-3ebd321b-table.log`); 4ee4e7cb, the run the text document
+is from, where `BigTable` read its file with the first RFC 4180 parser, at
+1,761 ms and 809 MB (`results/2026-09-15-4ee4e7cb.log`); f72b9f08, which counts
+the pages of a `BigTable` and writes each one as it is finished, so that
+`BigTable` needs a 32 MB heap rather than 256 (`results/2026-09-15-f72b9f08.log`);
+312697d5, which places a string with `Td` (`results/2026-09-15-312697d5.log`);
+7c4988ad, which writes page content without an array for each string and number,
+and measured the text document at 59 ms (`results/2026-09-15-7c4988ad.log`); and
+d963a7c8 before all three, at 71 ms (`results/2026-09-15-d963a7c8.log`).
 
 ### The two table APIs, 16 September 2026
 
-`Table` against iText's `Table` on the same data, in the same run of the
-table benchmark as the rows above (`results/2026-09-16-3ebd321b-table.log`).
-It was first measured at 542b3dbf (`results/2026-09-16-542b3dbf-table.log`),
-where `Table` came out at 5,038 ms and iText's at 35,258, within 2% of these.
+`Table` against iText's `Table` on the same data, in the same run as the rows
+above (`results/2026-09-16-d2f5d4cb.log`). It was first measured at 542b3dbf
+(`results/2026-09-16-542b3dbf-table.log`) and again at 3ebd321b, at 5,038 and
+5,099 ms and 25.2 MB, before d2f5d4cb.
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File | Code |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| PDFjet `BigTable` | 1,703 ms | 2,065 ms | 761 MB | 389 MB | 32 MB | 12.3 MB | 17 |
-| PDFjet `Table` | 5,099 ms | 5,706 ms | 2,255 MB | 1,748 MB | 1,024 MB | 25.2 MB | 153 |
-| iText `Table` | 35,304 ms | 36,965 ms | 47,220 MB | 7,104 MB | 8,192 MB | 21.6 MB | 167 |
+| PDFjet `BigTable` | 1,671 ms | 2,099 ms | 778 MB | 389 MB | 32 MB | 12.1 MB | 17 |
+| PDFjet `Table` | 3,672 ms | 4,548 ms | 1,821 MB | 1,342 MB | 512 MB | 21.2 MB | 153 |
+| iText `Table` | 35,966 ms | 37,052 ms | 47,197 MB | 7,015 MB | 8,192 MB | 21.6 MB | 167 |
 
-- PDFjet's `Table` is 6.9 times faster than iText's, 5,099 against 35,304 ms,
-  allocates a twenty-first as much, 2,255 against 47,220 MB, and finishes in a
-  1 GB heap where iText's needs 8. Both are given the same column widths and
-  draw the same 2,546 pages.
-- It writes a larger file, 25.2 MB against iText's 21.6. Both table APIs draw
-  per cell rather than per row: on page 1 of the sample each writes 225 fills
-  for the shaded cells, where `BigTable` writes 25, one per shaded row. What
-  PDFjet adds on top is the colour: 2,027 `rg` and `RG` operators against
-  iText's 675, because `Cell` sets the brush and the pen for every cell it
-  draws. That is the first place to look if this file size is worth closing.
-- Against `BigTable` on the same data, `Table` is 3.0 times slower, allocates
-  3.0 times as much, needs 32 times the heap and writes twice the file, and it
-  is 153 lines of program against 17. It is the API to reach for when the rows
-  are already in memory and the table is not enormous; `BigTable` is the one
-  for a file this size.
+- PDFjet's `Table` is 9.8 times faster than iText's, 3,672 against 35,966 ms,
+  allocates a twenty-sixth as much, 1,821 against 47,197 MB, and finishes in a
+  512 MB heap where iText's needs 8,192. Both are given the same column widths
+  and draw the same 2,546 pages.
+- It writes the smaller file, 21.2 MB against 21.6. Until d2f5d4cb it wrote
+  25.2 MB: both table APIs draw per cell, and PDFjet's `Cell` set the brush and
+  the pen for every cell (2,027 `rg` and `RG` operators on page 1 of the sample
+  against iText's 675), wrote the font and the pen width again for every cell,
+  and filled each shaded cell with a path of four operators. A page now writes a
+  color, a width or a font only when it changes and fills a rectangle with one
+  `re`, which also took `Table` from 5,099 to 3,672 ms and from a 1,024 MB heap
+  to 512.
+- Against `BigTable` on the same data, `Table` is 2.2 times slower, allocates
+  2.3 times as much, needs 16 times the heap and writes 75% more, and it is 153
+  lines of program against 17. It is the API to reach for when the rows are
+  already in memory and the table is not enormous; `BigTable` is the one for a
+  file this size.
 
 ### What the numbers say
 
@@ -166,30 +176,32 @@ where `Table` came out at 5,038 ms and iText's at 35,258, within 2% of these.
   for 500 pages and 14 against 26 ms for 100. It allocates about a third as much,
   with a lower peak, a faster start and a jar a fifteenth of the size. PDFBox is
   about 350 times slower on the text document with Noto Sans, whose Devanagari
-  substitution rules it applies to every line, and 7.3 times slower on the table.
-- On the table, `BigTable` takes 17% less time than iText's `PdfCanvas` (1,703
-  against 2,046 ms), and iText's own `Table` is 21 times slower and needs an
+  substitution rules it applies to every line, and 7.6 times slower than
+  `BigTable` on the table.
+- On the table, `BigTable` takes 20% less time than iText's `PdfCanvas` (1,671
+  against 2,096 ms), and iText's own `Table` is 22 times slower and needs an
   8,192 MB heap. The programs that draw this table are 17 lines for `BigTable`,
   215 for `PdfCanvas`, 167 for iText's `Table` and 217 for PDFBox, without the
   blank lines and the comments.
 - Drawn with the same calls, PDFjet is ahead of iText too: on `Page` the table
-  takes 12% less time than on `PdfCanvas` and allocates 27% less; page by page,
-  14% less time and 26% less. `BigTable` takes 5% less time than the same drawing
-  on `Page`: both write only a position for each string, but `Page.drawString`
-  also writes the text color and makes two arrays for it.
-- `BigTable` allocates 7% less than that drawing, 761 against 815 MB. Since
-  4ee4e7cb it reads the quoted fields of its data file as RFC 4180 does, which
-  the driver of the other configurations does not. The first parser copied every
-  field and took it from 754 MB and 1,726 ms at f72b9f08 to 809 MB and 1,761;
-  3ebd321b takes the fields as substrings of the line, 761 MB and 1,703 ms.
+  takes 24% less time than on `PdfCanvas` and allocates 43% less; page by page,
+  25% less time and 45% less.
+- Since d2f5d4cb the same drawing on `Page` is 5% faster than `BigTable`, 1,584
+  against 1,671 ms, and writes the smaller file, 11.5 against 12.1 MB: the
+  driver fills each shaded row with `fillRect`, which is now one `re`, where
+  `BigTable` still fills it with a path of four operators. `BigTable` also
+  allocates more, 778 against 628 MB, as it reads the quoted fields of its
+  file as RFC 4180 does, which the driver does not.
 - Memory depends on keeping the pages, not on the library. A page that has not
-  been added to the PDF holds its content uncompressed, 97.5 MB for the 2,546
-  pages against 11.6 MB compressed, so keeping them all costs a 256 MB heap, as
-  drawing on `Page` and on `PdfCanvas` does. `BigTable` counts its pages in the
-  pass that measures the columns, draws each footer when its page is finished and
-  writes the page out, so it needs 32 MB and peaks at 389 MB. PDFBox compresses
-  each page as it is closed but writes the document only when it is saved: 128 MB
-  and 467 MB. Drawn page by page, `Page` and `PdfCanvas` also finish in 32 MB.
+  been added to the PDF holds its content uncompressed, 31,338 bytes a page, or
+  79.8 MB for the 2,546 pages against 10.7 MB compressed, so keeping them all
+  costs a 128 MB heap on `Page` and 256 MB on `PdfCanvas`; it was 38,307 bytes a
+  page and a 256 MB heap on `Page` before d2f5d4cb. `BigTable` counts its pages
+  in the pass that measures the columns, draws each footer when its page is
+  finished and writes the page out, so it needs 32 MB and peaks at 389 MB.
+  PDFBox compresses each page as it is closed but writes the document only when
+  it is saved: 128 MB and 457 MB. Drawn page by page, `Page` and `PdfCanvas` also
+  finish in 32 MB.
 
 ## Caveats
 

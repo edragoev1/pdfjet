@@ -44,35 +44,44 @@ the machine meanwhile. `build/` is not tracked.
 
 ## Results, 16 September 2026
 
-AMD Ryzen 5 5600G, 12 threads, Linux, with nothing else running. OpenJDK
-21.0.12.1, .NET SDK 8.0.424, Go 1.27.1, Swift 6.3.3. The first three rows are
-one run at 4ee4e7cb, logged in `results/2026-09-16-4ee4e7cb.log`. The Swift
-row was measured again at 300d67ab, where its `FlateEncode` began choosing the
-Huffman codes of each block, and is logged in
-`results/2026-09-16-300d67ab-swift.log`; nothing in the other three ports
-changed in between, and a file of a given document is the same bytes every
-run.
+AMD Ryzen 5 5600G, 12 threads, Linux. OpenJDK 21.0.12.1, .NET SDK 8.0.424,
+Go 1.27.1, Swift 6.3.3. One run at d2f5d4cb, logged in
+`results/2026-09-16-d2f5d4cb.log`, on a machine that had not been rebooted.
 
 | Port | 100 pages | 500 pages | First document | File, 500 pages | Peak memory |
 |---|---:|---:|---:|---:|---:|
-| Java | 14 ms | 58 ms | 170 ms | 567,688 bytes | 87 MB |
-| C# | 21 ms | 71 ms | 176 ms | 567,688 bytes | 54 MB |
-| Go | 11 ms | 51 ms | 50 ms | 518,785 bytes | 12 MB |
-| Swift | 23 ms | 100 ms | 105 ms | 601,363 bytes | 29 MB |
+| Java | 14 ms | 56 ms | 173 ms | 533,287 bytes | 79 MB |
+| C# | 21 ms | 61 ms | 181 ms | 533,287 bytes | 55 MB |
+| Go | 10 ms | 48 ms | 49 ms | 518,650 bytes | 12 MB |
+| Swift | 22 ms | 93 ms | 97 ms | 599,518 bytes | 29 MB |
 
 - Java and C# write files of the same size, to the byte. Go's 500-page file is
-  about 9% smaller and Swift's about 6% larger.
-- Swift's was 688,640 bytes before 300d67ab, and 718,115 before that. Its
-  `FlateEncode` is the only compressor in the four ports that is not zlib, and
-  it has been closing the gap in steps: 7c4988ad and 312697d5 shortened the
-  page content of every port and it was taught to find longer matches, 4% off
-  the file, and it then stopped writing one fixed-Huffman block per stream and
-  began choosing stored, fixed or dynamic codes a block at a time, 12.7% off.
-- Go starts a first document fastest, 50 ms against 170 for Java, and keeps the
-  smallest process, 12 MB against 87. The JVM and the .NET runtime carry their
+  about 3% smaller and Swift's about 12% larger. The four write the same page
+  content, so the differences are the compressors'.
+- d2f5d4cb writes a colour, a pen width or a font only when it changes. That
+  took 6% off the Java and C# file, which was 567,688 bytes, and next to nothing
+  off Go's, 518,785 bytes before: Go's compressor had already squeezed most of
+  the repetition out of the old content. Swift's was 601,363 bytes at 300d67ab
+  (`results/2026-09-16-300d67ab-swift.log`), 688,640 before that and 718,115
+  before that. Its `FlateEncode` is the only compressor in the four ports that
+  is not zlib, and it has been closing the gap in steps: longer matches, 4% off
+  the file, and then stored, fixed or dynamic Huffman codes chosen a block at a
+  time, 12.7% off.
+- At 4ee4e7cb (`results/2026-09-16-4ee4e7cb.log`) the 500-page times were
+  Java 58, C# 71, Go 51 and Swift 100 ms, on a freshly rebooted machine. All
+  four are faster now, C# by 10 ms; differences of a few milliseconds are
+  within the noise of a machine that was not rebooted.
+- Go starts a first document fastest, 49 ms against 173 for Java, and keeps the
+  smallest process, 12 MB against 79. The JVM and the .NET runtime carry their
   own footprint before the first page is drawn.
 - mutool extracts the three lines of Latin, Greek and Cyrillic text from the
   3-page sample of every port.
+- The C# figures of the first run at d2f5d4cb were of an old `PDFjet.dll`:
+  the benchmark project took every file under its directory as a candidate,
+  and a `build/` directory left from an earlier comparison held an old copy,
+  which .NET preferred to the one the `HintPath` names. `PortBench.csproj` now
+  names its one source file, and the run above is the second. The run at
+  4ee4e7cb was made before that directory existed.
 
 ## Caveats
 

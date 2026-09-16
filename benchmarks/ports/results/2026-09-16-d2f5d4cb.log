@@ -1,0 +1,33 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.1 linux/amd64
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T14:15:49-04:00
+d2f5d4cb Write colors, pen width and font only when they change, and fillRect as re, in the four ports
+== ports: Latin, Greek and Cyrillic, 60 lines per page, IBM Plex Sans
+java 100 pages: median 14 ms (min 12, max 21, 7 runs), 155400 bytes
+dotnet 100 pages: median 21 ms (min 20, max 21, 7 runs), 155400 bytes
+go 100 pages: median 10 ms (min 9, max 11, 7 runs), 152392 bytes
+swift 100 pages: median 22 ms (min 21, max 22, 7 runs), 168506 bytes
+java 500 pages: median 56 ms (min 51, max 63, 7 runs), 533287 bytes
+dotnet 500 pages: median 61 ms (min 49, max 81, 7 runs), 533287 bytes
+go 500 pages: median 48 ms (min 46, max 51, 7 runs), 518650 bytes
+swift 500 pages: median 93 ms (min 92, max 96, 7 runs), 599518 bytes
+== ports: first document in a new process, 500 pages
+java cold 500 pages: 173 ms, 533287 bytes
+dotnet cold 500 pages: 181 ms, 533287 bytes
+go cold 500 pages: 49 ms, 518650 bytes
+swift cold 500 pages: 97 ms, 599518 bytes
+== ports: peak memory, one 500-page document, runtime defaults, median of 3
+java peak 80872 KB
+dotnet peak 56148 KB
+go peak 11788 KB
+swift peak 29184 KB
+== ports: 3-page samples
+java: 64974 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+dotnet: 64974 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+go: 64894 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+swift: 65359 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+2026-09-16T14:15:55-04:00

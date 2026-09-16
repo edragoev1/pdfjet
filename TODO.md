@@ -153,6 +153,11 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 - ⬜ **B** CHANGELOG and README for everything weeks 1 and 2 add or change;
       record the new benchmark numbers in `benchmarks/README.md`.
+      Benchmarks rerun at d2f5d4cb (Sep 16): the Example_43 table, the four
+      ports and `Table` are recorded in the three READMEs and
+      `jet-vs-box.html`. Left: the text document of `benchmarks/run.sh text`,
+      to be rerun on a freshly rebooted, idle machine, as iText and PDFBox came
+      out 6 to 22% slower than before on the busy one.
 - ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
       7c15442d, in a commit of its own. Done (Sep 16).
 - ✅ S License headers, in a commit with nothing else in it: 45 library files

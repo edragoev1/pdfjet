@@ -1,0 +1,34 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.1 linux/amd64
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T14:08:58-04:00
+d2f5d4cb Write colors, pen width and font only when they change, and fillRect as re, in the four ports
+== table: 9 columns of the EV CSV as cells, IBM Plex Sans 8 pt, Letter
+java 124716 rows: median 4220 ms (min 4095, max 4423, 7 runs), 2673 pages, 22552652 bytes
+dotnet 124716 rows: median 5158 ms (min 5058, max 5354, 7 runs), 2673 pages, 22552652 bytes
+go 124716 rows: median 1946 ms (min 1831, max 1955, 7 runs), 2673 pages, 22628965 bytes
+swift 124716 rows: median 6591 ms (min 6568, max 6667, 7 runs), 2673 pages, 27743694 bytes
+== table: first document in a new process, 50000 rows
+java cold 50000 rows: 2227 ms, 1072 pages, 9116668 bytes
+dotnet cold 50000 rows: 2554 ms, 1072 pages, 9116668 bytes
+go cold 50000 rows: 884 ms, 1072 pages, 9147319 bytes
+swift cold 50000 rows: 2785 ms, 1072 pages, 11197754 bytes
+== table: peak memory, one 50000-row table, runtime defaults, median of 3
+java peak 469576 KB
+dotnet peak 256584 KB
+go peak 281644 KB
+swift peak 192680 KB
+== table: 40-row samples
+java: 133901 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+dotnet: 133901 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+go: 133951 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+swift: 135551 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+2026-09-16T14:12:15-04:00
+== table: measured on its own after the run, 124716 rows: a new process each, peak from /usr/bin/time, 3 runs
+java cold 124716 rows: 4894 ms, 5196 ms, 4920 ms; peak 1021504, 1013596, 1028016 KB; 2673 pages, 22552652 bytes
+dotnet cold 124716 rows: 5627 ms, 5558 ms, 5441 ms; peak 549884, 549608, 549564 KB; 2673 pages, 22552652 bytes
+go cold 124716 rows: 2128 ms, 2141 ms, 2161 ms; peak 785504, 773500, 773044 KB; 2673 pages, 22628965 bytes
+swift cold 124716 rows: 6791 ms, 6742 ms, 6730 ms; peak 438532, 438572, 437908 KB; 2673 pages, 27743694 bytes
