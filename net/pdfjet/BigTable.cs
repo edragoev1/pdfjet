@@ -29,7 +29,9 @@ namespace PDFjet.NET {
         private int highlightColor = 0xF0F0F0;
         private int penColor = 0xB0B0B0;
         private IEnumerable<string[]> rows;
-        private int numberOfColumns;
+        private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
+        private int numberOfColumns;            // The length of columns
+        private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
         private bool startNewPage = true;
         private int dataRows;           // The rows under the header, counted by SetTableData
         private int pageCount;          // The pages they take, counted by Complete
@@ -61,9 +63,38 @@ namespace PDFjet.NET {
             return this;
         }
 
-        /// <summary>Sets the number of columns in this table.</summary>
+        /// <summary>
+        /// Sets the number of columns in this table: the first fields of every row, in their
+        /// order. It is the same as SetColumns(0, 1, ... numberOfColumns - 1).
+        /// </summary>
         public BigTable SetNumberOfColumns(int numberOfColumns) {
-            this.numberOfColumns = numberOfColumns;
+            int[] columns = new int[Math.Max(numberOfColumns, 0)];
+            for (int i = 0; i < columns.Length; i++) {
+                columns[i] = i;
+            }
+            return SetColumns(columns);
+        }
+
+        /// <summary>
+        /// Sets the fields of every row that the table draws, by their index from 0, in the order
+        /// they are drawn, so SetColumns(3, 0, 11) draws the fourth field, then the first, then
+        /// the twelfth. The indexes pick the header fields the same way. A row without a field for
+        /// every index is skipped. Call it before SetTableData; SetTextAlignment counts the
+        /// columns as they are drawn.
+        /// </summary>
+        /// <param name="columns">the indexes of the fields to draw.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetColumns(params int[] columns) {
+            int fieldsNeeded = 0;
+            foreach (int column in columns) {
+                if (column < 0) {
+                    pdf.Fail(new ArgumentException("A column index cannot be negative."));
+                }
+                fieldsNeeded = Math.Max(fieldsNeeded, column + 1);
+            }
+            this.columns = (int[]) columns.Clone();
+            this.numberOfColumns = columns.Length;
+            this.fieldsNeeded = fieldsNeeded;
             return this;
         }
 
@@ -164,7 +195,7 @@ namespace PDFjet.NET {
             page.SetBrushColor(Color.black);
 
             for (int i = 0; i < this.numberOfColumns; i++) {
-                String text = fields[i];
+                String text = fields[columns[i]];
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
                     xText = (vertLines[i + 1] - this.padding) - font.StringWidth(text);
@@ -207,23 +238,22 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Reads the data file to set the column widths, the column alignment and the header fields.
-        /// The file is read as UTF-8. Its first line with at least as many fields as the table has
-        /// columns is the header, and the lines after it are the rows. A quoted field is read as
+        /// The file is read as UTF-8. Its first line with a field for every column is the header, and the lines after it are the rows. A quoted field is read as
         /// RFC 4180 reads it, so a delimiter inside one is text.
         /// </summary>
         /// <param name="fileName">the data file.</param>
         /// <param name="delimiter">the field delimiter.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetTableData(string fileName, string delimiter) {
-            int columns = this.numberOfColumns;
+            int fieldsNeeded = this.fieldsNeeded;
             string[] header = new string[0];
-            foreach (string[] fields in ReadDataFile(fileName, delimiter, columns, false)) {
-                if (fields.Length >= columns) {
+            foreach (string[] fields in ReadDataFile(fileName, delimiter, fieldsNeeded, false)) {
+                if (fields.Length >= fieldsNeeded) {
                     header = fields;
                     break;
                 }
             }
-            return SetTableData(header, ReadDataFile(fileName, delimiter, columns, true));
+            return SetTableData(header, ReadDataFile(fileName, delimiter, fieldsNeeded, true));
         }
 
         /// <summary>
@@ -231,34 +261,31 @@ namespace PDFjet.NET {
         /// not in a file: the results of a query, or a list of objects. The rows are enumerated
         /// twice, once here to measure the columns and once by Complete to draw them, and neither
         /// keeps them, so an IEnumerable that runs the query again, or maps the objects to fields
-        /// as it goes, keeps the memory flat. A row with fewer fields than the table has columns
-        /// is skipped, as a short line of a file is.
+        /// as it goes, keeps the memory flat. A row without a field for every column is skipped,
+        /// as a short line of a file is.
         /// </summary>
-        /// <param name="header">the header fields, at least as many as the columns.</param>
+        /// <param name="header">the header fields, with a field for every column.</param>
         /// <param name="rows">the fields of each row, in the order they are drawn.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetTableData(string[] header, IEnumerable<string[]> rows) {
-            if (header.Length < this.numberOfColumns) {
-                pdf.Fail(new ArgumentException("The header has fewer fields than the table has columns."));
+            if (header.Length < this.fieldsNeeded) {
+                pdf.Fail(new ArgumentException("The header does not have a field for every column."));
             }
             this.rows = rows;
             this.vertLines = new float[this.numberOfColumns + 1];
-            this.headerFields = new string[this.numberOfColumns];
+            this.headerFields = (string[]) header.Clone();
             this.widths = new float[this.numberOfColumns];
             this.alignment = new Alignment[this.numberOfColumns];
 
-            for (int i = 0; i < this.numberOfColumns; i++) {
-                headerFields[i] = header[i];
-            }
             Measure(header);
             int rowNumber = 0;
             foreach (string[] fields in rows) {
-                if (fields.Length < this.numberOfColumns) {
+                if (fields.Length < this.fieldsNeeded) {
                     continue;
                 }
                 if (rowNumber == 0) {   // Determine alignment from first data row
                     for (int i = 0; i < this.numberOfColumns; i++) {
-                        alignment[i] = GetAlignment(fields[i]);
+                        alignment[i] = GetAlignment(fields[columns[i]]);
                     }
                 }
                 Measure(fields);
@@ -273,7 +300,7 @@ namespace PDFjet.NET {
         // Widens the columns to fit the fields of a row.
         private void Measure(string[] fields) {
             for (int i = 0; i < this.numberOfColumns; i++) {
-                float width = f1.StringWidth(fields[i]) + 2 * this.padding;
+                float width = f1.StringWidth(fields[columns[i]]) + 2 * this.padding;
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }
@@ -294,10 +321,9 @@ namespace PDFjet.NET {
         // only, as in the other ports, after the byte order mark at its start, if
         // there is one. The quoted fields are read as RFC 4180 does, so a delimiter
         // inside one is text and not a column break. With skipHeader, the rows
-        // start after the header: the first line with at least as many fields as
-        // the table has columns.
+        // start after the header: the first line with at least fieldsNeeded fields.
         private static IEnumerable<string[]> ReadDataFile(
-                string fileName, string delimiter, int columns, bool skipHeader) {
+                string fileName, string delimiter, int fieldsNeeded, bool skipHeader) {
             using (StreamReader reader = new StreamReader(fileName, new UTF8Encoding(false), false)) {
                 if (reader.Peek() == '\uFEFF') {
                     reader.Read();
@@ -306,7 +332,7 @@ namespace PDFjet.NET {
                 while ((line = reader.ReadLine()) != null) {
                     string[] fields = Util.Split(line, delimiter);
                     if (skipHeader) {
-                        skipHeader = fields.Length < columns;
+                        skipHeader = fields.Length < fieldsNeeded;
                         continue;
                     }
                     yield return fields;
@@ -323,7 +349,7 @@ namespace PDFjet.NET {
             this.pageCount = CountPages();
             NewPage();
             foreach (string[] fields in rows) {
-                if (fields.Length < this.numberOfColumns) {
+                if (fields.Length < this.fieldsNeeded) {
                     continue;
                 }
                 this.DrawTextAndLine(fields);

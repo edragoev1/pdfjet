@@ -30,7 +30,9 @@ public class BigTable {
     private var penColor: Int32 = 0xB0B0B0
     private var rows: (() -> AnyIterator<[String]>)?
     private var readError: Error?       // The error opening the data file, if any
-    private var numberOfColumns: Int = 0
+    private var columns: [Int] = []         // The fields drawn, in the order they are drawn
+    private var numberOfColumns: Int = 0    // The length of columns
+    private var fieldsNeeded: Int = 0       // The fields a row needs: the largest index plus 1
     private var startNewPage: Bool = true
     private var dataRows: Int = 0       // The rows under the header, counted by setTableData
     private var pageCount: Int = 0      // The pages they take, counted by complete
@@ -64,10 +66,37 @@ public class BigTable {
         return self
     }
 
-    /// Sets the number of columns in this table.
+    /// Sets the number of columns in this table: the first fields of every row, in their
+    /// order. It is the same as `setColumns([0, 1, ... numberOfColumns - 1])`.
     @discardableResult
     public func setNumberOfColumns(_ numberOfColumns: Int) -> BigTable {
-        self.numberOfColumns = numberOfColumns
+        return setColumns(Array(0..<max(numberOfColumns, 0)))
+    }
+
+    ///
+    /// Sets the fields of every row that the table draws, by their index from 0, in the order
+    /// they are drawn, so `setColumns([3, 0, 11])` draws the fourth field, then the first, then
+    /// the twelfth. The indexes pick the header fields the same way. A row without a field for
+    /// every index is skipped. Call it before setTableData; setTextAlignment counts the columns
+    /// as they are drawn. A negative index is recorded on the PDF as misuse, and the columns are
+    /// left as they were.
+    ///
+    /// - Parameter columns: the indexes of the fields to draw.
+    /// - Returns: this BigTable object.
+    ///
+    @discardableResult
+    public func setColumns(_ columns: [Int]) -> BigTable {
+        var fieldsNeeded = 0
+        for column in columns {
+            if column < 0 {
+                pdf.fail("A column index cannot be negative.")
+                return self
+            }
+            fieldsNeeded = max(fieldsNeeded, column + 1)
+        }
+        self.columns = columns
+        self.numberOfColumns = columns.count
+        self.fieldsNeeded = fieldsNeeded
         return self
     }
 
@@ -169,7 +198,7 @@ public class BigTable {
         page!.setBrushColor(Color.black)
 
         for i in 0..<numberOfColumns {
-            let text = fields[i]
+            let text = fields[columns[i]]
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
                 xText = (vertLines[i + 1] - self.padding) - font.stringWidth(text)
@@ -212,8 +241,7 @@ public class BigTable {
 
     ///
     /// Reads the data file to set the column widths, the column alignment and the header fields.
-    /// The file is read as UTF-8. Its first line with at least as many fields as the table has
-    /// columns is the header, and the lines after it are the rows. A quoted field is read as
+    /// The file is read as UTF-8. Its first line with a field for every column is the header, and the lines after it are the rows. A quoted field is read as
     /// RFC 4180 reads it, so a delimiter inside one is text.
     ///
     /// - Parameter fileName: the data file.
@@ -222,11 +250,11 @@ public class BigTable {
     ///
     @discardableResult
     public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {
-        let columns = numberOfColumns
+        let fieldsNeeded = self.fieldsNeeded
         var header = [String]()
         let lines = try DataFileRows(fileName, delimiter)
         while let fields = lines.next() {
-            if fields.count >= columns {
+            if fields.count >= fieldsNeeded {
                 header = fields
                 break
             }
@@ -237,7 +265,7 @@ public class BigTable {
             do {
                 let rows = try DataFileRows(fileName, delimiter)
                 // The rows start after the header.
-                while let fields = rows.next(), fields.count < columns {
+                while let fields = rows.next(), fields.count < fieldsNeeded {
                 }
                 return AnyIterator(rows)
             } catch {
@@ -257,11 +285,11 @@ public class BigTable {
     /// twice, once here to measure the columns and once by complete to draw them, and neither
     /// keeps them, so the sequence must be one that can be iterated more than once, such as an
     /// array, a lazy map of one, or a sequence whose `makeIterator` runs the query again. A row
-    /// with fewer fields than the table has columns is skipped, as a short line of a file is.
-    /// A header with fewer fields than the table has columns is recorded on the PDF as misuse,
-    /// and the table is left without data.
+    /// without a field for every column is skipped, as a short line of a file is. A header
+    /// without a field for every column is recorded on the PDF as misuse, and the table is
+    /// left without data.
     ///
-    /// - Parameter header: the header fields, at least as many as the columns.
+    /// - Parameter header: the header fields, with a field for every column.
     /// - Parameter rows: the fields of each row, in the order they are drawn.
     /// - Returns: this BigTable object.
     ///
@@ -273,25 +301,25 @@ public class BigTable {
 
     @discardableResult
     private func setTableData(_ header: [String], _ rows: @escaping () -> AnyIterator<[String]>) -> BigTable {
-        if header.count < numberOfColumns {
-            pdf.fail("The header has fewer fields than the table has columns.")
+        if header.count < fieldsNeeded {
+            pdf.fail("The header does not have a field for every column.")
             return self
         }
         self.rows = rows
         self.vertLines = [Float](repeating: 0.0, count: numberOfColumns + 1)
-        self.headerFields = Array(header[0..<numberOfColumns])
+        self.headerFields = header
         self.widths = [Float](repeating: 0.0, count: numberOfColumns)
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
         measure(header)
         var rowNumber = 0
         for fields in IteratorSequence(rows()) {
-            if fields.count < numberOfColumns {
+            if fields.count < fieldsNeeded {
                 continue
             }
             if rowNumber == 0 {     // Determine alignment from first data row
                 for i in 0..<numberOfColumns {
-                    alignment[i] = getAlignment(fields[i])
+                    alignment[i] = getAlignment(fields[columns[i]])
                 }
             }
             measure(fields)
@@ -306,7 +334,7 @@ public class BigTable {
     // Widens the columns to fit the fields of a row.
     private func measure(_ fields: [String]) {
         for i in 0..<numberOfColumns {
-            let width = f1.stringWidth(fields[i]) + 2 * padding
+            let width = f1.stringWidth(fields[columns[i]]) + 2 * padding
             if width > widths[i] {
                 widths[i] = width
             }
@@ -335,7 +363,7 @@ public class BigTable {
         readError = nil
         newPage()
         for fields in IteratorSequence(rows()) {
-            if fields.count < numberOfColumns {
+            if fields.count < fieldsNeeded {
                 continue
             }
             drawTextAndLine(fields: fields)

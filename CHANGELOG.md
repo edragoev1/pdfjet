@@ -281,6 +281,10 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   and once to draw, and none is kept. The file form reads its first line as the
   header and hands the lines after it to the same code, and a header with fewer
   fields than the table has columns is refused.
+- `BigTable.setColumns` takes the indexes of the fields to draw, in the order
+  they are drawn, so the columns of a file or a query can be picked and
+  reordered without rewriting it; `setNumberOfColumns(n)` draws the first n
+  fields, as before. A row without a field for every index is skipped.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three

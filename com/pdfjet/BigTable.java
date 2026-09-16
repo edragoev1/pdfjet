@@ -35,7 +35,9 @@ public class BigTable {
     private int highlightColor = 0xF0F0F0;
     private int penColor = 0xB0B0B0;
     private Iterable<String[]> rows;
-    private int numberOfColumns;    // Total column count
+    private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
+    private int numberOfColumns;            // The length of columns
+    private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
     private boolean startNewPage = true;
     private int dataRows;           // The rows under the header, counted by setTableData
     private int pageCount;          // The pages they take, counted by complete()
@@ -75,13 +77,42 @@ public class BigTable {
     }
 
     /**
-     * Sets the number of columns in this table.
+     * Sets the number of columns in this table: the first fields of every row,
+     * in their order. It is the same as setColumns(0, 1, ... numberOfColumns - 1).
      *
      * @param numberOfColumns the number of columns.
      * @return this BigTable object.
      */
     public BigTable setNumberOfColumns(int numberOfColumns) {
-        this.numberOfColumns = numberOfColumns;
+        int[] columns = new int[Math.max(numberOfColumns, 0)];
+        for (int i = 0; i < columns.length; i++) {
+            columns[i] = i;
+        }
+        return setColumns(columns);
+    }
+
+    /**
+     * Sets the fields of every row that the table draws, by their index from
+     * 0, in the order they are drawn, so setColumns(3, 0, 11) draws the fourth
+     * field, then the first, then the twelfth. The indexes pick the header
+     * fields the same way. A row without a field for every index is skipped.
+     * Call it before setTableData; setTextAlignment counts the columns as they
+     * are drawn.
+     *
+     * @param columns the indexes of the fields to draw.
+     * @return this BigTable object.
+     */
+    public BigTable setColumns(int... columns) {
+        int fieldsNeeded = 0;
+        for (int column : columns) {
+            if (column < 0) {
+                pdf.fail(new IllegalArgumentException("A column index cannot be negative."));
+            }
+            fieldsNeeded = Math.max(fieldsNeeded, column + 1);
+        }
+        this.columns = columns.clone();
+        this.numberOfColumns = columns.length;
+        this.fieldsNeeded = fieldsNeeded;
         return this;
     }
 
@@ -197,7 +228,7 @@ public class BigTable {
         page.setBrushColor(Color.black);
 
         for (int i = 0; i < this.numberOfColumns; i++) {
-            String text = fields[i];
+            String text = fields[columns[i]];
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
                 xText = (vertLines[i + 1] - this.padding) - font.stringWidth(text);
@@ -241,9 +272,8 @@ public class BigTable {
 
     /**
      * Sets the column widths, the column alignment and header fields from a
-     * delimited text file, read as UTF-8. Its first line with at least as
-     * many fields as the table has columns is the header, and the lines after
-     * it are the rows. A quoted field is read as RFC 4180 reads it, so a
+     * delimited text file, read as UTF-8. Its first line with a field for
+     * every column is the header, and the lines after it are the rows. A quoted field is read as RFC 4180 reads it, so a
      * delimiter inside one is text.
      *
      * @param fileName the file name.
@@ -252,13 +282,13 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setTableData(String fileName, String delimiter) throws IOException {
-        int columns = this.numberOfColumns;
+        int fieldsNeeded = this.fieldsNeeded;
         try {
             String[] header = new String[0];
-            try (DataFileRows lines = DataFileRows.open(fileName, delimiter, columns, false)) {
+            try (DataFileRows lines = DataFileRows.open(fileName, delimiter, fieldsNeeded, false)) {
                 while (lines.hasNext()) {
                     String[] fields = lines.next();
-                    if (fields.length >= columns) {
+                    if (fields.length >= fieldsNeeded) {
                         header = fields;
                         break;
                     }
@@ -266,7 +296,7 @@ public class BigTable {
             }
             return setTableData(header, () -> {
                 try {
-                    return DataFileRows.open(fileName, delimiter, columns, true);
+                    return DataFileRows.open(fileName, delimiter, fieldsNeeded, true);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -283,39 +313,36 @@ public class BigTable {
      * and once by complete() to draw them, and neither keeps them, so an
      * Iterable whose iterator() runs the query again, or maps the objects to
      * fields as it goes, keeps the memory flat. An iterator that is Closeable
-     * is closed when the table is done with it. A row with fewer fields than
-     * the table has columns is skipped, as a short line of a file is.
+     * is closed when the table is done with it. A row without a field for
+     * every column is skipped, as a short line of a file is.
      *
-     * @param header the header fields, at least as many as the columns.
+     * @param header the header fields, with a field for every column.
      * @param rows the fields of each row, in the order they are drawn.
      * @return this BigTable object.
      */
     public BigTable setTableData(String[] header, Iterable<String[]> rows) {
-        if (header.length < this.numberOfColumns) {
+        if (header.length < this.fieldsNeeded) {
             pdf.fail(new IllegalArgumentException(
-                    "The header has fewer fields than the table has columns."));
+                    "The header does not have a field for every column."));
         }
         this.rows = rows;
         this.vertLines = new float[this.numberOfColumns + 1];
-        this.headerFields = new String[this.numberOfColumns];
+        this.headerFields = header.clone();
         this.widths = new float[this.numberOfColumns];
         this.alignment = new Alignment[this.numberOfColumns];
 
-        for (int i = 0; i < this.numberOfColumns; i++) {
-            headerFields[i] = header[i];
-        }
         measure(header);
         int rowNumber = 0;
         Iterator<String[]> iterator = rows.iterator();
         try {
             while (iterator.hasNext()) {
                 String[] fields = iterator.next();
-                if (fields.length < this.numberOfColumns) {
+                if (fields.length < this.fieldsNeeded) {
                     continue;
                 }
                 if (rowNumber == 0) {    // Determine alignment from first data row
                     for (int i = 0; i < this.numberOfColumns; i++) {
-                        alignment[i] = getAlignment(fields[i]);
+                        alignment[i] = getAlignment(fields[columns[i]]);
                     }
                 }
                 measure(fields);
@@ -333,7 +360,7 @@ public class BigTable {
     // Widens the columns to fit the fields of a row.
     private void measure(String[] fields) {
         for (int i = 0; i < this.numberOfColumns; i++) {
-            float width = f1.stringWidth(fields[i]) + 2*this.padding;
+            float width = f1.stringWidth(fields[columns[i]]) + 2*this.padding;
             if (width > widths[i]) {
                 this.widths[i] = width;
             }
@@ -368,8 +395,8 @@ public class BigTable {
         }
 
         // With skipHeader, the rows start after the header: the first line
-        // with at least as many fields as the table has columns.
-        static DataFileRows open(String fileName, String delimiter, int columns, boolean skipHeader)
+        // with at least fieldsNeeded fields.
+        static DataFileRows open(String fileName, String delimiter, int fieldsNeeded, boolean skipHeader)
                 throws IOException {
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
@@ -381,7 +408,7 @@ public class BigTable {
                 }
                 rows.advance();
                 if (skipHeader) {
-                    while (rows.next != null && rows.next.length < columns) {
+                    while (rows.next != null && rows.next.length < fieldsNeeded) {
                         rows.advance();
                     }
                     rows.advance();
@@ -448,7 +475,7 @@ public class BigTable {
         try {
             while (iterator.hasNext()) {
                 String[] fields = iterator.next();
-                if (fields.length < this.numberOfColumns) {
+                if (fields.length < this.fieldsNeeded) {
                     continue;
                 }
                 this.drawTextAndLine(fields);

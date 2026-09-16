@@ -42,10 +42,19 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       Example_43 is identical in the four ports, and its time is unchanged
       when both builds run from the same directory: Java 2,090 ms, C# about
       2,430 (`setTableData` maybe 20 ms slower), Go 990, Swift 3,100.
-- ⬜ **B** Choosing and ordering the columns of a `BigTable`.
+- ✅ **B** Choosing and ordering the columns of a `BigTable`.
       `setNumberOfColumns(9)` draws the first nine fields of every line; take
       the indexes to draw, in the order they are drawn, and keep
       `setNumberOfColumns` as the first N of them.
+      Done (Sep 16): `setColumns(int...)` in Java, `SetColumns(params int[])`
+      in C#, `SetColumns(...int)` in Go and `setColumns([Int])` in Swift, as
+      `merge` takes its page numbers. The indexes pick the header fields too;
+      `setTextAlignment` counts drawn columns; a row, or a file's header line,
+      needs a field for the largest index; a negative index is refused.
+      Two more tests per port: file and memory draw the same last page with
+      the columns `2, 0`, in that order, skipping a row without a third field,
+      and a negative index is refused. Example_43 is identical in the four
+      ports and its time unchanged, run from the same directory.
 - ⬜ **B** The knobs of a `BigTable`: setters for the shading colour, the rule
       colour and the padding, and a way to turn the "Page i of N" footer off
       or give it a text and a font of its own.

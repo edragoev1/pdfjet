@@ -41,7 +41,10 @@ func testDrawBigTable(t *testing.T, table *BigTable) []*Page {
 	return table.GetPages()
 }
 
-func TestBigTableRowsFromMemoryDrawWhatTheSameFileDraws(t *testing.T) {
+// testBigTableFile writes the rows as a delimited file, with the fields that
+// hold a comma quoted, and returns its path.
+func testBigTableFile(t *testing.T) string {
+	t.Helper()
 	var csv strings.Builder
 	csv.WriteString("Name,City,Total\n")
 	for _, row := range testBigTableRows() {
@@ -55,6 +58,11 @@ func TestBigTableRowsFromMemoryDrawWhatTheSameFileDraws(t *testing.T) {
 	if err := os.WriteFile(path, []byte(csv.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	return path
+}
+
+func TestBigTableRowsFromMemoryDrawWhatTheSameFileDraws(t *testing.T) {
+	path := testBigTableFile(t)
 
 	pdf1 := testNewPDF()
 	font1 := testHelvetica(pdf1)
@@ -86,6 +94,48 @@ func TestBigTableRowsFromMemoryDrawWhatTheSameFileDraws(t *testing.T) {
 	}
 }
 
+func TestBigTableChosenColumnsAreDrawnInTheirOrder(t *testing.T) {
+	path := testBigTableFile(t)
+	rows := testBigTableRows()
+	rows = slices.Insert(rows, 95, []string{"n95b", "x"}) // No third field, so it is skipped
+
+	pdf1 := testNewPDF()
+	font1 := testHelvetica(pdf1)
+	fromFile, err := NewBigTable(pdf1, font1, font1, letter.Portrait()).SetColumns(2, 0).SetTableData(path, ",")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filePages := testDrawBigTable(t, fromFile)
+	pdf2 := testNewPDF()
+	font2 := testHelvetica(pdf2)
+	memoryPages := testDrawBigTable(t, NewBigTable(pdf2, font2, font2, letter.Portrait()).
+		SetColumns(2, 0).SetTableRows(testBigTableHeader, slices.Values(rows)))
+
+	if len(memoryPages) != 2 {
+		t.Fatalf("pages: %d", len(memoryPages))
+	}
+	last := testContent(memoryPages[1])
+	if testContent(filePages[1]) != last {
+		t.Error("the last pages differ")
+	}
+	if strings.Index(last, testHex("Total")) > strings.Index(last, testHex("Name")) {
+		t.Error("the columns are not in their order")
+	}
+	if !strings.Contains(last, testHex("n99")) {
+		t.Error("the last row was not drawn")
+	}
+	if strings.Contains(last, testHex("City")) || strings.Contains(last, testHex("n95b")) {
+		t.Error("a column or a row that is not drawn was drawn")
+	}
+}
+
+func TestBigTableANegativeColumnIndexIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	NewBigTable(pdf, font, font, letter.Portrait()).SetColumns(1, -1)
+	testRecorded(t, pdf, "A column index cannot be negative.")
+}
+
 func TestBigTableTheRowsAreReadTwice(t *testing.T) {
 	rows := testBigTableRows()
 	opened := 0
@@ -110,7 +160,7 @@ func TestBigTableAHeaderWithFewerFieldsThanColumnsIsRefused(t *testing.T) {
 	font := testHelvetica(pdf)
 	table := NewBigTable(pdf, font, font, letter.Portrait()).SetNumberOfColumns(4)
 	table.SetTableRows(testBigTableHeader, slices.Values(testBigTableRows()))
-	testRecorded(t, pdf, "The header has fewer fields than the table has columns.")
+	testRecorded(t, pdf, "The header does not have a field for every column.")
 	if err := table.Complete(); err != nil || len(table.GetPages()) != 0 {
 		t.Errorf("Complete: %v, %d pages", err, len(table.GetPages()))
 	}

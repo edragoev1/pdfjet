@@ -30,13 +30,19 @@ import Testing
         return table.getPages()
     }
 
-    @Test func rowsFromMemoryDrawWhatTheSameFileDraws() throws {
+    /// Writes the rows as a delimited file, with the fields that hold a comma quoted.
+    private func writeCSV() throws -> URL {
         var csv = "Name,City,Total\n"
         for row in rows() {
             csv += row.count == 1 ? row[0] + "\n" : row[0] + ",\"" + row[1] + "\"," + row[2] + "\n"
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("rows-\(UUID().uuidString).csv")
         try Data(csv.utf8).write(to: url)
+        return url
+    }
+
+    @Test func rowsFromMemoryDrawWhatTheSameFileDraws() throws {
+        let url = try writeCSV()
         defer { try? FileManager.default.removeItem(at: url) }
 
         let pdf1 = TestSupport.newPDF()
@@ -57,6 +63,38 @@ import Testing
         #expect(TestSupport.content(filePages[1]) == last)
         #expect(last.contains(TestSupport.hex("Name")) && last.contains(TestSupport.hex("n99")))
         #expect(!last.contains(TestSupport.hex("short")))
+    }
+
+    @Test func chosenColumnsAreDrawnInTheirOrder() throws {
+        let url = try writeCSV()
+        defer { try? FileManager.default.removeItem(at: url) }
+        var rows = self.rows()
+        rows.insert(["n95b", "x"], at: 95)      // No third field, so it is skipped
+
+        let pdf1 = TestSupport.newPDF()
+        let font1 = TestSupport.helvetica(pdf1)
+        let filePages = try draw(
+                BigTable(pdf1, font1, font1, Letter.PORTRAIT).setColumns([2, 0]).setTableData(url.path, ","))
+        let pdf2 = TestSupport.newPDF()
+        let font2 = TestSupport.helvetica(pdf2)
+        let memoryPages = try draw(
+                BigTable(pdf2, font2, font2, Letter.PORTRAIT).setColumns([2, 0]).setTableData(header, rows))
+
+        #expect(memoryPages.count == 2)
+        let last = TestSupport.content(memoryPages[1])
+        #expect(TestSupport.content(filePages[1]) == last)
+        let total = try #require(last.range(of: TestSupport.hex("Total")))
+        let name = try #require(last.range(of: TestSupport.hex("Name")))
+        #expect(total.lowerBound < name.lowerBound)
+        #expect(last.contains(TestSupport.hex("n99")))
+        #expect(!last.contains(TestSupport.hex("City")) && !last.contains(TestSupport.hex("n95b")))
+    }
+
+    @Test func aNegativeColumnIndexIsRefused() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        BigTable(pdf, font, font, Letter.PORTRAIT).setColumns([1, -1])
+        #expect(pdf.error == "A column index cannot be negative.")
     }
 
     @Test func theRowsAreReadTwice() throws {
@@ -80,7 +118,7 @@ import Testing
         let font = TestSupport.helvetica(pdf)
         let table = BigTable(pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(4)
         table.setTableData(header, rows())
-        #expect(pdf.error == "The header has fewer fields than the table has columns.")
+        #expect(pdf.error == "The header does not have a field for every column.")
         try table.complete()
         #expect(table.getPages().isEmpty)
     }

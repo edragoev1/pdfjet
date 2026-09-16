@@ -43,7 +43,9 @@ type BigTable struct {
 	penColor        int32
 	rows            iter.Seq[[]string]
 	readErr         error // The error reading the data file, if any
-	numberOfColumns int
+	columns         []int // The fields drawn, in the order they are drawn
+	numberOfColumns int   // The length of columns
+	fieldsNeeded    int   // The fields a row needs: the largest index plus 1
 	startNewPage    bool
 	dataRows        int // The rows under the header, counted by SetTableData
 	pageCount       int // The pages they take, counted by Complete
@@ -79,9 +81,36 @@ func (bt *BigTable) SetLocation(x, y float32) *BigTable {
 	return bt
 }
 
-// SetNumberOfColumns sets the number of columns
+// SetNumberOfColumns sets the number of columns in this table: the first fields
+// of every row, in their order. It is the same as SetColumns(0, 1, ...
+// numberOfColumns - 1).
 func (bt *BigTable) SetNumberOfColumns(numberOfColumns int) *BigTable {
-	bt.numberOfColumns = numberOfColumns
+	columns := make([]int, max(numberOfColumns, 0))
+	for i := range columns {
+		columns[i] = i
+	}
+	return bt.SetColumns(columns...)
+}
+
+// SetColumns sets the fields of every row that the table draws, by their index
+// from 0, in the order they are drawn, so SetColumns(3, 0, 11) draws the fourth
+// field, then the first, then the twelfth. The indexes pick the header fields
+// the same way. A row without a field for every index is skipped. Call it
+// before SetTableData; SetTextAlignment counts the columns as they are drawn. A
+// negative index is recorded on the PDF as misuse, and the columns are left as
+// they were.
+func (bt *BigTable) SetColumns(columns ...int) *BigTable {
+	fieldsNeeded := 0
+	for _, column := range columns {
+		if column < 0 {
+			bt.pdf.fail("A column index cannot be negative.")
+			return bt
+		}
+		fieldsNeeded = max(fieldsNeeded, column+1)
+	}
+	bt.columns = append([]int(nil), columns...)
+	bt.numberOfColumns = len(columns)
+	bt.fieldsNeeded = fieldsNeeded
 	return bt
 }
 
@@ -182,7 +211,7 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 	bt.page.SetBrushColor(color.Black)
 
 	for i := 0; i < bt.numberOfColumns; i++ {
-		text := fields[i]
+		text := fields[bt.columns[i]]
 		xText := bt.vertLines[i] + bt.padding
 		if bt.alignment[i] == alignment.Right {
 			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
@@ -264,14 +293,13 @@ func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
 }
 
 // SetTableData sets the table data from the file, which is read as UTF-8. Its
-// first line with at least as many fields as the table has columns is the
-// header, and the lines after it are the rows. It returns the table, or an
+// first line with a field for every column is the header, and the lines after it are the rows. It returns the table, or an
 // error if the file cannot be read.
 func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) {
-	columns := bt.numberOfColumns
+	fieldsNeeded := bt.fieldsNeeded
 	header := []string{}
 	err := scanDataFile(fileName, delimiter, func(fields []string) bool {
-		if len(fields) >= columns {
+		if len(fields) >= fieldsNeeded {
 			header = fields
 			return false
 		}
@@ -285,7 +313,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 		inHeader := true
 		err := scanDataFile(fileName, delimiter, func(fields []string) bool {
 			if inHeader {
-				inHeader = len(fields) < columns
+				inHeader = len(fields) < fieldsNeeded
 				return true
 			}
 			return yield(fields)
@@ -305,32 +333,31 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 // results of a query, or a slice of objects. The rows are iterated twice, once
 // here to measure the columns and once by Complete to draw them, and neither
 // keeps them, so an iterator that runs the query again, or maps the objects to
-// fields as it goes, keeps the memory flat. A row with fewer fields than the
-// table has columns is skipped, as a short line of a file is. A header with
-// fewer fields than the table has columns is recorded on the PDF as misuse, and
-// the table is left without data.
+// fields as it goes, keeps the memory flat. A row without a field for every
+// column is skipped, as a short line of a file is. A header without a field for
+// every column is recorded on the PDF as misuse, and the table is left without
+// data.
 func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigTable {
-	if len(header) < bt.numberOfColumns {
-		bt.pdf.fail("The header has fewer fields than the table has columns.")
+	if len(header) < bt.fieldsNeeded {
+		bt.pdf.fail("The header does not have a field for every column.")
 		return bt
 	}
 	bt.rows = rows
 	bt.readErr = nil
 	bt.vertLines = make([]float32, bt.numberOfColumns+1)
-	bt.headerFields = make([]string, bt.numberOfColumns)
+	bt.headerFields = append([]string(nil), header...)
 	bt.widths = make([]float32, bt.numberOfColumns)
 	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
 
-	copy(bt.headerFields, header)
 	bt.measure(header)
 	rowNumber := 0
 	for fields := range rows {
-		if len(fields) < bt.numberOfColumns {
+		if len(fields) < bt.fieldsNeeded {
 			continue
 		}
 		if rowNumber == 0 { // Determine alignment from first data row
 			for i := 0; i < bt.numberOfColumns; i++ {
-				bt.alignment[i] = bt.getAlignment(fields[i])
+				bt.alignment[i] = bt.getAlignment(fields[bt.columns[i]])
 			}
 		}
 		bt.measure(fields)
@@ -345,7 +372,7 @@ func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigT
 // measure widens the columns to fit the fields of a row.
 func (bt *BigTable) measure(fields []string) {
 	for i := 0; i < bt.numberOfColumns; i++ {
-		width := bt.f1.StringWidth(bt.f1.size, fields[i]) + 2*bt.padding
+		width := bt.f1.StringWidth(bt.f1.size, fields[bt.columns[i]]) + 2*bt.padding
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}
@@ -375,7 +402,7 @@ func (bt *BigTable) Complete() error {
 	bt.readErr = nil
 	bt.newPage()
 	for fields := range bt.rows {
-		if len(fields) < bt.numberOfColumns {
+		if len(fields) < bt.fieldsNeeded {
 			continue
 		}
 		bt.drawTextAndLine(fields)

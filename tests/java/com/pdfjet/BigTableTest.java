@@ -44,16 +44,21 @@ class BigTableTest {
         return table.getPages();
     }
 
-    @Test
-    void rowsFromMemoryDrawWhatTheSameFileDraws() throws Exception {
+    // The rows as a delimited file, with the fields that hold a comma quoted.
+    private static String csv() {
         StringBuilder csv = new StringBuilder("Name,City,Total\n");
         for (String[] row : rows()) {
             csv.append(row.length == 1 ? row[0] : row[0] + ",\"" + row[1] + "\"," + row[2]).append('\n');
         }
+        return csv.toString();
+    }
+
+    @Test
+    void rowsFromMemoryDrawWhatTheSameFileDraws() throws Exception {
         File file = new File(tempDir, "rows.csv");
         OutputStream out = new FileOutputStream(file);
         try {
-            out.write(csv.toString().getBytes(StandardCharsets.UTF_8));
+            out.write(csv().getBytes(StandardCharsets.UTF_8));
         } finally {
             out.close();
         }
@@ -78,6 +83,44 @@ class BigTableTest {
         assertEquals(TestSupport.content(filePages.get(1)), last);
         assertTrue(last.contains(TestSupport.hex("Name")) && last.contains(TestSupport.hex("n99")));
         assertTrue(!last.contains(TestSupport.hex("short")));
+    }
+
+    @Test
+    void chosenColumnsAreDrawnInTheirOrder() throws Exception {
+        File file = new File(tempDir, "rows.csv");
+        OutputStream out = new FileOutputStream(file);
+        try {
+            out.write(csv().getBytes(StandardCharsets.UTF_8));
+        } finally {
+            out.close();
+        }
+        List<String[]> rows = rows();
+        rows.add(95, new String[] {"n95b", "x"});   // No third field, so it is skipped
+
+        PDF pdf1 = TestSupport.newPDF();
+        Font font1 = TestSupport.helvetica(pdf1);
+        List<Page> filePages = draw(new BigTable(pdf1, font1, font1, Letter.PORTRAIT)
+                .setColumns(2, 0).setTableData(file.getPath(), ","));
+        PDF pdf2 = TestSupport.newPDF();
+        Font font2 = TestSupport.helvetica(pdf2);
+        List<Page> memoryPages = draw(new BigTable(pdf2, font2, font2, Letter.PORTRAIT)
+                .setColumns(2, 0).setTableData(HEADER, rows));
+
+        assertEquals(2, memoryPages.size());
+        String last = TestSupport.content(memoryPages.get(1));
+        assertEquals(TestSupport.content(filePages.get(1)), last);
+        assertTrue(last.indexOf(TestSupport.hex("Total")) < last.indexOf(TestSupport.hex("Name")));
+        assertTrue(last.contains(TestSupport.hex("n99")));
+        assertTrue(!last.contains(TestSupport.hex("City")) && !last.contains(TestSupport.hex("n95b")));
+    }
+
+    @Test
+    void aNegativeColumnIndexIsRefused() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> table.setColumns(1, -1));
+        assertEquals("A column index cannot be negative.", e.getMessage());
     }
 
     @Test
@@ -138,6 +181,6 @@ class BigTableTest {
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(4);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> table.setTableData(HEADER, rows()));
-        assertEquals("The header has fewer fields than the table has columns.", e.getMessage());
+        assertEquals("The header does not have a field for every column.", e.getMessage());
     }
 }
