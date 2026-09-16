@@ -1084,10 +1084,10 @@ renames included (the Week 1 decision), so every item is a blocker.
       became mandatory when `complete` started counting the pages and drawing
       the footers itself. Add setters for the three, and a way to turn the
       footer off or give it a text and a font of its own.
-- ⬜ **B** Swift compression, by improving `FlateEncode` rather than replacing
+- ✅ **B** Swift compression, by improving `FlateEncode` rather than replacing
       it: no zlib. The chain of earlier positions per bucket and the longest
       match among them landed earlier, and dynamic Huffman coding landed in
-      the commit that added `FlateTables` and `FlateHuffman`. That last one
+      300d67ab, which added `FlateTables` and `FlateHuffman`. That last one
       went against the line this item used to carry, "the fixed-Huffman block
       stays": measurement showed the fixed block was costing more than the
       match finder was, and the decision to drop it was taken on 16 September
@@ -1100,14 +1100,10 @@ renames included (the Week 1 decision), so every item is a blocker.
       became 1.07x; Example_01 1.015x became 1.008x. The 50,000-row table of
       `benchmarks/table` went from 14,566,771 bytes to 11,839,117, 18.7% off,
       and from 2,927 ms to 2,878 ms.
-      What is left is lazy matching, where a literal is written when position
-      i+1 starts a longer match. Measured against zlib with the Huffman stage
-      held still, that is worth about another 17%, which would bring Swift
-      level with the zlib the other three ports use; it roughly doubles the
-      match search, so it is a size-against-time decision of its own and not
-      an obvious yes. The content streams must still match Java's in CI, which
-      compares them decoded, so the output stays a valid deflate stream
-      throughout.
+      Closed here by decision, not by exhaustion. Lazy matching, where a
+      literal is written when position i+1 starts a longer match, is the rest
+      of the gap to zlib and is worth about another 17%; it roughly doubles
+      the match search, and it is not being done. Do not propose it again.
 - ⬜ **B** `Table` performance. The caller builds the whole grid and hands it
       over, `setTableData(List<List<Cell>>)`, so Example_43's data would be
       about 1.1 million `Cell` objects before a page is drawn and the memory
