@@ -58,6 +58,9 @@ public class Page {
     private float[] tmx = {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
     private float textRise = 0f;
+    // The bytes of the text matrix, written for every string while the page
+    // has a text rotation. SetTextRotation fills them, and DrawString reads
+    // them only where tmx is not the identity, which is only after it ran.
     private byte[] tm0;
     private byte[] tm1;
     private byte[] tm2;
@@ -128,10 +131,6 @@ public class Page {
         }
         pdf.pagesCreated++;
         this.buf = new MemoryStream(8192);
-        this.tm0 = FastFloat.ToByteArray(tmx[0]);
-        this.tm1 = FastFloat.ToByteArray(tmx[1]);
-        this.tm2 = FastFloat.ToByteArray(tmx[2]);
-        this.tm3 = FastFloat.ToByteArray(tmx[3]);
         if (addPageToPDF) {
             pdf.AddPage(this);
         }
@@ -145,10 +144,6 @@ public class Page {
         this.width = pageSize.GetWidth();
         this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
-        this.tm0 = FastFloat.ToByteArray(tmx[0]);
-        this.tm1 = FastFloat.ToByteArray(tmx[1]);
-        this.tm2 = FastFloat.ToByteArray(tmx[2]);
-        this.tm3 = FastFloat.ToByteArray(tmx[3]);
         SaveGraphicsState();
         if (pageObj.gsNumber != -1) {
             Append("/GS");
@@ -640,9 +635,10 @@ public class Page {
     }
 
     private void AppendByteAsHex(int b) {
-        hexBuf2[0] = HEX[(b >> 4) & 0xF];
-        hexBuf2[1] = HEX[b & 0xF];
-        buf.Write(hexBuf2, 0, 2);
+        Span<byte> digits = stackalloc byte[2];
+        digits[0] = HEX[(b >> 4) & 0xF];
+        digits[1] = HEX[b & 0xF];
+        buf.Write(digits);
     }
 
     private void DrawASCIIString(Font font, String str) {
@@ -2168,31 +2164,27 @@ public class Page {
         (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
         (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F'
     };
-    // Reusable scratch buffers for AppendCodePointAsHex()/AppendByteAsHex() -
-    // avoid allocating a new small array on every character drawn, and batch
-    // the digits into a single buf.Write(byte[]) call instead of several
-    // buf.WriteByte() calls (each re-checks/grows MemoryStream capacity).
-    private readonly byte[] hexBuf2 = new byte[2];
-    private readonly byte[] hexBuf4 = new byte[4];
-    private readonly byte[] hexBuf6 = new byte[6];
+    // A character of a string, four hexadecimal digits for the Basic
+    // Multilingual Plane and six above it, where the largest code point is
+    // 0x10FFFF. This is the innermost loop of every string drawn, so the
+    // digits go on the stack, as they do in Append(float) and Append(int).
     internal void AppendCodePointAsHex(int codePoint) {
         if (codePoint <= 0xFFFF) {
-            // Basic Multilingual Plane (BMP) character
-            hexBuf4[0] = HEX[(codePoint >> 12) & 0xF];
-            hexBuf4[1] = HEX[(codePoint >> 8)  & 0xF];
-            hexBuf4[2] = HEX[(codePoint >> 4)  & 0xF];
-            hexBuf4[3] = HEX[(codePoint)       & 0xF];
-            buf.Write(hexBuf4, 0, 4);
+            Span<byte> digits = stackalloc byte[4];
+            digits[0] = HEX[(codePoint >> 12) & 0xF];
+            digits[1] = HEX[(codePoint >> 8)  & 0xF];
+            digits[2] = HEX[(codePoint >> 4)  & 0xF];
+            digits[3] = HEX[(codePoint)       & 0xF];
+            buf.Write(digits);
         } else {
-            // Supplementary character (needs surrogate pair in UTF-16)
-            // Write as 6 hex digits (max Unicode code point is 0x10FFFF)
-            hexBuf6[0] = HEX[(codePoint >> 20) & 0xF];
-            hexBuf6[1] = HEX[(codePoint >> 16) & 0xF];
-            hexBuf6[2] = HEX[(codePoint >> 12) & 0xF];
-            hexBuf6[3] = HEX[(codePoint >> 8)  & 0xF];
-            hexBuf6[4] = HEX[(codePoint >> 4)  & 0xF];
-            hexBuf6[5] = HEX[(codePoint)       & 0xF];
-            buf.Write(hexBuf6, 0, 6);
+            Span<byte> digits = stackalloc byte[6];
+            digits[0] = HEX[(codePoint >> 20) & 0xF];
+            digits[1] = HEX[(codePoint >> 16) & 0xF];
+            digits[2] = HEX[(codePoint >> 12) & 0xF];
+            digits[3] = HEX[(codePoint >> 8)  & 0xF];
+            digits[4] = HEX[(codePoint >> 4)  & 0xF];
+            digits[5] = HEX[(codePoint)       & 0xF];
+            buf.Write(digits);
         }
     }
 

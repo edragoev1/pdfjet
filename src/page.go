@@ -55,6 +55,9 @@ type Page struct {
 	brushColor [3]float32
 
 	tmx [4]float32
+	// The bytes of the text matrix, written for every string while the page
+	// has a text rotation. SetTextRotation fills them, and DrawString reads
+	// them only where tmx is not the identity, which is only after it ran.
 	tm0 []byte
 	tm1 []byte
 	tm2 []byte
@@ -127,10 +130,6 @@ func newPage(pdf *PDF, pageSize pagesize.PageSize, addToPDF bool) *Page {
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
-	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
-	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
-	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
-	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
 	if pdf.completed {
 		pdf.fail("The PDF was already completed.")
 		return page
@@ -157,10 +156,6 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.strokeDashPattern = "[] 0"
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
-	page.tm0 = fastfloat.ToByteArray(page.tmx[0])
-	page.tm1 = fastfloat.ToByteArray(page.tmx[1])
-	page.tm2 = fastfloat.ToByteArray(page.tmx[2])
-	page.tm3 = fastfloat.ToByteArray(page.tmx[3])
 	page.SaveGraphicsState()
 	if pageObj.gsNumber != -1 {
 		page.appendString("/GS")

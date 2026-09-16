@@ -52,7 +52,10 @@ final public class Page {
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
     private float textRise = 0f;
-    private byte[] tm0;   // Used for caching tm values
+    // The bytes of the text matrix, written for every string while the page
+    // has a text rotation. setTextRotation fills them, and drawString reads
+    // them only where tmx is not the identity, which is only after it ran.
+    private byte[] tm0;
     private byte[] tm1;
     private byte[] tm2;
     private byte[] tm3;
@@ -152,10 +155,6 @@ final public class Page {
         }
         pdf.pagesCreated++;
         buf = new ContentBuffer(8192);
-        tm0 = FastFloat.toByteArray(tmx[0]);
-        tm1 = FastFloat.toByteArray(tmx[1]);
-        tm2 = FastFloat.toByteArray(tmx[2]);
-        tm3 = FastFloat.toByteArray(tmx[3]);
         if (addPageToPDF) {
             pdf.addPage(this);
         }
@@ -174,10 +173,6 @@ final public class Page {
         width = pageSize.getWidth();
         height = pageSize.getHeight();
         buf = new ContentBuffer(8192);
-        tm0 = FastFloat.toByteArray(tmx[0]);
-        tm1 = FastFloat.toByteArray(tmx[1]);
-        tm2 = FastFloat.toByteArray(tmx[2]);
-        tm3 = FastFloat.toByteArray(tmx[3]);
         this.saveGraphicsState();
         if (pageObj.gsNumber != -1) {
             append("/GS");
@@ -352,6 +347,37 @@ final public class Page {
             reserve(count + FastFloat.MAX_LENGTH);
             count = FastFloat.write(f, buf, count);
         }
+
+        // Writes the value as two hexadecimal digits.
+        void writeHex2(int value) {
+            reserve(count + 2);
+            buf[count] = HEX[(value >> 4) & 0xF];
+            buf[count + 1] = HEX[value & 0xF];
+            count += 2;
+        }
+
+        // Writes the value as four hexadecimal digits. This runs for every
+        // character of every string drawn, so it is written out straight.
+        void writeHex4(int value) {
+            reserve(count + 4);
+            buf[count] = HEX[(value >> 12) & 0xF];
+            buf[count + 1] = HEX[(value >> 8) & 0xF];
+            buf[count + 2] = HEX[(value >> 4) & 0xF];
+            buf[count + 3] = HEX[value & 0xF];
+            count += 4;
+        }
+
+        // Writes the value as six hexadecimal digits.
+        void writeHex6(int value) {
+            reserve(count + 6);
+            buf[count] = HEX[(value >> 20) & 0xF];
+            buf[count + 1] = HEX[(value >> 16) & 0xF];
+            buf[count + 2] = HEX[(value >> 12) & 0xF];
+            buf[count + 3] = HEX[(value >> 8) & 0xF];
+            buf[count + 4] = HEX[(value >> 4) & 0xF];
+            buf[count + 5] = HEX[value & 0xF];
+            count += 6;
+        }
     }
 
     /**
@@ -388,6 +414,21 @@ final public class Page {
 
         @Override
         void writeFloat(float f) {
+            fail();
+        }
+
+        @Override
+        void writeHex2(int value) {
+            fail();
+        }
+
+        @Override
+        void writeHex4(int value) {
+            fail();
+        }
+
+        @Override
+        void writeHex6(int value) {
             fail();
         }
 
@@ -683,9 +724,7 @@ final public class Page {
     }
 
     private void appendByteAsHex(int b) {
-        hexBuf2[0] = HEX[(b >> 4) & 0xF];
-        hexBuf2[1] = HEX[b & 0xF];
-        buf.write(hexBuf2, 0, 2);
+        ((ContentBuffer) buf).writeHex2(b);
     }
 
     private void drawASCIIString(Font font, String str) {
@@ -2306,33 +2345,16 @@ final public class Page {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'A', 'B', 'C', 'D', 'E', 'F'
     };
-    // Reusable scratch buffers for appendCodePointAsHex()/appendByteAsHex() -
-    // avoid allocating a new small array on every character drawn.
-    private final byte[] hexBuf2 = new byte[2];
-    private final byte[] hexBuf4 = new byte[4];
-    private final byte[] hexBuf6 = new byte[6];
+
+    // A character of a string, four hexadecimal digits for the Basic
+    // Multilingual Plane and six above it, where the largest code point is
+    // 0x10FFFF. This is the innermost loop of every string drawn, so the
+    // digits go into the page's buffer rather than through an array.
     private void appendCodePointAsHex(int codePoint) {
-        // Batch the hex digits into a local array and write it with a single
-        // buf.write(byte[]) call. ByteArrayOutputStream.write(int) is
-        // synchronized and re-checks/grows capacity on every call, so writing
-        // one digit at a time meant 4-6 synchronized calls per character.
         if (codePoint <= 0xFFFF) {
-            // Basic Multilingual Plane (BMP) character
-            hexBuf4[0] = HEX[(codePoint >> 12) & 0xF];
-            hexBuf4[1] = HEX[(codePoint >> 8)  & 0xF];
-            hexBuf4[2] = HEX[(codePoint >> 4)  & 0xF];
-            hexBuf4[3] = HEX[(codePoint)       & 0xF];
-            buf.write(hexBuf4, 0, 4);
+            ((ContentBuffer) buf).writeHex4(codePoint);
         } else {
-            // Supplementary character (needs surrogate pair in UTF-16)
-            // Write as 6 hex digits (max Unicode code point is 0x10FFFF)
-            hexBuf6[0] = HEX[(codePoint >> 20) & 0xF];
-            hexBuf6[1] = HEX[(codePoint >> 16) & 0xF];
-            hexBuf6[2] = HEX[(codePoint >> 12) & 0xF];
-            hexBuf6[3] = HEX[(codePoint >> 8)  & 0xF];
-            hexBuf6[4] = HEX[(codePoint >> 4)  & 0xF];
-            hexBuf6[5] = HEX[(codePoint)       & 0xF];
-            buf.write(hexBuf6, 0, 6);
+            ((ContentBuffer) buf).writeHex6(codePoint);
         }
     }
 

@@ -63,10 +63,13 @@ public class Page {
     internal var tmx: [Float] = [1.0, 0.0, 0.0, 1.0]
     private var textFontSize: Float = 0.0   // The font size of the text drawn last
     private var textRise: Float = 0.0
-    internal var tm0: [UInt8]
-    internal var tm1: [UInt8]
-    internal var tm2: [UInt8]
-    internal var tm3: [UInt8]
+    // The bytes of the text matrix, written for every string while the page
+    // has a text rotation. setTextRotation fills them, and drawString reads
+    // them only where tmx is not the identity, which is only after it ran.
+    internal var tm0 = [UInt8]()
+    internal var tm1 = [UInt8]()
+    internal var tm2 = [UInt8]()
+    internal var tm3 = [UInt8]()
 
     private var penColor: [Float] = [0.0, 0.0, 0.0]
     private var brushColor: [Float] = [0.0, 0.0, 0.0]
@@ -111,10 +114,6 @@ public class Page {
         self.destinations = [Destination]()
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
-        self.tm0 = FastFloat.toByteArray(tmx[0])
-        self.tm1 = FastFloat.toByteArray(tmx[1])
-        self.tm2 = FastFloat.toByteArray(tmx[2])
-        self.tm3 = FastFloat.toByteArray(tmx[3])
         if pdf.completed {
             pdf.fail("The PDF was already completed.")
         }
@@ -135,10 +134,6 @@ public class Page {
         let pageSize = self.pageObj!.getPageSize()
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
-        self.tm0 = FastFloat.toByteArray(tmx[0])
-        self.tm1 = FastFloat.toByteArray(tmx[1])
-        self.tm2 = FastFloat.toByteArray(tmx[2])
-        self.tm3 = FastFloat.toByteArray(tmx[3])
         saveGraphicsState()
         if pageObj.gsNumber != -1 {
             append("/GS")
@@ -172,10 +167,6 @@ public class Page {
         self.pdf = pdf
         self.objNumber = objNumber
         self.mergedDict = mergedDict
-        self.tm0 = FastFloat.toByteArray(tmx[0])
-        self.tm1 = FastFloat.toByteArray(tmx[1])
-        self.tm2 = FastFloat.toByteArray(tmx[2])
-        self.tm3 = FastFloat.toByteArray(tmx[3])
         self.added = true
         self.written = true
     }
