@@ -67,7 +67,7 @@ are the same size to the byte.
 | Go | 1,106 ms | 884 ms | 1,178 ms | 963 ms | 327 MB | 342 MB |
 | Swift | 3,815 ms | 2,928 ms | 3,873 ms | 3,021 ms | 207 MB | 207 MB |
 
-A 50,000-row table is 1,072 pages and about 9.7 MB.
+A 50,000-row table is 1,072 pages, and about 9.7 MB in Java and C#.
 
 - The wrapping used to run twice over every cell: once to count the lines the
   text needs, and again to write them. One walk now serves both, which is
@@ -83,8 +83,10 @@ A 50,000-row table is 1,072 pages and about 9.7 MB.
   collector runs later. C# and Swift do not move.
 - The order of the ports is the one in `../ports/README.md`: Go draws this
   table fastest and Swift slowest. Java and C# write the same bytes, Go's file
-  is about 1% larger and Swift's about 50%, which is `FlateEncode` rather than
-  `Table`.
+  is about 1% larger and Swift's about 23%, which is `FlateEncode` rather than
+  `Table`. Swift's was about 50% larger until 300d67ab gave each block the
+  Huffman codes that fit it, which took its 50,000-row file from 14,566,771
+  bytes to 11,839,117.
 
 ## At the size of Example_43
 
@@ -101,7 +103,14 @@ ROWS=124716 benchmarks/table/run.sh
 | Java | 4,983 ms | 1,135 MB | 23.9 MB |
 | C# | 5,910 ms | 566 MB | 23.9 MB |
 | Go | 2,389 ms | 800 MB | 24.1 MB |
-| Swift | 7,446 ms | 474 MB | 36.1 MB |
+| Swift | 7,203 ms | 472 MB | 29.3 MB |
+
+The Swift row was measured again at 300d67ab, where its `FlateEncode` began
+choosing the Huffman codes of each block: the file was 36.1 MB before it, and
+the time and the memory did not move. Its log is
+`results/2026-09-16-300d67ab-swift-124716.log`; the peak there is `run.sh`'s,
+which is taken at 50,000 rows whatever `ROWS` says, so the 472 MB above was
+measured on its own. The other three rows are the earlier run.
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, at

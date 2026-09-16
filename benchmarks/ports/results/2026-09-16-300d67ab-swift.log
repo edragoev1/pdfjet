@@ -1,0 +1,20 @@
+# The Swift port measured again after 300d67ab gave each deflate block the
+# Huffman codes that fit it. The commit line below is the parent, efcbae4e:
+# the run was made from the working tree that became 300d67ab.
+Building for production...
+Build complete! (52.48s)
+== environment
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T08:52:50-04:00
+efcbae4e Write the hexadecimal digits of a string straight into the page, in Java and C#
+== ports: Latin, Greek and Cyrillic, 60 lines per page, IBM Plex Sans
+swift 100 pages: median 23 ms (min 23, max 24, 7 runs), 169596 bytes
+swift 500 pages: median 100 ms (min 99, max 104, 7 runs), 601363 bytes
+== ports: first document in a new process, 500 pages
+swift cold 500 pages: 105 ms, 601363 bytes
+== ports: peak memory, one 500-page document, runtime defaults, median of 3
+swift peak 29240 KB
+== ports: 3-page samples
+swift: 65409 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+2026-09-16T08:52:51-04:00

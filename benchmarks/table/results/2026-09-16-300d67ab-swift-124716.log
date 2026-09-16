@@ -1,0 +1,21 @@
+# The Swift port at 124,716 rows, measured again after 300d67ab gave each
+# deflate block the Huffman codes that fit it. The commit line below is the
+# parent, efcbae4e: the run was made from the working tree that became
+# 300d67ab. The peak below is run.sh's, at 50,000 rows; at 124,716 rows it
+# is 483,208 KB, the median of 3.
+Building for production...
+Build complete! (51.47s)
+== environment
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T08:53:43-04:00
+efcbae4e Write the hexadecimal digits of a string straight into the page, in Java and C#
+== table: 9 columns of the EV CSV as cells, IBM Plex Sans 8 pt, Letter
+swift 124716 rows: median 7203 ms (min 7149, max 7233, 7 runs), 2673 pages, 29343436 bytes
+== table: first document in a new process, 50000 rows
+swift cold 50000 rows: 2983 ms, 1072 pages, 11839117 bytes
+== table: peak memory, one 50000-row table, runtime defaults, median of 3
+swift peak 210140 KB
+== table: 40-row samples
+swift: 136107 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+2026-09-16T08:55:00-04:00
