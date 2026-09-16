@@ -86,7 +86,7 @@ peak() {
     fi
 
     if [ "$WHAT" = all ] || [ "$WHAT" = table ]; then
-        CONFIGS=${TABLE_CONFIGS:-"jet jet-page it-canvas it-layout box jet-page-stream it-canvas-stream"}
+        CONFIGS=${TABLE_CONFIGS:-"jet jet-table jet-page it-canvas it-layout box jet-page-stream it-canvas-stream"}
         CSV="$ROOT/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
         if [ -n "$QUICK" ]; then CSV="$ROOT/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"

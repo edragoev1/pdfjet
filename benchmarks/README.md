@@ -9,7 +9,7 @@ programs, the method and the results that `jet-vs-box.html` quotes.
 | `BigTableBench.java` | Example_43: a 2,546-page table from a 124,716-row CSV file |
 | `pom.xml` | iText Core 9.7.1 and PDFBox 3.0.8, which `run.sh` copies into `build/lib` |
 | `run.sh` | Builds PDFjet from this checkout and the benchmarks, runs them and writes `build/results-<date>-<time>.log` |
-| `results/` | The logs of the runs; the results below are from `2026-09-15-4ee4e7cb.log` |
+| `results/` | The logs of the runs; the results below are from `2026-09-15-4ee4e7cb.log`, and the two table APIs from `2026-09-16-542b3dbf-table.log` |
 
 ## Running
 
@@ -18,7 +18,7 @@ benchmarks/run.sh              # both benchmarks, about 25 minutes
 benchmarks/run.sh text         # the text document only, about 10 minutes
 benchmarks/run.sh table        # Example_43 only, about 13 minutes
 benchmarks/run.sh all --quick  # a short run that checks that everything works
-TABLE_CONFIGS="jet jet-page" benchmarks/run.sh table   # some of the table configurations
+TABLE_CONFIGS="jet jet-table it-layout" benchmarks/run.sh table   # some of the table configurations
 ```
 
 It needs a JDK (21 was used), Maven (`MVN=/path/to/mvn` when it is not on the
@@ -50,6 +50,11 @@ and `build/` is not tracked.
   to the `Document` before its rows, flushed every 50 rows, with header cells,
   and with immediate flushing off so that the "Page i of N" footers can be added
   before the document is closed.
+- `jet-table` is PDFjet's own `Table` against that one: the same 9 columns built
+  as `Cell` objects with the widths the driver measures, the header row repeated
+  on every page, alternate rows shaded and a rule above each row. Neither table
+  API draws the vertical rules that `BigTable` draws, and both hold every cell
+  of the file. The two produce the same 2,546 pages as `BigTable`.
 - In `BigTableBench`, PDFjet's `Page` (`jet-page`), iText's `PdfCanvas` and
   PDFBox draw through one driver that follows `BigTable` step by step: two
   passes over the file, column widths measured from every field with the header
@@ -121,6 +126,37 @@ places a string with `Td` (`results/2026-09-15-312697d5.log`); 7c4988ad, which
 writes page content without an array for each string and number, and measured
 the text document at 59 ms (`results/2026-09-15-7c4988ad.log`); and d963a7c8
 before all three, at 71 ms (`results/2026-09-15-d963a7c8.log`).
+
+### The two table APIs, 16 September 2026
+
+`Table` against iText's `Table` on the same data, in a separate run of the
+table benchmark at 542b3dbf with nothing else running
+(`results/2026-09-16-542b3dbf-table.log`). That run measured every
+configuration again: `BigTable` came out at 1,778 ms against 1,761, iText's
+`PdfCanvas` at 2,022 against 2,014 and PDFBox at 12,457 against 12,503, so the
+two runs agree within 3% and the rows below can be read against the ones above.
+
+| Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File | Code |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| PDFjet `BigTable` | 1,778 ms | 2,160 ms | 811 MB | 391 MB | 32 MB | 12.3 MB | 17 |
+| PDFjet `Table` | 5,038 ms | 5,778 ms | 2,256 MB | 1,742 MB | 1,024 MB | 25.2 MB | 153 |
+| iText `Table` | 35,258 ms | 37,666 ms | 47,128 MB | 7,226 MB | 8,192 MB | 21.6 MB | 167 |
+
+- PDFjet's `Table` is 7.0 times faster than iText's, 5,038 against 35,258 ms,
+  allocates a twenty-first as much, 2,256 against 47,128 MB, and finishes in a
+  1 GB heap where iText's needs 8. Both are given the same column widths and
+  draw the same 2,546 pages.
+- It writes a larger file, 25.2 MB against iText's 21.6. Both table APIs draw
+  per cell rather than per row: on page 1 of the sample each writes 225 fills
+  for the shaded cells, where `BigTable` writes 25, one per shaded row. What
+  PDFjet adds on top is the colour: 2,027 `rg` and `RG` operators against
+  iText's 675, because `Cell` sets the brush and the pen for every cell it
+  draws. That is the first place to look if this file size is worth closing.
+- Against `BigTable` on the same data, `Table` is 2.8 times slower, allocates
+  2.8 times as much, needs 32 times the heap and writes twice the file, and it
+  is 153 lines of program against 17. It is the API to reach for when the rows
+  are already in memory and the table is not enormous; `BigTable` is the one
+  for a file this size.
 
 ### What the numbers say
 

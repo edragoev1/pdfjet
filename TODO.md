@@ -1114,19 +1114,26 @@ renames included (the Week 1 decision), so every item is a blocker.
       incrementally, as `BigTable` reads its file, the method for it belongs in
       9.0.0: adding it later would leave two ways of giving a table its data,
       and the second one would arrive in a minor release.
-      Measured: `benchmarks/table/` builds the 9 columns as cells and draws
-      them with `Table` in the four ports, rather than a configuration of
-      `BigTableBench.java`, so that every port is measured and not only Java.
-      On the whole file, 124,716 rows and 1.12 million cells, Java takes
-      4,983 ms and 1,135 MB in a new JVM, C# 5,910 ms and 566 MB, Go 2,389 ms
-      and 800 MB, Swift 7,446 ms and 474 MB. iText's `Table` took 36,543 ms
-      and 7,180 MB for the same data and would not run under an 8 GB heap, so
-      `Table` is nowhere near it: seven times faster and a sixth of the memory
-      even holding every cell. `BigTable` took 2,109 ms and 391 MB.
-      Also measured, before and after wrapping every cell once instead of
-      twice: at 50,000 rows Java went from 2,073 ms and 964 MB to 1,768 ms and
-      600 MB, C# from 2,546 to 2,272, Go from 1,106 to 884 and Swift from
+      Measured twice. `benchmarks/table/` builds the 9 columns as cells and
+      draws them with `Table` in all four ports: at 124,716 rows and 1.12
+      million cells Java takes 4,983 ms and 1,135 MB in a new process, C#
+      5,910 and 566, Go 2,389 and 800, Swift 7,446 and 474. Before and after
+      wrapping every cell once instead of twice, at 50,000 rows: Java 2,073 ms
+      and 964 MB to 1,768 and 600, C# 2,546 to 2,272, Go 1,106 to 884, Swift
       3,815 to 2,928.
+      And head to head with the other table API, as the `jet-table`
+      configuration of `BigTableBench.java`, on Example_43's own data and
+      geometry, all three drawing 2,546 pages
+      (`benchmarks/results/2026-09-16-542b3dbf-table.log`): `Table` 5,038 ms,
+      2,256 MB allocated, 1,742 MB peak, a 1 GB heap, 25.2 MB of PDF, against
+      iText's `Table` at 35,258 ms, 47,128 MB, 7,226 MB, an 8 GB heap and
+      21.6 MB, and `BigTable` at 1,778 ms, 811 MB, 391 MB, a 32 MB heap and
+      12.3 MB. So `Table` is seven times faster than iText's and needs an
+      eighth of its heap; it is 2.8 times slower than `BigTable` and needs 32
+      times its heap, which is the cost of holding every cell.
+      Found on the way, not fixed: `Table` writes 25.2 MB where iText's writes
+      21.6, because `Cell` sets the brush and the pen for every cell it draws
+      (2,027 `rg` and `RG` on the sample's first page against iText's 675).
       Still to decide, and the part that belongs in 9.0.0: whether the rows
       may arrive incrementally, as `BigTable` reads its file.
 

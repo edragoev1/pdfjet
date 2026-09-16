@@ -11,12 +11,17 @@ import java.util.*;
  *
  * Configurations:
  *   jet               Example_43 as it is, with BigTable
+ *   jet-table         PDFjet's own Table, the same 9 columns built as Cell objects
  *   jet-page          PDFjet drawing the same table on its Page, as iText does with PdfCanvas
  *   it-canvas         iText drawing the same table with PdfCanvas
  *   it-layout         iText's own Table in large-table mode
  *   box               PDFBox drawing the same table with PDPageContentStream
  *   jet-page-stream   jet-page with each page written when the next one starts
  *   it-canvas-stream  it-canvas with each page flushed when the next one starts
+ *
+ * jet-table and it-layout are the two table APIs compared with each other: both
+ * are given the widths the driver measures, both repeat the header row, shade
+ * alternate rows and rule above each row, and both hold every cell.
  *
  * jet-page, iText and PDFBox draw through one driver that follows BigTable step
  * by step, with the geometry that PDFjet's metrics of IBM Plex Sans give. The
@@ -242,6 +247,75 @@ public class BigTableBench {
         int pages = table.getPages().size();
         pdf.complete();
         return pages;
+    }
+
+    // The same table built as Cell objects and drawn with PDFjet's own Table,
+    // the counterpart of it-layout. The widths are the ones every configuration
+    // measures, the header row repeats on every page, alternate rows are shaded
+    // and every row has a line above it. Like it-layout it draws no vertical
+    // rules, which Table has nowhere per page to put; and like it-layout it
+    // holds every cell of the file, 1.12 million of them, where BigTable reads
+    // the file twice and holds a row.
+    static int jetTable(String file, OutputStream os) throws Exception {
+        com.pdfjet.PDF pdf = new com.pdfjet.PDF(os);
+        pdf.setTitle(TITLE);
+        com.pdfjet.Font f1 = new com.pdfjet.Font(pdf, ROOT + com.pdfjet.fonts.IBMPlexSans.SemiBold);
+        f1.setSize(10f);
+        com.pdfjet.Font f2 = new com.pdfjet.Font(pdf, ROOT + com.pdfjet.fonts.IBMPlexSans.Regular);
+        f2.setSize(9f);
+        Columns c = measure(file, new Surface() {
+            public float width(boolean header, String text) { return f1.stringWidth(text); }
+            public void newPage(int number, int pages) {}
+            public void fill(float x1, float y1, float x2, float y2) {}
+            public void line(float x1, float y1, float x2, float y2) {}
+            public void text(boolean header, String text, float x, float y) {}
+        });
+        List<List<com.pdfjet.Cell>> data = new ArrayList<>();
+        try (BufferedReader r = open(file)) {
+            String line;
+            int row = 0;
+            while ((line = r.readLine()) != null) {
+                String[] f = split(line);
+                if (f.length < COLUMNS) {
+                    continue;
+                }
+                boolean header = (row == 0);
+                List<com.pdfjet.Cell> cells = new ArrayList<>(COLUMNS);
+                for (int i = 0; i < COLUMNS; i++) {
+                    com.pdfjet.Cell cell = new com.pdfjet.Cell(header ? f1 : f2, f[i]);
+                    cell.setWidth(c.widths[i]);
+                    cell.setPadding(0f);
+                    cell.setLeftPadding(PADDING);
+                    cell.setRightPadding(PADDING);
+                    cell.setBorders(false);
+                    cell.setBorder(com.pdfjet.Border.TOP, true);
+                    cell.setBorderColor(0xB0B0B0);
+                    cell.setBorderWidth(0f);    // A hairline, as BigTable draws
+                    if (header || row % 2 == 0) {
+                        cell.setBackgroundColor(0xF0F0F0);
+                    }
+                    if (c.right[i]) {
+                        cell.setTextAlignment(com.pdfjet.Alignment.RIGHT);
+                    }
+                    cells.add(cell);
+                }
+                data.add(cells);
+                row++;
+            }
+        }
+        com.pdfjet.Table table = new com.pdfjet.Table();
+        table.setTableData(data, 1);
+        table.setLocation(0f, 0f);
+        table.setBottomMargin(BOTTOM);
+        List<com.pdfjet.Page> pages = new ArrayList<>();
+        table.drawOn(pdf, pages, com.pdfjet.Letter.LANDSCAPE);
+        for (int i = 0; i < pages.size(); i++) {
+            com.pdfjet.Page page = pages.get(i);
+            page.addFooter(new com.pdfjet.TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            pdf.addPage(page);
+        }
+        pdf.complete();
+        return pages.size();
     }
 
     // The same table drawn on PDFjet's Page through the driver, with the calls
@@ -497,6 +571,7 @@ public class BigTableBench {
         int pages;
         switch (config) {
         case "jet": pages = jet(csv, os); break;
+        case "jet-table": pages = jetTable(csv, os); break;
         case "jet-page": pages = jetPage(csv, os, false); break;
         case "jet-page-stream": pages = jetPage(csv, os, true); break;
         case "it-canvas": pages = itextCanvas(csv, os, false); break;
