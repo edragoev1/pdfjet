@@ -1027,7 +1027,7 @@ renames included (the Week 1 decision), so every item is a blocker.
       document; MisuseTest in each port. The pie chart NaN and stamp text
       without `addFont` were fixed on the way.
 
-## Data files and performance (Sep 18–Oct 1)
+## Tables, data files and performance (Sep 18–Oct 1)
 
 - ⬜ **B** Quoted fields in the data files of `BigTable` and `Table`. Both
       split on the delimiter with no quoting, in all four ports, so a line
@@ -1050,6 +1050,25 @@ renames included (the Week 1 decision), so every item is a blocker.
       that ends on a delimiter. A file without quotes must come out unchanged:
       Example_43 and the `Table` examples stay byte-identical in the four
       ports.
+- ⬜ **B** Rows from memory in a `BigTable`, not only from a file. The data
+      has to be in a delimited file today, so rows that come from a query or a
+      list of objects are written to a temporary file first, which rules the
+      class out of a lot of work it would otherwise suit. Take them from a
+      callback or an iterator that yields one row of fields at a time, asked
+      for them twice, as `setTableData` and `complete` read the file twice:
+      once to measure the columns and once to draw them. The file API stays,
+      written in terms of the new one. What keeps the memory flat — read a
+      row, draw it, let it go — must survive: nothing may collect the rows.
+- ⬜ **B** Choosing and ordering the columns of a `BigTable`.
+      `setNumberOfColumns(9)` draws the first nine fields of every line, so a
+      file whose interesting columns are 1, 4 and 12 cannot be drawn without
+      rewriting the file first. Take the indexes to draw, in the order they
+      are to be drawn; `setNumberOfColumns` stays as the first N of them.
+- ⬜ **B** The knobs of a `BigTable`. The shading colour, the rule colour and
+      the padding are private with no setters, and the "Page i of N" footer
+      became mandatory when `complete` started counting the pages and drawing
+      the footers itself. Add setters for the three, and a way to turn the
+      footer off or give it a text and a font of its own.
 - ⬜ **B** Swift compression, by improving `FlateEncode` rather than replacing
       it: no zlib, and the fixed-Huffman block stays. It keeps one position per
       hash in a 64K table, so a collision or a repeat further back than the
