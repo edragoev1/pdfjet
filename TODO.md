@@ -200,8 +200,16 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       `hello` and `world`, shows print allowed and copy denied, opens the
       Cyrillic and the 200 byte password files, and opens the PDF/UA and PDF/A
       examples without warnings. Same files in Preview, Chrome and Firefox.
-- ⬜ **B** Regenerate the docs (`generate-documentation.sh`) and check the four
+- ✅ **B** Regenerate the docs (`generate-documentation.sh`) and check the four
       references and the examples pages on GitHub Pages after the push.
+      Done (Sep 16), early: `generate-documentation.sh` builds the four
+      references without warnings (Javadoc, DocFX 0 warnings and 0 errors,
+      doc2go, DocC), and the Documentation workflow, run by hand at 8f181971,
+      built and deployed them. On GitHub Pages the four references load and
+      carry the new `BigTable` API (`setFooter`, `setColumns`), and all 102
+      local links of `examples-java.html` and of `examples-dotnet.html`
+      resolve. Rerun after any change to the API or the examples before the
+      release.
 
 ## Week 5 (Oct 15–21): freeze and release
 
