@@ -136,11 +136,19 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       record the new benchmark numbers in `benchmarks/README.md`.
 - ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
       7c15442d, in a commit of its own. Done (Sep 16).
-- ⬜ S License headers, in a commit with nothing else in it: 45 library files
+- ✅ S License headers, in a commit with nothing else in it: 45 library files
       carry theirs after the `package`, `using` and `import` lines (15 each in
       Java, C# and Go: the 14 core font classes, plus `Bidi` in Java and C#
       and `arc.go` in Go), and 105 have none (25 Java, 26 C#, 27 Go, 27
       Swift), as do the 51 Go examples.
+      Done (Sep 16) in the commit before this one. The count was off: the 14
+      core font classes of each port had no header (what looked like one is
+      the Adobe notice they hold as data), `Bidi` and `arc.go` had theirs
+      late, and C# `Bidi.cs` had it as a doc comment that DocFX showed as the
+      summary of `Bidi`: 164 library files in all, and the 51 examples of
+      every port. `bmpimage.go` keeps its contributor's copyright. Javadoc,
+      DocFX, doc2go and DocC build without warnings, and their output is the
+      same apart from the `Bidi` summary and line numbers.
 
 ## Week 4 (Oct 8–14): release checks
 
