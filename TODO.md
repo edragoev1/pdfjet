@@ -1029,7 +1029,7 @@ renames included (the Week 1 decision), so every item is a blocker.
 
 ## Tables, data files and performance (Sep 18–Oct 1)
 
-- ⬜ **B** Quoted fields in the data files of `BigTable` and `Table`. Both
+- ✅ **B** Quoted fields in the data files of `BigTable` and `Table`. Both
       split on the delimiter with no quoting, in all four ports, so a line
       holding `"Smith, John"` becomes two columns, every column after it
       shifts, and the quotes are drawn as text. `BigTable.split` uses the
@@ -1050,6 +1050,21 @@ renames included (the Week 1 decision), so every item is a blocker.
       that ends on a delimiter. A file without quotes must come out unchanged:
       Example_43 and the `Table` examples stay byte-identical in the four
       ports.
+      Fixed in 4ee4e7cb: one parser per port (`Util.split`, `Util.Split`,
+      `splitDelimited` in Go's `helperfunctions.go`) serves `BigTable`, both
+      of its passes and the file constructors of `Table`; `Table` counts only the
+      delimiters outside quotes when it guesses one; a file that cannot be
+      read is refused the way each port reports misuse (Java and C# throw, Go
+      panics, Swift calls `fatalError`), with tests in the four ports. The 56
+      examples are byte-identical, and `data/report.csv`, quoted throughout,
+      reads as 12 columns with its en dash and its Korean text intact. It cost
+      `BigTable` 754 MB and 1,726 ms at f72b9f08 against 809 MB and 1,761 ms
+      now, because the driver of the other benchmark configurations still
+      splits on commas; see `benchmarks/README.md`.
+- ⬜ Decide whether a quoted field may hold a line break, which means
+      reading on until the quotes balance rather than a line at a time.
+      Today it may not, in the four ports; the choice is to implement it or
+      to document it as unsupported.
 - ⬜ **B** Rows from memory in a `BigTable`, not only from a file. The data
       has to be in a delimited file today, so rows that come from a query or a
       list of objects are written to a temporary file first, which rules the
@@ -1555,6 +1570,17 @@ renames included (the Week 1 decision), so every item is a blocker.
       the examples pages are up on GitHub Pages for 017d197b, with
       `scriptposition` and `com.pdfjet.qrcode`. The examples pages are for
       Java and .NET and both link Example_30; there is no Swift examples page.
+- ⬜ S `PNGImage.WriteInt` in the C# port is a private method nothing
+      calls: its only caller was the commented-out PNG to `.jet` converter
+      that 7c15442d removed. Java's `writeInt` was inside the comment block,
+      so it went with it. Removing the C# one is a code change, so it waits
+      for a commit of its own.
+- ⬜ S License headers, in a commit with nothing else in it, since it
+      touches nearly every file: 45 library files carry theirs after the
+      `package`, `using` and `import` lines instead of at the top (15 each in
+      Java, C# and Go — the 14 core font classes, plus `Bidi` in Java and C#
+      and `arc.go` in Go), and 105 have none at all (25 Java, 26 C#, 27 Go,
+      27 Swift), as do the 51 Go examples.
 - ⬜ Release: tag `v9.0.0`, build the Java and .NET archives, confirm
       `go get github.com/edragoev1/pdfjet/v9@v9.0.0` works from a clean module,
       and confirm the Swift package resolves from the tag.
