@@ -117,9 +117,11 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       per port with a recording drawable. Example_08 changed on purpose: its
       barcode row is 1.9 points taller, as the measured corner includes the
       descent of the text under the barcode, which `Barcode.getHeight` leaves
-      out; every other Java example has the same page content. Open, not in
-      this item: `Barcode.getHeight` still leaves out the descent and ignores
-      the direction.
+      out; every other Java example has the same page content.
+      `Barcode.getHeight` fixed after it (Sep 16): it returns the corner of
+      `drawOn(null)` less the top, in the four ports, checked against the
+      rendered ink of the four barcode types in three directions with and
+      without text; the barcode tests expect it for all 24 rows.
 - ⬜ Decide whether a quoted field may hold a line break (read on until the
       quotes balance) or document it as unsupported. Today it may not, in the
       four ports.

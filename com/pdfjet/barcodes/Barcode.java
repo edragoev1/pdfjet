@@ -630,13 +630,20 @@ public class Barcode implements Drawable {
     }
 
     /**
-     * Returns the height of this barcode.
+     * Returns the height of this barcode as it is drawn: from its location to
+     * the bottom of the bars, or of the text under them, in the direction the
+     * barcode is drawn, so a barcode drawn top to bottom or bottom to top is as
+     * tall as it is long.
+     *
      * @return the height of this barcode.
      */
     public float getHeight() {
-        if (font == null) {
-            return m1 * barHeightFactor;
+        try {
+            return drawOn(null)[1] - y1;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {     // Code 39 text with a character the code cannot encode
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
-        return m1 * barHeightFactor + font.getBodyHeight();
     }
 }   // End of Barcode.java

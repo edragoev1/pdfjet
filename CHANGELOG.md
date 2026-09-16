@@ -313,6 +313,12 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   the text, as Example_08 shows. The Java and C# `Cell` fields `image`,
   `barcode`, `textBlock` and `textColumn` are one `drawable` field, and Swift
   `Drawable` is class-bound (`AnyObject`), so a cell stores it in 16 bytes.
+- `Barcode.getHeight` returns the height of the barcode as it is drawn, the
+  corner `drawOn` returns less the top: a barcode drawn top to bottom or bottom
+  to top is as tall as it is long, where it was given the height of a
+  horizontal one; the text under a Code 128 or Code 39 barcode counts with its
+  descent; and the text of an EAN-13 or UPC-A barcode counts where it is drawn,
+  where the height was the bar height and a line of text in every case.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three

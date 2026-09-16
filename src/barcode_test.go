@@ -62,11 +62,7 @@ func TestBarcodeDrawOnReturnsTheCornerOfTheBarsAndTheTextInEveryDirection(t *tes
 		if second := barcode.DrawOn(page); second != first {
 			t.Errorf("%s drawn again: %v", name, second)
 		}
-		height := float32(37.5)
-		if row.withFont {
-			height = 51.372
-		}
-		testNear(t, name+" height", height, barcode.GetHeight(), testDelta)
+		testNear(t, name+" height", row.y-100, barcode.GetHeight(), testDelta)
 	}
 }
 

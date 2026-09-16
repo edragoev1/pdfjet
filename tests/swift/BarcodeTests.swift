@@ -50,7 +50,7 @@ import Testing
             TestSupport.expectNear(row.5, first[1], TestSupport.delta, "\(name) y")
             let second = barcode.drawOn(page)
             #expect(first == second, "\(name) drawn again")
-            TestSupport.expectNear(row.3 ? 51.372 : 37.5, barcode.getHeight(), TestSupport.delta, "\(name) height")
+            TestSupport.expectNear(row.5 - 100, barcode.getHeight(), TestSupport.delta, "\(name) height")
         }
     }
 

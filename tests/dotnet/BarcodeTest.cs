@@ -55,7 +55,7 @@ public class BarcodeTest {
             float[] second = barcode.DrawOn(page);
             TestSupport.AssertNear(first[0], second[0], 0f, name + " drawn again x");
             TestSupport.AssertNear(first[1], second[1], 0f, name + " drawn again y");
-            TestSupport.AssertNear((bool) row[3] ? 51.372f : 37.5f, barcode.GetHeight(), TestSupport.DELTA, name + " height");
+            TestSupport.AssertNear((float) row[5] - 100f, barcode.GetHeight(), TestSupport.DELTA, name + " height");
         }
     }
 

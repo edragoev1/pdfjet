@@ -628,14 +628,13 @@ public class Barcode : IDrawable {
     }
 
     /// <summary>
-    /// Returns the height of this barcode.
+    /// Returns the height of this barcode as it is drawn: from its location to the bottom of the
+    /// bars, or of the text under them, in the direction the barcode is drawn, so a barcode drawn
+    /// top to bottom or bottom to top is as tall as it is long.
     /// </summary>
     /// <returns>the height of this barcode.</returns>
     public float GetHeight() {
-        if (font == null) {
-            return m1 * barHeightFactor;
-        }
-        return m1 * barHeightFactor + font.GetBodyHeight(font.GetSize());
+        return DrawOn(null)[1] - y1;
     }
 }   // End of Barcode.cs
 }   // End of namespace PDFjet.NET

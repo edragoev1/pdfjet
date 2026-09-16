@@ -722,11 +722,10 @@ public class Barcode : Drawable {
         }
     }
 
-    /// Returns the height of this barcode.
+    /// Returns the height of this barcode as it is drawn: from its location to the bottom of the
+    /// bars, or of the text under them, in the direction the barcode is drawn, so a barcode drawn
+    /// top to bottom or bottom to top is as tall as it is long.
     public func getHeight() -> Float {
-        if font == nil {
-            return m1 * barHeightFactor
-        }
-        return m1 * barHeightFactor + font!.getBodyHeight()
+        return drawOn(nil)[1] - y1
     }
 }   // End of Barcode.swift

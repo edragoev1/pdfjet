@@ -64,7 +64,7 @@ class BarcodeTest {
             float[] second = barcode.drawOn(page);
             assertEquals(first[0], second[0], 0f, name + " drawn again");
             assertEquals(first[1], second[1], 0f, name + " drawn again");
-            assertEquals((Boolean) row[3] ? 51.372f : 37.5f, barcode.getHeight(), TestSupport.DELTA, name);
+            assertEquals((Float) row[5] - 100f, barcode.getHeight(), TestSupport.DELTA, name + " height");
         }
     }
 

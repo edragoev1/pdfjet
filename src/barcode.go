@@ -608,10 +608,10 @@ func (bars *barcodeBars) getBottomRight(left, right, bottom float32) [2]float32 
 	return [2]float32{right, bottom}
 }
 
-// GetHeight returns the height of this barcode.
+// GetHeight returns the height of this barcode as it is drawn: from its
+// location to the bottom of the bars, or of the text under them, in the
+// direction the barcode is drawn, so a barcode drawn top to bottom or bottom to
+// top is as tall as it is long.
 func (barcode *Barcode) GetHeight() float32 {
-	if barcode.font == nil {
-		return barcode.m1 * barcode.barHeightFactor
-	}
-	return barcode.m1*barcode.barHeightFactor + barcode.font.GetBodyHeight(barcode.font.size)
+	return barcode.DrawOn(nil)[1] - barcode.y1
 }
