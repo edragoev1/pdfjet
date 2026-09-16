@@ -151,7 +151,7 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 ## Week 3 (Oct 1–7): cleanups and documentation
 
-- ⬜ **B** CHANGELOG and README for everything weeks 1 and 2 add or change;
+- ✅ **B** CHANGELOG and README for everything weeks 1 and 2 add or change;
       record the new benchmark numbers in `benchmarks/README.md`.
       Benchmarks rerun at d2f5d4cb (Sep 16): the Example_43 table, the four
       ports and `Table` are recorded in the three READMEs and
@@ -160,6 +160,12 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       out 6 to 22% slower than before on the busy one. After that run
       `BigTable` began filling its rows with one `re` (11.7 MB and 1 to 2%
       faster), so rerun `benchmarks/run.sh table` with it.
+      Done (Sep 16): both rerun at 7dbfee5d after a reboot, one after the
+      other, and recorded in `benchmarks/README.md` and `jet-vs-box.html`.
+      iText and PDFBox came within 2% of 4ee4e7cb on the text document, where
+      PDFjet now takes 54 ms against 59 and writes 533,287 bytes; `BigTable`
+      takes 1,599 ms against 1,671, allocates 674 MB against 778 and is within
+      1.3% of the same drawing on `Page`, whose pages still render the same.
 - ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
       7c15442d, in a commit of its own. Done (Sep 16).
 - ✅ S License headers, in a commit with nothing else in it: 45 library files

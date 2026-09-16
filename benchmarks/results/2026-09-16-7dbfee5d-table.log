@@ -1,0 +1,59 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T14:52:04-04:00
+7dbfee5d Fill the shaded rows of a BigTable with one re, in the four ports
+== table: Example_43, Electric_Vehicle_Population_Data.csv
+jet: median 1599 ms (min 1597, max 1609, 7 runs), 2546 pages, 11664115 bytes, 674 MB allocated
+jet-table: median 3607 ms (min 3576, max 4062, 7 runs), 2546 pages, 21179889 bytes, 1821 MB allocated
+jet-page: median 1579 ms (min 1572, max 1582, 7 runs), 2546 pages, 11481000 bytes, 628 MB allocated
+it-canvas: median 2052 ms (min 2042, max 2210, 7 runs), 2546 pages, 11808631 bytes, 1109 MB allocated
+it-layout: median 34249 ms (min 34231, max 34601, 3 runs), 2546 pages, 21601806 bytes, 47178 MB allocated
+box: median 12664 ms (min 12633, max 12685, 3 runs), 2546 pages, 11906309 bytes, 25200 MB allocated
+jet-page-stream: median 1546 ms (min 1543, max 1549, 7 runs), 2546 pages, 11508079 bytes, 628 MB allocated
+it-canvas-stream: median 2045 ms (min 2043, max 2046, 7 runs), 2546 pages, 11814639 bytes, 1133 MB allocated
+== table: first run in a new JVM
+jet cold: 1959 ms, 2546 pages, 11664115 bytes
+jet-table cold: 4467 ms, 2546 pages, 21179889 bytes
+jet-page cold: 1910 ms, 2546 pages, 11481000 bytes
+it-canvas cold: 2649 ms, 2546 pages, 11808631 bytes
+it-layout cold: 36609 ms, 2546 pages, 21601806 bytes
+box cold: 13561 ms, 2546 pages, 11906309 bytes
+jet-page-stream cold: 1876 ms, 2546 pages, 11508079 bytes
+it-canvas-stream cold: 2560 ms, 2546 pages, 11814639 bytes
+== table: peak memory, JVM defaults, median of 3
+jet peak 399348 KB
+jet-table peak 1361492 KB
+jet-page peak 479840 KB
+it-canvas peak 866236 KB
+it-layout peak 7115888 KB
+box peak 561100 KB
+jet-page-stream peak 384860 KB
+it-canvas-stream peak 415184 KB
+== table: smallest heap that finishes, of 32m 64m 128m 256m 512m 1g 2g 4g 8g
+jet: 32m
+jet-table: 512m
+jet-page: 128m
+it-canvas: 256m
+it-layout: 8g
+box: 128m
+jet-page-stream: 32m
+it-canvas-stream: 32m
+== table: samples
+jet sample: 2546 pages, 1968 ms
+jet: 11664115 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-table sample: 2546 pages, 4464 ms
+jet-table: 21179889 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page sample: 2546 pages, 1937 ms
+jet-page: 11481000 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-canvas sample: 2546 pages, 2673 ms
+it-canvas: 11808631 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-layout sample: 2546 pages, 36764 ms
+it-layout: 21601806 bytes, 2546 pages, last footer: Page 2546 of 2546
+box sample: 2546 pages, 13494 ms
+box: 11906309 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page-stream sample: 2546 pages, 1929 ms
+jet-page-stream: 11508079 bytes, 2546 pages, last footer: Page 2546 of 2546
+it-canvas-stream sample: 2546 pages, 2570 ms
+it-canvas-stream: 11814639 bytes, 2546 pages, last footer: Page 2546 of 2546
+2026-09-16T15:07:31-04:00
