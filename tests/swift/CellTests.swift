@@ -7,7 +7,76 @@
 import Testing
 @testable import PDFjet
 
+/// A drawable that is 30 wide and 20 high, and remembers where it was placed
+/// and how many times it was drawn.
+private final class Box: Drawable {
+    var x: Float = 0
+    var y: Float = 0
+    var draws = 0
+
+    func drawOn(_ page: Page?) -> [Float] {
+        if page != nil {
+            draws += 1
+        }
+        return [x + 30, y + 20]
+    }
+
+    func setLocation(_ x: Float, _ y: Float) -> Self {
+        self.x = x
+        self.y = y
+        return self
+    }
+}
+
 @Suite struct CellTests {
+    @Test func theLastContentSetterWins() throws {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let cell = Cell(font, "text")
+        let barcode = try Barcode(Barcode.CODE_128, "x")
+        cell.setTextBlock(TextBlock(font, "block")).setBarcode(barcode)
+        #expect(cell.getTextBlock() == nil)
+        #expect(cell.getBarcode() === barcode)
+        #expect(cell.getDrawable() === barcode)
+        let box = Box()
+        cell.setDrawable(box)
+        #expect(cell.getBarcode() == nil && cell.getImage() == nil && cell.getTextColumn() == nil)
+        #expect(cell.getDrawable() === box)
+        #expect(cell.getText() == nil)
+    }
+
+    @Test func anyDrawableIsMeasuredAndAlignedInTheCell() {
+        let pdf = TestSupport.newPDF()
+        let box = Box()
+        let cell = Cell(TestSupport.helvetica(pdf)).setDrawable(box)
+        TestSupport.expectNear(24, cell.getHeight(100))     // 20 and the paddings of 2
+        let page = Page(pdf, Letter.PORTRAIT)
+        cell.drawOn(page, 10, 50, 100, 24)
+        TestSupport.expectXY(12, 52, [box.x, box.y])
+        cell.setTextAlignment(Alignment.CENTER).drawOn(page, 10, 50, 100, 24)
+        TestSupport.expectXY(45, 52, [box.x, box.y])
+        cell.setTextAlignment(Alignment.RIGHT).drawOn(page, 10, 50, 100, 24)
+        TestSupport.expectXY(78, 52, [box.x, box.y])
+        #expect(box.draws == 3)
+    }
+
+    @Test func textSetAfterTheDrawableIsDrawnAndMeasuredInstead() {
+        let pdf = TestSupport.newPDF()
+        let box = Box()
+        let cell = Cell(TestSupport.helvetica(pdf)).setDrawable(box)
+        cell.setText("x")
+        TestSupport.expectNear(17.872, cell.getHeight(100))
+        cell.drawOn(Page(pdf, Letter.PORTRAIT), 10, 50, 100, 24)
+        #expect(box.draws == 0)
+        #expect(cell.getDrawable() === box)
+    }
+
+    @Test func aTableFitsItsColumnsToAnyDrawable() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let data = [[Cell(font, "a")], [Cell(font).setDrawable(Box())]]
+        let table = Table().setTableData(data, 1).autoAdjustColumnWidths()
+        TestSupport.expectNear(34, table.getColumnWidth(0))
+    }
+
     @Test func aCellWithoutTextHasNoHeight() {
         #expect(Cell(TestSupport.helvetica(TestSupport.newPDF())).getHeight(100) == 0)
     }

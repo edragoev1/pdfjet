@@ -21,15 +21,8 @@ public class Cell {
     protected float fontSize;
     /** The cell text. */
     protected String text;
-    /** The image drawn in this cell. */
-    protected Image image;
-    /** The barcode drawn in this cell. */
-    protected Barcode barcode;
-    /** The text box drawn in this cell. */
-    /** The text block drawn in this cell. */
-    protected TextBlock textBlock;
-    /** The text column drawn in this cell. */
-    protected TextColumn textColumn;
+    /** The image, barcode, text block, text column or other drawable in this cell. */
+    protected Drawable drawable;
     /** The point drawn in this cell. */
     protected Point point;
     private Alignment markerAlignment = Alignment.RIGHT;
@@ -167,15 +160,38 @@ public class Cell {
     }
 
     /**
+     * Sets the drawable inside this cell and clears the cell text. A cell holds
+     * one drawable, so this replaces the image, barcode, text block or text
+     * column set before. The drawable is placed by its top left corner, at the
+     * padding, and aligned in the cell as the text is; it is measured with
+     * drawOn(null). A text block gets the width of the cell.
+     *
+     * @param drawable the drawable, for example a QRCode, an SVGImage or a Table.
+     * @return this Cell object.
+     */
+    public Cell setDrawable(Drawable drawable) {
+        this.drawable = drawable;
+        this.text = null;
+        return this;
+    }
+
+    /**
+     * Returns the drawable inside this cell.
+     *
+     * @return the drawable, or null.
+     */
+    public Drawable getDrawable() {
+        return this.drawable;
+    }
+
+    /**
      * Sets the image inside this cell and clears the cell text.
      *
      * @param image the image.
      * @return this Cell object.
      */
     public Cell setImage(Image image) {
-        this.image = image;
-        this.text = null;
-        return this;
+        return setDrawable(image);
     }
 
     /**
@@ -185,27 +201,25 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBarcode(Barcode barcode) {
-        this.barcode = barcode;
-        this.text = null;
-        return this;
+        return setDrawable(barcode);
     }
 
     /**
      * Returns the barcode drawn in this cell.
      *
-     * @return the barcode.
+     * @return the barcode, or null when the cell holds none.
      */
     public Barcode getBarcode() {
-        return this.barcode;
+        return (drawable instanceof Barcode) ? (Barcode) drawable : null;
     }
 
     /**
      * Returns the cell image.
      *
-     * @return the image.
+     * @return the image, or null when the cell holds none.
      */
     public Image getImage() {
-        return this.image;
+        return (drawable instanceof Image) ? (Image) drawable : null;
     }
 
     /**
@@ -259,18 +273,16 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTextBlock(TextBlock textBlock) {
-        this.textBlock = textBlock;
-        this.text = null;
-        return this;
+        return setDrawable(textBlock);
     }
 
     /**
      * Returns the text block drawn inside this cell.
      *
-     * @return the text block.
+     * @return the text block, or null when the cell holds none.
      */
     public TextBlock getTextBlock() {
-        return this.textBlock;
+        return (drawable instanceof TextBlock) ? (TextBlock) drawable : null;
     }
 
     /**
@@ -281,19 +293,17 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTextColumn(TextColumn textColumn) {
-        this.textColumn = textColumn;
         this.width = textColumn.getWidth() + this.leftPadding + this.rightPadding;
-        this.text = null;
-        return this;
+        return setDrawable(textColumn);
     }
 
     /**
      * Returns the text column drawn inside this cell.
      *
-     * @return the text column.
+     * @return the text column, or null when the cell holds none.
      */
     public TextColumn getTextColumn() {
-        return this.textColumn;
+        return (drawable instanceof TextColumn) ? (TextColumn) drawable : null;
     }
 
     /**
@@ -304,8 +314,8 @@ public class Cell {
      */
     public Cell setWidth(float width) {
         this.width = width;
-        if (textBlock != null) {
-            textBlock.setWidth(this.width - (this.leftPadding + this.rightPadding));
+        if (drawable instanceof TextBlock) {
+            ((TextBlock) drawable).setWidth(this.width - (this.leftPadding + this.rightPadding));
         }
         return this;
     }
@@ -476,15 +486,11 @@ public class Cell {
      */
     public float getHeight(float width) throws Exception {
         float cellHeight = 0f;
-        if (textBlock != null) {
-            textBlock.setWidth(width);
-            cellHeight = (textBlock.drawOn(null)[1] - textBlock.y) + topPadding + bottomPadding;
-        } else if (textColumn != null) {
-            cellHeight = (textColumn.drawOn(null)[1] - textColumn.y) + topPadding + bottomPadding;
-        } else if (image != null) {
-            cellHeight = image.getHeight() + topPadding + bottomPadding;
-        } else if (barcode != null) {
-            cellHeight = barcode.getHeight() + topPadding + bottomPadding;
+        if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
+            if (drawable instanceof TextBlock) {
+                ((TextBlock) drawable).setWidth(width);
+            }
+            cellHeight = measure(drawable)[1] + topPadding + bottomPadding;
         } else if (text != null) {
             float fontHeight = font.getBodyHeight(fontSize);
             if (fallbackFont != null && fallbackFont.getBodyHeight(fontSize) > fontHeight) {
@@ -752,36 +758,22 @@ public class Cell {
 
         if (text != null && !text.equals("")) {
             drawText(page, x, y, w, h);
-        } else if (textBlock != null) {
+        } else if (drawable instanceof TextBlock) {
+            TextBlock textBlock = (TextBlock) drawable;
             textBlock.setLocation(x + leftPadding, y + topPadding);
             textBlock.setWidth(w - (leftPadding + rightPadding));
             textBlock.drawOn(page);
-        } else if (textColumn != null) {
-            textColumn.setLocation(x + leftPadding, y + topPadding);
-            textColumn.drawOn(page);
-        } else if (image != null) {
+        } else if (drawable != null) {
             if (getTextAlignment() == Alignment.RIGHT) {
-                image.setLocation((x + w) - (image.getWidth() + rightPadding), y + topPadding);
+                float drawableWidth = measure(drawable)[0];
+                drawable.setLocation((x + w) - (drawableWidth + rightPadding), y + topPadding);
             } else if (getTextAlignment() == Alignment.CENTER) {
-                image.setLocation((x + w/2f) - image.getWidth()/2f, y + topPadding);
+                float drawableWidth = measure(drawable)[0];
+                drawable.setLocation((x + w/2f) - drawableWidth/2f, y + topPadding);
             } else {
-                image.setLocation(x + leftPadding, y + topPadding);
+                drawable.setLocation(x + leftPadding, y + topPadding);
             }
-            image.drawOn(page);
-        } else if (barcode != null) {
-            try {
-                if (getTextAlignment() == Alignment.RIGHT) {
-                    float barcodeWidth = barcode.drawOn(null)[0];
-                    barcode.setLocation((x + w) - (barcodeWidth + rightPadding), y + topPadding).drawOn(page);
-                } else if (getTextAlignment() == Alignment.CENTER) {
-                    float barcodeWidth = barcode.drawOn(null)[0];
-                    barcode.setLocation((x + w/2f) - barcodeWidth/2f, y + topPadding).drawOn(page);
-                } else {
-                    barcode.setLocation(x + leftPadding, y + topPadding).drawOn(page);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            drawable.drawOn(page);
         }
 
         drawBorders(page, x, y, w, h);
@@ -812,6 +804,20 @@ public class Cell {
                         null));
             }
             page.drawPoint(point);
+        }
+    }
+
+    // Returns the width and the height of the drawable: its corner when it is
+    // placed at 0, 0 and measured without a page. Measuring writes nothing, so
+    // an exception from it is not an input or output error.
+    static float[] measure(Drawable drawable) {
+        drawable.setLocation(0f, 0f);
+        try {
+            return drawable.drawOn(null);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
     }
 

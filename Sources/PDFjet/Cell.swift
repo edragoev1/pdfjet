@@ -15,10 +15,7 @@ public class Cell {
     internal var fallbackFont: Font?
     internal var fontSize: Float = 12.0
     var text: String?
-    var image: Image?
-    var barcode: Barcode?
-    var textBlock: TextBlock?
-    var textColumn: TextColumn?
+    var drawable: Drawable?     // The image, barcode, text block, text column or other drawable
     var point: Point?
     private var markerAlignment = Alignment.RIGHT
     var compositeTextLine: CompositeTextLine?
@@ -144,31 +141,48 @@ public class Cell {
      */
     @discardableResult
     public func setImage(_ image: Image?) -> Cell {
-        self.image = image
-        self.text = nil
-        return self
+        return setDrawable(image)
     }
 
     /**
      * Returns the cell image.
      *
-     * - Returns: the image.
+     * - Returns: the image, or nil when the cell holds none.
      */
     public func getImage() -> Image? {
-        return self.image
+        return drawable as? Image
+    }
+
+    ///
+    /// Sets the drawable inside this cell and clears the cell text. A cell holds one drawable,
+    /// so this replaces the image, barcode, text block or text column set before. The drawable
+    /// is placed by its top left corner, at the padding, and aligned in the cell as the text is;
+    /// it is measured with drawOn(nil). A text block gets the width of the cell.
+    ///
+    /// - Parameter drawable: the drawable, for example a QRCode, an SVGImage or a Table.
+    /// - Returns: this Cell object.
+    ///
+    @discardableResult
+    public func setDrawable(_ drawable: Drawable?) -> Cell {
+        self.drawable = drawable
+        self.text = nil
+        return self
+    }
+
+    /// Returns the drawable inside this cell, or nil.
+    public func getDrawable() -> Drawable? {
+        return drawable
     }
 
     /// Sets the barcode drawn in this cell and clears the cell text.
     @discardableResult
     public func setBarcode(_ barcode: Barcode) -> Cell {
-        self.barcode = barcode
-        self.text = nil
-        return self
+        return setDrawable(barcode)
     }
 
-    /// Returns the barcode drawn in this cell.
+    /// Returns the barcode drawn in this cell, or nil when the cell holds none.
     public func getBarcode() -> Barcode? {
-        return self.barcode
+        return drawable as? Barcode
     }
 
     /**
@@ -225,8 +239,8 @@ public class Cell {
     @discardableResult
     public func setWidth(_ width: Float) -> Cell {
         self.width = width
-        if self.textBlock != nil {
-            self.textBlock!.setWidth(self.width - (self.leftPadding + self.rightPadding))
+        if let textBlock = drawable as? TextBlock {
+            textBlock.setWidth(self.width - (self.leftPadding + self.rightPadding))
         }
         return self
     }
@@ -237,25 +251,21 @@ public class Cell {
     ///
     @discardableResult
     public func setTextColumn(_ textColumn: TextColumn) -> Cell {
-        self.textColumn = textColumn
         self.width = textColumn.getWidth() + self.leftPadding + self.rightPadding
-        self.text = nil
-        return self
+        return setDrawable(textColumn)
     }
 
     ///
-    /// Returns the text column that this cell holds.
+    /// Returns the text column that this cell holds, or nil when it holds none.
     ///
     public func getTextColumn() -> TextColumn? {
-        return self.textColumn
+        return drawable as? TextColumn
     }
 
     /// Sets the text block drawn in this cell and clears the cell text.
     @discardableResult
     public func setTextBlock(_ textBlock: TextBlock) -> Cell {
-        self.textBlock = textBlock
-        self.text = nil
-        return self
+        return setDrawable(textBlock)
     }
 
     /**
@@ -357,15 +367,11 @@ public class Cell {
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
-        if textBlock != nil {
-            textBlock!.setWidth(width)
-            cellHeight = (textBlock!.drawOn(nil)[1] - textBlock!.y) + topPadding + bottomPadding
-        } else if textColumn != nil {
-            cellHeight = (textColumn!.drawOn(nil)[1] - textColumn!.y) + topPadding + bottomPadding
-        } else if image != nil {
-            cellHeight = image!.getHeight() + topPadding + bottomPadding
-        } else if barcode != nil {
-            cellHeight = barcode!.getHeight() + topPadding + bottomPadding
+        if let drawable = drawable, text == nil || text == "" {   // The text is drawn first
+            if let textBlock = drawable as? TextBlock {
+                textBlock.setWidth(width)
+            }
+            cellHeight = Cell.measure(drawable)[1] + topPadding + bottomPadding
         } else if text != nil {
             var fontHeight = font.getBodyHeight(fontSize)
             if fallbackFont != nil && fallbackFont!.getBodyHeight(fontSize) > fontHeight {
@@ -625,32 +631,21 @@ public class Cell {
 
         if text != nil && text != "" {
             drawText(page, x, y, w, h)
-        } else if textBlock != nil {
-            textBlock!.setLocation(x + leftPadding, y + topPadding)
-            textBlock!.setWidth(w - (leftPadding + rightPadding))
-            textBlock!.drawOn(page)
-        } else if textColumn != nil {
-            textColumn!.setLocation(x + leftPadding, y + topPadding)
-            textColumn!.drawOn(page)
-        } else if image != nil {
+        } else if let textBlock = drawable as? TextBlock {
+            textBlock.setLocation(x + leftPadding, y + topPadding)
+            textBlock.setWidth(w - (leftPadding + rightPadding))
+            textBlock.drawOn(page)
+        } else if let drawable = drawable {
             if getTextAlignment() == Alignment.RIGHT {
-                image!.setLocation((x + w) - (image!.getWidth() + rightPadding), y + topPadding)
+                let drawableWidth = Cell.measure(drawable)[0]
+                drawable.setLocation((x + w) - (drawableWidth + rightPadding), y + topPadding)
             } else if getTextAlignment() == Alignment.CENTER {
-                image!.setLocation((x + w/2.0) - image!.getWidth()/2.0, y + topPadding)
+                let drawableWidth = Cell.measure(drawable)[0]
+                drawable.setLocation((x + w/2.0) - drawableWidth/2.0, y + topPadding)
             } else {
-                image!.setLocation(x + leftPadding, y + topPadding)
+                drawable.setLocation(x + leftPadding, y + topPadding)
             }
-            image!.drawOn(page)
-        } else if barcode != nil {
-            if getTextAlignment() == Alignment.RIGHT {
-                let barcodeWidth = barcode!.drawOn(nil)[0]
-                barcode!.drawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding)
-            } else if getTextAlignment() == Alignment.CENTER {
-                let barcodeWidth = barcode!.drawOn(nil)[0]
-                barcode!.drawOnPageAtLocation(page, (x + w/2.0) - barcodeWidth/2.0, y + topPadding)
-            } else {
-                barcode!.drawOnPageAtLocation(page, x + leftPadding, y + topPadding)
-            }
+            drawable.drawOn(page)
         }
 
         drawBorders(page, x, y, w, h)
@@ -823,8 +818,15 @@ public class Cell {
         page.addEMC()
     }
 
-    /// Returns the text block drawn in this cell.
+    /// Returns the text block drawn in this cell, or nil when it holds none.
     public func getTextBlock() -> TextBlock? {
-        return textBlock
+        return drawable as? TextBlock
+    }
+
+    // Returns the width and the height of the drawable: its corner when it is
+    // placed at 0, 0 and measured without a page.
+    static func measure(_ drawable: Drawable) -> [Float] {
+        drawable.setLocation(0.0, 0.0)
+        return drawable.drawOn(nil)
     }
 }   // End of Cell.swift

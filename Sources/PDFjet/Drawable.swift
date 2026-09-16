@@ -11,7 +11,7 @@ import Foundation
  *
  * @author Mark Paxton, Eugene Dragoev
  */
-public protocol Drawable {
+public protocol Drawable: AnyObject {
 
     /**
      *  Draw the component implementing this interface on the PDF page.

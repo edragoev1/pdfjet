@@ -300,6 +300,19 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   null leaves the shading or the lines out, and the footer is a text in which
   `{page}` and `{pages}` stand for the page number and the page count, in a
   font of its own, or none with a null or empty text.
+- A `Cell` holds one drawable, set with `setDrawable` or with `setImage`,
+  `setBarcode`, `setTextBlock` or `setTextColumn`, so the last of them wins;
+  before, the four were kept side by side and drawn in a fixed order, so a
+  text block was drawn over an image set after it. Any drawable whose location
+  is its top left corner can go in a cell, a QR code, an SVG image, a chart or
+  a table, measured with `drawOn(null)` and aligned as the text is.
+  `getImage`, `getBarcode`, `getTextBlock` and `getTextColumn` return the
+  drawable when it is of that type and null otherwise, and a cell measures
+  text set after its drawable, which it draws, instead of the drawable. A
+  barcode with its text in a cell makes the row tall enough for the descent of
+  the text, as Example_08 shows. The Java and C# `Cell` fields `image`,
+  `barcode`, `textBlock` and `textColumn` are one `drawable` field, and Swift
+  `Drawable` is class-bound (`AnyObject`), so a cell stores it in 16 bytes.
 - The `Table(f1, f2)` constructor, which ignored its fonts, and the
   `WITH_n_HEADER_ROWS` constants are removed; pass the number of header rows.
 - `Table.getWidth` of an empty table is 0 in the four ports, where three

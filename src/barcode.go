@@ -191,22 +191,6 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	return xy
 }
 
-// drawOnPageAtLocation draws this barcode on the specified page at the specified location.
-func (barcode *Barcode) drawOnPageAtLocation(page *Page, x1, y1 float32) [2]float32 {
-	switch barcode.barcodeType {
-	case EAN_13:
-		return barcode.drawCodeEAN13(page, x1, y1)
-	case UPC_A:
-		return barcode.drawCodeUPC(page, x1, y1)
-	case CODE_128:
-		return barcode.drawCode128(page, x1, y1)
-	case CODE_39:
-		return barcode.drawCode39(page, x1, y1)
-	default:
-		panic("Unsupported Barcode Type.")
-	}
-}
-
 func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	x := x1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally

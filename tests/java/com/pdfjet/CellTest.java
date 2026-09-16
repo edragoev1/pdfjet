@@ -12,9 +12,92 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.pdfjet.barcodes.Barcode;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CellTest {
+    // A drawable that is 30 wide and 20 high, and remembers where it was
+    // placed and how many times it was drawn.
+    private static final class Box implements Drawable {
+        float x;
+        float y;
+        int draws;
+
+        @Override
+        public float[] drawOn(Page page) {
+            if (page != null) {
+                draws++;
+            }
+            return new float[] {x + 30f, y + 20f};
+        }
+
+        @Override
+        public Drawable setLocation(float x, float y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        }
+    }
+
+    @Test
+    void theLastContentSetterWins() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Cell cell = new Cell(font, "text");
+        Barcode barcode = new Barcode(Barcode.CODE_128, "x");
+        cell.setTextBlock(new TextBlock(font, "block")).setBarcode(barcode);
+        assertNull(cell.getTextBlock());
+        assertSame(barcode, cell.getBarcode());
+        assertSame(barcode, cell.getDrawable());
+        Box box = new Box();
+        cell.setDrawable(box);
+        assertNull(cell.getBarcode());
+        assertNull(cell.getImage());
+        assertNull(cell.getTextColumn());
+        assertSame(box, cell.getDrawable());
+        assertNull(cell.getText());
+    }
+
+    @Test
+    void anyDrawableIsMeasuredAndAlignedInTheCell() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Box box = new Box();
+        Cell cell = new Cell(TestSupport.helvetica(pdf)).setDrawable(box);
+        assertEquals(24f, cell.getHeight(100f), TestSupport.DELTA);   // 20 and the paddings of 2
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        cell.drawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.assertXY(12f, 52f, new float[] {box.x, box.y});
+        cell.setTextAlignment(Alignment.CENTER).drawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.assertXY(45f, 52f, new float[] {box.x, box.y});
+        cell.setTextAlignment(Alignment.RIGHT).drawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.assertXY(78f, 52f, new float[] {box.x, box.y});
+        assertEquals(3, box.draws);
+    }
+
+    @Test
+    void textSetAfterTheDrawableIsDrawnAndMeasuredInstead() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Box box = new Box();
+        Cell cell = new Cell(TestSupport.helvetica(pdf)).setDrawable(box);
+        cell.setText("x");
+        assertEquals(17.872f, cell.getHeight(100f), TestSupport.DELTA);
+        cell.drawOn(new Page(pdf, Letter.PORTRAIT), 10f, 50f, 100f, 24f);
+        assertEquals(0, box.draws);
+        assertSame(box, cell.getDrawable());
+    }
+
+    @Test
+    void aTableFitsItsColumnsToAnyDrawable() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font).setDrawable(new Box()))));
+        Table table = new Table().setTableData(data, 1).autoAdjustColumnWidths();
+        assertEquals(34f, table.getColumnWidth(0), TestSupport.DELTA);
+    }
+
     @Test
     void aCellWithoutTextHasNoHeight() throws Exception {
         assertEquals(0f, new Cell(TestSupport.helvetica(TestSupport.newPDF())).getHeight(100f), 0f);

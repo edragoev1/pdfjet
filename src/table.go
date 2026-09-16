@@ -221,8 +221,8 @@ func (table *Table) SetTextAlignmentInColumn(index int, textAlignment alignment.
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextAlignment(textAlignment)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextAlignment(textAlignment)
+			if cell.GetTextBlock() != nil {
+				cell.GetTextBlock().SetTextAlignment(textAlignment)
 			}
 		}
 	}
@@ -237,8 +237,8 @@ func (table *Table) SetTextColorInColumn(index int, color int32) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetTextColor(color)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextColor(color)
+			if cell.GetTextBlock() != nil {
+				cell.GetTextBlock().SetTextColor(color)
 			}
 		}
 	}
@@ -253,8 +253,8 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 		if index < len(row) {
 			cell := row[index]
 			cell.SetFont(font).SetFontSize(font.size)
-			if cell.textBlock != nil {
-				cell.textBlock.font = font
+			if cell.GetTextBlock() != nil {
+				cell.GetTextBlock().font = font
 			}
 		}
 	}
@@ -269,8 +269,8 @@ func (table *Table) SetTextColorInRow(index int, color int32) *Table {
 		row := table.tableData[index]
 		for _, cell := range row {
 			cell.SetTextColor(color)
-			if cell.textBlock != nil {
-				cell.textBlock.SetTextColor(color)
+			if cell.GetTextBlock() != nil {
+				cell.GetTextBlock().SetTextColor(color)
 			}
 		}
 	}
@@ -285,8 +285,8 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 		row := table.tableData[index]
 		for _, cell := range row {
 			cell.SetFont(font).SetFontSize(font.size)
-			if cell.textBlock != nil {
-				cell.textBlock.font = font
+			if cell.GetTextBlock() != nil {
+				cell.GetTextBlock().font = font
 			}
 		}
 	}
@@ -591,25 +591,20 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]
 			if cell.GetColSpan() == 1 {
-				if cell.textBlock != nil {
-					tokens := splitOnWhitespace(cell.textBlock.textContent)
+				if textBlock := cell.GetTextBlock(); textBlock != nil {
+					tokens := splitOnWhitespace(textBlock.textContent)
 					for _, token := range tokens {
-						tokenWidth := cell.textBlock.font.StringWidthUsingFallbackFont(
-							cell.textBlock.fallbackFont, cell.textBlock.font.size, token)
+						tokenWidth := textBlock.font.StringWidthUsingFallbackFont(
+							textBlock.fallbackFont, textBlock.font.size, token)
 						tokenWidth += cell.leftPadding + cell.rightPadding
 						if tokenWidth > maxColWidths[i] {
 							maxColWidths[i] = tokenWidth
 						}
 					}
-				} else if cell.image != nil {
-					imageWidth := cell.image.GetWidth() + cell.leftPadding + cell.rightPadding
-					if imageWidth > maxColWidths[i] {
-						maxColWidths[i] = imageWidth
-					}
-				} else if cell.barcode != nil {
-					barcodeWidth := cell.barcode.DrawOn(nil)[0] + cell.leftPadding + cell.rightPadding
-					if barcodeWidth > maxColWidths[i] {
-						maxColWidths[i] = barcodeWidth
+				} else if cell.drawable != nil {
+					drawableWidth := measureDrawable(cell.drawable)[0] + cell.leftPadding + cell.rightPadding
+					if drawableWidth > maxColWidths[i] {
+						maxColWidths[i] = drawableWidth
 					}
 				} else if cell.hasText {
 					textWidth := cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)

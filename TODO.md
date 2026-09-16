@@ -83,7 +83,7 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       (`benchmarks/results/2026-09-16-542b3dbf-table.log`). If yes, the method
       lands in 9.0.0, so there are never two ways of giving a table its data
       arriving in different releases.
-- ⬜ **B** One content field in `Cell`. `image`, `barcode`, `textBlock` and
+- ✅ **B** One content field in `Cell`. `image`, `barcode`, `textBlock` and
       `textColumn` are four fields that are meant to exclude each other, but
       each setter clears only the cell text, and `drawOn` and `getHeight` try
       them in a fixed order, so after `setImage` then `setTextBlock` the text
@@ -107,7 +107,19 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       measuring with what is drawn without. `Table` and `TextColumn` return
       their right edge (the user's choice), and Example_10 subtracts the
       column width. The 56 Java example PDFs have the same page content.
-      Left: the `Cell` change itself.
+      Step 2 done (Sep 16): `Cell` holds one `Drawable` in the four ports,
+      with `setDrawable` and `getDrawable`; the typed setters call
+      `setDrawable`, the typed getters cast, `getHeight` follows the order
+      `drawOn` draws in (non-empty text first), content is measured with
+      `drawOn(null)` at 0, 0 and aligned as images were, and `Table` uses
+      `getTextBlock`. Swift `Drawable` is `AnyObject`. The unused Go and C#
+      `drawOnPageAtLocation` copies of `Barcode.drawOn` are gone. Four tests
+      per port with a recording drawable. Example_08 changed on purpose: its
+      barcode row is 1.9 points taller, as the measured corner includes the
+      descent of the text under the barcode, which `Barcode.getHeight` leaves
+      out; every other Java example has the same page content. Open, not in
+      this item: `Barcode.getHeight` still leaves out the descent and ignores
+      the direction.
 - ⬜ Decide whether a quoted field may hold a line break (read on until the
       quotes balance) or document it as unsupported. Today it may not, in the
       four ports.

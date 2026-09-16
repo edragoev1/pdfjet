@@ -18,12 +18,9 @@ type Cell struct {
 	fallbackFont      *Font
 	fontSize          float32
 	text              string
-	hasText           bool // Java's null text is a cell without text, which is 0 tall
-	textBlock         *TextBlock
-	textColumn        *TextColumn
+	hasText           bool     // Java's null text is a cell without text, which is 0 tall
+	drawable          Drawable // The image, barcode, text block, text column or other drawable
 	compositeTextLine *CompositeTextLine
-	image             *Image
-	barcode           *Barcode
 	point             *Point
 	markerAlignment   alignment.Alignment
 	width             float32
@@ -137,30 +134,51 @@ func (cell *Cell) SetFontSize(fontSize float32) *Cell {
 	return cell
 }
 
-// SetImage sets the image inside this cell and clears the cell text.
-func (cell *Cell) SetImage(image *Image) *Cell {
-	cell.image = image
+// SetDrawable sets the drawable inside this cell and clears the cell text. A
+// cell holds one drawable, so this replaces the image, barcode, text block or
+// text column set before. The drawable is placed by its top left corner, at the
+// padding, and aligned in the cell as the text is; it is measured with
+// DrawOn(nil). A text block gets the width of the cell.
+//   - drawable: the drawable, for example a QRCode, an SVGImage or a Table.
+func (cell *Cell) SetDrawable(drawable Drawable) *Cell {
+	cell.drawable = drawable
 	cell.text = ""
 	cell.hasText = false
 	return cell
 }
 
-// GetImage returns the cell image.
+// GetDrawable returns the drawable inside this cell, or nil.
+func (cell *Cell) GetDrawable() Drawable {
+	return cell.drawable
+}
+
+// SetImage sets the image inside this cell and clears the cell text.
+func (cell *Cell) SetImage(image *Image) *Cell {
+	if image == nil {
+		return cell.SetDrawable(nil)
+	}
+	return cell.SetDrawable(image)
+}
+
+// GetImage returns the cell image, or nil when the cell holds none.
 func (cell *Cell) GetImage() *Image {
-	return cell.image
+	image, _ := cell.drawable.(*Image)
+	return image
 }
 
 // SetBarcode sets the barcode inside this cell and clears the cell text.
 func (cell *Cell) SetBarcode(barcode *Barcode) *Cell {
-	cell.barcode = barcode
-	cell.text = ""
-	cell.hasText = false
-	return cell
+	if barcode == nil {
+		return cell.SetDrawable(nil)
+	}
+	return cell.SetDrawable(barcode)
 }
 
-// GetBarcode returns the barcode drawn in this cell.
+// GetBarcode returns the barcode drawn in this cell, or nil when the cell holds
+// none.
 func (cell *Cell) GetBarcode() *Barcode {
-	return cell.barcode
+	barcode, _ := cell.drawable.(*Barcode)
+	return barcode
 }
 
 // SetMarker sets the marker drawn in this cell: a Point, placed at the left or
@@ -181,20 +199,17 @@ func (cell *Cell) GetMarker() *Point {
 
 // SetTextBlock sets the text block drawn in this cell and clears the cell text.
 func (cell *Cell) SetTextBlock(textBlock *TextBlock) *Cell {
-	cell.textBlock = textBlock
-	cell.text = ""
-	cell.hasText = false
-	return cell
+	if textBlock == nil {
+		return cell.SetDrawable(nil)
+	}
+	return cell.SetDrawable(textBlock)
 }
 
 // SetTextColumn sets the text column drawn in this cell, widens the cell to fit it
 // and clears the cell text.
 func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
-	cell.textColumn = textColumn
 	cell.width = textColumn.w + cell.leftPadding + cell.rightPadding
-	cell.text = ""
-	cell.hasText = false
-	return cell
+	return cell.SetDrawable(textColumn)
 }
 
 // SetCompositeTextLine sets the composite text line that this cell holds.
@@ -208,22 +223,26 @@ func (cell *Cell) GetCompositeTextLine() *CompositeTextLine {
 	return cell.compositeTextLine
 }
 
-// GetTextColumn returns the text column that this cell holds.
+// GetTextColumn returns the text column that this cell holds, or nil when it
+// holds none.
 func (cell *Cell) GetTextColumn() *TextColumn {
-	return cell.textColumn
+	textColumn, _ := cell.drawable.(*TextColumn)
+	return textColumn
 }
 
-// GetTextBlock returns the text block drawn in this cell.
+// GetTextBlock returns the text block drawn in this cell, or nil when it holds
+// none.
 func (cell *Cell) GetTextBlock() *TextBlock {
-	return cell.textBlock
+	textBlock, _ := cell.drawable.(*TextBlock)
+	return textBlock
 }
 
 // SetWidth sets the width of this cell.
 //   - width: the specified width.
 func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
-	if cell.textBlock != nil {
-		cell.textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
+	if textBlock, ok := cell.drawable.(*TextBlock); ok {
+		textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
 	}
 	return cell
 }
@@ -296,15 +315,11 @@ func (cell *Cell) SetPadding(padding float32) *Cell {
 // Returns the cell height.
 func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
-	if cell.textBlock != nil {
-		cell.textBlock.SetWidth(width)
-		cellHeight = (cell.textBlock.DrawOn(nil)[1] - cell.textBlock.y) + cell.topPadding + cell.bottomPadding
-	} else if cell.textColumn != nil {
-		cellHeight = (cell.textColumn.DrawOn(nil)[1] - cell.textColumn.y) + cell.topPadding + cell.bottomPadding
-	} else if cell.image != nil {
-		cellHeight = cell.image.GetHeight() + cell.topPadding + cell.bottomPadding
-	} else if cell.barcode != nil {
-		cellHeight = cell.barcode.GetHeight() + cell.topPadding + cell.bottomPadding
+	if cell.text == "" && cell.drawable != nil { // The text is drawn first
+		if textBlock, ok := cell.drawable.(*TextBlock); ok {
+			textBlock.SetWidth(width)
+		}
+		cellHeight = measureDrawable(cell.drawable)[1] + cell.topPadding + cell.bottomPadding
 	} else if cell.hasText {
 		fontHeight := cell.font.GetBodyHeight(cell.fontSize)
 		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeight(cell.fontSize) > fontHeight {
@@ -514,6 +529,13 @@ func (cell *Cell) SetURIAction(uri string) *Cell {
 	return cell
 }
 
+// measureDrawable returns the width and the height of the drawable: its corner
+// when it is placed at 0, 0 and measured without a page.
+func measureDrawable(drawable Drawable) [2]float32 {
+	drawable.SetLocation(0, 0)
+	return drawable.DrawOn(nil)
+}
+
 // drawOn draws the point, text and borders of this cell.
 func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 	if cell.hasBackgroundColor {
@@ -522,32 +544,21 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 	if cell.text != "" {
 		cell.drawText(page, x, y, w, h)
-	} else if cell.textBlock != nil {
-		cell.textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textBlock.SetWidth(w - (cell.leftPadding + cell.rightPadding))
-		cell.textBlock.DrawOn(page)
-	} else if cell.textColumn != nil {
-		cell.textColumn.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		cell.textColumn.DrawOn(page)
-	} else if cell.image != nil {
+	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
+		textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+		textBlock.SetWidth(w - (cell.leftPadding + cell.rightPadding))
+		textBlock.DrawOn(page)
+	} else if cell.drawable != nil {
 		if cell.textAlignment == alignment.Right {
-			cell.image.SetLocation((x+w)-(cell.image.GetWidth()+cell.rightPadding), y+cell.topPadding)
+			drawableWidth := measureDrawable(cell.drawable)[0]
+			cell.drawable.SetLocation((x+w)-(drawableWidth+cell.rightPadding), y+cell.topPadding)
 		} else if cell.textAlignment == alignment.Center {
-			cell.image.SetLocation((x+w/2.0)-cell.image.GetWidth()/2.0, y+cell.topPadding)
+			drawableWidth := measureDrawable(cell.drawable)[0]
+			cell.drawable.SetLocation((x+w/2.0)-drawableWidth/2.0, y+cell.topPadding)
 		} else {
-			cell.image.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+			cell.drawable.SetLocation(x+cell.leftPadding, y+cell.topPadding)
 		}
-		cell.image.DrawOn(page)
-	} else if cell.barcode != nil {
-		if cell.textAlignment == alignment.Right {
-			barcodeWidth := cell.barcode.DrawOn(nil)[0]
-			cell.barcode.drawOnPageAtLocation(page, (x+w)-(barcodeWidth+cell.rightPadding), y+cell.topPadding)
-		} else if cell.textAlignment == alignment.Center {
-			barcodeWidth := cell.barcode.DrawOn(nil)[0]
-			cell.barcode.drawOnPageAtLocation(page, (x+w/2.0)-barcodeWidth/2.0, y+cell.topPadding)
-		} else {
-			cell.barcode.drawOnPageAtLocation(page, x+cell.leftPadding, y+cell.topPadding)
-		}
+		cell.drawable.DrawOn(page)
 	}
 
 	cell.drawBorders(page, x, y, w, h)

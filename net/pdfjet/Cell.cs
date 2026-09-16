@@ -16,10 +16,7 @@ public class Cell {
     internal Font fallbackFont;
     internal float fontSize;
     internal String text;
-    internal Image image;
-    internal Barcode barcode;
-    internal TextBlock textBlock;
-    internal TextColumn textColumn;
+    internal IDrawable drawable;    // The image, barcode, text block, text column or other drawable
     internal Point point;
     private Alignment markerAlignment = Alignment.RIGHT;
     internal CompositeTextLine compositeTextLine;
@@ -133,14 +130,31 @@ public class Cell {
     }
 
     /// <summary>
+    /// Sets the drawable inside this cell and clears the cell text. A cell holds one drawable,
+    /// so this replaces the image, barcode, text block or text column set before. The drawable
+    /// is placed by its top left corner, at the padding, and aligned in the cell as the text is;
+    /// it is measured with DrawOn(null). A text block gets the width of the cell.
+    /// </summary>
+    /// <param name="drawable">the drawable, for example a QRCode, an SVGImage or a Table.</param>
+    /// <returns>this Cell object.</returns>
+    public Cell SetDrawable(IDrawable drawable) {
+        this.drawable = drawable;
+        this.text = null;
+        return this;
+    }
+
+    /// <summary>Returns the drawable inside this cell, or null.</summary>
+    public IDrawable GetDrawable() {
+        return this.drawable;
+    }
+
+    /// <summary>
     /// Sets the image inside this cell and clears the cell text.
     /// </summary>
     /// <param name="image">the image.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetImage(Image image) {
-        this.image = image;
-        this.text = null;
-        return this;
+        return SetDrawable(image);
     }
 
     /// <summary>
@@ -149,22 +163,20 @@ public class Cell {
     /// <param name="barcode">the barcode.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBarcode(Barcode barcode) {
-        this.barcode = barcode;
-        this.text = null;
-        return this;
+        return SetDrawable(barcode);
     }
 
-    /// <summary>Returns the barcode drawn in this cell.</summary>
+    /// <summary>Returns the barcode drawn in this cell, or null when the cell holds none.</summary>
     public Barcode GetBarcode() {
-        return this.barcode;
+        return drawable as Barcode;
     }
 
     /// <summary>
     /// Returns the cell image.
     /// </summary>
-    /// <returns>the image.</returns>
+    /// <returns>the image, or null when the cell holds none.</returns>
     public Image GetImage() {
-        return this.image;
+        return drawable as Image;
     }
 
     /// <summary>
@@ -202,22 +214,18 @@ public class Cell {
 
     /// <summary>Sets the text block drawn in this cell and clears the cell text.</summary>
     public Cell SetTextBlock(TextBlock textBlock) {
-        this.textBlock = textBlock;
-        this.text = null;
-        return this;
+        return SetDrawable(textBlock);
     }
 
     /// <summary>Sets the text column drawn in this cell, widens the cell to fit it and clears the cell text.</summary>
     public Cell SetTextColumn(TextColumn textColumn) {
-        this.textColumn = textColumn;
         this.width = textColumn.GetWidth() + this.leftPadding + this.rightPadding;
-        this.text = null;
-        return this;
+        return SetDrawable(textColumn);
     }
 
-    /// <summary>Returns the text column drawn in this cell.</summary>
+    /// <summary>Returns the text column drawn in this cell, or null when the cell holds none.</summary>
     public TextColumn GetTextColumn() {
-        return this.textColumn;
+        return drawable as TextColumn;
     }
 
     /// <summary>Sets the background color from an array of red, green and blue values, or removes the background with null.</summary>
@@ -233,7 +241,7 @@ public class Cell {
     /// <returns>this Cell object.</returns>
     public Cell SetWidth(float width) {
         this.width = width;
-        if (textBlock != null) {
+        if (drawable is TextBlock textBlock) {
             textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
         }
         return this;
@@ -311,15 +319,11 @@ public class Cell {
     /// <returns>the cell height.</returns>
     public float GetHeight(float width) {
         float cellHeight = 0f;
-        if (textBlock != null) {
-            textBlock.SetWidth(width);
-            cellHeight = (textBlock.DrawOn(null)[1] - textBlock.y) + topPadding + bottomPadding;
-        } else if (textColumn != null) {
-            cellHeight = (textColumn.DrawOn(null)[1] - textColumn.y) + topPadding + bottomPadding;
-        } else if (image != null) {
-            cellHeight = image.GetHeight() + topPadding + bottomPadding;
-        } else if (barcode != null) {
-            cellHeight = barcode.GetHeight() + topPadding + bottomPadding;
+        if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
+            if (drawable is TextBlock textBlock) {
+                textBlock.SetWidth(width);
+            }
+            cellHeight = Measure(drawable)[1] + topPadding + bottomPadding;
         } else if (text != null) {
             float fontHeight = font.GetBodyHeight(fontSize);
             if (fallbackFont != null && fallbackFont.GetBodyHeight(fontSize) > fontHeight) {
@@ -560,36 +564,21 @@ public class Cell {
 
         if (text != null && !text.Equals("")) {
             DrawText(page, x, y, w, h);
-        } else if (textBlock != null) {
+        } else if (drawable is TextBlock textBlock) {
             textBlock.SetLocation(x + leftPadding, y + topPadding);
             textBlock.SetWidth(w - (leftPadding + rightPadding));
             textBlock.DrawOn(page);
-        } else if (textColumn != null) {
-            textColumn.SetLocation(x + leftPadding, y + topPadding);
-            textColumn.DrawOn(page);
-        } else if (image != null) {
+        } else if (drawable != null) {
             if (GetTextAlignment() == Alignment.RIGHT) {
-                image.SetLocation((x + w) - (image.GetWidth() + rightPadding), y + topPadding);
+                float drawableWidth = Measure(drawable)[0];
+                drawable.SetLocation((x + w) - (drawableWidth + rightPadding), y + topPadding);
             } else if (GetTextAlignment() == Alignment.CENTER) {
-                image.SetLocation((x + w/2f) - image.GetWidth()/2f, y + topPadding);
+                float drawableWidth = Measure(drawable)[0];
+                drawable.SetLocation((x + w/2f) - drawableWidth/2f, y + topPadding);
             } else {
-                image.SetLocation(x + leftPadding, y + topPadding);
+                drawable.SetLocation(x + leftPadding, y + topPadding);
             }
-            image.DrawOn(page);
-        } else if (barcode != null) {
-            try {
-                if (GetTextAlignment() == Alignment.RIGHT) {
-                    float barcodeWidth = barcode.DrawOn(null)[0];
-                    barcode.DrawOnPageAtLocation(page, (x + w) - (barcodeWidth + rightPadding), y + topPadding);
-                } else if (GetTextAlignment() == Alignment.CENTER) {
-                    float barcodeWidth = barcode.DrawOn(null)[0];
-                    barcode.DrawOnPageAtLocation(page, (x + w/2f) - barcodeWidth/2f, y + topPadding);
-                } else {
-                    barcode.DrawOnPageAtLocation(page, x + leftPadding, y + topPadding);
-                }
-            } catch (Exception e) {
-                Console.Error.WriteLine(e.ToString());
-            }
+            drawable.DrawOn(page);
         }
 
         DrawBorders(page, x, y, w, h);
@@ -621,6 +610,13 @@ public class Cell {
             }
             page.DrawPoint(point);
         }
+    }
+
+    // Returns the width and the height of the drawable: its corner when it is
+    // placed at 0, 0 and measured without a page.
+    internal static float[] Measure(IDrawable drawable) {
+        drawable.SetLocation(0f, 0f);
+        return drawable.DrawOn(null);
     }
 
     private void DrawBackground(
@@ -764,7 +760,7 @@ public class Cell {
 
     /// <summary>Returns the text block drawn in this cell.</summary>
     public TextBlock GetTextBlock() {
-        return this.textBlock;
+        return drawable as TextBlock;
     }
 }   // End of Cell.cs
 }   // End of namespace PDFjet.NET

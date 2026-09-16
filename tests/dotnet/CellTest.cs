@@ -4,10 +4,89 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
 public class CellTest {
+    // A drawable that is 30 wide and 20 high, and remembers where it was
+    // placed and how many times it was drawn.
+    private sealed class Box : IDrawable {
+        internal float x;
+        internal float y;
+        internal int draws;
+
+        public float[] DrawOn(Page page) {
+            if (page != null) {
+                draws++;
+            }
+            return new float[] {x + 30f, y + 20f};
+        }
+
+        public IDrawable SetLocation(float x, float y) {
+            this.x = x;
+            this.y = y;
+            return this;
+        }
+    }
+
+    [Fact]
+    public void TheLastContentSetterWins() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Cell cell = new Cell(font, "text");
+        Barcode barcode = new Barcode(Barcode.CODE_128, "x");
+        cell.SetTextBlock(new TextBlock(font, "block")).SetBarcode(barcode);
+        Assert.Null(cell.GetTextBlock());
+        Assert.Same(barcode, cell.GetBarcode());
+        Assert.Same(barcode, cell.GetDrawable());
+        Box box = new Box();
+        cell.SetDrawable(box);
+        Assert.Null(cell.GetBarcode());
+        Assert.Null(cell.GetImage());
+        Assert.Null(cell.GetTextColumn());
+        Assert.Same(box, cell.GetDrawable());
+        Assert.Null(cell.GetText());
+    }
+
+    [Fact]
+    public void AnyDrawableIsMeasuredAndAlignedInTheCell() {
+        PDF pdf = TestSupport.NewPDF();
+        Box box = new Box();
+        Cell cell = new Cell(TestSupport.Helvetica(pdf)).SetDrawable(box);
+        TestSupport.AssertNear(24f, cell.GetHeight(100f), TestSupport.DELTA, "height");  // 20 and the paddings of 2
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        cell.DrawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.AssertXY(12f, 52f, new float[] {box.x, box.y});
+        cell.SetTextAlignment(Alignment.CENTER).DrawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.AssertXY(45f, 52f, new float[] {box.x, box.y});
+        cell.SetTextAlignment(Alignment.RIGHT).DrawOn(page, 10f, 50f, 100f, 24f);
+        TestSupport.AssertXY(78f, 52f, new float[] {box.x, box.y});
+        Assert.Equal(3, box.draws);
+    }
+
+    [Fact]
+    public void TextSetAfterTheDrawableIsDrawnAndMeasuredInstead() {
+        PDF pdf = TestSupport.NewPDF();
+        Box box = new Box();
+        Cell cell = new Cell(TestSupport.Helvetica(pdf)).SetDrawable(box);
+        cell.SetText("x");
+        TestSupport.AssertNear(17.872f, cell.GetHeight(100f), TestSupport.DELTA, "height");
+        cell.DrawOn(new Page(pdf, Letter.PORTRAIT), 10f, 50f, 100f, 24f);
+        Assert.Equal(0, box.draws);
+        Assert.Same(box, cell.GetDrawable());
+    }
+
+    [Fact]
+    public void ATableFitsItsColumnsToAnyDrawable() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "a")},
+            new List<Cell> {new Cell(font).SetDrawable(new Box())},
+        };
+        Table table = new Table().SetTableData(data, 1).AutoAdjustColumnWidths();
+        TestSupport.AssertNear(34f, table.GetColumnWidth(0), TestSupport.DELTA, "width");
+    }
+
     [Fact]
     public void ACellWithoutTextHasNoHeight() {
         Assert.Equal(0f, new Cell(TestSupport.Helvetica(TestSupport.NewPDF())).GetHeight(100f));

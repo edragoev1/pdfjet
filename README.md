@@ -312,6 +312,10 @@ has one job:
 
 `Table` and `BigTable` draw tables, with a `TextBlock` in a cell when the
 cell text needs wrapping. Example_01, 10, 16, 19, 35 and 47 show these classes.
+A cell holds text or one drawable, set with `Cell.setDrawable` (or
+`setImage`, `setBarcode`, `setTextBlock`, `setTextColumn`): an image, a QR
+code, a chart or another table, placed at the padding and aligned as the text
+is.
 `BigTable` is for tables of any length: it reads its rows from a delimited
 file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
 `IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go

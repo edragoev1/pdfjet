@@ -261,8 +261,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setTextAlignment(alignment);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setTextAlignment(alignment);
+                if (cell.getTextBlock() != null) {
+                    cell.getTextBlock().setTextAlignment(alignment);
                 }
             }
         }
@@ -281,8 +281,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setTextColor(color);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setTextColor(color);
+                if (cell.getTextBlock() != null) {
+                    cell.getTextBlock().setTextColor(color);
                 }
             }
         }
@@ -301,8 +301,8 @@ public class Table implements Drawable {
             if (index < row.size()) {
                 Cell cell = row.get(index);
                 cell.setFont(font).setFontSize(font.getSize());
-                if (cell.textBlock != null) {
-                    cell.textBlock.font = font;
+                if (cell.getTextBlock() != null) {
+                    cell.getTextBlock().font = font;
                 }
             }
         }
@@ -321,8 +321,8 @@ public class Table implements Drawable {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
                 cell.setTextColor(color);
-                if (cell.textBlock != null) {
-                    cell.textBlock.setTextColor(color);
+                if (cell.getTextBlock() != null) {
+                    cell.getTextBlock().setTextColor(color);
                 }
             }
         }
@@ -341,8 +341,8 @@ public class Table implements Drawable {
             List<Cell> row = tableData.get(index);
             for (Cell cell : row) {
                 cell.setFont(font).setFontSize(font.getSize());
-                if (cell.textBlock != null) {
-                    cell.textBlock.font = font;
+                if (cell.getTextBlock() != null) {
+                    cell.getTextBlock().font = font;
                 }
             }
         }
@@ -696,27 +696,20 @@ public class Table implements Drawable {
             for (int i = 0; i < row.size(); i++) {
                 Cell cell = row.get(i);
                 if (cell.getColSpan() == 1) {
-                    if (cell.textBlock != null) {
-                        String[] tokens = Util.splitOnWhitespace(cell.textBlock.textContent);
+                    TextBlock textBlock = cell.getTextBlock();
+                    if (textBlock != null) {
+                        String[] tokens = Util.splitOnWhitespace(textBlock.textContent);
                         for (String token : tokens) {
-                            float tokenWidth = cell.textBlock.font.stringWidth(cell.textBlock.fallbackFont, token);
+                            float tokenWidth = textBlock.font.stringWidth(textBlock.fallbackFont, token);
                             tokenWidth += cell.leftPadding + cell.rightPadding;
                             if (tokenWidth > maxColWidths[i]) {
                                 maxColWidths[i] = tokenWidth;
                             }
                         }
-                    } else if (cell.image != null) {
-                        float imageWidth = cell.image.getWidth() + cell.leftPadding + cell.rightPadding;
-                        if (imageWidth > maxColWidths[i]) {
-                            maxColWidths[i] = imageWidth;
-                        }
-                    } else if (cell.barcode != null) {
-                        try {
-                            float barcodeWidth = cell.barcode.drawOn(null)[0] + cell.leftPadding + cell.rightPadding;
-                            if (barcodeWidth > maxColWidths[i]) {
-                                maxColWidths[i] = barcodeWidth;
-                            }
-                        } catch (Exception e) {
+                    } else if (cell.drawable != null) {
+                        float drawableWidth = Cell.measure(cell.drawable)[0] + cell.leftPadding + cell.rightPadding;
+                        if (drawableWidth > maxColWidths[i]) {
+                            maxColWidths[i] = drawableWidth;
                         }
                     } else if (cell.text != null) {
                         float textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text);

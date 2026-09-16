@@ -204,20 +204,6 @@ public class Barcode : IDrawable {
         }
     }
 
-    internal float[] DrawOnPageAtLocation(Page page, float x1, float y1) {
-        if (barcodeType == Barcode.EAN_13) {
-            return DrawCodeEAN13(page, x1, y1);
-        } else if (barcodeType == Barcode.UPC_A) {
-            return DrawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_128) {
-            return DrawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_39) {
-            return DrawCode39(page, x1, y1);
-        } else {
-            throw new Exception("Unsupported Barcode Type.");
-        }
-    }
-
     private float[] DrawCodeUPC(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally

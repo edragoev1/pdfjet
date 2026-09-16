@@ -246,8 +246,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setTextAlignment(alignment)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setTextAlignment(alignment)
+                if let textBlock = cell.getTextBlock() {
+                    textBlock.setTextAlignment(alignment)
                 }
             }
         }
@@ -266,8 +266,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setTextColor(color)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setTextColor(color)
+                if let textBlock = cell.getTextBlock() {
+                    textBlock.setTextColor(color)
                 }
             }
         }
@@ -286,8 +286,8 @@ public class Table : Drawable {
             if index < row.count {
                 let cell = row[index]
                 cell.setFont(font).setFontSize(font.size)
-                if cell.textBlock != nil {
-                    cell.textBlock!.font = font
+                if let textBlock = cell.getTextBlock() {
+                    textBlock.font = font
                 }
             }
         }
@@ -306,8 +306,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.setTextColor(color)
-                if cell.textBlock != nil {
-                    cell.textBlock!.setTextColor(color)
+                if let textBlock = cell.getTextBlock() {
+                    textBlock.setTextColor(color)
                 }
             }
         }
@@ -326,8 +326,8 @@ public class Table : Drawable {
             let row = tableData[index]
             for cell in row {
                 cell.setFont(font).setFontSize(font.size)
-                if cell.textBlock != nil {
-                    cell.textBlock!.font = font
+                if let textBlock = cell.getTextBlock() {
+                    textBlock.font = font
                 }
             }
         }
@@ -677,24 +677,19 @@ public class Table : Drawable {
             for i in 0..<row.count {
                 let cell = row[i]
                 if cell.getColSpan() == 1 {
-                    if cell.textBlock != nil {
-                        let tokens = cell.textBlock!.textContent.splitOnWhitespace()
+                    if let textBlock = cell.getTextBlock() {
+                        let tokens = textBlock.textContent.splitOnWhitespace()
                         for token in tokens {
-                            var tokenWidth = cell.textBlock!.font.stringWidth(cell.textBlock!.fallbackFont, token)
+                            var tokenWidth = textBlock.font.stringWidth(textBlock.fallbackFont, token)
                             tokenWidth += cell.leftPadding + cell.rightPadding
                             if tokenWidth > maxColWidths[i] {
                                 maxColWidths[i] = tokenWidth
                             }
                         }
-                    } else if cell.image != nil {
-                        let imageWidth = cell.image!.getWidth() + cell.leftPadding + cell.rightPadding
-                        if imageWidth > maxColWidths[i] {
-                            maxColWidths[i] = imageWidth
-                        }
-                    } else if cell.barcode != nil {
-                        let barcodeWidth = cell.barcode!.drawOn(nil)[0] + cell.leftPadding + cell.rightPadding
-                        if barcodeWidth > maxColWidths[i] {
-                            maxColWidths[i] = barcodeWidth
+                    } else if let drawable = cell.drawable {
+                        let drawableWidth = Cell.measure(drawable)[0] + cell.leftPadding + cell.rightPadding
+                        if drawableWidth > maxColWidths[i] {
+                            maxColWidths[i] = drawableWidth
                         }
                     } else if cell.text != nil {
                         var textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text)
