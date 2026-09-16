@@ -357,6 +357,9 @@ final public class Image implements Drawable {
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return new float[] {x + w, y + h};  // Measured, not drawn
+        }
         if (pdf != null && page.pdf != pdf) {
             page.pdf.fail(new IllegalArgumentException("The image belongs to another PDF."));
         }

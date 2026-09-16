@@ -359,7 +359,7 @@ public class Chart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         // Guard against null or empty data
-        if (!hasPoints()) {
+        if (page == null || !hasPoints()) {    // Measured, or nothing to draw
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 

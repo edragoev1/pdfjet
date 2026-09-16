@@ -433,6 +433,9 @@ public class Stamp : IDrawable {
 
     /// <summary>Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.</summary>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] { this.x + width, this.y + height };  // Measured, not drawn
+        }
         if (page.pdf != pdf) {
             page.pdf.Fail(new ArgumentException("The stamp belongs to another PDF."));
         }

@@ -34,8 +34,8 @@ public sealed class TableTest : IDisposable {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Table table = new Table().SetTableData(Rows(font, 5, 3), 1).SetLocation(20f, 20f);
-        TestSupport.AssertXY(20f, 109.36f, table.DrawOn((Page) null));
-        TestSupport.AssertXY(20f, 109.36f, table.DrawOn(new Page(pdf, Letter.PORTRAIT)));
+        TestSupport.AssertXY(245f, 109.36f, table.DrawOn((Page) null));
+        TestSupport.AssertXY(245f, 109.36f, table.DrawOn(new Page(pdf, Letter.PORTRAIT)));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class TableTest : IDisposable {
         PDF pdf = TestSupport.NewPDF();
         Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 1), 1).SetLocation(20f, 20f);
         List<Page> pages = new List<Page>();
-        TestSupport.AssertXY(20f, 341.696f, table.DrawOn(pdf, pages, Letter.PORTRAIT));
+        TestSupport.AssertXY(95f, 341.696f, table.DrawOn(pdf, pages, Letter.PORTRAIT));
         Assert.Equal(2, pages.Count);
         string first = TestSupport.Content(pages[0]);
         string second = TestSupport.Content(pages[1]);

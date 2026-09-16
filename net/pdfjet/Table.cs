@@ -388,7 +388,7 @@ public class Table : IDrawable {
     /// Draws this table on the specified page.
     /// </summary>
     /// <param name="page">the page to draw this table on.</param>
-    /// <returns>Point the point on the page where to draw the next component.</returns>
+    /// <returns>the x and y coordinates of the bottom right corner of the table.</returns>
     public float[] DrawOn(Page page) {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table draws nothing.
@@ -396,7 +396,8 @@ public class Table : IDrawable {
         WrapAroundCellText();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
-        return DrawTableRows(page, DrawHeaderRows(page, 0));
+        float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
+        return new float[] {x1 + GetWidth(), xy[1]};
     }
 
     /// <summary>
@@ -406,7 +407,7 @@ public class Table : IDrawable {
     /// <param name="pdf">the PDF document.</param>
     /// <param name="pages">the list that receives the new pages.</param>
     /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
-    /// <returns>the x and y coordinates below the table on the last page.</returns>
+    /// <returns>the x and y coordinates of the bottom right corner of the table on the last page.</returns>
     public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table needs no page.
@@ -422,7 +423,7 @@ public class Table : IDrawable {
             xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
             pageNumber++;
         }
-        return xy;
+        return new float[] {x1 + GetWidth(), xy[1]};
     }
 
     private float[] DrawHeaderRows(Page page, int pageNumber) {

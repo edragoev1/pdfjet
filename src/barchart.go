@@ -310,7 +310,7 @@ func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarC
 // DrawOn draws this chart on the specified page and returns the bottom right corner coordinates.
 func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	n := chart.numberOfCategories()
-	if n == 0 {
+	if page == nil || n == 0 { // Measured, or nothing to draw
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 	f1 := chart.f1

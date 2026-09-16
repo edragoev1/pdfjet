@@ -237,6 +237,9 @@ public class Arc : Drawable {
             startAngle = atan2(p2.y - cy, p2.x - cx) * (180.0 / Float.pi)
         }
 
+        if page == nil {
+            return [cx + rx, cy + ry]   // Measured, not drawn
+        }
         page!.addBDC(StructElem.P, language, actualText, altDescription)
         page!.saveGraphicsState()
         let centerX = cx

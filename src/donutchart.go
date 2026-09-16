@@ -237,7 +237,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			total += slice.value
 		}
 	}
-	if total <= 0.0 {
+	if page == nil || total <= 0.0 { // Measured, or nothing to draw
 		return [2]float32{xc + dc.r1, yc + dc.r1}
 	}
 

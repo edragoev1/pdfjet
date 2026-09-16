@@ -86,11 +86,13 @@ public class QRCode : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        page.SetBrushColor(this.color);
-        for (int row = 0; row < modules.Length; row++) {
-            for (int col = 0; col < modules.Length; col++) {
-                if (IsDark(row, col)) {
-                    page.FillRect(x + col*m1, y + row*m1, m1, m1);
+        if (page != null) {
+            page.SetBrushColor(this.color);
+            for (int row = 0; row < modules.Length; row++) {
+                for (int col = 0; col < modules.Length; col++) {
+                    if (IsDark(row, col)) {
+                        page.FillRect(x + col*m1, y + row*m1, m1, m1);
+                    }
                 }
             }
         }

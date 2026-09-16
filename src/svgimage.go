@@ -391,6 +391,9 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 
 // DrawOn draws this svgParser image on the specified page.
 func (image *SVGImage) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return [2]float32{image.x + image.w, image.y + image.h} // Measured, not drawn
+	}
 	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)

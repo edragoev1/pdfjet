@@ -83,6 +83,31 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       (`benchmarks/results/2026-09-16-542b3dbf-table.log`). If yes, the method
       lands in 9.0.0, so there are never two ways of giving a table its data
       arriving in different releases.
+- ⬜ **B** One content field in `Cell`. `image`, `barcode`, `textBlock` and
+      `textColumn` are four fields that are meant to exclude each other, but
+      each setter clears only the cell text, and `drawOn` and `getHeight` try
+      them in a fixed order, so after `setImage` then `setTextBlock` the text
+      block is drawn whichever came last. Hold one `Drawable`, so the last
+      setter wins and any drawable whose location is its top left corner can
+      go in a cell (a QR code, an SVG image, a chart, a table). The cell
+      measures its content with `drawOn(null)`, which not every `Drawable`
+      supports (`Image.drawOn(null)` fails on `page.pdf`), so the drawables
+      measure without drawing first, in the four ports. `getImage`,
+      `getBarcode`, `getTextBlock` and `getTextColumn` stay, returning the
+      content when it is of that type; `Table`'s column and row setters that
+      reach into `cell.textBlock` check the type. `point` (a marker drawn
+      beside the content) and `compositeTextLine` (drawn with the text) stay
+      fields. Memory is not the reason: about 16 bytes a cell in Java, 1% of
+      the `Table` benchmark peak, and more in Swift unless `Drawable` is
+      class-bound. Also remove the stray "The text box drawn in this cell."
+      comment in Java `Cell`.
+      Step 1 done (Sep 16): `drawOn(null)` measures in every `Drawable` in
+      the four ports, checked by a test that draws 29 drawables and compares
+      the measured corner with the drawn one and what is drawn after
+      measuring with what is drawn without. `Table` and `TextColumn` return
+      their right edge (the user's choice), and Example_10 subtracts the
+      column width. The 56 Java example PDFs have the same page content.
+      Left: the `Cell` change itself.
 - ⬜ Decide whether a quoted field may hold a line break (read on until the
       quotes balance) or document it as unsupported. Today it may not, in the
       four ports.

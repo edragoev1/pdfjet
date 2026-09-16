@@ -30,6 +30,15 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   `SVGImage` and `DonutChart` implement `Drawable`, and `DonutChart.drawOn`
   returns the bottom right corner of the outer circle. `DonutChart.setLocation`
   sets the top left corner of the outer circle, where it set the center.
+- `drawOn(null)` measures in every `Drawable`: it draws nothing and returns
+  the corner that drawing returns, without changing what a later draw draws.
+  `Image`, `SVGImage`, `QRCode`, `PDF417`, `Chart`, `BarChart`, `DonutChart`,
+  `Container`, `CalendarMonth`, `Form`, `CheckBox`, `RadioButton`, `Line`,
+  `Arc`, `Path`, `Stamp`, `FileAttachment` and the annotations failed on it,
+  and `TextLine`, `CompositeTextLine` and `Title` returned their location.
+  `Table.drawOn` and `TextColumn.drawOn` return the bottom right corner, as
+  `Drawable` says, where they returned the left x: code that drew next to them
+  from `xy[0]` subtracts the width now, as Example_10 does.
 - `Box` is removed in favor of `Rect`: `setColor` becomes `setBorderColor`, or
   `setFillColor` with `setFillShape(true)`, and `setLineWidth` and `setPattern`
   become `setBorderWidth` and `setBorderDashPattern`.
@@ -520,8 +529,7 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
 
 ### Errors
 - Swift `PDF.complete()` throws when the PDF cannot be written, and Swift
-  throws on invalid PNG, BMP, OTF and SVG data and stops with an error on
-  `Form.drawOn(nil)`.
+  throws on invalid PNG, BMP, OTF and SVG data.
 - The Swift `Barcode` and `QRCode` initializers throw a `PDFjetError`, as Java
   and C# throw, where they stopped the program with `fatalError`: for UPC-A or
   EAN-13 text that is not 11 or 12 digits, a barcode type the class does not

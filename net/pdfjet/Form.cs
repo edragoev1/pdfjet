@@ -162,10 +162,6 @@ public class Form : IDrawable {
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     /// <exception cref="System.Exception">If an input or output exception occurred</exception>
     public float[] DrawOn(Page page) {
-        if (page == null) {
-            throw new ArgumentNullException(nameof(page), "Page cannot be null");
-        }
-
         float yField = 0f;
         float xOffset = 3f;
         for (int i = 0; i < fields.Count; i++) {

@@ -590,6 +590,9 @@ public class Stamp implements Drawable {
      * @return the x and y coordinates of the bottom right corner of this stamp.
      */
     public float[] drawOn(Page page) {
+        if (page == null) {
+            return new float[] { this.x + width, this.y + height };  // Measured, not drawn
+        }
         if (page.pdf != pdf) {
             page.pdf.fail(new IllegalArgumentException("The stamp belongs to another PDF."));
         }

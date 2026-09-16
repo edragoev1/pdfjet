@@ -111,6 +111,9 @@ public class CalendarMonth implements Drawable {
     }
 
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return new float[] {this.x1 + 7*this.dx, this.y1 + 7*this.dy};  // Measured, not drawn
+        }
         for (int row = 0; row < 7; row++) {
             for (int col = 0; col < 7; col++) {
                 if (row == 0) {

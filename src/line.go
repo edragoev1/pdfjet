@@ -199,6 +199,9 @@ func (line *Line) ScaleBy(factor float32) *Line {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (line *Line) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return [2]float32{max(line.x1, line.x2), max(line.y1, line.y2)} // Measured, not drawn
+	}
 	page.AddBDC(structelem.P, line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
 	page.SetPenColorRGB(line.color)

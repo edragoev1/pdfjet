@@ -195,6 +195,15 @@ public class Path : IDrawable {
     /// <param name="page">the page to draw this path on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {     // Measured, not drawn
+            float xMost = 0f;
+            float yMost = 0f;
+            foreach (Point point in points) {
+                xMost = Math.Max(xMost, point.x + xBox);
+                yMost = Math.Max(yMost, point.y + yBox);
+            }
+            return new float[] {xMost, yMost};
+        }
         foreach (Point point in points) {
             point.x += xBox;
             point.y += yBox;

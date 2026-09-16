@@ -167,7 +167,7 @@ public class TextColumn : Drawable {
     /// If the page is nil, nothing is drawn and only the location of the next component is computed.
     ///
     /// - Parameter page: the page to draw this text column on.
-    /// - Returns: the point with x and y coordinates of the location where to draw the next component.
+    /// - Returns: the x and y coordinates of the bottom right corner of this text column.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -181,7 +181,7 @@ public class TextColumn : Drawable {
         if y + h > xy[1] {
             xy[1] = y + h
         }
-        return xy
+        return [x + w, xy[1]]
     }
 
     private func drawParagraphOn(_ page: Page?, _ paragraph: Paragraph) -> [Float] {

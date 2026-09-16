@@ -251,7 +251,7 @@ func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) *Chart {
 //   - page: the page to draw chart on.
 func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Guard against null or empty data
-	if !chart.hasPoints() {
+	if page == nil || !chart.hasPoints() { // Measured, or nothing to draw
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 

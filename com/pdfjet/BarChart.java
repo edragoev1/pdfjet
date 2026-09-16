@@ -434,7 +434,7 @@ public class BarChart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         int n = numberOfCategories();
-        if (n == 0) {
+        if (page == null || n == 0) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
         }
 

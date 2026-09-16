@@ -322,6 +322,9 @@ func (image *Image) SetLanguage(language string) *Image {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return [2]float32{image.x + image.w, image.y + image.h} // Measured, not drawn
+	}
 	if image.pdf != nil && page.pdf != image.pdf {
 		page.pdf.fail("The image belongs to another PDF.")
 		return [2]float32{image.x + image.w, image.y + image.h}

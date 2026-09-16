@@ -214,6 +214,15 @@ public class Path : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if page == nil {    // Measured, not drawn
+            var xMax: Float = 0.0
+            var yMax: Float = 0.0
+            for point in points {
+                xMax = max(xMax, point.x + xBox)
+                yMax = max(yMax, point.y + yBox)
+            }
+            return [xMax, yMax]
+        }
         for point in points {
             point.x += xBox
             point.y += yBox

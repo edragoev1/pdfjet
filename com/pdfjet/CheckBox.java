@@ -197,12 +197,15 @@ public class CheckBox implements Drawable {
      *  @param page the Page where the CheckBox is to be drawn.
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBDC(StructElem.P, language, actualText, altDescription);
-
         this.w = font.getAscent();
         this.h = this.w;
         this.penWidth = this.w/15;
         this.checkWidth = this.w/5;
+        if (page == null) {     // Measured, not drawn
+            return new float[] { x + 3f*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
+        }
+
+        page.addBDC(StructElem.P, language, actualText, altDescription);
 
         float yBox = y;
         page.setPenWidth(penWidth);

@@ -346,6 +346,9 @@ public class SVGImage : IDrawable {
 
     /// <summary>Draws this SVG image on the specified page.</summary>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {x + w, y + h};  // Measured, not drawn
+        }
         page.AddBDC(StructElem.P, language, actualText, altDescription);
         foreach (SVGPath path in paths) {
             drawPath(path, page);

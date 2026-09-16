@@ -81,6 +81,9 @@ func (calendarMonth *CalendarMonth) SetCellHeight(height float32) *CalendarMonth
 
 // DrawOn draws the calendar month on the page.
 func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
+	if page == nil { // Measured, not drawn
+		return [2]float32{calendarMonth.x1 + 7*calendarMonth.dx, calendarMonth.y1 + 7*calendarMonth.dy}
+	}
 	for row := 0; row < 7; row++ {
 		for col := 0; col < 7; col++ {
 			if row == 0 {

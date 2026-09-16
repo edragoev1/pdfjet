@@ -295,6 +295,9 @@ public class PDF417 : IDrawable {
             float y,
             float w,    // Bar width
             float h) {
+        if (page == null) {
+            return;     // Measured, not drawn
+        }
         page.AddArtifactBMC();
         page.SetPenWidth(w);
         page.MoveTo(x + w/2, y);

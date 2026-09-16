@@ -115,9 +115,9 @@ public class Example_10 {
         float[] xy = column.drawOn(page);
 
         Line line = new Line(
-                xy[0],
+                xy[0] - columnWidth,
                 xy[1],
-                xy[0] + columnWidth,
+                xy[0],
                 xy[1]);
         line.drawOn(page);
 

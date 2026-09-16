@@ -123,9 +123,9 @@ func Example10() {
 	xy := column.DrawOn(page)
 
 	line := pdfjet.NewLine(
-		xy[0],
+		xy[0]-columnWidth,
 		xy[1],
-		xy[0]+columnWidth,
+		xy[0],
 		xy[1])
 	line.DrawOn(page)
 

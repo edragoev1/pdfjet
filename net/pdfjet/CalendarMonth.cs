@@ -85,6 +85,9 @@ public class CalendarMonth : IDrawable {
 
     /// <summary>Draws this calendar on the specified page.</summary>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {this.x1 + 7*this.dx, this.y1 + 7*this.dy};  // Measured, not drawn
+        }
         for (int row = 0; row < 7; row++) {
             for (int col = 0; col < 7; col++) {
                 if (row == 0) {

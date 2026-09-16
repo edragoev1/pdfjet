@@ -133,8 +133,8 @@ func (c *Container) Add(element Drawable) *Container {
 // Returns a slice containing the bottom-right position of the container.
 // Returns an error if drawing fails.
 func (c *Container) DrawOn(page *Page) [2]float32 {
-	if c.scaleX == 0 || c.scaleY == 0 {
-		return [2]float32{c.x + c.width, c.y + c.height} // Nothing to paint.
+	if page == nil || c.scaleX == 0 || c.scaleY == 0 {
+		return [2]float32{c.x + c.width, c.y + c.height} // Measured, or nothing to paint.
 	}
 	page.SaveGraphicsState()
 

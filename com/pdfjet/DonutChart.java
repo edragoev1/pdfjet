@@ -241,7 +241,7 @@ public class DonutChart implements Drawable {
                 total += slice.value;
             }
         }
-        if (total <= 0.0f) {
+        if (page == null || total <= 0.0f) {   // Measured, or nothing to draw
             return new float[] {xc + r1, yc + r1};
         }
         float angle = 0.0f;

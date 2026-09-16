@@ -508,8 +508,11 @@ public class TextLine : IDrawable {
     /// <param name="page">the page to draw this text line on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        if (page == null || text == null || text.Equals("")) {
+        if (text == null || text.Equals("")) {
             return new float[] {x, y};
+        }
+        if (page == null) {
+            return GetCorner(GetVerticalOffset());  // Measured, not drawn
         }
         if (destination != null) {
             page.AddDestination(destination, DestinationY());
@@ -584,10 +587,16 @@ public class TextLine : IDrawable {
         }
         page.SetTextRotation(0);
 
+        return GetCorner(verticalOffset);
+    }
+
+    // Returns the right end of the baseline, or its lower end when the text is rotated.
+    private float[] GetCorner(float verticalOffset) {
+        // The trigonometry turns counterclockwise, where the rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
         float len = font.StringWidth(fallbackFont, fontSize, text);
         double xMax = Math.Max((double) x, x + len*Math.Cos(radians));
         double yMax = Math.Max((double) (y + verticalOffset), (y + verticalOffset) - len*Math.Sin(radians));
-
         return new float[] {(float) xMax, (float) yMax};
     }
 }   // End of TextLine.cs

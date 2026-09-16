@@ -237,6 +237,9 @@ public class Line implements Drawable {
      *  @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return new float[] {Math.max(x1, x2), Math.max(y1, y2)};    // Measured, not drawn
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
         page.setPenColor(color);

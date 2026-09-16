@@ -336,87 +336,90 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if let identity = pdfIdentity, identity != page!.pdf.identity {
-            page!.pdf.fail("The image belongs to another PDF.")
+        guard let page = page else {
+            return [x + w!, y + h!]     // Measured, not drawn
+        }
+        if let identity = pdfIdentity, identity != page.pdf.identity {
+            page.pdf.fail("The image belongs to another PDF.")
             return [x + w!, y + h!]
         }
         if w! == 0.0 || h! == 0.0 {
             return [x + w!, y + h!]     // A zero size image paints nothing.
         }
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
-        page!.saveGraphicsState()
+        page.addBDC(StructElem.P, language, actualText, altDescription)
+        page.saveGraphicsState()
 
         if degrees == 0 {
-            page!.append(w!)
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(h!)
-            page!.append(Token.space)
-            page!.append(x)
-            page!.append(Token.space)
-            page!.append(page!.height - (y + h!))
-            page!.append(" cm\n")
+            page.append(w!)
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(h!)
+            page.append(Token.space)
+            page.append(x)
+            page.append(Token.space)
+            page.append(page.height - (y + h!))
+            page.append(" cm\n")
         } else if degrees == 90 {
-            page!.append(h!)
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(w!)
-            page!.append(Token.space)
-            page!.append(x)
-            page!.append(Token.space)
-            page!.append(page!.height - y)
-            page!.append(" cm\n")
-            page!.append("0 -1 1 0 0 0 cm\n")
+            page.append(h!)
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(w!)
+            page.append(Token.space)
+            page.append(x)
+            page.append(Token.space)
+            page.append(page.height - y)
+            page.append(" cm\n")
+            page.append("0 -1 1 0 0 0 cm\n")
         } else if degrees == 180 {
-            page!.append(w!)
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(h!)
-            page!.append(Token.space)
-            page!.append(x + w!)
-            page!.append(Token.space)
-            page!.append(page!.height - y)
-            page!.append(" cm\n")
-            page!.append("-1 0 0 -1 0 0 cm\n")
+            page.append(w!)
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(h!)
+            page.append(Token.space)
+            page.append(x + w!)
+            page.append(Token.space)
+            page.append(page.height - y)
+            page.append(" cm\n")
+            page.append("-1 0 0 -1 0 0 cm\n")
         } else if degrees == 270 {
-            page!.append(h!)
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(Float(0.0))
-            page!.append(Token.space)
-            page!.append(w!)
-            page!.append(Token.space)
-            page!.append(x + h!)
-            page!.append(Token.space)
-            page!.append(page!.height - (y + w!))
-            page!.append(" cm\n")
-            page!.append("0 1 -1 0 0 0 cm\n")
+            page.append(h!)
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(Float(0.0))
+            page.append(Token.space)
+            page.append(w!)
+            page.append(Token.space)
+            page.append(x + h!)
+            page.append(Token.space)
+            page.append(page.height - (y + w!))
+            page.append(" cm\n")
+            page.append("0 1 -1 0 0 0 cm\n")
         }
 
         if flipUpsideDown {
-            page!.append("1 0 0 -1 0 1 cm\n")
+            page.append("1 0 0 -1 0 1 cm\n")
         }
 
-        page!.append("/Im")
-        page!.append(objNumber!)
-        page!.append(" Do\n")
+        page.append("/Im")
+        page.append(objNumber!)
+        page.append(" Do\n")
 
-        page!.restoreGraphicsState()
+        page.restoreGraphicsState()
 
-        page!.addEMC()
+        page.addEMC()
 
         if uri != nil || key != nil {
-            page!.addAnnotation(Annotation(
+            page.addAnnotation(Annotation(
                     Annotation.Link,
                     x,
                     y,

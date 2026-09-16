@@ -378,6 +378,9 @@ public class SVGImage implements Drawable {
      * @return the array containing the x and y of the SVG image.
      */
     public float[] drawOn(Page page) {
+        if (page == null) {
+            return new float[] {x + w, y + h};  // Measured, not drawn
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription);
         for (SVGPath path : paths) {
             drawPath(path, page);

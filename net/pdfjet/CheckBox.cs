@@ -172,12 +172,15 @@ public class CheckBox : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
-
         this.w = font.GetAscent();
         this.h = this.w;
         this.penWidth = this.w/15;
         this.checkWidth = this.w/5;
+        if (page == null) {     // Measured, not drawn
+            return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
+        }
+
+        page.AddBDC(StructElem.P, language, actualText, altDescription);
 
         float yBox = y;
         page.SetPenWidth(penWidth);

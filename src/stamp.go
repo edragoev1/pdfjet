@@ -435,6 +435,9 @@ func (s *Stamp) appendCodePointAsHex(codePoint int) {
 // DrawOn draws this stamp on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (s *Stamp) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return [2]float32{s.x + s.width, s.y + s.height} // Measured, not drawn
+	}
 	if page.pdf != s.pdf {
 		page.pdf.fail("The stamp belongs to another PDF.")
 		return [2]float32{s.x + s.width, s.y + s.height}

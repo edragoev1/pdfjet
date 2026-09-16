@@ -117,7 +117,6 @@ public class Form : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let page: Page = page! // A form needs a page, like a check box or a radio button.
 
         var yField: Float = 0.0
         let xOffset: Float = 3.0

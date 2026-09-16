@@ -276,6 +276,9 @@ public class Arc implements Drawable {
             startAngle = (float) (Math.atan2((double)(line.y2 - cy), (double)(line.x2 - cx)) * (180.0 / Math.PI));
         }
 
+        if (page == null) {
+            return new float[] {cx + rx, cy + ry};  // Measured, not drawn
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription);
         page.saveGraphicsState();
         float centerX = cx;

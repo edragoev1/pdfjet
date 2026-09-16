@@ -111,9 +111,9 @@ public class Example_10 {
         let xy = column.drawOn(page)
 
         let line = Line(
-                xy[0],
+                xy[0] - columnWidth,
                 xy[1],
-                xy[0] + columnWidth,
+                xy[0],
                 xy[1])
         line.drawOn(page)
 

@@ -133,6 +133,9 @@ public abstract class BaseAnnotation implements Drawable {
     }
 
     public float[] drawOn(Page page) {
+        if (page == null) {
+            return new float[] {point2[0], point2[1]};  // Measured, not drawn
+        }
         page.addAnnotation(new Annotation(
                 annotationType,
                 point1[0],
@@ -149,6 +152,6 @@ public abstract class BaseAnnotation implements Drawable {
                 language,
                 actualText,
                 altDescription));
-        return point2;
+        return new float[] {point2[0], point2[1]};
     }
 }

@@ -164,8 +164,8 @@ public class Container : IDrawable {
     /// <returns>An array containing the bottom-right position of the container.</returns>
     /// <exception cref="System.Exception">Thrown if drawing fails.</exception>
     public float[] DrawOn(Page page) {
-        if (scaleX == 0f || scaleY == 0f) {
-            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        if (page == null || scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Measured, or nothing to paint.
         }
         page.SaveGraphicsState();
 

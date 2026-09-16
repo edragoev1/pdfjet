@@ -219,6 +219,9 @@ public class Arc : IDrawable {
             startAngle = MathF.Atan2(line.y2 - cy, line.x2 - cx) * (180f / MathF.PI);
         }
 
+        if (page == null) {
+            return new float[] {cx + rx, cy + ry};  // Measured, not drawn
+        }
         page.AddBDC(StructElem.P, language, actualText, altDescription);
 
         page.SaveGraphicsState();

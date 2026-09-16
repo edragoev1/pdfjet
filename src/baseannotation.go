@@ -112,6 +112,9 @@ func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
 
 // DrawOn draws the annotation on the specified page.
 func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
+	if page == nil {
+		return b.point2 // Measured, not drawn
+	}
 	page.addAnnotation(&annotationObject{
 		annotationType: b.annotationType,
 		x1:             b.point1[0],

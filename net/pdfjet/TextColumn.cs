@@ -154,7 +154,7 @@ public class TextColumn : IDrawable {
     /// With no page nothing is drawn and the location of the next component is computed.
     /// </summary>
     /// <param name="page">the page to draw this text column on.</param>
-    /// <returns>the point with x and y coordinates of the location where to draw the next component.</returns>
+    /// <returns>the x and y coordinates of the bottom right corner of this text column.</returns>
     public float[] DrawOn(Page page) {
         float[] xy = new float[] {x, y};
         foreach (Paragraph paragraph in paragraphs) {
@@ -166,7 +166,7 @@ public class TextColumn : IDrawable {
         if (y + h > xy[1]) {
             xy[1] = y + h;
         }
-        return xy;
+        return new float[] {x + w, xy[1]};
     }
 
     private float[] DrawParagraphOn(Page page, Paragraph paragraph) {

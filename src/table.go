@@ -350,7 +350,7 @@ func (table *Table) GetColumn(index int) []*Cell {
 // DrawOn draws this table on the specified page.
 //   - page: the page to draw this table on.
 //
-// Returns Point the point on the page where to draw the next component.
+// Returns the x and y coordinates of the bottom right corner of the table.
 func (table *Table) DrawOn(page *Page) [2]float32 {
 	if len(table.tableData) == 0 {
 		return [2]float32{table.x1, table.y1} // An empty table draws nothing.
@@ -358,12 +358,14 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.wrapAroundCellText()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
-	return table.drawTableRows(page, table.drawHeaderRows(page, 0))
+	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
+	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
 
 // DrawOnPages draws this table on as many new pages as it needs.
 // The pages are created detached and added to the list; add them to the PDF afterwards.
-// It returns the x and y coordinates below the table on the last page.
+// It returns the x and y coordinates of the bottom right corner of the table on
+// the last page.
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	if len(table.tableData) == 0 {
 		return [2]float32{table.x1, table.y1} // An empty table needs no page.
@@ -379,7 +381,7 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 		xy = table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
 		pageNumber++
 	}
-	return xy
+	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
 
 // drawHeaderRows draws the header rows at the top of the page and returns

@@ -170,6 +170,9 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
 	}
 
+	if page == nil {
+		return [2]float32{arc.cx + arc.rx, arc.cy + arc.ry} // Measured, not drawn
+	}
 	page.AddBDC("P", arc.language, arc.actualText, arc.altDescription)
 
 	page.SaveGraphicsState()

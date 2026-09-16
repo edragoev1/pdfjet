@@ -320,6 +320,9 @@ public class Image : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {x + w, y + h};  // Measured, not drawn
+        }
         if (pdf != null && page.pdf != pdf) {
             page.pdf.Fail(new ArgumentException("The image belongs to another PDF."));
         }

@@ -289,6 +289,9 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 }
 
 func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {
+	if page == nil {
+		return // Measured, not drawn
+	}
 	page.AddArtifactBMC()
 	page.SetPenWidth(w)
 	page.MoveTo(x+w/2, y)

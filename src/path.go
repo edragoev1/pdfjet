@@ -178,6 +178,15 @@ func (path *Path) ScaleBy(factor float32) *Path {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (path *Path) DrawOn(page *Page) [2]float32 {
+	if page == nil { // Measured, not drawn
+		var xMax float32 = 0.0
+		var yMax float32 = 0.0
+		for _, point := range path.points {
+			xMax = max(xMax, point.x+path.xBox)
+			yMax = max(yMax, point.y+path.yBox)
+		}
+		return [2]float32{xMax, yMax}
+	}
 	for _, point := range path.points {
 		point.x += path.xBox
 		point.y += path.yBox

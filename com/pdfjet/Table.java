@@ -423,7 +423,7 @@ public class Table implements Drawable {
      *
      * @param page the page to draw this table on.
      *
-     * @return Point the point on the page where to draw the next component.
+     * @return the x and y coordinates of the bottom right corner of the table.
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
@@ -433,7 +433,8 @@ public class Table implements Drawable {
         wrapAroundCellText();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
-        return drawTableRows(page, drawHeaderRows(page, 0));
+        float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
+        return new float[] {x1 + getWidth(), xy[1]};
     }
 
     /**
@@ -443,7 +444,7 @@ public class Table implements Drawable {
      * @param pdf the PDF document.
      * @param pages the list that receives the new pages.
      * @param pageSize the page size, for example Letter.PORTRAIT.
-     * @return the x and y coordinates below the table on the last page.
+     * @return the x and y coordinates of the bottom right corner of the table on the last page.
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
@@ -461,7 +462,7 @@ public class Table implements Drawable {
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
             pageNumber++;
         }
-        return xy;
+        return new float[] {x1 + getWidth(), xy[1]};
     }
 
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {

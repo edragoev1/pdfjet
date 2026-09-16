@@ -41,8 +41,8 @@ class TableTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         Table table = new Table().setTableData(rows(font, 5, 3), 1).setLocation(20f, 20f);
-        TestSupport.assertXY(20f, 109.36f, table.drawOn((Page) null));
-        TestSupport.assertXY(20f, 109.36f, table.drawOn(new Page(pdf, Letter.PORTRAIT)));
+        TestSupport.assertXY(245f, 109.36f, table.drawOn((Page) null));
+        TestSupport.assertXY(245f, 109.36f, table.drawOn(new Page(pdf, Letter.PORTRAIT)));
     }
 
     @Test
@@ -63,7 +63,7 @@ class TableTest {
         PDF pdf = TestSupport.newPDF();
         Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20f, 20f);
         List<Page> pages = new ArrayList<Page>();
-        TestSupport.assertXY(20f, 341.696f, table.drawOn(pdf, pages, Letter.PORTRAIT));
+        TestSupport.assertXY(95f, 341.696f, table.drawOn(pdf, pages, Letter.PORTRAIT));
         assertEquals(2, pages.size());
         String first = TestSupport.content(pages.get(0));
         String second = TestSupport.content(pages.get(1));

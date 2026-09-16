@@ -308,6 +308,9 @@ public class PDF417 implements Drawable {
             float y,
             float w, // Bar width
             float h) throws Exception {
+        if (page == null) {
+            return;     // Measured, not drawn
+        }
         page.addArtifactBMC();
         page.setPenWidth(w);
         page.moveTo(x + w / 2, y);

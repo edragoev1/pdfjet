@@ -638,8 +638,11 @@ public class TextLine implements Drawable {
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null || text == null || text.equals("")) {
+        if (text == null || text.equals("")) {
             return new float[] {x, y};
+        }
+        if (page == null) {
+            return getCorner(getVerticalOffset());  // Measured, not drawn
         }
         if (destination != null) {
             page.addDestination(destination, destinationY());
@@ -714,10 +717,16 @@ public class TextLine implements Drawable {
         }
         page.setTextRotation(0);
 
+        return getCorner(verticalOffset);
+    }
+
+    // Returns the right end of the baseline, or its lower end when the text is rotated.
+    private float[] getCorner(float verticalOffset) {
+        // The trigonometry turns counterclockwise, where the rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
         float len = font.stringWidth(fallbackFont, fontSize, text);
         double xMax = Math.max(x, x + len*Math.cos(radians));
         double yMax = Math.max(y + verticalOffset, (y + verticalOffset) - len*Math.sin(radians));
-
         return new float[] {(float) xMax, (float) yMax};
     }
 }   // End of TextLine.java

@@ -188,8 +188,8 @@ public class Container implements Drawable {
      * @throws Exception if drawing fails
      */
     public float[] drawOn(Page page) throws Exception {
-        if (scaleX == 0f || scaleY == 0f) {
-            return new float[] { this.x + width, this.y + height };  // Nothing to paint.
+        if (page == null || scaleX == 0f || scaleY == 0f) {
+            return new float[] { this.x + width, this.y + height };  // Measured, or nothing to paint.
         }
         page.saveGraphicsState();
 

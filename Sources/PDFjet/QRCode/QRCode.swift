@@ -92,11 +92,13 @@ public class QRCode : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.setBrushColor(self.color)
-        for row in 0..<modules!.count {
-            for col in 0..<modules!.count {
-                if isDark(row, col) {
-                    page!.fillRect(x + Float(col)*m1, y + Float(row)*m1, m1, m1)
+        if let page = page {
+            page.setBrushColor(self.color)
+            for row in 0..<modules!.count {
+                for col in 0..<modules!.count {
+                    if isDark(row, col) {
+                        page.fillRect(x + Float(col)*m1, y + Float(row)*m1, m1, m1)
+                    }
                 }
             }
         }

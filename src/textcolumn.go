@@ -126,8 +126,8 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 }
 
 // DrawOn draws this text column on the specified page and returns the x and y
-// coordinates of the location where to draw the next component. With no page
-// nothing is drawn and the location is computed.
+// coordinates of its bottom right corner. With no page nothing is drawn and the
+// corner is computed.
 func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	xy := [2]float32{textColumn.x, textColumn.y}
 	for _, paragraph := range textColumn.paragraphs {
@@ -139,7 +139,7 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	if textColumn.y+textColumn.h > xy[1] {
 		xy[1] = textColumn.y + textColumn.h
 	}
-	return xy
+	return [2]float32{textColumn.x + textColumn.w, xy[1]}
 }
 
 func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) [2]float32 {

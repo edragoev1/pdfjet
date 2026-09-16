@@ -106,6 +106,9 @@ public class FileAttachment implements Drawable {
      * @param page the page to draw on
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {
+            return new float[] {this.x + this.h, this.y + this.h};    // Measured, not drawn
+        }
         if (embeddedFile.pdf != page.pdf) {
             page.pdf.fail(new IllegalArgumentException("The embedded file belongs to another PDF."));
         }

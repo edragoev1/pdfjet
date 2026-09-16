@@ -526,7 +526,9 @@ public class SVGImage : Drawable {
     /// Draws this SVG image on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let page = page!
+        guard let page = page else {
+            return [self.x + self.w, self.y + self.h]   // Measured, not drawn
+        }
         page.addBDC(StructElem.P, language, actualText, altDescription)
         for path in paths ?? [] {
             drawPath(path, page)

@@ -180,12 +180,15 @@ public class CheckBox : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
-
         self.w = self.font.getAscent()
         self.h = self.w
         self.penWidth = self.w/15
         self.checkWidth = self.w/5
+        if page == nil {    // Measured, not drawn
+            return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
+        }
+
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
 
         let yBox: Float = y
         page!.setPenWidth(self.penWidth!)

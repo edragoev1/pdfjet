@@ -170,10 +170,6 @@ public class Form implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (page == null) {
-            throw new NullPointerException("Page cannot be null");
-        }
-
         float yField = 0f;
         float xOffset = 3f;
         for (int i = 0; i < fields.size(); i++) {

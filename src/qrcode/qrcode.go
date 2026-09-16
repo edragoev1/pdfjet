@@ -79,15 +79,17 @@ func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 // @param page the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
 func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
-	page.SetBrushColor(qrcode.color)
-	for row := 0; row < len(qrcode.modules); row++ {
-		for col := 0; col < len(qrcode.modules); col++ {
-			if qrcode.isDark(row, col) {
-				page.FillRect(
-					qrcode.x+float32(col)*qrcode.m1,
-					qrcode.y+float32(row)*qrcode.m1,
-					qrcode.m1,
-					qrcode.m1)
+	if page != nil {
+		page.SetBrushColor(qrcode.color)
+		for row := 0; row < len(qrcode.modules); row++ {
+			for col := 0; col < len(qrcode.modules); col++ {
+				if qrcode.isDark(row, col) {
+					page.FillRect(
+						qrcode.x+float32(col)*qrcode.m1,
+						qrcode.y+float32(row)*qrcode.m1,
+						qrcode.m1,
+						qrcode.m1)
+				}
 			}
 		}
 	}

@@ -91,11 +91,14 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
-	page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
-
 	radioButton.r1 = radioButton.font.GetAscent(radioButton.fontSize) / 2
 	radioButton.r2 = radioButton.r1 / 2
 	radioButton.penWidth = radioButton.r1 / 10
+	if page == nil {
+		return radioButton.corner() // Measured, not drawn
+	}
+
+	page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 
 	yBox := radioButton.y
 	page.SetPenWidth(1.0)
@@ -145,6 +148,11 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		})
 	}
 
+	return radioButton.corner()
+}
+
+// corner returns the bottom right corner of the radio button and its label.
+func (radioButton *RadioButton) corner() [2]float32 {
 	return [2]float32{
 		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
 		radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize)}

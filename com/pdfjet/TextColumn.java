@@ -185,7 +185,7 @@ public class TextColumn implements Drawable {
      * drawn and the location of the next component is computed.
      *
      * @param page the page to draw this text column on.
-     * @return the point with x and y coordinates of the location where to draw the next component.
+     * @return the x and y coordinates of the bottom right corner of this text column.
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
@@ -199,7 +199,7 @@ public class TextColumn implements Drawable {
         if (y + h > xy[1]) {
             xy[1] = y + h;
         }
-        return xy;
+        return new float[] {x + w, xy[1]};
     }
 
     private float[] drawParagraphOn(Page page, Paragraph paragraph) throws Exception {

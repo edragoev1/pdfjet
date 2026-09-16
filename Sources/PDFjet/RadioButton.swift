@@ -116,11 +116,14 @@ public class RadioButton : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
-
         self.r1 = font.getAscent(fontSize)/2
         self.r2 = r1/2
         self.penWidth = r1/10
+        if page == nil {    // Measured, not drawn
+            return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
+        }
+
+        page!.addBDC(StructElem.P, language, actualText, altDescription)
 
         let yBox = y
         page!.setPenWidth(1.0)

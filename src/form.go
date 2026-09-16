@@ -116,9 +116,6 @@ func (form *Form) SetValueColorRGB(color [3]float32) *Form {
 //
 // Returns x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) [2]float32 {
-	if page == nil {
-		panic("The page cannot be nil.")
-	}
 	yField := float32(0.0)
 	xOffset := float32(3.0)
 	for i, field := range form.fields {

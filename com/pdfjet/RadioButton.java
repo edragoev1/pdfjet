@@ -113,11 +113,14 @@ public class RadioButton implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        page.addBDC(StructElem.P, language, actualText, altDescription);
-
         this.r1 = font.getAscent(fontSize)/2;
         this.r2 = r1/2;
         this.penWidth = r1/10;
+        if (page == null) {     // Measured, not drawn
+            return new float[] { x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
+        }
+
+        page.addBDC(StructElem.P, language, actualText, altDescription);
 
         float yBox = y;
         page.setPenWidth(1f);

@@ -556,8 +556,11 @@ public class TextLine : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if page == nil || text == nil || text == "" {
+        if text == nil || text == "" {
             return [x, y]
+        }
+        if page == nil {
+            return getCorner(getVerticalOffset())   // Measured, not drawn
         }
         if let destination {
             _ = page!.addDestination(destination, destinationY())
@@ -633,10 +636,17 @@ public class TextLine : Drawable {
         }
         page!.setTextRotation(0)
 
+        return getCorner(verticalOffset)
+    }
+
+    // Returns the right end of the baseline, or its lower end when the text is rotated.
+    private func getCorner(_ verticalOffset: Float) -> [Float] {
+        // The trigonometry is done in double precision, as in the other ports, and
+        // turns counterclockwise, where the rotation turns clockwise.
+        let radians = Double.pi * Double(-degrees) / 180.0
         let len = Double(font!.stringWidth(fallbackFont, fontSize, text!))
         let xMax = max(Double(x), Double(x) + len*cos(radians))
         let yMax = max(Double(y + verticalOffset), Double(y + verticalOffset) - len*sin(radians))
-
         return [Float(xMax), Float(yMax)]
     }
 }   // End of TextLine.swift

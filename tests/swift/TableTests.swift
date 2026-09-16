@@ -25,8 +25,8 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         let table = Table().setTableData(rows(font, 5, 3), 1).setLocation(20, 20)
-        TestSupport.expectXY(20, 109.36, table.drawOn(nil))
-        TestSupport.expectXY(20, 109.36, table.drawOn(Page(pdf, Letter.PORTRAIT)))
+        TestSupport.expectXY(245, 109.36, table.drawOn(nil))
+        TestSupport.expectXY(245, 109.36, table.drawOn(Page(pdf, Letter.PORTRAIT)))
     }
 
     @Test func measuringFirstStillDrawsEveryRowOnThePage() {
@@ -45,7 +45,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 1), 1).setLocation(20, 20)
         var pages = [Page]()
-        TestSupport.expectXY(20, 341.696, table.drawOn(pdf, &pages, Letter.PORTRAIT))
+        TestSupport.expectXY(95, 341.696, table.drawOn(pdf, &pages, Letter.PORTRAIT))
         #expect(pages.count == 2)
         guard pages.count == 2 else { return }
         let first = TestSupport.content(pages[0])

@@ -208,6 +208,15 @@ public class Path implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        if (page == null) {     // Measured, not drawn
+            float xMax = 0f;
+            float yMax = 0f;
+            for (Point point : points) {
+                xMax = Math.max(xMax, point.x + xBox);
+                yMax = Math.max(yMax, point.y + yBox);
+            }
+            return new float[] {xMax, yMax};
+        }
         for (Point point : points) {
             point.x += xBox;
             point.y += yBox;

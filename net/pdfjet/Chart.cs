@@ -279,7 +279,7 @@ public class Chart : IDrawable {
     /// <returns>the bottom-right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
         // Guard against null or empty data
-        if (!HasPoints()) {
+        if (page == null || !HasPoints()) {    // Measured, or nothing to draw
             return new float[] { this.x1 + this.w, this.y1 + this.h };
         }
 

@@ -155,7 +155,7 @@ public class PDF417 : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        return drawPdf417(page!)
+        return drawPdf417(page)
     }
 
     private func textToArrayOfIntegers() -> [Int] {
@@ -253,7 +253,7 @@ public class PDF417 : Drawable {
         }
     }
 
-    private func drawPdf417(_ page: Page) -> [Float] {
+    private func drawPdf417(_ page: Page?) -> [Float] {
         var x: Float = x1
         var y: Float = y1
 
@@ -305,11 +305,14 @@ public class PDF417 : Drawable {
     }
 
     private func drawBar(
-            _ page: Page,
+            _ page: Page?,
             _ x: Float,
             _ y: Float,
             _ w: Float,    // Bar width
             _ h: Float) {
+        guard let page = page else {
+            return      // Measured, not drawn
+        }
         page.addArtifactBMC()
         page.setPenWidth(w)
         page.moveTo(x + w/2, y)

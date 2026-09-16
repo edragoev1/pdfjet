@@ -218,7 +218,6 @@ public class DonutChart : Drawable {
     ///   circle of this chart. The slice labels can extend past it.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let page = page!
         let xc = x + r1     // the center of the chart
         let yc = y + r1
 
@@ -229,8 +228,8 @@ public class DonutChart : Drawable {
                 total += slice.value
             }
         }
-        if total <= 0.0 {
-            return [xc + r1, yc + r1]
+        guard let page = page, total > 0.0 else {
+            return [xc + r1, yc + r1]   // Measured, or nothing to draw
         }
         var angle: Float = 0.0
         for slice in slices! {

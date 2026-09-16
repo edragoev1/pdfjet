@@ -161,8 +161,8 @@ public class Container: Drawable {
     /// - Parameter page: The `Page` to draw on.
     /// - Returns: An array containing the bottom-right position of the container.
     public func drawOn(_ page: Page?) -> [Float] {
-        if scaleX == 0.0 || scaleY == 0.0 {
-            return [self.x + width, self.y + height]    // Nothing to paint.
+        if page == nil || scaleX == 0.0 || scaleY == 0.0 {
+            return [self.x + width, self.y + height]    // Measured, or nothing to paint.
         }
         page!.saveGraphicsState()
 

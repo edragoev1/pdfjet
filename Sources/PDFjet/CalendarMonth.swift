@@ -91,6 +91,9 @@ public class CalendarMonth : Drawable {
     /// Draws this calendar on the specified page.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if page == nil {
+            return [self.x1 + 7*self.dx, self.y1 + 7*self.dy]   // Measured, not drawn
+        }
         for row in 0..<7 {
             for col in 0..<7 {
                 if row == 0 {

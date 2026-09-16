@@ -324,7 +324,7 @@ public class Chart : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         // Guard against nil or empty data
-        if !hasPoints() {
+        if page == nil || !hasPoints() {   // Measured, or nothing to draw
             return [self.x1 + self.w, self.y1 + self.h]
         }
 

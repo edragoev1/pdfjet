@@ -446,8 +446,11 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 // coordinates of its bottom right corner. It draws nothing when the page is
 // nil or the text is empty.
 func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
-	if page == nil || textLine.text == "" {
+	if textLine.text == "" {
 		return [2]float32{textLine.x, textLine.y}
+	}
+	if page == nil {
+		return textLine.corner(textLine.GetVerticalOffset()) // Measured, not drawn
 	}
 	if textLine.destination != "" {
 		page.AddDestination(textLine.destination, textLine.destinationY())
@@ -536,12 +539,19 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	page.SetTextRotation(0)
 
+	return textLine.corner(verticalOffset)
+}
+
+// corner returns the right end of the baseline, or its lower end when the text
+// is rotated.
+func (textLine *TextLine) corner(verticalOffset float32) [2]float32 {
+	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
+	radians := math.Pi * float64(-textLine.degrees) / 180.0
 	length := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
 	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
 	yMax := math.Max(
 		float64(textLine.y+verticalOffset),
 		float64(textLine.y+verticalOffset)-float64(length)*math.Sin(radians))
-
 	return [2]float32{float32(xMax), float32(yMax)}
 }
 

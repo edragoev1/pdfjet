@@ -99,6 +99,9 @@ public class BaseAnnotation: Drawable {
 
     /// Adds this annotation to the specified page.
     public func drawOn(_ page: Page?) -> [Float] {
+        if page == nil {
+            return point2   // Measured, not drawn
+        }
         page!.addAnnotation(Annotation(
             annotationType,
             point1[0],

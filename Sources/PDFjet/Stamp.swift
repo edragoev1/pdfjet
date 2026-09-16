@@ -445,7 +445,9 @@ public class Stamp : Drawable {
     /// Draws this stamp on the specified page and returns the x and y coordinates of its bottom right corner.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        let page = page!
+        guard let page = page else {
+            return [self.x + width, self.y + height]    // Measured, not drawn
+        }
         if page.pdf !== pdf {
             page.pdf.fail("The stamp belongs to another PDF.")
             return [self.x + width, self.y + height]

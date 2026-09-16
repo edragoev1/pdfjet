@@ -36,8 +36,8 @@ func TestTableMeasuringAndDrawingReturnTheSameCorner(t *testing.T) {
 	pdf := testNewPDF()
 	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 5, 3), 1)
 	table.SetLocation(20, 20)
-	testAssertXY(t, 20, 109.36, table.DrawOn(nil))
-	testAssertXY(t, 20, 109.36, table.DrawOn(NewPage(pdf, letter.Portrait())))
+	testAssertXY(t, 245, 109.36, table.DrawOn(nil))
+	testAssertXY(t, 245, 109.36, table.DrawOn(NewPage(pdf, letter.Portrait())))
 }
 
 func TestTableMeasuringFirstStillDrawsEveryRowOnThePage(t *testing.T) {
@@ -61,7 +61,7 @@ func TestTableHeaderRowsRepeatOnEveryPage(t *testing.T) {
 	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 60, 1), 1)
 	table.SetLocation(20, 20)
 	pages := make([]*Page, 0)
-	testAssertXY(t, 20, 341.696, table.DrawOnPages(pdf, &pages, letter.Portrait()))
+	testAssertXY(t, 95, 341.696, table.DrawOnPages(pdf, &pages, letter.Portrait()))
 	if len(pages) != 2 {
 		t.Fatalf("pages %d", len(pages))
 	}

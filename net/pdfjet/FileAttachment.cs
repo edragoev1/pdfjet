@@ -67,6 +67,9 @@ public class FileAttachment : IDrawable {
 
     /// <summary>Adds this attachment to the specified page.</summary>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {this.x + this.h, this.y + this.h};    // Measured, not drawn
+        }
         if (embeddedFile.pdf != page.pdf) {
             page.pdf.Fail(new ArgumentException("The embedded file belongs to another PDF."));
         }

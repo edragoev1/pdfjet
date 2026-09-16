@@ -100,6 +100,9 @@ public abstract class BaseAnnotation : IDrawable {
 
     /// <summary>Adds this annotation to the specified page.</summary>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {point2[0], point2[1]};  // Measured, not drawn
+        }
         page.AddAnnotation(new Annotation(
                 annotationType,
                 point1[0],
@@ -116,7 +119,7 @@ public abstract class BaseAnnotation : IDrawable {
                 language,
                 actualText,
                 altDescription));
-        return point2;
+        return new float[] {point2[0], point2[1]};
     }
 }
 }

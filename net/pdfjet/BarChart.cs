@@ -371,7 +371,7 @@ public class BarChart : IDrawable {
     /// <returns>the bottom right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
         int n = NumberOfCategories();
-        if (n == 0) {
+        if (page == null || n == 0) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
         }
 

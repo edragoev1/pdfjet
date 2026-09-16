@@ -218,6 +218,9 @@ public class Line : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        if (page == null) {
+            return new float[] {Math.Max(x1, x2), Math.Max(y1, y2)};    // Measured, not drawn
+        }
         page.AddBDC(StructElem.P, language, actualText, altDescription);
         page.SaveGraphicsState();
         page.SetPenColor(color);
