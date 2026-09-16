@@ -184,9 +184,18 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 
 ## Week 4 (Oct 8–14): release checks
 
-- ⬜ **B** `check-examples.sh` clean, the four test suites green (Java on JDK 21
+- ✅ **B** `check-examples.sh` clean, the four test suites green (Java on JDK 21
       and 8), `go vet ./src/...` clean, Swift builds with
       `-warnings-as-errors`, Build, Documentation and Windows workflows green.
+      Done (Sep 16), early: `check-examples.sh` found no problems (Java 257
+      tests, C# 255, Swift 264, Go green; 44 files pass veraPDF), `go vet` is
+      clean on 107 packages, and a clean release build of Swift and its 51
+      examples has no warnings. The Java tests did not compile on JDK 8, which
+      rejects a constructor reference to a local class in `BigTableTest`, and
+      had turned the Build workflow's JDK 8 job red since the commits of Sep 16
+      afternoon; 7345a51f passes a lambda, and all 257 pass on JDK 8 and 21.
+      Build and Windows are green at 7345a51f, and Documentation at 7dbfee5d,
+      the last commit it ran for. Recheck after any change before the freeze.
 - ⬜ **B** Manual viewer pass: Acrobat Reader on Windows opens Example_30 with
       `hello` and `world`, shows print allowed and copy denied, opens the
       Cyrillic and the 200 byte password files, and opens the PDF/UA and PDF/A
