@@ -17,11 +17,4 @@ internal class FlateUtils {
         }
         return mirror >> 1
     }
-
-    static func twoPowerOf(_ exponent: Int) -> UInt32 {
-        if exponent == 0 {
-            return 1
-        }
-        return UInt32(2 << (exponent - 1))
-    }
 }

@@ -1085,23 +1085,29 @@ renames included (the Week 1 decision), so every item is a blocker.
       the footers itself. Add setters for the three, and a way to turn the
       footer off or give it a text and a font of its own.
 - ⬜ **B** Swift compression, by improving `FlateEncode` rather than replacing
-      it: no zlib, and the fixed-Huffman block stays. It keeps one position per
-      hash in a 64K table, so a collision or a repeat further back than the
-      last one is a missed match, and it takes the first match it finds instead
-      of the longest. Its files are larger than the other ports', and the gap
-      grows with how repetitive the content is: Example_43 is 22,863,030 bytes
-      against 12,335,377 in Java and C# (1.85x), Example_12 1.22x, Example_01
-      1.02x, Example_51 the same. The Example_43 binary also takes 4,480 ms in
-      Swift against 2,310 ms in C# and 938 ms in Go, though not all of that is
-      the compression. In order: keep a short chain of earlier positions per
-      bucket and take the longest match among them; add lazy matching, where a
-      literal is written when position i+1 starts a longer match; then
-      `reserveCapacity` on the output and `withUnsafeBufferPointer` over the
-      input in `getMatchIndex` and `writeCode`, which buy speed and no size.
-      Measure the files again once the match finding is fixed, and decide then
-      whether anything larger is worth doing. The content streams must still
-      match Java's in CI, which compares them decoded, so the output stays a
-      valid deflate stream throughout.
+      it: no zlib. The chain of earlier positions per bucket and the longest
+      match among them landed earlier, and dynamic Huffman coding landed in
+      the commit that added `FlateTables` and `FlateHuffman`. That last one
+      went against the line this item used to carry, "the fixed-Huffman block
+      stays": measurement showed the fixed block was costing more than the
+      match finder was, and the decision to drop it was taken on 16 September
+      2026. A block is now written stored, fixed or dynamic, whichever of the
+      three counts out smallest, so no block can grow.
+      Measured over the 2,703 streams the encoder writes in the examples,
+      108,204,890 bytes of input: 18,039,851 bytes before, 15,227,644 after,
+      15.6% off. Example_43 went from 16,981,268 bytes to 14,496,969 against
+      12,335,377 in Java and C#, so 1.38x became 1.18x; Example_12 1.15x
+      became 1.07x; Example_01 1.015x became 1.008x. The 50,000-row table of
+      `benchmarks/table` went from 14,566,771 bytes to 11,839,117, 18.7% off,
+      and from 2,927 ms to 2,878 ms.
+      What is left is lazy matching, where a literal is written when position
+      i+1 starts a longer match. Measured against zlib with the Huffman stage
+      held still, that is worth about another 17%, which would bring Swift
+      level with the zlib the other three ports use; it roughly doubles the
+      match search, so it is a size-against-time decision of its own and not
+      an obvious yes. The content streams must still match Java's in CI, which
+      compares them decoded, so the output stays a valid deflate stream
+      throughout.
 - ⬜ **B** `Table` performance. The caller builds the whole grid and hands it
       over, `setTableData(List<List<Cell>>)`, so Example_43's data would be
       about 1.1 million `Cell` objects before a page is drawn and the memory
