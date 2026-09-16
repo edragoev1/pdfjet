@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.IO;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
@@ -80,6 +81,81 @@ internal class Util {
     /// A file that cannot be read this way is refused rather than guessed at.
     /// </summary>
     internal static String[] Split(String line, String delimiter) {
+        return Split(line, delimiter, false);
+    }
+
+    // The most lines a record may take, so that a quote that is never closed
+    // fails instead of reading the rest of the file into one field.
+    internal const int MAX_LINES_IN_RECORD = 10000;
+
+    /// <summary>
+    /// Returns the fields of the record of a delimited data file that starts with the line.
+    /// When a quoted field holds line breaks, the record goes on over the next lines of the
+    /// reader, and each line break in the field is a space, as a table cell is drawn on one line.
+    /// Only a record of several lines is looked at for them, so a line costs nothing more to read.
+    /// </summary>
+    internal static String[] ReadRecord(String line, TextReader reader, String delimiter) {
+        String[] fields = Split(line, delimiter, true);
+        if (fields != null) {
+            return fields;
+        }
+        StringBuilder record = new StringBuilder(line);
+        int lines = 1;
+        while (true) {
+            String next = reader.ReadLine();
+            if (next == null) {
+                throw new ArgumentException(
+                        "A quoted field is not closed by the end of the data file: " + Excerpt(record.ToString()));
+            }
+            if (++lines > MAX_LINES_IN_RECORD) {
+                throw new ArgumentException("A quoted field is not closed within "
+                        + MAX_LINES_IN_RECORD + " lines of the data file: " + Excerpt(record.ToString()));
+            }
+            record.Append('\n').Append(next);
+            // The quoted field goes on until a quote that is not doubled; only
+            // then can the record end, so only then is it split again.
+            if (ClosesQuotedField(next)) {
+                fields = Split(record.ToString(), delimiter, true);
+                if (fields != null) {
+                    for (int i = 0; i < fields.Length; i++) {
+                        fields[i] = LineBreaksToSpaces(fields[i]);
+                    }
+                    return fields;
+                }
+            }
+        }
+    }
+
+    // Returns true when the line, read inside a quoted field, holds the quote
+    // that closes it: a quote that is not one of a doubled pair.
+    private static bool ClosesQuotedField(String line) {
+        int i = line.IndexOf('"');
+        while (i != -1) {
+            if (i + 1 < line.Length && line[i + 1] == '"') {
+                i = line.IndexOf('"', i + 2);
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the text with each line break, "\r\n", "\r" or "\n", replaced by a space, for a
+    /// table cell that is drawn on one line.
+    /// </summary>
+    internal static String LineBreaksToSpaces(String text) {
+        if (text.IndexOfAny(LINE_BREAKS) == -1) {
+            return text;
+        }
+        return text.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+    }
+
+    private static readonly char[] LINE_BREAKS = {'\r', '\n'};
+
+    // With open, a line that ends inside a quoted field returns null, for
+    // ReadRecord to read on; without it the line is refused.
+    private static String[] Split(String line, String delimiter, bool open) {
         if (delimiter.Length == 0) {
             return new String[] {line};
         }
@@ -101,6 +177,9 @@ internal class Util {
                 while (true) {
                     int quote = line.IndexOf('"', i);
                     if (quote == -1) {
+                        if (open) {
+                            return null;
+                        }
                         throw new ArgumentException(
                                 "A quoted field is not closed on this line of the data file: " + Excerpt(line));
                     }

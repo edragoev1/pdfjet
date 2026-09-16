@@ -100,6 +100,20 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void TheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces() {
+        string file = tempDir.Write("breaks.csv", Encoding.UTF8.GetBytes(
+                "Name,Address\r\n"
+                + "\"Smith, John\",\"12 Main St\r\nApt 4\"\r\n"
+                + "Plain,\"one\n\ntwo\"\n"));
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Table table = new Table(font, font, file);
+        Assert.Equal("12 Main St Apt 4", table.GetCellAt(1, 1).GetText());
+        Assert.Equal("Plain", table.GetCellAt(2, 0).GetText());
+        Assert.Equal("one  two", table.GetCellAt(2, 1).GetText());
+        Assert.Equal(3, table.GetColumn(0).Count);
+    }
+
+    [Fact]
     public void GetCellAtGetRowAndGetColumnAgree() {
         Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(TestSupport.NewPDF()), 4, 3), 1);
         Assert.Same(table.GetCellAt(2, 1), table.GetRow(2)[1]);

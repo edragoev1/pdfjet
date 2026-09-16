@@ -47,6 +47,7 @@ type BigTable struct {
 	footerText      string
 	footerFont      *Font // nil for the header font
 	rows            iter.Seq[[]string]
+	checkLineBreaks bool  // The rows are not read from a file, which has no line breaks left
 	readErr         error // The error reading the data file, if any
 	columns         []int // The fields drawn, in the order they are drawn
 	numberOfColumns int   // The length of columns
@@ -288,6 +289,9 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 
 	for i := 0; i < bt.numberOfColumns; i++ {
 		text := fields[bt.columns[i]]
+		if bt.checkLineBreaks && hasLineBreak(text) {
+			text = lineBreaksToSpaces(text)
+		}
 		xText := bt.vertLines[i] + bt.padding
 		if bt.alignment[i] == alignment.Right {
 			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
@@ -363,8 +367,14 @@ func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
 	}(file)
 
 	scanner := newDataScanner(file)
+	nextLine := func() (string, bool) {
+		if scanner.Scan() {
+			return scanner.Text(), true
+		}
+		return "", false
+	}
 	for scanner.Scan() {
-		if !yield(splitDelimited(scanner.Text(), delimiter)) {
+		if !yield(readDelimitedRecord(scanner.Text(), delimiter, nextLine)) {
 			return nil
 		}
 	}
@@ -372,8 +382,11 @@ func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
 }
 
 // SetTableData sets the table data from the file, which is read as UTF-8. Its
-// first line with a field for every column is the header, and the lines after it are the rows. It returns the table, or an
-// error if the file cannot be read.
+// first line with a field for every column is the header, and the lines after
+// it are the rows. A quoted field is read as RFC 4180 reads it, so a delimiter
+// inside one is text, and a line break inside one goes on to the next line of
+// the file and is drawn as a space. It returns the table, or an error if the
+// file cannot be read.
 func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) {
 	fieldsNeeded := bt.fieldsNeeded
 	header := []string{}
@@ -401,7 +414,7 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 			bt.readErr = err
 		}
 	}
-	bt.SetTableRows(header, rows)
+	bt.setTableRows(header, rows, false)
 	if bt.readErr != nil {
 		return nil, bt.readErr
 	}
@@ -413,10 +426,19 @@ func (bt *BigTable) SetTableData(fileName, delimiter string) (*BigTable, error) 
 // here to measure the columns and once by Complete to draw them, and neither
 // keeps them, so an iterator that runs the query again, or maps the objects to
 // fields as it goes, keeps the memory flat. A row without a field for every
-// column is skipped, as a short line of a file is. A header without a field for
+// column is skipped, as a short line of a file is, and a line break in a field
+// is drawn as a space. A header without a field for
 // every column is recorded on the PDF as misuse, and the table is left without
 // data.
 func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigTable {
+	return bt.setTableRows(header, rows, true)
+}
+
+// setTableRows sets the table data. With checkLineBreaks, each field is looked
+// at for line breaks to draw as spaces; the rows of a data file have them as
+// spaces already.
+func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], checkLineBreaks bool) *BigTable {
+	bt.checkLineBreaks = checkLineBreaks
 	if len(header) < bt.fieldsNeeded {
 		bt.pdf.fail("The header does not have a field for every column.")
 		return bt
@@ -452,7 +474,11 @@ func (bt *BigTable) SetTableRows(header []string, rows iter.Seq[[]string]) *BigT
 // of the text, and setVertLines adds the padding, so it can be set later.
 func (bt *BigTable) measure(fields []string) {
 	for i := 0; i < bt.numberOfColumns; i++ {
-		width := bt.f1.StringWidth(bt.f1.size, fields[bt.columns[i]])
+		text := fields[bt.columns[i]]
+		if bt.checkLineBreaks && hasLineBreak(text) {
+			text = lineBreaksToSpaces(text)
+		}
+		width := bt.f1.StringWidth(bt.f1.size, text)
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}

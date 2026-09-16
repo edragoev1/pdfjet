@@ -120,6 +120,25 @@ class TableTest {
     }
 
     @Test
+    void theFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces() throws Exception {
+        File file = new File(tempDir, "breaks.csv");
+        OutputStream out = new FileOutputStream(file);
+        try {
+            out.write(("Name,Address\r\n"
+                    + "\"Smith, John\",\"12 Main St\r\nApt 4\"\r\n"
+                    + "Plain,\"one\n\ntwo\"\n").getBytes(StandardCharsets.UTF_8));
+        } finally {
+            out.close();
+        }
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Table table = new Table(font, font, file.getPath());
+        assertEquals("12 Main St Apt 4", table.getCellAt(1, 1).getText());
+        assertEquals("Plain", table.getCellAt(2, 0).getText());
+        assertEquals("one  two", table.getCellAt(2, 1).getText());
+        assertEquals(3, table.getColumn(0).size());
+    }
+
+    @Test
     void getCellAtGetRowAndGetColumnAgree() throws Exception {
         Table table = new Table().setTableData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1);
         assertSame(table.getCellAt(2, 1), table.getRow(2).get(1));

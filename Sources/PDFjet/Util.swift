@@ -24,6 +24,87 @@ class Util {
     /// A file that cannot be read this way is refused rather than guessed at.
     ///
     static func split(_ line: String, _ delimiter: String) -> [String] {
+        return split(line, delimiter, open: false)!
+    }
+
+    // The most lines a record may take, so that a quote that is never closed
+    // fails instead of reading the rest of the file into one field.
+    static let maxLinesInRecord = 10000
+
+    ///
+    /// Returns the fields of the record of a delimited data file that starts with the line.
+    /// When a quoted field holds line breaks, the record goes on over the lines that nextLine
+    /// returns, and each line break in the field is a space, as a table cell is drawn on one line.
+    /// Only a record of several lines is looked at for them, so a line costs nothing more to
+    /// read. nextLine returns nil at the end of the file.
+    ///
+    static func readRecord(_ line: String, _ delimiter: String, _ nextLine: () -> String?) -> [String] {
+        if let fields = split(line, delimiter, open: true) {
+            return fields
+        }
+        var record = line
+        var lines = 1
+        while true {
+            guard let next = nextLine() else {
+                fatalError("A quoted field is not closed by the end of the data file: " + Util.excerpt(record))
+            }
+            lines += 1
+            if lines > maxLinesInRecord {
+                fatalError("A quoted field is not closed within \(maxLinesInRecord) lines of the data file: "
+                        + Util.excerpt(record))
+            }
+            record += "\n"
+            record += next
+            // The quoted field goes on until a quote that is not doubled; only
+            // then can the record end, so only then is it split again.
+            if closesQuotedField(next), let fields = split(record, delimiter, open: true) {
+                return fields.map { lineBreaksToSpaces($0) }
+            }
+        }
+    }
+
+    // Returns true when the line, read inside a quoted field, holds the quote
+    // that closes it: a quote that is not one of a doubled pair.
+    private static func closesQuotedField(_ line: String) -> Bool {
+        let quote = UInt8(ascii: "\"")
+        var previousWasQuote = false
+        for byte in line.utf8 {
+            if previousWasQuote {
+                if byte != quote {
+                    return true
+                }
+                previousWasQuote = false    // A doubled quote
+            } else if byte == quote {
+                previousWasQuote = true
+            }
+        }
+        return previousWasQuote             // A quote at the end of the line closes the field
+    }
+
+    ///
+    /// Returns the text with each line break, "\r\n", "\r" or "\n", replaced by a space, for a
+    /// table cell that is drawn on one line.
+    ///
+    static func lineBreaksToSpaces(_ text: String) -> String {
+        let utf8 = text.utf8
+        if !utf8.contains(where: { $0 == 10 || $0 == 13 }) {
+            return text
+        }
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(utf8.count)
+        var previous: UInt8 = 0
+        for byte in utf8 {
+            if !(byte == 10 && previous == 13) {    // "\r\n" is one space
+                bytes.append((byte == 10 || byte == 13) ? 32 : byte)
+            }
+            previous = byte
+        }
+        return String(decoding: bytes, as: UTF8.self)
+    }
+
+    // With open, a line that ends inside a quoted field returns nil, for
+    // readRecord to read on; without it the line is refused.
+    private static func split(_ line: String, _ delimiter: String, open: Bool) -> [String]? {
         if delimiter.isEmpty {
             return [line]
         }
@@ -44,6 +125,9 @@ class Util {
                 let start = i
                 while true {
                     guard let next = Util.indexOf(bytes, quote, i) else {
+                        if open {
+                            return nil
+                        }
                         fatalError("A quoted field is not closed on this line of the data file: "
                                 + Util.excerpt(line))
                     }

@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -149,8 +150,103 @@ func isJavaWhitespace(r rune) bool {
 // copy is of a quoted field that holds a doubled quote. BigTable reads every
 // line of its file through here.
 func splitDelimited(line, delimiter string) []string {
+	fields, _ := splitDelimitedRecord(line, delimiter, false)
+	return fields
+}
+
+// maxLinesInRecord is the most lines a record may take, so that a quote that
+// is never closed fails instead of reading the rest of the file into one field.
+const maxLinesInRecord = 10000
+
+// readDelimitedRecord returns the fields of the record of a delimited data
+// file that starts with the line. When a quoted field holds line breaks, the
+// record goes on over the lines that nextLine returns, and each line break in
+// the field is a space, as a table cell is drawn on one line. Only a record of
+// several lines is looked at for them, so a line costs nothing more to read.
+// nextLine returns false at the end of the file.
+func readDelimitedRecord(line, delimiter string, nextLine func() (string, bool)) []string {
+	if fields, closed := splitDelimitedRecord(line, delimiter, true); closed {
+		return fields // Nearly every line ends here
+	}
+	return readDelimitedLines(line, delimiter, nextLine)
+}
+
+// readDelimitedLines reads on from a line that ends inside a quoted field.
+func readDelimitedLines(line, delimiter string, nextLine func() (string, bool)) []string {
+	var record strings.Builder
+	record.WriteString(line)
+	lines := 1
+	for {
+		next, ok := nextLine()
+		if !ok {
+			panic("A quoted field is not closed by the end of the data file: " + excerptOfLine(record.String()))
+		}
+		lines++
+		if lines > maxLinesInRecord {
+			panic(fmt.Sprintf("A quoted field is not closed within %d lines of the data file: %s",
+				maxLinesInRecord, excerptOfLine(record.String())))
+		}
+		record.WriteByte('\n')
+		record.WriteString(next)
+		// The quoted field goes on until a quote that is not doubled; only then
+		// can the record end, so only then is it split again.
+		if closesQuotedField(next) {
+			if fields, closed := splitDelimitedRecord(record.String(), delimiter, true); closed {
+				for i, field := range fields {
+					fields[i] = lineBreaksToSpaces(field)
+				}
+				return fields
+			}
+		}
+	}
+}
+
+// closesQuotedField returns true when the line, read inside a quoted field,
+// holds the quote that closes it: a quote that is not one of a doubled pair.
+func closesQuotedField(line string) bool {
+	for i := 0; i < len(line); i++ {
+		if line[i] == '"' {
+			if i+1 < len(line) && line[i+1] == '"' {
+				i++
+			} else {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// lineBreaksToSpaces returns the text with each line break, "\r\n", "\r" or
+// "\n", replaced by a space, for a table cell that is drawn on one line.
+func lineBreaksToSpaces(text string) string {
+	if hasLineBreak(text) {
+		return lineBreaks.Replace(text)
+	}
+	return text
+}
+
+// hasLineBreak returns true when the text holds a "\r" or a "\n". BigTable
+// calls it for every field it measures and draws, and a field is short, so a
+// loop small enough to be inlined is faster than calls to IndexByte.
+func hasLineBreak(text string) bool {
+	for i := 0; i < len(text); i++ {
+		if isLineBreak[text[i]] {
+			return true
+		}
+	}
+	return false
+}
+
+var isLineBreak = [256]bool{'\n': true, '\r': true}
+
+var lineBreaks = strings.NewReplacer("\r\n", " ", "\r", " ", "\n", " ")
+
+// splitDelimitedRecord splits the line as splitDelimited does. With open, a
+// line that ends inside a quoted field returns false, for readDelimitedRecord
+// to read on; without it the line is refused.
+func splitDelimitedRecord(line, delimiter string, open bool) ([]string, bool) {
 	if delimiter == "" {
-		return []string{line}
+		return []string{line}, true
 	}
 	fields := make([]string, 0, strings.Count(line, delimiter)+1)
 	i := 0
@@ -161,6 +257,9 @@ func splitDelimited(line, delimiter string) []string {
 			for {
 				quote := strings.IndexByte(line[i:], '"')
 				if quote == -1 {
+					if open {
+						return nil, false
+					}
 					panic("A quoted field is not closed on this line of the data file: " + excerptOfLine(line))
 				}
 				i += quote + 1
@@ -194,7 +293,7 @@ func splitDelimited(line, delimiter string) []string {
 			break
 		}
 	}
-	return fields
+	return fields, true
 }
 
 // excerptOfLine returns the start of the line, for the message of a file that

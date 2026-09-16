@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -100,6 +101,89 @@ class Util {
      * @return the fields, including the empty ones at the end of the line.
      */
     static String[] split(String line, String delimiter) {
+        return split(line, delimiter, false);
+    }
+
+    // The most lines a record may take, so that a quote that is never closed
+    // fails instead of reading the rest of the file into one field.
+    static final int MAX_LINES_IN_RECORD = 10000;
+
+    /**
+     * Returns the fields of the record of a delimited data file that starts
+     * with the line. When a quoted field holds line breaks, the record goes on
+     * over the next lines of the reader, and each line break in the field is a
+     * space, as a table cell is drawn on one line. Only a record of several
+     * lines is looked at for them, so a line costs nothing more to read.
+     *
+     * @param line the first line of the record.
+     * @param reader the reader of the lines after it.
+     * @param delimiter the delimiter.
+     * @return the fields of the record.
+     * @throws IOException if the reader fails.
+     */
+    static String[] readRecord(String line, BufferedReader reader, String delimiter) throws IOException {
+        String[] fields = split(line, delimiter, true);
+        if (fields != null) {
+            return fields;
+        }
+        StringBuilder record = new StringBuilder(line);
+        int lines = 1;
+        while (true) {
+            String next = reader.readLine();
+            if (next == null) {
+                throw new IllegalArgumentException(
+                        "A quoted field is not closed by the end of the data file: " + excerpt(record.toString()));
+            }
+            if (++lines > MAX_LINES_IN_RECORD) {
+                throw new IllegalArgumentException("A quoted field is not closed within "
+                        + MAX_LINES_IN_RECORD + " lines of the data file: " + excerpt(record.toString()));
+            }
+            record.append('\n').append(next);
+            // The quoted field goes on until a quote that is not doubled; only
+            // then can the record end, so only then is it split again.
+            if (closesQuotedField(next)) {
+                fields = split(record.toString(), delimiter, true);
+                if (fields != null) {
+                    for (int i = 0; i < fields.length; i++) {
+                        fields[i] = lineBreaksToSpaces(fields[i]);
+                    }
+                    return fields;
+                }
+            }
+        }
+    }
+
+    // Returns true when the line, read inside a quoted field, holds the quote
+    // that closes it: a quote that is not one of a doubled pair.
+    private static boolean closesQuotedField(String line) {
+        int i = line.indexOf('"');
+        while (i != -1) {
+            if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                i = line.indexOf('"', i + 2);
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the text with each line break, "\r\n", "\r" or "\n", replaced by
+     * a space, for a table cell that is drawn on one line.
+     *
+     * @param text the text.
+     * @return the text on one line.
+     */
+    static String lineBreaksToSpaces(String text) {
+        if (text.indexOf('\n') == -1 && text.indexOf('\r') == -1) {
+            return text;
+        }
+        return text.replace("\r\n", " ").replace('\r', ' ').replace('\n', ' ');
+    }
+
+    // With open, a line that ends inside a quoted field returns null, for
+    // readRecord to read on; without it the line is refused.
+    private static String[] split(String line, String delimiter, boolean open) {
         if (delimiter.isEmpty()) {
             return new String[] {line};
         }
@@ -115,6 +199,9 @@ class Util {
                 while (true) {
                     int quote = line.indexOf('"', i);
                     if (quote == -1) {
+                        if (open) {
+                            return null;
+                        }
                         throw new IllegalArgumentException(
                                 "A quoted field is not closed on this line of the data file: " + excerpt(line));
                     }

@@ -282,6 +282,13 @@ places, so code written for v8.7.0 needs changes, and the Go module path is now
   empty fields at the end of a line. `BigTable` splits lines at the delimiter
   literally, `setLocation` sets the location, and `setLanguage`, which did
   nothing, is removed.
+- The data files of `Table` and `BigTable` are read as RFC 4180 reads them: a
+  quoted field holds its delimiters, and a quoted field with line breaks, as
+  spreadsheets export a cell of several lines, goes on over the lines of the
+  file to its closing quote, where it was refused. The line breaks are drawn
+  as spaces, as are those in the rows a `BigTable` takes from memory, since a
+  row is one line tall. A quote that is never closed is refused at the end of
+  the file or after 10,000 lines.
 - `BigTable.setTableData(header, rows)` takes the rows from memory, the
   results of a query or a list of objects, where they had to be written to a
   file first: an `Iterable<String[]>` in Java, an `IEnumerable<string[]>` in

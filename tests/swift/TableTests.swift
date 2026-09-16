@@ -55,6 +55,21 @@ import Testing
         #expect(!first.contains(TestSupport.hex("row59")) && second.contains(TestSupport.hex("row59")))
     }
 
+    @Test func theFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("breaks-\(UUID().uuidString).csv")
+        let data = "Name,Address\r\n"
+                + "\"Smith, John\",\"12 Main St\r\nApt 4\"\r\n"
+                + "Plain,\"one\n\ntwo\"\n"
+        try Data(data.utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let table = try Table(font, font, url.path)
+        #expect(table.getCellAt(1, 1).getText() == "12 Main St Apt 4")
+        #expect(table.getCellAt(2, 0).getText() == "Plain")
+        #expect(table.getCellAt(2, 1).getText() == "one  two")
+        #expect(table.getColumn(0).count == 3)
+    }
+
     @Test func theFileConstructorReadsQuotedFields() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("quoted-\(UUID().uuidString).csv")
         let data = "\"Name\",\"Note\",\"Amount\"\n"

@@ -312,6 +312,9 @@ has one job:
 
 `Table` and `BigTable` draw tables, with a `TextBlock` in a cell when the
 cell text needs wrapping. Example_01, 10, 16, 19, 35 and 47 show these classes.
+Their data files are comma, pipe or tab separated values read as RFC 4180
+reads them, so a quoted field can hold a delimiter or, as a spreadsheet exports
+a cell of several lines, line breaks, which a table draws as spaces.
 A cell holds text or one drawable, set with `Cell.setDrawable` (or
 `setImage`, `setBarcode`, `setTextBlock`, `setTextColumn`): an image, a QR
 code, a chart or another table, placed at the padding and aligned as the text

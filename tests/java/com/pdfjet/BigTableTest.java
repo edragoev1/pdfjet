@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -171,6 +172,37 @@ class BigTableTest {
         String none = drawSmall(TestSupport.newPDF(), table -> table.setFooter(null, null));
         String defaults = drawSmall(TestSupport.newPDF(), table -> {});
         assertTrue(defaults.startsWith(none) && defaults.length() > none.length());
+    }
+
+    @Test
+    void lineBreaksInFieldsAreDrawnAsSpaces() throws Exception {
+        File file = new File(tempDir, "breaks.csv");
+        OutputStream out = new FileOutputStream(file);
+        try {
+            out.write(("Name,City,Total\n\"n\n0\",\"City\r\n0\",1\nn1,City 1,2\n").getBytes(StandardCharsets.UTF_8));
+        } finally {
+            out.close();
+        }
+        PDF pdf1 = TestSupport.newPDF();
+        Font font1 = TestSupport.helvetica(pdf1);
+        List<Page> fromFile = draw(new BigTable(pdf1, font1, font1, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(file.getPath(), ","));
+
+        PDF pdf2 = TestSupport.newPDF();
+        Font font2 = TestSupport.helvetica(pdf2);
+        List<String[]> rows = Arrays.asList(new String[] {"n\r0", "City\r\n0", "1"}, new String[] {"n1", "City 1", "2"});
+        List<Page> fromMemory = draw(new BigTable(pdf2, font2, font2, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, rows));
+
+        PDF pdf3 = TestSupport.newPDF();
+        Font font3 = TestSupport.helvetica(pdf3);
+        List<String[]> spaces = Arrays.asList(new String[] {"n 0", "City 0", "1"}, new String[] {"n1", "City 1", "2"});
+        List<Page> withSpaces = draw(new BigTable(pdf3, font3, font3, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, spaces));
+
+        assertEquals(1, fromFile.size());
+        assertEquals(TestSupport.content(withSpaces.get(0)), TestSupport.content(fromFile.get(0)));
+        assertEquals(TestSupport.content(withSpaces.get(0)), TestSupport.content(fromMemory.get(0)));
     }
 
     @Test

@@ -35,7 +35,9 @@ public class Table : IDrawable {
     /// <summary>
     /// Creates a table from a text file with comma, pipe or tab separated values.
     /// The first line is the header row and uses f1; the other lines use f2.
-    /// Every row gets as many cells as the first line has fields.
+    /// Every row gets as many cells as the first line has fields. A quoted field is read as
+    /// RFC 4180 reads it, and a line break inside one goes on to the next line of the file and
+    /// is drawn as a space.
     /// </summary>
     /// <param name="f1">the font for the header row.</param>
     /// <param name="f2">the font for the other rows.</param>
@@ -56,12 +58,15 @@ public class Table : IDrawable {
                         line = line.Substring(1);
                     }
                     delimiter = GetDelimiter(line);
-                    numberOfFields = Util.Split(line, delimiter).Length;
                 }
                 List<Cell> row = new List<Cell>();
-                // The empty fields at the end of the line are kept, and a quoted
-                // field holds its delimiters instead of being cut at them.
-                String[] fields = Util.Split(line, delimiter);
+                // The empty fields at the end of the line are kept, a quoted field
+                // holds its delimiters instead of being cut at them, and its line
+                // breaks, which go on to the next lines, are spaces.
+                String[] fields = Util.ReadRecord(line, reader, delimiter);
+                if (lineNumber == 0) {
+                    numberOfFields = fields.Length;
+                }
                 foreach (String field in fields) {
                     if (lineNumber == 0) {
                         row.Add(new Cell(f1, field));

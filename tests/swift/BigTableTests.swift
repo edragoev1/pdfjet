@@ -146,6 +146,33 @@ import Testing
         #expect(defaults.hasPrefix(none) && defaults.count > none.count)
     }
 
+    @Test func lineBreaksInFieldsAreDrawnAsSpaces() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("breaks-\(UUID().uuidString).csv")
+        try Data("Name,City,Total\n\"n\n0\",\"City\r\n0\",1\nn1,City 1,2\n".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let pdf1 = TestSupport.newPDF()
+        let font1 = TestSupport.helvetica(pdf1)
+        let fromFile = try draw(
+                BigTable(pdf1, font1, font1, Letter.PORTRAIT).setNumberOfColumns(3).setTableData(url.path, ","))
+
+        let pdf2 = TestSupport.newPDF()
+        let font2 = TestSupport.helvetica(pdf2)
+        let rows = [["n\r0", "City\r\n0", "1"], ["n1", "City 1", "2"]]
+        let fromMemory = try draw(
+                BigTable(pdf2, font2, font2, Letter.PORTRAIT).setNumberOfColumns(3).setTableData(header, rows))
+
+        let pdf3 = TestSupport.newPDF()
+        let font3 = TestSupport.helvetica(pdf3)
+        let spaces = [["n 0", "City 0", "1"], ["n1", "City 1", "2"]]
+        let withSpaces = try draw(
+                BigTable(pdf3, font3, font3, Letter.PORTRAIT).setNumberOfColumns(3).setTableData(header, spaces))
+
+        #expect(fromFile.count == 1)
+        #expect(TestSupport.content(fromFile[0]) == TestSupport.content(withSpaces[0]))
+        #expect(TestSupport.content(fromMemory[0]) == TestSupport.content(withSpaces[0]))
+    }
+
     @Test func theRowsAreReadTwice() throws {
         let rows = self.rows()
         final class Counter {

@@ -38,6 +38,7 @@ namespace PDFjet.NET {
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
         private IEnumerable<string[]> rows;
+        private bool checkLineBreaks;   // The rows are not read from a file, which has no line breaks left
         private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
         private int numberOfColumns;            // The length of columns
         private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
@@ -287,7 +288,7 @@ namespace PDFjet.NET {
             page.SetBrushColor(Color.black);
 
             for (int i = 0; i < this.numberOfColumns; i++) {
-                String text = fields[columns[i]];
+                String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
                     xText = (vertLines[i + 1] - this.padding) - font.StringWidth(text);
@@ -338,8 +339,10 @@ namespace PDFjet.NET {
 
         /// <summary>
         /// Reads the data file to set the column widths, the column alignment and the header fields.
-        /// The file is read as UTF-8. Its first line with a field for every column is the header, and the lines after it are the rows. A quoted field is read as
-        /// RFC 4180 reads it, so a delimiter inside one is text.
+        /// The file is read as UTF-8. Its first line with a field for every column is the header,
+        /// and the lines after it are the rows. A quoted field is read as RFC 4180 reads it, so a
+        /// delimiter inside one is text, and a line break inside one goes on to the next line of
+        /// the file and is drawn as a space.
         /// </summary>
         /// <param name="fileName">the data file.</param>
         /// <param name="delimiter">the field delimiter.</param>
@@ -353,7 +356,7 @@ namespace PDFjet.NET {
                     break;
                 }
             }
-            return SetTableData(header, ReadDataFile(fileName, delimiter, fieldsNeeded, true));
+            return SetTableData(header, false, ReadDataFile(fileName, delimiter, fieldsNeeded, true));
         }
 
         /// <summary>
@@ -362,12 +365,19 @@ namespace PDFjet.NET {
         /// twice, once here to measure the columns and once by Complete to draw them, and neither
         /// keeps them, so an IEnumerable that runs the query again, or maps the objects to fields
         /// as it goes, keeps the memory flat. A row without a field for every column is skipped,
-        /// as a short line of a file is.
+        /// as a short line of a file is, and a line break in a field is drawn as a space.
         /// </summary>
         /// <param name="header">the header fields, with a field for every column.</param>
         /// <param name="rows">the fields of each row, in the order they are drawn.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetTableData(string[] header, IEnumerable<string[]> rows) {
+            return SetTableData(header, true, rows);
+        }
+
+        // With checkLineBreaks, each field is looked at for line breaks to draw as
+        // spaces; the rows of a data file have them as spaces already.
+        private BigTable SetTableData(string[] header, bool checkLineBreaks, IEnumerable<string[]> rows) {
+            this.checkLineBreaks = checkLineBreaks;
             if (header.Length < this.fieldsNeeded) {
                 pdf.Fail(new ArgumentException("The header does not have a field for every column."));
             }
@@ -401,7 +411,8 @@ namespace PDFjet.NET {
         // the text, and SetVertLines adds the padding, so it can be set later.
         private void Measure(string[] fields) {
             for (int i = 0; i < this.numberOfColumns; i++) {
-                float width = f1.StringWidth(fields[columns[i]]);
+                String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+                float width = f1.StringWidth(text);
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }
@@ -422,7 +433,8 @@ namespace PDFjet.NET {
         // Yields the fields of the lines of the data file, which is read as UTF-8
         // only, as in the other ports, after the byte order mark at its start, if
         // there is one. The quoted fields are read as RFC 4180 does, so a delimiter
-        // inside one is text and not a column break. With skipHeader, the rows
+        // inside one is text and not a column break, and one with line breaks takes
+        // the lines up to its closing quote. With skipHeader, the rows
         // start after the header: the first line with at least fieldsNeeded fields.
         private static IEnumerable<string[]> ReadDataFile(
                 string fileName, string delimiter, int fieldsNeeded, bool skipHeader) {
@@ -432,7 +444,7 @@ namespace PDFjet.NET {
                 }
                 string line;
                 while ((line = reader.ReadLine()) != null) {
-                    string[] fields = Util.Split(line, delimiter);
+                    string[] fields = Util.ReadRecord(line, reader, delimiter);
                     if (skipHeader) {
                         skipHeader = fields.Length < fieldsNeeded;
                         continue;

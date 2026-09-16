@@ -162,6 +162,32 @@ public sealed class BigTableTest : IDisposable {
     }
 
     [Fact]
+    public void LineBreaksInFieldsAreDrawnAsSpaces() {
+        string file = tempDir.Write("breaks.csv", Encoding.UTF8.GetBytes(
+                "Name,City,Total\n\"n\n0\",\"City\r\n0\",1\nn1,City 1,2\n"));
+        PDF pdf1 = TestSupport.NewPDF();
+        Font font1 = TestSupport.Helvetica(pdf1);
+        List<Page> fromFile = Draw(new BigTable(pdf1, font1, font1, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(file, ","));
+
+        PDF pdf2 = TestSupport.NewPDF();
+        Font font2 = TestSupport.Helvetica(pdf2);
+        List<string[]> rows = new List<string[]> {new string[] {"n\r0", "City\r\n0", "1"}, new string[] {"n1", "City 1", "2"}};
+        List<Page> fromMemory = Draw(new BigTable(pdf2, font2, font2, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(Header, rows));
+
+        PDF pdf3 = TestSupport.NewPDF();
+        Font font3 = TestSupport.Helvetica(pdf3);
+        List<string[]> spaces = new List<string[]> {new string[] {"n 0", "City 0", "1"}, new string[] {"n1", "City 1", "2"}};
+        List<Page> withSpaces = Draw(new BigTable(pdf3, font3, font3, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(Header, spaces));
+
+        Assert.Single(fromFile);
+        Assert.Equal(TestSupport.Content(withSpaces[0]), TestSupport.Content(fromFile[0]));
+        Assert.Equal(TestSupport.Content(withSpaces[0]), TestSupport.Content(fromMemory[0]));
+    }
+
+    [Fact]
     public void TheRowsAreReadTwiceAndDisposed() {
         List<string[]> rows = Rows();
         int opened = 0;

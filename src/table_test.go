@@ -99,6 +99,26 @@ func TestTableTheFileConstructorReadsQuotedFields(t *testing.T) {
 	}
 }
 
+func TestTableTheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces(t *testing.T) {
+	data := "Name,Address\r\n" +
+		"\"Smith, John\",\"12 Main St\r\nApt 4\"\r\n" +
+		"Plain,\"one\n\ntwo\"\n"
+	path := testWriteFile(t, "breaks.csv", []byte(data))
+	font := testHelvetica(testNewPDF())
+	table := NewTableFromFile(font, font, path)
+	for _, want := range []struct {
+		row, col int
+		text     string
+	}{{1, 1, "12 Main St Apt 4"}, {2, 0, "Plain"}, {2, 1, "one  two"}} {
+		if got := table.GetCellAt(want.row, want.col).GetText(); got != want.text {
+			t.Errorf("cell (%d, %d): want %q, got %q", want.row, want.col, want.text, got)
+		}
+	}
+	if n := len(table.GetColumn(0)); n != 3 {
+		t.Errorf("rows %d", n)
+	}
+}
+
 func TestTableTheFileConstructorDropsAByteOrderMarkAndPadsShortRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "table.txt")
 	if err := os.WriteFile(path, []byte("\uFEFFa|b|c\n1||\n2\n"), 0o644); err != nil {

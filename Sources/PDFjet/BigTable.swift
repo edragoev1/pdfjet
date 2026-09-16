@@ -31,6 +31,7 @@ public class BigTable {
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
     private var rows: (() -> AnyIterator<[String]>)?
+    private var checkLineBreaks = false     // The rows are not read from a file, which has no line breaks left
     private var readError: Error?       // The error opening the data file, if any
     private var columns: [Int] = []         // The fields drawn, in the order they are drawn
     private var numberOfColumns: Int = 0    // The length of columns
@@ -273,7 +274,7 @@ public class BigTable {
         page!.setBrushColor(Color.black)
 
         for i in 0..<numberOfColumns {
-            let text = fields[columns[i]]
+            let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
                 xText = (vertLines[i + 1] - self.padding) - font.stringWidth(text)
@@ -323,8 +324,10 @@ public class BigTable {
 
     ///
     /// Reads the data file to set the column widths, the column alignment and the header fields.
-    /// The file is read as UTF-8. Its first line with a field for every column is the header, and the lines after it are the rows. A quoted field is read as
-    /// RFC 4180 reads it, so a delimiter inside one is text.
+    /// The file is read as UTF-8. Its first line with a field for every column is the header,
+    /// and the lines after it are the rows. A quoted field is read as RFC 4180 reads it, so a
+    /// delimiter inside one is text, and a line break inside one goes on to the next line of
+    /// the file and is drawn as a space.
     ///
     /// - Parameter fileName: the data file.
     /// - Parameter delimiter: the field delimiter.
@@ -343,7 +346,7 @@ public class BigTable {
         }
 
         readError = nil
-        setTableData(header) { [weak self] in
+        setTableData(header, checkLineBreaks: false) { [weak self] in
             do {
                 let rows = try DataFileRows(fileName, delimiter)
                 // The rows start after the header.
@@ -367,7 +370,8 @@ public class BigTable {
     /// twice, once here to measure the columns and once by complete to draw them, and neither
     /// keeps them, so the sequence must be one that can be iterated more than once, such as an
     /// array, a lazy map of one, or a sequence whose `makeIterator` runs the query again. A row
-    /// without a field for every column is skipped, as a short line of a file is. A header
+    /// without a field for every column is skipped, as a short line of a file is, and a line
+    /// break in a field is drawn as a space. A header
     /// without a field for every column is recorded on the PDF as misuse, and the table is
     /// left without data.
     ///
@@ -378,11 +382,17 @@ public class BigTable {
     @discardableResult
     public func setTableData<Rows: Sequence>(
             _ header: [String], _ rows: Rows) -> BigTable where Rows.Element == [String] {
-        return setTableData(header) { AnyIterator(rows.makeIterator()) }
+        return setTableData(header, checkLineBreaks: true) { AnyIterator(rows.makeIterator()) }
     }
 
     @discardableResult
-    private func setTableData(_ header: [String], _ rows: @escaping () -> AnyIterator<[String]>) -> BigTable {
+    // With checkLineBreaks, each field is looked at for line breaks to draw as
+    // spaces; the rows of a data file have them as spaces already.
+    private func setTableData(
+            _ header: [String],
+            checkLineBreaks: Bool,
+            _ rows: @escaping () -> AnyIterator<[String]>) -> BigTable {
+        self.checkLineBreaks = checkLineBreaks
         if header.count < fieldsNeeded {
             pdf.fail("The header does not have a field for every column.")
             return self
@@ -417,7 +427,8 @@ public class BigTable {
     // the text, and setVertLines adds the padding, so it can be set later.
     private func measure(_ fields: [String]) {
         for i in 0..<numberOfColumns {
-            let width = f1.stringWidth(fields[columns[i]])
+            let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
+            let width = f1.stringWidth(text)
             if width > widths[i] {
                 widths[i] = width
             }
@@ -483,7 +494,7 @@ private final class DataFileRows: IteratorProtocol {
         guard let line = nextLine() else {
             return nil
         }
-        return Util.split(line, delimiter)
+        return Util.readRecord(line, delimiter) { self.nextLine() }
     }
 
     private func nextLine() -> String? {

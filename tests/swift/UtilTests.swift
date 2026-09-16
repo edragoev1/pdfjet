@@ -96,4 +96,32 @@ import Testing
         #expect(Util.split("5\" pipe,b", ",") == ["5\" pipe", "b"])
         #expect(Util.split("a\"b\"c", ",") == ["a\"b\"c"])
     }
+
+    /// Reads the first record of the text, as the data file readers do.
+    private func firstRecord(_ text: String) -> [String] {
+        let lines = text.components(separatedBy: "\n")
+        var i = 1
+        return Util.readRecord(lines[0], ",") {
+            guard i < lines.count else {
+                return nil
+            }
+            i += 1
+            return lines[i - 1]
+        }
+    }
+
+    /// The other ports also check that a quoted field that is never closed is
+    /// refused; Swift stops with fatalError, which a test cannot catch.
+    @Test func aQuotedFieldGoesOnOverItsLineBreaksAsSpaces() {
+        #expect(firstRecord("a,\"12 Main St\nApt 4\",b\nnext,line") == ["a", "12 Main St Apt 4", "b"])
+        #expect(firstRecord("\"x\"\"\ny\"") == ["x\" y"])
+        #expect(firstRecord("\"a\nb\",\"c\nd\"") == ["a b", "c d"])
+        #expect(firstRecord(",\"\n\",\nnext") == ["", " ", ""])
+        #expect(firstRecord("a,b\n\"c\nd\"") == ["a", "b"])
+    }
+
+    @Test func lineBreaksAreDrawnAsSpaces() {
+        #expect(Util.lineBreaksToSpaces("a\r\nb\rc\nd") == "a b c d")
+        #expect(Util.lineBreaksToSpaces("no breaks") == "no breaks")
+    }
 }

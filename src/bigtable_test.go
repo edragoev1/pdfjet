@@ -206,6 +206,40 @@ func TestBigTableTheFooterCanHaveItsOwnTextAndFontOrBeLeftOut(t *testing.T) {
 	}
 }
 
+func TestBigTableLineBreaksInFieldsAreDrawnAsSpaces(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "breaks.csv")
+	data := "Name,City,Total\n\"n\n0\",\"City\r\n0\",1\nn1,City 1,2\n"
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pdf1 := testNewPDF()
+	font1 := testHelvetica(pdf1)
+	table1, err := NewBigTable(pdf1, font1, font1, letter.Portrait()).SetNumberOfColumns(3).SetTableData(path, ",")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fromFile := testDrawBigTable(t, table1)
+
+	pdf2 := testNewPDF()
+	font2 := testHelvetica(pdf2)
+	rows := [][]string{{"n\r0", "City\r\n0", "1"}, {"n1", "City 1", "2"}}
+	fromMemory := testDrawBigTable(t, NewBigTable(pdf2, font2, font2, letter.Portrait()).
+		SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(rows)))
+
+	pdf3 := testNewPDF()
+	font3 := testHelvetica(pdf3)
+	spaces := [][]string{{"n 0", "City 0", "1"}, {"n1", "City 1", "2"}}
+	withSpaces := testDrawBigTable(t, NewBigTable(pdf3, font3, font3, letter.Portrait()).
+		SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(spaces)))
+
+	if len(fromFile) != 1 {
+		t.Fatalf("pages %d", len(fromFile))
+	}
+	if testContent(fromFile[0]) != testContent(withSpaces[0]) || testContent(fromMemory[0]) != testContent(withSpaces[0]) {
+		t.Error("a line break is not drawn as a space")
+	}
+}
+
 func TestBigTableTheRowsAreReadTwice(t *testing.T) {
 	rows := testBigTableRows()
 	opened := 0

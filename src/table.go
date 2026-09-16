@@ -38,7 +38,9 @@ func NewTable() *Table {
 
 // NewTableFromFile creates a table from a text file with comma, pipe or tab
 // separated values. The first line is the header row and uses f1; the other
-// lines use f2. Every row gets as many cells as the first line has fields.
+// lines use f2. Every row gets as many cells as the first line has fields. A
+// quoted field is read as RFC 4180 reads it, and a line break inside one goes
+// on to the next line of the file and is drawn as a space.
 func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	table := NewTable()
 	delimiter := ""
@@ -57,16 +59,27 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	scanner := bufio.NewScanner(f)
 	// A line can be longer than the 64 KB that the scanner reads by default.
 	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
+	nextLine := func() (string, bool) {
+		if scanner.Scan() {
+			return scanner.Text(), true
+		}
+		return "", false
+	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if lineNumber == 0 {
 			// A byte order mark at the start of the file is not part of the text.
 			line = strings.TrimPrefix(line, "\uFEFF")
 			delimiter = getDelimiter(line)
-			numberOfFields = len(splitDelimited(line, delimiter))
 		}
 		row := make([]*Cell, 0)
-		fields := splitDelimited(line, delimiter)
+		// The empty fields at the end of the line are kept, a quoted field holds
+		// its delimiters instead of being cut at them, and its line breaks, which
+		// go on to the next lines, are spaces.
+		fields := readDelimitedRecord(line, delimiter, nextLine)
+		if lineNumber == 0 {
+			numberOfFields = len(fields)
+		}
 		for _, field := range fields {
 			if lineNumber == 0 {
 				row = append(row, NewCell(f1, field))

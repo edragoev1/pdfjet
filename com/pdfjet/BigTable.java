@@ -43,6 +43,7 @@ public class BigTable {
     private String footerText = "Page {page} of {pages}";
     private Font footerFont;                        // null for the header font
     private Iterable<String[]> rows;
+    private boolean checkLineBreaks;        // The rows are not read from a file, which has no line breaks left
     private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
     private int numberOfColumns;            // The length of columns
     private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
@@ -326,7 +327,7 @@ public class BigTable {
         page.setBrushColor(Color.black);
 
         for (int i = 0; i < this.numberOfColumns; i++) {
-            String text = fields[columns[i]];
+            String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
                 xText = (vertLines[i + 1] - this.padding) - font.stringWidth(text);
@@ -379,8 +380,10 @@ public class BigTable {
     /**
      * Sets the column widths, the column alignment and header fields from a
      * delimited text file, read as UTF-8. Its first line with a field for
-     * every column is the header, and the lines after it are the rows. A quoted field is read as RFC 4180 reads it, so a
-     * delimiter inside one is text.
+     * every column is the header, and the lines after it are the rows. A
+     * quoted field is read as RFC 4180 reads it, so a delimiter inside one is
+     * text, and a line break inside one goes on to the next line of the file
+     * and is drawn as a space.
      *
      * @param fileName the file name.
      * @param delimiter the delimiter.
@@ -400,7 +403,7 @@ public class BigTable {
                     }
                 }
             }
-            return setTableData(header, () -> {
+            return setTableData(header, false, () -> {
                 try {
                     return DataFileRows.open(fileName, delimiter, fieldsNeeded, true);
                 } catch (IOException e) {
@@ -420,13 +423,21 @@ public class BigTable {
      * Iterable whose iterator() runs the query again, or maps the objects to
      * fields as it goes, keeps the memory flat. An iterator that is Closeable
      * is closed when the table is done with it. A row without a field for
-     * every column is skipped, as a short line of a file is.
+     * every column is skipped, as a short line of a file is, and a line break
+     * in a field is drawn as a space.
      *
      * @param header the header fields, with a field for every column.
      * @param rows the fields of each row, in the order they are drawn.
      * @return this BigTable object.
      */
     public BigTable setTableData(String[] header, Iterable<String[]> rows) {
+        return setTableData(header, true, rows);
+    }
+
+    // With checkLineBreaks, each field is looked at for line breaks to draw as
+    // spaces; the rows of a data file have them as spaces already.
+    private BigTable setTableData(String[] header, boolean checkLineBreaks, Iterable<String[]> rows) {
+        this.checkLineBreaks = checkLineBreaks;
         if (header.length < this.fieldsNeeded) {
             pdf.fail(new IllegalArgumentException(
                     "The header does not have a field for every column."));
@@ -467,7 +478,8 @@ public class BigTable {
     // the text, and setVertLines adds the padding, so it can be set later.
     private void measure(String[] fields) {
         for (int i = 0; i < this.numberOfColumns; i++) {
-            float width = f1.stringWidth(fields[columns[i]]);
+            String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+            float width = f1.stringWidth(text);
             if (width > widths[i]) {
                 this.widths[i] = width;
             }
@@ -488,7 +500,8 @@ public class BigTable {
     // order mark at its start, if there is one. The lines are split at the
     // delimiter, which is not a regular expression, keeping the empty fields
     // at the end of a line and reading the quoted fields as RFC 4180 does, as
-    // the other ports do. An iterator cannot throw an IOException, so it
+    // the other ports do: a quoted field with line breaks takes the lines up
+    // to its closing quote. An iterator cannot throw an IOException, so it
     // throws an UncheckedIOException, and setTableData and complete() throw
     // its cause.
     private static final class DataFileRows implements Iterator<String[]>, Closeable {
@@ -530,7 +543,7 @@ public class BigTable {
         private void advance() {
             try {
                 String line = reader.readLine();
-                next = (line == null) ? null : Util.split(line, delimiter);
+                next = (line == null) ? null : Util.readRecord(line, reader, delimiter);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

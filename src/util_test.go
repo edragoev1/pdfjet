@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -118,5 +119,56 @@ func TestUtilSplitRefusesALineItCannotRead(t *testing.T) {
 			}()
 			splitDelimited(line, ",")
 		}()
+	}
+}
+
+// testFirstRecord reads the first record of the text, as the data file readers do.
+func testFirstRecord(text string) []string {
+	lines := strings.Split(text, "\n")
+	i := 1
+	return readDelimitedRecord(lines[0], ",", func() (string, bool) {
+		if i < len(lines) {
+			i++
+			return lines[i-1], true
+		}
+		return "", false
+	})
+}
+
+func TestUtilAQuotedFieldGoesOnOverItsLineBreaksAsSpaces(t *testing.T) {
+	for _, c := range []struct {
+		want []string
+		text string
+	}{
+		{[]string{"a", "12 Main St Apt 4", "b"}, "a,\"12 Main St\nApt 4\",b\nnext,line"},
+		{[]string{"x\" y"}, "\"x\"\"\ny\""},
+		{[]string{"a b", "c d"}, "\"a\nb\",\"c\nd\""},
+		{[]string{"", " ", ""}, ",\"\n\",\nnext"},
+		{[]string{"a", "b"}, "a,b\n\"c\nd\""},
+	} {
+		if got := testFirstRecord(c.text); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%q: want %q, got %q", c.text, c.want, got)
+		}
+	}
+}
+
+func TestUtilAQuotedFieldThatIsNeverClosedIsRefused(t *testing.T) {
+	message, _ := testPanic(func() { testFirstRecord("a,\"b\nc\nd") })
+	if message != "A quoted field is not closed by the end of the data file: a,\"b\nc\nd" {
+		t.Errorf("end: %q", message)
+	}
+	text := "\"a" + strings.Repeat("\nb", maxLinesInRecord)
+	message, _ = testPanic(func() { testFirstRecord(text) })
+	if message != "A quoted field is not closed within 10000 lines of the data file: "+text[:60]+"..." {
+		t.Errorf("limit: %q", message)
+	}
+}
+
+func TestUtilLineBreaksAreDrawnAsSpaces(t *testing.T) {
+	if got := lineBreaksToSpaces("a\r\nb\rc\nd"); got != "a b c d" {
+		t.Errorf("got %q", got)
+	}
+	if got := lineBreaksToSpaces("no breaks"); got != "no breaks" {
+		t.Errorf("got %q", got)
 	}
 }

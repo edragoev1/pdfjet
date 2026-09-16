@@ -94,6 +94,41 @@ public sealed class UtilTest : IDisposable {
         Assert.Equal(new String[] {"a\"b\"c"}, Util.Split("a\"b\"c", ","));
     }
 
+    // Reads the first record of the text, as the data file readers do.
+    private static String[] FirstRecord(String text) {
+        StringReader reader = new StringReader(text);
+        return Util.ReadRecord(reader.ReadLine(), reader, ",");
+    }
+
+    [Fact]
+    public void AQuotedFieldGoesOnOverItsLineBreaksAsSpaces() {
+        Assert.Equal(new String[] {"a", "12 Main St Apt 4", "b"}, FirstRecord("a,\"12 Main St\nApt 4\",b\nnext,line"));
+        Assert.Equal(new String[] {"x\" y"}, FirstRecord("\"x\"\"\ny\""));
+        Assert.Equal(new String[] {"a b", "c d"}, FirstRecord("\"a\nb\",\"c\nd\""));
+        Assert.Equal(new String[] {"", " ", ""}, FirstRecord(",\"\n\",\nnext"));
+        Assert.Equal(new String[] {"a", "b"}, FirstRecord("a,b\n\"c\nd\""));
+    }
+
+    [Fact]
+    public void AQuotedFieldThatIsNeverClosedIsRefused() {
+        ArgumentException end = Assert.Throws<ArgumentException>(() => FirstRecord("a,\"b\nc\nd"));
+        Assert.Equal("A quoted field is not closed by the end of the data file: a,\"b\nc\nd", end.Message);
+        StringBuilder text = new StringBuilder("\"a");
+        for (int i = 0; i < Util.MAX_LINES_IN_RECORD; i++) {
+            text.Append("\nb");
+        }
+        ArgumentException limit = Assert.Throws<ArgumentException>(() => FirstRecord(text.ToString()));
+        Assert.Equal("A quoted field is not closed within 10000 lines of the data file: "
+                + text.ToString().Substring(0, 60) + "...", limit.Message);
+    }
+
+    [Fact]
+    public void LineBreaksAreDrawnAsSpaces() {
+        Assert.Equal("a b c d", Util.LineBreaksToSpaces("a\r\nb\rc\nd"));
+        String plain = "no breaks";
+        Assert.Same(plain, Util.LineBreaksToSpaces(plain));
+    }
+
     [Fact]
     public void SplitRefusesALineItCannotRead() {
         Assert.Throws<System.ArgumentException>(() => Util.Split("a,\"b,c", ","));

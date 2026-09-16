@@ -31,7 +31,9 @@ public class Table : Drawable {
     ///
     /// Creates a table from a text file with comma, pipe or tab separated values.
     /// The first line is the header row and uses f1; the other lines use f2.
-    /// Every row gets as many cells as the first line has fields.
+    /// Every row gets as many cells as the first line has fields. A quoted field is read as
+    /// RFC 4180 reads it, and a line break inside one goes on to the next line of the file and
+    /// is drawn as a space.
     ///
     /// - Parameter f1: the font for the header row.
     /// - Parameter f2: the font for the other rows.
@@ -50,15 +52,27 @@ public class Table : Drawable {
         if lines.last == "" {
             lines.removeLast()          // Ignore the trailing end-of-line marker
         }
-        for line in lines {
+        var index = 0
+        while index < lines.count {
+            let line = lines[index]
+            index += 1
             if lineNumber == 0 {
                 delimiter = getDelimiter(line)
-                numberOfFields = Util.split(line, delimiter!).count
             }
             var row = [Cell]()
-            // The empty fields at the end of the line are kept, and a quoted
-            // field holds its delimiters instead of being cut at them.
-            let fields = Util.split(line, delimiter!)
+            // The empty fields at the end of the line are kept, a quoted field
+            // holds its delimiters instead of being cut at them, and its line
+            // breaks, which go on to the next lines, are spaces.
+            let fields = Util.readRecord(line, delimiter!) {
+                guard index < lines.count else {
+                    return nil
+                }
+                index += 1
+                return lines[index - 1]
+            }
+            if lineNumber == 0 {
+                numberOfFields = fields.count
+            }
             for field in fields {
                 if lineNumber == 0 {
                     row.append(Cell(f1, field))

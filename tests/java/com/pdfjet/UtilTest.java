@@ -10,12 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
@@ -103,6 +105,41 @@ class UtilTest {
     void splitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() {
         assertArrayEquals(new String[] {"5\" pipe", "b"}, Util.split("5\" pipe,b", ","));
         assertArrayEquals(new String[] {"a\"b\"c"}, Util.split("a\"b\"c", ","));
+    }
+
+    // Reads the first record of the text, as the data file readers do.
+    private static String[] firstRecord(String text) throws IOException {
+        BufferedReader reader = new BufferedReader(new StringReader(text));
+        return Util.readRecord(reader.readLine(), reader, ",");
+    }
+
+    @Test
+    void aQuotedFieldGoesOnOverItsLineBreaksAsSpaces() throws Exception {
+        assertArrayEquals(new String[] {"a", "12 Main St Apt 4", "b"}, firstRecord("a,\"12 Main St\nApt 4\",b\nnext,line"));
+        assertArrayEquals(new String[] {"x\" y"}, firstRecord("\"x\"\"\ny\""));
+        assertArrayEquals(new String[] {"a b", "c d"}, firstRecord("\"a\nb\",\"c\nd\""));
+        assertArrayEquals(new String[] {"", " ", ""}, firstRecord(",\"\n\",\nnext"));
+        assertArrayEquals(new String[] {"a", "b"}, firstRecord("a,b\n\"c\nd\""));
+    }
+
+    @Test
+    void aQuotedFieldThatIsNeverClosedIsRefused() throws Exception {
+        IllegalArgumentException end = assertThrows(IllegalArgumentException.class, () -> firstRecord("a,\"b\nc\nd"));
+        assertEquals("A quoted field is not closed by the end of the data file: a,\"b\nc\nd", end.getMessage());
+        StringBuilder text = new StringBuilder("\"a");
+        for (int i = 0; i < Util.MAX_LINES_IN_RECORD; i++) {
+            text.append("\nb");
+        }
+        IllegalArgumentException limit = assertThrows(IllegalArgumentException.class, () -> firstRecord(text.toString()));
+        assertEquals("A quoted field is not closed within 10000 lines of the data file: "
+                + text.substring(0, 60) + "...", limit.getMessage());
+    }
+
+    @Test
+    void lineBreaksAreDrawnAsSpaces() {
+        assertEquals("a b c d", Util.lineBreaksToSpaces("a\r\nb\rc\nd"));
+        String plain = "no breaks";
+        assertEquals(plain, Util.lineBreaksToSpaces(plain));
     }
 
     @Test

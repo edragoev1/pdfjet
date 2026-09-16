@@ -122,9 +122,18 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       `drawOn(null)` less the top, in the four ports, checked against the
       rendered ink of the four barcode types in three directions with and
       without text; the barcode tests expect it for all 24 rows.
-- ⬜ Decide whether a quoted field may hold a line break (read on until the
+- ✅ Decide whether a quoted field may hold a line break (read on until the
       quotes balance) or document it as unsupported. Today it may not, in the
       four ports.
+      Decided (Sep 16, the user's choice of four ideas): it may, and a table
+      draws the line break as a space. The record reader of each port reads on
+      from a line that ends inside a quoted field, scanning only the new lines
+      for the closing quote, and replaces the line breaks of such a record
+      with spaces; a quote that is never closed fails at the end of the file
+      or after 10,000 lines, a count that is the same in every port. `BigTable`
+      looks at every field for line breaks only in rows from memory, so
+      Example_43 is identical and as fast in the four ports: a first version
+      that looked at every field cost Go 6% and Swift 3%.
 - ⬜ S `Table` writes 25.2 MB where iText's writes 21.6, because `Cell` sets
       the brush and the pen for every cell (2,027 `rg` and `RG` on the sample's
       first page against iText's 675). Skip the operators when the colour has
