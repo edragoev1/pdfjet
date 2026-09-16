@@ -166,13 +166,29 @@ class Util {
      * @return the non-empty tokens.
      */
     static String[] splitOnWhitespace(String text) {
+        // The scan is what split("\\s+") does, without compiling a Pattern for
+        // every call; the other three ports have never used a regex here.
         List<String> tokens = new ArrayList<String>();
-        for (String token : text.split("\\s+")) {
-            if (!token.isEmpty()) {
-                tokens.add(token);
+        int i = 0;
+        while (i < text.length()) {
+            while (i < text.length() && isASCIIWhitespace(text.charAt(i))) {
+                i++;
+            }
+            int start = i;
+            while (i < text.length() && !isASCIIWhitespace(text.charAt(i))) {
+                i++;
+            }
+            if (i > start) {
+                tokens.add(text.substring(start, i));
             }
         }
         return tokens.toArray(new String[] {});
+    }
+
+    // The six characters that Java's \s matches: space, tab, line feed,
+    // vertical tab, form feed and carriage return.
+    private static boolean isASCIIWhitespace(char ch) {
+        return ch == ' ' || (ch >= '\t' && ch <= '\r');
     }
 
     /**

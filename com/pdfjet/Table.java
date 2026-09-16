@@ -735,20 +735,41 @@ public class Table implements Drawable {
         return this;
     }
 
-    // Returns the table data with a row added below each row for every extra
-    // line that its wrapped cell text needs. The rows added below a header row
-    // are header rows too.
-    private List<List<Cell>> addExtraTableRows() {
+    private float getTotalWidth(List<Cell> row, int index) {
+        Cell cell = row.get(index);
+        int colspan = cell.getColSpan();
+        float cellWidth = 0f;
+        for (int i = 0; i < colspan; i++) {
+            cellWidth += row.get(index + i).getWidth();
+        }
+        cellWidth -= (cell.leftPadding + row.get(index + (colspan - 1)).rightPadding);
+        return cellWidth;
+    }
+
+    /**
+     * Wraps around the text in all cells so it fits the column width.
+     * This method should be called after all calls to setColumnWidth and
+     * autoAdjustColumnWidths.
+     */
+    protected void wrapAroundCellText() {
         List<List<Cell>> tableData2 = new ArrayList<List<Cell>>();
+        List<List<String>> lines = new ArrayList<List<String>>();
         int numOfHeaderRows2 = 0;
         for (int r = 0; r < tableData.size(); r++) {
             List<Cell> row = tableData.get(r);
+            int first = tableData2.size();
             tableData2.add(row);    // Add the original row
-            int maxNumVerCells = 0;
+            // Every cell of the row is wrapped once, here. The lines it needs
+            // are what the cells stacked below it get, and the most lines any
+            // cell of the row needs is how many rows to stack. The rows added
+            // below a header row are header rows too.
+            lines.clear();
+            int maxNumVerCells = 1;
             for (int i = 0; i < row.size(); i++) {
-                int numVerCells = getNumVerCells(row, i);
-                if (numVerCells > maxNumVerCells) {
-                    maxNumVerCells = numVerCells;
+                List<String> cellLines = (row.get(i).text == null) ? null : wrapCellText(row, i);
+                lines.add(cellLines);
+                if (cellLines != null && cellLines.size() > maxNumVerCells) {
+                    maxNumVerCells = cellLines.size();
                 }
             }
             for (int i = 1; i < maxNumVerCells; i++) {
@@ -779,6 +800,28 @@ public class Table implements Drawable {
                 }
                 tableData2.add(row2);
             }
+            for (int j = 0; j < row.size(); j++) {
+                List<String> cellLines = lines.get(j);
+                if (cellLines != null) {
+                    for (int n = 0; n < cellLines.size(); n++) {
+                        tableData2.get(first + n).get(j).setText(cellLines.get(n));
+                    }
+                }
+            }
+            // The stacked rows are wrapped in their turn, as they were when
+            // the rows were all added first and the table wrapped in one pass
+            // afterwards: a line that ends in a space loses it here.
+            for (int i = first + 1; i < tableData2.size(); i++) {
+                List<Cell> row2 = tableData2.get(i);
+                for (int j = 0; j < row2.size(); j++) {
+                    if (row2.get(j).text != null) {
+                        List<String> cellLines = wrapCellText(row2, j);
+                        for (int n = 0; n < cellLines.size(); n++) {
+                            tableData2.get(i + n).get(j).setText(cellLines.get(n));
+                        }
+                    }
+                }
+            }
             if (r < numOfHeaderRows) {
                 numOfHeaderRows2 = tableData2.size();
             }
@@ -787,68 +830,45 @@ public class Table implements Drawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
-        return tableData2;
+        tableData = tableData2;
     }
 
-    private float getTotalWidth(List<Cell> row, int index) {
+    // The lines the text of the cell needs to fit the width of its column.
+    // A token wider than the column is broken between two of its characters.
+    private List<String> wrapCellText(List<Cell> row, int index) {
         Cell cell = row.get(index);
-        int colspan = cell.getColSpan();
-        float cellWidth = 0f;
-        for (int i = 0; i < colspan; i++) {
-            cellWidth += row.get(index + i).getWidth();
-        }
-        cellWidth -= (cell.leftPadding + row.get(index + (colspan - 1)).rightPadding);
-        return cellWidth;
-    }
-
-    /**
-     * Wraps around the text in all cells so it fits the column width.
-     * This method should be called after all calls to setColumnWidth and
-     * autoAdjustColumnWidths.
-     */
-    protected void wrapAroundCellText() {
-        List<List<Cell>> tableData2 = addExtraTableRows();
-        for (int i = 0; i < tableData2.size(); i++) {
-            List<Cell> row = tableData2.get(i);
-            for (int j = 0; j < row.size(); j++) {
-                Cell cell = row.get(j);
-                if (cell.text != null) {
-                    float cellWidth = getTotalWidth(row, j);
-                    String[] tokens = Util.splitOnWhitespace(cell.text);
-                    int n = 0;
-                    StringBuilder buf = new StringBuilder();
-                    for (String token : tokens) {
-                        if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                            if (buf.length() > 0) {
-                                buf.append(" ");
-                            }
-                            for (int k = 0; k < token.length(); k++) {
-                                if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf.toString() + token.charAt(k)) > cellWidth) {
-                                    tableData2.get(i + n).get(j).setText(buf.toString());
-                                    buf.setLength(0);
-                                    n++;
-                                }
-                                buf.append(token.charAt(k));
-                            }
-                        } else {
-                            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf.toString() + " " + token).trim()) > cellWidth) {
-                                tableData2.get(i + n).get(j).setText(buf.toString().trim());
-                                buf.setLength(0);
-                                buf.append(token);
-                                n++;
-                            } else {
-                                if (buf.length() > 0) {
-                                    buf.append(" ");
-                                }
-                                buf.append(token);
-                            }
-                        }
-                    }
-                    tableData2.get(i + n).get(j).setText(buf.toString().trim());
+        float cellWidth = getTotalWidth(row, index);
+        List<String> lines = new ArrayList<String>();
+        StringBuilder buf = new StringBuilder();
+        for (String token : Util.splitOnWhitespace(cell.text)) {
+            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
+                if (buf.length() > 0) {
+                    buf.append(" ");
                 }
+                for (int k = 0; k < token.length(); k++) {
+                    if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                            buf.toString() + token.charAt(k)) > cellWidth) {
+                        lines.add(buf.toString());
+                        buf.setLength(0);
+                    }
+                    buf.append(token.charAt(k));
+                }
+            } else if (buf.length() == 0) {
+                // A token that fits the column fits a line of its own, and its
+                // width is the one measured just above.
+                buf.append(token);
+            } else if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                    (buf.toString() + " " + token).trim()) > cellWidth) {
+                lines.add(buf.toString().trim());
+                buf.setLength(0);
+                buf.append(token);
+            } else {
+                buf.append(" ");
+                buf.append(token);
             }
         }
-        tableData = tableData2;
+        lines.add(buf.toString().trim());
+        return lines;
     }
 
     /**
@@ -859,41 +879,12 @@ public class Table implements Drawable {
      *  @return the number of vertical cells needed to wrap around the cell text.
      */
     protected int getNumVerCells(List<Cell> row, int index) {
-        Cell cell = row.get(index);
-        int numOfVerCells = 1;
-        if (cell.text == null) {
-            return numOfVerCells;
+        if (row.get(index).text == null) {
+            return 1;
         }
-        float cellWidth = getTotalWidth(row, index);
-        String[] tokens = Util.splitOnWhitespace(cell.text);
-        StringBuilder buf = new StringBuilder();
-        for (String token : tokens) {
-            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                if (buf.length() > 0) {
-                    buf.append(" ");
-                }
-                for (int k = 0; k < token.length(); k++) {
-                    if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf.toString() + token.charAt(k)) > cellWidth) {
-                        numOfVerCells++;
-                        buf.setLength(0);
-                    }
-                    buf.append(token.charAt(k));
-                }
-            } else {
-                if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf.toString() + " " + token).trim()) > cellWidth) {
-                    numOfVerCells++;
-                    buf.setLength(0);
-                    buf.append(token);
-                } else {
-                    if (buf.length() > 0) {
-                        buf.append(" ");
-                    }
-                    buf.append(token);
-                }
-            }
-        }
-        return numOfVerCells;
+        return wrapCellText(row, index).size();
     }
+
 
     // The delimiter of the line: the commonest of a comma, a pipe and a tab.
     // The ones inside a quoted field are not counted, or a file whose values

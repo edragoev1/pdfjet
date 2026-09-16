@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <StartupObject>TableBench</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="PDFjet">
+      <HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

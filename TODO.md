@@ -1114,6 +1114,21 @@ renames included (the Week 1 decision), so every item is a blocker.
       incrementally, as `BigTable` reads its file, the method for it belongs in
       9.0.0: adding it later would leave two ways of giving a table its data,
       and the second one would arrive in a minor release.
+      Measured: `benchmarks/table/` builds the 9 columns as cells and draws
+      them with `Table` in the four ports, rather than a configuration of
+      `BigTableBench.java`, so that every port is measured and not only Java.
+      On the whole file, 124,716 rows and 1.12 million cells, Java takes
+      4,983 ms and 1,135 MB in a new JVM, C# 5,910 ms and 566 MB, Go 2,389 ms
+      and 800 MB, Swift 7,446 ms and 474 MB. iText's `Table` took 36,543 ms
+      and 7,180 MB for the same data and would not run under an 8 GB heap, so
+      `Table` is nowhere near it: seven times faster and a sixth of the memory
+      even holding every cell. `BigTable` took 2,109 ms and 391 MB.
+      Also measured, before and after wrapping every cell once instead of
+      twice: at 50,000 rows Java went from 2,073 ms and 964 MB to 1,768 ms and
+      600 MB, C# from 2,546 to 2,272, Go from 1,106 to 884 and Swift from
+      3,815 to 2,928.
+      Still to decide, and the part that belongs in 9.0.0: whether the rows
+      may arrive incrementally, as `BigTable` reads its file.
 
 ## Week 4 (Oct 2–11): parity audit, docs, release
 

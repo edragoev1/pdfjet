@@ -685,20 +685,40 @@ public class Table : IDrawable {
         return this;
     }
 
-    // Returns the table data with a row added below each row for every extra
-    // line that its wrapped cell text needs. The rows added below a header row
-    // are header rows too.
-    private List<List<Cell>> AddExtraTableRows() {
+    private float GetTotalWidth(List<Cell> row, int index) {
+        Cell cell = row[index];
+        int colspan = cell.GetColSpan();
+        float cellWidth = 0f;
+        for (int i = 0; i < colspan; i++) {
+            cellWidth += row[index + i].GetWidth();
+        }
+        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding);
+        return cellWidth;
+    }
+
+    /// <summary>
+    /// Wraps around the text in all cells so it fits the column width.
+    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+    /// </summary>
+    protected void WrapAroundCellText() {
         List<List<Cell>> tableData2 = new List<List<Cell>>();
+        List<List<String>> lines = new List<List<String>>();
         int numOfHeaderRows2 = 0;
         for (int r = 0; r < tableData.Count; r++) {
             List<Cell> row = tableData[r];
+            int first = tableData2.Count;
             tableData2.Add(row);    // Add the original row
-            int maxNumVerCells = 0;
+            // Every cell of the row is wrapped once, here. The lines it needs
+            // are what the cells stacked below it get, and the most lines any
+            // cell of the row needs is how many rows to stack. The rows added
+            // below a header row are header rows too.
+            lines.Clear();
+            int maxNumVerCells = 1;
             for (int i = 0; i < row.Count; i++) {
-                int numVerCells = GetNumVerCells(row, i);
-                if (numVerCells > maxNumVerCells) {
-                    maxNumVerCells = numVerCells;
+                List<String> cellLines = (row[i].text == null) ? null : WrapCellText(row, i);
+                lines.Add(cellLines);
+                if (cellLines != null && cellLines.Count > maxNumVerCells) {
+                    maxNumVerCells = cellLines.Count;
                 }
             }
             for (int i = 1; i < maxNumVerCells; i++) {
@@ -729,6 +749,28 @@ public class Table : IDrawable {
                 }
                 tableData2.Add(row2);
             }
+            for (int j = 0; j < row.Count; j++) {
+                List<String> cellLines = lines[j];
+                if (cellLines != null) {
+                    for (int n = 0; n < cellLines.Count; n++) {
+                        tableData2[first + n][j].SetText(cellLines[n]);
+                    }
+                }
+            }
+            // The stacked rows are wrapped in their turn, as they were when
+            // the rows were all added first and the table wrapped in one pass
+            // afterwards: a line that ends in a space loses it here.
+            for (int i = first + 1; i < tableData2.Count; i++) {
+                List<Cell> row2 = tableData2[i];
+                for (int j = 0; j < row2.Count; j++) {
+                    if (row2[j].text != null) {
+                        List<String> cellLines = WrapCellText(row2, j);
+                        for (int n = 0; n < cellLines.Count; n++) {
+                            tableData2[i + n][j].SetText(cellLines[n]);
+                        }
+                    }
+                }
+            }
             if (r < numOfHeaderRows) {
                 numOfHeaderRows2 = tableData2.Count;
             }
@@ -737,67 +779,45 @@ public class Table : IDrawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
-        return tableData2;
+        tableData = tableData2;
     }
 
-    private float GetTotalWidth(List<Cell> row, int index) {
+    // The lines the text of the cell needs to fit the width of its column.
+    // A token wider than the column is broken between two of its characters.
+    private List<String> WrapCellText(List<Cell> row, int index) {
         Cell cell = row[index];
-        int colspan = cell.GetColSpan();
-        float cellWidth = 0f;
-        for (int i = 0; i < colspan; i++) {
-            cellWidth += row[index + i].GetWidth();
-        }
-        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding);
-        return cellWidth;
-    }
-
-    /// <summary>
-    /// Wraps around the text in all cells so it fits the column width.
-    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
-    /// </summary>
-    protected void WrapAroundCellText() {
-        List<List<Cell>> tableData2 = AddExtraTableRows();
-        for (int i = 0; i < tableData2.Count; i++) {
-            List<Cell> row = tableData2[i];
-            for (int j = 0; j < row.Count; j++) {
-                Cell cell = row[j];
-                if (cell.text != null) {
-                    float cellWidth = GetTotalWidth(row, j);
-                    String[] tokens = Util.SplitOnWhitespace(cell.text);
-                    int n = 0;
-                    StringBuilder buf = new StringBuilder();
-                    foreach (String token in tokens) {
-                        if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                            if (buf.Length > 0) {
-                                buf.Append(" ");
-                            }
-                            foreach (char ch in token) {
-                                if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, buf.ToString() + ch) > cellWidth) {
-                                    tableData2[i + n][j].SetText(buf.ToString());
-                                    buf.Length = 0;
-                                    n++;
-                                }
-                                buf.Append(ch);
-                            }
-                        } else {
-                            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
-                                tableData2[i + n][j].SetText(Util.Trim(buf.ToString()));
-                                buf.Length = 0;
-                                buf.Append(token);
-                                n++;
-                            } else {
-                                if (buf.Length > 0) {
-                                    buf.Append(" ");
-                                }
-                                buf.Append(token);
-                            }
-                        }
-                    }
-                    tableData2[i + n][j].SetText(Util.Trim(buf.ToString()));
+        float cellWidth = GetTotalWidth(row, index);
+        List<String> lines = new List<String>();
+        StringBuilder buf = new StringBuilder();
+        foreach (String token in Util.SplitOnWhitespace(cell.text)) {
+            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
+                if (buf.Length > 0) {
+                    buf.Append(" ");
                 }
+                foreach (char ch in token) {
+                    if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
+                            buf.ToString() + ch) > cellWidth) {
+                        lines.Add(buf.ToString());
+                        buf.Length = 0;
+                    }
+                    buf.Append(ch);
+                }
+            } else if (buf.Length == 0) {
+                // A token that fits the column fits a line of its own, and its
+                // width is the one measured just above.
+                buf.Append(token);
+            } else if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
+                    Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
+                lines.Add(Util.Trim(buf.ToString()));
+                buf.Length = 0;
+                buf.Append(token);
+            } else {
+                buf.Append(" ");
+                buf.Append(token);
             }
         }
-        tableData = tableData2;
+        lines.Add(Util.Trim(buf.ToString()));
+        return lines;
     }
 
     /// <summary>
@@ -805,40 +825,10 @@ public class Table : IDrawable {
     /// </summary>
     /// <returns>the number of vertical cells needed to wrap around the cell text.</returns>
     internal int GetNumVerCells(List<Cell> row, int index) {
-        Cell cell = row[index];
-        int numOfVerCells = 1;
-        if (cell.text == null) {
-            return numOfVerCells;
+        if (row[index].text == null) {
+            return 1;
         }
-        float cellWidth = GetTotalWidth(row, index);
-        String[] tokens = Util.SplitOnWhitespace(cell.text);
-        StringBuilder buf = new StringBuilder();
-        foreach (String token in tokens) {
-            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                if (buf.Length > 0) {
-                    buf.Append(" ");
-                }
-                foreach (char ch in token) {
-                    if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, buf.ToString() + ch) > cellWidth) {
-                        numOfVerCells++;
-                        buf.Length = 0;
-                    }
-                    buf.Append(ch);
-                }
-            } else {
-                if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
-                    numOfVerCells++;
-                    buf.Length = 0;
-                    buf.Append(token);
-                } else {
-                    if (buf.Length > 0) {
-                        buf.Append(" ");
-                    }
-                    buf.Append(token);
-                }
-            }
-        }
-        return numOfVerCells;
+        return WrapCellText(row, index).Count;
     }
 
     // The delimiter of the line: the commonest of a comma, a pipe and a tab.

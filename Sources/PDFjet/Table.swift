@@ -710,20 +710,39 @@ public class Table : Drawable {
         return self
     }
 
-    // Returns the table data with a row added below each row for every extra
-    // line that its wrapped cell text needs. The rows added below a header row
-    // are header rows too.
-    private func addExtraTableRows() -> [[Cell]] {
+    func getTotalWidth(_ row: [Cell], _ index: Int) -> Float {
+        let cell = row[index]
+        let colspan = Int(cell.getColSpan())
+        var cellWidth = Float(0.0)
+        for i in 0..<colspan {
+            cellWidth += row[index + i].getWidth()
+        }
+        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding)
+        return cellWidth
+    }
+
+    ///
+    /// Wraps around the text in all cells so it fits the column width.
+    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+    ///
+    func wrapAroundCellText() {
         var tableData2 = [[Cell]]()
+        var lines = [[String]?]()
         var numOfHeaderRows2 = 0
-        for r in 0..<tableData.count {
-            let row = tableData[r]
+        for (r, row) in tableData.enumerated() {
+            let first = tableData2.count
             tableData2.append(row)  // Add the original row
-            var maxNumVerCells = 0
+            // Every cell of the row is wrapped once, here. The lines it needs
+            // are what the cells stacked below it get, and the most lines any
+            // cell of the row needs is how many rows to stack. The rows added
+            // below a header row are header rows too.
+            lines.removeAll(keepingCapacity: true)
+            var maxNumVerCells = 1
             for i in 0..<row.count {
-                let numVerCells = getNumVerCells(row, i)
-                if numVerCells > maxNumVerCells {
-                    maxNumVerCells = numVerCells
+                let cellLines = (row[i].text == nil) ? nil : wrapCellText(row, i)
+                lines.append(cellLines)
+                if let cellLines = cellLines, cellLines.count > maxNumVerCells {
+                    maxNumVerCells = cellLines.count
                 }
             }
             var k = 1
@@ -756,6 +775,24 @@ public class Table : Drawable {
                 tableData2.append(row2)
                 k += 1
             }
+            for j in 0..<row.count {
+                if let cellLines = lines[j] {
+                    for (n, line) in cellLines.enumerated() {
+                        tableData2[first + n][j].setText(line)
+                    }
+                }
+            }
+            // The stacked rows are wrapped in their turn, as they were when
+            // the rows were all added first and the table wrapped in one pass
+            // afterwards: a line that ends in a space loses it here.
+            for i in (first + 1)..<tableData2.count {
+                let row2 = tableData2[i]
+                for j in 0..<row2.count where row2[j].text != nil {
+                    for (n, line) in wrapCellText(row2, j).enumerated() {
+                        tableData2[i + n][j].setText(line)
+                    }
+                }
+            }
             if r < numOfHeaderRows {
                 numOfHeaderRows2 = tableData2.count
             }
@@ -764,65 +801,45 @@ public class Table : Drawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows
         }
         numOfHeaderRows = numOfHeaderRows2
-        return tableData2
+        tableData = tableData2
     }
 
-    func getTotalWidth(_ row: [Cell], _ index: Int) -> Float {
+    // The lines the text of the cell needs to fit the width of its column.
+    // A token wider than the column is broken between two of its characters.
+    private func wrapCellText(_ row: [Cell], _ index: Int) -> [String] {
         let cell = row[index]
-        let colspan = Int(cell.getColSpan())
-        var cellWidth = Float(0.0)
-        for i in 0..<colspan {
-            cellWidth += row[index + i].getWidth()
-        }
-        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding)
-        return cellWidth
-    }
-
-    ///
-    /// Wraps around the text in all cells so it fits the column width.
-    /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
-    ///
-    func wrapAroundCellText() {
-        let tableData2 = addExtraTableRows()
-        for (i, row) in tableData2.enumerated() {
-            for (j, cell) in row.enumerated() {
-                if cell.text != nil {
-                    let cellWidth = getTotalWidth(row, j)
-                    let tokens = cell.text!.splitOnWhitespace()
-                    var n = 0
-                    var buf = String()
-                    for token in tokens {
-                        if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
-                            if !buf.isEmpty {
-                                buf.append(" ")
-                            }
-                            for scalar in token.unicodeScalars {
-                                if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf + String(scalar)) > cellWidth {
-                                    tableData2[i + n][j].setText(buf)
-                                    buf = ""
-                                    n += 1
-                                }
-                                buf.append(String(scalar))
-                            }
-                        } else {
-                            if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf + " " + token).trim()) > cellWidth {
-                                tableData2[i + n][j].setText(buf.trim())
-                                buf = ""
-                                buf.append(token)
-                                n += 1
-                            } else {
-                                if !buf.isEmpty {
-                                    buf.append(" ")
-                                }
-                                buf.append(token)
-                            }
-                        }
-                    }
-                    tableData2[i + n][j].setText(buf.trim())
+        let cellWidth = getTotalWidth(row, index)
+        var lines = [String]()
+        var buf = String()
+        for token in cell.text!.splitOnWhitespace() {
+            if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
+                if !buf.isEmpty {
+                    buf.append(" ")
                 }
+                for scalar in token.unicodeScalars {
+                    if cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                            buf + String(scalar)) > cellWidth {
+                        lines.append(buf)
+                        buf = ""
+                    }
+                    buf.append(String(scalar))
+                }
+            } else if buf.isEmpty {
+                // A token that fits the column fits a line of its own, and its
+                // width is the one measured just above.
+                buf.append(token)
+            } else if cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                    (buf + " " + token).trim()) > cellWidth {
+                lines.append(buf.trim())
+                buf = ""
+                buf.append(token)
+            } else {
+                buf.append(" ")
+                buf.append(token)
             }
         }
-        tableData = tableData2
+        lines.append(buf.trim())
+        return lines
     }
 
     ///
@@ -831,40 +848,10 @@ public class Table : Drawable {
     /// - Returns: the number of vertical cells needed to wrap around the cell text.
     ///
     func getNumVerCells(_ row: [Cell], _ index: Int) -> Int {
-        let cell = row[index]
-        var numOfVerCells = 1
-        if cell.text == nil {
-            return numOfVerCells
+        if row[index].text == nil {
+            return 1
         }
-        let cellWidth = getTotalWidth(row, index)
-        let tokens = cell.text!.splitOnWhitespace()
-        var buf = String()
-        for token in tokens {
-            if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
-                if !buf.isEmpty {
-                    buf.append(" ")
-                }
-                for scalar in token.unicodeScalars {
-                    if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, buf + String(scalar)) > cellWidth {
-                        numOfVerCells += 1
-                        buf = ""
-                    }
-                    buf.append(String(scalar))
-                }
-            } else {
-                if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, (buf + " " + token).trim()) > cellWidth {
-                    numOfVerCells += 1
-                    buf = ""
-                    buf.append(token)
-                } else {
-                    if !buf.isEmpty {
-                        buf.append(" ")
-                    }
-                    buf.append(token)
-                }
-            }
-        }
-        return numOfVerCells
+        return wrapCellText(row, index).count
     }
 
     // The delimiter of the line: the commonest of a comma, a pipe and a tab.

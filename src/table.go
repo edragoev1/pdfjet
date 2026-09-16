@@ -627,20 +627,41 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 	return table
 }
 
-// addExtraTableRows returns the table data with a row added below each row
-// for every extra line that its wrapped cell text needs. The rows added below
-// a header row are header rows too.
-func (table *Table) addExtraTableRows() [][]*Cell {
+func getTotalWidth(row []*Cell, index int) float32 {
+	cell := row[index]
+	colspan := cell.GetColSpan()
+	cellWidth := float32(0.0)
+	for i := 0; i < colspan; i++ {
+		cellWidth += row[index+i].GetWidth()
+	}
+	cellWidth -= cell.leftPadding + row[index+(colspan-1)].rightPadding
+	return cellWidth
+}
+
+// wrapAroundCellText wraps around the text in all cells so it fits the column width.
+// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
+func (table *Table) wrapAroundCellText() {
 	tableData2 := make([][]*Cell, 0)
+	lines := make([][]string, 0)
 	numOfHeaderRows2 := 0
 	for r, row := range table.tableData {
+		first := len(tableData2)
 		tableData2 = append(tableData2, row) // Add the original row
-		maxNumVerCells := 0
+		// Every cell of the row is wrapped once, here. The lines it needs are
+		// what the cells stacked below it get, and the most lines any cell of
+		// the row needs is how many rows to stack. The rows added below a
+		// header row are header rows too.
+		lines = lines[:0]
+		maxNumVerCells := 1
 		for i := 0; i < len(row); i++ {
-			numVerCells := getNumVerCells(row, i)
-			if numVerCells > maxNumVerCells {
-				maxNumVerCells = numVerCells
+			var cellLines []string
+			if row[i].hasText {
+				cellLines = wrapCellText(row, i)
+				if len(cellLines) > maxNumVerCells {
+					maxNumVerCells = len(cellLines)
+				}
 			}
+			lines = append(lines, cellLines)
 		}
 		for i := 1; i < maxNumVerCells; i++ {
 			row2 := make([]*Cell, 0)
@@ -678,6 +699,24 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 			}
 			tableData2 = append(tableData2, row2)
 		}
+		for j := 0; j < len(row); j++ {
+			for n, line := range lines[j] {
+				tableData2[first+n][j].SetText(line)
+			}
+		}
+		// The stacked rows are wrapped in their turn, as they were when the
+		// rows were all added first and the table wrapped in one pass
+		// afterwards: a line that ends in a space loses it here.
+		for i := first + 1; i < len(tableData2); i++ {
+			row2 := tableData2[i]
+			for j := 0; j < len(row2); j++ {
+				if row2[j].hasText {
+					for n, line := range wrapCellText(row2, j) {
+						tableData2[i+n][j].SetText(line)
+					}
+				}
+			}
+		}
 		if r < table.numOfHeaderRows {
 			numOfHeaderRows2 = len(tableData2)
 		}
@@ -686,82 +725,18 @@ func (table *Table) addExtraTableRows() [][]*Cell {
 		table.rendered += numOfHeaderRows2 - table.numOfHeaderRows
 	}
 	table.numOfHeaderRows = numOfHeaderRows2
-	return tableData2
-}
-
-func getTotalWidth(row []*Cell, index int) float32 {
-	cell := row[index]
-	colspan := cell.GetColSpan()
-	cellWidth := float32(0.0)
-	for i := 0; i < colspan; i++ {
-		cellWidth += row[index+i].GetWidth()
-	}
-	cellWidth -= cell.leftPadding + row[index+(colspan-1)].rightPadding
-	return cellWidth
-}
-
-// wrapAroundCellText wraps around the text in all cells so it fits the column width.
-// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
-func (table *Table) wrapAroundCellText() {
-	tableData2 := table.addExtraTableRows()
-	for i := 0; i < len(tableData2); i++ {
-		row := tableData2[i]
-		for j := 0; j < len(row); j++ {
-			cell := row[j]
-			if !cell.hasText {
-				continue
-			}
-			cellWidth := getTotalWidth(row, j)
-			tokens := splitOnWhitespace(cell.text)
-			var n = 0
-			var buf strings.Builder
-			for _, token := range tokens {
-				if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, token) > cellWidth {
-					if buf.Len() > 0 {
-						buf.WriteString(" ")
-					}
-					for _, ch := range token {
-						if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
-							cell.fontSize, buf.String()+string(ch)) > cellWidth {
-							tableData2[i+n][j].SetText(buf.String())
-							buf.Reset()
-							n++
-						}
-						buf.WriteRune(ch)
-					}
-				} else {
-					if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
-						cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
-						tableData2[i+n][j].SetText(trimSpace(buf.String()))
-						buf.Reset()
-						buf.WriteString(token)
-						n++
-					} else {
-						if buf.Len() > 0 {
-							buf.WriteString(" ")
-						}
-						buf.WriteString(token)
-					}
-				}
-			}
-			tableData2[i+n][j].SetText(trimSpace(buf.String()))
-		}
-	}
 	table.tableData = tableData2
 }
 
-// getNumVerCells returns the number of vertically stacked cells that the
-// wrapped text of the cell needs.
-func getNumVerCells(row []*Cell, index int) int {
+// wrapCellText returns the lines the text of the cell needs to fit the width
+// of its column. A token wider than the column is broken between two of its
+// characters.
+func wrapCellText(row []*Cell, index int) []string {
 	cell := row[index]
-	numOfVerCells := 1
-	if !cell.hasText {
-		return numOfVerCells
-	}
 	cellWidth := getTotalWidth(row, index)
-	tokens := splitOnWhitespace(cell.text)
+	lines := make([]string, 0, 1)
 	var buf strings.Builder
-	for _, token := range tokens {
+	for _, token := range splitOnWhitespace(cell.text) {
 		if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, token) > cellWidth {
 			if buf.Len() > 0 {
 				buf.WriteString(" ")
@@ -769,26 +744,35 @@ func getNumVerCells(row []*Cell, index int) int {
 			for _, ch := range token {
 				if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
 					cell.fontSize, buf.String()+string(ch)) > cellWidth {
-					numOfVerCells++
+					lines = append(lines, buf.String())
 					buf.Reset()
 				}
 				buf.WriteRune(ch)
 			}
+		} else if buf.Len() == 0 {
+			// A token that fits the column fits a line of its own, and its
+			// width is the one measured just above.
+			buf.WriteString(token)
+		} else if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
+			cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
+			lines = append(lines, trimSpace(buf.String()))
+			buf.Reset()
+			buf.WriteString(token)
 		} else {
-			if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
-				cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
-				numOfVerCells++
-				buf.Reset()
-				buf.WriteString(token)
-			} else {
-				if buf.Len() > 0 {
-					buf.WriteString(" ")
-				}
-				buf.WriteString(token)
-			}
+			buf.WriteString(" ")
+			buf.WriteString(token)
 		}
 	}
-	return numOfVerCells
+	return append(lines, trimSpace(buf.String()))
+}
+
+// getNumVerCells returns the number of vertically stacked cells that the
+// wrapped text of the cell needs.
+func getNumVerCells(row []*Cell, index int) int {
+	if !row[index].hasText {
+		return 1
+	}
+	return len(wrapCellText(row, index))
 }
 
 // getDelimiter returns the delimiter of the line: the commonest of a comma, a
