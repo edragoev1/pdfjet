@@ -5,8 +5,8 @@
 # PngSuite), and scripts that build and run the examples against PDFjet.jar.
 # The library sources and the font tools in util are not in the package.
 #
-# The README and the build and run scripts of the package are in
-# .packaging/java.
+# The README, the commercial LICENSE and the build and run scripts of the
+# package are in .packaging/java.
 #
 # The package is made from the last commit, not the working tree. Its PDFs are
 # created by its own build-java.sh, so the scripts a client runs are tested.
@@ -35,7 +35,7 @@ mkdir -p "$STAGE" .commercial-packages
 
 git archive HEAD \
     .packaging/java com examples data fonts images PngSuite \
-    LICENSE CHANGELOG.md THIRD-PARTIES.TXT examples-java.html \
+    CHANGELOG.md THIRD-PARTIES.TXT examples-java.html \
     | tar -x -C "$STAGE"
 
 # The C# example projects and the go.mod files of the Go port are not needed.
@@ -73,9 +73,10 @@ javadoc -quiet -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java
 
 rm -rf com out
 
-# The README of the package is about the prebuilt library, and its build and
-# run scripts build the examples against PDFjet.jar, where those of the
-# repository build the library from its sources.
+# The LICENSE of the package is the commercial license agreement of
+# pdfjet.com, its README is about the prebuilt library, and its build and run
+# scripts build the examples against PDFjet.jar, where those of the repository
+# build the library from its sources.
 mv .packaging/java/* .
 rm -rf .packaging
 

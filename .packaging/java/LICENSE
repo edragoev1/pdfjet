@@ -1,0 +1,106 @@
+End User License Agreement
+
+1. License Grant
+
+"You" means the person or company who is being licensed to use the Software or
+Documentation. "We," "us" and "our" means PDFjet Software.
+
+We hereby grant you a nonexclusive license to use one copy of the Software on
+any single computer, provided the Software is in use on only one computer at
+any time. The Software is "in use" on a computer when it is loaded into
+temporary memory (RAM).
+
+2. Redistributable Code
+
+The following file
+
+  - PDFjet.jar
+
+contains portions of the Software designated as "Redistributable Code". You are
+hereby granted the right to distribute royalty-free the "Redistributable Code"
+as part of your product(s) and application(s) only if:
+
+  - You distribute the "Redistributable Code" as part of a product or
+    application that adds a significant and primary functionality to the
+    Software.
+  - You don't expose the programming interfaces of the Software in said product
+    or application.
+  - The product or application has a valid license and you agree to indemnify
+    and hold us harmless against any claims that may arise as a result of the
+    distribution of the "Redistributable Code" as part of said product or
+    application.
+
+3. Title
+
+We remain the owner of all right, title and interest in the Software and
+related explanatory written materials ("Documentation").
+
+4. Archival or Backup Copies
+
+You may copy the Software for backup and archival purposes, provided that the
+original and each copy is kept in your possession and that your installation
+and use of the Software does not exceed that allowed in the "License Grant"
+section above.
+
+5. Things You May Not Do
+
+The Software and Documentation are protected by Canadian copyright laws and
+international treaties. You must treat the Software and Documentation like any
+other copyrighted material - for example, a book. You may not:
+
+  - copy the Software or Documentation except to make archival or backup copies
+    as provided above, or
+  - sublicense, rent, lease or lend any portion of the Software or
+    Documentation.
+
+6. Limited Warranty
+
+We warrant that for a period of 90 days after delivery the Software will
+perform in substantial accordance with the Documentation.
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE FOREGOING LIMITED WARRANTY IS IN
+LIEU OF ALL OTHER WARRANTIES OR CONDITIONS, EXPRESS OR IMPLIED, AND WE DISCLAIM
+ANY AND ALL IMPLIED WARRANTIES OR CONDITIONS, INCLUDING ANY IMPLIED WARRANTY OF
+TITLE, NONINFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. NO
+EMPLOYEE, AGENT, DEALER OR DISTRIBUTOR OF OURS IS AUTHORIZED TO MODIFY THIS
+LIMITED WARRANTY, NOR TO MAKE ANY ADDITIONAL WARRANTIES.
+
+SOME STATES DO NOT ALLOW THE EXCLUSION OF IMPLIED WARRANTIES, SO THE ABOVE
+EXCLUSION MAY NOT APPLY TO YOU. THIS WARRANTY GIVES YOU SPECIFIC LEGAL RIGHTS,
+AND YOU MAY ALSO HAVE OTHER RIGHTS WHICH VARY FROM STATE TO STATE.
+
+7. Limited Remedy
+
+Our entire liability and your exclusive remedy for breach of the foregoing
+warranty shall be, at our option, to either:
+
+  - return the price you paid, or
+  - repair or replace the Software.
+
+IN NO EVENT WILL WE BE LIABLE TO YOU FOR ANY DAMAGES, INCLUDING ANY LOST
+PROFITS, LOST SAVINGS, OR OTHER INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+FROM THE USE OR THE INABILITY TO USE THE SOFTWARE (EVEN IF WE OR AN AUTHORIZED
+DEALER OR DISTRIBUTOR HAS BEEN ADVISED OF THE POSSIBILITY OF THESE DAMAGES), OR
+FOR ANY CLAIM BY ANY OTHER PARTY.
+
+SOME STATES DO NOT ALLOW THE LIMITATION OR EXCLUSION OF LIABILITY FOR
+INCIDENTAL OR CONSEQUENTIAL DAMAGES, SO THE ABOVE LIMITATION MAY NOT APPLY TO
+YOU.
+
+8. Term and Termination
+
+This license agreement takes effect upon your use of the Software and remains
+effective until terminated. You may terminate it at any time by destroying all
+copies of the Software and Documentation in your possession. It will also
+automatically terminate if you fail to comply with any term or condition of
+this license agreement. You agree on termination of this license to destroy all
+copies of the Software and Documentation in your possession.
+
+9. General Provisions
+
+  - This written license agreement is the exclusive agreement between you and
+    us concerning the Software and Documentation and supersedes any prior
+    communication, advertising or representation concerning the Software.
+  - This license agreement may be modified only by a writing signed by you and
+    us.
+  - This license agreement is governed by the laws of the Province of Ontario.
