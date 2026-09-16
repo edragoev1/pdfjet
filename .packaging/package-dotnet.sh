@@ -2,10 +2,11 @@
 # Builds .commercial-packages/PDFjet-For.NET-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
 # projects with the PDFs they create, the files they read (data, fonts, images,
-# PngSuite), the font tools in util, and scripts that build and run the
-# examples against PDFjet.dll. The library sources are not in the package.
+# PngSuite), and scripts that build and run the examples against PDFjet.dll.
+# The library sources and the font tools in util are not in the package.
 #
-# The build and run scripts of the package are in .packaging/dotnet.
+# The README and the build and run scripts of the package are in
+# .packaging/dotnet.
 #
 # The package is made from the last commit, not the working tree. Its PDFs are
 # created by its own build-dotnet.sh, so the scripts a client runs are tested.
@@ -33,8 +34,8 @@ rm -rf "$STAGE" "$ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
 git archive HEAD \
-    .packaging/dotnet net PDFjet.csproj examples data fonts images PngSuite util docfx \
-    README.md LICENSE CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html \
+    .packaging/dotnet net PDFjet.csproj examples data fonts images PngSuite docfx \
+    LICENSE CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html \
     | tar -x -C "$STAGE"
 
 # The Java examples and the go.mod files of the Go port are not needed, but
@@ -61,8 +62,9 @@ if grep -L '<HintPath>../../PDFjet.dll</HintPath>' examples/Example_*/Example_*.
     exit 1
 fi
 
-# The build and run scripts of the package build the examples against
-# PDFjet.dll; the scripts of the repository build the library from its sources.
+# The README of the package is about the prebuilt library, and its build and
+# run scripts build the examples against PDFjet.dll, where those of the
+# repository build the library from its sources.
 mv .packaging/dotnet/* .
 rm -rf .packaging
 
