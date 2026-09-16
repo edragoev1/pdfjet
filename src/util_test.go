@@ -79,3 +79,44 @@ func TestUtilOfBinaryFileReadsTheBytes(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+func testFields(t *testing.T, want []string, line, delimiter string) {
+	t.Helper()
+	got := splitDelimited(line, delimiter)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%q split on %q: want %q, got %q", line, delimiter, want, got)
+	}
+}
+
+func TestUtilSplitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields(t *testing.T) {
+	testFields(t, []string{"a", "b", "c"}, "a,b,c", ",")
+	testFields(t, []string{"", "a", ""}, ",a,", ",")
+	testFields(t, []string{""}, "", ",")
+	testFields(t, []string{"a", "b"}, "a||b", "||")
+	testFields(t, []string{"a,b"}, "a,b", "")
+}
+
+func TestUtilSplitReadsAQuotedFieldAsRfc4180Does(t *testing.T) {
+	testFields(t, []string{"Smith, John", "42"}, `"Smith, John",42`, ",")
+	testFields(t, []string{`a"b`}, `"a""b"`, ",")
+	testFields(t, []string{"", "x", ""}, `"",x,""`, ",")
+	testFields(t, []string{"one\ttwo", "three"}, "\"one\ttwo\"\tthree", "\t")
+}
+
+func TestUtilSplitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne(t *testing.T) {
+	testFields(t, []string{`5" pipe`, "b"}, `5" pipe,b`, ",")
+	testFields(t, []string{`a"b"c`}, `a"b"c`, ",")
+}
+
+func TestUtilSplitRefusesALineItCannotRead(t *testing.T) {
+	for _, line := range []string{`a,"b,c`, `"a"b,c`} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("%q was read without complaint", line)
+				}
+			}()
+			splitDelimited(line, ",")
+		}()
+	}
+}

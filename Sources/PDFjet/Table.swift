@@ -39,7 +39,7 @@ public class Table : Drawable {
     ///
     public init(_ f1: Font, _ f2: Font, _ fileName: String) throws {
         tableData = [[Cell]]()
-        var delimiterRegex: String?
+        var delimiter: String?
         var numberOfFields = 0
         var lineNumber = 0
         // Swift treats "\r\n" as one character, which a "\n" separator does not
@@ -52,11 +52,13 @@ public class Table : Drawable {
         }
         for line in lines {
             if lineNumber == 0 {
-                delimiterRegex = getDelimiterRegex(line)
-                numberOfFields = line.components(separatedBy: delimiterRegex!).count
+                delimiter = getDelimiter(line)
+                numberOfFields = Util.split(line, delimiter!).count
             }
             var row = [Cell]()
-            let fields = line.components(separatedBy: delimiterRegex!)
+            // The empty fields at the end of the line are kept, and a quoted
+            // field holds its delimiters instead of being cut at them.
+            let fields = Util.split(line, delimiter!)
             for field in fields {
                 if lineNumber == 0 {
                     row.append(Cell(f1, field))
@@ -865,12 +867,20 @@ public class Table : Drawable {
         return numOfVerCells
     }
 
-    private func getDelimiterRegex(_ str: String) -> String {
+    // The delimiter of the line: the commonest of a comma, a pipe and a tab.
+    // The ones inside a quoted field are not counted, or a file whose values
+    // hold commas could be split on the wrong character altogether.
+    private func getDelimiter(_ str: String) -> String {
         var comma = 0
         var pipe = 0
         var tab = 0
+        var quoted = false
         for scalar in str.unicodeScalars {
-            if scalar == "," {
+            if scalar == "\"" {
+                quoted = !quoted
+            } else if quoted {
+                continue
+            } else if scalar == "," {
                 comma += 1
             } else if scalar == "|" {
                 pipe += 1

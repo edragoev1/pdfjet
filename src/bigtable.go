@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -231,13 +230,10 @@ func (bt *BigTable) getAlignment(str string) alignment.Alignment {
 	return alignment.Left
 }
 
-// splitFields splits a line at the delimiter; with no delimiter the line is
-// one field, as in the other ports.
+// splitFields splits a line at the delimiter, reading the quoted fields as RFC
+// 4180 does; with no delimiter the line is one field, as in the other ports.
 func (bt *BigTable) splitFields(line string) []string {
-	if bt.delimiter == "" {
-		return []string{line}
-	}
-	return strings.Split(line, bt.delimiter)
+	return splitDelimited(line, bt.delimiter)
 }
 
 // newDataScanner returns a scanner of the lines of the data file, which is

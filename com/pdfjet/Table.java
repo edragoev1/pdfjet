@@ -50,7 +50,7 @@ public class Table implements Drawable {
         BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
         try {
-            String delimiterRegex = null;
+            String delimiter = null;
             int numberOfFields = 0;
             int lineNumber = 0;
             String line;
@@ -60,12 +60,13 @@ public class Table implements Drawable {
                     if (line.startsWith("\uFEFF")) {
                         line = line.substring(1);
                     }
-                    delimiterRegex = getDelimiterRegex(line);
-                    numberOfFields = line.split(delimiterRegex, -1).length;
+                    delimiter = getDelimiter(line);
+                    numberOfFields = Util.split(line, delimiter).length;
                 }
                 List<Cell> row = new ArrayList<Cell>();
-                // The limit -1 keeps the empty fields at the end of the line.
-                String[] fields = line.split(delimiterRegex, -1);
+                // The empty fields at the end of the line are kept, and a
+                // quoted field holds its delimiters instead of being cut at them.
+                String[] fields = Util.split(line, delimiter);
                 for (String field : fields) {
                     if (lineNumber == 0) {
                         row.add(new Cell(f1, field));
@@ -894,13 +895,21 @@ public class Table implements Drawable {
         return numOfVerCells;
     }
 
-    private String getDelimiterRegex(String str) {
+    // The delimiter of the line: the commonest of a comma, a pipe and a tab.
+    // The ones inside a quoted field are not counted, or a file whose values
+    // hold commas could be split on the wrong character altogether.
+    private String getDelimiter(String str) {
         int comma = 0;
         int pipe = 0;
         int tab = 0;
+        boolean quoted = false;
         for (int i = 0; i < str.length(); i++) {
             char ch = str.charAt(i);
-            if (ch == ',') {
+            if (ch == '"') {
+                quoted = !quoted;
+            } else if (quoted) {
+                continue;
+            } else if (ch == ',') {
                 comma++;
             } else if (ch == '|') {
                 pipe++;
@@ -915,7 +924,7 @@ public class Table implements Drawable {
             return "\t";
         } else {
             if (pipe >= tab) {
-                return "\\|";
+                return "|";
             }
             return "\t";
         }

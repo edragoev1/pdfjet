@@ -55,6 +55,26 @@ import Testing
         #expect(!first.contains(TestSupport.hex("row59")) && second.contains(TestSupport.hex("row59")))
     }
 
+    @Test func theFileConstructorReadsQuotedFields() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("quoted-\(UUID().uuidString).csv")
+        let data = "\"Name\",\"Note\",\"Amount\"\n"
+                + "\"Smith, John\",\"said \"\"hi\"\"\",\"1,200\"\n"
+                + "Plain,,7\n"
+        try Data(data.utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let table = try Table(font, font, url.path)
+        #expect(table.getRow(0).count == 3)
+        #expect(table.getCellAt(0, 0).getText() == "Name")
+        #expect(table.getCellAt(1, 0).getText() == "Smith, John")
+        #expect(table.getCellAt(1, 1).getText() == "said \"hi\"")
+        #expect(table.getCellAt(1, 2).getText() == "1,200")
+        #expect(table.getRow(2).count == 3)
+        #expect(table.getCellAt(2, 0).getText() == "Plain")
+        #expect(table.getCellAt(2, 1).getText() == "")
+        #expect(table.getCellAt(2, 2).getText() == "7")
+    }
+
     @Test func theFileConstructorDropsAByteOrderMarkAndPadsShortRows() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("table-\(UUID().uuidString).txt")
         try Data("\u{FEFF}a|b|c\n1||\n2\n".utf8).write(to: url)

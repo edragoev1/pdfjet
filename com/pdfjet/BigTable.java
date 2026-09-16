@@ -240,20 +240,10 @@ public class BigTable {
     }
 
     // Splits the line at the delimiter, which is not a regular expression,
-    // and keeps the empty fields at the end of the line, as the other ports do.
+    // keeping the empty fields at the end of the line and reading the quoted
+    // fields as RFC 4180 does, as the other ports do.
     private String[] split(String line) {
-        if (delimiter.isEmpty()) {
-            return new String[] {line};
-        }
-        List<String> fields = new ArrayList<String>();
-        int start = 0;
-        int end;
-        while ((end = line.indexOf(delimiter, start)) != -1) {
-            fields.add(line.substring(start, end));
-            start = end + delimiter.length();
-        }
-        fields.add(line.substring(start));
-        return fields.toArray(new String[0]);
+        return Util.split(line, delimiter);
     }
 
     /**

@@ -85,6 +85,79 @@ class Util {
     }
 
     /**
+     * Splits one line of a delimited data file into its fields, as RFC 4180
+     * reads them: a field that starts with a quote runs to the closing quote,
+     * a doubled quote inside it stands for one quote, and a delimiter inside
+     * it is part of the text. A field that does not start with a quote keeps
+     * any quotes it holds. The quotes around a field are not part of it.
+     * <p>
+     * A file that cannot be read this way is refused rather than guessed at:
+     * a quoted field that is never closed, or one with text after its closing
+     * quote, throws instead of being cut in the wrong place.
+     *
+     * @param line the line, without its line break.
+     * @param delimiter the delimiter, which is text, not a regular expression.
+     * @return the fields, including the empty ones at the end of the line.
+     */
+    static String[] split(String line, String delimiter) {
+        if (delimiter.isEmpty()) {
+            return new String[] {line};
+        }
+        List<String> fields = new ArrayList<String>();
+        StringBuilder field = new StringBuilder();
+        int i = 0;
+        while (true) {
+            if (i < line.length() && line.charAt(i) == '"') {
+                i++;                            // The quote that opens the field
+                while (true) {
+                    int quote = line.indexOf('"', i);
+                    if (quote == -1) {
+                        throw new IllegalArgumentException(
+                                "A quoted field is not closed on this line of the data file: " + excerpt(line));
+                    }
+                    field.append(line, i, quote);
+                    i = quote + 1;
+                    if (i < line.length() && line.charAt(i) == '"') {
+                        field.append('"');      // Two quotes stand for one
+                        i++;
+                    } else {
+                        break;                  // The quote that closes the field
+                    }
+                }
+                if (i < line.length() && !line.startsWith(delimiter, i)) {
+                    throw new IllegalArgumentException(
+                            "A quoted field is followed by text on this line of the data file: " + excerpt(line));
+                }
+            } else {
+                int end = line.indexOf(delimiter, i);
+                if (end == -1) {
+                    field.append(line, i, line.length());
+                    i = line.length();
+                } else {
+                    field.append(line, i, end);
+                    i = end;
+                }
+            }
+            fields.add(field.toString());
+            field.setLength(0);
+            if (i == line.length()) {
+                break;
+            }
+            i += delimiter.length();            // Step over the delimiter
+            if (i == line.length()) {           // The line ends on a delimiter
+                fields.add("");
+                break;
+            }
+        }
+        return fields.toArray(new String[] {});
+    }
+
+    // The start of the line, for the message of a file that cannot be read.
+    private static String excerpt(String line) {
+        return (line.length() <= 60) ? line : (line.substring(0, 60) + "...");
+    }
+
+    /**
      * Splits the text on runs of ASCII whitespace: space, tab, line feed,
      * vertical tab, form feed and carriage return. Empty tokens are dropped,
      * so leading and trailing whitespace yield no tokens.

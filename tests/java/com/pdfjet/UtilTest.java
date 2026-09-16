@@ -81,4 +81,33 @@ class UtilTest {
     void toHexStringWritesLowerCaseDigits() {
         assertEquals("00abff", Util.toHexString(new byte[] {0x00, (byte) 0xAB, (byte) 0xFF}));
     }
+
+    @Test
+    void splitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields() {
+        assertArrayEquals(new String[] {"a", "b", "c"}, Util.split("a,b,c", ","));
+        assertArrayEquals(new String[] {"", "a", ""}, Util.split(",a,", ","));
+        assertArrayEquals(new String[] {""}, Util.split("", ","));
+        assertArrayEquals(new String[] {"a", "b"}, Util.split("a||b", "||"));
+        assertArrayEquals(new String[] {"a,b"}, Util.split("a,b", ""));
+    }
+
+    @Test
+    void splitReadsAQuotedFieldAsRfc4180Does() {
+        assertArrayEquals(new String[] {"Smith, John", "42"}, Util.split("\"Smith, John\",42", ","));
+        assertArrayEquals(new String[] {"a\"b"}, Util.split("\"a\"\"b\"", ","));
+        assertArrayEquals(new String[] {"", "x", ""}, Util.split("\"\",x,\"\"", ","));
+        assertArrayEquals(new String[] {"one\ttwo", "three"}, Util.split("\"one\ttwo\"\tthree", "\t"));
+    }
+
+    @Test
+    void splitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() {
+        assertArrayEquals(new String[] {"5\" pipe", "b"}, Util.split("5\" pipe,b", ","));
+        assertArrayEquals(new String[] {"a\"b\"c"}, Util.split("a\"b\"c", ","));
+    }
+
+    @Test
+    void splitRefusesALineItCannotRead() {
+        assertThrows(IllegalArgumentException.class, () -> Util.split("a,\"b,c", ","));
+        assertThrows(IllegalArgumentException.class, () -> Util.split("\"a\"b,c", ","));
+    }
 }

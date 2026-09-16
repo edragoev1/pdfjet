@@ -138,6 +138,73 @@ func isJavaWhitespace(r rune) bool {
 	return unicode.In(r, unicode.Zs, unicode.Zl, unicode.Zp)
 }
 
+// splitDelimited splits one line of a delimited data file into its fields, as
+// RFC 4180 reads them: a field that starts with a quote runs to the closing
+// quote, a doubled quote inside it stands for one quote, and a delimiter
+// inside it is part of the text. A field that does not start with a quote
+// keeps any quotes it holds. The quotes around a field are not part of it.
+// A file that cannot be read this way is refused rather than guessed at.
+func splitDelimited(line, delimiter string) []string {
+	if delimiter == "" {
+		return []string{line}
+	}
+	fields := make([]string, 0)
+	var field strings.Builder
+	i := 0
+	for {
+		if i < len(line) && line[i] == '"' {
+			i++ // The quote that opens the field
+			for {
+				quote := strings.IndexByte(line[i:], '"')
+				if quote == -1 {
+					panic("A quoted field is not closed on this line of the data file: " + excerptOfLine(line))
+				}
+				quote += i
+				field.WriteString(line[i:quote])
+				i = quote + 1
+				if i < len(line) && line[i] == '"' {
+					field.WriteByte('"') // Two quotes stand for one
+					i++
+				} else {
+					break // The quote that closes the field
+				}
+			}
+			if i < len(line) && !strings.HasPrefix(line[i:], delimiter) {
+				panic("A quoted field is followed by text on this line of the data file: " + excerptOfLine(line))
+			}
+		} else {
+			end := strings.Index(line[i:], delimiter)
+			if end == -1 {
+				field.WriteString(line[i:])
+				i = len(line)
+			} else {
+				field.WriteString(line[i : i+end])
+				i += end
+			}
+		}
+		fields = append(fields, field.String())
+		field.Reset()
+		if i == len(line) {
+			break
+		}
+		i += len(delimiter) // Step over the delimiter
+		if i == len(line) { // The line ends on a delimiter
+			fields = append(fields, "")
+			break
+		}
+	}
+	return fields
+}
+
+// excerptOfLine returns the start of the line, for the message of a file that
+// cannot be read.
+func excerptOfLine(line string) string {
+	if len(line) <= 60 {
+		return line
+	}
+	return line[:60] + "..."
+}
+
 // isCJK returns true if more than half of the characters of the string are
 // CJK Unified Ideographs (4E00 - 9FD5), Hiragana (3040 - 309F), Katakana
 // (30A0 - 30FF) or Hangul Jamo (1100 - 11FF).

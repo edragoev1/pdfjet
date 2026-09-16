@@ -230,7 +230,7 @@ public class BigTable {
 
         var rowNumber = 0
         try enumerateFileLines(fileName) { line in
-            let fields = line.components(separatedBy: self.delimiter)
+            let fields = Util.split(line, self.delimiter)
             if fields.count < self.numberOfColumns {
                 return
             }
@@ -276,7 +276,7 @@ public class BigTable {
     public func complete() throws {
         self.pageCount = countPages()
         try enumerateFileLines(self.fileName) { line in
-            let fields = line.components(separatedBy: self.delimiter)
+            let fields = Util.split(line, self.delimiter)
             if fields.count < self.numberOfColumns {
                 return
             }

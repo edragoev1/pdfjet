@@ -78,6 +78,27 @@ func TestTableHeaderRowsRepeatOnEveryPage(t *testing.T) {
 	}
 }
 
+func TestTableTheFileConstructorReadsQuotedFields(t *testing.T) {
+	data := "\"Name\",\"Note\",\"Amount\"\n" +
+		"\"Smith, John\",\"said \"\"hi\"\"\",\"1,200\"\n" +
+		"Plain,,7\n"
+	path := testWriteFile(t, "quoted.csv", []byte(data))
+	font := testHelvetica(testNewPDF())
+	table := NewTableFromFile(font, font, path)
+	if len(table.GetRow(0)) != 3 {
+		t.Errorf("row 0 has %d cells", len(table.GetRow(0)))
+	}
+	for _, want := range []struct {
+		row, col int
+		text     string
+	}{{0, 0, "Name"}, {1, 0, "Smith, John"}, {1, 1, `said "hi"`}, {1, 2, "1,200"},
+		{2, 0, "Plain"}, {2, 1, ""}, {2, 2, "7"}} {
+		if got := table.GetCellAt(want.row, want.col).GetText(); got != want.text {
+			t.Errorf("cell (%d, %d): want %q, got %q", want.row, want.col, want.text, got)
+		}
+	}
+}
+
 func TestTableTheFileConstructorDropsAByteOrderMarkAndPadsShortRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "table.txt")
 	if err := os.WriteFile(path, []byte("\uFEFFa|b|c\n1||\n2\n"), 0o644); err != nil {

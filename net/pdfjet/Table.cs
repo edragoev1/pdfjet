@@ -45,7 +45,7 @@ public class Table : IDrawable {
         // UTF-8 only, as in the other ports: the reader does not look for UTF-16
         // and UTF-32 byte order marks, and keeps a UTF-8 one.
         using (StreamReader reader = new StreamReader(fileName, new UTF8Encoding(false), false)) {
-            Char[] delimiterRegex = null;
+            String delimiter = null;
             int numberOfFields = 0;
             int lineNumber = 0;
             String line;
@@ -55,11 +55,13 @@ public class Table : IDrawable {
                     if (line.StartsWith("\uFEFF", StringComparison.Ordinal)) {
                         line = line.Substring(1);
                     }
-                    delimiterRegex = GetDelimiterRegex(line);
-                    numberOfFields = line.Split(delimiterRegex).Length;
+                    delimiter = GetDelimiter(line);
+                    numberOfFields = Util.Split(line, delimiter).Length;
                 }
                 List<Cell> row = new List<Cell>();
-                String[] fields = line.Split(delimiterRegex);
+                // The empty fields at the end of the line are kept, and a quoted
+                // field holds its delimiters instead of being cut at them.
+                String[] fields = Util.Split(line, delimiter);
                 foreach (String field in fields) {
                     if (lineNumber == 0) {
                         row.Add(new Cell(f1, field));
@@ -839,12 +841,20 @@ public class Table : IDrawable {
         return numOfVerCells;
     }
 
-    private Char[] GetDelimiterRegex(String str) {
+    // The delimiter of the line: the commonest of a comma, a pipe and a tab.
+    // The ones inside a quoted field are not counted, or a file whose values
+    // hold commas could be split on the wrong character altogether.
+    private String GetDelimiter(String str) {
         int comma = 0;
         int pipe = 0;
         int tab = 0;
+        bool quoted = false;
         foreach (char ch in str) {
-            if (ch == ',') {
+            if (ch == '"') {
+                quoted = !quoted;
+            } else if (quoted) {
+                continue;
+            } else if (ch == ',') {
                 comma++;
             } else if (ch == '|') {
                 pipe++;
@@ -854,14 +864,14 @@ public class Table : IDrawable {
         }
         if (comma >= pipe) {
             if (comma >= tab) {
-                return new Char[] {','};
+                return ",";
             }
-            return new Char[] {'\t'};
+            return "\t";
         } else {
             if (pipe >= tab) {
-                return new Char[] {'|'};
+                return "|";
             }
-            return new Char[] {'\t'};
+            return "\t";
         }
     }
 

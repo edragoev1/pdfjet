@@ -74,4 +74,26 @@ import Testing
         let data: [UInt8] = [0, 1, 2, 0xFF]
         #expect(try Content.ofBinaryFile(try write("data.bin", data)) == data)
     }
+
+    @Test func splitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields() {
+        #expect(Util.split("a,b,c", ",") == ["a", "b", "c"])
+        #expect(Util.split(",a,", ",") == ["", "a", ""])
+        #expect(Util.split("", ",") == [""])
+        #expect(Util.split("a||b", "||") == ["a", "b"])
+        #expect(Util.split("a,b", "") == ["a,b"])
+    }
+
+    @Test func splitReadsAQuotedFieldAsRfc4180Does() {
+        #expect(Util.split("\"Smith, John\",42", ",") == ["Smith, John", "42"])
+        #expect(Util.split("\"a\"\"b\"", ",") == ["a\"b"])
+        #expect(Util.split("\"\",x,\"\"", ",") == ["", "x", ""])
+        #expect(Util.split("\"one\ttwo\"\tthree", "\t") == ["one\ttwo", "three"])
+    }
+
+    // A line that cannot be read stops the program with fatalError, as the
+    // misuse of a font or a cell does in this port, so it has no test here.
+    @Test func splitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() {
+        #expect(Util.split("5\" pipe,b", ",") == ["5\" pipe", "b"])
+        #expect(Util.split("a\"b\"c", ",") == ["a\"b\"c"])
+    }
 }

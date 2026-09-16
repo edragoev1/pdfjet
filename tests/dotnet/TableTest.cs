@@ -66,6 +66,25 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void TheFileConstructorReadsQuotedFields() {
+        string file = tempDir.Write("quoted.csv", Encoding.UTF8.GetBytes(
+                "\"Name\",\"Note\",\"Amount\"\n"
+                + "\"Smith, John\",\"said \"\"hi\"\"\",\"1,200\"\n"
+                + "Plain,,7\n"));
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Table table = new Table(font, font, file);
+        Assert.Equal(3, table.GetRow(0).Count);
+        Assert.Equal("Name", table.GetCellAt(0, 0).GetText());
+        Assert.Equal("Smith, John", table.GetCellAt(1, 0).GetText());
+        Assert.Equal("said \"hi\"", table.GetCellAt(1, 1).GetText());
+        Assert.Equal("1,200", table.GetCellAt(1, 2).GetText());
+        Assert.Equal(3, table.GetRow(2).Count);
+        Assert.Equal("Plain", table.GetCellAt(2, 0).GetText());
+        Assert.Equal("", table.GetCellAt(2, 1).GetText());
+        Assert.Equal("7", table.GetCellAt(2, 2).GetText());
+    }
+
+    [Fact]
     public void TheFileConstructorDropsAByteOrderMarkAndPadsShortRows() {
         string file = tempDir.Write("table.txt", Encoding.UTF8.GetBytes("﻿a|b|c\n1||\n2\n"));
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());

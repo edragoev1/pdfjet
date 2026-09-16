@@ -71,6 +71,72 @@ internal class Util {
         return buf.ToString();
     }
 
+    /// <summary>
+    /// Splits one line of a delimited data file into its fields, as RFC 4180
+    /// reads them: a field that starts with a quote runs to the closing quote,
+    /// a doubled quote inside it stands for one quote, and a delimiter inside
+    /// it is part of the text. A field that does not start with a quote keeps
+    /// any quotes it holds. The quotes around a field are not part of it.
+    /// A file that cannot be read this way is refused rather than guessed at.
+    /// </summary>
+    internal static String[] Split(String line, String delimiter) {
+        if (delimiter.Length == 0) {
+            return new String[] {line};
+        }
+        List<String> fields = new List<String>();
+        StringBuilder field = new StringBuilder();
+        int i = 0;
+        while (true) {
+            if (i < line.Length && line[i] == '"') {
+                i++;                            // The quote that opens the field
+                while (true) {
+                    int quote = line.IndexOf('"', i);
+                    if (quote == -1) {
+                        throw new ArgumentException(
+                                "A quoted field is not closed on this line of the data file: " + Excerpt(line));
+                    }
+                    field.Append(line, i, quote - i);
+                    i = quote + 1;
+                    if (i < line.Length && line[i] == '"') {
+                        field.Append('"');      // Two quotes stand for one
+                        i++;
+                    } else {
+                        break;                  // The quote that closes the field
+                    }
+                }
+                if (i < line.Length && String.CompareOrdinal(line, i, delimiter, 0, delimiter.Length) != 0) {
+                    throw new ArgumentException(
+                            "A quoted field is followed by text on this line of the data file: " + Excerpt(line));
+                }
+            } else {
+                int end = line.IndexOf(delimiter, i, StringComparison.Ordinal);
+                if (end == -1) {
+                    field.Append(line, i, line.Length - i);
+                    i = line.Length;
+                } else {
+                    field.Append(line, i, end - i);
+                    i = end;
+                }
+            }
+            fields.Add(field.ToString());
+            field.Length = 0;
+            if (i == line.Length) {
+                break;
+            }
+            i += delimiter.Length;              // Step over the delimiter
+            if (i == line.Length) {             // The line ends on a delimiter
+                fields.Add("");
+                break;
+            }
+        }
+        return fields.ToArray();
+    }
+
+    // The start of the line, for the message of a file that cannot be read.
+    private static String Excerpt(String line) {
+        return (line.Length <= 60) ? line : (line.Substring(0, 60) + "...");
+    }
+
     // The ASCII whitespace that Java's \s matches; a no-break space does not break a line.
     private static readonly char[] WHITESPACE = {' ', '\t', '\n', '\x0B', '\f', '\r'};
 

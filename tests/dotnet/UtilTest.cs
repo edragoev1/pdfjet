@@ -70,5 +70,34 @@ public sealed class UtilTest : IDisposable {
     public void ToHexStringWritesLowerCaseDigits() {
         Assert.Equal("00abff", Util.ToHexString(new byte[] {0x00, 0xAB, 0xFF}));
     }
+
+    [Fact]
+    public void SplitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields() {
+        Assert.Equal(new String[] {"a", "b", "c"}, Util.Split("a,b,c", ","));
+        Assert.Equal(new String[] {"", "a", ""}, Util.Split(",a,", ","));
+        Assert.Equal(new String[] {""}, Util.Split("", ","));
+        Assert.Equal(new String[] {"a", "b"}, Util.Split("a||b", "||"));
+        Assert.Equal(new String[] {"a,b"}, Util.Split("a,b", ""));
+    }
+
+    [Fact]
+    public void SplitReadsAQuotedFieldAsRfc4180Does() {
+        Assert.Equal(new String[] {"Smith, John", "42"}, Util.Split("\"Smith, John\",42", ","));
+        Assert.Equal(new String[] {"a\"b"}, Util.Split("\"a\"\"b\"", ","));
+        Assert.Equal(new String[] {"", "x", ""}, Util.Split("\"\",x,\"\"", ","));
+        Assert.Equal(new String[] {"one\ttwo", "three"}, Util.Split("\"one\ttwo\"\tthree", "\t"));
+    }
+
+    [Fact]
+    public void SplitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() {
+        Assert.Equal(new String[] {"5\" pipe", "b"}, Util.Split("5\" pipe,b", ","));
+        Assert.Equal(new String[] {"a\"b\"c"}, Util.Split("a\"b\"c", ","));
+    }
+
+    [Fact]
+    public void SplitRefusesALineItCannotRead() {
+        Assert.Throws<System.ArgumentException>(() => Util.Split("a,\"b,c", ","));
+        Assert.Throws<System.ArgumentException>(() => Util.Split("\"a\"b,c", ","));
+    }
 }
 }

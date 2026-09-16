@@ -224,11 +224,9 @@ namespace PDFjet.NET {
             using (StreamReader reader = OpenDataFile()) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
-                    // Split(string, StringSplitOptions) takes the single-separator
-                    // fast path. Split(string[], StringSplitOptions) always takes
-                    // the "any of several separators" path (MakeSeparatorListAny),
-                    // which is significantly slower even with a one-element array.
-                    string[] fields = line.Split(this.delimiter, StringSplitOptions.None);
+                    // The quoted fields are read as RFC 4180 does, so a
+                    // delimiter inside one is text and not a column break.
+                    string[] fields = Util.Split(line, this.delimiter);
                     if (fields.Length < this.numberOfColumns) {
                         continue;
                     }
@@ -288,7 +286,7 @@ namespace PDFjet.NET {
             using (StreamReader reader = OpenDataFile()) {
                 string line;
                 while ((line = reader.ReadLine()) != null) {
-                    string[] fields = line.Split(this.delimiter, StringSplitOptions.None);
+                    string[] fields = Util.Split(line, this.delimiter);
                     if (fields.Length < this.numberOfColumns) {
                         continue;
                     }

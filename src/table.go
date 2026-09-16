@@ -41,7 +41,7 @@ func NewTable() *Table {
 // lines use f2. Every row gets as many cells as the first line has fields.
 func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	table := NewTable()
-	delimiterRegex := ""
+	delimiter := ""
 	numberOfFields := 0
 	lineNumber := 0
 	f, err := os.Open(fileName)
@@ -62,11 +62,11 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		if lineNumber == 0 {
 			// A byte order mark at the start of the file is not part of the text.
 			line = strings.TrimPrefix(line, "\uFEFF")
-			delimiterRegex = getDelimiterRegex(line)
-			numberOfFields = len(strings.Split(line, delimiterRegex))
+			delimiter = getDelimiter(line)
+			numberOfFields = len(splitDelimited(line, delimiter))
 		}
 		row := make([]*Cell, 0)
-		fields := strings.Split(line, delimiterRegex)
+		fields := splitDelimited(line, delimiter)
 		for _, field := range fields {
 			if lineNumber == 0 {
 				row = append(row, NewCell(f1, field))
@@ -791,11 +791,22 @@ func getNumVerCells(row []*Cell, index int) int {
 	return numOfVerCells
 }
 
-func getDelimiterRegex(str string) string {
+// getDelimiter returns the delimiter of the line: the commonest of a comma, a
+// pipe and a tab. The ones inside a quoted field are not counted, or a file
+// whose values hold commas could be split on the wrong character altogether.
+func getDelimiter(str string) string {
 	comma := 0
 	pipe := 0
 	tab := 0
+	quoted := false
 	for _, ch := range str {
+		if ch == '"' {
+			quoted = !quoted
+			continue
+		}
+		if quoted {
+			continue
+		}
 		switch ch {
 		case ',':
 			comma++

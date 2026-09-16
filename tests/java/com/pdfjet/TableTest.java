@@ -94,6 +94,32 @@ class TableTest {
     }
 
     @Test
+    void theFileConstructorReadsQuotedFields() throws Exception {
+        File file = new File(tempDir, "quoted.csv");
+        OutputStream out = new FileOutputStream(file);
+        try {
+            // The commas inside the quotes are text, so the delimiter is the
+            // comma between the fields and every row has three of them.
+            out.write(("\"Name\",\"Note\",\"Amount\"\n"
+                    + "\"Smith, John\",\"said \"\"hi\"\"\",\"1,200\"\n"
+                    + "Plain,,7\n").getBytes(StandardCharsets.UTF_8));
+        } finally {
+            out.close();
+        }
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Table table = new Table(font, font, file.getPath());
+        assertEquals(3, table.getRow(0).size());
+        assertEquals("Name", table.getCellAt(0, 0).getText());
+        assertEquals("Smith, John", table.getCellAt(1, 0).getText());
+        assertEquals("said \"hi\"", table.getCellAt(1, 1).getText());
+        assertEquals("1,200", table.getCellAt(1, 2).getText());
+        assertEquals(3, table.getRow(2).size());
+        assertEquals("Plain", table.getCellAt(2, 0).getText());
+        assertEquals("", table.getCellAt(2, 1).getText());
+        assertEquals("7", table.getCellAt(2, 2).getText());
+    }
+
+    @Test
     void getCellAtGetRowAndGetColumnAgree() throws Exception {
         Table table = new Table().setTableData(rows(TestSupport.helvetica(TestSupport.newPDF()), 4, 3), 1);
         assertSame(table.getCellAt(2, 1), table.getRow(2).get(1));
