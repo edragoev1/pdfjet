@@ -42,7 +42,7 @@ and `build/` is not tracked.
 - Peak memory: the largest resident size, from `/usr/bin/time`, of a new JVM
   at its defaults writing one document, the median of 3 runs. It includes the
   JVM itself.
-- Smallest heap (the table only): the smallest of `-Xmx` 32 MB to 8 GB, in
+- Smallest heap (the table only): the smallest of `-Xmx` 32 MB to 8,192 MB, in
   steps of a factor of two, with which the document is finished.
 - iText and PDFBox draw with their low-level APIs, `PdfCanvas` and
   `PDPageContentStream`, one call per line of text or per cell, as PDFjet does.
@@ -103,7 +103,7 @@ PDFBox 3,845,317 bytes.
 | PDFjet `BigTable` | 1,726 ms | 2,071 ms | 754 MB | 390 MB | 32 MB | 12.3 MB |
 | PDFjet `Page` | 1,800 ms | 2,224 ms | 815 MB | 756 MB | 256 MB | 12.6 MB |
 | iText `PdfCanvas` | 2,064 ms | 2,691 ms | 1,109 MB | 827 MB | 256 MB | 11.8 MB |
-| iText `Table` | 34,969 ms | 37,334 ms | 47,198 MB | 7,187 MB | 8 GB | 21.6 MB |
+| iText `Table` | 34,969 ms | 37,334 ms | 47,198 MB | 7,187 MB | 8,192 MB | 21.6 MB |
 | PDFBox, content stream | 12,434 ms | 13,561 ms | 25,200 MB | 457 MB | 128 MB | 11.9 MB |
 | PDFjet `Page`, page by page | 1,797 ms | 2,130 ms | 815 MB | 384 MB | 32 MB | 12.6 MB |
 | iText `PdfCanvas`, page by page | 2,040 ms | 2,534 ms | 1,133 MB | 406 MB | 32 MB | 11.8 MB |
@@ -127,8 +127,10 @@ without an array for each string and number, and at 71 ms at d963a7c8
   about 360 times slower on the text document with Noto Sans, whose Devanagari
   substitution rules it applies to every line, and 7.2 times slower on the table.
 - On the table, `BigTable` takes 16% less time than iText's `PdfCanvas` (1,726
-  against 2,064 ms), and iText's own `Table` is 20 times slower and needs an 8 GB
-  heap.
+  against 2,064 ms), and iText's own `Table` is 20 times slower and needs an
+  8,192 MB heap. The programs that draw this table are 17 lines for `BigTable`,
+  215 for `PdfCanvas`, 167 for iText's `Table` and 217 for PDFBox, without the
+  blank lines and the comments.
 - Drawn with the same calls, PDFjet is ahead of iText too: on `Page` the table
   takes 13% less time than on `PdfCanvas` and allocates 27% less; page by page,
   12% less time and 28% less. `BigTable` takes 4% less time than the same drawing
