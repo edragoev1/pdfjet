@@ -47,13 +47,6 @@ class Example_37 {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_37("data/testPDFs/wirth.pdf");
-        // new Example_37("../../eBooks/UniversityPhysicsVolume1.pdf");
-        // new Example_37("../../eBooks/Smalltalk-and-OO.pdf");
-        // new Example_37("../../eBooks/InsideSmalltalk1.pdf");
-        // new Example_37("../../eBooks/InsideSmalltalk2.pdf");
-        // new Example_37("../../eBooks/Greenbook.pdf");
-        // new Example_37("../../eBooks/Bluebook.pdf");
-        // new Example_37("../../eBooks/Orangebook.pdf");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine($"Example_37 => {time1 - time0,4} ms");
     }

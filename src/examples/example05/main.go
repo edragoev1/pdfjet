@@ -41,7 +41,7 @@ func Example05() {
 	for i := 0; i < 360; i += 15 {
 		text.SetTextRotation(-i)
 		text.SetUnderline(true)
-		// text.setStrikeLine(true);
+		// text.SetStrikeout(true)
 		text.SetText("             Hello, World -- " + strconv.Itoa(i) + " degrees.")
 		text.DrawOn(page)
 	}

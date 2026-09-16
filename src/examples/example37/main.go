@@ -62,13 +62,6 @@ func Example37(fileName string) {
 func main() {
 	time0 := time.Now().UnixMilli()
 	Example37("data/testPDFs/wirth.pdf")
-	// Example37("../../eBooks/UniversityPhysicsVolume1.pdf")
-	// Example37("../../eBooks/Smalltalk-and-OO.pdf")
-	// Example37("../../eBooks/InsideSmalltalk1.pdf")
-	// Example37("../../eBooks/InsideSmalltalk2.pdf")
-	// Example37("../../eBooks/Greenbook.pdf")
-	// Example37("../../eBooks/Bluebook.pdf")
-	// Example37("../../eBooks/Orangebook.pdf")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_37 => %4d ms\n", time1-time0)
 }

@@ -216,9 +216,6 @@ func stripSpacesAndDashes(str string) string {
 func main() {
 	time0 := time.Now().UnixMilli()
 	Example50("data/testPDFs/rc65-16e.pdf")
-	// Example50("data/testPDFs/NoPredictor.pdf")
-	// Example50("../../eBooks/UniversityPhysicsVolume1.pdf")
-	// Example50("../specifications/ISO_32000-2_2017(en).PDF")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_50 => %4d ms\n", time1-time0)
 }

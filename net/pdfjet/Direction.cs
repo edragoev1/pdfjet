@@ -5,9 +5,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-/*
- * The direction a Barcode is drawn in.
- */
 namespace PDFjet.NET {
 /// <summary>The direction a Barcode is drawn in.</summary>
 public enum Direction {

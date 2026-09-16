@@ -32,7 +32,7 @@ public class Example_05 {
         while i < 360 {
             text.setTextRotation(-i)
             text.setUnderline(true)
-            // text.setStrikeLine(true)
+            // text.setStrikeout(true)
             text.setText("             Hello, World -- \(i) degrees.")
             text.drawOn(page)
             i += 15

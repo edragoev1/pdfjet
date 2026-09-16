@@ -34,7 +34,7 @@ public class Example_05 {
         for (int i = 0; i < 360; i += 15) {
             text.setTextRotation(-i);
             text.setUnderline(true);
-            // text.setStrikeLine(true);
+            // text.setStrikeout(true);
             text.setText("             Hello, World -- " + i + " degrees.");
             text.drawOn(page);
         }

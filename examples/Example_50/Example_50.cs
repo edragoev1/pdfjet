@@ -185,9 +185,6 @@ public class Example_50 {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_50("50", "data/testPDFs/rc65-16e.pdf");
-        // new Example_50("50", "data/testPDFs/NoPredictor.pdf");
-        // new Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf");
-        // new Example_50("50", "../specifications/ISO_32000-2_2017(en).PDF");
         long time1 = sw.ElapsedMilliseconds;
         Console.WriteLine($"Example_50 => {time1 - time0,4} ms");
     }

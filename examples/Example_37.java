@@ -45,13 +45,6 @@ class Example_37 {
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
         new Example_37("data/testPDFs/wirth.pdf");
-        // new Example_37("../../eBooks/UniversityPhysicsVolume1.pdf");
-        // new Example_37("../../eBooks/Smalltalk-and-OO.pdf");
-        // new Example_37("../../eBooks/InsideSmalltalk1.pdf");
-        // new Example_37("../../eBooks/InsideSmalltalk2.pdf");
-        // new Example_37("../../eBooks/Greenbook.pdf");
-        // new Example_37("../../eBooks/Bluebook.pdf");
-        // new Example_37("../../eBooks/Orangebook.pdf");
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_37 => %4d ms%n", time1 - time0);
     }

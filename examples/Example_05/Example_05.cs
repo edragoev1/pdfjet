@@ -34,7 +34,7 @@ public class Example_05 {
         for (int i = 0; i < 360; i += 15) {
             text.SetTextRotation(-i);
             text.SetUnderline(true);
-            // text.SetStrikeLine(true);
+            // text.SetStrikeout(true);
             text.SetText("             Hello, World -- " + i + " degrees.");
             text.DrawOn(page);
         }

@@ -174,8 +174,5 @@ public class Example_50 {
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_50("50", "data/testPDFs/rc65-16e.pdf")
-// _ = try Example_50("50", "data/testPDFs/NoPredictor.pdf")
-// _ = try Example_50("50", "../../eBooks/UniversityPhysicsVolume1.pdf")
-// _ = try Example_50("50", "../specifications/ISO_32000-2_2017(en).PDF")
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_50 => \(String(format: "%4lld", time1 - time0)) ms")

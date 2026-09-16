@@ -48,13 +48,6 @@ class PNGImage {
                 self.h = Int(getUInt32(chunk.getData()!, 4))    // Height
                 self.bitDepth = Int(chunk.getData()![8])        // Bit Depth
                 self.colorType = Int(chunk.getData()![9])       // Color Type
-/*
-                Swift.print("bitDepth == " + String(self.bitDepth))
-                Swift.print("colorType == " + String(self.colorType))
-                Swift.print("Compression: " + String(chunk.getData()![10]))
-                Swift.print("Filter: " + String(chunk.getData()![11]))
-                Swift.print("Interlace: " + String(chunk.getData()![12]))
-*/
                 if chunk.getData()![12] == 1 {
                     throw PDFjetError(message: "Interlaced PNG images are not supported.\n" +
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
