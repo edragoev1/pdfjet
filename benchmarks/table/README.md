@@ -48,18 +48,24 @@ the machine meanwhile. `build/` is not tracked.
 - The 40-row sample of each port is checked with mutool for the text of its
   first page.
 
-## Results at d2f5d4cb, 16 September 2026
+## Results at 7dbfee5d, 16 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, .NET SDK 8.0.424,
-Go 1.27.1, Swift 6.3.3, in one run on a machine that had not been rebooted
-(`results/2026-09-16-d2f5d4cb.log`).
+Go 1.27.1, Swift 6.3.3, in one run on a freshly rebooted machine with nothing
+else running (`results/2026-09-16-7dbfee5d.log`).
 
 | Port | 2,000 rows | 10,000 rows | 50,000 rows | First document | Peak memory | File, 50,000 rows |
 |---|---:|---:|---:|---:|---:|---:|
-| Java | 83 ms | 376 ms | 1,676 ms | 2,063 ms | 462 MB | 9,116,668 bytes |
-| C# | 84 ms | 411 ms | 2,081 ms | 2,362 ms | 251 MB | 9,116,668 bytes |
-| Go | 32 ms | 155 ms | 776 ms | 852 ms | 289 MB | 9,147,319 bytes |
-| Swift | 112 ms | 524 ms | 2,599 ms | 2,694 ms | 188 MB | 11,197,754 bytes |
+| Java | 79 ms | 340 ms | 1,679 ms | 2,096 ms | 462 MB | 9,116,668 bytes |
+| C# | 89 ms | 413 ms | 2,084 ms | 2,396 ms | 251 MB | 9,116,668 bytes |
+| Go | 33 ms | 159 ms | 787 ms | 850 ms | 281 MB | 9,147,319 bytes |
+| Swift | 114 ms | 531 ms | 2,613 ms | 2,697 ms | 188 MB | 11,197,754 bytes |
+
+- Nothing `Table` runs changed in 7dbfee5d, which fills the rows of `BigTable`
+  with one `re`. The files are the same to the byte as at d2f5d4cb
+  (`results/2026-09-16-d2f5d4cb.log`, on a machine that had not been rebooted),
+  and at 50,000 rows the times are within 1.4%: Java 1,676 ms, C# 2,081, Go 776
+  and Swift 2,599 then. The notes below are from d2f5d4cb.
 
 - d2f5d4cb writes a colour, a pen width or a font only when it changes, and
   fills a rectangle with one `re` operator, in the four ports. Every cell used
@@ -125,15 +131,21 @@ ROWS=124716 benchmarks/table/run.sh
 
 | Port | Time | First document | Peak memory | File |
 |---|---:|---:|---:|---:|
-| Java | 4,220 ms | 4,920 ms | 998 MB | 22.6 MB |
-| C# | 5,158 ms | 5,558 ms | 537 MB | 22.6 MB |
-| Go | 1,946 ms | 2,141 ms | 755 MB | 22.6 MB |
-| Swift | 6,591 ms | 6,742 ms | 428 MB | 27.7 MB |
+| Java | 4,197 ms | 4,808 ms | 999 MB | 22.6 MB |
+| C# | 5,051 ms | 5,352 ms | 537 MB | 22.6 MB |
+| Go | 1,939 ms | 2,076 ms | 682 MB | 22.6 MB |
+| Swift | 6,484 ms | 6,632 ms | 428 MB | 27.7 MB |
 
-One run at d2f5d4cb, `results/2026-09-16-d2f5d4cb-124716.log`. `run.sh` takes
-the first document and the peak memory at 50,000 rows whatever `ROWS` says, so
-at this size both were measured on their own after the run, three new
-processes each, and the medians are above; the log has all three. Before
+One run on a freshly rebooted machine, `results/2026-09-16-989b6c27-124716.log`:
+989b6c27 changes only documentation, so the library is 7dbfee5d's. `run.sh`
+takes the first document and the peak memory at 50,000 rows whatever `ROWS`
+says, so at this size both were measured on their own after the run, three new
+processes each, and the medians are above; the log has all three. At d2f5d4cb
+(`results/2026-09-16-d2f5d4cb-124716.log`), on a machine that had not been
+rebooted, the times were 4,220, 5,158, 1,946 and 6,591 ms, the first documents
+4,920, 5,558, 2,141 and 6,742 ms, and the peaks 998, 537, 755 and 428 MB, with
+the same files; Go's peak varies most from run to run, 677 to 710 MB in this
+one. Before
 d2f5d4cb, which writes a colour, a pen width or a font only when it changes and
 fills a rectangle with one `re`, the first document took 4,983 ms in Java,
 5,910 in C#, 2,389 in Go and 7,203 in Swift, with peaks of 1,135, 566, 800 and
@@ -143,9 +155,9 @@ fills a rectangle with one `re`, the first document took 4,983 ms in Java,
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, in the run
-at d2f5d4cb and on this machine, iText Core's own `Table` in large-table mode
-took 37,052 ms in a new JVM and peaked at 7,015 MB, and needed an 8 GB heap to
-run at all, while `BigTable` took 2,099 ms and 389 MB (`../results/`). So
+at 7dbfee5d and on this machine, iText Core's own `Table` in large-table mode
+took 36,609 ms in a new JVM and peaked at 6,949 MB, and needed an 8 GB heap to
+run at all, while `BigTable` took 1,959 ms and 390 MB (`../results/`). So
 `Table` holding all 1.12 million cells is about seven times faster than iText's
 and needs about a seventh of the memory; what it cannot do is draw the table
 without holding them, which is what `BigTable` is for.

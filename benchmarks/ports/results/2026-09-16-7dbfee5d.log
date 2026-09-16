@@ -1,0 +1,33 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.1 linux/amd64
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-16T15:17:37-04:00
+7dbfee5d Fill the shaded rows of a BigTable with one re, in the four ports
+== ports: Latin, Greek and Cyrillic, 60 lines per page, IBM Plex Sans
+java 100 pages: median 14 ms (min 12, max 19, 7 runs), 155400 bytes
+dotnet 100 pages: median 20 ms (min 19, max 20, 7 runs), 155400 bytes
+go 100 pages: median 9 ms (min 8, max 11, 7 runs), 152392 bytes
+swift 100 pages: median 21 ms (min 21, max 22, 7 runs), 168506 bytes
+java 500 pages: median 56 ms (min 50, max 57, 7 runs), 533287 bytes
+dotnet 500 pages: median 62 ms (min 46, max 81, 7 runs), 533287 bytes
+go 500 pages: median 46 ms (min 43, max 49, 7 runs), 518650 bytes
+swift 500 pages: median 90 ms (min 89, max 90, 7 runs), 599518 bytes
+== ports: first document in a new process, 500 pages
+java cold 500 pages: 164 ms, 533287 bytes
+dotnet cold 500 pages: 170 ms, 533287 bytes
+go cold 500 pages: 47 ms, 518650 bytes
+swift cold 500 pages: 93 ms, 599518 bytes
+== ports: peak memory, one 500-page document, runtime defaults, median of 3
+java peak 80704 KB
+dotnet peak 55940 KB
+go peak 12712 KB
+swift peak 28956 KB
+== ports: 3-page samples
+java: 64974 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+dotnet: 64974 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+go: 64894 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+swift: 65359 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+2026-09-16T15:17:44-04:00

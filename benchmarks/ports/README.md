@@ -45,15 +45,16 @@ the machine meanwhile. `build/` is not tracked.
 ## Results, 16 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux. OpenJDK 21.0.12.1, .NET SDK 8.0.424,
-Go 1.27.1, Swift 6.3.3. One run at d2f5d4cb, logged in
-`results/2026-09-16-d2f5d4cb.log`, on a machine that had not been rebooted.
+Go 1.27.1, Swift 6.3.3. One run at 7dbfee5d, logged in
+`results/2026-09-16-7dbfee5d.log`, on a freshly rebooted machine with nothing
+else running.
 
 | Port | 100 pages | 500 pages | First document | File, 500 pages | Peak memory |
 |---|---:|---:|---:|---:|---:|
-| Java | 14 ms | 56 ms | 173 ms | 533,287 bytes | 79 MB |
-| C# | 21 ms | 61 ms | 181 ms | 533,287 bytes | 55 MB |
-| Go | 10 ms | 48 ms | 49 ms | 518,650 bytes | 12 MB |
-| Swift | 22 ms | 93 ms | 97 ms | 599,518 bytes | 29 MB |
+| Java | 14 ms | 56 ms | 164 ms | 533,287 bytes | 79 MB |
+| C# | 20 ms | 62 ms | 170 ms | 533,287 bytes | 55 MB |
+| Go | 9 ms | 46 ms | 47 ms | 518,650 bytes | 12 MB |
+| Swift | 21 ms | 90 ms | 93 ms | 599,518 bytes | 28 MB |
 
 - Java and C# write files of the same size, to the byte. Go's 500-page file is
   about 3% smaller and Swift's about 12% larger. The four write the same page
@@ -67,11 +68,13 @@ Go 1.27.1, Swift 6.3.3. One run at d2f5d4cb, logged in
   is not zlib, and it has been closing the gap in steps: longer matches, 4% off
   the file, and then stored, fixed or dynamic Huffman codes chosen a block at a
   time, 12.7% off.
-- At 4ee4e7cb (`results/2026-09-16-4ee4e7cb.log`) the 500-page times were
-  Java 58, C# 71, Go 51 and Swift 100 ms, on a freshly rebooted machine. All
-  four are faster now, C# by 10 ms; differences of a few milliseconds are
-  within the noise of a machine that was not rebooted.
-- Go starts a first document fastest, 49 ms against 173 for Java, and keeps the
+- At d2f5d4cb (`results/2026-09-16-d2f5d4cb.log`), on a machine that had not
+  been rebooted, the files were the same, and the 500-page times Java 56, C# 61,
+  Go 48 and Swift 93 ms, and the first documents 173, 181, 49 and 97 ms: nothing
+  the four ports run changed in 7dbfee5d, so the differences are the machine's.
+  At 4ee4e7cb (`results/2026-09-16-4ee4e7cb.log`), before d2f5d4cb, the
+  500-page times were Java 58, C# 71, Go 51 and Swift 100 ms.
+- Go starts a first document fastest, 47 ms against 164 for Java, and keeps the
   smallest process, 12 MB against 79. The JVM and the .NET runtime carry their
   own footprint before the first page is drawn.
 - mutool extracts the three lines of Latin, Greek and Cyrillic text from the
@@ -80,7 +83,7 @@ Go 1.27.1, Swift 6.3.3. One run at d2f5d4cb, logged in
   the benchmark project took every file under its directory as a candidate,
   and a `build/` directory left from an earlier comparison held an old copy,
   which .NET preferred to the one the `HintPath` names. `PortBench.csproj` now
-  names its one source file, and the run above is the second. The run at
+  names its one source file, and the second run at d2f5d4cb is the one quoted. The run at
   4ee4e7cb was made before that directory existed.
 
 ## Caveats
