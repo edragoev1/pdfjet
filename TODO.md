@@ -1027,8 +1027,29 @@ renames included (the Week 1 decision), so every item is a blocker.
       document; MisuseTest in each port. The pie chart NaN and stamp text
       without `addFont` were fixed on the way.
 
-## Performance (Sep 18–Oct 1)
+## Data files and performance (Sep 18–Oct 1)
 
+- ⬜ **B** Quoted fields in the data files of `BigTable` and `Table`. Both
+      split on the delimiter with no quoting, in all four ports, so a line
+      holding `"Smith, John"` becomes two columns, every column after it
+      shifts, and the quotes are drawn as text. `BigTable.split` uses the
+      delimiter given to `setTableData`; the file constructors of `Table`
+      (`Table(f1, f2, fileName)`, `NewTableFromFile` in Go) guess it in
+      `getDelimiterRegex` by counting the commas, pipes and tabs of the first
+      line, which a quoted field can also throw off, so a file whose quoted
+      values hold commas can be split on the wrong character altogether.
+      Parse as RFC 4180 does: a field that starts with a quote runs to the
+      closing quote, a doubled quote inside it stands for one quote, and a
+      delimiter inside it is data; a field that does not start with a quote
+      keeps its quotes as they are. Decide whether a quoted field may hold a
+      line break, which means reading on until the quotes balance rather than
+      a line at a time, or whether that is documented as unsupported. One
+      parser for both classes and both of `BigTable`’s passes, the same one in
+      the four ports, with tests for a delimiter inside quotes, a doubled
+      quote, an empty quoted field, a quote in an unquoted field and a line
+      that ends on a delimiter. A file without quotes must come out unchanged:
+      Example_43 and the `Table` examples stay byte-identical in the four
+      ports.
 - ⬜ **B** Swift compression, by improving `FlateEncode` rather than replacing
       it: no zlib, and the fixed-Huffman block stays. It keeps one position per
       hash in a 64K table, so a collision or a repeat further back than the
