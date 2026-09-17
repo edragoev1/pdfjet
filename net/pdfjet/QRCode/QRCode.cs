@@ -25,7 +25,9 @@ public class QRCode : IDrawable {
     private const int PAD0 = 0xEC;
     private const int PAD1 = 0x11;
     private Boolean?[][] modules;
-    private int moduleCount = 33;    // Magic Number
+    // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
+    private int typeNumber;
+    private int moduleCount;
     private ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M;
 
     private float x;
@@ -37,14 +39,50 @@ public class QRCode : IDrawable {
     private int color = Color.black;
 
     /// <summary>
-    /// Used to create 2D QR Code barcodes.
+    /// Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
+    /// the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
+    /// to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
+    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
     /// </summary>
     /// <param name="str">the string to encode.</param>
     /// <param name="errorCorrectionLevel">the desired error correction level.</param>
+    /// <exception cref="ArgumentException">If the string does not fit in a version 40 symbol.</exception>
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) {
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
         this.errorCorrectionLevel = errorCorrectionLevel;
+        this.typeNumber = GetTypeNumber(qrData.Length, errorCorrectionLevel);
+        this.moduleCount = 4 * typeNumber + 17;
         this.Make(false, GetBestMaskPattern());
+    }
+
+    // Returns the smallest version, from 4, whose data codewords hold the data.
+    private static int GetTypeNumber(int dataLength, ErrorCorrectionLevel errorCorrectionLevel) {
+        for (int typeNumber = 4; typeNumber <= 40; typeNumber++) {
+            if (GetLengthInBits(dataLength, typeNumber) <= GetDataCount(typeNumber, errorCorrectionLevel) * 8) {
+                return typeNumber;
+            }
+        }
+        int maxLength = (GetDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8;
+        throw new ArgumentException("The data is too long for a QR code at level "
+                + errorCorrectionLevel + ": " + dataLength + " bytes, at most " + maxLength + ".");
+    }
+
+    // The bits of the mode indicator, the character count and the data, in byte mode.
+    private static int GetLengthInBits(int dataLength, int typeNumber) {
+        return 4 + GetCharacterCountBits(typeNumber) + 8 * dataLength;
+    }
+
+    // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
+    private static int GetCharacterCountBits(int typeNumber) {
+        return (typeNumber < 10) ? 8 : 16;
+    }
+
+    private static int GetDataCount(int typeNumber, ErrorCorrectionLevel errorCorrectionLevel) {
+        int dataCount = 0;
+        foreach (RSBlock rsBlock in RSBlock.GetRSBlocks(typeNumber, errorCorrectionLevel)) {
+            dataCount += rsBlock.GetDataCount();
+        }
+        return dataCount;
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -152,6 +190,9 @@ public class QRCode : IDrawable {
         SetupPositionAdjustPattern();
         SetupTimingPattern();
         SetupTypeInfo(test, maskPattern);
+        if (typeNumber >= 7) {
+            SetupTypeNumber(test);
+        }
 
         MapData(CreateData(errorCorrectionLevel), maskPattern);
     }
@@ -198,7 +239,7 @@ public class QRCode : IDrawable {
     }
 
     private void SetupPositionAdjustPattern() {
-        int[] pos = {6, 26};    // Magic Numbers
+        int[] pos = QRUtil.GetPatternPosition(typeNumber);
         foreach (int row in pos) {
             foreach (int col in pos) {
 
@@ -247,6 +288,19 @@ public class QRCode : IDrawable {
         }
     }
 
+    // Versions 7 and up carry their version number twice, next to two finder patterns.
+    private void SetupTypeNumber(bool test) {
+        int bits = QRUtil.GetBCHTypeNumber(typeNumber);
+        for (int i = 0; i < 18; i++) {
+            bool mod = (!test && ((bits >> i) & 1) == 1);
+            modules[i / 3][i % 3 + moduleCount - 8 - 3] = mod;
+        }
+        for (int i = 0; i < 18; i++) {
+            bool mod = (!test && ((bits >> i) & 1) == 1);
+            modules[i % 3 + moduleCount - 8 - 3][i / 3] = mod;
+        }
+    }
+
     private void SetupTypeInfo(bool test, int maskPattern) {
         int data = ((int) errorCorrectionLevel << 3) | maskPattern;
         int bits = QRUtil.GetBCHTypeInfo(data);
@@ -277,11 +331,11 @@ public class QRCode : IDrawable {
     }
 
     private byte[] CreateData(ErrorCorrectionLevel errorCorrectionLevel) {
-        RSBlock[] rsBlocks = RSBlock.GetRSBlocks(errorCorrectionLevel);
+        RSBlock[] rsBlocks = RSBlock.GetRSBlocks(typeNumber, errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
         buffer.Put(4, 4);
-        buffer.Put(qrData.Length, 8);
+        buffer.Put(qrData.Length, GetCharacterCountBits(typeNumber));
         foreach (byte b in qrData) {
             buffer.Put(b, 8);
         }

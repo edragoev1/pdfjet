@@ -14,11 +14,31 @@ public class QRCodeTest {
     }
 
     [Fact]
-    public void TheSymbolIs33ModulesAtEveryLevel() {
+    public void ShortDataKeepsTheSymbolAt33ModulesAtEveryLevel() {
         foreach (ErrorCorrectionLevel level in Enum.GetValues(typeof(ErrorCorrectionLevel))) {
             bool?[][] modules = new QRCode("Hello", level).GetModules();
             Assert.True(modules.Length == 33, level + " rows");
             Assert.True(modules[0].Length == 33, level + " columns");
+        }
+    }
+
+    [Fact]
+    public void LongerDataMakesALargerSymbol() {
+        Assert.Equal(33, new QRCode(new string('a', 78), ErrorCorrectionLevel.L).GetModules().Length);     // version 4
+        Assert.Equal(37, new QRCode(new string('a', 79), ErrorCorrectionLevel.L).GetModules().Length);     // version 5
+        Assert.Equal(177, new QRCode(new string('a', 2953), ErrorCorrectionLevel.L).GetModules().Length);  // version 40
+        Assert.Equal(177, new QRCode(new string('a', 1273), ErrorCorrectionLevel.H).GetModules().Length);  // version 40
+    }
+
+    [Fact]
+    public void VersionsFrom7CarryTheirVersionNumber() {
+        // 120 bytes at level M need version 7, 45 modules, whose version information is 0x07C94.
+        bool?[][] modules = new QRCode(new string('a', 120), ErrorCorrectionLevel.M).GetModules();
+        Assert.Equal(45, modules.Length);
+        for (int i = 0; i < 18; i++) {
+            bool bit = ((0x07C94 >> i) & 1) == 1;
+            Assert.True(bit == Dark(modules, i / 3, i % 3 + 45 - 11), "top right, bit " + i);
+            Assert.True(bit == Dark(modules, i % 3 + 45 - 11, i / 3), "bottom left, bit " + i);
         }
     }
 
@@ -36,10 +56,9 @@ public class QRCodeTest {
     }
 
     [Fact]
-    public void DataThatDoesNotFitThrows() {
-        Assert.Equal(33, new QRCode(new string('a', 50), ErrorCorrectionLevel.M).GetModules().Length);
-        Assert.Throws<ArgumentException>(() => new QRCode(new string('a', 80), ErrorCorrectionLevel.L));
-        Assert.Throws<ArgumentException>(() => new QRCode(new string('a', 50), ErrorCorrectionLevel.Q));
+    public void DataThatDoesNotFitVersion40Throws() {
+        Assert.Throws<ArgumentException>(() => new QRCode(new string('a', 2954), ErrorCorrectionLevel.L));
+        Assert.Throws<ArgumentException>(() => new QRCode(new string('a', 1274), ErrorCorrectionLevel.H));
     }
 
     [Fact]

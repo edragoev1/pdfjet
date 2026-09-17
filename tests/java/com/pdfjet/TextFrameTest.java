@@ -46,4 +46,40 @@ class TextFrameTest {
         assertEquals(font.getBodyHeight(24f) + font.getBodyHeight(font.getSize()),
                 body.getY1() - heading.getY1(), TestSupport.DELTA);
     }
+
+    // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
+    private static Paragraph drawAligned(Alignment alignment, String text) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Paragraph paragraph = new Paragraph(new TextLine(TestSupport.helvetica(pdf), text));
+        paragraph.setTextAlignment(alignment);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(200f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+        return paragraph;
+    }
+
+    @Test
+    void aRightAlignedParagraphEndsAtTheRightEdge() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Paragraph paragraph = drawAligned(Alignment.RIGHT, "Hello");
+        // The text ends at the right edge; the space after it is past the edge.
+        assertEquals(210f - font.stringWidth("Hello"), paragraph.getTextX(), TestSupport.DELTA);
+        assertEquals(210f + font.stringWidth(" "), paragraph.getX2(), TestSupport.DELTA);
+    }
+
+    @Test
+    void aCenteredParagraphHasTheSameSpaceOnBothSides() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Paragraph paragraph = drawAligned(Alignment.CENTER, "Hello");
+        assertEquals(10f + (200f - font.stringWidth("Hello")) / 2f, paragraph.getTextX(), TestSupport.DELTA);
+    }
+
+    @Test
+    void aJustifiedParagraphLeavesItsLastRowAsItIs() throws Exception {
+        String text = "one two three four five six seven eight nine ten eleven twelve thirteen";
+        Paragraph left = drawAligned(Alignment.LEFT, text);
+        Paragraph justified = drawAligned(Alignment.JUSTIFY, text);
+        assertEquals(true, left.getY2() - left.getY1() > 20f, "more than one row");
+        assertEquals(left.getY2(), justified.getY2(), TestSupport.DELTA);
+        assertEquals(left.getX2(), justified.getX2(), TestSupport.DELTA);
+    }
 }

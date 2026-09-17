@@ -52,6 +52,29 @@ public class TextFrame : IDrawable {
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
 
+    // The text of the row being drawn, drawn when the row is complete, so that it
+    // can be aligned: each part is a text line with some of its text.
+    private readonly List<RowPart> row = new List<RowPart>();
+
+    private sealed class RowPart {
+        internal readonly TextLine textLine;
+        internal readonly String text;
+        internal readonly float x;
+        internal readonly Paragraph paragraph;
+        internal readonly bool startsParagraph;     // The first text of the paragraph
+        internal readonly bool endsTextLine;        // The last text of the text line
+
+        internal RowPart(TextLine textLine, String text, float x, Paragraph paragraph,
+                bool startsParagraph, bool endsTextLine) {
+            this.textLine = textLine;
+            this.text = text;
+            this.x = x;
+            this.paragraph = paragraph;
+            this.startsParagraph = startsParagraph;
+            this.endsTextLine = endsTextLine;
+        }
+    }
+
     /// <summary>
     /// Creates a text frame from paragraphs of text lines. An empty line separates
     /// the paragraphs unless SetParagraphGap sets another gap.
@@ -201,12 +224,14 @@ public class TextFrame : IDrawable {
         rowOpen = false;
         rowPlaced = false;
         startsParagraph = false;
+        row.Clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
             Paragraph paragraph = paragraphs[paragraphIndex];
             while (lineIndex < paragraph.lines.Count) {
                 TextLine textLine = paragraph.lines[lineIndex];
                 if (!rowOpen && !OpenRow(textLine)) {
+                    DrawRow(page, false);
                     return bottom;
                 }
                 if (tokens == null) {
@@ -219,7 +244,8 @@ public class TextFrame : IDrawable {
                     tokens = Tokenize(textLine);
                     tokenIndex = 0;
                 }
-                if (!DrawTokens(page, textLine)) {
+                if (!DrawTokens(page, paragraph, textLine)) {
+                    DrawRow(page, false);
                     return bottom;
                 }
                 paragraph.x2 = xText;
@@ -229,6 +255,7 @@ public class TextFrame : IDrawable {
                 tokenIndex = 0;
                 lineIndex++;
             }
+            DrawRow(page, true);
             xText = x;
             rowOpen = false;
             if (paragraph.lines.Count > 0) {
@@ -271,7 +298,7 @@ public class TextFrame : IDrawable {
     // Draws the tokens of the text line that are left, wrapping them at the width
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
-    private bool DrawTokens(Page page, TextLine textLine) {
+    private bool DrawTokens(Page page, Paragraph paragraph, TextLine textLine) {
         Font font = textLine.font;
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
@@ -298,13 +325,14 @@ public class TextFrame : IDrawable {
                     tokens[tokenIndex] = token.Substring(head.Length);
                 }
             }
-            DrawLine(page, textLine, buf.ToString());
+            AddToRow(paragraph, textLine, buf.ToString(), false);
+            DrawRow(page, false);
             buf.Length = 0;
             xText = x;
             rowOpen = false;
             nextBaseline = yText + textLine.GetHeight();
         }
-        DrawLine(page, textLine, buf.ToString());
+        AddToRow(paragraph, textLine, buf.ToString(), true);
         xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());
         return true;
     }
@@ -323,10 +351,113 @@ public class TextFrame : IDrawable {
         return token.Substring(0, end);
     }
 
-    // Draws the string at the current text position, with every setting of the text line,
-    // including its vertical offset and its link, as Text does.
-    private void DrawLine(Page page, TextLine textLine, String str) {
-        textLine.CopyWithText(str).SetLocation(xText, yText).DrawOn(page);
+    // Adds the string to the row, at the current text position.
+    private void AddToRow(Paragraph paragraph, TextLine textLine, String str, bool endsTextLine) {
+        bool first = row.Count == 0 && lineIndex == 0 && xText == paragraph.xText
+                && yText == paragraph.yText;
+        row.Add(new RowPart(textLine, str, xText, paragraph, first, endsTextLine));
+    }
+
+    // Draws the parts of the row, with every setting of their text lines, including
+    // the vertical offset and the link, as TextColumn does. A paragraph aligned to
+    // the right or to the center moves the row, and a justified one widens the
+    // spaces of every row but its last.
+    private void DrawRow(Page page, bool lastRowOfParagraph) {
+        if (row.Count == 0) {
+            return;
+        }
+        Paragraph paragraph = row[0].paragraph;
+        Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
+        RowPart last = row[row.Count - 1];
+        float rowWidth = last.x + Width(last.textLine, TrimTrailingSpaces(last.text)) - x;
+
+        if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
+            DrawJustifiedRow(page, rowWidth);
+        } else {
+            float shift = 0f;
+            if (alignment == Alignment.RIGHT) {
+                shift = w - rowWidth;
+            } else if (alignment == Alignment.CENTER) {
+                shift = (w - rowWidth) / 2f;
+            }
+            foreach (RowPart part in row) {
+                part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
+                if (part.startsParagraph) {
+                    part.paragraph.xText += shift;
+                }
+                if (part.endsTextLine) {
+                    part.paragraph.x2 = part.x + Width(part.textLine, part.text) + shift;
+                }
+            }
+        }
+        row.Clear();
+    }
+
+    // Draws the words of the row one by one, with the width left in the row shared
+    // out among the spaces between them.
+    private void DrawJustifiedRow(Page page, float rowWidth) {
+        int spaces = 0;
+        for (int i = 0; i < row.Count; i++) {
+            String text = row[i].text;
+            for (int j = 0; j < text.Length; j++) {
+                if (text[j] == ' ' && HasWordAfter(i, j + 1)) {
+                    spaces++;
+                }
+            }
+        }
+        float dx = (spaces > 0) ? (w - rowWidth) / spaces : 0f;
+        float xWord = x;
+        for (int i = 0; i < row.Count; i++) {
+            RowPart part = row[i];
+            String text = part.text;
+            int start = 0;
+            while (start < text.Length) {
+                int end = text.IndexOf(' ', start);
+                if (end == -1) {
+                    end = text.Length;
+                }
+                if (end > start) {
+                    String word = text.Substring(start, end - start);
+                    part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
+                    xWord += Width(part.textLine, word);
+                }
+                if (end < text.Length) {
+                    xWord += Width(part.textLine, Single.space);
+                    if (HasWordAfter(i, end + 1)) {
+                        xWord += dx;
+                    }
+                }
+                start = end + 1;
+            }
+            if (part.endsTextLine) {
+                part.paragraph.x2 = xWord;
+            }
+        }
+    }
+
+    // Returns true when a word follows this position of the row.
+    private bool HasWordAfter(int partIndex, int charIndex) {
+        for (int i = partIndex; i < row.Count; i++) {
+            String text = row[i].text;
+            for (int j = (i == partIndex) ? charIndex : 0; j < text.Length; j++) {
+                if (text[j] != ' ') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static String TrimTrailingSpaces(String text) {
+        int end = text.Length;
+        while (end > 0 && text[end - 1] == ' ') {
+            end--;
+        }
+        return text.Substring(0, end);
+    }
+
+    private static float Width(TextLine textLine, String text) {
+        return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, text);
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

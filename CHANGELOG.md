@@ -7,7 +7,30 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## Unreleased
+## v9.0.1 — planned for 2026-10-21
+
+Producer string bumped from `PDFjet v9.0.0` to `PDFjet v9.0.1` in all four
+ports, so `.packaging/package-java.sh` and `.packaging/package-dotnet.sh` name
+their archives v9.0.1. The public API does not change.
+
+### Added
+- A QR code is as large as its data needs, from version 4, 33 by 33 modules,
+  to version 40, 177 by 177 modules, in all four ports. It held at most 78
+  bytes at level L and 34 at level H, and now holds up to 2,953 and 1,273, so
+  payment codes, contact cards and long links fit. Data that fitted before
+  makes the same symbol as before; data too long for version 40 throws, or
+  panics in Go, with the most bytes the level holds. Unit tests check the
+  sizes and the version information, and every version and level was read
+  back with a QR code reader. The Swift port no longer hangs on the timing
+  patterns of version 7 and up, and shares its Galois field tables, as the
+  other ports do.
+
+### Fixed
+- `TextFrame` aligns a paragraph to the right, to the center or to both
+  edges, as `TextColumn` does, in all four ports; it drew every paragraph
+  aligned to the left. A right aligned or centered row is moved as a whole,
+  and a justified paragraph widens the spaces of every row but its last.
+  Paragraphs aligned to the left are drawn as before.
 
 ### Examples
 - Examples 18, 22, 26, 48 and 49 draw documents instead of test pages, in all

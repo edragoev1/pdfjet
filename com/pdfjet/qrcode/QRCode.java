@@ -29,7 +29,9 @@ final public class QRCode implements Drawable {
     private static final int PAD0 = 0xEC;
     private static final int PAD1 = 0x11;
     private Boolean[][] modules;
-    private final int moduleCount = 33;   // Magic Number
+    // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
+    private int typeNumber;
+    private int moduleCount;
     private ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M;
     private float x;
     private float y;
@@ -38,16 +40,52 @@ final public class QRCode implements Drawable {
     private int color = Color.black;
 
     /**
-     * Used to create 2D QR Code barcodes.
+     * Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
+     * the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
+     * to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
+     * at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
      *
      * @param str the string to encode.
      * @param errorCorrectionLevel the desired error correction level.
      * @throws UnsupportedEncodingException If an input or output exception occurred
+     * @throws IllegalArgumentException If the string does not fit in a version 40 symbol.
      */
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) throws UnsupportedEncodingException {
         this.qrData = str.getBytes(StandardCharsets.UTF_8);
         this.errorCorrectionLevel = errorCorrectionLevel;
+        this.typeNumber = getTypeNumber(qrData.length, errorCorrectionLevel);
+        this.moduleCount = 4 * typeNumber + 17;
         this.make(false, getBestMaskPattern());
+    }
+
+    // Returns the smallest version, from 4, whose data codewords hold the data.
+    private static int getTypeNumber(int dataLength, ErrorCorrectionLevel errorCorrectionLevel) {
+        for (int typeNumber = 4; typeNumber <= 40; typeNumber++) {
+            if (getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8) {
+                return typeNumber;
+            }
+        }
+        int maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8;
+        throw new IllegalArgumentException("The data is too long for a QR code at level "
+                + errorCorrectionLevel + ": " + dataLength + " bytes, at most " + maxLength + ".");
+    }
+
+    // The bits of the mode indicator, the character count and the data, in byte mode.
+    private static int getLengthInBits(int dataLength, int typeNumber) {
+        return 4 + getCharacterCountBits(typeNumber) + 8 * dataLength;
+    }
+
+    // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
+    private static int getCharacterCountBits(int typeNumber) {
+        return (typeNumber < 10) ? 8 : 16;
+    }
+
+    private static int getDataCount(int typeNumber, ErrorCorrectionLevel errorCorrectionLevel) {
+        int dataCount = 0;
+        for (RSBlock rsBlock : RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel)) {
+            dataCount += rsBlock.getDataCount();
+        }
+        return dataCount;
     }
 
     /**
@@ -175,6 +213,9 @@ final public class QRCode implements Drawable {
         setupPositionAdjustPattern();
         setupTimingPattern();
         setupTypeInfo(test, maskPattern);
+        if (typeNumber >= 7) {
+            setupTypeNumber(test);
+        }
         mapData(createData(errorCorrectionLevel), maskPattern);
     }
 
@@ -215,7 +256,7 @@ final public class QRCode implements Drawable {
     }
 
     private void setupPositionAdjustPattern() {
-        int[] pos = {6, 26};    // Magic Numbers
+        int[] pos = QRUtil.getPatternPosition(typeNumber);
         for (int row : pos) {
             for (int col : pos) {
                 if (modules[row][col] != null) {
@@ -262,6 +303,19 @@ final public class QRCode implements Drawable {
         }
     }
 
+    // Versions 7 and up carry their version number twice, next to two finder patterns.
+    private void setupTypeNumber(boolean test) {
+        int bits = QRUtil.getBCHTypeNumber(typeNumber);
+        for (int i = 0; i < 18; i++) {
+            boolean mod = (!test && ((bits >> i) & 1) == 1);
+            modules[i / 3][i % 3 + moduleCount - 8 - 3] = mod;
+        }
+        for (int i = 0; i < 18; i++) {
+            boolean mod = (!test && ((bits >> i) & 1) == 1);
+            modules[i % 3 + moduleCount - 8 - 3][i / 3] = mod;
+        }
+    }
+
     private void setupTypeInfo(boolean test, int maskPattern) {
         int data = (errorCorrectionLevel.value << 3) | maskPattern;
         int bits = QRUtil.getBCHTypeInfo(data);
@@ -292,11 +346,11 @@ final public class QRCode implements Drawable {
     }
 
     private byte[] createData(ErrorCorrectionLevel errorCorrectionLevel) {
-        RSBlock[] rsBlocks = RSBlock.getRSBlocks(errorCorrectionLevel);
+        RSBlock[] rsBlocks = RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
         buffer.put(4, 4);
-        buffer.put(qrData.length, 8);
+        buffer.put(qrData.length, getCharacterCountBits(typeNumber));
         for (byte b : qrData) {
             buffer.put(b, 8);
         }

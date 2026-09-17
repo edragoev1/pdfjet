@@ -49,6 +49,19 @@ public class TextFrame : Drawable {
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
 
+    // The text of the row being drawn, drawn when the row is complete, so that it
+    // can be aligned: each part is a text line with some of its text.
+    private var row = [RowPart]()
+
+    private struct RowPart {
+        let textLine: TextLine
+        let text: String
+        let x: Float
+        let paragraph: Paragraph
+        let startsParagraph: Bool   // The first text of the paragraph
+        let endsTextLine: Bool      // The last text of the text line
+    }
+
     /// Creates a text frame from paragraphs of text lines. An empty line separates
     /// the paragraphs unless setParagraphGap sets another gap.
     public init(_ paragraphs: [Paragraph]) {
@@ -198,12 +211,14 @@ public class TextFrame : Drawable {
         rowOpen = false
         rowPlaced = false
         startsParagraph = false
+        row.removeAll()
         var bottom = y
         while paragraphIndex < paragraphs.count {
             let paragraph = paragraphs[paragraphIndex]
             while lineIndex < paragraph.lines.count {
                 let textLine = paragraph.lines[lineIndex]
                 if !rowOpen && !openRow(textLine) {
+                    drawRow(page, false)
                     return bottom
                 }
                 if tokens == nil {
@@ -216,7 +231,8 @@ public class TextFrame : Drawable {
                     tokens = tokenize(textLine)
                     tokenIndex = 0
                 }
-                if !drawTokens(page, textLine) {
+                if !drawTokens(page, paragraph, textLine) {
+                    drawRow(page, false)
                     return bottom
                 }
                 paragraph.x2 = xText
@@ -226,6 +242,7 @@ public class TextFrame : Drawable {
                 tokenIndex = 0
                 lineIndex += 1
             }
+            drawRow(page, true)
             xText = x
             rowOpen = false
             if let lastLine = paragraph.lines.last {
@@ -267,7 +284,7 @@ public class TextFrame : Drawable {
     // Draws the tokens of the text line that are left, wrapping them at the width
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
-    private func drawTokens(_ page: Page?, _ textLine: TextLine) -> Bool {
+    private func drawTokens(_ page: Page?, _ paragraph: Paragraph, _ textLine: TextLine) -> Bool {
         let font = textLine.font!
         let fallbackFont = textLine.fallbackFont
         let fontSize = textLine.fontSize
@@ -296,13 +313,14 @@ public class TextFrame : Drawable {
                     tokens![tokenIndex] = String(String.UnicodeScalarView(token.unicodeScalars.dropFirst(headCount)))
                 }
             }
-            drawLine(page, textLine, buf)
+            addToRow(paragraph, textLine, buf, false)
+            drawRow(page, false)
             buf = ""
             xText = x
             rowOpen = false
             nextBaseline = yText + textLine.getHeight()
         }
-        drawLine(page, textLine, buf)
+        addToRow(paragraph, textLine, buf, true)
         xText += font.stringWidth(fallbackFont, fontSize, buf)
         return true
     }
@@ -322,10 +340,113 @@ public class TextFrame : Drawable {
         return String(String.UnicodeScalarView(scalars[0..<end]))
     }
 
-    // Draws the string at the current text position, with every setting of the
-    // text line, including its vertical offset and link, as Text does.
-    private func drawLine(_ page: Page?, _ textLine: TextLine, _ str: String) {
-        textLine.copyWithText(str).setLocation(xText, yText).drawOn(page)
+    // Adds the string to the row, at the current text position.
+    private func addToRow(_ paragraph: Paragraph, _ textLine: TextLine, _ str: String, _ endsTextLine: Bool) {
+        let first = row.isEmpty && lineIndex == 0 && xText == paragraph.xText
+                && yText == paragraph.yText
+        row.append(RowPart(textLine: textLine, text: str, x: xText, paragraph: paragraph,
+                startsParagraph: first, endsTextLine: endsTextLine))
+    }
+
+    // Draws the parts of the row, with every setting of their text lines, including
+    // the vertical offset and the link, as TextColumn does. A paragraph aligned to
+    // the right or to the center moves the row, and a justified one widens the
+    // spaces of every row but its last.
+    private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
+        if row.isEmpty {
+            return
+        }
+        let paragraph = row[0].paragraph
+        let alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT
+        let last = row[row.count - 1]
+        let rowWidth = last.x + TextFrame.width(last.textLine, TextFrame.trimTrailingSpaces(last.text)) - x
+
+        if alignment == Alignment.JUSTIFY && !lastRowOfParagraph {
+            drawJustifiedRow(page, rowWidth)
+        } else {
+            var shift: Float = 0.0
+            if alignment == Alignment.RIGHT {
+                shift = w - rowWidth
+            } else if alignment == Alignment.CENTER {
+                shift = (w - rowWidth) / 2.0
+            }
+            for part in row {
+                part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
+                if part.startsParagraph {
+                    part.paragraph.xText += shift
+                }
+                if part.endsTextLine {
+                    part.paragraph.x2 = part.x + TextFrame.width(part.textLine, part.text) + shift
+                }
+            }
+        }
+        row.removeAll()
+    }
+
+    // Draws the words of the row one by one, with the width left in the row shared
+    // out among the spaces between them.
+    private func drawJustifiedRow(_ page: Page?, _ rowWidth: Float) {
+        let texts = row.map { Array($0.text.unicodeScalars) }
+        var spaces = 0
+        for i in 0..<texts.count {
+            for j in 0..<texts[i].count where texts[i][j] == " " && hasWordAfter(texts, i, j + 1) {
+                spaces += 1
+            }
+        }
+        let dx: Float = (spaces > 0) ? (w - rowWidth) / Float(spaces) : 0.0
+        var xWord = x
+        for i in 0..<row.count {
+            let part = row[i]
+            let text = texts[i]
+            var start = 0
+            while start < text.count {
+                var end = start
+                while end < text.count && text[end] != " " {
+                    end += 1
+                }
+                if end > start {
+                    let word = String(String.UnicodeScalarView(text[start..<end]))
+                    part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
+                    xWord += TextFrame.width(part.textLine, word)
+                }
+                if end < text.count {
+                    xWord += TextFrame.width(part.textLine, Single.space)
+                    if hasWordAfter(texts, i, end + 1) {
+                        xWord += dx
+                    }
+                }
+                start = end + 1
+            }
+            if part.endsTextLine {
+                part.paragraph.x2 = xWord
+            }
+        }
+    }
+
+    // Returns true when a word follows this position of the row.
+    private func hasWordAfter(_ texts: [[Unicode.Scalar]], _ partIndex: Int, _ charIndex: Int) -> Bool {
+        for i in partIndex..<texts.count {
+            var j = (i == partIndex) ? charIndex : 0
+            while j < texts[i].count {
+                if texts[i][j] != " " {
+                    return true
+                }
+                j += 1
+            }
+        }
+        return false
+    }
+
+    private static func trimTrailingSpaces(_ text: String) -> String {
+        var scalars = Array(text.unicodeScalars)
+        while let last = scalars.last, last == " " {
+            scalars.removeLast()
+        }
+        return String(String.UnicodeScalarView(scalars))
+    }
+
+    private static func width(_ textLine: TextLine, _ text: String) -> Float {
+        return textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, text)
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

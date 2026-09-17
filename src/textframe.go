@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 )
@@ -51,6 +52,19 @@ type TextFrame struct {
 	rowPlaced       bool
 	nextBaseline    float32
 	startsParagraph bool // The next row starts a paragraph
+
+	// The text of the row being drawn, drawn when the row is complete, so that
+	// it can be aligned: each part is a text line with some of its text.
+	row []*rowPart
+}
+
+type rowPart struct {
+	textLine        *TextLine
+	text            string
+	x               float32
+	paragraph       *Paragraph
+	startsParagraph bool // The first text of the paragraph
+	endsTextLine    bool // The last text of the text line
 }
 
 // NewTextFrame creates a text frame from strings, one paragraph each, in the
@@ -202,12 +216,14 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.rowOpen = false
 	tf.rowPlaced = false
 	tf.startsParagraph = false
+	tf.row = tf.row[:0]
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
 		paragraph := tf.paragraphs[tf.paragraphIndex]
 		for tf.lineIndex < len(paragraph.lines) {
 			textLine := paragraph.lines[tf.lineIndex]
 			if !tf.rowOpen && !tf.openRow(textLine) {
+				tf.drawRow(page, false)
 				return bottom
 			}
 			if tf.tokens == nil {
@@ -220,7 +236,8 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 				tf.tokens = tf.tokenize(textLine)
 				tf.tokenIndex = 0
 			}
-			if !tf.drawTokens(page, textLine) {
+			if !tf.drawTokens(page, paragraph, textLine) {
+				tf.drawRow(page, false)
 				return bottom
 			}
 			paragraph.x2 = tf.xText
@@ -230,6 +247,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 			tf.tokenIndex = 0
 			tf.lineIndex++
 		}
+		tf.drawRow(page, true)
 		tf.xText = tf.x
 		tf.rowOpen = false
 		if len(paragraph.lines) > 0 {
@@ -276,7 +294,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 // drawTokens draws the tokens of the text line that are left, wrapping them at
 // the width of the frame. It returns false when a row does not fit in the
 // height of the frame; the tokens that are left stay for the next frame.
-func (tf *TextFrame) drawTokens(page *Page, textLine *TextLine) bool {
+func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *TextLine) bool {
 	font := textLine.font
 	fallbackFont := textLine.fallbackFont
 	fontSize := textLine.fontSize
@@ -304,13 +322,14 @@ func (tf *TextFrame) drawTokens(page *Page, textLine *TextLine) bool {
 				tf.tokens[tf.tokenIndex] = token[len(head):]
 			}
 		}
-		tf.drawLine(page, textLine, buf.String())
+		tf.addToRow(paragraph, textLine, buf.String(), false)
+		tf.drawRow(page, false)
 		buf.Reset()
 		tf.xText = tf.x
 		tf.rowOpen = false
 		tf.nextBaseline = tf.yText + textLine.GetHeight()
 	}
-	tf.drawLine(page, textLine, buf.String())
+	tf.addToRow(paragraph, textLine, buf.String(), true)
 	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
 	return true
 }
@@ -330,12 +349,123 @@ func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 	return token[:end]
 }
 
-// drawLine draws the string at the current text position, with every setting of
-// the text line, including its vertical offset and link, as TextColumn does.
-func (tf *TextFrame) drawLine(page *Page, textLine *TextLine, str string) {
-	line := textLine.copyWithText(str)
-	line.SetLocation(tf.xText, tf.yText)
-	line.DrawOn(page)
+// addToRow adds the string to the row, at the current text position.
+func (tf *TextFrame) addToRow(paragraph *Paragraph, textLine *TextLine, str string, endsTextLine bool) {
+	first := len(tf.row) == 0 && tf.lineIndex == 0 && tf.xText == paragraph.xText &&
+		tf.yText == paragraph.yText
+	tf.row = append(tf.row, &rowPart{textLine, str, tf.xText, paragraph, first, endsTextLine})
+}
+
+// drawRow draws the parts of the row, with every setting of their text lines,
+// including the vertical offset and the link, as TextColumn does. A paragraph
+// aligned to the right or to the center moves the row, and a justified one
+// widens the spaces of every row but its last.
+func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
+	if len(tf.row) == 0 {
+		return
+	}
+	paragraph := tf.row[0].paragraph
+	textAlignment := alignment.Left
+	if paragraph.explicitAlignment {
+		textAlignment = paragraph.alignment
+	}
+	last := tf.row[len(tf.row)-1]
+	rowWidth := last.x + textWidth(last.textLine, trimTrailingSpaces(last.text)) - tf.x
+
+	if textAlignment == alignment.Justify && !lastRowOfParagraph {
+		tf.drawJustifiedRow(page, rowWidth)
+	} else {
+		var shift float32
+		if textAlignment == alignment.Right {
+			shift = tf.w - rowWidth
+		} else if textAlignment == alignment.Center {
+			shift = (tf.w - rowWidth) / 2
+		}
+		for _, part := range tf.row {
+			line := part.textLine.copyWithText(part.text)
+			line.SetLocation(part.x+shift, tf.yText)
+			line.DrawOn(page)
+			if part.startsParagraph {
+				part.paragraph.xText += shift
+			}
+			if part.endsTextLine {
+				part.paragraph.x2 = part.x + textWidth(part.textLine, part.text) + shift
+			}
+		}
+	}
+	tf.row = tf.row[:0]
+}
+
+// drawJustifiedRow draws the words of the row one by one, with the width left
+// in the row shared out among the spaces between them.
+func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
+	spaces := 0
+	for i, part := range tf.row {
+		for j := 0; j < len(part.text); j++ {
+			if part.text[j] == ' ' && tf.hasWordAfter(i, j+1) {
+				spaces++
+			}
+		}
+	}
+	var dx float32
+	if spaces > 0 {
+		dx = (tf.w - rowWidth) / float32(spaces)
+	}
+	xWord := tf.x
+	for i, part := range tf.row {
+		text := part.text
+		start := 0
+		for start < len(text) {
+			end := strings.IndexByte(text[start:], ' ')
+			if end == -1 {
+				end = len(text)
+			} else {
+				end += start
+			}
+			if end > start {
+				word := text[start:end]
+				line := part.textLine.copyWithText(word)
+				line.SetLocation(xWord, tf.yText)
+				line.DrawOn(page)
+				xWord += textWidth(part.textLine, word)
+			}
+			if end < len(text) {
+				xWord += textWidth(part.textLine, single.Space)
+				if tf.hasWordAfter(i, end+1) {
+					xWord += dx
+				}
+			}
+			start = end + 1
+		}
+		if part.endsTextLine {
+			part.paragraph.x2 = xWord
+		}
+	}
+}
+
+// hasWordAfter returns true when a word follows this position of the row.
+func (tf *TextFrame) hasWordAfter(partIndex, byteIndex int) bool {
+	for i := partIndex; i < len(tf.row); i++ {
+		text := tf.row[i].text
+		j := 0
+		if i == partIndex {
+			j = byteIndex
+		}
+		for ; j < len(text); j++ {
+			if text[j] != ' ' {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func trimTrailingSpaces(text string) string {
+	return strings.TrimRight(text, " ")
+}
+
+func textWidth(textLine *TextLine, text string) float32 {
+	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 // tokenize splits the text of the text line into words, or, for CJK text,

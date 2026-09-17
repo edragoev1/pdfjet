@@ -12,6 +12,48 @@ what is left.
 
 Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 
+## v9.0.1 — target 2026-10-21
+
+A fix release on the v9.0.0 API, from master: a solid base to build on, so
+**no breaking API changes**. Every public class, method and constant of v9.0.0
+stays as it is; changes are fixes, internal code and new behavior behind the
+same API. Before the tag, compare the public API with v9.0.0 in each port. The
+producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
+2026-10-21" until the tag.
+
+- ✅ Fifteen weak examples redone in the four ports: 18, 22, 26, 48, 49
+      (30444469), 06, 07, 11, 20, 36 (50a22f36), 04, 12, 21, 29, 31
+      (ed52df46), each checked with `check-examples.sh`.
+- ✅ **B** QR codes from version 4 to 40, in the four ports.
+      Done (Sep 17): the smallest version from 4 that holds the data, up to
+      2,953 bytes at L and 1,273 at H. 310 symbols, every version and level at
+      and one byte over each capacity, a payment code, a vCard and multi-byte
+      UTF-8, read back with zxing-cpp from the Java port; the C#, Go and Swift
+      symbols and error messages are identical to Java's, and every symbol
+      9.0.0 could make is unchanged. The Swift timing pattern loop hung from
+      version 7 and is fixed; Swift shares its Galois field tables (310
+      symbols: Java 2.6 s, Go 3.7 s, Swift 10.4 s). Unit tests in the four
+      ports for the sizes, the version information and the version 40 limits.
+- ✅ **B** `TextFrame` honors paragraph alignment (right, center, justify),
+      in the four ports. Done (Sep 17): a row is drawn when it is complete, so
+      it can be moved or its spaces widened; the last row of a justified
+      paragraph is not widened, and alignment continues in the next frame.
+      Left-aligned output is unchanged (Examples 03, 47 and 49 compared with
+      9.0.0). Unit tests in the four ports.
+      Both checked with `check-examples.sh`: Java 262 tests on JDK 21 and 8,
+      C# 260, Go, Swift 268, every example identical in the four ports.
+- ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
+- ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
+      website's example pages and download pages (links and evaluation zips).
+- ⬜ **B** The public API is that of v9.0.0 in the four ports. Checked for
+      the QR code and TextFrame work (Sep 17): the Java public API from `javap`
+      and the Go API from `go doc -all` are unchanged; only package-private or
+      internal classes (`RSBlock`, `QRUtil`, the row parts of `TextFrame`)
+      changed in all four ports. Recheck before the tag.
+- ⬜ **B** On Oct 21: date the CHANGELOG entry, tag `v9.0.1` and publish the
+      GitHub release, then check that the Go module and the Swift package
+      resolve 9.0.1.
+
 ## Done before this plan (Sep 11–16)
 
 - ✅ Breaking changes, encryption and PDF reading, right to left text, the

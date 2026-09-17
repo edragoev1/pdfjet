@@ -16,24 +16,29 @@
  */
 import Foundation
 
-class QRMath {
-    var EXP_TABLE = [Int](repeating: 0, count: 256)
-    var LOG_TABLE = [Int](repeating: 0, count: 256)
+// The tables never change after they are built, so one instance can be shared.
+final class QRMath: Sendable {
+    let EXP_TABLE: [Int]
+    let LOG_TABLE: [Int]
 
     init() {
+        var expTable = [Int](repeating: 0, count: 256)
+        var logTable = [Int](repeating: 0, count: 256)
         for i in 0..<8 {
-            self.EXP_TABLE[i] = (1 << i)
+            expTable[i] = (1 << i)
         }
         for i in 8..<256 {
-            self.EXP_TABLE[i] =
-                    self.EXP_TABLE[i - 4] ^
-                    self.EXP_TABLE[i - 5] ^
-                    self.EXP_TABLE[i - 6] ^
-                    self.EXP_TABLE[i - 8]
+            expTable[i] =
+                    expTable[i - 4] ^
+                    expTable[i - 5] ^
+                    expTable[i - 6] ^
+                    expTable[i - 8]
         }
         for i in 0..<255 {
-            self.LOG_TABLE[self.EXP_TABLE[i]] = i
+            logTable[expTable[i]] = i
         }
+        self.EXP_TABLE = expTable
+        self.LOG_TABLE = logTable
     }
 
     /// Returns the logarithm of n in GF(256).

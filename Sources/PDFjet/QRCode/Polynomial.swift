@@ -18,7 +18,9 @@ import Foundation
 
 class Polynomial {
     private var num: [Int]
-    private let qrmath = QRMath()
+    // The tables are the same for every polynomial, so they are built once.
+    private static let qrmath = QRMath()
+    private var qrmath: QRMath { return Polynomial.qrmath }
 
     init(_ num: [Int], _ shift: Int) {
         var offset = 0

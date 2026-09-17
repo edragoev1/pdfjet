@@ -28,7 +28,8 @@ type QRCode struct {
 	pad0                 int
 	pad1                 int
 	modules              [][]*bool
-	moduleCount          int
+	typeNumber           int // The version of the symbol, from 4 to 40
+	moduleCount          int // 4 * typeNumber + 17
 	errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel
 	x                    float32
 	y                    float32
@@ -37,7 +38,11 @@ type QRCode struct {
 	color                int32
 }
 
-// NewQRCode is used to create 2D QR Code barcodes.
+// NewQRCode is used to create 2D QR Code barcodes. The string is encoded in
+// UTF-8, and the symbol is the smallest that holds it, from version 4, 33 by
+// 33 modules, to version 40, 177 by 177 modules. At version 40 it holds up to
+// 2,953 bytes at level L, 2,331 at M, 1,663 at Q and 1,273 at H. It panics if
+// the string does not fit in a version 40 symbol.
 // @param str the string to encode.
 // @param errorCorrectionLevel the desired error correction level.
 func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) *QRCode {
@@ -45,11 +50,54 @@ func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrec
 	qrcode.pad0 = 0xEC
 	qrcode.pad1 = 0x11
 	qrcode.qrData = []byte(str)
-	qrcode.moduleCount = 33 // Magic Number
+	qrcode.typeNumber = getTypeNumber(len(qrcode.qrData), errorCorrectionLevel)
+	qrcode.moduleCount = 4*qrcode.typeNumber + 17
 	qrcode.m1 = 2.0
 	qrcode.errorCorrectionLevel = errorCorrectionLevel
 	qrcode.make(false, qrcode.getBestMaskPattern())
 	return qrcode
+}
+
+// getTypeNumber returns the smallest version, from 4, whose data codewords
+// hold the data.
+func getTypeNumber(dataLength int, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) int {
+	for typeNumber := 4; typeNumber <= 40; typeNumber++ {
+		if getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel)*8 {
+			return typeNumber
+		}
+	}
+	maxLength := (getDataCount(40, errorCorrectionLevel)*8 - 4 - 16) / 8
+	panic("The data is too long for a QR code at level " +
+		levelName(errorCorrectionLevel) + ": " + strconv.Itoa(dataLength) +
+		" bytes, at most " + strconv.Itoa(maxLength) + ".")
+}
+
+// getLengthInBits returns the bits of the mode indicator, the character count
+// and the data, in byte mode.
+func getLengthInBits(dataLength, typeNumber int) int {
+	return 4 + getCharacterCountBits(typeNumber) + 8*dataLength
+}
+
+// getCharacterCountBits returns the bits of the character count of byte mode:
+// 8 up to version 9, and 16 after it.
+func getCharacterCountBits(typeNumber int) int {
+	if typeNumber < 10 {
+		return 8
+	}
+	return 16
+}
+
+func getDataCount(typeNumber int, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) int {
+	rsblock := new(qrRSBlock)
+	dataCount := 0
+	for _, block := range rsblock.getRSBlocks(typeNumber, errorCorrectionLevel) {
+		dataCount += block.getDataCount()
+	}
+	return dataCount
+}
+
+func levelName(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) string {
+	return []string{"M", "L", "H", "Q"}[errorCorrectionLevel]
 }
 
 // SetLocation sets the location where this barcode will be drawn on the page.
@@ -141,6 +189,9 @@ func (qrcode *QRCode) make(test bool, maskPattern int) {
 	qrcode.setupPositionAdjustPattern()
 	qrcode.setupTimingPattern()
 	qrcode.setupTypeInfo(test, maskPattern)
+	if qrcode.typeNumber >= 7 {
+		qrcode.setupTypeNumber(test)
+	}
 
 	qrcode.mapData(qrcode.createData(qrcode.errorCorrectionLevel), maskPattern)
 }
@@ -186,7 +237,7 @@ func (qrcode *QRCode) mapData(data []byte, maskPattern int) {
 }
 
 func (qrcode *QRCode) setupPositionAdjustPattern() {
-	pos := []int{6, 26} // Magic Numbers
+	pos := getPatternPosition(qrcode.typeNumber)
 	for i := 0; i < len(pos); i++ {
 		for j := 0; j < len(pos); j++ {
 			row := pos[i]
@@ -235,6 +286,20 @@ func (qrcode *QRCode) setupTimingPattern() {
 	}
 }
 
+// setupTypeNumber places the version number of versions 7 and up twice,
+// next to two finder patterns.
+func (qrcode *QRCode) setupTypeNumber(test bool) {
+	bits := getBCHTypeNumber(qrcode.typeNumber)
+	for i := 0; i < 18; i++ {
+		mod := (!test && ((bits>>i)&1) == 1)
+		qrcode.modules[i/3][i%3+qrcode.moduleCount-8-3] = &mod
+	}
+	for i := 0; i < 18; i++ {
+		mod := (!test && ((bits>>i)&1) == 1)
+		qrcode.modules[i%3+qrcode.moduleCount-8-3][i/3] = &mod
+	}
+}
+
 func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
 	data := int(qrcode.errorCorrectionLevel)<<3 | maskPattern
 	bits := getBCHTypeInfo(data)
@@ -267,11 +332,11 @@ func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
 
 func (qrcode *QRCode) createData(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) []byte {
 	rsblock := new(qrRSBlock)
-	rsBlocks := rsblock.getRSBlocks(errorCorrectionLevel)
+	rsBlocks := rsblock.getRSBlocks(qrcode.typeNumber, errorCorrectionLevel)
 
 	var buffer = newBitBuffer()
 	buffer.put(4, 4)
-	buffer.put(len(qrcode.qrData), 8)
+	buffer.put(len(qrcode.qrData), getCharacterCountBits(qrcode.typeNumber))
 	for i := 0; i < len(qrcode.qrData); i++ {
 		buffer.put(int(qrcode.qrData[i]), 8)
 	}

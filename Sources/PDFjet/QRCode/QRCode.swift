@@ -23,7 +23,9 @@ public class QRCode : Drawable {
     private let PAD0: UInt32 = 0xEC
     private let PAD1: UInt32 = 0x11
     private var modules: [[Bool?]]?
-    private var moduleCount = 33            // Magic Number
+    // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
+    private var typeNumber = 4
+    private var moduleCount = 33
     private var errorCorrectionLevel = ErrorCorrectionLevel.M
 
     private var x: Float = 0.0
@@ -36,10 +38,13 @@ public class QRCode : Drawable {
     private let qrutil = QRUtil()
 
     ///
-    /// Used to create 2D QR Code barcodes.
+    /// Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
+    /// the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
+    /// to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
+    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
     ///
-    /// Throws a PDFjetError when the data does not fit the symbol at that
-    /// error correction level.
+    /// Throws a PDFjetError when the data does not fit a version 40 symbol at
+    /// that error correction level.
     ///
     /// - Parameter str: the string to encode.
     /// - Parameter errorCorrectionLevel: the desired error correction level.
@@ -49,7 +54,44 @@ public class QRCode : Drawable {
             _ errorCorrectionLevel: ErrorCorrectionLevel) throws {
         self.qrData = Array(str.utf8)
         self.errorCorrectionLevel = errorCorrectionLevel
+        self.typeNumber = try QRCode.getTypeNumber(qrData!.count, errorCorrectionLevel)
+        self.moduleCount = 4 * typeNumber + 17
         try self.make(false, try getBestMaskPattern())
+    }
+
+    // Returns the smallest version, from 4, whose data codewords hold the data.
+    private static func getTypeNumber(
+            _ dataLength: Int,
+            _ errorCorrectionLevel: ErrorCorrectionLevel) throws -> Int {
+        for typeNumber in 4...40 {
+            if getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8 {
+                return typeNumber
+            }
+        }
+        let maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8
+        throw PDFjetError(message: "The data is too long for a QR code at level " +
+                String(describing: errorCorrectionLevel) + ": " + String(dataLength) +
+                " bytes, at most " + String(maxLength) + ".")
+    }
+
+    // The bits of the mode indicator, the character count and the data, in byte mode.
+    private static func getLengthInBits(_ dataLength: Int, _ typeNumber: Int) -> Int {
+        return 4 + getCharacterCountBits(typeNumber) + 8 * dataLength
+    }
+
+    // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
+    private static func getCharacterCountBits(_ typeNumber: Int) -> Int {
+        return (typeNumber < 10) ? 8 : 16
+    }
+
+    private static func getDataCount(
+            _ typeNumber: Int,
+            _ errorCorrectionLevel: ErrorCorrectionLevel) -> Int {
+        var dataCount = 0
+        for block in RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel) {
+            dataCount += block.getDataCount()
+        }
+        return dataCount
     }
 
     ///
@@ -156,6 +198,9 @@ public class QRCode : Drawable {
         setupPositionAdjustPattern()
         setupTimingPattern()
         setupTypeInfo(test, maskPattern)
+        if typeNumber >= 7 {
+            setupTypeNumber(test)
+        }
         mapData(try createData(errorCorrectionLevel), maskPattern)
     }
 
@@ -204,7 +249,7 @@ public class QRCode : Drawable {
     }
 
     private func setupPositionAdjustPattern() {
-        let pos = [6, 26]               // Magic Numbers
+        let pos = qrutil.getPatternPosition(typeNumber)
         for i in 0..<pos.count {
             for j in 0..<pos.count {
                 let row = pos[i]
@@ -249,19 +294,26 @@ public class QRCode : Drawable {
     }
 
     private func setupTimingPattern() {
-        var r = 8
-        while r < (moduleCount - 8) {
-            if modules![r][6] == nil {
-                modules![r][6] = (r % 2 == 0)
-                r += 1
-            }
+        // The alignment patterns of versions 7 and up cross the timing patterns,
+        // so the modules they already set are skipped.
+        for r in 8..<(moduleCount - 8) where modules![r][6] == nil {
+            modules![r][6] = (r % 2 == 0)
         }
-        var c = 8
-        while c < (moduleCount - 8) {
-            if modules![6][c] == nil {
-                modules![6][c] = (c % 2 == 0)
-                c += 1
-            }
+        for c in 8..<(moduleCount - 8) where modules![6][c] == nil {
+            modules![6][c] = (c % 2 == 0)
+        }
+    }
+
+    // Versions 7 and up carry their version number twice, next to two finder patterns.
+    private func setupTypeNumber(_ test: Bool) {
+        let bits = qrutil.getBCHTypeNumber(typeNumber)
+        for i in 0..<18 {
+            let mod = (!test && ((bits >> i) & 1) == 1)
+            modules![i / 3][i % 3 + moduleCount - 8 - 3] = mod
+        }
+        for i in 0..<18 {
+            let mod = (!test && ((bits >> i) & 1) == 1)
+            modules![i % 3 + moduleCount - 8 - 3][i / 3] = mod
         }
     }
 
@@ -297,10 +349,10 @@ public class QRCode : Drawable {
     }
 
     private func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) throws -> [UInt8] {
-        let rsBlocks = RSBlock.getRSBlocks(errorCorrectionLevel)
+        let rsBlocks = RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel)
         let buffer = BitBuffer()
         buffer.put(UInt32(4), 4)
-        buffer.put(UInt32(qrData!.count), 8)
+        buffer.put(UInt32(qrData!.count), QRCode.getCharacterCountBits(typeNumber))
         for i in 0..<qrData!.count {
             buffer.put(UInt32(qrData![i]), 8)
         }

@@ -39,4 +39,36 @@ import Testing
         TestSupport.expectNear(font.getBodyHeight(24) + font.getBodyHeight(font.getSize()),
                 body.getY1() - heading.getY1())
     }
+
+    // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
+    private func drawAligned(_ alignment: Alignment, _ text: String) -> Paragraph {
+        let pdf = TestSupport.newPDF()
+        let paragraph = Paragraph(TextLine(TestSupport.helvetica(pdf), text))
+        paragraph.setTextAlignment(alignment)
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(200).drawOn(Page(pdf, Letter.PORTRAIT))
+        return paragraph
+    }
+
+    @Test func aRightAlignedParagraphEndsAtTheRightEdge() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let paragraph = drawAligned(Alignment.RIGHT, "Hello")
+        // The text ends at the right edge; the space after it is past the edge.
+        TestSupport.expectNear(210 - font.stringWidth("Hello"), paragraph.getTextX())
+        TestSupport.expectNear(210 + font.stringWidth(" "), paragraph.getX2())
+    }
+
+    @Test func aCenteredParagraphHasTheSameSpaceOnBothSides() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let paragraph = drawAligned(Alignment.CENTER, "Hello")
+        TestSupport.expectNear(10 + (200 - font.stringWidth("Hello")) / 2, paragraph.getTextX())
+    }
+
+    @Test func aJustifiedParagraphLeavesItsLastRowAsItIs() {
+        let text = "one two three four five six seven eight nine ten eleven twelve thirteen"
+        let left = drawAligned(Alignment.LEFT, text)
+        let justified = drawAligned(Alignment.JUSTIFY, text)
+        #expect(left.getY2() - left.getY1() > 20, "more than one row")
+        TestSupport.expectNear(left.getY2(), justified.getY2())
+        TestSupport.expectNear(left.getX2(), justified.getX2())
+    }
 }

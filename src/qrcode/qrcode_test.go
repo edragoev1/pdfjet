@@ -42,12 +42,47 @@ func testOverflows(fn func()) (overflows bool) {
 	return false
 }
 
-func TestQRCodeTheSymbolIs33ModulesAtEveryLevel(t *testing.T) {
+func TestQRCodeShortDataKeepsTheSymbolAt33ModulesAtEveryLevel(t *testing.T) {
 	levels := []errorcorrectionlevel.ErrorCorrectionLevel{errorcorrectionlevel.L, errorcorrectionlevel.M, errorcorrectionlevel.Q, errorcorrectionlevel.H}
 	for _, level := range levels {
 		modules := NewQRCode("Hello", level).GetModules()
 		if len(modules) != 33 || len(modules[0]) != 33 {
 			t.Errorf("level %d: %d x %d", level, len(modules), len(modules[0]))
+		}
+	}
+}
+
+func TestQRCodeLongerDataMakesALargerSymbol(t *testing.T) {
+	cases := []struct {
+		length  int
+		level   errorcorrectionlevel.ErrorCorrectionLevel
+		modules int
+	}{
+		{78, errorcorrectionlevel.L, 33},    // version 4
+		{79, errorcorrectionlevel.L, 37},    // version 5
+		{2953, errorcorrectionlevel.L, 177}, // version 40
+		{1273, errorcorrectionlevel.H, 177}, // version 40
+	}
+	for _, c := range cases {
+		if n := len(NewQRCode(strings.Repeat("a", c.length), c.level).GetModules()); n != c.modules {
+			t.Errorf("%d bytes at level %d: %d modules, want %d", c.length, c.level, n, c.modules)
+		}
+	}
+}
+
+func TestQRCodeVersionsFrom7CarryTheirVersionNumber(t *testing.T) {
+	// 120 bytes at level M need version 7, 45 modules, whose version information is 0x07C94.
+	modules := NewQRCode(strings.Repeat("a", 120), errorcorrectionlevel.M).GetModules()
+	if len(modules) != 45 {
+		t.Fatalf("%d modules, want 45", len(modules))
+	}
+	for i := 0; i < 18; i++ {
+		bit := ((0x07C94 >> i) & 1) == 1
+		if testDark(modules, i/3, i%3+45-11) != bit {
+			t.Errorf("top right, bit %d", i)
+		}
+		if testDark(modules, i%3+45-11, i/3) != bit {
+			t.Errorf("bottom left, bit %d", i)
 		}
 	}
 }
@@ -64,16 +99,13 @@ func TestQRCodeFinderPatternsAreInThreeCorners(t *testing.T) {
 	}
 }
 
-func TestQRCodeDataThatDoesNotFitThrows(t *testing.T) {
+func TestQRCodeDataThatDoesNotFitVersion40Panics(t *testing.T) {
 	// Java throws IllegalArgumentException; Go panics.
-	if len(NewQRCode(strings.Repeat("a", 50), errorcorrectionlevel.M).GetModules()) != 33 {
-		t.Error("50 characters at M")
+	if !testOverflows(func() { NewQRCode(strings.Repeat("a", 2954), errorcorrectionlevel.L) }) {
+		t.Error("2954 bytes at L did not panic")
 	}
-	if !testOverflows(func() { NewQRCode(strings.Repeat("a", 80), errorcorrectionlevel.L) }) {
-		t.Error("80 characters at L did not panic")
-	}
-	if !testOverflows(func() { NewQRCode(strings.Repeat("a", 50), errorcorrectionlevel.Q) }) {
-		t.Error("50 characters at Q did not panic")
+	if !testOverflows(func() { NewQRCode(strings.Repeat("a", 1274), errorcorrectionlevel.H) }) {
+		t.Error("1274 bytes at H did not panic")
 	}
 }
 

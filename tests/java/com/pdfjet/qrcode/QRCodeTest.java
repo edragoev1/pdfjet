@@ -24,11 +24,31 @@ class QRCodeTest {
     }
 
     @Test
-    void theSymbolIs33ModulesAtEveryLevel() throws Exception {
+    void shortDataKeepsTheSymbolAt33ModulesAtEveryLevel() throws Exception {
         for (ErrorCorrectionLevel level : ErrorCorrectionLevel.values()) {
             Boolean[][] modules = new QRCode("Hello", level).getModules();
             assertEquals(33, modules.length, level.toString());
             assertEquals(33, modules[0].length, level.toString());
+        }
+    }
+
+    @Test
+    void longerDataMakesALargerSymbol() throws Exception {
+        assertEquals(33, new QRCode(repeat('a', 78), ErrorCorrectionLevel.L).getModules().length);     // version 4
+        assertEquals(37, new QRCode(repeat('a', 79), ErrorCorrectionLevel.L).getModules().length);     // version 5
+        assertEquals(177, new QRCode(repeat('a', 2953), ErrorCorrectionLevel.L).getModules().length);  // version 40
+        assertEquals(177, new QRCode(repeat('a', 1273), ErrorCorrectionLevel.H).getModules().length);  // version 40
+    }
+
+    @Test
+    void versionsFrom7CarryTheirVersionNumber() throws Exception {
+        // 120 bytes at level M need version 7, 45 modules, whose version information is 0x07C94.
+        Boolean[][] modules = new QRCode(repeat('a', 120), ErrorCorrectionLevel.M).getModules();
+        assertEquals(45, modules.length);
+        for (int i = 0; i < 18; i++) {
+            boolean bit = ((0x07C94 >> i) & 1) == 1;
+            assertEquals(bit, dark(modules, i / 3, i % 3 + 45 - 11), "top right, bit " + i);
+            assertEquals(bit, dark(modules, i % 3 + 45 - 11, i / 3), "bottom left, bit " + i);
         }
     }
 
@@ -46,10 +66,9 @@ class QRCodeTest {
     }
 
     @Test
-    void dataThatDoesNotFitThrows() throws Exception {
-        assertEquals(33, new QRCode(repeat('a', 50), ErrorCorrectionLevel.M).getModules().length);
-        assertThrows(IllegalArgumentException.class, () -> new QRCode(repeat('a', 80), ErrorCorrectionLevel.L));
-        assertThrows(IllegalArgumentException.class, () -> new QRCode(repeat('a', 50), ErrorCorrectionLevel.Q));
+    void dataThatDoesNotFitVersion40Throws() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> new QRCode(repeat('a', 2954), ErrorCorrectionLevel.L));
+        assertThrows(IllegalArgumentException.class, () -> new QRCode(repeat('a', 1274), ErrorCorrectionLevel.H));
     }
 
     @Test

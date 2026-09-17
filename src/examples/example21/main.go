@@ -40,8 +40,8 @@ func Example21() {
 	textBlock := pdfjet.NewTextBlock(f1,
 		"Each QR code below holds the same address, https://pdfjet.com. "+
 			"A higher error correction level lets a scanner read the code when "+
-			"more of it is damaged or covered, and leaves room for less data: "+
-			"PDFjet draws every code with 33 by 33 modules.")
+			"more of it is damaged or covered, and leaves room for less data, "+
+			"so longer data at a higher level makes a larger code.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(70.0, 95.0)
@@ -61,10 +61,10 @@ func Example21() {
 		"H (High)",
 	}
 	notes := []string{
-		"About 7% can be restored, up to 78 bytes",
-		"About 15% can be restored, up to 62 bytes",
-		"About 25% can be restored, up to 46 bytes",
-		"About 30% can be restored, up to 34 bytes",
+		"About 7% can be restored, 78 bytes fit in this size",
+		"About 15% can be restored, 62 bytes fit in this size",
+		"About 25% can be restored, 46 bytes fit in this size",
+		"About 30% can be restored, 34 bytes fit in this size",
 	}
 
 	// Two rows of two codes.

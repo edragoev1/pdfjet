@@ -51,6 +51,29 @@ public class TextFrame implements Drawable {
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
 
+    // The text of the row being drawn, drawn when the row is complete, so that it
+    // can be aligned: each part is a text line with some of its text.
+    private final List<RowPart> row = new ArrayList<RowPart>();
+
+    private static final class RowPart {
+        final TextLine textLine;
+        final String text;
+        final float x;
+        final Paragraph paragraph;
+        final boolean startsParagraph;  // The first text of the paragraph
+        final boolean endsTextLine;     // The last text of the text line
+
+        RowPart(TextLine textLine, String text, float x, Paragraph paragraph,
+                boolean startsParagraph, boolean endsTextLine) {
+            this.textLine = textLine;
+            this.text = text;
+            this.x = x;
+            this.paragraph = paragraph;
+            this.startsParagraph = startsParagraph;
+            this.endsTextLine = endsTextLine;
+        }
+    }
+
     /**
      * Creates a text frame from paragraphs of text lines. An empty line separates
      * the paragraphs unless setParagraphGap sets another gap.
@@ -262,12 +285,14 @@ public class TextFrame implements Drawable {
         rowOpen = false;
         rowPlaced = false;
         startsParagraph = false;
+        row.clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
             Paragraph paragraph = paragraphs.get(paragraphIndex);
             while (lineIndex < paragraph.lines.size()) {
                 TextLine textLine = paragraph.lines.get(lineIndex);
                 if (!rowOpen && !openRow(textLine)) {
+                    drawRow(page, false);
                     return bottom;
                 }
                 if (tokens == null) {
@@ -280,7 +305,8 @@ public class TextFrame implements Drawable {
                     tokens = tokenize(textLine);
                     tokenIndex = 0;
                 }
-                if (!drawTokens(page, textLine)) {
+                if (!drawTokens(page, paragraph, textLine)) {
+                    drawRow(page, false);
                     return bottom;
                 }
                 paragraph.x2 = xText;
@@ -290,6 +316,7 @@ public class TextFrame implements Drawable {
                 tokenIndex = 0;
                 lineIndex++;
             }
+            drawRow(page, true);
             xText = x;
             rowOpen = false;
             if (!paragraph.lines.isEmpty()) {
@@ -332,7 +359,7 @@ public class TextFrame implements Drawable {
     // Draws the tokens of the text line that are left, wrapping them at the width
     // of the frame. Returns false when a row does not fit in the height of the
     // frame; the tokens that are left stay for the next frame.
-    private boolean drawTokens(Page page, TextLine textLine) throws Exception {
+    private boolean drawTokens(Page page, Paragraph paragraph, TextLine textLine) throws Exception {
         Font font = textLine.font;
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
@@ -359,13 +386,14 @@ public class TextFrame implements Drawable {
                     tokens.set(tokenIndex, token.substring(head.length()));
                 }
             }
-            drawLine(page, textLine, buf.toString());
+            addToRow(paragraph, textLine, buf.toString(), false);
+            drawRow(page, false);
             buf.setLength(0);
             xText = x;
             rowOpen = false;
             nextBaseline = yText + textLine.getHeight();
         }
-        drawLine(page, textLine, buf.toString());
+        addToRow(paragraph, textLine, buf.toString(), true);
         xText += font.stringWidth(fallbackFont, fontSize, buf.toString());
         return true;
     }
@@ -384,10 +412,113 @@ public class TextFrame implements Drawable {
         return token.substring(0, end);
     }
 
-    // Draws the string at the current text position, with every setting of the
-    // text line, including its vertical offset and its link, as TextColumn does.
-    private void drawLine(Page page, TextLine textLine, String str) throws Exception {
-        textLine.copyWithText(str).setLocation(xText, yText).drawOn(page);
+    // Adds the string to the row, at the current text position.
+    private void addToRow(Paragraph paragraph, TextLine textLine, String str, boolean endsTextLine) {
+        boolean first = row.isEmpty() && lineIndex == 0 && xText == paragraph.xText
+                && yText == paragraph.yText;
+        row.add(new RowPart(textLine, str, xText, paragraph, first, endsTextLine));
+    }
+
+    // Draws the parts of the row, with every setting of their text lines, including
+    // the vertical offset and the link, as TextColumn does. A paragraph aligned to
+    // the right or to the center moves the row, and a justified one widens the
+    // spaces of every row but its last.
+    private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
+        if (row.isEmpty()) {
+            return;
+        }
+        Paragraph paragraph = row.get(0).paragraph;
+        Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : Alignment.LEFT;
+        RowPart last = row.get(row.size() - 1);
+        float rowWidth = last.x + width(last.textLine, trimTrailingSpaces(last.text)) - x;
+
+        if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
+            drawJustifiedRow(page, rowWidth);
+        } else {
+            float shift = 0f;
+            if (alignment == Alignment.RIGHT) {
+                shift = w - rowWidth;
+            } else if (alignment == Alignment.CENTER) {
+                shift = (w - rowWidth) / 2f;
+            }
+            for (RowPart part : row) {
+                part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page);
+                if (part.startsParagraph) {
+                    part.paragraph.xText += shift;
+                }
+                if (part.endsTextLine) {
+                    part.paragraph.x2 = part.x + width(part.textLine, part.text) + shift;
+                }
+            }
+        }
+        row.clear();
+    }
+
+    // Draws the words of the row one by one, with the width left in the row shared
+    // out among the spaces between them.
+    private void drawJustifiedRow(Page page, float rowWidth) throws Exception {
+        int spaces = 0;
+        for (int i = 0; i < row.size(); i++) {
+            String text = row.get(i).text;
+            for (int j = 0; j < text.length(); j++) {
+                if (text.charAt(j) == ' ' && hasWordAfter(i, j + 1)) {
+                    spaces++;
+                }
+            }
+        }
+        float dx = (spaces > 0) ? (w - rowWidth) / spaces : 0f;
+        float xWord = x;
+        for (int i = 0; i < row.size(); i++) {
+            RowPart part = row.get(i);
+            String text = part.text;
+            int start = 0;
+            while (start < text.length()) {
+                int end = text.indexOf(' ', start);
+                if (end == -1) {
+                    end = text.length();
+                }
+                if (end > start) {
+                    String word = text.substring(start, end);
+                    part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page);
+                    xWord += width(part.textLine, word);
+                }
+                if (end < text.length()) {
+                    xWord += width(part.textLine, Single.space);
+                    if (hasWordAfter(i, end + 1)) {
+                        xWord += dx;
+                    }
+                }
+                start = end + 1;
+            }
+            if (part.endsTextLine) {
+                part.paragraph.x2 = xWord;
+            }
+        }
+    }
+
+    // Returns true when a word follows this position of the row.
+    private boolean hasWordAfter(int partIndex, int charIndex) {
+        for (int i = partIndex; i < row.size(); i++) {
+            String text = row.get(i).text;
+            for (int j = (i == partIndex) ? charIndex : 0; j < text.length(); j++) {
+                if (text.charAt(j) != ' ') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static String trimTrailingSpaces(String text) {
+        int end = text.length();
+        while (end > 0 && text.charAt(end - 1) == ' ') {
+            end--;
+        }
+        return text.substring(0, end);
+    }
+
+    private static float width(TextLine textLine, String text) {
+        return textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, text);
     }
 
     // Splits the text of the text line into words, or, for CJK text, which has no

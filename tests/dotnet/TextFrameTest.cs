@@ -43,5 +43,41 @@ public class TextFrameTest {
         TestSupport.AssertNear(font.GetBodyHeight(24f) + font.GetBodyHeight(font.GetSize()),
                 body.GetY1() - heading.GetY1(), TestSupport.DELTA);
     }
+
+    // Draws one paragraph with the alignment in a frame 200 wide at x 10, and returns it.
+    private static Paragraph DrawAligned(Alignment alignment, string text) {
+        PDF pdf = TestSupport.NewPDF();
+        Paragraph paragraph = new Paragraph(new TextLine(TestSupport.Helvetica(pdf), text));
+        paragraph.SetTextAlignment(alignment);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(200f)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+        return paragraph;
+    }
+
+    [Fact]
+    public void ARightAlignedParagraphEndsAtTheRightEdge() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Paragraph paragraph = DrawAligned(Alignment.RIGHT, "Hello");
+        // The text ends at the right edge; the space after it is past the edge.
+        TestSupport.AssertNear(210f - font.StringWidth("Hello"), paragraph.GetTextX(), TestSupport.DELTA);
+        TestSupport.AssertNear(210f + font.StringWidth(" "), paragraph.GetX2(), TestSupport.DELTA);
+    }
+
+    [Fact]
+    public void ACenteredParagraphHasTheSameSpaceOnBothSides() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Paragraph paragraph = DrawAligned(Alignment.CENTER, "Hello");
+        TestSupport.AssertNear(10f + (200f - font.StringWidth("Hello")) / 2f, paragraph.GetTextX(), TestSupport.DELTA);
+    }
+
+    [Fact]
+    public void AJustifiedParagraphLeavesItsLastRowAsItIs() {
+        string text = "one two three four five six seven eight nine ten eleven twelve thirteen";
+        Paragraph left = DrawAligned(Alignment.LEFT, text);
+        Paragraph justified = DrawAligned(Alignment.JUSTIFY, text);
+        Assert.True(left.GetY2() - left.GetY1() > 20f, "more than one row");
+        TestSupport.AssertNear(left.GetY2(), justified.GetY2(), TestSupport.DELTA);
+        TestSupport.AssertNear(left.GetX2(), justified.GetX2(), TestSupport.DELTA);
+    }
 }
 }

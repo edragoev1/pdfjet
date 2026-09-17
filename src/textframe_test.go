@@ -7,6 +7,8 @@ package pdfjet
 
 import (
 	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 )
 
 // testParagraphDistance draws two paragraphs of one line and returns how far
@@ -44,4 +46,41 @@ func TestTextFrameTheDefaultGapIsAnEmptyLineOfTheNextParagraph(t *testing.T) {
 	// The heading, then one empty line in the size of the body text
 	want := font.GetBodyHeight(24) + font.GetBodyHeight(font.GetSize())
 	testNear(t, "distance", want, body.GetY1()-heading.GetY1(), testDelta)
+}
+
+// testDrawAligned draws one paragraph with the alignment in a frame 200 wide
+// at x 10, and returns it.
+func testDrawAligned(textAlignment alignment.Alignment, text string) *Paragraph {
+	pdf := testNewPDF()
+	paragraph := NewParagraph().Add(NewTextLine(testHelvetica(pdf), text))
+	paragraph.SetTextAlignment(textAlignment)
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(200)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	return paragraph
+}
+
+func TestTextFrameARightAlignedParagraphEndsAtTheRightEdge(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	paragraph := testDrawAligned(alignment.Right, "Hello")
+	// The text ends at the right edge; the space after it is past the edge.
+	testNear(t, "text x", 210-font.StringWidth(font.GetSize(), "Hello"), paragraph.GetTextX(), testDelta)
+	testNear(t, "x2", 210+font.StringWidth(font.GetSize(), " "), paragraph.GetX2(), testDelta)
+}
+
+func TestTextFrameACenteredParagraphHasTheSameSpaceOnBothSides(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	paragraph := testDrawAligned(alignment.Center, "Hello")
+	testNear(t, "text x", 10+(200-font.StringWidth(font.GetSize(), "Hello"))/2, paragraph.GetTextX(), testDelta)
+}
+
+func TestTextFrameAJustifiedParagraphLeavesItsLastRowAsItIs(t *testing.T) {
+	text := "one two three four five six seven eight nine ten eleven twelve thirteen"
+	left := testDrawAligned(alignment.Left, text)
+	justified := testDrawAligned(alignment.Justify, text)
+	if left.GetY2()-left.GetY1() <= 20 {
+		t.Error("the text is not more than one row")
+	}
+	testNear(t, "y2", left.GetY2(), justified.GetY2(), testDelta)
+	testNear(t, "x2", left.GetX2(), justified.GetX2(), testDelta)
 }
