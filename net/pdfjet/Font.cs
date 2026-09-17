@@ -578,15 +578,19 @@ public class Font {
         }
 
         Font activeFont = this;
-        StringBuilder buf = new StringBuilder();
+        // The runs of text drawn with one font are the pieces of the string
+        // between the characters that switch fonts, so measuring them copies
+        // nothing: a string that is all in the primary font is one piece.
+        int start = 0;
         for (int i = 0; i < str.Length; ) {
             int ch = Util.CodePointAt(str, i);
             int count = (ch > 0xFFFF) ? 2 : 1;
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             int next = (IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
             if (!activeFont.HasGlyph(next)) {
-                width += activeFont.StringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.ToString());
-                buf.Length = 0;
+                width += activeFont.StringWidth(
+                        activeFont == this ? fontSize : fallbackFontSize, str.Substring(start, i - start));
+                start = i;
                 // Switch the active font
                 if (activeFont == this) {
                     activeFont = fallbackFont;
@@ -594,10 +598,10 @@ public class Font {
                     activeFont = this;
                 }
             }
-            buf.Append(str, i, count);
             i += count;
         }
-        width += activeFont.StringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.ToString());
+        width += activeFont.StringWidth(
+                activeFont == this ? fontSize : fallbackFontSize, str.Substring(start));
 
         return width;
     }

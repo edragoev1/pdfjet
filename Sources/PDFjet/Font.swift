@@ -607,25 +607,37 @@ public class Font {
             return stringWidth(fontSize, str)
         }
         var activeFont = self
-        var buf = String()
-        let scalars = Array(str!.unicodeScalars)
-        for (i, scalar) in scalars.enumerated() {
+        var activeSize = fontSize
+        // The runs of text drawn with one font are the pieces of the string
+        // between the characters that switch fonts, so measuring them copies
+        // nothing per character: a string that is all in the primary font is
+        // one piece, the string itself.
+        let scalars = str!.unicodeScalars
+        var start = scalars.startIndex
+        var i = scalars.startIndex
+        while i < scalars.endIndex {
+            let scalar = scalars[i]
+            let after = scalars.index(after: i)
             // An RLM, ZWNJ or ZWJ goes with the character after it.
-            let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
+            let next = (Font.isJoinerOrRLM(scalar.value) && after < scalars.endIndex) ? scalars[after] : scalar
             if !activeFont.hasGlyph(Int(next.value)) {
-                width += activeFont.stringWidth((activeFont === self) ? fontSize : fallbackFontSize, buf)
-                buf = ""
+                width += activeFont.stringWidth(activeSize, String(scalars[start..<i]))
+                start = i
                 // Switch the active font
                 if activeFont === self {
                     activeFont = fallbackFont!
+                    activeSize = fallbackFontSize
                 } else {
                     activeFont = self
+                    activeSize = fontSize
                 }
             }
-            buf.append(String(scalar))
+            i = after
         }
-        width += activeFont.stringWidth((activeFont === self) ? fontSize : fallbackFontSize, buf)
-        return width
+        if start == scalars.startIndex {
+            return width + activeFont.stringWidth(activeSize, str!)
+        }
+        return width + activeFont.stringWidth(activeSize, String(scalars[start...]))
     }
 
     // Returns true for the right-to-left and left-to-right marks and the zero

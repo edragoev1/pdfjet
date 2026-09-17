@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
@@ -544,17 +545,20 @@ func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontS
 
 	activeFont := font
 	activeSize := fontSize
-	var buf strings.Builder
-	runes := []rune(text)
-	for i, ch := range runes {
+	// The runs of text drawn with one font are the pieces of the string
+	// between the characters that switch fonts, so measuring them copies
+	// nothing: text that is all in the primary font is measured in one piece.
+	start := 0
+	for i := 0; i < len(text); {
+		ch, size := utf8.DecodeRuneInString(text[i:])
 		// An RLM, ZWNJ or ZWJ goes with the character after it.
 		next := ch
-		if isJoinerOrRLM(ch) && i+1 < len(runes) {
-			next = runes[i+1]
+		if isJoinerOrRLM(ch) && i+size < len(text) {
+			next, _ = utf8.DecodeRuneInString(text[i+size:])
 		}
 		if !activeFont.hasGlyph(next) {
-			width += activeFont.StringWidth(activeSize, buf.String())
-			buf.Reset()
+			width += activeFont.StringWidth(activeSize, text[start:i])
+			start = i
 			// Switch the active font
 			if activeFont == font {
 				activeFont = fallbackFont
@@ -564,9 +568,9 @@ func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontS
 				activeSize = fontSize
 			}
 		}
-		buf.WriteRune(ch)
+		i += size
 	}
-	width += activeFont.StringWidth(activeSize, buf.String())
+	width += activeFont.StringWidth(activeSize, text[start:])
 
 	return width
 }

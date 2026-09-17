@@ -953,6 +953,7 @@ func (page *Page) appendByteAsHex(b byte) {
 	if !page.open() {
 		return
 	}
+	page.grow(2)
 	page.buf = append(page.buf, hexDigits[(b>>4)&0xF], hexDigits[b&0xF])
 }
 
@@ -960,6 +961,7 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 	if !page.open() {
 		return
 	}
+	page.grow(6)
 	if codePoint <= 0xFFFF {
 		page.buf = append(page.buf,
 			hexDigits[(codePoint>>12)&0xF],
@@ -2252,8 +2254,28 @@ func (page *Page) drawTextLine(font *Font, str string, x float32, y float32) {
 	page.endText()
 }
 
+// grow makes room in the page content for n more bytes, doubling the buffer as
+// Java's ContentBuffer does. Go's append grows a buffer this size by a quarter,
+// which copies the content of a page about five times over as it fills.
+func (page *Page) grow(n int) {
+	if cap(page.buf)-len(page.buf) >= n {
+		return
+	}
+	size := 2 * cap(page.buf)
+	if size < 2048 {
+		size = 2048
+	}
+	for size-len(page.buf) < n {
+		size *= 2
+	}
+	buf := make([]byte, len(page.buf), size)
+	copy(buf, page.buf)
+	page.buf = buf
+}
+
 func (page *Page) appendInteger(value int) {
 	if page.open() {
+		page.grow(20) // The digits of an int64 and its sign
 		page.buf = strconv.AppendInt(page.buf, int64(value), 10)
 	}
 }
@@ -2263,24 +2285,28 @@ func (page *Page) appendFloat32(value float32) {
 		if !fastfloat.IsWritable(value) {
 			page.pdf.fail(notWritable)
 		}
+		page.grow(24) // The digits of a float and its sign and point
 		page.buf = fastfloat.Append(page.buf, value)
 	}
 }
 
 func (page *Page) appendString(s1 string) {
 	if page.open() {
+		page.grow(len(s1))
 		page.buf = append(page.buf, s1...)
 	}
 }
 
 func (page *Page) appendByte(b byte) {
 	if page.open() {
+		page.grow(1)
 		page.buf = append(page.buf, b)
 	}
 }
 
 func (page *Page) appendByteArray(a []byte) {
 	if page.open() {
+		page.grow(len(a))
 		page.buf = append(page.buf, a...)
 	}
 }

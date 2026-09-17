@@ -731,15 +731,19 @@ final public class Font {
         }
 
         Font activeFont = this;
-        StringBuilder buf = new StringBuilder();
+        // The runs of text drawn with one font are the pieces of the string
+        // between the characters that switch fonts, so measuring them copies
+        // nothing: a string that is all in the primary font is one piece.
+        int start = 0;
         for (int i = 0; i < str.length(); ) {
             int cp = str.codePointAt(i);
             int count = Character.charCount(cp);
             // An RLM, ZWNJ or ZWJ goes with the character after it.
             int next = (isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
             if (!activeFont.hasGlyph(next)) {
-                width += activeFont.stringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.toString());
-                buf.setLength(0);
+                width += activeFont.stringWidth(
+                        activeFont == this ? fontSize : fallbackFontSize, str.substring(start, i));
+                start = i;
                 // Switch the active font
                 if (activeFont == this) {
                     activeFont = fallbackFont;
@@ -747,10 +751,10 @@ final public class Font {
                     activeFont = this;
                 }
             }
-            buf.append(str, i, i + count);
             i += count;
         }
-        width += activeFont.stringWidth(activeFont == this ? fontSize : fallbackFontSize, buf.toString());
+        width += activeFont.stringWidth(
+                activeFont == this ? fontSize : fallbackFontSize, str.substring(start));
 
         return width;
     }
