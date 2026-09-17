@@ -8,6 +8,10 @@
 # The README, the commercial LICENSE and the build and run scripts of the
 # package are in .packaging/java.
 #
+# It also builds .commercial-packages/PDFjet-ForJava-Eval-vX.Y.Z.zip, the
+# evaluation package: the same files, with the evaluation license agreement of
+# .packaging/LICENSE-EVALUATION as its LICENSE.
+#
 # The package is made from the last commit, not the working tree. Its PDFs are
 # created by its own build-java.sh, so the scripts a client runs are tested.
 # PDFjet.jar is built for Java 8, as the build scripts of the repository are.
@@ -25,16 +29,19 @@ fi
 NAME="PDFjet-ForJava-$VERSION"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
+EVAL_NAME="PDFjet-ForJava-Eval-$VERSION"
+EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 
 if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: uncommitted changes are left out; the package is made from $(git rev-parse --short HEAD)."
 fi
 
-rm -rf "$STAGE" "$ZIP"
+rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
 git archive HEAD \
-    .packaging/java com examples data fonts images PngSuite \
+    .packaging/java .packaging/LICENSE-EVALUATION \
+    com examples data fonts images PngSuite \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html \
     | tar -x -C "$STAGE"
 
@@ -78,6 +85,7 @@ rm -rf com out
 # scripts build the examples against PDFjet.jar, where those of the repository
 # build the library from its sources.
 mv .packaging/java/* .
+mv .packaging/LICENSE-EVALUATION ..
 rm -rf .packaging
 
 # Creates the PDFs of the package with its own script.
@@ -94,7 +102,13 @@ done
 
 cd ..
 zip -q -r -9 "$ZIP" "$NAME"
+
+# The evaluation package is the same package under the evaluation license.
+mv "$NAME" "$EVAL_NAME"
+mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
+zip -q -r -9 "$EVAL_ZIP" "$EVAL_NAME"
 cd ../..
 rm -rf build/package-java
 
 echo "Created $ZIP"
+echo "Created $EVAL_ZIP"

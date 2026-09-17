@@ -8,6 +8,10 @@
 # The README, the commercial LICENSE and the build and run scripts of the
 # package are in .packaging/dotnet.
 #
+# It also builds .commercial-packages/PDFjet-For.NET-Eval-vX.Y.Z.zip, the
+# evaluation package: the same files, with the evaluation license agreement of
+# .packaging/LICENSE-EVALUATION as its LICENSE.
+#
 # The package is made from the last commit, not the working tree. Its PDFs are
 # created by its own build-dotnet.sh, so the scripts a client runs are tested.
 # Building the reference needs DocFX: dotnet tool install -g docfx
@@ -25,16 +29,19 @@ fi
 NAME="PDFjet-For.NET-$VERSION"
 STAGE="build/package-dotnet/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
+EVAL_NAME="PDFjet-For.NET-Eval-$VERSION"
+EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 
 if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: uncommitted changes are left out; the package is made from $(git rev-parse --short HEAD)."
 fi
 
-rm -rf "$STAGE" "$ZIP"
+rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
 git archive HEAD \
-    .packaging/dotnet net PDFjet.csproj examples data fonts images PngSuite docfx \
+    .packaging/dotnet .packaging/LICENSE-EVALUATION \
+    net PDFjet.csproj examples data fonts images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html \
     | tar -x -C "$STAGE"
 
@@ -67,6 +74,7 @@ fi
 # scripts build the examples against PDFjet.dll, where those of the repository
 # build the library from its sources.
 mv .packaging/dotnet/* .
+mv .packaging/LICENSE-EVALUATION ..
 rm -rf .packaging
 
 # Creates the PDFs of the package with its own script.
@@ -83,7 +91,13 @@ done
 
 cd ..
 zip -q -r -9 "$ZIP" "$NAME"
+
+# The evaluation package is the same package under the evaluation license.
+mv "$NAME" "$EVAL_NAME"
+mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
+zip -q -r -9 "$EVAL_ZIP" "$EVAL_NAME"
 cd ../..
 rm -rf build/package-dotnet
 
 echo "Created $ZIP"
+echo "Created $EVAL_ZIP"
