@@ -471,10 +471,14 @@ public class Table : IDrawable {
         float x = xy[0];
         float y = xy[1];
         int index = (rendered == -1) ? tableData.Count : rendered;
+        int first = index;
         while (index < tableData.Count) {
             List<Cell> row = tableData[index];
             float h = GetMaxCellHeight(row);
-            if (page != null && (y + h) > (page.height - bottomMargin)) {
+            // A row that does not fit goes on the next page, unless it is the
+            // first row of this one: a row taller than the page fits no page,
+            // and leaving it for the next page would ask for pages forever.
+            if (page != null && (y + h) > (page.height - bottomMargin) && index > first) {
                 rendered = index;
                 return new float[] {x, y};
             }

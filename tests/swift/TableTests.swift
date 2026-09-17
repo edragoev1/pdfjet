@@ -90,6 +90,28 @@ import Testing
         #expect(table.getCellAt(2, 2).getText() == "7")
     }
 
+    @Test func aRowTallerThanThePageIsDrawnRatherThanAskedForForever() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var text = ""
+        for i in 0..<200 {
+            text += "word\(i) "
+        }
+        let header = [Cell(font, "header")]
+        let tall = Cell(font)
+        tall.setTextBlock(TextBlock(font, text)).setWidth(70.0)
+        let table = Table().setTableData([header, [tall]], 1)
+        table.setLocation(50.0, 50.0)
+        table.setBottomMargin(20.0)
+        #expect(tall.getHeight(66.0) > 792.0)       // taller than a Letter page
+        var pages = [Page]()
+        // Asked for pages forever before.
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 1)
+        #expect(table.getRowsRendered() == -1)
+        #expect(TestSupport.content(pages[0]).contains(TestSupport.hex("word0")))
+    }
+
     @Test func theFileConstructorDropsAByteOrderMarkAndPadsShortRows() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("table-\(UUID().uuidString).txt")
         try Data("\u{FEFF}a|b|c\n1||\n2\n".utf8).write(to: url)

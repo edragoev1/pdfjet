@@ -119,6 +119,35 @@ func TestTableTheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces(t *testing
 	}
 }
 
+func TestTableARowTallerThanThePageIsDrawnRatherThanAskedForForever(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	var text strings.Builder
+	for i := 0; i < 200; i++ {
+		fmt.Fprintf(&text, "word%d ", i)
+	}
+	header := []*Cell{NewCell(font, "header")}
+	tall := NewEmptyCell(font)
+	tall.SetTextBlock(NewTextBlock(font, text.String())).SetWidth(70)
+	table := NewTable().SetTableData([][]*Cell{header, {tall}}, 1)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	if tall.GetHeight(66) <= 792 { // taller than a Letter page
+		t.Fatalf("height %f", tall.GetHeight(66))
+	}
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait()) // asked for pages forever before
+	if len(pages) != 1 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	if table.GetRowsRendered() != -1 {
+		t.Errorf("rows rendered %d", table.GetRowsRendered())
+	}
+	if !strings.Contains(testContent(pages[0]), testHex("word0")) {
+		t.Error("the row taller than the page is not drawn")
+	}
+}
+
 func TestTableTheFileConstructorDropsAByteOrderMarkAndPadsShortRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "table.txt")
 	if err := os.WriteFile(path, []byte("\uFEFFa|b|c\n1||\n2\n"), 0o644); err != nil {

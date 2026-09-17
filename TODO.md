@@ -74,17 +74,31 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       565,713 bytes either way). Kept for the simpler drawing code.
       Checked with `check-examples.sh` (Sep 17): every example identical in the
       four ports; Java 267 tests on JDK 21 and 8, C# 265, Go, Swift 273.
+- ✅ **B** `Table` no longer asks for pages forever (Sep 17), found reviewing
+      `Table` after `Cell`: a row taller than the page was left for the next
+      page for ever, so `drawOn(pdf, pages, pageSize)` filled memory with pages
+      (Java 245,094 pages in 5 s then OutOfMemoryError; Go 224,415; C# and
+      Swift have the same loop). By the user's decision such a row is drawn on
+      the page it starts, past the bottom margin, rather than throwing. Unit
+      tests in the four ports; `check-examples.sh` (Sep 17): every example
+      identical in the four ports, Java 268 tests on JDK 21 and 8, C# 266, Go,
+      Swift 274.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
-- ⬜ **B** The public API is that of v9.0.0 in the four ports. Checked for
-      the QR code and TextFrame work (Sep 17): the Java public API from `javap`
-      and the Go API from `go doc -all` are unchanged; only package-private or
-      internal classes (`RSBlock`, `QRUtil`, the row parts of `TextFrame`)
-      changed in all four ports. By the user's decision, the protected Java
-      fields `Cell.textColor`, `backgroundColor` and `borderColor` are now
-      `int`, packed colors; the public methods are unchanged. Recheck before
-      the tag.
+- ✅ **B** The public API is that of v9.0.0 in the four ports.
+      Checked at 660ab679 against the `v9.0.0` tag in a worktree (Sep 17), with
+      every commit of 9.0.1 in: Java `javap -public` over every class, 1,411
+      public members of public classes, identical; the C# public surface read
+      from the built `PDFjet.dll` with reflection, identical; Go `go doc -all`
+      over every package, 1,525 declarations, identical but for the parameter
+      name of `Cell.SetBorderColor(c int32)`, which Go callers cannot name and
+      which now matches `SetTextColor` and `SetBackgroundColor`; Swift `public`
+      and `open` declarations, 1,591, identical. What changed is package-private
+      or internal only: `QRUtil`, `RSBlock` and the row parts of `TextFrame`.
+      By the user's decision, the protected Java fields `Cell.textColor`,
+      `backgroundColor` and `borderColor` are now `int`, packed colors; the
+      public methods are unchanged. Recheck before the tag if the API is touched.
 - ⬜ **B** On Oct 21: date the CHANGELOG entry, tag `v9.0.1` and publish the
       GitHub release, then check that the Go module and the Swift package
       resolve 9.0.1.

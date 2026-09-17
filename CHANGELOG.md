@@ -43,6 +43,12 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- `Table.drawOn(pdf, pages, pageSize)` no longer asks for pages forever when a
+  row is taller than the page, in all four ports. A row that does not fit was
+  left for the next page, and a row that fits no page was left for page after
+  page: the call filled memory with pages until it died, with no error. Such a
+  row is now drawn on the page it starts, past the bottom margin, and the table
+  goes on with the next row. Rows that fit are drawn exactly as before.
 - Four bugs in `Cell`, in all four ports. The underline and the strikeout of
   the cell text are drawn in the text color; they were drawn in the border
   color, or in whatever color the pen carried when no border color was set.

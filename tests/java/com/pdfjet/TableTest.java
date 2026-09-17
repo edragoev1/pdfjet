@@ -73,6 +73,32 @@ class TableTest {
     }
 
     @Test
+    void aRowTallerThanThePageIsDrawnRatherThanAskedForForever() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            text.append("word").append(i).append(' ');
+        }
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        List<Cell> header = new ArrayList<Cell>();
+        header.add(new Cell(font, "header"));
+        data.add(header);
+        List<Cell> row = new ArrayList<Cell>();
+        Cell tall = new Cell(font);
+        tall.setTextBlock(new TextBlock(font, text.toString())).setWidth(70f);
+        row.add(tall);
+        data.add(row);
+        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+        assertTrue(tall.getHeight(66f) > 792f);      // taller than a Letter page
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);   // asked for pages forever before
+        assertEquals(1, pages.size());
+        assertEquals(-1, table.getRowsRendered());
+        assertTrue(TestSupport.content(pages.get(0)).contains(TestSupport.hex("word0")));
+    }
+
+    @Test
     void theFileConstructorDropsAByteOrderMarkAndPadsShortRows() throws Exception {
         File file = new File(tempDir, "table.txt");
         OutputStream out = new FileOutputStream(file);

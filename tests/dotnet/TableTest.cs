@@ -85,6 +85,28 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void ARowTallerThanThePageIsDrawnRatherThanAskedForForever() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            text.Append("word").Append(i).Append(' ');
+        }
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(new List<Cell> { new Cell(font, "header") });
+        Cell tall = new Cell(font);
+        tall.SetTextBlock(new TextBlock(font, text.ToString())).SetWidth(70f);
+        data.Add(new List<Cell> { tall });
+        Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f).SetBottomMargin(20f);
+        Assert.True(tall.GetHeight(66f) > 792f);      // taller than a Letter page
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);    // asked for pages forever before
+        Assert.Single(pages);
+        Assert.Equal(-1, table.GetRowsRendered());
+        Assert.Contains(TestSupport.Hex("word0"), TestSupport.Content(pages[0]));
+    }
+
+    [Fact]
     public void TheFileConstructorDropsAByteOrderMarkAndPadsShortRows() {
         string file = tempDir.Write("table.txt", Encoding.UTF8.GetBytes("﻿a|b|c\n1||\n2\n"));
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());

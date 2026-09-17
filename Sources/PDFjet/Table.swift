@@ -509,10 +509,14 @@ public class Table : Drawable {
         var x = xy[0]
         var y = xy[1]
         var index = (rendered == -1) ? tableData.count : rendered
+        let first = index
         while index < tableData.count {
             let row = tableData[index]
             let h = getMaxCellHeight(row)
-            if page != nil && (y + h) > (page!.height - bottomMargin) {
+            // A row that does not fit goes on the next page, unless it is the
+            // first row of this one: a row taller than the page fits no page,
+            // and leaving it for the next page would ask for pages forever.
+            if page != nil && (y + h) > (page!.height - bottomMargin) && index > first {
                 rendered = index
                 return [x, y]
             }

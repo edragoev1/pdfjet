@@ -441,10 +441,14 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	if index == -1 {
 		index = len(table.tableData)
 	}
+	first := index
 	for index < len(table.tableData) {
 		row := table.tableData[index]
 		h := table.getMaxCellHeight(row)
-		if page != nil && (y+h) > (page.height-table.bottomMargin) {
+		// A row that does not fit goes on the next page, unless it is the
+		// first row of this one: a row taller than the page fits no page,
+		// and leaving it for the next page would ask for pages forever.
+		if page != nil && (y+h) > (page.height-table.bottomMargin) && index > first {
 			table.rendered = index
 			return [2]float32{x, y}
 		}
