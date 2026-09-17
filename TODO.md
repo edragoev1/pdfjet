@@ -1,7 +1,8 @@
 # PDFjet v9.0.0 — release plan
 
-Target: **2026-10-21**. This file is the working list for the release; tick
-items off as they land on master.
+Target: **2026-10-21**. Released early, on **2026-09-16**, at e957f841. This
+file is the working list for the release; tick items off as they land on
+master.
 
 v9.0.0 is a major release: the API changed since v8.7.0 (Go `Drawable` and
 `[2]float32`, the `/v9` Go module path, `PageSize`, typed constants, the
@@ -214,7 +215,14 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 ## Week 5 (Oct 15–21): freeze and release
 
 - ⬜ **B** Code freeze on Oct 15: fixes only, each with its check.
-- ⬜ **B** Tag `v9.0.0` on Oct 21.
+      Not held: the user released on Sep 16, so fixes from here go in 9.0.x.
+- ✅ **B** Tag `v9.0.0` on Oct 21.
+      Done (Sep 16), early, by the user's decision, with the manual viewer
+      pass still open: the annotated tag `v9.0.0` ("v9.0.0 RELEASE", as
+      v8.7.0) on e957f841, whose code is that of 00f06a3f, where the Build
+      workflow passed; the commits after it change only CHANGELOG.md, which
+      dates the release 2026-09-16, and TODO.md. The GitHub release
+      "v9.0.0 RELEASE" has the CHANGELOG entry as its notes and is the latest.
 - ✅ **B** Build the Java and .NET archives
       (`.packaging/package-java.sh`, `.packaging/package-dotnet.sh`).
       Done (Sep 16), early, at 00f06a3f: the scripts make
@@ -227,11 +235,15 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       `.packaging/dotnet`; the scripts build the examples against the library
       in the archive with whatever JDK or .NET SDK the client has, and create
       the PDFs of the archive, all 51 of them complete. The quick starts were
-      run against the archives, Java on JDK 8 and 21. Rebuild both from the
-      tag.
+      run against the archives, Java on JDK 8 and 21. Rebuilt from the tag
+      on Sep 16, with its CHANGELOG.md.
 - ⬜ **B** From a scratch module: `go list -m github.com/edragoev1/pdfjet/v9@v9.0.0`
       and `go get github.com/edragoev1/pdfjet/v9@v9.0.0` build and write a PDF.
-- ⬜ **B** A scratch Swift package resolves PDFjet from the tag and writes a PDF.
+- ✅ **B** A scratch Swift package resolves PDFjet from the tag and writes a PDF.
+      Done (Sep 16): a package with `.package(url:
+      "https://github.com/edragoev1/pdfjet.git", from: "9.0.0")` resolved 9.0.0
+      at e957f841, built in release with Swift 6.3.3, and the README's hello
+      program wrote a PDF whose text Poppler extracts.
 
 ## Known and accepted for 9.0.0 (document, do not fix)
 
