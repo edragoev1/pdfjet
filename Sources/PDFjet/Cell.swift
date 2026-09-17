@@ -25,10 +25,10 @@ public class Cell {
     var rightPadding: Float = 2.0
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
-    // for every cell; NO_COLOR marks a color that is not set.
+    // for every cell; NO_COLOR marks a background or a border that is not set.
     static let NO_COLOR: Int32 = -1
     var backgroundColor: Int32 = Cell.NO_COLOR
-    var textColor: Int32 = 0x000000
+    var textColor: Int32 = 0x000000 // Black until it is set
     var borderWidth: Float = 0.0
     var borderColor: Int32 = Cell.NO_COLOR
 
@@ -816,9 +816,7 @@ public class Cell {
     private func underlineText(_ page: Page, _ x: Float, _ y: Float) {
         let descent = font.getDescent(fontSize)
         page.addBDC(StructElem.P, "underline", "underline")
-        if textColor != Cell.NO_COLOR {
-            page.setPenColor(textColor)
-        }
+        page.setPenColor(textColor)
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y + descent)
         page.lineTo(x + getTextWidth(), y + descent)
@@ -829,9 +827,7 @@ public class Cell {
     private func strikeoutText(_ page: Page, _ x: Float, _ y: Float) {
         let ascent = font.getAscent(fontSize)
         page.addBDC(StructElem.P, "strike out", "strike out")
-        if textColor != Cell.NO_COLOR {
-            page.setPenColor(textColor)
-        }
+        page.setPenColor(textColor)
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y - ascent/3.0)
         page.lineTo(x + getTextWidth(), y - ascent/3.0)

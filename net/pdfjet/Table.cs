@@ -449,9 +449,7 @@ public class Table : IDrawable {
                     w += row[j++].GetWidth();
                 }
                 if (page != null) {
-                    if (cell.textColor != Cell.NO_COLOR) {
-                        page.SetBrushColor(cell.textColor);
-                    }
+                    page.SetBrushColor(cell.textColor);
                     if (i == (numOfHeaderRows - 1)) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
@@ -491,9 +489,7 @@ public class Table : IDrawable {
                     w += row[i++].GetWidth();
                 }
                 if (page != null) {
-                    if (cell.textColor != Cell.NO_COLOR) {
-                        page.SetBrushColor(cell.textColor);
-                    }
+                    page.SetBrushColor(cell.textColor);
                     cell.DrawOn(page, x, y, w, h);
                 }
                 x += w;

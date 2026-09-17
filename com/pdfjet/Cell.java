@@ -38,11 +38,11 @@ public class Cell {
     protected float rightPadding = 2f;
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
-    // for every cell; NO_COLOR marks a color that is not set.
+    // for every cell; NO_COLOR marks a background or a border that is not set.
     static final int NO_COLOR = -1;
     /** The background color as a 0xRRGGBB value, or -1 when the cell has no background. */
     protected int backgroundColor = NO_COLOR;
-    /** The text color as a 0xRRGGBB value, or -1 when it is not set. */
+    /** The text color as a 0xRRGGBB value; it is black until it is set. */
     protected int textColor = 0x000000;
     /** The width of the cell borders. */
     protected float borderWidth;
@@ -548,7 +548,7 @@ public class Cell {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getTextColor() {
-        return (textColor == NO_COLOR) ? null : Util.toRGB(textColor);
+        return Util.toRGB(textColor);
     }
 
     /**
@@ -915,7 +915,7 @@ public class Cell {
         if (line == null) {
             page.addBDC(StructElem.P, text, text);
             page.drawString(font, fallbackFont, fontSize, text, xText, yText,
-                    (textColor == NO_COLOR) ? null : page.packedToRGB(textColor), null);
+                    page.packedToRGB(textColor), null);
             page.addEMC();
             if (getUnderline()) {
                 underlineText(page, xText, yText);
@@ -988,9 +988,7 @@ public class Cell {
     private void underlineText(Page page, float x, float y) throws Exception {
         float descent = font.getDescent(fontSize);
         page.addBDC(StructElem.P, "underline", "underline");
-        if (textColor != NO_COLOR) {
-            page.setPenColor(textColor);
-        }
+        page.setPenColor(textColor);
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y + descent);
         page.lineTo(x + getTextWidth(), y + descent);
@@ -1001,9 +999,7 @@ public class Cell {
     private void strikeoutText(Page page, float x, float y) throws Exception {
         float ascent = font.getAscent(fontSize);
         page.addBDC(StructElem.P, "strike out", "strike out");
-        if (textColor != NO_COLOR) {
-            page.setPenColor(textColor);
-        }
+        page.setPenColor(textColor);
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y - ascent/3f);
         page.lineTo(x + getTextWidth(), y - ascent/3f);

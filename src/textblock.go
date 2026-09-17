@@ -67,6 +67,19 @@ func colorToRGB(c int32) [3]float32 {
 	return [3]float32{r, g, b}
 }
 
+// rgbToColor returns red, green and blue components, from 0.0 to 1.0, as a
+// 0xRRGGBB color, each component rounded to the nearest of 256 steps.
+func rgbToColor(rgbColor [3]float32) int32 {
+	return (toByte(rgbColor[0]) << 16) | (toByte(rgbColor[1]) << 8) | toByte(rgbColor[2])
+}
+
+// toByte returns a color component, from 0.0 to 1.0, as one of 256 steps.
+// Half a step rounds up, as Java's Math.round does.
+func toByte(component float32) int32 {
+	value := min(max(component, 0.0), 1.0)
+	return int32(value*255.0 + 0.5)
+}
+
 // NewTextBlock creates a text block and sets the font and the text.
 // The font is the fallback font too.
 func NewTextBlock(font *Font, textContent string) *TextBlock {

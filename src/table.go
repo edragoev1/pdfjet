@@ -417,7 +417,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 				j++
 			}
 			if page != nil {
-				page.SetBrushColorRGB(cell.GetTextColor())
+				page.SetBrushColor(cell.textColor)
 				if i == (table.numOfHeaderRows - 1) {
 					cell.bottomBorder = true
 				}
@@ -461,7 +461,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 				i++
 			}
 			if page != nil {
-				page.SetBrushColorRGB(cell.GetTextColor())
+				page.SetBrushColor(cell.textColor)
 				cell.drawOn(page, x, y, w, h)
 			}
 			x += w
@@ -690,16 +690,10 @@ func (table *Table) wrapAroundCellText() {
 				cell2.SetWidth(cell.GetWidth())
 				cell2.SetLeftPadding(cell.GetLeftPadding())
 				cell2.SetRightPadding(cell.GetRightPadding())
-				// Java copies a null background and a null pen color across as
-				// null, which leaves the new cell without either.
-				if cell.hasBackgroundColor {
-					cell2.SetBackgroundColorRGB(cell.backgroundColor)
-				}
+				cell2.backgroundColor = cell.backgroundColor
 				cell2.SetBorderWidth(cell.GetBorderWidth())
-				if cell.hasBorderColor {
-					cell2.SetBorderColorRGB(cell.borderColor)
-				}
-				cell2.SetTextColorRGB(cell.GetTextColor())
+				cell2.borderColor = cell.borderColor
+				cell2.textColor = cell.textColor
 				// Java copies these across with Cell.setProperties()
 				cell2.SetColSpan(cell.GetColSpan())
 				cell2.topBorder = cell.topBorder

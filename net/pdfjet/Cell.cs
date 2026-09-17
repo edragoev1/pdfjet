@@ -26,10 +26,10 @@ public class Cell {
     internal float rightPadding = 2f;
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
-    // for every cell; NO_COLOR marks a color that is not set.
+    // for every cell; NO_COLOR marks a background or a border that is not set.
     internal const int NO_COLOR = -1;
     internal int backgroundColor = NO_COLOR;
-    internal int textColor = 0x000000;
+    internal int textColor = 0x000000; // Black until it is set
     internal float borderWidth;
     internal int borderColor = NO_COLOR;
 
@@ -378,7 +378,7 @@ public class Cell {
 
     /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
-        return (textColor == NO_COLOR) ? null : Util.ToRGB(textColor);
+        return Util.ToRGB(textColor);
     }
 
     /// <summary>Sets the width of the cell borders.</summary>
@@ -708,7 +708,7 @@ public class Cell {
         if (line == null) {
             page.AddBDC(StructElem.P, text, text);
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText,
-                    (textColor == NO_COLOR) ? null : page.PackedToRGB(textColor), null);
+                    page.PackedToRGB(textColor), null);
             page.AddEMC();
             if (GetUnderline()) {
                 UnderlineText(page, xText, yText);
@@ -781,9 +781,7 @@ public class Cell {
     private void UnderlineText(Page page, float x, float y) {
         float descent = font.GetDescent(fontSize);
         page.AddBDC(StructElem.P, "underline", "underline");
-        if (textColor != NO_COLOR) {
-            page.SetPenColor(textColor);
-        }
+        page.SetPenColor(textColor);
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y + descent);
         page.LineTo(x + GetTextWidth(), y + descent);
@@ -794,9 +792,7 @@ public class Cell {
     private void StrikeoutText(Page page, float x, float y) {
         float ascent = font.GetAscent(fontSize);
         page.AddBDC(StructElem.P, "strike out", "strike out");
-        if (textColor != NO_COLOR) {
-            page.SetPenColor(textColor);
-        }
+        page.SetPenColor(textColor);
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y - ascent/3f);
         page.LineTo(x + GetTextWidth(), y - ascent/3f);

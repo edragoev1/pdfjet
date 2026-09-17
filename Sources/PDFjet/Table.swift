@@ -487,9 +487,7 @@ public class Table : Drawable {
                     j += 1
                 }
                 if page != nil {
-                    if cell.textColor != Cell.NO_COLOR {
-                        page!.setBrushColor(cell.textColor)
-                    }
+                    page!.setBrushColor(cell.textColor)
                     if i == (numOfHeaderRows - 1) {
                         cell.setBorder(Border.BOTTOM, true)
                     }
@@ -530,9 +528,7 @@ public class Table : Drawable {
                     i += 1
                 }
                 if page != nil {
-                    if cell.textColor != Cell.NO_COLOR {
-                        page!.setBrushColor(cell.textColor)
-                    }
+                    page!.setBrushColor(cell.textColor)
                     cell.drawOn(page!, x, y, w, h)
                 }
                 x += w

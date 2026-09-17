@@ -28,12 +28,13 @@ type Cell struct {
 	leftPadding     float32
 	rightPadding    float32
 
-	backgroundColor    [3]float32
-	hasBackgroundColor bool
-	borderColor        [3]float32
-	hasBorderColor     bool
-	borderWidth        float32
-	textColor          [3]float32
+	// The colors are packed 0xRRGGBB values, 4 bytes each instead of a
+	// [3]float32 for every cell; color.Transparent marks a background or a
+	// border that is not set, and the text color is black until it is set.
+	backgroundColor int32
+	textColor       int32
+	borderWidth     float32
+	borderColor     int32
 
 	colspan      int
 	topBorder    bool
@@ -75,6 +76,9 @@ func NewCell(font *Font, text string) *Cell {
 	cell.bottomPadding = 2.0
 	cell.leftPadding = 2.0
 	cell.rightPadding = 2.0
+	cell.backgroundColor = color.Transparent
+	cell.borderColor = color.Transparent
+	cell.textColor = color.Black
 	// Java's Cell defaults its properties to 0x00050001 - only the top and
 	// left borders are on.
 	cell.topBorder = true
@@ -339,10 +343,10 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	return cellHeight
 }
 
-// SetBackgroundColorRGB sets the background color from red, green and blue values.
-func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
-	cell.backgroundColor = color
-	cell.hasBackgroundColor = true
+// SetBackgroundColorRGB sets the background color from red, green and blue
+// values. The cell keeps each component to the nearest of 256 steps.
+func (cell *Cell) SetBackgroundColorRGB(rgbColor [3]float32) *Cell {
+	cell.backgroundColor = rgbToColor(rgbColor)
 	return cell
 }
 
@@ -350,28 +354,26 @@ func (cell *Cell) SetBackgroundColorRGB(color [3]float32) *Cell {
 // color.Transparent removes the background.
 func (cell *Cell) SetBackgroundColor(c int32) *Cell {
 	if c == color.Transparent {
-		cell.backgroundColor = [3]float32{}
-		cell.hasBackgroundColor = false
+		cell.backgroundColor = color.Transparent
 		return cell
 	}
-	cell.backgroundColor = colorToRGB(c)
-	cell.hasBackgroundColor = true
+	cell.backgroundColor = c & 0xFFFFFF
 	return cell
 }
 
 // GetBackgroundColor returns a copy of the background color of this cell, or nil if it has none.
 func (cell *Cell) GetBackgroundColor() *[3]float32 {
-	if !cell.hasBackgroundColor {
+	if cell.backgroundColor == color.Transparent {
 		return nil
 	}
-	backgroundColor := cell.backgroundColor
+	backgroundColor := colorToRGB(cell.backgroundColor)
 	return &backgroundColor
 }
 
-// SetBorderColorRGB sets the color of the cell borders from red, green and blue values.
-func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
-	cell.borderColor = color
-	cell.hasBorderColor = true
+// SetBorderColorRGB sets the color of the cell borders from red, green and
+// blue values. The cell keeps each component to the nearest of 256 steps.
+func (cell *Cell) SetBorderColorRGB(rgbColor [3]float32) *Cell {
+	cell.borderColor = rgbToColor(rgbColor)
 	return cell
 }
 
@@ -380,21 +382,19 @@ func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
 //   - c: the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetBorderColor(c int32) *Cell {
 	if c == color.Transparent {
-		cell.borderColor = [3]float32{}
-		cell.hasBorderColor = false
+		cell.borderColor = color.Transparent
 		return cell
 	}
-	cell.borderColor = colorToRGB(c)
-	cell.hasBorderColor = true
+	cell.borderColor = c & 0xFFFFFF
 	return cell
 }
 
 // GetBorderColor returns a copy of the color of the cell borders, or nil if none was set.
 func (cell *Cell) GetBorderColor() *[3]float32 {
-	if !cell.hasBorderColor {
+	if cell.borderColor == color.Transparent {
 		return nil
 	}
-	borderColor := cell.borderColor
+	borderColor := colorToRGB(cell.borderColor)
 	return &borderColor
 }
 
@@ -414,8 +414,9 @@ func (cell *Cell) GetBorderWidth() float32 {
 }
 
 // SetTextColorRGB sets the text color from red, green and blue values.
+// The cell keeps each component to the nearest of 256 steps.
 func (cell *Cell) SetTextColorRGB(textColor [3]float32) *Cell {
-	cell.textColor = textColor
+	cell.textColor = rgbToColor(textColor)
 	return cell
 }
 
@@ -425,13 +426,13 @@ func (cell *Cell) SetTextColor(c int32) *Cell {
 	if c == color.Transparent {
 		return cell
 	}
-	cell.textColor = colorToRGB(c)
+	cell.textColor = c & 0xFFFFFF
 	return cell
 }
 
 // GetTextColor returns the text color.
 func (cell *Cell) GetTextColor() [3]float32 {
-	return cell.textColor
+	return colorToRGB(cell.textColor)
 }
 
 // SetColSpan sets the number of columns this cell spans.
@@ -553,7 +554,7 @@ func measureDrawable(drawable Drawable) [2]float32 {
 
 // drawOn draws the point, text and borders of this cell.
 func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
-	if cell.hasBackgroundColor {
+	if cell.backgroundColor != color.Transparent {
 		cell.drawBackground(page, x, y, w, h)
 	}
 
@@ -606,7 +607,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
-	page.SetBrushColorRGB(cell.backgroundColor)
+	page.SetBrushColor(cell.backgroundColor)
 	page.FillRect(x, y+cell.borderWidth/2, cellW, cellH)
 	page.AddEMC()
 }
@@ -616,8 +617,8 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 		return // Nothing to draw, so nothing to write.
 	}
 	page.AddArtifactBMC()
-	if cell.hasBorderColor {
-		page.SetPenColorRGB(cell.borderColor)
+	if cell.borderColor != color.Transparent {
+		page.SetPenColor(cell.borderColor)
 	}
 	page.SetPenWidth(cell.borderWidth)
 	// Half the pen width, so that the corners of the borders close.
@@ -672,7 +673,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	if !hasLine {
 		page.AddBDC("P", "", cell.text, cell.text)
 		page.drawStringUsingHighlightColors(
-			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
+			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, colorToRGB(cell.textColor), nil)
 		page.AddEMC()
 		if cell.underline {
 			cell.underlineText(page, xText, yText)
@@ -712,7 +713,7 @@ func (cell *Cell) getTextWidth() float32 {
 func (cell *Cell) underlineText(page *Page, x, y float32) {
 	descent := cell.font.GetDescent(cell.fontSize)
 	page.AddBDC("P", "", "underline", "underline")
-	page.SetPenColorRGB(cell.textColor)
+	page.SetPenColor(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y+descent)
 	page.LineTo(x+cell.getTextWidth(), y+descent)
@@ -724,7 +725,7 @@ func (cell *Cell) underlineText(page *Page, x, y float32) {
 func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	ascent := cell.font.GetAscent(cell.fontSize)
 	page.AddBDC("P", "", "strike out", "strike out")
-	page.SetPenColorRGB(cell.textColor)
+	page.SetPenColor(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)
 	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)
