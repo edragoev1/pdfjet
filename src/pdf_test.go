@@ -158,10 +158,20 @@ func TestPDFCompleteFlushesTheWriter(t *testing.T) {
 }
 
 func TestPDFCrossReferenceOffsetsAreTenDigits(t *testing.T) {
-	testWant(t, "0000000017", xrefOffset(17))
-	testWant(t, "9999999999", xrefOffset(9999999999))
+	for offset, want := range map[int64]string{17: "0000000017", 9999999999: "9999999999"} {
+		entry, err := xrefOffset(offset)
+		if err != nil {
+			t.Error(err)
+		}
+		testWant(t, want, entry)
+	}
+	// Java throws an IOException; Go returns the error, and Complete returns it.
+	_, err := xrefOffset(10000000000)
+	if err == nil {
+		t.Fatal("no error")
+	}
 	testWant(t, "The PDF is too large for a cross-reference table: an object starts at byte 10000000000.",
-		testPanicMessage(func() { xrefOffset(10000000000) }))
+		err.Error())
 }
 
 // testPDFWithStream is a PDF with one stream whose data starts with a line
@@ -393,4 +403,18 @@ func TestPDFObjectsWithoutAPageTreeHaveNoPages(t *testing.T) {
 	if n := len(NewPDFReader().GetPageObjects(objects)); n != 0 {
 		t.Errorf("%d pages", n)
 	}
+}
+
+func TestPDFTheNameOfAnEmbeddedFileIsATextStringInFAndUF(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	file := NewEmbeddedFile(doc.pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", strings.NewReader("Hello"), false)
+	NewFileAttachment(file).SetLocation(100, 100).DrawOn(page)
+	spec := testFindObject(testRead(t, doc.complete()), "/UF")
+	if spec == nil {
+		t.Fatal("no /UF")
+	}
+	testWant(t, "/Filespec", spec.GetValue("/Type"))
+	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", testUTF16Hex(t, spec.GetValue("/UF")))
+	testWant(t, spec.GetValue("/UF"), spec.GetValue("/F"))
 }

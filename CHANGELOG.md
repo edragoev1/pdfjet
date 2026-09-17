@@ -11,7 +11,8 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 Producer string bumped from `PDFjet v9.0.0` to `PDFjet v9.0.1` in all four
 ports, so `.packaging/package-java.sh` and `.packaging/package-dotnet.sh` name
-their archives v9.0.1. The public API does not change.
+their archives v9.0.1. The public API does not change, but for one thing: the
+C# `PDF` class is sealed, as the Java class is final.
 
 ### Added
 - `BaselineDrawable`, a drawable whose location is the baseline of its text
@@ -43,6 +44,13 @@ their archives v9.0.1. The public API does not change.
   other ports do.
 
 ### Changed
+- The C# `PDF` class is `sealed`, as the Java class is `final`, and the Swift
+  class is marked `final`, which it already was outside the module. A C#
+  program that derived a class from `PDF` no longer compiles; nothing in the
+  class was made to be overridden.
+- In Go, `Complete` returns an error for a document too large for a
+  cross-reference table, one with an object past byte 9,999,999,999, where it
+  panicked; the other ports throw.
 - The borders of a `Cell` are the subpaths of one path, stroked once, instead
   of a path and a stroke for each side, and a cell with no visible border
   writes nothing at all, where it wrote its pen width. Example_43 drawn with
@@ -97,6 +105,11 @@ their archives v9.0.1. The public API does not change.
   objects without a page tree have no pages. And `Page.drawContents` puts a
   line feed after the content, which can end with an operator: `ET` followed
   by the `Q` that restores the graphics state read as the unknown `ETQ`.
+- The name of an embedded file is a text string, in the `/F` and the `/UF`
+  entries of its file specification, in all four ports. It was bare UTF-8 in
+  `/F` alone, so `pdfdetach` listed and saved "Übersicht – résumé.txt" as
+  "Ãœbersicht â•ﬁ rÃ©sumÃ©.txt". `/UF` is the entry that readers of PDF 1.7
+  look for first, and PDF/A-3 requires both.
 - Two more in the Swift port of `PDF`: `read` throws a `PDFjetError` for a
   malformed object stream, as Java throws and Go returns an error, where it
   stopped the program; and `complete()` throws for a number that is not

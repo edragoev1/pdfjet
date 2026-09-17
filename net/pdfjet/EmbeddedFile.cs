@@ -58,13 +58,15 @@ public class EmbeddedFile {
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /Filespec\n");
 
-        byte[] fileNameBytes = Encoding.UTF8.GetBytes(fileName);
-        if (pdf.encryption != null) {
-            fileNameBytes = AES256.Encrypt(fileNameBytes, pdf.encryption.GetKey());
-        }
-        pdf.Append("/F <");
-        pdf.Append(Util.ToHexString(fileNameBytes));
-        pdf.Append(">\n");
+        // The file name as a text string, which every reader decodes the same
+        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
+        // is the one that older readers know; PDF/A-3 requires both.
+        pdf.Append("/F ");
+        pdf.AppendTextString(fileName);
+        pdf.Append("\n");
+        pdf.Append("/UF ");
+        pdf.AppendTextString(fileName);
+        pdf.Append("\n");
 
         pdf.Append("/EF <</F ");
         pdf.Append(pdf.GetObjNumber() - 1);

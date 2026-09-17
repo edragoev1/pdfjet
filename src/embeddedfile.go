@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"bytes"
 	"compress/zlib"
-	"encoding/hex"
 	"io"
 	"os"
 	"strings"
@@ -93,13 +92,15 @@ func NewEmbeddedFile(pdf *PDF, fileName string, reader io.Reader, compress bool)
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Filespec\n")
 
-	fileNameBytes := []byte(fileName)
-	if pdf.encryption != nil {
-		fileNameBytes = pdf.encryption.encrypt(fileNameBytes)
-	}
-	pdf.appendString("/F <")
-	pdf.appendString(hex.EncodeToString(fileNameBytes))
-	pdf.appendString(">\n")
+	// The file name as a text string, which every reader decodes the same way.
+	// /UF is the name that readers of PDF 1.7 look for first, and /F is the one
+	// that older readers know; PDF/A-3 requires both.
+	pdf.appendString("/F ")
+	pdf.appendTextString(fileName)
+	pdf.appendString("\n")
+	pdf.appendString("/UF ")
+	pdf.appendTextString(fileName)
+	pdf.appendString("\n")
 
 	pdf.appendString("/EF <</F ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)

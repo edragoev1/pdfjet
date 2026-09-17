@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create PDF objects that represent PDF documents.
 ///
-public class PDF {
+public final class PDF {
     var fonts = [Font]()
     var images = [Image]()
     var pages = [Page]()

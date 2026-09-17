@@ -70,8 +70,14 @@ public class EmbeddedFile {
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /Filespec\n")
+        // The file name as a text string, which every reader decodes the same
+        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
+        // is the one that older readers know; PDF/A-3 requires both.
         pdf.append("/F <")
-        pdf.append(pdf.toHexString(fileName))
+        pdf.append(pdf.textString(fileName))
+        pdf.append(">\n")
+        pdf.append("/UF <")
+        pdf.append(pdf.textString(fileName))
         pdf.append(">\n")
         pdf.append("/EF <</F ")
         pdf.append(pdf.getObjNumber() - 1)

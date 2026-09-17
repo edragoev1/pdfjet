@@ -345,5 +345,21 @@ public class PDFTest {
         List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {"<< /Type /Catalog >>"}));
         Assert.Empty(new PDF().GetPageObjects(objects));
     }
+
+    [Fact]
+    public void TheNameOfAnEmbeddedFileIsATextStringInFAndUF() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt",
+                new MemoryStream(Encoding.ASCII.GetBytes("Hello")), false);
+        new FileAttachment(file).SetLocation(100f, 100f).DrawOn(page);
+        pdf.Complete();
+        PDFobj spec = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/UF");
+        Assert.NotNull(spec);
+        Assert.Equal("/Filespec", spec.GetValue("/Type"));
+        Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
+        Assert.Equal(spec.GetValue("/UF"), spec.GetValue("/F"));
+    }
 }
 }

@@ -237,13 +237,14 @@ func (pdf *PDF) setObjOffset(number int, offset int64) {
 }
 
 // xrefOffset returns the offset as the 10 digits of an entry of the
-// cross-reference table, which cannot hold an offset of more than 10 digits.
-func xrefOffset(offset int64) string {
+// cross-reference table, which cannot hold an offset of more than 10 digits:
+// it returns an error for one, where the other ports throw.
+func xrefOffset(offset int64) (string, error) {
 	digits := strconv.FormatInt(offset, 10)
 	if len(digits) > 10 {
-		panic(fmt.Sprintf("The PDF is too large for a cross-reference table: an object starts at byte %d.", offset))
+		return "", fmt.Errorf("The PDF is too large for a cross-reference table: an object starts at byte %d.", offset)
 	}
-	return "0000000000"[len(digits):] + digits
+	return "0000000000"[len(digits):] + digits, nil
 }
 
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
@@ -1693,7 +1694,11 @@ func (pdf *PDF) Complete() error {
 			pdf.appendString("0000000000 65535 f \n")
 			continue
 		}
-		pdf.appendString(xrefOffset(offset))
+		entry, err := xrefOffset(offset)
+		if err != nil {
+			return err
+		}
+		pdf.appendString(entry)
 		pdf.appendString(" 00000 n \n")
 	}
 	pdf.appendString("trailer\n")

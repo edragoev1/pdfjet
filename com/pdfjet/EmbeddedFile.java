@@ -86,13 +86,15 @@ public class EmbeddedFile {
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /Filespec\n");
 
-        byte[] fileNameBytes = fileName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        if (pdf.encryption != null) {
-            fileNameBytes = AES256.encrypt(fileNameBytes, pdf.encryption.getKey());
-        }
-        pdf.append("/F <");
-        pdf.append(Util.toHexString(fileNameBytes));
-        pdf.append(">\n");
+        // The file name as a text string, which every reader decodes the same
+        // way. /UF is the name that readers of PDF 1.7 look for first, and /F
+        // is the one that older readers know; PDF/A-3 requires both.
+        pdf.append("/F ");
+        pdf.appendTextString(fileName);
+        pdf.append("\n");
+        pdf.append("/UF ");
+        pdf.appendTextString(fileName);
+        pdf.append("\n");
 
         pdf.append("/EF <</F ");
         pdf.append(pdf.getObjNumber() - 1);

@@ -14,7 +14,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create PDF objects that represent PDF documents.
 /// </summary>
-public class PDF {
+public sealed class PDF {
     internal List<Font> fonts = new List<Font>();
     internal List<Image> images = new List<Image>();
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();

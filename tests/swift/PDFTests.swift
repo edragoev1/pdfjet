@@ -328,4 +328,17 @@ import Testing
             #expect(throws: PDFjetError.self) { try TestSupport.read(pdf) }
         }
     }
+
+    @Test func theNameOfAnEmbeddedFileIsATextStringInFAndUF() throws {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let file = try EmbeddedFile(memory.pdf, "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt",
+                InputStream(data: Data("Hello".utf8)), false)
+        FileAttachment(file).setLocation(100, 100).drawOn(page)
+        try memory.pdf.complete()
+        let spec = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/UF"))
+        #expect(spec.getValue("/Type") == "/Filespec")
+        #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt")
+        #expect(spec.getValue("/F") == spec.getValue("/UF"))
+    }
 }

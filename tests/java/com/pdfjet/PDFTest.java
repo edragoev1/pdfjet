@@ -354,4 +354,20 @@ class PDFTest {
         List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {"<< /Type /Catalog >>"}));
         assertEquals(0, new PDF().getPageObjects(objects).size());
     }
+
+    @Test
+    void theNameOfAnEmbeddedFileIsATextStringInFAndUF() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        EmbeddedFile file = new EmbeddedFile(pdf, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt",
+                new java.io.ByteArrayInputStream("Hello".getBytes(StandardCharsets.US_ASCII)), false);
+        new FileAttachment(file).setLocation(100f, 100f).drawOn(page);
+        pdf.complete();
+        PDFobj spec = TestSupport.findObject(TestSupport.read(bos.toByteArray()), "/UF");
+        assertNotNull(spec);
+        assertEquals("/Filespec", spec.getValue("/Type"));
+        assertEquals("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
+        assertEquals(spec.getValue("/UF"), spec.getValue("/F"));
+    }
 }
