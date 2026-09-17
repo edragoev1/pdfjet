@@ -488,7 +488,9 @@ public class Table implements Drawable {
                     w += row.get(j++).getWidth();
                 }
                 if (page != null) {
-                    page.setBrushColor(cell.getTextColor());
+                    if (cell.textColor != Cell.NO_COLOR) {
+                        page.setBrushColor(cell.textColor);
+                    }
                     if (i == (numOfHeaderRows - 1)) {
                         cell.setBorder(Border.BOTTOM, true);
                     }
@@ -524,7 +526,9 @@ public class Table implements Drawable {
                     w += row.get(i++).getWidth();
                 }
                 if (page != null) {
-                    page.setBrushColor(cell.getTextColor());
+                    if (cell.textColor != Cell.NO_COLOR) {
+                        page.setBrushColor(cell.textColor);
+                    }
                     cell.drawOn(page, x, y, w, h);
                 }
                 x += w;
@@ -780,10 +784,10 @@ public class Table implements Drawable {
                     cell2.setWidth(cell.getWidth());
                     cell2.setLeftPadding(cell.leftPadding);
                     cell2.setRightPadding(cell.rightPadding);
-                    cell2.setBackgroundColor(cell.getBackgroundColor());
+                    cell2.backgroundColor = cell.backgroundColor;
                     cell2.setBorderWidth(cell.getBorderWidth());
-                    cell2.setBorderColor(cell.getBorderColor());
-                    cell2.setTextColor(cell.getTextColor());
+                    cell2.borderColor = cell.borderColor;
+                    cell2.textColor = cell.textColor;
                     cell2.setColSpan(cell.getColSpan());
                     cell2.setBorder(Border.TOP, cell.getBorder(Border.TOP));
                     cell2.setBorder(Border.BOTTOM, cell.getBorder(Border.BOTTOM));

@@ -54,6 +54,9 @@ public class Page {
 
     private float[] brushColor = {0f, 0f, 0f};
     private float[] penColor = {0f, 0f, 0f};
+    // A color passed to the methods that take an array, filled from a packed
+    // color each time; those methods copy the colors they keep.
+    private readonly float[] packedRGB = new float[3];
     // True when the content has set the brush or the pen to the RGB color above,
     // so setting it again writes nothing. False on a new page, whose colors are
     // not written yet, and after a CMYK color. The pen width and the font of the
@@ -1166,7 +1169,18 @@ public class Page {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
+        if (brushColorWritten && brushColor[0] == r && brushColor[1] == g && brushColor[2] == b) {
+            return this;    // The content is drawn with this color already
+        }
         return SetBrushColor(new float[] {r, g, b});
+    }
+
+    // Returns the components of a 0xRRGGBB color in an array that the next call fills again.
+    internal float[] PackedToRGB(int color) {
+        packedRGB[0] = ((color >> 16) & 0xff)/255f;
+        packedRGB[1] = ((color >>  8) & 0xff)/255f;
+        packedRGB[2] = ((color)       & 0xff)/255f;
+        return packedRGB;
     }
 
     /// <summary>
@@ -1224,6 +1238,9 @@ public class Page {
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
+        if (penColorWritten && penColor[0] == r && penColor[1] == g && penColor[2] == b) {
+            return this;    // The content is drawn with this color already
+        }
         return SetPenColor(new float[] {r, g, b});
     }
 

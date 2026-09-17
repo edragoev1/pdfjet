@@ -42,6 +42,13 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       9.0.0). Unit tests in the four ports.
       Both checked with `check-examples.sh`: Java 262 tests on JDK 21 and 8,
       C# 260, Go, Swift 269, every example identical in the four ports.
+- ✅ **B** `Cell` colors as packed 0xRRGGBB values in Java, C# and Swift, by
+      the user's decision (Sep 17): the precision of float colors is accepted,
+      and the protected Java fields change from `float[]` to `int`. Example_43
+      with `Table`: 1,718 MB allocated instead of 1,821, a 384 MB heap instead
+      of 512, the same PDF. Checked with `check-examples.sh` (Sep 17): every
+      example identical in the four ports; Java 263 tests on JDK 21 and 8,
+      C# 261, Go, Swift 270.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
@@ -49,7 +56,10 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       the QR code and TextFrame work (Sep 17): the Java public API from `javap`
       and the Go API from `go doc -all` are unchanged; only package-private or
       internal classes (`RSBlock`, `QRUtil`, the row parts of `TextFrame`)
-      changed in all four ports. Recheck before the tag.
+      changed in all four ports. By the user's decision, the protected Java
+      fields `Cell.textColor`, `backgroundColor` and `borderColor` are now
+      `int`, packed colors; the public methods are unchanged. Recheck before
+      the tag.
 - ⬜ **B** On Oct 21: date the CHANGELOG entry, tag `v9.0.1` and publish the
       GitHub release, then check that the Go module and the Swift package
       resolve 9.0.1.

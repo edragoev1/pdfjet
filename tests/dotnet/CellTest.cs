@@ -148,6 +148,24 @@ public class CellTest {
     }
 
     [Fact]
+    public void ColorsAreKeptToTheNearestOf256Steps() {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        TestSupport.AssertRGB(0f, 0f, 0f, cell.GetTextColor());         // black by default
+        Assert.Null(cell.GetBackgroundColor());
+        Assert.Null(cell.GetBorderColor());
+        cell.SetTextColor(new float[] {0.5f, 0.25f, 1f});
+        TestSupport.AssertRGB(128 / 255f, 64 / 255f, 1f, cell.GetTextColor());
+        cell.SetBackgroundColor(new float[] {-1f, 2f, 0.1f});           // kept between 0 and 1
+        TestSupport.AssertRGB(0f, 1f, 26 / 255f, cell.GetBackgroundColor());
+        cell.SetBorderColor(0x336699);
+        TestSupport.AssertRGB(0x33 / 255f, 0x66 / 255f, 0x99 / 255f, cell.GetBorderColor());
+        cell.SetBackgroundColor(Color.transparent);
+        Assert.Null(cell.GetBackgroundColor());
+        cell.SetBorderColor((float[]) null);
+        Assert.Null(cell.GetBorderColor());
+    }
+
+    [Fact]
     public void SetFontChangesTheFallbackFontUnlessAnotherWasSet() {
         PDF pdf = TestSupport.NewPDF();
         Font helvetica = TestSupport.Helvetica(pdf);

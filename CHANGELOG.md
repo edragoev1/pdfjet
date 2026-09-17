@@ -25,6 +25,18 @@ their archives v9.0.1. The public API does not change.
   patterns of version 7 and up, and shares its Galois field tables, as the
   other ports do.
 
+### Changed
+- `Cell` keeps its text, background and border colors as packed 0xRRGGBB
+  values in Java, C# and Swift, instead of an array of three floats for each
+  color of each cell; Go already kept them inline. The setters and getters
+  are the same, and a color given as floats is kept to the nearest of 256
+  steps, between 0.0 and 1.0. In Java the protected `textColor`,
+  `backgroundColor` and `borderColor` fields are now `int`, -1 when not set.
+  Example_43 drawn with `Table`, 1.12 million cells, allocates 1,718 MB
+  instead of 1,821 and finishes in a 384 MB heap instead of 512, with the
+  same PDF. `Page.setBrushColor(int)` and `setPenColor(int)` no longer
+  allocate when the color is already set.
+
 ### Fixed
 - `TextFrame` aligns a paragraph to the right, to the center or to both
   edges, as `TextColumn` does, in all four ports; it drew every paragraph

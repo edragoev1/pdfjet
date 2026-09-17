@@ -1058,6 +1058,9 @@ public class Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
+        if penColorWritten && penColor[0] == r && penColor[1] == g && penColor[2] == b {
+            return self     // The content is drawn with this color already
+        }
         return setPenColor([r, g, b])
     }
 
@@ -1104,6 +1107,9 @@ public class Page {
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
+        if brushColorWritten && brushColor[0] == r && brushColor[1] == g && brushColor[2] == b {
+            return self     // The content is drawn with this color already
+        }
         return setBrushColor([r, g, b])
     }
 

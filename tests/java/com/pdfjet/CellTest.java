@@ -159,6 +159,24 @@ class CellTest {
     }
 
     @Test
+    void colorsAreKeptToTheNearestOf256Steps() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        TestSupport.assertRGB(0f, 0f, 0f, cell.getTextColor());         // black by default
+        assertNull(cell.getBackgroundColor());
+        assertNull(cell.getBorderColor());
+        cell.setTextColor(new float[] {0.5f, 0.25f, 1f});
+        TestSupport.assertRGB(128 / 255f, 64 / 255f, 1f, cell.getTextColor());
+        cell.setBackgroundColor(new float[] {-1f, 2f, 0.1f});           // kept between 0 and 1
+        TestSupport.assertRGB(0f, 1f, 26 / 255f, cell.getBackgroundColor());
+        cell.setBorderColor(0x336699);
+        TestSupport.assertRGB(0x33 / 255f, 0x66 / 255f, 0x99 / 255f, cell.getBorderColor());
+        cell.setBackgroundColor(Color.transparent);
+        assertNull(cell.getBackgroundColor());
+        cell.setBorderColor((float[]) null);
+        assertNull(cell.getBorderColor());
+    }
+
+    @Test
     void setFontChangesTheFallbackFontUnlessAnotherWasSet() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font helvetica = TestSupport.helvetica(pdf);

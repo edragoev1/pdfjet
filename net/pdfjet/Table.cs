@@ -449,7 +449,9 @@ public class Table : IDrawable {
                     w += row[j++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetTextColor());
+                    if (cell.textColor != Cell.NO_COLOR) {
+                        page.SetBrushColor(cell.textColor);
+                    }
                     if (i == (numOfHeaderRows - 1)) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
@@ -485,7 +487,9 @@ public class Table : IDrawable {
                     w += row[i++].GetWidth();
                 }
                 if (page != null) {
-                    page.SetBrushColor(cell.GetTextColor());
+                    if (cell.textColor != Cell.NO_COLOR) {
+                        page.SetBrushColor(cell.textColor);
+                    }
                     cell.DrawOn(page, x, y, w, h);
                 }
                 x += w;
@@ -729,10 +733,10 @@ public class Table : IDrawable {
                     cell2.SetWidth(cell.GetWidth());
                     cell2.SetLeftPadding(cell.leftPadding);
                     cell2.SetRightPadding(cell.rightPadding);
-                    cell2.SetBackgroundColor(cell.GetBackgroundColor());
+                    cell2.backgroundColor = cell.backgroundColor;
                     cell2.SetBorderWidth(cell.GetBorderWidth());
-                    cell2.SetBorderColor(cell.GetBorderColor());
-                    cell2.SetTextColor(cell.GetTextColor());
+                    cell2.borderColor = cell.borderColor;
+                    cell2.textColor = cell.textColor;
                     cell2.SetColSpan(cell.GetColSpan());
                     cell2.SetBorder(Border.TOP, cell.GetBorder(Border.TOP));
                     cell2.SetBorder(Border.BOTTOM, cell.GetBorder(Border.BOTTOM));

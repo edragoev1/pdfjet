@@ -21,6 +21,22 @@ internal class Util {
         return (color == null) ? null : (float[]) color.Clone();
     }
 
+    /// <summary>
+    /// Returns the color as a 0xRRGGBB value, each component rounded to the nearest
+    /// of 256 steps and kept between 0.0 and 1.0, or -1 if the color is null.
+    /// </summary>
+    internal static int ToPackedRGB(float[] color) {
+        if (color == null) {
+            return -1;
+        }
+        return (ToByte(color[0]) << 16) | (ToByte(color[1]) << 8) | ToByte(color[2]);
+    }
+
+    private static int ToByte(float component) {
+        float value = Math.Max(0f, Math.Min(1f, component));
+        return (int) Math.Floor(value * 255f + 0.5f);   // Rounds half up, as Java's Math.round
+    }
+
     /// <summary>Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color.</summary>
     internal static float[] ToRGB(int color) {
         return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};

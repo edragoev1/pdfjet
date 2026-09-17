@@ -10,6 +10,20 @@ import Foundation
 /// Utility methods.
 ///
 class Util {
+    /// Returns the color as a 0xRRGGBB value, each component rounded to the nearest
+    /// of 256 steps and kept between 0.0 and 1.0, or -1 if the color is nil.
+    static func toPackedRGB(_ color: [Float]?) -> Int32 {
+        guard let color else {
+            return -1
+        }
+        return (toByte(color[0]) << 16) | (toByte(color[1]) << 8) | toByte(color[2])
+    }
+
+    private static func toByte(_ component: Float) -> Int32 {
+        let value = max(0.0, min(1.0, component))
+        return Int32((value * 255.0 + 0.5).rounded(.down))   // Rounds half up, as Java's Math.round
+    }
+
     /// Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color.
     static func toRGB(_ color: Int32) -> [Float] {
         return [Float((color >> 16) & 0xff)/255.0, Float((color >> 8) & 0xff)/255.0, Float(color & 0xff)/255.0]

@@ -25,10 +25,13 @@ public class Cell {
     var leftPadding: Float = 2.0
     var rightPadding: Float = 2.0
 
-    var backgroundColor: [Float]?
-    var textColor: [Float] = [0.0, 0.0, 0.0]
+    // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
+    // for every cell; NO_COLOR marks a color that is not set.
+    static let NO_COLOR: Int32 = -1
+    var backgroundColor: Int32 = Cell.NO_COLOR
+    var textColor: Int32 = 0x000000
     var borderWidth: Float = 0.0
-    var borderColor: [Float]?
+    var borderColor: Int32 = Cell.NO_COLOR
 
     private var colspan: Int = 1
     private var uri: String?
@@ -388,72 +391,66 @@ public class Cell {
         if color == Color.transparent {
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.textColor = [r, g, b]
+        self.textColor = color & 0xFFFFFF
         return self
     }
 
     /// Sets the text color from an array of red, green and blue values.
+    /// The cell keeps each component to the nearest of 256 steps.
     @discardableResult
     public func setTextColor(_ textColor: [Float]) -> Cell {
-        self.textColor = textColor
+        self.textColor = Util.toPackedRGB(textColor)
         return self
     }
 
     /// Returns the text color.
     public func getTextColor() -> [Float] {
-        return self.textColor
+        return Util.toRGB(self.textColor)
     }
 
     /// Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.
     @discardableResult
     public func setBackgroundColor(_ color: Int32) -> Cell {
         if color == Color.transparent {
-            self.backgroundColor = nil
+            self.backgroundColor = Cell.NO_COLOR
             return self
         }
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.backgroundColor = [r, g, b]
+        self.backgroundColor = color & 0xFFFFFF
         return self
     }
 
     /// Sets the background color from an array of red, green and blue values,
-    /// or removes the background with nil.
+    /// or removes the background with nil. The cell keeps each component to the
+    /// nearest of 256 steps.
     @discardableResult
     public func setBackgroundColor(_ backgroundColor: [Float]?) -> Cell {
-        self.backgroundColor = backgroundColor
+        self.backgroundColor = Util.toPackedRGB(backgroundColor)
         return self
     }
 
     /// Returns the background color, or nil if the cell has no background.
     public func getBackgroundColor() -> [Float]? {
-        return self.backgroundColor
+        return (backgroundColor == Cell.NO_COLOR) ? nil : Util.toRGB(backgroundColor)
     }
 
     /// Sets the border color as a 0xRRGGBB value.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Cell {
-        let r = Float(((color >> 16) & 0xff))/255.0
-        let g = Float(((color >>  8) & 0xff))/255.0
-        let b = Float(((color)       & 0xff))/255.0
-        self.borderColor = [r, g, b]
+        self.borderColor = color & 0xFFFFFF
         return self
     }
 
     /// Sets the border color from an array of red, green and blue values.
+    /// The cell keeps each component to the nearest of 256 steps.
     @discardableResult
     public func setBorderColor(_ rgbColor: [Float]?) -> Cell {
-        self.borderColor = rgbColor
+        self.borderColor = Util.toPackedRGB(rgbColor)
         return self
     }
 
-    /// Returns the border color.
+    /// Returns the border color, or nil if it is not set.
     public func getBorderColor() -> [Float]? {
-        return self.borderColor
+        return (borderColor == Cell.NO_COLOR) ? nil : Util.toRGB(borderColor)
     }
 
     /// Sets the width of the cell borders.
@@ -625,7 +622,7 @@ public class Cell {
             _ y: Float,
             _ w: Float,
             _ h: Float) {
-        if backgroundColor != nil {
+        if backgroundColor != Cell.NO_COLOR {
             drawBackground(page, x, y, w, h)
         }
 
@@ -686,7 +683,7 @@ public class Cell {
             _ cellW: Float,
             _ cellH: Float) {
         page.addArtifactBMC()
-        page.setBrushColor(backgroundColor!)
+        page.setBrushColor(backgroundColor)
         page.fillRect(x, y + borderWidth/2, cellW, cellH)
         page.addEMC()
     }
@@ -698,7 +695,9 @@ public class Cell {
             _ cellW: Float,
             _ cellH: Float) {
         page.addArtifactBMC()
-        page.setPenColor(borderColor)
+        if borderColor != Cell.NO_COLOR {
+            page.setPenColor(borderColor)
+        }
         page.setPenWidth(borderWidth)
         let qWidth: Float = borderWidth / 4.0
         if topBorder {
@@ -742,7 +741,9 @@ public class Cell {
             fatalError("Invalid vertical text alignment option.")
         }
 
-        page.setPenColor(borderColor)
+        if borderColor != Cell.NO_COLOR {
+            page.setPenColor(borderColor)
+        }
         var xText: Float
         if getTextAlignment() == Alignment.RIGHT {
             xText = (x + cellW) - (getTextWidth() + self.rightPadding)
@@ -755,7 +756,7 @@ public class Cell {
         }
         if compositeTextLine == nil {
             page.addBDC(StructElem.P, text!, text!)
-            page.drawString(font, fallbackFont, fontSize, text!, xText, yText, textColor, nil)
+            page.drawString(font, fallbackFont, fontSize, text!, xText, yText, Util.toRGB(textColor), nil)
             page.addEMC()
             if getUnderline() {
                 underlineText(page, xText, yText)

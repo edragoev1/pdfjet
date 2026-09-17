@@ -26,10 +26,13 @@ public class Cell {
     internal float leftPadding = 2f;
     internal float rightPadding = 2f;
 
-    internal float[] backgroundColor;
-    internal float[] textColor = new float[] {0f, 0f, 0f};
+    // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
+    // for every cell; NO_COLOR marks a color that is not set.
+    internal const int NO_COLOR = -1;
+    internal int backgroundColor = NO_COLOR;
+    internal int textColor = 0x000000;
     internal float borderWidth;
-    internal float[] borderColor;
+    internal int borderColor = NO_COLOR;
 
     private int colspan = 1;
     // Only the top and left borders are drawn unless SetBorder says otherwise.
@@ -228,9 +231,9 @@ public class Cell {
         return drawable as TextColumn;
     }
 
-    /// <summary>Sets the background color from an array of red, green and blue values, or removes the background with null.</summary>
+    /// <summary>Sets the background color from an array of red, green and blue values, or removes the background with null. The cell keeps each component to the nearest of 256 steps.</summary>
     public Cell SetBackgroundColor(float[] rgbColor) {
-        this.backgroundColor = Util.CopyOf(rgbColor);
+        this.backgroundColor = Util.ToPackedRGB(rgbColor);
         return this;
     }
 
@@ -337,19 +340,16 @@ public class Cell {
     /// <summary>Sets the background color as a 0xRRGGBB value. Color.transparent removes the background.</summary>
     public Cell SetBackgroundColor(int color) {
         if (color == Color.transparent) {
-            backgroundColor = null;
+            backgroundColor = NO_COLOR;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        backgroundColor = new float[] {r, g, b};
+        backgroundColor = color & 0xFFFFFF;
         return this;
     }
 
     /// <summary>Returns the background color, or null if the cell has no background.</summary>
     public float[] GetBackgroundColor() {
-        return Util.CopyOf(this.backgroundColor);
+        return (backgroundColor == NO_COLOR) ? null : Util.ToRGB(backgroundColor);
     }
 
     /// <summary>Sets the text color as a 0xRRGGBB value. Color.transparent leaves the text color unchanged.</summary>
@@ -357,22 +357,19 @@ public class Cell {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = color & 0xFFFFFF;
         return this;
     }
 
-    /// <summary>Sets the text color from an array of red, green and blue values.</summary>
+    /// <summary>Sets the text color from an array of red, green and blue values. The cell keeps each component to the nearest of 256 steps.</summary>
     public Cell SetTextColor(float[] rgbColor) {
-        this.textColor = Util.CopyOf(rgbColor);
+        this.textColor = Util.ToPackedRGB(rgbColor);
         return this;
     }
 
     /// <summary>Returns the text color.</summary>
     public float[] GetTextColor() {
-        return Util.CopyOf(this.textColor);
+        return (textColor == NO_COLOR) ? null : Util.ToRGB(textColor);
     }
 
     /// <summary>Sets the width of the cell borders.</summary>
@@ -391,22 +388,19 @@ public class Cell {
 
     /// <summary>Sets the border color as a 0xRRGGBB value.</summary>
     public Cell SetBorderColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = color & 0xFFFFFF;
         return this;
     }
 
-    /// <summary>Sets the border color from an array of red, green and blue values.</summary>
+    /// <summary>Sets the border color from an array of red, green and blue values. The cell keeps each component to the nearest of 256 steps.</summary>
     public Cell SetBorderColor(float[] rgbColor) {
-        this.borderColor = Util.CopyOf(rgbColor);
+        this.borderColor = Util.ToPackedRGB(rgbColor);
         return this;
     }
 
-    /// <summary>Returns the border color.</summary>
+    /// <summary>Returns the border color, or null if it is not set.</summary>
     public float[] GetBorderColor() {
-        return Util.CopyOf(this.borderColor);
+        return (borderColor == NO_COLOR) ? null : Util.ToRGB(borderColor);
     }
 
     /// <summary>
@@ -558,7 +552,7 @@ public class Cell {
             float y,
             float w,
             float h) {
-        if (backgroundColor != null) {
+        if (backgroundColor != NO_COLOR) {
             DrawBackground(page, x, y, w, h);
         }
 
@@ -638,7 +632,9 @@ public class Cell {
             float cellW,
             float cellH) {
         page.AddArtifactBMC();
-        page.SetPenColor(borderColor);
+        if (borderColor != NO_COLOR) {
+            page.SetPenColor(borderColor);
+        }
         page.SetPenWidth(borderWidth);
         float qWidth = borderWidth / 4;
         if (GetBorder(Border.TOP)) {
@@ -682,7 +678,9 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.SetPenColor(borderColor);
+        if (borderColor != NO_COLOR) {
+            page.SetPenColor(borderColor);
+        }
         float xText;
         if (GetTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (GetTextWidth() + this.rightPadding);
@@ -695,7 +693,8 @@ public class Cell {
         }
         if (compositeTextLine == null) {
             page.AddBDC(StructElem.P, text, text);
-            page.DrawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
+            page.DrawString(font, fallbackFont, fontSize, text, xText, yText,
+                    (textColor == NO_COLOR) ? null : page.PackedToRGB(textColor), null);
             page.AddEMC();
             if (GetUnderline()) {
                 UnderlineText(page, xText, yText);

@@ -39,14 +39,17 @@ public class Cell {
     /** The right padding. */
     protected float rightPadding = 2f;
 
-    /** The background color as an RGB array, or null. */
-    protected float[] backgroundColor;
-    /** The text color as an RGB array. */
-    protected float[] textColor = new float[] {0f, 0f, 0f};
+    // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
+    // for every cell; NO_COLOR marks a color that is not set.
+    static final int NO_COLOR = -1;
+    /** The background color as a 0xRRGGBB value, or -1 when the cell has no background. */
+    protected int backgroundColor = NO_COLOR;
+    /** The text color as a 0xRRGGBB value, or -1 when it is not set. */
+    protected int textColor = 0x000000;
     /** The width of the cell borders. */
     protected float borderWidth;
-    /** The border color as an RGB array. */
-    protected float[] borderColor;
+    /** The border color as a 0xRRGGBB value, or -1 when it is not set. */
+    protected int borderColor = NO_COLOR;
 
     private int colspan = 1;
     // Only the top and left borders are drawn unless setBorder says otherwise.
@@ -430,31 +433,29 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBorderColor(int color) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.borderColor = new float[] {r, g, b};
+        this.borderColor = color & 0xFFFFFF;
         return this;
     }
 
     /**
-     * Sets the border color of this cell.
+     * Sets the border color of this cell. The cell keeps each component to the
+     * nearest of 256 steps.
      *
      * @param borderColor the red, green and blue components, from 0.0 to 1.0.
      * @return this Cell object.
      */
     public Cell setBorderColor(float[] borderColor) {
-        this.borderColor = Util.copyOf(borderColor);
+        this.borderColor = Util.toPackedRGB(borderColor);
         return this;
     }
 
     /**
      * Returns the border color.
      *
-     * @return the border color.
+     * @return the border color, or null if it is not set.
      */
     public float[] getBorderColor() {
-        return Util.copyOf(this.borderColor);
+        return (borderColor == NO_COLOR) ? null : Util.toRGB(borderColor);
     }
 
     /**
@@ -511,21 +512,19 @@ public class Cell {
         if (color == Color.transparent) {
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.textColor = new float[] {r, g, b};
+        this.textColor = color & 0xFFFFFF;
         return this;
     }
 
     /**
-     * Sets the text color of this cell.
+     * Sets the text color of this cell. The cell keeps each component to the
+     * nearest of 256 steps.
      *
      * @param textColor the red, green and blue components, from 0.0 to 1.0.
      * @return this Cell object.
      */
     public Cell setTextColor(float[] textColor) {
-        this.textColor = Util.copyOf(textColor);
+        this.textColor = Util.toPackedRGB(textColor);
         return this;
     }
 
@@ -535,7 +534,7 @@ public class Cell {
      * @return the red, green and blue components, from 0.0 to 1.0.
      */
     public float[] getTextColor() {
-        return Util.copyOf(textColor);
+        return (textColor == NO_COLOR) ? null : Util.toRGB(textColor);
     }
 
     /**
@@ -546,24 +545,22 @@ public class Cell {
      */
     public Cell setBackgroundColor(int color) {
         if (color == Color.transparent) {
-            this.backgroundColor = null;
+            this.backgroundColor = NO_COLOR;
             return this;
         }
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        this.backgroundColor = new float[] {r, g, b};
+        this.backgroundColor = color & 0xFFFFFF;
         return this;
     }
 
     /**
-     * Sets the background color of this cell, or removes the background.
+     * Sets the background color of this cell, or removes the background. The cell
+     * keeps each component to the nearest of 256 steps.
      *
      * @param color the red, green and blue components, from 0.0 to 1.0, or null.
      * @return this Cell object.
      */
     public Cell setBackgroundColor(float[] color) {
-        this.backgroundColor = Util.copyOf(color);
+        this.backgroundColor = Util.toPackedRGB(color);
         return this;
     }
 
@@ -573,7 +570,7 @@ public class Cell {
      * @return the background color, or null if the cell has no background.
      */
     public float[] getBackgroundColor() {
-        return Util.copyOf(this.backgroundColor);
+        return (backgroundColor == NO_COLOR) ? null : Util.toRGB(backgroundColor);
     }
 
     /**
@@ -752,7 +749,7 @@ public class Cell {
             float y,
             float w,
             float h) throws Exception {
-        if (backgroundColor != null) {
+        if (backgroundColor != NO_COLOR) {
             drawBackground(page, x, y, w, h);
         }
 
@@ -840,7 +837,9 @@ public class Cell {
             float cellW,
             float cellH) {
         page.addArtifactBMC();
-        page.setPenColor(borderColor);
+        if (borderColor != NO_COLOR) {
+            page.setPenColor(borderColor);
+        }
         page.setPenWidth(borderWidth);
         float qWidth = borderWidth / 4;
         if (getBorder(Border.TOP)) {
@@ -884,7 +883,9 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        page.setPenColor(borderColor);
+        if (borderColor != NO_COLOR) {
+            page.setPenColor(borderColor);
+        }
         float xText;
         if (getTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (getTextWidth() + this.rightPadding);
@@ -897,7 +898,8 @@ public class Cell {
         }
         if (compositeTextLine == null) {
             page.addBDC(StructElem.P, text, text);
-            page.drawString(font, fallbackFont, fontSize, text, xText, yText, textColor, null);
+            page.drawString(font, fallbackFont, fontSize, text, xText, yText,
+                    (textColor == NO_COLOR) ? null : page.packedToRGB(textColor), null);
             page.addEMC();
             if (getUnderline()) {
                 underlineText(page, xText, yText);

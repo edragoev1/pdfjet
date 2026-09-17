@@ -31,6 +31,22 @@ class Util {
         return (color == null) ? null : color.clone();
     }
 
+    /**
+     * Returns the color as a 0xRRGGBB value, each component rounded to the nearest
+     * of 256 steps and kept between 0.0 and 1.0, or -1 if the color is null.
+     */
+    static int toPackedRGB(float[] color) {
+        if (color == null) {
+            return -1;
+        }
+        return (toByte(color[0]) << 16) | (toByte(color[1]) << 8) | toByte(color[2]);
+    }
+
+    private static int toByte(float component) {
+        float value = Math.max(0f, Math.min(1f, component));
+        return Math.round(value * 255f);
+    }
+
     /** Returns the red, green and blue components, from 0.0 to 1.0, of a 0xRRGGBB color. */
     static float[] toRGB(int color) {
         return new float[] {((color >> 16) & 0xff)/255f, ((color >> 8) & 0xff)/255f, (color & 0xff)/255f};

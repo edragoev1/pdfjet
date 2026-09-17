@@ -130,6 +130,23 @@ private final class Box: Drawable {
         TestSupport.expectRGB(0, 0, 1, cell.getTextColor())
     }
 
+    @Test func colorsAreKeptToTheNearestOf256Steps() {
+        let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        TestSupport.expectRGB(0, 0, 0, cell.getTextColor())             // black by default
+        #expect(cell.getBackgroundColor() == nil)
+        #expect(cell.getBorderColor() == nil)
+        cell.setTextColor([0.5, 0.25, 1])
+        TestSupport.expectRGB(128 / 255, 64 / 255, 1, cell.getTextColor())
+        cell.setBackgroundColor([-1, 2, 0.1])                           // kept between 0 and 1
+        TestSupport.expectRGB(0, 1, 26 / 255, cell.getBackgroundColor())
+        cell.setBorderColor(0x336699)
+        TestSupport.expectRGB(Float(0x33) / 255, Float(0x66) / 255, Float(0x99) / 255, cell.getBorderColor())
+        cell.setBackgroundColor(Color.transparent)
+        #expect(cell.getBackgroundColor() == nil)
+        cell.setBorderColor(nil)
+        #expect(cell.getBorderColor() == nil)
+    }
+
     @Test func setFontChangesTheFallbackFontUnlessAnotherWasSet() throws {
         let pdf = TestSupport.newPDF()
         let helvetica = TestSupport.helvetica(pdf)
