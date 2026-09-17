@@ -12,6 +12,8 @@ using PDFjet.NET;
 
 /**
  * Example_49.cs
+ * This example draws a menu with paragraphs that mix fonts, sizes and colors,
+ * currency signs raised with a vertical offset, and a rotated, underlined label.
  */
 public class Example_49 {
     public Example_49() {
@@ -24,50 +26,75 @@ public class Example_49 {
         f1.SetSize(14f);
 
         Font f2 = new Font(pdf, SourceSerif4.Italic);
-        f2.SetSize(16f);
+        f2.SetSize(14f);
+
+        Font f3 = new Font(pdf, SourceSerif4.SemiBold);
+        f3.SetSize(14f);
+
+        Font f4 = new Font(pdf, SourceSerif4.SemiBold);
+        f4.SetSize(9f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Paragraph paragraph1 = new Paragraph()
-                .Add(new TextLine(f1, "Hello"))
-                .Add(new TextLine(f1, "W").SetTextColor(Color.black))
-                .Add(new TextLine(f1, "o").SetTextColor(Color.red))
-                .Add(new TextLine(f1, "r").SetTextColor(Color.green))
-                .Add(new TextLine(f1, "l").SetTextColor(Color.blue))
-                .Add(new TextLine(f1, "d").SetTextColor(Color.black))
-                .Add(new TextLine(f1, "$").SetVerticalOffset(1f))
-                .Add(new TextLine(f2, "29.95").SetTextColor(Color.blue))
-                .SetTextAlignment(Alignment.RIGHT);
+        TextLine title = new TextLine(f3, "Café Menu");
+        title.SetFontSize(28f);
+        title.SetLocation(70f, 100f);
+        title.DrawOn(page);
 
-        Paragraph paragraph2 = new Paragraph()
-                .Add(new TextLine(f1, "Hello"))
-                .Add(new TextLine(f1, "World"))
-                .Add(new TextLine(f1, "$"))
-                .Add(new TextLine(f2, "29.95").SetTextColor(Color.blue))
-                .SetTextAlignment(Alignment.RIGHT);
+        // Each paragraph mixes a name, an italic description and a price
+        // with a small dollar sign raised by a vertical offset.
+        String[] names = {"Espresso", "Cappuccino", "Hot chocolate"};
+        String[] notes = {"rich and intense", "with steamed milk foam", "made with dark cocoa"};
+        String[] prices = {"3.25", "4.50", "3.95"};
 
         TextColumn column = new TextColumn();
-        column.AddParagraph(paragraph1);
-        column.AddParagraph(paragraph2);
-        column.SetLocation(70f, 150f);
-        column.SetWidth(500f);
-        column.DrawOn(page);
+        for (int i = 0; i < names.Length; i++) {
+            Paragraph paragraph = new Paragraph()
+                    .Add(new TextLine(f3, names[i]))
+                    .Add(new TextLine(f2, notes[i]).SetTextColor(Color.gray))
+                    .Add(new TextLine(f4, "$").SetVerticalOffset(-4f))
+                    .Add(new TextLine(f1, prices[i]).SetTextColor(Color.darkred));
+            column.AddParagraph(paragraph);
+        }
 
+        // A paragraph that colors some of its words, aligned to the right.
+        column.AddParagraph(new Paragraph()
+                .Add(new TextLine(f2, "Freshly"))
+                .Add(new TextLine(f3, "roasted").SetTextColor(Color.saddlebrown))
+                .Add(new TextLine(f2, "every"))
+                .Add(new TextLine(f3, "morning").SetTextColor(Color.darkorange))
+                .SetTextAlignment(Alignment.RIGHT));
+
+        column.SetLocation(70f, 140f);
+        column.SetWidth(470f);
+        column.SetParagraphSpacing(1.8f);
+        float[] xy = column.DrawOn(page);
+
+        // A TextFrame wraps the words of its paragraphs to its width.
         List<Paragraph> paragraphs = new List<Paragraph>();
-        paragraphs.Add(paragraph1);
-        paragraphs.Add(paragraph2);
+        paragraphs.Add(new Paragraph()
+                .Add(new TextLine(f1, "Our beans come from small farms in"))
+                .Add(new TextLine(f3, "Colombia,"))
+                .Add(new TextLine(f3, "Ethiopia"))
+                .Add(new TextLine(f1, "and"))
+                .Add(new TextLine(f3, "Guatemala,"))
+                .Add(new TextLine(f1, "and we roast them in small batches."))
+                .Add(new TextLine(f2, "Ask us about the beans of the week.").SetTextColor(Color.darkred)));
+        paragraphs.Add(new Paragraph()
+                .Add(new TextLine(f2, "Prices include tax.").SetTextColor(Color.gray)));
 
-        TextFrame text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 200f);
-        text.SetWidth(500f);
-        text.DrawOn(page);
+        TextFrame frame = new TextFrame(paragraphs);
+        frame.SetLocation(70f, xy[1] + 30f);
+        frame.SetWidth(470f);
+        frame.DrawOn(page);
 
-        TextLine textLine = new TextLine(f1, "Hello, World!");
-        textLine.SetLocation(100f, 300f);
-        textLine.SetTextRotation(-30);
-        textLine.SetVerticalOffset(50f);
-        textLine.SetUnderline(true);
-        textLine.DrawOn(page);
+        TextLine label = new TextLine(f3, "Today's special!");
+        label.SetFontSize(18f);
+        label.SetTextColor(Color.red);
+        label.SetLocation(400f, 90f);
+        label.SetTextRotation(15);
+        label.SetUnderline(true);
+        label.DrawOn(page);
 
         pdf.Complete();
     }

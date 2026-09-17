@@ -21,39 +21,71 @@ public class Example_18 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
 
-        Font font = new Font(pdf, IBMPlexSans.Regular);
-        float fontSize = 14f;
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+
+        String[] titles = {
+            "1. Create the pages",
+            "2. Draw the content",
+            "3. Add the footers",
+        };
+        String[] texts = {
+            "The total number of pages is not known until all the content is drawn. "
+                + "That is why the pages in this document are created with Page.DETACHED: "
+                + "they are not added to the PDF yet, and they are kept in a list instead.",
+            "Each page gets its content, like this heading and this paragraph. "
+                + "Long documents would flow their text or tables from page to page here.",
+            "Now the list holds every page, so its size is the total number of pages. "
+                + "The footer \"Page X of N\" is drawn on each page, "
+                + "and then all the pages are added to the PDF with addPages.",
+        };
 
         List<Page> pages = new ArrayList<Page>();
-        Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+        for (int i = 0; i < titles.length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Rect rect = new Rect(50f, 50f, 100f, 100f);
-        rect.setFillColor(Color.red);
-        rect.drawOn(page);
-        pages.add(page);
+            TextLine header = new TextLine(f1, "How to number pages");
+            header.setFontSize(10f);
+            header.setTextColor(Color.gray);
+            header.setLocation(70f, 50f);
+            header.drawOn(page);
 
-        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        rect = new Rect(50f, 50f, 100f, 100f);
-        rect.setFillColor(Color.green);
-        rect.drawOn(page);
-        pages.add(page);
+            Line line = new Line(70f, 60f, page.getWidth() - 70f, 60f);
+            line.setStrokeColor(Color.lightgray);
+            line.drawOn(page);
 
-        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        rect = new Rect(50f, 50f, 100f, 100f);
-        rect.setFillColor(Color.blue);
-        rect.drawOn(page);
-        pages.add(page);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.setFontSize(20f);
+            title.setLocation(70f, 120f);
+            title.drawOn(page);
 
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.setFontSize(12f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(70f, 140f);
+            textBlock.setWidth(page.getWidth() - 140f);
+            textBlock.drawOn(page);
+
+            pages.add(page);
+        }
+
+        float fontSize = 10f;
         for (int i = 0; i < pages.size(); i++) {
-            page = pages.get(i);
+            Page page = pages.get(i);
+
+            Line line = new Line(70f, page.getHeight() - 60f,
+                    page.getWidth() - 70f, page.getHeight() - 60f);
+            line.setStrokeColor(Color.lightgray);
+            line.drawOn(page);
+
             String footer = "Page " + (i + 1) + " of " + pages.size();
             page.setBrushColor(Color.black);
             page.drawString(
-                    font,
+                    f1,
                     fontSize,
                     footer,
-                    (page.getWidth() - font.stringWidth(fontSize, footer))/2f,
-                    (page.getHeight() - 3f*fontSize/2f));
+                    (page.getWidth() - f1.stringWidth(fontSize, footer))/2f,
+                    page.getHeight() - 40f);
         }
         pdf.addPages(pages);
 

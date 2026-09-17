@@ -18,7 +18,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example49 draws paragraphs that mix several text styles.
+// Example49 draws a menu with paragraphs that mix fonts, sizes and colors,
+// currency signs raised with a vertical offset, and a rotated, underlined label.
 func Example49() {
 	pdf, err := pdfjet.NewPDFFile("Example_49.pdf")
 	if err != nil {
@@ -31,50 +32,75 @@ func Example49() {
 	f1.SetSize(14.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
-	f2.SetSize(16.0)
+	f2.SetSize(14.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f3.SetSize(14.0)
+
+	f4 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f4.SetSize(9.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	paragraph1 := pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f1, "Hello")).
-		Add(pdfjet.NewTextLine(f1, "W").SetTextColor(color.Black)).
-		Add(pdfjet.NewTextLine(f1, "o").SetTextColor(color.Red)).
-		Add(pdfjet.NewTextLine(f1, "r").SetTextColor(color.Green)).
-		Add(pdfjet.NewTextLine(f1, "l").SetTextColor(color.Blue)).
-		Add(pdfjet.NewTextLine(f1, "d").SetTextColor(color.Black)).
-		Add(pdfjet.NewTextLine(f1, "$").SetVerticalOffset(1.0)).
-		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
-		SetTextAlignment(alignment.Right)
+	title := pdfjet.NewTextLine(f3, "Café Menu")
+	title.SetFontSize(28.0)
+	title.SetLocation(70.0, 100.0)
+	title.DrawOn(page)
 
-	paragraph2 := pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f1, "Hello")).
-		Add(pdfjet.NewTextLine(f1, "World")).
-		Add(pdfjet.NewTextLine(f1, "$")).
-		Add(pdfjet.NewTextLine(f2, "29.95").SetTextColor(color.Blue)).
-		SetTextAlignment(alignment.Right)
+	// Each paragraph mixes a name, an italic description and a price
+	// with a small dollar sign raised by a vertical offset.
+	names := []string{"Espresso", "Cappuccino", "Hot chocolate"}
+	notes := []string{"rich and intense", "with steamed milk foam", "made with dark cocoa"}
+	prices := []string{"3.25", "4.50", "3.95"}
 
 	column := pdfjet.NewTextColumn()
-	column.AddParagraph(paragraph1)
-	column.AddParagraph(paragraph2)
-	column.SetLocation(70.0, 150.0)
-	column.SetWidth(500.0)
-	column.DrawOn(page)
+	for i := 0; i < len(names); i++ {
+		paragraph := pdfjet.NewParagraph().
+			Add(pdfjet.NewTextLine(f3, names[i])).
+			Add(pdfjet.NewTextLine(f2, notes[i]).SetTextColor(color.Gray)).
+			Add(pdfjet.NewTextLine(f4, "$").SetVerticalOffset(-4.0)).
+			Add(pdfjet.NewTextLine(f1, prices[i]).SetTextColor(color.DarkRed))
+		column.AddParagraph(paragraph)
+	}
 
+	// A paragraph that colors some of its words, aligned to the right.
+	column.AddParagraph(pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f2, "Freshly")).
+		Add(pdfjet.NewTextLine(f3, "roasted").SetTextColor(color.SaddleBrown)).
+		Add(pdfjet.NewTextLine(f2, "every")).
+		Add(pdfjet.NewTextLine(f3, "morning").SetTextColor(color.DarkOrange)).
+		SetTextAlignment(alignment.Right))
+
+	column.SetLocation(70.0, 140.0)
+	column.SetWidth(470.0)
+	column.SetParagraphSpacing(1.8)
+	xy := column.DrawOn(page)
+
+	// A TextFrame wraps the words of its paragraphs to its width.
 	paragraphs := make([]*pdfjet.Paragraph, 0)
-	paragraphs = append(paragraphs, paragraph1)
-	paragraphs = append(paragraphs, paragraph2)
+	paragraphs = append(paragraphs, pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f1, "Our beans come from small farms in")).
+		Add(pdfjet.NewTextLine(f3, "Colombia,")).
+		Add(pdfjet.NewTextLine(f3, "Ethiopia")).
+		Add(pdfjet.NewTextLine(f1, "and")).
+		Add(pdfjet.NewTextLine(f3, "Guatemala,")).
+		Add(pdfjet.NewTextLine(f1, "and we roast them in small batches.")).
+		Add(pdfjet.NewTextLine(f2, "Ask us about the beans of the week.").SetTextColor(color.DarkRed)))
+	paragraphs = append(paragraphs, pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f2, "Prices include tax.").SetTextColor(color.Gray)))
 
-	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 200.0)
-	text.SetWidth(500.0)
-	text.DrawOn(page)
+	frame := pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	frame.SetLocation(70.0, xy[1]+30.0)
+	frame.SetWidth(470.0)
+	frame.DrawOn(page)
 
-	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
-	textLine.SetLocation(100.0, 300.0)
-	textLine.SetTextRotation(-30)
-	textLine.SetVerticalOffset(50.0)
-	textLine.SetUnderline(true)
-	textLine.DrawOn(page)
+	label := pdfjet.NewTextLine(f3, "Today's special!")
+	label.SetFontSize(18.0)
+	label.SetTextColor(color.Red)
+	label.SetLocation(400.0, 90.0)
+	label.SetTextRotation(15)
+	label.SetUnderline(true)
+	label.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

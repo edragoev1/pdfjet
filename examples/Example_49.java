@@ -13,6 +13,8 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_49.java
+ * This example draws a menu with paragraphs that mix fonts, sizes and colors,
+ * currency signs raised with a vertical offset, and a rotated, underlined label.
  */
 public class Example_49 {
     public Example_49() throws Exception {
@@ -25,50 +27,75 @@ public class Example_49 {
         f1.setSize(14f);
 
         Font f2 = new Font(pdf, SourceSerif4.Italic);
-        f2.setSize(16f);
+        f2.setSize(14f);
+
+        Font f3 = new Font(pdf, SourceSerif4.SemiBold);
+        f3.setSize(14f);
+
+        Font f4 = new Font(pdf, SourceSerif4.SemiBold);
+        f4.setSize(9f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Paragraph paragraph1 = new Paragraph()
-                .add(new TextLine(f1, "Hello"))
-                .add(new TextLine(f1, "W").setTextColor(Color.black))
-                .add(new TextLine(f1, "o").setTextColor(Color.red))
-                .add(new TextLine(f1, "r").setTextColor(Color.green))
-                .add(new TextLine(f1, "l").setTextColor(Color.blue))
-                .add(new TextLine(f1, "d").setTextColor(Color.black))
-                .add(new TextLine(f1, "$").setVerticalOffset(1f))
-                .add(new TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setTextAlignment(Alignment.RIGHT);
+        TextLine title = new TextLine(f3, "Café Menu");
+        title.setFontSize(28f);
+        title.setLocation(70f, 100f);
+        title.drawOn(page);
 
-        Paragraph paragraph2 = new Paragraph()
-                .add(new TextLine(f1, "Hello"))
-                .add(new TextLine(f1, "World"))
-                .add(new TextLine(f1, "$"))
-                .add(new TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setTextAlignment(Alignment.RIGHT);
+        // Each paragraph mixes a name, an italic description and a price
+        // with a small dollar sign raised by a vertical offset.
+        String[] names = {"Espresso", "Cappuccino", "Hot chocolate"};
+        String[] notes = {"rich and intense", "with steamed milk foam", "made with dark cocoa"};
+        String[] prices = {"3.25", "4.50", "3.95"};
 
         TextColumn column = new TextColumn();
-        column.addParagraph(paragraph1);
-        column.addParagraph(paragraph2);
-        column.setLocation(70f, 150f);
-        column.setWidth(500f);
-        column.drawOn(page);
+        for (int i = 0; i < names.length; i++) {
+            Paragraph paragraph = new Paragraph()
+                    .add(new TextLine(f3, names[i]))
+                    .add(new TextLine(f2, notes[i]).setTextColor(Color.gray))
+                    .add(new TextLine(f4, "$").setVerticalOffset(-4f))
+                    .add(new TextLine(f1, prices[i]).setTextColor(Color.darkred));
+            column.addParagraph(paragraph);
+        }
 
+        // A paragraph that colors some of its words, aligned to the right.
+        column.addParagraph(new Paragraph()
+                .add(new TextLine(f2, "Freshly"))
+                .add(new TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
+                .add(new TextLine(f2, "every"))
+                .add(new TextLine(f3, "morning").setTextColor(Color.darkorange))
+                .setTextAlignment(Alignment.RIGHT));
+
+        column.setLocation(70f, 140f);
+        column.setWidth(470f);
+        column.setParagraphSpacing(1.8f);
+        float[] xy = column.drawOn(page);
+
+        // A TextFrame wraps the words of its paragraphs to its width.
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();
-        paragraphs.add(paragraph1);
-        paragraphs.add(paragraph2);
+        paragraphs.add(new Paragraph()
+                .add(new TextLine(f1, "Our beans come from small farms in"))
+                .add(new TextLine(f3, "Colombia,"))
+                .add(new TextLine(f3, "Ethiopia"))
+                .add(new TextLine(f1, "and"))
+                .add(new TextLine(f3, "Guatemala,"))
+                .add(new TextLine(f1, "and we roast them in small batches."))
+                .add(new TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)));
+        paragraphs.add(new Paragraph()
+                .add(new TextLine(f2, "Prices include tax.").setTextColor(Color.gray)));
 
-        TextFrame text = new TextFrame(paragraphs);
-        text.setLocation(70f, 200f);
-        text.setWidth(500f);
-        text.drawOn(page);
+        TextFrame frame = new TextFrame(paragraphs);
+        frame.setLocation(70f, xy[1] + 30f);
+        frame.setWidth(470f);
+        frame.drawOn(page);
 
-        TextLine textLine = new TextLine(f1, "Hello, World!");
-        textLine.setLocation(100f, 300f);
-        textLine.setTextRotation(-30);
-        textLine.setVerticalOffset(50f);
-        textLine.setUnderline(true);
-        textLine.drawOn(page);
+        TextLine label = new TextLine(f3, "Today's special!");
+        label.setFontSize(18f);
+        label.setTextColor(Color.red);
+        label.setLocation(400f, 90f);
+        label.setTextRotation(15);
+        label.setUnderline(true);
+        label.drawOn(page);
 
         pdf.complete();
     }

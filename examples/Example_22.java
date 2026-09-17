@@ -12,6 +12,8 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_22.java
+ * This example links a contents page to three chapters, and each chapter
+ * back to the contents, with destinations and "Go To" actions.
  */
 public class Example_22 {
     public Example_22() throws Exception {
@@ -21,63 +23,92 @@ public class Example_22 {
         pdf.setTitle("Internal links and destinations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
+        String[] chapters = {
+            "Destinations",
+            "Go To actions",
+            "Links on shapes and images",
+        };
+        String[] texts = {
+            "A destination is a named place in a document. The title of this chapter "
+                + "is the destination \"chapter1\", set with setDestination.",
+            "A Go To action makes something a link to a destination. The chapter titles "
+                + "on the contents page are text lines with a Go To action.",
+            "Rectangles and images can be links too. Click the arrow in the top left "
+                + "corner, or the arrow image next to it, to go back to the contents.",
+        };
+
+        // The contents page. The destination is the top of the page.
         Page page = new Page(pdf, Letter.PORTRAIT);
-        TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");
-        text.setGoToAction("dest#3");
-        text.setLocation(90f, 50f);
-        page.addDestination("dest#1", 0f, 0f);
-        text.drawOn(page);
+        page.addDestination("contents", 0f, 0f);
 
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #2 -> Go to Destination #3.");
-        text.setGoToAction("dest#3");
-        text.setDestination("dest#2");
-        text.setLocation(90f, 550f);
-        text.drawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #3 -> Go to Destination #4.");
-        text.setGoToAction("dest#4");
-        text.setDestination("dest#3");
-        text.setLocation(90f, 700f);
-        text.drawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #4 -> Go to Destination #1.");
-        text.setGoToAction("dest#1");
-        text.setDestination("dest#4");
+        TextLine text = new TextLine(f2, "Contents");
+        text.setFontSize(24f);
         text.setLocation(90f, 100f);
         text.drawOn(page);
 
-        text = new TextLine(f1, "Page #4 -> Go to Destination #2.");
-        text.setGoToAction("dest#2");
-        text.setLocation(90f, 200f);
-        text.drawOn(page);
+        float y = 150f;
+        for (int i = 0; i < chapters.length; i++) {
+            text = new TextLine(f1, "Chapter " + (i + 1) + ": " + chapters[i]);
+            text.setFontSize(14f);
+            text.setTextColor(Color.blue);
+            text.setUnderline(true);
+            text.setGoToAction("chapter" + (i + 1));
+            text.setLocation(90f, y);
+            text.drawOn(page);
+            y += 30f;
+        }
 
-        // Create a rect with no border that links to destination #1
+        for (int i = 0; i < chapters.length; i++) {
+            page = new Page(pdf, Letter.PORTRAIT);
+
+            // The title of the chapter is its destination.
+            text = new TextLine(f2, "Chapter " + (i + 1) + ": " + chapters[i]);
+            text.setFontSize(20f);
+            text.setDestination("chapter" + (i + 1));
+            text.setLocation(90f, 100f);
+            text.drawOn(page);
+
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.setFontSize(12f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(90f, 125f);
+            textBlock.setWidth(430f);
+            textBlock.drawOn(page);
+
+            text = new TextLine(f1, "Back to the contents");
+            text.setFontSize(12f);
+            text.setTextColor(Color.blue);
+            text.setUnderline(true);
+            text.setGoToAction("contents");
+            text.setLocation(90f, 250f);
+            text.drawOn(page);
+        }
+
+        // On the last page, a rect with no border links to the contents too.
         Rect rect = new Rect(20f, 20f, 20f, 20f);
-        rect.setGoToAction("dest#1");
+        rect.setGoToAction("contents");
         rect.drawOn(page);
 
         // Create an up arrow and place it in the rect
         Path path = new Path();
-        path.add(new Point(10f,  1f));
-        path.add(new Point(17f,  9f));
-        path.add(new Point(13f,  9f));
-        path.add(new Point(13f, 19f));
-        path.add(new Point( 7f, 19f));
-        path.add(new Point( 7f,  9f));
-        path.add(new Point( 3f,  9f));
+        path.add(new Point(30f, 21f));
+        path.add(new Point(37f, 29f));
+        path.add(new Point(33f, 29f));
+        path.add(new Point(33f, 39f));
+        path.add(new Point(27f, 39f));
+        path.add(new Point(27f, 29f));
+        path.add(new Point(23f, 29f));
         path.setClosed(true);
-        path.setStrokeColor(Color.oldgloryblue);
         path.setStrokeColor(Color.deepskyblue);
         path.setFillShape(true);
         path.drawOn(page);
 
+        // And so does an image of an arrow.
         Image image = new Image(pdf, "images/up-arrow.png");
-        image.setLocation(40f, 40f);
-        image.setGoToAction("dest#1");
+        image.setLocation(50f, 20f);
+        image.setGoToAction("contents");
         image.drawOn(page);
 
         pdf.complete();

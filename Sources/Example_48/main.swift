@@ -9,6 +9,9 @@ import PDFjet
 
 /**
  * Example_48.swift
+ * This example draws the outline of a short guide to the structure of a PDF
+ * file, and adds a bookmark for each of its titles. The numbers of the titles
+ * come from their place in the tree of bookmarks.
  */
 public class Example_48 {
 
@@ -22,84 +25,95 @@ public class Example_48 {
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(14.0)
 
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        f2.setSize(20.0)
+
         var page = Page(pdf, Letter.PORTRAIT)
 
         let toc = Bookmark(pdf)
 
         let x: Float = 70.0
-        var y: Float = 50.0
+        var y: Float = 80.0
         let offset: Float = 50.0
 
-        y += 30.0
-        var title = Title(f1, "This is a test!", x, y)
+        // A bookmark without a number.
+        var title = Title(f2, "The structure of a PDF file", x, y)
         toc.addBookmark(page, title)
         title.drawOn(page)
 
-        y += 30.0
-        title = Title(f1, "General", x, y).setOffset(offset)
+        y += 50.0
+        title = Title(f1, "File header", x, y).setOffset(offset)
         toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
-        title = Title(f1, "File Header", x, y).setOffset(offset)
+        title = Title(f1, "File body", x, y).setOffset(offset)
+        let body = toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        // Bookmarks nested in "File body".
+        y += 30.0
+        title = Title(f1, "Objects", x, y).setOffset(offset)
+        body.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Streams", x, y).setOffset(offset)
+        body.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Cross-reference table", x, y).setOffset(offset)
         toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
-        title = Title(f1, "File Body", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.getPrefix())
-        title.drawOn(page)
-
-        y += 30.0
-        title = Title(f1, "Cross-Reference Table", x, y).setOffset(offset)
+        title = Title(f1, "File trailer", x, y).setOffset(offset)
         toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        y = 50.0
-        title = Title(f1, "File Trailer", x, y).setOffset(offset)
-        toc.addBookmark(page, title).autoNumber(title.getPrefix())
-        title.drawOn(page)
-
-        y += 30.0
-        title = Title(f1, "Incremental Updates", x, y).setOffset(offset)
+        y = 80.0
+        title = Title(f1, "Incremental updates", x, y).setOffset(offset)
         var bm = toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
-        title = Title(f1, "Hello", x, y).setOffset(offset)
+        title = Title(f1, "New and changed objects", x, y).setOffset(offset)
         bm = bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
+        // Two levels down.
         y += 30.0
-        title = Title(f1, "World", x, y).setOffset(offset)
-        bm = bm.addBookmark(page, title).autoNumber(title.getPrefix())
-        title.drawOn(page)
-
-        y += 30.0
-        title = Title(f1, "Yahoo!!", x, y).setOffset(offset)
+        title = Title(f1, "Changed objects keep their numbers", x, y).setOffset(offset)
         bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
-        title = Title(f1, "Test Test Test ...", x, y).setOffset(offset)
+        title = Title(f1, "Deleted objects are marked as free", x, y).setOffset(offset)
         bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
+        // Back up one level.
         y += 30.0
         bm = bm.getParent()!
-        title = Title(f1, "Let's see ...", x, y).setOffset(offset)
+        title = Title(f1, "A new cross-reference section", x, y).setOffset(offset)
         bm.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
         y += 30.0
-        title = Title(f1, "One more item.", x, y).setOffset(offset)
+        title = Title(f1, "A new trailer", x, y).setOffset(offset)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Linearized files", x, y).setOffset(offset)
         toc.addBookmark(page, title).autoNumber(title.getPrefix())
         title.drawOn(page)
 
-        y += 30.0
-        title = Title(f1, "The End :)", x, y)
+        y += 50.0
+        title = Title(f2, "Summary", x, y)
         toc.addBookmark(page, title)
         title.drawOn(page)
 

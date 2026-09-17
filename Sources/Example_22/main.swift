@@ -9,6 +9,8 @@ import PDFjet
 
 /**
  * Example_22.swift
+ * This example links a contents page to three chapters, and each chapter
+ * back to the contents, with destinations and "Go To" actions.
  */
 public class Example_22 {
     public init() throws {
@@ -17,68 +19,98 @@ public class Example_22 {
         pdf.setTitle("Internal links and destinations")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
+        let chapters = [
+            "Destinations",
+            "Go To actions",
+            "Links on shapes and images",
+        ]
+        let texts = [
+            "A destination is a named place in a document. The title of this chapter "
+                + "is the destination \"chapter1\", set with setDestination.",
+            "A Go To action makes something a link to a destination. The chapter titles "
+                + "on the contents page are text lines with a Go To action.",
+            "Rectangles and images can be links too. Click the arrow in the top left "
+                + "corner, or the arrow image next to it, to go back to the contents.",
+        ]
+
+        // The contents page. The destination is the top of the page.
         var page = Page(pdf, Letter.PORTRAIT)
-        var text = TextLine(f1, "Page #1 -> Go to Destination #3.")
-        text.setGoToAction("dest#3")
-        text.setLocation(90.0, 50.0)
-        page.addDestination("dest#1", 0.0, 0.0)
-        text.drawOn(page)
+        page.addDestination("contents", 0.0, 0.0)
 
-        page = Page(pdf, Letter.PORTRAIT)
-        text = TextLine(f1, "Page #2 -> Go to Destination #3.")
-        text.setGoToAction("dest#3")
-        text.setDestination("dest#2")
-        text.setLocation(90.0, 550.0)
-        text.drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-        text = TextLine(f1, "Page #3 -> Go to Destination #4.")
-        text.setGoToAction("dest#4")
-        text.setDestination("dest#3")
-        text.setLocation(90.0, 700.0)
-        text.drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-        text = TextLine(f1, "Page #4 -> Go to Destination #1.")
-        text.setGoToAction("dest#1")
-        text.setDestination("dest#4")
+        var text = TextLine(f2, "Contents")
+        text.setFontSize(24.0)
         text.setLocation(90.0, 100.0)
         text.drawOn(page)
 
-        text = TextLine(f1, "Page #4 -> Go to Destination #2.")
-        text.setGoToAction("dest#2")
-        text.setLocation(90.0, 200.0)
-        text.drawOn(page)
+        var y: Float = 150.0
+        for i in 0..<chapters.count {
+            text = TextLine(f1, "Chapter " + String(i + 1) + ": " + chapters[i])
+            text.setFontSize(14.0)
+            text.setTextColor(Color.blue)
+            text.setUnderline(true)
+            text.setGoToAction("chapter" + String(i + 1))
+            text.setLocation(90.0, y)
+            text.drawOn(page)
+            y += 30.0
+        }
 
-        // Create a rect with no border that links to destination #1
+        for i in 0..<chapters.count {
+            page = Page(pdf, Letter.PORTRAIT)
+
+            // The title of the chapter is its destination.
+            text = TextLine(f2, "Chapter " + String(i + 1) + ": " + chapters[i])
+            text.setFontSize(20.0)
+            text.setDestination("chapter" + String(i + 1))
+            text.setLocation(90.0, 100.0)
+            text.drawOn(page)
+
+            let textBlock = TextBlock(f1, texts[i])
+            textBlock.setFontSize(12.0)
+            textBlock.setLineSpacing(1.5)
+            textBlock.setLocation(90.0, 125.0)
+            textBlock.setWidth(430.0)
+            textBlock.drawOn(page)
+
+            text = TextLine(f1, "Back to the contents")
+            text.setFontSize(12.0)
+            text.setTextColor(Color.blue)
+            text.setUnderline(true)
+            text.setGoToAction("contents")
+            text.setLocation(90.0, 250.0)
+            text.drawOn(page)
+        }
+
+        // On the last page, a rect with no border links to the contents too.
         let rect = Rect(20.0, 20.0, 20.0, 20.0)
-        rect.setGoToAction("dest#1")
+        rect.setGoToAction("contents")
         rect.drawOn(page)
 
         // Create an up arrow and place it in the rect
         let path = Path()
-        path.add(Point(10.0,  1.0))
-        path.add(Point(17.0,  9.0))
-        path.add(Point(13.0,  9.0))
-        path.add(Point(13.0, 19.0))
-        path.add(Point( 7.0, 19.0))
-        path.add(Point( 7.0,  9.0))
-        path.add(Point( 3.0,  9.0))
+        path.add(Point(30.0, 21.0))
+        path.add(Point(37.0, 29.0))
+        path.add(Point(33.0, 29.0))
+        path.add(Point(33.0, 39.0))
+        path.add(Point(27.0, 39.0))
+        path.add(Point(27.0, 29.0))
+        path.add(Point(23.0, 29.0))
         path.setClosed(true)
-        path.setStrokeColor(Color.oldgloryblue)
         path.setStrokeColor(Color.deepskyblue)
         path.setFillShape(true)
         path.drawOn(page)
 
+        // And so does an image of an arrow.
         let image = try Image(pdf, "images/up-arrow.png")
-        image.setLocation(40.0, 40.0)
-        image.setGoToAction("dest#1")
+        image.setLocation(50.0, 20.0)
+        image.setGoToAction("contents")
         image.drawOn(page)
 
         try pdf.complete()
     }
 }   // End of Example_22.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_22()

@@ -17,71 +17,108 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/mark"
 )
 
-// Example26 draws check boxes and radio buttons.
+// Example26 draws a survey with check boxes and radio buttons.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(10.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(11.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	var x float32 = 50.0
-	var y float32 = 50.0
+	var x float32 = 70.0
+	var y float32 = 90.0
 
-	pdfjet.NewCheckBox(f1, "Hello").
+	text := pdfjet.NewTextLine(f2, "Customer Survey")
+	text.SetFontSize(22.0)
+	text.SetLocation(x, y)
+	text.DrawOn(page)
+
+	// Check boxes, one below the other.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Which PDFjet ports do you use?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	pdfjet.NewCheckBox(f1, "Java").
 		SetCheckmarkColor(color.Blue).
 		Check(mark.Check).
 		SetLocation(x, y).
 		DrawOn(page)
 
-	y += 30.0
-	pdfjet.NewCheckBox(f1, "World!").
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "C#").
 		SetCheckmarkColor(color.Blue).
-		SetURIAction("http://pdfjet.com").
 		Check(mark.Check).
 		SetLocation(x, y).
 		DrawOn(page)
 
-	y += 30.0
-	pdfjet.NewCheckBox(f1, "This is a test.").
-		SetURIAction("http://pdfjet.com").
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "Swift").
 		SetLocation(x, y).
 		DrawOn(page)
 
-	y += 30.0
-	pdfjet.NewRadioButton(f1, "Hello, World!").
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "Go").
+		SetLocation(x, y).
+		DrawOn(page)
+
+	// Radio buttons in a row. Each one starts where the one before it ends.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "How did you hear about PDFjet?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	xy := pdfjet.NewRadioButton(f1, "Web search").
 		Select(true).
 		SetLocation(x, y).
 		DrawOn(page)
 
-	xy := pdfjet.NewRadioButton(f1, "Yes").
-		SetURIAction("http://pdfjet.com").
+	xy = pdfjet.NewRadioButton(f1, "A colleague").
+		SetLocation(xy[0]+20.0, y).
+		DrawOn(page)
+
+	pdfjet.NewRadioButton(f1, "Other").
+		SetLocation(xy[0]+20.0, y).
+		DrawOn(page)
+
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Would you recommend PDFjet?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	xy = pdfjet.NewRadioButton(f1, "Yes").
 		Select(true).
-		SetLocation(x+100.0, 50.0).
+		SetLocation(x, y).
 		DrawOn(page)
 
-	xy = pdfjet.NewRadioButton(f1, "No").
-		SetLocation(xy[0], 50.0).
+	pdfjet.NewRadioButton(f1, "No").
+		SetLocation(xy[0]+20.0, y).
 		DrawOn(page)
 
-	xy = pdfjet.NewCheckBox(f1, "Hello").
-		SetCheckmarkColor(color.Blue).
+	// A check box marked with an X, and one with a link.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Stay in touch").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	pdfjet.NewCheckBox(f1, "Send me news about new releases").
+		SetCheckmarkColor(color.Red).
 		Check(mark.X).
-		SetLocation(xy[0], 50.0).
+		SetLocation(x, y).
 		DrawOn(page)
 
-	xy = pdfjet.NewCheckBox(f1, "Yahoo").
-		SetCheckmarkColor(color.Blue).
-		Check(mark.Check).
-		SetLocation(xy[0], 50.0).
+	y += 25.0
+	xy = pdfjet.NewCheckBox(f1, "Visit https://pdfjet.com").
+		SetURIAction("https://pdfjet.com").
+		SetLocation(x, y).
 		DrawOn(page)
 
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.SetBorderColor(color.Black)
+	// A border around the survey.
+	rect := pdfjet.NewRect(50.0, 50.0, 512.0, xy[1]+25.0-50.0)
+	rect.SetBorderColor(color.LightGray)
 	rect.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

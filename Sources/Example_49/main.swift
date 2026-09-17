@@ -9,6 +9,8 @@ import PDFjet
 
 /**
  * Example_49.swift
+ * This example draws a menu with paragraphs that mix fonts, sizes and colors,
+ * currency signs raised with a vertical offset, and a rotated, underlined label.
  */
 public class Example_49 {
     public init() throws {
@@ -20,54 +22,80 @@ public class Example_49 {
         f1.setSize(14.0)
 
         let f2 = try Font(pdf, SourceSerif4.Italic)
-        f2.setSize(16.0)
+        f2.setSize(14.0)
+
+        let f3 = try Font(pdf, SourceSerif4.SemiBold)
+        f3.setSize(14.0)
+
+        let f4 = try Font(pdf, SourceSerif4.SemiBold)
+        f4.setSize(9.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let paragraph1 = Paragraph()
-                .add(TextLine(f1, "Hello"))
-                .add(TextLine(f1, "W").setTextColor(Color.black))
-                .add(TextLine(f1, "o").setTextColor(Color.red))
-                .add(TextLine(f1, "r").setTextColor(Color.green))
-                .add(TextLine(f1, "l").setTextColor(Color.blue))
-                .add(TextLine(f1, "d").setTextColor(Color.black))
-                .add(TextLine(f1, "$").setVerticalOffset(1.0))
-                .add(TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setTextAlignment(Alignment.RIGHT)
+        let title = TextLine(f3, "Café Menu")
+        title.setFontSize(28.0)
+        title.setLocation(70.0, 100.0)
+        title.drawOn(page)
 
-        let paragraph2 = Paragraph()
-                .add(TextLine(f1, "Hello"))
-                .add(TextLine(f1, "World"))
-                .add(TextLine(f1, "$"))
-                .add(TextLine(f2, "29.95").setTextColor(Color.blue))
-                .setTextAlignment(Alignment.RIGHT)
+        // Each paragraph mixes a name, an italic description and a price
+        // with a small dollar sign raised by a vertical offset.
+        let names = ["Espresso", "Cappuccino", "Hot chocolate"]
+        let notes = ["rich and intense", "with steamed milk foam", "made with dark cocoa"]
+        let prices = ["3.25", "4.50", "3.95"]
 
         let column = TextColumn()
-        column.addParagraph(paragraph1)
-        column.addParagraph(paragraph2)
-        column.setLocation(70.0, 150.0)
-        column.setWidth(500.0)
-        column.drawOn(page)
+        for i in 0..<names.count {
+            let paragraph = Paragraph()
+                    .add(TextLine(f3, names[i]))
+                    .add(TextLine(f2, notes[i]).setTextColor(Color.gray))
+                    .add(TextLine(f4, "$").setVerticalOffset(-4.0))
+                    .add(TextLine(f1, prices[i]).setTextColor(Color.darkred))
+            column.addParagraph(paragraph)
+        }
 
+        // A paragraph that colors some of its words, aligned to the right.
+        column.addParagraph(Paragraph()
+                .add(TextLine(f2, "Freshly"))
+                .add(TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
+                .add(TextLine(f2, "every"))
+                .add(TextLine(f3, "morning").setTextColor(Color.darkorange))
+                .setTextAlignment(Alignment.RIGHT))
+
+        column.setLocation(70.0, 140.0)
+        column.setWidth(470.0)
+        column.setParagraphSpacing(1.8)
+        let xy = column.drawOn(page)
+
+        // A TextFrame wraps the words of its paragraphs to its width.
         var paragraphs = [Paragraph]()
-        paragraphs.append(paragraph1)
-        paragraphs.append(paragraph2)
+        paragraphs.append(Paragraph()
+                .add(TextLine(f1, "Our beans come from small farms in"))
+                .add(TextLine(f3, "Colombia,"))
+                .add(TextLine(f3, "Ethiopia"))
+                .add(TextLine(f1, "and"))
+                .add(TextLine(f3, "Guatemala,"))
+                .add(TextLine(f1, "and we roast them in small batches."))
+                .add(TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)))
+        paragraphs.append(Paragraph()
+                .add(TextLine(f2, "Prices include tax.").setTextColor(Color.gray)))
 
-        let text = TextFrame(paragraphs)
-        text.setLocation(70.0, 200.0)
-        text.setWidth(500.0)
-        text.drawOn(page)
+        let frame = TextFrame(paragraphs)
+        frame.setLocation(70.0, xy[1] + 30.0)
+        frame.setWidth(470.0)
+        frame.drawOn(page)
 
-        let textLine = TextLine(f1, "Hello, World!")
-        textLine.setLocation(100.0, 300.0)
-        textLine.setTextRotation(-30)
-        textLine.setVerticalOffset(50.0)
-        textLine.setUnderline(true)
-        textLine.drawOn(page)
+        let label = TextLine(f3, "Today's special!")
+        label.setFontSize(18.0)
+        label.setTextColor(Color.red)
+        label.setLocation(400.0, 90.0)
+        label.setTextRotation(15)
+        label.setUnderline(true)
+        label.drawOn(page)
 
         try pdf.complete()
     }
 }   // End of Example_49.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_49()

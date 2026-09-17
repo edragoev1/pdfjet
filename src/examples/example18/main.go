@@ -24,39 +24,71 @@ func Example18() {
 		log.Fatal(err)
 	}
 
-	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	fontSize := float32(14.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+
+	titles := []string{
+		"1. Create the pages",
+		"2. Draw the content",
+		"3. Add the footers",
+	}
+	texts := []string{
+		"The total number of pages is not known until all the content is drawn. " +
+			"That is why the pages in this document are created with Page.DETACHED: " +
+			"they are not added to the PDF yet, and they are kept in a list instead.",
+		"Each page gets its content, like this heading and this paragraph. " +
+			"Long documents would flow their text or tables from page to page here.",
+		"Now the list holds every page, so its size is the total number of pages. " +
+			"The footer \"Page X of N\" is drawn on each page, " +
+			"and then all the pages are added to the PDF with addPages.",
+	}
 
 	pages := make([]*pdfjet.Page, 0)
+	for i := 0; i < len(titles); i++ {
+		page := pdfjet.NewPageDetached(pdf, a4.Portrait())
 
-	page := pdfjet.NewPageDetached(pdf, a4.Portrait())
-	rect := pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
-	rect.SetFillColor(color.Red)
-	rect.DrawOn(page)
-	pages = append(pages, page)
+		header := pdfjet.NewTextLine(f1, "How to number pages")
+		header.SetFontSize(10.0)
+		header.SetTextColor(color.Gray)
+		header.SetLocation(70.0, 50.0)
+		header.DrawOn(page)
 
-	page = pdfjet.NewPageDetached(pdf, a4.Portrait())
-	rect = pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
-	rect.SetFillColor(color.Green)
-	rect.DrawOn(page)
-	pages = append(pages, page)
+		line := pdfjet.NewLine(70.0, 60.0, page.GetWidth()-70.0, 60.0)
+		line.SetStrokeColor(color.LightGray)
+		line.DrawOn(page)
 
-	page = pdfjet.NewPageDetached(pdf, a4.Portrait())
-	rect = pdfjet.NewRect(50.0, 50.0, 100.0, 100.0)
-	rect.SetFillColor(color.Blue)
-	rect.DrawOn(page)
-	pages = append(pages, page)
+		title := pdfjet.NewTextLine(f2, titles[i])
+		title.SetFontSize(20.0)
+		title.SetLocation(70.0, 120.0)
+		title.DrawOn(page)
 
+		textBlock := pdfjet.NewTextBlock(f1, texts[i])
+		textBlock.SetFontSize(12.0)
+		textBlock.SetLineSpacing(1.5)
+		textBlock.SetLocation(70.0, 140.0)
+		textBlock.SetWidth(page.GetWidth() - 140.0)
+		textBlock.DrawOn(page)
+
+		pages = append(pages, page)
+	}
+
+	fontSize := float32(10.0)
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
+
+		line := pdfjet.NewLine(70.0, page.GetHeight()-60.0,
+			page.GetWidth()-70.0, page.GetHeight()-60.0)
+		line.SetStrokeColor(color.LightGray)
+		line.DrawOn(page)
+
 		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint(len(pages))
 		page.SetBrushColor(color.Black)
 		page.DrawStringUsingFontSize(
-			font,
+			f1,
 			fontSize,
 			footer,
-			(page.GetWidth()-font.StringWidth(fontSize, footer))/2.0,
-			page.GetHeight()-3.0*fontSize/2.0)
+			(page.GetWidth()-f1.StringWidth(fontSize, footer))/2.0,
+			page.GetHeight()-40.0)
 	}
 	pdf.AddPages(pages)
 

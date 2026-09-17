@@ -19,39 +19,71 @@ public class Example_18 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
 
-        Font font = new Font(pdf, IBMPlexSans.Regular);
-        float fontSize = 14f;
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+
+        String[] titles = {
+            "1. Create the pages",
+            "2. Draw the content",
+            "3. Add the footers",
+        };
+        String[] texts = {
+            "The total number of pages is not known until all the content is drawn. "
+                + "That is why the pages in this document are created with Page.DETACHED: "
+                + "they are not added to the PDF yet, and they are kept in a list instead.",
+            "Each page gets its content, like this heading and this paragraph. "
+                + "Long documents would flow their text or tables from page to page here.",
+            "Now the list holds every page, so its size is the total number of pages. "
+                + "The footer \"Page X of N\" is drawn on each page, "
+                + "and then all the pages are added to the PDF with addPages.",
+        };
 
         List<Page> pages = new List<Page>();
-        Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+        for (int i = 0; i < titles.Length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Rect rect = new Rect(50f, 50f, 100f, 100f);
-        rect.SetFillColor(Color.red);
-        rect.DrawOn(page);
-        pages.Add(page);
+            TextLine header = new TextLine(f1, "How to number pages");
+            header.SetFontSize(10f);
+            header.SetTextColor(Color.gray);
+            header.SetLocation(70f, 50f);
+            header.DrawOn(page);
 
-        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        rect = new Rect(50f, 50f, 100f, 100f);
-        rect.SetFillColor(Color.green);
-        rect.DrawOn(page);
-        pages.Add(page);
+            Line line = new Line(70f, 60f, page.GetWidth() - 70f, 60f);
+            line.SetStrokeColor(Color.lightgray);
+            line.DrawOn(page);
 
-        page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-        rect = new Rect(50f, 50f, 100f, 100f);
-        rect.SetFillColor(Color.blue);
-        rect.DrawOn(page);
-        pages.Add(page);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.SetFontSize(20f);
+            title.SetLocation(70f, 120f);
+            title.DrawOn(page);
 
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.SetFontSize(12f);
+            textBlock.SetLineSpacing(1.5f);
+            textBlock.SetLocation(70f, 140f);
+            textBlock.SetWidth(page.GetWidth() - 140f);
+            textBlock.DrawOn(page);
+
+            pages.Add(page);
+        }
+
+        float fontSize = 10f;
         for (int i = 0; i < pages.Count; i++) {
-            page = pages[i];
+            Page page = pages[i];
+
+            Line line = new Line(70f, page.GetHeight() - 60f,
+                    page.GetWidth() - 70f, page.GetHeight() - 60f);
+            line.SetStrokeColor(Color.lightgray);
+            line.DrawOn(page);
+
             String footer = "Page " + (i + 1) + " of " + pages.Count;
             page.SetBrushColor(Color.black);
             page.DrawString(
-                    font,
+                    f1,
                     fontSize,
                     footer,
-                    (page.GetWidth() - font.StringWidth(fontSize, footer))/2f,
-                    (page.GetHeight() - 3f*fontSize/2f));
+                    (page.GetWidth() - f1.StringWidth(fontSize, footer))/2f,
+                    page.GetHeight() - 40f);
         }
         pdf.AddPages(pages);
 

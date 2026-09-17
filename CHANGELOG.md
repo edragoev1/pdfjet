@@ -7,6 +7,15 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## Unreleased
+
+### Examples
+- Examples 18, 22, 26, 48 and 49 draw documents instead of test pages, in all
+  four ports: a short document with "Page X of N" footers, a contents page
+  linked to chapters and back, a survey with check boxes and radio buttons, the
+  bookmarked outline of a guide to the PDF file structure, and a menu with
+  mixed text styles. They use the same features as before.
+
 ## v9.0.0 — 2026-09-16
 
 Producer string bumped from `PDFjet v8.7.0` to `PDFjet v9.0.0` in all four

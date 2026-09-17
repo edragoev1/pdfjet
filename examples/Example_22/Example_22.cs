@@ -11,6 +11,8 @@ using PDFjet.NET;
 
 /**
  * Example_22.cs
+ * This example links a contents page to three chapters, and each chapter
+ * back to the contents, with destinations and "Go To" actions.
  */
 public class Example_22 {
     public Example_22() {
@@ -20,63 +22,92 @@ public class Example_22 {
         pdf.SetTitle("Internal links and destinations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
+        String[] chapters = {
+            "Destinations",
+            "Go To actions",
+            "Links on shapes and images",
+        };
+        String[] texts = {
+            "A destination is a named place in a document. The title of this chapter "
+                + "is the destination \"chapter1\", set with setDestination.",
+            "A Go To action makes something a link to a destination. The chapter titles "
+                + "on the contents page are text lines with a Go To action.",
+            "Rectangles and images can be links too. Click the arrow in the top left "
+                + "corner, or the arrow image next to it, to go back to the contents.",
+        };
+
+        // The contents page. The destination is the top of the page.
         Page page = new Page(pdf, Letter.PORTRAIT);
-        TextLine text = new TextLine(f1, "Page #1 -> Go to Destination #3.");
-        text.SetGoToAction("dest#3");
-        text.SetLocation(90f, 50f);
-        page.AddDestination("dest#1", 0f, 0f);
-        text.DrawOn(page);
+        page.AddDestination("contents", 0f, 0f);
 
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #2 -> Go to Destination #3.");
-        text.SetGoToAction("dest#3");
-        text.SetDestination("dest#2");
-        text.SetLocation(90f, 550f);
-        text.DrawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #3 -> Go to Destination #4.");
-        text.SetGoToAction("dest#4");
-        text.SetDestination("dest#3");
-        text.SetLocation(90f, 700f);
-        text.DrawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        text = new TextLine(f1, "Page #4 -> Go to Destination #1.");
-        text.SetGoToAction("dest#1");
-        text.SetDestination("dest#4");
+        TextLine text = new TextLine(f2, "Contents");
+        text.SetFontSize(24f);
         text.SetLocation(90f, 100f);
         text.DrawOn(page);
 
-        text = new TextLine(f1, "Page #4 -> Go to Destination #2.");
-        text.SetGoToAction("dest#2");
-        text.SetLocation(90f, 200f);
-        text.DrawOn(page);
+        float y = 150f;
+        for (int i = 0; i < chapters.Length; i++) {
+            text = new TextLine(f1, "Chapter " + (i + 1) + ": " + chapters[i]);
+            text.SetFontSize(14f);
+            text.SetTextColor(Color.blue);
+            text.SetUnderline(true);
+            text.SetGoToAction("chapter" + (i + 1));
+            text.SetLocation(90f, y);
+            text.DrawOn(page);
+            y += 30f;
+        }
 
-        // Create a rect with no border that links to destination #1
+        for (int i = 0; i < chapters.Length; i++) {
+            page = new Page(pdf, Letter.PORTRAIT);
+
+            // The title of the chapter is its destination.
+            text = new TextLine(f2, "Chapter " + (i + 1) + ": " + chapters[i]);
+            text.SetFontSize(20f);
+            text.SetDestination("chapter" + (i + 1));
+            text.SetLocation(90f, 100f);
+            text.DrawOn(page);
+
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.SetFontSize(12f);
+            textBlock.SetLineSpacing(1.5f);
+            textBlock.SetLocation(90f, 125f);
+            textBlock.SetWidth(430f);
+            textBlock.DrawOn(page);
+
+            text = new TextLine(f1, "Back to the contents");
+            text.SetFontSize(12f);
+            text.SetTextColor(Color.blue);
+            text.SetUnderline(true);
+            text.SetGoToAction("contents");
+            text.SetLocation(90f, 250f);
+            text.DrawOn(page);
+        }
+
+        // On the last page, a rect with no border links to the contents too.
         Rect rect = new Rect(20f, 20f, 20f, 20f);
-        rect.SetGoToAction("dest#1");
+        rect.SetGoToAction("contents");
         rect.DrawOn(page);
 
         // Create an up arrow and place it in the rect
         PDFjet.NET.Path path = new PDFjet.NET.Path();
-        path.Add(new Point(10f,  1f));
-        path.Add(new Point(17f,  9f));
-        path.Add(new Point(13f,  9f));
-        path.Add(new Point(13f, 19f));
-        path.Add(new Point( 7f, 19f));
-        path.Add(new Point( 7f,  9f));
-        path.Add(new Point( 3f,  9f));
+        path.Add(new Point(30f, 21f));
+        path.Add(new Point(37f, 29f));
+        path.Add(new Point(33f, 29f));
+        path.Add(new Point(33f, 39f));
+        path.Add(new Point(27f, 39f));
+        path.Add(new Point(27f, 29f));
+        path.Add(new Point(23f, 29f));
         path.SetClosed(true);
-        path.SetStrokeColor(Color.oldgloryblue);
         path.SetStrokeColor(Color.deepskyblue);
         path.SetFillShape(true);
         path.DrawOn(page);
 
+        // And so does an image of an arrow.
         Image image = new Image(pdf, "images/up-arrow.png");
-        image.SetLocation(40f, 40f);
-        image.SetGoToAction("dest#1");
+        image.SetLocation(50f, 20f);
+        image.SetGoToAction("contents");
         image.DrawOn(page);
 
         pdf.Complete();
