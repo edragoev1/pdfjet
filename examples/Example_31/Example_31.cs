@@ -6,11 +6,14 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_31.cs
+ * This example draws Hindi and Marathi text, and filled rectangles, first
+ * opaque and then half transparent, so the colors mix where they overlap.
  */
 public class Example_31 {
     public Example_31() {
@@ -18,48 +21,51 @@ public class Example_31 {
                 new FileStream("Example_31.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, IBMPlexSansDevanagari.Regular);
-        f1.SetSize(15f);
+        f1.SetSize(13f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(14f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBlock textBlock = new TextBlock(
-                f1, Content.OfTextFile("data/languages/marathi.txt"));
-        textBlock.SetLocation(50f, 50f);
-        textBlock.SetWidth(500f);
-        textBlock.DrawOn(page);
+        // Hindi: the second line of the file, after its label.
+        new TextLine(f2, "Hindi").SetLocation(50f, 60f).DrawOn(page);
+        List<String> lines = Content.LinesOfTextFile("data/languages/devanagari.txt");
+        TextBlock textBlock = new TextBlock(f1, lines[1]);
+        textBlock.SetLineSpacing(1.3f);
+        textBlock.SetLocation(50f, 70f);
+        textBlock.SetWidth(510f);
+        float[] xy = textBlock.DrawOn(page);
 
-        String str = "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?";
-        TextLine textLine = new TextLine(f1, str);
-        textLine.SetLocation(50f, 175f);
-        textLine.DrawOn(page);
+        new TextLine(f2, "Marathi").SetLocation(50f, xy[1] + 35f).DrawOn(page);
+        textBlock = new TextBlock(f1, Content.OfTextFile("data/languages/marathi.txt"));
+        textBlock.SetLineSpacing(1.3f);
+        textBlock.SetLocation(50f, xy[1] + 45f);
+        textBlock.SetWidth(510f);
+        xy = textBlock.DrawOn(page);
 
-        page.SetPenColor(Color.blue);
-        page.SetBrushColor(Color.blue);
-        page.FillRect(50f, 200f, 200f, 200f);
+        float y = xy[1] + 50f;
+        int[] colors = {Color.blue, Color.green, Color.red};
 
+        // Opaque rectangles: each one hides the one under it.
+        new TextLine(f2, "Opaque").SetLocation(50f, y).DrawOn(page);
+        for (int i = 0; i < colors.Length; i++) {
+            page.SetBrushColor(colors[i]);
+            page.FillRect(50f + i * 60f, y + 15f + i * 30f, 120f, 120f);
+        }
+
+        // Half transparent rectangles: the colors mix where they overlap.
+        new TextLine(f2, "50% transparent").SetLocation(320f, y).DrawOn(page);
         page.SaveGraphicsState();
-
         GraphicsState gs = new GraphicsState();
         gs.SetAlphaStroking(0.5f);      // The stroking alpha constant
         gs.SetAlphaNonStroking(0.5f);   // The non-stroking alpha constant
         page.SetGraphicsState(gs);
-
-        page.SetPenColor(Color.green);
-        page.SetBrushColor(Color.green);
-        page.FillRect(100f, 250f, 200f, 200f);
-
-        page.SetPenColor(Color.red);
-        page.SetBrushColor(Color.red);
-        page.FillRect(150, 300, 200f, 200f);
-
+        for (int i = 0; i < colors.Length; i++) {
+            page.SetBrushColor(colors[i]);
+            page.FillRect(320f + i * 60f, y + 15f + i * 30f, 120f, 120f);
+        }
         page.RestoreGraphicsState();
-
-        page.SetPenColor(Color.orange);
-        page.SetBrushColor(Color.orange);
-        page.FillRect(200, 350, 200f, 200f);
-
-        page.SetBrushColor(0x00003865);
-        page.FillRect(50, 550, 200f, 200f);
 
         pdf.Complete();
     }

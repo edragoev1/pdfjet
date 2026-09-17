@@ -20,6 +20,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   watermark on a two-page PDF/A-3B proposal, labeled linear barcodes, a
   letterhead with a logo read from a PDF file, and a contents page drawn last
   but added first.
+- Examples 04, 12, 21, 29 and 31 explain what they show, in all four ports:
+  greetings in CJK fonts that are not embedded, a PDF417 barcode that holds a
+  source file, the four QR code error correction levels with the data each
+  holds, English and Greek text columns in table cells, and Hindi and Marathi
+  text with opaque and transparent rectangles.
 
 ## v9.0.0 — 2026-09-16
 

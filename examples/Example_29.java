@@ -13,40 +13,60 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_29.java
+ * This example draws a table whose cells hold text columns: each paragraph of
+ * English and Greek text wraps inside its cell, and the cell grows to fit it.
  */
 public class Example_29 {
     public Example_29() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_29.pdf")));
 
-        Font font = new Font(pdf, IBMPlexSans.Regular);
-        font.setSize(15f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(10f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Paragraph paragraph1 = new Paragraph();
-        paragraph1.add(new TextLine(font, Content.ofTextFile("data/languages/english.txt")));
+        TextLine text = new TextLine(f2, "Text Columns in Table Cells");
+        text.setFontSize(22f);
+        text.setLocation(50f, 70f);
+        text.drawOn(page);
 
-        Paragraph paragraph2 = new Paragraph();
-        paragraph2.add(new TextLine(font, Content.ofTextFile("data/languages/greek.txt")));
-
-        TextColumn column = new TextColumn();
-        column.setLocation(50f, 50f);
-        column.setWidth(400f);
-        column.addParagraph(paragraph1);
-        column.addParagraph(paragraph2);
-        // column.drawOn(page);
+        String[] languages = {"English", "Greek"};
+        String[] files = {"data/languages/english.txt", "data/languages/greek.txt"};
 
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+
         List<Cell> row = new ArrayList<Cell>();
-        row.add(new Cell(font, "Hello"));
-        row.add(new Cell(font, "World"));
-        row.get(1).setTextColumn(column);
+        row.add(new Cell(f2, "Language"));
+        row.add(new Cell(f2, "Text"));
         tableData.add(row);
 
+        for (int i = 0; i < languages.length; i++) {
+            // Each line of the file after the first two is a paragraph.
+            List<String> lines = Content.linesOfTextFile(files[i]);
+            TextColumn column = new TextColumn();
+            column.setWidth(400f);
+            for (int j = 2; j < lines.size(); j++) {
+                Paragraph paragraph = new Paragraph();
+                paragraph.add(new TextLine(f1, lines.get(j)));
+                column.addParagraph(paragraph);
+            }
+
+            row = new ArrayList<Cell>();
+            row.add(new Cell(f1, languages[i]));
+            row.add(new Cell(f1, ""));
+            row.get(1).setTextColumn(column);
+            tableData.add(row);
+        }
+
         Table table = new Table();
-        table.setTableData(tableData);
-        table.setLocation(50f, 50f);
+        table.setTableData(tableData, 1);
+        table.setColumnWidth(0, 90f);
+        table.setColumnWidth(1, 420f);
+        table.setLocation(50f, 100f);
         table.drawOn(page);
 
         pdf.complete();

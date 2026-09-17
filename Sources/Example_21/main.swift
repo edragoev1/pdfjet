@@ -9,54 +9,80 @@ import PDFjet
 
 /**
  * Example_21.swift
+ * This example draws the same web address as a QR code with each of the four
+ * error correction levels. A higher level lets a scanner read a code that is
+ * more damaged or covered, and leaves room for less data in the code.
  */
 public class Example_21 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_21.pdf", append: false)!)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let text = TextLine(f1,
-                "QR codes encoded with Low, Medium, High and Very High error correction level")
-        text.setLocation(100.0, 30.0)
+        var text = TextLine(f2, "QR Code Error Correction")
+        text.setFontSize(22.0)
+        text.setLocation(70.0, 80.0)
         text.drawOn(page)
 
-        // Please note:
-        // The higher the error correction level - the shorter the string that you can encode.
-        var qr = try QRCode(
-                "https://kazuhikoarase.github.io/qrcode-generator/js/demo",
-                ErrorCorrectionLevel.L)    // Low
-        qr.setModuleLength(3.0)
-        qr.setLocation(100.0, 100.0)
-        // qr.setModuleColor(Color.blue)
-        qr.drawOn(page)
+        let textBlock = TextBlock(f1,
+                "Each QR code below holds the same address, https://pdfjet.com. "
+                + "A higher error correction level lets a scanner read the code when "
+                + "more of it is damaged or covered, and leaves room for less data: "
+                + "PDFjet draws every code with 33 by 33 modules.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(70.0, 95.0)
+        textBlock.setWidth(470.0)
+        textBlock.drawOn(page)
 
-        qr = try QRCode(
-                "https://github.com/kazuhikoarase/qrcode-generator",
-                ErrorCorrectionLevel.M)    // Medium
-        qr.setLocation(400.0, 100.0)
-        qr.setModuleLength(3.0)
-        qr.drawOn(page)
+        let levels = [
+            ErrorCorrectionLevel.L,
+            ErrorCorrectionLevel.M,
+            ErrorCorrectionLevel.Q,
+            ErrorCorrectionLevel.H,
+        ]
+        let names = [
+            "L (Low)",
+            "M (Medium)",
+            "Q (Quartile)",
+            "H (High)",
+        ]
+        let notes = [
+            "About 7% can be restored, up to 78 bytes",
+            "About 15% can be restored, up to 62 bytes",
+            "About 25% can be restored, up to 46 bytes",
+            "About 30% can be restored, up to 34 bytes",
+        ]
 
-        qr = try QRCode(
-                "https://github.com/kazuhikoarase/jaconv",
-                ErrorCorrectionLevel.Q)    // High
-        qr.setLocation(100.0, 400.0)
-        qr.setModuleLength(3.0)
-        qr.drawOn(page)
+        // Two rows of two codes.
+        for i in 0..<levels.count {
+            let x: Float = 70.0 + Float(i % 2) * 250.0
+            let y: Float = 200.0 + Float(i / 2) * 250.0
 
-        qr = try QRCode(
-                "https://github.com/kazuhikoarase",
-                ErrorCorrectionLevel.H)    // Very High
-        qr.setLocation(400.0, 400.0)
-        qr.setModuleLength(3.0)
-        qr.drawOn(page)
+            let qr = try QRCode("https://pdfjet.com", levels[i])
+            qr.setModuleLength(5.0)
+            qr.setLocation(x, y)
+            let xy = qr.drawOn(page)
+
+            text = TextLine(f2, names[i])
+            text.setFontSize(12.0)
+            text.setLocation(x, xy[1] + 20.0)
+            text.drawOn(page)
+
+            text = TextLine(f1, notes[i])
+            text.setFontSize(10.0)
+            text.setTextColor(Color.gray)
+            text.setLocation(x, xy[1] + 35.0)
+            text.drawOn(page)
+        }
 
         try pdf.complete()
     }
 }   // End of Example_21.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_21()

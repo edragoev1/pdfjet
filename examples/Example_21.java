@@ -13,6 +13,9 @@ import com.pdfjet.qrcode.*;
 
 /**
  * Example_21.java
+ * This example draws the same web address as a QR code with each of the four
+ * error correction levels. A higher level lets a scanner read a code that is
+ * more damaged or covered, and leaves room for less data in the code.
  */
 public class Example_21 {
     public Example_21() throws Exception {
@@ -20,44 +23,66 @@ public class Example_21 {
                 new BufferedOutputStream(new FileOutputStream("Example_21.pdf")));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f1,
-                "QR codes encoded with Low, Medium, High and Very High error correction level");
-        text.setLocation(100.0f, 30.0f);
+        TextLine text = new TextLine(f2, "QR Code Error Correction");
+        text.setFontSize(22f);
+        text.setLocation(70f, 80f);
         text.drawOn(page);
 
-        // Please note:
-        // The higher the error correction level - the shorter the string that you can encode.
-        QRCode qr = new QRCode(
-                "https://kazuhikoarase.github.io/qrcode-generator/js/demo",
-                ErrorCorrectionLevel.L);   // Low
-        qr.setModuleLength(3f);
-        qr.setLocation(100f, 100f);
-        // qr.setModuleColor(Color.blue);
-        qr.drawOn(page);
+        TextBlock textBlock = new TextBlock(f1,
+                "Each QR code below holds the same address, https://pdfjet.com. "
+                + "A higher error correction level lets a scanner read the code when "
+                + "more of it is damaged or covered, and leaves room for less data: "
+                + "PDFjet draws every code with 33 by 33 modules.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(70f, 95f);
+        textBlock.setWidth(470f);
+        textBlock.drawOn(page);
 
-        qr = new QRCode(
-                "https://github.com/kazuhikoarase/qrcode-generator",
-                ErrorCorrectionLevel.M);   // Medium
-        qr.setLocation(400f, 100f);
-        qr.setModuleLength(3f);
-        qr.drawOn(page);
+        ErrorCorrectionLevel[] levels = {
+            ErrorCorrectionLevel.L,
+            ErrorCorrectionLevel.M,
+            ErrorCorrectionLevel.Q,
+            ErrorCorrectionLevel.H,
+        };
+        String[] names = {
+            "L (Low)",
+            "M (Medium)",
+            "Q (Quartile)",
+            "H (High)",
+        };
+        String[] notes = {
+            "About 7% can be restored, up to 78 bytes",
+            "About 15% can be restored, up to 62 bytes",
+            "About 25% can be restored, up to 46 bytes",
+            "About 30% can be restored, up to 34 bytes",
+        };
 
-        qr = new QRCode(
-                "https://github.com/kazuhikoarase/jaconv",
-                ErrorCorrectionLevel.Q);   // High
-        qr.setLocation(100f, 400f);
-        qr.setModuleLength(3f);
-        qr.drawOn(page);
+        // Two rows of two codes.
+        for (int i = 0; i < levels.length; i++) {
+            float x = 70f + (i % 2) * 250f;
+            float y = 200f + (i / 2) * 250f;
 
-        qr = new QRCode(
-                "https://github.com/kazuhikoarase",
-                ErrorCorrectionLevel.H);   // Very High
-        qr.setLocation(400f, 400f);
-        qr.setModuleLength(3f);
-        qr.drawOn(page);
+            QRCode qr = new QRCode("https://pdfjet.com", levels[i]);
+            qr.setModuleLength(5f);
+            qr.setLocation(x, y);
+            float[] xy = qr.drawOn(page);
+
+            text = new TextLine(f2, names[i]);
+            text.setFontSize(12f);
+            text.setLocation(x, xy[1] + 20f);
+            text.drawOn(page);
+
+            text = new TextLine(f1, notes[i]);
+            text.setFontSize(10f);
+            text.setTextColor(Color.gray);
+            text.setLocation(x, xy[1] + 35f);
+            text.drawOn(page);
+        }
 
         pdf.complete();
     }

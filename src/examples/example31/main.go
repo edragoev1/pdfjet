@@ -11,13 +11,15 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansDevanagari"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example31 draws Devanagari text and fills rectangles through a transparent graphics state.
+// Example31 draws Hindi and Marathi text, and filled rectangles, first
+// opaque and then half transparent, so the colors mix where they overlap.
 func Example31() {
 	pdf, err := pdfjet.NewPDFFile("Example_31.pdf")
 	if err != nil {
@@ -25,47 +27,51 @@ func Example31() {
 	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansDevanagari.Regular)
-	f1.SetSize(15.0)
+	f1.SetSize(13.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(14.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/marathi.txt"))
-	textBlock.SetLocation(50.0, 50.0)
-	textBlock.SetWidth(500.0)
-	textBlock.DrawOn(page)
+	// Hindi: the second line of the file, after its label.
+	pdfjet.NewTextLine(f2, "Hindi").SetLocation(50.0, 60.0).DrawOn(page)
+	lines := content.LinesOfTextFile("data/languages/devanagari.txt")
+	textBlock := pdfjet.NewTextBlock(f1, lines[1])
+	textBlock.SetLineSpacing(1.3)
+	textBlock.SetLocation(50.0, 70.0)
+	textBlock.SetWidth(510.0)
+	xy := textBlock.DrawOn(page)
 
-	str := "असम के बाद UP में भी CM कैंडिडेट का ऐलान करेगी BJP?"
-	textLine := pdfjet.NewTextLine(f1, str)
-	textLine.SetLocation(50.0, 175.0)
-	textLine.DrawOn(page)
+	pdfjet.NewTextLine(f2, "Marathi").SetLocation(50.0, xy[1]+35.0).DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/marathi.txt"))
+	textBlock.SetLineSpacing(1.3)
+	textBlock.SetLocation(50.0, xy[1]+45.0)
+	textBlock.SetWidth(510.0)
+	xy = textBlock.DrawOn(page)
 
-	page.SetPenColor(color.Blue)
-	page.SetBrushColor(color.Blue)
-	page.FillRect(50.0, 200.0, 200.0, 200.0)
+	y := xy[1] + 50.0
+	colors := []int32{color.Blue, color.Green, color.Red}
 
+	// Opaque rectangles: each one hides the one under it.
+	pdfjet.NewTextLine(f2, "Opaque").SetLocation(50.0, y).DrawOn(page)
+	for i := 0; i < len(colors); i++ {
+		page.SetBrushColor(colors[i])
+		page.FillRect(50.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
+	}
+
+	// Half transparent rectangles: the colors mix where they overlap.
+	pdfjet.NewTextLine(f2, "50% transparent").SetLocation(320.0, y).DrawOn(page)
 	page.SaveGraphicsState()
-
 	gs := pdfjet.NewGraphicsState()
 	gs.SetAlphaStroking(0.5)    // The stroking alpha constant
 	gs.SetAlphaNonStroking(0.5) // The non-stroking alpha constant
 	page.SetGraphicsState(gs)
-
-	page.SetPenColor(color.Green)
-	page.SetBrushColor(color.Green)
-	page.FillRect(100.0, 250.0, 200.0, 200.0)
-
-	page.SetPenColor(color.Red)
-	page.SetBrushColor(color.Red)
-	page.FillRect(150.0, 300.0, 200.0, 200.0)
-
+	for i := 0; i < len(colors); i++ {
+		page.SetBrushColor(colors[i])
+		page.FillRect(320.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
+	}
 	page.RestoreGraphicsState()
-
-	page.SetPenColor(color.Orange)
-	page.SetBrushColor(color.Orange)
-	page.FillRect(200.0, 350.0, 200.0, 200.0)
-
-	page.SetBrushColor(0x00003865)
-	page.FillRect(50.0, 550.0, 200.0, 200.0)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

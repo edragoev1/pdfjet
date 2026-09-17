@@ -12,12 +12,15 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
 )
 
-// Example21 uses QR code 2D barcodes.
+// Example21 draws the same web address as a QR code with each of the four
+// error correction levels. A higher level lets a scanner read a code that is
+// more damaged or covered, and leaves room for less data in the code.
 func Example21() {
 	pdf, err := pdfjet.NewPDFFile("Example_21.pdf")
 	if err != nil {
@@ -25,44 +28,66 @@ func Example21() {
 	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f1,
-		"QR codes encoded with Low, Medium, High and Very High error correction level")
-	text.SetLocation(100.0, 30.0)
+	text := pdfjet.NewTextLine(f2, "QR Code Error Correction")
+	text.SetFontSize(22.0)
+	text.SetLocation(70.0, 80.0)
 	text.DrawOn(page)
 
-	// Please note:
-	// The higher the error correction level - the shorter the string that you can encode.
-	qr := qrcode.NewQRCode(
-		"https://kazuhikoarase.github.io/qrcode-generator/js/demo",
-		errorcorrectionlevel.L) // Low
-	qr.SetModuleLength(3.0)
-	qr.SetLocation(100.0, 100.0)
-	// qr.SetModuleColor(color.Blue)
-	qr.DrawOn(page)
+	textBlock := pdfjet.NewTextBlock(f1,
+		"Each QR code below holds the same address, https://pdfjet.com. "+
+			"A higher error correction level lets a scanner read the code when "+
+			"more of it is damaged or covered, and leaves room for less data: "+
+			"PDFjet draws every code with 33 by 33 modules.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(70.0, 95.0)
+	textBlock.SetWidth(470.0)
+	textBlock.DrawOn(page)
 
-	qr = qrcode.NewQRCode(
-		"https://github.com/kazuhikoarase/qrcode-generator",
-		errorcorrectionlevel.M) // Medium
-	qr.SetLocation(400.0, 100.0)
-	qr.SetModuleLength(3.0)
-	qr.DrawOn(page)
+	levels := []errorcorrectionlevel.ErrorCorrectionLevel{
+		errorcorrectionlevel.L,
+		errorcorrectionlevel.M,
+		errorcorrectionlevel.Q,
+		errorcorrectionlevel.H,
+	}
+	names := []string{
+		"L (Low)",
+		"M (Medium)",
+		"Q (Quartile)",
+		"H (High)",
+	}
+	notes := []string{
+		"About 7% can be restored, up to 78 bytes",
+		"About 15% can be restored, up to 62 bytes",
+		"About 25% can be restored, up to 46 bytes",
+		"About 30% can be restored, up to 34 bytes",
+	}
 
-	qr = qrcode.NewQRCode(
-		"https://github.com/kazuhikoarase/jaconv",
-		errorcorrectionlevel.Q) // High
-	qr.SetLocation(100.0, 400.0)
-	qr.SetModuleLength(3.0)
-	qr.DrawOn(page)
+	// Two rows of two codes.
+	for i := 0; i < len(levels); i++ {
+		x := 70.0 + float32(i%2)*250.0
+		y := 200.0 + float32(i/2)*250.0
 
-	qr = qrcode.NewQRCode(
-		"https://github.com/kazuhikoarase",
-		errorcorrectionlevel.H) // Very High
-	qr.SetLocation(400.0, 400.0)
-	qr.SetModuleLength(3.0)
-	qr.DrawOn(page)
+		qr := qrcode.NewQRCode("https://pdfjet.com", levels[i])
+		qr.SetModuleLength(5.0)
+		qr.SetLocation(x, y)
+		xy := qr.DrawOn(page)
+
+		text = pdfjet.NewTextLine(f2, names[i])
+		text.SetFontSize(12.0)
+		text.SetLocation(x, xy[1]+20.0)
+		text.DrawOn(page)
+
+		text = pdfjet.NewTextLine(f1, notes[i])
+		text.SetFontSize(10.0)
+		text.SetTextColor(color.Gray)
+		text.SetLocation(x, xy[1]+35.0)
+		text.DrawOn(page)
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
