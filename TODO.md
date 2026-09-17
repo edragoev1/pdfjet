@@ -41,7 +41,7 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       Left-aligned output is unchanged (Examples 03, 47 and 49 compared with
       9.0.0). Unit tests in the four ports.
       Both checked with `check-examples.sh`: Java 262 tests on JDK 21 and 8,
-      C# 260, Go, Swift 268, every example identical in the four ports.
+      C# 260, Go, Swift 269, every example identical in the four ports.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
