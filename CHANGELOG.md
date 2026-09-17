@@ -43,6 +43,16 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- Four bugs in `TextBlock`, in all four ports. A padding wider than half the
+  block no longer breaks a word past its last character: it threw in Java and
+  C#, panicked in Go and trapped in Swift, and a `Cell` narrower than its
+  paddings reached it. The underline and the strikeout are drawn in the text
+  color and as thick as the font says, where they took the color of the pen the
+  page drew with and the width of the block's border. `setCornerRadius` rounds
+  a block that has a background and no border, where the radius was dropped
+  unless a border color was also set. And in Java and C#, `setTextColor(null)`
+  with an array of floats leaves the text color unchanged, where it left the
+  block with no text color, so the text took the brush color of the page.
 - `Table.drawOn(pdf, pages, pageSize)` no longer asks for pages forever when a
   row is taller than the page, in all four ports. A row that does not fit was
   left for the next page, and a row that fits no page was left for page after

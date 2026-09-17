@@ -57,6 +57,63 @@ public class TextBlockTest {
     }
 
     [Fact]
+    public void PaddingWiderThanTheBlockDrawsOneCharacterALine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        // The text area was negative, and the word was broken past its end.
+        TextBlock block = new TextBlock(font, "Hello");
+        block.SetLocation(50f, 50f).SetWidth(100f).SetPadding(60f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains(TestSupport.Hex("H"), content);
+        Assert.Contains(TestSupport.Hex("o"), content);
+    }
+
+    [Fact]
+    public void TheUnderlineIsDrawnInTheTextColorAtTheFontThickness() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetPenColor(Color.red);     // the underline took the pen color
+        TextBlock block = new TextBlock(font, "Hello");
+        block.SetLocation(50f, 50f).SetTextColor(Color.blue);
+        block.SetUnderline(true);
+        block.SetBorderWidth(3f);        // and the border width
+        block.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains("0 0 1 RG", content);
+        Assert.DoesNotContain("3 w", content);
+        Assert.Contains(font.GetUnderlineThickness(font.GetSize()) + " w", content);
+    }
+
+    [Fact]
+    public void TheCornerRadiusRoundsABackgroundWithoutABorder() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextBlock block = new TextBlock(font, "Hello");
+        block.SetLocation(50f, 50f).SetBackgroundColor(Color.yellow);
+        block.SetCornerRadius(10f);
+        block.DrawOn(page);
+        // A rounded rectangle draws its corners with the curve operator.
+        Assert.Contains(" c\n", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void ANullTextColorLeavesTheTextColorUnchanged() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetBrushColor(Color.red);
+        TextBlock block = new TextBlock(font, "Hi");
+        block.SetLocation(50f, 50f);
+        block.SetTextColor((float[]) null);
+        block.DrawOn(page);
+        TestSupport.AssertRGB(0f, 0f, 0f, block.GetTextColor());
+        Assert.Contains("0 0 0 rg", TestSupport.Content(page));
+    }
+
+    [Fact]
     public void StrikeoutDrawsALineThroughEachLine() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

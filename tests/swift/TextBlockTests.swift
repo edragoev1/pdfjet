@@ -53,6 +53,45 @@ import Testing
         #expect(bottom.contains(textMatrix), "\(textMatrix) missing from \(bottom)")
     }
 
+    @Test func paddingWiderThanTheBlockDrawsOneCharacterALine() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        // The text area was negative, and the word was broken past its end.
+        let block = TextBlock(font, "Hello")
+        block.setLocation(50.0, 50.0).setWidth(100.0).setPadding(60.0).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("H")))
+        #expect(content.contains(TestSupport.hex("o")))
+    }
+
+    @Test func theUnderlineIsDrawnInTheTextColorAtTheFontThickness() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.setPenColor(Color.red)     // the underline took the pen color
+        let block = TextBlock(font, "Hello")
+        block.setLocation(50.0, 50.0).setTextColor(Color.blue)
+        block.setUnderline(true)
+        block.setBorderWidth(3.0)       // and the border width
+        block.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("0 0 1 RG"))
+        #expect(!content.contains("3 w"))
+        #expect(content.contains("\(font.getUnderlineThickness(font.getSize())) w"))
+    }
+
+    @Test func theCornerRadiusRoundsABackgroundWithoutABorder() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let block = TextBlock(TestSupport.helvetica(pdf), "Hello")
+        block.setLocation(50.0, 50.0).setBackgroundColor(Color.yellow)
+        block.setCornerRadius(10.0)
+        block.drawOn(page)
+        // A rounded rectangle draws its corners with the curve operator.
+        #expect(TestSupport.content(page).contains(" c\n"))
+    }
+
     @Test func strikeoutDrawsALineThroughEachLine() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)

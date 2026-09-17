@@ -245,8 +245,11 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the text color from an array of red, green and blue values.</summary>
+    /// <summary>Sets the text color from an array of red, green and blue values. A null color leaves the text color unchanged.</summary>
     public TextBlock SetTextColor(float[] textColor) {
+        if (textColor == null) {
+            return this;
+        }
         this.textColor = Util.CopyOf(textColor);
         return this;
     }
@@ -338,7 +341,7 @@ public class TextBlock : IDrawable {
     private TextLine[] GetTextLines() {
         List<TextLine> textLines = new List<TextLine>();
 
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        float textAreaWidth = TextAreaWidth();
         // Like String.split in Java: the trailing empty lines are dropped, but an empty text is one empty line.
         List<string> lines = new List<string>(this.textContent.Replace("\r\n", "\n").Split('\n'));
         while (lines.Count > 1 && lines[lines.Count - 1].Length == 0) {
@@ -591,7 +594,7 @@ public class TextBlock : IDrawable {
 
     // The offsets are from the left edge of the text, inside the padding.
     private void RightAlignText(TextLine[] textLines) {
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
             textLine.xOffset =
                 textAreaWidth - StringWidth(textLine.text);
@@ -599,11 +602,17 @@ public class TextBlock : IDrawable {
     }
 
     private void CenterText(TextLine[] textLines) {
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        float textAreaWidth = TextAreaWidth();
         foreach (TextLine textLine in textLines) {
             textLine.xOffset =
                 (textAreaWidth - StringWidth(textLine.text)) / 2f;
         }
+    }
+
+    // The width the text is laid out in, never narrower than nothing.
+    private float TextAreaWidth() {
+        float textAreaWidth = this.width - 2 * this.textPadding;
+        return (textAreaWidth > 0f) ? textAreaWidth : 0f;
     }
 
     private void UnderlineText(TextLine[] textLines) {
@@ -642,7 +651,6 @@ public class TextBlock : IDrawable {
         }
 
         page.SaveGraphicsState();
-        page.SetPenWidth(this.borderWidth);
         if (textAlignment == Alignment.CENTER) {
             CenterText(textLines);
         } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
@@ -657,10 +665,10 @@ public class TextBlock : IDrawable {
 
         if (borderColor != null || fillColor != null) {
             Rect rect = new Rect(this.x, this.y, this.width, blockHeight);
+            rect.SetCornerRadius(this.borderCornerRadius);
             if (borderColor != null) {
                 rect.SetBorderColor(this.borderColor);
                 rect.SetBorderWidth(this.borderWidth);
-                rect.SetCornerRadius(this.borderCornerRadius);
             }
             if (fillColor != null) {
                 rect.SetFillColor(this.fillColor);

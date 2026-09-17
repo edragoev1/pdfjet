@@ -62,6 +62,63 @@ class TextBlockTest {
     }
 
     @Test
+    void paddingWiderThanTheBlockDrawsOneCharacterALine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        // The text area was negative, and the word was broken past its end.
+        TextBlock block = new TextBlock(font, "Hello");
+        block.setLocation(50f, 50f).setWidth(100f).setPadding(60f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("H")));
+        assertTrue(content.contains(TestSupport.hex("o")));
+    }
+
+    @Test
+    void theUnderlineIsDrawnInTheTextColorAtTheFontThickness() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setPenColor(Color.red);     // the underline took the pen color
+        TextBlock block = new TextBlock(font, "Hello");
+        block.setLocation(50f, 50f).setTextColor(Color.blue);
+        block.setUnderline(true);
+        block.setBorderWidth(3f);        // and the border width
+        block.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("0 0 1 RG"));
+        assertFalse(content.contains("3 w"));
+        assertTrue(content.contains(font.getUnderlineThickness(font.getSize()) + " w"));
+    }
+
+    @Test
+    void theCornerRadiusRoundsABackgroundWithoutABorder() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextBlock block = new TextBlock(font, "Hello");
+        block.setLocation(50f, 50f).setBackgroundColor(Color.yellow);
+        block.setCornerRadius(10f);
+        block.drawOn(page);
+        // A rounded rectangle draws its corners with the curve operator.
+        assertTrue(TestSupport.content(page).contains(" c\n"));
+    }
+
+    @Test
+    void aNullTextColorLeavesTheTextColorUnchanged() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setBrushColor(Color.red);
+        TextBlock block = new TextBlock(font, "Hi");
+        block.setLocation(50f, 50f);
+        block.setTextColor((float[]) null);
+        block.drawOn(page);
+        TestSupport.assertRGB(0f, 0f, 0f, block.getTextColor());
+        assertTrue(TestSupport.content(page).contains("0 0 0 rg"));
+    }
+
+    @Test
     void strikeoutDrawsALineThroughEachLine() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);

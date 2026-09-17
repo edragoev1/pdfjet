@@ -2669,6 +2669,19 @@ public class Page {
 
         var yLine = y + font.getBodyHeight(fontSize)
         var yStrike = y + font.getAscent(fontSize) - font.getBodyHeight(fontSize) / 4.0
+        var decorated = false
+        for textLine in textLines {
+            if textLine.underline || textLine.strikeout {
+                decorated = true
+                break
+            }
+        }
+        if decorated {
+            // The lines are drawn in the color of the text and as thick as the
+            // font says they are, as TextLine draws them.
+            setPenWidth(font.getUnderlineThickness(fontSize))
+            setPenColor(color)
+        }
         for textLine in textLines {
             if textLine.underline || textLine.strikeout {
                 let width = hasFallbackFont ?

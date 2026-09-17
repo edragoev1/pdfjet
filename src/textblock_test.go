@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -69,6 +70,59 @@ func TestTextBlockAHeightCutsTheTextThatDoesNotFitAndAlignsTheRest(t *testing.T)
 	textMatrix := lower[start : strings.Index(lower, " Tm\n")+4]
 	if !strings.Contains(bottom, textMatrix) {
 		t.Errorf("%q missing from %q", textMatrix, bottom)
+	}
+}
+
+func TestTextBlockPaddingWiderThanTheBlockDrawsOneCharacterALine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	// The text area was negative, and the word was broken past its end.
+	block := NewTextBlock(font, "Hello")
+	block.SetLocation(50, 50)
+	block.SetWidth(100)
+	block.SetPadding(60)
+	block.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("H")) || !strings.Contains(content, testHex("o")) {
+		t.Error("the characters of the word are not drawn")
+	}
+}
+
+func TestTextBlockTheUnderlineIsDrawnInTheTextColorAtTheFontThickness(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	page.SetPenColor(color.Red) // the underline took the pen color
+	block := NewTextBlock(font, "Hello")
+	block.SetLocation(50, 50)
+	block.SetTextColor(color.Blue)
+	block.SetUnderline(true)
+	block.SetBorderWidth(3) // and the border width
+	block.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, "0 0 1 RG") {
+		t.Error("the underline is not drawn in the text color")
+	}
+	if strings.Contains(content, "3 w") {
+		t.Error("the underline is drawn at the border width")
+	}
+	if !strings.Contains(content, fmt.Sprintf("%v w", font.GetUnderlineThickness(font.GetSize()))) {
+		t.Error("the underline is not as thick as the font says")
+	}
+}
+
+func TestTextBlockTheCornerRadiusRoundsABackgroundWithoutABorder(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	block := NewTextBlock(testHelvetica(pdf), "Hello")
+	block.SetLocation(50, 50)
+	block.SetBackgroundColor(color.Yellow)
+	block.SetCornerRadius(10)
+	block.DrawOn(page)
+	// A rounded rectangle draws its corners with the curve operator.
+	if !strings.Contains(testContent(page), " c\n") {
+		t.Error("the background is not rounded")
 	}
 }
 

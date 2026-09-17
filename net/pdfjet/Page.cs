@@ -2604,6 +2604,19 @@ public class Page {
 
         float yLine = y + font.GetBodyHeight(fontSize);
         float yStrike = y + font.GetAscent(fontSize) - font.GetBodyHeight(fontSize) / 4f;
+        bool decorated = false;
+        foreach (TextLine textLine in textLines) {
+            if (textLine.underline || textLine.strikeout) {
+                decorated = true;
+                break;
+            }
+        }
+        if (decorated) {
+            // The lines are drawn in the color of the text and as thick as the
+            // font says they are, as TextLine draws them.
+            SetPenWidth(font.GetUnderlineThickness(fontSize));
+            SetPenColor(color);
+        }
         foreach (TextLine textLine in textLines) {
             if (textLine.underline || textLine.strikeout) {
                 float width = hasFallbackFont ?

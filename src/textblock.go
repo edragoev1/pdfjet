@@ -358,7 +358,9 @@ func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string
 func (textBlock *TextBlock) getTextLines() []*TextLine {
 	var textLines []*TextLine
 
-	var textAreaWidth = textBlock.width - 2*textBlock.textPadding
+	// The padding can be wider than the block, and a text area narrower than
+	// nothing would break a word past its last character.
+	var textAreaWidth = textBlock.textAreaWidth()
 	// Like String.split in Java: the trailing empty lines are dropped, but an
 	// empty text is one empty line.
 	lines := strings.Split(strings.ReplaceAll(textBlock.textContent, "\r\n", "\n"), "\n")
@@ -605,6 +607,15 @@ func (textBlock *TextBlock) GetStrikeout() bool {
 	return textBlock.strikeout
 }
 
+// textAreaWidth returns the width the text is laid out in, never narrower than nothing.
+func (textBlock *TextBlock) textAreaWidth() float32 {
+	textAreaWidth := textBlock.width - 2*textBlock.textPadding
+	if textAreaWidth < 0.0 {
+		return 0.0
+	}
+	return textAreaWidth
+}
+
 func (textBlock *TextBlock) underlineText(textLines []*TextLine) {
 	for _, textLine := range textLines {
 		textLine.underline = true
@@ -641,7 +652,7 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 // rightAlignText sets the offsets from the left edge of the text, inside the
 // padding.
 func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
-	textAreaWidth := textBlock.width - 2*textBlock.textPadding
+	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
 		textLine.xOffset = textAreaWidth -
 			textBlock.stringWidth(textLine.text)
@@ -651,7 +662,7 @@ func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 // centerText sets the offsets from the left edge of the text, inside the
 // padding.
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
-	textAreaWidth := textBlock.width - 2*textBlock.textPadding
+	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
 		textLine.xOffset = (textAreaWidth -
 			textBlock.stringWidth(textLine.text)) / 2.0
@@ -684,7 +695,6 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 
 	page.SaveGraphicsState()
 
-	page.SetPenWidth(textBlock.borderWidth)
 	switch {
 	case textBlock.textAlignment == alignment.Center:
 		textBlock.centerText(textLines)
@@ -700,10 +710,10 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 
 	if textBlock.hasBorderColor || textBlock.hasFillColor {
 		rect := NewRect(textBlock.x, textBlock.y, textBlock.width, blockHeight)
+		rect.SetCornerRadius(textBlock.borderCornerRadius)
 		if textBlock.hasBorderColor {
 			rect.SetBorderColorRGB(textBlock.borderColor)
 			rect.SetBorderWidth(textBlock.borderWidth)
-			rect.SetCornerRadius(textBlock.borderCornerRadius)
 		}
 		if textBlock.hasFillColor {
 			rect.SetFillColorRGB(textBlock.fillColor)

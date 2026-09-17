@@ -301,12 +301,15 @@ public class TextBlock implements Drawable {
     }
 
     /**
-     * Sets the text color.
+     * Sets the text color. A null color leaves the text color unchanged.
      *
      * @param rgbColor the red, green and blue components, from 0.0 to 1.0.
      * @return this TextBlock object.
      */
     public TextBlock setTextColor(float[] rgbColor) {
+        if (rgbColor == null) {
+            return this;
+        }
         this.textColor = Util.copyOf(rgbColor);
         return this;
     }
@@ -503,7 +506,9 @@ public class TextBlock implements Drawable {
     private TextLine[] getTextLines() {
         List<TextLine> textLines = new ArrayList<>();
 
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        // The padding can be wider than the block, and a text area narrower
+        // than nothing would break a word past its last character.
+        float textAreaWidth = textAreaWidth();
         String[] lines = this.textContent.split("\r?\n");
         if (lines.length == 0) {
             // split drops the trailing empty lines, which leaves no lines at
@@ -775,17 +780,23 @@ public class TextBlock implements Drawable {
 
     // The offsets are from the left edge of the text, inside the padding.
     private void rightAlignText(TextLine[] textLines) {
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
             textLine.xOffset = textAreaWidth - stringWidth(textLine.text);
         }
     }
 
     private void centerText(TextLine[] textLines) {
-        float textAreaWidth = this.width - 2 * this.textPadding;
+        float textAreaWidth = textAreaWidth();
         for (TextLine textLine : textLines) {
             textLine.xOffset = (textAreaWidth - stringWidth(textLine.text)) / 2f;
         }
+    }
+
+    // The width the text is laid out in, never narrower than nothing.
+    private float textAreaWidth() {
+        float textAreaWidth = this.width - 2 * this.textPadding;
+        return (textAreaWidth > 0f) ? textAreaWidth : 0f;
     }
 
     private void underlineText(TextLine[] textLines) {
@@ -830,7 +841,6 @@ public class TextBlock implements Drawable {
         }
 
         page.saveGraphicsState();
-        page.setPenWidth(this.borderWidth);
         if (textAlignment == Alignment.CENTER) {
             centerText(textLines);
         } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
@@ -845,10 +855,10 @@ public class TextBlock implements Drawable {
 
         if (borderColor != null || fillColor != null) {
             Rect rect = new Rect(this.x, this.y, this.width, blockHeight);
+            rect.setCornerRadius(this.borderCornerRadius);
             if (borderColor != null) {
                 rect.setBorderColor(this.borderColor);
                 rect.setBorderWidth(this.borderWidth);
-                rect.setCornerRadius(this.borderCornerRadius);
             }
             if (fillColor != null) {
                 rect.setFillColor(this.fillColor);

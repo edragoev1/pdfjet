@@ -2385,6 +2385,19 @@ func (page *Page) drawTextBlock(
 
 	yLine := y + font.GetBodyHeight(fontSize)
 	yStrike := y + font.GetAscent(fontSize) - font.GetBodyHeight(fontSize)/4.0
+	decorated := false
+	for _, textLine := range textLines {
+		if textLine.underline || textLine.strikeout {
+			decorated = true
+			break
+		}
+	}
+	if decorated {
+		// The lines are drawn in the color of the text and as thick as the
+		// font says they are, as TextLine draws them.
+		page.SetPenWidth(font.GetUnderlineThickness(fontSize))
+		page.SetPenColorRGB(textColor)
+	}
 	for _, textLine := range textLines {
 		if textLine.underline || textLine.strikeout {
 			width := font.StringWidth(fontSize, textLine.text)

@@ -2952,6 +2952,19 @@ final public class Page {
 
         float yLine = y + font.getBodyHeight(fontSize);
         float yStrike = y + font.getAscent(fontSize) - font.getBodyHeight(fontSize) / 4f;
+        boolean decorated = false;
+        for (TextLine textLine : textLines) {
+            if (textLine.underline || textLine.strikeout) {
+                decorated = true;
+                break;
+            }
+        }
+        if (decorated) {
+            // The lines are drawn in the color of the text and as thick as the
+            // font says they are, as TextLine draws them.
+            setPenWidth(font.getUnderlineThickness(fontSize));
+            setPenColor(color);
+        }
         for (TextLine textLine : textLines) {
             if (textLine.underline || textLine.strikeout) {
                 float width = hasFallbackFont ?

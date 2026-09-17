@@ -341,7 +341,9 @@ public class TextBlock : Drawable {
     private func getTextLines() -> [TextLine] {
         var textLines = [TextLine]()
 
-        let textAreaWidth = self.width - 2 * self.textPadding
+        // The padding can be wider than the block, and a text area narrower
+        // than nothing would break a word past its last character.
+        let textAreaWidth = self.textAreaWidth()
         // Like String.split in Java: the trailing empty lines are dropped, but
         // an empty text is one empty line.
         var lines = textContent.replacingOccurrences(of: "\r\n", with: "\n")
@@ -607,17 +609,23 @@ public class TextBlock : Drawable {
 
     // The offsets are from the left edge of the text, inside the padding.
     private func rightAlignText(_ textLines: [TextLine]) {
-        let textAreaWidth = self.width - 2 * self.textPadding
+        let textAreaWidth = self.textAreaWidth()
         for textLine in textLines {
             textLine.xOffset = textAreaWidth - stringWidth(textLine.text)
         }
     }
 
     private func centerText(_ textLines: [TextLine]) {
-        let textAreaWidth = self.width - 2 * self.textPadding
+        let textAreaWidth = self.textAreaWidth()
         for textLine in textLines {
             textLine.xOffset = (textAreaWidth - stringWidth(textLine.text)) / 2.0
         }
+    }
+
+    // The width the text is laid out in, never narrower than nothing.
+    private func textAreaWidth() -> Float {
+        let textAreaWidth = self.width - 2 * self.textPadding
+        return (textAreaWidth > 0.0) ? textAreaWidth : 0.0
     }
 
     private func underlineText(_ textLines: [TextLine]) {
@@ -658,7 +666,6 @@ public class TextBlock : Drawable {
 
         page!.saveGraphicsState()
 
-        page!.setPenWidth(self.borderWidth)
         if textAlignment == Alignment.CENTER {
             centerText(textLines)
         } else if textAlignment == Alignment.RIGHT || rightToLeft {
@@ -673,10 +680,10 @@ public class TextBlock : Drawable {
 
         if self.borderColor != nil || self.fillColor != nil {
             let rect = Rect(x, y, width, blockHeight)
+            rect.setCornerRadius(borderCornerRadius)
             if self.borderColor != nil {
                 rect.setBorderColor(self.borderColor)
                 rect.setBorderWidth(self.borderWidth)
-                rect.setCornerRadius(borderCornerRadius)
             }
             if self.fillColor != nil {
                 rect.setFillColor(fillColor)

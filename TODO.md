@@ -83,6 +83,18 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       tests in the four ports; `check-examples.sh` (Sep 17): every example
       identical in the four ports, Java 268 tests on JDK 21 and 8, C# 266, Go,
       Swift 274.
+- ✅ **B** Four `TextBlock` bugs fixed in the four ports (Sep 17), found by a
+      review like `Cell`'s: a padding wider than half the block broke a word
+      past its last character (an exception in Java and C#, a panic in Go, a
+      trap in Swift, reachable through a narrow `Cell`); the underline and the
+      strikeout took the page's pen color and the border width instead of the
+      text color and the font's thickness, the same bug as `Cell`'s;
+      `setCornerRadius` was dropped unless a border color was set; and
+      `setTextColor(null)` left Java and C# blocks with no text color. Unit
+      tests in the four ports. Example_01 renders the same but for its
+      underlines, now 0.6 pt from the font rather than the border width.
+      `check-examples.sh` (Sep 17): every example identical in the four ports,
+      Java 272 tests on JDK 21 and 8, C# 270, Go, Swift 277.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
