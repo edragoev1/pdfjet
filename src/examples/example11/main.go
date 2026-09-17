@@ -12,67 +12,94 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example11 tests the one dimensional barcodes.
+// Example11 draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
+// each next to a label, and then barcodes drawn from top to bottom and from
+// bottom to top.
 func Example11() {
 	pdf, err := pdfjet.NewPDFFile("Example_11.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(12.0)
 
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(12.0)
+
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	code := pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!")
-	code.SetLocation(170.0, 70.0)
-	code.SetModuleLength(0.75)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	text := pdfjet.NewTextLine(f2, "Linear Barcodes")
+	text.SetFontSize(22.0)
+	text.SetLocation(70.0, 80.0)
+	text.DrawOn(page)
 
-	code = pdfjet.NewBarcode(pdfjet.CODE_128, "G86513JVW0C")
-	code.SetLocation(170.0, 170.0)
-	code.SetModuleLength(0.75)
-	code.SetDirection(direction.TopToBottom)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	labels := []string{
+		"Code 128",
+		"Code 39",
+		"UPC-A",
+		"EAN-13",
+	}
+	notes := []string{
+		"Letters, digits and symbols",
+		"Upper case letters and digits",
+		"11 digits, the check digit is added",
+		"12 digits, the check digit is added",
+	}
+	barcodes := []*pdfjet.Barcode{
+		pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!"),
+		pdfjet.NewBarcode(pdfjet.CODE_39, "WIKIPEDIA"),
+		pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890"),
+		pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890"),
+	}
+	// UPC-A and EAN-13 need wider bars for the digits under them.
+	moduleLengths := []float32{0.75, 0.75, 1.0, 1.0}
 
-	code = pdfjet.NewBarcode(pdfjet.CODE_39, "WIKIPEDIA")
-	code.SetLocation(270.0, 370.0)
-	code.SetModuleLength(0.75)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	y := float32(130.0)
+	for i := 0; i < len(barcodes); i++ {
+		pdfjet.NewTextLine(f2, labels[i]).SetLocation(70.0, y+15.0).DrawOn(page)
+		note := pdfjet.NewTextLine(f1, notes[i])
+		note.SetFontSize(10.0)
+		note.SetTextColor(color.Gray)
+		note.SetLocation(70.0, y+32.0)
+		note.DrawOn(page)
 
-	code = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
-	code.SetLocation(400.0, 70.0)
-	code.SetModuleLength(0.75)
-	code.SetDirection(direction.TopToBottom)
-	code.SetFont(f1)
-	code.DrawOn(page)
+		barcode := barcodes[i]
+		barcode.SetLocation(290.0, y)
+		barcode.SetModuleLength(moduleLengths[i])
+		barcode.SetFont(f1)
+		xy := barcode.DrawOn(page)
+		y = xy[1] + 30.0
+	}
 
-	code = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
-	code.SetLocation(450.0, 70.0)
-	code.SetModuleLength(0.75)
-	code.SetDirection(direction.BottomToTop)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	// The same barcodes can be drawn from top to bottom and from bottom to top.
+	pdfjet.NewTextLine(f2, "Vertical barcodes").SetLocation(70.0, y+15.0).DrawOn(page)
 
-	code = pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890") // UPC-A without the check digit which we calculate!!
-	code.SetLocation(450.0, 250.0)
-	code.SetModuleLength(1.0)
-	code.SetDirection(direction.BottomToTop)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "G86513JVW0C")
+	barcode.SetLocation(70.0, y+35.0)
+	barcode.SetModuleLength(0.75)
+	barcode.SetDirection(direction.TopToBottom)
+	barcode.SetFont(f1)
+	xy := barcode.DrawOn(page)
 
-	code = pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890") // EAN-13 without the check digit which we calculate!!
-	code.SetLocation(450.0, 450.0)
-	code.SetModuleLength(1.0)
-	code.SetDirection(direction.BottomToTop)
-	code.SetFont(f1)
-	code.DrawOn(page)
+	barcode = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
+	barcode.SetLocation(xy[0]+60.0, y+35.0)
+	barcode.SetModuleLength(0.75)
+	barcode.SetDirection(direction.BottomToTop)
+	barcode.SetFont(f1)
+	xy = barcode.DrawOn(page)
+
+	barcode = pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890")
+	barcode.SetLocation(xy[0]+60.0, y+35.0)
+	barcode.SetModuleLength(1.0)
+	barcode.SetDirection(direction.BottomToTop)
+	barcode.SetFont(f1)
+	barcode.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

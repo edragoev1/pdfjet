@@ -9,28 +9,34 @@ import PDFjet
 
 /**
  * Example_20.swift
- * Reading a logo in PDF format and drawing it on a new PDF document.
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
 public class Example_20 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_20.pdf", append: false)!)
 
+        // Read the logo from a PDF file, and add its fonts and images to this PDF.
         let objects = try pdf.read(
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
 
         pdf.addResourceObjects(from: objects)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(18.0)
+        f1.setSize(11.0)
+
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        f2.setSize(11.0)
 
         let pages = pdf.getPageObjects(from: objects)
         let content = pages[0].getContentObject(objects)!
 
-        var page = Page(pdf, Letter.PORTRAIT)
+        let page = Page(pdf, Letter.PORTRAIT)
 
+        // Draw the content of the first page of the logo PDF, at half its size.
         let height: Float = 105.0   // The logo height in points.
-        let x: Float = 50.0
-        let y: Float = 50.0
+        let x: Float = 60.0
+        let y: Float = 40.0
         let xScale: Float = 0.5
         let yScale: Float = 0.5
 
@@ -42,10 +48,33 @@ public class Example_20 {
                 xScale,
                 yScale)
 
-        page.setPenColor(Color.darkblue)
-        page.setPenWidth(0.0)
-        page.drawRect(0.0, 0.0, 50.0, 50.0)
+        TextLine(f2, "PDFjet Software").setLocation(390.0, 60.0).drawOn(page)
+        TextLine(f1, "Unionville, Ontario, Canada").setLocation(390.0, 76.0).drawOn(page)
+        TextLine(f1, "https://pdfjet.com").setLocation(390.0, 92.0).drawOn(page)
 
+        // A thin rule under the letterhead.
+        page.setPenColor(Color.darkred)
+        page.setPenWidth(1.0)
+        page.drawLine(60.0, 115.0, 552.0, 115.0)
+
+        let text = TextLine(f2, "The logo on this page was read from a PDF file.")
+        text.setFontSize(16.0)
+        text.setLocation(60.0, 170.0)
+        text.drawOn(page)
+
+        let textBlock = TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(60.0, 185.0)
+        textBlock.setWidth(490.0)
+        textBlock.drawOn(page)
+
+        // A maple leaf, drawn with lines and with curves from control points.
         let path = Path()
 
         path.add(Point(13.0,  0.0))
@@ -81,24 +110,32 @@ public class Example_20 {
         path.add(Point(10.5,  4.5))
         path.setClosed(true)
         path.setStrokeColor(Color.red)
-        // path.setFillShape(true)
-        path.setLocation(100.0, 100.0)
-        path.scaleBy(10.0)
-
+        path.setFillShape(true)
+        path.setLocation(60.0, 330.0)
+        path.scaleBy(6.0)
         path.drawOn(page)
 
-        page = Page(pdf, Letter.PORTRAIT)
-
-        let line = TextLine(f1, "Hello, World!")
-        line.setLocation(50.0, 50.0)
-        line.drawOn(page)
-
         let qr = try QRCode(
-                "https://kazuhikoarase.github.io",
-                ErrorCorrectionLevel.L)    // Low
-        qr.setModuleLength(3.0)
-        qr.setLocation(50.0, 200.0)
-        qr.drawOn(page)
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M)    // Medium
+        qr.setModuleLength(5.0)
+        qr.setLocation(300.0, 340.0)
+        let xy = qr.drawOn(page)
+
+        // A frame around the QR code.
+        page.setPenColor(Color.lightgray)
+        page.setPenWidth(0.5)
+        page.drawRect(290.0, 330.0, xy[0] - 280.0, xy[1] - 320.0)
+
+        var caption = TextLine(f1, "A Path with curves")
+        caption.setTextColor(Color.gray)
+        caption.setLocation(60.0, xy[1] + 35.0)
+        caption.drawOn(page)
+
+        caption = TextLine(f1, "Scan to visit https://pdfjet.com")
+        caption.setTextColor(Color.gray)
+        caption.setLocation(290.0, xy[1] + 35.0)
+        caption.drawOn(page)
 
         try pdf.complete()
     }

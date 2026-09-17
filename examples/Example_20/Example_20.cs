@@ -12,13 +12,15 @@ using PDFjet.NET;
 
 /**
  * Example_20.cs
- * Reading a logo in PDF format and drawing it on a new PDF document.
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
 class Example_20 {
     public Example_20() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_20.pdf", FileMode.Create)));
 
+        // Read the logo from a PDF file, and add its fonts and images to this PDF.
         BufferedStream bis = new BufferedStream(
                 new FileStream("data/testPDFs/PDFjetLogo.pdf", FileMode.Open));
         List<PDFobj> objects = pdf.Read(bis);
@@ -26,16 +28,20 @@ class Example_20 {
         pdf.AddResourceObjects(objects);
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(18f);
+        f1.SetSize(11f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(11f);
 
         List<PDFobj> pages = pdf.GetPageObjects(objects);
         PDFobj content = pages[0].GetContentObject(objects);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // Draw the content of the first page of the logo PDF, at half its size.
         float height = 105f;    // The logo height in points.
-        float x = 50f;
-        float y = 50f;
+        float x = 60f;
+        float y = 40f;
         float xScale = 0.5f;
         float yScale = 0.5f;
 
@@ -47,10 +53,33 @@ class Example_20 {
                 xScale,
                 yScale);
 
-        page.SetPenColor(Color.darkblue);
-        page.SetPenWidth(0f);
-        page.DrawRect(0f, 0f, 50f, 50f);
+        new TextLine(f2, "PDFjet Software").SetLocation(390f, 60f).DrawOn(page);
+        new TextLine(f1, "Unionville, Ontario, Canada").SetLocation(390f, 76f).DrawOn(page);
+        new TextLine(f1, "https://pdfjet.com").SetLocation(390f, 92f).DrawOn(page);
 
+        // A thin rule under the letterhead.
+        page.SetPenColor(Color.darkred);
+        page.SetPenWidth(1f);
+        page.DrawLine(60f, 115f, 552f, 115f);
+
+        TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.SetFontSize(16f);
+        text.SetLocation(60f, 170f);
+        text.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(60f, 185f);
+        textBlock.SetWidth(490f);
+        textBlock.DrawOn(page);
+
+        // A maple leaf, drawn with lines and with curves from control points.
         PDFjet.NET.Path path = new PDFjet.NET.Path();
 
         path.Add(new Point(13.0f,  0.0f));
@@ -86,24 +115,32 @@ class Example_20 {
         path.Add(new Point(10.5f,  4.5f));
         path.SetClosed(true);
         path.SetStrokeColor(Color.red);
-        // path.SetFillShape(true);
-        path.SetLocation(100f, 100f);
-        path.ScaleBy(10f);
-
+        path.SetFillShape(true);
+        path.SetLocation(60f, 330f);
+        path.ScaleBy(6f);
         path.DrawOn(page);
 
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        TextLine line = new TextLine(f1, "Hello, World!");
-        line.SetLocation(50f, 50f);
-        line.DrawOn(page);
-
         QRCode qr = new QRCode(
-                "https://kazuhikoarase.github.io",
-                ErrorCorrectionLevel.L);   // Low
-        qr.SetModuleLength(3f);
-        qr.SetLocation(50f, 200f);
-        qr.DrawOn(page);
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M);   // Medium
+        qr.SetModuleLength(5f);
+        qr.SetLocation(300f, 340f);
+        float[] xy = qr.DrawOn(page);
+
+        // A frame around the QR code.
+        page.SetPenColor(Color.lightgray);
+        page.SetPenWidth(0.5f);
+        page.DrawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+
+        TextLine caption = new TextLine(f1, "A Path with curves");
+        caption.SetTextColor(Color.gray);
+        caption.SetLocation(60f, xy[1] + 35f);
+        caption.DrawOn(page);
+
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
+        caption.SetTextColor(Color.gray);
+        caption.SetLocation(290f, xy[1] + 35f);
+        caption.DrawOn(page);
 
         pdf.Complete();
     }

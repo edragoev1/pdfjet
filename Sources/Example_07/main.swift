@@ -9,6 +9,9 @@ import PDFjet
 
 /**
  * Example_07.swift
+ * This example adds a "DRAFT" watermark to every page of a two-page
+ * PDF/A-3B document. The watermark is drawn first, so the text of the page
+ * is drawn over it.
  */
 public class Example_07 {
     public init() throws {
@@ -16,66 +19,58 @@ public class Example_07 {
         pdf.setTitle("PDF/A-3B compliant PDF")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        let f3 = try Font(pdf, IBMPlexSans.Bold)
 
-        var page = Page(pdf, A4.LANDSCAPE)
+        let titles = [
+            "Project Proposal",
+            "Budget and Schedule",
+        ]
+        let texts = [
+            "This proposal describes a new reporting service that creates invoices, "
+                + "statements and delivery notes as PDF documents. The documents are "
+                + "archived as PDF/A-3B, so they can be opened and printed exactly "
+                + "the same way for many years.\n\n"
+                + "The watermark tells every reader that this is a draft. It is drawn "
+                + "in light gray behind the text, at an angle from the bottom left "
+                + "corner to the top right corner of the page.",
+            "The service will be built in three phases over six months. The first "
+                + "phase delivers invoices, the second statements, and the third "
+                + "delivery notes.\n\n"
+                + "The budget and the schedule will be final once the proposal is "
+                + "approved. Until then, every page of this document is marked as a draft.",
+        ]
 
-        f1.setSize(72.0)
-        page.addWatermark(f1, "This is a Draft")
-        f1.setSize(18.0)
+        for i in 0..<titles.count {
+            let page = Page(pdf, A4.LANDSCAPE)
 
-        let xPos: Float = 20.0
-        var yPos: Float = 20.0
+            // The watermark is drawn before the content of the page.
+            f3.setSize(120.0)
+            page.addWatermark(f3, "DRAFT")
 
-        let textLine = TextLine(f1)
+            let title = TextLine(f2, titles[i])
+            title.setFontSize(28.0)
+            title.setLocation(70.0, 100.0)
+            title.drawOn(page)
 
-        var buffer = String()
-        var j = 0
-        var i = 0x410
-        while i < 0x46F {
-            if j % 64 == 0 {
-                textLine.setText(buffer)
-                textLine.setLocation(xPos, yPos)
-                textLine.drawOn(page)
-                buffer = ""
-                yPos += 24.0
-            }
-            buffer.append(Character(UnicodeScalar(i)!))
-            i += 1
-            j += 1
+            let textBlock = TextBlock(f1, texts[i])
+            textBlock.setFontSize(14.0)
+            textBlock.setLineSpacing(1.5)
+            textBlock.setLocation(70.0, 130.0)
+            textBlock.setWidth(page.getWidth() - 140.0)
+            textBlock.drawOn(page)
+
+            let footer = TextLine(f1, "Page " + String(i + 1) + " of " + String(titles.count))
+            footer.setFontSize(10.0)
+            footer.setTextColor(Color.gray)
+            footer.setLocation(70.0, page.getHeight() - 40.0)
+            footer.drawOn(page)
         }
-        textLine.setText(buffer)
-        textLine.setLocation(xPos, yPos)
-        textLine.drawOn(page)
-
-        yPos += 24.0
-        buffer = String()
-        j = 0
-        i = 0x20
-        while i < 0x7F {
-            if j % 64 == 0 {
-                textLine.setText(buffer)
-                textLine.setLocation(xPos, yPos)
-                textLine.drawOn(page)
-                buffer = ""
-                yPos += 24.0
-            }
-            buffer.append(Character(UnicodeScalar(i)!))
-            i += 1
-            j += 1
-        }
-        textLine.setText(buffer)
-        textLine.setLocation(xPos, yPos)
-        textLine.drawOn(page)
-
-        page = Page(pdf, A4.LANDSCAPE)
-        textLine.setText("Hello, World!")
-        textLine.setUnderline(true)
-        textLine.setLocation(xPos, 34.0)
-        textLine.drawOn(page)
 
         try pdf.complete()
     }
 }   // End of Example_07.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_07()

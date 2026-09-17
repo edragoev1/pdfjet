@@ -14,13 +14,15 @@ import com.pdfjet.qrcode.*;
 
 /**
  * Example_20.java
- * Reading a logo in PDF format and drawing it on a new PDF document.
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
 class Example_20 {
     public Example_20() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_20.pdf")));
 
+        // Read the logo from a PDF file, and add its fonts and images to this PDF.
         BufferedInputStream bis = new BufferedInputStream(
                 new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
         List<PDFobj> objects = pdf.read(bis);
@@ -28,16 +30,20 @@ class Example_20 {
         pdf.addResourceObjects(objects);
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(18f);
+        f1.setSize(11f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(11f);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
         PDFobj content = pages.get(0).getContentObject(objects);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // Draw the content of the first page of the logo PDF, at half its size.
         float height = 105f;    // The logo height in points.
-        float x = 50f;
-        float y = 50f;
+        float x = 60f;
+        float y = 40f;
         float xScale = 0.5f;
         float yScale = 0.5f;
 
@@ -49,10 +55,33 @@ class Example_20 {
                 xScale,
                 yScale);
 
-        page.setPenColor(Color.darkblue);
-        page.setPenWidth(0f);
-        page.drawRect(0f, 0f, 50f, 50f);
+        new TextLine(f2, "PDFjet Software").setLocation(390f, 60f).drawOn(page);
+        new TextLine(f1, "Unionville, Ontario, Canada").setLocation(390f, 76f).drawOn(page);
+        new TextLine(f1, "https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
 
+        // A thin rule under the letterhead.
+        page.setPenColor(Color.darkred);
+        page.setPenWidth(1f);
+        page.drawLine(60f, 115f, 552f, 115f);
+
+        TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.setFontSize(16f);
+        text.setLocation(60f, 170f);
+        text.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(60f, 185f);
+        textBlock.setWidth(490f);
+        textBlock.drawOn(page);
+
+        // A maple leaf, drawn with lines and with curves from control points.
         Path path = new Path();
 
         path.add(new Point(13.0f,  0.0f));
@@ -88,24 +117,32 @@ class Example_20 {
         path.add(new Point(10.5f,  4.5f));
         path.setClosed(true);
         path.setStrokeColor(Color.red);
-        // path.setFillShape(true);
-        path.setLocation(100f, 100f);
-        path.scaleBy(10f);
-
+        path.setFillShape(true);
+        path.setLocation(60f, 330f);
+        path.scaleBy(6f);
         path.drawOn(page);
 
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        TextLine line = new TextLine(f1, "Hello, World!");
-        line.setLocation(50f, 50f);
-        line.drawOn(page);
-
         QRCode qr = new QRCode(
-                "https://kazuhikoarase.github.io",
-                ErrorCorrectionLevel.L);   // Low
-        qr.setModuleLength(3f);
-        qr.setLocation(50f, 200f);
-        qr.drawOn(page);
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M);   // Medium
+        qr.setModuleLength(5f);
+        qr.setLocation(300f, 340f);
+        float[] xy = qr.drawOn(page);
+
+        // A frame around the QR code.
+        page.setPenColor(Color.lightgray);
+        page.setPenWidth(0.5f);
+        page.drawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+
+        TextLine caption = new TextLine(f1, "A Path with curves");
+        caption.setTextColor(Color.gray);
+        caption.setLocation(60f, xy[1] + 35f);
+        caption.drawOn(page);
+
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
+        caption.setTextColor(Color.gray);
+        caption.setLocation(290f, xy[1] + 35f);
+        caption.drawOn(page);
 
         pdf.complete();
     }

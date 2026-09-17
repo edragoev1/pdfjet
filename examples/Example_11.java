@@ -13,6 +13,9 @@ import com.pdfjet.barcodes.*;
 
 /**
  * Example_11.java
+ * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
+ * each next to a label, and then barcodes drawn from top to bottom and from
+ * bottom to top.
  */
 public class Example_11 {
     public Example_11() throws Exception {
@@ -22,54 +25,77 @@ public class Example_11 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);
 
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(12f);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Barcode code = new Barcode(Barcode.CODE_128, "Hellö, World!");
-        code.setLocation(170f, 70f);
-        code.setModuleLength(0.75f);
-        code.setFont(f1);
-        code.drawOn(page);
+        TextLine text = new TextLine(f2, "Linear Barcodes");
+        text.setFontSize(22f);
+        text.setLocation(70f, 80f);
+        text.drawOn(page);
 
-        code = new Barcode(Barcode.CODE_128, "G86513JVW0C");
-        code.setLocation(170f, 170f);
-        code.setModuleLength(0.75f);
-        code.setDirection(Direction.TOP_TO_BOTTOM);
-        code.setFont(f1);
-        code.drawOn(page);
+        String[] labels = {
+            "Code 128",
+            "Code 39",
+            "UPC-A",
+            "EAN-13",
+        };
+        String[] notes = {
+            "Letters, digits and symbols",
+            "Upper case letters and digits",
+            "11 digits, the check digit is added",
+            "12 digits, the check digit is added",
+        };
+        Barcode[] barcodes = {
+            new Barcode(Barcode.CODE_128, "Hellö, World!"),
+            new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
+            new Barcode(Barcode.UPC_A, "51234567890"),
+            new Barcode(Barcode.EAN_13, "051234567890"),
+        };
+        // UPC-A and EAN-13 need wider bars for the digits under them.
+        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f};
 
-        code = new Barcode(Barcode.CODE_39, "WIKIPEDIA");
-        code.setLocation(270f, 370f);
-        code.setModuleLength(0.75f);
-        code.setFont(f1);
-        code.drawOn(page);
+        float y = 130f;
+        for (int i = 0; i < barcodes.length; i++) {
+            new TextLine(f2, labels[i]).setLocation(70f, y + 15f).drawOn(page);
+            TextLine note = new TextLine(f1, notes[i]);
+            note.setFontSize(10f);
+            note.setTextColor(Color.gray);
+            note.setLocation(70f, y + 32f);
+            note.drawOn(page);
 
-        code = new Barcode(Barcode.CODE_39, "CODE39");
-        code.setLocation(400f, 70f);
-        code.setModuleLength(0.75f);
-        code.setDirection(Direction.TOP_TO_BOTTOM);
-        code.setFont(f1);
-        code.drawOn(page);
+            Barcode barcode = barcodes[i];
+            barcode.setLocation(290f, y);
+            barcode.setModuleLength(moduleLengths[i]);
+            barcode.setFont(f1);
+            float[] xy = barcode.drawOn(page);
+            y = xy[1] + 30f;
+        }
 
-        code = new Barcode(Barcode.CODE_39, "CODE39");
-        code.setLocation(450f, 70f);
-        code.setModuleLength(0.75f);
-        code.setDirection(Direction.BOTTOM_TO_TOP);
-        code.setFont(f1);
-        code.drawOn(page);
+        // The same barcodes can be drawn from top to bottom and from bottom to top.
+        new TextLine(f2, "Vertical barcodes").setLocation(70f, y + 15f).drawOn(page);
 
-        code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
-        code.setLocation(450f, 250f);
-        code.setModuleLength(1f);
-        code.setDirection(Direction.BOTTOM_TO_TOP);
-        code.setFont(f1);
-        code.drawOn(page);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "G86513JVW0C");
+        barcode.setLocation(70f, y + 35f);
+        barcode.setModuleLength(0.75f);
+        barcode.setDirection(Direction.TOP_TO_BOTTOM);
+        barcode.setFont(f1);
+        float[] xy = barcode.drawOn(page);
 
-        code = new Barcode(Barcode.EAN_13, "051234567890");   // EAN-13 without the check digit which we calculate!!
-        code.setLocation(450f, 450f);
-        code.setModuleLength(1f);
-        code.setDirection(Direction.BOTTOM_TO_TOP);
-        code.setFont(f1);
-        code.drawOn(page);
+        barcode = new Barcode(Barcode.CODE_39, "CODE39");
+        barcode.setLocation(xy[0] + 60f, y + 35f);
+        barcode.setModuleLength(0.75f);
+        barcode.setDirection(Direction.BOTTOM_TO_TOP);
+        barcode.setFont(f1);
+        xy = barcode.drawOn(page);
+
+        barcode = new Barcode(Barcode.EAN_13, "051234567890");
+        barcode.setLocation(xy[0] + 60f, y + 35f);
+        barcode.setModuleLength(1f);
+        barcode.setDirection(Direction.BOTTOM_TO_TOP);
+        barcode.setFont(f1);
+        barcode.drawOn(page);
 
         pdf.complete();
     }

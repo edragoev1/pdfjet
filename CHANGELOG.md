@@ -15,6 +15,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   linked to chapters and back, a survey with check boxes and radio buttons, the
   bookmarked outline of a guide to the PDF file structure, and a menu with
   mixed text styles. They use the same features as before.
+- Examples 06, 07, 11, 20 and 36 show their features next to labels and
+  explanations, in all four ports: attachments and annotations, a "DRAFT"
+  watermark on a two-page PDF/A-3B proposal, labeled linear barcodes, a
+  letterhead with a logo read from a PDF file, and a contents page drawn last
+  but added first.
 
 ## v9.0.0 — 2026-09-16
 

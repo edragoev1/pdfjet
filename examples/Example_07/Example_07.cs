@@ -6,12 +6,14 @@
  */
 using System;
 using System.IO;
-using System.Text;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_07.cs
+ * This example adds a "DRAFT" watermark to every page of a two-page
+ * PDF/A-3B document. The watermark is drawn first, so the text of the page
+ * is drawn over it.
  */
 public class Example_07 {
     public Example_07() {
@@ -21,56 +23,53 @@ public class Example_07 {
         pdf.SetTitle("PDF/A-3B compliant PDF");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        Font f3 = new Font(pdf, IBMPlexSans.Bold);
 
-        Page page = new Page(pdf, A4.LANDSCAPE);
+        String[] titles = {
+            "Project Proposal",
+            "Budget and Schedule",
+        };
+        String[] texts = {
+            "This proposal describes a new reporting service that creates invoices, "
+                + "statements and delivery notes as PDF documents. The documents are "
+                + "archived as PDF/A-3B, so they can be opened and printed exactly "
+                + "the same way for many years.\n\n"
+                + "The watermark tells every reader that this is a draft. It is drawn "
+                + "in light gray behind the text, at an angle from the bottom left "
+                + "corner to the top right corner of the page.",
+            "The service will be built in three phases over six months. The first "
+                + "phase delivers invoices, the second statements, and the third "
+                + "delivery notes.\n\n"
+                + "The budget and the schedule will be final once the proposal is "
+                + "approved. Until then, every page of this document is marked as a draft.",
+        };
 
-        f1.SetSize(72f);
-        page.AddWatermark(f1, "This is a Draft");
-        f1.SetSize(18f);
+        for (int i = 0; i < titles.Length; i++) {
+            Page page = new Page(pdf, A4.LANDSCAPE);
 
-        float xPos = 20f;
-        float yPos = 20f;
-        StringBuilder buf = new StringBuilder();
-        TextLine textLine = new TextLine(f1);
-        int j = 0;
-        for (int i = 0x410; i < 0x46F; i++) {
-            if (j % 64 == 0) {
-                textLine.SetText(buf.ToString());
-                textLine.SetLocation(xPos, yPos);
-                textLine.DrawOn(page);
-                buf.Length = 0;
-                yPos += 24f;
-            }
-            buf.Append((char) i);
-            j++;
+            // The watermark is drawn before the content of the page.
+            f3.SetSize(120f);
+            page.AddWatermark(f3, "DRAFT");
+
+            TextLine title = new TextLine(f2, titles[i]);
+            title.SetFontSize(28f);
+            title.SetLocation(70f, 100f);
+            title.DrawOn(page);
+
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.SetFontSize(14f);
+            textBlock.SetLineSpacing(1.5f);
+            textBlock.SetLocation(70f, 130f);
+            textBlock.SetWidth(page.GetWidth() - 140f);
+            textBlock.DrawOn(page);
+
+            TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.Length);
+            footer.SetFontSize(10f);
+            footer.SetTextColor(Color.gray);
+            footer.SetLocation(70f, page.GetHeight() - 40f);
+            footer.DrawOn(page);
         }
-        textLine.SetText(buf.ToString());
-        textLine.SetLocation(xPos, yPos);
-        textLine.DrawOn(page);
-
-        yPos += 24f;
-        buf.Length = 0;
-        j = 0;
-        for (int i = 0x20; i < 0x7F; i++) {
-            if (j % 64 == 0) {
-                textLine.SetText(buf.ToString());
-                textLine.SetLocation(xPos, yPos);
-                textLine.DrawOn(page);
-                buf.Length = 0;
-                yPos += 24f;
-            }
-            buf.Append((char) i);
-            j++;
-        }
-        textLine.SetText(buf.ToString());
-        textLine.SetLocation(xPos, yPos);
-        textLine.DrawOn(page);
-
-        page = new Page(pdf, A4.LANDSCAPE);
-        textLine.SetText("Hello, World!");
-        textLine.SetUnderline(true);
-        textLine.SetLocation(xPos, 34f);
-        textLine.DrawOn(page);
 
         pdf.Complete();
     }

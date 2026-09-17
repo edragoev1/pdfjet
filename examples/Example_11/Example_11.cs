@@ -11,6 +11,9 @@ using PDFjet.NET;
 
 /**
  * Example_11.cs
+ * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
+ * each next to a label, and then barcodes drawn from top to bottom and from
+ * bottom to top.
  */
 public class Example_11 {
     public Example_11() {
@@ -20,54 +23,77 @@ public class Example_11 {
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);
 
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(12f);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Barcode code = new Barcode(Barcode.CODE_128, "Hellö, World!");
-        code.SetLocation(170f, 70f);
-        code.SetModuleLength(0.75f);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        TextLine text = new TextLine(f2, "Linear Barcodes");
+        text.SetFontSize(22f);
+        text.SetLocation(70f, 80f);
+        text.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE_128, "G86513JVW0C");
-        code.SetLocation(170f, 170f);
-        code.SetModuleLength(0.75f);
-        code.SetDirection(Direction.TOP_TO_BOTTOM);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        String[] labels = {
+            "Code 128",
+            "Code 39",
+            "UPC-A",
+            "EAN-13",
+        };
+        String[] notes = {
+            "Letters, digits and symbols",
+            "Upper case letters and digits",
+            "11 digits, the check digit is added",
+            "12 digits, the check digit is added",
+        };
+        Barcode[] barcodes = {
+            new Barcode(Barcode.CODE_128, "Hellö, World!"),
+            new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
+            new Barcode(Barcode.UPC_A, "51234567890"),
+            new Barcode(Barcode.EAN_13, "051234567890"),
+        };
+        // UPC-A and EAN-13 need wider bars for the digits under them.
+        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f};
 
-        code = new Barcode(Barcode.CODE_39, "WIKIPEDIA");
-        code.SetLocation(270f, 370f);
-        code.SetModuleLength(0.75f);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        float y = 130f;
+        float[] xy;
+        for (int i = 0; i < barcodes.Length; i++) {
+            new TextLine(f2, labels[i]).SetLocation(70f, y + 15f).DrawOn(page);
+            TextLine note = new TextLine(f1, notes[i]);
+            note.SetFontSize(10f);
+            note.SetTextColor(Color.gray);
+            note.SetLocation(70f, y + 32f);
+            note.DrawOn(page);
 
-        code = new Barcode(Barcode.CODE_39, "CODE39");
-        code.SetLocation(400f, 70f);
-        code.SetModuleLength(0.75f);
-        code.SetDirection(Direction.TOP_TO_BOTTOM);
-        code.SetFont(f1);
-        code.DrawOn(page);
+            barcodes[i].SetLocation(290f, y);
+            barcodes[i].SetModuleLength(moduleLengths[i]);
+            barcodes[i].SetFont(f1);
+            xy = barcodes[i].DrawOn(page);
+            y = xy[1] + 30f;
+        }
 
-        code = new Barcode(Barcode.CODE_39, "CODE39");
-        code.SetLocation(450f, 70f);
-        code.SetModuleLength(0.75f);
-        code.SetDirection(Direction.BOTTOM_TO_TOP);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        // The same barcodes can be drawn from top to bottom and from bottom to top.
+        new TextLine(f2, "Vertical barcodes").SetLocation(70f, y + 15f).DrawOn(page);
 
-        code = new Barcode(Barcode.UPC_A, "51234567890");     // UPC-A without the check digit which we calculate!!
-        code.SetLocation(450f, 250f);
-        code.SetModuleLength(1.0f);
-        code.SetDirection(Direction.BOTTOM_TO_TOP);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "G86513JVW0C");
+        barcode.SetLocation(70f, y + 35f);
+        barcode.SetModuleLength(0.75f);
+        barcode.SetDirection(Direction.TOP_TO_BOTTOM);
+        barcode.SetFont(f1);
+        xy = barcode.DrawOn(page);
 
-        code = new Barcode(Barcode.EAN_13, "051234567890");   // EAN-13 without the check digit which we calculate!!
-        code.SetLocation(450f, 450f);
-        code.SetModuleLength(1.0f);
-        code.SetDirection(Direction.BOTTOM_TO_TOP);
-        code.SetFont(f1);
-        code.DrawOn(page);
+        barcode = new Barcode(Barcode.CODE_39, "CODE39");
+        barcode.SetLocation(xy[0] + 60f, y + 35f);
+        barcode.SetModuleLength(0.75f);
+        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
+        barcode.SetFont(f1);
+        xy = barcode.DrawOn(page);
+
+        barcode = new Barcode(Barcode.EAN_13, "051234567890");
+        barcode.SetLocation(xy[0] + 60f, y + 35f);
+        barcode.SetModuleLength(1f);
+        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
+        barcode.SetFont(f1);
+        barcode.DrawOn(page);
 
         pdf.Complete();
     }

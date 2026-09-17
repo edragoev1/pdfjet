@@ -16,7 +16,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example06 shows how to attach files and annotations to a page.
+// Example06 attaches two files to a page, and adds a note, a link and
+// polygon, square and circle annotations next to labels that describe them.
 func Example06() {
 	pdf, err := pdfjet.NewPDFFile("Example_06.pdf")
 	if err != nil {
@@ -24,79 +25,102 @@ func Example06() {
 	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(12.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(14.0)
 
 	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
 	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// File attachment functionality
+	text := pdfjet.NewTextLine(f2, "Attachments and annotations")
+	text.SetFontSize(22.0)
+	text.SetLocation(70.0, 80.0)
+	text.DrawOn(page)
+
+	text = pdfjet.NewTextLine(f1,
+		"Open this page in a PDF viewer that shows annotations, and hover over the icons.")
+	text.SetTextColor(color.Gray)
+	text.SetLocation(70.0, 105.0)
+	text.DrawOn(page)
+
+	// File attachments. The files are stored inside the PDF.
+	pdfjet.NewTextLine(f2, "Attached files").SetLocation(70.0, 160.0).DrawOn(page)
+
 	attachment := pdfjet.NewFileAttachment(file1)
-	attachment.SetLocation(100.0, 600.0)
+	attachment.SetLocation(70.0, 175.0)
 	attachment.SetIconPushPin()
 	attachment.SetTitle("Attached File: " + file1.GetFileName())
 	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
+	pdfjet.NewTextLine(f1, "linux-logo.png, an image, with a push pin icon").
+		SetLocation(105.0, 192.0).DrawOn(page)
 
 	attachment = pdfjet.NewFileAttachment(file2)
-	attachment.SetLocation(200.0, 600.0)
+	attachment.SetLocation(70.0, 210.0)
 	attachment.SetIconPaperclip()
 	attachment.SetTitle("Attached File: " + file2.GetFileName())
 	attachment.SetContents(
 		"Right mouse click on the icon to save the attached file.")
 	attachment.DrawOn(page)
+	pdfjet.NewTextLine(f1, "The source code of Example_02, with a paperclip icon").
+		SetLocation(105.0, 227.0).DrawOn(page)
 
-	textLine := pdfjet.NewTextLine(f1, "pdfjet.com")
-	textLine.SetLocation(300.0, 618.0)
-	textLine.SetURIAction("https://pdfjet.com")
-	textLine.DrawOn(page)
+	// A note, and a link.
+	pdfjet.NewTextLine(f2, "A note and a link").SetLocation(70.0, 290.0).DrawOn(page)
 
 	textAnnotation := pdfjet.NewTextAnnotation()
-	textAnnotation.SetLocation(400.0, 600.0)
+	textAnnotation.SetLocation(70.0, 305.0)
 	textAnnotation.SetSize(24.0, 24.0)
-	textAnnotation.SetTitle("Hello")
-	textAnnotation.SetContents("World")
+	textAnnotation.SetTitle("Reviewer")
+	textAnnotation.SetContents("Please check the figures on page 2.")
 	textAnnotation.DrawOn(page)
+	pdfjet.NewTextLine(f1, "A text annotation: click the note icon to read it").
+		SetLocation(105.0, 322.0).DrawOn(page)
 
-	container := pdfjet.NewContainer(400.0, 400.0)
-	container.SetLocation(100.0, 100.0)
-	container.SetBorderColor(color.Black)
-	container.SetRotation(90)
+	text = pdfjet.NewTextLine(f1, "Visit https://pdfjet.com")
+	text.SetTextColor(color.Blue)
+	text.SetUnderline(true)
+	text.SetURIAction("https://pdfjet.com")
+	text.SetLocation(105.0, 357.0)
+	text.DrawOn(page)
 
-	rect := pdfjet.NewRect(0.0, 0.0, 25.0, 25.0)
-	rect.SetBorderColor(color.Black)
-	rect.SetBorderWidth(1.0)
-	container.Add(rect)
+	// Shape annotations, drawn half transparent over the page.
+	pdfjet.NewTextLine(f2, "Shape annotations").SetLocation(70.0, 420.0).DrawOn(page)
 
 	polygonAnnotation := pdfjet.NewPolygonAnnotation()
-	polygonAnnotation.SetLocation(0.0, 0.0)
-	polygonAnnotation.SetVertices([]float32{0.0, 0.0, 50.0, 0.0, 0.0, 50.0, 0.0, 0.0})
+	polygonAnnotation.SetLocation(70.0, 440.0)
+	polygonAnnotation.SetVertices([]float32{0.0, 60.0, 30.0, 0.0, 60.0, 60.0, 0.0, 60.0})
 	polygonAnnotation.SetFillColor(color.Red)
 	polygonAnnotation.SetOpacity(0.5)
 	polygonAnnotation.SetTitle("Polygon")
 	polygonAnnotation.SetContents("Polygon Annotation")
-	container.Add(polygonAnnotation)
+	polygonAnnotation.DrawOn(page)
 
 	squareAnnotation := pdfjet.NewSquareAnnotation()
-	squareAnnotation.SetLocation(25.0, 0.0)
-	squareAnnotation.SetSize(50.0, 50.0)
-	squareAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
+	squareAnnotation.SetLocation(170.0, 440.0)
+	squareAnnotation.SetSize(60.0, 60.0)
+	squareAnnotation.SetFillColorRGB([3]float32{0.0, 0.5, 0.0})
 	squareAnnotation.SetOpacity(0.5)
 	squareAnnotation.SetTitle("Square")
 	squareAnnotation.SetContents("Square Annotation")
-	container.Add(squareAnnotation)
+	squareAnnotation.DrawOn(page)
 
 	circleAnnotation := pdfjet.NewCircleAnnotation()
-	circleAnnotation.SetLocation(50.0, 0.0)
-	circleAnnotation.SetSize(50.0, 50.0)
-	circleAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0}) // Blue color
+	circleAnnotation.SetLocation(270.0, 440.0)
+	circleAnnotation.SetSize(60.0, 60.0)
+	circleAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0})
 	circleAnnotation.SetOpacity(0.5)
 	circleAnnotation.SetTitle("Circle")
 	circleAnnotation.SetContents("Circle Annotation")
-	container.Add(circleAnnotation)
+	circleAnnotation.DrawOn(page)
 
-	container.DrawOn(page)
+	pdfjet.NewTextLine(f1, "Polygon").SetLocation(78.0, 520.0).DrawOn(page)
+	pdfjet.NewTextLine(f1, "Square").SetLocation(180.0, 520.0).DrawOn(page)
+	pdfjet.NewTextLine(f1, "Circle").SetLocation(283.0, 520.0).DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

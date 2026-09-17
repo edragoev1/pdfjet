@@ -11,6 +11,8 @@ using PDFjet.NET;
 
 /**
  * Example_36.cs
+ * This example draws two map pages first and their contents page last, and
+ * then adds the pages to the PDF in reading order, with the contents first.
  */
 public class Example_36 {
     public Example_36() {
@@ -18,31 +20,69 @@ public class Example_36 {
                 new FileStream("Example_36.pdf", FileMode.Create)));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        Image image1 = new Image(pdf, "images/ee-map.png");
-        Image image2 = new Image(pdf, "images/spain-admin.jpg");
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+        String[] titles = {"Europe", "Spain"};
+        String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
 
-        TextLine text = new TextLine(f1, "The map below is an embedded PNG image");
-        text.SetLocation(90f, 30f);
-        float[] xy1 = text.DrawOn(page1);
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        Page[] mapPages = new Page[titles.Length];
+        for (int i = 0; i < titles.Length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        image1.SetLocation(90f, xy1[1] + 10f);
-        image1.ScaleBy(0.3f);
-        image1.DrawOn(page1);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.SetFontSize(24f);
+            title.SetLocation(50f, 80f);
+            title.DrawOn(page);
 
-        Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+            // Scale the image to the width of the page between the margins.
+            Image image = new Image(pdf, files[i]);
+            image.ScaleBy((page.GetWidth() - 100f) / image.GetWidth());
+            image.SetLocation(50f, 100f);
+            image.DrawOn(page);
 
-        text.SetText("This page was created after the second one but it was drawn first!");
-        text.SetLocation(90f, 30f);
-        float[] xy7 = text.DrawOn(page2);
+            TextLine footer = new TextLine(f1, "Page " + (i + 2));
+            footer.SetFontSize(10f);
+            footer.SetTextColor(Color.gray);
+            footer.SetLocation(50f, page.GetHeight() - 40f);
+            footer.DrawOn(page);
 
-        image2.SetLocation(90f, xy7[1] + 10f);
-        image2.ScaleBy(0.1f);
-        image2.DrawOn(page2);
+            mapPages[i] = page;
+        }
 
-        pdf.AddPage(page2);
-        pdf.AddPage(page1);
+        // 2. Draw the contents page last, now that the map pages are ready.
+        Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+
+        TextLine text = new TextLine(f2, "Maps");
+        text.SetFontSize(24f);
+        text.SetLocation(50f, 80f);
+        text.DrawOn(contents);
+
+        float y = 130f;
+        for (int i = 0; i < titles.Length; i++) {
+            text = new TextLine(f1, titles[i] + " . . . . . . . . . . page " + (i + 2));
+            text.SetFontSize(14f);
+            text.SetLocation(50f, y);
+            text.DrawOn(contents);
+            y += 25f;
+        }
+
+        TextBlock textBlock = new TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document, because the pages were created detached and added "
+                + "to the PDF in reading order with addPage.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetTextColor(Color.gray);
+        textBlock.SetLocation(50f, y + 20f);
+        textBlock.SetWidth(contents.GetWidth() - 100f);
+        textBlock.DrawOn(contents);
+
+        // 3. Add the pages in reading order.
+        pdf.AddPage(contents);
+        for (int i = 0; i < mapPages.Length; i++) {
+            pdf.AddPage(mapPages[i]);
+        }
 
         pdf.Complete();
     }

@@ -12,6 +12,8 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_36.java
+ * This example draws two map pages first and their contents page last, and
+ * then adds the pages to the PDF in reading order, with the contents first.
  */
 public class Example_36 {
     public Example_36() throws Exception {
@@ -20,31 +22,69 @@ public class Example_36 {
                         new FileOutputStream("Example_36.pdf")));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        Image image1 = new Image(pdf, "images/ee-map.png");
-        Image image2 = new Image(pdf, "images/spain-admin.jpg");
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        Page page1 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+        String[] titles = {"Europe", "Spain"};
+        String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
 
-        TextLine text = new TextLine(f1, "The map below is an embedded PNG image");
-        text.setLocation(90f, 30f);
-        float[] xy1 = text.drawOn(page1);
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        Page[] mapPages = new Page[titles.length];
+        for (int i = 0; i < titles.length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        image1.setLocation(90f, xy1[1] + 10f);
-        image1.scaleBy(0.3f);
-        image1.drawOn(page1);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.setFontSize(24f);
+            title.setLocation(50f, 80f);
+            title.drawOn(page);
 
-        Page page2 = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+            // Scale the image to the width of the page between the margins.
+            Image image = new Image(pdf, files[i]);
+            image.scaleBy((page.getWidth() - 100f) / image.getWidth());
+            image.setLocation(50f, 100f);
+            image.drawOn(page);
 
-        text.setText("This page was created after the second one but it was drawn first!");
-        text.setLocation(90f, 30f);
-        float[] xy7 = text.drawOn(page2);
+            TextLine footer = new TextLine(f1, "Page " + (i + 2));
+            footer.setFontSize(10f);
+            footer.setTextColor(Color.gray);
+            footer.setLocation(50f, page.getHeight() - 40f);
+            footer.drawOn(page);
 
-        image2.setLocation(90f, xy7[1] + 10f);
-        image2.scaleBy(0.1f);
-        image2.drawOn(page2);
+            mapPages[i] = page;
+        }
 
-        pdf.addPage(page2);
-        pdf.addPage(page1);
+        // 2. Draw the contents page last, now that the map pages are ready.
+        Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+
+        TextLine text = new TextLine(f2, "Maps");
+        text.setFontSize(24f);
+        text.setLocation(50f, 80f);
+        text.drawOn(contents);
+
+        float y = 130f;
+        for (int i = 0; i < titles.length; i++) {
+            text = new TextLine(f1, titles[i] + " . . . . . . . . . . page " + (i + 2));
+            text.setFontSize(14f);
+            text.setLocation(50f, y);
+            text.drawOn(contents);
+            y += 25f;
+        }
+
+        TextBlock textBlock = new TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document, because the pages were created detached and added "
+                + "to the PDF in reading order with addPage.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setTextColor(Color.gray);
+        textBlock.setLocation(50f, y + 20f);
+        textBlock.setWidth(contents.getWidth() - 100f);
+        textBlock.drawOn(contents);
+
+        // 3. Add the pages in reading order.
+        pdf.addPage(contents);
+        for (int i = 0; i < mapPages.length; i++) {
+            pdf.addPage(mapPages[i]);
+        }
 
         pdf.complete();
     }

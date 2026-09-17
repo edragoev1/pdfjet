@@ -9,41 +9,82 @@ import PDFjet
 
 /**
  * Example_36.swift
+ * This example draws two map pages first and their contents page last, and
+ * then adds the pages to the PDF in reading order, with the contents first.
  */
 public class Example_36 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_36.pdf", append: false)!)
+
         let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
-        let image1 = try Image(pdf, "images/ee-map.png")
-        let image2 = try Image(pdf, "images/spain-admin.jpg")
+        let titles = ["Europe", "Spain"]
+        let files = ["images/ee-map.png", "images/spain-admin.jpg"]
 
-        let page1 = Page(pdf, A4.PORTRAIT, Page.DETACHED)
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        var mapPages = [Page]()
+        for i in 0..<titles.count {
+            let page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
-        let text = TextLine(f1, "The map below is an embedded PNG image")
-        text.setLocation(90.0, 30.0)
-        let xy1 = text.drawOn(page1)
+            let title = TextLine(f2, titles[i])
+            title.setFontSize(24.0)
+            title.setLocation(50.0, 80.0)
+            title.drawOn(page)
 
-        image1.setLocation(90.0, xy1[1] + 10.0)
-        image1.scaleBy(0.3)
-        image1.drawOn(page1)
+            // Scale the image to the width of the page between the margins.
+            let image = try Image(pdf, files[i])
+            image.scaleBy((page.getWidth() - 100.0) / image.getWidth())
+            image.setLocation(50.0, 100.0)
+            image.drawOn(page)
 
-        let page2 = Page(pdf, A4.PORTRAIT, Page.DETACHED)
+            let footer = TextLine(f1, "Page " + String(i + 2))
+            footer.setFontSize(10.0)
+            footer.setTextColor(Color.gray)
+            footer.setLocation(50.0, page.getHeight() - 40.0)
+            footer.drawOn(page)
 
-        text.setText("This page was created after the second one but it was drawn first!")
-        text.setLocation(90.0, 30.0)
-        let xy7 = text.drawOn(page2)
+            mapPages.append(page)
+        }
 
-        image2.setLocation(90.0, xy7[1] + 10.0)
-        image2.scaleBy(0.1)
-        image2.drawOn(page2)
+        // 2. Draw the contents page last, now that the map pages are ready.
+        let contents = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
-        pdf.addPage(page2)
-        pdf.addPage(page1)
+        var text = TextLine(f2, "Maps")
+        text.setFontSize(24.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(contents)
+
+        var y: Float = 130.0
+        for i in 0..<titles.count {
+            text = TextLine(f1, titles[i] + " . . . . . . . . . . page " + String(i + 2))
+            text.setFontSize(14.0)
+            text.setLocation(50.0, y)
+            text.drawOn(contents)
+            y += 25.0
+        }
+
+        let textBlock = TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document, because the pages were created detached and added "
+                + "to the PDF in reading order with addPage.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setTextColor(Color.gray)
+        textBlock.setLocation(50.0, y + 20.0)
+        textBlock.setWidth(contents.getWidth() - 100.0)
+        textBlock.drawOn(contents)
+
+        // 3. Add the pages in reading order.
+        pdf.addPage(contents)
+        for i in 0..<mapPages.count {
+            pdf.addPage(mapPages[i])
+        }
 
         try pdf.complete()
     }
 }   // End of Example_36.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_36()
