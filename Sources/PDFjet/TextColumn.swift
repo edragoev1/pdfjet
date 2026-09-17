@@ -172,8 +172,8 @@ public class TextColumn : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         var xy: [Float] = [x, y]
-        for paragraph in paragraphs {
-            xy = drawParagraphOn(page, paragraph)
+        for (i, paragraph) in paragraphs.enumerated() {
+            xy = drawParagraphOn(page, paragraph, i == (paragraphs.count - 1))
         }
         // Restore the original location
         setLocation(self.x, self.y)
@@ -184,11 +184,13 @@ public class TextColumn : Drawable {
         return [x + w, xy[1]]
     }
 
-    private func drawParagraphOn(_ page: Page?, _ paragraph: Paragraph) -> [Float] {
+    private func drawParagraphOn(
+            _ page: Page?, _ paragraph: Paragraph, _ lastParagraph: Bool) -> [Float] {
         let alignment = paragraph.explicitAlignment ? paragraph.alignment : self.alignment
         var list = [TextLine]()
         var lineHeight: Float = 0.0
         var maxAscent: Float = 0.0
+        var maxDescent: Float = 0.0
         for line in paragraph.lines {
             if (line.getHeight() * self.lineSpacing) > lineHeight {
                 lineHeight = line.getHeight() * lineSpacing
@@ -196,18 +198,23 @@ public class TextColumn : Drawable {
             if line.font!.getAscent(line.fontSize) > maxAscent {
                 maxAscent = line.font!.getAscent(line.fontSize)
             }
+            if line.font!.getDescent(line.fontSize) > maxDescent {
+                maxDescent = line.font!.getDescent(line.fontSize)
+            }
         }
         self.y1 += maxAscent
 
         var runLength: Float = 0.0
         for line in paragraph.lines {
-            var text: TextLine? = nil
             for token in (line.text ?? "").splitOnWhitespace() {
                 let textLine = line.copyWithText(token + Single.space)
-                text = textLine
-                runLength += textLine.getWidth()
-                if runLength < self.w {
+                // The token is measured without the space that follows it: a
+                // line is as wide as the text it shows. A token wider than the
+                // column goes on a line of its own rather than after an empty
+                // one, which would leave the line above it blank.
+                if list.isEmpty || (runLength + TextColumn.width(textLine, token)) <= self.w {
                     list.append(textLine)
+                    runLength += textLine.getWidth()
                 } else {
                     drawLineOfText(page, list, alignment)
                     moveToNextLine(lineHeight)
@@ -216,15 +223,55 @@ public class TextColumn : Drawable {
                     runLength = textLine.getWidth()
                 }
             }
-            text?.isLastToken = true
         }
+        // The last line of a paragraph is not justified.
         drawNonJustifiedLine(page, list, alignment)
 
+        // The paragraph reaches down to the descent of its last line. The
+        // spacing and the blank line go between the paragraphs, not after the
+        // last one.
+        if lastParagraph {
+            return moveToNextParagraph(maxDescent)
+        }
         if lineBetweenParagraphs {
             moveToNextLine(lineHeight)
         }
 
         return moveToNextParagraph(lineHeight * self.paragraphSpacing)
+    }
+
+    // The last token of a line drawn on the page ends the line: its underline
+    // and its strikeout stop at its text, not after the space that follows it.
+    private static func markLastToken(_ list: [TextLine]) {
+        if let last = list.last {
+            last.isLastToken = true
+        }
+    }
+
+    // The width of the text the line shows: every token with the space after
+    // it, and the last token without it.
+    private static func visibleWidth(_ list: [TextLine]) -> Float {
+        var runLength: Float = 0.0
+        for (i, textLine) in list.enumerated() {
+            if i == (list.count - 1) {
+                runLength += width(textLine, trimTrailingSpaces(textLine.text))
+            } else {
+                runLength += textLine.getWidth()
+            }
+        }
+        return runLength
+    }
+
+    private static func width(_ textLine: TextLine, _ text: String?) -> Float {
+        return textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, text)
+    }
+
+    private static func trimTrailingSpaces(_ text: String?) -> String {
+        var trimmed = text ?? ""
+        while trimmed.hasSuffix(" ") {
+            trimmed.removeLast()
+        }
+        return trimmed
     }
 
     @discardableResult
@@ -242,12 +289,11 @@ public class TextColumn : Drawable {
 
     private func drawLineOfText(_ page: Page?, _ list: [TextLine], _ alignment: Alignment) {
         if alignment == Alignment.JUSTIFY {
-            var sumOfWordWidths: Float = 0.0
-            for textLine in list {
-                sumOfWordWidths += textLine.getWidth()
-            }
-
-            let dx = (w - sumOfWordWidths) / Float(list.count - 1)
+            TextColumn.markLastToken(list)
+            // The spaces are widened so that the text of the line reaches both
+            // edges. A line of one token has no space to widen.
+            let dx = (list.count > 1) ?
+                    (w - TextColumn.visibleWidth(list)) / Float(list.count - 1) : 0.0
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for textLine in list {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
@@ -260,10 +306,8 @@ public class TextColumn : Drawable {
     }
 
     private func drawNonJustifiedLine(_ page: Page?, _ list: [TextLine], _ alignment: Alignment) {
-        var runLength: Float = 0.0
-        for textLine in list {
-            runLength += textLine.getWidth()
-        }
+        TextColumn.markLastToken(list)
+        let runLength = TextColumn.visibleWidth(list)
 
         if alignment == Alignment.CENTER {
             x1 = x + ((w - runLength) / 2)

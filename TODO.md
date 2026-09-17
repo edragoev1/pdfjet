@@ -95,6 +95,24 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       underlines, now 0.6 pt from the font rather than the border width.
       `check-examples.sh` (Sep 17): every example identical in the four ports,
       Java 272 tests on JDK 21 and 8, C# 270, Go, Swift 277.
+- ✅ **B** Four `TextColumn` bugs and the `Table` font setters fixed in the
+      four ports (Sep 17), by the user's decision to fix everything found:
+      alignment measured the space after the last token, so right aligned,
+      centered and justified lines fell a space short of the right edge; the
+      paragraph spacing was added after the last paragraph and the last
+      descent left out, so a column reported a line of spacing too much (a
+      one-line column 25.04 points instead of 13.87, and a table row with a
+      `TextColumn` about 11 points too tall); a first word wider than the
+      column left a blank line above it; and `isLastToken` was set per text
+      line rather than per drawn line, so underlines overhung wrapped lines
+      and broke inside a shared line. `Table.setFontInColumn`/`setFontInRow`
+      now call `TextBlock.setFont`, which keeps the font size and the fallback
+      font in step. New `TextColumn` unit tests in the four ports.
+      Examples 10, 29, 44 and 49 move: justified text now reaches the right
+      edge and the table rows of Example_29 no longer carry dead space under
+      their text (checked by rendering page 1 before and after).
+      `check-examples.sh` (Sep 17): every example identical in the four ports,
+      Java 277 tests on JDK 21 and 8, C# 275, Go, Swift 282.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

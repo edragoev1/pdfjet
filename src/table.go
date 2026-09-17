@@ -267,7 +267,7 @@ func (table *Table) SetFontInColumn(index int, font *Font) *Table {
 			cell := row[index]
 			cell.SetFont(font).SetFontSize(font.size)
 			if cell.GetTextBlock() != nil {
-				cell.GetTextBlock().font = font
+				cell.GetTextBlock().SetFont(font).SetFontSize(font.GetSize())
 			}
 		}
 	}
@@ -299,7 +299,7 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 		for _, cell := range row {
 			cell.SetFont(font).SetFontSize(font.size)
 			if cell.GetTextBlock() != nil {
-				cell.GetTextBlock().font = font
+				cell.GetTextBlock().SetFont(font).SetFontSize(font.GetSize())
 			}
 		}
 	}

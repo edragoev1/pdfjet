@@ -43,6 +43,22 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- Four bugs in `TextColumn`, in all four ports. A right aligned, centered or
+  justified line now reaches the edge of the column: every token was measured
+  with the space that follows it, so the text stopped a space short of the
+  right edge and justified lines were never flush. The height of a column is
+  the height of its text: the spacing that goes between paragraphs was added
+  after the last one as well and the descent of the last line was left out, so
+  a column of one 12 point line reported 25.04 points instead of 13.87, and
+  every table row holding a `TextColumn` was about 11 points too tall. A
+  paragraph whose first word is wider than the column no longer starts with a
+  blank line. And the underline or strikeout of a wrapped line stops at the
+  text of the line instead of a space further on, and runs through a line that
+  two text lines share, where it had a gap.
+- `Table.setFontInColumn` and `setFontInRow` set the font of a `TextBlock` in a
+  cell with `setFont`, in all four ports. They assigned the field, so the block
+  kept the font size of the old font, and its fallback font still pointed at the
+  old font: every character the new font lacked was drawn in the old one.
 - Four bugs in `TextBlock`, in all four ports. A padding wider than half the
   block no longer breaks a word past its last character: it threw in Java and
   C#, panicked in Go and trapped in Swift, and a `Cell` narrower than its

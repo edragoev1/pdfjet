@@ -157,8 +157,8 @@ public class TextColumn : IDrawable {
     /// <returns>the x and y coordinates of the bottom right corner of this text column.</returns>
     public float[] DrawOn(Page page) {
         float[] xy = new float[] {x, y};
-        foreach (Paragraph paragraph in paragraphs) {
-            xy = DrawParagraphOn(page, paragraph);
+        for (int i = 0; i < paragraphs.Count; i++) {
+            xy = DrawParagraphOn(page, paragraphs[i], i == (paragraphs.Count - 1));
         }
         // Restore the original location
         SetLocation(this.x, this.y);
@@ -169,11 +169,12 @@ public class TextColumn : IDrawable {
         return new float[] {x + w, xy[1]};
     }
 
-    private float[] DrawParagraphOn(Page page, Paragraph paragraph) {
+    private float[] DrawParagraphOn(Page page, Paragraph paragraph, bool lastParagraph) {
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new List<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
+        float maxDescent = 0f;
         foreach (TextLine line in paragraph.lines) {
             if ((line.GetHeight() * lineSpacing) > lineHeight) {
                 lineHeight = line.GetHeight() * lineSpacing;
@@ -181,18 +182,24 @@ public class TextColumn : IDrawable {
             if (line.font.GetAscent(line.fontSize) > maxAscent) {
                 maxAscent = line.font.GetAscent(line.fontSize);
             }
+            if (line.font.GetDescent(line.fontSize) > maxDescent) {
+                maxDescent = line.font.GetDescent(line.fontSize);
+            }
         }
         y1 += maxAscent;
 
         float runLength = 0f;
         foreach (TextLine line in paragraph.lines) {
             String[] tokens = Util.SplitOnWhitespace(line.text ?? "");
-            TextLine text = null;
             foreach (String token in tokens) {
-                text = line.CopyWithText(token + Single.space);
-                runLength += text.GetWidth();
-                if (runLength < this.w) {
+                TextLine text = line.CopyWithText(token + Single.space);
+                // The token is measured without the space that follows it: a
+                // line is as wide as the text it shows. A token wider than the
+                // column goes on a line of its own rather than after an empty
+                // one, which would leave the line above it blank.
+                if (list.Count == 0 || (runLength + Width(text, token)) <= this.w) {
                     list.Add(text);
+                    runLength += text.GetWidth();
                 } else {
                     DrawLineOfText(page, list, alignment);
                     MoveToNextLine(lineHeight);
@@ -201,17 +208,53 @@ public class TextColumn : IDrawable {
                     runLength = text.GetWidth();
                 }
             }
-            if (text != null) {
-                text.isLastToken = true;
-            }
         }
+        // The last line of a paragraph is not justified.
         DrawNonJustifiedLine(page, list, alignment);
 
+        // The paragraph reaches down to the descent of its last line. The
+        // spacing and the blank line go between the paragraphs, not after the
+        // last one.
+        if (lastParagraph) {
+            return MoveToNextParagraph(maxDescent);
+        }
         if (lineBetweenParagraphs) {
             MoveToNextLine(lineHeight);
         }
-
         return MoveToNextParagraph(lineHeight * this.paragraphSpacing);
+    }
+
+    // The last token of a line drawn on the page ends the line: its underline
+    // and its strikeout stop at its text, not after the space that follows it.
+    private static void MarkLastToken(List<TextLine> list) {
+        if (list.Count > 0) {
+            list[list.Count - 1].isLastToken = true;
+        }
+    }
+
+    // The width of the text the line shows: every token with the space after
+    // it, and the last token without it.
+    private static float VisibleWidth(List<TextLine> list) {
+        float runLength = 0f;
+        for (int i = 0; i < list.Count; i++) {
+            TextLine textLine = list[i];
+            runLength += (i == (list.Count - 1))
+                    ? Width(textLine, TrimTrailingSpaces(textLine.text))
+                    : textLine.GetWidth();
+        }
+        return runLength;
+    }
+
+    private static float Width(TextLine textLine, String text) {
+        return textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, text);
+    }
+
+    private static String TrimTrailingSpaces(String text) {
+        int end = text.Length;
+        while (end > 0 && text[end - 1] == ' ') {
+            end--;
+        }
+        return text.Substring(0, end);
     }
 
     private float[] MoveToNextLine(float lineHeight) {
@@ -228,12 +271,10 @@ public class TextColumn : IDrawable {
 
     private void DrawLineOfText(Page page, List<TextLine> list, Alignment alignment) {
         if (alignment == Alignment.JUSTIFY) {
-            float sumOfWordWidths = 0f;
-            foreach (TextLine textLine in list) {
-                sumOfWordWidths += textLine.GetWidth();
-            }
-
-            float dx = (w - sumOfWordWidths) / (list.Count - 1);
+            MarkLastToken(list);
+            // The spaces are widened so that the text of the line reaches both
+            // edges. A line of one token has no space to widen.
+            float dx = (list.Count > 1) ? (w - VisibleWidth(list)) / (list.Count - 1) : 0f;
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             foreach (TextLine textLine in list) {
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
@@ -246,10 +287,8 @@ public class TextColumn : IDrawable {
     }
 
     private void DrawNonJustifiedLine(Page page, List<TextLine> list, Alignment alignment) {
-        float runLength = 0f;
-        foreach (TextLine textLine in list) {
-            runLength += textLine.GetWidth();
-        }
+        MarkLastToken(list);
+        float runLength = VisibleWidth(list);
 
         if (alignment == Alignment.CENTER) {
             x1 = x + ((w - runLength) / 2);

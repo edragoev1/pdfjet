@@ -283,7 +283,7 @@ public class Table : IDrawable {
                 Cell cell = row[index];
                 cell.SetFont(font).SetFontSize(font.GetSize());
                 if (cell.GetTextBlock() != null) {
-                    cell.GetTextBlock().font = font;
+                    cell.GetTextBlock().SetFont(font).SetFontSize(font.GetSize());
                 }
             }
         }
@@ -321,7 +321,7 @@ public class Table : IDrawable {
             foreach (Cell cell in row) {
                 cell.SetFont(font).SetFontSize(font.GetSize());
                 if (cell.GetTextBlock() != null) {
-                    cell.GetTextBlock().font = font;
+                    cell.GetTextBlock().SetFont(font).SetFontSize(font.GetSize());
                 }
             }
         }

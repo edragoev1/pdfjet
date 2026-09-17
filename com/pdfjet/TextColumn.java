@@ -190,8 +190,8 @@ public class TextColumn implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         float[] xy = new float[] {x, y};
-        for (Paragraph paragraph : paragraphs) {
-            xy = drawParagraphOn(page, paragraph);
+        for (int i = 0; i < paragraphs.size(); i++) {
+            xy = drawParagraphOn(page, paragraphs.get(i), i == (paragraphs.size() - 1));
         }
         // Restore the original location
         setLocation(this.x, this.y);
@@ -202,17 +202,22 @@ public class TextColumn implements Drawable {
         return new float[] {x + w, xy[1]};
     }
 
-    private float[] drawParagraphOn(Page page, Paragraph paragraph) throws Exception {
+    private float[] drawParagraphOn(
+            Page page, Paragraph paragraph, boolean lastParagraph) throws Exception {
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new ArrayList<TextLine>();
         float lineHeight = 0f;
         float maxAscent = 0f;
+        float maxDescent = 0f;
         for (TextLine line : paragraph.lines) {
             if ((line.getHeight() * lineSpacing) > lineHeight) {
                 lineHeight = line.getHeight() * lineSpacing;
             }
             if (line.font.getAscent(line.fontSize) > maxAscent) {
                 maxAscent = line.font.getAscent(line.fontSize);
+            }
+            if (line.font.getDescent(line.fontSize) > maxDescent) {
+                maxDescent = line.font.getDescent(line.fontSize);
             }
         }
         y1 += maxAscent;
@@ -221,12 +226,15 @@ public class TextColumn implements Drawable {
         for (TextLine line : paragraph.lines) {
             String text = line.text == null ? "" : line.text;
             String[] tokens = Util.splitOnWhitespace(text);
-            TextLine textLine = null;
             for (String token : tokens) {
-                textLine = line.copyWithText(token + Single.space);
-                runLength += textLine.getWidth();
-                if (runLength < this.w) {
+                TextLine textLine = line.copyWithText(token + Single.space);
+                // The token is measured without the space that follows it: a
+                // line is as wide as the text it shows. A token wider than the
+                // column goes on a line of its own rather than after an empty
+                // one, which would leave the line above it blank.
+                if (list.isEmpty() || (runLength + width(textLine, token)) <= this.w) {
                     list.add(textLine);
+                    runLength += textLine.getWidth();
                 } else {
                     drawLineOfText(page, list, alignment);
                     moveToNextLine(lineHeight);
@@ -235,17 +243,53 @@ public class TextColumn implements Drawable {
                     runLength = textLine.getWidth();
                 }
             }
-            if (textLine != null) {
-                textLine.isLastToken = true;
-            }
         }
+        // The last line of a paragraph is not justified.
         drawNonJustifiedLine(page, list, alignment);
 
+        // The paragraph reaches down to the descent of its last line. The
+        // spacing and the blank line go between the paragraphs, not after the
+        // last one.
+        if (lastParagraph) {
+            return moveToNextParagraph(maxDescent);
+        }
         if (lineBetweenParagraphs) {
             moveToNextLine(lineHeight);
         }
-
         return moveToNextParagraph(lineHeight * this.paragraphSpacing);
+    }
+
+    // The last token of a line drawn on the page ends the line: its underline
+    // and its strikeout stop at its text, not after the space that follows it.
+    private static void markLastToken(List<TextLine> list) {
+        if (!list.isEmpty()) {
+            list.get(list.size() - 1).isLastToken = true;
+        }
+    }
+
+    // The width of the text the line shows: every token with the space after
+    // it, and the last token without it.
+    private static float visibleWidth(List<TextLine> list) {
+        float runLength = 0f;
+        for (int i = 0; i < list.size(); i++) {
+            TextLine textLine = list.get(i);
+            runLength += (i == (list.size() - 1))
+                    ? width(textLine, trimTrailingSpaces(textLine.text))
+                    : textLine.getWidth();
+        }
+        return runLength;
+    }
+
+    private static float width(TextLine textLine, String text) {
+        return textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, text);
+    }
+
+    private static String trimTrailingSpaces(String text) {
+        int end = text.length();
+        while (end > 0 && text.charAt(end - 1) == ' ') {
+            end--;
+        }
+        return text.substring(0, end);
     }
 
     private float[] moveToNextLine(float lineHeight) {
@@ -262,11 +306,10 @@ public class TextColumn implements Drawable {
 
     private void drawLineOfText(Page page, List<TextLine> list, Alignment alignment) throws Exception {
         if (alignment == Alignment.JUSTIFY) {
-            float sumOfWordWidths = 0f;
-            for (TextLine textLine : list) {
-                sumOfWordWidths += textLine.getWidth();
-            }
-            float dx = (w - sumOfWordWidths) / (list.size() - 1);
+            markLastToken(list);
+            // The spaces are widened so that the text of the line reaches both
+            // edges. A line of one token has no space to widen.
+            float dx = (list.size() > 1) ? (w - visibleWidth(list)) / (list.size() - 1) : 0f;
 
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for (TextLine textLine : list) {
@@ -280,10 +323,8 @@ public class TextColumn implements Drawable {
     }
 
     private void drawNonJustifiedLine(Page page, List<TextLine> list, Alignment alignment) throws Exception {
-        float runLength = 0f;
-        for (TextLine textLine : list) {
-            runLength += textLine.getWidth();
-        }
+        markLastToken(list);
+        float runLength = visibleWidth(list);
 
         if (alignment == Alignment.CENTER) {
             x1 = x + ((w - runLength) / 2);

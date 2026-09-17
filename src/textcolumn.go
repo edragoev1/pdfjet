@@ -130,8 +130,8 @@ func (textColumn *TextColumn) GetSize() *Dimension {
 // corner is computed.
 func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	xy := [2]float32{textColumn.x, textColumn.y}
-	for _, paragraph := range textColumn.paragraphs {
-		xy = textColumn.drawParagraphOn(page, paragraph)
+	for i, paragraph := range textColumn.paragraphs {
+		xy = textColumn.drawParagraphOn(page, paragraph, i == (len(textColumn.paragraphs)-1))
 	}
 	// Restore the original location
 	textColumn.SetLocation(textColumn.x, textColumn.y)
@@ -142,7 +142,8 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	return [2]float32{textColumn.x + textColumn.w, xy[1]}
 }
 
-func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) [2]float32 {
+func (textColumn *TextColumn) drawParagraphOn(
+	page *Page, paragraph *Paragraph, lastParagraph bool) [2]float32 {
 	textAlignment := textColumn.alignment
 	if paragraph.explicitAlignment {
 		textAlignment = paragraph.alignment
@@ -150,6 +151,7 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 	list := make([]*TextLine, 0)
 	var lineHeight = float32(0.0)
 	var maxAscent = float32(0.0)
+	var maxDescent = float32(0.0)
 	for _, line := range paragraph.lines {
 		if (line.GetHeight() * textColumn.lineSpacing) > lineHeight {
 			lineHeight = line.GetHeight() * textColumn.lineSpacing
@@ -157,17 +159,23 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 		if line.font.GetAscent(line.fontSize) > maxAscent {
 			maxAscent = line.font.GetAscent(line.fontSize)
 		}
+		if line.font.GetDescent(line.fontSize) > maxDescent {
+			maxDescent = line.font.GetDescent(line.fontSize)
+		}
 	}
 	textColumn.y1 += maxAscent
 
 	var runLength float32
 	for _, line := range paragraph.lines {
-		var text *TextLine
 		for _, token := range splitOnWhitespace(line.text) {
-			text = line.copyWithText(token + single.Space)
-			runLength += text.GetWidth()
-			if runLength < textColumn.w {
+			text := line.copyWithText(token + single.Space)
+			// The token is measured without the space that follows it: a line
+			// is as wide as the text it shows. A token wider than the column
+			// goes on a line of its own rather than after an empty one, which
+			// would leave the line above it blank.
+			if len(list) == 0 || (runLength+textLineWidth(text, token)) <= textColumn.w {
 				list = append(list, text)
+				runLength += text.GetWidth()
 			} else {
 				textColumn.drawLineOfText(page, list, textAlignment)
 				textColumn.moveToNextLine(lineHeight)
@@ -176,17 +184,47 @@ func (textColumn *TextColumn) drawParagraphOn(page *Page, paragraph *Paragraph) 
 				runLength = text.GetWidth()
 			}
 		}
-		if text != nil {
-			text.isLastToken = true
-		}
 	}
+	// The last line of a paragraph is not justified.
 	textColumn.drawNonJustifiedLine(page, list, textAlignment)
 
+	// The paragraph reaches down to the descent of its last line. The spacing
+	// and the blank line go between the paragraphs, not after the last one.
+	if lastParagraph {
+		return textColumn.moveToNextParagraph(maxDescent)
+	}
 	if textColumn.lineBetweenParagraphs {
 		textColumn.moveToNextLine(lineHeight)
 	}
 
 	return textColumn.moveToNextParagraph(lineHeight * textColumn.paragraphSpacing)
+}
+
+// markLastToken marks the last token of a line drawn on the page as the one
+// that ends it: its underline and its strikeout stop at its text, not after
+// the space that follows it.
+func markLastToken(textLines []*TextLine) {
+	if len(textLines) > 0 {
+		textLines[len(textLines)-1].isLastToken = true
+	}
+}
+
+// visibleWidth returns the width of the text the line shows: every token with
+// the space after it, and the last token without it.
+func visibleWidth(textLines []*TextLine) float32 {
+	var runLength float32
+	for i, textLine := range textLines {
+		if i == (len(textLines) - 1) {
+			runLength += textLineWidth(textLine, strings.TrimRight(textLine.text, " "))
+		} else {
+			runLength += textLine.GetWidth()
+		}
+	}
+	return runLength
+}
+
+func textLineWidth(textLine *TextLine, text string) float32 {
+	return textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, text)
 }
 
 func (textColumn *TextColumn) moveToNextLine(lineHeight float32) [2]float32 {
@@ -203,11 +241,13 @@ func (textColumn *TextColumn) moveToNextParagraph(paragraphSpacing float32) [2]f
 
 func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, textAlignment alignment.Alignment) {
 	if textAlignment == alignment.Justify {
-		var sumOfWordWidths float32
-		for _, textLine := range textLines {
-			sumOfWordWidths += textLine.GetWidth()
+		markLastToken(textLines)
+		// The spaces are widened so that the text of the line reaches both
+		// edges. A line of one token has no space to widen.
+		var dx float32
+		if len(textLines) > 1 {
+			dx = (textColumn.w - visibleWidth(textLines)) / float32(len(textLines)-1)
 		}
-		dx := (textColumn.w - sumOfWordWidths) / float32(len(textLines)-1)
 		// Each token draws its own link annotation when the line has a URI or GoTo action.
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
@@ -220,10 +260,8 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 }
 
 func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*TextLine, textAlignment alignment.Alignment) {
-	var runLength float32
-	for _, textLine := range textLines {
-		runLength += textLine.GetWidth()
-	}
+	markLastToken(textLines)
+	runLength := visibleWidth(textLines)
 
 	if textAlignment == alignment.Center {
 		textColumn.x1 = textColumn.x + ((textColumn.w - runLength) / 2)

@@ -307,7 +307,7 @@ public class Table implements Drawable {
                 Cell cell = row.get(index);
                 cell.setFont(font).setFontSize(font.getSize());
                 if (cell.getTextBlock() != null) {
-                    cell.getTextBlock().font = font;
+                    cell.getTextBlock().setFont(font).setFontSize(font.getSize());
                 }
             }
         }
@@ -347,7 +347,7 @@ public class Table implements Drawable {
             for (Cell cell : row) {
                 cell.setFont(font).setFontSize(font.getSize());
                 if (cell.getTextBlock() != null) {
-                    cell.getTextBlock().font = font;
+                    cell.getTextBlock().setFont(font).setFontSize(font.getSize());
                 }
             }
         }

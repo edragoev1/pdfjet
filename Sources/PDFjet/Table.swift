@@ -301,7 +301,7 @@ public class Table : Drawable {
                 let cell = row[index]
                 cell.setFont(font).setFontSize(font.size)
                 if let textBlock = cell.getTextBlock() {
-                    textBlock.font = font
+                    textBlock.setFont(font).setFontSize(font.getSize())
                 }
             }
         }
@@ -341,7 +341,7 @@ public class Table : Drawable {
             for cell in row {
                 cell.setFont(font).setFontSize(font.size)
                 if let textBlock = cell.getTextBlock() {
-                    textBlock.font = font
+                    textBlock.setFont(font).setFontSize(font.getSize())
                 }
             }
         }
