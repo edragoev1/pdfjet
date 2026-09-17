@@ -11,15 +11,15 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 Producer string bumped from `PDFjet v8.7.0` to `PDFjet v9.0.0` in all four
 ports (Java, C#, Go, Swift), and `.packaging/package-java.sh` and
-`.packaging/package-dotnet.sh` name their archives v9.0.0. This major release makes the four ports behave the same
-class by class, after a public API audit of all four; gives each concept one
-name in every class and port; reads encrypted and damaged PDFs; adds encryption
-to the Swift port, right to left text shaped and ordered by the Unicode
-Bidirectional Algorithm, and Data Matrix barcodes; and makes the Build workflow
-run and compare the examples of every port. The public API changes in many
-places, so code written for v8.7.0 needs changes, and the Go module path is now
-`github.com/edragoev1/pdfjet/v9`. Highlights below; see
-`git log v8.7.0..v9.0.0` for the complete history.
+`.packaging/package-dotnet.sh` name their archives v9.0.0. This major release
+makes the four ports behave the same class by class, after a public API audit
+of all four; gives each concept one name in every class and port; reads
+encrypted and damaged PDFs; adds encryption to the Swift port, right to left
+text shaped and ordered by the Unicode Bidirectional Algorithm, and Data Matrix
+barcodes; and makes the Build workflow run and compare the examples of every
+port. The public API changes in many places, so code written for v8.7.0 needs
+changes, and the Go module path is now `github.com/edragoev1/pdfjet/v9`.
+Highlights below; see `git log v8.7.0..v9.0.0` for the complete history.
 
 ### Breaking changes
 - The Go module path is `github.com/edragoev1/pdfjet/v9`, as Go requires for a
