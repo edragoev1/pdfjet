@@ -669,7 +669,10 @@ func (table *Table) wrapAroundCellText() {
 		maxNumVerCells := 1
 		for i := 0; i < len(row); i++ {
 			var cellLines []string
-			if row[i].hasText {
+			// A cell that draws a line of text of its own draws no cell text,
+			// so there is nothing to wrap.
+			_, hasLine := row[i].drawable.(BaselineDrawable)
+			if row[i].hasText && !hasLine {
 				cellLines = wrapCellText(row, i)
 				if len(cellLines) > maxNumVerCells {
 					maxNumVerCells = len(cellLines)

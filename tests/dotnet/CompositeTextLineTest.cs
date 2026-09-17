@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -154,6 +155,77 @@ public class CompositeTextLineTest {
         CompositeTextLine empty = new CompositeTextLine(0f, 0f);
         empty.AddFormula(font, "");
         Assert.Equal(0, empty.GetNumberOfTextLines());
+    }
+
+    [Fact]
+    public void ACellDrawsALineOfTextOnItsBaselineWhateverItsAlignment() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // A TextLine is a baseline drawable too, and a cell draws it where it
+        // draws its own text rather than at its top left corner.
+        Cell cell = new Cell(font);
+        TextLine line = new TextLine(font, "Text");
+        cell.SetDrawable(line);
+        Assert.Equal(new Cell(font, "Text").GetHeight(100f), cell.GetHeight(100f),
+                TestSupport.DELTA);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        cell.DrawOn(page, 50f, 50f, 100f, 20f);
+        // The baseline is an ascent below the top of the cell and its padding.
+        Assert.Equal(50f + cell.GetTopPadding() + font.GetAscent(font.GetSize()),
+                line.GetLocation()[1], TestSupport.DELTA);
+        Assert.Contains(TestSupport.Hex("Text"), TestSupport.Content(page));
+        // The vertical alignments move the baseline down the cell, as they do
+        // for cell text.
+        float[] baselines = new float[3];
+        Alignment[] valigns = {Alignment.TOP, Alignment.CENTER, Alignment.BOTTOM};
+        for (int i = 0; i < valigns.Length; i++) {
+            Cell aligned = new Cell(font);
+            TextLine text = new TextLine(font, "Text");
+            aligned.SetDrawable(text).SetVerticalAlignment(valigns[i]);
+            aligned.DrawOn(new Page(pdf, Letter.PORTRAIT), 50f, 50f, 100f, 40f);
+            baselines[i] = text.GetLocation()[1];
+        }
+        Assert.True(baselines[0] < baselines[1] && baselines[1] < baselines[2]);
+    }
+
+    [Fact]
+    public void ACellTakesTheAscentOfTheLineItDraws() {
+        PDF pdf = TestSupport.NewPDF();
+        Font small = TestSupport.Helvetica(pdf);
+        small.SetSize(8f);
+        Font big = new Font(pdf, CoreFont.HELVETICA);
+        big.SetSize(24f);
+        // The cell font is small and the line it draws is big, so the cell is
+        // as tall as the line rather than as its own font.
+        Cell cell = new Cell(small);
+        cell.SetDrawable(new TextLine(big, "Text"));
+        Assert.Equal(big.GetAscent(24f) + big.GetDescent(24f)
+                + cell.GetTopPadding() + cell.GetBottomPadding(),
+                cell.GetHeight(100f), TestSupport.DELTA);
+    }
+
+    [Fact]
+    public void ATableDoesNotWrapTheTextOfACellThatDrawsALineOfItsOwn() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>>();
+        // The cell text is long and the column narrow, but the composite is
+        // what the cell draws, so the text is not wrapped into more rows.
+        Cell cell = new Cell(font, "a long text that would wrap in a narrow column");
+        CompositeTextLine composite = new CompositeTextLine(0f, 0f);
+        composite.AddFormula(font, "H2O");
+        cell.SetCompositeTextLine(composite);
+        cell.SetWidth(30f);
+        data.Add(new List<Cell> { cell });
+        Table table = new Table().SetTableData(data, 0).SetLocation(20f, 20f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.DrawOn(page);
+        // One row, drawn to the end, and no word of the cell text on the page.
+        Assert.Single(table.GetRow(0));
+        Assert.Equal(-1, table.GetRowsRendered());
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex("long"), content);
+        Assert.Contains(TestSupport.Hex("H"), content);
     }
 
     [Fact]

@@ -7,8 +7,11 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CompositeTextLineTest {
@@ -156,6 +159,80 @@ class CompositeTextLineTest {
         CompositeTextLine empty = new CompositeTextLine(0f, 0f);
         empty.addFormula(font, "");
         assertEquals(0, empty.getNumberOfTextLines());
+    }
+
+    @Test
+    void aCellDrawsALineOfTextOnItsBaselineWhateverItsAlignment() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // A TextLine is a baseline drawable too, and a cell draws it where it
+        // draws its own text rather than at its top left corner.
+        Cell cell = new Cell(font);
+        TextLine line = new TextLine(font, "Text");
+        cell.setDrawable(line);
+        assertEquals(new Cell(font, "Text").getHeight(100f), cell.getHeight(100f),
+                TestSupport.DELTA);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        cell.drawOn(page, 50f, 50f, 100f, 20f);
+        // The baseline is an ascent below the top of the cell and its padding.
+        assertEquals(50f + cell.getTopPadding() + font.getAscent(font.getSize()),
+                line.getLocation()[1], TestSupport.DELTA);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("Text")));
+        // The vertical alignments move the baseline down the cell, as they do
+        // for cell text: the location of a text line is in the coordinates the
+        // cell is drawn in, which grow downwards.
+        float[] baselines = new float[3];
+        Alignment[] valigns = {Alignment.TOP, Alignment.CENTER, Alignment.BOTTOM};
+        for (int i = 0; i < valigns.length; i++) {
+            Cell aligned = new Cell(font);
+            TextLine text = new TextLine(font, "Text");
+            aligned.setDrawable(text).setVerticalAlignment(valigns[i]);
+            aligned.drawOn(new Page(pdf, Letter.PORTRAIT), 50f, 50f, 100f, 40f);
+            baselines[i] = text.getLocation()[1];
+        }
+        assertTrue(baselines[0] < baselines[1] && baselines[1] < baselines[2]);
+    }
+
+    @Test
+    void aCellTakesTheAscentOfTheLineItDraws() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font small = TestSupport.helvetica(pdf);
+        small.setSize(8f);
+        Font big = new Font(pdf, CoreFont.HELVETICA);
+        big.setSize(24f);
+        // The cell font is small and the line it draws is big, so the cell is
+        // as tall as the line rather than as its own font.
+        Cell cell = new Cell(small);
+        cell.setDrawable(new TextLine(big, "Text"));
+        assertEquals(big.getAscent(24f) + big.getDescent(24f)
+                + cell.getTopPadding() + cell.getBottomPadding(),
+                cell.getHeight(100f), TestSupport.DELTA);
+    }
+
+    @Test
+    void aTableDoesNotWrapTheTextOfACellThatDrawsALineOfItsOwn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        List<Cell> row = new ArrayList<Cell>();
+        // The cell text is long and the column narrow, but the composite is
+        // what the cell draws, so the text is not wrapped into more rows.
+        Cell cell = new Cell(font, "a long text that would wrap in a narrow column");
+        CompositeTextLine composite = new CompositeTextLine(0f, 0f);
+        composite.addFormula(font, "H2O");
+        cell.setCompositeTextLine(composite);
+        cell.setWidth(30f);
+        row.add(cell);
+        data.add(row);
+        Table table = new Table().setTableData(data, 0).setLocation(20f, 20f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.drawOn(page);
+        // One row, drawn to the end, and no word of the cell text on the page.
+        assertEquals(1, table.getRow(0).size());
+        assertEquals(-1, table.getRowsRendered());
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex("long")));
+        assertTrue(content.contains(TestSupport.hex("H")));
     }
 
     @Test

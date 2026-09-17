@@ -11,7 +11,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create text line objects.
 /// </summary>
-public class TextLine : IDrawable {
+public class TextLine : IBaselineDrawable {
     internal float x;
     internal float y;
     internal Font font;
@@ -239,6 +239,18 @@ public class TextLine : IDrawable {
     /// <returns>the height.</returns>
     public float GetHeight() {
         return font.GetBodyHeight(this.fontSize);
+    }
+
+    /// <summary>Returns how far above its baseline this text line reaches.</summary>
+    /// <returns>the ascent of the font at the font size of this text line.</returns>
+    public float GetAscent() {
+        return font.GetAscent(this.fontSize);
+    }
+
+    /// <summary>Returns how far below its baseline this text line reaches.</summary>
+    /// <returns>the descent of the font at the font size of this text line.</returns>
+    public float GetDescent() {
+        return font.GetDescent(this.fontSize);
     }
 
     /// <summary>

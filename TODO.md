@@ -130,6 +130,30 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       cells now measure the composite. `check-examples.sh` (Sep 17): every
       example identical in the four ports, Java 285 tests on JDK 21 and 8,
       C# 283, Go, Swift 290.
+- ✅ **B** `BaselineDrawable` and one content field in `Cell` (Sep 17), at the
+      user's request to use `CompositeTextLine` as a drawable and drop the
+      special case. By the user's reasoning a composite text line is a line of
+      text, so it keeps its baseline location, as `TextLine` has; what was
+      wrong is that a cell placed every drawable by its top left corner. A
+      cell now asks the drawable: a `BaselineDrawable` (`TextLine`,
+      `CompositeTextLine`) is drawn where the cell text would be, on the
+      baseline of its vertical alignment, and the cell makes room for the
+      ascent and the descent of the line; anything else is placed by its top
+      left corner as before. The composite moved into the `drawable` field, so
+      `Cell` holds one content field again, and `Table` does not wrap the text
+      of a cell that draws a line of its own (it would have wrapped
+      Example_15's unused text into junk rows once the column narrowed).
+      Fixed on the way: a `TextLine` given to `setDrawable` was drawn above a
+      4-point cell.
+      ⚠ API note for the tag: this removes the protected Java field
+      `Cell.compositeTextLine` (`getCompositeTextLine()` returns it), and adds
+      the `BaselineDrawable` interface with `getAscent`, `getDescent` and
+      `getWidth`, and `getAscent`/`getDescent` on `TextLine` and
+      `CompositeTextLine`. Everything else in the four ports is additive.
+      Example_15's first column is now as wide as the H2O it draws rather than
+      the text it ignores. `check-examples.sh` (Sep 17): every example
+      identical in the four ports, Java 288 tests on JDK 21 and 8, C# 286, Go,
+      Swift 293.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

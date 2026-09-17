@@ -14,6 +14,16 @@ ports, so `.packaging/package-java.sh` and `.packaging/package-dotnet.sh` name
 their archives v9.0.1. The public API does not change.
 
 ### Added
+- `BaselineDrawable`, a drawable whose location is the baseline of its text
+  rather than the top left corner of a box, in all four ports. `TextLine` and
+  `CompositeTextLine` are such drawables, and a `Cell` draws either of them
+  where it draws its own text, on the baseline its vertical alignment asks
+  for, making room for the ascent and the descent of the line. A `TextLine`
+  given to `Cell.setDrawable` used to be placed by its top left corner, so it
+  was drawn above the cell in a cell 4 points tall. `TextLine.getAscent`,
+  `TextLine.getDescent`, `CompositeTextLine.getAscent` and
+  `CompositeTextLine.getDescent` are new; a drawable of your own becomes a
+  line of text in a cell by implementing the interface.
 - `CompositeTextLine.addFormula(font, formula)` builds the components of a
   chemical formula, in all four ports: the digits that follow an element or a
   closing bracket are subscripts, as the 2 of `H2O` and the 6, 12 and 6 of
@@ -64,6 +74,14 @@ their archives v9.0.1. The public API does not change.
   empty composite text line measures its own location rather than 0, 0, as the
   other drawables do. And `getWidth` adds up the components instead of
   trusting a running total, so it cannot go stale.
+- A `Cell` holds a composite text line in the drawable it holds, rather than
+  in a field of its own, so one field holds the content of a cell, as the
+  image, the barcode, the text block and the text column already do.
+  `setCompositeTextLine` and `getCompositeTextLine` are unchanged, and a
+  composite given to `setDrawable` is drawn the same way. In Java the
+  protected `Cell.compositeTextLine` field is gone; `getCompositeTextLine()`
+  returns it. `Table` no longer wraps the text of a cell that draws a line of
+  text of its own, as that text is not drawn.
 - A `Cell` measures and draws a composite text line of its own, in all four
   ports. `setCompositeTextLine` needed the cell text to be set as well: the
   cell drew nothing and measured no height without it, and the text it needed

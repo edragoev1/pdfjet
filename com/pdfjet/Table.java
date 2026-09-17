@@ -773,7 +773,11 @@ public class Table implements Drawable {
             lines.clear();
             int maxNumVerCells = 1;
             for (int i = 0; i < row.size(); i++) {
-                List<String> cellLines = (row.get(i).text == null) ? null : wrapCellText(row, i);
+                // A cell that draws a line of text of its own draws no cell
+                // text, so there is nothing to wrap.
+                List<String> cellLines = (row.get(i).text == null
+                        || row.get(i).drawable instanceof BaselineDrawable)
+                        ? null : wrapCellText(row, i);
                 lines.add(cellLines);
                 if (cellLines != null && cellLines.size() > maxNumVerCells) {
                     maxNumVerCells = cellLines.size();

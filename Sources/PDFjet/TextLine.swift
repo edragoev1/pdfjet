@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create text line objects.
 ///
-public class TextLine : Drawable {
+public class TextLine : BaselineDrawable {
     var x: Float = 0.0
     var y: Float = 0.0
 
@@ -242,6 +242,22 @@ public class TextLine : Drawable {
     ///
     public func getHeight() -> Float {
         return font!.getBodyHeight(self.fontSize)
+    }
+
+    ///
+    /// Returns how far above its baseline this text line reaches: the ascent
+    /// of the font at the font size of this text line.
+    ///
+    public func getAscent() -> Float {
+        return font!.getAscent(self.fontSize)
+    }
+
+    ///
+    /// Returns how far below its baseline this text line reaches: the descent
+    /// of the font at the font size of this text line.
+    ///
+    public func getDescent() -> Float {
+        return font!.getDescent(self.fontSize)
     }
 
     ///

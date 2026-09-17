@@ -26,8 +26,6 @@ public class Cell {
     /** The point drawn in this cell. */
     protected Point point;
     private Alignment markerAlignment = Alignment.RIGHT;
-    /** The composite text line drawn in this cell. */
-    protected CompositeTextLine compositeTextLine;
     /** The width of this cell. */
     protected float width = 75f;
     /** The top padding. */
@@ -256,7 +254,10 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setCompositeTextLine(CompositeTextLine compositeTextLine) {
-        this.compositeTextLine = compositeTextLine;
+        // A composite text line is the content of the cell, in the drawable it
+        // holds, and is drawn where the cell text would be. The cell text is
+        // left as it is, and the composite is drawn instead of it.
+        this.drawable = compositeTextLine;
         return this;
     }
 
@@ -266,7 +267,7 @@ public class Cell {
      * @return the composite text object.
      */
     public CompositeTextLine getCompositeTextLine() {
-        return this.compositeTextLine;
+        return (drawable instanceof CompositeTextLine) ? (CompositeTextLine) drawable : null;
     }
 
     /**
@@ -492,13 +493,10 @@ public class Cell {
      */
     public float getHeight(float width) throws Exception {
         float cellHeight = 0f;
-        if (compositeTextLine != null) {
-            // The composite text line is drawn where the cell text would be,
-            // so the cell is as tall as the taller of the two.
-            float fontHeight = font.getBodyHeight(fontSize);
-            float compositeHeight = compositeTextLine.getHeight();
-            cellHeight = ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
-                    + topPadding + bottomPadding;
+        if (drawable instanceof BaselineDrawable) {
+            // A line of text is drawn on the baseline of the cell text, so the
+            // cell makes room for the ascent and the descent of both.
+            cellHeight = ascent() + descent() + topPadding + bottomPadding;
         } else if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
             if (drawable instanceof TextBlock) {
                 ((TextBlock) drawable).setWidth(width);
@@ -769,8 +767,8 @@ public class Cell {
             drawBackground(page, x, y, w, h);
         }
 
-        if (compositeTextLine != null || (text != null && !text.equals(""))) {
-            // The composite text line is drawn instead of the cell text.
+        if (drawable instanceof BaselineDrawable || (text != null && !text.equals(""))) {
+            // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h);
         } else if (drawable instanceof TextBlock) {
             TextBlock textBlock = (TextBlock) drawable;
@@ -890,7 +888,7 @@ public class Cell {
             float y,
             float cellW,
             float cellH) throws Exception {
-        float ascent = font.getAscent(fontSize);
+        float ascent = ascent();
         float yText;
         if (valign == Alignment.TOP) {
             yText = y + ascent + this.topPadding;
@@ -912,7 +910,9 @@ public class Cell {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
             xText = x + this.leftPadding;
         }
-        if (compositeTextLine == null) {
+        BaselineDrawable line = (drawable instanceof BaselineDrawable)
+                ? (BaselineDrawable) drawable : null;
+        if (line == null) {
             page.addBDC(StructElem.P, text, text);
             page.drawString(font, fallbackFont, fontSize, text, xText, yText,
                     (textColor == NO_COLOR) ? null : page.packedToRGB(textColor), null);
@@ -924,9 +924,9 @@ public class Cell {
                 strikeoutText(page, xText, yText);
             }
         } else {
-            compositeTextLine.setLocation(xText, yText);
-            // The text lines of the composite mark their own text.
-            compositeTextLine.drawOn(page);
+            // A text line and a composite text line mark their own text.
+            line.setLocation(xText, yText);
+            line.drawOn(page);
         }
 
         if (uri != null) {
@@ -935,7 +935,7 @@ public class Cell {
                     xText,
                     yText - ascent,
                     xText + getTextWidth(),
-                    yText + font.getDescent(fontSize),
+                    yText + descent(),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Opacity
@@ -949,13 +949,40 @@ public class Cell {
         }
     }
 
-    // Returns the width of the composite text line, or of the cell text drawn
-    // with the font and the fallback font at the font size of this cell.
+    // Returns the width of the line of text this cell draws: of the drawable
+    // when it is one, and of the cell text with the font and the fallback font
+    // at the font size of this cell otherwise.
     private float getTextWidth() throws Exception {
-        if (compositeTextLine != null) {
-            return compositeTextLine.getWidth();
+        if (drawable instanceof BaselineDrawable) {
+            return ((BaselineDrawable) drawable).getWidth();
         }
         return font.stringWidth(fallbackFont, fontSize, text);
+    }
+
+    // How far above the baseline the cell draws: the ascent of its font, and
+    // of the line of text it holds, whichever reaches higher.
+    private float ascent() {
+        float ascent = font.getAscent(fontSize);
+        if (drawable instanceof BaselineDrawable) {
+            float lineAscent = ((BaselineDrawable) drawable).getAscent();
+            if (lineAscent > ascent) {
+                ascent = lineAscent;
+            }
+        }
+        return ascent;
+    }
+
+    // How far below the baseline the cell draws: the descent of its font, and
+    // of the line of text it holds, whichever reaches lower.
+    private float descent() {
+        float descent = font.getDescent(fontSize);
+        if (drawable instanceof BaselineDrawable) {
+            float lineDescent = ((BaselineDrawable) drawable).getDescent();
+            if (lineDescent > descent) {
+                descent = lineDescent;
+            }
+        }
+        return descent;
     }
 
     private void underlineText(Page page, float x, float y) throws Exception {

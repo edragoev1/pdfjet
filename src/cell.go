@@ -14,20 +14,19 @@ import (
 // Cell is used to create table cell objects.
 // See the Table class for more information.
 type Cell struct {
-	font              *Font
-	fallbackFont      *Font
-	fontSize          float32
-	text              string
-	hasText           bool     // Java's null text is a cell without text, which is 0 tall
-	drawable          Drawable // The image, barcode, text block, text column or other drawable
-	compositeTextLine *CompositeTextLine
-	point             *Point
-	markerAlignment   alignment.Alignment
-	width             float32
-	topPadding        float32
-	bottomPadding     float32
-	leftPadding       float32
-	rightPadding      float32
+	font            *Font
+	fallbackFont    *Font
+	fontSize        float32
+	text            string
+	hasText         bool     // Java's null text is a cell without text, which is 0 tall
+	drawable        Drawable // The image, barcode, text block, text column or other drawable
+	point           *Point
+	markerAlignment alignment.Alignment
+	width           float32
+	topPadding      float32
+	bottomPadding   float32
+	leftPadding     float32
+	rightPadding    float32
 
 	backgroundColor    [3]float32
 	hasBackgroundColor bool
@@ -214,13 +213,19 @@ func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
 
 // SetCompositeTextLine sets the composite text line that this cell holds.
 func (cell *Cell) SetCompositeTextLine(compositeTextLine *CompositeTextLine) *Cell {
-	cell.compositeTextLine = compositeTextLine
+	// A composite text line is the content of the cell, in the drawable it
+	// holds, and is drawn where the cell text would be. The cell text is left
+	// as it is, and the composite is drawn instead of it.
+	cell.drawable = compositeTextLine
 	return cell
 }
 
 // GetCompositeTextLine returns the composite text line that this cell holds.
 func (cell *Cell) GetCompositeTextLine() *CompositeTextLine {
-	return cell.compositeTextLine
+	if composite, ok := cell.drawable.(*CompositeTextLine); ok {
+		return composite
+	}
+	return nil
 }
 
 // GetTextColumn returns the text column that this cell holds, or nil when it
@@ -315,16 +320,10 @@ func (cell *Cell) SetPadding(padding float32) *Cell {
 // Returns the cell height.
 func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
-	if cell.compositeTextLine != nil {
-		// The composite text line is drawn where the cell text would be, so
-		// the cell is as tall as the taller of the two.
-		fontHeight := cell.font.GetBodyHeight(cell.fontSize)
-		compositeHeight := cell.compositeTextLine.GetHeight()
-		if compositeHeight > fontHeight {
-			cellHeight = compositeHeight + cell.topPadding + cell.bottomPadding
-		} else {
-			cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
-		}
+	if _, ok := cell.drawable.(BaselineDrawable); ok {
+		// A line of text is drawn on the baseline of the cell text, so the
+		// cell makes room for the ascent and the descent of both.
+		cellHeight = cell.ascent() + cell.descent() + cell.topPadding + cell.bottomPadding
 	} else if cell.text == "" && cell.drawable != nil { // The text is drawn first
 		if textBlock, ok := cell.drawable.(*TextBlock); ok {
 			textBlock.SetWidth(width)
@@ -558,8 +557,8 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		cell.drawBackground(page, x, y, w, h)
 	}
 
-	if cell.compositeTextLine != nil || cell.text != "" {
-		// The composite text line is drawn instead of the cell text.
+	if _, ok := cell.drawable.(BaselineDrawable); ok || cell.text != "" {
+		// A line of text is drawn instead of the cell text, on its baseline.
 		cell.drawText(page, x, y, w, h)
 	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
 		textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
@@ -646,7 +645,7 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 
 // drawText draws the cell text, or the composite text line, and its link.
 func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
-	ascent := cell.font.GetAscent(cell.fontSize)
+	ascent := cell.ascent()
 	var yText float32
 	switch cell.valign {
 	case alignment.Top:
@@ -669,7 +668,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		// alignment.Left, and alignment.Justify, which a single line of text cannot use.
 		xText = x + cell.leftPadding
 	}
-	if cell.compositeTextLine == nil {
+	line, hasLine := cell.drawable.(BaselineDrawable)
+	if !hasLine {
 		page.AddBDC("P", "", cell.text, cell.text)
 		page.drawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, cell.textColor, nil)
@@ -681,9 +681,9 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 			cell.strikeoutText(page, xText, yText)
 		}
 	} else {
-		cell.compositeTextLine.SetLocation(xText, yText)
-		// The text lines of the composite mark their own text.
-		cell.compositeTextLine.DrawOn(page)
+		// A text line and a composite text line mark their own text.
+		line.SetLocation(xText, yText)
+		line.DrawOn(page)
 	}
 
 	if cell.uri != "" {
@@ -692,7 +692,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 			x1:             xText,
 			y1:             yText - ascent,
 			x2:             xText + cell.getTextWidth(),
-			y2:             yText + cell.font.GetDescent(cell.fontSize),
+			y2:             yText + cell.descent(),
 			vertices:       nil,
 			uri:            cell.uri,
 		})
@@ -702,8 +702,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 // getTextWidth returns the width of the composite text line, or of the cell
 // text drawn with the font and the fallback font at the font size of this cell.
 func (cell *Cell) getTextWidth() float32 {
-	if cell.compositeTextLine != nil {
-		return cell.compositeTextLine.GetWidth()
+	if line, ok := cell.drawable.(BaselineDrawable); ok {
+		return line.GetWidth()
 	}
 	return cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)
 }
@@ -730,4 +730,28 @@ func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)
 	page.StrokePath()
 	page.AddEMC()
+}
+
+// ascent returns how far above the baseline the cell draws: the ascent of its
+// font, and of the line of text it holds, whichever reaches higher.
+func (cell *Cell) ascent() float32 {
+	ascent := cell.font.GetAscent(cell.fontSize)
+	if line, ok := cell.drawable.(BaselineDrawable); ok {
+		if lineAscent := line.GetAscent(); lineAscent > ascent {
+			ascent = lineAscent
+		}
+	}
+	return ascent
+}
+
+// descent returns how far below the baseline the cell draws: the descent of
+// its font, and of the line of text it holds, whichever reaches lower.
+func (cell *Cell) descent() float32 {
+	descent := cell.font.GetDescent(cell.fontSize)
+	if line, ok := cell.drawable.(BaselineDrawable); ok {
+		if lineDescent := line.GetDescent(); lineDescent > descent {
+			descent = lineDescent
+		}
+	}
+	return descent
 }

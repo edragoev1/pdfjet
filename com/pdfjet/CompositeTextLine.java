@@ -14,7 +14,7 @@ import java.util.*;
  * Refactored and integrated into the project by Eugene Dragoev - 2nd June 2012.
  * Used to create composite text line objects.
  */
-public class CompositeTextLine implements Drawable {
+public class CompositeTextLine implements BaselineDrawable {
     private static final int X = 0;
     private static final int Y = 1;
 
@@ -350,6 +350,27 @@ public class CompositeTextLine implements Drawable {
             }
         }
         return new float[] {min, max};
+    }
+
+    /**
+     *  Returns how far above its baseline this composite text line reaches:
+     *  the ascent of the component that reaches highest, a superscript
+     *  included.
+     *
+     *  @return the ascent, in points.
+     */
+    public float getAscent() {
+        return position[Y] - getMinMaxY()[0];
+    }
+
+    /**
+     *  Returns how far below its baseline this composite text line reaches:
+     *  the descent of the component that reaches lowest, a subscript included.
+     *
+     *  @return the descent, in points.
+     */
+    public float getDescent() {
+        return getMinMaxY()[1] - position[Y];
     }
 
     /**

@@ -12,7 +12,7 @@ import Foundation
 /**
  * Used to create composite text line objects.
  */
-public class CompositeTextLine : Drawable {
+public class CompositeTextLine : BaselineDrawable {
     private let X = 0
     private let Y = 1
 
@@ -359,6 +359,23 @@ public class CompositeTextLine : Drawable {
     public func getHeight()-> Float {
         let yy = getMinMaxY()
         return yy[1] - yy[0]
+    }
+
+    ///
+    /// Returns how far above its baseline this composite text line reaches:
+    /// the ascent of the component that reaches highest, a superscript
+    /// included.
+    ///
+    public func getAscent() -> Float {
+        return position[Y] - getMinMaxY()[0]
+    }
+
+    ///
+    /// Returns how far below its baseline this composite text line reaches:
+    /// the descent of the component that reaches lowest, a subscript included.
+    ///
+    public func getDescent() -> Float {
+        return getMinMaxY()[1] - position[Y]
     }
 
     /**

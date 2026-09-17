@@ -722,7 +722,11 @@ public class Table : IDrawable {
             lines.Clear();
             int maxNumVerCells = 1;
             for (int i = 0; i < row.Count; i++) {
-                List<String> cellLines = (row[i].text == null) ? null : WrapCellText(row, i);
+                // A cell that draws a line of text of its own draws no cell
+                // text, so there is nothing to wrap.
+                List<String> cellLines = (row[i].text == null
+                        || row[i].drawable is IBaselineDrawable)
+                        ? null : WrapCellText(row, i);
                 lines.Add(cellLines);
                 if (cellLines != null && cellLines.Count > maxNumVerCells) {
                     maxNumVerCells = cellLines.Count;

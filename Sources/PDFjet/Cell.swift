@@ -18,7 +18,6 @@ public class Cell {
     var drawable: Drawable?     // The image, barcode, text block, text column or other drawable
     var point: Point?
     private var markerAlignment = Alignment.RIGHT
-    var compositeTextLine: CompositeTextLine?
     var width: Float = 75.0
     var topPadding: Float = 2.0
     var bottomPadding: Float = 2.0
@@ -220,7 +219,10 @@ public class Cell {
      */
     @discardableResult
     public func setCompositeTextLine(_ compositeTextLine: CompositeTextLine?) -> Cell {
-        self.compositeTextLine = compositeTextLine
+        // A composite text line is the content of the cell, in the drawable
+        // it holds, and is drawn where the cell text would be. The cell text
+        // is left as it is, and the composite is drawn instead of it.
+        self.drawable = compositeTextLine
         return self
     }
 
@@ -230,7 +232,7 @@ public class Cell {
      * - Returns: the composite text object.
      */
     public func getCompositeTextLine() -> CompositeTextLine? {
-        return self.compositeTextLine
+        return drawable as? CompositeTextLine
     }
 
     /**
@@ -370,13 +372,10 @@ public class Cell {
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
-        if compositeTextLine != nil {
-            // The composite text line is drawn where the cell text would be,
-            // so the cell is as tall as the taller of the two.
-            let fontHeight = font.getBodyHeight(fontSize)
-            let compositeHeight = compositeTextLine!.getHeight()
-            return ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
-                    + topPadding + bottomPadding
+        if drawable is BaselineDrawable {
+            // A line of text is drawn on the baseline of the cell text, so the
+            // cell makes room for the ascent and the descent of both.
+            return ascentOfCell() + descentOfCell() + topPadding + bottomPadding
         }
         if let drawable = drawable, text == nil || text == "" {   // The text is drawn first
             if let textBlock = drawable as? TextBlock {
@@ -639,8 +638,8 @@ public class Cell {
             drawBackground(page, x, y, w, h)
         }
 
-        if compositeTextLine != nil || (text != nil && text != "") {
-            // The composite text line is drawn instead of the cell text.
+        if drawable is BaselineDrawable || (text != nil && text != "") {
+            // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h)
         } else if let textBlock = drawable as? TextBlock {
             textBlock.setLocation(x + leftPadding, y + topPadding)
@@ -745,7 +744,7 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
-        let ascent = font.getAscent(fontSize)
+        let ascent = ascentOfCell()
         var yText: Float
         if valign == Alignment.TOP {
             yText = y + ascent + self.topPadding
@@ -767,7 +766,8 @@ public class Cell {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
             xText = x + self.leftPadding
         }
-        if compositeTextLine == nil {
+        let line = drawable as? BaselineDrawable
+        if line == nil {
             page.addBDC(StructElem.P, text!, text!)
             page.drawString(font, fallbackFont, fontSize, text!, xText, yText, Util.toRGB(textColor), nil)
             page.addEMC()
@@ -778,9 +778,10 @@ public class Cell {
                 strikeoutText(page, xText, yText)
             }
         } else {
-            compositeTextLine!.setLocation(xText, yText)
+            // A text line and a composite text line mark their own text.
+            _ = line!.setLocation(xText, yText)
             // The text lines of the composite mark their own text.
-            compositeTextLine!.drawOn(page)
+            line!.drawOn(page)
         }
 
         if uri != nil {
@@ -789,7 +790,7 @@ public class Cell {
                     xText,
                     yText - ascent,
                     xText + getTextWidth(),
-                    yText + font.getDescent(fontSize),
+                    yText + descentOfCell(),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Opacity
@@ -806,8 +807,8 @@ public class Cell {
     // Returns the width of the composite text line, or of the cell text drawn
     // with the font and the fallback font at the font size of this cell.
     private func getTextWidth() -> Float {
-        if compositeTextLine != nil {
-            return compositeTextLine!.getWidth()
+        if let line = drawable as? BaselineDrawable {
+            return line.getWidth()
         }
         return font.stringWidth(fallbackFont, fontSize, text)
     }
@@ -848,5 +849,31 @@ public class Cell {
     static func measure(_ drawable: Drawable) -> [Float] {
         drawable.setLocation(0.0, 0.0)
         return drawable.drawOn(nil)
+    }
+
+    // How far above the baseline the cell draws: the ascent of its font, and
+    // of the line of text it holds, whichever reaches higher.
+    private func ascentOfCell() -> Float {
+        var ascent = font.getAscent(fontSize)
+        if let line = drawable as? BaselineDrawable {
+            let lineAscent = line.getAscent()
+            if lineAscent > ascent {
+                ascent = lineAscent
+            }
+        }
+        return ascent
+    }
+
+    // How far below the baseline the cell draws: the descent of its font, and
+    // of the line of text it holds, whichever reaches lower.
+    private func descentOfCell() -> Float {
+        var descent = font.getDescent(fontSize)
+        if let line = drawable as? BaselineDrawable {
+            let lineDescent = line.getDescent()
+            if lineDescent > descent {
+                descent = lineDescent
+            }
+        }
+        return descent
     }
 }   // End of Cell.swift

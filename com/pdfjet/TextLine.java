@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Used to create text line objects.
  */
-public class TextLine implements Drawable {
+public class TextLine implements BaselineDrawable {
     /** The x coordinate. */
     protected float x;
     /** The y coordinate. */
@@ -310,6 +310,24 @@ public class TextLine implements Drawable {
      */
     public float getHeight() {
         return font.getBodyHeight(this.fontSize);
+    }
+
+    /**
+     * Returns how far above its baseline this text line reaches.
+     *
+     * @return the ascent of the font at the font size of this text line.
+     */
+    public float getAscent() {
+        return font.getAscent(this.fontSize);
+    }
+
+    /**
+     * Returns how far below its baseline this text line reaches.
+     *
+     * @return the descent of the font at the font size of this text line.
+     */
+    public float getDescent() {
+        return font.getDescent(this.fontSize);
     }
 
     /**

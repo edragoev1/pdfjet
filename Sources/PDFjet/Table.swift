@@ -760,7 +760,10 @@ public class Table : Drawable {
             lines.removeAll(keepingCapacity: true)
             var maxNumVerCells = 1
             for i in 0..<row.count {
-                let cellLines = (row[i].text == nil) ? nil : wrapCellText(row, i)
+                // A cell that draws a line of text of its own draws no cell
+                // text, so there is nothing to wrap.
+                let cellLines = (row[i].text == nil || row[i].drawable is BaselineDrawable)
+                        ? nil : wrapCellText(row, i)
                 lines.append(cellLines)
                 if let cellLines = cellLines, cellLines.count > maxNumVerCells {
                     maxNumVerCells = cellLines.count

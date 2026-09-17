@@ -19,7 +19,6 @@ public class Cell {
     internal IDrawable drawable;    // The image, barcode, text block, text column or other drawable
     internal Point point;
     private Alignment markerAlignment = Alignment.RIGHT;
-    internal CompositeTextLine compositeTextLine;
     internal float width = 75f;
     internal float topPadding = 2f;
     internal float bottomPadding = 2f;
@@ -206,13 +205,16 @@ public class Cell {
 
     /// <summary>Sets the composite text line drawn in this cell.</summary>
     public Cell SetCompositeTextLine(CompositeTextLine compositeTextLine) {
-        this.compositeTextLine = compositeTextLine;
+        // A composite text line is the content of the cell, in the drawable it
+        // holds, and is drawn where the cell text would be. The cell text is
+        // left as it is, and the composite is drawn instead of it.
+        this.drawable = compositeTextLine;
         return this;
     }
 
     /// <summary>Returns the composite text line drawn in this cell.</summary>
     public CompositeTextLine GetCompositeTextLine() {
-        return this.compositeTextLine;
+        return drawable as CompositeTextLine;
     }
 
     /// <summary>Sets the text block drawn in this cell and clears the cell text.</summary>
@@ -322,13 +324,10 @@ public class Cell {
     /// <returns>the cell height.</returns>
     public float GetHeight(float width) {
         float cellHeight = 0f;
-        if (compositeTextLine != null) {
-            // The composite text line is drawn where the cell text would be,
-            // so the cell is as tall as the taller of the two.
-            float fontHeight = font.GetBodyHeight(fontSize);
-            float compositeHeight = compositeTextLine.GetHeight();
-            cellHeight = ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
-                    + topPadding + bottomPadding;
+        if (drawable is IBaselineDrawable) {
+            // A line of text is drawn on the baseline of the cell text, so the
+            // cell makes room for the ascent and the descent of both.
+            cellHeight = Ascent() + Descent() + topPadding + bottomPadding;
         } else if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
             if (drawable is TextBlock textBlock) {
                 textBlock.SetWidth(width);
@@ -570,8 +569,8 @@ public class Cell {
             DrawBackground(page, x, y, w, h);
         }
 
-        if (compositeTextLine != null || (text != null && !text.Equals(""))) {
-            // The composite text line is drawn instead of the cell text.
+        if (drawable is IBaselineDrawable || (text != null && !text.Equals(""))) {
+            // A line of text is drawn instead of the cell text, on its baseline.
             DrawText(page, x, y, w, h);
         } else if (drawable is TextBlock textBlock) {
             textBlock.SetLocation(x + leftPadding, y + topPadding);
@@ -683,7 +682,7 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-        float ascent = font.GetAscent(fontSize);
+        float ascent = Ascent();
         float yText;
         if (valign == Alignment.TOP) {
             yText = y + ascent + this.topPadding;
@@ -705,7 +704,8 @@ public class Cell {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
             xText = x + this.leftPadding;
         }
-        if (compositeTextLine == null) {
+        IBaselineDrawable line = drawable as IBaselineDrawable;
+        if (line == null) {
             page.AddBDC(StructElem.P, text, text);
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText,
                     (textColor == NO_COLOR) ? null : page.PackedToRGB(textColor), null);
@@ -717,9 +717,10 @@ public class Cell {
                 StrikeoutText(page, xText, yText);
             }
         } else {
-            compositeTextLine.SetLocation(xText, yText);
+            // A text line and a composite text line mark their own text.
+            line.SetLocation(xText, yText);
             // The text lines of the composite mark their own text.
-            compositeTextLine.DrawOn(page);
+            line.DrawOn(page);
         }
 
         if (uri != null) {
@@ -728,7 +729,7 @@ public class Cell {
                     xText,
                     yText - ascent,
                     xText + GetTextWidth(),
-                    yText + font.GetDescent(fontSize),
+                    yText + Descent(),
                     null,       // Vertices
                     null,       // Fill Color
                     0f,         // Opacity
@@ -745,10 +746,36 @@ public class Cell {
     // Returns the width of the composite text line, or of the cell text drawn
     // with the font and the fallback font at the font size of this cell.
     private float GetTextWidth() {
-        if (compositeTextLine != null) {
-            return compositeTextLine.GetWidth();
+        if (drawable is IBaselineDrawable line) {
+            return line.GetWidth();
         }
         return font.StringWidth(fallbackFont, fontSize, text);
+    }
+
+    // How far above the baseline the cell draws: the ascent of its font, and
+    // of the line of text it holds, whichever reaches higher.
+    private float Ascent() {
+        float ascent = font.GetAscent(fontSize);
+        if (drawable is IBaselineDrawable line) {
+            float lineAscent = line.GetAscent();
+            if (lineAscent > ascent) {
+                ascent = lineAscent;
+            }
+        }
+        return ascent;
+    }
+
+    // How far below the baseline the cell draws: the descent of its font, and
+    // of the line of text it holds, whichever reaches lower.
+    private float Descent() {
+        float descent = font.GetDescent(fontSize);
+        if (drawable is IBaselineDrawable line) {
+            float lineDescent = line.GetDescent();
+            if (lineDescent > descent) {
+                descent = lineDescent;
+            }
+        }
+        return descent;
     }
 
     private void UnderlineText(Page page, float x, float y) {

@@ -14,7 +14,7 @@ namespace PDFjet.NET {
 ///
 /// Used to create composite text line objects.
 /// </summary>
-public class CompositeTextLine : IDrawable {
+public class CompositeTextLine : IBaselineDrawable {
     private const int X = 0;
     private const int Y = 1;
 
@@ -332,6 +332,25 @@ public class CompositeTextLine : IDrawable {
             }
         }
         return new float[] {min, max};
+    }
+
+    /// <summary>
+    /// Returns how far above its baseline this composite text line reaches:
+    /// the ascent of the component that reaches highest, a superscript
+    /// included.
+    /// </summary>
+    /// <returns>the ascent, in points.</returns>
+    public float GetAscent() {
+        return position[Y] - GetMinMaxY()[0];
+    }
+
+    /// <summary>
+    /// Returns how far below its baseline this composite text line reaches:
+    /// the descent of the component that reaches lowest, a subscript included.
+    /// </summary>
+    /// <returns>the descent, in points.</returns>
+    public float GetDescent() {
+        return GetMinMaxY()[1] - position[Y];
     }
 
     /// <summary>

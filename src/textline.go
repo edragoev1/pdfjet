@@ -203,6 +203,18 @@ func (textLine *TextLine) GetHeight() float32 {
 	return textLine.font.GetBodyHeight(textLine.fontSize)
 }
 
+// GetAscent returns how far above its baseline this text line reaches: the
+// ascent of the font at the font size of this text line.
+func (textLine *TextLine) GetAscent() float32 {
+	return textLine.font.GetAscent(textLine.fontSize)
+}
+
+// GetDescent returns how far below its baseline this text line reaches: the
+// descent of the font at the font size of this text line.
+func (textLine *TextLine) GetDescent() float32 {
+	return textLine.font.GetDescent(textLine.fontSize)
+}
+
 // SetURIAction sets the URI for the "click text line" action.
 //   - uri: the URI
 //

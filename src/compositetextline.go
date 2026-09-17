@@ -304,6 +304,20 @@ func (composite *CompositeTextLine) GetMinMaxY() [2]float32 {
 }
 
 // GetHeight returns the height of this CompositeTextLine.
+// GetAscent returns how far above its baseline this composite text line
+// reaches: the ascent of the component that reaches highest, a superscript
+// included.
+func (composite *CompositeTextLine) GetAscent() float32 {
+	return composite.position[composite.y] - composite.GetMinMaxY()[0]
+}
+
+// GetDescent returns how far below its baseline this composite text line
+// reaches: the descent of the component that reaches lowest, a subscript
+// included.
+func (composite *CompositeTextLine) GetDescent() float32 {
+	return composite.GetMinMaxY()[1] - composite.position[composite.y]
+}
+
 func (composite *CompositeTextLine) GetHeight() float32 {
 	yy := composite.GetMinMaxY()
 	return yy[1] - yy[0]

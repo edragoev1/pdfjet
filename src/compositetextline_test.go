@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
@@ -167,6 +168,77 @@ func TestCompositeTextLineAFormulaSuperscriptsTheChargeAfterACircumflex(t *testi
 	empty.AddFormula(font, "")
 	if empty.GetNumberOfTextLines() != 0 {
 		t.Errorf("components %d", empty.GetNumberOfTextLines())
+	}
+}
+
+func TestCompositeTextLineACellDrawsALineOfTextOnItsBaselineWhateverItsAlignment(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	// A TextLine is a baseline drawable too, and a cell draws it where it
+	// draws its own text rather than at its top left corner.
+	cell := NewEmptyCell(font)
+	line := NewTextLine(font, "Text")
+	cell.SetDrawable(line)
+	testNear(t, "height", NewCell(font, "Text").GetHeight(100), cell.GetHeight(100), testDelta)
+	page := NewPage(pdf, letter.Portrait())
+	cell.drawOn(page, 50, 50, 100, 20)
+	// The baseline is an ascent below the top of the cell and its padding.
+	testNear(t, "baseline", 50+cell.GetTopPadding()+font.GetAscent(font.GetSize()),
+		line.GetLocation()[1], testDelta)
+	if !strings.Contains(testContent(page), testHex("Text")) {
+		t.Error("the text line is not drawn")
+	}
+	// The vertical alignments move the baseline down the cell, as they do for
+	// cell text.
+	baselines := make([]float32, 0)
+	for _, valign := range []alignment.Alignment{alignment.Top, alignment.Center, alignment.Bottom} {
+		aligned := NewEmptyCell(font)
+		text := NewTextLine(font, "Text")
+		aligned.SetDrawable(text)
+		aligned.SetVerticalAlignment(valign)
+		aligned.drawOn(NewPage(pdf, letter.Portrait()), 50, 50, 100, 40)
+		baselines = append(baselines, text.GetLocation()[1])
+	}
+	if !(baselines[0] < baselines[1] && baselines[1] < baselines[2]) {
+		t.Errorf("baselines %v", baselines)
+	}
+}
+
+func TestCompositeTextLineACellTakesTheAscentOfTheLineItDraws(t *testing.T) {
+	pdf := testNewPDF()
+	small := testHelvetica(pdf)
+	small.SetSize(8)
+	big := NewCoreFont(pdf, corefont.Helvetica())
+	big.SetSize(24)
+	// The cell font is small and the line it draws is big, so the cell is as
+	// tall as the line rather than as its own font.
+	cell := NewEmptyCell(small)
+	cell.SetDrawable(NewTextLine(big, "Text"))
+	testNear(t, "cell height", big.GetAscent(24)+big.GetDescent(24)+
+		cell.GetTopPadding()+cell.GetBottomPadding(), cell.GetHeight(100), testDelta)
+}
+
+func TestCompositeTextLineATableDoesNotWrapTheTextOfACellThatDrawsALineOfItsOwn(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	// The cell text is long and the column narrow, but the composite is what
+	// the cell draws, so the text is not wrapped into more rows.
+	cell := NewCell(font, "a long text that would wrap in a narrow column")
+	composite := NewCompositeTextLine(0, 0)
+	composite.AddFormula(font, "H2O")
+	cell.SetCompositeTextLine(composite)
+	cell.SetWidth(30)
+	table := NewTable().SetTableData([][]*Cell{{cell}}, 0)
+	table.SetLocation(20, 20)
+	page := NewPage(pdf, letter.Portrait())
+	table.DrawOn(page)
+	// One row, drawn to the end, and no word of the cell text on the page.
+	if len(table.GetRow(0)) != 1 || table.GetRowsRendered() != -1 {
+		t.Errorf("cells %d, rendered %d", len(table.GetRow(0)), table.GetRowsRendered())
+	}
+	content := testContent(page)
+	if strings.Contains(content, testHex("long")) || !strings.Contains(content, testHex("H")) {
+		t.Error("the cell text was wrapped and drawn instead of the composite")
 	}
 }
 
