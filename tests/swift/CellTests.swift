@@ -147,6 +147,27 @@ private final class Box: Drawable {
         #expect(cell.getBorderColor() == nil)
     }
 
+    @Test func theUnderlineAndTheStrikeoutAreDrawnInTheTextColor() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let cell = Cell(TestSupport.helvetica(pdf), "Text")
+        cell.setTextColor(Color.red).setBorderColor(Color.blue).setBorderWidth(2.0)
+            .setBackgroundColor(Color.yellow).setUnderline(true).setStrikeout(true)
+        cell.drawOn(page, 10.0, 50.0, 100.0, 20.0)
+        let content = TestSupport.content(page)
+        // The text, the underline and the strikeout are red; only the borders are blue.
+        #expect(content.range(of: "1 0 0 RG")!.lowerBound < content.range(of: "0 0 1 RG")!.lowerBound)
+        #expect(content.components(separatedBy: "0 0 1 RG").count - 1 == 1)
+        // Each border starts half the pen width back, so that the corners close.
+        #expect(content.contains("9 742 m"))
+    }
+
+    @Test func transparentLeavesTheBordersTheColorOfThePen() {
+        let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        cell.setBorderColor(Color.blue).setBorderColor(Color.transparent)
+        #expect(cell.getBorderColor() == nil)
+    }
+
     @Test func setFontChangesTheFallbackFontUnlessAnotherWasSet() throws {
         let pdf = TestSupport.newPDF()
         let helvetica = TestSupport.helvetica(pdf)

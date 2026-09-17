@@ -367,9 +367,15 @@ func (cell *Cell) SetBorderColorRGB(color [3]float32) *Cell {
 }
 
 // SetBorderColor sets the color of the cell borders.
-//   - color: the color specified as 0xRRGGBB integer.
-func (cell *Cell) SetBorderColor(color int32) *Cell {
-	cell.borderColor = colorToRGB(color)
+// color.Transparent leaves the borders the color of the pen the page draws with.
+//   - c: the color specified as 0xRRGGBB integer.
+func (cell *Cell) SetBorderColor(c int32) *Cell {
+	if c == color.Transparent {
+		cell.borderColor = [3]float32{}
+		cell.hasBorderColor = false
+		return cell
+	}
+	cell.borderColor = colorToRGB(c)
 	cell.hasBorderColor = true
 	return cell
 }
@@ -601,25 +607,26 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 		page.SetPenColorRGB(cell.borderColor)
 	}
 	page.SetPenWidth(cell.borderWidth)
-	qWidth := cell.borderWidth / 4.0
+	// Half the pen width, so that the corners of the borders close.
+	hWidth := cell.borderWidth / 2.0
 	if cell.topBorder {
-		page.MoveTo(x-qWidth, y)
+		page.MoveTo(x-hWidth, y)
 		page.LineTo(x+cellW, y)
 		page.StrokePath()
 	}
 	if cell.bottomBorder {
-		page.MoveTo(x-qWidth, y+cellH)
+		page.MoveTo(x-hWidth, y+cellH)
 		page.LineTo(x+cellW, y+cellH)
 		page.StrokePath()
 	}
 	if cell.leftBorder {
-		page.MoveTo(x, y-qWidth)
-		page.LineTo(x, y+cellH+qWidth)
+		page.MoveTo(x, y-hWidth)
+		page.LineTo(x, y+cellH+hWidth)
 		page.StrokePath()
 	}
 	if cell.rightBorder {
-		page.MoveTo(x+cellW, y-qWidth)
-		page.LineTo(x+cellW, y+cellH+qWidth)
+		page.MoveTo(x+cellW, y-hWidth)
+		page.LineTo(x+cellW, y+cellH+hWidth)
 		page.StrokePath()
 	}
 	page.AddEMC()
@@ -640,9 +647,6 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		panic("Invalid vertical text alignment option.")
 	}
 
-	if cell.hasBorderColor {
-		page.SetPenColorRGB(cell.borderColor)
-	}
 	var xText float32
 	if cell.textAlignment == alignment.Right {
 		xText = (x + cellW) - (cell.getTextWidth() + cell.rightPadding)
@@ -696,6 +700,7 @@ func (cell *Cell) getTextWidth() float32 {
 func (cell *Cell) underlineText(page *Page, x, y float32) {
 	descent := cell.font.GetDescent(cell.fontSize)
 	page.AddBDC("P", "", "underline", "underline")
+	page.SetPenColorRGB(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y+descent)
 	page.LineTo(x+cell.getTextWidth(), y+descent)
@@ -707,6 +712,7 @@ func (cell *Cell) underlineText(page *Page, x, y float32) {
 func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	ascent := cell.font.GetAscent(cell.fontSize)
 	page.AddBDC("P", "", "strike out", "strike out")
+	page.SetPenColorRGB(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)
 	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)

@@ -361,8 +361,11 @@ public class Cell {
         return this;
     }
 
-    /// <summary>Sets the text color from an array of red, green and blue values. The cell keeps each component to the nearest of 256 steps.</summary>
+    /// <summary>Sets the text color from an array of red, green and blue values. The cell keeps each component to the nearest of 256 steps. A null color leaves the text color unchanged, as Color.transparent does.</summary>
     public Cell SetTextColor(float[] rgbColor) {
+        if (rgbColor == null) {
+            return this;
+        }
         this.textColor = Util.ToPackedRGB(rgbColor);
         return this;
     }
@@ -386,8 +389,12 @@ public class Cell {
         return this.borderWidth;
     }
 
-    /// <summary>Sets the border color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent leaves the borders the color of the pen the page draws with.</summary>
     public Cell SetBorderColor(int color) {
+        if (color == Color.transparent) {
+            this.borderColor = NO_COLOR;
+            return this;
+        }
         this.borderColor = color & 0xFFFFFF;
         return this;
     }
@@ -636,25 +643,26 @@ public class Cell {
             page.SetPenColor(borderColor);
         }
         page.SetPenWidth(borderWidth);
-        float qWidth = borderWidth / 4;
+        // Half the pen width, so that the corners of the borders close.
+        float hWidth = borderWidth / 2;
         if (GetBorder(Border.TOP)) {
-            page.MoveTo(x - qWidth, y);
+            page.MoveTo(x - hWidth, y);
             page.LineTo(x + cellW, y);
             page.StrokePath();
         }
         if (GetBorder(Border.BOTTOM)) {
-            page.MoveTo(x - qWidth, y + cellH);
+            page.MoveTo(x - hWidth, y + cellH);
             page.LineTo(x + cellW, y + cellH);
             page.StrokePath();
         }
         if (GetBorder(Border.LEFT)) {
-            page.MoveTo(x, y - qWidth);
-            page.LineTo(x, y + cellH + qWidth);
+            page.MoveTo(x, y - hWidth);
+            page.LineTo(x, y + cellH + hWidth);
             page.StrokePath();
         }
         if (GetBorder(Border.RIGHT)) {
-            page.MoveTo(x + cellW, y - qWidth);
-            page.LineTo(x + cellW, y + cellH + qWidth);
+            page.MoveTo(x + cellW, y - hWidth);
+            page.LineTo(x + cellW, y + cellH + hWidth);
             page.StrokePath();
         }
         page.AddEMC();
@@ -678,9 +686,6 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        if (borderColor != NO_COLOR) {
-            page.SetPenColor(borderColor);
-        }
         float xText;
         if (GetTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (GetTextWidth() + this.rightPadding);
@@ -740,6 +745,9 @@ public class Cell {
     private void UnderlineText(Page page, float x, float y) {
         float descent = font.GetDescent(fontSize);
         page.AddBDC(StructElem.P, "underline", "underline");
+        if (textColor != NO_COLOR) {
+            page.SetPenColor(textColor);
+        }
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y + descent);
         page.LineTo(x + GetTextWidth(), y + descent);
@@ -750,6 +758,9 @@ public class Cell {
     private void StrikeoutText(Page page, float x, float y) {
         float ascent = font.GetAscent(fontSize);
         page.AddBDC(StructElem.P, "strike out", "strike out");
+        if (textColor != NO_COLOR) {
+            page.SetPenColor(textColor);
+        }
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y - ascent/3f);
         page.LineTo(x + GetTextWidth(), y - ascent/3f);

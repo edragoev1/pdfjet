@@ -166,6 +166,36 @@ public class CellTest {
     }
 
     [Fact]
+    public void TheUnderlineAndTheStrikeoutAreDrawnInTheTextColor() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Cell cell = new Cell(TestSupport.Helvetica(pdf), "Text");
+        cell.SetTextColor(Color.red).SetBorderColor(Color.blue).SetBorderWidth(2f)
+                .SetBackgroundColor(Color.yellow).SetUnderline(true).SetStrikeout(true);
+        cell.DrawOn(page, 10f, 50f, 100f, 20f);
+        string content = TestSupport.Content(page);
+        // The text, the underline and the strikeout are red; only the borders are blue.
+        Assert.True(content.IndexOf("1 0 0 RG") < content.IndexOf("0 0 1 RG"));
+        Assert.Equal(1, content.Split("0 0 1 RG").Length - 1);
+        // Each border starts half the pen width back, so that the corners close.
+        Assert.Contains("9 742 m", content);
+    }
+
+    [Fact]
+    public void TransparentLeavesTheBordersTheColorOfThePen() {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        cell.SetBorderColor(Color.blue).SetBorderColor(Color.transparent);
+        Assert.Null(cell.GetBorderColor());
+    }
+
+    [Fact]
+    public void ANullTextColorLeavesTheTextColorUnchanged() {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        cell.SetTextColor(Color.blue).SetTextColor((float[]) null);
+        TestSupport.AssertRGB(0f, 0f, 1f, cell.GetTextColor());
+    }
+
+    [Fact]
     public void SetFontChangesTheFallbackFontUnlessAnotherWasSet() {
         PDF pdf = TestSupport.NewPDF();
         Font helvetica = TestSupport.Helvetica(pdf);

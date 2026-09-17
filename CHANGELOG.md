@@ -38,6 +38,17 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- Four bugs in `Cell`, in all four ports. The underline and the strikeout of
+  the cell text are drawn in the text color; they were drawn in the border
+  color, or in whatever color the pen carried when no border color was set.
+  `setBorderColor(Color.transparent)` leaves the borders the color of the pen,
+  as `setTextColor(Color.transparent)` leaves the text color unchanged; it made
+  the borders white. In Java and C#, `setTextColor(null)` with an array of
+  floats leaves the text color unchanged; it left the cell without a text
+  color, so the text was drawn in the background color and disappeared on a
+  shaded cell. And each border line starts half the pen width back, so that the
+  corners of a thick border close; they had a notch of a quarter of the width.
+  Cells with the default border width of 0 draw as before.
 - `TextFrame` aligns a paragraph to the right, to the center or to both
   edges, as `TextColumn` does, in all four ports; it drew every paragraph
   aligned to the left. A right aligned or centered row is moved as a whole,

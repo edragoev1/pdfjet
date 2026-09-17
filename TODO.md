@@ -51,6 +51,19 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       C# 261, Go, Swift 270.
       Benchmarks recorded at 8db803f0 (Sep 17) in `pdfjet-benchmarks.html`:
       `Table` at 50,000 rows Java 1,632 ms, C# 1,902, Go 778, Swift 2,584.
+- ✅ **B** Four `Cell` bugs fixed in the four ports (Sep 17), found while
+      reviewing `Cell` after the packed colors: the underline and the strikeout
+      were drawn in the border color, `setBorderColor(Color.transparent)` made
+      the borders white, `setTextColor((float[]) null)` in Java and C# left the
+      text with no color so it took the background color, and the corners of a
+      thick border had a notch, as the lines were extended by a quarter of the
+      pen width instead of half. Unit tests in the four ports check the drawn
+      content. Cells with the default border width of 0 draw as before.
+      A fifth candidate was dropped: the background of a cell overflows half
+      the border width past its bottom, but the next row is drawn over it and
+      the last row's bottom border covers the overhang, so cutting it short
+      only left white gaps between cells that share no drawn edge (seen in
+      Example_38).
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

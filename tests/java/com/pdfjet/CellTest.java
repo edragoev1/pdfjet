@@ -177,6 +177,36 @@ class CellTest {
     }
 
     @Test
+    void theUnderlineAndTheStrikeoutAreDrawnInTheTextColor() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Cell cell = new Cell(TestSupport.helvetica(pdf), "Text");
+        cell.setTextColor(Color.red).setBorderColor(Color.blue).setBorderWidth(2f)
+                .setBackgroundColor(Color.yellow).setUnderline(true).setStrikeout(true);
+        cell.drawOn(page, 10f, 50f, 100f, 20f);
+        String content = TestSupport.content(page);
+        // The text, the underline and the strikeout are red; only the borders are blue.
+        assertTrue(content.indexOf("1 0 0 RG") < content.indexOf("0 0 1 RG"));
+        assertEquals(1, content.split("0 0 1 RG", -1).length - 1);
+        // Each border starts half the pen width back, so that the corners close.
+        assertTrue(content.contains("9 742 m"));
+    }
+
+    @Test
+    void transparentLeavesTheBordersTheColorOfThePen() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        cell.setBorderColor(Color.blue).setBorderColor(Color.transparent);
+        assertNull(cell.getBorderColor());
+    }
+
+    @Test
+    void aNullTextColorLeavesTheTextColorUnchanged() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        cell.setTextColor(Color.blue).setTextColor((float[]) null);
+        TestSupport.assertRGB(0f, 0f, 1f, cell.getTextColor());
+    }
+
+    @Test
     void setFontChangesTheFallbackFontUnlessAnotherWasSet() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font helvetica = TestSupport.helvetica(pdf);

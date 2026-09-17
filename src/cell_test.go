@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -76,6 +77,35 @@ func TestCellTransparentLeavesTheTextColorUnchanged(t *testing.T) {
 	cell := NewCell(testHelvetica(testNewPDF()), "x")
 	cell.SetTextColor(color.Blue).SetTextColor(color.Transparent)
 	testAssertRGB(t, 0, 0, 1, cell.GetTextColor())
+}
+
+func TestCellTheUnderlineAndTheStrikeoutAreDrawnInTheTextColor(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, letter.Portrait())
+	cell := NewCell(testHelvetica(pdf), "Text")
+	cell.SetTextColor(color.Red).SetBorderColor(color.Blue).SetBorderWidth(2.0).
+		SetBackgroundColor(color.Yellow).SetUnderline(true).SetStrikeout(true)
+	cell.drawOn(page, 10, 50, 100, 20)
+	content := testContent(page)
+	// The text, the underline and the strikeout are red; only the borders are blue.
+	if strings.Index(content, "1 0 0 RG") > strings.Index(content, "0 0 1 RG") {
+		t.Error("the underline is not drawn in the text color")
+	}
+	if strings.Count(content, "0 0 1 RG") != 1 {
+		t.Error("the border color is written more than once")
+	}
+	// Each border starts half the pen width back, so that the corners close.
+	if !strings.Contains(content, "9 742 m") {
+		t.Error("the corners of the borders do not close")
+	}
+}
+
+func TestCellTransparentLeavesTheBordersTheColorOfThePen(t *testing.T) {
+	cell := NewCell(testHelvetica(testNewPDF()), "x")
+	cell.SetBorderColor(color.Blue).SetBorderColor(color.Transparent)
+	if cell.GetBorderColor() != nil {
+		t.Error("the border color is set")
+	}
 }
 
 func TestCellSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) {

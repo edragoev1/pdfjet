@@ -427,12 +427,17 @@ public class Cell {
     }
 
     /**
-     * Sets the border color of this cell.
+     * Sets the border color of this cell. Color.transparent leaves the borders
+     * the color of the pen the page draws with.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
      */
     public Cell setBorderColor(int color) {
+        if (color == Color.transparent) {
+            this.borderColor = NO_COLOR;
+            return this;
+        }
         this.borderColor = color & 0xFFFFFF;
         return this;
     }
@@ -518,12 +523,16 @@ public class Cell {
 
     /**
      * Sets the text color of this cell. The cell keeps each component to the
-     * nearest of 256 steps.
+     * nearest of 256 steps. A null color leaves the text color unchanged, as
+     * Color.transparent does.
      *
      * @param textColor the red, green and blue components, from 0.0 to 1.0.
      * @return this Cell object.
      */
     public Cell setTextColor(float[] textColor) {
+        if (textColor == null) {
+            return this;
+        }
         this.textColor = Util.toPackedRGB(textColor);
         return this;
     }
@@ -841,25 +850,26 @@ public class Cell {
             page.setPenColor(borderColor);
         }
         page.setPenWidth(borderWidth);
-        float qWidth = borderWidth / 4;
+        // Half the pen width, so that the corners of the borders close.
+        float hWidth = borderWidth / 2;
         if (getBorder(Border.TOP)) {
-            page.moveTo(x - qWidth, y);
+            page.moveTo(x - hWidth, y);
             page.lineTo(x + cellW, y);
             page.strokePath();
         }
         if (getBorder(Border.BOTTOM)) {
-            page.moveTo(x - qWidth, y + cellH);
+            page.moveTo(x - hWidth, y + cellH);
             page.lineTo(x + cellW, y + cellH);
             page.strokePath();
         }
         if (getBorder(Border.LEFT)) {
-            page.moveTo(x, y - qWidth);
-            page.lineTo(x, y + cellH + qWidth);
+            page.moveTo(x, y - hWidth);
+            page.lineTo(x, y + cellH + hWidth);
             page.strokePath();
         }
         if (getBorder(Border.RIGHT)) {
-            page.moveTo(x + cellW, y - qWidth);
-            page.lineTo(x + cellW, y + cellH + qWidth);
+            page.moveTo(x + cellW, y - hWidth);
+            page.lineTo(x + cellW, y + cellH + hWidth);
             page.strokePath();
         }
         page.addEMC();
@@ -883,9 +893,6 @@ public class Cell {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
-        if (borderColor != NO_COLOR) {
-            page.setPenColor(borderColor);
-        }
         float xText;
         if (getTextAlignment() == Alignment.RIGHT) {
             xText = (x + cellW) - (getTextWidth() + this.rightPadding);
@@ -945,6 +952,9 @@ public class Cell {
     private void underlineText(Page page, float x, float y) throws Exception {
         float descent = font.getDescent(fontSize);
         page.addBDC(StructElem.P, "underline", "underline");
+        if (textColor != NO_COLOR) {
+            page.setPenColor(textColor);
+        }
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y + descent);
         page.lineTo(x + getTextWidth(), y + descent);
@@ -955,6 +965,9 @@ public class Cell {
     private void strikeoutText(Page page, float x, float y) throws Exception {
         float ascent = font.getAscent(fontSize);
         page.addBDC(StructElem.P, "strike out", "strike out");
+        if (textColor != NO_COLOR) {
+            page.setPenColor(textColor);
+        }
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y - ascent/3f);
         page.lineTo(x + getTextWidth(), y - ascent/3f);

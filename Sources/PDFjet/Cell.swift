@@ -433,9 +433,14 @@ public class Cell {
         return (backgroundColor == Cell.NO_COLOR) ? nil : Util.toRGB(backgroundColor)
     }
 
-    /// Sets the border color as a 0xRRGGBB value.
+    /// Sets the border color as a 0xRRGGBB value. Color.transparent leaves the
+    /// borders the color of the pen the page draws with.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Cell {
+        if color == Color.transparent {
+            self.borderColor = Cell.NO_COLOR
+            return self
+        }
         self.borderColor = color & 0xFFFFFF
         return self
     }
@@ -699,25 +704,26 @@ public class Cell {
             page.setPenColor(borderColor)
         }
         page.setPenWidth(borderWidth)
-        let qWidth: Float = borderWidth / 4.0
+        // Half the pen width, so that the corners of the borders close.
+        let hWidth: Float = borderWidth / 2.0
         if topBorder {
-            page.moveTo(x - qWidth, y)
+            page.moveTo(x - hWidth, y)
             page.lineTo(x + cellW, y)
             page.strokePath()
         }
         if bottomBorder {
-            page.moveTo(x - qWidth, y + cellH)
+            page.moveTo(x - hWidth, y + cellH)
             page.lineTo(x + cellW, y + cellH)
             page.strokePath()
         }
         if leftBorder {
-            page.moveTo(x, y - qWidth)
-            page.lineTo(x, y + cellH + qWidth)
+            page.moveTo(x, y - hWidth)
+            page.lineTo(x, y + cellH + hWidth)
             page.strokePath()
         }
         if rightBorder {
-            page.moveTo(x + cellW, y - qWidth)
-            page.lineTo(x + cellW, y + cellH + qWidth)
+            page.moveTo(x + cellW, y - hWidth)
+            page.lineTo(x + cellW, y + cellH + hWidth)
             page.strokePath()
         }
         page.addEMC()
@@ -741,9 +747,6 @@ public class Cell {
             fatalError("Invalid vertical text alignment option.")
         }
 
-        if borderColor != Cell.NO_COLOR {
-            page.setPenColor(borderColor)
-        }
         var xText: Float
         if getTextAlignment() == Alignment.RIGHT {
             xText = (x + cellW) - (getTextWidth() + self.rightPadding)
@@ -802,6 +805,9 @@ public class Cell {
     private func underlineText(_ page: Page, _ x: Float, _ y: Float) {
         let descent = font.getDescent(fontSize)
         page.addBDC(StructElem.P, "underline", "underline")
+        if textColor != Cell.NO_COLOR {
+            page.setPenColor(textColor)
+        }
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y + descent)
         page.lineTo(x + getTextWidth(), y + descent)
@@ -812,6 +818,9 @@ public class Cell {
     private func strikeoutText(_ page: Page, _ x: Float, _ y: Float) {
         let ascent = font.getAscent(fontSize)
         page.addBDC(StructElem.P, "strike out", "strike out")
+        if textColor != Cell.NO_COLOR {
+            page.setPenColor(textColor)
+        }
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y - ascent/3.0)
         page.lineTo(x + getTextWidth(), y - ascent/3.0)
