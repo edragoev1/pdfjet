@@ -17,6 +17,10 @@ public class CompositeTextLine : Drawable {
     private let Y = 1
 
     private var textLines = [TextLine]()
+    // The font size each component had when it was added. It is the base of
+    // the script size and offset of that component when this composite text
+    // line has no font size of its own.
+    private var fontSizes = [Float]()
 
     private var position = [Float](repeating: 0, count: 2)
     private var current = [Float](repeating: 0, count: 2)
@@ -47,6 +51,7 @@ public class CompositeTextLine : Drawable {
     @discardableResult
     public func setFontSize(_ fontSize: Float) -> CompositeTextLine {
         self.fontSize = fontSize
+        layoutComponents()
         return self
     }
 
@@ -67,6 +72,7 @@ public class CompositeTextLine : Drawable {
     @discardableResult
     public func setSuperscriptFactor(_ superscriptFactor: Float) -> CompositeTextLine {
         self.superscriptFactor = superscriptFactor
+        layoutComponents()
         return self
     }
 
@@ -87,6 +93,7 @@ public class CompositeTextLine : Drawable {
     @discardableResult
     public func setSubscriptFactor(_ subscriptFactor: Float) -> CompositeTextLine {
         self.subscriptFactor = subscriptFactor
+        layoutComponents()
         return self
     }
 
@@ -107,6 +114,7 @@ public class CompositeTextLine : Drawable {
     @discardableResult
     public func setSuperscriptPosition(_ superscriptPosition: Float) -> CompositeTextLine {
         self.superscriptPosition = superscriptPosition
+        layoutComponents()
         return self
     }
 
@@ -127,6 +135,7 @@ public class CompositeTextLine : Drawable {
     @discardableResult
     public func setSubscriptPosition(_ subscriptPosition: Float) -> CompositeTextLine {
         self.subscriptPosition = subscriptPosition
+        layoutComponents()
         return self
     }
 
@@ -151,31 +160,118 @@ public class CompositeTextLine : Drawable {
      */
     @discardableResult
     public func addComponent(_ component: TextLine) -> CompositeTextLine {
+        textLines.append(component)
+        fontSizes.append(component.getFontSize())
+        place(component, baseFontSize(textLines.count - 1))
+        return self
+    }
+
+    ///
+    /// Adds the components of a chemical formula, in the specified font.
+    ///
+    /// The digits that follow an element or a closing bracket are subscripts,
+    /// as the 2 of H2O and the 6, 12 and 6 of C6H12O6; a run of digits and
+    /// signs after a circumflex is a superscript, as the charge of Ca^2+ and
+    /// SO4^2-; and everything else is drawn on the baseline, including a digit
+    /// that begins the formula, as the 2 of 2H2O.
+    ///
+    /// - Parameter font: the font of the formula.
+    /// - Parameter formula: the formula, for example "C6H12O6" or "SO4^2-".
+    /// - Returns: this CompositeTextLine object.
+    ///
+    @discardableResult
+    public func addFormula(_ font: Font, _ formula: String) -> CompositeTextLine {
+        var buf = String()
+        let characters = Array(formula)
+        var i = 0
+        while i < characters.count {
+            let ch = characters[i]
+            if ch == "^" {
+                addRun(font, &buf, ScriptPosition.NORMAL)
+                i += 1
+                while i < characters.count && CompositeTextLine.isDigitOrSign(characters[i]) {
+                    buf.append(characters[i])
+                    i += 1
+                }
+                addRun(font, &buf, ScriptPosition.SUPERSCRIPT)
+            } else if CompositeTextLine.isDigit(ch)
+                    && CompositeTextLine.followsAnElement(characters, i) {
+                addRun(font, &buf, ScriptPosition.NORMAL)
+                while i < characters.count && CompositeTextLine.isDigit(characters[i]) {
+                    buf.append(characters[i])
+                    i += 1
+                }
+                addRun(font, &buf, ScriptPosition.SUBSCRIPT)
+            } else {
+                buf.append(ch)
+                i += 1
+            }
+        }
+        addRun(font, &buf, ScriptPosition.NORMAL)
+        return self
+    }
+
+    // Adds what the buffer holds as one component, and empties the buffer.
+    private func addRun(_ font: Font, _ buf: inout String, _ scriptPosition: ScriptPosition) {
+        if buf.isEmpty {
+            return
+        }
+        let component = TextLine(font, buf)
+        component.setScriptPosition(scriptPosition)
+        buf = ""
+        addComponent(component)
+    }
+
+    private static func isDigit(_ ch: Character) -> Bool {
+        return ch >= "0" && ch <= "9"
+    }
+
+    private static func isDigitOrSign(_ ch: Character) -> Bool {
+        return isDigit(ch) || ch == "+" || ch == "-"
+    }
+
+    // A digit is a subscript when it counts the atoms of the element or the
+    // group before it, and plain text when it begins the formula.
+    private static func followsAnElement(_ characters: [Character], _ index: Int) -> Bool {
+        if index == 0 {
+            return false
+        }
+        let ch = characters[index - 1]
+        return (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch == ")" || ch == "]"
+    }
+
+    // The base of the script size and offset of the component: the font size
+    // of this composite text line, or the one the component came with.
+    private func baseFontSize(_ index: Int) -> Float {
+        return (fontSize > 0.0) ? fontSize : fontSizes[index]
+    }
+
+    // Places the component at the current position, at the size its script
+    // position asks for, and moves the current position past it. The size goes
+    // on the TextLine: drawOn uses the line's own font size, so resizing the
+    // shared Font here would have no effect.
+    private func place(_ component: TextLine, _ base: Float) {
         if component.getScriptPosition() == ScriptPosition.SUPERSCRIPT {
-            if fontSize > 0 {
-                // Set it on the TextLine: drawOn uses the line's own font size,
-                // so resizing the shared Font here would have no effect.
-                component.setFontSize(fontSize * superscriptFactor)
-            }
-            component.setLocation(
-                    current[X],
-                    current[Y] - fontSize * superscriptPosition)
+            component.setFontSize(base * superscriptFactor)
+            component.setLocation(current[X], current[Y] - base * superscriptPosition)
         } else if component.getScriptPosition() == ScriptPosition.SUBSCRIPT {
-            if fontSize > 0 {
-                component.setFontSize(fontSize * subscriptFactor)
-            }
-            component.setLocation(
-                    current[X],
-                    current[Y] + fontSize * subscriptPosition)
+            component.setFontSize(base * subscriptFactor)
+            component.setLocation(current[X], current[Y] + base * subscriptPosition)
         } else {
-            if fontSize > 0 {
-                component.setFontSize(fontSize)
-            }
+            component.setFontSize(base)
             component.setLocation(current[X], current[Y])
         }
         current[X] += component.getWidth()
-        textLines.append(component)
-        return self
+    }
+
+    // Places every component again, from the location of this composite text
+    // line, after the location, the font size or a script setting changed.
+    private func layoutComponents() {
+        current[X] = position[X]
+        current[Y] = position[Y]
+        for (i, component) in textLines.enumerated() {
+            place(component, baseFontSize(i))
+        }
     }
 
     /**
@@ -189,26 +285,7 @@ public class CompositeTextLine : Drawable {
     public func setLocation(_ x: Float, _ y: Float) -> Self {
         self.position[X] = x
         self.position[Y] = y
-        self.current[X]  = x
-        self.current[Y]  = y
-
-        if textLines.count == 0 {
-            return self
-        }
-        for component in textLines {
-            if component.getScriptPosition() == ScriptPosition.SUPERSCRIPT {
-                component.setLocation(
-                        current[X],
-                        current[Y] - fontSize * superscriptPosition)
-            } else if component.getScriptPosition() == ScriptPosition.SUBSCRIPT {
-                component.setLocation(
-                        current[X],
-                        current[Y] + fontSize * subscriptPosition)
-            } else {
-                component.setLocation(current[X], current[Y])
-            }
-            current[X] += component.getWidth()
-        }
+        layoutComponents()
         return self
     }
 
@@ -256,28 +333,18 @@ public class CompositeTextLine : Drawable {
     public func getMinMaxY()-> [Float] {
         var min: Float = position[Y]
         var max: Float = position[Y]
-        var cur: Float
 
+        // Each component is measured where it is drawn, with the font size it
+        // is drawn at, which a script position makes smaller than the base.
         for component in textLines {
-            if component.getScriptPosition() == ScriptPosition.SUPERSCRIPT {
-                cur = (position[Y] - component.font!.ascent) - fontSize * superscriptPosition
-                if cur < min {
-                    min = cur
-                }
-            } else if component.getScriptPosition() == ScriptPosition.SUBSCRIPT {
-                cur = (position[Y] + component.font!.descent) + fontSize * subscriptPosition
-                if cur > max {
-                    max = cur
-                }
-            } else {
-                cur = position[Y] - component.font!.ascent
-                if cur < min {
-                    min = cur
-                }
-                cur = position[Y] + component.font!.descent
-                if cur > max {
-                    max = cur
-                }
+            let baseline = component.getLocation()[1]
+            let top = baseline - component.font!.getAscent(component.getFontSize())
+            let bottom = baseline + component.font!.getDescent(component.getFontSize())
+            if top < min {
+                min = top
+            }
+            if bottom > max {
+                max = bottom
             }
         }
 
@@ -300,7 +367,11 @@ public class CompositeTextLine : Drawable {
      * - Returns: the width.
      */
     public func getWidth()-> Float {
-        return (current[X] - position[X])
+        var width: Float = 0.0
+        for component in textLines {
+            width += component.getWidth()
+        }
+        return width
     }
 
     /**
@@ -311,8 +382,9 @@ public class CompositeTextLine : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?)-> [Float] {
-        var xMax: Float = 0.0
-        var yMax: Float = 0.0
+        // A composite text line with no component reaches its own location.
+        var xMax: Float = position[X]
+        var yMax: Float = position[Y]
         // Loop through all the text lines and draw them on the page
         for textLine in textLines {
             let xy: [Float] = textLine.drawOn(page)

@@ -113,6 +113,23 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       their text (checked by rendering page 1 before and after).
       `check-examples.sh` (Sep 17): every example identical in the four ports,
       Java 277 tests on JDK 21 and 8, C# 275, Go, Swift 282.
+- ✅ **B** `CompositeTextLine` reviewed at the user's request (Sep 17): five
+      bugs fixed in the four ports and `addFormula` added. The class exists to
+      draw chemical formulas, and its scripts did nothing at all unless
+      `setFontSize` was called first (the default 0 multiplied the size factor
+      and the offset away); `setFontSize` after `addComponent` was ignored;
+      `getHeight` read the font object's metrics rather than the drawn size
+      (27.74 points reported for 14.44 of text); an empty composite measured
+      0, 0; and `getWidth` trusted a running total. A `Cell` with only a
+      composite drew nothing and measured 0 height, so the working recipe was
+      to set text that was then discarded. `addFormula(font, "C6H12O6")` now
+      builds the runs, with the digits after an element or a bracket as
+      subscripts, a run after a circumflex as a superscript and a leading
+      coefficient on the baseline. New unit tests in the four ports.
+      Example_15 draws the same H2O with rows half a point taller, as its
+      cells now measure the composite. `check-examples.sh` (Sep 17): every
+      example identical in the four ports, Java 285 tests on JDK 21 and 8,
+      C# 283, Go, Swift 290.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

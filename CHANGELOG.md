@@ -14,6 +14,13 @@ ports, so `.packaging/package-java.sh` and `.packaging/package-dotnet.sh` name
 their archives v9.0.1. The public API does not change.
 
 ### Added
+- `CompositeTextLine.addFormula(font, formula)` builds the components of a
+  chemical formula, in all four ports: the digits that follow an element or a
+  closing bracket are subscripts, as the 2 of `H2O` and the 6, 12 and 6 of
+  `C6H12O6`; a run of digits and signs after a circumflex is a superscript, as
+  the charge of `Ca^2+` and `SO4^2-`; and everything else is drawn on the
+  baseline, including a digit that begins the formula, as the 2 of `2H2O`.
+  H2SO4 is now one call rather than five `TextLine` objects.
 - A QR code is as large as its data needs, from version 4, 33 by 33 modules,
   to version 40, 177 by 177 modules, in all four ports. It held at most 78
   bytes at level L and 34 at level H, and now holds up to 2,953 and 1,273, so
@@ -43,6 +50,25 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- Five bugs in `CompositeTextLine`, in all four ports. Subscripts and
+  superscripts are drawn smaller and off the baseline without a call to
+  `setFontSize` first: the font size of the component is the base when the
+  composite text line has none of its own, where a composite text line without
+  one drew every component at its full size on the baseline, so `H2O` came out
+  flat. `setFontSize` and the script factors and positions reach the components
+  added before them, where they only applied to the components added
+  afterwards. `getMinMaxY` and `getHeight` measure each component where it is
+  drawn and at the size it is drawn at, where they read the metrics of the
+  font object: a composite text line of a 12 point base and a subscript from
+  fonts of other sizes reported 27.74 points for text that spans 14.44. An
+  empty composite text line measures its own location rather than 0, 0, as the
+  other drawables do. And `getWidth` adds up the components instead of
+  trusting a running total, so it cannot go stale.
+- A `Cell` measures and draws a composite text line of its own, in all four
+  ports. `setCompositeTextLine` needed the cell text to be set as well: the
+  cell drew nothing and measured no height without it, and the text it needed
+  was then thrown away. A cell with a composite text line is now as tall as
+  the taller of its font and the composite.
 - Four bugs in `TextColumn`, in all four ports. A right aligned, centered or
   justified line now reaches the edge of the column: every token was measured
   with the space that follows it, so the text stopped a space short of the

@@ -370,6 +370,14 @@ public class Cell {
      */
     public func getHeight(_ width: Float) -> Float {
         var cellHeight = Float(0.0)
+        if compositeTextLine != nil {
+            // The composite text line is drawn where the cell text would be,
+            // so the cell is as tall as the taller of the two.
+            let fontHeight = font.getBodyHeight(fontSize)
+            let compositeHeight = compositeTextLine!.getHeight()
+            return ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
+                    + topPadding + bottomPadding
+        }
         if let drawable = drawable, text == nil || text == "" {   // The text is drawn first
             if let textBlock = drawable as? TextBlock {
                 textBlock.setWidth(width)
@@ -631,7 +639,8 @@ public class Cell {
             drawBackground(page, x, y, w, h)
         }
 
-        if text != nil && text != "" {
+        if compositeTextLine != nil || (text != nil && text != "") {
+            // The composite text line is drawn instead of the cell text.
             drawText(page, x, y, w, h)
         } else if let textBlock = drawable as? TextBlock {
             textBlock.setLocation(x + leftPadding, y + topPadding)

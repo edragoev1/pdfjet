@@ -492,7 +492,14 @@ public class Cell {
      */
     public float getHeight(float width) throws Exception {
         float cellHeight = 0f;
-        if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
+        if (compositeTextLine != null) {
+            // The composite text line is drawn where the cell text would be,
+            // so the cell is as tall as the taller of the two.
+            float fontHeight = font.getBodyHeight(fontSize);
+            float compositeHeight = compositeTextLine.getHeight();
+            cellHeight = ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
+                    + topPadding + bottomPadding;
+        } else if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
             if (drawable instanceof TextBlock) {
                 ((TextBlock) drawable).setWidth(width);
             }
@@ -762,7 +769,8 @@ public class Cell {
             drawBackground(page, x, y, w, h);
         }
 
-        if (text != null && !text.equals("")) {
+        if (compositeTextLine != null || (text != null && !text.equals(""))) {
+            // The composite text line is drawn instead of the cell text.
             drawText(page, x, y, w, h);
         } else if (drawable instanceof TextBlock) {
             TextBlock textBlock = (TextBlock) drawable;

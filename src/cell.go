@@ -315,7 +315,17 @@ func (cell *Cell) SetPadding(padding float32) *Cell {
 // Returns the cell height.
 func (cell *Cell) GetHeight(width float32) float32 {
 	cellHeight := float32(0.0)
-	if cell.text == "" && cell.drawable != nil { // The text is drawn first
+	if cell.compositeTextLine != nil {
+		// The composite text line is drawn where the cell text would be, so
+		// the cell is as tall as the taller of the two.
+		fontHeight := cell.font.GetBodyHeight(cell.fontSize)
+		compositeHeight := cell.compositeTextLine.GetHeight()
+		if compositeHeight > fontHeight {
+			cellHeight = compositeHeight + cell.topPadding + cell.bottomPadding
+		} else {
+			cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
+		}
+	} else if cell.text == "" && cell.drawable != nil { // The text is drawn first
 		if textBlock, ok := cell.drawable.(*TextBlock); ok {
 			textBlock.SetWidth(width)
 		}
@@ -548,7 +558,8 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		cell.drawBackground(page, x, y, w, h)
 	}
 
-	if cell.text != "" {
+	if cell.compositeTextLine != nil || cell.text != "" {
+		// The composite text line is drawn instead of the cell text.
 		cell.drawText(page, x, y, w, h)
 	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
 		textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)

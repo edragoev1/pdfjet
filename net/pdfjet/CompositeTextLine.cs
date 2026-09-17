@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -18,6 +19,10 @@ public class CompositeTextLine : IDrawable {
     private const int Y = 1;
 
     private List<TextLine> textLines = new List<TextLine>();
+    // The font size each component had when it was added. It is the base of
+    // the script size and offset of that component when this composite text
+    // line has no font size of its own.
+    private List<float> fontSizes = new List<float>();
 
     private float[] position = new float[2];
     private float[] current  = new float[2];
@@ -47,6 +52,7 @@ public class CompositeTextLine : IDrawable {
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetFontSize(float fontSize) {
         this.fontSize = fontSize;
+        LayoutComponents();
         return this;
     }
 
@@ -65,6 +71,7 @@ public class CompositeTextLine : IDrawable {
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSuperscriptFactor(float superscript) {
         this.superscriptFactor = superscript;
+        LayoutComponents();
         return this;
     }
 
@@ -83,6 +90,7 @@ public class CompositeTextLine : IDrawable {
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSubscriptFactor(float subscript) {
         this.subscriptFactor = subscript;
+        LayoutComponents();
         return this;
     }
 
@@ -101,6 +109,7 @@ public class CompositeTextLine : IDrawable {
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSuperscriptPosition(float superscriptPosition) {
         this.superscriptPosition = superscriptPosition;
+        LayoutComponents();
         return this;
     }
 
@@ -119,6 +128,7 @@ public class CompositeTextLine : IDrawable {
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine SetSubscriptPosition(float subscriptPosition) {
         this.subscriptPosition = subscriptPosition;
+        LayoutComponents();
         return this;
     }
 
@@ -141,31 +151,114 @@ public class CompositeTextLine : IDrawable {
     /// <param name="component">the component.</param>
     /// <returns>this CompositeTextLine object.</returns>
     public CompositeTextLine AddComponent(TextLine component) {
+        textLines.Add(component);
+        fontSizes.Add(component.GetFontSize());
+        Place(component, BaseFontSize(textLines.Count - 1));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds the components of a chemical formula, in the specified font.
+    ///
+    /// The digits that follow an element or a closing bracket are subscripts,
+    /// as the 2 of H2O and the 6, 12 and 6 of C6H12O6; a run of digits and
+    /// signs after a circumflex is a superscript, as the charge of Ca^2+ and
+    /// SO4^2-; and everything else is drawn on the baseline, including a digit
+    /// that begins the formula, as the 2 of 2H2O.
+    /// </summary>
+    /// <param name="font">the font of the formula.</param>
+    /// <param name="formula">the formula, for example "C6H12O6" or "SO4^2-".</param>
+    /// <returns>this CompositeTextLine object.</returns>
+    public CompositeTextLine AddFormula(Font font, string formula) {
+        StringBuilder buf = new StringBuilder();
+        int i = 0;
+        while (i < formula.Length) {
+            char ch = formula[i];
+            if (ch == '^') {
+                AddRun(font, buf, ScriptPosition.NORMAL);
+                i++;
+                while (i < formula.Length && IsDigitOrSign(formula[i])) {
+                    buf.Append(formula[i]);
+                    i++;
+                }
+                AddRun(font, buf, ScriptPosition.SUPERSCRIPT);
+            } else if (IsDigit(ch) && FollowsAnElement(formula, i)) {
+                AddRun(font, buf, ScriptPosition.NORMAL);
+                while (i < formula.Length && IsDigit(formula[i])) {
+                    buf.Append(formula[i]);
+                    i++;
+                }
+                AddRun(font, buf, ScriptPosition.SUBSCRIPT);
+            } else {
+                buf.Append(ch);
+                i++;
+            }
+        }
+        AddRun(font, buf, ScriptPosition.NORMAL);
+        return this;
+    }
+
+    // Adds what the buffer holds as one component, and empties the buffer.
+    private void AddRun(Font font, StringBuilder buf, ScriptPosition scriptPosition) {
+        if (buf.Length == 0) {
+            return;
+        }
+        TextLine component = new TextLine(font, buf.ToString());
+        component.SetScriptPosition(scriptPosition);
+        buf.Length = 0;
+        AddComponent(component);
+    }
+
+    private static bool IsDigit(char ch) {
+        return ch >= '0' && ch <= '9';
+    }
+
+    private static bool IsDigitOrSign(char ch) {
+        return IsDigit(ch) || ch == '+' || ch == '-';
+    }
+
+    // A digit is a subscript when it counts the atoms of the element or the
+    // group before it, and plain text when it begins the formula.
+    private static bool FollowsAnElement(string formula, int index) {
+        if (index == 0) {
+            return false;
+        }
+        char ch = formula[index - 1];
+        return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == ')' || ch == ']';
+    }
+
+    // The base of the script size and offset of the component: the font size
+    // of this composite text line, or the one the component came with.
+    private float BaseFontSize(int index) {
+        return (fontSize > 0f) ? fontSize : fontSizes[index];
+    }
+
+    // Places the component at the current position, at the size its script
+    // position asks for, and moves the current position past it. The size goes
+    // on the TextLine: DrawOn uses the line's own font size, so resizing the
+    // shared Font here would have no effect.
+    private void Place(TextLine component, float baseSize) {
         if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-            if (fontSize > 0f) {
-                // Set it on the TextLine: DrawOn uses the line's own font size,
-                // so resizing the shared Font here would have no effect.
-                component.SetFontSize(fontSize * superscriptFactor);
-            }
-            component.SetLocation(
-                    current[X],
-                    current[Y] - fontSize * superscriptPosition);
+            component.SetFontSize(baseSize * superscriptFactor);
+            component.SetLocation(current[X], current[Y] - baseSize * superscriptPosition);
         } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
-            if (fontSize > 0f) {
-                component.SetFontSize(fontSize * subscriptFactor);
-            }
-            component.SetLocation(
-                    current[X],
-                    current[Y] + fontSize * subscriptPosition);
+            component.SetFontSize(baseSize * subscriptFactor);
+            component.SetLocation(current[X], current[Y] + baseSize * subscriptPosition);
         } else {
-            if (fontSize > 0f) {
-                component.SetFontSize(fontSize);
-            }
+            component.SetFontSize(baseSize);
             component.SetLocation(current[X], current[Y]);
         }
         current[X] += component.GetWidth();
-        textLines.Add(component);
-        return this;
+    }
+
+    // Places every component again, from the location of this composite text
+    // line, after the location, the font size or a script setting changed.
+    private void LayoutComponents() {
+        current[X] = position[X];
+        current[Y] = position[Y];
+        for (int i = 0; i < textLines.Count; i++) {
+            Place(textLines[i], BaseFontSize(i));
+        }
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -182,27 +275,7 @@ public class CompositeTextLine : IDrawable {
     public CompositeTextLine SetLocation(float x, float y) {
         position[X] = x;
         position[Y] = y;
-        current[X]  = x;
-        current[Y]  = y;
-
-        if (textLines == null || textLines.Count == 0) {
-            return this;
-        }
-
-        foreach (TextLine component in textLines) {
-            if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-                component.SetLocation(
-                        current[X],
-                        current[Y] - fontSize * superscriptPosition);
-            } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
-                component.SetLocation(
-                        current[X],
-                        current[Y] + fontSize * subscriptPosition);
-            } else {
-                component.SetLocation(current[X], current[Y]);
-            }
-            current[X] += component.GetWidth();
-        }
+        LayoutComponents();
         return this;
     }
 
@@ -245,27 +318,19 @@ public class CompositeTextLine : IDrawable {
     public float[] GetMinMaxY() {
         float min = position[Y];
         float max = position[Y];
-        float cur;
-
+        // Each component is measured where it is drawn, with the font size it
+        // is drawn at, which a script position makes smaller than the base.
         foreach (TextLine component in textLines) {
-            if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-                cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
-                if (cur < min)
-                    min = cur;
-            } else if (component.GetScriptPosition() == ScriptPosition.SUBSCRIPT) {
-                cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
-                if (cur > max)
-                    max = cur;
-            } else {
-                cur = position[Y] - component.font.ascent;
-                if (cur < min)
-                    min = cur;
-                cur = position[Y] + component.font.descent;
-                if (cur > max)
-                    max = cur;
+            float baseline = component.GetLocation()[1];
+            float top = baseline - component.font.GetAscent(component.GetFontSize());
+            float bottom = baseline + component.font.GetDescent(component.GetFontSize());
+            if (top < min) {
+                min = top;
+            }
+            if (bottom > max) {
+                max = bottom;
             }
         }
-
         return new float[] {min, max};
     }
 
@@ -283,7 +348,11 @@ public class CompositeTextLine : IDrawable {
     /// </summary>
     /// <returns>the width.</returns>
     public float GetWidth() {
-        return (current[X] - position[X]);
+        float width = 0f;
+        foreach (TextLine component in textLines) {
+            width += component.GetWidth();
+        }
+        return width;
     }
 
     /// <summary>
@@ -292,8 +361,9 @@ public class CompositeTextLine : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        float xMax = 0f;
-        float yMax = 0f;
+        // A composite text line with no component reaches its own location.
+        float xMax = position[X];
+        float yMax = position[Y];
         // Loop through all the text lines and draw them on the page
         foreach (TextLine textLine in textLines) {
             float[] xy = textLine.DrawOn(page);

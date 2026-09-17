@@ -322,7 +322,14 @@ public class Cell {
     /// <returns>the cell height.</returns>
     public float GetHeight(float width) {
         float cellHeight = 0f;
-        if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
+        if (compositeTextLine != null) {
+            // The composite text line is drawn where the cell text would be,
+            // so the cell is as tall as the taller of the two.
+            float fontHeight = font.GetBodyHeight(fontSize);
+            float compositeHeight = compositeTextLine.GetHeight();
+            cellHeight = ((compositeHeight > fontHeight) ? compositeHeight : fontHeight)
+                    + topPadding + bottomPadding;
+        } else if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
             if (drawable is TextBlock textBlock) {
                 textBlock.SetWidth(width);
             }
@@ -563,7 +570,8 @@ public class Cell {
             DrawBackground(page, x, y, w, h);
         }
 
-        if (text != null && !text.Equals("")) {
+        if (compositeTextLine != null || (text != null && !text.Equals(""))) {
+            // The composite text line is drawn instead of the cell text.
             DrawText(page, x, y, w, h);
         } else if (drawable is TextBlock textBlock) {
             textBlock.SetLocation(x + leftPadding, y + topPadding);

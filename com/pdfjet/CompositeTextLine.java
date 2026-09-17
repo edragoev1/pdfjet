@@ -19,6 +19,10 @@ public class CompositeTextLine implements Drawable {
     private static final int Y = 1;
 
     private List<TextLine> textLines = new ArrayList<TextLine>();
+    // The font size each component had when it was added. It is the base of
+    // the script size and offset of that component when this composite text
+    // line has no font size of its own.
+    private List<Float> fontSizes = new ArrayList<Float>();
 
     private float[] position = new float[2];
     private float[] current  = new float[2];
@@ -54,6 +58,7 @@ public class CompositeTextLine implements Drawable {
      */
     public CompositeTextLine setFontSize(float fontSize) {
         this.fontSize = fontSize;
+        layoutComponents();     // the components added before this call follow it
         return this;
     }
 
@@ -74,6 +79,7 @@ public class CompositeTextLine implements Drawable {
      */
     public CompositeTextLine setSuperscriptFactor(float superscript) {
         this.superscriptFactor = superscript;
+        layoutComponents();
         return this;
     }
 
@@ -94,6 +100,7 @@ public class CompositeTextLine implements Drawable {
      */
     public CompositeTextLine setSubscriptFactor(float subscript) {
         this.subscriptFactor = subscript;
+        layoutComponents();
         return this;
     }
 
@@ -114,6 +121,7 @@ public class CompositeTextLine implements Drawable {
      */
     public CompositeTextLine setSuperscriptPosition(float superscriptPosition) {
         this.superscriptPosition = superscriptPosition;
+        layoutComponents();
         return this;
     }
 
@@ -134,6 +142,7 @@ public class CompositeTextLine implements Drawable {
      */
     public CompositeTextLine setSubscriptPosition(float subscriptPosition) {
         this.subscriptPosition = subscriptPosition;
+        layoutComponents();
         return this;
     }
 
@@ -158,31 +167,115 @@ public class CompositeTextLine implements Drawable {
      *  @return this CompositeTextLine object.
      */
     public CompositeTextLine addComponent(TextLine component) {
+        textLines.add(component);
+        fontSizes.add(Float.valueOf(component.getFontSize()));
+        place(component, baseFontSize(textLines.size() - 1));
+        return this;
+    }
+
+    /**
+     *  Adds the components of a chemical formula, in the specified font.
+     *
+     *  The digits that follow an element or a closing bracket are subscripts,
+     *  as the 2 of H2O and the 6, 12 and 6 of C6H12O6; a run of digits and
+     *  signs after a circumflex is a superscript, as the charge of Ca^2+ and
+     *  SO4^2-; and everything else is drawn on the baseline, including a digit
+     *  that begins the formula, as the 2 of 2H2O.
+     *
+     *  @param font the font of the formula.
+     *  @param formula the formula, for example "C6H12O6" or "SO4^2-".
+     *  @return this CompositeTextLine object.
+     */
+    public CompositeTextLine addFormula(Font font, String formula) {
+        StringBuilder buf = new StringBuilder();
+        int i = 0;
+        while (i < formula.length()) {
+            char ch = formula.charAt(i);
+            if (ch == '^') {
+                addRun(font, buf, ScriptPosition.NORMAL);
+                i++;
+                while (i < formula.length() && isDigitOrSign(formula.charAt(i))) {
+                    buf.append(formula.charAt(i));
+                    i++;
+                }
+                addRun(font, buf, ScriptPosition.SUPERSCRIPT);
+            } else if (isDigit(ch) && followsAnElement(formula, i)) {
+                addRun(font, buf, ScriptPosition.NORMAL);
+                while (i < formula.length() && isDigit(formula.charAt(i))) {
+                    buf.append(formula.charAt(i));
+                    i++;
+                }
+                addRun(font, buf, ScriptPosition.SUBSCRIPT);
+            } else {
+                buf.append(ch);
+                i++;
+            }
+        }
+        addRun(font, buf, ScriptPosition.NORMAL);
+        return this;
+    }
+
+    // Adds what the buffer holds as one component, and empties the buffer.
+    private void addRun(Font font, StringBuilder buf, ScriptPosition scriptPosition) {
+        if (buf.length() == 0) {
+            return;
+        }
+        TextLine component = new TextLine(font, buf.toString());
+        component.setScriptPosition(scriptPosition);
+        buf.setLength(0);
+        addComponent(component);
+    }
+
+    private static boolean isDigit(char ch) {
+        return ch >= '0' && ch <= '9';
+    }
+
+    private static boolean isDigitOrSign(char ch) {
+        return isDigit(ch) || ch == '+' || ch == '-';
+    }
+
+    // A digit is a subscript when it counts the atoms of the element or the
+    // group before it, and plain text when it begins the formula.
+    private static boolean followsAnElement(String formula, int index) {
+        if (index == 0) {
+            return false;
+        }
+        char ch = formula.charAt(index - 1);
+        return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == ')' || ch == ']';
+    }
+
+    // The base of the script size and offset of the component: the font size
+    // of this composite text line, or the one the component came with.
+    private float baseFontSize(int index) {
+        return (fontSize > 0f) ? fontSize : fontSizes.get(index).floatValue();
+    }
+
+    // Places the component at the current position, at the size its script
+    // position asks for, and moves the current position past it. The size goes
+    // on the TextLine: drawOn uses the line's own font size, so mutating the
+    // shared Font here would have no effect.
+    private void place(TextLine component, float base) {
         if (component.getScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-            if (fontSize > 0f) {
-                // Set it on the TextLine: drawOn uses the line's own font size,
-                // so mutating the shared Font here would have no effect.
-                component.setFontSize(fontSize * superscriptFactor);
-            }
-            component.setLocation(
-                    current[X],
-                    current[Y] - fontSize * superscriptPosition);
+            component.setFontSize(base * superscriptFactor);
+            component.setLocation(current[X], current[Y] - base * superscriptPosition);
         } else if (component.getScriptPosition() == ScriptPosition.SUBSCRIPT) {
-            if (fontSize > 0f) {
-                component.setFontSize(fontSize * subscriptFactor);
-            }
-            component.setLocation(
-                    current[X],
-                    current[Y] + fontSize * subscriptPosition);
+            component.setFontSize(base * subscriptFactor);
+            component.setLocation(current[X], current[Y] + base * subscriptPosition);
         } else {
-            if (fontSize > 0f) {
-                component.setFontSize(fontSize);
-            }
+            component.setFontSize(base);
             component.setLocation(current[X], current[Y]);
         }
         current[X] += component.getWidth();
-        textLines.add(component);
-        return this;
+    }
+
+    // Places every component again, from the location of this composite text
+    // line, after the location, the font size or a script setting changed.
+    private void layoutComponents() {
+        current[X] = position[X];
+        current[Y] = position[Y];
+        for (int i = 0; i < textLines.size(); i++) {
+            place(textLines.get(i), baseFontSize(i));
+        }
     }
 
     /**
@@ -196,27 +289,7 @@ public class CompositeTextLine implements Drawable {
     public CompositeTextLine setLocation(float x, float y) {
         position[X] = x;
         position[Y] = y;
-        current[X]  = x;
-        current[Y]  = y;
-
-        if (textLines == null || textLines.size() == 0) {
-            return this;
-        }
-
-        for (TextLine component : textLines) {
-            if (component.getScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-                component.setLocation(
-                        current[X],
-                        current[Y] - fontSize * superscriptPosition);
-            } else if (component.getScriptPosition() == ScriptPosition.SUBSCRIPT) {
-                component.setLocation(
-                        current[X],
-                        current[Y] + fontSize * subscriptPosition);
-            } else {
-                component.setLocation(current[X], current[Y]);
-            }
-            current[X] += component.getWidth();
-        }
+        layoutComponents();
         return this;
     }
 
@@ -263,27 +336,19 @@ public class CompositeTextLine implements Drawable {
     public float[] getMinMaxY() {
         float min = position[Y];
         float max = position[Y];
-        float cur;
-
+        // Each component is measured where it is drawn, with the font size it
+        // is drawn at, which a script position makes smaller than the base.
         for (TextLine component : textLines) {
-            if (component.getScriptPosition() == ScriptPosition.SUPERSCRIPT) {
-                cur = (position[Y] - component.font.ascent) - fontSize * superscriptPosition;
-                if (cur < min)
-                    min = cur;
-            } else if (component.getScriptPosition() == ScriptPosition.SUBSCRIPT) {
-                cur = (position[Y] + component.font.descent) + fontSize * subscriptPosition;
-                if (cur > max)
-                    max = cur;
-            } else {
-                cur = position[Y] - component.font.ascent;
-                if (cur < min)
-                    min = cur;
-                cur = position[Y] + component.font.descent;
-                if (cur > max)
-                    max = cur;
+            float baseline = component.getLocation()[1];
+            float top = baseline - component.font.getAscent(component.getFontSize());
+            float bottom = baseline + component.font.getDescent(component.getFontSize());
+            if (top < min) {
+                min = top;
+            }
+            if (bottom > max) {
+                max = bottom;
             }
         }
-
         return new float[] {min, max};
     }
 
@@ -303,7 +368,11 @@ public class CompositeTextLine implements Drawable {
      *  @return the width.
      */
     public float getWidth() {
-        return (current[X] - position[X]);
+        float width = 0f;
+        for (TextLine component : textLines) {
+            width += component.getWidth();
+        }
+        return width;
     }
 
     /**
@@ -314,8 +383,9 @@ public class CompositeTextLine implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        float xMax = 0f;
-        float yMax = 0f;
+        // A composite text line with no component reaches its own location.
+        float xMax = position[X];
+        float yMax = position[Y];
         // Loop through all the text lines and draw them on the page
         for (TextLine textLine : textLines) {
             float[] xy = textLine.drawOn(page);
