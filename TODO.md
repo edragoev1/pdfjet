@@ -214,8 +214,21 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 ## Week 5 (Oct 15–21): freeze and release
 
 - ⬜ **B** Code freeze on Oct 15: fixes only, each with its check.
-- ⬜ **B** Tag `v9.0.0` on Oct 21 and build the Java and .NET archives
+- ⬜ **B** Tag `v9.0.0` on Oct 21.
+- ✅ **B** Build the Java and .NET archives
       (`.packaging/package-java.sh`, `.packaging/package-dotnet.sh`).
+      Done (Sep 16), early, at 00f06a3f: the scripts make
+      `.commercial-packages/PDFjet-ForJava-v9.0.0.zip` and
+      `PDFjet-For.NET-v9.0.0.zip` from the last commit, with `PDFjet.jar` (built
+      for Java 8) or `PDFjet.dll`, the API reference, the examples of the port
+      and their PDFs, the fonts and the files the examples read, and no library
+      sources or `util`. The README, the commercial `LICENSE` of pdfjet.com and
+      the build and run scripts of each archive are in `.packaging/java` and
+      `.packaging/dotnet`; the scripts build the examples against the library
+      in the archive with whatever JDK or .NET SDK the client has, and create
+      the PDFs of the archive, all 51 of them complete. The quick starts were
+      run against the archives, Java on JDK 8 and 21. Rebuild both from the
+      tag.
 - ⬜ **B** From a scratch module: `go list -m github.com/edragoev1/pdfjet/v9@v9.0.0`
       and `go get github.com/edragoev1/pdfjet/v9@v9.0.0` build and write a PDF.
 - ⬜ **B** A scratch Swift package resolves PDFjet from the tag and writes a PDF.

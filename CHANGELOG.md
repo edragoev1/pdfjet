@@ -7,11 +7,11 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.0 — 2026-09-13
+## v9.0.0 — 2026-09-16
 
 Producer string bumped from `PDFjet v8.7.0` to `PDFjet v9.0.0` in all four
-ports (Java, C#, Go, Swift), and `package-java.sh` and `package-dotnet.sh` name
-their archives v9.0.0. This major release makes the four ports behave the same
+ports (Java, C#, Go, Swift), and `.packaging/package-java.sh` and
+`.packaging/package-dotnet.sh` name their archives v9.0.0. This major release makes the four ports behave the same
 class by class, after a public API audit of all four; gives each concept one
 name in every class and port; reads encrypted and damaged PDFs; adds encryption
 to the Swift port, right to left text shaped and ordered by the Unicode
