@@ -204,5 +204,146 @@ public class PDFTest {
         Assert.Equal(1, raw.Split("/Alt <").Length - 1);
         Assert.DoesNotContain("/ActualText", raw);
     }
+
+    // The numbers of the page objects, in page order.
+    private static string[] PageNumbers(byte[] pdf) {
+        List<PDFobj> pages = new PDF().GetPageObjects(TestSupport.Read(pdf));
+        string[] numbers = new string[pages.Count];
+        for (int i = 0; i < numbers.Length; i++) {
+            numbers[i] = pages[i].GetNumber().ToString();
+        }
+        return numbers;
+    }
+
+    [Fact]
+    public void ADetachedPageThatIsNeverAddedLeavesNoTrace() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        // A dry run, like one that measures the text, on a page that is never added.
+        Page dry = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(dry);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go to page 2").SetGoToAction("dest2").SetLocation(70f, 80f).DrawOn(page1);
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        page2.AddDestination("dest2", 100f);
+        pdf.Complete();
+
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/Pg 0 0 R", raw);
+        Assert.Equal(1, raw.Split("/Type /Annot\n").Length - 1);
+        // The link leads to the second page, not to the object before it.
+        Match dest = Regex.Match(raw, @"/Dest \[(\d+) 0 R");
+        Assert.True(dest.Success);
+        Assert.Equal(PageNumbers(stream.ToArray())[1], dest.Groups[1].Value);
+    }
+
+    [Fact]
+    public void TheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page second = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "Second").SetLocation(70f, 80f).DrawOn(second);
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "First").SetLocation(70f, 80f).DrawOn(first);
+        pdf.AddPage(first);
+        pdf.AddPage(second);
+        pdf.Complete();
+
+        // The structure elements are written, and listed by the document
+        // element, in the order of their pages.
+        string[] pages = PageNumbers(stream.ToArray());
+        MatchCollection pg = Regex.Matches(TestSupport.Latin1(stream.ToArray()), @"/Pg (\d+) 0 R");
+        Assert.True(pg.Count >= 2);
+        Assert.Equal(pages[0], pg[0].Groups[1].Value);
+        Assert.Equal(pages[1], pg[1].Groups[1].Value);
+    }
+
+    [Fact]
+    public void TextStringsAreUtf16SoThatEveryReaderDecodesThem() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Line(10f, 20f, 100f, 20f).SetAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").DrawOn(page);
+        pdf.Complete();
+        PDFobj element = TestSupport.FindObject(TestSupport.Read(stream.ToArray()), "/Alt");
+        Assert.NotNull(element);
+        Assert.StartsWith("<feff", element.GetValue("/Alt").ToLowerInvariant());
+        Assert.Equal("Gr\u00fc\u00dfe \u2013 \u7dda", TestSupport.Utf16Hex(element.GetValue("/Alt")));
+    }
+
+    // A PDF whose font has its widths and its encoding in objects of their own,
+    // as the PDFs that Word makes do.
+    private static byte[] PdfWithIndirectWidths() {
+        return PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+            "<< /Length 32 >>\nstream\nBT /F1 24 Tf 72 700 Td (H) Tj ET\nendstream",
+            "<< /Type /Font /Subtype /TrueType /BaseFont /Helvetica /FirstChar 72 /LastChar 72"
+                    + " /Widths 6 0 R /Encoding 7 0 R >>",
+            "[ 722 ]",
+            "<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [ 72 /H ] >>",
+        });
+    }
+
+    private static byte[] PdfWithObjects(string[] objects) {
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[objects.Length];
+        for (int i = 0; i < objects.Length; i++) {
+            offsets[i] = sb.Length;
+            sb.Append(i + 1).Append(" 0 obj\n").Append(objects[i]).Append("\nendobj\n");
+        }
+        int xref = sb.Length;
+        sb.Append("xref\n0 ").Append(objects.Length + 1).Append("\n0000000000 65535 f \n");
+        foreach (int offset in offsets) {
+            sb.Append(offset.ToString("D10")).Append(" 00000 n \n");
+        }
+        sb.Append("trailer\n<< /Size ").Append(objects.Length + 1)
+                .Append(" /Root 1 0 R >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+        return Encoding.Latin1.GetBytes(sb.ToString());
+    }
+
+    [Fact]
+    public void AFontIsImportedWithTheObjectsItRefersTo() {
+        List<PDFobj> source = TestSupport.Read(PdfWithIndirectWidths());
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.AddResourceObjects(source);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        PDFobj content = pdf.GetPageObjects(source)[0].GetContentObject(source);
+        page.DrawContents(content.GetData(), 792f, 0f, 0f, 1f, 1f);
+        pdf.Complete();
+
+        List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+        Assert.Equal("/Font", objects[4].GetValue("/Type"));
+        Assert.Contains("722", objects[5].GetDict());
+        Assert.Equal("/Encoding", objects[6].GetValue("/Type"));
+    }
+
+    [Fact]
+    public void APageTreeThatLoopsIsReadOnce() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R 99 0 R] /Count 1 >>",
+            "<< /Type /Pages /Parent 2 0 R /Kids [3 0 R 2 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        }));
+        Assert.Single(new PDF().GetPageObjects(objects));
+        PDF pdf = new PDF(new MemoryStream());
+        pdf.Merge(objects);
+        pdf.Complete();
+    }
+
+    [Fact]
+    public void ObjectsWithoutAPageTreeHaveNoPages() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {"<< /Type /Catalog >>"}));
+        Assert.Empty(new PDF().GetPageObjects(objects));
+    }
 }
 }

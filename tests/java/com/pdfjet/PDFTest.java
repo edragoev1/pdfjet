@@ -211,4 +211,147 @@ class PDFTest {
         assertEquals(1, raw.split("/Alt <").length - 1);
         assertFalse(raw.contains("/ActualText"));
     }
+
+    // The numbers of the page objects, in page order.
+    private static String[] pageNumbers(byte[] pdf) throws Exception {
+        List<PDFobj> pages = new PDF().getPageObjects(TestSupport.read(pdf));
+        String[] numbers = new String[pages.size()];
+        for (int i = 0; i < numbers.length; i++) {
+            numbers[i] = String.valueOf(pages.get(i).getNumber());
+        }
+        return numbers;
+    }
+
+    @Test
+    void aDetachedPageThatIsNeverAddedLeavesNoTrace() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        // A dry run, like one that measures the text, on a page that is never added.
+        Page dry = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 80f).drawOn(dry);
+        Page page1 = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Go to page 2").setGoToAction("dest2").setLocation(70f, 80f).drawOn(page1);
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        page2.addDestination("dest2", 100f);
+        pdf.complete();
+
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertFalse(raw.contains("/Pg 0 0 R"));
+        assertEquals(1, raw.split("/Type /Annot\n").length - 1);
+        // The link leads to the second page, not to the object before it.
+        Matcher dest = Pattern.compile("/Dest \\[(\\d+) 0 R").matcher(raw);
+        assertTrue(dest.find());
+        assertEquals(pageNumbers(bos.toByteArray())[1], dest.group(1));
+    }
+
+    @Test
+    void theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page second = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "Second").setLocation(70f, 80f).drawOn(second);
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "First").setLocation(70f, 80f).drawOn(first);
+        pdf.addPage(first);
+        pdf.addPage(second);
+        pdf.complete();
+
+        // The structure elements are written, and listed by the document
+        // element, in the order of their pages.
+        String[] pages = pageNumbers(bos.toByteArray());
+        Matcher pg = Pattern.compile("/Pg (\\d+) 0 R").matcher(TestSupport.latin1(bos.toByteArray()));
+        assertTrue(pg.find());
+        assertEquals(pages[0], pg.group(1));
+        assertTrue(pg.find());
+        assertEquals(pages[1], pg.group(1));
+    }
+
+    @Test
+    void textStringsAreUtf16SoThatEveryReaderDecodesThem() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Line(10f, 20f, 100f, 20f).setAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").drawOn(page);
+        pdf.complete();
+        PDFobj element = TestSupport.findObject(TestSupport.read(bos.toByteArray()), "/Alt");
+        assertNotNull(element);
+        assertTrue(element.getValue("/Alt").toLowerCase().startsWith("<feff"), element.getValue("/Alt"));
+        assertEquals("Gr\u00fc\u00dfe \u2013 \u7dda", TestSupport.utf16Hex(element.getValue("/Alt")));
+    }
+
+    // A PDF whose font has its widths and its encoding in objects of their own,
+    // as the PDFs that Word makes do.
+    private static byte[] pdfWithIndirectWidths() {
+        String[] objects = {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+            "<< /Length 32 >>\nstream\nBT /F1 24 Tf 72 700 Td (H) Tj ET\nendstream",
+            "<< /Type /Font /Subtype /TrueType /BaseFont /Helvetica /FirstChar 72 /LastChar 72"
+                    + " /Widths 6 0 R /Encoding 7 0 R >>",
+            "[ 722 ]",
+            "<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [ 72 /H ] >>",
+        };
+        return pdfWithObjects(objects);
+    }
+
+    private static byte[] pdfWithObjects(String[] objects) {
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[objects.length];
+        for (int i = 0; i < objects.length; i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n").append(objects[i]).append("\nendobj\n");
+        }
+        int xref = sb.length();
+        sb.append("xref\n0 ").append(objects.length + 1).append("\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00000 n \n", offset));
+        }
+        sb.append("trailer\n<< /Size ").append(objects.length + 1)
+                .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    @Test
+    void aFontIsImportedWithTheObjectsItRefersTo() throws Exception {
+        List<PDFobj> source = TestSupport.read(pdfWithIndirectWidths());
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.addResourceObjects(source);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        PDFobj content = pdf.getPageObjects(source).get(0).getContentObject(source);
+        page.drawContents(content.getData(), 792f, 0f, 0f, 1f, 1f);
+        pdf.complete();
+
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        assertEquals("/Font", objects.get(4).getValue("/Type"));
+        assertTrue(objects.get(5).getDict().contains("722"), objects.get(5).getDict().toString());
+        assertEquals("/Encoding", objects.get(6).getValue("/Type"));
+    }
+
+    @Test
+    void aPageTreeThatLoopsIsReadOnce() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R 99 0 R] /Count 1 >>",
+            "<< /Type /Pages /Parent 2 0 R /Kids [3 0 R 2 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        }));
+        assertEquals(1, new PDF().getPageObjects(objects).size());
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        pdf.merge(objects);
+        pdf.complete();
+    }
+
+    @Test
+    void objectsWithoutAPageTreeHaveNoPages() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {"<< /Type /Catalog >>"}));
+        assertEquals(0, new PDF().getPageObjects(objects).size());
+    }
 }

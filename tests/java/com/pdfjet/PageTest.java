@@ -263,4 +263,11 @@ class PageTest {
         assertEquals(12f, font.getSize(), 0f);
         assertTrue(TestSupport.content(page).contains(" 20 Tf\n"), TestSupport.content(page));
     }
+
+    @Test
+    void importedContentIsSeparatedFromTheOperatorAfterIt() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.drawContents("BT ET".getBytes("ISO-8859-1"), 100f, 0f, 0f, 1f, 1f);
+        assertTrue(TestSupport.content(page).contains("BT ET\nQ\n"), TestSupport.content(page));
+    }
 }

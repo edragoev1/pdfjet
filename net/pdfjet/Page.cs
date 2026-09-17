@@ -2348,7 +2348,6 @@ public class Page {
             element.language = language;
             element.actualText = actualText;
             element.altDescription = altDescription;
-            pdf.structElements.Add(element);
             this.structures.Add(element);
 
             Append("/");
@@ -2416,6 +2415,7 @@ public class Page {
             float yScale) {
         BeginTransform(x, (this.height - yScale * h) - y, xScale, yScale);
         Append(content);
+        Append(Token.Newline);      // The content can end with an operator, like ET.
         EndTransform();
     }
 
@@ -2539,7 +2539,6 @@ public class Page {
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
-            pdf.structElements.Add(element);
             this.structures.Add(element);
         }
     }

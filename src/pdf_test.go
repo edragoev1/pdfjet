@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -235,5 +236,161 @@ func TestPDFAShapeWithoutADescriptionWritesNoAltText(t *testing.T) {
 	}
 	if strings.Contains(raw, "/ActualText") {
 		t.Error("an /ActualText entry")
+	}
+}
+
+// testPageNumbers returns the numbers of the page objects, in page order.
+func testPageNumbers(t *testing.T, pdf []byte) []string {
+	t.Helper()
+	numbers := make([]string, 0)
+	for _, page := range NewPDFReader().GetPageObjects(testRead(t, pdf)) {
+		numbers = append(numbers, strconv.Itoa(page.GetNumber()))
+	}
+	return numbers
+}
+
+func testStreamFont(t *testing.T, pdf *PDF) *Font {
+	t.Helper()
+	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	if err != nil {
+		t.Skip("the fonts directory is not here")
+	}
+	defer file.Close()
+	return NewFont(pdf, file)
+}
+
+func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	// A dry run, like one that measures the text, on a page that is never added.
+	dry := NewPageDetached(doc.pdf, letter.Portrait())
+	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(dry)
+	page1 := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "Go to page 2").SetGoToAction("dest2").SetLocation(70, 80).DrawOn(page1)
+	page2 := NewPage(doc.pdf, letter.Portrait())
+	page2.AddDestination("dest2", 100)
+	pdf := doc.complete()
+
+	raw := string(pdf)
+	if strings.Contains(raw, "/Pg 0 0 R") {
+		t.Error("a structure element of a page that is not in the document")
+	}
+	if n := strings.Count(raw, "/Type /Annot\n"); n != 1 {
+		t.Errorf("%d annotations", n)
+	}
+	// The link leads to the second page, not to the object before it.
+	dest := regexp.MustCompile(`/Dest \[(\d+) 0 R`).FindStringSubmatch(raw)
+	if dest == nil {
+		t.Fatal("no /Dest")
+	}
+	testWant(t, testPageNumbers(t, pdf)[1], dest[1])
+}
+
+func TestPDFTheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	second := NewPageDetached(doc.pdf, letter.Portrait())
+	NewTextLine(font, "Second").SetLocation(70, 80).DrawOn(second)
+	first := NewPageDetached(doc.pdf, letter.Portrait())
+	NewTextLine(font, "First").SetLocation(70, 80).DrawOn(first)
+	doc.pdf.AddPage(first)
+	doc.pdf.AddPage(second)
+	pdf := doc.complete()
+
+	// The structure elements are written, and listed by the document element,
+	// in the order of their pages.
+	pages := testPageNumbers(t, pdf)
+	pg := regexp.MustCompile(`/Pg (\d+) 0 R`).FindAllStringSubmatch(string(pdf), -1)
+	if len(pg) < 2 {
+		t.Fatalf("%d structure elements", len(pg))
+	}
+	testWant(t, pages[0], pg[0][1])
+	testWant(t, pages[1], pg[1][1])
+}
+
+func TestPDFTextStringsAreUtf16SoThatEveryReaderDecodesThem(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewLine(10, 20, 100, 20).SetAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").DrawOn(page)
+	element := testFindObject(testRead(t, doc.complete()), "/Alt")
+	if element == nil {
+		t.Fatal("no /Alt")
+	}
+	if alt := strings.ToLower(element.GetValue("/Alt")); !strings.HasPrefix(alt, "<feff") {
+		t.Errorf("alt %s", alt)
+	}
+	testWant(t, "Gr\u00fc\u00dfe \u2013 \u7dda", testUTF16Hex(t, element.GetValue("/Alt")))
+}
+
+func testPDFWithObjects(objects ...string) []byte {
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.4\n")
+	offsets := make([]int, 0)
+	for i, object := range objects {
+		offsets = append(offsets, sb.Len())
+		fmt.Fprintf(&sb, "%d 0 obj\n%s\nendobj\n", i+1, object)
+	}
+	xref := sb.Len()
+	fmt.Fprintf(&sb, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	for _, offset := range offsets {
+		fmt.Fprintf(&sb, "%010d 00000 n \n", offset)
+	}
+	fmt.Fprintf(&sb, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	return []byte(sb.String())
+}
+
+// A PDF whose font has its widths and its encoding in objects of their own, as
+// the PDFs that Word makes do.
+func TestPDFAFontIsImportedWithTheObjectsItRefersTo(t *testing.T) {
+	source := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"+
+			" /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+		"<< /Length 32 >>\nstream\nBT /F1 24 Tf 72 700 Td (H) Tj ET\nendstream",
+		"<< /Type /Font /Subtype /TrueType /BaseFont /Helvetica /FirstChar 72 /LastChar 72"+
+			" /Widths 6 0 R /Encoding 7 0 R >>",
+		"[ 722 ]",
+		"<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [ 72 /H ] >>"))
+	doc := testNewDoc()
+	doc.pdf.AddResourceObjects(source)
+	page := NewPage(doc.pdf, letter.Portrait())
+	content := doc.pdf.GetPageObjects(source)[0].GetContentObject(source)
+	page.DrawContents(content.GetData(), 792, 0, 0, 1, 1)
+
+	objects := testRead(t, doc.complete())
+	testWant(t, "/Font", objects[4].GetValue("/Type"))
+	if !contains(objects[5].GetDict(), "722") {
+		t.Errorf("widths %v", objects[5].GetDict())
+	}
+	testWant(t, "/Encoding", objects[6].GetValue("/Type"))
+}
+
+func TestPDFAPageTreeThatLoopsIsReadOnce(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 4 0 R 99 0 R] /Count 1 >>",
+		"<< /Type /Pages /Parent 2 0 R /Kids [3 0 R 2 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"))
+	if n := len(NewPDFReader().GetPageObjects(objects)); n != 1 {
+		t.Errorf("%d pages", n)
+	}
+	doc := testNewDoc()
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	doc.complete()
+}
+
+func TestPDFObjectsWithoutAPageTreeHaveNoPages(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects("<< /Type /Catalog >>"))
+	if n := len(NewPDFReader().GetPageObjects(objects)); n != 0 {
+		t.Errorf("%d pages", n)
 	}
 }

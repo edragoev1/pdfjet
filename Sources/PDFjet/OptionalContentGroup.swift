@@ -92,7 +92,7 @@ public class OptionalContentGroup {
             pdf.append(Token.beginDictionary)
             pdf.append("/Type /OCG\n")
             pdf.append("/Name <")
-            pdf.append(pdf.toHexString(name!))
+            pdf.append(pdf.textString(name!))
             pdf.append(">\n")
             pdf.append("/Usage <<\n")
             if visible {

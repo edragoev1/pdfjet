@@ -2531,7 +2531,6 @@ final public class Page {
             element.language = language;
             element.actualText = actualText;
             element.altDescription = altDescription;
-            pdf.structElements.add(element);
             this.structures.add(element);
 
             append("/");
@@ -2577,7 +2576,6 @@ final public class Page {
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
-            pdf.structElements.add(element);
             this.structures.add(element);
         }
     }
@@ -2629,6 +2627,7 @@ final public class Page {
             float yScale) throws Exception {
         beginTransform(x, (this.height - yScale * h) - y, xScale, yScale);
         append(content);
+        append(Token.NEWLINE);      // The content can end with an operator, like ET.
         endTransform();
     }
 

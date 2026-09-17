@@ -274,3 +274,11 @@ func TestPageFillRectWritesOneRectangleWithTheEdgesOfThePath(t *testing.T) {
 		t.Errorf("content %q", got)
 	}
 }
+
+func TestPageImportedContentIsSeparatedFromTheOperatorAfterIt(t *testing.T) {
+	page := testNewPage()
+	page.DrawContents([]byte("BT ET"), 100, 0, 0, 1, 1)
+	if content := testContent(page); !strings.Contains(content, "BT ET\nQ\n") {
+		t.Error(content)
+	}
+}

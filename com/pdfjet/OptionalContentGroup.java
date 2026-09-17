@@ -133,13 +133,9 @@ public class OptionalContentGroup {
             pdf.append("<<\n");
             pdf.append("/Type /OCG\n");
 
-            byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            if (pdf.encryption != null) {
-                nameBytes = AES256.encrypt(nameBytes, pdf.encryption.getKey());
-            }
-            pdf.append("/Name <");
-            pdf.append(Util.toHexString(nameBytes));
-            pdf.append(">\n");
+            pdf.append("/Name ");
+            pdf.appendTextString(name);
+            pdf.append("\n");
 
             pdf.append("/Usage <<\n");
             if (visible) {

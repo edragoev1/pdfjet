@@ -7,6 +7,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -287,5 +288,64 @@ public class MisuseTest {
         container.ScaleBy(0f).SetLocation(50f, 50f).DrawOn(page);
         Assert.DoesNotContain(" cm\n", TestSupport.Content(page));
     }
+
+    // The objects of a small PDF, as Read returns them.
+    private static List<PDFobj> ExistingObjects() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        new TextLine(TestSupport.Helvetica(pdf), "Existing").SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        return TestSupport.Read(stream.ToArray());
+    }
+
+    [Fact]
+    public void TheObjectsOfAnExistingPdfComeBeforeTheContent() {
+        List<PDFobj> objects = ExistingObjects();
+        string message = "Add the objects of an existing PDF before fonts, images or pages "
+                + "are added to the PDF: object 1 is already written.";
+
+        PDF pdf = TestSupport.NewPDF();
+        TestSupport.Helvetica(pdf);     // Object 1, which the objects would replace.
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => pdf.AddResourceObjects(objects)).Message);
+        AssertRefused(pdf, message);
+
+        PDF pdf2 = TestSupport.NewPDF();
+        TestSupport.Helvetica(pdf2);
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => pdf2.AddObjects(objects)).Message);
+
+        // The objects first, and the font after them.
+        PDF pdf3 = TestSupport.NewPDF();
+        pdf3.AddResourceObjects(objects);
+        TestSupport.Helvetica(pdf3);
+        new Page(pdf3, Letter.PORTRAIT);
+        pdf3.Complete();
+    }
+
+    [Fact]
+    public void TheObjectsOfAnExistingPdfCannotBeAddedToAnEncryptedPdf() {
+        List<PDFobj> objects = ExistingObjects();
+        PDF pdf = TestSupport.NewPDF();
+        pdf.SetEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        string message = "The objects of an existing PDF cannot be added to an encrypted PDF.";
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => pdf.AddResourceObjects(objects)).Message);
+        AssertRefused(pdf, message);
+    }
+
+    [Fact]
+    public void APdfACannotBeEncrypted() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_A_2B);
+        Encryption encryption = new Encryption(pdf, new Passwords(), new Permissions());
+        string message = "A PDF/A document cannot be encrypted.";
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => pdf.SetEncryption(encryption)).Message);
+        AssertRefused(pdf, message);
+
+        // A PDF/UA document can be.
+        PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        ua.SetEncryption(new Encryption(ua, new Passwords(), new Permissions()));
+    }
 }
-}   // End of namespace PDFjet.NET
+}

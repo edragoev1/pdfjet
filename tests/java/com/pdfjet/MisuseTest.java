@@ -346,4 +346,67 @@ class MisuseTest {
         container.scaleBy(0f).setLocation(50f, 50f).drawOn(page);
         assertFalse(TestSupport.content(page).contains(" cm\n"), TestSupport.content(page));
     }
+
+    // The objects of a small PDF, as read() returns them.
+    private static java.util.List<PDFobj> existingObjects() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new TextLine(TestSupport.helvetica(pdf), "Existing").setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        return TestSupport.read(bos.toByteArray());
+    }
+
+    @Test
+    void theObjectsOfAnExistingPdfComeBeforeTheContent() throws Exception {
+        final java.util.List<PDFobj> objects = existingObjects();
+        String message = "Add the objects of an existing PDF before fonts, images or pages "
+                + "are added to the PDF: object 1 is already written.";
+
+        final PDF pdf = TestSupport.newPDF();
+        TestSupport.helvetica(pdf);     // Object 1, which the objects would replace.
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf.addResourceObjects(objects); }
+        }));
+        assertRefused(pdf, message);
+
+        final PDF pdf2 = TestSupport.newPDF();
+        TestSupport.helvetica(pdf2);
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf2.addObjects(objects); }
+        }));
+
+        // The objects first, and the font after them.
+        PDF pdf3 = TestSupport.newPDF();
+        pdf3.addResourceObjects(objects);
+        TestSupport.helvetica(pdf3);
+        new Page(pdf3, Letter.PORTRAIT);
+        pdf3.complete();
+    }
+
+    @Test
+    void theObjectsOfAnExistingPdfCannotBeAddedToAnEncryptedPdf() throws Exception {
+        final java.util.List<PDFobj> objects = existingObjects();
+        final PDF pdf = TestSupport.newPDF();
+        pdf.setEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        String message = "The objects of an existing PDF cannot be added to an encrypted PDF.";
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf.addResourceObjects(objects); }
+        }));
+        assertRefused(pdf, message);
+    }
+
+    @Test
+    void aPdfACannotBeEncrypted() throws Exception {
+        final PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_A_2B);
+        final Encryption encryption = new Encryption(pdf, new Passwords(), new Permissions());
+        String message = "A PDF/A document cannot be encrypted.";
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf.setEncryption(encryption); }
+        }));
+        assertRefused(pdf, message);
+
+        // A PDF/UA document can be.
+        PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        ua.setEncryption(new Encryption(ua, new Passwords(), new Permissions()));
+    }
 }

@@ -183,4 +183,149 @@ import Testing
         #expect(raw.components(separatedBy: "/Alt <").count - 1 == 1)
         #expect(!raw.contains("/ActualText"))
     }
+
+    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+
+    // The numbers of the page objects, in page order.
+    private func pageNumbers(_ pdf: [UInt8]) throws -> [String] {
+        return TestSupport.pageObjects(try TestSupport.read(pdf)).map { String($0.getNumber()) }
+    }
+
+    // The first group of every match of the pattern.
+    private func matches(_ pattern: String, _ text: String) throws -> [String] {
+        let regex = try NSRegularExpression(pattern: pattern)
+        let string = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: string.length)).map {
+            string.substring(with: $0.range(at: 1))
+        }
+    }
+
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        // A dry run, like one that measures the text, on a page that is never added.
+        let dry = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
+        TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(dry)
+        let page1 = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Go to page 2").setGoToAction("dest2").setLocation(70, 80).drawOn(page1)
+        let page2 = Page(pdf, Letter.PORTRAIT)
+        _ = page2.addDestination("dest2", 100)
+        try pdf.complete()
+
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(!raw.contains("/Pg 0 0 R"))
+        #expect(raw.components(separatedBy: "/Type /Annot\n").count - 1 == 1)
+        // The link leads to the second page, not to the object before it.
+        let dest = try matches("/Dest \\[(\\d+) 0 R", raw)
+        #expect(try dest.first == pageNumbers(memory.bytes)[1])
+    }
+
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let second = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
+        TextLine(font, "Second").setLocation(70, 80).drawOn(second)
+        let first = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
+        TextLine(font, "First").setLocation(70, 80).drawOn(first)
+        pdf.addPage(first)
+        pdf.addPage(second)
+        try pdf.complete()
+
+        // The structure elements are written, and listed by the document
+        // element, in the order of their pages.
+        let pages = try pageNumbers(memory.bytes)
+        let pg = try matches("/Pg (\\d+) 0 R", TestSupport.latin1(memory.bytes))
+        #expect(Array(pg.prefix(2)) == pages)
+    }
+
+    @Test func textStringsAreUtf16SoThatEveryReaderDecodesThem() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        Line(10, 20, 100, 20).setAltDescription("Gr\u{fc}\u{df}e \u{2013} \u{7dda}").drawOn(page)
+        try memory.pdf.complete()
+        let element = try #require(TestSupport.findObject(try TestSupport.read(memory.bytes), "/Alt"))
+        #expect(element.getValue("/Alt").lowercased().hasPrefix("<feff"))
+        #expect(TestSupport.utf16Hex(element.getValue("/Alt")) == "Gr\u{fc}\u{df}e \u{2013} \u{7dda}")
+    }
+
+    private func pdfWithObjects(_ objects: [String]) -> [UInt8] {
+        var body = "%PDF-1.4\n"
+        var offsets = [Int]()
+        for (i, object) in objects.enumerated() {
+            offsets.append(body.utf8.count)
+            body += "\(i + 1) 0 obj\n" + object + "\nendobj\n"
+        }
+        let xref = body.utf8.count
+        body += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n"
+        for offset in offsets {
+            body += String(format: "%010d 00000 n \n", offset)
+        }
+        body += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
+        return TestSupport.bytes(body)
+    }
+
+    // A PDF whose font has its widths and its encoding in objects of their own,
+    // as the PDFs that Word makes do.
+    @Test func aFontIsImportedWithTheObjectsItRefersTo() throws {
+        let source = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+            "<< /Length 32 >>\nstream\nBT /F1 24 Tf 72 700 Td (H) Tj ET\nendstream",
+            "<< /Type /Font /Subtype /TrueType /BaseFont /Helvetica /FirstChar 72 /LastChar 72"
+                    + " /Widths 6 0 R /Encoding 7 0 R >>",
+            "[ 722 ]",
+            "<< /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [ 72 /H ] >>",
+        ]))
+        let memory = MemoryPDF()
+        memory.pdf.addResourceObjects(from: source)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let content = try #require(memory.pdf.getPageObjects(from: source)[0].getContentObject(source))
+        page.drawContents(content.getData(), 792, 0, 0, 1, 1)
+        try memory.pdf.complete()
+
+        let objects = try TestSupport.read(memory.bytes)
+        #expect(objects[4].getValue("/Type") == "/Font")
+        #expect(objects[5].getDict().contains("722"), "\(objects[5].getDict())")
+        #expect(objects[6].getValue("/Type") == "/Encoding")
+    }
+
+    @Test func aPageTreeThatLoopsIsReadOnce() throws {
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R 99 0 R] /Count 1 >>",
+            "<< /Type /Pages /Parent 2 0 R /Kids [3 0 R 2 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        ]))
+        #expect(TestSupport.pageObjects(objects).count == 1)
+        let memory = MemoryPDF()
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+    }
+
+    @Test func objectsWithoutAPageTreeHaveNoPages() throws {
+        let objects = try TestSupport.read(pdfWithObjects(["<< /Type /Catalog >>"]))
+        #expect(TestSupport.pageObjects(objects).isEmpty)
+    }
+
+    // Java throws an exception for a malformed object stream; Swift used to trap.
+    @Test func aMalformedObjectStreamIsAnErrorAndNotATrap() {
+        for dict in ["/Type /ObjStm /N 1", "/Type /ObjStm /N 1 /First 4", "/Type /ObjStm /N 1 /First 900"] {
+            let data = "4 x << /A 1 >>"
+            let pdf = pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [] /Count 0 >>",
+                "<< \(dict) /Length \(data.utf8.count) >>\nstream\n\(data)\nendstream",
+            ])
+            #expect(throws: PDFjetError.self) { try TestSupport.read(pdf) }
+        }
+    }
 }

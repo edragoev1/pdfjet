@@ -45,7 +45,10 @@ public class PDF {
         ($0 < 16 ? "0" : "") + String($0, radix: 16)
     }.joined()
     private var prevPage: Page?
-    var structElements = [StructElement]()
+    // The structure elements of the pages of the document, in page order.
+    // complete() collects them, so a detached page that was never added has
+    // no part in the structure tree.
+    private var structElements = [StructElement]()
     private var contentStreamsCompression = true
     var encryption: Encryption?
 
@@ -173,6 +176,11 @@ public class PDF {
             fail("Set the encryption before adding fonts, images or pages to the PDF.")
             return self
         }
+        // ISO 19005 does not allow a PDF/A document to be encrypted.
+        if compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1 {
+            fail("A PDF/A document cannot be encrypted.")
+            return self
+        }
         self.encryption = encryption
         return self
     }
@@ -193,6 +201,23 @@ public class PDF {
             return ""
         }
         return toHex(encrypted(Array(str.utf8)))
+    }
+
+    /// Returns a text string, like a bookmark title or an alternate
+    /// description, as hexadecimal digits: UTF-16BE with a byte order mark,
+    /// encrypted if the document is encrypted. A text string without the mark
+    /// is in PDFDocEncoding, so UTF-8 bytes would show as two or three wrong
+    /// characters each.
+    func textString(_ str: String?) -> String {
+        guard let str = str, !str.isEmpty else {
+            return ""
+        }
+        var bytes: [UInt8] = [0xFE, 0xFF]
+        for unit in str.utf16 {
+            bytes.append(UInt8(unit >> 8))
+            bytes.append(UInt8(unit & 0xFF))
+        }
+        return toHex(encrypted(bytes))
     }
 
     /// Records the first misuse of the API, which complete() then throws.
@@ -374,7 +399,6 @@ public class PDF {
         return self.getObjNumber()
     }
 
-    // Returns the text with the characters that have a meaning in XML escaped.
     // Returns the text with the characters that have a meaning in XML escaped,
     // and without the characters XML does not allow: the control characters
     // other than tab, line feed and carriage return, U+FFFE and U+FFFF, which
@@ -599,9 +623,9 @@ public class PDF {
             append("\n/P ")
             append(structTreeRootObjNumber + 2)  // Use the document struct as parent!
             append(" 0 R /Pg ")
-            // A detached page is never added to pages, so its elements never
-            // get an object number. Fall back to 0 rather than trapping, which
-            // is what the other ports do.
+            // The elements get the number of their page when the pages object
+            // is written, which addObjects replaces. Fall back to 0 rather
+            // than trapping, which is what the other ports do.
             append(element.pageObjNumber ?? 0)
             append(Token.objRef)
 
@@ -633,13 +657,13 @@ public class PDF {
 
             if !actualText.isEmpty {
                 append("/ActualText <")
-                append(toHexString(actualText))
+                append(textString(actualText))
                 append(">\n")
             }
 
             if !altDescription.isEmpty {
                 append("/Alt <")
-                append(toHexString(altDescription))
+                append(textString(altDescription))
                 append(">\n")
             }
 
@@ -711,18 +735,16 @@ public class PDF {
         return getObjNumber()
     }
 
-    /// Appends an entry of the information dictionary with the text in
-    /// UTF-16BE with a byte order mark, unless the text is nil.
+    /// Appends an entry of the information dictionary with the text, unless
+    /// the text is nil.
     private func appendInfoText(_ key: String, _ text: String?) {
         guard let text = text else {
             return
         }
-        var bytes: [UInt8] = [0xFE, 0xFF]
-        for unit in text.utf16 {
-            bytes.append(UInt8(unit >> 8))
-            bytes.append(UInt8(unit & 0xFF))
-        }
-        appendInfoString(key, bytes)
+        append(key)
+        append(" <")
+        append(textString(text))
+        append(">\n")
     }
 
     /// Appends an entry of the information dictionary with the bytes of a
@@ -989,13 +1011,13 @@ public class PDF {
             append(annot.fileAttachment!.icon)
             append("\n")
 
-            let title = toHexString(annot.fileAttachment!.title)
+            let title = textString(annot.fileAttachment!.title)
             if !title.isEmpty {
                 append("/T <")
                 append(title)
                 append(">\n")
             }
-            let contents = toHexString(annot.fileAttachment!.contents)
+            let contents = textString(annot.fileAttachment!.contents)
             if !contents.isEmpty {
                 append("/Contents <")
                 append(contents)
@@ -1016,7 +1038,7 @@ public class PDF {
             }
             if let description = description, !description.isEmpty {
                 append("/Contents <")
-                append(toHexString(description))
+                append(textString(description))
                 append(">\n")
             }
             if let uri = annot.uri {
@@ -1064,13 +1086,13 @@ public class PDF {
 
             if let title = annot.title, !title.isEmpty {
                 append("/T <")
-                append(toHexString(title))
+                append(textString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
-                append(toHexString(contents))
+                append(textString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Square ||
@@ -1089,26 +1111,26 @@ public class PDF {
 
             if let title = annot.title, !title.isEmpty {
                 append("/T <")
-                append(toHexString(title))
+                append(textString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
-                append(toHexString(contents))
+                append(textString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Text {
             append("/Name /Comment\n")
             if let title = annot.title, !title.isEmpty {
                 append("/T <")
-                append(toHexString(title))
+                append(textString(title))
                 append(">\n")
             }
 
             if let contents = annot.contents, !contents.isEmpty {
                 append("/Contents <")
-                append(toHexString(contents))
+                append(textString(contents))
                 append(">\n")
             }
         }
@@ -1259,6 +1281,9 @@ public class PDF {
             throw PDFjetError(message: error)
         }
         completed = true
+        for page in pages {
+            structElements.append(contentsOf: page.structures)
+        }
         if compliance != Compliance.PDF_1_7 {
             metadataObjNumber = addMetadataObject("", false)
             outputIntentObjNumber = addOutputIntentObject()
@@ -1283,8 +1308,7 @@ public class PDF {
             outlineDictNum = addOutlineDict(toc!)
             var i = 1
             while i < list.count {
-                let bookmark = list[i]
-                addOutlineItem(outlineDictNum, i, bookmark)
+                addOutlineItem(outlineDictNum, list[i])
                 i += 1
             }
         }
@@ -1341,6 +1365,9 @@ public class PDF {
         append(Token.newline)
         append("%%EOF\n")
 
+        if let error = error {  // Found when the rest of the document was written.
+            throw PDFjetError(message: error)
+        }
         try os!.close()
     }
 
@@ -1358,9 +1385,9 @@ public class PDF {
     /// Set the "Title" document property of the PDF file.
     /// - Parameter title: The title of this document.
     ///
-    @discardableResult
     // An empty document property is the same as one that was never set: it is
     // not written, as in the Go port, which cannot tell the two apart.
+    @discardableResult
     public func setTitle(_ title: String) -> PDF {
         self.title = title.isEmpty ? nil : title
         return self
@@ -1388,7 +1415,7 @@ public class PDF {
 
     ///
     /// Set the "Keywords" document property of the PDF file.
-    /// - Parameter keywords: The author of this document.
+    /// - Parameter keywords: The keywords of this document.
     ///
     @discardableResult
     public func setKeywords(_ keywords: String) -> PDF {
@@ -1398,7 +1425,7 @@ public class PDF {
 
     ///
     /// Set the "Creator" document property of the PDF file.
-    /// - Parameter creator: The author of this document.
+    /// - Parameter creator: The creator of this document.
     ///
     @discardableResult
     public func setCreator(_ creator: String) -> PDF {
@@ -1478,7 +1505,7 @@ public class PDF {
             obj.setNumber(number)
             sorted.append(obj)
         }
-        for obj in objects {
+        for obj in objects where obj.number > 0 {
             sorted[obj.number - 1] = obj
         }
         return sorted
@@ -1542,18 +1569,20 @@ public class PDF {
                 try obj.setStreamAndData(&buffer1, obj.getLength(objects1), decryptor)
             }
             if type == "/ObjStm" {
-                let first = Int(obj.getValue("/First"))!
-                let o2 = getObject(obj.data, 0, first)
+                // A malformed object stream is an error, as in the other
+                // ports, and not a reason to stop the program.
+                let first = try objectStreamNumber(obj.getValue("/First"))
+                let o2 = getObject(obj.data, 0, min(first, obj.data.count))
                 var i = 0
-                while i < o2.dict.count {
+                while i + 1 < o2.dict.count {
                     let num = o2.dict[i]
-                    let off = o2.dict[i + 1]
+                    let off = try objectStreamNumber(o2.dict[i + 1])
                     var end = obj.data.count
                     if i <= o2.dict.count - 4 {
-                        end = first + Int(o2.dict[i + 3])!
+                        end = min(first + (try objectStreamNumber(o2.dict[i + 3])), obj.data.count)
                     }
-                    let o3 = getObject(obj.data, first + Int(off)!, end)
-                    o3.number = Int(num)!
+                    let o3 = getObject(obj.data, first + off, end)
+                    o3.number = try objectStreamNumber(num)
                     o3.dict.insert(contentsOf: [num, "0", "obj"], at: 0)
                     objects2.append(o3)
                     i += 2
@@ -1563,6 +1592,15 @@ public class PDF {
             }
         }
         return getSortedObjects(objects2)
+    }
+
+    // Returns the number in the header of an object stream.
+    private func objectStreamNumber(_ token: String) throws -> Int {
+        let number = toInteger(token)
+        if number < 0 {
+            throw PDFjetError(message: "The object stream of the PDF is malformed: \"\(token)\" is not a number.")
+        }
+        return number
     }
 
     private func process(
@@ -2014,56 +2052,60 @@ public class PDF {
         return -1
     }
 
-    /// Adds the outline dictionary for the bookmarks and returns its object number.
+    /// Adds the outline dictionary for the bookmarks and returns its object
+    /// number. The bookmarks were numbered by toArrayList(), level by level,
+    /// and the object of a bookmark is that many objects after the outline
+    /// dictionary.
     func addOutlineDict(_ toc: Bookmark) -> Int {
-        let numOfChildren = getNumOfChildren(0, toc)
         newObj()
         append(Token.beginDictionary)
         append("/Type /Outlines\n")
         append("/First ")
-        append(getObjNumber() + 1)
+        append(getObjNumber() + toc.getFirstChild()!.objNumber)
         append(" 0 R\n")
         append("/Last ")
-        append(getObjNumber() + numOfChildren)
+        append(getObjNumber() + toc.getLastChild()!.objNumber)
         append(" 0 R\n")
+        // The items that are visible: those of the first level, as the items
+        // with children are closed.
         append("/Count ")
-        append(numOfChildren)
+        append(toc.getChildren()!.count)
         append(Token.newline)
         append(Token.endDictionary)
         endObj()
         return getObjNumber()
     }
 
-    /// Adds an outline item for the specified bookmark.
-    func addOutlineItem(
-            _ parent: Int,
-            _ i: Int,
-            _ bm1: Bookmark) {
+    /// Adds an outline item for the bookmark, under the outline dictionary
+    /// with the given object number.
+    func addOutlineItem(_ outlines: Int, _ bm1: Bookmark) {
         var prev = 0
-        if bm1.getPrevBookmark() != nil {
-            prev = parent + (i - 1)
+        if let bookmark = bm1.getPrevBookmark() {
+            prev = outlines + bookmark.objNumber
         }
         var next = 0
-        if bm1.getNextBookmark() != nil {
-            next = parent + (i + 1)
+        if let bookmark = bm1.getNextBookmark() {
+            next = outlines + bookmark.objNumber
         }
 
         var first = 0
         var last = 0
         var count = 0
-        if bm1.getChildren() != nil && bm1.getChildren()!.count > 0 {
-            first = parent + bm1.getFirstChild()!.objNumber
-            last  = parent + bm1.getLastChild()!.objNumber
-            count = (-1) * getNumOfChildren(0, bm1)
+        if let children = bm1.getChildren(), children.count > 0 {
+            first = outlines + children[0].objNumber
+            last  = outlines + children[children.count - 1].objNumber
+            // A closed item: the items that opening it would show.
+            count = (-1) * children.count
         }
 
         newObj()
         append(Token.beginDictionary)
         append("/Title <")
-        append(toHexString(bm1.getTitle()))
+        append(textString(bm1.getTitle()))
         append(">\n")
+        // The root of the bookmarks is the outline dictionary itself.
         append("/Parent ")
-        append(parent)
+        append(outlines + (bm1.getParent()?.objNumber ?? 0))
         append(" 0 R\n")
         if prev > 0 {
             append("/Prev ")
@@ -2090,7 +2132,6 @@ public class PDF {
             append(count)
             append("\n")
         }
-        append("/F 4\n")        // No Zoom
         append("/Dest [")
         append(bm1.getDestination()!.pageObjNumber)
         append(" 0 R /XYZ ")
@@ -2100,32 +2141,6 @@ public class PDF {
         append(" 0]\n")
         append(Token.endDictionary)
         endObj()
-    }
-
-    private func getNumOfChildren(
-            _ numOfChildren: Int,
-            _ bm1: Bookmark) -> Int {
-        var numberOfChildren = numOfChildren
-        if let children = bm1.getChildren() {
-            for bm2 in children {
-                numberOfChildren += 1
-                numberOfChildren = getNumOfChildren(numberOfChildren, bm2)
-            }
-        }
-        return numberOfChildren
-    }
-
-    /// Adds objects read from an existing PDF to this document.
-    /// The error when objects read from a PDF cannot be added to this document.
-    enum PDFError: Error, CustomStringConvertible {
-        case noPagesObject
-
-        var description: String {
-            switch self {
-            case .noPagesObject:
-                return "The objects have no root /Pages object."
-            }
-        }
     }
 
     ///
@@ -2171,10 +2186,10 @@ public class PDF {
         var seen = Set<Int>()
         for number in pageNumbers {
             if number < 1 || number > pageObjects.count {
-                try refuseMerge("The document has no page \(number).")
+                try refuse("The document has no page \(number).")
             }
             if !seen.insert(number).inserted {
-                try refuseMerge("Page \(number) is listed twice.")
+                try refuse("Page \(number) is listed twice.")
             }
             listed.append(pageObjects[number - 1])
         }
@@ -2184,16 +2199,16 @@ public class PDF {
     // Refuses a merge that would break this document.
     private func checkMerge(_ objects: [PDFobj]) throws {
         if completed {
-            try refuseMerge("The PDF was already completed.")
+            try refuse("The PDF was already completed.")
         }
         if compliance != Compliance.PDF_1_7 {
-            try refuseMerge("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.")
+            try refuse("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.")
         }
         if pagesObjNumber != 0 {
-            try refuseMerge("merge and addObjects cannot be used on the same PDF.")
+            try refuse("merge and addObjects cannot be used on the same PDF.")
         }
         if getPagesObject(objects) == nil {
-            try refuseMerge("The objects have no root /Pages object.")
+            try refuse("The objects have no root /Pages object.")
         }
     }
 
@@ -2246,7 +2261,7 @@ public class PDF {
     }
 
     // Records the misuse and throws it.
-    private func refuseMerge(_ message: String) throws {
+    private func refuse(_ message: String) throws {
         fail(message)
         throw PDFjetError(message: message)
     }
@@ -2480,16 +2495,48 @@ public class PDF {
         }
     }
 
-    /// - Throws: PDFError when the objects have no root /Pages object.
+    ///
+    /// Adds objects read from an existing PDF to this document. The objects
+    /// keep their numbers and are written as they are, so they are added
+    /// before any font, image or page of this document, and an encrypted PDF
+    /// cannot take them.
+    ///
+    /// - Throws: PDFjetError when the objects cannot be added to this document.
+    ///
     public func addObjects(_ objects: [PDFobj]) throws {
         for page in pages where page.mergedDict != nil {
-            try refuseMerge("merge and addObjects cannot be used on the same PDF.")
+            try refuse("merge and addObjects cannot be used on the same PDF.")
         }
-        guard let pagesObject = getPagesObject(objects) else {
-            throw PDFError.noPagesObject
+        guard let pagesObject = getPagesObject(objects),
+                let number = Int(pagesObject.dict.first ?? "") else {
+            try refuse("The objects have no root /Pages object.")
+            return
         }
-        self.pagesObjNumber = Int(pagesObject.dict[0])!
+        if let message = checkObjects(objects) {
+            try refuse(message)
+        }
+        self.pagesObjNumber = number
         addObjectsToPDF(objects)
+    }
+
+    // Returns why the objects of a PDF that was read cannot be written, or nil.
+    // They keep their numbers and are written as they are, so they have to come
+    // before the objects that this document numbers itself, and an encrypted
+    // document cannot take them.
+    private func checkObjects(_ objects: [PDFobj]) -> String? {
+        if completed {
+            return "The PDF was already completed."
+        }
+        if encryption != nil {
+            return "The objects of an existing PDF cannot be added to an encrypted PDF."
+        }
+        for obj in objects {
+            if obj.number > 0 && obj.number <= objOffset.count && objOffset[obj.number - 1] != 0 {
+                return "Add the objects of an existing PDF before fonts, images or pages "
+                        + "are added to the PDF: object \(obj.number) is already written."
+            }
+        }
+        return nil
     }
 
     /// Returns the root pages object.
@@ -2507,22 +2554,33 @@ public class PDF {
     /// Returns the page objects.
     public func getPageObjects(from objects: [PDFobj]) -> [PDFobj] {
         var pageObjects = [PDFobj]()
-        let pagesObject = getPagesObject(objects)!
-        getPageObjects(pagesObject, &pageObjects, objects)
+        if let pagesObject = getPagesObject(objects) {
+            var visited = Set<Int>()
+            getPageObjects(pagesObject, &pageObjects, objects, &visited)
+        }
         return pageObjects
     }
 
+    // The nodes of the page tree that were visited are skipped, as a node of a
+    // broken tree can list itself or a node above it as a kid.
     private func getPageObjects(
             _ pdfObj: PDFobj,
             _ pages: inout [PDFobj],
-            _ objects: [PDFobj]) {
+            _ objects: [PDFobj],
+            _ visited: inout Set<Int>) {
+        if !visited.insert(pdfObj.number).inserted {
+            return
+        }
         let kids = pdfObj.getObjectNumbers("/Kids")
         for number in kids {
+            if number < 1 || number > objects.count {
+                continue        // A kid that the document does not have.
+            }
             let object = objects[number - 1]
             if isPageObject(object) {
                 pages.append(object)
             } else {
-                getPageObjects(object, &pages, objects)
+                getPageObjects(object, &pages, objects, &visited)
             }
         }
     }
@@ -2598,55 +2656,6 @@ public class PDF {
             i += 1
         }
         return fonts
-    }
-
-    private func getDescendantFonts(
-            _ font: PDFobj,
-            _ objects: [PDFobj]) -> [PDFobj] {
-        var descendantFonts = [PDFobj]()
-        let dict = font.getDict()
-        for i in 0..<max(dict.count - 2, 0) {
-            if dict[i] == "/DescendantFonts" {
-                let token = dict[i + 2]
-                if token != "]" {
-                    let object = objects[Int(token)! - 1]
-                    descendantFonts.append(object)
-                }
-            }
-        }
-        return descendantFonts
-    }
-
-    private func getObject(
-            _ name: String,
-            _ object: PDFobj,
-            _ objects: [PDFobj]) -> PDFobj? {
-        let dict = object.getDict()
-        for i in 0..<max(dict.count - 1, 0) {
-            if dict[i] == name {
-                // A value that is not a reference to an object, like a name, has no object.
-                let number = toInteger(dict[i + 1])
-                return (number > 0 && number <= objects.count) ? objects[number - 1] : nil
-            }
-        }
-        return nil
-    }
-
-    /// Collects the font descriptor of the given font, together with whichever
-    /// embedded font program it carries.
-    private func addFontDescriptor(
-            _ font: PDFobj,
-            _ objects: [PDFobj],
-            _ resources: inout [PDFobj]) {
-        guard let descriptor = getObject("/FontDescriptor", font, objects) else {
-            return
-        }
-        resources.append(descriptor)
-        for key in ["/FontFile", "/FontFile2", "/FontFile3"] {
-            if let fontFile = getObject(key, descriptor, objects) {
-                resources.append(fontFile)
-            }
-        }
     }
 
     ///
@@ -2773,27 +2782,30 @@ public class PDF {
         }
     }
 
-    /// Adds the fonts, images and graphics states used by the pages to this document.
+    ///
+    /// Adds the fonts, images and graphics states used by the pages to this
+    /// document. The objects keep their numbers and are written as they are,
+    /// so they are added before any font, image or page of this document, and
+    /// an encrypted PDF cannot take them: the mistake is recorded, and
+    /// complete() throws it.
+    ///
     public func addResourceObjects(from objects: [PDFobj]) {
+        if let message = checkObjects(objects) {
+            fail(message)
+            return
+        }
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)
         for page in pages {
-            let resObj = page.getResourcesObject(objects)!
-            let fonts = getFontObjects(resObj, objects)
-            for font in fonts {
-                resources.append(font)
-                if let obj = getObject("/ToUnicode", font, objects) {
-                    resources.append(obj)
-                }
-                // A simple font carries its descriptor directly; only a
-                // composite one puts it on the descendant.
-                addFontDescriptor(font, objects, &resources)
-                let descendantFonts = getDescendantFonts(font, objects)
-                for descendantFont in descendantFonts {
-                    resources.append(descendantFont)
-                    addFontDescriptor(descendantFont, objects, &resources)
-                }
+            guard let resObj = page.getResourcesObject(objects) else {
+                continue        // A page without resources of its own.
+            }
+            // A font is copied with every object that it refers to: its
+            // descriptor and font file, and also the widths, the encoding and
+            // the other entries that can be objects of their own.
+            for font in getFontObjects(resObj, objects) {
+                addObjectTree(font.number, objects, &numbers, &resources)
             }
             addXObjects(resObj, objects, &numbers, &resources)
             addExtGStates(resObj, objects)

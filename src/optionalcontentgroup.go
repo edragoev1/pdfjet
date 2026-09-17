@@ -9,8 +9,6 @@
 package pdfjet
 
 import (
-	"encoding/hex"
-
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 )
 
@@ -93,13 +91,9 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) [2]float32 {
 		ocg.pdf.appendByteArray(token.BeginDictionary)
 		ocg.pdf.appendString("/Type /OCG\n")
 
-		nameBytes := []byte(ocg.name)
-		if ocg.pdf.encryption != nil {
-			nameBytes = ocg.pdf.encryption.encrypt(nameBytes)
-		}
-		ocg.pdf.appendString("/Name <")
-		ocg.pdf.appendString(hex.EncodeToString(nameBytes))
-		ocg.pdf.appendString(">\n")
+		ocg.pdf.appendString("/Name ")
+		ocg.pdf.appendTextString(ocg.name)
+		ocg.pdf.appendString("\n")
 
 		ocg.pdf.appendString("/Usage <<\n")
 		if ocg.visible {

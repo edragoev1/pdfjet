@@ -27,7 +27,6 @@ final public class PDF {
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
     Map<String, Integer> states = new LinkedHashMap<String, Integer>();
     List<Stamp> stamps = new ArrayList<Stamp>();
-    List<StructElement> structElements = new ArrayList<StructElement>();
     Encryption encryption = null;
 
     private int metadataObjNumber = 0;
@@ -54,6 +53,10 @@ final public class PDF {
     private final List<String> importedExtGStates = new ArrayList<String>();
     private Page prevPage = null;
     private boolean contentStreamsCompression = true;
+    // The structure elements of the pages of the document, in page order.
+    // complete() collects them, so a detached page that was never added has
+    // no part in the structure tree.
+    private final List<StructElement> structElements = new ArrayList<StructElement>();
 
     // The first misuse of the API. The call that finds it throws, and complete()
     // then refuses to finish the document, as the file would be broken even if
@@ -183,6 +186,10 @@ final public class PDF {
         // Every object after the encryption dictionary is encrypted.
         if (encryption != null && encryption.getObjNumber() != getObjNumber()) {
             fail(new IllegalStateException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
+        // ISO 19005 does not allow a PDF/A document to be encrypted.
+        if (encryption != null && compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1) {
+            fail(new IllegalStateException("A PDF/A document cannot be encrypted."));
         }
         this.encryption = encryption;
         return this;
@@ -662,23 +669,15 @@ final public class PDF {
             }
 
             if (hasActualText) {
-                byte[] actualTextBytes = element.actualText.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    actualTextBytes = AES256.encrypt(actualTextBytes, encryption.getKey());
-                }
-                append("/ActualText <");
-                append(Util.toHexString(actualTextBytes));
-                append(">\n");
+                append("/ActualText ");
+                appendTextString(element.actualText);
+                append("\n");
             }
 
             if (hasAltDescription) {
-                byte[] altDescriptionBytes = element.altDescription.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    altDescriptionBytes = AES256.encrypt(altDescriptionBytes, encryption.getKey());
-                }
-                append("/Alt <");
-                append(Util.toHexString(altDescriptionBytes));
-                append(">\n");
+                append("/Alt ");
+                appendTextString(element.altDescription);
+                append("\n");
             }
 
             append(">>\n");
@@ -741,12 +740,34 @@ final public class PDF {
         return getObjNumber();
     }
 
-    // Appends an entry of the information dictionary with the text in UTF-16BE
-    // with a byte order mark, unless the text is null.
+    // Appends an entry of the information dictionary with the text, unless
+    // the text is null.
     private void appendInfoText(String key, String text) throws Exception {
         if (text != null) {
-            appendInfoString(key, ("\uFEFF" + text).getBytes(StandardCharsets.UTF_16BE));
+            append(key);
+            append(Token.SPACE);
+            appendTextString(text);
+            append(Token.NEWLINE);
         }
+    }
+
+    /**
+     * Appends a text string, like a bookmark title or an alternate description:
+     * UTF-16BE with a byte order mark in hexadecimal, encrypted if the document
+     * is encrypted. A text string without the mark is in PDFDocEncoding, so
+     * UTF-8 bytes would show as two or three wrong characters each.
+     *
+     * @param text the text.
+     * @throws Exception if writing to the output fails.
+     */
+    void appendTextString(String text) throws Exception {
+        byte[] bytes = ("\uFEFF" + text).getBytes(StandardCharsets.UTF_16BE);
+        if (encryption != null) {
+            bytes = AES256.encrypt(bytes, encryption.getKey());
+        }
+        append('<');
+        append(Util.toHexString(bytes));
+        append('>');
     }
 
     // Appends an entry of the information dictionary with the bytes of a
@@ -1033,23 +1054,15 @@ final public class PDF {
             append("\n");
 
             if (annot.fileAttachment.title != null && !annot.fileAttachment.title.isEmpty()) {
-                byte[] title = annot.fileAttachment.title.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    title = AES256.encrypt(title, encryption.getKey());
-                }
-                append("/T <");
-                append(Util.toHexString(title));
-                append(">\n");
+                append("/T ");
+                appendTextString(annot.fileAttachment.title);
+                append("\n");
             }
 
             if (annot.fileAttachment.contents != null && !annot.fileAttachment.contents.isEmpty()) {
-                byte[] contents = annot.fileAttachment.contents.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    contents = AES256.encrypt(contents, encryption.getKey());
-                }
-                append("/Contents <");
-                append(Util.toHexString(contents));
-                append(">\n");
+                append("/Contents ");
+                appendTextString(annot.fileAttachment.contents);
+                append("\n");
             }
         } else if (annot.annotationType.equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
@@ -1065,13 +1078,9 @@ final public class PDF {
                 description = annot.key;
             }
             if (description != null && !description.isEmpty()) {
-                byte[] bytes = description.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    bytes = AES256.encrypt(bytes, encryption.getKey());
-                }
-                append("/Contents <");
-                append(Util.toHexString(bytes));
-                append(">\n");
+                append("/Contents ");
+                appendTextString(description);
+                append("\n");
             }
             if (annot.uri != null) {
                 append("/F 4\n");
@@ -1121,23 +1130,15 @@ final public class PDF {
             append("\n");
 
             if (annot.title != null && !annot.title.isEmpty()) {
-                byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    title = AES256.encrypt(title, encryption.getKey());
-                }
-                append("/T <");
-                append(Util.toHexString(title));
-                append(">\n");
+                append("/T ");
+                appendTextString(annot.title);
+                append("\n");
             }
 
             if (annot.contents != null && !annot.contents.isEmpty()) {
-                byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    contents = AES256.encrypt(contents, encryption.getKey());
-                }
-                append("/Contents <");
-                append(Util.toHexString(contents));
-                append(">\n");
+                append("/Contents ");
+                appendTextString(annot.contents);
+                append("\n");
             }
         } else if (annot.annotationType.equals(Annotation.Square) ||
                 annot.annotationType.equals(Annotation.Circle)) {
@@ -1154,45 +1155,29 @@ final public class PDF {
             append("\n");
 
             if (annot.title != null && !annot.title.isEmpty()) {
-                byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    title = AES256.encrypt(title, encryption.getKey());
-                }
-                append("/T <");
-                append(Util.toHexString(title));
-                append(">\n");
+                append("/T ");
+                appendTextString(annot.title);
+                append("\n");
             }
 
             if (annot.contents != null && !annot.contents.isEmpty()) {
-                byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    contents = AES256.encrypt(contents, encryption.getKey());
-                }
-                append("/Contents <");
-                append(Util.toHexString(contents));
-                append(">\n");
+                append("/Contents ");
+                appendTextString(annot.contents);
+                append("\n");
             }
         } else if (annot.annotationType.equals(Annotation.Text)) {
             append("/Name /Comment\n");
 
             if (annot.title != null && !annot.title.isEmpty()) {
-                byte[] title = annot.title.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    title = AES256.encrypt(title, encryption.getKey());
-                }
-                append("/T <");
-                append(Util.toHexString(title));
-                append(">\n");
+                append("/T ");
+                appendTextString(annot.title);
+                append("\n");
             }
 
             if (annot.contents != null && !annot.contents.isEmpty()) {
-                byte[] contents = annot.contents.getBytes(StandardCharsets.UTF_8);
-                if (encryption != null) {
-                    contents = AES256.encrypt(contents, encryption.getKey());
-                }
-                append("/Contents <");
-                append(Util.toHexString(contents));
-                append(">\n");
+                append("/Contents ");
+                appendTextString(annot.contents);
+                append("\n");
             }
         }
 
@@ -1691,6 +1676,9 @@ final public class PDF {
             addPageContent(prevPage);
         }
         completed = true;
+        for (Page page : pages) {
+            structElements.addAll(page.structures);
+        }
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();
@@ -1714,8 +1702,7 @@ final public class PDF {
             List<Bookmark> list = toc.toArrayList();
             outlineDictNum = addOutlineDict(toc);
             for (int i = 1; i < list.size(); i++) {
-                Bookmark bookmark = list.get(i);
-                addOutlineItem(outlineDictNum, i, bookmark);
+                addOutlineItem(outlineDictNum, list.get(i));
             }
         }
 
@@ -2452,25 +2439,28 @@ final public class PDF {
     }
 
     /**
-     * Adds outline dictionary to the PDF.
+     * Adds the outline dictionary to the PDF. The bookmarks were numbered by
+     * toArrayList(), level by level, and the object of a bookmark is that many
+     * objects after the outline dictionary.
      *
-     * @param toc the bookmark table of contents.
-     * @return the number of children.
+     * @param toc the root of the bookmarks.
+     * @return the object number of the outline dictionary.
      * @throws Exception if there is an issue.
      */
     int addOutlineDict(Bookmark toc) throws Exception {
-        int numOfChildren = getNumOfChildren(0, toc);
         newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Outlines\n");
         append("/First ");
-        append(getObjNumber() + 1);
+        append(getObjNumber() + toc.getFirstChild().objNumber);
         append(" 0 R\n");
         append("/Last ");
-        append(getObjNumber() + numOfChildren);
+        append(getObjNumber() + toc.getLastChild().objNumber);
         append(" 0 R\n");
+        // The items that are visible: those of the first level, as the items
+        // with children are closed.
         append("/Count ");
-        append(numOfChildren);
+        append(toc.getChildren().size());
         append("\n");
         append(Token.END_DICTIONARY);
         endObj();
@@ -2478,38 +2468,34 @@ final public class PDF {
     }
 
     /**
-     * Adds an outline item to the bookmark.
+     * Adds an outline item for the bookmark.
      *
-     * @param parent the parent number.
-     * @param i the item number.
+     * @param outlines the object number of the outline dictionary.
      * @param bm1 the bookmark.
      * @throws Exception if there is an issue.
      */
-    void addOutlineItem(int parent, int i, Bookmark bm1) throws Exception {
-        int prev = (bm1.getPrevBookmark() == null) ? 0 : parent + (i - 1);
-        int next = (bm1.getNextBookmark() == null) ? 0 : parent + (i + 1);
+    void addOutlineItem(int outlines, Bookmark bm1) throws Exception {
+        int prev = (bm1.getPrevBookmark() == null) ? 0 : outlines + bm1.getPrevBookmark().objNumber;
+        int next = (bm1.getNextBookmark() == null) ? 0 : outlines + bm1.getNextBookmark().objNumber;
 
         int first = 0;
         int last  = 0;
         int count = 0;
         if (bm1.getChildren() != null && bm1.getChildren().size() > 0) {
-            first = parent + bm1.getFirstChild().objNumber;
-            last  = parent + bm1.getLastChild().objNumber;
-            count = (-1) * getNumOfChildren(0, bm1);
-        }
-
-        byte[] title = bm1.getTitle().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        if (encryption != null) {
-            title = AES256.encrypt(title, encryption.getKey());
+            first = outlines + bm1.getFirstChild().objNumber;
+            last  = outlines + bm1.getLastChild().objNumber;
+            // A closed item: the items that opening it would show.
+            count = (-1) * bm1.getChildren().size();
         }
 
         newObj();
         append(Token.BEGIN_DICTIONARY);
-        append("/Title <");
-        append(Util.toHexString(title));
-        append(">\n");
+        append("/Title ");
+        appendTextString(bm1.getTitle());
+        append("\n");
+        // The root of the bookmarks is the outline dictionary itself.
         append("/Parent ");
-        append(parent);
+        append(outlines + bm1.getParent().objNumber);
         append(" 0 R\n");
         if (prev > 0) {
             append("/Prev ");
@@ -2536,7 +2522,6 @@ final public class PDF {
             append(count);
             append("\n");
         }
-        append("/F 4\n");       // No Zoom
         append("/Dest [");
         append(bm1.getDestination().pageObjNumber);
         append(" 0 R /XYZ ");
@@ -2548,18 +2533,10 @@ final public class PDF {
         endObj();
     }
 
-    private int getNumOfChildren(int numOfChildren, Bookmark bm1) {
-        List<Bookmark> children = bm1.getChildren();
-        if (children != null) {
-            for (Bookmark bm2 : children) {
-                numOfChildren = getNumOfChildren(++numOfChildren, bm2);
-            }
-        }
-        return numOfChildren;
-    }
-
     /**
-     * Adds the specified objects to the PDF.
+     * Adds the specified objects to the PDF. The objects keep their numbers and
+     * are written as they are, so they are added before any font, image or
+     * page of this document, and an encrypted PDF cannot take them.
      *
      * @param objects the objects.
      * @throws Exception if there is an issue.
@@ -2572,10 +2549,32 @@ final public class PDF {
         }
         PDFobj pagesObject = getPagesObject(objects);
         if (pagesObject == null) {
-            throw new Exception("The objects have no root /Pages object.");
+            fail(new IllegalArgumentException("The objects have no root /Pages object."));
         }
+        checkObjects(objects);
         this.pagesObjNumber = Integer.parseInt(pagesObject.dict.get(0));
         addObjectsToPDF(objects);
+    }
+
+    // Refuses objects of a PDF that was read when writing them would break this
+    // document. They keep their numbers and are written as they are, so they
+    // have to come before the objects that this document numbers itself, and
+    // an encrypted document cannot take them.
+    private void checkObjects(List<PDFobj> objects) {
+        if (completed) {
+            fail(new IllegalStateException("The PDF was already completed."));
+        }
+        if (encryption != null) {
+            fail(new IllegalStateException(
+                    "The objects of an existing PDF cannot be added to an encrypted PDF."));
+        }
+        for (PDFobj obj : objects) {
+            if (obj.number > 0 && obj.number <= objOffset.size() && objOffset.get(obj.number - 1) != 0L) {
+                fail(new IllegalStateException("Add the objects of an existing PDF before "
+                        + "fonts, images or pages are added to the PDF: object "
+                        + obj.number + " is already written."));
+            }
+        }
     }
 
     /**
@@ -2601,21 +2600,33 @@ final public class PDF {
      */
     public List<PDFobj> getPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new ArrayList<PDFobj>();
-        getPageObjects(getPagesObject(objects), objects, pages);
+        PDFobj pagesObject = getPagesObject(objects);
+        if (pagesObject != null) {
+            getPageObjects(pagesObject, objects, pages, new HashSet<Integer>());
+        }
         return pages;
     }
 
+    // The nodes of the page tree that were visited are skipped, as a node of a
+    // broken tree can list itself or a node above it as a kid.
     private void getPageObjects(
             PDFobj pdfObj,
             List<PDFobj> objects,
-            List<PDFobj> pages) {
+            List<PDFobj> pages,
+            Set<Integer> visited) {
+        if (!visited.add(pdfObj.number)) {
+            return;
+        }
         List<Integer> kids = pdfObj.getObjectNumbers("/Kids");
         for (Integer number : kids) {
-            PDFobj obj =  objects.get(number - 1);
+            if (number < 1 || number > objects.size()) {
+                continue;       // A kid that the document does not have.
+            }
+            PDFobj obj = objects.get(number - 1);
             if (isPageObject(obj)) {
                 pages.add(obj);
             } else {
-                getPageObjects(obj, objects, pages);
+                getPageObjects(obj, objects, pages, visited);
             }
         }
     }
@@ -2686,52 +2697,7 @@ final public class PDF {
             importedFonts.add(token);
             i += 1;
         }
-        return fonts.isEmpty() ? null : fonts;
-    }
-
-    private List<PDFobj> getDescendantFonts(PDFobj font, List<PDFobj> objects) {
-        List<PDFobj> descendantFonts = new ArrayList<PDFobj>();
-        List<String> dict = font.getDict();
-        for (int i = 0; i < dict.size() - 2; i++) {
-            if (dict.get(i).equals("/DescendantFonts")) {
-                String token = dict.get(i + 2);
-                if (!token.equals("]")) {
-                    descendantFonts.add(objects.get(Integer.parseInt(token) - 1));
-                }
-            }
-        }
-        return descendantFonts;
-    }
-
-    private PDFobj getObject(String name, PDFobj obj, List<PDFobj> objects) {
-        List<String> dict = obj.getDict();
-        for (int i = 0; i < dict.size() - 1; i++) {
-            if (dict.get(i).equals(name)) {
-                // A value that is not a reference to an object, like a name, has no object.
-                int number = toInteger(dict.get(i + 1));
-                return (number > 0 && number <= objects.size()) ? objects.get(number - 1) : null;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Collects the font descriptor of the given font, together with whichever
-     * embedded font program it carries.
-     */
-    private void addFontDescriptor(
-            PDFobj font, List<PDFobj> objects, List<PDFobj> resources) {
-        PDFobj descriptor = getObject("/FontDescriptor", font, objects);
-        if (descriptor == null) {
-            return;
-        }
-        resources.add(descriptor);
-        for (String key : new String[] {"/FontFile", "/FontFile2", "/FontFile3"}) {
-            PDFobj fontFile = getObject(key, descriptor, objects);
-            if (fontFile != null) {
-                resources.add(fontFile);
-            }
-        }
+        return fonts;
     }
 
     /**
@@ -2846,7 +2812,9 @@ final public class PDF {
 
     /**
      * Adds the fonts, images and graphics states used by the pages of a PDF
-     * that was read to this document.
+     * that was read to this document. The objects keep their numbers and are
+     * written as they are, so they are added before any font, image or page of
+     * this document, and an encrypted PDF cannot take them.
      *
      * @param objects the objects of the PDF that was read.
      * @throws Exception if there is an issue.
@@ -2855,26 +2823,18 @@ final public class PDF {
         List<PDFobj> resources = new ArrayList<PDFobj>();
         Set<Integer> numbers = new HashSet<Integer>();
 
+        checkObjects(objects);
         List<PDFobj> pages = getPageObjects(objects);
         for (PDFobj page : pages) {
             PDFobj resObj = page.getResourcesObject(objects);
-            List<PDFobj> fonts = getFontObjects(resObj, objects);
-            if (fonts != null) {
-                for (PDFobj font : fonts) {
-                    resources.add(font);
-                    PDFobj obj = getObject("/ToUnicode", font, objects);
-                    if (obj != null) {
-                        resources.add(obj);
-                    }
-                    // A simple font carries its descriptor directly; only a
-                    // composite one puts it on the descendant.
-                    addFontDescriptor(font, objects, resources);
-                    List<PDFobj> descendantFonts = getDescendantFonts(font, objects);
-                    for (PDFobj descendantFont : descendantFonts) {
-                        resources.add(descendantFont);
-                        addFontDescriptor(descendantFont, objects, resources);
-                    }
-                }
+            if (resObj == null) {
+                continue;       // A page without resources of its own.
+            }
+            // A font is copied with every object that it refers to: its
+            // descriptor and font file, and also the widths, the encoding and
+            // the other entries that can be objects of their own.
+            for (PDFobj font : getFontObjects(resObj, objects)) {
+                addObjectTree(font.number, objects, numbers, resources);
             }
             addXObjects(resObj, objects, numbers, resources);
             addExtGStates(resObj, objects);

@@ -298,4 +298,71 @@ import Testing
         #expect(!TestSupport.content(page).contains(" cm\n"), "\(TestSupport.content(page))")
         #expect(pdf.error == nil)
     }
+
+    // The objects of a small PDF, as read(from:) returns them.
+    private func existingObjects() throws -> [PDFobj] {
+        let memory = MemoryPDF()
+        TextLine(TestSupport.helvetica(memory.pdf), "Existing").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        return try TestSupport.read(memory.bytes)
+    }
+
+    @Test func theObjectsOfAnExistingPdfComeBeforeTheContent() throws {
+        let objects = try existingObjects()
+        let message = "Add the objects of an existing PDF before fonts, images or pages "
+                + "are added to the PDF: object 1 is already written."
+
+        let pdf = TestSupport.newPDF()
+        _ = TestSupport.helvetica(pdf)      // Object 1, which the objects would replace.
+        pdf.addResourceObjects(from: objects)
+        #expect(pdf.error == message)
+        #expect(completeMessage(pdf) == earlier + message)
+
+        let pdf2 = TestSupport.newPDF()
+        _ = TestSupport.helvetica(pdf2)
+        do {
+            try pdf2.addObjects(objects)
+            Issue.record("addObjects did not throw")
+        } catch {
+            #expect(TestSupport.message(error) == message)
+        }
+
+        // The objects first, and the font after them.
+        let pdf3 = TestSupport.newPDF()
+        pdf3.addResourceObjects(from: objects)
+        _ = TestSupport.helvetica(pdf3)
+        _ = Page(pdf3, Letter.PORTRAIT)
+        try pdf3.complete()
+    }
+
+    @Test func theObjectsOfAnExistingPdfCannotBeAddedToAnEncryptedPdf() throws {
+        let objects = try existingObjects()
+        let pdf = TestSupport.newPDF()
+        _ = pdf.setEncryption(Encryption(pdf, Passwords(), Permissions()))
+        pdf.addResourceObjects(from: objects)
+        let message = "The objects of an existing PDF cannot be added to an encrypted PDF."
+        #expect(pdf.error == message)
+        #expect(completeMessage(pdf) == earlier + message)
+    }
+
+    @Test func aPdfACannotBeEncrypted() throws {
+        let pdf = MemoryPDF(Compliance.PDF_A_2B).pdf
+        _ = pdf.setEncryption(Encryption(pdf, Passwords(), Permissions()))
+        #expect(pdf.error == "A PDF/A document cannot be encrypted.")
+        #expect(completeMessage(pdf) == earlier + "A PDF/A document cannot be encrypted.")
+
+        // A PDF/UA document can be.
+        let ua = MemoryPDF(Compliance.PDF_UA_1).pdf
+        _ = ua.setEncryption(Encryption(ua, Passwords(), Permissions()))
+        #expect(ua.error == nil)
+    }
+
+    // Java throws from complete() for a number found while the page tree is
+    // written; Swift used to return and leave a broken PDF.
+    @Test func aNumberThatIsNotWritableInThePageTreeIsThrownByComplete() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = page.setCropBox(0, 0, .nan, 100)
+        #expect(completeMessage(pdf) == notWritable)
+    }
 }

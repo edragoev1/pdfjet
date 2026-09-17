@@ -60,6 +60,49 @@ their archives v9.0.1. The public API does not change.
   allocate when the color is already set.
 
 ### Fixed
+- Eight bugs in `PDF`, the main class, in all four ports, found by reading the
+  four ports side by side and running each case. Nested bookmarks make a
+  correct outline tree: every outline item named the outline dictionary as its
+  `/Parent`, and the dictionary had the last item of the deepest level as its
+  `/Last` and the number of all the items as its `/Count`, so MuPDF reported
+  "repaired broken tree structure in outline" for Example_48. An item now has
+  the item above it as its parent, the dictionary ends at the last item of the
+  first level, the counts are those of the items that are shown, and the `/F 4`
+  entry, which means nothing in an outline item, is gone. Text strings are
+  UTF-16BE with a byte order mark, as the information dictionary already was:
+  the bookmark titles, the `/T` and `/Contents` of the annotations, the `/Alt`
+  and `/ActualText` of the structure elements and the name of an optional
+  content group were bare UTF-8, which readers take for PDFDocEncoding, so
+  Poppler showed "Übersicht" as "Ãœbersicht" and a screen reader got the same
+  from an alternate description. The structure tree is made of the pages of
+  the document, in page order: a page made with `Page.DETACHED` and never
+  added, like one used for a dry run, left structure elements with `/Pg 0 0 R`
+  and an annotation that no page has, and moved the target of every link and
+  bookmark by one object, so "go to page 2" led to page 1; and pages that were
+  drawn in one order and added in another were read aloud in the order they
+  were drawn. `addObjects` and `addResourceObjects` refuse what they cannot
+  write: the objects keep their numbers, so adding them after a font, an image
+  or a page silently wrote two objects under one number, and in an encrypted
+  PDF they replaced the encryption dictionary and were written without
+  encryption; both now fail with a message that says to add them first, or
+  that an encrypted PDF cannot take them. `addResourceObjects` copies a font
+  with every object it refers to, as it copies an image: the `/Widths` and
+  `/Encoding` that Word writes as objects of their own were left behind, and
+  their numbers were then given to new objects, so the widths of the font
+  pointed at a content stream. `setEncryption` refuses a PDF/A document, which
+  ISO 19005 does not allow to be encrypted and veraPDF failed on clause 6.1.3.
+  A page tree in which a node lists itself or a node above it as a kid is read
+  once, where `getPageObjects` and `merge` overflowed the stack, which ends a
+  Go or Swift program; a kid that the document does not have is skipped, and
+  objects without a page tree have no pages. And `Page.drawContents` puts a
+  line feed after the content, which can end with an operator: `ET` followed
+  by the `Q` that restores the graphics state read as the unknown `ETQ`.
+- Two more in the Swift port of `PDF`: `read` throws a `PDFjetError` for a
+  malformed object stream, as Java throws and Go returns an error, where it
+  stopped the program; and `complete()` throws for a number that is not
+  writable found while it writes the page tree, like a NaN in a crop box,
+  where it returned normally and left a `/CropBox` of three numbers. In Go a
+  number that is refused is no longer written after it is refused.
 - Five bugs in `CompositeTextLine`, in all four ports. Subscripts and
   superscripts are drawn smaller and off the baseline without a call to
   `setFontSize` first: the font size of the component is the base when the

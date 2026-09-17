@@ -223,4 +223,10 @@ import Testing
         #expect(font.getSize() == 12)
         #expect(TestSupport.content(page).contains(" 20 Tf\n"), "\(TestSupport.content(page))")
     }
+
+    @Test func importedContentIsSeparatedFromTheOperatorAfterIt() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.drawContents(TestSupport.bytes("BT ET"), 100, 0, 0, 1, 1)
+        #expect(TestSupport.content(page).contains("BT ET\nQ\n"), "\(TestSupport.content(page))")
+    }
 }

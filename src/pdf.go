@@ -166,6 +166,11 @@ func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
 		pdf.fail("Set the encryption before adding fonts, images or pages to the PDF.")
 		return pdf
 	}
+	// ISO 19005 does not allow a PDF/A document to be encrypted.
+	if encryption != nil && pdf.compliance != compliance.PDF_1_7 && pdf.compliance != compliance.PDF_UA_1 {
+		pdf.fail("A PDF/A document cannot be encrypted.")
+		return pdf
+	}
 	pdf.encryption = encryption
 	return pdf
 }
@@ -374,8 +379,6 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	return pdf.getObjNumber()
 }
 
-// escapeXML returns the text with the characters that have a meaning in XML
-// escaped.
 // escapeXML returns the text with the characters that have a meaning in XML
 // escaped, and without what XML does not allow: invalid UTF-8, the control
 // characters other than tab, line feed and carriage return, U+FFFE and
@@ -638,23 +641,15 @@ func (pdf *PDF) addStructElementObjects() {
 		}
 
 		if hasActualText {
-			actualTextBytes := []byte(element.actualText)
-			if pdf.encryption != nil {
-				actualTextBytes = pdf.encryption.encrypt(actualTextBytes)
-			}
-			pdf.appendString("/ActualText <")
-			pdf.appendString(hex.EncodeToString(actualTextBytes))
-			pdf.appendString(">\n")
+			pdf.appendString("/ActualText ")
+			pdf.appendTextString(element.actualText)
+			pdf.appendString("\n")
 		}
 
 		if hasAltDescription {
-			altDescriptionBytes := []byte(element.altDescription)
-			if pdf.encryption != nil {
-				altDescriptionBytes = pdf.encryption.encrypt(altDescriptionBytes)
-			}
-			pdf.appendString("/Alt <")
-			pdf.appendString(hex.EncodeToString(altDescriptionBytes))
-			pdf.appendString(">\n")
+			pdf.appendString("/Alt ")
+			pdf.appendTextString(element.altDescription)
+			pdf.appendString("\n")
 		}
 
 		pdf.appendString(">>\n")
@@ -718,17 +713,33 @@ func (pdf *PDF) addInfoObject() int {
 	return pdf.getObjNumber()
 }
 
-// appendInfoText appends an entry of the information dictionary with the text
-// in UTF-16BE with a byte order mark, unless the text is empty.
+// appendInfoText appends an entry of the information dictionary with the text,
+// unless the text is empty.
 func (pdf *PDF) appendInfoText(key, text string) {
 	if text == "" {
 		return
 	}
+	pdf.appendString(key)
+	pdf.appendString(" ")
+	pdf.appendTextString(text)
+	pdf.appendString("\n")
+}
+
+// appendTextString appends a text string, like a bookmark title or an alternate
+// description: UTF-16BE with a byte order mark in hexadecimal, encrypted if the
+// document is encrypted. A text string without the mark is in PDFDocEncoding,
+// so UTF-8 bytes would show as two or three wrong characters each.
+func (pdf *PDF) appendTextString(text string) {
 	bytes := []byte{0xFE, 0xFF}
 	for _, unit := range utf16.Encode([]rune(text)) {
 		bytes = append(bytes, byte(unit>>8), byte(unit))
 	}
-	pdf.appendInfoString(key, bytes)
+	if pdf.encryption != nil {
+		bytes = pdf.encryption.encrypt(bytes)
+	}
+	pdf.appendString("<")
+	pdf.appendString(hex.EncodeToString(bytes))
+	pdf.appendString(">")
 }
 
 // appendInfoString appends an entry of the information dictionary with the
@@ -1004,23 +1015,15 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString("\n")
 
 		if annot.fileAttachment.title != "" {
-			title := []byte(annot.fileAttachment.title)
-			if pdf.encryption != nil {
-				title = pdf.encryption.encrypt(title)
-			}
-			pdf.appendString("/T <")
-			pdf.appendString(hex.EncodeToString(title))
-			pdf.appendString(">\n")
+			pdf.appendString("/T ")
+			pdf.appendTextString(annot.fileAttachment.title)
+			pdf.appendString("\n")
 		}
 
 		if annot.fileAttachment.contents != "" {
-			contents := []byte(annot.fileAttachment.contents)
-			if pdf.encryption != nil {
-				contents = pdf.encryption.encrypt(contents)
-			}
-			pdf.appendString("/Contents <")
-			pdf.appendString(hex.EncodeToString(contents))
-			pdf.appendString(">\n")
+			pdf.appendString("/Contents ")
+			pdf.appendTextString(annot.fileAttachment.contents)
+			pdf.appendString("\n")
 		}
 	} else if annot.annotationType == annotationLink {
 		// PDF/UA requires a link to carry an alternate description in its
@@ -1036,13 +1039,9 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 			description = annot.key
 		}
 		if description != "" {
-			bytes := []byte(description)
-			if pdf.encryption != nil {
-				bytes = pdf.encryption.encrypt(bytes)
-			}
-			pdf.appendString("/Contents <")
-			pdf.appendString(hex.EncodeToString(bytes))
-			pdf.appendString(">\n")
+			pdf.appendString("/Contents ")
+			pdf.appendTextString(description)
+			pdf.appendString("\n")
 		}
 		if annot.uri != "" {
 			pdf.appendString("/F 4\n")
@@ -1092,23 +1091,15 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString("\n")
 
 		if annot.title != "" {
-			title := []byte(annot.title)
-			if pdf.encryption != nil {
-				title = pdf.encryption.encrypt(title)
-			}
-			pdf.appendString("/T <")
-			pdf.appendString(hex.EncodeToString(title))
-			pdf.appendString(">\n")
+			pdf.appendString("/T ")
+			pdf.appendTextString(annot.title)
+			pdf.appendString("\n")
 		}
 
 		if annot.contents != "" {
-			contents := []byte(annot.contents)
-			if pdf.encryption != nil {
-				contents = pdf.encryption.encrypt(contents)
-			}
-			pdf.appendString("/Contents <")
-			pdf.appendString(hex.EncodeToString(contents))
-			pdf.appendString(">\n")
+			pdf.appendString("/Contents ")
+			pdf.appendTextString(annot.contents)
+			pdf.appendString("\n")
 		}
 	} else if annot.annotationType == annotationSquare ||
 		annot.annotationType == annotationCircle {
@@ -1125,45 +1116,29 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendString("\n")
 
 		if annot.title != "" {
-			title := []byte(annot.title)
-			if pdf.encryption != nil {
-				title = pdf.encryption.encrypt(title)
-			}
-			pdf.appendString("/T <")
-			pdf.appendString(hex.EncodeToString(title))
-			pdf.appendString(">\n")
+			pdf.appendString("/T ")
+			pdf.appendTextString(annot.title)
+			pdf.appendString("\n")
 		}
 
 		if annot.contents != "" {
-			contents := []byte(annot.contents)
-			if pdf.encryption != nil {
-				contents = pdf.encryption.encrypt(contents)
-			}
-			pdf.appendString("/Contents <")
-			pdf.appendString(hex.EncodeToString(contents))
-			pdf.appendString(">\n")
+			pdf.appendString("/Contents ")
+			pdf.appendTextString(annot.contents)
+			pdf.appendString("\n")
 		}
 	} else if annot.annotationType == annotationText {
 		pdf.appendString("/Name /Comment\n")
 
 		if annot.title != "" {
-			title := []byte(annot.title)
-			if pdf.encryption != nil {
-				title = pdf.encryption.encrypt(title)
-			}
-			pdf.appendString("/T <")
-			pdf.appendString(hex.EncodeToString(title))
-			pdf.appendString(">\n")
+			pdf.appendString("/T ")
+			pdf.appendTextString(annot.title)
+			pdf.appendString("\n")
 		}
 
 		if annot.contents != "" {
-			contents := []byte(annot.contents)
-			if pdf.encryption != nil {
-				contents = pdf.encryption.encrypt(contents)
-			}
-			pdf.appendString("/Contents <")
-			pdf.appendString(hex.EncodeToString(contents))
-			pdf.appendString(">\n")
+			pdf.appendString("/Contents ")
+			pdf.appendTextString(annot.contents)
+			pdf.appendString("\n")
 		}
 	}
 
@@ -1671,6 +1646,11 @@ func (pdf *PDF) Complete() error {
 		}
 	}
 	pdf.completed = true
+	// The structure elements of the pages that were added, in page order: a
+	// detached page that was never added has no part in the structure tree.
+	for _, page := range pdf.pages {
+		pdf.structElements = append(pdf.structElements, page.structures...)
+	}
 	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
@@ -1694,7 +1674,7 @@ func (pdf *PDF) Complete() error {
 		list := pdf.toc.toArrayList()
 		outlineDictNum = pdf.addOutlineDict(pdf.toc)
 		for i := 1; i < len(list); i++ {
-			pdf.addOutlineItem(outlineDictNum, i, list[i])
+			pdf.addOutlineItem(outlineDictNum, list[i])
 		}
 	}
 
@@ -1842,12 +1822,9 @@ func contains(slice []string, text string) bool {
 	return false
 }
 
-// Read returns a list of objects of type PDFobj read from input stream.
-// An encrypted PDF is decrypted when it opens without a password. It returns
-// an error if the PDF needs a password or cannot be read.
-//   - inputStream: the PDF input stream.
-//
-// Returns List<PDFobj> the list of PDF objects.
+// Read returns the objects of the PDF in buf. An encrypted PDF is decrypted
+// when it opens without a password. It returns an error if the PDF needs a
+// password or cannot be read.
 func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 	return pdf.ReadWithPassword(buf, "")
 }
@@ -1857,10 +1834,6 @@ func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 // PDF is decrypted with the password, which is its user or its owner
 // password. It returns an error if the password is not correct or the PDF
 // cannot be read.
-//   - buf: the bytes of the PDF.
-//   - password: the user or owner password of the PDF.
-//
-// Returns List<PDFobj> the list of PDF objects.
 func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj, err error) {
 	// The code that reads a malformed PDF panics where the Java port throws,
 	// like a Flate stream that cannot be inflated; the panic is the error.
@@ -2360,56 +2333,59 @@ func (pdf *PDF) getStartXRef(buf []byte) int {
 	return -1
 }
 
+// addOutlineDict adds the outline dictionary and returns its object number.
+// The bookmarks were numbered by toArrayList, level by level, and the object of
+// a bookmark is that many objects after the outline dictionary.
 func (pdf *PDF) addOutlineDict(toc *Bookmark) int {
-	numOfChildren := getNumOfChildren(0, toc)
 	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /Outlines\n")
 	pdf.appendString("/First ")
-	pdf.appendInteger(pdf.getObjNumber() + 1)
+	pdf.appendInteger(pdf.getObjNumber() + toc.getFirstChild().objNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("/Last ")
-	pdf.appendInteger(pdf.getObjNumber() + numOfChildren)
+	pdf.appendInteger(pdf.getObjNumber() + toc.getLastChild().objNumber)
 	pdf.appendString(" 0 R\n")
+	// The items that are visible: those of the first level, as the items with
+	// children are closed.
 	pdf.appendString("/Count ")
-	pdf.appendInteger(numOfChildren)
+	pdf.appendInteger(len(toc.getChildren()))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.endObj()
 	return pdf.getObjNumber()
 }
 
-func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
+// addOutlineItem adds an outline item for the bookmark, under the outline
+// dictionary with the given object number.
+func (pdf *PDF) addOutlineItem(outlines int, bm1 *Bookmark) {
 	prev := 0
 	if bm1.getPrevBookmark() != nil {
-		prev = parent + (i - 1)
+		prev = outlines + bm1.getPrevBookmark().objNumber
 	}
 	next := 0
 	if bm1.getNextBookmark() != nil {
-		next = parent + (i + 1)
+		next = outlines + bm1.getNextBookmark().objNumber
 	}
 
 	first := 0
 	last := 0
 	count := 0
-	if bm1.getChildren() != nil && len(bm1.getChildren()) > 0 {
-		first = parent + bm1.getFirstChild().objNumber
-		last = parent + bm1.getLastChild().objNumber
-		count = (-1) * getNumOfChildren(0, bm1)
-	}
-
-	title := []byte(bm1.GetTitle())
-	if pdf.encryption != nil {
-		title = pdf.encryption.encrypt(title)
+	if len(bm1.getChildren()) > 0 {
+		first = outlines + bm1.getFirstChild().objNumber
+		last = outlines + bm1.getLastChild().objNumber
+		// A closed item: the items that opening it would show.
+		count = (-1) * len(bm1.getChildren())
 	}
 
 	pdf.newObj()
 	pdf.appendString("<<\n")
-	pdf.appendString("/Title <")
-	pdf.appendString(hex.EncodeToString(title))
-	pdf.appendString(">\n")
+	pdf.appendString("/Title ")
+	pdf.appendTextString(bm1.GetTitle())
+	pdf.appendString("\n")
+	// The root of the bookmarks is the outline dictionary itself.
 	pdf.appendString("/Parent ")
-	pdf.appendInteger(parent)
+	pdf.appendInteger(outlines + bm1.GetParent().objNumber)
 	pdf.appendString(" 0 R\n")
 	if prev > 0 {
 		pdf.appendString("/Prev ")
@@ -2436,7 +2412,6 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 		pdf.appendInteger(count)
 		pdf.appendString("\n")
 	}
-	pdf.appendString("/F 4\n") // No Zoom
 	pdf.appendString("/Dest [")
 	pdf.appendInteger(bm1.getDestination().pageObjNumber)
 	pdf.appendString(" 0 R /XYZ ")
@@ -2448,17 +2423,11 @@ func (pdf *PDF) addOutlineItem(parent, i int, bm1 *Bookmark) {
 	pdf.endObj()
 }
 
-func getNumOfChildren(numOfChildren int, bm1 *Bookmark) int {
-	children := bm1.getChildren()
-	for _, bm2 := range children {
-		numOfChildren++
-		numOfChildren = getNumOfChildren(numOfChildren, bm2)
-	}
-	return numOfChildren
-}
-
-// AddObjects adds the specified objects to the PDF. It returns an error when
-// they have no root /Pages object.
+// AddObjects adds the specified objects to the PDF. The objects keep their
+// numbers and are written as they are, so they are added before any font,
+// image or page of this document, and an encrypted PDF cannot take them. It
+// records the mistake and returns it as an error, as it does when the objects
+// have no root /Pages object.
 func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 	for _, page := range pdf.pages {
 		if page.mergedDict != nil {
@@ -2467,7 +2436,10 @@ func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 	}
 	pagesObject := pdf.getPagesObject(objects)
 	if pagesObject == nil {
-		return errors.New("the objects have no root /Pages object")
+		return pdf.fail("The objects have no root /Pages object.")
+	}
+	if err := pdf.checkObjects(objects); err != nil {
+		return err
 	}
 	objNumber, err := strconv.Atoi(pagesObject.dict[0])
 	if err != nil {
@@ -2475,6 +2447,26 @@ func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 	}
 	pdf.pagesObjNumber = objNumber
 	pdf.addObjectsToPDF(objects)
+	return nil
+}
+
+// checkObjects refuses objects of a PDF that was read when writing them would
+// break this document. They keep their numbers and are written as they are, so
+// they have to come before the objects that this document numbers itself, and
+// an encrypted document cannot take them.
+func (pdf *PDF) checkObjects(objects []*PDFobj) error {
+	if pdf.completed {
+		return pdf.fail("The PDF was already completed.")
+	}
+	if pdf.encryption != nil {
+		return pdf.fail("The objects of an existing PDF cannot be added to an encrypted PDF.")
+	}
+	for _, obj := range objects {
+		if obj.number > 0 && obj.number <= len(pdf.objOffsets) && pdf.objOffsets[obj.number-1] != 0 {
+			return pdf.fail("Add the objects of an existing PDF before fonts, images or pages " +
+				"are added to the PDF: object " + strconv.Itoa(obj.number) + " is already written.")
+		}
+	}
 	return nil
 }
 
@@ -2490,18 +2482,29 @@ func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
 // GetPageObjects returns all page objects.
 func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 	pages := make([]*PDFobj, 0)
-	pdf.getPageObjects(pdf.getPagesObject(objects), objects, &pages)
+	if pagesObject := pdf.getPagesObject(objects); pagesObject != nil {
+		pdf.getPageObjects(pagesObject, objects, &pages, make(map[int]bool))
+	}
 	return pages
 }
 
-func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj) {
+// The nodes of the page tree that were visited are skipped, as a node of a
+// broken tree can list itself or a node above it as a kid.
+func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool) {
+	if visited[pdfObj.number] {
+		return
+	}
+	visited[pdfObj.number] = true
 	kids := pdfObj.getObjectNumbers("/Kids")
 	for _, number := range kids {
+		if number < 1 || number > len(objects) {
+			continue // A kid that the document does not have.
+		}
 		obj := objects[number-1]
 		if isPageObject(obj) {
 			*pages = append(*pages, obj)
 		} else {
-			pdf.getPageObjects(obj, objects, pages)
+			pdf.getPageObjects(obj, objects, pages, visited)
 		}
 	}
 }
@@ -2576,61 +2579,7 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 		pdf.importedFonts = append(pdf.importedFonts, token1)
 		i++
 	}
-	if len(fonts) == 0 {
-		return nil
-	}
 	return fonts
-}
-
-func (pdf *PDF) getDescendantFonts(font *PDFobj, objects []*PDFobj) []*PDFobj {
-	descendantFonts := make([]*PDFobj, 0)
-	dict := font.GetDict()
-	for i, token1 := range dict {
-		if token1 == "/DescendantFonts" && i+2 < len(dict) {
-			token1 = dict[i+2]
-			if token1 != "]" {
-				objNumber, err := strconv.Atoi(token1)
-				if err != nil {
-					panic(err)
-				} else {
-					descendantFonts = append(descendantFonts, objects[objNumber-1])
-				}
-			}
-		}
-	}
-	return descendantFonts
-}
-
-func (pdf *PDF) getObjectFromObjects(name string, obj *PDFobj, objects []*PDFobj) *PDFobj {
-	dict := obj.GetDict()
-	for i, token1 := range dict {
-		if token1 == name && i+1 < len(dict) {
-			// A value that is not a reference to an object, like a name, has no object.
-			if objNumber := toInteger(dict[i+1]); objNumber > 0 && objNumber <= len(objects) {
-				return objects[objNumber-1]
-			}
-			return nil
-		}
-	}
-	return nil
-}
-
-// addFontDescriptor collects the font descriptor of the given font, together
-// with whichever embedded font program it carries.
-func (pdf *PDF) addFontDescriptor(
-	font *PDFobj, objects []*PDFobj, resources []*PDFobj) []*PDFobj {
-	descriptor := pdf.getObjectFromObjects("/FontDescriptor", font, objects)
-	if descriptor == nil {
-		return resources
-	}
-	resources = append(resources, descriptor)
-	for _, key := range []string{"/FontFile", "/FontFile2", "/FontFile3"} {
-		fontFile := pdf.getObjectFromObjects(key, descriptor, objects)
-		if fontFile != nil {
-			resources = append(resources, fontFile)
-		}
-	}
-	return resources
 }
 
 // getResourceEntries returns the entries of a sub-dictionary of the resources,
@@ -2745,29 +2694,29 @@ func (pdf *PDF) addXObjects(
 	return resources
 }
 
-// AddResourceObjects adds the fonts, images and graphics states used by the pages to this document.
+// AddResourceObjects adds the fonts, images and graphics states used by the
+// pages to this document. The objects keep their numbers and are written as
+// they are, so they are added before any font, image or page of this document,
+// and an encrypted PDF cannot take them: the mistake is recorded, and Complete
+// returns it.
 func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
+	if pdf.checkObjects(objects) != nil {
+		return
+	}
 	resources := make([]*PDFobj, 0)
 	numbers := make(map[int]bool)
 
 	pages := pdf.GetPageObjects(objects)
 	for _, page := range pages {
 		resObj := page.GetResourcesObject(objects)
-		fonts := pdf.getFontObjects(resObj, objects)
-		for _, font := range fonts {
-			resources = append(resources, font)
-			obj := pdf.getObjectFromObjects("/ToUnicode", font, objects)
-			if obj != nil {
-				resources = append(resources, obj)
-			}
-			// A simple font carries its descriptor directly; only a composite
-			// one puts it on the descendant.
-			resources = pdf.addFontDescriptor(font, objects, resources)
-			descendantFonts := pdf.getDescendantFonts(font, objects)
-			for _, descendantFont := range descendantFonts {
-				resources = append(resources, descendantFont)
-				resources = pdf.addFontDescriptor(descendantFont, objects, resources)
-			}
+		if resObj == nil {
+			continue // A page without resources of its own.
+		}
+		// A font is copied with every object that it refers to: its descriptor
+		// and font file, and also the widths, the encoding and the other
+		// entries that can be objects of their own.
+		for _, font := range pdf.getFontObjects(resObj, objects) {
+			resources = pdf.addObjectTree(font.number, objects, numbers, resources)
 		}
 		resources = pdf.addXObjects(resObj, objects, numbers, resources)
 		pdf.addExtGStates(resObj, objects)
@@ -2847,6 +2796,7 @@ func (pdf *PDF) appendInteger(value int) {
 func (pdf *PDF) appendFloat32(f float32) {
 	if !fastfloat.IsWritable(f) {
 		pdf.fail(notWritable)
+		return
 	}
 	pdf.appendByteArray(fastfloat.ToByteArray(f))
 }

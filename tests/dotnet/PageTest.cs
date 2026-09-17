@@ -247,5 +247,12 @@ public class PageTest {
         Assert.Equal(12f, font.GetSize());
         Assert.Contains(" 20 Tf\n", TestSupport.Content(page));
     }
+
+    [Fact]
+    public void ImportedContentIsSeparatedFromTheOperatorAfterIt() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.DrawContents(System.Text.Encoding.Latin1.GetBytes("BT ET"), 100f, 0f, 0f, 1f, 1f);
+        Assert.Contains("BT ET\nQ\n", TestSupport.Content(page));
+    }
 }
 }

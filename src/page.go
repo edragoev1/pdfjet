@@ -1995,7 +1995,6 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 		element.language = language
 		element.actualText = actualText
 		element.altDescription = altDescription
-		page.pdf.structElements = append(page.pdf.structElements, element)
 		page.structures = append(page.structures, element)
 
 		page.appendString("/")
@@ -2041,7 +2040,6 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		element.actualText = annotation.actualText
 		element.altDescription = annotation.altDescription
 		element.annotation = annotation
-		page.pdf.structElements = append(page.pdf.structElements, element)
 		page.structures = append(page.structures, element)
 	}
 }
@@ -2082,6 +2080,7 @@ func (page *Page) DrawContents(
 	yScale float32) {
 	page.beginTransform(x, (page.height-yScale*h)-y, xScale, yScale)
 	page.appendByteArray(content)
+	page.appendString("\n") // The content can end with an operator, like ET.
 	page.endTransform()
 }
 

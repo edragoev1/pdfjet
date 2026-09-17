@@ -20,7 +20,6 @@ public class PDF {
     internal List<OptionalContentGroup> groups = new List<OptionalContentGroup>();
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
     internal List<Stamp> stamps = new List<Stamp>();
-    internal List<StructElement> structElements = new List<StructElement>();
     internal Compliance compliance = Compliance.PDF_1_7;
     internal Bookmark toc = null;
     internal Encryption encryption = null;
@@ -52,6 +51,10 @@ public class PDF {
     private List<String> importedExtGStates = new List<String>();
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
+    // The structure elements of the pages of the document, in page order.
+    // Complete() collects them, so a detached page that was never added has
+    // no part in the structure tree.
+    private readonly List<StructElement> structElements = new List<StructElement>();
 
     // The first misuse of the API. The call that finds it throws, and Complete()
     // then refuses to finish the document, as the file would be broken even if
@@ -149,6 +152,10 @@ public class PDF {
         // Every object after the encryption dictionary is encrypted.
         if (encryption != null && encryption.GetObjNumber() != GetObjNumber()) {
             Fail(new InvalidOperationException("Set the encryption before adding fonts, images or pages to the PDF."));
+        }
+        // ISO 19005 does not allow a PDF/A document to be encrypted.
+        if (encryption != null && compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1) {
+            Fail(new InvalidOperationException("A PDF/A document cannot be encrypted."));
         }
         this.encryption = encryption;
         return this;
@@ -616,23 +623,15 @@ public class PDF {
             }
 
             if (hasActualText) {
-                byte[] actualTextBytes = Encoding.UTF8.GetBytes(element.actualText);
-                if (encryption != null) {
-                    actualTextBytes = AES256.Encrypt(actualTextBytes, encryption.GetKey());
-                }
-                Append("/ActualText <");
-                Append(Util.ToHexString(actualTextBytes));
-                Append(">\n");
+                Append("/ActualText ");
+                AppendTextString(element.actualText);
+                Append("\n");
             }
 
             if (hasAltDescription) {
-                byte[] altDescriptionBytes = Encoding.UTF8.GetBytes(element.altDescription);
-                if (encryption != null) {
-                    altDescriptionBytes = AES256.Encrypt(altDescriptionBytes, encryption.GetKey());
-                }
-                Append("/Alt <");
-                Append(Util.ToHexString(altDescriptionBytes));
-                Append(">\n");
+                Append("/Alt ");
+                AppendTextString(element.altDescription);
+                Append("\n");
             }
 
             Append(">>\n");
@@ -695,12 +694,31 @@ public class PDF {
         return GetObjNumber();
     }
 
-    // Appends an entry of the information dictionary with the text in UTF-16BE
-    // with a byte order mark, unless the text is null.
+    // Appends an entry of the information dictionary with the text, unless
+    // the text is null.
     private void AppendInfoText(String key, String text) {
         if (text != null) {
-            AppendInfoString(key, Encoding.BigEndianUnicode.GetBytes("\uFEFF" + text));
+            Append(key);
+            Append(Token.Space);
+            AppendTextString(text);
+            Append(Token.Newline);
         }
+    }
+
+    /// <summary>
+    /// Appends a text string, like a bookmark title or an alternate description:
+    /// UTF-16BE with a byte order mark in hexadecimal, encrypted if the document
+    /// is encrypted. A text string without the mark is in PDFDocEncoding, so
+    /// UTF-8 bytes would show as two or three wrong characters each.
+    /// </summary>
+    internal void AppendTextString(String text) {
+        byte[] bytes = Encoding.BigEndianUnicode.GetBytes("\uFEFF" + text);
+        if (encryption != null) {
+            bytes = AES256.Encrypt(bytes, encryption.GetKey());
+        }
+        Append('<');
+        Append(Util.ToHexString(bytes));
+        Append('>');
     }
 
     // Appends an entry of the information dictionary with the bytes of a
@@ -975,23 +993,15 @@ public class PDF {
             Append("\n");
 
             if (!String.IsNullOrEmpty(annot.fileAttachment.title)) {
-                byte[] title = Encoding.UTF8.GetBytes(annot.fileAttachment.title);
-                if (encryption != null) {
-                    title = AES256.Encrypt(title, encryption.GetKey());
-                }
-                Append("/T <");
-                Append(Util.ToHexString(title));
-                Append(">\n");
+                Append("/T ");
+                AppendTextString(annot.fileAttachment.title);
+                Append("\n");
             }
 
             if (!String.IsNullOrEmpty(annot.fileAttachment.contents)) {
-                byte[] contents = Encoding.UTF8.GetBytes(annot.fileAttachment.contents);
-                if (encryption != null) {
-                    contents = AES256.Encrypt(contents, encryption.GetKey());
-                }
-                Append("/Contents <");
-                Append(Util.ToHexString(contents));
-                Append(">\n");
+                Append("/Contents ");
+                AppendTextString(annot.fileAttachment.contents);
+                Append("\n");
             }
         } else if (annot.annotationType.Equals(Annotation.Link)) {
             // PDF/UA requires a link to carry an alternate description in its
@@ -1007,13 +1017,9 @@ public class PDF {
                 description = annot.key;
             }
             if (!String.IsNullOrEmpty(description)) {
-                byte[] bytes = Encoding.UTF8.GetBytes(description);
-                if (encryption != null) {
-                    bytes = AES256.Encrypt(bytes, encryption.GetKey());
-                }
-                Append("/Contents <");
-                Append(Util.ToHexString(bytes));
-                Append(">\n");
+                Append("/Contents ");
+                AppendTextString(description);
+                Append("\n");
             }
             if (annot.uri != null) {
                 Append("/F 4\n");
@@ -1063,23 +1069,15 @@ public class PDF {
             Append("\n");
 
             if (!String.IsNullOrEmpty(annot.title)) {
-                byte[] title = Encoding.UTF8.GetBytes(annot.title);
-                if (encryption != null) {
-                    title = AES256.Encrypt(title, encryption.GetKey());
-                }
-                Append("/T <");
-                Append(Util.ToHexString(title));
-                Append(">\n");
+                Append("/T ");
+                AppendTextString(annot.title);
+                Append("\n");
             }
 
             if (!String.IsNullOrEmpty(annot.contents)) {
-                byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
-                if (encryption != null) {
-                    contents = AES256.Encrypt(contents, encryption.GetKey());
-                }
-                Append("/Contents <");
-                Append(Util.ToHexString(contents));
-                Append(">\n");
+                Append("/Contents ");
+                AppendTextString(annot.contents);
+                Append("\n");
             }
         } else if (annot.annotationType.Equals(Annotation.Square) ||
                 annot.annotationType.Equals(Annotation.Circle)) {
@@ -1096,45 +1094,29 @@ public class PDF {
             Append("\n");
 
             if (!String.IsNullOrEmpty(annot.title)) {
-                byte[] title = Encoding.UTF8.GetBytes(annot.title);
-                if (encryption != null) {
-                    title = AES256.Encrypt(title, encryption.GetKey());
-                }
-                Append("/T <");
-                Append(Util.ToHexString(title));
-                Append(">\n");
+                Append("/T ");
+                AppendTextString(annot.title);
+                Append("\n");
             }
 
             if (!String.IsNullOrEmpty(annot.contents)) {
-                byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
-                if (encryption != null) {
-                    contents = AES256.Encrypt(contents, encryption.GetKey());
-                }
-                Append("/Contents <");
-                Append(Util.ToHexString(contents));
-                Append(">\n");
+                Append("/Contents ");
+                AppendTextString(annot.contents);
+                Append("\n");
             }
         } else if (annot.annotationType.Equals(Annotation.Text)) {
             Append("/Name /Comment\n");
 
             if (!String.IsNullOrEmpty(annot.title)) {
-                byte[] title = Encoding.UTF8.GetBytes(annot.title);
-                if (encryption != null) {
-                    title = AES256.Encrypt(title, encryption.GetKey());
-                }
-                Append("/T <");
-                Append(Util.ToHexString(title));
-                Append(">\n");
+                Append("/T ");
+                AppendTextString(annot.title);
+                Append("\n");
             }
 
             if (!String.IsNullOrEmpty(annot.contents)) {
-                byte[] contents = Encoding.UTF8.GetBytes(annot.contents);
-                if (encryption != null) {
-                    contents = AES256.Encrypt(contents, encryption.GetKey());
-                }
-                Append("/Contents <");
-                Append(Util.ToHexString(contents));
-                Append(">\n");
+                Append("/Contents ");
+                AppendTextString(annot.contents);
+                Append("\n");
             }
         }
 
@@ -1618,6 +1600,9 @@ public class PDF {
             AddPageContent(prevPage);
         }
         completed = true;
+        foreach (Page page in pages) {
+            structElements.AddRange(page.structures);
+        }
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = AddMetadataObject("", false);
             outputIntentObjNumber = AddOutputIntentObject();
@@ -1641,8 +1626,7 @@ public class PDF {
             List<Bookmark> list = toc.ToArrayList();
             outlineDictNum = AddOutlineDict(toc);
             for (int i = 1; i < list.Count; i++) {
-                Bookmark bookmark = list[i];
-                AddOutlineItem(outlineDictNum, i, bookmark);
+                AddOutlineItem(outlineDictNum, list[i]);
             }
         }
 
@@ -1700,17 +1684,17 @@ public class PDF {
         os.Close();
     }
 
-    /// <summary>
-    /// Set the "Title" document property of the PDF file.
-    /// </summary>
-    /// <param name="title">The title of this document.</param>
-    /// <returns>this PDF object.</returns>
     // An empty document property is the same as one that was never set: it is
     // not written, as in the Go port, which cannot tell the two apart.
     private static String NullIfEmpty(String text) {
         return (text != null && text.Length == 0) ? null : text;
     }
 
+    /// <summary>
+    /// Set the "Title" document property of the PDF file. An empty title is not written.
+    /// </summary>
+    /// <param name="title">The title of this document.</param>
+    /// <returns>this PDF object.</returns>
     public PDF SetTitle(String title) {
         this.title = NullIfEmpty(title);
         return this;
@@ -2304,52 +2288,55 @@ public class PDF {
         return -1;
     }
 
-    /// <summary>Adds the outline dictionary for the bookmarks and returns its object number.</summary>
+    /// <summary>
+    /// Adds the outline dictionary for the bookmarks and returns its object
+    /// number. The bookmarks were numbered by ToArrayList(), level by level,
+    /// and the object of a bookmark is that many objects after the outline
+    /// dictionary.
+    /// </summary>
     internal int AddOutlineDict(Bookmark toc) {
-        int numOfChildren = GetNumOfChildren(0, toc);
         NewObj();
         Append(Token.BeginDictionary);
         Append("/Type /Outlines\n");
         Append("/First ");
-        Append(GetObjNumber() + 1);
+        Append(GetObjNumber() + toc.GetFirstChild().objNumber);
         Append(" 0 R\n");
         Append("/Last ");
-        Append(GetObjNumber() + numOfChildren);
+        Append(GetObjNumber() + toc.GetLastChild().objNumber);
         Append(" 0 R\n");
+        // The items that are visible: those of the first level, as the items
+        // with children are closed.
         Append("/Count ");
-        Append(numOfChildren);
+        Append(toc.GetChildren().Count);
         Append(Token.Newline);
         Append(Token.EndDictionary);
         EndObj();
         return GetObjNumber();
     }
 
-    /// <summary>Adds an outline item for the specified bookmark.</summary>
-    internal void AddOutlineItem(int parent, int i, Bookmark bm1) {
-        int prev = (bm1.GetPrevBookmark() == null) ? 0 : parent + (i - 1);
-        int next = (bm1.GetNextBookmark() == null) ? 0 : parent + (i + 1);
+    /// <summary>Adds an outline item for the bookmark, under the outline dictionary with the given object number.</summary>
+    internal void AddOutlineItem(int outlines, Bookmark bm1) {
+        int prev = (bm1.GetPrevBookmark() == null) ? 0 : outlines + bm1.GetPrevBookmark().objNumber;
+        int next = (bm1.GetNextBookmark() == null) ? 0 : outlines + bm1.GetNextBookmark().objNumber;
 
         int first = 0;
         int last  = 0;
         int count = 0;
         if (bm1.GetChildren() != null && bm1.GetChildren().Count > 0) {
-            first = parent + bm1.GetFirstChild().objNumber;
-            last  = parent + bm1.GetLastChild().objNumber;
-            count = (-1) * GetNumOfChildren(0, bm1);
-        }
-
-        byte[] title = Encoding.UTF8.GetBytes(bm1.GetTitle());
-        if (encryption != null) {
-            title = AES256.Encrypt(title, encryption.GetKey());
+            first = outlines + bm1.GetFirstChild().objNumber;
+            last  = outlines + bm1.GetLastChild().objNumber;
+            // A closed item: the items that opening it would show.
+            count = (-1) * bm1.GetChildren().Count;
         }
 
         NewObj();
         Append(Token.BeginDictionary);
-        Append("/Title <");
-        Append(Util.ToHexString(title));
-        Append(">\n");
+        Append("/Title ");
+        AppendTextString(bm1.GetTitle());
+        Append("\n");
+        // The root of the bookmarks is the outline dictionary itself.
         Append("/Parent ");
-        Append(parent);
+        Append(outlines + bm1.GetParent().objNumber);
         Append(" 0 R\n");
         if (prev > 0) {
             Append("/Prev ");
@@ -2376,7 +2363,6 @@ public class PDF {
             Append(count);
             Append("\n");
         }
-        Append("/F 4\n");       // No Zoom
         Append("/Dest [");
         Append(bm1.GetDestination().pageObjNumber);
         Append(" 0 R /XYZ ");
@@ -2388,17 +2374,12 @@ public class PDF {
         EndObj();
     }
 
-    private int GetNumOfChildren(int numOfChildren, Bookmark bm1) {
-        List<Bookmark> children = bm1.GetChildren();
-        if (children != null) {
-            foreach (Bookmark bm2 in children) {
-                numOfChildren = GetNumOfChildren(++numOfChildren, bm2);
-            }
-        }
-        return numOfChildren;
-    }
-
-    /// <summary>Adds objects read from an existing PDF to this document.</summary>
+    /// <summary>
+    /// Adds objects read from an existing PDF to this document. The objects
+    /// keep their numbers and are written as they are, so they are added
+    /// before any font, image or page of this document, and an encrypted PDF
+    /// cannot take them.
+    /// </summary>
     public void AddObjects(List<PDFobj> objects) {
         foreach (Page page in pages) {
             if (page.mergedDict != null) {
@@ -2407,10 +2388,32 @@ public class PDF {
         }
         PDFobj pagesObject = GetPagesObject(objects);
         if (pagesObject == null) {
-            throw new Exception("The objects have no root /Pages object.");
+            Fail(new ArgumentException("The objects have no root /Pages object."));
         }
+        CheckObjects(objects);
         this.pagesObjNumber = Int32.Parse(pagesObject.dict[0]);
         AddObjectsToPDF(objects);
+    }
+
+    // Refuses objects of a PDF that was read when writing them would break this
+    // document. They keep their numbers and are written as they are, so they
+    // have to come before the objects that this document numbers itself, and
+    // an encrypted document cannot take them.
+    private void CheckObjects(List<PDFobj> objects) {
+        if (completed) {
+            Fail(new InvalidOperationException("The PDF was already completed."));
+        }
+        if (encryption != null) {
+            Fail(new InvalidOperationException(
+                    "The objects of an existing PDF cannot be added to an encrypted PDF."));
+        }
+        foreach (PDFobj obj in objects) {
+            if (obj.number > 0 && obj.number <= objOffset.Count && objOffset[obj.number - 1] != 0) {
+                Fail(new InvalidOperationException("Add the objects of an existing PDF before "
+                        + "fonts, images or pages are added to the PDF: object "
+                        + obj.number + " is already written."));
+            }
+        }
     }
 
     /// <summary>Returns the root pages object.</summary>
@@ -2427,21 +2430,33 @@ public class PDF {
     /// <summary>Returns the page objects.</summary>
     public List<PDFobj> GetPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new List<PDFobj>();
-        GetPageObjects(GetPagesObject(objects), objects, pages);
+        PDFobj pagesObject = GetPagesObject(objects);
+        if (pagesObject != null) {
+            GetPageObjects(pagesObject, objects, pages, new HashSet<int>());
+        }
         return pages;
     }
 
+    // The nodes of the page tree that were visited are skipped, as a node of a
+    // broken tree can list itself or a node above it as a kid.
     private void GetPageObjects(
             PDFobj pdfObj,
             List<PDFobj> objects,
-            List<PDFobj> pages) {
+            List<PDFobj> pages,
+            HashSet<int> visited) {
+        if (!visited.Add(pdfObj.number)) {
+            return;
+        }
         List<Int32> kids = pdfObj.GetObjectNumbers("/Kids");
         foreach (Int32 number in kids) {
-            PDFobj obj =  objects[number - 1];
+            if (number < 1 || number > objects.Count) {
+                continue;       // A kid that the document does not have.
+            }
+            PDFobj obj = objects[number - 1];
             if (IsPageObject(obj)) {
                 pages.Add(obj);
             } else {
-                GetPageObjects(obj, objects, pages);
+                GetPageObjects(obj, objects, pages, visited);
             }
         }
     }
@@ -2513,52 +2528,7 @@ public class PDF {
             importedFonts.Add(token);
             i += 1;
         }
-        return (fonts.Count == 0) ? null : fonts;
-    }
-
-    private List<PDFobj> GetDescendantFonts(PDFobj font, List<PDFobj> objects) {
-        List<PDFobj> descendantFonts = new List<PDFobj>();
-        List<String> dict = font.GetDict();
-        for (int i = 0; i < dict.Count - 2; i++) {
-            if (dict[i].Equals("/DescendantFonts")) {
-                String token = dict[i + 2];
-                if (!token.Equals("]")) {
-                    descendantFonts.Add(objects[Int32.Parse(token) - 1]);
-                }
-            }
-        }
-        return descendantFonts;
-    }
-
-    private PDFobj GetObject(String name, PDFobj obj, List<PDFobj> objects) {
-        List<String> dict = obj.GetDict();
-        for (int i = 0; i < dict.Count - 1; i++) {
-            if (dict[i].Equals(name)) {
-                // A value that is not a reference to an object, like a name, has no object.
-                int number = ToInteger(dict[i + 1]);
-                return (number > 0 && number <= objects.Count) ? objects[number - 1] : null;
-            }
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// Collects the font descriptor of the given font, together with whichever
-    /// embedded font program it carries.
-    /// </summary>
-    private void AddFontDescriptor(
-            PDFobj font, List<PDFobj> objects, List<PDFobj> resources) {
-        PDFobj descriptor = GetObject("/FontDescriptor", font, objects);
-        if (descriptor == null) {
-            return;
-        }
-        resources.Add(descriptor);
-        foreach (String key in new String[] {"/FontFile", "/FontFile2", "/FontFile3"}) {
-            PDFobj fontFile = GetObject(key, descriptor, objects);
-            if (fontFile != null) {
-                resources.Add(fontFile);
-            }
-        }
+        return fonts;
     }
 
     /// <summary>
@@ -2671,30 +2641,27 @@ public class PDF {
         }
     }
 
-    /// <summary>Adds the fonts, images and graphics states used by the pages to this document.</summary>
+    /// <summary>
+    /// Adds the fonts, images and graphics states used by the pages to this
+    /// document. The objects keep their numbers and are written as they are,
+    /// so they are added before any font, image or page of this document, and
+    /// an encrypted PDF cannot take them.
+    /// </summary>
     public void AddResourceObjects(List<PDFobj> objects) {
         List<PDFobj> resources = new List<PDFobj>();
         HashSet<Int32> numbers = new HashSet<Int32>();
+        CheckObjects(objects);
         List<PDFobj> pages = GetPageObjects(objects);
         foreach (PDFobj page in pages) {
             PDFobj resObj = page.GetResourcesObject(objects);
-            List<PDFobj> fonts = GetFontObjects(resObj, objects);
-            if (fonts != null) {
-                foreach (PDFobj font in fonts) {
-                    resources.Add(font);
-                    PDFobj obj = GetObject("/ToUnicode", font, objects);
-                    if (obj != null) {
-                        resources.Add(obj);
-                    }
-                    // A simple font carries its descriptor directly; only a
-                    // composite one puts it on the descendant.
-                    AddFontDescriptor(font, objects, resources);
-                    List<PDFobj> descendantFonts = GetDescendantFonts(font, objects);
-                    foreach (PDFobj descendantFont in descendantFonts) {
-                        resources.Add(descendantFont);
-                        AddFontDescriptor(descendantFont, objects, resources);
-                    }
-                }
+            if (resObj == null) {
+                continue;       // A page without resources of its own.
+            }
+            // A font is copied with every object that it refers to: its
+            // descriptor and font file, and also the widths, the encoding and
+            // the other entries that can be objects of their own.
+            foreach (PDFobj font in GetFontObjects(resObj, objects)) {
+                AddObjectTree(font.number, objects, numbers, resources);
             }
             AddXObjects(resObj, objects, numbers, resources);
             AddExtGStates(resObj, objects);

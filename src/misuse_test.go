@@ -351,3 +351,68 @@ func TestMisuseStampTextNeedsAFont(t *testing.T) {
 	NewStamp(pdf2).SetSize(100, 50).DrawTextUsingParams(nil)
 	testRecorded(t, pdf2, "Stamp text needs a font and a text.")
 }
+
+// testExistingObjects returns the objects of a small PDF, as Read returns them.
+func testExistingObjects(t *testing.T) []*PDFobj {
+	t.Helper()
+	return testRead(t, testMergeDocument("Existing"))
+}
+
+func TestMisuseTheObjectsOfAnExistingPdfComeBeforeTheContent(t *testing.T) {
+	objects := testExistingObjects(t)
+	message := "Add the objects of an existing PDF before fonts, images or pages " +
+		"are added to the PDF: object 1 is already written."
+
+	pdf := testNewPDF()
+	testHelvetica(pdf) // Object 1, which the objects would replace.
+	pdf.AddResourceObjects(objects)
+	testRefused(t, pdf, message)
+
+	pdf2 := testNewPDF()
+	testHelvetica(pdf2)
+	if err := pdf2.AddObjects(objects); err == nil || err.Error() != message {
+		t.Errorf("AddObjects: %v", err)
+	}
+
+	// The objects first, and the font after them.
+	doc := testNewDoc()
+	doc.pdf.AddResourceObjects(objects)
+	testHelvetica(doc.pdf)
+	NewPage(doc.pdf, letter.Portrait())
+	doc.complete()
+}
+
+func TestMisuseTheObjectsOfAnExistingPdfCannotBeAddedToAnEncryptedPdf(t *testing.T) {
+	objects := testExistingObjects(t)
+	pdf := testNewPDF()
+	enc, err := NewEncryption(pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf.SetEncryption(enc)
+	pdf.AddResourceObjects(objects)
+	testRefused(t, pdf, "The objects of an existing PDF cannot be added to an encrypted PDF.")
+}
+
+func TestMisuseAPdfACannotBeEncrypted(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_A_2B)
+	enc, err := NewEncryption(pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf.SetEncryption(enc)
+	testRefused(t, pdf, "A PDF/A document cannot be encrypted.")
+
+	// A PDF/UA document can be.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	enc, err = NewEncryption(doc.pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.pdf.SetEncryption(enc)
+	doc.pdf.SetTitle("Title")
+	NewPage(doc.pdf, letter.Portrait())
+	doc.complete()
+}

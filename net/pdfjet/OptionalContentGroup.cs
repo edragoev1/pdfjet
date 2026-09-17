@@ -88,13 +88,9 @@ public class OptionalContentGroup {
             pdf.Append(Token.BeginDictionary);
             pdf.Append("/Type /OCG\n");
 
-            byte[] nameBytes = Encoding.UTF8.GetBytes(name);
-            if (pdf.encryption != null) {
-                nameBytes = AES256.Encrypt(nameBytes, pdf.encryption.GetKey());
-            }
-            pdf.Append("/Name <");
-            pdf.Append(Util.ToHexString(nameBytes));
-            pdf.Append(">\n");
+            pdf.Append("/Name ");
+            pdf.AppendTextString(name);
+            pdf.Append("\n");
 
             pdf.Append("/Usage <<\n");
             if (visible) {
