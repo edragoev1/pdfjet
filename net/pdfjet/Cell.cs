@@ -638,6 +638,9 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        if (!topBorder && !bottomBorder && !leftBorder && !rightBorder) {
+            return;     // Nothing to draw, so nothing to write.
+        }
         page.AddArtifactBMC();
         if (borderColor != NO_COLOR) {
             page.SetPenColor(borderColor);
@@ -645,26 +648,24 @@ public class Cell {
         page.SetPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;
-        if (GetBorder(Border.TOP)) {
+        // The borders of a cell are the subpaths of one path, stroked once.
+        if (topBorder) {
             page.MoveTo(x - hWidth, y);
             page.LineTo(x + cellW, y);
-            page.StrokePath();
         }
-        if (GetBorder(Border.BOTTOM)) {
+        if (bottomBorder) {
             page.MoveTo(x - hWidth, y + cellH);
             page.LineTo(x + cellW, y + cellH);
-            page.StrokePath();
         }
-        if (GetBorder(Border.LEFT)) {
+        if (leftBorder) {
             page.MoveTo(x, y - hWidth);
             page.LineTo(x, y + cellH + hWidth);
-            page.StrokePath();
         }
-        if (GetBorder(Border.RIGHT)) {
+        if (rightBorder) {
             page.MoveTo(x + cellW, y - hWidth);
             page.LineTo(x + cellW, y + cellH + hWidth);
-            page.StrokePath();
         }
+        page.StrokePath();
         page.AddEMC();
     }
 

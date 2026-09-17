@@ -64,6 +64,16 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       the last row's bottom border covers the overhang, so cutting it short
       only left white gaps between cells that share no drawn edge (seen in
       Example_38).
+- ✅ **B** One border path per `Cell` in the four ports (Sep 17): the visible
+      sides are the subpaths of one path, stroked once, and a cell with no
+      border writes nothing, not even its pen width. Example_43 with `Table`:
+      9,148 bytes smaller (21,163,276 against 21,172,424) and the same time,
+      3,556 against 3,560 ms. The gain is small, and a table with
+      `setCellBorders(false)` gains nothing, as `Page` already writes the pen
+      width only when it changes (measured: a 20,000-row borderless table is
+      565,713 bytes either way). Kept for the simpler drawing code.
+      Checked with `check-examples.sh` (Sep 17): every example identical in the
+      four ports; Java 267 tests on JDK 21 and 8, C# 265, Go, Swift 273.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

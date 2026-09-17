@@ -162,6 +162,20 @@ private final class Box: Drawable {
         #expect(content.contains("9 742 m"))
     }
 
+    @Test func theBordersOfACellAreOnePathAndNoBorderWritesNothing() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        Cell(font, "x").drawOn(page, 10.0, 50.0, 100.0, 20.0)   // the top and left borders
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: " m\n").count - 1 == 2)   // two subpaths
+        #expect(content.components(separatedBy: "\nS\n").count - 1 == 1)  // stroked once
+        let bare = Page(pdf, Letter.PORTRAIT)
+        Cell(font, "x").setBorders(false).drawOn(bare, 10.0, 50.0, 100.0, 20.0)
+        #expect(!TestSupport.content(bare).contains("S"))        // no path, no pen width
+        #expect(!TestSupport.content(bare).contains(" w"))
+    }
+
     @Test func transparentLeavesTheBordersTheColorOfThePen() {
         let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
         cell.setBorderColor(Color.blue).setBorderColor(Color.transparent)

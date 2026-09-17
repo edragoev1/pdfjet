@@ -26,6 +26,11 @@ their archives v9.0.1. The public API does not change.
   other ports do.
 
 ### Changed
+- The borders of a `Cell` are the subpaths of one path, stroked once, instead
+  of a path and a stroke for each side, and a cell with no visible border
+  writes nothing at all, where it wrote its pen width. Example_43 drawn with
+  `Table` is 9,148 bytes smaller, 21,163,276 against 21,172,424, and takes the
+  same time. The pages look the same.
 - `Cell` keeps its text, background and border colors as packed 0xRRGGBB
   values in Java, C# and Swift, instead of an array of three floats for each
   color of each cell; Go already kept them inline. The setters and getters

@@ -845,6 +845,9 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
+        if (!topBorder && !bottomBorder && !leftBorder && !rightBorder) {
+            return;     // Nothing to draw, so nothing to write.
+        }
         page.addArtifactBMC();
         if (borderColor != NO_COLOR) {
             page.setPenColor(borderColor);
@@ -852,26 +855,24 @@ public class Cell {
         page.setPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;
-        if (getBorder(Border.TOP)) {
+        // The borders of a cell are the subpaths of one path, stroked once.
+        if (topBorder) {
             page.moveTo(x - hWidth, y);
             page.lineTo(x + cellW, y);
-            page.strokePath();
         }
-        if (getBorder(Border.BOTTOM)) {
+        if (bottomBorder) {
             page.moveTo(x - hWidth, y + cellH);
             page.lineTo(x + cellW, y + cellH);
-            page.strokePath();
         }
-        if (getBorder(Border.LEFT)) {
+        if (leftBorder) {
             page.moveTo(x, y - hWidth);
             page.lineTo(x, y + cellH + hWidth);
-            page.strokePath();
         }
-        if (getBorder(Border.RIGHT)) {
+        if (rightBorder) {
             page.moveTo(x + cellW, y - hWidth);
             page.lineTo(x + cellW, y + cellH + hWidth);
-            page.strokePath();
         }
+        page.strokePath();
         page.addEMC();
     }
 

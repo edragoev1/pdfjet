@@ -182,6 +182,21 @@ public class CellTest {
     }
 
     [Fact]
+    public void TheBordersOfACellAreOnePathAndNoBorderWritesNothing() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Cell(font, "x").DrawOn(page, 10f, 50f, 100f, 20f);   // the top and left borders
+        string content = TestSupport.Content(page);
+        Assert.Equal(2, content.Split(" m\n").Length - 1);       // two subpaths
+        Assert.Equal(1, content.Split("\nS\n").Length - 1);      // stroked once
+        Page bare = new Page(pdf, Letter.PORTRAIT);
+        new Cell(font, "x").SetBorders(false).DrawOn(bare, 10f, 50f, 100f, 20f);
+        Assert.DoesNotContain("S", TestSupport.Content(bare));    // no path, no pen width
+        Assert.DoesNotContain(" w", TestSupport.Content(bare));
+    }
+
+    [Fact]
     public void TransparentLeavesTheBordersTheColorOfThePen() {
         Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
         cell.SetBorderColor(Color.blue).SetBorderColor(Color.transparent);

@@ -602,6 +602,9 @@ func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
+	if !cell.topBorder && !cell.bottomBorder && !cell.leftBorder && !cell.rightBorder {
+		return // Nothing to draw, so nothing to write.
+	}
 	page.AddArtifactBMC()
 	if cell.hasBorderColor {
 		page.SetPenColorRGB(cell.borderColor)
@@ -609,26 +612,24 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	page.SetPenWidth(cell.borderWidth)
 	// Half the pen width, so that the corners of the borders close.
 	hWidth := cell.borderWidth / 2.0
+	// The borders of a cell are the subpaths of one path, stroked once.
 	if cell.topBorder {
 		page.MoveTo(x-hWidth, y)
 		page.LineTo(x+cellW, y)
-		page.StrokePath()
 	}
 	if cell.bottomBorder {
 		page.MoveTo(x-hWidth, y+cellH)
 		page.LineTo(x+cellW, y+cellH)
-		page.StrokePath()
 	}
 	if cell.leftBorder {
 		page.MoveTo(x, y-hWidth)
 		page.LineTo(x, y+cellH+hWidth)
-		page.StrokePath()
 	}
 	if cell.rightBorder {
 		page.MoveTo(x+cellW, y-hWidth)
 		page.LineTo(x+cellW, y+cellH+hWidth)
-		page.StrokePath()
 	}
+	page.StrokePath()
 	page.AddEMC()
 }
 

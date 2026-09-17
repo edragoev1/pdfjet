@@ -100,6 +100,26 @@ func TestCellTheUnderlineAndTheStrikeoutAreDrawnInTheTextColor(t *testing.T) {
 	}
 }
 
+func TestCellTheBordersOfACellAreOnePathAndNoBorderWritesNothing(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewCell(font, "x").drawOn(page, 10, 50, 100, 20) // the top and left borders
+	content := testContent(page)
+	if strings.Count(content, " m\n") != 2 {
+		t.Error("the borders are not two subpaths")
+	}
+	if strings.Count(content, "\nS\n") != 1 {
+		t.Error("the borders are not stroked once")
+	}
+	bare := NewPage(pdf, letter.Portrait())
+	NewCell(font, "x").SetBorders(false).drawOn(bare, 10, 50, 100, 20)
+	content = testContent(bare)
+	if strings.Contains(content, "S") || strings.Contains(content, " w") {
+		t.Error("a cell without borders writes a path or a pen width")
+	}
+}
+
 func TestCellTransparentLeavesTheBordersTheColorOfThePen(t *testing.T) {
 	cell := NewCell(testHelvetica(testNewPDF()), "x")
 	cell.SetBorderColor(color.Blue).SetBorderColor(color.Transparent)

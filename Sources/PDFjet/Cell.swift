@@ -699,6 +699,9 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
+        if !topBorder && !bottomBorder && !leftBorder && !rightBorder {
+            return      // Nothing to draw, so nothing to write.
+        }
         page.addArtifactBMC()
         if borderColor != Cell.NO_COLOR {
             page.setPenColor(borderColor)
@@ -706,26 +709,24 @@ public class Cell {
         page.setPenWidth(borderWidth)
         // Half the pen width, so that the corners of the borders close.
         let hWidth: Float = borderWidth / 2.0
+        // The borders of a cell are the subpaths of one path, stroked once.
         if topBorder {
             page.moveTo(x - hWidth, y)
             page.lineTo(x + cellW, y)
-            page.strokePath()
         }
         if bottomBorder {
             page.moveTo(x - hWidth, y + cellH)
             page.lineTo(x + cellW, y + cellH)
-            page.strokePath()
         }
         if leftBorder {
             page.moveTo(x, y - hWidth)
             page.lineTo(x, y + cellH + hWidth)
-            page.strokePath()
         }
         if rightBorder {
             page.moveTo(x + cellW, y - hWidth)
             page.lineTo(x + cellW, y + cellH + hWidth)
-            page.strokePath()
         }
+        page.strokePath()
         page.addEMC()
     }
 

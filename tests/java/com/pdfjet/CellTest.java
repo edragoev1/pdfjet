@@ -193,6 +193,21 @@ class CellTest {
     }
 
     @Test
+    void theBordersOfACellAreOnePathAndNoBorderWritesNothing() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Cell(font, "x").drawOn(page, 10f, 50f, 100f, 20f);   // the top and left borders
+        String content = TestSupport.content(page);
+        assertEquals(2, content.split(" m\n", -1).length - 1);  // two subpaths
+        assertEquals(1, content.split("\nS\n", -1).length - 1);  // stroked once
+        Page bare = new Page(pdf, Letter.PORTRAIT);
+        new Cell(font, "x").setBorders(false).drawOn(bare, 10f, 50f, 100f, 20f);
+        assertFalse(TestSupport.content(bare).contains("S"));    // no path, no pen width
+        assertFalse(TestSupport.content(bare).contains(" w"));
+    }
+
+    @Test
     void transparentLeavesTheBordersTheColorOfThePen() throws Exception {
         Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
         cell.setBorderColor(Color.blue).setBorderColor(Color.transparent);
