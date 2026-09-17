@@ -1,6 +1,6 @@
 #!/bin/bash
 # Compares the four ports of PDFjet with each other on the text document of
-# section 5 of jet-vs-box.html, and writes the results to
+# section 3 of pdfjet-benchmarks.html, and writes the results to
 # benchmarks/ports/build/results-<date>.log. See benchmarks/ports/README.md.
 #
 #   benchmarks/ports/run.sh            all four ports, about 10 minutes

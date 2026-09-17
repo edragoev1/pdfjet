@@ -198,13 +198,13 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       record the new benchmark numbers in `benchmarks/README.md`.
       Benchmarks rerun at d2f5d4cb (Sep 16): the Example_43 table, the four
       ports and `Table` are recorded in the three READMEs and
-      `jet-vs-box.html`. Left: the text document of `benchmarks/run.sh text`,
+      `pdfjet-benchmarks.html`. Left: the text document of `benchmarks/run.sh text`,
       to be rerun on a freshly rebooted, idle machine, as iText and PDFBox came
       out 6 to 22% slower than before on the busy one. After that run
       `BigTable` began filling its rows with one `re` (11.7 MB and 1 to 2%
       faster), so rerun `benchmarks/run.sh table` with it.
       Done (Sep 16): both rerun at 7dbfee5d after a reboot, one after the
-      other, and recorded in `benchmarks/README.md` and `jet-vs-box.html`.
+      other, and recorded in `benchmarks/README.md` and `pdfjet-benchmarks.html`.
       iText and PDFBox came within 2% of 4ee4e7cb on the text document, where
       PDFjet now takes 54 ms against 59 and writes 533,287 bytes; `BigTable`
       takes 1,599 ms against 1,671, allocates 674 MB against 778 and is within

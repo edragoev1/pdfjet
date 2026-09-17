@@ -1,13 +1,13 @@
 #!/bin/bash
-# Benchmarks PDFjet for Java against iText Core and Apache PDFBox, and writes
-# the results to benchmarks/build/results-<date>.log. See benchmarks/README.md.
+# Benchmarks PDFjet for Java, and writes the results to
+# benchmarks/build/results-<date>.log. See benchmarks/README.md.
 #
-#   benchmarks/run.sh              both benchmarks, about 25 minutes
+#   benchmarks/run.sh              both benchmarks, a few minutes
 #   benchmarks/run.sh text         the multilingual text document only
 #   benchmarks/run.sh table        Example_43's big table only
 #   benchmarks/run.sh all --quick  a short run that checks that everything works
 #
-# Needs a JDK (21 was used), Maven, curl and GNU time; mutool for the checks
+# Needs a JDK (21 was used) and GNU time; mutool for the checks
 # of the sample files, if it is installed. Nothing else should run meanwhile.
 
 set -euo pipefail
@@ -16,8 +16,7 @@ ROOT=$(pwd)
 B=benchmarks/build
 WHAT=${1:-all}
 QUICK=${2:-}
-MVN=${MVN:-mvn}
-mkdir -p "$B/lib" "$B/fonts" "$B/pdf"
+mkdir -p "$B/pdf"
 LOG="$B/results-$(date +%Y-%m-%d-%H%M).log"
 
 # The PDFjet library from this checkout, without the examples.
@@ -27,23 +26,10 @@ javac -O -encoding utf-8 --release 8 -nowarn -d "$B/jet-classes" \
     com/pdfjet/datamatrix/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
 jar cf "$B/PDFjet.jar" -C "$B/jet-classes" .
 
-# iText Core and PDFBox from Maven Central.
-if [ ! -f "$B/lib/kernel-9.7.1.jar" ] || [ ! -f "$B/lib/pdfbox-3.0.8.jar" ]; then
-    "$MVN" -q -f benchmarks/pom.xml dependency:copy-dependencies -DoutputDirectory=build/lib -DincludeScope=runtime
-fi
-
-# PDFBox cannot embed the OpenType (CFF) IBM Plex Sans, so it gets IBM's TrueType build.
-for w in Regular SemiBold; do
-    if [ ! -f "$B/fonts/IBMPlexSans-$w.ttf" ]; then
-        curl -sfL -o "$B/fonts/IBMPlexSans-$w.ttf" \
-            "https://raw.githubusercontent.com/IBM/plex/master/packages/plex-sans/fonts/complete/ttf/IBMPlexSans-$w.ttf"
-    fi
-done
-
-CP="$B/PDFjet.jar:$(ls "$B"/lib/*.jar | tr '\n' ':')"
+CP="$B/PDFjet.jar"
 javac -nowarn -encoding utf-8 -d "$B/classes" -cp "$CP" benchmarks/TextBench.java benchmarks/BigTableBench.java
 CP="$B/classes:$CP"
-PROPS="-Dpdfjet.root=$ROOT -Dplex.ttf=$ROOT/$B/fonts"
+PROPS="-Dpdfjet.root=$ROOT"
 
 # The median peak resident size, in KB, of a new JVM at its defaults.
 peak() {
@@ -62,7 +48,7 @@ peak() {
     git log --oneline -1 | cat
 
     if [ "$WHAT" = all ] || [ "$WHAT" = text ]; then
-        CONFIGS="jet-plex jet-noto box-noto-subset box-noto-full it-plex-subset it-plex-full it-noto-subset it-noto-full"
+        CONFIGS="jet-plex jet-noto"
         SIZES="50 100 200 500"; COLD=20; PEAK_PAGES=500; RUNS=3
         if [ -n "$QUICK" ]; then SIZES="50"; COLD=5; PEAK_PAGES=50; RUNS=1; fi
         J="java -Xmx4g $PROPS -cp $CP TextBench"
@@ -73,7 +59,7 @@ peak() {
         echo "== text: first document in a new JVM, $COLD pages"
         for c in $CONFIGS; do $J cold $c $COLD 2>&1 | grep cold; done
         echo "== text: peak memory, one $PEAK_PAGES-page document, JVM defaults, median of $RUNS"
-        for c in $CONFIGS it-plex-subset-flush it-noto-subset-flush; do
+        for c in $CONFIGS; do
             echo "$c peak $(peak $RUNS java $PROPS -cp "$CP" TextBench cold $c $PEAK_PAGES) KB"
         done
         echo "== text: 3-page samples"
@@ -86,7 +72,7 @@ peak() {
     fi
 
     if [ "$WHAT" = all ] || [ "$WHAT" = table ]; then
-        CONFIGS=${TABLE_CONFIGS:-"jet jet-table jet-page it-canvas it-layout box jet-page-stream it-canvas-stream"}
+        CONFIGS=${TABLE_CONFIGS:-"jet jet-table jet-page jet-page-stream"}
         CSV="$ROOT/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
         if [ -n "$QUICK" ]; then CSV="$ROOT/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"

@@ -1,7 +1,7 @@
 import Foundation
 import PDFjet
 
-// The text document of section 5 of jet-vs-box.html, written by PDFjet for
+// The text document of section 3 of pdfjet-benchmarks.html, written by PDFjet for
 // Swift: pages of 60 lines of 10 point Latin, Greek and Cyrillic text in
 // IBM Plex Sans, one drawing call per line.
 //

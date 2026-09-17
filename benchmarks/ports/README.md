@@ -4,8 +4,8 @@ The same document written by PDFjet for Java, C#, Go and Swift, with each
 port's own build. It is the text document of `../TextBench.java`: pages of 60
 lines of 10 point Latin, Greek and Cyrillic text in IBM Plex Sans
 (`IBMPlexSans-Regular.otf.stream`), one `drawString` call per line, on Letter
-portrait pages. Section 10 of `jet-vs-box.html` quotes these numbers; the
-comparison with iText Core and Apache PDFBox is in `../README.md`.
+portrait pages. Section 5 of `pdfjet-benchmarks.html` quotes these numbers;
+the Java benchmarks are in `../README.md`.
 
 | File | What it is |
 |---|---|
@@ -91,4 +91,4 @@ else running.
 - One machine; absolute times will differ elsewhere.
 - Peak memory includes the runtime, which is most of it for Java and C#.
 - Each port is timed with its runtime at its defaults, so Java has no `-Xmx`
-  here where section 5 of `jet-vs-box.html` gives it `-Xmx4g`.
+  here where the text document in `pdfjet-benchmarks.html` gives it `-Xmx4g`.

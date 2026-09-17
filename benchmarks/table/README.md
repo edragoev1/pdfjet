@@ -155,19 +155,17 @@ fills a rectangle with one `re`, the first document took 4,983 ms in Java,
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, in the run
-at 7dbfee5d and on this machine, iText Core's own `Table` in large-table mode
-took 36,609 ms in a new JVM and peaked at 6,949 MB, and needed an 8 GB heap to
-run at all, while `BigTable` took 1,959 ms and 390 MB (`../results/`). So
-`Table` holding all 1.12 million cells is about seven times faster than iText's
-and needs about a seventh of the memory; what it cannot do is draw the table
-without holding them, which is what `BigTable` is for.
+at 7dbfee5d and on this machine, `BigTable` took 1,959 ms in a new JVM and
+peaked at 390 MB, and `Table` in Java 4,467 ms and 1,330 MB (`../results/`).
+What `Table` cannot do is draw the table without holding all 1.12 million
+cells, which is what `BigTable` is for.
 
 ## Caveats
 
 - One machine; absolute times will differ elsewhere.
 - Peak memory includes the runtime, which is most of it for Java and C#.
 - Each port is timed with its runtime at its defaults, so Java has no `-Xmx`
-  here where section 5 of `jet-vs-box.html` gives it `-Xmx4g`.
+  here where the text document in `pdfjet-benchmarks.html` gives it `-Xmx4g`.
 - The cells are held in memory before the first page is drawn, which is what
   the release plan wants measured; `BigTable` reads its file instead and draws
   the same data in a fraction of the memory. See `../README.md`.
