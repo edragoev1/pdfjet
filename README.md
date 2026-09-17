@@ -116,6 +116,14 @@ public class Hello {
 go get github.com/edragoev1/pdfjet/v9@latest
 ```
 
+If `go get` reports `404 Not Found` from `proxy.golang.org`, the Go module
+proxy has not made the module available yet. Fetch it straight from GitHub
+instead:
+
+```bash
+GOPROXY=direct GONOSUMDB=github.com/edragoev1/pdfjet go get github.com/edragoev1/pdfjet/v9@latest
+```
+
 ```go
 package main
 

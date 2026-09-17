@@ -237,8 +237,16 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       the PDFs of the archive, all 51 of them complete. The quick starts were
       run against the archives, Java on JDK 8 and 21. Rebuilt from the tag
       on Sep 16, with its CHANGELOG.md.
-- ⬜ **B** From a scratch module: `go list -m github.com/edragoev1/pdfjet/v9@v9.0.0`
+- ✅ **B** From a scratch module: `go list -m github.com/edragoev1/pdfjet/v9@v9.0.0`
       and `go get github.com/edragoev1/pdfjet/v9@v9.0.0` build and write a PDF.
+      Done (Sep 16), from GitHub only: with `GOPROXY=direct` the module
+      downloads (7.3 MB without fonts, data and images), builds and writes the
+      README's hello PDF. proxy.golang.org lists v9.0.0 but has answered 404
+      "not found", with no reason, for its .info, .mod and .zip for over an
+      hour, and sum.golang.org and pkg.go.dev with it; the 535 MB history of
+      the repository may be making the proxy's clone time out. The user stopped
+      waiting for it, and the README's Go section gives the `GOPROXY=direct`
+      workaround.
 - ✅ **B** A scratch Swift package resolves PDFjet from the tag and writes a PDF.
       Done (Sep 16): a package with `.package(url:
       "https://github.com/edragoev1/pdfjet.git", from: "9.0.0")` resolved 9.0.0
