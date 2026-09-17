@@ -1,0 +1,53 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-17T13:27:24-04:00
+8db803f0 Keep the colors of a Cell as packed RGB values, for v9.0.1
+== text: Latin, Greek and Cyrillic, 60 lines per page
+jet-plex 50 pages: median 7 ms (min 6, max 11, 7 runs), 108638 bytes, 4 MB allocated
+jet-noto 50 pages: median 10 ms (min 8, max 10, 7 runs), 390211 bytes, 7 MB allocated
+jet-plex 100 pages: median 13 ms (min 11, max 14, 7 runs), 155400 bytes, 6 MB allocated
+jet-noto 100 pages: median 16 ms (min 14, max 16, 7 runs), 435830 bytes, 9 MB allocated
+jet-plex 200 pages: median 24 ms (min 19, max 27, 7 runs), 249742 bytes, 11 MB allocated
+jet-noto 200 pages: median 27 ms (min 21, max 28, 7 runs), 527982 bytes, 13 MB allocated
+jet-plex 500 pages: median 53 ms (min 46, max 62, 7 runs), 533287 bytes, 25 MB allocated
+jet-noto 500 pages: median 59 ms (min 48, max 65, 7 runs), 804928 bytes, 28 MB allocated
+== text: first document in a new JVM, 20 pages
+jet-plex cold 20 pages: 92 ms, 80721 bytes
+jet-noto cold 20 pages: 97 ms, 362971 bytes
+== text: peak memory, one 500-page document, JVM defaults, median of 3
+jet-plex peak 80352 KB
+jet-noto peak 81508 KB
+== text: 3-page samples
+jet-plex: 64974 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+jet-noto: 347616 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+== table: Example_43, Electric_Vehicle_Population_Data.csv
+jet: median 1603 ms (min 1600, max 1607, 7 runs), 2546 pages, 11664115 bytes, 671 MB allocated
+jet-table: median 3536 ms (min 3509, max 3660, 7 runs), 2546 pages, 21179889 bytes, 1718 MB allocated
+jet-page: median 1577 ms (min 1572, max 1579, 7 runs), 2546 pages, 11481000 bytes, 628 MB allocated
+jet-page-stream: median 1565 ms (min 1561, max 1567, 7 runs), 2546 pages, 11508079 bytes, 628 MB allocated
+== table: first run in a new JVM
+jet cold: 1925 ms, 2546 pages, 11664115 bytes
+jet-table cold: 4277 ms, 2546 pages, 21179889 bytes
+jet-page cold: 1913 ms, 2546 pages, 11481000 bytes
+jet-page-stream cold: 1877 ms, 2546 pages, 11508079 bytes
+== table: peak memory, JVM defaults, median of 3
+jet peak 398100 KB
+jet-table peak 1282448 KB
+jet-page peak 475800 KB
+jet-page-stream peak 380892 KB
+== table: smallest heap that finishes, of 32m 64m 128m 256m 512m 1g 2g 4g 8g
+jet: 32m
+jet-table: 512m
+jet-page: 128m
+jet-page-stream: 32m
+== table: samples
+jet sample: 2546 pages, 1959 ms
+jet: 11664115 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-table sample: 2546 pages, 4305 ms
+jet-table: 21179889 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page sample: 2546 pages, 1927 ms
+jet-page: 11481000 bytes, 2546 pages, last footer: Page 2546 of 2546
+jet-page-stream sample: 2546 pages, 1893 ms
+jet-page-stream: 11508079 bytes, 2546 pages, last footer: Page 2546 of 2546
+2026-09-17T13:30:02-04:00

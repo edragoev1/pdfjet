@@ -49,6 +49,8 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       of 512, the same PDF. Checked with `check-examples.sh` (Sep 17): every
       example identical in the four ports; Java 263 tests on JDK 21 and 8,
       C# 261, Go, Swift 270.
+      Benchmarks recorded at 8db803f0 (Sep 17) in `pdfjet-benchmarks.html`:
+      `Table` at 50,000 rows Java 1,632 ms, C# 1,902, Go 778, Swift 2,584.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).

@@ -48,19 +48,30 @@ the machine meanwhile. `build/` is not tracked.
 - The 40-row sample of each port is checked with mutool for the text of its
   first page.
 
-## Results at 7dbfee5d, 16 September 2026
+## Results at 8db803f0, 17 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, .NET SDK 8.0.424,
 Go 1.27.1, Swift 6.3.3, in one run on a freshly rebooted machine with nothing
-else running (`results/2026-09-16-7dbfee5d.log`).
+else running (`results/2026-09-17-8db803f0.log`).
 
 | Port | 2,000 rows | 10,000 rows | 50,000 rows | First document | Peak memory | File, 50,000 rows |
 |---|---:|---:|---:|---:|---:|---:|
-| Java | 79 ms | 340 ms | 1,679 ms | 2,096 ms | 462 MB | 9,116,668 bytes |
-| C# | 89 ms | 413 ms | 2,084 ms | 2,396 ms | 251 MB | 9,116,668 bytes |
-| Go | 33 ms | 159 ms | 787 ms | 850 ms | 281 MB | 9,147,319 bytes |
-| Swift | 114 ms | 531 ms | 2,613 ms | 2,697 ms | 188 MB | 11,197,754 bytes |
+| Java | 77 ms | 370 ms | 1,632 ms | 2,086 ms | 413 MB | 9,116,668 bytes |
+| C# | 123 ms | 385 ms | 1,902 ms | 2,219 ms | 225 MB | 9,116,668 bytes |
+| Go | 33 ms | 154 ms | 778 ms | 832 ms | 286 MB | 9,147,319 bytes |
+| Swift | 111 ms | 522 ms | 2,584 ms | 2,665 ms | 180 MB | 11,197,754 bytes |
 
+- 8db803f0 keeps the text, background and border colors of a `Cell` as packed
+  0xRRGGBB ints in Java, C# and Swift, where each was an array of three floats;
+  Go already kept them inline. The files are the same to the byte as at
+  7dbfee5d (`results/2026-09-16-7dbfee5d.log`). At 50,000 rows C# is 8.7%
+  faster, 1,902 against 2,084 ms, and its peak 225 MB against 251; Java is 2.8%
+  faster, 1,632 against 1,679 ms; Swift 1.1%, 2,584 against 2,613, with a peak
+  of 180 MB against 188; and Go, whose cells did not change, 778 against 787.
+  Java's peak is the least steady figure: 413 MB here, and 497 MB when the
+  124,716-row run below measured it again at 50,000 rows, against 462 and 464
+  at 7dbfee5d. The 2,000-row times are within their noise; C#'s ranged from 78
+  to 160 ms.
 - Nothing `Table` runs changed in 7dbfee5d, which fills the rows of `BigTable`
   with one `re`. The files are the same to the byte as at d2f5d4cb
   (`results/2026-09-16-d2f5d4cb.log`, on a machine that had not been rebooted),
@@ -152,6 +163,12 @@ fills a rectangle with one `re`, the first document took 4,983 ms in Java,
 472 MB and files of 23.9, 23.9, 24.1 and 29.3 MB
 (`results/2026-09-16-300d67ab-swift-124716.log` for Swift, where its
 `FlateEncode` began choosing the Huffman codes of each block).
+
+At 8db803f0 (`results/2026-09-17-8db803f0-124716.log`, a freshly rebooted
+machine) the times were Java 4,106 ms, C# 4,743, Go 1,943 and Swift 6,430, with
+the same files: 2.2%, 6.1% and 0.8% faster in Java, C# and Swift than above,
+and Go 0.2% slower. The first document and the peak at this size were not
+measured on their own in that run.
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, in the run
