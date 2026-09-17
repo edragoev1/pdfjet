@@ -793,12 +793,7 @@ public class Table implements Drawable {
                     cell2.borderColor = cell.borderColor;
                     cell2.textColor = cell.textColor;
                     cell2.setColSpan(cell.getColSpan());
-                    cell2.setBorder(Border.TOP, cell.getBorder(Border.TOP));
-                    cell2.setBorder(Border.BOTTOM, cell.getBorder(Border.BOTTOM));
-                    cell2.setBorder(Border.LEFT, cell.getBorder(Border.LEFT));
-                    cell2.setBorder(Border.RIGHT, cell.getBorder(Border.RIGHT));
-                    cell2.setUnderline(cell.getUnderline());
-                    cell2.setStrikeout(cell.getStrikeout());
+                    cell2.properties = cell.properties;
                     cell2.setTextAlignment(cell.getTextAlignment());
                     cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);

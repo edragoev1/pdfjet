@@ -50,13 +50,13 @@ public class Cell {
     protected int borderColor = NO_COLOR;
 
     private int colspan = 1;
-    // Only the top and left borders are drawn unless setBorder says otherwise.
-    private boolean topBorder = true;
-    private boolean bottomBorder = false;
-    private boolean leftBorder = true;
-    private boolean rightBorder = false;
-    private boolean underline = false;
-    private boolean strikeout = false;
+    // The borders and the underline and strikeout of the text are the bits of
+    // one int, 4 bytes instead of 6 booleans and the padding they need. The
+    // four borders are the bits Border gives them; only the top and the left
+    // are drawn unless setBorder says otherwise.
+    private static final int UNDERLINE = 0x00100000;
+    private static final int STRIKEOUT = 0x00200000;
+    int properties = Border.TOP | Border.LEFT;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
     private Alignment valign = Alignment.TOP;
@@ -615,17 +615,10 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBorder(int border, boolean visible) {
-        if ((border & Border.TOP) != 0) {
-            this.topBorder = visible;
-        }
-        if ((border & Border.BOTTOM) != 0) {
-            this.bottomBorder = visible;
-        }
-        if ((border & Border.LEFT) != 0) {
-            this.leftBorder = visible;
-        }
-        if ((border & Border.RIGHT) != 0) {
-            this.rightBorder = visible;
+        if (visible) {
+            this.properties |= (border & Border.ALL);
+        } else {
+            this.properties &= ~(border & Border.ALL);
         }
         return this;
     }
@@ -637,10 +630,7 @@ public class Cell {
      * @return the cell border object.
      */
     public boolean getBorder(int border) {
-        return ((border & Border.TOP) != 0 && topBorder) ||
-                ((border & Border.BOTTOM) != 0 && bottomBorder) ||
-                ((border & Border.LEFT) != 0 && leftBorder) ||
-                ((border & Border.RIGHT) != 0 && rightBorder);
+        return (properties & border & Border.ALL) != 0;
     }
 
     /**
@@ -703,7 +693,11 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setUnderline(boolean underline) {
-        this.underline = underline;
+        if (underline) {
+            this.properties |= UNDERLINE;
+        } else {
+            this.properties &= ~UNDERLINE;
+        }
         return this;
     }
 
@@ -713,7 +707,7 @@ public class Cell {
      * @return the underline text parameter.
      */
     public boolean getUnderline() {
-        return this.underline;
+        return (this.properties & UNDERLINE) != 0;
     }
 
     /**
@@ -723,7 +717,11 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setStrikeout(boolean strikeout) {
-        this.strikeout = strikeout;
+        if (strikeout) {
+            this.properties |= STRIKEOUT;
+        } else {
+            this.properties &= ~STRIKEOUT;
+        }
         return this;
     }
 
@@ -733,7 +731,7 @@ public class Cell {
      * @return the strikeout text parameter.
      */
     public boolean getStrikeout() {
-        return this.strikeout;
+        return (this.properties & STRIKEOUT) != 0;
     }
 
     /**
@@ -851,7 +849,7 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-        if (!topBorder && !bottomBorder && !leftBorder && !rightBorder) {
+        if ((properties & Border.ALL) == 0) {
             return;     // Nothing to draw, so nothing to write.
         }
         page.addArtifactBMC();
@@ -862,19 +860,19 @@ public class Cell {
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;
         // The borders of a cell are the subpaths of one path, stroked once.
-        if (topBorder) {
+        if ((properties & Border.TOP) != 0) {
             page.moveTo(x - hWidth, y);
             page.lineTo(x + cellW, y);
         }
-        if (bottomBorder) {
+        if ((properties & Border.BOTTOM) != 0) {
             page.moveTo(x - hWidth, y + cellH);
             page.lineTo(x + cellW, y + cellH);
         }
-        if (leftBorder) {
+        if ((properties & Border.LEFT) != 0) {
             page.moveTo(x, y - hWidth);
             page.lineTo(x, y + cellH + hWidth);
         }
-        if (rightBorder) {
+        if ((properties & Border.RIGHT) != 0) {
             page.moveTo(x + cellW, y - hWidth);
             page.lineTo(x + cellW, y + cellH + hWidth);
         }

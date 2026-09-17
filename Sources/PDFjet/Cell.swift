@@ -37,14 +37,13 @@ public class Cell {
     private var textAlignment = Alignment.LEFT
     private var valign = Alignment.TOP
 
-    // Only the top and left borders are drawn unless setBorder says otherwise.
-    internal var topBorder: Bool = true
-    internal var bottomBorder: Bool = false
-    internal var leftBorder: Bool = true
-    internal var rightBorder: Bool = false
-
-    private var underline: Bool
-    private var strikeout: Bool
+    // The borders and the underline and strikeout of the text are the bits of
+    // one UInt32, 4 bytes instead of 6 Bools and the padding they need. The
+    // four borders are the bits Border gives them; only the top and the left
+    // are drawn unless setBorder says otherwise.
+    private static let UNDERLINE: UInt32 = 0x00100000
+    private static let STRIKEOUT: UInt32 = 0x00200000
+    internal var properties: UInt32 = Border.TOP | Border.LEFT
 
     /**
      * Creates a cell object and sets the font and, optionally, the cell text.
@@ -58,8 +57,6 @@ public class Cell {
         self.fallbackFont = font
         self.fontSize = font.size
         self.text = text
-        self.underline = false
-        self.strikeout = false
     }
 
     /**
@@ -501,27 +498,17 @@ public class Cell {
     /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.
     @discardableResult
     public func setBorder(_ border: UInt32, _ visible: Bool) -> Cell {
-        if border & Border.TOP != 0 {
-            self.topBorder = visible
-        }
-        if border & Border.BOTTOM != 0 {
-            self.bottomBorder = visible
-        }
-        if border & Border.LEFT != 0 {
-            self.leftBorder = visible
-        }
-        if border & Border.RIGHT != 0 {
-            self.rightBorder = visible
+        if visible {
+            self.properties |= (border & Border.ALL)
+        } else {
+            self.properties &= ~(border & Border.ALL)
         }
         return self
     }
 
     /// Returns true if any of the specified borders, for example Border.TOP, is drawn.
     public func getBorder(_ border: UInt32) -> Bool {
-        return (border & Border.TOP != 0 && self.topBorder) ||
-                (border & Border.BOTTOM != 0 && self.bottomBorder) ||
-                (border & Border.LEFT != 0 && self.leftBorder) ||
-                (border & Border.RIGHT != 0 && self.rightBorder)
+        return self.properties & border & Border.ALL != 0
     }
 
     /// Sets whether all four borders of this cell are drawn.
@@ -584,7 +571,11 @@ public class Cell {
      */
     @discardableResult
     public func setUnderline(_ underline: Bool) -> Cell {
-        self.underline = underline
+        if underline {
+            self.properties |= Cell.UNDERLINE
+        } else {
+            self.properties &= ~Cell.UNDERLINE
+        }
         return self
     }
 
@@ -594,7 +585,7 @@ public class Cell {
      * - Returns: the underline text parameter.
      */
     public func getUnderline() -> Bool {
-        return self.underline
+        return self.properties & Cell.UNDERLINE != 0
     }
 
     /**
@@ -605,7 +596,11 @@ public class Cell {
      */
     @discardableResult
     public func setStrikeout(_ strikeout: Bool) -> Cell {
-        self.strikeout = strikeout
+        if strikeout {
+            self.properties |= Cell.STRIKEOUT
+        } else {
+            self.properties &= ~Cell.STRIKEOUT
+        }
         return self
     }
 
@@ -615,7 +610,7 @@ public class Cell {
      * - Returns: the strikeout text parameter.
      */
     public func getStrikeout() -> Bool {
-        return self.strikeout
+        return self.properties & Cell.STRIKEOUT != 0
     }
 
     /// Sets the URI opened when this cell is clicked.
@@ -707,7 +702,7 @@ public class Cell {
             _ y: Float,
             _ cellW: Float,
             _ cellH: Float) {
-        if !topBorder && !bottomBorder && !leftBorder && !rightBorder {
+        if properties & Border.ALL == 0 {
             return      // Nothing to draw, so nothing to write.
         }
         page.addArtifactBMC()
@@ -718,19 +713,19 @@ public class Cell {
         // Half the pen width, so that the corners of the borders close.
         let hWidth: Float = borderWidth / 2.0
         // The borders of a cell are the subpaths of one path, stroked once.
-        if topBorder {
+        if properties & Border.TOP != 0 {
             page.moveTo(x - hWidth, y)
             page.lineTo(x + cellW, y)
         }
-        if bottomBorder {
+        if properties & Border.BOTTOM != 0 {
             page.moveTo(x - hWidth, y + cellH)
             page.lineTo(x + cellW, y + cellH)
         }
-        if leftBorder {
+        if properties & Border.LEFT != 0 {
             page.moveTo(x, y - hWidth)
             page.lineTo(x, y + cellH + hWidth)
         }
-        if rightBorder {
+        if properties & Border.RIGHT != 0 {
             page.moveTo(x + cellW, y - hWidth)
             page.lineTo(x + cellW, y + cellH + hWidth)
         }

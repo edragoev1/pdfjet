@@ -34,13 +34,13 @@ public class Cell {
     internal int borderColor = NO_COLOR;
 
     private int colspan = 1;
-    // Only the top and left borders are drawn unless SetBorder says otherwise.
-    private bool topBorder = true;
-    private bool bottomBorder = false;
-    private bool leftBorder = true;
-    private bool rightBorder = false;
-    private bool underline = false;
-    private bool strikeout = false;
+    // The borders and the underline and strikeout of the text are the bits of
+    // one uint, 4 bytes instead of 6 bools and the padding they need. The four
+    // borders are the bits Border gives them; only the top and the left are
+    // drawn unless SetBorder says otherwise.
+    private const uint UNDERLINE = 0x00100000;
+    private const uint STRIKEOUT = 0x00200000;
+    internal uint properties = Border.TOP | Border.LEFT;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
     private Alignment valign = Alignment.TOP;
@@ -440,17 +440,10 @@ public class Cell {
     /// <param name="visible">true to show the border, false to hide it.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetBorder(uint border, bool visible) {
-        if ((border & Border.TOP) != 0) {
-            this.topBorder = visible;
-        }
-        if ((border & Border.BOTTOM) != 0) {
-            this.bottomBorder = visible;
-        }
-        if ((border & Border.LEFT) != 0) {
-            this.leftBorder = visible;
-        }
-        if ((border & Border.RIGHT) != 0) {
-            this.rightBorder = visible;
+        if (visible) {
+            this.properties |= (border & Border.ALL);
+        } else {
+            this.properties &= ~(border & Border.ALL);
         }
         return this;
     }
@@ -460,10 +453,7 @@ public class Cell {
     /// </summary>
     /// <returns>the cell border object.</returns>
     public bool GetBorder(uint border) {
-        return ((border & Border.TOP) != 0 && topBorder) ||
-                ((border & Border.BOTTOM) != 0 && bottomBorder) ||
-                ((border & Border.LEFT) != 0 && leftBorder) ||
-                ((border & Border.RIGHT) != 0 && rightBorder);
+        return (properties & border & Border.ALL) != 0;
     }
 
     /// <summary>
@@ -520,24 +510,32 @@ public class Cell {
     /// <param name="underline">the underline flag.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetUnderline(bool underline) {
-        this.underline = underline;
+        if (underline) {
+            this.properties |= UNDERLINE;
+        } else {
+            this.properties &= ~UNDERLINE;
+        }
         return this;
     }
 
     /// <summary>Returns true if the text is underlined.</summary>
     public bool GetUnderline() {
-        return this.underline;
+        return (this.properties & UNDERLINE) != 0;
     }
 
     /// <summary>Sets whether the text is struck out.</summary>
     public Cell SetStrikeout(bool strikeout) {
-        this.strikeout = strikeout;
+        if (strikeout) {
+            this.properties |= STRIKEOUT;
+        } else {
+            this.properties &= ~STRIKEOUT;
+        }
         return this;
     }
 
     /// <summary>Returns true if the text is struck out.</summary>
     public bool GetStrikeout() {
-        return this.strikeout;
+        return (this.properties & STRIKEOUT) != 0;
     }
 
     /// <summary>Sets the URI opened when this cell is clicked.</summary>
@@ -645,7 +643,7 @@ public class Cell {
             float y,
             float cellW,
             float cellH) {
-        if (!topBorder && !bottomBorder && !leftBorder && !rightBorder) {
+        if ((properties & Border.ALL) == 0) {
             return;     // Nothing to draw, so nothing to write.
         }
         page.AddArtifactBMC();
@@ -656,19 +654,19 @@ public class Cell {
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;
         // The borders of a cell are the subpaths of one path, stroked once.
-        if (topBorder) {
+        if ((properties & Border.TOP) != 0) {
             page.MoveTo(x - hWidth, y);
             page.LineTo(x + cellW, y);
         }
-        if (bottomBorder) {
+        if ((properties & Border.BOTTOM) != 0) {
             page.MoveTo(x - hWidth, y + cellH);
             page.LineTo(x + cellW, y + cellH);
         }
-        if (leftBorder) {
+        if ((properties & Border.LEFT) != 0) {
             page.MoveTo(x, y - hWidth);
             page.LineTo(x, y + cellH + hWidth);
         }
-        if (rightBorder) {
+        if ((properties & Border.RIGHT) != 0) {
             page.MoveTo(x + cellW, y - hWidth);
             page.LineTo(x + cellW, y + cellH + hWidth);
         }

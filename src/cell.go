@@ -18,7 +18,6 @@ type Cell struct {
 	fallbackFont    *Font
 	fontSize        float32
 	text            string
-	hasText         bool     // Java's null text is a cell without text, which is 0 tall
 	drawable        Drawable // The image, barcode, text block, text column or other drawable
 	point           *Point
 	markerAlignment alignment.Alignment
@@ -36,19 +35,26 @@ type Cell struct {
 	borderWidth     float32
 	borderColor     int32
 
-	colspan      int
-	topBorder    bool
-	bottomBorder bool
-	leftBorder   bool
-	rightBorder  bool
+	colspan int
+	// The borders and the underline and strikeout of the text are the bits of
+	// one uint32, 4 bytes instead of 6 bools and the padding they need. The
+	// four borders are the bits the border package gives them; only the top
+	// and the left are drawn unless SetBorder says otherwise.
+	properties uint32
 
 	textAlignment alignment.Alignment
 	uri           string
 	valign        alignment.Alignment
 
-	underline bool
-	strikeout bool
+	// Last, so that the byte it needs comes out of the padding of the struct.
+	hasText bool // Java's null text is a cell without text, which is 0 tall
 }
+
+// The bits of Cell.properties that are not the borders of the cell.
+const (
+	cellUnderline uint32 = 0x00100000
+	cellStrikeout uint32 = 0x00200000
+)
 
 // NewEmptyCell creates a cell without text, like Cell(font) in the other ports.
 // It is 0 tall until it gets text, an image or a barcode.
@@ -79,10 +85,7 @@ func NewCell(font *Font, text string) *Cell {
 	cell.backgroundColor = color.Transparent
 	cell.borderColor = color.Transparent
 	cell.textColor = color.Black
-	// Java's Cell defaults its properties to 0x00050001 - only the top and
-	// left borders are on.
-	cell.topBorder = true
-	cell.leftBorder = true
+	cell.properties = border.Top | border.Left
 	cell.textAlignment = alignment.Left
 	cell.valign = alignment.Top
 	return cell
@@ -452,17 +455,10 @@ func (cell *Cell) GetColSpan() int {
 //   - b: the borders, for example border.Top | border.Bottom.
 //   - visible: true to draw the borders.
 func (cell *Cell) SetBorder(b uint32, visible bool) *Cell {
-	if b&border.Top != 0 {
-		cell.topBorder = visible
-	}
-	if b&border.Bottom != 0 {
-		cell.bottomBorder = visible
-	}
-	if b&border.Left != 0 {
-		cell.leftBorder = visible
-	}
-	if b&border.Right != 0 {
-		cell.rightBorder = visible
+	if visible {
+		cell.properties |= b & border.All
+	} else {
+		cell.properties &= ^(b & border.All)
 	}
 	return cell
 }
@@ -470,10 +466,7 @@ func (cell *Cell) SetBorder(b uint32, visible bool) *Cell {
 // GetBorder returns true if any of the specified borders is drawn.
 //   - b: the borders, for example border.Top.
 func (cell *Cell) GetBorder(b uint32) bool {
-	return (b&border.Top != 0 && cell.topBorder) ||
-		(b&border.Bottom != 0 && cell.bottomBorder) ||
-		(b&border.Left != 0 && cell.leftBorder) ||
-		(b&border.Right != 0 && cell.rightBorder)
+	return cell.properties&b&border.All != 0
 }
 
 // SetBorders sets whether all four borders of this cell are drawn.
@@ -516,27 +509,35 @@ func (cell *Cell) GetVerticalAlignment() alignment.Alignment {
 // If the value of the underline variable is 'true' - the text is underlined.
 //   - underline: the underline text parameter.
 func (cell *Cell) SetUnderline(underline bool) *Cell {
-	cell.underline = underline
+	if underline {
+		cell.properties |= cellUnderline
+	} else {
+		cell.properties &= ^cellUnderline
+	}
 	return cell
 }
 
 // GetUnderline returns the underline text parameter.
 // Returns the underline text parameter.
 func (cell *Cell) GetUnderline() bool {
-	return cell.underline
+	return cell.properties&cellUnderline != 0
 }
 
 // SetStrikeout sets the strikeout text parameter.
 //   - strikeout: the strikeout text parameter.
 func (cell *Cell) SetStrikeout(strikeout bool) *Cell {
-	cell.strikeout = strikeout
+	if strikeout {
+		cell.properties |= cellStrikeout
+	} else {
+		cell.properties &= ^cellStrikeout
+	}
 	return cell
 }
 
 // GetStrikeout returns the strikeout text parameter.
 // Returns the strikeout text parameter.
 func (cell *Cell) GetStrikeout() bool {
-	return cell.strikeout
+	return cell.properties&cellStrikeout != 0
 }
 
 // SetURIAction sets the URI action.
@@ -613,7 +614,7 @@ func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 }
 
 func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
-	if !cell.topBorder && !cell.bottomBorder && !cell.leftBorder && !cell.rightBorder {
+	if cell.properties&border.All == 0 {
 		return // Nothing to draw, so nothing to write.
 	}
 	page.AddArtifactBMC()
@@ -624,19 +625,19 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	// Half the pen width, so that the corners of the borders close.
 	hWidth := cell.borderWidth / 2.0
 	// The borders of a cell are the subpaths of one path, stroked once.
-	if cell.topBorder {
+	if cell.properties&border.Top != 0 {
 		page.MoveTo(x-hWidth, y)
 		page.LineTo(x+cellW, y)
 	}
-	if cell.bottomBorder {
+	if cell.properties&border.Bottom != 0 {
 		page.MoveTo(x-hWidth, y+cellH)
 		page.LineTo(x+cellW, y+cellH)
 	}
-	if cell.leftBorder {
+	if cell.properties&border.Left != 0 {
 		page.MoveTo(x, y-hWidth)
 		page.LineTo(x, y+cellH+hWidth)
 	}
-	if cell.rightBorder {
+	if cell.properties&border.Right != 0 {
 		page.MoveTo(x+cellW, y-hWidth)
 		page.LineTo(x+cellW, y+cellH+hWidth)
 	}
@@ -675,10 +676,10 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		page.drawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, colorToRGB(cell.textColor), nil)
 		page.AddEMC()
-		if cell.underline {
+		if cell.properties&cellUnderline != 0 {
 			cell.underlineText(page, xText, yText)
 		}
-		if cell.strikeout {
+		if cell.properties&cellStrikeout != 0 {
 			cell.strikeoutText(page, xText, yText)
 		}
 	} else {

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
@@ -213,11 +214,11 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	for i := index1; i < index2; i++ {
 		row := table.tableData[i]
 		for _, cell := range row {
-			cell.bottomBorder = false
+			cell.properties &= ^border.Bottom
 		}
 		row = table.tableData[i+1]
 		for _, cell := range row {
-			cell.topBorder = false
+			cell.properties &= ^border.Top
 		}
 	}
 	return table
@@ -419,7 +420,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			if page != nil {
 				page.SetBrushColor(cell.textColor)
 				if i == (table.numOfHeaderRows - 1) {
-					cell.bottomBorder = true
+					cell.properties |= border.Bottom
 				}
 				cell.drawOn(page, x, y, w, h)
 			}
@@ -561,7 +562,7 @@ func (table *Table) SetCellBorderWidth(width float32) *Table {
 // Sets the right border on all cells in the last column.
 func (table *Table) setRightBorderOnLastColumn() {
 	for _, row := range table.tableData {
-		if len(row) > 0 && !row[0].leftBorder {
+		if len(row) > 0 && row[0].properties&border.Left == 0 {
 			return
 		}
 	}
@@ -574,7 +575,7 @@ func (table *Table) setRightBorderOnLastColumn() {
 			i += cell.GetColSpan()
 		}
 		if cell != nil {
-			cell.rightBorder = true
+			cell.properties |= border.Right
 		}
 	}
 }
@@ -586,14 +587,14 @@ func (table *Table) setBottomBorderOnLastRow() {
 	}
 	firstRow := table.tableData[0]
 	for _, cell := range firstRow {
-		if !cell.topBorder {
+		if cell.properties&border.Top == 0 {
 			return
 		}
 	}
 	// Only run this code if all the cells in the first row have top border.
 	lastRow := table.tableData[len(table.tableData)-1]
 	for _, cell := range lastRow {
-		cell.bottomBorder = true
+		cell.properties |= border.Bottom
 	}
 }
 
@@ -694,18 +695,12 @@ func (table *Table) wrapAroundCellText() {
 				cell2.SetBorderWidth(cell.GetBorderWidth())
 				cell2.borderColor = cell.borderColor
 				cell2.textColor = cell.textColor
-				// Java copies these across with Cell.setProperties()
 				cell2.SetColSpan(cell.GetColSpan())
-				cell2.topBorder = cell.topBorder
-				cell2.bottomBorder = cell.bottomBorder
-				cell2.leftBorder = cell.leftBorder
-				cell2.rightBorder = cell.rightBorder
+				cell2.properties = cell.properties
 				cell2.SetTextAlignment(cell.GetTextAlignment())
-				cell2.SetUnderline(cell.GetUnderline())
-				cell2.SetStrikeout(cell.GetStrikeout())
 				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
-				cell2.topBorder = false
+				cell2.properties &= ^border.Top
 				row2 = append(row2, cell2)
 			}
 			tableData2 = append(tableData2, row2)

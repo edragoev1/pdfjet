@@ -742,12 +742,7 @@ public class Table : IDrawable {
                     cell2.borderColor = cell.borderColor;
                     cell2.textColor = cell.textColor;
                     cell2.SetColSpan(cell.GetColSpan());
-                    cell2.SetBorder(Border.TOP, cell.GetBorder(Border.TOP));
-                    cell2.SetBorder(Border.BOTTOM, cell.GetBorder(Border.BOTTOM));
-                    cell2.SetBorder(Border.LEFT, cell.GetBorder(Border.LEFT));
-                    cell2.SetBorder(Border.RIGHT, cell.GetBorder(Border.RIGHT));
-                    cell2.SetUnderline(cell.GetUnderline());
-                    cell2.SetStrikeout(cell.GetStrikeout());
+                    cell2.properties = cell.properties;
                     cell2.SetTextAlignment(cell.GetTextAlignment());
                     cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);
