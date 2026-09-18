@@ -12,14 +12,15 @@ what is left.
 
 Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 
-## v9.0.1 — target 2026-10-21
+## v9.0.1 — released 2026-09-18
 
 A fix release on the v9.0.0 API, from master: a solid base to build on, so
 **no breaking API changes**. Every public class, method and constant of v9.0.0
 stays as it is; changes are fixes, internal code and new behavior behind the
-same API. Before the tag, compare the public API with v9.0.0 in each port. The
-producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
-2026-10-21" until the tag.
+same API, but for the two breaks the user chose: the sealed C# `PDF` class and
+the removed `IBMPlexSansDevanagari` constants. Tagged `v9.0.1` at 72c41923 on
+2026-09-18, ahead of the Oct 21 target, with the GitHub release from the
+CHANGELOG entry.
 
 - ✅ Nineteen weak examples redone in the four ports: 18, 22, 26, 48, 49
       (30444469), 06, 07, 11, 20, 36 (50a22f36), 04, 12, 21, 29, 31
@@ -194,9 +195,11 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       By the user's decision, the protected Java fields `Cell.textColor`,
       `backgroundColor` and `borderColor` are now `int`, packed colors; the
       public methods are unchanged. Recheck before the tag if the API is touched.
-- ⬜ **B** On Oct 21: date the CHANGELOG entry, tag `v9.0.1` and publish the
-      GitHub release, then check that the Go module and the Swift package
-      resolve 9.0.1.
+- ✅ **B** Date the CHANGELOG entry, tag `v9.0.1` and publish the GitHub
+      release, then check that the Go module and the Swift package resolve
+      9.0.1. Done Sep 18: tag at 72c41923, release "v9.0.1 RELEASE" with the
+      CHANGELOG entry as its notes; packages, site and `pdfjet-website.zip`
+      rebuilt from the tag.
 
 ## Done before this plan (Sep 11–16)
 
