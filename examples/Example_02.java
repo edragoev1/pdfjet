@@ -39,8 +39,10 @@ public class Example_02 {
         TextBlock textBlock = new TextBlock(
                 f1, Content.ofTextFile("data/languages/japanese.txt"));
         textBlock.setLanguage("ja");
+        // The Japanese and Chinese fonts leave no space between lines.
+        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(415f);
+        textBlock.setWidth(512f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -51,7 +53,7 @@ public class Example_02 {
                 f2, Content.ofTextFile("data/languages/korean.txt"));
         textBlock.setLanguage("ko");
         textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(415f);
+        textBlock.setWidth(512f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -61,8 +63,9 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
         textBlock.setLanguage("zh-Hans");
+        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(415f);
+        textBlock.setWidth(512f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -72,8 +75,9 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
         textBlock.setLanguage("zh-Hant");
+        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(415f);
+        textBlock.setWidth(512f);
         textBlock.drawOn(page);
 
         pdf.complete();

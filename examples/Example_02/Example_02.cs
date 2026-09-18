@@ -38,8 +38,10 @@ public class Example_02 {
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
         textBlock.SetLanguage("ja");
+        // The Japanese and Chinese fonts leave no space between lines.
+        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(415f);
+        textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -50,7 +52,7 @@ public class Example_02 {
                 f2, Content.OfTextFile("data/languages/korean.txt"));
         textBlock.SetLanguage("ko");
         textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(415f);
+        textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -60,8 +62,9 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
         textBlock.SetLanguage("zh-Hans");
+        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(415f);
+        textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
@@ -71,8 +74,9 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));
         textBlock.SetLanguage("zh-Hant");
+        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(415f);
+        textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
 
         pdf.Complete();

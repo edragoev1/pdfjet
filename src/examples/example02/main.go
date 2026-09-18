@@ -55,8 +55,10 @@ func Example02() {
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLanguage("ja")
+	// The Japanese and Chinese fonts leave no space between lines.
+	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(415.0)
+	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
@@ -66,7 +68,7 @@ func Example02() {
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
 	textBlock.SetLanguage("ko")
 	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(415.0)
+	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
@@ -75,8 +77,9 @@ func Example02() {
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
 	textBlock.SetLanguage("zh-Hans")
+	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(415.0)
+	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
@@ -85,8 +88,9 @@ func Example02() {
 
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
 	textBlock.SetLanguage("zh-Hant")
+	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(415.0)
+	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
 
 	// Finalize the PDF document

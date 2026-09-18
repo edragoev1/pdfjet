@@ -36,8 +36,10 @@ public class Example_02 {
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
         textBlock.setLanguage("ja")
+        // The Japanese and Chinese fonts leave no space between lines.
+        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(415.0)
+        textBlock.setWidth(512.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
@@ -48,7 +50,7 @@ public class Example_02 {
                 f2, try Content.ofTextFile("data/languages/korean.txt"))
         textBlock.setLanguage("ko")
         textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(415.0)
+        textBlock.setWidth(512.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
@@ -58,8 +60,9 @@ public class Example_02 {
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
         textBlock.setLanguage("zh-Hans")
+        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(415.0)
+        textBlock.setWidth(512.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
@@ -69,8 +72,9 @@ public class Example_02 {
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
         textBlock.setLanguage("zh-Hant")
+        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(415.0)
+        textBlock.setWidth(512.0)
         textBlock.drawOn(page)
 
         try pdf.complete()
