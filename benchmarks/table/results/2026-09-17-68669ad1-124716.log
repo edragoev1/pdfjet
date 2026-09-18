@@ -1,0 +1,29 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.1 linux/amd64
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-17T20:08:04-04:00
+68669ad1 Measure text without copying it, and double the Go page buffer as it fills
+== table: 9 columns of the EV CSV as cells, IBM Plex Sans 8 pt, Letter
+java 124716 rows: median 4004 ms (min 3972, max 4230, 7 runs), 2673 pages, 22415937 bytes
+dotnet 124716 rows: median 4709 ms (min 4640, max 4845, 7 runs), 2673 pages, 22415937 bytes
+go 124716 rows: median 1752 ms (min 1739, max 1757, 7 runs), 2673 pages, 22474872 bytes
+swift 124716 rows: median 5978 ms (min 5959, max 5997, 7 runs), 2673 pages, 27553691 bytes
+== table: first document in a new process, 50000 rows
+java cold 50000 rows: 2010 ms, 1072 pages, 9061891 bytes
+dotnet cold 50000 rows: 2182 ms, 1072 pages, 9061891 bytes
+go cold 50000 rows: 749 ms, 1072 pages, 9085466 bytes
+swift cold 50000 rows: 2487 ms, 1072 pages, 11121504 bytes
+== table: peak memory, one 50000-row table, runtime defaults, median of 3
+java peak 443968 KB
+dotnet peak 227856 KB
+go peak 200652 KB
+swift peak 176600 KB
+== table: 40-row samples
+java: 133847 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+dotnet: 133847 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+go: 133911 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+swift: 135454 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+2026-09-17T20:11:05-04:00

@@ -8,7 +8,7 @@ the programs, the method and the results that `pdfjet-benchmarks.html` quotes.
 | `TextBench.java` | A multilingual document: pages of 60 lines of Latin, Greek and Cyrillic text |
 | `BigTableBench.java` | Example_43: a 2,546-page table from a 124,716-row CSV file |
 | `run.sh` | Builds PDFjet from this checkout and the benchmarks, runs them and writes `build/results-<date>-<time>.log` |
-| `results/` | The logs of the runs; the figures below are from `2026-09-17-8db803f0.log` |
+| `results/` | The logs of the runs; the figures below are from `2026-09-17-68669ad1.log` |
 | `ports/` | The four ports of PDFjet on the text document; see `ports/README.md` |
 | `table/` | `Table` in the four ports; see `table/README.md` |
 
@@ -74,26 +74,26 @@ The text document has two configurations: `jet-plex`, with IBM Plex Sans
 ## Results, 17 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1. Both benchmarks ran
-at 8db803f0, in one run, on a freshly rebooted machine with nothing else
-running: `results/2026-09-17-8db803f0.log`. The logs of earlier runs also hold
+at 68669ad1, in one run, on a freshly rebooted machine with nothing else
+running: `results/2026-09-17-68669ad1.log`. The logs of earlier runs also hold
 lines of configurations that the benchmarks no longer run.
 
 ### The text document, 500 pages
 
 | Configuration | Time | File | Allocated | Peak memory |
 |---|---:|---:|---:|---:|
-| IBM Plex Sans | 53 ms | 533,287 bytes | 25 MB | 78 MB |
-| Noto Sans | 59 ms | 804,928 bytes | 28 MB | 80 MB |
+| IBM Plex Sans | 54 ms | 533,287 bytes | 25 MB | 78 MB |
+| Noto Sans | 60 ms | 804,928 bytes | 28 MB | 81 MB |
 
 | Time by length | 50 pages | 100 pages | 200 pages | 500 pages |
 |---|---:|---:|---:|---:|
-| IBM Plex Sans | 7 ms | 13 ms | 24 ms | 53 ms |
-| Noto Sans | 10 ms | 16 ms | 27 ms | 59 ms |
+| IBM Plex Sans | 7 ms | 13 ms | 24 ms | 54 ms |
+| Noto Sans | 10 ms | 16 ms | 28 ms | 60 ms |
 
-First document in a new JVM, 20 pages: 92 ms with IBM Plex Sans and 97 ms with
+First document in a new JVM, 20 pages: 92 ms with IBM Plex Sans and 96 ms with
 Noto Sans. The PDFjet jar is 402,651 bytes and needs nothing else.
 
-The files are 6% smaller and the time 6 ms shorter than at 4ee4e7cb (59 ms and
+The files are 6% smaller and the time 5 ms shorter than at 4ee4e7cb (59 ms and
 567,688 bytes with IBM Plex Sans), as d2f5d4cb writes a color or a font only
 when it changes.
 
@@ -101,10 +101,10 @@ when it changes.
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File | Code |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `BigTable` | 1,603 ms | 1,925 ms | 671 MB | 389 MB | 32 MB | 11.7 MB | 17 |
-| `Table` | 3,536 ms | 4,277 ms | 1,718 MB | 1,252 MB | 512 MB | 21.2 MB | 153 |
-| `Page` | 1,577 ms | 1,913 ms | 628 MB | 465 MB | 128 MB | 11.5 MB | |
-| `Page`, page by page | 1,565 ms | 1,877 ms | 628 MB | 372 MB | 32 MB | 11.5 MB | |
+| `BigTable` | 1,619 ms | 1,977 ms | 670 MB | 388 MB | 32 MB | 11.7 MB | 17 |
+| `Table` | 3,435 ms | 4,194 ms | 1,491 MB | 1,098 MB | 512 MB | 21.2 MB | 153 |
+| `Page` | 1,598 ms | 1,944 ms | 632 MB | 465 MB | 128 MB | 11.5 MB | |
+| `Page`, page by page | 1,598 ms | 1,896 ms | 628 MB | 371 MB | 32 MB | 11.5 MB | |
 
 Code is the lines of program that draw the table, without the blank lines and
 the comments. All four files have 2,546 pages and end with "Page 2546 of 2546".
@@ -116,14 +116,14 @@ as `BigTable`'s at 72 dpi, pixel for pixel.
   took `Page` from 12.6 to 11.5 MB, and 7dbfee5d fills the shaded rows of
   `BigTable` with one `re` too, which took it from 12.3 MB at 3ebd321b to 12.1
   at d2f5d4cb and 11.7 now.
-- `BigTable` is within 1.7% of the same drawing on `Page`, 1,603 against 1,577
+- `BigTable` is within 1.3% of the same drawing on `Page`, 1,619 against 1,598
   ms. At d2f5d4cb `Page` was 5% faster, 1,584 against 1,671 ms, and wrote 11.5
   MB against 12.1: the driver filled each shaded row with `fillRect`, one `re`,
   where `BigTable` filled it with a path of four operators. `BigTable` still
-  allocates more than `Page`, 671 against 628 MB, as it reads the quoted fields
+  allocates more than `Page`, 670 against 632 MB, as it reads the quoted fields
   of its file as RFC 4180 does, which the driver does not.
-- `Table` is 2.2 times slower than `BigTable` on the same data, allocates 2.6
-  times as much, needs 16 times the heap and writes 82% more. It is the API to
+- `Table` is 2.1 times slower than `BigTable` on the same data, allocates 2.2
+  times as much, needs 16 times the heap and writes 81% more. It is the API to
   reach for when the rows are already in memory and the table is not enormous;
   `BigTable` is the one for a file this size. Until d2f5d4cb it wrote 25.2 MB:
   `Cell` set the brush and the pen for every cell, wrote the font and the pen
@@ -133,20 +133,28 @@ as `BigTable`'s at 72 dpi, pixel for pixel.
   3,672 ms and from a 1,024 MB heap to 512. 8db803f0 keeps the three colors of
   a `Cell` as packed 0xRRGGBB ints rather than arrays of three floats, which
   took `Table` from 1,821 to 1,718 MB allocated, from a 1,330 to a 1,252 MB
-  peak and from 3,607 to 3,536 ms, with the same file.
+  peak and from 3,607 to 3,536 ms, with the same file. 68669ad1 measures the
+  text of a cell without copying it and packs the six flags of a `Cell` into
+  one int, which took it from 1,718 to 1,491 MB allocated, from a 1,252 to a
+  1,098 MB peak and from 3,536 to 3,435 ms; and 660ab679 strokes the visible
+  sides of a cell as one path, and writes nothing for a cell with no border,
+  which took the file from 21,179,889 to 21,163,276 bytes.
 - Memory depends on keeping the pages. A page that has not been added to the
   PDF holds its content uncompressed, 31,338 bytes a page, or 79.8 MB for the
   2,546 pages against 10.7 MB compressed, so keeping them all costs a 128 MB
   heap on `Page`; it was 38,307 bytes a page and a 256 MB heap before d2f5d4cb.
   `BigTable` counts its pages in the pass that measures the columns, draws each
   footer when its page is finished and writes the page out, so it needs 32 MB
-  and peaks at 389 MB. Drawn page by page, `Page` also finishes in 32 MB.
+  and peaks at 388 MB. Drawn page by page, `Page` also finishes in 32 MB.
 
 ## Earlier runs
 
-Of the same programs: 7dbfee5d, which fills the shaded rows of a `BigTable`
-with one `re`, where `BigTable` took 1,599 ms and 674 MB and `Table` 3,607 ms
-and 1,821 MB (`results/2026-09-16-7dbfee5d-text.log` and
+Of the same programs: 8db803f0, which keeps the colors of a `Cell` as packed
+RGB values, where the text document took 53 ms, `BigTable` 1,603 ms and 671 MB
+and `Table` 3,536 ms, 1,718 MB and a 1,252 MB peak
+(`results/2026-09-17-8db803f0.log`); 7dbfee5d, which fills the shaded rows of
+a `BigTable` with one `re`, where `BigTable` took 1,599 ms and 674 MB and
+`Table` 3,607 ms and 1,821 MB (`results/2026-09-16-7dbfee5d-text.log` and
 `results/2026-09-16-7dbfee5d-table.log`); d2f5d4cb, where `BigTable` took 1,671
 ms and 778 MB and wrote 12.1 MB, and `Table` 3,672 ms
 (`results/2026-09-16-d2f5d4cb.log`, whose text figures are not quoted, as the

@@ -48,19 +48,33 @@ the machine meanwhile. `build/` is not tracked.
 - The 40-row sample of each port is checked with mutool for the text of its
   first page.
 
-## Results at 8db803f0, 17 September 2026
+## Results at 68669ad1, 17 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, .NET SDK 8.0.424,
 Go 1.27.1, Swift 6.3.3, in one run on a freshly rebooted machine with nothing
-else running (`results/2026-09-17-8db803f0.log`).
+else running (`results/2026-09-17-68669ad1.log`).
 
 | Port | 2,000 rows | 10,000 rows | 50,000 rows | First document | Peak memory | File, 50,000 rows |
 |---|---:|---:|---:|---:|---:|---:|
-| Java | 77 ms | 370 ms | 1,632 ms | 2,086 ms | 413 MB | 9,116,668 bytes |
-| C# | 123 ms | 385 ms | 1,902 ms | 2,219 ms | 225 MB | 9,116,668 bytes |
-| Go | 33 ms | 154 ms | 778 ms | 832 ms | 286 MB | 9,147,319 bytes |
-| Swift | 111 ms | 522 ms | 2,584 ms | 2,665 ms | 180 MB | 11,197,754 bytes |
+| Java | 75 ms | 355 ms | 1,624 ms | 1,987 ms | 435 MB | 9,061,891 bytes |
+| C# | 76 ms | 379 ms | 1,881 ms | 2,213 ms | 222 MB | 9,061,891 bytes |
+| Go | 30 ms | 143 ms | 713 ms | 748 ms | 193 MB | 9,085,466 bytes |
+| Swift | 105 ms | 487 ms | 2,391 ms | 2,478 ms | 173 MB | 11,121,504 bytes |
 
+- 68669ad1 measures the text of a cell without copying it: `stringWidth` with a
+  fallback font used to copy every string it measured, character by character,
+  and the runs of text drawn with one font are now the pieces of the string
+  between the characters that switch fonts, which copies nothing when one font
+  covers the string. It also doubles the Go page buffer as it fills, where Go's
+  `append` grew a buffer this size by a quarter and copied the content of a page
+  about five times over. At 50,000 rows that is Go 778 to 713 ms with its peak
+  286 to 193 MB, C# 1,902 to 1,881, Swift 2,584 to 2,391 and Java 1,632 to
+  1,624; Java's peak reads 435 MB here and 434 in the 124,716-row run below,
+  against 413 and 497 at 8db803f0, which is the least steady figure of the set.
+  b377ba4f packs the six flags of a `Cell` into one int, and 660ab679 strokes
+  the visible sides of a cell as one path and writes nothing for a cell with no
+  border, which took the 50,000-row file from 9,116,668 to 9,061,891 bytes in
+  Java and C#.
 - 8db803f0 keeps the text, background and border colors of a `Cell` as packed
   0xRRGGBB ints in Java, C# and Swift, where each was an array of three floats;
   Go already kept them inline. The files are the same to the byte as at
@@ -167,8 +181,13 @@ fills a rectangle with one `re`, the first document took 4,983 ms in Java,
 At 8db803f0 (`results/2026-09-17-8db803f0-124716.log`, a freshly rebooted
 machine) the times were Java 4,106 ms, C# 4,743, Go 1,943 and Swift 6,430, with
 the same files: 2.2%, 6.1% and 0.8% faster in Java, C# and Swift than above,
-and Go 0.2% slower. The first document and the peak at this size were not
-measured on their own in that run.
+and Go 0.2% slower. At 68669ad1
+(`results/2026-09-17-68669ad1-124716.log`) they were Java 4,004 ms, C# 4,709,
+Go 1,752 and Swift 5,978, and the files 22,415,937 bytes in Java and C#,
+22,474,872 in Go and 27,553,691 in Swift, which are smaller than the 22.6 and
+27.7 MB above: 660ab679 writes nothing for a cell with no visible border. The
+first document and the peak at this size were not measured on their own in
+either run.
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, in the run

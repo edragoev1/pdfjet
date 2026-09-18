@@ -154,6 +154,17 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       the text it ignores. `check-examples.sh` (Sep 17): every example
       identical in the four ports, Java 288 tests on JDK 21 and 8, C# 286, Go,
       Swift 293.
+- ✅ **B** Less memory per `Cell` and per measured string (Sep 17): the six
+      flags of a `Cell` packed into one int, which takes a Java `Cell` from 104
+      to 96 bytes (b377ba4f); `stringWidth` no longer copies the string it
+      measures when one font covers it, which is almost every string (68669ad1);
+      and the Go page content buffer doubles as it fills rather than growing by
+      a quarter, which its `append` did about five times over per page.
+      Benchmarks recorded at 68669ad1 (Sep 17) in `pdfjet-benchmarks.html`:
+      Example_43 with `Table` 3,435 ms and 1,491 MB allocated, against 3,536 and
+      1,718 at 8db803f0; `Table` at 50,000 rows Java 1,624 ms, C# 1,881, Go 713
+      with its peak 286 to 193 MB, Swift 2,391; the text document in C# 60 to
+      48 ms and in Go 46 to 43.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
 - ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
