@@ -63,10 +63,14 @@ class JPGImage {
     let M_SOF13: UInt8 = 0xCD
     let M_SOF14: UInt8 = 0xCE
     let M_SOF15: UInt8 = 0xCF
+    let M_APP14: UInt8 = 0xEE
 
     var width: UInt16 = 0
     var height: UInt16 = 0
     var colorComponents: UInt8 = 0
+    // True when an APP14 segment says that Adobe software wrote the image,
+    // which stores the inks of a CMYK image inverted, 255 for no ink.
+    var adobe = false
     var data: [UInt8]
     var index = 0
 
@@ -90,6 +94,10 @@ class JPGImage {
 
     func getColorComponents() -> UInt8 {
         return self.colorComponents
+    }
+
+    func isAdobe() -> Bool {
+        return self.adobe
     }
 
     func getData() -> [UInt8] {
@@ -131,6 +139,8 @@ class JPGImage {
                     throw JPGImageError.invalidDimensionsOrComponentCount
                 }
                 break
+            } else if ch == M_APP14 {
+                try readAPP14(&buffer)
             } else {
                 try skipVariable(&buffer)
             }
@@ -176,6 +186,20 @@ class JPGImage {
         } while ch == 0xFF
 
         return ch
+    }
+
+    // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
+    private func readAPP14(_ buffer: inout [UInt8]) throws {
+        let length = try getUInt16(&buffer)
+        if length < 2 {
+            throw JPGImageError.invalidSegmentLength
+        }
+        let end = index + Int(length) - 2
+        guard end <= buffer.count else {
+            throw JPGImageError.unexpectedEndOfJPEGData
+        }
+        adobe = end - index >= 5 && buffer[index..<(index + 5)].elementsEqual(Array("Adobe".utf8))
+        index = end
     }
 
     // Most types of marker are followed by a variable-length parameter

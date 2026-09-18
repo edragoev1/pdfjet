@@ -63,10 +63,14 @@ class JPGImage {
     static final char M_SOF13 = (char) 0x00CD;
     static final char M_SOF14 = (char) 0x00CE;
     static final char M_SOF15 = (char) 0x00CF;
+    static final char M_APP14 = (char) 0x00EE;
 
     int width;
     int height;
     int colorComponents;
+    // True when an APP14 segment says that Adobe software wrote the image,
+    // which stores the inks of a CMYK image inverted, 255 for no ink.
+    boolean adobe;
     byte[] data;
 
     public JPGImage(InputStream inputStream) throws Exception {
@@ -88,6 +92,10 @@ class JPGImage {
 
     int getColorComponents() {
         return this.colorComponents;
+    }
+
+    boolean isAdobe() {
+        return this.adobe;
     }
 
     byte[] getData() {
@@ -135,6 +143,10 @@ class JPGImage {
                 foundSOFn = true;
                 break;
 
+                case M_APP14:
+                readAPP14(is);
+                break;
+
                 default:
                 skipVariable(is);
                 break;
@@ -167,6 +179,21 @@ class JPGImage {
             ch = readByte(is);
         } while (ch == 0x00FF);
         return (char) ch;
+    }
+
+    // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
+    private void readAPP14(InputStream is) throws IOException {
+        int length = getUInt16(is);
+        if (length < 2) {
+            throw new IOException("Invalid marker segment length.");
+        }
+        byte[] segment = new byte[length - 2];
+        for (int i = 0; i < segment.length; i++) {
+            segment[i] = (byte) readByte(is);   // throws on EOF
+        }
+        adobe = segment.length >= 5 &&
+                segment[0] == 'A' && segment[1] == 'd' && segment[2] == 'o' &&
+                segment[3] == 'b' && segment[4] == 'e';
     }
 
     // Most types of marker are followed by a variable-length parameter

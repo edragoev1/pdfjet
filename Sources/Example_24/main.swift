@@ -20,6 +20,7 @@ public class Example_24 {
         let image1 = try Image(pdf, "images/gr-map.jpg")
         let image2 = try Image(pdf, "images/ee-map.png")
         let image3 = try Image(pdf, "images/rgb24pal.bmp")
+        let image4 = try Image(pdf, "images/cmyk.jpg")
 
         var page = Page(pdf, Letter.PORTRAIT)
         let textLine1 = TextLine(font, "This is a JPEG image.")
@@ -40,6 +41,12 @@ public class Example_24 {
         textLine3.setLocation(50.0, 620.0)
         point = textLine3.drawOn(page)
         image3.setLocation(50.0, point[1] + 5.0).scaleBy(0.75).drawOn(page)
+
+        page = Page(pdf, Letter.PORTRAIT)
+        let textLine4 = TextLine(font, "This is a CMYK JPEG image, with its inks stored inverted, as Photoshop saves them.")
+        textLine4.setLocation(50.0, 50.0)
+        point = textLine4.drawOn(page)
+        image4.setLocation(50.0, point[1] + 5.0).scaleBy(0.425).drawOn(page)
 
         try pdf.complete()
     }

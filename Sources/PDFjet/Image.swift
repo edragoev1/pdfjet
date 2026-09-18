@@ -28,6 +28,8 @@ public class Image : Drawable {
 
     private var degrees = 0
     private var flipUpsideDown = false
+    // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
+    private var invertedInks = false
 
     private var language: String?
     private var altDescription: String?
@@ -80,6 +82,7 @@ public class Image : Drawable {
             } else if jpg.getColorComponents() == 3 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceRGB", 8)
             } else if jpg.getColorComponents() == 4 {
+                invertedInks = jpg.isAdobe()
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceCMYK", 8)
             }
         } else if imageType == ImageType.PNG {
@@ -130,6 +133,7 @@ public class Image : Drawable {
             } else if jpg.getColorComponents() == 3 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
             } else if jpg.getColorComponents() == 4 {
+                invertedInks = jpg.isAdobe()
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceCMYK", 8)
             }
         } else if imageType == ImageType.PNG {
@@ -533,8 +537,8 @@ public class Image : Drawable {
         pdf.append("/BitsPerComponent ")
         pdf.append(bitsPerComponent)
         pdf.append(Token.newline)
-        if colorSpace == "DeviceCMYK" {
-            // If the image was created with Photoshop - invert the colors:
+        if colorSpace == "DeviceCMYK" && invertedInks {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
         }
         let buf = pdf.encrypted(data)
@@ -639,8 +643,8 @@ public class Image : Drawable {
         obj.dict.append("/" + colorSpace)
         obj.dict.append("/BitsPerComponent")
         obj.dict.append(String(bitsPerComponent))
-        if colorSpace == "DeviceCMYK" {
-            // If the image was created with Photoshop - invert the colors:
+        if colorSpace == "DeviceCMYK" && invertedInks {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             obj.dict.append("/Decode")
             obj.dict.append("[")
             obj.dict.append("1.0")

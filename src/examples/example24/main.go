@@ -30,6 +30,7 @@ func Example24() {
 	image1 := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg")
 	image2 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 	image3 := pdfjet.NewImageFromFile(pdf, "images/rgb24pal.bmp")
+	image4 := pdfjet.NewImageFromFile(pdf, "images/cmyk.jpg")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	textLine1 := pdfjet.NewTextLine(font, "This is a JPEG image.")
@@ -50,6 +51,12 @@ func Example24() {
 	textLine3.SetLocation(50.0, 620.0)
 	point = textLine3.DrawOn(page)
 	image3.ScaleBy(0.75).SetLocation(50.0, point[1]+5.0).DrawOn(page)
+
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+	textLine4 := pdfjet.NewTextLine(font, "This is a CMYK JPEG image, with its inks stored inverted, as Photoshop saves them.")
+	textLine4.SetLocation(50.0, 50.0)
+	point = textLine4.DrawOn(page)
+	image4.ScaleBy(0.425).SetLocation(50.0, point[1]+5.0).DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

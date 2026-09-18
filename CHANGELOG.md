@@ -50,6 +50,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   measured as a space, and neither it nor the no-break space had the kerning
   pairs of the glyph it is drawn with; the metrics of the fourteen core fonts
   now agree with their AFM files in `fonts/Core`.
+- A CMYK JPEG is written with the Decode array that inverts its inks back only
+  when an APP14 marker says that Adobe software wrote it, which stores the inks
+  inverted; every CMYK JPEG had the array, so one from other software came out
+  as a negative.
 - Chinese and Japanese text in a `TextBlock` or `TextFrame` no longer starts a
   line with a closing mark, punctuation such as 。 and 、, or a small kana, nor
   ends one with an opening bracket (kinsoku shori): the character before such a
@@ -83,6 +87,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   Each page names its language, "This block is Japanese: 日本語", in IBM Plex
   Sans with the font of the page as its fallback font.
 - Example_40 draws the calendar of 2026, with the weeks starting on Monday.
+- Example_24 draws a CMYK JPEG saved as Photoshop saves one, `images/cmyk.jpg`,
+  a print test chart that `util/make-cmyk-jpeg.py` draws. It replaces
+  `images/photoshop.jpg`, an advertisement no example used any more, and ten
+  files in `data` that nothing read are gone.
 
 ## v9.0.1 — 2026-09-18
 

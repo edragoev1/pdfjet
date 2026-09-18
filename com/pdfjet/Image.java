@@ -39,6 +39,8 @@ final public class Image implements Drawable {
 
     private int degrees = 0;
     private boolean flipUpsideDown = false;
+    // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
+    private boolean invertedInks = false;
 
     private String language = null;
     private String actualText = null;
@@ -81,6 +83,7 @@ final public class Image implements Drawable {
             } else if (jpg.getColorComponents() == 3) {
                 addImage(pdf, data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.getColorComponents() == 4) {
+                invertedInks = jpg.isAdobe();
                 addImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
         } else if (imageType == ImageType.PNG) {
@@ -135,6 +138,7 @@ final public class Image implements Drawable {
             } else if (jpg.getColorComponents() == 3) {
                 addImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.getColorComponents() == 4) {
+                invertedInks = jpg.isAdobe();
                 addImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
         } else if (imageType == ImageType.PNG) {
@@ -554,8 +558,8 @@ final public class Image implements Drawable {
         pdf.append("/BitsPerComponent ");
         pdf.append(bitsPerComponent);
         pdf.append('\n');
-        if (colorSpace.equals("DeviceCMYK")) {
-            // If the image was created with Photoshop - invert the colors:
+        if (colorSpace.equals("DeviceCMYK") && invertedInks) {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n");
         }
 
@@ -642,8 +646,8 @@ final public class Image implements Drawable {
         obj.dict.add("/" + colorSpace);
         obj.dict.add("/BitsPerComponent");
         obj.dict.add(String.valueOf(bitsPerComponent));
-        if (colorSpace.equals("DeviceCMYK")) {
-            // If the image was created with Photoshop - invert the colors:
+        if (colorSpace.equals("DeviceCMYK") && invertedInks) {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             obj.dict.add("/Decode");
             obj.dict.add("[");
             obj.dict.add("1.0");

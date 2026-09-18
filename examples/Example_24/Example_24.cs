@@ -24,6 +24,7 @@ public class Example_24 {
         Image image1 = new Image(pdf, "images/gr-map.jpg");
         Image image2 = new Image(pdf, "images/ee-map.png");
         Image image3 = new Image(pdf, "images/rgb24pal.bmp");
+        Image image4 = new Image(pdf, "images/cmyk.jpg");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine textLine1 = new TextLine(font, "This is a JPEG image.");
@@ -44,6 +45,12 @@ public class Example_24 {
         textLine3.SetLocation(50f, 620f);
         point = textLine3.DrawOn(page);
         image3.SetLocation(50f, point[1] + 5f).ScaleBy(0.75f).DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        TextLine textLine4 = new TextLine(font, "This is a CMYK JPEG image, with its inks stored inverted, as Photoshop saves them.");
+        textLine4.SetLocation(50f, 50f);
+        point = textLine4.DrawOn(page);
+        image4.SetLocation(50f, point[1] + 5f).ScaleBy(0.425f).DrawOn(page);
 
         pdf.Complete();
     }

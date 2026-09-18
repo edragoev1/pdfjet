@@ -29,6 +29,8 @@ public class Image : IDrawable {
 
     private int degrees = 0;
     private bool flipUpsideDown = false;
+    // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
+    private bool invertedInks = false;
     private String language = null;
     private String actualText = null;
     private String altDescription = null;
@@ -64,6 +66,7 @@ public class Image : IDrawable {
             } else if (jpg.GetColorComponents() == 3) {
                 AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.GetColorComponents() == 4) {
+                invertedInks = jpg.IsAdobe();
                 AddImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
         } else if (imageType == ImageType.PNG) {
@@ -120,6 +123,7 @@ public class Image : IDrawable {
             } else if (jpg.GetColorComponents() == 3) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
             } else if (jpg.GetColorComponents() == 4) {
+                invertedInks = jpg.IsAdobe();
                 AddImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
         } else if (imageType == ImageType.PNG) {
@@ -538,8 +542,8 @@ public class Image : IDrawable {
         pdf.Append("/BitsPerComponent ");
         pdf.Append(bitsPerComponent);
         pdf.Append('\n');
-        if (colorSpace.Equals("DeviceCMYK")) {
-            // If the image was created with Photoshop - invert the colors:
+        if (colorSpace.Equals("DeviceCMYK") && invertedInks) {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.Append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n");
         }
 
@@ -626,8 +630,8 @@ public class Image : IDrawable {
         obj.dict.Add("/" + colorSpace);
         obj.dict.Add("/BitsPerComponent");
         obj.dict.Add(bitsPerComponent.ToString());
-        if (colorSpace.Equals("DeviceCMYK")) {
-            // If the image was created with Photoshop - invert the colors:
+        if (colorSpace.Equals("DeviceCMYK") && invertedInks) {
+            // Adobe software, Photoshop among them, stores the inks inverted.
             obj.dict.Add("/Decode");
             obj.dict.Add("[");
             obj.dict.Add("1.0");

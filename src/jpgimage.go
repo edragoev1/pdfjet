@@ -54,8 +54,11 @@ type jpgImage struct {
 	width           uint16
 	height          uint16
 	colorComponents uint8
-	data            []byte
-	index           int
+	// adobe is true when an APP14 segment says that Adobe software wrote the
+	// image, which stores the inks of a CMYK image inverted, 255 for no ink.
+	adobe bool
+	data  []byte
+	index int
 }
 
 // Constants
@@ -73,6 +76,7 @@ const (
 	mSOF13 = uint8(0xCD)
 	mSOF14 = uint8(0xCE)
 	mSOF15 = uint8(0xCF)
+	mAPP14 = uint8(0xEE)
 )
 
 // newJPGImage is the constructor.
@@ -103,6 +107,10 @@ func (image *jpgImage) getColorComponents() uint8 {
 }
 
 // GetData returns the image data.
+func (image *jpgImage) isAdobe() bool {
+	return image.adobe
+}
+
 func (image *jpgImage) getData() []byte {
 	return image.data
 }
@@ -162,6 +170,11 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 
 			return image, nil
 
+		case mAPP14:
+			if err := image.readAPP14(buffer); err != nil {
+				return nil, err
+			}
+
 		default:
 			if err := image.skipVariable(buffer); err != nil {
 				return nil, err
@@ -219,6 +232,25 @@ func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
 			return ch, err
 		}
 	}
+}
+
+// readAPP14 reads an APP14 segment, which Adobe software writes starting with
+// "Adobe".
+func (image *jpgImage) readAPP14(buffer []byte) error {
+	length, err := image.getUint16(buffer)
+	if err != nil {
+		return err
+	}
+	if length < 2 {
+		return errors.New("Error: Length includes itself, so must be at least 2.")
+	}
+	end := image.index + int(length) - 2
+	if end > len(buffer) {
+		return io.ErrUnexpectedEOF
+	}
+	image.adobe = end-image.index >= 5 && string(buffer[image.index:image.index+5]) == "Adobe"
+	image.index = end
+	return nil
 }
 
 // skipVariable skips over the parameter segment of any marker

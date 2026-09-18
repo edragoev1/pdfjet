@@ -36,6 +36,7 @@ type Image struct {
 	key            string
 	degrees        int
 	flipUpsideDown bool
+	invertedInks   bool // A CMYK JPEG that Adobe software wrote, with its inks inverted
 	language       string
 	altDescription string
 	actualText     string
@@ -81,6 +82,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 		} else if jpg.getColorComponents() == 3 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
 		} else if jpg.getColorComponents() == 4 {
+			image.invertedInks = jpg.isAdobe()
 			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
 		}
 	case imagetype.PNG:
@@ -133,6 +135,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		} else if jpg.getColorComponents() == 3 {
 			image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
 		} else if jpg.getColorComponents() == 4 {
+			image.invertedInks = jpg.isAdobe()
 			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
 		}
 	case imagetype.PNG:
@@ -512,8 +515,8 @@ func (image *Image) addImageToPDF(
 	pdf.appendString("/BitsPerComponent ")
 	pdf.appendInteger(bitsPerComponent)
 	pdf.appendString("\n")
-	if colorSpace == device.CMYK {
-		// If the image was created with Photoshop - invert the colors:
+	if colorSpace == device.CMYK && image.invertedInks {
+		// Adobe software, Photoshop among them, stores the inks inverted.
 		pdf.appendString("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
 	}
 
@@ -602,8 +605,8 @@ func (image *Image) addImageToObjects(
 	obj.dict = append(obj.dict, "/"+colorSpace)
 	obj.dict = append(obj.dict, "/BitsPerComponent")
 	obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
-	if colorSpace == device.CMYK {
-		// If the image was created with Photoshop - invert the colors:
+	if colorSpace == device.CMYK && image.invertedInks {
+		// Adobe software, Photoshop among them, stores the inks inverted.
 		obj.dict = append(obj.dict, "/Decode")
 		obj.dict = append(obj.dict, "[")
 		obj.dict = append(obj.dict, "1.0")
