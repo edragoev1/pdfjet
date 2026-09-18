@@ -12,6 +12,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -23,6 +24,8 @@ func Example39() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("10 Longest Rivers in the World")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(15.0)
@@ -62,6 +65,8 @@ func Example39() {
 	chart.SetDrawValueLabels(true)
 	chart.SetValueLabelsInside(true)
 	chart.SetGroupingUsed(true)
+	chart.SetAltDescription(
+		"The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
 	chart.SetLocation(36.0, 40.0)
 	chart.DrawOn(page)
 
@@ -76,8 +81,8 @@ func Example39() {
 	keyX := []float32{171.0, 262.0, 398.0, 171.0, 313.0}
 	keyY := []float32{482.0, 482.0, 482.0, 497.0, 497.0}
 	for i := range keyColors {
-		page.SetBrushColor(keyColors[i])
-		page.FillRect(keyX[i], keyY[i]-8.5, 10.5, 10.5)
+		// The swatches are rectangles, drawn as artifacts next to their text.
+		pdfjet.NewRect(keyX[i], keyY[i]-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
 		pdfjet.NewTextLine(f4, keyTexts[i]).
 			SetTextColor(gray).SetLocation(keyX[i]+15.0, keyY[i]).DrawOn(page)
 	}

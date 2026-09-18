@@ -17,6 +17,8 @@ import PDFjet
 public class Example_39 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_39.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("10 Longest Rivers in the World")
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(15.0)
@@ -57,6 +59,8 @@ public class Example_39 {
         chart.setDrawValueLabels(true)
         chart.setValueLabelsInside(true)
         chart.setGroupingUsed(true)
+        chart.setAltDescription(
+                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
         chart.drawOn(page)
 
         // The color key under the chart
@@ -70,8 +74,8 @@ public class Example_39 {
         let keyX: [Float] = [171.0, 262.0, 398.0, 171.0, 313.0]
         let keyY: [Float] = [482.0, 482.0, 482.0, 497.0, 497.0]
         for i in 0..<keyColors.count {
-            page.setBrushColor(keyColors[i])
-            page.fillRect(keyX[i], keyY[i] - 8.5, 10.5, 10.5)
+            // The swatches are rectangles, drawn as artifacts next to their text.
+            Rect(keyX[i], keyY[i] - 8.5, 10.5, 10.5).setFillColor(keyColors[i]).drawOn(page)
             TextLine(f4, keyTexts[i])
                     .setTextColor(gray).setLocation(keyX[i] + 15.0, keyY[i]).drawOn(page)
         }

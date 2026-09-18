@@ -21,6 +21,8 @@ final public class Example_39 {
     public Example_39() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_39.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("10 Longest Rivers in the World");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.setSize(15f);
@@ -61,6 +63,8 @@ final public class Example_39 {
         chart.setDrawValueLabels(true);
         chart.setValueLabelsInside(true);
         chart.setGroupingUsed(true);
+        chart.setAltDescription(
+                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.");
         chart.drawOn(page);
 
         // The color key under the chart
@@ -74,8 +78,8 @@ final public class Example_39 {
         float[] keyX = {171f, 262f, 398f, 171f, 313f};
         float[] keyY = {482f, 482f, 482f, 497f, 497f};
         for (int i = 0; i < keyColors.length; i++) {
-            page.setBrushColor(keyColors[i]);
-            page.fillRect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f);
+            // The swatches are rectangles, drawn as artifacts next to their text.
+            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).setFillColor(keyColors[i]).drawOn(page);
             new TextLine(f4, keyTexts[i])
                     .setTextColor(gray).setLocation(keyX[i] + 15f, keyY[i]).drawOn(page);
         }

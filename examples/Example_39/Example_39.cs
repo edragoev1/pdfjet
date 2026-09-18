@@ -20,6 +20,8 @@ public class Example_39 {
     public Example_39() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_39.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("10 Longest Rivers in the World");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(15f);
@@ -60,6 +62,8 @@ public class Example_39 {
         chart.SetDrawValueLabels(true);
         chart.SetValueLabelsInside(true);
         chart.SetGroupingUsed(true);
+        chart.SetAltDescription(
+                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.");
         chart.DrawOn(page);
 
         // The color key under the chart
@@ -73,8 +77,8 @@ public class Example_39 {
         float[] keyX = {171f, 262f, 398f, 171f, 313f};
         float[] keyY = {482f, 482f, 482f, 497f, 497f};
         for (int i = 0; i < keyColors.Length; i++) {
-            page.SetBrushColor(keyColors[i]);
-            page.FillRect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f);
+            // The swatches are rectangles, drawn as artifacts next to their text.
+            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
             new TextLine(f4, keyTexts[i])
                     .SetTextColor(gray).SetLocation(keyX[i] + 15f, keyY[i]).DrawOn(page);
         }
