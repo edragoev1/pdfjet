@@ -104,4 +104,86 @@ class BMPImageTest {
         byte[] truncated = Arrays.copyOf(bmp24(false), 60);
         assertThrows(Exception.class, () -> new BMPImage(new ByteArrayInputStream(truncated)));
     }
+
+    // A BMP file of the 2 by 2 pixels with a header of the size, 40 bytes or
+    // more, the bits per pixel, the compression, the masks after the first 40
+    // bytes of the header, the palette of 0xRRGGBB colors, and the pixels of
+    // the bottom row and then the top row, each padded to 4 bytes.
+    private static byte[] bmp(int headerSize, int bitsPerPixel, int compression,
+            int[] masks, int[] palette, byte[] bottomRow, byte[] topRow) {
+        int colors = (palette == null) ? 0 : palette.length;
+        int afterHeader = (headerSize == 40 && masks != null) ? 12 : 0;
+        int offset = 14 + headerSize + afterHeader + 4 * colors;
+        int rowSize = (bottomRow.length + 3) & ~3;
+        ByteBuffer buf = ByteBuffer.allocate(offset + 2 * rowSize).order(ByteOrder.LITTLE_ENDIAN);
+        buf.put((byte) 'B').put((byte) 'M').putInt(buf.capacity()).putInt(0).putInt(offset);
+        buf.putInt(headerSize).putInt(2).putInt(2).putShort((short) 1).putShort((short) bitsPerPixel);
+        buf.putInt(compression).putInt(2 * rowSize).putInt(2835).putInt(2835).putInt(colors).putInt(0);
+        if (masks != null) {
+            buf.putInt(masks[0]).putInt(masks[1]).putInt(masks[2]);
+        }
+        buf.position(offset - 4 * colors);      // The rest of a larger header is 0
+        for (int i = 0; i < colors; i++) {
+            buf.put((byte) palette[i]).put((byte) (palette[i] >> 8)).put((byte) (palette[i] >> 16)).put((byte) 0);
+        }
+        buf.put(bottomRow).position(offset + rowSize);
+        buf.put(topRow);
+        return buf.array();
+    }
+
+    private static byte[] decode(byte[] bmp) throws Exception {
+        return Decompressor.inflate(new BMPImage(new ByteArrayInputStream(bmp)).getData());
+    }
+
+    // The pixels as little endian 16 bit values.
+    private static byte[] shorts(int... pixels) {
+        ByteBuffer buf = ByteBuffer.allocate(2 * pixels.length).order(ByteOrder.LITTLE_ENDIAN);
+        for (int pixel : pixels) {
+            buf.putShort((short) pixel);
+        }
+        return buf.array();
+    }
+
+    private static byte[] bytes(int... values) {
+        byte[] bytes = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            bytes[i] = (byte) values[i];
+        }
+        return bytes;
+    }
+
+    @Test
+    void aThirtyTwoBitPixelIsBlueGreenRedAndAByteThatIsNotAColor() throws Exception {
+        byte[] bmp = bmp(40, 32, 0, null, null,
+                bytes(255, 0, 0, 0, 255, 255, 255, 0), bytes(0, 0, 255, 0, 0, 255, 0, 0));
+        assertArrayEquals(RGB, decode(bmp));
+    }
+
+    @Test
+    void theMasksOfSixteenAndThirtyTwoBitPixelsAreRead() throws Exception {
+        // 5 bits a color without masks; 31 of 5 bits is 255.
+        assertArrayEquals(RGB, decode(bmp(40, 16, 0, null, null,
+                shorts(0x001F, 0x7FFF), shorts(0x7C00, 0x03E0))));
+        // 5, 6 and 5 bits.
+        assertArrayEquals(RGB, decode(bmp(40, 16, 3, new int[] {0xF800, 0x07E0, 0x001F}, null,
+                shorts(0x001F, 0xFFFF), shorts(0xF800, 0x07E0))));
+        // Red in the low byte, in a 108 byte header.
+        assertArrayEquals(RGB, decode(bmp(108, 32, 3, new int[] {0x000000FF, 0x0000FF00, 0x00FF0000}, null,
+                bytes(0, 0, 255, 0, 255, 255, 255, 0), bytes(255, 0, 0, 0, 0, 255, 0, 0))));
+    }
+
+    @Test
+    void thePaletteFollowsAHeaderOfAnySize() throws Exception {
+        int[] palette = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF};
+        assertArrayEquals(RGB, decode(bmp(40, 8, 0, null, palette, bytes(2, 3), bytes(0, 1))));
+        assertArrayEquals(RGB, decode(bmp(124, 8, 0, null, palette, bytes(2, 3), bytes(0, 1))));
+    }
+
+    @Test
+    void rejectsACompressedImage() {
+        int[] palette = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF};
+        // RLE8: a run of 1 pixel of color 2, 1 of color 3, the end of the bitmap
+        assertEquals("Compressed BMP images are not supported.",
+                decodeError(bmp(40, 8, 1, null, palette, bytes(1, 2, 1, 3), bytes(0, 1, 0, 0))));
+    }
 }

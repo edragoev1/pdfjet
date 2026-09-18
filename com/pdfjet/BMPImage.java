@@ -19,8 +19,11 @@ class BMPImage {
 
     private int bpp;
     private byte palette[][];
-    private boolean r5g6b5; // If 16 bit image two encodings can occur
+    private int[] masks;        // The red, green and blue masks of a 16 or 32 bit pixel
     private boolean topDown;    // If the first row is the top row
+
+    private static final int BI_RGB = 0;
+    private static final int BI_BITFIELDS = 3;
 
     private static final int m10000000 = 0x80;
     private static final int m01000000 = 0x40;
@@ -45,8 +48,8 @@ class BMPImage {
            (bm[0] == 'I' && bm[1] == 'C')||
            (bm[0] == 'P' && bm[1] == 'T')) {
             skipNBytes(is, 8);
-            int offset = readSignedInt(is);
-            readSignedInt(is); // Skip the sizeOfHeader
+            int offset = readSignedInt(is);     // Where the pixels start
+            int headerSize = readSignedInt(is);
             w = readSignedInt(is);
             h = readSignedInt(is);
             if (h < 0) {
@@ -66,6 +69,16 @@ class BMPImage {
                 throw new Exception(
                         "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
             }
+            // RLE and the JPEG and PNG compressions are not supported, and their
+            // data is not read as pixels.
+            if (compression != BI_RGB && !(compression == BI_BITFIELDS && (bpp == 16 || bpp == 32))) {
+                throw new Exception("Compressed BMP images are not supported.");
+            }
+            // The older OS/2 header is 12 bytes; the others start with the 40
+            // bytes of the BITMAPINFOHEADER.
+            if (headerSize < 40) {
+                throw new Exception("Unsupported BMP header of " + headerSize + " bytes.");
+            }
             long rowSize = 4 * ((bpp * (long) w + 31) / 32);
             // A height of at most the limit keeps the products in a long.
             if (h > Decompressor.MAX_DECODED_LENGTH ||
@@ -74,23 +87,38 @@ class BMPImage {
                 throw new Exception(
                         "The BMP image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
             }
-            if (bpp > 8) {
-                r5g6b5 = (compression == 3);
-                skipNBytes(is, 20);
-                if (offset > 54) {
-                    skipNBytes(is, offset-54);
-                }
-            } else {
-                skipNBytes(is, 12);
-                int numpalcol = readSignedInt(is);
-                if (numpalcol == 0) {
-                    numpalcol = (int) Math.pow(2, bpp);
-                }
+            skipNBytes(is, 12);
+            int colorsUsed = readSignedInt(is);
+            skipNBytes(is, 4);
+            long read = 54;     // The bytes read so far
+
+            // The masks follow the first 40 bytes of the header, in the larger
+            // headers or after the BITMAPINFOHEADER. Without them the pixels
+            // have the masks of the format: 5 bits a color in 16 bits, and 8
+            // bits a color in 32 bits.
+            if (compression == BI_BITFIELDS) {
+                masks = new int[] {readSignedInt(is), readSignedInt(is), readSignedInt(is)};
+                read += 12;
+            } else if (bpp == 16) {
+                masks = new int[] {0x7C00, 0x03E0, 0x001F};
+            } else if (bpp == 32) {
+                masks = new int[] {0x00FF0000, 0x0000FF00, 0x000000FF};
+            }
+            if (14 + headerSize > read) {
+                skipNBytes(is, (int) (14 + headerSize - read));     // The rest of a larger header
+                read = 14 + headerSize;
+            }
+
+            if (bpp <= 8) {
+                int numpalcol = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
                 if (numpalcol < 0 || numpalcol > 256) {
                     throw new Exception("Invalid BMP palette size " + numpalcol + ".");
                 }
-                skipNBytes(is, 4);
                 parsePalette(is, numpalcol);
+                read += 4L * numpalcol;
+            }
+            if (offset > read) {
+                skipNBytes(is, (int) (offset - read));     // The pixels start at the offset
             }
             parseData(is);
         } else {
@@ -112,15 +140,9 @@ class BMPImage {
                 case  1: row = bit1to8(row, w); break;  // opslag i palette
                 case  4: row = bit4to8(row, w); break;  // opslag i palette
                 case  8: break;                         // opslag i palette
-                case 16:
-                    if (r5g6b5) {
-                        row = bit16to24(row, w);        // 5,6,5 bit
-                    } else {
-                        row = bit16to24b(row, w);
-                    }
-                    break;
+                case 16: row = masksTo24(row, w, 2, masks); break;
                 case 24: break;                         // bytes are correct
-                case 32: row = bit32to24(row, w); break;
+                case 32: row = masksTo24(row, w, 4, masks); break;
                 default:
                     throw new Exception(
                             "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
@@ -154,40 +176,32 @@ class BMPImage {
         deflated = data2.toByteArray();
     }
 
-    // 5 + 6 + 5 in B G R format 2 bytes to 3 bytes
-    private static byte[] bit16to24(byte[] row, int width) {
+    // Converts a row of 16 or 32 bit little endian pixels to blue, green and
+    // red bytes, with the red, green and blue masks. A color of fewer than 8
+    // bits is scaled to the full range, so that 31 of 5 bits is 255.
+    private static byte[] masksTo24(byte[] row, int width, int bytesPerPixel, int[] masks) {
         byte[] ret = new byte[width * 3];
         int j = 0;
-        for (int i = 0; i < width*2; i+=2) {
-            ret[j++] = (byte)((row[i] & 0x1F)<<3);
-            ret[j++] = (byte)(((row[i+1] & 0x07)<<5)+((row[i] & 0xE0)>>3));
-            ret[j++] = (byte)((row[i+1] & 0xF8));
+        for (int i = 0; i < width * bytesPerPixel; i += bytesPerPixel) {
+            int pixel = (row[i] & 0xFF) | (row[i + 1] & 0xFF) << 8;
+            if (bytesPerPixel == 4) {
+                pixel |= (row[i + 2] & 0xFF) << 16 | (row[i + 3] & 0xFF) << 24;
+            }
+            ret[j++] = (byte) color(pixel, masks[2]);
+            ret[j++] = (byte) color(pixel, masks[1]);
+            ret[j++] = (byte) color(pixel, masks[0]);
         }
         return ret;
     }
 
-    // 5 + 5 + 5 in B G R format 2 bytes to 3 bytes
-    private static byte[] bit16to24b(byte[] row, int width) {
-        byte[] ret = new byte[width * 3];
-        int j = 0;
-        for (int i = 0; i < width*2; i+=2) {
-            ret[j++] = (byte)((row[i] & 0x1F)<<3);
-            ret[j++] = (byte)(((row[i+1] & 0x03)<<6)+((row[i] & 0xE0)>>2));
-            ret[j++] = (byte)((row[i+1] & 0x7C)<<1);
+    // Returns the color of the pixel under the mask, from 0 to 255.
+    private static int color(int pixel, int mask) {
+        if (mask == 0) {
+            return 0;
         }
-        return ret;
-    }
-
-    /* alpha first? */
-    private static byte[] bit32to24(byte[] row, int width) {
-        byte[] ret = new byte[width * 3];
-        int j = 0;
-        for (int i = 0; i < width*4; i+=4) {
-            ret[j++] = row[i+1];
-            ret[j++] = row[i+2];
-            ret[j++] = row[i+3];
-        }
-        return ret;
+        long max = (mask & 0xFFFFFFFFL) >>> Integer.numberOfTrailingZeros(mask);
+        long value = (pixel & mask & 0xFFFFFFFFL) >>> Integer.numberOfTrailingZeros(mask);
+        return (int) (value * 255 / max);
     }
 
     private static byte[] bit4to8(byte[] row, int width) {

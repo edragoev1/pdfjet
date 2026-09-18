@@ -50,6 +50,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   measured as a space, and neither it nor the no-break space had the kerning
   pairs of the glyph it is drawn with; the metrics of the fourteen core fonts
   now agree with their AFM files in `fonts/Core`.
+- A 32-bit BMP was drawn with its colors shifted, since its pixels were read
+  as a byte that is not a color followed by blue, green and red, where they are
+  blue, green, red and that byte. A 1, 4 or 8-bit BMP with a header larger than
+  40 bytes, as GIMP and Photoshop write, failed, since the palette was read
+  where the header went on; the palette now follows the header of the size the
+  file gives, and the pixels start at the offset it gives. A compressed BMP,
+  RLE8 or RLE4, was read as if its data were pixels, and is now refused. The
+  masks of a 16 or 32-bit BMP are read, where a 16-bit image with masks was
+  taken for 5, 6 and 5 bits, and a color of fewer than 8 bits is scaled to the
+  full range, so that white is 255 rather than 248.
 - A CMYK JPEG is written with the Decode array that inverts its inks back only
   when an APP14 marker says that Adobe software wrote it, which stores the inks
   inverted; every CMYK JPEG had the array, so one from other software came out

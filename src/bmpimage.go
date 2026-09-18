@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/bits"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
@@ -21,9 +22,14 @@ type bmpImage struct {
 	deflated []byte // The deflated reconstructed image data
 	bpp      int
 	palette  [][]byte
-	r5g6b5   bool // If 16 bit image two encodings can occur
-	topDown  bool // If the first row is the top row
+	masks    []uint32 // The red, green and blue masks of a 16 or 32 bit pixel
+	topDown  bool     // If the first row is the top row
 }
+
+const (
+	biRGB       = 0
+	biBitfields = 3
+)
 
 const (
 	m10000000 = 0x80
@@ -51,8 +57,8 @@ func newBMPImage(reader io.Reader) *bmpImage {
 		(bm[0] == 'I' && bm[1] == 'C') ||
 		(bm[0] == 'P' && bm[1] == 'T') {
 		skipNBytes(reader, 8)
-		offset := readSignedInt(reader)
-		readSignedInt(reader) // skip sizeOfHeader
+		offset := readSignedInt(reader) // Where the pixels start
+		headerSize := readSignedInt(reader)
 		image.w = readSignedInt(reader)
 		image.h = readSignedInt(reader)
 		if image.h < 0 {
@@ -73,6 +79,16 @@ func newBMPImage(reader io.Reader) *bmpImage {
 		default:
 			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
 		}
+		// RLE and the JPEG and PNG compressions are not supported, and their
+		// data is not read as pixels.
+		if compression != biRGB && !(compression == biBitfields && (image.bpp == 16 || image.bpp == 32)) {
+			panic("Compressed BMP images are not supported.")
+		}
+		// The older OS/2 header is 12 bytes; the others start with the 40
+		// bytes of the BITMAPINFOHEADER.
+		if headerSize < 40 {
+			panic(fmt.Sprintf("Unsupported BMP header of %d bytes.", headerSize))
+		}
 		rowSize := 4 * ((int64(image.bpp)*int64(image.w) + 31) / 32)
 		// A height of at most the limit keeps the products in an int64.
 		if int64(image.h) > decompressor.MaxDecodedLength ||
@@ -80,23 +96,42 @@ func newBMPImage(reader io.Reader) *bmpImage {
 			rowSize*int64(image.h) > decompressor.MaxDecodedLength {
 			panic(fmt.Sprintf("The BMP image is larger than %d bytes.", decompressor.MaxDecodedLength))
 		}
-		if image.bpp > 8 {
-			image.r5g6b5 = compression == 3
-			skipNBytes(reader, 20)
-			if offset > 54 {
-				skipNBytes(reader, offset-54)
-			}
-		} else {
-			skipNBytes(reader, 12)
-			numpalcol := readSignedInt(reader)
+		skipNBytes(reader, 12)
+		colorsUsed := readSignedInt(reader)
+		skipNBytes(reader, 4)
+		read := 54 // The bytes read so far
+
+		// The masks follow the first 40 bytes of the header, in the larger
+		// headers or after the BITMAPINFOHEADER. Without them the pixels have
+		// the masks of the format: 5 bits a color in 16 bits, and 8 bits a
+		// color in 32 bits.
+		if compression == biBitfields {
+			image.masks = []uint32{
+				uint32(readSignedInt(reader)), uint32(readSignedInt(reader)), uint32(readSignedInt(reader))}
+			read += 12
+		} else if image.bpp == 16 {
+			image.masks = []uint32{0x7C00, 0x03E0, 0x001F}
+		} else if image.bpp == 32 {
+			image.masks = []uint32{0x00FF0000, 0x0000FF00, 0x000000FF}
+		}
+		if 14+headerSize > read {
+			skipNBytes(reader, 14+headerSize-read) // The rest of a larger header
+			read = 14 + headerSize
+		}
+
+		if image.bpp <= 8 {
+			numpalcol := colorsUsed
 			if numpalcol == 0 {
-				numpalcol = int(math.Pow(2, float64(image.bpp)))
+				numpalcol = 1 << image.bpp
 			}
 			if numpalcol < 0 || numpalcol > 256 {
 				panic(fmt.Sprintf("Invalid BMP palette size %d.", numpalcol))
 			}
-			skipNBytes(reader, 4)
 			image.parsePalette(reader, numpalcol)
+			read += 4 * numpalcol
+		}
+		if offset > read {
+			skipNBytes(reader, offset-read) // The pixels start at the offset
 		}
 		image.parseData(reader)
 	} else {
@@ -120,15 +155,11 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 			row = image.bit4to8(row, image.w) // opslag i palette
 		case 8:
 		case 16:
-			if image.r5g6b5 {
-				row = image.bit16to24(row, image.w) // 5,6,5 bit
-			} else {
-				row = image.bit16to24b(row, image.w)
-			}
+			row = masksTo24(row, image.w, 2, image.masks)
 		case 24:
 			// bytes are correct
 		case 32:
-			row = image.bit32to24(row, image.w)
+			row = masksTo24(row, image.w, 4, image.masks)
 		default:
 			panic("Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
 		}
@@ -166,49 +197,34 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 	return bmpImage
 }
 
-// 5 + 6 + 5 in B G R format 2 bytes to 3 bytes
-func (image *bmpImage) bit16to24(row []byte, width int) []byte {
+// masksTo24 converts a row of 16 or 32 bit little endian pixels to blue, green
+// and red bytes, with the red, green and blue masks. A color of fewer than 8
+// bits is scaled to the full range, so that 31 of 5 bits is 255.
+func masksTo24(row []byte, width, bytesPerPixel int, masks []uint32) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
-	for i := 0; i < 2*width; i += 2 {
-		ret[j] = (row[i] & 0x1F) << 3
-		j++
-		ret[j] = ((row[i+1] & 0x07) << 5) + ((row[i] & 0xE0) >> 3)
-		j++
-		ret[j] = row[i+1] & 0xF8
-		j++
+	for i := 0; i < width*bytesPerPixel; i += bytesPerPixel {
+		pixel := uint32(row[i]) | uint32(row[i+1])<<8
+		if bytesPerPixel == 4 {
+			pixel |= uint32(row[i+2])<<16 | uint32(row[i+3])<<24
+		}
+		ret[j] = colorOf(pixel, masks[2])
+		ret[j+1] = colorOf(pixel, masks[1])
+		ret[j+2] = colorOf(pixel, masks[0])
+		j += 3
 	}
 	return ret
 }
 
-// 5 + 5 + 5 in B G R format 2 bytes to 3 bytes
-func (image *bmpImage) bit16to24b(row []byte, width int) []byte {
-	ret := make([]byte, 3*width)
-	j := 0
-	for i := 0; i < 2*width; i += 2 {
-		ret[j] = (row[i] & 0x1F) << 3
-		j++
-		ret[j] = ((row[i+1] & 0x03) << 6) + ((row[i] & 0xE0) >> 2)
-		j++
-		ret[j] = (row[i+1] & 0x7C) << 1
-		j++
+// colorOf returns the color of the pixel under the mask, from 0 to 255.
+func colorOf(pixel, mask uint32) byte {
+	if mask == 0 {
+		return 0
 	}
-	return ret
-}
-
-/* alpha first? */
-func (image *bmpImage) bit32to24(row []byte, width int) []byte {
-	ret := make([]byte, 3*width)
-	j := 0
-	for i := 0; i < width*4; i += 4 {
-		ret[j] = row[i+1]
-		j++
-		ret[j] = row[i+2]
-		j++
-		ret[j] = row[i+3]
-		j++
-	}
-	return ret
+	shift := bits.TrailingZeros32(mask)
+	max := uint64(mask >> shift)
+	value := uint64((pixel & mask) >> shift)
+	return byte(value * 255 / max)
 }
 
 func (image *bmpImage) bit4to8(row []byte, width int) []byte {

@@ -15,8 +15,11 @@ class BMPImage {
 
     private var bpp = 0
     private var palette: [[UInt8]]?
-    private var r5g6b5: Bool = false    // If 16 bit image two encodings can occur
+    private var masks = [UInt32]()      // The red, green and blue masks of a 16 or 32 bit pixel
     private var topDown: Bool = false   // If the first row is the top row
+
+    private let BI_RGB = 0
+    private let BI_BITFIELDS = 3
 
     private let m10000000: UInt8 = 0x80
     private let m01000000: UInt8 = 0x40
@@ -50,8 +53,8 @@ class BMPImage {
                 (Unicode.Scalar(bm[0]) == "I" && Unicode.Scalar(bm[1]) == "C") ||
                 (Unicode.Scalar(bm[0]) == "P" && Unicode.Scalar(bm[1]) == "T") {
             try skipNBytes(stream, 8)
-            let offset = try readSignedInt(stream)
-            try readSignedInt(stream)           // size of header
+            let offset = try readSignedInt(stream)      // Where the pixels start
+            let headerSize = try readSignedInt(stream)
             self.w = try readSignedInt(stream)
             self.h = try readSignedInt(stream)
             if self.h < 0 {
@@ -70,6 +73,16 @@ class BMPImage {
             if ![1, 4, 8, 16, 24, 32].contains(bpp) {
                 throw PDFjetError(message: "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images")
             }
+            // RLE and the JPEG and PNG compressions are not supported, and their
+            // data is not read as pixels.
+            if compression != BI_RGB && !(compression == BI_BITFIELDS && (bpp == 16 || bpp == 32)) {
+                throw PDFjetError(message: "Compressed BMP images are not supported.")
+            }
+            // The older OS/2 header is 12 bytes; the others start with the 40
+            // bytes of the BITMAPINFOHEADER.
+            if headerSize < 40 {
+                throw PDFjetError(message: "Unsupported BMP header of \(headerSize) bytes.")
+            }
             let rowSize = 4 * ((bpp * w + 31) / 32)     // w is an Int32 and bpp at most 32
             let (samples, samplesOverflow) = (3 * w).multipliedReportingOverflow(by: h)
             let (rows, rowsOverflow) = rowSize.multipliedReportingOverflow(by: h)
@@ -77,23 +90,40 @@ class BMPImage {
                     samples > MAX_DECODED_LENGTH || rows > MAX_DECODED_LENGTH {
                 throw PDFjetError(message: "The BMP image is larger than \(MAX_DECODED_LENGTH) bytes.")
             }
-            if bpp > 8 {
-                r5g6b5 = (compression == 3)
-                try skipNBytes(stream, 20)
-                if offset > 54 {
-                    try skipNBytes(stream, offset - 54)
+            try skipNBytes(stream, 12)
+            let colorsUsed = try readSignedInt(stream)
+            try skipNBytes(stream, 4)
+            var read = 54       // The bytes read so far
+
+            // The masks follow the first 40 bytes of the header, in the larger
+            // headers or after the BITMAPINFOHEADER. Without them the pixels
+            // have the masks of the format: 5 bits a color in 16 bits, and 8
+            // bits a color in 32 bits.
+            if compression == BI_BITFIELDS {
+                for _ in 0..<3 {
+                    masks.append(UInt32(truncatingIfNeeded: try readSignedInt(stream)))
                 }
-            } else {
-                try skipNBytes(stream, 12)
-                var numPalColors = try readSignedInt(stream)
-                if numPalColors == 0 {
-                    numPalColors = Int(pow(2.0, Double(bpp)))
-                }
+                read += 12
+            } else if bpp == 16 {
+                masks = [0x7C00, 0x03E0, 0x001F]
+            } else if bpp == 32 {
+                masks = [0x00FF0000, 0x0000FF00, 0x000000FF]
+            }
+            if 14 + headerSize > read {
+                try skipNBytes(stream, 14 + headerSize - read)     // The rest of a larger header
+                read = 14 + headerSize
+            }
+
+            if bpp <= 8 {
+                let numPalColors = (colorsUsed == 0) ? (1 << bpp) : colorsUsed
                 if numPalColors < 0 || numPalColors > 256 {
                     throw PDFjetError(message: "Invalid BMP palette size \(numPalColors).")
                 }
-                try skipNBytes(stream, 4)
                 try parsePalette(stream, numPalColors)
+                read += 4 * numPalColors
+            }
+            if offset > read {
+                try skipNBytes(stream, offset - read)      // The pixels start at the offset
             }
             try parseData(stream)
         } else {
@@ -118,14 +148,10 @@ class BMPImage {
             } else if self.bpp == 8 {             // opslag i palette
                 //
             } else if self.bpp == 16 {
-                if self.r5g6b5 {                // 5,6,5 bit
-                    row = bit16to24(row, w)
-                } else {
-                    row = bit16to24b(row, w)
-                }
+                row = masksTo24(row, w, 2, masks)
             } else if self.bpp == 24 {            // bytes are correct
             } else if self.bpp == 32 {
-                row = bit32to24(row, w)
+                row = masksTo24(row, w, 4, masks)
             } else {
                 // Only 1, 4, 8, 16, 24 and 32 bits per pixel are supported.
                 throw BMPImageError.unsupportedBitDepth
@@ -164,55 +190,36 @@ class BMPImage {
         FlateEncode(&deflated!, image!)
     }
 
-    // 5 + 6 + 5 in B G R format 2 bytes to 3 bytes
-    private func bit16to24(_ row: [UInt8], _ width: Int) -> [UInt8] {
+    // Converts a row of 16 or 32 bit little endian pixels to blue, green and
+    // red bytes, with the red, green and blue masks. A color of fewer than 8
+    // bits is scaled to the full range, so that 31 of 5 bits is 255.
+    private func masksTo24(_ row: [UInt8], _ width: Int, _ bytesPerPixel: Int, _ masks: [UInt32]) -> [UInt8] {
         var ret = [UInt8](repeating: 0, count: 3*width)
-        var i = 0
         var j = 0
-        while i < 2*width {
-            ret[j] = UInt8((row[i] & 0x1F) << 3)
-            j += 1
-            ret[j] = UInt8(((row[i + 1] & 0x07) << 5) + (row[i] & 0xE0) >> 3)
-            j += 1
-            ret[j] = UInt8((row[i + 1] & 0xF8))
-            j += 1
-            i += 2
+        var i = 0
+        while i < width * bytesPerPixel {
+            var pixel = UInt32(row[i]) | UInt32(row[i + 1]) << 8
+            if bytesPerPixel == 4 {
+                pixel |= UInt32(row[i + 2]) << 16 | UInt32(row[i + 3]) << 24
+            }
+            ret[j] = colorOf(pixel, masks[2])
+            ret[j + 1] = colorOf(pixel, masks[1])
+            ret[j + 2] = colorOf(pixel, masks[0])
+            j += 3
+            i += bytesPerPixel
         }
         return ret
     }
 
-    // 5 + 5 + 5 in B G R format 2 bytes to 3 bytes
-    private func bit16to24b(_ row: [UInt8], _ width: Int) -> [UInt8] {
-        var ret = [UInt8](repeating: 0, count: 3*width)
-        var i = 0
-        var j = 0
-        while i < 2*width {
-            ret[j] = UInt8((row[i] & 0x1F) << 3)
-            j += 1
-            ret[j] = UInt8(((row[i + 1] & 0x03) << 6) + (row[i] & 0xE0) >> 2)
-            j += 1
-            ret[j] = UInt8((row[i + 1] & 0x7C) << 1)
-            j += 1
-            i += 2
+    // Returns the color of the pixel under the mask, from 0 to 255.
+    private func colorOf(_ pixel: UInt32, _ mask: UInt32) -> UInt8 {
+        if mask == 0 {
+            return 0
         }
-        return ret
-    }
-
-    /* alpha first? */
-    private func bit32to24(_ row: [UInt8], _ width: Int) -> [UInt8] {
-        var ret = [UInt8](repeating: 0, count: 3*width)
-        var i = 0
-        var j = 0
-        while i < 4*width {
-            ret[j] = row[i + 1]
-            j += 1
-            ret[j] = row[i + 2]
-            j += 1
-            ret[j] = row[i + 3]
-            j += 1
-            i += 4
-        }
-        return ret
+        let shift = mask.trailingZeroBitCount
+        let max = UInt64(mask >> shift)
+        let value = UInt64((pixel & mask) >> shift)
+        return UInt8(value * 255 / max)
     }
 
     private func bit4to8(_ row: [UInt8], _ width: Int) -> [UInt8] {

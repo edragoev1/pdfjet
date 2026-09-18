@@ -112,4 +112,78 @@ import Testing
         let truncated = Array(bmp24(false).prefix(60))
         #expect(throws: (any Error).self) { _ = try BMPImage(stream(truncated)) }
     }
+
+    // A BMP file of the 2 by 2 pixels with a header of the size, 40 bytes or
+    // more, the bits per pixel, the compression, the masks after the first 40
+    // bytes of the header, the palette of 0xRRGGBB colors, and the pixels of
+    // the bottom row and then the top row, each padded to 4 bytes.
+    private func bmp(_ headerSize: Int, _ bitsPerPixel: Int, _ compression: Int,
+            _ masks: [UInt32]?, _ palette: [UInt32]?, _ bottomRow: [UInt8], _ topRow: [UInt8]) -> [UInt8] {
+        let colors = palette?.count ?? 0
+        let afterHeader = (headerSize == 40 && masks != nil) ? 12 : 0
+        let offset = 14 + headerSize + afterHeader + 4 * colors
+        let rowSize = (bottomRow.count + 3) & ~3
+        var bytes: [UInt8] = [0x42, 0x4D]
+        littleEndian32(Int32(offset + 2 * rowSize), &bytes)
+        littleEndian32(0, &bytes)
+        littleEndian32(Int32(offset), &bytes)
+        littleEndian32(Int32(headerSize), &bytes)
+        littleEndian32(2, &bytes)
+        littleEndian32(2, &bytes)
+        bytes.append(contentsOf: [1, 0, UInt8(bitsPerPixel), 0])
+        for value in [compression, 2 * rowSize, 2835, 2835, colors, 0] {
+            littleEndian32(Int32(value), &bytes)
+        }
+        for mask in masks ?? [] {
+            littleEndian32(Int32(bitPattern: mask), &bytes)
+        }
+        // The rest of a larger header is 0
+        bytes.append(contentsOf: [UInt8](repeating: 0, count: offset - 4 * colors - bytes.count))
+        for color in palette ?? [] {
+            bytes.append(contentsOf: [UInt8(color & 0xFF), UInt8((color >> 8) & 0xFF), UInt8(color >> 16), 0])
+        }
+        for row in [bottomRow, topRow] {
+            bytes.append(contentsOf: row + [UInt8](repeating: 0, count: rowSize - row.count))
+        }
+        return bytes
+    }
+
+    private func decode(_ bmp: [UInt8]) throws -> [UInt8] {
+        return try TestSupport.inflate(BMPImage(stream(bmp)).getData())
+    }
+
+    // The pixels as little endian 16 bit values.
+    private func shorts(_ pixels: Int...) -> [UInt8] {
+        return pixels.flatMap { [UInt8($0 & 0xFF), UInt8($0 >> 8)] }
+    }
+
+    @Test func aThirtyTwoBitPixelIsBlueGreenRedAndAByteThatIsNotAColor() throws {
+        let bmp = bmp(40, 32, 0, nil, nil, [255, 0, 0, 0, 255, 255, 255, 0], [0, 0, 255, 0, 0, 255, 0, 0])
+        #expect(try decode(bmp) == BMPImageTests.rgb)
+    }
+
+    @Test func theMasksOfSixteenAndThirtyTwoBitPixelsAreRead() throws {
+        // 5 bits a color without masks; 31 of 5 bits is 255.
+        #expect(try decode(bmp(40, 16, 0, nil, nil,
+                shorts(0x001F, 0x7FFF), shorts(0x7C00, 0x03E0))) == BMPImageTests.rgb)
+        // 5, 6 and 5 bits.
+        #expect(try decode(bmp(40, 16, 3, [0xF800, 0x07E0, 0x001F], nil,
+                shorts(0x001F, 0xFFFF), shorts(0xF800, 0x07E0))) == BMPImageTests.rgb)
+        // Red in the low byte, in a 108 byte header.
+        #expect(try decode(bmp(108, 32, 3, [0x000000FF, 0x0000FF00, 0x00FF0000], nil,
+                [0, 0, 255, 0, 255, 255, 255, 0], [255, 0, 0, 0, 0, 255, 0, 0])) == BMPImageTests.rgb)
+    }
+
+    @Test func thePaletteFollowsAHeaderOfAnySize() throws {
+        let palette: [UInt32] = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF]
+        #expect(try decode(bmp(40, 8, 0, nil, palette, [2, 3], [0, 1])) == BMPImageTests.rgb)
+        #expect(try decode(bmp(124, 8, 0, nil, palette, [2, 3], [0, 1])) == BMPImageTests.rgb)
+    }
+
+    @Test func rejectsACompressedImage() {
+        let palette: [UInt32] = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFFFF]
+        // RLE8: a run of 1 pixel of color 2, 1 of color 3, the end of the bitmap
+        #expect(decodeError(bmp(40, 8, 1, nil, palette, [1, 2, 1, 3], [0, 1, 0, 0]))
+                == "Compressed BMP images are not supported.")
+    }
 }
