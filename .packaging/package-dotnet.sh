@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-For.NET-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
-# projects with the PDFs they create, the files they read (data, fonts, images,
-# PngSuite), and scripts that build and run the examples against PDFjet.dll.
+# projects with the PDFs they create, the files they read (data, the .stream
+# fonts, images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -49,6 +49,11 @@ git archive HEAD \
 # Example_32 draws the source of Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/data/go.mod" "$STAGE/fonts/go.mod" "$STAGE/images/go.mod"
+
+# The .stream fonts are the fonts of the package. The .otf and .ttf files they
+# are made from are left out, but for the two that Example_28 reads.
+find "$STAGE/fonts" -type f \( -name '*.otf' -o -name '*.ttf' \) \
+    ! -name IBMPlexSans-Regular.otf ! -name NotoSans-Regular.ttf -delete
 
 cd "$STAGE"
 

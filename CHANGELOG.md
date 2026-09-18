@@ -53,6 +53,9 @@ C# `PDF` class is sealed, as the Java class is final.
   Devanagari font file still runs, and draws it as before.
 
 ### Changed
+- The Java and .NET packages ship the `.stream` fonts and, of the `.otf` and
+  `.ttf` files they are made from, only the two that Example_28 reads. The
+  Java package is 296 MB where v9.0.0 was 536 MB.
 - The 113 `.otf.stream` fonts, the IBM Plex families, hold the whole font:
   after the metrics comes an `R` block with the tables that are not in the
   CFF data, compressed with Zopfli, so that the original `.otf` can be rebuilt

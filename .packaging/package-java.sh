@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-ForJava-vX.Y.Z.zip, a self-contained
 # package for Java clients: PDFjet.jar, the Javadoc reference, the examples
-# with the PDFs they create, the files they read (data, fonts, images,
-# PngSuite), and scripts that build and run the examples against PDFjet.jar.
+# with the PDFs they create, the files they read (data, the .stream fonts,
+# images, PngSuite), and scripts that build and run the examples against PDFjet.jar.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
@@ -48,6 +48,11 @@ git archive HEAD \
 # The C# example projects and the go.mod files of the Go port are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 rm -f "$STAGE/data/go.mod" "$STAGE/fonts/go.mod" "$STAGE/images/go.mod"
+
+# The .stream fonts are the fonts of the package. The .otf and .ttf files they
+# are made from are left out, but for the two that Example_28 reads.
+find "$STAGE/fonts" -type f \( -name '*.otf' -o -name '*.ttf' \) \
+    ! -name IBMPlexSans-Regular.otf ! -name NotoSans-Regular.ttf -delete
 
 cd "$STAGE"
 
