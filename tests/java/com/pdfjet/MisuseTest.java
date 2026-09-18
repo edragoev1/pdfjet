@@ -203,7 +203,7 @@ class MisuseTest {
             public void execute() throws Throwable { new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(page); }
         }));
 
-        final Image image = new Image(other, TestSupport.open("images/map407.png"));
+        final Image image = new Image(other, TestSupport.open("PngSuite/BASN2C08.PNG"));
         assertEquals("The image belongs to another PDF.", fails(IllegalArgumentException.class, new Executable() {
             public void execute() throws Throwable { image.setLocation(50f, 50f).drawOn(page); }
         }));
@@ -335,7 +335,7 @@ class MisuseTest {
     void aZeroSizeImageStampOrContainerDrawsNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.open("images/map407.png"));
+        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
         image.scaleBy(0f);
         image.setLocation(50f, 50f).drawOn(page);
         Stamp stamp = new Stamp(pdf).setSize(50f, 50f);

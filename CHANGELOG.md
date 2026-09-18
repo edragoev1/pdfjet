@@ -221,6 +221,11 @@ C# `PDF` class is sealed, as the Java class is final.
   relief, the lines of latitude and longitude, which are not printed, and
   fifteen capital cities. It replaces a street map screenshot with a line
   and a QR code over it, in all four ports.
+- `images/qrcode.png`, which Examples 17 and 50 draw, is a QR code for
+  https://pdfjet.com with its quiet zone, still a 1-bit palette PNG; it was a
+  sample for the QR generator's own web site with no margin around it.
+  `images/map407.png`, an OpenStreetMap screenshot that only the misuse tests
+  still read, is gone; they read a PngSuite image instead.
 
 ## v9.0.0 — 2026-09-16
 

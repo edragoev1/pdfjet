@@ -201,7 +201,7 @@ func TestMisuseFontsImagesStampsAndGroupsBelongToOneDocument(t *testing.T) {
 	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(page)
 	testRecorded(t, page.pdf, "The font belongs to another PDF.")
 
-	image := NewImageFromFile(other, testRepoPath(t, "images/map407.png"))
+	image := NewImageFromFile(other, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
 	page = testNewPage()
 	image.SetLocation(50, 50).DrawOn(page)
 	testRecorded(t, page.pdf, "The image belongs to another PDF.")
@@ -325,7 +325,7 @@ func TestMisuseTheXmpMetadataLeavesOutControlCharacters(t *testing.T) {
 
 func TestMisuseAZeroSizeImageStampOrContainerDrawsNothing(t *testing.T) {
 	page := testNewPage()
-	image := NewImageFromFile(page.pdf, testRepoPath(t, "images/map407.png"))
+	image := NewImageFromFile(page.pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
 	image.ScaleBy(0)
 	image.SetLocation(50, 50).DrawOn(page)
 	stamp := NewStamp(page.pdf).SetSize(50, 50)

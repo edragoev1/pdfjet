@@ -166,7 +166,7 @@ public class MisuseTest {
         Assert.Equal("The font belongs to another PDF.", Assert.Throws<ArgumentException>(
                 () => new TextLine(font, "Hello").SetLocation(50f, 50f).DrawOn(page)).Message);
 
-        Image image = new Image(other, TestSupport.Open("images/map407.png"));
+        Image image = new Image(other, TestSupport.Open("PngSuite/BASN2C08.PNG"));
         Assert.Equal("The image belongs to another PDF.", Assert.Throws<ArgumentException>(
                 () => image.SetLocation(50f, 50f).DrawOn(page)).Message);
 
@@ -277,7 +277,7 @@ public class MisuseTest {
     public void AZeroSizeImageStampOrContainerDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Image image = new Image(pdf, TestSupport.Open("images/map407.png"));
+        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
         image.ScaleBy(0f);
         image.SetLocation(50f, 50f).DrawOn(page);
         Stamp stamp = new Stamp(pdf).SetSize(50f, 50f);
