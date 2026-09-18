@@ -598,35 +598,23 @@ final public class Page {
             float y,
             float[] textColor,
             Map<String, Integer> highlightColors) {
-        if (font.isCoreFont ||
-                font.isCJK ||
-                fallbackFont == null ||
-                fallbackFont.isCoreFont ||
-                fallbackFont.isCJK) {
+        if (str == null || font.isCJK || fallbackFont == null || fallbackFont.isCJK) {
             drawString(font, fontSize, str, x, y, textColor, highlightColors);
         } else {
+            // Each run of the characters drawn with one font is drawn after the run before it.
             Font activeFont = font;
-            StringBuilder buf = new StringBuilder();
-            for (int i = 0; i < str.length(); ) {
-                int cp = str.codePointAt(i);
-                int count = Character.charCount(cp);
-                // An RLM, ZWNJ or ZWJ goes with the character after it.
-                int next = (Font.isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
-                if (!activeFont.hasGlyph(next)) {
-                    drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
-                    x += activeFont.stringWidth(fontSize, buf.toString());
-                    buf.setLength(0);
-                    // Switch the active font
-                    if (activeFont == font) {
-                        activeFont = fallbackFont;
-                    } else {
-                        activeFont = font;
-                    }
+            int start = 0;
+            for (int i = 0; i < str.length(); i += Character.charCount(str.codePointAt(i))) {
+                Font charFont = Font.fontOf(font, fallbackFont, activeFont, str, i);
+                if (charFont != activeFont) {
+                    String run = str.substring(start, i);
+                    drawString(activeFont, fontSize, run, x, y, textColor, highlightColors);
+                    x += activeFont.stringWidth(fontSize, run);
+                    start = i;
+                    activeFont = charFont;
                 }
-                buf.append(str, i, i + count);
-                i += count;
             }
-            drawString(activeFont, fontSize, buf.toString(), x, y, textColor, highlightColors);
+            drawString(activeFont, fontSize, str.substring(start), x, y, textColor, highlightColors);
         }
     }
 
@@ -2929,7 +2917,7 @@ final public class Page {
         }
         // The fallback font is used as drawString uses it.
         boolean hasFallbackFont = fallbackFont != null && fallbackFont != font &&
-                !font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK;
+                !font.isCJK && !fallbackFont.isCJK;
 
         // A span gives the language of the text, for screen readers and text extraction.
         boolean hasLanguage = language != null && !language.isEmpty();
@@ -3017,23 +3005,17 @@ final public class Page {
             float[] color,
             Map<String, Integer> highlightColors) {
         Font activeFont = font;
-        StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < str.length(); ) {
-            int cp = str.codePointAt(i);
-            int count = Character.charCount(cp);
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (Font.isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
-            if (!activeFont.hasGlyph(next)) {
-                drawTextBlockRun(activeFont, buf.toString(), color, highlightColors);
-                buf.setLength(0);
-                // Switch the active font
-                activeFont = (activeFont == font) ? fallbackFont : font;
+        int start = 0;
+        for (int i = 0; i < str.length(); i += Character.charCount(str.codePointAt(i))) {
+            Font charFont = Font.fontOf(font, fallbackFont, activeFont, str, i);
+            if (charFont != activeFont) {
+                drawTextBlockRun(activeFont, str.substring(start, i), color, highlightColors);
+                start = i;
+                activeFont = charFont;
                 setTextFont(activeFont, (activeFont == font) ? fontSize : fallbackFontSize);
             }
-            buf.append(str, i, i + count);
-            i += count;
         }
-        drawTextBlockRun(activeFont, buf.toString(), color, highlightColors);
+        drawTextBlockRun(activeFont, str.substring(start), color, highlightColors);
         if (activeFont != font) {
             setTextFont(font, fontSize);    // The next line starts in the font
         }
@@ -3045,12 +3027,16 @@ final public class Page {
         if (str.isEmpty()) {
             return;
         }
-        if (highlightColors == null) {
+        if (highlightColors != null) {
+            drawColoredString(font, str, color, highlightColors);
+        } else if (font.isCoreFont) {
+            append("[<");
+            drawASCIIString(font, str);
+            append(">] TJ\n");
+        } else {
             append("<");
             drawUnicodeString(font, str);
             append("> Tj\n");
-        } else {
-            drawColoredString(font, str, color, highlightColors);
         }
     }
 

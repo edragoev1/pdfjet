@@ -506,9 +506,34 @@ final public class Font {
     }
 
     // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
+    // the end of the glyph table of the font, like an emoji, has none, and a
+    // core font has the characters of its encoding.
     boolean hasGlyph(int cp) {
+        if (isCoreFont) {
+            return cp == 32 || coreFontCode(cp) != 32;
+        }
         return cp < unicodeToGID.length && unicodeToGID[cp] != 0;
+    }
+
+    // Returns the font, of the font and its fallback font, that draws the
+    // character at index i of the string, when the character before it is
+    // drawn with the active font: the font when it has a glyph for the
+    // character, else the fallback font when that has one, else the font. A
+    // combining mark stays with the character before it when that font has it,
+    // and an RLM, LRM, ZWNJ or ZWJ goes with the character after it.
+    static Font fontOf(Font font, Font fallbackFont, Font active, String str, int i) {
+        int cp = str.codePointAt(i);
+        if (i > 0 && Character.getType(cp) == Character.NON_SPACING_MARK && active.hasGlyph(cp)) {
+            return active;
+        }
+        int next = i + Character.charCount(cp);
+        if (isJoinerOrRLM(cp) && next < str.length()) {
+            cp = str.codePointAt(next);
+        }
+        if (font.hasGlyph(cp) || !fallbackFont.hasGlyph(cp)) {
+            return font;
+        }
+        return fallbackFont;
     }
 
     /**
@@ -800,8 +825,7 @@ final public class Font {
     float stringWidth(Font fallbackFont, float fontSize, float fallbackFontSize, String str) {
         float width = 0f;
 
-        if (str == null || this.isCoreFont || this.isCJK ||
-                fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
+        if (str == null || this.isCJK || fallbackFont == null || fallbackFont.isCJK) {
             return stringWidth(fontSize, str);
         }
 
@@ -810,23 +834,14 @@ final public class Font {
         // between the characters that switch fonts, so measuring them copies
         // nothing: a string that is all in the primary font is one piece.
         int start = 0;
-        for (int i = 0; i < str.length(); ) {
-            int cp = str.codePointAt(i);
-            int count = Character.charCount(cp);
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (isJoinerOrRLM(cp) && i + count < str.length()) ? str.codePointAt(i + count) : cp;
-            if (!activeFont.hasGlyph(next)) {
+        for (int i = 0; i < str.length(); i += Character.charCount(str.codePointAt(i))) {
+            Font charFont = fontOf(this, fallbackFont, activeFont, str, i);
+            if (charFont != activeFont) {
                 width += activeFont.stringWidth(
                         activeFont == this ? fontSize : fallbackFontSize, str.substring(start, i));
                 start = i;
-                // Switch the active font
-                if (activeFont == this) {
-                    activeFont = fallbackFont;
-                } else {
-                    activeFont = this;
-                }
+                activeFont = charFont;
             }
-            i += count;
         }
         width += activeFont.stringWidth(
                 activeFont == this ? fontSize : fallbackFontSize, str.substring(start));

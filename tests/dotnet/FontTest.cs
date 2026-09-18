@@ -182,5 +182,28 @@ public class FontTest {
         // KPX period space -60
         TestSupport.AssertNear(4.96f, font.StringWidth(10f, ".\u00a0"), 0.001f);
     }
+
+    [Fact]
+    public void AFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() {
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))) {
+            return;     // The fonts directory is not here.
+        }
+        PDF pdf = TestSupport.NewPDF();
+        Font latin = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font jp = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"));
+        Font helvetica = TestSupport.Helvetica(pdf);
+        // The Latin letters after the Japanese ones are in the font again.
+        TestSupport.AssertNear(latin.StringWidth(10f, "abc") + jp.StringWidth(10f, "\u65e5\u672c") + latin.StringWidth(10f, "def"),
+                latin.StringWidth(jp, 10f, "abc\u65e5\u672cdef"), 0.001f);
+        // A core font has a fallback font too.
+        TestSupport.AssertNear(helvetica.StringWidth(10f, "Tokyo ") + jp.StringWidth(10f, "\u6771\u4eac"),
+                helvetica.StringWidth(jp, 10f, "Tokyo \u6771\u4eac"), 0.001f);
+        // A character that neither font has stays in the font.
+        Assert.Equal(latin.StringWidth(10f, "x\u0e01y"), latin.StringWidth(jp, 10f, "x\u0e01y"));
+        // A combining mark stays with the character before it, in one run of one font.
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(latin, "\u65e5\u0301").SetFallbackFont(jp).SetLocation(10f, 20f).DrawOn(page);
+        Assert.Equal(1, TestSupport.Content(page).Split(" Tf\n").Length - 1);
+    }
 }
 }

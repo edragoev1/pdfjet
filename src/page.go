@@ -17,6 +17,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -328,32 +329,24 @@ func (page *Page) DrawStringUsingFontSize(
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) drawStringUsingHighlightColors(
 	font, fallbackFont *Font, fontSize float32, text string, x, y float32, brush [3]float32, colors map[string]int32) {
-	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
+	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK {
 		page.drawString(font, fontSize, text, x, y, brush, colors)
 	} else {
+		// Each run of the characters drawn with one font is drawn after the run before it.
 		activeFont := font
-		var buf strings.Builder
-		runes := []rune(text)
-		for i, ch := range runes {
-			// An RLM, ZWNJ or ZWJ goes with the character after it.
-			next := ch
-			if isJoinerOrRLM(ch) && i+1 < len(runes) {
-				next = runes[i+1]
+		start := 0
+		for i := 0; i < len(text); {
+			_, size := utf8.DecodeRuneInString(text[i:])
+			if charFont := fontOf(font, fallbackFont, activeFont, text, i); charFont != activeFont {
+				run := text[start:i]
+				page.drawString(activeFont, fontSize, run, x, y, brush, colors)
+				x += activeFont.StringWidth(fontSize, run)
+				start = i
+				activeFont = charFont
 			}
-			if !activeFont.hasGlyph(next) {
-				page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
-				x += activeFont.StringWidth(fontSize, buf.String())
-				buf.Reset()
-				// Switch the active font
-				if activeFont == font {
-					activeFont = fallbackFont
-				} else {
-					activeFont = font
-				}
-			}
-			buf.WriteRune(ch)
+			i += size
 		}
-		page.drawString(activeFont, fontSize, buf.String(), x, y, brush, colors)
+		page.drawString(activeFont, fontSize, text[start:], x, y, brush, colors)
 	}
 }
 
@@ -2399,7 +2392,7 @@ func (page *Page) drawTextBlock(
 	}
 	// The fallback font is used as drawStringUsingHighlightColors uses it.
 	hasFallbackFont := fallbackFont != nil && fallbackFont != font &&
-		!font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK
+		!font.isCJK && !fallbackFont.isCJK
 
 	// A span gives the language of the text, for screen readers and text extraction.
 	hasLanguage := language != ""
@@ -2484,29 +2477,22 @@ func (page *Page) drawTextBlockLine(
 	font, fallbackFont *Font, fontSize, fallbackFontSize float32,
 	text string, textColor [3]float32, highlightColors map[string]int32) {
 	activeFont := font
-	var buf strings.Builder
-	runes := []rune(text)
-	for i, ch := range runes {
-		// An RLM, ZWNJ or ZWJ goes with the character after it.
-		next := ch
-		if isJoinerOrRLM(ch) && i+1 < len(runes) {
-			next = runes[i+1]
-		}
-		if !activeFont.hasGlyph(next) {
-			page.drawTextBlockRun(activeFont, buf.String(), textColor, highlightColors)
-			buf.Reset()
-			// Switch the active font
+	start := 0
+	for i := 0; i < len(text); {
+		_, size := utf8.DecodeRuneInString(text[i:])
+		if charFont := fontOf(font, fallbackFont, activeFont, text, i); charFont != activeFont {
+			page.drawTextBlockRun(activeFont, text[start:i], textColor, highlightColors)
+			start = i
+			activeFont = charFont
 			if activeFont == font {
-				activeFont = fallbackFont
-				page.setTextFont(activeFont, fallbackFontSize)
-			} else {
-				activeFont = font
 				page.setTextFont(activeFont, fontSize)
+			} else {
+				page.setTextFont(activeFont, fallbackFontSize)
 			}
 		}
-		buf.WriteRune(ch)
+		i += size
 	}
-	page.drawTextBlockRun(activeFont, buf.String(), textColor, highlightColors)
+	page.drawTextBlockRun(activeFont, text[start:], textColor, highlightColors)
 	if activeFont != font {
 		page.setTextFont(font, fontSize) // The next line starts in the font
 	}
@@ -2518,11 +2504,15 @@ func (page *Page) drawTextBlockRun(
 	if text == "" {
 		return
 	}
-	if highlightColors == nil {
+	if highlightColors != nil {
+		page.drawColoredString(font, text, textColor, highlightColors)
+	} else if font.isCoreFont {
+		page.appendString("[<")
+		page.drawASCIIString(font, text)
+		page.appendString(">] TJ\n")
+	} else {
 		page.appendString("<")
 		page.drawUnicodeString(font, text)
 		page.appendString("> Tj\n")
-	} else {
-		page.drawColoredString(font, text, textColor, highlightColors)
 	}
 }

@@ -152,4 +152,25 @@ import Testing
         // KPX period space -60
         TestSupport.expectNear(4.96, font.stringWidth(10, ".\u{00A0}"), 0.001)
     }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func aFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() throws {
+        let pdf = TestSupport.newPDF()
+        let latin = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        let jp = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))
+        let helvetica = TestSupport.helvetica(pdf)
+        // The Latin letters after the Japanese ones are in the font again.
+        TestSupport.expectNear(latin.stringWidth(10, "abc") + jp.stringWidth(10, "\u{65E5}\u{672C}") + latin.stringWidth(10, "def"),
+                latin.stringWidth(jp, 10, "abc\u{65E5}\u{672C}def"), 0.001)
+        // A core font has a fallback font too.
+        TestSupport.expectNear(helvetica.stringWidth(10, "Tokyo ") + jp.stringWidth(10, "\u{6771}\u{4EAC}"),
+                helvetica.stringWidth(jp, 10, "Tokyo \u{6771}\u{4EAC}"), 0.001)
+        // A character that neither font has stays in the font.
+        #expect(latin.stringWidth(10, "x\u{0E01}y") == latin.stringWidth(jp, 10, "x\u{0E01}y"))
+        // A combining mark stays with the character before it, in one run of one font.
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(latin, "\u{65E5}\u{0301}").setFallbackFont(jp).setLocation(10, 20).drawOn(page)
+        #expect(TestSupport.content(page).components(separatedBy: " Tf\n").count - 1 == 1)
+    }
 }

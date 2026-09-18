@@ -393,9 +393,35 @@ public class Font {
     }
 
     // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
+    // the end of the glyph table of the font, like an emoji, has none, and a
+    // core font has the characters of its encoding.
     internal bool HasGlyph(int codePoint) {
+        if (isCoreFont) {
+            return codePoint == 32 || CoreFontCode(codePoint) != 32;
+        }
         return codePoint < unicodeToGID.Length && unicodeToGID[codePoint] != 0;
+    }
+
+    // Returns the font, of the font and its fallback font, that draws the
+    // character at index i of the string, when the character before it is
+    // drawn with the active font: the font when it has a glyph for the
+    // character, else the fallback font when that has one, else the font. A
+    // combining mark stays with the character before it when that font has it,
+    // and an RLM, LRM, ZWNJ or ZWJ goes with the character after it.
+    internal static Font FontOf(Font font, Font fallbackFont, Font active, String str, int i) {
+        int cp = Util.CodePointAt(str, i);
+        if (i > 0 && System.Globalization.CharUnicodeInfo.GetUnicodeCategory(cp) ==
+                System.Globalization.UnicodeCategory.NonSpacingMark && active.HasGlyph(cp)) {
+            return active;
+        }
+        int next = i + ((cp > 0xFFFF) ? 2 : 1);
+        if (IsJoinerOrRLM(cp) && next < str.Length) {
+            cp = Util.CodePointAt(str, next);
+        }
+        if (font.HasGlyph(cp) || !fallbackFont.HasGlyph(cp)) {
+            return font;
+        }
+        return fallbackFont;
     }
 
     /// <summary>Returns the ascent at the current font size.</summary>
@@ -637,8 +663,7 @@ public class Font {
     internal float StringWidth(Font fallbackFont, float fontSize, float fallbackFontSize, String str) {
         float width = 0f;
 
-        if (str == null || this.isCoreFont || this.isCJK ||
-                fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
+        if (str == null || this.isCJK || fallbackFont == null || fallbackFont.isCJK) {
             return StringWidth(fontSize, str);
         }
 
@@ -647,23 +672,14 @@ public class Font {
         // between the characters that switch fonts, so measuring them copies
         // nothing: a string that is all in the primary font is one piece.
         int start = 0;
-        for (int i = 0; i < str.Length; ) {
-            int ch = Util.CodePointAt(str, i);
-            int count = (ch > 0xFFFF) ? 2 : 1;
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
-            if (!activeFont.HasGlyph(next)) {
+        for (int i = 0; i < str.Length; i += Util.CharCount(str, i)) {
+            Font charFont = FontOf(this, fallbackFont, activeFont, str, i);
+            if (charFont != activeFont) {
                 width += activeFont.StringWidth(
                         activeFont == this ? fontSize : fallbackFontSize, str.Substring(start, i - start));
                 start = i;
-                // Switch the active font
-                if (activeFont == this) {
-                    activeFont = fallbackFont;
-                } else {
-                    activeFont = this;
-                }
+                activeFont = charFont;
             }
-            i += count;
         }
         width += activeFont.StringWidth(
                 activeFont == this ? fontSize : fallbackFontSize, str.Substring(start));

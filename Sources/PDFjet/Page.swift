@@ -365,33 +365,26 @@ public class Page {
             _ highlightColors: [String : Int32]?) {
         var x = xOrig
         let y = yOrig
-        if (font.isCoreFont ||
-                font.isCJK ||
-                fallbackFont == nil ||
-                fallbackFont!.isCoreFont ||
-                fallbackFont!.isCJK) {
+        if str == nil || font.isCJK || fallbackFont == nil || fallbackFont!.isCJK {
             drawString(font, fontSize, str, x, y, textColor, highlightColors)
         } else {
+            // Each run of the characters drawn with one font is drawn after the run before it.
             var activeFont = font
-            var buf = String()
-            let scalars = Array(str!.unicodeScalars)
-            for (i, scalar) in scalars.enumerated() {
-                // An RLM, ZWNJ or ZWJ goes with the character after it.
-                let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
-                if !activeFont.hasGlyph(Int(next.value)) {
-                    drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
-                    x += activeFont.stringWidth(fontSize, buf)
-                    buf = ""
-                    // Switch the font
-                    if activeFont === font {
-                        activeFont = fallbackFont!
-                    } else {
-                        activeFont = font
-                    }
+            let scalars = str!.unicodeScalars
+            var start = scalars.startIndex
+            var i = scalars.startIndex
+            while i < scalars.endIndex {
+                let charFont = Font.fontOf(font, fallbackFont!, activeFont, scalars, i)
+                if charFont !== activeFont {
+                    let run = String(scalars[start..<i])
+                    drawString(activeFont, fontSize, run, x, y, textColor, highlightColors)
+                    x += activeFont.stringWidth(fontSize, run)
+                    start = i
+                    activeFont = charFont
                 }
-                buf.append(String(scalar))
+                i = scalars.index(after: i)
             }
-            drawString(activeFont, fontSize, buf, x, y, textColor, highlightColors)
+            drawString(activeFont, fontSize, String(scalars[start...]), x, y, textColor, highlightColors)
         }
     }
 
@@ -2652,7 +2645,7 @@ public class Page {
         }
         // The fallback font is used as drawString uses it.
         let hasFallbackFont = fallbackFont != nil && fallbackFont! !== font &&
-                !font.isCoreFont && !font.isCJK && !fallbackFont!.isCoreFont && !fallbackFont!.isCJK
+                !font.isCJK && !fallbackFont!.isCJK
 
         // A span gives the language of the text, for screen readers and text extraction.
         let hasLanguage = language != nil && !language!.isEmpty
@@ -2740,21 +2733,20 @@ public class Page {
             _ color: [Float],
             _ highlightColors: [String: Int32]?) {
         var activeFont = font
-        var buf = String()
-        let scalars = Array(str.unicodeScalars)
-        for (i, scalar) in scalars.enumerated() {
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            let next = (Font.isJoinerOrRLM(scalar.value) && i + 1 < scalars.count) ? scalars[i + 1] : scalar
-            if !activeFont.hasGlyph(Int(next.value)) {
-                drawTextBlockRun(activeFont, buf, color, highlightColors)
-                buf = ""
-                // Switch the active font
-                activeFont = (activeFont === font) ? fallbackFont : font
+        let scalars = str.unicodeScalars
+        var start = scalars.startIndex
+        var i = scalars.startIndex
+        while i < scalars.endIndex {
+            let charFont = Font.fontOf(font, fallbackFont, activeFont, scalars, i)
+            if charFont !== activeFont {
+                drawTextBlockRun(activeFont, String(scalars[start..<i]), color, highlightColors)
+                start = i
+                activeFont = charFont
                 setTextFont(activeFont, (activeFont === font) ? fontSize : fallbackFontSize)
             }
-            buf.append(String(scalar))
+            i = scalars.index(after: i)
         }
-        drawTextBlockRun(activeFont, buf, color, highlightColors)
+        drawTextBlockRun(activeFont, String(scalars[start...]), color, highlightColors)
         if activeFont !== font {
             setTextFont(font, fontSize)     // The next line starts in the font
         }
@@ -2766,12 +2758,16 @@ public class Page {
         if str.isEmpty {
             return
         }
-        if highlightColors == nil {
+        if highlightColors != nil {
+            drawColoredString(font, str, color, highlightColors!)
+        } else if font.isCoreFont {
+            append("[<")
+            drawASCIIString(font, str)
+            append(">] TJ\n")
+        } else {
             append("<")
             drawUnicodeString(font, str)
             append("> Tj\n")
-        } else {
-            drawColoredString(font, str, color, highlightColors!)
         }
     }
 

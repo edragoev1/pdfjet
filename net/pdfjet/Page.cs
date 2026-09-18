@@ -524,31 +524,23 @@ public class Page {
             float y,
             float[] textColor,
             Dictionary<String, Int32> colors) {
-        if (font.isCoreFont || font.isCJK || fallbackFont == null || fallbackFont.isCoreFont || fallbackFont.isCJK) {
+        if (str == null || font.isCJK || fallbackFont == null || fallbackFont.isCJK) {
             DrawString(font, fontSize, str, x, y, textColor, colors);
         } else {
+            // Each run of the characters drawn with one font is drawn after the run before it.
             Font activeFont = font;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < str.Length; ) {
-                int ch = Util.CodePointAt(str, i);
-                int count = (ch > 0xFFFF) ? 2 : 1;
-                // An RLM, ZWNJ or ZWJ goes with the character after it.
-                int next = (Font.IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
-                if (!activeFont.HasGlyph(next)) {
-                    DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
-                    x += activeFont.StringWidth(fontSize, sb.ToString());
-                    sb.Length = 0;
-                    // Switch the font
-                    if (activeFont == font) {
-                        activeFont = fallbackFont;
-                    } else {
-                        activeFont = font;
-                    }
+            int start = 0;
+            for (int i = 0; i < str.Length; i += Util.CharCount(str, i)) {
+                Font charFont = Font.FontOf(font, fallbackFont, activeFont, str, i);
+                if (charFont != activeFont) {
+                    String run = str.Substring(start, i - start);
+                    DrawString(activeFont, fontSize, run, x, y, textColor, colors);
+                    x += activeFont.StringWidth(fontSize, run);
+                    start = i;
+                    activeFont = charFont;
                 }
-                sb.Append(str, i, count);
-                i += count;
             }
-            DrawString(activeFont, fontSize, sb.ToString(), x, y, textColor, colors);
+            DrawString(activeFont, fontSize, str.Substring(start), x, y, textColor, colors);
         }
     }
 
@@ -2617,7 +2609,7 @@ public class Page {
         }
         // The fallback font is used as DrawString uses it.
         bool hasFallbackFont = fallbackFont != null && fallbackFont != font &&
-                !font.isCoreFont && !font.isCJK && !fallbackFont.isCoreFont && !fallbackFont.isCJK;
+                !font.isCJK && !fallbackFont.isCJK;
 
         // A span gives the language of the text, for screen readers and text extraction.
         bool hasLanguage = !String.IsNullOrEmpty(language);
@@ -2705,23 +2697,17 @@ public class Page {
             float[] color,
             Dictionary<String, Int32> highlightColors) {
         Font activeFont = font;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < str.Length; ) {
-            int ch = Util.CodePointAt(str, i);
-            int count = (ch > 0xFFFF) ? 2 : 1;
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            int next = (Font.IsJoinerOrRLM(ch) && i + count < str.Length) ? Util.CodePointAt(str, i + count) : ch;
-            if (!activeFont.HasGlyph(next)) {
-                DrawTextBlockRun(activeFont, sb.ToString(), color, highlightColors);
-                sb.Length = 0;
-                // Switch the active font
-                activeFont = (activeFont == font) ? fallbackFont : font;
+        int start = 0;
+        for (int i = 0; i < str.Length; i += Util.CharCount(str, i)) {
+            Font charFont = Font.FontOf(font, fallbackFont, activeFont, str, i);
+            if (charFont != activeFont) {
+                DrawTextBlockRun(activeFont, str.Substring(start, i - start), color, highlightColors);
+                start = i;
+                activeFont = charFont;
                 SetTextFont(activeFont, (activeFont == font) ? fontSize : fallbackFontSize);
             }
-            sb.Append(str, i, count);
-            i += count;
         }
-        DrawTextBlockRun(activeFont, sb.ToString(), color, highlightColors);
+        DrawTextBlockRun(activeFont, str.Substring(start), color, highlightColors);
         if (activeFont != font) {
             SetTextFont(font, fontSize);    // The next line starts in the font
         }
@@ -2733,12 +2719,16 @@ public class Page {
         if (str.Length == 0) {
             return;
         }
-        if (highlightColors == null) {
+        if (highlightColors != null) {
+            DrawColoredString(font, str, color, highlightColors);
+        } else if (font.isCoreFont) {
+            Append("[<");
+            DrawASCIIString(font, str);
+            Append(">] TJ\n");
+        } else {
             Append("<");
             DrawUnicodeString(font, str);
             Append("> Tj\n");
-        } else {
-            DrawColoredString(font, str, color, highlightColors);
         }
     }
 

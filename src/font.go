@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
@@ -611,9 +612,33 @@ func (font *Font) advanceWidthOf(c rune) int {
 }
 
 // hasGlyph returns true if the font has a glyph for the character. A character
-// past the end of the glyph table of the font, like an emoji, has none.
+// past the end of the glyph table of the font, like an emoji, has none, and a
+// core font has the characters of its encoding.
 func (font *Font) hasGlyph(c rune) bool {
+	if font.isCoreFont {
+		return c == 32 || font.coreFontCode(c) != 32
+	}
 	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
+}
+
+// fontOf returns the font, of the font and its fallback font, that draws the
+// character at byte index i of the text, when the character before it is drawn
+// with the active font: the font when it has a glyph for the character, else
+// the fallback font when that has one, else the font. A combining mark stays
+// with the character before it when that font has it, and an RLM, LRM, ZWNJ or
+// ZWJ goes with the character after it.
+func fontOf(font, fallbackFont, active *Font, text string, i int) *Font {
+	cp, size := utf8.DecodeRuneInString(text[i:])
+	if i > 0 && unicode.Is(unicode.Mn, cp) && active.hasGlyph(cp) {
+		return active
+	}
+	if isJoinerOrRLM(cp) && i+size < len(text) {
+		cp, _ = utf8.DecodeRuneInString(text[i+size:])
+	}
+	if font.hasGlyph(cp) || !fallbackFont.hasGlyph(cp) {
+		return font
+	}
+	return fallbackFont
 }
 
 // StringWidthUsingFallbackFont returns the width of text string drawn using main and fallback fonts.
@@ -626,7 +651,7 @@ func (font *Font) StringWidthUsingFallbackFont(fallbackFont *Font, fontSize floa
 func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontSize float32, text string) float32 {
 	var width float32 = 0.0
 
-	if font.isCoreFont || font.isCJK || fallbackFont == nil || fallbackFont.isCoreFont || fallbackFont.isCJK {
+	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK {
 		return font.StringWidth(fontSize, text)
 	}
 
@@ -637,22 +662,14 @@ func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontS
 	// nothing: text that is all in the primary font is measured in one piece.
 	start := 0
 	for i := 0; i < len(text); {
-		ch, size := utf8.DecodeRuneInString(text[i:])
-		// An RLM, ZWNJ or ZWJ goes with the character after it.
-		next := ch
-		if isJoinerOrRLM(ch) && i+size < len(text) {
-			next, _ = utf8.DecodeRuneInString(text[i+size:])
-		}
-		if !activeFont.hasGlyph(next) {
+		_, size := utf8.DecodeRuneInString(text[i:])
+		if charFont := fontOf(font, fallbackFont, activeFont, text, i); charFont != activeFont {
 			width += activeFont.StringWidth(activeSize, text[start:i])
 			start = i
-			// Switch the active font
-			if activeFont == font {
-				activeFont = fallbackFont
+			activeFont = charFont
+			activeSize = fontSize
+			if activeFont != font {
 				activeSize = fallbackFontSize
-			} else {
-				activeFont = font
-				activeSize = fontSize
 			}
 		}
 		i += size

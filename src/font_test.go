@@ -183,3 +183,33 @@ func TestFontASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace(t *testing.T) {
 	// KPX period space -60
 	testNear(t, "a kerned no-break space", 4.96, font.StringWidth(10, ".\u00a0"), 0.001)
 }
+
+func TestFontAFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor(t *testing.T) {
+	pdf := testNewPDF()
+	open := func(path string) *Font {
+		file, err := os.Open(testRepoPath(t, path))
+		if err != nil {
+			t.Skip("the fonts directory is not here")
+		}
+		defer file.Close()
+		return NewFont(pdf, file)
+	}
+	latin := open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream")
+	helvetica := testHelvetica(pdf)
+	// The Latin letters after the Japanese ones are in the font again.
+	testNear(t, "Latin after Japanese", latin.StringWidth(10, "abc")+jp.StringWidth(10, "\u65e5\u672c")+latin.StringWidth(10, "def"),
+		latin.StringWidthUsingFallbackFont(jp, 10, "abc\u65e5\u672cdef"), 0.001)
+	// A core font has a fallback font too.
+	testNear(t, "a core font", helvetica.StringWidth(10, "Tokyo ")+jp.StringWidth(10, "\u6771\u4eac"),
+		helvetica.StringWidthUsingFallbackFont(jp, 10, "Tokyo \u6771\u4eac"), 0.001)
+	// A character that neither font has stays in the font.
+	testNear(t, "a character neither font has", latin.StringWidth(10, "x\u0e01y"),
+		latin.StringWidthUsingFallbackFont(jp, 10, "x\u0e01y"), 0)
+	// A combining mark stays with the character before it, in one run of one font.
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(latin, "\u65e5\u0301").SetFallbackFont(jp).SetLocation(10, 20).DrawOn(page)
+	if n := strings.Count(testContent(page), " Tf\n"); n != 1 {
+		t.Errorf("%d fonts: %q", n, testContent(page))
+	}
+}

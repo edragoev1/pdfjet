@@ -414,9 +414,40 @@ public class Font {
     }
 
     // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none.
+    // the end of the glyph table of the font, like an emoji, has none, and a
+    // core font has the characters of its encoding.
     func hasGlyph(_ codePoint: Int) -> Bool {
+        if isCoreFont {
+            return codePoint == 32 || coreFontCode(UInt32(codePoint)) != 32
+        }
         return codePoint < unicodeToGID.count && unicodeToGID[codePoint] != 0
+    }
+
+    // Returns the font, of the font and its fallback font, that draws the
+    // character at index i of the scalars, when the character before it is
+    // drawn with the active font: the font when it has a glyph for the
+    // character, else the fallback font when that has one, else the font. A
+    // combining mark stays with the character before it when that font has it,
+    // and an RLM, LRM, ZWNJ or ZWJ goes with the character after it.
+    static func fontOf(
+            _ font: Font,
+            _ fallbackFont: Font,
+            _ active: Font,
+            _ scalars: String.UnicodeScalarView,
+            _ i: String.UnicodeScalarView.Index) -> Font {
+        var scalar = scalars[i]
+        if i > scalars.startIndex && scalar.properties.generalCategory == .nonspacingMark &&
+                active.hasGlyph(Int(scalar.value)) {
+            return active
+        }
+        let after = scalars.index(after: i)
+        if Font.isJoinerOrRLM(scalar.value) && after < scalars.endIndex {
+            scalar = scalars[after]
+        }
+        if font.hasGlyph(Int(scalar.value)) || !fallbackFont.hasGlyph(Int(scalar.value)) {
+            return font
+        }
+        return fallbackFont
     }
 
     ///
@@ -659,8 +690,7 @@ public class Font {
     // in the fallback font at the fallback font size.
     func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ fallbackFontSize: Float, _ str: String?) -> Float {
         var width: Float = 0.0
-        if str == nil || self.isCoreFont || self.isCJK ||
-                fallbackFont == nil || fallbackFont!.isCoreFont || fallbackFont!.isCJK {
+        if str == nil || self.isCJK || fallbackFont == nil || fallbackFont!.isCJK {
             return stringWidth(fontSize, str)
         }
         var activeFont = self
@@ -673,23 +703,14 @@ public class Font {
         var start = scalars.startIndex
         var i = scalars.startIndex
         while i < scalars.endIndex {
-            let scalar = scalars[i]
-            let after = scalars.index(after: i)
-            // An RLM, ZWNJ or ZWJ goes with the character after it.
-            let next = (Font.isJoinerOrRLM(scalar.value) && after < scalars.endIndex) ? scalars[after] : scalar
-            if !activeFont.hasGlyph(Int(next.value)) {
+            let charFont = Font.fontOf(self, fallbackFont!, activeFont, scalars, i)
+            if charFont !== activeFont {
                 width += activeFont.stringWidth(activeSize, String(scalars[start..<i]))
                 start = i
-                // Switch the active font
-                if activeFont === self {
-                    activeFont = fallbackFont!
-                    activeSize = fallbackFontSize
-                } else {
-                    activeFont = self
-                    activeSize = fontSize
-                }
+                activeFont = charFont
+                activeSize = (activeFont === self) ? fontSize : fallbackFontSize
             }
-            i = after
+            i = scalars.index(after: i)
         }
         if start == scalars.startIndex {
             return width + activeFont.stringWidth(activeSize, str!)

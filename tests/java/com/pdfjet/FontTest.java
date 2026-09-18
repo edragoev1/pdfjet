@@ -188,4 +188,25 @@ class FontTest {
         // KPX period space -60
         assertEquals(4.96f, font.stringWidth(10f, ".\u00a0"), 0.001f);
     }
+
+    @Test
+    void aFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() throws Exception {
+        assumeTrue(TestSupport.file("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream").exists(), "the fonts directory is not here");
+        PDF pdf = TestSupport.newPDF();
+        Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"));
+        Font helvetica = TestSupport.helvetica(pdf);
+        // The Latin letters after the Japanese ones are in the font again.
+        assertEquals(latin.stringWidth(10f, "abc") + jp.stringWidth(10f, "\u65e5\u672c") + latin.stringWidth(10f, "def"),
+                latin.stringWidth(jp, 10f, "abc\u65e5\u672cdef"), 0.001f);
+        // A core font has a fallback font too.
+        assertEquals(helvetica.stringWidth(10f, "Tokyo ") + jp.stringWidth(10f, "\u6771\u4eac"),
+                helvetica.stringWidth(jp, 10f, "Tokyo \u6771\u4eac"), 0.001f);
+        // A character that neither font has stays in the font.
+        assertEquals(latin.stringWidth(10f, "x\u0e01y"), latin.stringWidth(jp, 10f, "x\u0e01y"), 0f);
+        // A combining mark stays with the character before it, in one run of one font.
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(latin, "\u65e5\u0301").setFallbackFont(jp).setLocation(10f, 20f).drawOn(page);
+        assertEquals(1, TestSupport.content(page).split(" Tf\n").length - 1, TestSupport.content(page));
+    }
 }
