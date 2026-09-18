@@ -37,6 +37,7 @@ type Font struct {
 	bBoxURy                int16
 	fontAscent             int16
 	fontDescent            int16
+	fontLineGap            int16 // The space the font puts between its lines.
 	firstChar              rune
 	lastChar               rune
 	capHeight              int16
@@ -368,6 +369,18 @@ func (font *Font) GetDescent(fontSize float32) float32 {
 		return fontSize / 4
 	}
 	return -float32(font.fontDescent) * fontSize / float32(font.unitsPerEm)
+}
+
+// GetLineGap returns the line gap at the font size: the space the font puts
+// between the descent of a line and the ascent of the next one. It is 0 for
+// most fonts, which leave that space in their ascent and descent, and 1 em for
+// the Japanese and Chinese IBM Plex fonts, whose ascent and descent add up to
+// 1 em.
+func (font *Font) GetLineGap(fontSize float32) float32 {
+	if font.isCJK {
+		return 0
+	}
+	return float32(font.fontLineGap) * fontSize / float32(font.unitsPerEm)
 }
 
 // GetBodyHeight returns the height of the body of the font at the font size.

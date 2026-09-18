@@ -151,4 +151,19 @@ class FontTest {
         assertThrows(IllegalArgumentException.class, () -> new Font(pdf, 0));
         assertThrows(IllegalArgumentException.class, () -> new Font(pdf, 15));
     }
+
+    @Test
+    void theLineGapOfAFontSpacesTheLinesOfATextBlock() throws Exception {
+        String path = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream";
+        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
+        PDF pdf = TestSupport.newPDF();
+        Font jp = new Font(pdf, TestSupport.open(path));
+        assertEquals(10f, jp.getLineGap(10f), 0.001f);
+        assertEquals(10f, new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")).getLineGap(10f), 0.001f);
+        assertEquals(0f, new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+                .getLineGap(10f), 0f);
+        // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
+        jp.setSize(10f);
+        TestSupport.assertXY(500f, 40f, new TextBlock(jp, "日本\n日本").setLocation(0f, 0f).drawOn(null));
+    }
 }

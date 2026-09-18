@@ -192,8 +192,9 @@ public class TextColumn : Drawable {
         var maxAscent: Float = 0.0
         var maxDescent: Float = 0.0
         for line in paragraph.lines {
-            if (line.getHeight() * self.lineSpacing) > lineHeight {
-                lineHeight = line.getHeight() * lineSpacing
+            let height = (line.getHeight() + line.font!.getLineGap(line.fontSize)) * lineSpacing
+            if height > lineHeight {
+                lineHeight = height
             }
             if line.font!.getAscent(line.fontSize) > maxAscent {
                 maxAscent = line.font!.getAscent(line.fontSize)

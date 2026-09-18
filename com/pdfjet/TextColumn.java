@@ -210,8 +210,9 @@ public class TextColumn implements Drawable {
         float maxAscent = 0f;
         float maxDescent = 0f;
         for (TextLine line : paragraph.lines) {
-            if ((line.getHeight() * lineSpacing) > lineHeight) {
-                lineHeight = line.getHeight() * lineSpacing;
+            float height = (line.getHeight() + line.font.getLineGap(line.fontSize)) * lineSpacing;
+            if (height > lineHeight) {
+                lineHeight = height;
             }
             if (line.font.getAscent(line.fontSize) > maxAscent) {
                 maxAscent = line.font.getAscent(line.fontSize);

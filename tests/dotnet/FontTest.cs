@@ -144,5 +144,22 @@ public class FontTest {
         Assert.Throws<ArgumentException>(() => new Font(pdf, 0));
         Assert.Throws<ArgumentException>(() => new Font(pdf, 15));
     }
+
+    [Fact]
+    public void TheLineGapOfAFontSpacesTheLinesOfATextBlock() {
+        string path = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream";
+        if (!File.Exists(TestSupport.RepoPath(path))) {
+            return;     // The fonts directory is not here.
+        }
+        PDF pdf = TestSupport.NewPDF();
+        Font jp = new Font(pdf, TestSupport.Open(path));
+        TestSupport.AssertNear(10f, jp.GetLineGap(10f), 0.001f);
+        TestSupport.AssertNear(10f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")).GetLineGap(10f), 0.001f);
+        Assert.Equal(0f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+                .GetLineGap(10f));
+        // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
+        jp.SetSize(10f);
+        TestSupport.AssertXY(500f, 40f, new TextBlock(jp, "日本\n日本").SetLocation(0f, 0f).DrawOn(null));
+    }
 }
 }

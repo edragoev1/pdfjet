@@ -38,6 +38,7 @@ type openTypeFont struct {
 	bBoxURy            int16
 	ascent             int16
 	descent            int16
+	lineGap            int16
 	firstChar          rune
 	lastChar           rune
 	capHeight          int16
@@ -148,7 +149,8 @@ func getHheaTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 4
 	otf.ascent = readInt16(otf)
 	otf.descent = readInt16(otf)
-	otf.index += 26
+	otf.lineGap = readInt16(otf)
+	otf.index += 24
 	otf.advanceWidth = make([]uint16, readUint16(otf))
 }
 

@@ -23,6 +23,7 @@ class OTF {
     short bBoxURy;
     short ascent;
     short descent;
+    short lineGap;
     int firstChar;
     int lastChar;
     short capHeight;
@@ -122,7 +123,8 @@ class OTF {
         index = table.offset + 4;
         ascent  = readInt16();
         descent = readInt16();
-        index += 26;
+        lineGap = readInt16();
+        index += 24;
         advanceWidth = new int[readUInt16()];
     }
 

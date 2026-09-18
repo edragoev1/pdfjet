@@ -28,6 +28,7 @@ public class Font {
     var unitsPerEm = 1000
     var fontAscent: Int16 = 0
     var fontDescent: Int16 = 0
+    var fontLineGap: Int16 = 0     // The space the font puts between its lines.
     var bBoxLLx: Int16 = 0
     var bBoxLLy: Int16 = 0
     var bBoxURx: Int16 = 0
@@ -460,6 +461,18 @@ public class Font {
             return fontSize/4
         }
         return -Float(fontDescent) * fontSize / Float(unitsPerEm)
+    }
+
+    /// Returns the line gap of this font at the specified size: the space the
+    /// font puts between the descent of a line and the ascent of the next one.
+    /// It is 0 for most fonts, which leave that space in their ascent and
+    /// descent, and 1 em for the Japanese and Chinese IBM Plex fonts, whose
+    /// ascent and descent add up to 1 em.
+    public func getLineGap(_ fontSize: Float) -> Float {
+        if isCJK {
+            return 0.0
+        }
+        return Float(fontLineGap) * fontSize / Float(unitsPerEm)
     }
 
     ///

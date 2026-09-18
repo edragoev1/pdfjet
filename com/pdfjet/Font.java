@@ -44,6 +44,8 @@ final public class Font {
     protected int fontAscent;
     /** The descent in font units. */
     protected int fontDescent;
+    /** The line gap in font units: the space the font puts between its lines. */
+    protected int fontLineGap;
     /** The x coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLx;
     /** The y coordinate of the lower left corner of the font bounding box. */
@@ -559,6 +561,23 @@ final public class Font {
             return fontSize/4;
         }
         return -fontDescent * fontSize / unitsPerEm;
+    }
+
+    /**
+     * Returns the line gap of this font at the specified size: the space the
+     * font puts between the descent of a line and the ascent of the next one.
+     * It is 0 for most fonts, which leave that space in their ascent and descent,
+     * and 1 em for the Japanese and Chinese IBM Plex fonts, whose ascent and
+     * descent add up to 1 em.
+     *
+     * @param fontSize the font size.
+     * @return the line gap.
+     */
+    public float getLineGap(float fontSize) {
+        if (isCJK) {
+            return 0f;
+        }
+        return fontLineGap * fontSize / unitsPerEm;
     }
 
     /**

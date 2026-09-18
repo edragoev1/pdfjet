@@ -21,16 +21,16 @@ public class Example_02 {
         pdf.setTitle("The Universal Declaration of Human Rights in Four Languages");
 
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
-        f1.setSize(14f);
+        f1.setSize(12f);
 
         Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
-        f2.setSize(14f);
+        f2.setSize(12f);
 
         Font f3 = new Font(pdf, IBMPlexSansSC.Regular);
-        f3.setSize(14f);
+        f3.setSize(12f);
 
         Font f4 = new Font(pdf, IBMPlexSansTC.Regular);
-        f4.setSize(14f);
+        f4.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -39,8 +39,6 @@ public class Example_02 {
         TextBlock textBlock = new TextBlock(
                 f1, Content.ofTextFile("data/languages/japanese.txt"));
         textBlock.setLanguage("ja");
-        // The Japanese and Chinese fonts leave no space between lines.
-        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);
         textBlock.drawOn(page);
@@ -63,7 +61,6 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
         textBlock.setLanguage("zh-Hans");
-        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);
         textBlock.drawOn(page);
@@ -75,7 +72,6 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
         textBlock.setLanguage("zh-Hant");
-        textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 70f);
         textBlock.setWidth(512f);
         textBlock.drawOn(page);

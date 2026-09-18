@@ -280,7 +280,8 @@ public class TextFrame : IDrawable {
             baseline = nextBaseline;
             if (startsParagraph) {
                 // The gap, one empty line of this text by default, then its ascent.
-                float gap = hasParagraphGap ? paragraphGap : textLine.GetHeight();
+                float gap = hasParagraphGap ? paragraphGap :
+                        textLine.GetHeight() + 2 * textLine.font.GetLineGap(textLine.fontSize);
                 baseline += gap + textLine.font.GetAscent(textLine.fontSize);
             }
         }
@@ -334,7 +335,7 @@ public class TextFrame : IDrawable {
             runLength = 0f;
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + textLine.GetHeight();
+            nextBaseline = yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
         }
         AddToRow(paragraph, textLine, buf.ToString(), true);
         xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());

@@ -404,6 +404,11 @@ class FontStream1 {
             font.markData = new byte[GetInt32(stream)];
             ReadFully(stream, font.markData);
         }
+        // The line gap of a font that has one follows the marks, where a library
+        // that does not read it stops.
+        if (stream.Position < stream.Length) {
+            font.fontLineGap = GetInt32(stream);
+        }
 
         int flag = inputStream.ReadByte();
         if (flag == 'R') {

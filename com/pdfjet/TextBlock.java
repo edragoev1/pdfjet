@@ -228,7 +228,7 @@ public class TextBlock implements Drawable {
         if (this.height > 0f) {
             return this.height;
         }
-        float leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing;
+        float leading = (font.getAscent(fontSize) + font.getDescent(fontSize) + font.getLineGap(fontSize)) * lineSpacing;
         return getTextLines().length * leading + 2 * this.textPadding;
     }
 
@@ -824,7 +824,7 @@ public class TextBlock implements Drawable {
     public float[] drawOn(Page page) throws Exception {
         float ascent = this.font.getAscent(fontSize);
         float descent = this.font.getDescent(fontSize);
-        float leading = (ascent + descent) * this.lineSpacing;
+        float leading = (ascent + descent + font.getLineGap(fontSize)) * this.lineSpacing;
         TextLine[] textLines = getTextLines();
         float blockHeight = textLines.length * leading + 2 * this.textPadding;
         float yText = this.y + this.textPadding;

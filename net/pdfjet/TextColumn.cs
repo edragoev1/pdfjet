@@ -176,8 +176,9 @@ public class TextColumn : IDrawable {
         float maxAscent = 0f;
         float maxDescent = 0f;
         foreach (TextLine line in paragraph.lines) {
-            if ((line.GetHeight() * lineSpacing) > lineHeight) {
-                lineHeight = line.GetHeight() * lineSpacing;
+            float height = (line.GetHeight() + line.font.GetLineGap(line.fontSize)) * lineSpacing;
+            if (height > lineHeight) {
+                lineHeight = height;
             }
             if (line.font.GetAscent(line.fontSize) > maxAscent) {
                 maxAscent = line.font.GetAscent(line.fontSize);

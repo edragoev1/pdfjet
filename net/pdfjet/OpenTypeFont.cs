@@ -30,6 +30,7 @@ class OpenTypeFont {
         font.baseAnchors = otf.baseAnchors;
         font.fontAscent = otf.ascent;
         font.fontDescent = otf.descent;
+        font.fontLineGap = otf.lineGap;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
         font.SetSize(font.size);

@@ -20,16 +20,16 @@ public class Example_02 {
         pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages");
 
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
-        f1.SetSize(14f);
+        f1.SetSize(12f);
 
         Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
-        f2.SetSize(14f);
+        f2.SetSize(12f);
 
         Font f3 = new Font(pdf, IBMPlexSansSC.Regular);
-        f3.SetSize(14f);
+        f3.SetSize(12f);
 
         Font f4 = new Font(pdf, IBMPlexSansTC.Regular);
-        f4.SetSize(14f);
+        f4.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -38,8 +38,6 @@ public class Example_02 {
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
         textBlock.SetLanguage("ja");
-        // The Japanese and Chinese fonts leave no space between lines.
-        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
@@ -62,7 +60,6 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
         textBlock.SetLanguage("zh-Hans");
-        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
         textBlock.DrawOn(page);
@@ -74,7 +71,6 @@ public class Example_02 {
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));
         textBlock.SetLanguage("zh-Hant");
-        textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
         textBlock.DrawOn(page);

@@ -25,6 +25,7 @@ class OpenTypeFont {
         font.bBoxURy = otf.bBoxURy;
         font.fontAscent = otf.ascent;
         font.fontDescent = otf.descent;
+        font.fontLineGap = otf.lineGap;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
         font.advanceWidth = otf.advanceWidth;

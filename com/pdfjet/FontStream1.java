@@ -477,6 +477,11 @@ class FontStream1 {
             font.markData = new byte[getInt32(stream)];
             readFully(stream, font.markData);
         }
+        // The line gap of a font that has one follows the marks, where a library
+        // that does not read it stops.
+        if (stream.available() > 0) {
+            font.fontLineGap = getInt32(stream);
+        }
 
         int flag = inputStream.read();
         if (flag == 'R') {

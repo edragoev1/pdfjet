@@ -341,7 +341,8 @@ public class TextFrame implements Drawable {
             baseline = nextBaseline;
             if (startsParagraph) {
                 // The gap, one empty line of this text by default, then its ascent.
-                float gap = hasParagraphGap ? paragraphGap : textLine.getHeight();
+                float gap = hasParagraphGap ? paragraphGap :
+                        textLine.getHeight() + 2 * textLine.font.getLineGap(textLine.fontSize);
                 baseline += gap + textLine.font.getAscent(textLine.fontSize);
             }
         }
@@ -395,7 +396,7 @@ public class TextFrame implements Drawable {
             runLength = 0f;
             xText = x;
             rowOpen = false;
-            nextBaseline = yText + textLine.getHeight();
+            nextBaseline = yText + textLine.getHeight() + font.getLineGap(fontSize);
         }
         addToRow(paragraph, textLine, buf.toString(), true);
         xText += font.stringWidth(fallbackFont, fontSize, buf.toString());

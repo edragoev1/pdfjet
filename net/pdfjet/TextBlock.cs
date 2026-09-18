@@ -164,7 +164,7 @@ public class TextBlock : IDrawable {
         if (this.height > 0f) {
             return this.height;
         }
-        float leading = (this.font.GetAscent(fontSize) + this.font.GetDescent(fontSize)) * this.lineSpacing;
+        float leading = (this.font.GetAscent(fontSize) + this.font.GetDescent(fontSize) + this.font.GetLineGap(fontSize)) * this.lineSpacing;
         return GetTextLines().Length * leading + 2 * this.textPadding;
     }
 
@@ -634,7 +634,7 @@ public class TextBlock : IDrawable {
     public float[] DrawOn(Page page) {
         float ascent = this.font.GetAscent(fontSize);
         float descent = this.font.GetDescent(fontSize);
-        float leading = (ascent + descent) * this.lineSpacing;
+        float leading = (ascent + descent + this.font.GetLineGap(fontSize)) * this.lineSpacing;
         TextLine[] textLines = GetTextLines();
         float blockHeight = textLines.Length * leading + 2 * this.textPadding;
         float yText = this.y + this.textPadding;

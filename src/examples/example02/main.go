@@ -37,16 +37,16 @@ func Example02() {
 	pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
-	f1.SetSize(14.0)
+	f1.SetSize(12.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansKR.Regular)
-	f2.SetSize(14.0)
+	f2.SetSize(12.0)
 
 	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
-	f3.SetSize(14.0)
+	f3.SetSize(12.0)
 
 	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
-	f4.SetSize(14.0)
+	f4.SetSize(12.0)
 
 	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait())
@@ -55,8 +55,6 @@ func Example02() {
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLanguage("ja")
-	// The Japanese and Chinese fonts leave no space between lines.
-	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
@@ -77,7 +75,6 @@ func Example02() {
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
 	textBlock.SetLanguage("zh-Hans")
-	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)
@@ -88,7 +85,6 @@ func Example02() {
 
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
 	textBlock.SetLanguage("zh-Hant")
-	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(512.0)
 	_ = textBlock.DrawOn(page)

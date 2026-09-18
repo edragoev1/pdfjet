@@ -18,16 +18,16 @@ public class Example_02 {
         pdf.setTitle("The Universal Declaration of Human Rights in Four Languages")
 
         let f1 = try Font(pdf, IBMPlexSansJP.Regular)
-        f1.setSize(14.0)
+        f1.setSize(12.0)
 
         let f2 = try Font(pdf, IBMPlexSansKR.Regular)
-        f2.setSize(14.0)
+        f2.setSize(12.0)
 
         let f3 = try Font(pdf, IBMPlexSansSC.Regular)
-        f3.setSize(14.0)
+        f3.setSize(12.0)
 
         let f4 = try Font(pdf, IBMPlexSansTC.Regular)
-        f4.setSize(14.0)
+        f4.setSize(12.0)
 
         var page = Page(pdf, Letter.PORTRAIT)
 
@@ -36,8 +36,6 @@ public class Example_02 {
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
         textBlock.setLanguage("ja")
-        // The Japanese and Chinese fonts leave no space between lines.
-        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
         textBlock.drawOn(page)
@@ -60,7 +58,6 @@ public class Example_02 {
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
         textBlock.setLanguage("zh-Hans")
-        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
         textBlock.drawOn(page)
@@ -72,7 +69,6 @@ public class Example_02 {
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
         textBlock.setLanguage("zh-Hant")
-        textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
         textBlock.drawOn(page)

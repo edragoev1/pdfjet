@@ -111,18 +111,17 @@ public class GenerateStreamFontsFiles {
                 writeInt32(pair.getValue()[0], marksBuf);
                 writeInt32(pair.getValue()[1], marksBuf);
             }
-            if (GenerateStreamFontsFiles.useZopfli) {
-                compressWithZopfli(fileName, baos, marksBuf.toByteArray(), false);
-            } else {
-                ByteArrayOutputStream buf6 = new ByteArrayOutputStream(0xFFFF);
-                Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
-                DeflaterOutputStream dos = new DeflaterOutputStream(buf6, deflater);
-                marksBuf.writeTo(dos);
-                dos.finish();
-                deflater.end();
-                writeInt32(buf6.size(), baos);
-                buf6.writeTo(baos);
+            writeMarks(fileName, baos, marksBuf.toByteArray());
+        }
+
+        // The line gap of a font that has one, after the marks, where a library
+        // that does not read it stops. A font without marks gets empty ones
+        // first: no subtables and no pairs.
+        if (otf.lineGap != 0 && !oldFormat) {
+            if (otf.markAnchors == null) {
+                writeMarks(fileName, baos, new byte[8]);
             }
+            writeInt32(otf.lineGap, baos);
         }
 
         byte[] buf1 = baos.toByteArray();
@@ -187,6 +186,22 @@ public class GenerateStreamFontsFiles {
             buf4.writeTo(fos);
         }
         fos.close();
+    }
+
+    // Writes the marks compressed on their own, after their compressed size.
+    private static void writeMarks(String fileName, ByteArrayOutputStream baos, byte[] marks) throws IOException {
+        if (GenerateStreamFontsFiles.useZopfli) {
+            compressWithZopfli(fileName, baos, marks, false);
+        } else {
+            ByteArrayOutputStream buf6 = new ByteArrayOutputStream(0xFFFF);
+            Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+            DeflaterOutputStream dos = new DeflaterOutputStream(buf6, deflater);
+            dos.write(marks, 0, marks.length);
+            dos.finish();
+            deflater.end();
+            writeInt32(buf6.size(), baos);
+            buf6.writeTo(baos);
+        }
     }
 
     private static void compressWithZopfli(

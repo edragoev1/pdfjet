@@ -266,7 +266,8 @@ public class TextFrame : Drawable {
             baseline = nextBaseline
             if startsParagraph {
                 // The gap, one empty line of this text by default, then its ascent.
-                let gap = hasParagraphGap ? paragraphGap : textLine.getHeight()
+                let gap = hasParagraphGap ? paragraphGap :
+                        textLine.getHeight() + 2 * textLine.font!.getLineGap(textLine.fontSize)
                 baseline += gap + textLine.font!.getAscent(textLine.fontSize)
             }
         }
@@ -322,7 +323,7 @@ public class TextFrame : Drawable {
             runLength = 0.0
             xText = x
             rowOpen = false
-            nextBaseline = yText + textLine.getHeight()
+            nextBaseline = yText + textLine.getHeight() + textLine.font!.getLineGap(textLine.fontSize)
         }
         addToRow(paragraph, textLine, buf, true)
         xText += font.stringWidth(fallbackFont, fontSize, buf)

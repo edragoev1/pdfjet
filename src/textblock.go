@@ -203,7 +203,7 @@ func (textBlock *TextBlock) GetHeight() float32 {
 	}
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
 	descent := textBlock.font.GetDescent(textBlock.fontSize)
-	leading := (ascent + descent) * textBlock.lineSpacing
+	leading := (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
 	return float32(len(textBlock.getTextLines()))*leading + 2*textBlock.textPadding
 }
 
@@ -690,7 +690,7 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
 	descent := textBlock.font.GetDescent(textBlock.fontSize)
-	leading := (ascent + descent) * textBlock.lineSpacing
+	leading := (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
 	textLines := textBlock.getTextLines()
 	blockHeight := float32(len(textLines))*leading + 2*textBlock.textPadding
 	yText := textBlock.y + textBlock.textPadding

@@ -139,3 +139,24 @@ func TestFontAStreamFontPlacesTheMarksAsTheOpenTypeFontDoes(t *testing.T) {
 		t.Errorf("stream %q\notf %q", stream, otf)
 	}
 }
+
+func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
+	pdf := testNewPDF()
+	open := func(path string) *Font {
+		file, err := os.Open(testRepoPath(t, path))
+		if err != nil {
+			t.Skip("the fonts directory is not here")
+		}
+		defer file.Close()
+		return NewFont(pdf, file)
+	}
+	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream")
+	testNear(t, "the line gap of the stream", 10, jp.GetLineGap(10), 0.001)
+	testNear(t, "the line gap of the .otf", 10, open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf").GetLineGap(10), 0.001)
+	testNear(t, "the line gap of IBM Plex Sans", 0, open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").GetLineGap(10), 0)
+	// The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
+	jp.SetSize(10)
+	block := NewTextBlock(jp, "日本\n日本")
+	block.SetLocation(0, 0)
+	testAssertXY(t, 500, 40, block.DrawOn(nil))
+}

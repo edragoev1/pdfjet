@@ -153,8 +153,9 @@ func (textColumn *TextColumn) drawParagraphOn(
 	var maxAscent = float32(0.0)
 	var maxDescent = float32(0.0)
 	for _, line := range paragraph.lines {
-		if (line.GetHeight() * textColumn.lineSpacing) > lineHeight {
-			lineHeight = line.GetHeight() * textColumn.lineSpacing
+		height := (line.GetHeight() + line.font.GetLineGap(line.fontSize)) * textColumn.lineSpacing
+		if height > lineHeight {
+			lineHeight = height
 		}
 		if line.font.GetAscent(line.fontSize) > maxAscent {
 			maxAscent = line.font.GetAscent(line.fontSize)

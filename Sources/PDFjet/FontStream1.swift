@@ -495,6 +495,11 @@ class FontStream1 {
             font.markData = Array(inflated[offset..<(offset + length)])
             offset += length
         }
+        // The line gap of a font that has one follows the marks, where a library
+        // that does not read it stops.
+        if offset < inflated.count {
+            font.fontLineGap = Int16(getInt32(inflated, &offset))
+        }
 
         var flag = UnicodeScalar(try getInt8(stream))
         if flag == UnicodeScalar("R") {

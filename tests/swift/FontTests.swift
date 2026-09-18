@@ -120,4 +120,17 @@ import Testing
         #expect(throws: PDFjetError.self) { try Font(pdf, 0) }
         #expect(throws: PDFjetError.self) { try Font(pdf, 15) }
     }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func theLineGapOfAFontSpacesTheLinesOfATextBlock() throws {
+        let pdf = TestSupport.newPDF()
+        let jp = try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))
+        TestSupport.expectNear(10, jp.getLineGap(10), 0.001)
+        TestSupport.expectNear(10, try Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")).getLineGap(10), 0.001)
+        #expect(try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).getLineGap(10) == 0)
+        // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
+        jp.setSize(10)
+        TestSupport.expectXY(500, 40, TextBlock(jp, "日本\n日本").setLocation(0, 0).drawOn(nil))
+    }
 }

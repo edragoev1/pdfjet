@@ -407,6 +407,11 @@ func getFontData(font *Font, reader io.Reader) {
 		font.markData = append([]byte(nil), inflated[pos:pos+length]...)
 		pos += length
 	}
+	// The line gap of a font that has one follows the marks, where a library
+	// that does not read it stops.
+	if pos < len(inflated) {
+		font.fontLineGap = int16(readInt32())
+	}
 
 	flag := getUint8(reader)
 	if flag == 'R' {

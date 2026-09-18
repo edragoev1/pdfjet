@@ -33,6 +33,7 @@ public class Font {
     internal int unitsPerEm = 1000;     // The default for core fonts.
     internal int fontAscent;
     internal int fontDescent;
+    internal int fontLineGap;          // The space the font puts between its lines.
     internal int bBoxLLx;
     internal int bBoxLLy;
     internal int bBoxURx;
@@ -428,6 +429,20 @@ public class Font {
             return fontSize/4;
         }
         return -fontDescent * fontSize / unitsPerEm;
+    }
+
+    /// <summary>
+    /// Returns the line gap at the specified font size: the space the font puts
+    /// between the descent of a line and the ascent of the next one. It is 0 for
+    /// most fonts, which leave that space in their ascent and descent, and 1 em
+    /// for the Japanese and Chinese IBM Plex fonts, whose ascent and descent add
+    /// up to 1 em.
+    /// </summary>
+    public float GetLineGap(float fontSize) {
+        if (isCJK) {
+            return 0f;
+        }
+        return fontLineGap * fontSize / unitsPerEm;
     }
 
     /// <summary>Returns the ascent plus the descent at the specified font size.</summary>

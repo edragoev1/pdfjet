@@ -272,7 +272,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 		baseline = tf.nextBaseline
 		if tf.startsParagraph {
 			// The gap, one empty line of this text by default, then its ascent.
-			gap := textLine.GetHeight()
+			gap := textLine.GetHeight() + 2*textLine.font.GetLineGap(textLine.fontSize)
 			if tf.hasParagraphGap {
 				gap = tf.paragraphGap
 			}
@@ -330,7 +330,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		runLength = 0
 		tf.xText = tf.x
 		tf.rowOpen = false
-		tf.nextBaseline = tf.yText + textLine.GetHeight()
+		tf.nextBaseline = tf.yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
 	}
 	tf.addToRow(paragraph, textLine, buf.String(), true)
 	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())

@@ -27,6 +27,7 @@ class OTF {
     var bBoxURy: Int16?
     var ascent: Int16?
     var descent: Int16?
+    var lineGap: Int16 = 0
     var advanceWidth: [UInt16] = []
     var firstChar: Int?
     var lastChar: Int?
@@ -118,7 +119,8 @@ class OTF {
         self.index = table.offset! + 4
         self.ascent  = readInt16()
         self.descent = readInt16()
-        self.index += 26
+        self.lineGap = readInt16()
+        self.index += 24
         self.advanceWidth = [UInt16](repeating: 0, count: Int(readUInt16()))
     }
 

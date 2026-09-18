@@ -158,7 +158,7 @@ public class TextBlock : Drawable {
         if height > 0.0 {
             return height
         }
-        let leading = (font.getAscent(fontSize) + font.getDescent(fontSize)) * lineSpacing
+        let leading = (font.getAscent(fontSize) + font.getDescent(fontSize) + font.getLineGap(fontSize)) * lineSpacing
         return Float(getTextLines().count) * leading + 2 * textPadding
     }
 
@@ -648,7 +648,7 @@ public class TextBlock : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         let ascent = font.getAscent(fontSize)
         let descent = font.getDescent(fontSize)
-        let leading = (ascent + descent) * lineSpacing
+        let leading = (ascent + descent + font.getLineGap(fontSize)) * lineSpacing
         var textLines = getTextLines()
         var blockHeight = Float(textLines.count) * leading + 2 * textPadding
         var yText = y + textPadding
