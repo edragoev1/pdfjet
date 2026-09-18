@@ -399,10 +399,16 @@ func getFontData(font *Font, reader io.Reader) {
 		font.unicodeToGID[i] = int(readUint16())
 	}
 
-	font.cff = false
-	if getUint8(reader) == 'Y' {
-		font.cff = true
+	flag := getUint8(reader)
+	if flag == 'R' {
+		// The tables of an OpenType font that are not in its CFF data,
+		// which keep the font whole; they are not embedded.
+		if _, err := io.CopyN(io.Discard, reader, int64(getUint32(reader))); err != nil {
+			panic(err)
+		}
+		flag = getUint8(reader)
 	}
+	font.cff = flag == 'Y'
 
 	font.uncompressedSize = int(getUint32(reader))
 	font.compressedSize = int(getUint32(reader))

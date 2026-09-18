@@ -342,6 +342,18 @@ class FontStream1 {
         return buffer
     }
 
+    private static func skipFully(_ stream: InputStream, _ count: Int) throws {
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        var remaining = count
+        while remaining > 0 {
+            let read = stream.read(&buffer, maxLength: min(remaining, buffer.count))
+            if read <= 0 {
+                throw StreamError.read
+            }
+            remaining -= read
+        }
+    }
+
     private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
         let buffer = try readFully(stream, 2)
         return (UInt16(buffer[0]) << 8) | UInt16(buffer[1])
@@ -424,7 +436,13 @@ class FontStream1 {
             font.unicodeToGID[i] = getInt(inflated, &offset)
         }
 
-        let flag = UnicodeScalar(try getInt8(stream))
+        var flag = UnicodeScalar(try getInt8(stream))
+        if flag == UnicodeScalar("R") {
+            // The tables of an OpenType font that are not in its CFF data,
+            // which keep the font whole; they are not embedded.
+            try skipFully(stream, Int(try getInt32(stream)))
+            flag = UnicodeScalar(try getInt8(stream))
+        }
         if flag == UnicodeScalar("Y") {
             font.cff = true
         }

@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+import Foundation
 import Testing
 @testable import PDFjet
 
@@ -55,6 +56,45 @@ import Testing
         let font = try Font(TestSupport.newPDF(), stream)
         #expect(font.getName() == "IBMPlexSans")
         TestSupport.expectNear(28.32, font.stringWidth(12, "Hello"), 0.001)
+    }
+
+    // The embedded font file of a PDF that draws a line of text in the font.
+    private func embeddedFontFile(_ fontStream: [UInt8]) throws -> [UInt8] {
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, InputStream(data: Data(fontStream)))
+        let text = TextLine(font, "Hello")
+        text.setLocation(50, 50)
+        text.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        for obj in try TestSupport.read(memory.bytes) where obj.getValue("/Subtype") == "/CIDFontType0C" {
+            return obj.getData()
+        }
+        return []
+    }
+
+    private func int32(_ buffer: [UInt8], _ i: Int) -> Int {
+        return Int(buffer[i]) << 24 | Int(buffer[i + 1]) << 16 | Int(buffer[i + 2]) << 8 | Int(buffer[i + 3])
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func anOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() throws {
+        let path = TestSupport.path("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+        let whole = [UInt8](try Data(contentsOf: URL(fileURLWithPath: path)))
+        // The name, the info and the metrics come first, then 'R' with the
+        // length of the other tables of the font, and then the CFF data.
+        var i = 1 + Int(whole[0])
+        i += 3 + (Int(whole[i]) << 16 | Int(whole[i + 1]) << 8 | Int(whole[i + 2]))
+        i += 4 + int32(whole, i)
+        #expect(whole[i] == UInt8(ascii: "R"))
+        let length = int32(whole, i + 1)
+        // The same stream without the tables, as streams were written before.
+        let cffOnly = Array(whole[0..<i]) + Array(whole[(i + 5 + length)...])
+        #expect(cffOnly[i] == UInt8(ascii: "Y"))
+
+        let embedded = try embeddedFontFile(whole)
+        #expect(!embedded.isEmpty)
+        #expect(embedded == (try embeddedFontFile(cffOnly)))
     }
 
     @Test func aCoreFontNumberOutsideTheFourteenIsRejected() {

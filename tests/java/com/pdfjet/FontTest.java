@@ -6,11 +6,16 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
 class FontTest {
@@ -72,6 +77,50 @@ class FontTest {
         } finally {
             in.close();
         }
+    }
+
+    // The embedded font file of a PDF that draws a line of text in the font.
+    private static byte[] embeddedFontFile(byte[] fontStream) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = new Font(pdf, new ByteArrayInputStream(fontStream));
+        new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        for (PDFobj obj : TestSupport.read(bos.toByteArray())) {
+            if (obj.getValue("/Subtype").equals("/CIDFontType0C")) {
+                return obj.getData();
+            }
+        }
+        return null;
+    }
+
+    @Test
+    void anOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() throws Exception {
+        String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
+        InputStream in = TestSupport.open(path);
+        byte[] whole;
+        try {
+            whole = TestSupport.readAll(in);
+        } finally {
+            in.close();
+        }
+        // The name, the info and the metrics come first, then 'R' with the
+        // length of the other tables of the font, and then the CFF data.
+        int i = 1 + (whole[0] & 0xFF);
+        i += 3 + (((whole[i] & 0xFF) << 16) | ((whole[i + 1] & 0xFF) << 8) | (whole[i + 2] & 0xFF));
+        i += 4 + ByteBuffer.wrap(whole, i, 4).getInt();
+        assertEquals('R', whole[i]);
+        int length = ByteBuffer.wrap(whole, i + 1, 4).getInt();
+        // The same stream without the tables, as streams were written before.
+        byte[] cffOnly = new byte[whole.length - 5 - length];
+        System.arraycopy(whole, 0, cffOnly, 0, i);
+        System.arraycopy(whole, i + 5 + length, cffOnly, i, whole.length - i - 5 - length);
+        assertEquals('Y', cffOnly[i]);
+
+        byte[] embedded = embeddedFontFile(whole);
+        assertTrue(embedded.length > 0);
+        assertArrayEquals(embedded, embeddedFontFile(cffOnly));
     }
 
     @Test

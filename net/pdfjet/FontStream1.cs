@@ -397,9 +397,27 @@ class FontStream1 {
             font.unicodeToGID[i] = GetInt16(stream);
         }
 
-        font.cff = (inputStream.ReadByte() == 'Y') ? true : false;
+        int flag = inputStream.ReadByte();
+        if (flag == 'R') {
+            // The tables of an OpenType font that are not in its CFF data,
+            // which keep the font whole; they are not embedded.
+            SkipFully(inputStream, GetInt32(inputStream));
+            flag = inputStream.ReadByte();
+        }
+        font.cff = flag == 'Y';
         font.uncompressedSize = GetInt32(inputStream);
         font.compressedSize = GetInt32(inputStream);
+    }
+
+    private static void SkipFully(Stream stream, int count) {
+        byte[] buffer = new byte[4096];
+        while (count > 0) {
+            int bytesRead = stream.Read(buffer, 0, Math.Min(count, buffer.Length));
+            if (bytesRead == 0) {
+                throw new EndOfStreamException("Unexpected end of the font stream.");
+            }
+            count -= bytesRead;
+        }
     }
 
     internal static void ReadFully(Stream stream, byte[] buffer) {

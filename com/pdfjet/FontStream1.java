@@ -365,6 +365,17 @@ class FontStream1 {
     }
 
     // Fills the buffer: a single read may return fewer bytes than asked for.
+    private static void skipFully(InputStream stream, int count) throws Exception {
+        byte[] buffer = new byte[4096];
+        while (count > 0) {
+            int n = stream.read(buffer, 0, Math.min(count, buffer.length));
+            if (n <= 0) {
+                throw new EOFException("Unexpected end of the font stream.");
+            }
+            count -= n;
+        }
+    }
+
     private static void readFully(InputStream stream, byte[] buffer) throws Exception {
         int off = 0;
         while (off < buffer.length) {
@@ -417,7 +428,14 @@ class FontStream1 {
             font.unicodeToGID[i] = getInt16(stream);
         }
 
-        font.cff = inputStream.read() == 'Y';
+        int flag = inputStream.read();
+        if (flag == 'R') {
+            // The tables of an OpenType font that are not in its CFF data,
+            // which keep the font whole; they are not embedded.
+            skipFully(inputStream, getInt32(inputStream));
+            flag = inputStream.read();
+        }
+        font.cff = flag == 'Y';
         font.uncompressedSize = getInt32(inputStream);
         font.compressedSize = getInt32(inputStream);
     }

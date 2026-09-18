@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"bytes"
+	"encoding/binary"
 	"os"
 	"testing"
 
@@ -68,4 +70,48 @@ func TestFontReadsAStreamFont(t *testing.T) {
 		t.Errorf("name %q", font.GetName())
 	}
 	testNear(t, "Hello at 12", 28.32, font.StringWidth(12, "Hello"), 0.001)
+}
+
+// testEmbeddedFontFile returns the embedded font file of a PDF that draws a
+// line of text in the font.
+func testEmbeddedFontFile(t *testing.T, fontStream []byte) []byte {
+	t.Helper()
+	doc := testNewDoc()
+	font := NewFont(doc.pdf, bytes.NewReader(fontStream))
+	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(NewPage(doc.pdf, testLetterPortrait()))
+	for _, obj := range testRead(t, doc.complete()) {
+		if obj.GetValue("/Subtype") == "/CIDFontType0C" {
+			return obj.GetData()
+		}
+	}
+	return nil
+}
+
+func TestFontAnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData(t *testing.T) {
+	whole, err := os.ReadFile(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	if err != nil {
+		t.Skip("the fonts directory is not here")
+	}
+	// The name, the info and the metrics come first, then 'R' with the
+	// length of the other tables of the font, and then the CFF data.
+	i := 1 + int(whole[0])
+	i += 3 + (int(whole[i])<<16 | int(whole[i+1])<<8 | int(whole[i+2]))
+	i += 4 + int(binary.BigEndian.Uint32(whole[i:]))
+	if whole[i] != 'R' {
+		t.Fatalf("flag %q", whole[i])
+	}
+	length := int(binary.BigEndian.Uint32(whole[i+1:]))
+	// The same stream without the tables, as streams were written before.
+	cffOnly := append(append([]byte{}, whole[:i]...), whole[i+5+length:]...)
+	if cffOnly[i] != 'Y' {
+		t.Fatalf("flag %q", cffOnly[i])
+	}
+
+	embedded := testEmbeddedFontFile(t, whole)
+	if len(embedded) == 0 {
+		t.Fatal("no embedded font file")
+	}
+	if !bytes.Equal(embedded, testEmbeddedFontFile(t, cffOnly)) {
+		t.Error("the embedded font files differ")
+	}
 }

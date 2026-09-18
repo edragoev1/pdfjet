@@ -69,6 +69,52 @@ public class FontTest {
         }
     }
 
+    // The embedded font file of a PDF that draws a line of text in the font.
+    private static byte[] EmbeddedFontFile(byte[] fontStream) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font font = new Font(pdf, new MemoryStream(fontStream));
+        TextLine text = new TextLine(font, "Hello");
+        text.SetLocation(50f, 50f);
+        text.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        foreach (PDFobj obj in TestSupport.Read(output.ToArray())) {
+            if (obj.GetValue("/Subtype") == "/CIDFontType0C") {
+                return obj.GetData();
+            }
+        }
+        return null;
+    }
+
+    private static int Int32At(byte[] buffer, int i) {
+        return (buffer[i] << 24) | (buffer[i + 1] << 16) | (buffer[i + 2] << 8) | buffer[i + 3];
+    }
+
+    [Fact]
+    public void AnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() {
+        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        if (!File.Exists(TestSupport.RepoPath(path))) {
+            return;     // The fonts directory is not here.
+        }
+        byte[] whole = File.ReadAllBytes(TestSupport.RepoPath(path));
+        // The name, the info and the metrics come first, then 'R' with the
+        // length of the other tables of the font, and then the CFF data.
+        int i = 1 + whole[0];
+        i += 3 + ((whole[i] << 16) | (whole[i + 1] << 8) | whole[i + 2]);
+        i += 4 + Int32At(whole, i);
+        Assert.Equal((byte) 'R', whole[i]);
+        int length = Int32At(whole, i + 1);
+        // The same stream without the tables, as streams were written before.
+        byte[] cffOnly = new byte[whole.Length - 5 - length];
+        Array.Copy(whole, 0, cffOnly, 0, i);
+        Array.Copy(whole, i + 5 + length, cffOnly, i, whole.Length - i - 5 - length);
+        Assert.Equal((byte) 'Y', cffOnly[i]);
+
+        byte[] embedded = EmbeddedFontFile(whole);
+        Assert.True(embedded.Length > 0);
+        Assert.Equal(embedded, EmbeddedFontFile(cffOnly));
+    }
+
     [Fact]
     public void ACoreFontNumberOutsideTheFourteenIsRejected() {
         PDF pdf = TestSupport.NewPDF();

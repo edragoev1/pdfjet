@@ -79,6 +79,29 @@ public class GenerateStreamFontsFiles {
             buf2.writeTo(fos);
         }
 
+        if (otf.cff == true) {
+            // The tables that are not in the CFF data, so that the stream
+            // holds the whole font: the original is these bytes with the CFF
+            // table put back at the offset its table directory entry gives.
+            byte[] rest = new byte[otf.buf.length - otf.cffLen];
+            System.arraycopy(otf.buf, 0, rest, 0, otf.cffOff);
+            System.arraycopy(otf.buf, otf.cffOff + otf.cffLen,
+                    rest, otf.cffOff, otf.buf.length - otf.cffOff - otf.cffLen);
+            fos.write('R');
+            if (GenerateStreamFontsFiles.useZopfli) {
+                compressWithZopfli(fileName, fos, rest, false);
+            } else {
+                ByteArrayOutputStream buf5 = new ByteArrayOutputStream(0xFFFF);
+                Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+                DeflaterOutputStream dos = new DeflaterOutputStream(buf5, deflater);
+                dos.write(rest, 0, rest.length);
+                dos.finish();
+                deflater.end();
+                writeInt32(buf5.size(), fos);
+                buf5.writeTo(fos);
+            }
+        }
+
         byte[] buf3 = otf.buf;
         if (otf.cff == true) {
             fos.write('Y');

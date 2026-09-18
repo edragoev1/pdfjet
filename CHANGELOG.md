@@ -44,6 +44,15 @@ C# `PDF` class is sealed, as the Java class is final.
   other ports do.
 
 ### Changed
+- The 113 `.otf.stream` fonts, the IBM Plex families, hold the whole font:
+  after the metrics comes an `R` block with the tables that are not in the
+  CFF data, compressed with Zopfli, so that the original `.otf` can be rebuilt
+  from the stream byte for byte, as it always could from a `.ttf.stream`. The
+  font files grow by 7.1 MB, 6.7%, and nothing else changes: the four ports
+  skip the block and embed the same CFF data as before, and they still read
+  streams without it. A library older than this one cannot read the new
+  streams, so the fonts directory and the library go together.
+  `util/GenerateStreamFontsFiles.java` writes the block.
 - The C# `PDF` class is `sealed`, as the Java class is `final`, and the Swift
   class is marked `final`, which it already was outside the module. A C#
   program that derived a class from `PDF` no longer compiles; nothing in the
