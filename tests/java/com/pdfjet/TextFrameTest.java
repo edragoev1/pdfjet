@@ -35,6 +35,11 @@ class TextFrameTest {
     }
 
     @Test
+    void aNegativeGapIsTakenAsZero() throws Exception {
+        assertEquals(paragraphDistance(0f), paragraphDistance(-5f), TestSupport.DELTA);
+    }
+
+    @Test
     void theDefaultGapIsAnEmptyLineOfTheNextParagraph() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
@@ -55,6 +60,26 @@ class TextFrameTest {
         new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(200f)
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
         return paragraph;
+    }
+
+    // Draws one paragraph in a frame of the width at x 0, and returns how far down its text reaches.
+    private static float textHeight(String text, float width) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Paragraph paragraph = new Paragraph(new TextLine(TestSupport.helvetica(pdf), text));
+        new TextFrame(Arrays.asList(paragraph)).setLocation(0f, 10f).setWidth(width)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+        return paragraph.getY2() - paragraph.getY1();
+    }
+
+    @Test
+    void aRowTakesTheWordsThatFitWithoutTheSpaceAfterThem() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        float oneRow = textHeight("one two", 300f);
+        float width = font.stringWidth("one ") + font.stringWidth("two");
+        assertEquals(oneRow, textHeight("one two", width), TestSupport.DELTA);
+        assertEquals(true, textHeight("one two", width - 0.1f) > oneRow, "two rows");
+        // A word as wide as the frame is not broken.
+        assertEquals(oneRow, textHeight("Hello", font.stringWidth("Hello")), TestSupport.DELTA);
     }
 
     @Test

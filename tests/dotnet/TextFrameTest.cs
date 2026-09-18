@@ -32,6 +32,11 @@ public class TextFrameTest {
     }
 
     [Fact]
+    public void ANegativeGapIsTakenAsZero() {
+        TestSupport.AssertNear(ParagraphDistance(0f), ParagraphDistance(-5f), TestSupport.DELTA);
+    }
+
+    [Fact]
     public void TheDefaultGapIsAnEmptyLineOfTheNextParagraph() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
@@ -52,6 +57,26 @@ public class TextFrameTest {
         new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(200f)
                 .DrawOn(new Page(pdf, Letter.PORTRAIT));
         return paragraph;
+    }
+
+    // Draws one paragraph in a frame of the width at x 0, and returns how far down its text reaches.
+    private static float TextHeight(string text, float width) {
+        PDF pdf = TestSupport.NewPDF();
+        Paragraph paragraph = new Paragraph(new TextLine(TestSupport.Helvetica(pdf), text));
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(0f, 10f).SetWidth(width)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+        return paragraph.GetY2() - paragraph.GetY1();
+    }
+
+    [Fact]
+    public void ARowTakesTheWordsThatFitWithoutTheSpaceAfterThem() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        float oneRow = TextHeight("one two", 300f);
+        float width = font.StringWidth("one ") + font.StringWidth("two");
+        TestSupport.AssertNear(oneRow, TextHeight("one two", width), TestSupport.DELTA);
+        Assert.True(TextHeight("one two", width - 0.1f) > oneRow, "two rows");
+        // A word as wide as the frame is not broken.
+        TestSupport.AssertNear(oneRow, TextHeight("Hello", font.StringWidth("Hello")), TestSupport.DELTA);
     }
 
     [Fact]

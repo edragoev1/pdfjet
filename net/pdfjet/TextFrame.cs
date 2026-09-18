@@ -132,9 +132,10 @@ public class TextFrame : IDrawable {
     /// the text of a paragraph to the top of the text of the next, so paragraphs
     /// never overlap. The default is one empty line in the size of the next
     /// paragraph, so a heading is not followed by an empty line of its own size.
+    /// A negative gap is taken as 0.
     /// </summary>
     public TextFrame SetParagraphGap(float paragraphGap) {
-        this.paragraphGap = paragraphGap;
+        this.paragraphGap = Math.Max(0f, paragraphGap);
         this.hasParagraphGap = true;
         return this;
     }
@@ -303,15 +304,17 @@ public class TextFrame : IDrawable {
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
+        float runLength = 0f;
         while (tokenIndex < tokens.Count) {
             if (!rowOpen && !OpenRow(textLine)) {
                 return false;
             }
             String token = tokens[tokenIndex];
-            float runLength = font.StringWidth(fallbackFont, fontSize, buf.ToString());
-            float tokenWidth = font.StringWidth(fallbackFont, fontSize, token + Single.space);
-            if ((runLength + tokenWidth) < ((x + w) - xText)) {
+            // The token is measured without the space that follows it, as in
+            // TextColumn: a row is as wide as the text it shows.
+            if ((runLength + Width(textLine, token)) <= ((x + w) - xText)) {
                 buf.Append(token).Append(Single.space);
+                runLength += Width(textLine, token + Single.space);
                 tokenIndex++;
                 continue;
             }
@@ -328,6 +331,7 @@ public class TextFrame : IDrawable {
             AddToRow(paragraph, textLine, buf.ToString(), false);
             DrawRow(page, false);
             buf.Length = 0;
+            runLength = 0f;
             xText = x;
             rowOpen = false;
             nextBaseline = yText + textLine.GetHeight();
@@ -337,13 +341,13 @@ public class TextFrame : IDrawable {
         return true;
     }
 
-    // Returns the longest start of the token that is narrower than the frame, and
-    // at least the first character of the token.
+    // Returns the longest start of the token that fits in the width of the frame,
+    // and at least the first character of the token.
     private String HeadThatFits(TextLine textLine, String token) {
         int end = Util.CharCount(token, 0);
         while (end < token.Length) {
             int next = end + Util.CharCount(token, end);
-            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, token.Substring(0, next)) >= w) {
+            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, token.Substring(0, next)) > w) {
                 break;
             }
             end = next;
@@ -473,7 +477,7 @@ public class TextFrame : IDrawable {
         String text = textLine.text;
         for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
             String ch = text.Substring(i, Util.CharCount(text, i));
-            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, buf.ToString() + ch) < w) {
+            if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, buf.ToString() + ch) <= w) {
                 buf.Append(ch);
             } else {
                 if (buf.Length > 0) {

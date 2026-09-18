@@ -12,16 +12,16 @@ import (
 )
 
 // testParagraphDistance draws two paragraphs of one line and returns how far
-// below the first the second starts. A negative gap leaves the default.
-func testParagraphDistance(gap float32) float32 {
+// below the first the second starts. With no gap the default is left.
+func testParagraphDistance(gap ...float32) float32 {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	first := NewParagraph().Add(NewTextLine(font, "one"))
 	second := NewParagraph().Add(NewTextLine(font, "two"))
 	frame := NewTextFrameFromParagraphs([]*Paragraph{first, second}).SetWidth(300)
 	frame.SetLocation(10, 10)
-	if gap >= 0 {
-		frame.SetParagraphGap(gap)
+	if len(gap) > 0 {
+		frame.SetParagraphGap(gap[0])
 	}
 	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
 	return second.GetY1() - first.GetY1()
@@ -30,9 +30,13 @@ func testParagraphDistance(gap float32) float32 {
 func TestTextFrameTheGapIsAddedToTheLineSoParagraphsNeverOverlap(t *testing.T) {
 	helvetica := testHelvetica(testNewPDF())
 	line := helvetica.GetBodyHeight(helvetica.GetSize())
-	testNear(t, "default", 2*line, testParagraphDistance(-1), testDelta) // one empty line
+	testNear(t, "default", 2*line, testParagraphDistance(), testDelta) // one empty line
 	testNear(t, "gap 0", line, testParagraphDistance(0), testDelta)
 	testNear(t, "gap 10", line+10, testParagraphDistance(10), testDelta)
+}
+
+func TestTextFrameANegativeGapIsTakenAsZero(t *testing.T) {
+	testNear(t, "gap -5", testParagraphDistance(0), testParagraphDistance(-5), testDelta)
 }
 
 func TestTextFrameTheDefaultGapIsAnEmptyLineOfTheNextParagraph(t *testing.T) {
@@ -58,6 +62,29 @@ func testDrawAligned(textAlignment alignment.Alignment, text string) *Paragraph 
 	frame.SetLocation(10, 10)
 	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
 	return paragraph
+}
+
+// testTextHeight draws one paragraph in a frame of the width at x 0, and
+// returns how far down its text reaches.
+func testTextHeight(text string, width float32) float32 {
+	pdf := testNewPDF()
+	paragraph := NewParagraph().Add(NewTextLine(testHelvetica(pdf), text))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
+	frame.SetLocation(0, 10)
+	frame.DrawOn(NewPage(pdf, testLetterPortrait()))
+	return paragraph.GetY2() - paragraph.GetY1()
+}
+
+func TestTextFrameARowTakesTheWordsThatFitWithoutTheSpaceAfterThem(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	oneRow := testTextHeight("one two", 300)
+	width := font.StringWidth(font.GetSize(), "one ") + font.StringWidth(font.GetSize(), "two")
+	testNear(t, "one row", oneRow, testTextHeight("one two", width), testDelta)
+	if testTextHeight("one two", width-0.1) <= oneRow {
+		t.Error("the text is not two rows")
+	}
+	// A word as wide as the frame is not broken.
+	testNear(t, "a whole word", oneRow, testTextHeight("Hello", font.StringWidth(font.GetSize(), "Hello")), testDelta)
 }
 
 func TestTextFrameARightAlignedParagraphEndsAtTheRightEdge(t *testing.T) {

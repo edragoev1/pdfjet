@@ -29,6 +29,10 @@ import Testing
         TestSupport.expectNear(line + 10, paragraphDistance(10))
     }
 
+    @Test func aNegativeGapIsTakenAsZero() {
+        TestSupport.expectNear(paragraphDistance(0), paragraphDistance(-5))
+    }
+
     @Test func theDefaultGapIsAnEmptyLineOfTheNextParagraph() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
@@ -47,6 +51,24 @@ import Testing
         paragraph.setTextAlignment(alignment)
         TextFrame([paragraph]).setLocation(10, 10).setWidth(200).drawOn(Page(pdf, Letter.PORTRAIT))
         return paragraph
+    }
+
+    // Draws one paragraph in a frame of the width at x 0, and returns how far down its text reaches.
+    private func textHeight(_ text: String, _ width: Float) -> Float {
+        let pdf = TestSupport.newPDF()
+        let paragraph = Paragraph(TextLine(TestSupport.helvetica(pdf), text))
+        TextFrame([paragraph]).setLocation(0, 10).setWidth(width).drawOn(Page(pdf, Letter.PORTRAIT))
+        return paragraph.getY2() - paragraph.getY1()
+    }
+
+    @Test func aRowTakesTheWordsThatFitWithoutTheSpaceAfterThem() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let oneRow = textHeight("one two", 300)
+        let width = font.stringWidth("one ") + font.stringWidth("two")
+        TestSupport.expectNear(oneRow, textHeight("one two", width))
+        #expect(textHeight("one two", width - 0.1) > oneRow, "two rows")
+        // A word as wide as the frame is not broken.
+        TestSupport.expectNear(oneRow, textHeight("Hello", font.stringWidth("Hello")))
     }
 
     @Test func aRightAlignedParagraphEndsAtTheRightEdge() {

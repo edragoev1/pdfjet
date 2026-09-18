@@ -123,9 +123,9 @@ func (tf *TextFrame) GetHeight() float32 {
 // from the bottom of the text of a paragraph to the top of the text of the
 // next, so paragraphs never overlap. The default is one empty line in the size
 // of the next paragraph, so a heading is not followed by an empty line of its
-// own size.
+// own size. A negative gap is taken as 0.
 func (tf *TextFrame) SetParagraphGap(paragraphGap float32) *TextFrame {
-	tf.paragraphGap = paragraphGap
+	tf.paragraphGap = max(0, paragraphGap)
 	tf.hasParagraphGap = true
 	return tf
 }
@@ -299,16 +299,18 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 	fallbackFont := textLine.fallbackFont
 	fontSize := textLine.fontSize
 	var buf strings.Builder
+	var runLength float32
 	for tf.tokenIndex < len(tf.tokens) {
 		if !tf.rowOpen && !tf.openRow(textLine) {
 			return false
 		}
 		token := tf.tokens[tf.tokenIndex]
-		runLength := font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
-		tokenWidth := font.StringWidthUsingFallbackFont(fallbackFont, fontSize, token+single.Space)
-		if (runLength + tokenWidth) < ((tf.x + tf.w) - tf.xText) {
+		// The token is measured without the space that follows it, as in
+		// TextColumn: a row is as wide as the text it shows.
+		if (runLength + textWidth(textLine, token)) <= ((tf.x + tf.w) - tf.xText) {
 			buf.WriteString(token)
 			buf.WriteString(single.Space)
+			runLength += textWidth(textLine, token+single.Space)
 			tf.tokenIndex++
 			continue
 		}
@@ -325,6 +327,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		tf.addToRow(paragraph, textLine, buf.String(), false)
 		tf.drawRow(page, false)
 		buf.Reset()
+		runLength = 0
 		tf.xText = tf.x
 		tf.rowOpen = false
 		tf.nextBaseline = tf.yText + textLine.GetHeight()
@@ -334,14 +337,14 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 	return true
 }
 
-// headThatFits returns the longest start of the token that is narrower than the
-// frame, and at least the first character of the token.
+// headThatFits returns the longest start of the token that fits in the width
+// of the frame, and at least the first character of the token.
 func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
 	_, size := utf8.DecodeRuneInString(token)
 	end := size
 	for end < len(token) {
 		_, size = utf8.DecodeRuneInString(token[end:])
-		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:end+size]) >= tf.w {
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:end+size]) > tf.w {
 			break
 		}
 		end += size
@@ -478,7 +481,7 @@ func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 	}
 	var buf strings.Builder
 	for _, ch := range textLine.text {
-		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) < tf.w {
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) <= tf.w {
 			buf.WriteRune(ch)
 		} else {
 			if buf.Len() > 0 {

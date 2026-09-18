@@ -158,11 +158,12 @@ public class TextFrame implements Drawable {
      * overlap. The default is one empty line in the size of the next paragraph,
      * so a heading is not followed by an empty line of its own size.
      *
-     * @param paragraphGap the space between paragraphs, 0 or more.
+     * @param paragraphGap the space between paragraphs, 0 or more; a negative
+     *     gap is taken as 0.
      * @return this TextFrame object.
      */
     public TextFrame setParagraphGap(float paragraphGap) {
-        this.paragraphGap = paragraphGap;
+        this.paragraphGap = Math.max(0f, paragraphGap);
         this.hasParagraphGap = true;
         return this;
     }
@@ -364,15 +365,17 @@ public class TextFrame implements Drawable {
         Font fallbackFont = textLine.fallbackFont;
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
+        float runLength = 0f;
         while (tokenIndex < tokens.size()) {
             if (!rowOpen && !openRow(textLine)) {
                 return false;
             }
             String token = tokens.get(tokenIndex);
-            float runLength = font.stringWidth(fallbackFont, fontSize, buf.toString());
-            float tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space);
-            if ((runLength + tokenWidth) < ((x + w) - xText)) {
+            // The token is measured without the space that follows it, as in
+            // TextColumn: a row is as wide as the text it shows.
+            if ((runLength + width(textLine, token)) <= ((x + w) - xText)) {
                 buf.append(token).append(Single.space);
+                runLength += width(textLine, token + Single.space);
                 tokenIndex++;
                 continue;
             }
@@ -389,6 +392,7 @@ public class TextFrame implements Drawable {
             addToRow(paragraph, textLine, buf.toString(), false);
             drawRow(page, false);
             buf.setLength(0);
+            runLength = 0f;
             xText = x;
             rowOpen = false;
             nextBaseline = yText + textLine.getHeight();
@@ -398,13 +402,13 @@ public class TextFrame implements Drawable {
         return true;
     }
 
-    // Returns the longest start of the token that is narrower than the frame, and
-    // at least the first character of the token.
+    // Returns the longest start of the token that fits in the width of the frame,
+    // and at least the first character of the token.
     private String headThatFits(TextLine textLine, String token) {
         int end = Character.charCount(token.codePointAt(0));
         while (end < token.length()) {
             int next = end + Character.charCount(token.codePointAt(end));
-            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, token.substring(0, next)) >= w) {
+            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, token.substring(0, next)) > w) {
                 break;
             }
             end = next;
@@ -536,7 +540,7 @@ public class TextFrame implements Drawable {
             int ch = text.codePointAt(i);
             i += Character.charCount(ch);
             String str = new String(Character.toChars(ch));
-            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + str) < w) {
+            if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + str) <= w) {
                 buf.appendCodePoint(ch);
             } else {
                 if (buf.length() > 0) {

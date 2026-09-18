@@ -111,9 +111,10 @@ public class TextFrame : Drawable {
     /// the text of a paragraph to the top of the text of the next, so paragraphs
     /// never overlap. The default is one empty line in the size of the next
     /// paragraph, so a heading is not followed by an empty line of its own size.
+    /// A negative gap is taken as 0.
     @discardableResult
     public func setParagraphGap(_ paragraphGap: Float) -> TextFrame {
-        self.paragraphGap = paragraphGap
+        self.paragraphGap = max(0.0, paragraphGap)
         self.hasParagraphGap = true
         return self
     }
@@ -289,16 +290,18 @@ public class TextFrame : Drawable {
         let fallbackFont = textLine.fallbackFont
         let fontSize = textLine.fontSize
         var buf = String()
+        var runLength: Float = 0.0
         while tokenIndex < tokens!.count {
             if !rowOpen && !openRow(textLine) {
                 return false
             }
             let token = tokens![tokenIndex]
-            let runLength = font.stringWidth(fallbackFont, fontSize, buf)
-            let tokenWidth = font.stringWidth(fallbackFont, fontSize, token + Single.space)
-            if (runLength + tokenWidth) < ((x + w) - xText) {
+            // The token is measured without the space that follows it, as in
+            // TextColumn: a row is as wide as the text it shows.
+            if (runLength + TextFrame.width(textLine, token)) <= ((x + w) - xText) {
                 buf.append(token)
                 buf.append(Single.space)
+                runLength += TextFrame.width(textLine, token + Single.space)
                 tokenIndex += 1
                 continue
             }
@@ -316,6 +319,7 @@ public class TextFrame : Drawable {
             addToRow(paragraph, textLine, buf, false)
             drawRow(page, false)
             buf = ""
+            runLength = 0.0
             xText = x
             rowOpen = false
             nextBaseline = yText + textLine.getHeight()
@@ -325,14 +329,14 @@ public class TextFrame : Drawable {
         return true
     }
 
-    // Returns the longest start of the token that is narrower than the frame, and
-    // at least the first character of the token.
+    // Returns the longest start of the token that fits in the width of the frame,
+    // and at least the first character of the token.
     private func headThatFits(_ textLine: TextLine, _ token: String) -> String {
         let scalars = Array(token.unicodeScalars)
         var end = 1
         while end < scalars.count {
             let next = String(String.UnicodeScalarView(scalars[0...end]))
-            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, next) >= w {
+            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, next) > w {
                 break
             }
             end += 1
@@ -458,7 +462,7 @@ public class TextFrame : Drawable {
         var list = [String]()
         var buf = String()
         for scalar in textLine.text!.unicodeScalars {
-            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, buf + String(scalar)) < w {
+            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, buf + String(scalar)) <= w {
                 buf.unicodeScalars.append(scalar)
             } else {
                 if !buf.isEmpty {
