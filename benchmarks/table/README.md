@@ -48,19 +48,28 @@ the machine meanwhile. `build/` is not tracked.
 - The 40-row sample of each port is checked with mutool for the text of its
   first page.
 
-## Results at 68669ad1, 17 September 2026
+## Results at e662e6bc, 18 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux, OpenJDK 21.0.12.1, .NET SDK 8.0.424,
-Go 1.27.1, Swift 6.3.3, in one run on a freshly rebooted machine with nothing
-else running (`results/2026-09-17-68669ad1.log`).
+Go 1.27.1, Swift 6.3.3, in one run at the v9.0.1 release with nothing else
+running (`results/2026-09-18-e662e6bc.log`).
 
 | Port | 2,000 rows | 10,000 rows | 50,000 rows | First document | Peak memory | File, 50,000 rows |
 |---|---:|---:|---:|---:|---:|---:|
-| Java | 75 ms | 355 ms | 1,624 ms | 1,987 ms | 435 MB | 9,061,891 bytes |
-| C# | 76 ms | 379 ms | 1,881 ms | 2,213 ms | 222 MB | 9,061,891 bytes |
-| Go | 30 ms | 143 ms | 713 ms | 748 ms | 193 MB | 9,085,466 bytes |
-| Swift | 105 ms | 487 ms | 2,391 ms | 2,478 ms | 173 MB | 11,121,504 bytes |
+| Java | 76 ms | 356 ms | 1,594 ms | 2,038 ms | 434 MB | 9,061,891 bytes |
+| C# | 77 ms | 370 ms | 1,865 ms | 2,172 ms | 221 MB | 9,061,891 bytes |
+| Go | 29 ms | 138 ms | 684 ms | 735 ms | 194 MB | 9,085,466 bytes |
+| Swift | 103 ms | 481 ms | 2,375 ms | 2,457 ms | 172 MB | 11,121,504 bytes |
 
+- e662e6bc, the v9.0.1 release, changes nothing in `Table`; it keeps the
+  whole font and its GPOS marks in every stream font, read when a mark is
+  drawn, and looks at a string once, rather than scanning it four times, to
+  tell if it needs shaping, which the many short strings of a table feel. The
+  files are the same to the byte as at 68669ad1
+  (`results/2026-09-17-68669ad1.log`, a freshly rebooted machine), and at
+  50,000 rows Java is 1,594 ms against 1,624, C# 1,865 against 1,881, Go 684
+  against 713 and Swift 2,375 against 2,391: all faster, Go by 4%, the others
+  within their noise.
 - 68669ad1 measures the text of a cell without copying it: `stringWidth` with a
   fallback font used to copy every string it measured, character by character,
   and the runs of text drawn with one font are now the pieces of the string
@@ -187,7 +196,8 @@ Go 1,752 and Swift 5,978, and the files 22,415,937 bytes in Java and C#,
 22,474,872 in Go and 27,553,691 in Swift, which are smaller than the 22.6 and
 27.7 MB above: 660ab679 writes nothing for a cell with no visible border. The
 first document and the peak at this size were not measured on their own in
-either run.
+either run. At e662e6bc (`results/2026-09-18-e662e6bc-124716.log`) they were
+Java 4,029 ms, C# 4,628, Go 1,701 and Swift 5,948, with the same files.
 
 The geometry is this benchmark's, not Example_43's, so the page counts differ
 a little: Example_43 is 2,546 pages of the same data. On that table, in the run

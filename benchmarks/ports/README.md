@@ -42,19 +42,18 @@ the machine meanwhile. `build/` is not tracked.
 - The 3-page sample of each port is checked with mutool for its three lines of
   Latin, Greek and Cyrillic text.
 
-## Results, 17 September 2026
+## Results, 18 September 2026
 
 AMD Ryzen 5 5600G, 12 threads, Linux. OpenJDK 21.0.12.1, .NET SDK 8.0.424,
-Go 1.27.1, Swift 6.3.3. One run at 68669ad1, logged in
-`results/2026-09-17-68669ad1.log`, on a freshly rebooted machine with nothing
-else running.
+Go 1.27.1, Swift 6.3.3. One run at e662e6bc, the v9.0.1 release, logged in
+`results/2026-09-18-e662e6bc.log`, with nothing else running.
 
 | Port | 100 pages | 500 pages | First document | File, 500 pages | Peak memory |
 |---|---:|---:|---:|---:|---:|
-| Java | 14 ms | 56 ms | 171 ms | 533,287 bytes | 79 MB |
-| C# | 20 ms | 48 ms | 175 ms | 533,287 bytes | 54 MB |
-| Go | 9 ms | 43 ms | 46 ms | 518,650 bytes | 11 MB |
-| Swift | 21 ms | 90 ms | 97 ms | 599,518 bytes | 28 MB |
+| Java | 14 ms | 56 ms | 175 ms | 533,287 bytes | 82 MB |
+| C# | 21 ms | 60 ms | 180 ms | 533,287 bytes | 55 MB |
+| Go | 9 ms | 43 ms | 43 ms | 518,650 bytes | 11 MB |
+| Swift | 22 ms | 91 ms | 100 ms | 599,518 bytes | 29 MB |
 
 - Java and C# write files of the same size, to the byte. Go's 500-page file is
   about 3% smaller and Swift's about 12% larger. The four write the same page
@@ -68,6 +67,16 @@ else running.
   is not zlib, and it has been closing the gap in steps: longer matches, 4% off
   the file, and then stored, fixed or dynamic Huffman codes chosen a block at a
   time, 12.7% off.
+- The files are the same to the byte as at 68669ad1
+  (`results/2026-09-17-68669ad1.log`, a freshly rebooted machine). e662e6bc
+  keeps the whole font and its GPOS marks in every stream font, which the
+  loader keeps compressed until a mark is drawn, and tells the text that needs
+  shaping in one pass over it. At 500 pages Java is 56 ms against 56, Go 43
+  against 43 and Swift 91 against 90. C#'s median reads 60 ms against 48, but
+  its seven runs spread from 48 to 82 ms here and from 47 to 72 there, with the
+  same best of 48; at 100 pages it is 21 ms against 20. The spread is that
+  port's, run to run, not the change: the same code measured 48 to 62 ms in
+  three runs before it was committed.
 - The files are the same to the byte as at 8db803f0
   (`results/2026-09-17-8db803f0.log`), where the 500-page times were Java 54,
   C# 60, Go 46 and Swift 89 ms. 68669ad1 measures a string without copying it
