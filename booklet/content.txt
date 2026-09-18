@@ -1,0 +1,353 @@
+% The text of the PDFjet booklet. Booklet.java lays it out with PDFjet.
+%
+% # Title             a chapter: a new page, a heading, a bookmark
+% ## Title            a section
+% - text             a bullet item
+% @code java         code for one language, until @end: java, csharp, go, swift
+% @lang java         text for one language, until @end; lines indented 4 spaces
+%                    are code
+% @example 24 Title  an example: its description follows, then its source
+% Other lines are paragraphs, which end at an empty line. Lines that start
+% with % are comments.
+
+# Introducing PDFjet
+
+PDFjet is a library for creating PDF documents from programs. It draws text in any script, tables that break across pages, charts, barcodes and images, and it writes documents that are accessible to screen readers and fit for long-term archiving when you ask it to.
+
+It began in 2000, when there were few PDF libraries and none that was small, fast and written in plain Java. The name says what it has been about ever since: a jet is fast and lean. PDFjet writes a 500-page document with an embedded font in under a tenth of a second, and it writes each page out and frees it as soon as the next one starts, so a long document does not need more memory than a short one.
+
+PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and the same output. Each port is written in its own language, with no native code and no dependencies: the Java library is one jar of less than half a megabyte. The four ports are checked against each other on every change: every example is built in the four languages, and the PDFs they write must draw the same text in the same fonts, sizes and positions, page by page.
+
+## What is in the library
+
+- Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Thai, Hebrew, Arabic and Persian, with right to left text, kerning and fallback fonts.
+- 272 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
+- Text lines, text blocks, columns and frames that wrap and flow text, and tables that break across pages and repeat their header rows.
+- Bar charts, donut charts, XY charts and calendars.
+- Barcodes: Code 128, Code 39, UPC-A, EAN-13, QR codes, Data Matrix and PDF417.
+- PNG, JPEG and BMP images, and SVG drawn as vector graphics.
+- Links, bookmarks, annotations, attached files, layers and forms.
+- PDF/UA for accessibility, and PDF/A-1, 2 and 3 for archiving, each with one setting.
+- AES-256 encryption with passwords and permissions.
+- Reading existing PDFs: merging, splitting and adding to their pages.
+
+## How this booklet is organized
+
+The first chapters show how to install PDFjet, what a PDFjet program looks like, and how to use the library efficiently. The chapters after them go through all 51 examples that come with PDFjet, grouped by topic. Each example starts with what it shows and what to look for, followed by its complete source code, exactly as it is in the repository, where the examples are built and their PDFs checked on every change.
+
+To see what an example draws, run it: every example writes a PDF named after it, such as Example_24.pdf. The examples read their fonts, images and data from the fonts, images and data folders of the repository, so run them from its root folder.
+
+This booklet was made with PDFjet, by booklet/Booklet.java in the repository, from the same example sources. It is a PDF/UA document, with bookmarks and a linked table of contents.
+
+# Getting started
+
+## Installing PDFjet
+
+@lang java
+Build PDFjet.jar with ./build-java.sh from the root of the repository, which also builds and runs the examples, and put the jar on the class path of your program. PDFjet runs on Java 8 and later.
+@end
+@lang csharp
+Build bin/release/net8.0/PDFjet.dll with ./build-dotnet.sh from the root of the repository, which also builds and runs the examples, and add a reference to it in your project. PDFjet runs on .NET 8 and later.
+@end
+@lang go
+Add the module to your program with the go command. The module path carries the major version, as Go requires from version 2 on.
+
+    go get github.com/edragoev1/pdfjet/v9@latest
+
+The Go module has the source of the library and the examples only. Copy the fonts folder of the repository next to your program; the core fonts need no files.
+@end
+@lang swift
+Add PDFjet to the Package.swift of your package, and the PDFjet product to the target that uses it:
+
+    dependencies: [
+        .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.0.0"),
+    ],
+    targets: [
+        .executableTarget(name: "App", dependencies: [
+            .product(name: "PDFjet", package: "pdfjet"),
+        ]),
+    ]
+@end
+
+The fonts that come with PDFjet, such as IBMPlexSans.Regular, are paths relative to the working folder, so a program that uses them runs in a folder that has the fonts folder of the repository.
+
+## Hello, World
+
+This program writes hello.pdf with one line of text in English, Greek and Bulgarian, in IBM Plex Sans at 18 points.
+
+@code java
+import com.pdfjet.*;
+import com.pdfjet.fonts.*;
+import java.io.*;
+
+public class Hello {
+    public static void main(String[] args) throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("hello.pdf")));
+        Font font = new Font(pdf, IBMPlexSans.Regular).setSize(18f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").setLocation(50f, 100f).drawOn(page);
+        pdf.complete();
+    }
+}
+@end
+@code csharp
+using System.IO;
+using PDFjet.NET;
+
+public class Hello {
+    public static void Main() {
+        var pdf = new PDF(new BufferedStream(new FileStream("hello.pdf", FileMode.Create)));
+        var font = new Font(pdf, IBMPlexSans.Regular).SetSize(18f);
+        var page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").SetLocation(50f, 100f).DrawOn(page);
+        pdf.Complete();
+    }
+}
+@end
+@code go
+package main
+
+import (
+	"log"
+
+	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
+)
+
+func main() {
+	pdf, err := pdfjet.NewPDFFile("hello.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(18)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewTextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").SetLocation(50, 100).DrawOn(page)
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
+}
+@end
+@code swift
+import Foundation
+import PDFjet
+
+let pdf = PDF(OutputStream(toFileAtPath: "hello.pdf", append: false)!)
+let font = try Font(pdf, IBMPlexSans.Regular).setSize(18.0)
+let page = Page(pdf, Letter.PORTRAIT)
+TextLine(font, "Hello, World! Γειά σου, κόσμε! Здравей, свят!").setLocation(50.0, 100.0).drawOn(page)
+try pdf.complete()
+@end
+
+## The shape of a PDFjet program
+
+Every PDFjet program has the same four steps. It creates a PDF on an output stream, adds the fonts and images it needs to the PDF, creates pages, and draws on each page. When it is done, it completes the PDF, which writes what is left and closes the stream.
+
+Positions are in points, 72 to an inch, from the top left corner of the page, with y growing down the page, as a page is read. Every component, a text line, a text block, a table, an image, a chart or a barcode, has a location that setLocation sets, and a drawOn method that draws it on a page. drawOn returns the x and y of the bottom right corner of what it drew, so the next component can start below it.
+
+A font can be one of the fonts that come with PDFjet, such as IBMPlexSans.Regular, any OpenType or TrueType file, or one of the 14 core fonts, such as Helvetica, which every PDF viewer has and which is not embedded. The embedded fonts draw any character they have, and are the ones to use for accessible and archival documents. The core fonts make the smallest documents, but draw only the characters of Windows Latin 1.
+
+For an accessible document, set the compliance to PDF/UA-1 and give the document a title, before anything else. PDFjet then tags every text line, text block, table cell and image, and marks lines, shapes and backgrounds as decoration, which screen readers skip. For an archival document, set one of the PDF/A levels instead.
+
+# Working efficiently
+
+PDFjet is fast by design, and a few habits keep it that way.
+
+- Create each font once and use it everywhere. A Font object embeds its font in the PDF once, however many pages use it, and a text line can draw in another size of the same font with setFontSize, without a second font.
+- Use the .stream fonts that come with PDFjet, such as IBMPlexSans.Regular. They are the same fonts, compressed once ahead of time, so they load faster than the .otf and .ttf files and are written to the PDF as they are.
+- Add an image to the PDF once and draw it on as many pages as you like. The image data is written once.
+- Write to a buffered stream, and let PDFjet write each page out as the next one starts. A document of thousands of pages needs no more memory than one page.
+- For a table of tens of thousands of rows, use BigTable, which writes the rows as it reads them, rather than Table, which holds every cell until it is drawn. Example 43 writes 124,716 rows of a CSV file this way.
+- Measure before you draw. drawOn returns where a component ends, and a text block drawn on no page, with drawOn(null), returns its size without drawing it, so a layout can decide where things go before it draws them.
+- Leave the compliance, PDF/UA or PDF/A, on from the start. Tagging costs little, and the document is accessible without a second pass.
+
+# Text and fonts
+
+These examples draw text: lines and blocks, in the fonts that come with PDFjet, in fonts read from files, and in the core fonts, with highlighting, kerning and metrics.
+
+@example 01 Text in English, Greek and Bulgarian
+Draws text blocks in three languages in IBM Plex Sans, one of the fonts that come with PDFjet, in a PDF/UA document. The commented lines show the other compliance levels: set one of them instead, and the same document is PDF/A.
+
+@example 16 Highlighted keywords
+Draws a text block with keywords in their own colors, and a transparent shape over it with a graphics state that sets the alpha of the fills and strokes.
+
+@example 23 The ascent and descent of a font
+Draws a large text block and marks the ascent, the descent and the baseline of its font with lines, and the corners that setLocation and drawOn use. It shows what the numbers a font returns mean on the page.
+
+@example 28 Fonts from .otf, .ttf and .stream files
+Reads fonts from OpenType and TrueType files and from the .stream files of the same fonts. Any font file on the computer is a font for PDFjet; the .stream files load faster.
+
+@example 49 Paragraphs with mixed text styles
+Draws a menu whose paragraphs mix fonts, sizes and colors, with currency signs raised with a vertical offset, and a rotated, underlined label.
+
+@example 05 Core fonts and kerning
+Draws text at every angle around a point, and the words WAVE AWAY with and without kerning, in the core font Helvetica-Bold, which is not embedded. The comment at the top weighs the core fonts against the embedded ones.
+
+@example 04 Chinese, Japanese and Korean fonts that are not embedded
+Draws Chinese, Japanese and Korean text with the CJK fonts that PDF viewers supply, so the PDF carries no font program at all. The comment at the top explains when that is the right choice.
+
+# Languages and scripts
+
+Text in scripts other than Latin: Chinese, Japanese and Korean, right to left text, and a fallback font for the characters a font does not have.
+
+@example 02 The Universal Declaration of Human Rights in four languages
+Draws the preamble and the first two articles of the Declaration in Japanese, Korean, Simplified and Traditional Chinese, each in its IBM Plex font, with the language of each text block set for screen readers. The heading of each page is in IBM Plex Sans with the page's font as its fallback font, which draws the name of the language in its own script. The lines of Chinese and Japanese text never start with a closing mark.
+
+@example 27 Thai, Hebrew, Arabic and Persian text
+Draws text in Thai, and right to left text in Hebrew, Arabic and Persian, with the Arabic letters shaped and the lines ordered for reading.
+
+@example 44 Simplified Chinese in a text column
+Draws a text column with paragraphs of English and Simplified Chinese, the Chinese in a CJK font that is not embedded.
+
+# Text layout
+
+Text that wraps and flows: frames, columns, text next to images, and source code with highlighted keywords.
+
+@example 03 Paragraphs in a text frame
+Draws paragraphs of mixed styles in a text frame, numbers them, and marks words in colors.
+
+@example 10 Text in a column
+Draws a text column of paragraphs about Switzerland, centered, justified and aligned, under a map, with the spacing between lines and paragraphs.
+
+@example 47 Text flowing through columns
+Flows a long text through the columns of a page and on to the next pages with text frames: what does not fit in one frame goes on in the next.
+
+@example 19 Text next to images
+Draws rows of an image with text next to it. The drawOn methods of the image and the text block return where they end, so each row starts below the taller of the two.
+
+@example 32 Source code with highlighted keywords
+Draws the source of Example 02 in JetBrains Mono, with its keywords in colors, starting a new page when one is full.
+
+# Tables
+
+Tables that break across pages and repeat their header rows, with cells that span columns, hold other components, and come from a CSV file.
+
+@example 13 Winter reading scores
+Draws a table from a file of values separated by bars, with two header rows, cells that span columns, and columns aligned, colored and struck out.
+
+@example 08 A table from a CSV file, over pages
+Draws the first ten pages of a CSV file as a table, with an image and a barcode in its cells, colors and fonts by row, and a "Page X of N" footer on every page.
+
+@example 15 A PDF/UA table
+Draws a table of cells with padding, colors and text lines of mixed styles in a PDF/UA document.
+
+@example 29 Text columns in table cells
+Draws a table whose cells hold text columns, so each paragraph of English and Greek text wraps inside its cell, and the cell grows to fit it.
+
+@example 38 Table cells that span rows and columns
+Draws a table whose cells span columns, with setColSpan, and rows, by leaving out the borders between them. It also checks the geometry of the cells.
+
+@example 43 A table of 124,716 rows
+Writes all 124,716 rows of a CSV file with BigTable, which writes rows as it reads them, in a PDF/UA document. It is the example to time: it prints how long it takes, and it needs little memory however long the file is.
+
+@example 34 A table of countries in a PDF/A-1B document
+Draws a table of the countries of a data file, whose last cell spans the columns left, in a PDF/A-1B document.
+
+# Images
+
+PNG, JPEG, BMP and SVG images, drawn and scaled, with the pages of a document added in reading order.
+
+@example 24 JPEG, PNG, BMP and CMYK JPEG images
+Draws a JPEG, a PNG, a BMP and a CMYK JPEG saved as Photoshop saves one, with its inks stored inverted.
+
+@example 17 PNG images from PngSuite
+Draws PNG images of every kind from PngSuite, the test images of the PNG format: palettes, grayscale, alpha and 16-bit samples.
+
+@example 33 SVG images
+Draws an SVG map of Europe, scaled to fit the page, and a set of SVG icons, each with its name. SVG images are drawn as vector graphics, so they stay sharp at any zoom.
+
+@example 36 Pages added in reading order
+Draws two map pages first and their contents page last, and then adds the pages to the PDF in reading order, with the contents first.
+
+# Graphics
+
+Shapes, paths, transparency, and components grouped, rotated and stamped.
+
+@example 31 Transparency
+Draws opaque and transparent shapes, with a graphics state that sets the alpha of the fills and the strokes, and strokes that are more or less transparent than their fills.
+
+@example 35 Containers and stamps
+Draws rectangles, text and paths in containers that nest and rotate, and a stamp, a reusable drawing, drawn twice at different angles.
+
+@example 20 A letterhead
+Draws a letterhead: a logo read from a PDF file and drawn as vector graphics, a maple leaf drawn as a path with curves, and a QR code with the address of a web site.
+
+# Charts and calendars
+
+@example 09 An XY chart and a table
+Draws an XY chart of the countries of a data file, each a marker that links to a page about the country, with the trend line of the points, and a table of the countries with a marker of their own.
+
+@example 25 A donut chart
+Draws a donut chart of five slices, each with its label and share. An inner radius of 0 makes a pie chart.
+
+@example 39 A horizontal bar chart
+Draws the ten longest rivers as a bar chart, each bar in its own color with its length inside it, with a color key and a source note.
+
+@example 40 Bar charts and a calendar
+Draws two bar charts of the same data, grouped and stacked, and on a second page the calendar of 2026 with its weeks starting on Monday.
+
+# Barcodes
+
+@example 11 Linear barcodes
+Draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode, each next to a label, and barcodes drawn from top to bottom and from bottom to top.
+
+@example 12 A PDF417 barcode
+Draws a PDF417 barcode that holds a whole source file.
+
+@example 14 Data Matrix barcodes
+Draws Data Matrix symbols of a web address, text in UTF-8, and digits, square and rectangular.
+
+@example 21 QR code error correction
+Draws the same web address as a QR code at each of the four error correction levels. A higher level lets a scanner read a damaged code, and holds less data.
+
+# Links, bookmarks, annotations and layers
+
+@example 22 Internal links and destinations
+Links a contents page to three chapters, and each chapter back to the contents, with destinations and "Go To" actions.
+
+@example 48 Bookmarks
+Draws the outline of a short guide to the structure of a PDF file, and adds a bookmark for each of its titles, numbered from their place in the tree of bookmarks.
+
+@example 06 Attachments and annotations
+Attaches two files to a page, and adds a note, a link and polygon, square and circle annotations next to labels that describe them.
+
+@example 46 Layers
+Draws a relief map of Europe with the lines of latitude and longitude and the capital cities over it, each a layer that a PDF viewer can show or hide.
+
+# Forms
+
+@example 26 Check boxes and radio buttons
+Draws a customer survey with check boxes and radio buttons.
+
+@example 42 A form of fields
+Draws a company information form with the Form and Field classes, a row of labeled values at a time.
+
+@example 45 A shipment request
+Draws a shipment request with the Form and Field classes. A field at x 0 starts a new row, and a field with an empty label continues the value above it.
+
+# Pages, accessibility and archiving
+
+@example 18 Page numbers
+Draws a short document and writes "Page X of N" at the foot of every page, as decoration that screen readers skip.
+
+@example 07 A PDF/A-3B document with a watermark
+Adds a DRAFT watermark to every page of a two-page PDF/A-3B document. The watermark is drawn first, so the text of the page is drawn over it.
+
+# Existing PDFs and security
+
+PDFjet reads existing PDFs too: it merges them, splits them, and adds to their pages. And it encrypts documents with AES-256.
+
+@example 41 Merging PDFs
+Merges existing PDF documents into one, after a cover page drawn with PDFjet. The pages keep their content, resources, annotations and links.
+
+@example 51 Splitting a PDF
+Splits an existing PDF into one PDF for each of its pages, and writes all its pages in reverse order to another.
+
+@example 37 Adding text to the pages of a scanned PDF
+Reads a scanned document and draws a transparent line of text on each of its pages.
+
+@example 50 Filling in an existing PDF form
+Reads an existing PDF form and writes the values of its fields, with an image, two fonts read from files, and the core font Helvetica.
+
+@example 30 Encryption
+Encrypts a document with AES-256, with a user password and an owner password and the permissions of the user, and attaches a file to it.

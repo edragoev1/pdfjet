@@ -219,6 +219,12 @@ sudo apt install libc6-dev gcc
 
 On Windows, use the `.cmd` scripts of the same names.
 
+`booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction to
+the library and all 51 examples with their source code, as a PDF/UA document
+with bookmarks and a linked table of contents. It writes one booklet for each
+port and one with the code of the four ports, `booklet/PDFjet-Booklet-*.pdf`,
+from `booklet/content.txt` and the example sources.
+
 ## Builds
 
 The `Build` GitHub Actions workflow runs `build-java.sh`, `build-dotnet.sh`,
