@@ -1044,62 +1044,67 @@ public class Page {
 
     // Returns true if the text has a character that is more than a glyph: an
     // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
-    // place. The scans are vectorized; marks start at U+0300, and a character
-    // is looked up only in the 64 characters around it that can have a mark.
+    // place. Vectorized scans settle text before U+0300, where there is
+    // neither, and Greek and Cyrillic text; from there each character is one
+    // bit of a table, so that CJK text costs a load and a test for each.
     private static bool NeedsShaping(Font font, string str) {
         ReadOnlySpan<char> span = str.AsSpan();
-        if (span.IndexOfAnyInRange('\u200C', '\u200F') >= 0) {
-            return true;
-        }
         if (font.markAnchors == null && font.markData == null) {
-            return false;
+            return span.IndexOfAnyInRange('\u200C', '\u200F') >= 0;
         }
         int start = span.IndexOfAnyInRange('\u0300', '\uFFFF');
         if (start < 0) {
             return false;
         }
+        span = span.Slice(start);
+        if (span.IndexOfAnyExceptInRange('\u0000', '\u04FF') < 0) {
+            // Latin, Greek and Cyrillic, whose only marks are the combining
+            // diacritical marks and the Cyrillic ones: three vectorized scans.
+            return span.IndexOfAnyInRange('\u0300', '\u036F') >= 0 ||
+                    span.IndexOfAnyInRange('\u0483', '\u0489') >= 0;
+        }
+        byte[] table = shapingChars;
         for (int i = start; i < str.Length; i++) {
             char c = str[i];
-            if (c >= 0x0300) {
-                // A pair of surrogates is one code point; either half alone
-                // is a surrogate, never a mark.
-                int codePoint = c;
-                if (char.IsHighSurrogate(c) && i + 1 < str.Length && char.IsLowSurrogate(str[i + 1])) {
-                    codePoint = char.ConvertToUtf32(c, str[i + 1]);
-                }
-                if (IsMark(codePoint)) {
-                    return true;
-                }
+            if ((table[c >> 3] & (1 << (c & 7))) == 0) {
+                continue;
+            }
+            if (!char.IsHighSurrogate(c)) {
+                return true;    // A joiner or a mark
+            }
+            // A pair of surrogates is one code point outside the plane, which
+            // is looked up; either half alone is a surrogate, never a mark.
+            if (i + 1 < str.Length && char.IsLowSurrogate(str[i + 1]) &&
+                    IsMark(char.ConvertToUtf32(c, str[i + 1]))) {
+                return true;
             }
         }
         return false;
     }
 
-    // True for each 64 characters of the Basic Multilingual Plane that have a
-    // mark among them, so that IsMark looks up the category of a character
-    // only when it can be a mark. Greek and most of Cyrillic, like the Latin
-    // letters before U+0300, have none.
-    private static readonly bool[] markChunks = MarkChunks();
+    // One bit for each character of the Basic Multilingual Plane that can
+    // make text need shaping: the joiners, the marks and the high surrogates,
+    // each of which starts a character outside the plane.
+    private static readonly byte[] shapingChars = ShapingChars();
 
-    private static bool[] MarkChunks() {
-        bool[] chunks = new bool[1024];
-        for (int codePoint = 0x0300; codePoint < 0x10000; codePoint++) {
-            if (codePoint < 0xD800 || codePoint > 0xDFFF) {
+    private static byte[] ShapingChars() {
+        byte[] table = new byte[8192];
+        for (int c = 0x0300; c < 0x10000; c++) {
+            bool set = (c >= 0x200C && c <= 0x200F) || (c >= 0xD800 && c <= 0xDBFF);
+            if (!set && (c < 0xD800 || c > 0xDFFF)) {
                 System.Globalization.UnicodeCategory category =
-                        System.Globalization.CharUnicodeInfo.GetUnicodeCategory(codePoint);
-                if (category == System.Globalization.UnicodeCategory.NonSpacingMark ||
-                        category == System.Globalization.UnicodeCategory.EnclosingMark) {
-                    chunks[codePoint >> 6] = true;
-                }
+                        System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                set = category == System.Globalization.UnicodeCategory.NonSpacingMark ||
+                        category == System.Globalization.UnicodeCategory.EnclosingMark;
+            }
+            if (set) {
+                table[c >> 3] |= (byte) (1 << (c & 7));
             }
         }
-        return chunks;
+        return table;
     }
 
     private static bool IsMark(int codePoint) {
-        if (codePoint < 0x10000 && !markChunks[codePoint >> 6]) {
-            return false;
-        }
         // The category of a code point, without a string made for it.
         System.Globalization.UnicodeCategory category =
                 System.Globalization.CharUnicodeInfo.GetUnicodeCategory(codePoint);
