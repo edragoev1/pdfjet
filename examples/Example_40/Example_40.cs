@@ -14,6 +14,8 @@ using PDFjet.NET;
  *
  * Draws two bar charts with vertical bars from the same data: the two series
  * grouped by month, and the same series stacked, with a legend under each title.
+ * The second page is the calendar of 2026, a CalendarMonth for each month, with
+ * the weeks starting on Monday.
  */
 public class Example_40 {
     public Example_40() {
@@ -59,6 +61,23 @@ public class Example_40 {
         stacked.SetStacked(true);
         stacked.SetDrawValueLabels(true);
         stacked.DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(f1, "Calendar 2026").SetFontSize(14f).SetLocation(50f, 45f).DrawOn(page);
+        String[] monthNames = {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"};
+        for (int i = 0; i < 12; i++) {
+            float x = 50f + (i % 3)*182f;
+            float y = 65f + (i / 3)*177f;
+            new TextLine(f1, monthNames[i]).SetLocation(x, y + 12f).DrawOn(page);
+            CalendarMonth calendar = new CalendarMonth(f1, f2, 2026, i + 1);
+            calendar.SetFirstDayOfWeek(DayOfWeek.Monday);
+            calendar.SetCellWidth(21f);
+            calendar.SetCellHeight(21f);
+            calendar.SetLocation(x, y + 18f);
+            calendar.DrawOn(page);
+        }
 
         pdf.Complete();
     }

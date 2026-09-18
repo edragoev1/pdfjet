@@ -18,7 +18,8 @@ import (
 
 // Example40 draws two bar charts with vertical bars from the same data: the
 // two series grouped by month, and the same series stacked, with a legend
-// under each title.
+// under each title. The second page is the calendar of 2026, a CalendarMonth
+// for each month, with the weeks starting on Monday.
 func Example40() {
 	pdf, err := pdfjet.NewPDFFile("Example_40.pdf")
 	if err != nil {
@@ -64,6 +65,27 @@ func Example40() {
 	stacked.SetDrawValueLabels(true)
 	stacked.SetLocation(70.0, 400.0)
 	stacked.DrawOn(page)
+
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+	title := pdfjet.NewTextLine(f1, "Calendar 2026").SetFontSize(14.0)
+	title.SetLocation(50.0, 45.0)
+	title.DrawOn(page)
+	monthNames := []string{
+		"January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"}
+	for i := 0; i < 12; i++ {
+		x := 50.0 + float32(i%3)*182.0
+		y := 65.0 + float32(i/3)*177.0
+		monthName := pdfjet.NewTextLine(f1, monthNames[i])
+		monthName.SetLocation(x, y+12.0)
+		monthName.DrawOn(page)
+		calendar := pdfjet.NewCalendarMonth(f1, f2, 2026, i+1)
+		calendar.SetFirstDayOfWeek(time.Monday)
+		calendar.SetCellWidth(21.0)
+		calendar.SetCellHeight(21.0)
+		calendar.SetLocation(x, y+18.0)
+		calendar.DrawOn(page)
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

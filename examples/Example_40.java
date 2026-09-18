@@ -7,6 +7,7 @@
 package examples;
 
 import java.io.*;
+import java.time.DayOfWeek;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
@@ -15,6 +16,8 @@ import com.pdfjet.fonts.*;
  *
  * Draws two bar charts with vertical bars from the same data: the two series
  * grouped by month, and the same series stacked, with a legend under each title.
+ * The second page is the calendar of 2026, a CalendarMonth for each month, with
+ * the weeks starting on Monday.
  */
 final public class Example_40 {
     public Example_40() throws Exception {
@@ -60,6 +63,23 @@ final public class Example_40 {
         stacked.setStacked(true);
         stacked.setDrawValueLabels(true);
         stacked.drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(f1, "Calendar 2026").setFontSize(14f).setLocation(50f, 45f).drawOn(page);
+        String[] monthNames = {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"};
+        for (int i = 0; i < 12; i++) {
+            float x = 50f + (i % 3)*182f;
+            float y = 65f + (i / 3)*177f;
+            new TextLine(f1, monthNames[i]).setLocation(x, y + 12f).drawOn(page);
+            CalendarMonth calendar = new CalendarMonth(f1, f2, 2026, i + 1);
+            calendar.setFirstDayOfWeek(DayOfWeek.MONDAY);
+            calendar.setCellWidth(21f);
+            calendar.setCellHeight(21f);
+            calendar.setLocation(x, y + 18f);
+            calendar.drawOn(page);
+        }
 
         pdf.complete();
     }

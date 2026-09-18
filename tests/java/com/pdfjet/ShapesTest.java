@@ -66,6 +66,32 @@ class ShapesTest {
     }
 
     @Test
+    void calendarMonthStartsTheWeekOnTheFirstDayOfTheWeek() throws Exception {
+        Page page = page();
+        Font font = TestSupport.helvetica(page.pdf);
+        new CalendarMonth(font, font, 2026, 2).setFirstDayOfWeek(java.time.DayOfWeek.MONDAY).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.indexOf("<4D6F>") < content.indexOf("<5375>"), "Mo before Su");
+        // Sunday, February 1, ends the first week, and Monday, February 2, starts the second.
+        assertTrue(content.contains("230.66 744.83 Td\n[<31>] TJ"), "the 1st in the last column");
+        assertTrue(content.contains("14.66 708.83 Td\n[<32>] TJ"), "the 2nd in the first column");
+    }
+
+    @Test
+    void calendarMonthLeavesThePenOfThePageAsItWas() throws Exception {
+        Page page = page();
+        Font font = TestSupport.helvetica(page.pdf);
+        new CalendarMonth(font, font, 2026, 2).drawOn(page);
+        int start = TestSupport.content(page).length();
+        // The blue pen 1.25 wide of the circles is not the pen of the page.
+        page.setPenColor(Color.blue);
+        page.setPenWidth(1.25f);
+        page.drawLine(10f, 10f, 50f, 10f);
+        String line = TestSupport.content(page).substring(start);
+        assertTrue(line.contains("0 0 1 RG\n") && line.contains("1.25 w\n"), line);
+    }
+
+    @Test
     void colorsAreSetAsAnIntOrAsAnArray() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

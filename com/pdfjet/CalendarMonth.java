@@ -6,45 +6,48 @@
  */
 package com.pdfjet;
 
-import java.util.*;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 
 /**
- * Creates calendar component.
+ * Draws a calendar for one month: the names of the days in the header font,
+ * a line under them, and the dates in the body font, each in a blue circle,
+ * in up to six weeks. The week starts on Sunday unless setFirstDayOfWeek
+ * sets another day.
  */
 public class CalendarMonth implements Drawable {
-    Font f1 = null;
-    Font f2 = null;
+    private Font f1;
+    private Font f2;
 
-    float x1;
-    float y1;
-    float dx;
-    float dy;
-    float f1Ascent;
-    float f2Ascent;
+    private float x1;
+    private float y1;
+    private float dx;
+    private float dy;
 
-    String[] days = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
-    // DAY_OF_WEEK     1     2     3     4     5     6     7
+    private static final String[] DAYS = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
 
-    int daysInMonth;
-    int dayOfWeek;
+    private final int daysInMonth;
+    // The day of the week of the first day of the month and the first day of
+    // the week, from 0 for Sunday to 6 for Saturday.
+    private final int firstDayOfMonth;
+    private int firstDayOfWeek = 0;
 
     /**
-     * Creates calendar month component.
+     * Creates a calendar for the specified month.
      *
      * @param f1 the header font.
      * @param f2 the body font.
      * @param year the year.
-     * @param month the month.
+     * @param month the month, from 1 to 12.
      */
     public CalendarMonth(Font f1, Font f2, int year, int month) {
         this.f1 = f1;
         this.f2 = f2;
-        daysInMonth = getDaysInMonth(year, month - 1);
-        // Gregorian whatever the default locale, where getInstance() can
-        // return a Buddhist or Japanese calendar
-        Calendar calendar = new GregorianCalendar(year, month - 1, 1);
-        dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-        for (String day : days) {
+        // The ISO calendar, Gregorian whatever the default locale
+        LocalDate first = LocalDate.of(year, month, 1);
+        daysInMonth = first.lengthOfMonth();
+        firstDayOfMonth = first.getDayOfWeek().getValue() % 7;
+        for (String day : DAYS) {
             float w = 2*f1.stringWidth(day);
             if (w > dx) {
                 dx = w;
@@ -76,7 +79,7 @@ public class CalendarMonth implements Drawable {
     }
 
     /**
-     * Sets the cell width.
+     * Sets the width of the day cells.
      *
      * @param width the cell width.
      * @return this CalendarMonth object.
@@ -87,7 +90,7 @@ public class CalendarMonth implements Drawable {
     }
 
     /**
-     * Sets the cell height.
+     * Sets the height of the day cells.
      *
      * @param height the cell height.
      * @return this CalendarMonth object.
@@ -98,11 +101,23 @@ public class CalendarMonth implements Drawable {
     }
 
     /**
-     * Sets the calendar location.
+     * Sets the day the weeks start on, in the first column. The default is
+     * Sunday; many countries start the week on Monday.
      *
-     * @param x the horizontal location.
-     * @param y the vertical location.
-     * @return the calendar component.
+     * @param day the first day of the week.
+     * @return this CalendarMonth object.
+     */
+    public CalendarMonth setFirstDayOfWeek(DayOfWeek day) {
+        this.firstDayOfWeek = day.getValue() % 7;
+        return this;
+    }
+
+    /**
+     * Sets the location of the top left corner of the calendar.
+     *
+     * @param x the x coordinate.
+     * @param y the y coordinate.
+     * @return this CalendarMonth object.
      */
     public CalendarMonth setLocation(float x, float y) {
         this.x1 = x;
@@ -110,55 +125,54 @@ public class CalendarMonth implements Drawable {
         return this;
     }
 
+    /**
+     * Draws this calendar on the specified page. The line and the circles are
+     * drawn as an artifact, and the pen of the page is left as it was.
+     *
+     * @param page the page to draw on.
+     * @return the x and y coordinates of the bottom right corner of the calendar.
+     * @throws Exception if an input or output exception occurred.
+     */
     public float[] drawOn(Page page) throws Exception {
         if (page == null) {
-            return new float[] {this.x1 + 7*this.dx, this.y1 + 7*this.dy};  // Measured, not drawn
+            return new float[] {x1 + 7*dx, y1 + 7*dy};     // Measured, not drawn
         }
-        for (int row = 0; row < 7; row++) {
-            for (int col = 0; col < 7; col++) {
-                if (row == 0) {
-                    float offset = (dx - f1.stringWidth(days[col])) / 2;
-                    TextLine text = new TextLine(f1, days[col]);
-                    text.setLocation(x1 + col*dx + offset, y1 + (dy/2) - f1.descent);
-                    text.drawOn(page);
-                    // Draw the line separating the title from the dates.
-                    Line line = new Line(
-                            x1,
-                            y1 + dy/2 + f1.descent,
-                            x1 + 7*dx,
-                            y1 + dy/2 + f1.descent);
-                    line.drawOn(page);
-                } else {
-                    int dayOfMonth = ((7*row + col) - 6) - (dayOfWeek - 1);
-                    if (dayOfMonth > 0 && dayOfMonth <= daysInMonth) {
-                        String s1 = String.valueOf(dayOfMonth);
-                        float offset = (dx - f2.stringWidth(s1)) / 2;
-                        TextLine text = new TextLine(f2, s1);
-                        text.setLocation(x1 + col*dx + offset, y1 + row*dy + f2.ascent);
-                        text.drawOn(page);
-                        page.setPenWidth(1.25f);
-                        page.setPenColor(Color.blue);
-                        page.drawEllipse(
-                                x1 + col*dx + dx/2,
-                                y1 + row*dy + (f2.getBodyHeight()/2),
-                                (float) (dx/2.5),
-                                (float) (dy/2.5));
-                    }
-                }
-            }
+        // The first day of the month is in this column of the first week.
+        int firstColumn = (firstDayOfMonth - firstDayOfWeek + 7) % 7;
+        for (int col = 0; col < 7; col++) {
+            String day = DAYS[(firstDayOfWeek + col) % 7];
+            float offset = (dx - f1.stringWidth(day)) / 2;
+            new TextLine(f1, day).setLocation(x1 + col*dx + offset, y1 + dy/2 - f1.descent).drawOn(page);
         }
-        return new float[] {this.x1 + 7*this.dx, this.y1 + 7*this.dy};
-    }
+        for (int dayOfMonth = 1; dayOfMonth <= daysInMonth; dayOfMonth++) {
+            int cell = firstColumn + dayOfMonth - 1;
+            float x = x1 + (cell % 7)*dx;
+            float y = y1 + (cell / 7 + 1)*dy;
+            String date = String.valueOf(dayOfMonth);
+            float offset = (dx - f2.stringWidth(date)) / 2;
+            new TextLine(f2, date).setLocation(x + offset, y + f2.ascent).drawOn(page);
+        }
 
-    private boolean isLeapYear(int year) {
-        return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        page.addArtifactBMC();
+        page.saveGraphicsState();
+        page.setStrokeDashPattern("[] 0");
+        page.setLineCapStyle(CapStyle.BUTT);
+        // The line separating the names of the days from the dates
+        page.setPenColor(Color.black);
+        page.setPenWidth(0f);
+        page.drawLine(x1, y1 + dy/2 + f1.descent, x1 + 7*dx, y1 + dy/2 + f1.descent);
+        page.setPenColor(Color.blue);
+        page.setPenWidth(1.25f);
+        for (int dayOfMonth = 1; dayOfMonth <= daysInMonth; dayOfMonth++) {
+            int cell = firstColumn + dayOfMonth - 1;
+            page.drawEllipse(
+                    x1 + (cell % 7)*dx + dx/2,
+                    y1 + (cell / 7 + 1)*dy + f2.getBodyHeight()/2,
+                    dx/2.5f,
+                    dy/2.5f);
+        }
+        page.restoreGraphicsState();
+        page.addEMC();
+        return new float[] {x1 + 7*dx, y1 + 7*dy};
     }
-
-    private int getDaysInMonth(
-            int year,
-            int month) {
-        int daysInFebruary = isLeapYear(year) ? 29 : 28;
-        int[] daysInMonth = {31, daysInFebruary, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        return daysInMonth[month];
-    }
-}
+}   // End of CalendarMonth.java

@@ -12,12 +12,14 @@ import PDFjet
  *
  * Draws two bar charts with vertical bars from the same data: the two series
  * grouped by month, and the same series stacked, with a legend under each title.
+ * The second page is the calendar of 2026, a CalendarMonth for each month, with
+ * the weeks starting on Monday.
  */
 public class Example_40 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_40.pdf", append: false)!)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(10.0)
@@ -56,6 +58,23 @@ public class Example_40 {
         stacked.setStacked(true)
         stacked.setDrawValueLabels(true)
         stacked.drawOn(page)
+
+        page = Page(pdf, Letter.PORTRAIT)
+        TextLine(f1, "Calendar 2026").setFontSize(14.0).setLocation(50.0, 45.0).drawOn(page)
+        let monthNames = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"]
+        for i in 0..<12 {
+            let x = 50.0 + Float(i % 3)*182.0
+            let y = 65.0 + Float(i / 3)*177.0
+            TextLine(f1, monthNames[i]).setLocation(x, y + 12.0).drawOn(page)
+            let calendar = CalendarMonth(f1, f2, 2026, i + 1)
+            calendar.setFirstDayOfWeek(2)   // Monday
+            calendar.setCellWidth(21.0)
+            calendar.setCellHeight(21.0)
+            calendar.setLocation(x, y + 18.0)
+            calendar.drawOn(page)
+        }
 
         try pdf.complete()
     }

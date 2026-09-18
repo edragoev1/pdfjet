@@ -6,22 +6,28 @@
  */
 import Foundation
 
-/// Draws a calendar for one month.
+///
+/// Draws a calendar for one month: the names of the days in the header font,
+/// a line under them, and the dates in the body font, each in a blue circle,
+/// in up to six weeks. The week starts on Sunday unless setFirstDayOfWeek
+/// sets another day.
+///
 public class CalendarMonth : Drawable {
-    var f1: Font?
-    var f2: Font?
+    private var f1: Font
+    private var f2: Font
 
-    var x1: Float = 0.0
-    var y1: Float = 0.0
-    var dx: Float = 0.0
-    var dy: Float = 0.0
-    var f1Ascent: Float = 0.0
-    var f2Ascent: Float = 0.0
+    private var x1: Float = 0.0
+    private var y1: Float = 0.0
+    private var dx: Float = 0.0
+    private var dy: Float = 0.0
 
-    let days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-    //            1     2     3     4     5     6     7     // DAY_OF_WEEK
-    var daysInMonth: Int?
-    var dayOfWeek: Int?
+    private static let days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+
+    private let daysInMonth: Int
+    // The day of the week of the first day of the month and the first day of
+    // the week, from 0 for Sunday to 6 for Saturday.
+    private let firstDayOfMonth: Int
+    private var firstDayOfWeek = 0
 
     ///
     /// Creates a calendar for the specified month.
@@ -34,18 +40,15 @@ public class CalendarMonth : Drawable {
     public init(_ f1: Font, _ f2: Font, _ year: Int, _ month: Int) {
         self.f1 = f1
         self.f2 = f2
-        daysInMonth = getDaysInMonth(year, month - 1)
-        // The day of the week of the first day of the month, from 1 (Sunday) to 7
+        // The Gregorian calendar, whatever the locale
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
-        let components = DateComponents(
-                calendar: calendar, year: year, month: month, day: 1)
-        dayOfWeek = calendar.component(.weekday, from: components.date!)
-
-        var w: Float = 0.0
-        for day in days {
-            w = 2*Float(f1.stringWidth(day))
-            if (w > dx) {
+        let first = DateComponents(calendar: calendar, year: year, month: month, day: 1).date!
+        daysInMonth = calendar.range(of: .day, in: .month, for: first)!.count
+        firstDayOfMonth = calendar.component(.weekday, from: first) - 1
+        for day in CalendarMonth.days {
+            let w = 2*f1.stringWidth(day)
+            if w > dx {
                 dx = w
             }
         }
@@ -80,6 +83,18 @@ public class CalendarMonth : Drawable {
         return self
     }
 
+    ///
+    /// Sets the day the weeks start on, in the first column, numbered as the
+    /// weekdays of Foundation's Calendar: 1 for Sunday, 2 for Monday and so on
+    /// to 7 for Saturday. The default is Sunday; many countries start the week
+    /// on Monday.
+    ///
+    @discardableResult
+    public func setFirstDayOfWeek(_ weekday: Int) -> CalendarMonth {
+        self.firstDayOfWeek = ((weekday - 1) % 7 + 7) % 7
+        return self
+    }
+
     /// Sets the location of the top left corner of the calendar.
     @discardableResult
     public func setLocation(_ x: Float, _ y: Float) -> Self {
@@ -88,61 +103,54 @@ public class CalendarMonth : Drawable {
         return self
     }
 
-    /// Draws this calendar on the specified page.
+    ///
+    /// Draws this calendar on the specified page. The line and the circles are
+    /// drawn as an artifact, and the pen of the page is left as it was.
+    ///
+    /// - Parameter page: the page to draw on.
+    /// - Returns: the x and y coordinates of the bottom right corner of the calendar.
+    ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        if page == nil {
-            return [self.x1 + 7*self.dx, self.y1 + 7*self.dy]   // Measured, not drawn
+        guard let page else {
+            return [x1 + 7*dx, y1 + 7*dy]  // Measured, not drawn
         }
-        for row in 0..<7 {
-            for col in 0..<7 {
-                if row == 0 {
-                    let offset = (dx - f1!.stringWidth(days[col])) / 2
-                    let text = TextLine(f1!, days[col])
-                    text.setLocation(x1 + Float(col)*dx + offset, y1 + (dy/2) - f1!.descent)
-                    if page != nil {
-                        text.drawOn(page!)
-                        // Draw the line separating the title from the dates.
-                        let line = Line(
-                                x1,
-                                y1 + dy/2 + f1!.descent,
-                                x1 + 7*dx,
-                                y1 + dy/2 + f1!.descent)
-                        line.drawOn(page!)
-                    }
-                } else {
-                    let dayOfMonth = ((7*row + col) - 6) - (dayOfWeek! - 1)
-                    if dayOfMonth > 0 && dayOfMonth <= daysInMonth! {
-                        let s1 = String(dayOfMonth)
-                        let offset = (dx - f2!.stringWidth(s1)) / 2
-                        let text = TextLine(f2!, s1)
-                        text.setLocation(x1 + Float(col)*dx + offset, y1 + Float(row)*dy + f2!.ascent)
-                        if page != nil {
-                            text.drawOn(page!)
-                            page!.setPenWidth(1.25)
-                            page!.setPenColor(Color.blue)
-                            page!.drawEllipse(
-                                    x1 + Float(col)*dx + dx/2,
-                                    y1 + Float(row)*dy + f2!.getBodyHeight()/2,
-                                    dx/2.5,
-                                    dy/2.5)
-                        }
-                    }
-                }
-            }
+        // The first day of the month is in this column of the first week.
+        let firstColumn = (firstDayOfMonth - firstDayOfWeek + 7) % 7
+        for col in 0..<7 {
+            let day = CalendarMonth.days[(firstDayOfWeek + col) % 7]
+            let offset = (dx - f1.stringWidth(day)) / 2
+            TextLine(f1, day).setLocation(x1 + Float(col)*dx + offset, y1 + dy/2 - f1.descent).drawOn(page)
         }
-        return [self.x1 + 7*self.dx, self.y1 + 7*self.dy]
-    }
+        for dayOfMonth in 1...daysInMonth {
+            let cell = firstColumn + dayOfMonth - 1
+            let x = x1 + Float(cell % 7)*dx
+            let y = y1 + Float(cell / 7 + 1)*dy
+            let date = String(dayOfMonth)
+            let offset = (dx - f2.stringWidth(date)) / 2
+            TextLine(f2, date).setLocation(x + offset, y + f2.ascent).drawOn(page)
+        }
 
-    private func isLeapYear(_ year: Int) -> Bool {
-        return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+        page.addArtifactBMC()
+        page.saveGraphicsState()
+        page.setStrokeDashPattern("[] 0")
+        page.setLineCapStyle(CapStyle.BUTT)
+        // The line separating the names of the days from the dates
+        page.setPenColor(Color.black)
+        page.setPenWidth(0.0)
+        page.drawLine(x1, y1 + dy/2 + f1.descent, x1 + 7*dx, y1 + dy/2 + f1.descent)
+        page.setPenColor(Color.blue)
+        page.setPenWidth(1.25)
+        for dayOfMonth in 1...daysInMonth {
+            let cell = firstColumn + dayOfMonth - 1
+            page.drawEllipse(
+                    x1 + Float(cell % 7)*dx + dx/2,
+                    y1 + Float(cell / 7 + 1)*dy + f2.getBodyHeight()/2,
+                    dx/2.5,
+                    dy/2.5)
+        }
+        page.restoreGraphicsState()
+        page.addEMC()
+        return [x1 + 7*dx, y1 + 7*dy]
     }
-
-    private func getDaysInMonth(
-            _ year: Int,
-            _ month: Int) -> Int {
-        let daysInFebruary = isLeapYear(year) ? 29 : 28
-        let daysInMonth = [31, daysInFebruary, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        return daysInMonth[month]
-    }
-}
+}   // End of CalendarMonth.swift

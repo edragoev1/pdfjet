@@ -56,6 +56,30 @@ import Testing
         TestSupport.expectXY(252, 252, CalendarMonth(font, font, 2026, 3).drawOn(page))
     }
 
+    @Test func calendarMonthStartsTheWeekOnTheFirstDayOfTheWeek() {
+        let page = self.page()
+        let font = TestSupport.helvetica(page.pdf)
+        CalendarMonth(font, font, 2026, 2).setFirstDayOfWeek(2).drawOn(page)   // Monday
+        let content = TestSupport.content(page)
+        #expect(content.range(of: "<4D6F>")!.lowerBound < content.range(of: "<5375>")!.lowerBound, "Mo before Su")
+        // Sunday, February 1, ends the first week, and Monday, February 2, starts the second.
+        #expect(content.contains("230.66 744.83 Td\n[<31>] TJ"), "the 1st in the last column")
+        #expect(content.contains("14.66 708.83 Td\n[<32>] TJ"), "the 2nd in the first column")
+    }
+
+    @Test func calendarMonthLeavesThePenOfThePageAsItWas() {
+        let page = self.page()
+        let font = TestSupport.helvetica(page.pdf)
+        CalendarMonth(font, font, 2026, 2).drawOn(page)
+        let start = TestSupport.content(page).utf8.count
+        // The blue pen 1.25 wide of the circles is not the pen of the page.
+        page.setPenColor(Color.blue)
+        page.setPenWidth(1.25)
+        page.drawLine(10, 10, 50, 10)
+        let line = String(TestSupport.content(page).utf8.dropFirst(start))!
+        #expect(line.contains("0 0 1 RG\n") && line.contains("1.25 w\n"), "\(line)")
+    }
+
     @Test func colorsAreSetAsAnIntOrAsAnArray() {
         let page = self.page()
         Line(10, 10, 50, 10).setStrokeColor(Color.red).drawOn(page)

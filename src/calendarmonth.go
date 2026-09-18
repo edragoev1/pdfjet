@@ -9,19 +9,27 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 )
 
-// CalendarMonth describes calendar month object.
+var calendarDays = [7]string{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
+
+// CalendarMonth draws a calendar for one month: the names of the days in the
+// header font, a line under them, and the dates in the body font, each in a
+// blue circle, in up to six weeks. The week starts on Sunday unless
+// SetFirstDayOfWeek sets another day.
 type CalendarMonth struct {
 	f1, f2      *Font
 	x1          float32
 	y1          float32
 	dx          float32
 	dy          float32
-	days        []string
 	daysInMonth int
-	dayOfWeek   int
+	// The day of the week of the first day of the month and the first day of
+	// the week, from 0 for Sunday to 6 for Saturday.
+	firstDayOfMonth int
+	firstDayOfWeek  int
 }
 
 // NewCalendarMonth creates a calendar for the specified month.
@@ -33,12 +41,11 @@ func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
 	calendarMonth := new(CalendarMonth)
 	calendarMonth.f1 = f1
 	calendarMonth.f2 = f2
-	calendarMonth.days = []string{"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
-	calendarMonth.daysInMonth = calendarMonth.getDaysInMonth(year, month-1)
-	// The day of the week of the first day of the month, from 1 (Sunday) to 7.
-	firstDay := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-	calendarMonth.dayOfWeek = int(firstDay.Weekday()) + 1
-	for _, day := range calendarMonth.days {
+	first := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	// Day 0 of the next month is the last day of this one.
+	calendarMonth.daysInMonth = time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	calendarMonth.firstDayOfMonth = int(first.Weekday())
+	for _, day := range calendarDays {
 		w := 2 * f1.StringWidth(f1.size, day)
 		if w > calendarMonth.dx {
 			calendarMonth.dx = w
@@ -79,62 +86,62 @@ func (calendarMonth *CalendarMonth) SetCellHeight(height float32) *CalendarMonth
 	return calendarMonth
 }
 
-// DrawOn draws the calendar month on the page.
+// SetFirstDayOfWeek sets the day the weeks start on, in the first column. The
+// default is Sunday; many countries start the week on Monday.
+func (calendarMonth *CalendarMonth) SetFirstDayOfWeek(day time.Weekday) *CalendarMonth {
+	calendarMonth.firstDayOfWeek = (int(day)%7 + 7) % 7
+	return calendarMonth
+}
+
+// DrawOn draws the calendar on the page and returns the x and y coordinates of
+// its bottom right corner. The line and the circles are drawn as an artifact,
+// and the pen of the page is left as it was.
 func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
-	if page == nil { // Measured, not drawn
-		return [2]float32{calendarMonth.x1 + 7*calendarMonth.dx, calendarMonth.y1 + 7*calendarMonth.dy}
+	x1, y1 := calendarMonth.x1, calendarMonth.y1
+	dx, dy := calendarMonth.dx, calendarMonth.dy
+	f1, f2 := calendarMonth.f1, calendarMonth.f2
+	if page == nil {
+		return [2]float32{x1 + 7*dx, y1 + 7*dy} // Measured, not drawn
 	}
-	for row := 0; row < 7; row++ {
-		for col := 0; col < 7; col++ {
-			if row == 0 {
-				offset := (calendarMonth.dx -
-					calendarMonth.f1.StringWidth(calendarMonth.f1.size, calendarMonth.days[col])) / 2.0
-				text := NewTextLine(calendarMonth.f1, calendarMonth.days[col])
-				text.SetLocation(
-					calendarMonth.x1+float32(col)*calendarMonth.dx+offset,
-					calendarMonth.y1+(calendarMonth.dy/2)-calendarMonth.f1.descent)
-				text.DrawOn(page)
-				// Draw the line separating the title from the dates.
-				line := NewLine(
-					calendarMonth.x1,
-					calendarMonth.y1+calendarMonth.dy/2+calendarMonth.f1.descent,
-					calendarMonth.x1+7*calendarMonth.dx,
-					calendarMonth.y1+calendarMonth.dy/2+calendarMonth.f1.descent)
-				line.DrawOn(page)
-			} else {
-				dayOfMonth := ((7*row + col) - 6) - (calendarMonth.dayOfWeek - 1)
-				if dayOfMonth > 0 && dayOfMonth <= calendarMonth.daysInMonth {
-					s1 := strconv.Itoa(dayOfMonth)
-					offset := (calendarMonth.dx - calendarMonth.f2.StringWidth(calendarMonth.f2.size, s1)) / 2
-					text := NewTextLine(calendarMonth.f2, s1)
-					text.SetLocation(
-						calendarMonth.x1+float32(col)*calendarMonth.dx+offset,
-						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.ascent)
-					text.DrawOn(page)
-
-					page.SetPenWidth(1.25)
-					page.SetPenColor(color.Blue)
-					page.DrawEllipse(
-						calendarMonth.x1+float32(col)*calendarMonth.dx+calendarMonth.dx/2,
-						calendarMonth.y1+float32(row)*calendarMonth.dy+calendarMonth.f2.GetBodyHeight(calendarMonth.f2.size)/2,
-						calendarMonth.dx/2.5,
-						calendarMonth.dy/2.5)
-				}
-			}
-		}
+	// The first day of the month is in this column of the first week.
+	firstColumn := (calendarMonth.firstDayOfMonth - calendarMonth.firstDayOfWeek + 7) % 7
+	for col := 0; col < 7; col++ {
+		day := calendarDays[(calendarMonth.firstDayOfWeek+col)%7]
+		offset := (dx - f1.StringWidth(f1.size, day)) / 2
+		text := NewTextLine(f1, day)
+		text.SetLocation(x1+float32(col)*dx+offset, y1+dy/2-f1.descent)
+		text.DrawOn(page)
 	}
-	return [2]float32{calendarMonth.x1 + 7*calendarMonth.dx, calendarMonth.y1 + 7*calendarMonth.dy}
-}
-
-func (calendarMonth *CalendarMonth) isLeapYear(year int) bool {
-	return (year%4 == 0 && year%100 != 0) || year%400 == 0
-}
-
-func (calendarMonth *CalendarMonth) getDaysInMonth(year, month int) int {
-	daysInFebruary := 28
-	if calendarMonth.isLeapYear(year) {
-		daysInFebruary = 29
+	for dayOfMonth := 1; dayOfMonth <= calendarMonth.daysInMonth; dayOfMonth++ {
+		cell := firstColumn + dayOfMonth - 1
+		x := x1 + float32(cell%7)*dx
+		y := y1 + float32(cell/7+1)*dy
+		date := strconv.Itoa(dayOfMonth)
+		offset := (dx - f2.StringWidth(f2.size, date)) / 2
+		text := NewTextLine(f2, date)
+		text.SetLocation(x+offset, y+f2.ascent)
+		text.DrawOn(page)
 	}
-	daysInMonth := []int{31, daysInFebruary, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-	return daysInMonth[month]
+
+	page.AddArtifactBMC()
+	page.SaveGraphicsState()
+	page.SetStrokeDashPattern("[] 0")
+	page.SetLineCapStyle(capstyle.Butt)
+	// The line separating the names of the days from the dates
+	page.SetPenColor(color.Black)
+	page.SetPenWidth(0)
+	page.DrawLine(x1, y1+dy/2+f1.descent, x1+7*dx, y1+dy/2+f1.descent)
+	page.SetPenColor(color.Blue)
+	page.SetPenWidth(1.25)
+	for dayOfMonth := 1; dayOfMonth <= calendarMonth.daysInMonth; dayOfMonth++ {
+		cell := firstColumn + dayOfMonth - 1
+		page.DrawEllipse(
+			x1+float32(cell%7)*dx+dx/2,
+			y1+float32(cell/7+1)*dy+f2.GetBodyHeight(f2.size)/2,
+			dx/2.5,
+			dy/2.5)
+	}
+	page.RestoreGraphicsState()
+	page.AddEMC()
+	return [2]float32{x1 + 7*dx, y1 + 7*dy}
 }

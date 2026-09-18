@@ -62,6 +62,32 @@ public class ShapesTest {
     }
 
     [Fact]
+    public void CalendarMonthStartsTheWeekOnTheFirstDayOfTheWeek() {
+        Page page = NewPage();
+        Font font = TestSupport.Helvetica(page.pdf);
+        new CalendarMonth(font, font, 2026, 2).SetFirstDayOfWeek(System.DayOfWeek.Monday).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.True(content.IndexOf("<4D6F>") < content.IndexOf("<5375>"), "Mo before Su");
+        // Sunday, February 1, ends the first week, and Monday, February 2, starts the second.
+        Assert.True(content.Contains("230.66 744.83 Td\n[<31>] TJ"), "the 1st in the last column");
+        Assert.True(content.Contains("14.66 708.83 Td\n[<32>] TJ"), "the 2nd in the first column");
+    }
+
+    [Fact]
+    public void CalendarMonthLeavesThePenOfThePageAsItWas() {
+        Page page = NewPage();
+        Font font = TestSupport.Helvetica(page.pdf);
+        new CalendarMonth(font, font, 2026, 2).DrawOn(page);
+        int start = TestSupport.Content(page).Length;
+        // The blue pen 1.25 wide of the circles is not the pen of the page.
+        page.SetPenColor(Color.blue);
+        page.SetPenWidth(1.25f);
+        page.DrawLine(10f, 10f, 50f, 10f);
+        string line = TestSupport.Content(page).Substring(start);
+        Assert.True(line.Contains("0 0 1 RG\n") && line.Contains("1.25 w\n"), line);
+    }
+
+    [Fact]
     public void ColorsAreSetAsAnIntOrAsAnArray() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
