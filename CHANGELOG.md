@@ -7,6 +7,83 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## Unreleased
+
+### Added
+- `Font.getLineGap(fontSize)`, the space a font puts between its lines, read
+  from the `hhea` table of an `.otf` or `.ttf` file and from a `.stream` file,
+  in all four ports. `TextBlock`, `TextColumn` and `TextFrame` put it between
+  lines, so text looks as its font was made to look without a line spacing.
+  Of the fonts PDFjet ships only IBM Plex Sans JP, SC and TC have one, 1 em on
+  an ascent and descent of 1 em, so their lines no longer touch; the text of
+  every other shipped font does not move. A `.stream` file holds the line gap
+  after the marks at the end of its metrics, where older libraries stop
+  reading, so they still read the new streams; the generator writes it, and
+  the 24 JP, SC and TC streams have it.
+- `CalendarMonth.setFirstDayOfWeek` starts the weeks on another day than
+  Sunday, with the date library of each port.
+- In a PDF/UA document a `Chart`, a `DonutChart` and a `BarChart` are each one
+  Figure, with the description `setAltDescription` gives or one made from the
+  title or the slices.
+
+### Changed
+- Text in IBM Plex Sans JP, SC or TC in a `TextBlock`, `TextColumn` or
+  `TextFrame` is twice as tall per line as before, the spacing of the font's
+  line gap (see Added). A document that set a line spacing to make up for the
+  missing gap gets more space than before.
+
+### Fixed
+- A fallback font drew only the characters the font had no glyph for until
+  the fallback font lacked one: in "abc日本def" the "def", and the spaces and
+  digits after Japanese text, were in the fallback font; a character that
+  neither font had was drawn as .notdef in the fallback font; and a core font
+  ignored its fallback font. Each character is now drawn in the font when it
+  has a glyph for it, else in the fallback font when that has one, else in
+  the font; a combining mark stays with the character before it when that font
+  has it; and a core font can have a fallback font or be one. `TextLine`,
+  `TextBlock` and the widths they measure follow the same rule.
+- A core font drew the characters WinAnsi puts from 128 to 159 as spaces,
+  since it took their Unicode values, which are above 255, for their codes:
+  "Don’t pay €5 — “Hi”" came out as "Don t pay  5    Hi ". ’ “ ” ‘ – — € … • ™
+  and the others are mapped to their WinAnsi codes when text is measured,
+  fitted and drawn, and are kerned. The soft hyphen, drawn as a hyphen, was
+  measured as a space, and neither it nor the no-break space had the kerning
+  pairs of the glyph it is drawn with; the metrics of the fourteen core fonts
+  now agree with their AFM files in `fonts/Core`.
+- Chinese and Japanese text in a `TextBlock` or `TextFrame` no longer starts a
+  line with a closing mark, punctuation such as 。 and 、, or a small kana, nor
+  ends one with an opening bracket (kinsoku shori): the character before such a
+  mark moves to the next line with it.
+- In a PDF/UA document a `Point`, the marker of a `Cell`, a QR code and a Data
+  Matrix symbol are artifacts, where they drew content that was neither tagged
+  nor an artifact, and an annotation other than a link is in an `Annot`
+  structure element rather than a `Link` one.
+- A `Chart` kept the axis ranges of its first drawing, so a chart drawn again
+  after new points kept its old axes; a range with 0 grid lines widened the
+  range of the data; and a point's marker set after `addPoint` was ignored.
+  The subtitles of `Chart` and `BarChart` and the labels inside the bars are
+  drawn in their colors instead of black.
+- A `CalendarMonth` left the page with its blue pen, drew the line under the
+  names of the days once for each day, and left its circles untagged.
+- A `TextFrame` wrapped a word early when there was room for it but not for
+  the space after it, and broke a word as wide as the frame; a negative
+  paragraph gap is 0.
+
+### Examples
+- 28 more examples are PDF/UA documents: 02, 03, 06, 08, 09, 10, 11, 13, 14,
+  17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and 45,
+  and 39 and 40 before them. The ones that are not use core fonts or fonts that
+  are not embedded (04, 05, 44, 50), are PDF/A (07, 34), show a layer that PDF/UA
+  does not allow (46), draw on or merge existing PDFs (37, 41, 51), or are
+  Example_43.
+- Example_02 prints the official texts of the Universal Declaration of Human
+  Rights, its preamble and Articles 1 and 2, in Japanese, Korean, Simplified
+  and Traditional Chinese, a paragraph on each line, where the files held cut
+  or run-together texts with ASCII punctuation and a character the font lacked.
+  Each page names its language, "This block is Japanese: 日本語", in IBM Plex
+  Sans with the font of the page as its fallback font.
+- Example_40 draws the calendar of 2026, with the weeks starting on Monday.
+
 ## v9.0.1 — 2026-09-18
 
 Producer string bumped from `PDFjet v9.0.0` to `PDFjet v9.0.1` in all four
