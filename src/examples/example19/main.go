@@ -12,13 +12,12 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
-	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example19 uses the TextBlock component to draw text next to images.
+// Example19 uses the TextBlock component to draw text next to images. The
+// DrawOn methods of Image and TextBlock return the bottom of what they drew,
+// so each row starts below the taller of the image and the text next to it.
 func Example19() {
 	pdf, err := pdfjet.NewPDFFile("Example_19.pdf")
 	if err != nil {
@@ -26,46 +25,67 @@ func Example19() {
 	}
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
-	f2.SetSize(10.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	// Columns x coordinates
-	x1 := float32(50.0)
-	y1 := float32(50.0)
-	x2 := float32(300.0)
-	w2 := float32(300.0) // Width of the second column
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
-	image2 := pdfjet.NewImageFromFile(pdf, "images/spain-admin.jpg")
+	text := pdfjet.NewTextLine(f2, "Text Next to Images")
+	text.SetFontSize(22.0)
+	text.SetLocation(50.0, 80.0)
+	text.DrawOn(page)
 
-	// Draw the first image
-	image1.SetLocation(x1, y1)
-	image1.ScaleBy(0.3)
-	image1.DrawOn(page)
-
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/calculus-short.txt"))
-	textBlock.SetLocation(x2, y1)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorderColor(color.Black)
+	textBlock := pdfjet.NewTextBlock(f1,
+		"Each map below is an Image with a TextBlock next to it. The drawOn "+
+			"method of both returns the bottom of what it drew, so every row "+
+			"starts below the taller of the two.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(50.0, 95.0)
+	textBlock.SetWidth(512.0)
 	xy := textBlock.DrawOn(page)
 
-	// Draw the second image
-	image2.SetLocation(x1, xy[1]+10.0)
-	image2.ScaleBy(0.1)
-	image2.DrawOn(page)
+	imageFiles := []string{
+		"images/ee-map.png",
+		"images/spain-admin.jpg",
+	}
+	titles := []string{
+		"The European Union",
+		"The Regions of Spain",
+	}
+	descriptions := []string{
+		"A map of Europe with the member states of the European Union and " +
+			"the countries that were candidates to join it when the map was " +
+			"made. The image is a PNG file of 687 by 710 pixels, drawn 200 " +
+			"points wide.",
+		"A map of the 17 autonomous communities of Spain and its two " +
+			"autonomous cities, Ceuta and Melilla, with their capitals. The " +
+			"image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points " +
+			"wide, which prints at more than 700 dots per inch.",
+	}
 
-	textBlock = pdfjet.NewTextBlock(f1, content.OfTextFile("data/physics.txt"))
-	textBlock.SetLocation(x2, xy[1]+10.0)
-	textBlock.SetWidth(w2)
-	textBlock.SetBorderColor(color.Black)
-	xy = textBlock.DrawOn(page)
+	var x1 float32 = 50.0  // The images
+	var x2 float32 = 270.0 // The text next to them
+	y := xy[1] + 25.0
+	for i := 0; i < len(imageFiles); i++ {
+		image := pdfjet.NewImageFromFile(pdf, imageFiles[i])
+		image.ResizeWidth(200.0)
+		image.SetLocation(x1, y)
+		imageXY := image.DrawOn(page)
 
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.SetBorderColor(color.Black)
-	rect.DrawOn(page)
+		text = pdfjet.NewTextLine(f2, titles[i])
+		text.SetFontSize(14.0)
+		text.SetLocation(x2, y+f2.GetAscent(14.0))
+		text.DrawOn(page)
+
+		textBlock = pdfjet.NewTextBlock(f1, descriptions[i])
+		textBlock.SetFontSize(11.0)
+		textBlock.SetLineSpacing(1.5)
+		textBlock.SetLocation(x2, y+25.0)
+		textBlock.SetWidth(292.0)
+		textXY := textBlock.DrawOn(page)
+
+		y = max(imageXY[1], textXY[1]) + 25.0
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

@@ -32,6 +32,19 @@ class SVGImageTest {
     }
 
     @Test
+    void scalingScalesTheSizeWithThePaths() throws Exception {
+        SVGImage image = new SVGImage(new ByteArrayInputStream(
+                "<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>".getBytes(StandardCharsets.UTF_8)));
+        image.scaleBy(0.5f);
+        assertEquals(50f, image.getWidth(), 0f);
+        assertEquals(25f, image.getHeight(), 0f);
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        image.setLocation(0f, 0f);
+        TestSupport.assertXY(50f, 25f, image.drawOn(page));
+        assertTrue(TestSupport.content(page).contains("5 787 m\n45 772 l\n"));
+    }
+
+    @Test
     void keepsTheLastNumberOfAPathThatIsNotClosed() throws Exception {
         String content = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>");
         assertTrue(content.contains("10 782 m\n90 752 l\n"), content);

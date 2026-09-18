@@ -9,42 +9,76 @@ import PDFjet
 
 /**
  * Example_45.swift
+ * Using the Form and Field classes to draw a shipment request. A field at x = 0
+ * starts a new row, the other fields of the row start at their own x, and a
+ * field with an empty label continues the value above it on a new line.
  */
 public class Example_45 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_45.pdf", append: false)!)
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let w: Float = 500.0
+        var text = TextLine(f2, "Shipment Request")
+        text.setFontSize(22.0)
+        text.setLocation(56.0, 80.0)
+        text.drawOn(page)
+
+        let textBlock = TextBlock(f1,
+                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
+                + "the other fields of the row start at their own x, and a field with "
+                + "an empty label continues the value above it on a new line.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(56.0, 95.0)
+        textBlock.setWidth(500.0)
+        var xy = textBlock.drawOn(page)
+
+        let w: Float = 500.0    // The width of the form
 
         var fields = [Field]()
-        fields.append(Field(  0.0, "Company", "Smart Widgets Construction Inc."))
-        fields.append(Field(  0.0, "Street Number", "120"))
-        fields.append(Field(  w/8, "Street Name", "Oak"))
-        fields.append(Field(5*w/8, "Street Type", "Street"))
-        fields.append(Field(6*w/8, "Direction", "West"))
-        fields.append(Field(7*w/8, "Suite/Floor/Apt.", "8W"))
-        fields.append(Field(  0.0, "City/Town", "Toronto"))
-        fields.append(Field(  w/2, "Province", "Ontario"))
-        fields.append(Field(7*w/8, "Postal Code", "M5M 2N2"))
-        fields.append(Field(  0.0, "Telephone Number", "(416) 331-2245"))
-        fields.append(Field(  w/4, "Fax (if applicable)", "(416) 124-9879"))
-        fields.append(Field(  w/2, "Email", "jsmith12345@gmail.ca"))
-        fields.append(Field(  0.0, "Other Information", "Hello, World!"))
-        fields.append(Field(  0.0, "", "This is a test."))
+        fields.append(Field(  0.0, "Sender", "Maple Leaf Instruments Ltd."))
+        fields.append(Field(  0.0, "Street Address", "480 King Street West"))
+        fields.append(Field(6*w/8, "Suite", "1200"))
+        fields.append(Field(  0.0, "City", "Toronto"))
+        fields.append(Field(3*w/8, "Province", "Ontario"))
+        fields.append(Field(5*w/8, "Postal Code", "M5V 1L7"))
+        fields.append(Field(6*w/8, "Country", "Canada"))
+        fields.append(Field(  0.0, "Recipient", "Nordic Sensor Labs AB"))
+        fields.append(Field(  0.0, "Street Address", "Drottninggatan 55"))
+        fields.append(Field(6*w/8, "Floor", "3"))
+        fields.append(Field(  0.0, "City", "Stockholm"))
+        fields.append(Field(5*w/8, "Postal Code", "111 21"))
+        fields.append(Field(6*w/8, "Country", "Sweden"))
+        fields.append(Field(  0.0, "Contact", "Anna Lindqvist"))
+        fields.append(Field(3*w/8, "Email", "anna.lindqvist@example.com"))
+        fields.append(Field(  0.0, "Contents", "Two calibrated pressure sensors"))
+        fields.append(Field(5*w/8, "Weight", "3.2 kg"))
+        fields.append(Field(6*w/8, "Declared Value", "CAD 1,450.00"))
+        fields.append(Field(  0.0, "Instructions",
+                "Keep upright and away from magnets. Deliver on a weekday"))
+        fields.append(Field(  0.0, "", "between 9:00 and 17:00, to the reception on the third floor."))
 
-        Form(fields)
+        xy = Form(fields)
                 .setLabelFont(f1)
                 .setLabelFontSize(8.0)
+                .setLabelColor(Color.gray)
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
-                .setLocation(50.0, 50.0)
+                .setValueColor(Color.black)
+                .setLocation(56.0, xy[1] + 20.0)
                 .setWidth(w)
+                .setStrokeWidth(0.5)
                 .drawOn(page)
+
+        text = TextLine(f1, "The recipient signs for the package on delivery.")
+        text.setFontSize(10.0)
+        text.setTextColor(Color.gray)
+        text.setLocation(56.0, xy[1] + 20.0)
+        text.drawOn(page)
 
         try pdf.complete()
     }

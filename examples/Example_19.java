@@ -12,7 +12,9 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_19.java
- * Using the TextBlock component to draw text next to images.
+ * Using the TextBlock component to draw text next to images. The drawOn
+ * methods of Image and TextBlock return the bottom of what they drew, so each
+ * row starts below the taller of the image and the text next to it.
  */
 public class Example_19 {
     public Example_19() throws Exception {
@@ -20,46 +22,67 @@ public class Example_19 {
                 new BufferedOutputStream(new FileOutputStream("Example_19.pdf")));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(10f);
-
-        Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
-        f2.setSize(10f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-        // Columns x coordinates
-        float x1 = 50f;
-        float y1 = 50f;
-        float x2 = 300f;
-        float w2 = 300f;    // Width of the second column
 
-        Image image1 = new Image(pdf, "images/ee-map.png");
-        Image image2 = new Image(pdf, "images/spain-admin.jpg");
+        TextLine text = new TextLine(f2, "Text Next to Images");
+        text.setFontSize(22f);
+        text.setLocation(50f, 80f);
+        text.drawOn(page);
 
-        // Draw the first image
-        image1.setLocation(x1, y1);
-        image1.scaleBy(0.3f);
-        image1.drawOn(page);
-
-        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/calculus-short.txt"));
-        textBlock.setLocation(x2, y1);
-        textBlock.setWidth(w2);
-        textBlock.setBorderColor(Color.black);
+        TextBlock textBlock = new TextBlock(f1,
+                "Each map below is an Image with a TextBlock next to it. The drawOn "
+                + "method of both returns the bottom of what it drew, so every row "
+                + "starts below the taller of the two.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(50f, 95f);
+        textBlock.setWidth(512f);
         float[] xy = textBlock.drawOn(page);
 
-        // Draw the second image
-        image2.setLocation(x1, xy[1] + 10f);
-        image2.scaleBy(0.1f);
-        image2.drawOn(page);
+        String[] imageFiles = {
+            "images/ee-map.png",
+            "images/spain-admin.jpg",
+        };
+        String[] titles = {
+            "The European Union",
+            "The Regions of Spain",
+        };
+        String[] descriptions = {
+            "A map of Europe with the member states of the European Union and "
+                + "the countries that were candidates to join it when the map was "
+                + "made. The image is a PNG file of 687 by 710 pixels, drawn 200 "
+                + "points wide.",
+            "A map of the 17 autonomous communities of Spain and its two "
+                + "autonomous cities, Ceuta and Melilla, with their capitals. The "
+                + "image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points "
+                + "wide, which prints at more than 700 dots per inch.",
+        };
 
-        textBlock = new TextBlock(f1, Content.ofTextFile("data/physics.txt"));
-        textBlock.setLocation(x2, xy[1] + 10f);
-        textBlock.setWidth(w2);
-        textBlock.setBorderColor(Color.black);
-        xy = textBlock.drawOn(page);
+        float x1 = 50f;     // The images
+        float x2 = 270f;    // The text next to them
+        float y = xy[1] + 25f;
+        for (int i = 0; i < imageFiles.length; i++) {
+            Image image = new Image(pdf, imageFiles[i]);
+            image.resizeWidth(200f);
+            image.setLocation(x1, y);
+            float[] imageXY = image.drawOn(page);
 
-        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
-        rect.setBorderColor(Color.black);
-        rect.drawOn(page);
+            text = new TextLine(f2, titles[i]);
+            text.setFontSize(14f);
+            text.setLocation(x2, y + f2.getAscent(14f));
+            text.drawOn(page);
+
+            textBlock = new TextBlock(f1, descriptions[i]);
+            textBlock.setFontSize(11f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(x2, y + 25f);
+            textBlock.setWidth(292f);
+            float[] textXY = textBlock.drawOn(page);
+
+            y = Math.max(imageXY[1], textXY[1]) + 25f;
+        }
 
         pdf.complete();
     }

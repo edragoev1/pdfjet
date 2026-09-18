@@ -191,6 +191,10 @@ C# `PDF` class is sealed, as the Java class is final.
   aligned to the left. A right aligned or centered row is moved as a whole,
   and a justified paragraph widens the spaces of every row but its last.
   Paragraphs aligned to the left are drawn as before.
+- `SVGImage.scaleBy` scales the width and the height of the image with its
+  paths, in all four ports. `getWidth`, `getHeight` and the corner that
+  `drawOn` returns kept the size before scaling, as did the click box of a
+  link on the image.
 
 ### Examples
 - Examples 18, 22, 26, 48 and 49 draw documents instead of test pages, in all
@@ -208,6 +212,10 @@ C# `PDF` class is sealed, as the Java class is final.
   source file, the four QR code error correction levels with the data each
   holds, English and Greek text columns in table cells, and Hindi and Marathi
   text with opaque and transparent rectangles.
+- Examples 19, 33 and 45 explain what they show, in all four ports: two maps
+  with a description next to each, each row below the taller of the two; a map
+  of Europe scaled to fit the page and a set of labeled SVG icons; and a
+  shipment request drawn with the `Form` class.
 
 ## v9.0.0 — 2026-09-16
 

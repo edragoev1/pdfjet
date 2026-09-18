@@ -373,6 +373,8 @@ public class SVGImage : Drawable {
     /// Scales this SVG image by the specified factor.
     @discardableResult
     public func scaleBy(_ factor: Float) -> SVGImage {
+        w *= factor
+        h *= factor
         guard let paths = paths else {
             return self
         }

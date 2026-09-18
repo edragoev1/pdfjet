@@ -219,6 +219,8 @@ public class SVGImage : IDrawable {
                 op.y *= factor;
             }
         }
+        this.w *= factor;
+        this.h *= factor;
         return this;
     }
 

@@ -27,6 +27,18 @@ import Testing
         #expect(svgImage.getHeight() == 50)
     }
 
+    @Test func scalingScalesTheSizeWithThePaths() throws {
+        let svgImage = try image("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>")
+        svgImage.scaleBy(0.5)
+        #expect(svgImage.getWidth() == 50)
+        #expect(svgImage.getHeight() == 25)
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        _ = svgImage.setLocation(0, 0)
+        TestSupport.expectXY(50, 25, svgImage.drawOn(page))
+        let content = TestSupport.content(page)
+        #expect(content.contains("5 787 m\n45 772 l\n"), "\(content)")
+    }
+
     @Test func keepsTheLastNumberOfAPathThatIsNotClosed() throws {
         let content = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>")
         #expect(content.contains("10 782 m\n90 752 l\n"), "\(content)")

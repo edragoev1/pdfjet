@@ -30,6 +30,18 @@ public class SVGImageTest {
     }
 
     [Fact]
+    public void ScalingScalesTheSizeWithThePaths() {
+        SVGImage image = Parse("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>");
+        image.ScaleBy(0.5f);
+        Assert.Equal(50f, image.GetWidth());
+        Assert.Equal(25f, image.GetHeight());
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        image.SetLocation(0f, 0f);
+        TestSupport.AssertXY(50f, 25f, image.DrawOn(page));
+        Assert.Contains("5 787 m\n45 772 l\n", TestSupport.Content(page));
+    }
+
+    [Fact]
     public void KeepsTheLastNumberOfAPathThatIsNotClosed() {
         Assert.Contains("10 782 m\n90 752 l\n", Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\"/></svg>"));
     }

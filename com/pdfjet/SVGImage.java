@@ -213,6 +213,8 @@ public class SVGImage implements Drawable {
                 op.y *= factor;
             }
         }
+        this.w *= factor;
+        this.h *= factor;
         return this;
     }
 

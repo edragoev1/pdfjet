@@ -9,6 +9,8 @@ import PDFjet
 
 /**
  * Example_33.swift
+ * Using the SVGImage component to draw a map of Europe, scaled to fit the page,
+ * and a set of icons, each labeled with its name.
  */
 struct ExampleError: Error, CustomStringConvertible {
     let message: String
@@ -22,47 +24,86 @@ public class Example_33 {
         }
         let pdf = PDF(output)
 
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+
         let page = Page(pdf, A4.PORTRAIT)
 
-        var image = try loadSVG("images/svg-test/europe.svg")
-        image.setLocation(-150.0, 0.0)
-        var xy = image.drawOn(page)
+        var text = TextLine(f2, "SVG Images")
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
 
-        image = try loadSVG("images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg")
-        image.setLocation(20.0, 670.0)
-        xy = image.drawOn(page)
+        var textBlock = TextBlock(f1,
+                "SVGImage reads the paths of an SVG file and draws them as vector "
+                + "graphics, which stay sharp at any zoom. The map is 1,000 points wide "
+                + "in its file and is scaled by 0.5 to fit the page.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(495.0)
+        var xy = textBlock.drawOn(page)
 
-        image = try loadSVG("images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
+        let map = try loadSVG("images/svg-test/europe.svg")
+        map.scaleBy(0.5)
+        map.setLocation((page.getWidth() - map.getWidth()) / 2.0, xy[1] + 20.0)
+        xy = map.drawOn(page)
 
-        image = try loadSVG("images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
+        textBlock = TextBlock(f1,
+                "The colors come from the file: the peachpuff fill of the svg element "
+                + "for most countries, an aliceblue fill for Spain and an olive "
+                + "outline for Austria.")
+        textBlock.setFontSize(10.0)
+        textBlock.setTextColor(Color.gray)
+        textBlock.setLocation(50.0, xy[1] + 10.0)
+        textBlock.setWidth(495.0)
+        xy = textBlock.drawOn(page)
 
-        image = try loadSVG("images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
+        let iconFiles = [
+            "images/svg/home_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/search_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/shopping_cart_checkout_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/palette_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/auto_stories_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/add_circle_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/star_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg/settings_FILL0_wght400_GRAD0_opsz48.svg",
+            "images/svg-test/menu-icon.svg",
+            "images/svg-test/menu-icon-close.svg",
+            "images/svg-test/test-CS.svg",
+            "images/svg-test/test-QQ1.svg",
+        ]
+        let iconNames = [
+            "home",
+            "search",
+            "checkout",
+            "palette",
+            "stories",
+            "add",
+            "star",
+            "settings",
+            "menu",
+            "close",
+            "C and S curves",
+            "Q curves",
+        ]
 
-        image = try loadSVG("images/svg/star_FILL0_wght400_GRAD0_opsz48.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
+        // Two rows of six icons, 48 by 48 points each.
+        let y: Float = xy[1] + 30.0
+        for i in 0..<iconFiles.count {
+            let x: Float = 50.0 + Float(i % 6) * 85.0
+            let yIcon: Float = y + Float(i / 6) * 90.0
 
-        image = try loadSVG("images/svg-test/test-CS.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
+            let icon = try loadSVG(iconFiles[i])
+            icon.setLocation(x, yIcon)
+            let iconXY = icon.drawOn(page)
 
-        image = try loadSVG("images/svg-test/test-QQ1.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
-
-        image = try loadSVG("images/svg-test/menu-icon.svg")
-        image.setLocation(xy[0], 670.0)
-        xy = image.drawOn(page)
-
-        image = try loadSVG("images/svg-test/menu-icon-close.svg")
-        image.setLocation(xy[0], 670.0)
-        image.drawOn(page)
+            text = TextLine(f1, iconNames[i])
+            text.setFontSize(9.0)
+            text.setTextColor(Color.gray)
+            text.setLocation(x, iconXY[1] + 15.0)
+            text.drawOn(page)
+        }
 
         try pdf.complete()
     }

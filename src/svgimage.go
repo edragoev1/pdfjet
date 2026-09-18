@@ -254,6 +254,8 @@ func (image *SVGImage) ScaleBy(factor float32) *SVGImage {
 			op.y *= factor
 		}
 	}
+	image.w *= factor
+	image.h *= factor
 	return image
 }
 

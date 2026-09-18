@@ -35,6 +35,20 @@ func TestSVGImageReadsTheSizeFromTheAttributes(t *testing.T) {
 	}
 }
 
+func TestSVGImageScalingScalesTheSizeWithThePaths(t *testing.T) {
+	image := testNewSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40"/></svg>`)
+	image.ScaleBy(0.5)
+	if image.GetWidth() != 50 || image.GetHeight() != 25 {
+		t.Errorf("size %v x %v", image.GetWidth(), image.GetHeight())
+	}
+	page := testNewPage()
+	image.SetLocation(0, 0)
+	testAssertXY(t, 50, 25, image.DrawOn(page))
+	if content := testContent(page); !strings.Contains(content, "5 787 m\n45 772 l\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
 func TestSVGImageKeepsTheLastNumberOfAPathThatIsNotClosed(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40"/></svg>`)
 	if !strings.Contains(content, "10 782 m\n90 752 l\n") {

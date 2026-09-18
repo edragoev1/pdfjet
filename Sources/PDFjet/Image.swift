@@ -249,12 +249,14 @@ public class Image : Drawable {
     }
 
     /// Scales this image proportionally to the specified width.
+    @discardableResult
     public func resizeWidth(_ width: Float) -> Image {
         let factor = width / getWidth()
         return self.scaleBy(factor, factor)
     }
 
     /// Scales this image proportionally to the specified height.
+    @discardableResult
     public func resizeHeight(_ height: Float) -> Image {
         let factor = height / getHeight()
         return self.scaleBy(factor, factor)
