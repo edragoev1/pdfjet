@@ -175,8 +175,12 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       with its peak 286 to 193 MB, Swift 2,391; the text document in C# 60 to
       48 ms and in Go 46 to 43.
 - ⬜ **B** The manual viewer pass, carried over from 9.0.0 (below).
-- ⬜ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
+- ✅ **B** Rebuild the docs, the Java and .NET packages as v9.0.1, and the
       website's example pages and download pages (links and evaluation zips).
+      Done (Sep 18) at 0dd4698a: `generate-documentation.sh`, both packages
+      (296 and 303 MB), and the site by its new `update-from-pdfjet.py`, with
+      `pdfjet-website.zip` rebuilt. Redo the three if the examples or the
+      library change again before the tag.
 - ✅ **B** The public API is that of v9.0.0 in the four ports.
       Checked at 660ab679 against the `v9.0.0` tag in a worktree (Sep 17), with
       every commit of 9.0.1 in: Java `javap -public` over every class, 1,411
