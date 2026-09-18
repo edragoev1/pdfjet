@@ -21,11 +21,14 @@ same API. Before the tag, compare the public API with v9.0.0 in each port. The
 producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
 2026-10-21" until the tag.
 
-- ✅ Eighteen weak examples redone in the four ports: 18, 22, 26, 48, 49
+- ✅ Nineteen weak examples redone in the four ports: 18, 22, 26, 48, 49
       (30444469), 06, 07, 11, 20, 36 (50a22f36), 04, 12, 21, 29, 31
       (ed52df46), each checked with `check-examples.sh`. Then 19, 33 and 45
       (Sep 17), with `SVGImage.scaleBy` scaling the width and height of the
-      image too, which Example_33 needs to fit its map on the page.
+      image too, which Example_33 needs to fit its map on the page. Then 46
+      (Sep 17), with a Natural Earth relief map of Europe in
+      `images/europe-relief.png` (public domain, source in
+      `images/europe-relief.txt`).
 - ✅ **B** QR codes from version 4 to 40, in the four ports.
       Done (Sep 17): the smallest version from 4 that holds the data, up to
       2,953 bytes at L and 1,273 at H. 310 symbols, every version and level at

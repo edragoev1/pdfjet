@@ -216,6 +216,11 @@ C# `PDF` class is sealed, as the Java class is final.
   with a description next to each, each row below the taller of the two; a map
   of Europe scaled to fit the page and a set of labeled SVG icons; and a
   shipment request drawn with the `Form` class.
+- Example_46 draws a shaded relief map of Europe, from the public domain
+  Natural Earth data, in three layers that a viewer can show or hide: the
+  relief, the lines of latitude and longitude, which are not printed, and
+  fifteen capital cities. It replaces a street map screenshot with a line
+  and a QR code over it, in all four ports.
 
 ## v9.0.0 — 2026-09-16
 
