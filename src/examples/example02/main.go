@@ -51,33 +51,41 @@ func Example02() {
 	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
+	pdfjet.NewTextLine(f1, "This block is Japanese.").SetLocation(50.0, 50.0).DrawOn(page)
+
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLanguage("ja")
-	textBlock.SetLocation(50.0, 50.0)
+	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
+
+	pdfjet.NewTextLine(f2, "This block is Korean.").SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
 	textBlock.SetLanguage("ko")
-	textBlock.SetLocation(50.0, 50.0)
+	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
+
+	pdfjet.NewTextLine(f3, "This block is Simplified Chinese.").SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
 	textBlock.SetLanguage("zh-Hans")
-	textBlock.SetLocation(50.0, 50.0)
+	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
+	pdfjet.NewTextLine(f4, "This block is Traditional Chinese.").SetLocation(50.0, 50.0).DrawOn(page)
+
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
 	textBlock.SetLanguage("zh-Hant")
-	textBlock.SetLocation(50.0, 50.0)
+	textBlock.SetLocation(50.0, 70.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
 

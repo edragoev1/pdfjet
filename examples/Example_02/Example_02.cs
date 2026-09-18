@@ -33,37 +33,45 @@ public class Example_02 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        new TextLine(f1, "This block is Japanese.").SetLocation(50f, 50f).DrawOn(page);
+
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
         textBlock.SetLanguage("ja");
-        textBlock.SetLocation(50f, 50f);
+        textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
+
+        new TextLine(f2, "This block is Korean.").SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f2, Content.OfTextFile("data/languages/korean.txt"));
         textBlock.SetLanguage("ko");
-        textBlock.SetLocation(50f, 50f);
+        textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
+
+        new TextLine(f3, "This block is Simplified Chinese.").SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
         textBlock.SetLanguage("zh-Hans");
-        textBlock.SetLocation(50f, 50f);
+        textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
 
+        new TextLine(f4, "This block is Traditional Chinese.").SetLocation(50f, 50f).DrawOn(page);
+
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));
         textBlock.SetLanguage("zh-Hant");
-        textBlock.SetLocation(50f, 50f);
+        textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
 

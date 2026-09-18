@@ -31,37 +31,45 @@ public class Example_02 {
 
         var page = Page(pdf, Letter.PORTRAIT)
 
+        TextLine(f1, "This block is Japanese.").setLocation(50.0, 50.0).drawOn(page)
+
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
         textBlock.setLanguage("ja")
-        textBlock.setLocation(50.0, 50.0)
+        textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
+
+        TextLine(f2, "This block is Korean.").setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f2, try Content.ofTextFile("data/languages/korean.txt"))
         textBlock.setLanguage("ko")
-        textBlock.setLocation(50.0, 50.0)
+        textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
+
+        TextLine(f3, "This block is Simplified Chinese.").setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
         textBlock.setLanguage("zh-Hans")
-        textBlock.setLocation(50.0, 50.0)
+        textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
 
+        TextLine(f4, "This block is Traditional Chinese.").setLocation(50.0, 50.0).drawOn(page)
+
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
         textBlock.setLanguage("zh-Hant")
-        textBlock.setLocation(50.0, 50.0)
+        textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
 

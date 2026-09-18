@@ -34,37 +34,45 @@ public class Example_02 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        new TextLine(f1, "This block is Japanese.").setLocation(50f, 50f).drawOn(page);
+
         TextBlock textBlock = new TextBlock(
                 f1, Content.ofTextFile("data/languages/japanese.txt"));
         textBlock.setLanguage("ja");
-        textBlock.setLocation(50f, 50f);
+        textBlock.setLocation(50f, 70f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
+
+        new TextLine(f2, "This block is Korean.").setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
                 f2, Content.ofTextFile("data/languages/korean.txt"));
         textBlock.setLanguage("ko");
-        textBlock.setLocation(50f, 50f);
+        textBlock.setLocation(50f, 70f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
+
+        new TextLine(f3, "This block is Simplified Chinese.").setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
         textBlock.setLanguage("zh-Hans");
-        textBlock.setLocation(50f, 50f);
+        textBlock.setLocation(50f, 70f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
 
+        new TextLine(f4, "This block is Traditional Chinese.").setLocation(50f, 50f).drawOn(page);
+
         textBlock = new TextBlock(
                 f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
         textBlock.setLanguage("zh-Hant");
-        textBlock.setLocation(50f, 50f);
+        textBlock.setLocation(50f, 70f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
 
