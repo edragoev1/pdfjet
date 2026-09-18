@@ -201,6 +201,36 @@ CHANGELOG entry.
       CHANGELOG entry as its notes; packages, site and `pdfjet-website.zip`
       rebuilt from the tag.
 
+## v9.0.3 — planned
+
+Tables, from the review of `Table` and `Cell` (Sep 18): what clients look for
+and do not find. Additions to the API only, in the four ports with tests and
+examples added to existing examples, so no breaking changes.
+
+- ⬜ **B** Tag a table as a table in a PDF/UA document. Every cell's text is
+      tagged `P` today, so a screen reader cannot say "row 3, column Price",
+      and a PAC or Matterhorn audit fails the table, though veraPDF passes
+      it, since it cannot know the paragraphs are a table. Write a `Table`
+      structure element with `TR` rows and `TH` or `TD` cells, header cells
+      `TH` with a `/Scope` (`Column`, or `Row` for a row header), the header
+      rows repeated on later pages as artifacts or in the same structure, and
+      the borders and backgrounds as artifacts as now. Needs structure
+      elements nested under a parent, where `Page.addBDC` makes them children
+      of the document today. Check with veraPDF and PAC on Examples 08, 13
+      and 38.
+- ⬜ True row spans: `Cell.setRowSpan`, like `setColSpan`, where Example_38
+      fakes them today by turning cell borders off. A spanned cell draws its
+      text, background and borders once over the rows it covers, and page
+      breaks keep it whole. The table tagging needs it for its `RowSpan`
+      attribute. Redo Example_38 with it.
+- ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
+      (zebra striping, as `BigTable.setShadingColor`), and a style for the
+      header rows, the body and a total row, rather than coloring every cell.
+- S Repeating footer or total rows on every page ("carried forward"
+      subtotals), and keeping a row with the next one across a page break.
+- S Column widths from the table width: percentages, or fit a width and
+      share it by the content, next to `autoAdjustColumnWidths`.
+
 ## Done before this plan (Sep 11–16)
 
 - ✅ Breaking changes, encryption and PDF reading, right to left text, the
