@@ -266,7 +266,7 @@ public class Example_17 {
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
         Image image54 = new Image(pdf, fis);
 
-        fileName = "images/LGK_ADDRESS.PNG";
+        fileName = "images/rgba-8bit-chunks.png";
         fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);
         Image image55 = new Image(pdf, fis);
 

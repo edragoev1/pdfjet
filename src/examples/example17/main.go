@@ -84,7 +84,7 @@ func Example17() {
 	image52 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBGN3P08.PNG")
 	image53 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBWN3P08.PNG")
 	image54 := pdfjet.NewImageFromFile(pdf, "PngSuite/TBYN3P08.PNG")
-	image55 := pdfjet.NewImageFromFile(pdf, "images/LGK_ADDRESS.PNG")
+	image55 := pdfjet.NewImageFromFile(pdf, "images/rgba-8bit-chunks.png")
 
 	page := pdfjet.NewPage(pdf, a4.Portrait())
 

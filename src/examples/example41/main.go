@@ -28,7 +28,7 @@ func Example41() {
 	}
 
 	fileNames := []string{
-		"data/testPDFs/wirth.pdf",
+		"data/testPDFs/scanned-linearized.pdf",
 		"data/testPDFs/rc65-16e.pdf",
 		"data/testPDFs/PDFjetLogo.pdf",
 	}

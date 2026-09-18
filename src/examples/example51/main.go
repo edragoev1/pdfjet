@@ -20,7 +20,7 @@ import (
 // into every PDF. The pages keep their content, resources, annotations and
 // links; a link to a page that is not in the same PDF leads nowhere.
 func Example51() {
-	buf, err := os.ReadFile("data/testPDFs/wirth.pdf")
+	buf, err := os.ReadFile("data/testPDFs/scanned-linearized.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}

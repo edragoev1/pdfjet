@@ -24,7 +24,7 @@ class Example_41 {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_41.pdf")));
 
         String[] fileNames = {
-            "data/testPDFs/wirth.pdf",
+            "data/testPDFs/scanned-linearized.pdf",
             "data/testPDFs/rc65-16e.pdf",
             "data/testPDFs/PDFjetLogo.pdf"
         };

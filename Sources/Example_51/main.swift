@@ -18,7 +18,7 @@ import PDFjet
  */
 public class Example_51 {
     public init() throws {
-        let objects = try PDF().read(from: InputStream(fileAtPath: "data/testPDFs/wirth.pdf")!)
+        let objects = try PDF().read(from: InputStream(fileAtPath: "data/testPDFs/scanned-linearized.pdf")!)
         let count = PDF().getPageObjects(from: objects).count
 
         for i in 1...count {

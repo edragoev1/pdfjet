@@ -46,6 +46,6 @@ public class Example_37 {
 }   // End of Example_37.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
-_ = try Example_37("data/testPDFs/wirth.pdf")
+_ = try Example_37("data/testPDFs/scanned-linearized.pdf")
 let time1 = Int64(Date().timeIntervalSince1970 * 1000)
 print("Example_37 => \(String(format: "%4lld", time1 - time0)) ms")

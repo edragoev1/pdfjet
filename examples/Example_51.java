@@ -21,7 +21,7 @@ import com.pdfjet.*;
  */
 class Example_51 {
     public Example_51() throws Exception {
-        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/wirth.pdf"));
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/scanned-linearized.pdf"));
         List<PDFobj> objects = new PDF().read(bis);
         bis.close();
         int count = new PDF().getPageObjects(objects).size();

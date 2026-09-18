@@ -266,7 +266,7 @@ public class Example_17 {
         let image54 = try Image(pdf, fis!)
 
 
-        fileName = "images/LGK_ADDRESS.PNG"
+        fileName = "images/rgba-8bit-chunks.png"
         fis = InputStream(fileAtPath: fileName)
         let image55 = try Image(pdf, fis!)
 

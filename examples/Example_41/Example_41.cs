@@ -24,7 +24,7 @@ public class Example_41 {
                 new FileStream("Example_41.pdf", FileMode.Create)));
 
         String[] fileNames = {
-            "data/testPDFs/wirth.pdf",
+            "data/testPDFs/scanned-linearized.pdf",
             "data/testPDFs/rc65-16e.pdf",
             "data/testPDFs/PDFjetLogo.pdf"
         };

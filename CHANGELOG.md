@@ -226,6 +226,18 @@ C# `PDF` class is sealed, as the Java class is final.
   sample for the QR generator's own web site with no margin around it.
   `images/map407.png`, an OpenStreetMap screenshot that only the misuse tests
   still read, is gone; they read a PngSuite image instead.
+- Example_17 draws `images/rgba-8bit-chunks.png`, an 8-bit RGBA PNG that
+  describes itself: anti-aliased text and half transparent circles on a
+  transparent background, with iCCP, bKGD, pHYs and tIME chunks and two IDAT
+  chunks. It replaces the logo and address of a company, a PNG of the same
+  kind, in all four ports.
+- Examples 37, 41 and 51 and the merge tests read
+  `data/testPDFs/scanned-linearized.pdf`, which `util/make-scanned-pdf.py`
+  writes, instead of a scanned magazine article. It has the structure of the
+  article: PDF 1.2 with lines that end in a carriage return, linearized with
+  hint tables, and five pages that are each a CCITT Group 4 image drawn by an
+  array of two LZW content streams, with the length of every stream in an
+  indirect object. Its pages describe these features.
 
 ## v9.0.0 — 2026-09-16
 

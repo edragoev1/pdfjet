@@ -50,7 +50,7 @@ class Example_37 {
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();
-        new Example_37("data/testPDFs/wirth.pdf");
+        new Example_37("data/testPDFs/scanned-linearized.pdf");
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_37 => %4d ms%n", time1 - time0);
     }

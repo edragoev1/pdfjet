@@ -20,7 +20,7 @@ public class Example_41 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_41.pdf", append: false)!)
 
         let fileNames = [
-            "data/testPDFs/wirth.pdf",
+            "data/testPDFs/scanned-linearized.pdf",
             "data/testPDFs/rc65-16e.pdf",
             "data/testPDFs/PDFjetLogo.pdf"
         ]
