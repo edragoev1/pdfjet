@@ -48,5 +48,27 @@ public class DonutChartTest {
         Assert.Contains(TestSupport.Hex("75%"), content);
         Assert.Contains("200 592 l", content);   // the center, in PDF coordinates
     }
+
+    [Fact]
+    public void AChartIsAFigureThatListsItsSlices() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart donut = NewChart(pdf).AddSlice(new Slice(25f, Color.red, "Apples"))
+                .AddSlice(new Slice(75f, Color.blue, "Oranges"));
+        donut.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
+        Assert.EndsWith("EMC\n", content);
+        Assert.Equal("0 0 0 rg", TestSupport.FillColorBefore(content, "Apples"));
+        Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "25%"));
+        DonutChart pie = NewChart(pdf).SetRadii(100f, 0f).AddSlice(new Slice(1f, Color.red, ""));
+        pie.DrawOn(page);
+        DonutChart described = NewChart(pdf).SetAltDescription("Most are oranges.")
+                .AddSlice(new Slice(1f, Color.red, "Apples"));
+        described.DrawOn(page);
+        Assert.Equal("Donut chart: Apples 25%, Oranges 75%", page.structures[0].altDescription);
+        Assert.Equal("Pie chart: 100%", page.structures[1].altDescription);
+        Assert.Equal("Most are oranges.", page.structures[2].altDescription);
+    }
 }
 }

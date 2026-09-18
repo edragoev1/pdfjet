@@ -576,9 +576,8 @@ public class BarChart : Drawable {
         page.setBrushColor(Color.black)
         page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2.0, titleBaseline)
         if !subtitle.isEmpty {
-            page.setBrushColor(Color.dimgray)
             page.drawString(f2, f2.getSize(), subtitle, x1 + (w - f2.stringWidth(subtitle)) / 2.0,
-                    titleBaseline + subtitleHeight)
+                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), nil)
         }
         if legend {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5 * bodyHeight)
@@ -659,10 +658,9 @@ public class BarChart : Drawable {
                                     barStart + barWidth / 2.0 + ascent / 2.0)
                         }
                     } else if let label = label, valueLabelsInside && abs(x - x0) >= f2.stringWidth(label) + pad {
-                        page.setBrushColor(Color.white)
                         page.drawString(f2, f2.getSize(), label,
                                 to >= base ? x - pad / 2.0 - f2.stringWidth(label) : x + pad / 2.0,
-                                barStart + barWidth / 2.0 + ascent / 2.0)
+                                barStart + barWidth / 2.0 + ascent / 2.0, Util.toRGB(Color.white), nil)
                     } else if let label = label {
                         page.setBrushColor(Color.black)
                         page.drawString(f2, f2.getSize(), label,
@@ -680,9 +678,8 @@ public class BarChart : Drawable {
                                     (y + y0) / 2.0 + ascent / 2.0)
                         }
                     } else if let label = label, valueLabelsInside && abs(y - y0) >= bodyHeight + pad {
-                        page.setBrushColor(Color.white)
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
-                                to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0)
+                                to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0, Util.toRGB(Color.white), nil)
                     } else if let label = label {
                         page.setBrushColor(Color.black)
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,

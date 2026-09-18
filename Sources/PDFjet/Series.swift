@@ -14,6 +14,8 @@
 public class Series {
     let name: String
     var points = [Point]()
+    // True for a point added by its coordinates, drawn with the marker of the series
+    var seriesMarker = [Bool]()
 
     var strokeColor: [Float]?       // nil: the next color of the palette
     var strokeWidth: Float = 1.0
@@ -36,7 +38,8 @@ public class Series {
     ///
     @discardableResult
     public func addPoint(_ x: Float, _ y: Float) -> Series {
-        points.append(Point(x, y).setShape(shape).setRadius(radius))
+        points.append(Point(x, y))
+        seriesMarker.append(true)
         return self
     }
 
@@ -50,6 +53,7 @@ public class Series {
     @discardableResult
     public func addPoint(_ point: Point) -> Series {
         points.append(point)
+        seriesMarker.append(false)
         return self
     }
 

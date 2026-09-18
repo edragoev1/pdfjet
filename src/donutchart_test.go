@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 func testDonutChart(pdf *PDF) *DonutChart {
@@ -58,5 +59,32 @@ func TestDonutChartAPieChartHasAnInnerRadiusOfZero(t *testing.T) {
 	}
 	if !strings.Contains(content, "200 592 l") { // the center, in PDF coordinates
 		t.Errorf("center missing from %q", content)
+	}
+}
+
+func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := NewPage(pdf, testLetterPortrait())
+	donut := testDonutChart(pdf).AddSlice(NewSlice(25, color.Red, "Apples")).
+		AddSlice(NewSlice(75, color.Blue, "Oranges"))
+	donut.DrawOn(page)
+	content := testContent(page)
+	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the chart is not a figure: %q", content)
+	}
+	if got := testFillColorBefore(content, "Apples"); got != "0 0 0 rg" {
+		t.Errorf("the label is drawn with %q", got)
+	}
+	if got := testFillColorBefore(content, "25%"); got != "1 1 1 rg" {
+		t.Errorf("the percentage is drawn with %q", got)
+	}
+	testDonutChart(pdf).SetRadii(100, 0).AddSlice(NewSlice(1, color.Red, "")).DrawOn(page)
+	testDonutChart(pdf).SetAltDescription("Most are oranges.").
+		AddSlice(NewSlice(1, color.Red, "Apples")).DrawOn(page)
+	for i, want := range []string{"Donut chart: Apples 25%, Oranges 75%", "Pie chart: 100%", "Most are oranges."} {
+		if got := page.structures[i].altDescription; got != want {
+			t.Errorf("chart %d is described as %q, not %q", i, got, want)
+		}
 	}
 }

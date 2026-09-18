@@ -66,6 +66,15 @@ public final class TestSupport {
         return sb.toString();
     }
 
+    /**
+     * Returns the fill color set last before the text, drawn in a core font, as
+     * its operator, for example "1 1 1 rg".
+     */
+    public static String fillColorBefore(String content, String text) {
+        int rg = content.lastIndexOf(" rg\n", content.indexOf("<" + hex(text) + ">"));
+        return content.substring(content.lastIndexOf('\n', rg) + 1, rg + 3);
+    }
+
     /** Decodes a PDF text string written as a hexadecimal string with a UTF-16BE byte order mark. */
     public static String utf16Hex(String value) {
         String digits = value.replaceAll("[<>\\s]", "");

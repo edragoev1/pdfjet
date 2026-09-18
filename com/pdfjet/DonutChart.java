@@ -23,6 +23,7 @@ public class DonutChart implements Drawable {
     float r1 = 0.0f;
     float r2 = 0.0f;
     List<Slice> slices;
+    private String altDescription = null;
 
     /**
      * Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -72,6 +73,19 @@ public class DonutChart implements Drawable {
      */
     public DonutChart addSlice(Slice slice) {
         slices.add(slice);
+        return this;
+    }
+
+    /**
+     * Sets the alternate description of the chart, which a screen reader reads
+     * in a PDF/UA document, where the chart is a figure. The default lists the
+     * label and the percentage of each slice.
+     *
+     * @param altDescription the alternate description.
+     * @return this DonutChart object.
+     */
+    public DonutChart setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
         return this;
     }
 
@@ -205,14 +219,9 @@ public class DonutChart implements Drawable {
             page.strokePath();
 
             // Draw the label text just above the horizontal line
-            TextLine label = new TextLine(f1, text);
-            label.setTextColor(Color.black);
-            if (onRightSide) {
-                label.setLocation(p2[0] + 2.0f, yEnd - f1.getAscent() / 3.0f);
-            } else {
-                label.setLocation(xEnd + 2.0f, yEnd - f1.getAscent() / 3.0f);
-            }
-            label.drawOn(page);
+            page.drawString(f1, f1.getSize(), text,
+                    onRightSide ? p2[0] + 2.0f : xEnd + 2.0f, yEnd - f1.getAscent() / 3.0f,
+                    Util.toRGB(Color.black), null);
         } else {
             // No text — short horizontal stub
             boolean onRightSide = Math.cos(midAngle * Math.PI / 180.0) >= 0;
@@ -244,6 +253,8 @@ public class DonutChart implements Drawable {
         if (page == null || total <= 0.0f) {   // Measured, or nothing to draw
             return new float[] {xc + r1, yc + r1};
         }
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, null, altDescription(total));
         float angle = 0.0f;
         for (Slice slice : slices) {
             if (slice.value <= 0.0f) {
@@ -262,20 +273,44 @@ public class DonutChart implements Drawable {
                     angle - sweep, angle);
             // The percentage fits inside a slice of 15 degrees or more
             if (f2 != null && sweep >= 15.0f) {
-                int pct = Math.round(slice.value * 100.0f / total);
-                String pctStr = pct + "%";
-                TextLine label = new TextLine(f2, pctStr);
-                label.setTextColor(Color.white);
+                String pctStr = percentage(slice, total);
                 float midAngle = angle - sweep / 2.0f - 90.0f;
                 float midR = (r1 + r2) / 2.0f;
                 float[] pos = getPoint(xc, yc, midR, midAngle);
-                label.setLocation(
+                page.drawString(f2, f2.getSize(), pctStr,
                         pos[0] - f2.stringWidth(pctStr) / 2.0f,
-                        pos[1] + f2.getAscent() / 3.0f);
-                label.drawOn(page);
+                        pos[1] + f2.getAscent() / 3.0f,
+                        Util.toRGB(Color.white), null);
             }
         }
+        page.addEMC();
         return new float[] {xc + r1, yc + r1};
+    }
+
+    // Returns the share of the slice in the total, as a whole percentage.
+    private static String percentage(Slice slice, float total) {
+        return Math.round(slice.value * 100.0f / total) + "%";
+    }
+
+    // Returns the alternate description, or the label and the percentage of
+    // each slice when none is set.
+    private String altDescription(float total) {
+        if (altDescription != null && !altDescription.isEmpty()) {
+            return altDescription;
+        }
+        StringBuilder sb = new StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
+        String separator = " ";
+        for (Slice slice : slices) {
+            if (slice.value > 0.0f) {
+                sb.append(separator);
+                if (!slice.text.isEmpty()) {
+                    sb.append(slice.text).append(' ');
+                }
+                sb.append(percentage(slice, total));
+                separator = ", ";
+            }
+        }
+        return sb.toString();
     }
 
     // Utility: convert float[][] into List<float[]> for convenient addAll

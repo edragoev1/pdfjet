@@ -19,6 +19,7 @@ public class DonutChart : Drawable {
     var r1: Float = 0.0
     var r2: Float = 0.0
     var slices: [Slice]?
+    private var altDescription: String?
 
     ///
     /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -60,6 +61,15 @@ public class DonutChart : Drawable {
     @discardableResult
     public func addSlice(_ slice: Slice) -> DonutChart {
         self.slices!.append(slice)
+        return self
+    }
+
+    /// Sets the alternate description of the chart, which a screen reader reads
+    /// in a PDF/UA document, where the chart is a figure. The default lists the
+    /// label and the percentage of each slice.
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> DonutChart {
+        self.altDescription = altDescription
         return self
     }
 
@@ -194,14 +204,9 @@ public class DonutChart : Drawable {
             page.strokePath()
 
             // Draw the label text just above the horizontal line
-            let label = TextLine(f1!, text)
-            label.setTextColor(Color.black)
-            if onRightSide {
-                label.setLocation(p2[0] + 2.0, yEnd - f1!.getAscent() / 3.0)
-            } else {
-                label.setLocation(xEnd + 2.0, yEnd - f1!.getAscent() / 3.0)
-            }
-            label.drawOn(page)
+            page.drawString(f1!, f1!.getSize(), text,
+                    onRightSide ? p2[0] + 2.0 : xEnd + 2.0, yEnd - f1!.getAscent() / 3.0,
+                    Util.toRGB(Color.black), nil)
         } else {
             // No text — short horizontal stub
             let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
@@ -231,6 +236,8 @@ public class DonutChart : Drawable {
         guard let page = page, total > 0.0 else {
             return [xc + r1, yc + r1]   // Measured, or nothing to draw
         }
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, nil, getAltDescription(total))
         var angle: Float = 0.0
         for slice in slices! {
             if slice.value <= 0.0 {
@@ -249,18 +256,41 @@ public class DonutChart : Drawable {
                     angle - sweep, angle)
             // The percentage fits inside a slice of 15 degrees or more
             if f2 != nil && sweep >= 15.0 {
-                let pct = Int((slice.value * 100.0 / total).rounded(.toNearestOrAwayFromZero))
-                let label = TextLine(f2!, "\(pct)%")
-                label.setTextColor(Color.white)
+                let pctStr = DonutChart.percentage(slice, total)
                 let midAngle = angle - sweep / 2.0 - 90.0
                 let midR = (r1 + r2) / 2.0
                 let pos = getPoint(xc, yc, midR, midAngle)
-                label.setLocation(
-                        pos[0] - f2!.stringWidth("\(pct)%") / 2.0,
-                        pos[1] + f2!.getAscent() / 3.0)
-                label.drawOn(page)
+                page.drawString(f2!, f2!.getSize(), pctStr,
+                        pos[0] - f2!.stringWidth(pctStr) / 2.0,
+                        pos[1] + f2!.getAscent() / 3.0,
+                        Util.toRGB(Color.white), nil)
             }
         }
+        page.addEMC()
         return [xc + r1, yc + r1]
+    }
+
+    // Returns the share of the slice in the total, as a whole percentage.
+    private static func percentage(_ slice: Slice, _ total: Float) -> String {
+        return "\(Int((slice.value * 100.0 / total).rounded(.toNearestOrAwayFromZero)))%"
+    }
+
+    // Returns the alternate description, or the label and the percentage of
+    // each slice when none is set.
+    private func getAltDescription(_ total: Float) -> String {
+        if let altDescription, !altDescription.isEmpty {
+            return altDescription
+        }
+        var description = (r2 > 0.0) ? "Donut chart:" : "Pie chart:"
+        var separator = " "
+        for slice in slices! where slice.value > 0.0 {
+            description += separator
+            if !slice.text.isEmpty {
+                description += slice.text + " "
+            }
+            description += DonutChart.percentage(slice, total)
+            separator = ", "
+        }
+        return description
     }
 }   // End of DonutChart.swift

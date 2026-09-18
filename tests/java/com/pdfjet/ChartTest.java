@@ -133,4 +133,70 @@ class ChartTest {
         assertTrue(content.contains("1 0 0 RG"), content);
         assertTrue(content.contains(TestSupport.hex("Subtitle")), content);
     }
+
+    @Test
+    void theMarkerOfASeriesIsTheOneItHasWhenTheChartIsDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf);
+        chart.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f).setShape(Shape.INVISIBLE);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(" c\n"), content);  // no circles
+    }
+
+    @Test
+    void aChartDrawnAgainHasTheRangeOfItsDataThen() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Chart chart = chart(pdf);
+        Series series = chart.addSeries("").addPoint(0f, 0f).addPoint(10f, 10f);
+        chart.drawOn(new Page(pdf, Letter.PORTRAIT));
+        series.addPoint(100f, 100f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("<" + TestSupport.hex("100") + ">"), content);
+    }
+
+    @Test
+    void anAxisWithoutGridLinesHasTheRangeOfItsData() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf).setXAxisMinMax(0f, 10f, -1).setYAxisMinMax(0f, 1000f, 0);
+        chart.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains("<" + TestSupport.hex("1000") + ">"), content);
+        assertFalse(content.contains("<" + TestSupport.hex("10") + ">"), content);
+        assertTrue(content.contains("<" + TestSupport.hex("2.0") + ">"), content);
+    }
+
+    @Test
+    void theSubtitleIsGray() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf).setTitle("Title").setSubtitle("Subtitle");
+        chart.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals("0 0 0 rg", TestSupport.fillColorBefore(content, "Title"));
+        assertEquals("0.41 0.41 0.41 rg", TestSupport.fillColorBefore(content, "Subtitle"));
+    }
+
+    @Test
+    void aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart titled = chart(pdf).setTitle("Sales");
+        titled.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f);
+        titled.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
+        assertTrue(content.endsWith("EMC\n"), content);
+        Chart described = chart(pdf).setTitle("Sales").setAltDescription("Sales rose from 1 to 2.");
+        described.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f);
+        described.drawOn(page);
+        assertEquals("Sales", page.structures.get(0).altDescription);
+        assertEquals("Sales rose from 1 to 2.", page.structures.get(1).altDescription);
+    }
 }

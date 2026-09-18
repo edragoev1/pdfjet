@@ -544,9 +544,8 @@ public class BarChart implements Drawable {
         page.setBrushColor(Color.black);
         page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2f, titleBaseline);
         if (!subtitle.isEmpty()) {
-            page.setBrushColor(Color.dimgray);
             page.drawString(f2, f2.getSize(), subtitle, x1 + (w - f2.stringWidth(subtitle)) / 2f,
-                    titleBaseline + subtitleHeight);
+                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), null);
         }
         if (legend) {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
@@ -627,10 +626,9 @@ public class BarChart implements Drawable {
                                     barStart + barWidth / 2f + ascent / 2f);
                         }
                     } else if (label != null && valueLabelsInside && Math.abs(x - x0) >= f2.stringWidth(label) + pad) {
-                        page.setBrushColor(Color.white);
                         page.drawString(f2, f2.getSize(), label,
                                 to >= base ? x - pad / 2f - f2.stringWidth(label) : x + pad / 2f,
-                                barStart + barWidth / 2f + ascent / 2f);
+                                barStart + barWidth / 2f + ascent / 2f, Util.toRGB(Color.white), null);
                     } else if (label != null) {
                         page.setBrushColor(Color.black);
                         page.drawString(f2, f2.getSize(), label,
@@ -648,9 +646,8 @@ public class BarChart implements Drawable {
                                     (y + y0) / 2f + ascent / 2f);
                         }
                     } else if (label != null && valueLabelsInside && Math.abs(y - y0) >= bodyHeight + pad) {
-                        page.setBrushColor(Color.white);
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
-                                to >= base ? y + ascent + pad / 2f : y - pad / 2f);
+                                to >= base ? y + ascent + pad / 2f : y - pad / 2f, Util.toRGB(Color.white), null);
                     } else if (label != null) {
                         page.setBrushColor(Color.black);
                         page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,

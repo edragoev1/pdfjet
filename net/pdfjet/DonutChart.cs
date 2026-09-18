@@ -21,6 +21,7 @@ namespace PDFjet.NET {
         private float r1;
         private float r2;
         private readonly List<Slice> slices;
+        private String altDescription = null;
 
         /// <summary>
         /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -60,6 +61,18 @@ namespace PDFjet.NET {
         /// <summary>Adds a slice to this chart.</summary>
         public DonutChart AddSlice(Slice slice) {
             slices.Add(slice);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the alternate description of the chart, which a screen reader reads
+        /// in a PDF/UA document, where the chart is a figure. The default lists the
+        /// label and the percentage of each slice.
+        /// </summary>
+        /// <param name="altDescription">the alternate description.</param>
+        /// <returns>this DonutChart object.</returns>
+        public DonutChart SetAltDescription(String altDescription) {
+            this.altDescription = altDescription;
             return this;
         }
 
@@ -193,14 +206,9 @@ namespace PDFjet.NET {
                 page.StrokePath();
 
                 // Draw the label text just above the horizontal line
-                TextLine label = new TextLine(f1, text);
-                label.SetTextColor(Color.black);
-                if (onRightSide) {
-                    label.SetLocation(x2 + 2.0f, yEnd - f1.GetAscent() / 3.0f);
-                } else {
-                    label.SetLocation(xEnd + 2.0f, yEnd - f1.GetAscent() / 3.0f);
-                }
-                label.DrawOn(page);
+                page.DrawString(f1, f1.GetSize(), text,
+                        onRightSide ? x2 + 2.0f : xEnd + 2.0f, yEnd - f1.GetAscent() / 3.0f,
+                        Util.ToRGB(Color.black), null);
             } else {
                 // No text — short horizontal stub
                 bool onRightSide = (float)Math.Cos(midAngle * Math.PI / 180.0) >= 0;
@@ -228,6 +236,8 @@ namespace PDFjet.NET {
             if (page == null || total <= 0.0f) {   // Measured, or nothing to draw
                 return new float[] {xc + r1, yc + r1};
             }
+            // The chart is one figure, described by its alternate description.
+            page.AddBDC(StructElem.FIGURE, null, AltDescription(total));
             float angle = 0.0f;
             foreach (Slice slice in slices) {
                 if (slice.value <= 0.0f) {
@@ -247,20 +257,44 @@ namespace PDFjet.NET {
 
                 // The percentage fits inside a slice of 15 degrees or more
                 if (f2 != null && sweep >= 15.0f) {
-                    int pct = (int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero);
-                    string pctStr = pct + "%";
-                    TextLine label = new TextLine(f2, pctStr);
-                    label.SetTextColor(Color.white);
+                    string pctStr = Percentage(slice, total);
                     float midAngle = angle - sweep / 2.0f - 90.0f;
                     float midR = (r1 + r2) / 2.0f;
                     var (posX, posY) = GetPoint(xc, yc, midR, midAngle);
-                    label.SetLocation(
+                    page.DrawString(f2, f2.GetSize(), pctStr,
                         posX - f2.StringWidth(pctStr) / 2.0f,
-                        posY + f2.GetAscent() / 3.0f);
-                    label.DrawOn(page);
+                        posY + f2.GetAscent() / 3.0f,
+                        Util.ToRGB(Color.white), null);
                 }
             }
+            page.AddEMC();
             return new float[] {xc + r1, yc + r1};
+        }
+
+        // Returns the share of the slice in the total, as a whole percentage.
+        private static String Percentage(Slice slice, float total) {
+            return (int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero) + "%";
+        }
+
+        // Returns the alternate description, or the label and the percentage of
+        // each slice when none is set.
+        private String AltDescription(float total) {
+            if (!String.IsNullOrEmpty(altDescription)) {
+                return altDescription;
+            }
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
+            String separator = " ";
+            foreach (Slice slice in slices) {
+                if (slice.value > 0.0f) {
+                    sb.Append(separator);
+                    if (slice.text.Length > 0) {
+                        sb.Append(slice.text).Append(' ');
+                    }
+                    sb.Append(Percentage(slice, total));
+                    separator = ", ";
+                }
+            }
+            return sb.ToString();
         }
 
         // Utility: append points from a control-point block into a list

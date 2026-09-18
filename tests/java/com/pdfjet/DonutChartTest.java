@@ -51,4 +51,26 @@ class DonutChartTest {
         assertTrue(content.contains(TestSupport.hex("75%")), content);
         assertTrue(content.contains("200 592 l"), content);   // the center, in PDF coordinates
     }
+
+    @Test
+    void aChartIsAFigureThatListsItsSlices() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart donut = chart(pdf).addSlice(new Slice(25f, Color.red, "Apples"))
+                .addSlice(new Slice(75f, Color.blue, "Oranges"));
+        donut.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
+        assertTrue(content.endsWith("EMC\n"), content);
+        assertEquals("0 0 0 rg", TestSupport.fillColorBefore(content, "Apples"));
+        assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "25%"));
+        DonutChart pie = chart(pdf).setRadii(100f, 0f).addSlice(new Slice(1f, Color.red, ""));
+        pie.drawOn(page);
+        DonutChart described = chart(pdf).setAltDescription("Most are oranges.")
+                .addSlice(new Slice(1f, Color.red, "Apples"));
+        described.drawOn(page);
+        assertEquals("Donut chart: Apples 25%, Oranges 75%", page.structures.get(0).altDescription);
+        assertEquals("Pie chart: 100%", page.structures.get(1).altDescription);
+        assertEquals("Most are oranges.", page.structures.get(2).altDescription);
+    }
 }

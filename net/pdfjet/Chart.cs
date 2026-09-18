@@ -20,14 +20,23 @@ public class Chart : IDrawable {
     // Inner plot area (x5,y5 = top-left, clockwise)
     private float x5, y5, x6, y6, x7, y7, x8, y8;
 
-    // Data axis ranges (auto-computed if grid lines == 0)
-    private float xMax = System.Single.MinValue;
-    private float xMin = System.Single.MaxValue;
-    private float yMax = System.Single.MinValue;
-    private float yMin = System.Single.MaxValue;
+    // The axis ranges that SetXAxisMinMax and SetYAxisMinMax set, used when
+    // they have grid lines
+    private float manualXMin;
+    private float manualXMax;
+    private int manualXGridLines = 0;
+    private float manualYMin;
+    private float manualYMax;
+    private int manualYGridLines = 0;
 
-    private int xAxisGridLines = 0;
-    private int yAxisGridLines = 0;
+    // The axis ranges of the chart being drawn: the ones set, or the ranges of
+    // the data rounded
+    private float xMin;
+    private float xMax;
+    private float yMin;
+    private float yMax;
+    private int xAxisGridLines;
+    private int yAxisGridLines;
 
     private String title = "";
     private String subtitle = "";
@@ -60,6 +69,7 @@ public class Chart : IDrawable {
 
     private readonly List<Series> series = new List<Series>();
     private bool drawLegend = true;
+    private String altDescription = null;
 
     internal static readonly int[] DEFAULT_PALETTE = {
         Color.blue,
@@ -135,6 +145,18 @@ public class Chart : IDrawable {
     /// <returns>this Chart object.</returns>
     public Chart SetDrawLegend(bool drawLegend) {
         this.drawLegend = drawLegend;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the alternate description of the chart, which a screen reader reads
+    /// in a PDF/UA document, where the chart is a figure. The default is the
+    /// title, or "Chart" without one. Describe what the chart shows.
+    /// </summary>
+    /// <param name="altDescription">the alternate description.</param>
+    /// <returns>this Chart object.</returns>
+    public Chart SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
         return this;
     }
 
@@ -291,18 +313,13 @@ public class Chart : IDrawable {
         x4 = x1;
         y4 = y3;
 
-        // Compute axis ranges
-        SetXAxisMinAndMaxChartValues();
-        SetYAxisMinAndMaxChartValues();
+        // The axis ranges are computed again for every drawing, from the data
+        // the chart has then.
+        SetXAxisRange();
+        SetYAxisRange();
 
-        // Guard against flat data (all same X or Y) before rounding,
-        // so the rounded ranges have grid lines
-        if (xMax == xMin) { xMax = xMin + 1f; }
-        if (yMax == yMin) { yMax = yMin + 1f; }
-
-        // Round axis ranges
-        RoundXAxisMinAndMaxValues();
-        RoundYAxisMinAndMaxValues();
+        // The chart is one figure, described by its alternate description.
+        page.AddBDC(StructElem.FIGURE, null, AltDescription());
 
         // Draw chart title (centered, top), the subtitle and then the legend under it
         float titleBaseline = y1 + 1.5f * f1.GetBodyHeight(f1.GetSize());
@@ -315,13 +332,12 @@ public class Chart : IDrawable {
                 x1 + ((w - f1.StringWidth(title)) / 2),
                 titleBaseline);
         if (subtitle.Length > 0) {
-            page.SetBrushColor(Color.dimgray);
             page.DrawString(
                     f2,
                     f2.GetSize(),
                     subtitle,
                     x1 + ((w - f2.StringWidth(subtitle)) / 2),
-                    titleBaseline + subtitleHeight);
+                    titleBaseline + subtitleHeight, Util.ToRGB(Color.dimgray), null);
         }
         bool legend = drawLegend && HasSeriesNames();
         if (legend) {
@@ -363,12 +379,18 @@ public class Chart : IDrawable {
             DrawYAxisLabels(page);
         }
 
-        // Defensive copy so the user's data is never mutated
+        // Defensive copy so the user's data is never mutated. A point added by
+        // its coordinates has the marker the series has now.
         List<List<Point>> plotData = new List<List<Point>>(series.Count);
         foreach (Series s in series) {
             List<Point> copy = new List<Point>(s.points.Count);
-            foreach (Point point in s.points) {
-                copy.Add(new Point(point));
+            for (int i = 0; i < s.points.Count; i++) {
+                Point point = new Point(s.points[i]);
+                if (s.seriesMarker[i]) {
+                    point.shape = s.shape;
+                    point.r = s.radius;
+                }
+                copy.Add(point);
             }
             plotData.Add(copy);
         }
@@ -424,8 +446,17 @@ public class Chart : IDrawable {
         page.SetDefaultPenWidth();
         page.SetDefaultStrokeDashPattern();
         page.SetPenColor(Color.black);
+        page.AddEMC();
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private String AltDescription() {
+        if (!String.IsNullOrEmpty(altDescription)) {
+            return altDescription;
+        }
+        return (title.Length == 0) ? "Chart" : title;
     }
 
     /// <summary>
@@ -552,67 +583,69 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    ///  Scans all data points to find X axis min/max (skipped if manual).
+    /// Sets the X axis range of the drawing: the one set with SetXAxisMinMax,
+    /// or the range of the data rounded to "nice" values, with its grid lines.
     /// </summary>
-    private void SetXAxisMinAndMaxChartValues() {
-        if (xAxisGridLines != 0) {
-            return;
-        }
-        foreach (Series s in series) {
-            foreach (Point point in s.points) {
-                if (point.x < xMin) {
-                    xMin = point.x;
-                }
-                if (point.x > xMax) {
-                    xMax = point.x;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    ///  Scans all data points to find Y axis min/max (skipped if manual).
-    /// </summary>
-    private void SetYAxisMinAndMaxChartValues() {
-        if (yAxisGridLines != 0) {
-            return;
-        }
-        foreach (Series s in series) {
-            foreach (Point point in s.points) {
-                if (point.y < yMin) {
-                    yMin = point.y;
-                }
-                if (point.y > yMax) {
-                    yMax = point.y;
+    private void SetXAxisRange() {
+        if (manualXGridLines > 0) {
+            xMin = manualXMin;
+            xMax = manualXMax;
+            xAxisGridLines = manualXGridLines;
+        } else {
+            xMin = System.Single.MaxValue;
+            xMax = System.Single.MinValue;
+            foreach (Series s in series) {
+                foreach (Point point in s.points) {
+                    if (point.x < xMin) {
+                        xMin = point.x;
+                    }
+                    if (point.x > xMax) {
+                        xMax = point.x;
+                    }
                 }
             }
         }
+        // Guard against flat data before rounding, so the range has grid lines
+        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (manualXGridLines == 0) {
+            Round round = RoundMaxAndMinValues(xMax, xMin);
+            xMax = round.maxValue;
+            xMin = round.minValue;
+            xAxisGridLines = round.numOfGridLines;
+        }
     }
 
     /// <summary>
-    ///  Rounds X axis range to "nice" values and sets grid line count.
+    /// Sets the Y axis range of the drawing: the one set with SetYAxisMinMax,
+    /// or the range of the data rounded to "nice" values, with its grid lines.
     /// </summary>
-    private void RoundXAxisMinAndMaxValues() {
-        if (xAxisGridLines != 0) {
-            return;
+    private void SetYAxisRange() {
+        if (manualYGridLines > 0) {
+            yMin = manualYMin;
+            yMax = manualYMax;
+            yAxisGridLines = manualYGridLines;
+        } else {
+            yMin = System.Single.MaxValue;
+            yMax = System.Single.MinValue;
+            foreach (Series s in series) {
+                foreach (Point point in s.points) {
+                    if (point.y < yMin) {
+                        yMin = point.y;
+                    }
+                    if (point.y > yMax) {
+                        yMax = point.y;
+                    }
+                }
+            }
         }
-        Round round = RoundMaxAndMinValues(xMax, xMin);
-        xMax = round.maxValue;
-        xMin = round.minValue;
-        xAxisGridLines = round.numOfGridLines;
-    }
-
-    /// <summary>
-    ///  Rounds Y axis range to "nice" values and sets grid line count.
-    /// </summary>
-    private void RoundYAxisMinAndMaxValues() {
-        if (yAxisGridLines != 0) {
-            return;
+        // Guard against flat data before rounding, so the range has grid lines
+        if (yMax == yMin) { yMax = yMin + 1f; }
+        if (manualYGridLines == 0) {
+            Round round = RoundMaxAndMinValues(yMax, yMin);
+            yMax = round.maxValue;
+            yMin = round.minValue;
+            yAxisGridLines = round.numOfGridLines;
         }
-        Round round = RoundMaxAndMinValues(yMax, yMin);
-        yMax = round.maxValue;
-        yMin = round.minValue;
-        yAxisGridLines = round.numOfGridLines;
     }
 
     /// <summary>
@@ -807,26 +840,28 @@ public class Chart : IDrawable {
     }
 
     /// <summary>
-    /// Manually sets X axis range and grid line count.
-    /// Skips auto-computation when grid lines > 0.
+    /// Sets the X axis range and its number of grid lines. With 0 grid lines,
+    /// the default, the range is the range of the data rounded to "nice"
+    /// values, and xMin and xMax are not used; a negative number is taken as 0.
     /// </summary>
     /// <returns>this Chart object.</returns>
     public Chart SetXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
-        this.xMin = xMin;
-        this.xMax = xMax;
-        this.xAxisGridLines = xAxisGridLines;
+        this.manualXMin = xMin;
+        this.manualXMax = xMax;
+        this.manualXGridLines = Math.Max(0, xAxisGridLines);
         return this;
     }
 
     /// <summary>
-    /// Manually sets Y axis range and grid line count.
-    /// Skips auto-computation when grid lines > 0.
+    /// Sets the Y axis range and its number of grid lines. With 0 grid lines,
+    /// the default, the range is the range of the data rounded to "nice"
+    /// values, and yMin and yMax are not used; a negative number is taken as 0.
     /// </summary>
     /// <returns>this Chart object.</returns>
     public Chart SetYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
-        this.yMin = yMin;
-        this.yMax = yMax;
-        this.yAxisGridLines = yAxisGridLines;
+        this.manualYMin = yMin;
+        this.manualYMax = yMax;
+        this.manualYGridLines = Math.Max(0, yAxisGridLines);
         return this;
     }
 }

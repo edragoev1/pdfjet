@@ -444,10 +444,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		chart.x1+(chart.w-f1.StringWidth(f1.size, chart.title))/2.0, titleBaseline,
 		[3]float32{0.0, 0.0, 0.0}, nil)
 	if chart.subtitle != "" {
-		page.SetBrushColor(color.DimGray)
 		page.drawString(f2, f2.size, chart.subtitle,
 			chart.x1+(chart.w-f2.StringWidth(f2.size, chart.subtitle))/2.0, titleBaseline+subtitleHeight,
-			[3]float32{0.0, 0.0, 0.0}, nil)
+			colorToRGB(color.DimGray), nil)
 	}
 	if legend {
 		chart.drawLegendOn(page, titleBaseline+subtitleHeight+1.5*bodyHeight)
@@ -559,7 +558,6 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 					}
 				} else if chart.drawValueLabels && chart.valueLabelsInside &&
 					abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
-					page.SetBrushColor(color.White)
 					var lx float32
 					if to >= base {
 						lx = x - pad/2.0 - f2.StringWidth(f2.size, label)
@@ -567,7 +565,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 						lx = x + pad/2.0
 					}
 					page.drawString(f2, f2.size, label, lx, barStart+barWidth/2.0+ascent/2.0,
-						[3]float32{0.0, 0.0, 0.0}, nil)
+						colorToRGB(color.White), nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var lx float32
@@ -590,7 +588,6 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 							(y+y0)/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
 					}
 				} else if chart.drawValueLabels && chart.valueLabelsInside && abs32(y-y0) >= bodyHeight+pad {
-					page.SetBrushColor(color.White)
 					var ly float32
 					if to >= base {
 						ly = y + ascent + pad/2.0
@@ -598,7 +595,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 						ly = y - pad/2.0
 					}
 					page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0, ly,
-						[3]float32{0.0, 0.0, 0.0}, nil)
+						colorToRGB(color.White), nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var ly float32

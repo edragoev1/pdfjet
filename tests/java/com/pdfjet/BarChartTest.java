@@ -109,7 +109,8 @@ class BarChartTest {
         assertTrue(content.contains(TestSupport.hex("sub")), content);
         assertTrue(content.contains("1 0 0 rg"), content);     // the first bar
         assertTrue(content.contains("0 0 1 rg"), content);     // the second bar
-        assertTrue(content.contains("1 1 1 rg"), content);     // the label inside the first bar
+        assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "6,650"));  // inside the first bar
+        assertEquals("0.41 0.41 0.41 rg", TestSupport.fillColorBefore(content, "sub"));
         assertTrue(content.contains(TestSupport.hex("12")), content);  // too short: next to the bar
     }
 

@@ -74,6 +74,19 @@ enum TestSupport {
         return result
     }
 
+    /// Returns the fill color set last before the text, drawn in a core font, as
+    /// its operator, for example "1 1 1 rg".
+    static func fillColorBefore(_ content: String, _ text: String) -> String {
+        guard let textRange = content.range(of: "<" + hex(text) + ">"),
+              let rg = content.range(of: " rg\n", options: .backwards,
+                      range: content.startIndex..<textRange.lowerBound) else {
+            return ""
+        }
+        let start = content[..<rg.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }
+                ?? content.startIndex
+        return String(content[start..<content.index(rg.lowerBound, offsetBy: 3)])
+    }
+
     /// Decodes a PDF text string written as a hexadecimal string with a UTF-16BE byte order mark.
     static func utf16Hex(_ value: String) -> String {
         let digits = value.unicodeScalars.filter { !"<> \n\r\t".unicodeScalars.contains($0) }.map { Character($0) }

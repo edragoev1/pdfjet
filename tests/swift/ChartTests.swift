@@ -115,4 +115,65 @@ import Testing
         #expect(content.contains("1 0 0 RG"), "\(content)")
         #expect(content.contains(TestSupport.hex("Subtitle")), "\(content)")
     }
+
+    @Test func theMarkerOfASeriesIsTheOneItHasWhenTheChartIsDrawn() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf)
+        chart.addSeries("").addPoint(1, 1).addPoint(2, 2).setShape(Shape.INVISIBLE)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(" c\n"), "\(content)")   // no circles
+    }
+
+    @Test func aChartDrawnAgainHasTheRangeOfItsDataThen() {
+        let pdf = TestSupport.newPDF()
+        let chart = chart(pdf)
+        let series = chart.addSeries("").addPoint(0, 0).addPoint(10, 10)
+        chart.drawOn(Page(pdf, Letter.PORTRAIT))
+        series.addPoint(100, 100)
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("<" + TestSupport.hex("100") + ">"), "\(content)")
+    }
+
+    @Test func anAxisWithoutGridLinesHasTheRangeOfItsData() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setXAxisMinMax(0, 10, -1).setYAxisMinMax(0, 1000, 0)
+        chart.addSeries("").addPoint(1, 1).addPoint(2, 2)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains("<" + TestSupport.hex("1000") + ">"), "\(content)")
+        #expect(!content.contains("<" + TestSupport.hex("10") + ">"), "\(content)")
+        #expect(content.contains("<" + TestSupport.hex("2.0") + ">"), "\(content)")
+    }
+
+    @Test func theSubtitleIsGray() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setTitle("Title").setSubtitle("Subtitle")
+        chart.addSeries("").addPoint(1, 1).addPoint(2, 2)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(TestSupport.fillColorBefore(content, "Title") == "0 0 0 rg")
+        #expect(TestSupport.fillColorBefore(content, "Subtitle") == "0.41 0.41 0.41 rg")
+    }
+
+    @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let titled = chart(memory.pdf).setTitle("Sales")
+        titled.addSeries("").addPoint(1, 1).addPoint(2, 2)
+        titled.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n"), "\(content)")
+        #expect(content.hasSuffix("EMC\n"), "\(content)")
+        let described = chart(memory.pdf).setTitle("Sales").setAltDescription("Sales rose from 1 to 2.")
+        described.addSeries("").addPoint(1, 1).addPoint(2, 2)
+        described.drawOn(page)
+        #expect(page.structures[0].altDescription == "Sales")
+        #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
+    }
 }

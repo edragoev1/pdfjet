@@ -68,6 +68,16 @@ public static class TestSupport {
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Returns the fill color set last before the text, drawn in a core font, as
+    /// its operator, for example "1 1 1 rg".
+    /// </summary>
+    public static string FillColorBefore(string content, string text) {
+        int rg = content.LastIndexOf(" rg\n", content.IndexOf("<" + Hex(text) + ">"), System.StringComparison.Ordinal);
+        int start = content.LastIndexOf('\n', rg) + 1;
+        return content.Substring(start, rg + 3 - start);
+    }
+
     /// <summary>Decodes a PDF text string written as a hexadecimal string with a UTF-16BE byte order mark.</summary>
     public static string Utf16Hex(string value) {
         string digits = value.Replace("<", "").Replace(">", "").Replace(" ", "").Replace("\n", "");

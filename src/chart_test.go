@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
@@ -141,5 +142,83 @@ func TestChartTheBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart(
 	}
 	if !strings.Contains(content, testHex("Subtitle")) {
 		t.Errorf("no subtitle in %q", content)
+	}
+}
+
+func TestChartTheMarkerOfASeriesIsTheOneItHasWhenTheChartIsDrawn(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf)
+	chart.AddSeries("").AddPoint(1, 1).AddPoint(2, 2).SetShape(shape.Invisible)
+	chart.DrawOn(page)
+	if content := testContent(page); strings.Contains(content, " c\n") {
+		t.Errorf("the points are drawn with circles: %q", content)
+	}
+}
+
+func TestChartAChartDrawnAgainHasTheRangeOfItsDataThen(t *testing.T) {
+	pdf := testNewPDF()
+	chart := testChart(pdf)
+	series := chart.AddSeries("").AddPoint(0, 0).AddPoint(10, 10)
+	chart.DrawOn(NewPage(pdf, testLetterPortrait()))
+	series.AddPoint(100, 100)
+	page := NewPage(pdf, testLetterPortrait())
+	chart.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "<"+testHex("100")+">") {
+		t.Errorf("the axes do not reach 100: %q", content)
+	}
+}
+
+func TestChartAnAxisWithoutGridLinesHasTheRangeOfItsData(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf).SetXAxisMinMax(0, 10, -1).SetYAxisMinMax(0, 1000, 0)
+	chart.AddSeries("").AddPoint(1, 1).AddPoint(2, 2)
+	chart.DrawOn(page)
+	content := testContent(page)
+	for _, label := range []string{"1000", "10"} {
+		if strings.Contains(content, "<"+testHex(label)+">") {
+			t.Errorf("the label %s is drawn: %q", label, content)
+		}
+	}
+	if !strings.Contains(content, "<"+testHex("2.0")+">") {
+		t.Errorf("the label 2.0 is not drawn: %q", content)
+	}
+}
+
+func TestChartTheSubtitleIsGray(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf).SetTitle("Title").SetSubtitle("Subtitle")
+	chart.AddSeries("").AddPoint(1, 1).AddPoint(2, 2)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if got := testFillColorBefore(content, "Title"); got != "0 0 0 rg" {
+		t.Errorf("the title is drawn with %q", got)
+	}
+	if got := testFillColorBefore(content, "Subtitle"); got != "0.41 0.41 0.41 rg" {
+		t.Errorf("the subtitle is drawn with %q", got)
+	}
+}
+
+func TestChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := NewPage(pdf, testLetterPortrait())
+	titled := testChart(pdf).SetTitle("Sales")
+	titled.AddSeries("").AddPoint(1, 1).AddPoint(2, 2)
+	titled.DrawOn(page)
+	content := testContent(page)
+	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the chart is not a figure: %q", content)
+	}
+	described := testChart(pdf).SetTitle("Sales").SetAltDescription("Sales rose from 1 to 2.")
+	described.AddSeries("").AddPoint(1, 1).AddPoint(2, 2)
+	described.DrawOn(page)
+	if page.structures[0].altDescription != "Sales" {
+		t.Errorf("the first chart is described as %q", page.structures[0].altDescription)
+	}
+	if page.structures[1].altDescription != "Sales rose from 1 to 2." {
+		t.Errorf("the second chart is described as %q", page.structures[1].altDescription)
 	}
 }

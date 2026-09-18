@@ -36,14 +36,23 @@ public class Chart implements Drawable {
     private float x8;
     private float y8;
 
-    // Data axis ranges (auto-computed if grid lines == 0)
-    private float xMax = -Float.MAX_VALUE;
-    private float xMin = Float.MAX_VALUE;
-    private float yMax = -Float.MAX_VALUE;
-    private float yMin = Float.MAX_VALUE;
+    // The axis ranges that setXAxisMinMax and setYAxisMinMax set, used when
+    // they have grid lines
+    private float manualXMin;
+    private float manualXMax;
+    private int manualXGridLines = 0;
+    private float manualYMin;
+    private float manualYMax;
+    private int manualYGridLines = 0;
 
-    private int xAxisGridLines = 0;
-    private int yAxisGridLines = 0;
+    // The axis ranges of the chart being drawn: the ones set, or the ranges of
+    // the data rounded
+    private float xMin;
+    private float xMax;
+    private float yMin;
+    private float yMax;
+    private int xAxisGridLines;
+    private int yAxisGridLines;
 
     private String title = "";
     private String subtitle = "";
@@ -76,6 +85,7 @@ public class Chart implements Drawable {
 
     private final List<Series> series = new ArrayList<Series>();
     private boolean drawLegend = true;
+    private String altDescription = null;
 
     static final int[] DEFAULT_PALETTE = {
         Color.blue,
@@ -166,6 +176,19 @@ public class Chart implements Drawable {
      */
     public Chart setDrawLegend(boolean drawLegend) {
         this.drawLegend = drawLegend;
+        return this;
+    }
+
+    /**
+     * Sets the alternate description of the chart, which a screen reader reads
+     * in a PDF/UA document, where the chart is a figure. The default is the
+     * title, or "Chart" without one. Describe what the chart shows.
+     *
+     * @param altDescription the alternate description.
+     * @return this Chart object.
+     */
+    public Chart setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
         return this;
     }
 
@@ -371,18 +394,13 @@ public class Chart implements Drawable {
         x4 = x1;
         y4 = y3;
 
-        // Compute axis ranges
-        setXAxisMinAndMaxChartValues();
-        setYAxisMinAndMaxChartValues();
+        // The axis ranges are computed again for every drawing, from the data
+        // the chart has then.
+        setXAxisRange();
+        setYAxisRange();
 
-        // Guard against flat data (all same X or Y) before rounding,
-        // so the rounded ranges have grid lines
-        if (xMax == xMin) { xMax = xMin + 1f; }
-        if (yMax == yMin) { yMax = yMin + 1f; }
-
-        // Round axis ranges
-        roundXAxisMinAndMaxValues();
-        roundYAxisMinAndMaxValues();
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, null, altDescription());
 
         // Draw chart title (centered, top), the subtitle and then the legend under it
         float titleBaseline = y1 + 1.5f * f1.bodyHeight;
@@ -395,13 +413,12 @@ public class Chart implements Drawable {
                 x1 + ((w - f1.stringWidth(title)) / 2),
                 titleBaseline);
         if (!subtitle.isEmpty()) {
-            page.setBrushColor(Color.dimgray);
             page.drawString(
                     f2,
                     f2.getSize(),
                     subtitle,
                     x1 + ((w - f2.stringWidth(subtitle)) / 2),
-                    titleBaseline + subtitleHeight);
+                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), null);
         }
         boolean legend = drawLegend && hasSeriesNames();
         if (legend) {
@@ -442,12 +459,18 @@ public class Chart implements Drawable {
             drawYAxisLabels(page);
         }
 
-        // Defensive copy so the user's data is never mutated
+        // Defensive copy so the user's data is never mutated. A point added by
+        // its coordinates has the marker the series has now.
         List<List<Point>> plotData = new ArrayList<List<Point>>(series.size());
         for (Series s : series) {
             List<Point> copy = new ArrayList<Point>(s.points.size());
-            for (Point p : s.points) {
-                copy.add(new Point(p));
+            for (int i = 0; i < s.points.size(); i++) {
+                Point point = new Point(s.points.get(i));
+                if (s.seriesMarker.get(i)) {
+                    point.shape = s.shape;
+                    point.r = s.radius;
+                }
+                copy.add(point);
             }
             plotData.add(copy);
         }
@@ -505,8 +528,17 @@ public class Chart implements Drawable {
         page.setDefaultPenWidth();
         page.setDefaultStrokeDashPattern();
         page.setPenColor(Color.black);
+        page.addEMC();
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private String altDescription() {
+        if (altDescription != null && !altDescription.isEmpty()) {
+            return altDescription;
+        }
+        return title.isEmpty() ? "Chart" : title;
     }
 
     /** Returns true if at least one series has points. */
@@ -632,60 +664,70 @@ public class Chart implements Drawable {
         return minLabelWidth;
     }
 
-    /** Scans all data points to find X axis min/max (skipped if manual). */
-    private void setXAxisMinAndMaxChartValues() {
-        if (xAxisGridLines != 0) {
-            return;
-        }
-        for (Series s : series) {
-            for (Point point : s.points) {
-                if (point.x < xMin) {
-                    xMin = point.x;
-                }
-                if (point.x > xMax) {
-                    xMax = point.x;
-                }
-            }
-        }
-    }
-
-    /** Scans all data points to find Y axis min/max (skipped if manual). */
-    private void setYAxisMinAndMaxChartValues() {
-        if (yAxisGridLines != 0) {
-            return;
-        }
-        for (Series s : series) {
-            for (Point point : s.points) {
-                if (point.y < yMin) {
-                    yMin = point.y;
-                }
-                if (point.y > yMax) {
-                    yMax = point.y;
+    /**
+     * Sets the X axis range of the drawing: the one set with setXAxisMinMax,
+     * or the range of the data rounded to "nice" values, with its grid lines.
+     */
+    private void setXAxisRange() {
+        if (manualXGridLines > 0) {
+            xMin = manualXMin;
+            xMax = manualXMax;
+            xAxisGridLines = manualXGridLines;
+        } else {
+            xMin = Float.MAX_VALUE;
+            xMax = -Float.MAX_VALUE;
+            for (Series s : series) {
+                for (Point point : s.points) {
+                    if (point.x < xMin) {
+                        xMin = point.x;
+                    }
+                    if (point.x > xMax) {
+                        xMax = point.x;
+                    }
                 }
             }
         }
+        // Guard against flat data before rounding, so the range has grid lines
+        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (manualXGridLines == 0) {
+            Round round = roundMaxAndMinValues(xMax, xMin);
+            xMax = round.maxValue;
+            xMin = round.minValue;
+            xAxisGridLines = round.numOfGridLines;
+        }
     }
 
-    /** Rounds X axis range to "nice" values and sets grid line count. */
-    private void roundXAxisMinAndMaxValues() {
-        if (xAxisGridLines != 0) {
-            return;
+    /**
+     * Sets the Y axis range of the drawing: the one set with setYAxisMinMax,
+     * or the range of the data rounded to "nice" values, with its grid lines.
+     */
+    private void setYAxisRange() {
+        if (manualYGridLines > 0) {
+            yMin = manualYMin;
+            yMax = manualYMax;
+            yAxisGridLines = manualYGridLines;
+        } else {
+            yMin = Float.MAX_VALUE;
+            yMax = -Float.MAX_VALUE;
+            for (Series s : series) {
+                for (Point point : s.points) {
+                    if (point.y < yMin) {
+                        yMin = point.y;
+                    }
+                    if (point.y > yMax) {
+                        yMax = point.y;
+                    }
+                }
+            }
         }
-        Round round = roundMaxAndMinValues(xMax, xMin);
-        xMax = round.maxValue;
-        xMin = round.minValue;
-        xAxisGridLines = round.numOfGridLines;
-    }
-
-    /** Rounds Y axis range to "nice" values and sets grid line count. */
-    private void roundYAxisMinAndMaxValues() {
-        if (yAxisGridLines != 0) {
-            return;
+        // Guard against flat data before rounding, so the range has grid lines
+        if (yMax == yMin) { yMax = yMin + 1f; }
+        if (manualYGridLines == 0) {
+            Round round = roundMaxAndMinValues(yMax, yMin);
+            yMax = round.maxValue;
+            yMin = round.minValue;
+            yAxisGridLines = round.numOfGridLines;
         }
-        Round round = roundMaxAndMinValues(yMax, yMin);
-        yMax = round.maxValue;
-        yMin = round.minValue;
-        yAxisGridLines = round.numOfGridLines;
     }
 
     /** Draws the outer chart border, unless its width is 0. */
@@ -873,8 +915,9 @@ public class Chart implements Drawable {
     }
 
     /**
-     *  Manually sets X axis range and grid line count.
-     *  Skips auto-computation when grid lines > 0.
+     *  Sets the X axis range and its number of grid lines. With 0 grid lines,
+     *  the default, the range is the range of the data rounded to "nice"
+     *  values, and xMin and xMax are not used; a negative number is taken as 0.
      *
      *  @param xMin for the X axis.
      *  @param xMax for the X axis.
@@ -882,15 +925,16 @@ public class Chart implements Drawable {
      *  @return this Chart object.
      */
     public Chart setXAxisMinMax(float xMin, float xMax, int xAxisGridLines) {
-        this.xMin = xMin;
-        this.xMax = xMax;
-        this.xAxisGridLines = xAxisGridLines;
+        this.manualXMin = xMin;
+        this.manualXMax = xMax;
+        this.manualXGridLines = Math.max(0, xAxisGridLines);
         return this;
     }
 
     /**
-     *  Manually sets Y axis range and grid line count.
-     *  Skips auto-computation when grid lines > 0.
+     *  Sets the Y axis range and its number of grid lines. With 0 grid lines,
+     *  the default, the range is the range of the data rounded to "nice"
+     *  values, and yMin and yMax are not used; a negative number is taken as 0.
      *
      *  @param yMin for the Y axis.
      *  @param yMax for the Y axis.
@@ -898,9 +942,9 @@ public class Chart implements Drawable {
      *  @return this Chart object.
      */
     public Chart setYAxisMinMax(float yMin, float yMax, int yAxisGridLines) {
-        this.yMin = yMin;
-        this.yMax = yMax;
-        this.yAxisGridLines = yAxisGridLines;
+        this.manualYMin = yMin;
+        this.manualYMax = yMax;
+        this.manualYGridLines = Math.max(0, yAxisGridLines);
         return this;
     }
 }   // End of Chart.java

@@ -128,5 +128,69 @@ public class ChartTest {
         Assert.Contains("1 0 0 RG", content);
         Assert.Contains(TestSupport.Hex("Subtitle"), content);
     }
+
+    [Fact]
+    public void TheMarkerOfASeriesIsTheOneItHasWhenTheChartIsDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf);
+        chart.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f).SetShape(Shape.INVISIBLE);
+        chart.DrawOn(page);
+        Assert.DoesNotContain(" c\n", TestSupport.Content(page));  // no circles
+    }
+
+    [Fact]
+    public void AChartDrawnAgainHasTheRangeOfItsDataThen() {
+        PDF pdf = TestSupport.NewPDF();
+        Chart chart = NewChart(pdf);
+        Series series = chart.AddSeries("").AddPoint(0f, 0f).AddPoint(10f, 10f);
+        chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        series.AddPoint(100f, 100f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart.DrawOn(page);
+        Assert.Contains("<" + TestSupport.Hex("100") + ">", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void AnAxisWithoutGridLinesHasTheRangeOfItsData() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf).SetXAxisMinMax(0f, 10f, -1).SetYAxisMinMax(0f, 1000f, 0);
+        chart.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain("<" + TestSupport.Hex("1000") + ">", content);
+        Assert.DoesNotContain("<" + TestSupport.Hex("10") + ">", content);
+        Assert.Contains("<" + TestSupport.Hex("2.0") + ">", content);
+    }
+
+    [Fact]
+    public void TheSubtitleIsGray() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf).SetTitle("Title").SetSubtitle("Subtitle");
+        chart.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Equal("0 0 0 rg", TestSupport.FillColorBefore(content, "Title"));
+        Assert.Equal("0.41 0.41 0.41 rg", TestSupport.FillColorBefore(content, "Subtitle"));
+    }
+
+    [Fact]
+    public void AChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart titled = NewChart(pdf).SetTitle("Sales");
+        titled.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f);
+        titled.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
+        Assert.EndsWith("EMC\n", content);
+        Chart described = NewChart(pdf).SetTitle("Sales").SetAltDescription("Sales rose from 1 to 2.");
+        described.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f);
+        described.DrawOn(page);
+        Assert.Equal("Sales", page.structures[0].altDescription);
+        Assert.Equal("Sales rose from 1 to 2.", page.structures[1].altDescription);
+    }
 }
 }

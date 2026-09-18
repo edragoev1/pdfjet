@@ -10,8 +10,10 @@ package pdfjet
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // DonutChart is a donut or pie chart: each slice is its value's share of the
@@ -25,6 +27,9 @@ type DonutChart struct {
 	r1     float32
 	r2     float32
 	slices []*Slice
+	// The alternate description; the label and the percentage of each slice
+	// when it is empty
+	altDescription string
 }
 
 // NewDonutChart creates a donut chart with f1 as the font for the slice labels
@@ -59,6 +64,14 @@ func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 // AddSlice adds a slice to this chart.
 func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
 	dc.slices = append(dc.slices, slice)
+	return dc
+}
+
+// SetAltDescription sets the alternate description of the chart, which a
+// screen reader reads in a PDF/UA document, where the chart is a figure. The
+// default lists the label and the percentage of each slice.
+func (dc *DonutChart) SetAltDescription(altDescription string) *DonutChart {
+	dc.altDescription = altDescription
 	return dc
 }
 
@@ -201,14 +214,12 @@ func (dc *DonutChart) drawLinePointer(
 		page.StrokePath()
 
 		// Draw the label text just above the horizontal line
-		label := NewTextLine(dc.f1, text)
-		label.SetTextColor(color.Black)
+		x := xEnd + 2.0
 		if onRightSide {
-			label.SetLocation(p2[0]+2.0, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0)
-		} else {
-			label.SetLocation(xEnd+2.0, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0)
+			x = p2[0] + 2.0
 		}
-		label.DrawOn(page)
+		page.drawString(dc.f1, dc.f1.size, text, x, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0,
+			colorToRGB(color.Black), nil)
 	} else {
 		// No text — short horizontal stub
 		onRightSide := math.Cos(float64(midAngle)*math.Pi/180.0) >= 0
@@ -240,6 +251,8 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	if page == nil || total <= 0.0 { // Measured, or nothing to draw
 		return [2]float32{xc + dc.r1, yc + dc.r1}
 	}
+	// The chart is one figure, described by its alternate description.
+	page.AddBDC(structelem.Figure, "", "", dc.getAltDescription(total))
 
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
@@ -262,20 +275,50 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 
 		// The percentage fits inside a slice of 15 degrees or more
 		if dc.f2 != nil && sweep >= 15.0 {
-			pct := int(math.Floor(float64(slice.value*100.0/total) + 0.5))
-			pctStr := fmt.Sprintf("%d%%", pct)
-			label := NewTextLine(dc.f2, pctStr)
-			label.SetTextColor(color.White)
+			pctStr := slicePercentage(slice, total)
 			midAngle := angle - sweep/2.0 - 90.0
 			midR := (dc.r1 + dc.r2) / 2.0
 			pos := getPoint(xc, yc, midR, midAngle)
-			label.SetLocation(
+			page.drawString(dc.f2, dc.f2.size, pctStr,
 				pos[0]-dc.f2.StringWidth(dc.f2.size, pctStr)/2.0,
 				pos[1]+dc.f2.GetAscent(dc.f2.size)/3.0,
-			)
-			label.DrawOn(page)
+				colorToRGB(color.White), nil)
 		}
 	}
+	page.AddEMC()
 
 	return [2]float32{xc + dc.r1, yc + dc.r1}
+}
+
+// slicePercentage returns the share of the slice in the total, as a whole
+// percentage.
+func slicePercentage(slice *Slice, total float32) string {
+	return fmt.Sprintf("%d%%", int(math.Floor(float64(slice.value*100.0/total)+0.5)))
+}
+
+// getAltDescription returns the alternate description, or the label and the
+// percentage of each slice when none is set.
+func (dc *DonutChart) getAltDescription(total float32) string {
+	if dc.altDescription != "" {
+		return dc.altDescription
+	}
+	var sb strings.Builder
+	if dc.r2 > 0.0 {
+		sb.WriteString("Donut chart:")
+	} else {
+		sb.WriteString("Pie chart:")
+	}
+	separator := " "
+	for _, slice := range dc.slices {
+		if slice.value > 0.0 {
+			sb.WriteString(separator)
+			if slice.text != "" {
+				sb.WriteString(slice.text)
+				sb.WriteString(" ")
+			}
+			sb.WriteString(slicePercentage(slice, total))
+			separator = ", "
+		}
+	}
+	return sb.String()
 }

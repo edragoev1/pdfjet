@@ -18,6 +18,8 @@ import java.util.List;
 public class Series {
     final String name;
     final List<Point> points = new ArrayList<Point>();
+    // True for a point added by its coordinates, drawn with the marker of the series
+    final List<Boolean> seriesMarker = new ArrayList<Boolean>();
 
     float[] strokeColor = null;     // null: the next color of the palette
     float strokeWidth = 1f;
@@ -32,14 +34,16 @@ public class Series {
     }
 
     /**
-     * Adds a point with the marker of this series.
+     * Adds a point with the marker of this series, the one it has when the
+     * chart is drawn.
      *
      * @param x the x value.
      * @param y the y value.
      * @return this Series object.
      */
     public Series addPoint(float x, float y) {
-        points.add(new Point(x, y).setShape(shape).setRadius(radius));
+        points.add(new Point(x, y));
+        seriesMarker.add(true);
         return this;
     }
 
@@ -52,6 +56,7 @@ public class Series {
      */
     public Series addPoint(Point point) {
         points.add(point);
+        seriesMarker.add(false);
         return this;
     }
 

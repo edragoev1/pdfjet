@@ -32,11 +32,21 @@ public class Chart : Drawable {
     private var x8: Float = 0.0
     private var y8: Float = 0.0
 
-    private var xMax = -Float.greatestFiniteMagnitude
-    private var xMin = Float.greatestFiniteMagnitude
-    private var yMax = -Float.greatestFiniteMagnitude
-    private var yMin = Float.greatestFiniteMagnitude
+    // The axis ranges that setXAxisMinMax and setYAxisMinMax set, used when
+    // they have grid lines
+    private var manualXMin: Float = 0.0
+    private var manualXMax: Float = 0.0
+    private var manualXGridLines = 0
+    private var manualYMin: Float = 0.0
+    private var manualYMax: Float = 0.0
+    private var manualYGridLines = 0
 
+    // The axis ranges of the chart being drawn: the ones set, or the ranges of
+    // the data rounded
+    private var xMin: Float = 0.0
+    private var xMax: Float = 0.0
+    private var yMin: Float = 0.0
+    private var yMax: Float = 0.0
     private var xAxisGridLines = 0
     private var yAxisGridLines = 0
 
@@ -64,11 +74,12 @@ public class Chart : Drawable {
     private var minFractionDigits = 0
     private var maxFractionDigits = 2
 
-    private var f1: Font?
-    private var f2: Font?
+    private var f1: Font
+    private var f2: Font
 
     private var series = [Series]()
     private var drawLegend = true
+    private var altDescription: String?
 
     static let DEFAULT_PALETTE = [
         Color.blue,
@@ -163,6 +174,20 @@ public class Chart : Drawable {
     @discardableResult
     public func setDrawLegend(_ drawLegend: Bool) -> Chart {
         self.drawLegend = drawLegend
+        return self
+    }
+
+    ///
+    /// Sets the alternate description of the chart, which a screen reader reads
+    /// in a PDF/UA document, where the chart is a figure. The default is the
+    /// title, or "Chart" without one. Describe what the chart shows.
+    ///
+    /// - Parameter altDescription: the alternate description.
+    /// - Returns: this Chart object.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> Chart {
+        self.altDescription = altDescription
         return self
     }
 
@@ -324,7 +349,7 @@ public class Chart : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         // Guard against nil or empty data
-        if page == nil || !hasPoints() {   // Measured, or nothing to draw
+        guard let page, hasPoints() else {  // Measured, or nothing to draw
             return [self.x1 + self.w, self.y1 + self.h]
         }
 
@@ -337,47 +362,41 @@ public class Chart : Drawable {
         x4 = x1
         y4 = y3
 
-        setXAxisMinAndMaxChartValues()
-        setYAxisMinAndMaxChartValues()
+        // The axis ranges are computed again for every drawing, from the data
+        // the chart has then.
+        setXAxisRange()
+        setYAxisRange()
 
-        // Guard against flat data (all same X or Y) before rounding,
-        // so the rounded ranges have grid lines
-        if xMax == xMin { xMax = xMin + 1.0 }
-        if yMax == yMin { yMax = yMin + 1.0 }
-
-        roundXAxisMinAndMaxValues()
-        roundYAxisMinAndMaxValues()
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, nil, getAltDescription())
 
         // Draw chart title, the subtitle and then the legend under it
         let legend = drawLegend && hasSeriesNames()
-        let titleBaseline = y1 + 1.5 * f1!.bodyHeight
-        let subtitleHeight: Float = subtitle.isEmpty ? 0.0 : f2!.bodyHeight
-        if page != nil {
-            page!.setBrushColor(Color.black)
-            page!.drawString(
-                    f1!,
-                    f1!.getSize(),
-                    title,
-                    x1 + ((w - f1!.stringWidth(title)) / 2),
-                    titleBaseline)
-            if !subtitle.isEmpty {
-                page!.setBrushColor(Color.dimgray)
-                page!.drawString(
-                        f2!,
-                        f2!.getSize(),
-                        subtitle,
-                        x1 + ((w - f2!.stringWidth(subtitle)) / 2),
-                        titleBaseline + subtitleHeight)
-            }
-            if legend {
-                drawLegend(page!, titleBaseline + subtitleHeight + 1.5 * f2!.bodyHeight)
-            }
+        let titleBaseline = y1 + 1.5 * f1.bodyHeight
+        let subtitleHeight: Float = subtitle.isEmpty ? 0.0 : f2.bodyHeight
+        page.setBrushColor(Color.black)
+        page.drawString(
+                f1,
+                f1.getSize(),
+                title,
+                x1 + ((w - f1.stringWidth(title)) / 2),
+                titleBaseline)
+        if !subtitle.isEmpty {
+            page.drawString(
+                    f2,
+                    f2.getSize(),
+                    subtitle,
+                    x1 + ((w - f2.stringWidth(subtitle)) / 2),
+                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), nil)
+        }
+        if legend {
+            drawLegend(page, titleBaseline + subtitleHeight + 1.5 * f2.bodyHeight)
         }
 
-        let topMargin = 2.5 * f1!.bodyHeight + subtitleHeight + (legend ? 1.5 * f2!.bodyHeight : 0.0)
-        let leftMargin = getLongestAxisYLabelWidth() + 2.0 * f2!.bodyHeight
-        let rightMargin = 2.0 * f2!.bodyHeight
-        let bottomMargin = 2.5 * f2!.bodyHeight
+        let topMargin = 2.5 * f1.bodyHeight + subtitleHeight + (legend ? 1.5 * f2.bodyHeight : 0.0)
+        let leftMargin = getLongestAxisYLabelWidth() + 2.0 * f2.bodyHeight
+        let rightMargin = 2.0 * f2.bodyHeight
+        let bottomMargin = 2.5 * f2.bodyHeight
 
         x5 = x1 + leftMargin
         y5 = y1 + topMargin
@@ -391,88 +410,102 @@ public class Chart : Drawable {
         x8 = x5
         y8 = y7
 
-        if page != nil {
-            drawChartBorder(page!)
-            drawInnerBorder(page!)
+        drawChartBorder(page)
+        drawInnerBorder(page)
 
-            if drawHorizontalGridLines {
-                drawHorizontalGrid(page!)
-            }
-            if drawVerticalGridLines {
-                drawVerticalGrid(page!)
-            }
-            if axisLineWidth > 0.0 {
-                drawAxisLines(page!)
-            }
-            if drawXAxisLabels {
-                drawXAxisLabels(page!)
-            }
-            if drawYAxisLabels {
-                drawYAxisLabels(page!)
-            }
+        if drawHorizontalGridLines {
+            drawHorizontalGrid(page)
+        }
+        if drawVerticalGridLines {
+            drawVerticalGrid(page)
+        }
+        if axisLineWidth > 0.0 {
+            drawAxisLines(page)
+        }
+        if drawXAxisLabels {
+            drawXAxisLabels(page)
+        }
+        if drawYAxisLabels {
+            drawYAxisLabels(page)
         }
 
-        // Translate copies of the points, so the data of the chart is not changed
+        // Translate copies of the points, so the data of the chart is not
+        // changed. A point added by its coordinates has the marker the series
+        // has now.
         var plotData = [[Point]]()
         for s in series {
-            plotData.append(s.points.map { Point($0) })
+            var copy = [Point]()
+            for i in 0..<s.points.count {
+                let point = Point(s.points[i])
+                if s.seriesMarker[i] {
+                    point.shape = s.shape
+                    point.r = s.radius
+                }
+                copy.append(point)
+            }
+            plotData.append(copy)
         }
         for points in plotData {
             for point in points {
                 point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
                 point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
                 if point.getURIAction() != nil {
-                    if page != nil {
-                        page!.addAnnotation(Annotation(
-                                Annotation.Link,
-                                point.x - point.r,
-                                point.y - point.r,
-                                point.x + point.r,
-                                point.y + point.r,
-                                nil,    // Vertices
-                                nil,    // Fill Color
-                                0.0,    // Opacity
-                                nil,    // Title
-                                nil,    // Contents
-                                point.getURIAction(),
-                                nil,
-                                nil,
-                                nil,
-                                nil))
-                    }
+                    page.addAnnotation(Annotation(
+                            Annotation.Link,
+                            point.x - point.r,
+                            point.y - point.r,
+                            point.x + point.r,
+                            point.y + point.r,
+                            nil,    // Vertices
+                            nil,    // Fill Color
+                            0.0,    // Opacity
+                            nil,    // Title
+                            nil,    // Contents
+                            point.getURIAction(),
+                            nil,
+                            nil,
+                            nil,
+                            nil))
                 }
             }
         }
 
-        if page != nil {
-            drawPathsAndPoints(page!, plotData)
+        drawPathsAndPoints(page, plotData)
 
-            // Draw the Y axis title
-            page!.setBrushColor(Color.black)
-            page!.setTextRotation(-90)
-            page!.drawString(
-                    f2!,
-                    f2!.getSize(),
-                    yAxisTitle,
-                    x1 + f2!.bodyHeight,
-                    y8 - ((y8 - y5) - f2!.stringWidth(yAxisTitle)) / 2)
+        // Draw the Y axis title
+        page.setBrushColor(Color.black)
+        page.setTextRotation(-90)
+        page.drawString(
+                f2,
+                f2.getSize(),
+                yAxisTitle,
+                x1 + f2.bodyHeight,
+                y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2)
 
-            // Draw the X axis title
-            page!.setTextRotation(0)
-            page!.setBrushColor(Color.black)
-            page!.drawString(
-                    f2!,
-                    f2!.getSize(),
-                    xAxisTitle,
-                    x5 + ((x6 - x5) - f2!.stringWidth(xAxisTitle)) / 2,
-                    y4 - f2!.bodyHeight / 2)
+        // Draw the X axis title
+        page.setTextRotation(0)
+        page.setBrushColor(Color.black)
+        page.drawString(
+                f2,
+                f2.getSize(),
+                xAxisTitle,
+                x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2,
+                y4 - f2.bodyHeight / 2)
 
-            page!.setDefaultPenWidth()
-            page!.setDefaultStrokeDashPattern()
-            page!.setPenColor(Color.black)
-        }
+        page.setDefaultPenWidth()
+        page.setDefaultStrokeDashPattern()
+        page.setPenColor(Color.black)
+        page.addEMC()
 
         return [self.x1 + self.w, self.y1 + self.h]
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private func getAltDescription() -> String {
+        if let altDescription, !altDescription.isEmpty {
+            return altDescription
+        }
+        return title.isEmpty ? "Chart" : title
     }
 
     // Returns true if at least one series has points.
@@ -493,16 +526,16 @@ public class Chart : Drawable {
     // Draws the legend centered on the chart: the line of each named series
     // that draws its path, its marker when it has one, and its name.
     private func drawLegend(_ page: Page, _ baseline: Float) {
-        let ascent = f2!.getAscent()
+        let ascent = f2.getAscent()
         let sample = 2.0 * ascent   // the width of the line or the marker
         let gap = ascent / 2.0
         var width: Float = 0.0
         var entries = 0
         for s in series where !s.name.isEmpty {
-            width += sample + gap + f2!.stringWidth(s.name)
+            width += sample + gap + f2.stringWidth(s.name)
             entries += 1
         }
-        width += Float(entries - 1) * f2!.bodyHeight
+        width += Float(entries - 1) * f2.bodyHeight
         var x = x1 + (w - width) / 2.0
         for j in 0..<series.count {
             let s = series[j]
@@ -524,8 +557,8 @@ public class Chart : Drawable {
             }
             x += sample + gap
             page.setBrushColor(Color.black)
-            page.drawString(f2!, f2!.getSize(), s.name, x, baseline)
-            x += f2!.stringWidth(s.name) + f2!.bodyHeight
+            page.drawString(f2, f2.getSize(), s.name, x, baseline)
+            x += f2.stringWidth(s.name) + f2.bodyHeight
         }
         page.setDefaultPenWidth()
         page.setDefaultStrokeDashPattern()
@@ -583,64 +616,74 @@ public class Chart : Drawable {
 
     private func getLongestAxisYLabelWidth()-> Float {
         let step = (yMax - yMin) / Float(yAxisGridLines)
-        let minLabelWidth = f2!.stringWidth(format(yMin, step) + "0")
-        let maxLabelWidth = f2!.stringWidth(format(yMax, step) + "0")
+        let minLabelWidth = f2.stringWidth(format(yMin, step) + "0")
+        let maxLabelWidth = f2.stringWidth(format(yMax, step) + "0")
         if maxLabelWidth > minLabelWidth {
             return maxLabelWidth
         }
         return minLabelWidth
     }
 
-    private func setXAxisMinAndMaxChartValues() {
-        if xAxisGridLines != 0 {
-            return
-        }
-        for s in series {
-            for point in s.points {
-                if point.x < xMin {
-                    xMin = point.x
-                }
-                if point.x > xMax {
-                    xMax = point.x
-                }
-            }
-        }
-    }
-
-    private func setYAxisMinAndMaxChartValues() {
-        if yAxisGridLines != 0 {
-            return
-        }
-        for s in series {
-            for point in s.points {
-                if point.y < yMin {
-                    yMin = point.y
-                }
-                if point.y > yMax {
-                    yMax = point.y
+    // Sets the X axis range of the drawing: the one set with setXAxisMinMax,
+    // or the range of the data rounded to "nice" values, with its grid lines.
+    private func setXAxisRange() {
+        if manualXGridLines > 0 {
+            xMin = manualXMin
+            xMax = manualXMax
+            xAxisGridLines = manualXGridLines
+        } else {
+            xMin = Float.greatestFiniteMagnitude
+            xMax = -Float.greatestFiniteMagnitude
+            for s in series {
+                for point in s.points {
+                    if point.x < xMin {
+                        xMin = point.x
+                    }
+                    if point.x > xMax {
+                        xMax = point.x
+                    }
                 }
             }
         }
+        // Guard against flat data before rounding, so the range has grid lines
+        if xMax == xMin { xMax = xMin + 1.0 }
+        if manualXGridLines == 0 {
+            let round = Chart.roundMaxAndMinValues(xMax, xMin)
+            xMax = round.maxValue
+            xMin = round.minValue
+            xAxisGridLines = round.numOfGridLines
+        }
     }
 
-    private func roundXAxisMinAndMaxValues() {
-        if xAxisGridLines != 0 {
-            return
+    // Sets the Y axis range of the drawing: the one set with setYAxisMinMax,
+    // or the range of the data rounded to "nice" values, with its grid lines.
+    private func setYAxisRange() {
+        if manualYGridLines > 0 {
+            yMin = manualYMin
+            yMax = manualYMax
+            yAxisGridLines = manualYGridLines
+        } else {
+            yMin = Float.greatestFiniteMagnitude
+            yMax = -Float.greatestFiniteMagnitude
+            for s in series {
+                for point in s.points {
+                    if point.y < yMin {
+                        yMin = point.y
+                    }
+                    if point.y > yMax {
+                        yMax = point.y
+                    }
+                }
+            }
         }
-        let round = Chart.roundMaxAndMinValues(xMax, xMin)
-        xMax = round.maxValue
-        xMin = round.minValue
-        xAxisGridLines = round.numOfGridLines
-    }
-
-    private func roundYAxisMinAndMaxValues() {
-        if yAxisGridLines != 0 {
-            return
+        // Guard against flat data before rounding, so the range has grid lines
+        if yMax == yMin { yMax = yMin + 1.0 }
+        if manualYGridLines == 0 {
+            let round = Chart.roundMaxAndMinValues(yMax, yMin)
+            yMax = round.maxValue
+            yMin = round.minValue
+            yAxisGridLines = round.numOfGridLines
         }
-        let round = Chart.roundMaxAndMinValues(yMax, yMin)
-        yMax = round.maxValue
-        yMin = round.minValue
-        yAxisGridLines = round.numOfGridLines
     }
 
     /// Draws the outer chart border, unless its width is 0.
@@ -710,7 +753,7 @@ public class Chart : Drawable {
 
     private func drawXAxisLabels(_ page: Page) {
         var x = x5
-        let y = y8 + f2!.getBodyHeight(f2!.getSize())
+        let y = y8 + f2.getBodyHeight(f2.getSize())
         let step = (x6 - x5) / Float(xAxisGridLines)
         let valueStep = (xMax - xMin) / Float(xAxisGridLines)
         page.setBrushColor(Color.black)
@@ -718,10 +761,10 @@ public class Chart : Drawable {
         while i < (xAxisGridLines + 1) {
             let label = format(xMin + valueStep * Float(i), valueStep)
             page.drawString(
-                    f2!,
-                    f2!.getSize(),
+                    f2,
+                    f2.getSize(),
                     label,
-                    x - (f2!.stringWidth(label) / 2),
+                    x - (f2.stringWidth(label) / 2),
                     y)
             x += step
             i += 1
@@ -730,7 +773,7 @@ public class Chart : Drawable {
 
     private func drawYAxisLabels(_ page: Page) {
         let x = x5 - getLongestAxisYLabelWidth()
-        var y = y8 + f2!.ascent / 3
+        var y = y8 + f2.ascent / 3
         let step = (y8 - y5) / Float(yAxisGridLines)
         let valueStep = (yMax - yMin) / Float(yAxisGridLines)
         page.setBrushColor(Color.black)
@@ -738,8 +781,8 @@ public class Chart : Drawable {
         while i < (yAxisGridLines + 1) {
             let label = format(yMin + valueStep * Float(i), valueStep)
             page.drawString(
-                    f2!,
-                    f2!.getSize(),
+                    f2,
+                    f2.getSize(),
                     label,
                     x,
                     y)
@@ -823,21 +866,25 @@ public class Chart : Drawable {
         return round
     }
 
-    /// Sets xMin and xMax for the X axis and the number of X grid lines.
+    /// Sets the X axis range and its number of grid lines. With 0 grid lines,
+    /// the default, the range is the range of the data rounded to "nice"
+    /// values, and xMin and xMax are not used; a negative number is taken as 0.
     @discardableResult
     public func setXAxisMinMax(_ xMin: Float, _ xMax: Float, _ xAxisGridLines: Int) -> Chart {
-        self.xMin = xMin
-        self.xMax = xMax
-        self.xAxisGridLines = xAxisGridLines
+        self.manualXMin = xMin
+        self.manualXMax = xMax
+        self.manualXGridLines = max(0, xAxisGridLines)
         return self
     }
 
-    /// Sets yMin and yMax for the Y axis and the number of Y grid lines.
+    /// Sets the Y axis range and its number of grid lines. With 0 grid lines,
+    /// the default, the range is the range of the data rounded to "nice"
+    /// values, and yMin and yMax are not used; a negative number is taken as 0.
     @discardableResult
     public func setYAxisMinMax(_ yMin: Float, _ yMax: Float, _ yAxisGridLines: Int) -> Chart {
-        self.yMin = yMin
-        self.yMax = yMax
-        self.yAxisGridLines = yAxisGridLines
+        self.manualYMin = yMin
+        self.manualYMax = yMax
+        self.manualYGridLines = max(0, yAxisGridLines)
         return self
     }
 }   // End of Chart.swift

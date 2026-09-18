@@ -99,7 +99,8 @@ import Testing
         #expect(content.contains(TestSupport.hex("sub")), "\(content)")
         #expect(content.contains("1 0 0 rg"), "\(content)")    // the first bar
         #expect(content.contains("0 0 1 rg"), "\(content)")    // the second bar
-        #expect(content.contains("1 1 1 rg"), "\(content)")    // the label inside the first bar
+        #expect(TestSupport.fillColorBefore(content, "6,650") == "1 1 1 rg")    // inside the first bar
+        #expect(TestSupport.fillColorBefore(content, "sub") == "0.41 0.41 0.41 rg")
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }
 

@@ -95,6 +95,20 @@ func testHex(text string) string {
 	return fmt.Sprintf("%X", []byte(text))
 }
 
+// testFillColorBefore returns the fill color set last before the text, drawn
+// in a core font, as its operator, for example "1 1 1 rg".
+func testFillColorBefore(content, text string) string {
+	i := strings.Index(content, "<"+testHex(text)+">")
+	if i == -1 {
+		return ""
+	}
+	rg := strings.LastIndex(content[:i], " rg\n")
+	if rg == -1 {
+		return ""
+	}
+	return content[strings.LastIndex(content[:rg], "\n")+1 : rg+3]
+}
+
 // testUTF16Hex decodes a PDF text string written as a hexadecimal string with
 // a UTF-16BE byte order mark.
 func testUTF16Hex(t *testing.T, value string) string {

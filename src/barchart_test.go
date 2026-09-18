@@ -118,10 +118,16 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	// the two bars in their colors, the label inside the first bar in white
 	// and the label of the bar too short for it next to the bar
 	for _, want := range []string{
-		testHex("6,650"), testHex("8,000"), testHex("sub"), testHex("12"), "1 0 0 rg", "0 0 1 rg", "1 1 1 rg"} {
+		testHex("6,650"), testHex("8,000"), testHex("sub"), testHex("12"), "1 0 0 rg", "0 0 1 rg"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("%q missing from %q", want, content)
 		}
+	}
+	if got := testFillColorBefore(content, "6,650"); got != "1 1 1 rg" {
+		t.Errorf("the label inside the first bar is drawn with %q", got)
+	}
+	if got := testFillColorBefore(content, "sub"); got != "0.41 0.41 0.41 rg" {
+		t.Errorf("the subtitle is drawn with %q", got)
 	}
 }
 

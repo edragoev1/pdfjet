@@ -16,6 +16,8 @@ import (
 type Series struct {
 	name   string
 	points []*Point
+	// True for a point added by its coordinates, drawn with the marker of the series
+	seriesMarker []bool
 
 	strokeColor       [3]float32
 	hasStrokeColor    bool // false: the next color of the palette
@@ -43,7 +45,8 @@ func newSeries(name string) *Series {
 //   - x: the x value.
 //   - y: the y value.
 func (series *Series) AddPoint(x, y float32) *Series {
-	series.points = append(series.points, NewPoint(x, y).SetShape(series.shape).SetRadius(series.radius))
+	series.points = append(series.points, NewPoint(x, y))
+	series.seriesMarker = append(series.seriesMarker, true)
 	return series
 }
 
@@ -51,6 +54,7 @@ func (series *Series) AddPoint(x, y float32) *Series {
 // colors. A point without a stroke color is drawn in the color of the series.
 func (series *Series) AddPointWithMarker(point *Point) *Series {
 	series.points = append(series.points, point)
+	series.seriesMarker = append(series.seriesMarker, false)
 	return series
 }
 

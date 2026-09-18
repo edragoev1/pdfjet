@@ -106,7 +106,8 @@ public class BarChartTest {
         Assert.Contains(TestSupport.Hex("sub"), content);
         Assert.Contains("1 0 0 rg", content);   // the first bar
         Assert.Contains("0 0 1 rg", content);   // the second bar
-        Assert.Contains("1 1 1 rg", content);   // the label inside the first bar
+        Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "6,650"));    // inside the first bar
+        Assert.Equal("0.41 0.41 0.41 rg", TestSupport.FillColorBefore(content, "sub"));
         Assert.Contains(TestSupport.Hex("12"), content);    // too short: next to the bar
     }
 

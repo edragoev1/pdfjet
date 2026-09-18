@@ -480,9 +480,8 @@ public class BarChart : IDrawable {
         page.SetBrushColor(Color.black);
         page.DrawString(f1, f1.GetSize(), title, x1 + (w - f1.StringWidth(title)) / 2f, titleBaseline);
         if (subtitle.Length > 0) {
-            page.SetBrushColor(Color.dimgray);
             page.DrawString(f2, f2.GetSize(), subtitle, x1 + (w - f2.StringWidth(subtitle)) / 2f,
-                    titleBaseline + subtitleHeight);
+                    titleBaseline + subtitleHeight, Util.ToRGB(Color.dimgray), null);
         }
         if (legend) {
             DrawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
@@ -563,10 +562,9 @@ public class BarChart : IDrawable {
                                     barStart + barWidth / 2f + ascent / 2f);
                         }
                     } else if (label != null && valueLabelsInside && Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
-                        page.SetBrushColor(Color.white);
                         page.DrawString(f2, f2.GetSize(), label,
                                 to >= baseValue ? x - pad / 2f - f2.StringWidth(label) : x + pad / 2f,
-                                barStart + barWidth / 2f + ascent / 2f);
+                                barStart + barWidth / 2f + ascent / 2f, Util.ToRGB(Color.white), null);
                     } else if (label != null) {
                         page.SetBrushColor(Color.black);
                         page.DrawString(f2, f2.GetSize(), label,
@@ -584,9 +582,8 @@ public class BarChart : IDrawable {
                                     (y + y0) / 2f + ascent / 2f);
                         }
                     } else if (label != null && valueLabelsInside && Math.Abs(y - y0) >= bodyHeight + pad) {
-                        page.SetBrushColor(Color.white);
                         page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
-                                to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f);
+                                to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f, Util.ToRGB(Color.white), null);
                     } else if (label != null) {
                         page.SetBrushColor(Color.black);
                         page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,

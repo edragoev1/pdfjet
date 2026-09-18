@@ -13,6 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Chart is used to create XY chart objects and draw them on a page.
@@ -25,28 +26,37 @@ type Chart struct {
 	h                              float32
 	x1, x2, x3, x4, x5, x6, x7, x8 float32
 	y1, y2, y3, y4, y5, y6, y7, y8 float32
-	xMax, xMin                     float32 // The range of the data, set when it is drawn.
-	yMax, yMin                     float32
-	xAxisGridLines                 int
-	yAxisGridLines                 int
-	title                          string
-	subtitle                       string
-	xAxisTitle                     string
-	yAxisTitle                     string
-	drawHorizontalGridLines        bool
-	drawVerticalGridLines          bool
-	drawXAxisLabels                bool
-	drawYAxisLabels                bool
-	gridLineColor                  int32
-	horizontalGridLineWidth        float32
-	verticalGridLineWidth          float32
-	horizontalGridLineDashPattern  string
-	verticalGridLineDashPattern    string
-	axisLineWidth                  float32
-	chartBorderWidth               float32
-	innerBorderWidth               float32
-	minFractionDigits              int
-	maxFractionDigits              int
+	// The axis ranges that SetXAxisMinMax and SetYAxisMinMax set, used when
+	// they have grid lines
+	manualXMin, manualXMax float32
+	manualXGridLines       int
+	manualYMin, manualYMax float32
+	manualYGridLines       int
+	// The axis ranges of the chart being drawn: the ones set, or the ranges
+	// of the data rounded
+	xMax, xMin                    float32
+	yMax, yMin                    float32
+	xAxisGridLines                int
+	yAxisGridLines                int
+	altDescription                string
+	title                         string
+	subtitle                      string
+	xAxisTitle                    string
+	yAxisTitle                    string
+	drawHorizontalGridLines       bool
+	drawVerticalGridLines         bool
+	drawXAxisLabels               bool
+	drawYAxisLabels               bool
+	gridLineColor                 int32
+	horizontalGridLineWidth       float32
+	verticalGridLineWidth         float32
+	horizontalGridLineDashPattern string
+	verticalGridLineDashPattern   string
+	axisLineWidth                 float32
+	chartBorderWidth              float32
+	innerBorderWidth              float32
+	minFractionDigits             int
+	maxFractionDigits             int
 }
 
 // defaultPalette holds the stroke colors of the series that have no color.
@@ -70,11 +80,6 @@ func NewChart(f1, f2 *Font) *Chart {
 	chart.f2 = f2
 	chart.w = 300.0
 	chart.h = 200.0
-
-	chart.xMax = -math.MaxFloat32
-	chart.xMin = math.MaxFloat32
-	chart.yMax = -math.MaxFloat32
-	chart.yMin = math.MaxFloat32
 
 	chart.series = make([]*Series, 0)
 	chart.drawLegend = true
@@ -131,6 +136,14 @@ func (chart *Chart) AddSeries(name string) *Series {
 // that have a name, under the title, each with its line or its marker.
 func (chart *Chart) SetDrawLegend(drawLegend bool) *Chart {
 	chart.drawLegend = drawLegend
+	return chart
+}
+
+// SetAltDescription sets the alternate description of the chart, which a
+// screen reader reads in a PDF/UA document, where the chart is a figure. The
+// default is the title, or "Chart" without one. Describe what the chart shows.
+func (chart *Chart) SetAltDescription(altDescription string) *Chart {
+	chart.altDescription = altDescription
 	return chart
 }
 
@@ -264,20 +277,13 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.x4 = chart.x1
 	chart.y4 = chart.y3
 
-	chart.setXAxisMinAndMaxChartValues()
-	chart.setYAxisMinAndMaxChartValues()
+	// The axis ranges are computed again for every drawing, from the data the
+	// chart has then.
+	chart.setXAxisRange()
+	chart.setYAxisRange()
 
-	// Guard against flat data (all same X or Y) before rounding,
-	// so the rounded ranges have grid lines
-	if chart.xMax == chart.xMin {
-		chart.xMax = chart.xMin + 1.0
-	}
-	if chart.yMax == chart.yMin {
-		chart.yMax = chart.yMin + 1.0
-	}
-
-	chart.roundXAxisMinAndMaxValues()
-	chart.roundYAxisMinAndMaxValues()
+	// The chart is one figure, described by its alternate description.
+	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 
 	// Draw chart title, the subtitle and then the legend under it
 	titleBaseline := chart.y1 + 1.5*chart.f1.bodyHeight
@@ -295,14 +301,13 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 	if chart.subtitle != "" {
-		page.SetBrushColor(color.DimGray)
 		page.drawString(
 			chart.f2,
 			chart.f2.GetSize(),
 			chart.subtitle,
 			chart.x1+((chart.w-chart.f2.StringWidth(chart.f2.GetSize(), chart.subtitle))/2),
 			titleBaseline+subtitleHeight,
-			[3]float32{0.0, 0.0, 0.0},
+			colorToRGB(color.DimGray),
 			nil)
 	}
 	legend := chart.drawLegend && chart.hasSeriesNames()
@@ -347,12 +352,17 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.drawYAxisLabelsOn(page)
 	}
 
-	// Defensive copy so the user's data is never mutated
+	// Defensive copy so the user's data is never mutated. A point added by its
+	// coordinates has the marker the series has now.
 	plotData := make([][]*Point, len(chart.series))
 	for i, s := range chart.series {
 		pointCopy := make([]*Point, len(s.points))
 		for j, p := range s.points {
 			pointCopy[j] = copyPoint(p)
+			if s.seriesMarker[j] {
+				pointCopy[j].shape = s.shape
+				pointCopy[j].r = s.radius
+			}
 		}
 		plotData[i] = pointCopy
 	}
@@ -413,8 +423,21 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SetDefaultPenWidth()
 	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
+	page.AddEMC()
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+}
+
+// getAltDescription returns the alternate description, or the title when none
+// is set.
+func (chart *Chart) getAltDescription() string {
+	if chart.altDescription != "" {
+		return chart.altDescription
+	}
+	if chart.title == "" {
+		return "Chart"
+	}
+	return chart.title
 }
 
 // hasPoints returns true if at least one series has points.
@@ -549,56 +572,72 @@ func (chart *Chart) getLongestAxisYLabelWidth() float32 {
 	return minLabelWidth
 }
 
-func (chart *Chart) setXAxisMinAndMaxChartValues() {
-	if chart.xAxisGridLines != 0 {
-		return
-	}
-	for _, s := range chart.series {
-		for _, point := range s.points {
-			if point.x < chart.xMin {
-				chart.xMin = point.x
-			}
-			if point.x > chart.xMax {
-				chart.xMax = point.x
-			}
-		}
-	}
-}
-
-func (chart *Chart) setYAxisMinAndMaxChartValues() {
-	if chart.yAxisGridLines != 0 {
-		return
-	}
-	for _, s := range chart.series {
-		for _, point := range s.points {
-			if point.y < chart.yMin {
-				chart.yMin = point.y
-			}
-			if point.y > chart.yMax {
-				chart.yMax = point.y
+// setXAxisRange sets the X axis range of the drawing: the one set with
+// SetXAxisMinMax, or the range of the data rounded to "nice" values, with its
+// grid lines.
+func (chart *Chart) setXAxisRange() {
+	if chart.manualXGridLines > 0 {
+		chart.xMin = chart.manualXMin
+		chart.xMax = chart.manualXMax
+		chart.xAxisGridLines = chart.manualXGridLines
+	} else {
+		chart.xMin = math.MaxFloat32
+		chart.xMax = -math.MaxFloat32
+		for _, s := range chart.series {
+			for _, point := range s.points {
+				if point.x < chart.xMin {
+					chart.xMin = point.x
+				}
+				if point.x > chart.xMax {
+					chart.xMax = point.x
+				}
 			}
 		}
 	}
+	// Guard against flat data before rounding, so the range has grid lines
+	if chart.xMax == chart.xMin {
+		chart.xMax = chart.xMin + 1.0
+	}
+	if chart.manualXGridLines == 0 {
+		round := roundMaxAndMinValues(chart.xMax, chart.xMin)
+		chart.xMax = round.maxValue
+		chart.xMin = round.minValue
+		chart.xAxisGridLines = round.numOfGridLines
+	}
 }
 
-func (chart *Chart) roundXAxisMinAndMaxValues() {
-	if chart.xAxisGridLines != 0 {
-		return
+// setYAxisRange sets the Y axis range of the drawing: the one set with
+// SetYAxisMinMax, or the range of the data rounded to "nice" values, with its
+// grid lines.
+func (chart *Chart) setYAxisRange() {
+	if chart.manualYGridLines > 0 {
+		chart.yMin = chart.manualYMin
+		chart.yMax = chart.manualYMax
+		chart.yAxisGridLines = chart.manualYGridLines
+	} else {
+		chart.yMin = math.MaxFloat32
+		chart.yMax = -math.MaxFloat32
+		for _, s := range chart.series {
+			for _, point := range s.points {
+				if point.y < chart.yMin {
+					chart.yMin = point.y
+				}
+				if point.y > chart.yMax {
+					chart.yMax = point.y
+				}
+			}
+		}
 	}
-	round := roundMaxAndMinValues(chart.xMax, chart.xMin)
-	chart.xMax = round.maxValue
-	chart.xMin = round.minValue
-	chart.xAxisGridLines = round.numOfGridLines
-}
-
-func (chart *Chart) roundYAxisMinAndMaxValues() {
-	if chart.yAxisGridLines != 0 {
-		return
+	// Guard against flat data before rounding, so the range has grid lines
+	if chart.yMax == chart.yMin {
+		chart.yMax = chart.yMin + 1.0
 	}
-	round := roundMaxAndMinValues(chart.yMax, chart.yMin)
-	chart.yMax = round.maxValue
-	chart.yMin = round.minValue
-	chart.yAxisGridLines = round.numOfGridLines
+	if chart.manualYGridLines == 0 {
+		round := roundMaxAndMinValues(chart.yMax, chart.yMin)
+		chart.yMax = round.maxValue
+		chart.yMin = round.minValue
+		chart.yAxisGridLines = round.numOfGridLines
+	}
 }
 
 // drawChartBorder draws the outer chart border, unless its width is 0.
@@ -808,18 +847,22 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	return round
 }
 
-// SetXAxisMinMax sets xMin and xMax for the X axis and the number of X grid lines.
+// SetXAxisMinMax sets the X axis range and its number of grid lines. With 0
+// grid lines, the default, the range is the range of the data rounded to "nice"
+// values, and xMin and xMax are not used; a negative number is taken as 0.
 func (chart *Chart) SetXAxisMinMax(xMin, xMax float32, xAxisGridLines int) *Chart {
-	chart.xMin = xMin
-	chart.xMax = xMax
-	chart.xAxisGridLines = xAxisGridLines
+	chart.manualXMin = xMin
+	chart.manualXMax = xMax
+	chart.manualXGridLines = max(0, xAxisGridLines)
 	return chart
 }
 
-// SetYAxisMinMax sets yMin and yMax for the Y axis and the number of Y grid lines.
+// SetYAxisMinMax sets the Y axis range and its number of grid lines. With 0
+// grid lines, the default, the range is the range of the data rounded to "nice"
+// values, and yMin and yMax are not used; a negative number is taken as 0.
 func (chart *Chart) SetYAxisMinMax(yMin, yMax float32, yAxisGridLines int) *Chart {
-	chart.yMin = yMin
-	chart.yMax = yMax
-	chart.yAxisGridLines = yAxisGridLines
+	chart.manualYMin = yMin
+	chart.manualYMax = yMax
+	chart.manualYGridLines = max(0, yAxisGridLines)
 	return chart
 }

@@ -17,6 +17,8 @@ namespace PDFjet.NET {
 public class Series {
     internal readonly String name;
     internal readonly List<Point> points = new List<Point>();
+    // True for a point added by its coordinates, drawn with the marker of the series
+    internal readonly List<bool> seriesMarker = new List<bool>();
 
     internal float[] strokeColor = null;    // null: the next color of the palette
     internal float strokeWidth = 1f;
@@ -30,12 +32,13 @@ public class Series {
         this.name = name == null ? "" : name;
     }
 
-    /// <summary>Adds a point with the marker of this series.</summary>
+    /// <summary>Adds a point with the marker of this series, the one it has when the chart is drawn.</summary>
     /// <param name="x">the x value.</param>
     /// <param name="y">the y value.</param>
     /// <returns>this Series object.</returns>
     public Series AddPoint(float x, float y) {
-        points.Add(new Point(x, y).SetShape(shape).SetRadius(radius));
+        points.Add(new Point(x, y));
+        seriesMarker.Add(true);
         return this;
     }
 
@@ -47,6 +50,7 @@ public class Series {
     /// <returns>this Series object.</returns>
     public Series AddPoint(Point point) {
         points.Add(point);
+        seriesMarker.Add(false);
         return this;
     }
 
