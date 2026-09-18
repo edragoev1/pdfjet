@@ -23,6 +23,8 @@ final public class Example_40 {
     public Example_40() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_40.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Units sold by month");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -49,6 +51,7 @@ final public class Example_40 {
         chart.addSeries("2026", units2026, Color.indianred);
         chart.setGroupGap(0.4f);
         chart.setBarGap(0.1f);
+        chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
         chart.drawOn(page);
 
         BarChart stacked = new BarChart(f1, f2);
@@ -62,6 +65,7 @@ final public class Example_40 {
         stacked.addSeries("2026", units2026, Color.indianred);
         stacked.setStacked(true);
         stacked.setDrawValueLabels(true);
+        stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
         stacked.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);

@@ -112,4 +112,21 @@ class BarChartTest {
         assertTrue(content.contains("1 1 1 rg"), content);     // the label inside the first bar
         assertTrue(content.contains(TestSupport.hex("12")), content);  // too short: next to the bar
     }
+
+    @Test
+    void aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart titled = chart(pdf).setTitle("Sales").setCategories("a", "b");
+        titled.addSeries("", new float[] {1f, 2f});
+        String content = draw(titled, page);
+        assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
+        assertTrue(content.endsWith("EMC\n"), content);
+        BarChart described = chart(pdf).setTitle("Sales").setAltDescription("Sales rose from 1 to 2.")
+                .setCategories("a", "b");
+        described.addSeries("", new float[] {1f, 2f});
+        draw(described, page);
+        assertEquals("Sales", page.structures.get(0).altDescription);
+        assertEquals("Sales rose from 1 to 2.", page.structures.get(1).altDescription);
+    }
 }

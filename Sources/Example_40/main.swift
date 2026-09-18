@@ -18,6 +18,8 @@ import PDFjet
 public class Example_40 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_40.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Units sold by month")
 
         var page = Page(pdf, Letter.PORTRAIT)
 
@@ -44,6 +46,7 @@ public class Example_40 {
         chart.addSeries("2026", units2026, Color.indianred)
         chart.setGroupGap(0.4)
         chart.setBarGap(0.1)
+        chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
         chart.drawOn(page)
 
         let stacked = BarChart(f1, f2)
@@ -57,6 +60,7 @@ public class Example_40 {
         stacked.addSeries("2026", units2026, Color.indianred)
         stacked.setStacked(true)
         stacked.setDrawValueLabels(true)
+        stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
         stacked.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)

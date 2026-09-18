@@ -40,6 +40,7 @@ public class BarChart : IDrawable {
 
     private String title = "";
     private String subtitle = "";
+    private String altDescription = null;
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
@@ -99,6 +100,18 @@ public class BarChart : IDrawable {
     /// <returns>this BarChart object.</returns>
     public BarChart SetSubtitle(String subtitle) {
         this.subtitle = subtitle;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the alternate description of the chart, which a screen reader reads
+    /// in a PDF/UA document, where the chart is a figure. The default is the
+    /// title, or "Bar chart" without one. Describe what the chart shows.
+    /// </summary>
+    /// <param name="altDescription">the alternate description.</param>
+    /// <returns>this BarChart object.</returns>
+    public BarChart SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
         return this;
     }
 
@@ -460,6 +473,9 @@ public class BarChart : IDrawable {
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
 
+        // The chart is one figure, described by its alternate description.
+        page.AddBDC(StructElem.FIGURE, null, AltDescription());
+
         // Title, the subtitle and then the legend under it
         page.SetBrushColor(Color.black);
         page.DrawString(f1, f1.GetSize(), title, x1 + (w - f1.StringWidth(title)) / 2f, titleBaseline);
@@ -610,8 +626,17 @@ public class BarChart : IDrawable {
         page.SetDefaultPenWidth();
         page.SetDefaultStrokeDashPattern();
         page.SetPenColor(Color.black);
+        page.AddEMC();
 
         return new float[] {x1 + w, y1 + h};
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private String AltDescription() {
+        if (!String.IsNullOrEmpty(altDescription)) {
+            return altDescription;
+        }
+        return (title.Length == 0) ? "Bar chart" : title;
     }
 
     /// <summary>Returns the number of category slots: the categories or the longest series.</summary>

@@ -40,6 +40,7 @@ public class BarChart implements Drawable {
 
     private String title = "";
     private String subtitle = "";
+    private String altDescription = null;
     private String xAxisTitle = "";
     private String yAxisTitle = "";
 
@@ -106,6 +107,19 @@ public class BarChart implements Drawable {
      */
     public BarChart setSubtitle(String subtitle) {
         this.subtitle = subtitle;
+        return this;
+    }
+
+    /**
+     * Sets the alternate description of the chart, which a screen reader reads
+     * in a PDF/UA document, where the chart is a figure. The default is the
+     * title, or "Bar chart" without one. Describe what the chart shows.
+     *
+     * @param altDescription the alternate description.
+     * @return this BarChart object.
+     */
+    public BarChart setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
         return this;
     }
 
@@ -523,6 +537,9 @@ public class BarChart implements Drawable {
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
 
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, null, altDescription());
+
         // Title, the subtitle and then the legend under it
         page.setBrushColor(Color.black);
         page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2f, titleBaseline);
@@ -673,8 +690,17 @@ public class BarChart implements Drawable {
         page.setDefaultPenWidth();
         page.setDefaultStrokeDashPattern();
         page.setPenColor(Color.black);
+        page.addEMC();
 
         return new float[] {x1 + w, y1 + h};
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private String altDescription() {
+        if (altDescription != null && !altDescription.isEmpty()) {
+            return altDescription;
+        }
+        return title.isEmpty() ? "Bar chart" : title;
     }
 
     /** Returns the number of category slots: the categories or the longest series. */

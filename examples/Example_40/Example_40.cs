@@ -21,6 +21,8 @@ public class Example_40 {
     public Example_40() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_40.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Units sold by month");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
@@ -47,6 +49,7 @@ public class Example_40 {
         chart.AddSeries("2026", units2026, Color.indianred);
         chart.SetGroupGap(0.4f);
         chart.SetBarGap(0.1f);
+        chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
         chart.DrawOn(page);
 
         BarChart stacked = new BarChart(f1, f2);
@@ -60,6 +63,7 @@ public class Example_40 {
         stacked.AddSeries("2026", units2026, Color.indianred);
         stacked.SetStacked(true);
         stacked.SetDrawValueLabels(true);
+        stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
         stacked.DrawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);

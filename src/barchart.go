@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // barSeries is one series of a bar chart: a name, a value per category and a
@@ -30,10 +31,12 @@ type BarChart struct {
 	x1, y1 float32
 	w, h   float32
 
-	title      string
-	subtitle   string
-	xAxisTitle string
-	yAxisTitle string
+	title    string
+	subtitle string
+	// The alternate description of the chart, the title when it is empty
+	altDescription string
+	xAxisTitle     string
+	yAxisTitle     string
 
 	categories []string
 	series     []*barSeries
@@ -105,6 +108,15 @@ func (chart *BarChart) SetTitle(title string) *BarChart {
 // SetSubtitle sets the subtitle, written in gray under the title in the second font.
 func (chart *BarChart) SetSubtitle(subtitle string) *BarChart {
 	chart.subtitle = subtitle
+	return chart
+}
+
+// SetAltDescription sets the alternate description of the chart, which a
+// screen reader reads in a PDF/UA document, where the chart is a figure. The
+// default is the title, or "Bar chart" without one. Describe what the chart
+// shows.
+func (chart *BarChart) SetAltDescription(altDescription string) *BarChart {
+	chart.altDescription = altDescription
 	return chart
 }
 
@@ -423,6 +435,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	x6 := x2 - rightMargin
 	y8 := y2 - bottomMargin
 
+	// The chart is one figure, described by its alternate description.
+	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
+
 	// Title, the subtitle and then the legend under it
 	page.SetBrushColor(color.Black)
 	page.drawString(f1, f1.size, chart.title,
@@ -631,8 +646,21 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	page.SetDefaultPenWidth()
 	page.SetDefaultStrokeDashPattern()
 	page.SetPenColor(color.Black)
+	page.AddEMC()
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+}
+
+// getAltDescription returns the alternate description, or the title when none
+// is set.
+func (chart *BarChart) getAltDescription() string {
+	if chart.altDescription != "" {
+		return chart.altDescription
+	}
+	if chart.title == "" {
+		return "Bar chart"
+	}
+	return chart.title
 }
 
 // numberOfCategories returns the number of category slots: the categories or the longest series.

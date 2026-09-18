@@ -109,5 +109,22 @@ public class BarChartTest {
         Assert.Contains("1 1 1 rg", content);   // the label inside the first bar
         Assert.Contains(TestSupport.Hex("12"), content);    // too short: next to the bar
     }
+
+    [Fact]
+    public void AChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart titled = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b");
+        titled.AddSeries("", new float[] {1f, 2f});
+        string content = Draw(titled, page);
+        Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
+        Assert.EndsWith("EMC\n", content);
+        BarChart described = NewChart(pdf).SetTitle("Sales").SetAltDescription("Sales rose from 1 to 2.")
+                .SetCategories("a", "b");
+        described.AddSeries("", new float[] {1f, 2f});
+        Draw(described, page);
+        Assert.Equal("Sales", page.structures[0].altDescription);
+        Assert.Equal("Sales rose from 1 to 2.", page.structures[1].altDescription);
+    }
 }
 }

@@ -30,6 +30,7 @@ public class BarChart : Drawable {
 
     private var title = ""
     private var subtitle = ""
+    private var altDescription: String?
     private var xAxisTitle = ""
     private var yAxisTitle = ""
 
@@ -98,6 +99,20 @@ public class BarChart : Drawable {
     @discardableResult
     public func setSubtitle(_ subtitle: String) -> BarChart {
         self.subtitle = subtitle
+        return self
+    }
+
+    ///
+    /// Sets the alternate description of the chart, which a screen reader reads
+    /// in a PDF/UA document, where the chart is a figure. The default is the
+    /// title, or "Bar chart" without one. Describe what the chart shows.
+    ///
+    /// - Parameter altDescription: the alternate description.
+    /// - Returns: this BarChart object.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> BarChart {
+        self.altDescription = altDescription
         return self
     }
 
@@ -554,6 +569,9 @@ public class BarChart : Drawable {
         let x6 = x2 - rightMargin
         let y8 = y2 - bottomMargin
 
+        // The chart is one figure, described by its alternate description.
+        page.addBDC(StructElem.FIGURE, nil, getAltDescription())
+
         // Title, the subtitle and then the legend under it
         page.setBrushColor(Color.black)
         page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2.0, titleBaseline)
@@ -704,8 +722,17 @@ public class BarChart : Drawable {
         page.setDefaultPenWidth()
         page.setDefaultStrokeDashPattern()
         page.setPenColor(Color.black)
+        page.addEMC()
 
         return [x1 + w, y1 + h]
+    }
+
+    // Returns the alternate description, or the title when none is set.
+    private func getAltDescription() -> String {
+        if let altDescription, !altDescription.isEmpty {
+            return altDescription
+        }
+        return title.isEmpty ? "Bar chart" : title
     }
 
     /// Returns the number of category slots: the categories or the longest series.

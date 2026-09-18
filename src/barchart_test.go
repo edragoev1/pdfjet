@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 func testBarChart(pdf *PDF) *BarChart {
@@ -121,5 +122,27 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 		if !strings.Contains(content, want) {
 			t.Errorf("%q missing from %q", want, content)
 		}
+	}
+}
+
+func TestBarChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := NewPage(pdf, testLetterPortrait())
+	titled := testBarChart(pdf).SetTitle("Sales").SetCategories("a", "b")
+	titled.AddSeries("", []float32{1, 2})
+	content := testDrawBarChart(t, titled, page)
+	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the chart is not a figure: %q", content)
+	}
+	described := testBarChart(pdf).SetTitle("Sales").SetAltDescription("Sales rose from 1 to 2.").
+		SetCategories("a", "b")
+	described.AddSeries("", []float32{1, 2})
+	testDrawBarChart(t, described, page)
+	if page.structures[0].altDescription != "Sales" {
+		t.Errorf("the first chart is described as %q", page.structures[0].altDescription)
+	}
+	if page.structures[1].altDescription != "Sales rose from 1 to 2." {
+		t.Errorf("the second chart is described as %q", page.structures[1].altDescription)
 	}
 }

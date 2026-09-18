@@ -13,6 +13,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -25,6 +26,9 @@ func Example40() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Units sold by month")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
@@ -50,6 +54,7 @@ func Example40() {
 	chart.AddSeriesWithColor("2026", units2026, color.IndianRed)
 	chart.SetGroupGap(0.4)
 	chart.SetBarGap(0.1)
+	chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
 	chart.SetLocation(70.0, 50.0)
 	chart.DrawOn(page)
 
@@ -63,6 +68,7 @@ func Example40() {
 	stacked.AddSeriesWithColor("2026", units2026, color.IndianRed)
 	stacked.SetStacked(true)
 	stacked.SetDrawValueLabels(true)
+	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
 	stacked.SetLocation(70.0, 400.0)
 	stacked.DrawOn(page)
 

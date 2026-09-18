@@ -102,4 +102,20 @@ import Testing
         #expect(content.contains("1 1 1 rg"), "\(content)")    // the label inside the first bar
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }
+
+    @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let titled = chart(memory.pdf).setTitle("Sales").setCategories("a", "b")
+        titled.addSeries("", [1, 2])
+        let content = draw(titled, page)
+        #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n"), "\(content)")
+        #expect(content.hasSuffix("EMC\n"), "\(content)")
+        let described = chart(memory.pdf).setTitle("Sales").setAltDescription("Sales rose from 1 to 2.")
+                .setCategories("a", "b")
+        described.addSeries("", [1, 2])
+        _ = draw(described, page)
+        #expect(page.structures[0].altDescription == "Sales")
+        #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
+    }
 }
