@@ -201,12 +201,49 @@ CHANGELOG entry.
       CHANGELOG entry as its notes; packages, site and `pdfjet-website.zip`
       rebuilt from the tag.
 
-## v9.0.3 — planned
+## v9.0.2 — planned for about Oct 1
 
-Tables, from the review of `Table` and `Cell` (Sep 18): what clients look for
-and do not find. Additions to the API only, in the four ports with tests and
-examples added to existing examples, so no breaking changes.
+A fix release from master, on the v9.0.1 API. What is in it so far is under
+`## Unreleased` in CHANGELOG.md: the PDF/UA examples, kinsoku, the font line
+gap, the WinAnsi characters and kerning of the core fonts, the fallback font
+rule, the CMYK JPEG marker and the BMP fixes.
 
+- ⬜ **B** The first wave of the class reviews of v9.0.3 (below): `Page`,
+      `TextLine`, and the image decoders `Image`, `PNGImage`, `JPGImage`.
+- ⬜ **B** The release checks of 9.0.1: `check-examples.sh` clean, the public
+      API that of v9.0.1 in the four ports, the JDK 8 build, benchmarks
+      recorded against 9.0.1 (Example_43's time), docs, packages and the
+      site rebuilt, the CHANGELOG entry dated, the tag and the GitHub release.
+
+## v9.0.3 — Oct 21: a rock solid foundation
+
+The goal is not new features but a foundation to build on after Oct 21.
+The bugs found from Sep 17 to 18 were almost all in code nobody had read end
+to end, and almost all were silently wrong output that every test and example
+check passed: 23 in the reviews of `Cell`, `Table`, `TextBlock`, `TextColumn`
+and `PDF`; then 32-bit BMPs in the wrong colors, ’ and € drawn as spaces in
+the core fonts, every CMYK JPEG inverted, a fallback font that stuck, and the
+CJK line gaps. Nothing is fuzzed. So, in order:
+
+- ⬜ **B** 1. Finish the class-by-class review, as on Sep 17: one class end
+      to end in the four ports, each finding proved by running it, fixed in
+      the four ports with a test, and the example pages it touches rendered
+      before and after. By exposure: `Page` and `TextLine`; `Image`,
+      `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; `Font` and its loaders
+      `OTF`, `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test
+      names; the reader, `PDF.read`, the merge and split, `PDFobj` and
+      `Decryptor`, which no test names; `TextFrame`, `BigTable`,
+      `CompositeTextLine` and `Bidi`; the barcodes, the charts, `Form`,
+      `Container` and `Stamp`.
+- ⬜ **B** 2. Fuzz the parsers of untrusted input with Go's fuzzing, and fix
+      each failure in the four ports, which share the logic: `PDF.read` (xref,
+      object streams, encryption), PNG, JPEG, BMP, SVG paths, OTF and TTF,
+      the `.stream` fonts and the decompressor. Any input either works or
+      fails with a clean error: no hang, no index error, no runaway memory.
+      Keep the fuzz targets and their corpora in the repository.
+- ⬜ **B** 3. PDF/UA as it is claimed: tag a table as a table (below), and
+      check the 41 PDF/UA examples with PAC or by the Matterhorn Protocol,
+      not only veraPDF, which cannot see what a paragraph stands for.
 - ⬜ **B** Tag a table as a table in a PDF/UA document. Every cell's text is
       tagged `P` today, so a screen reader cannot say "row 3, column Price",
       and a PAC or Matterhorn audit fails the table, though veraPDF passes
@@ -218,17 +255,49 @@ examples added to existing examples, so no breaking changes.
       elements nested under a parent, where `Page.addBDC` makes them children
       of the document today. Check with veraPDF and PAC on Examples 08, 13
       and 38.
+- ⬜ **B** 4. The manual viewer pass, open since 9.0.0 (Week 4 below):
+      Acrobat Reader, Chrome (pdf.js), Firefox, Edge and Preview, not only
+      veraPDF and MuPDF.
+- ⬜ **B** 5. Freeze the API and the behavior. After 9.0.2 fixes only; the
+      public API of v9.0.1 in the four ports, checked as for 9.0.1 before each
+      tag; the code freeze of Oct 15 stands.
+- ⬜ **B** 6. Guard against regressions: benchmarks recorded at 9.0.2 and
+      9.0.3 against 9.0.1, Example_43's printed time among them, and the JDK
+      8 build, the packages and the docs made from the tag.
+- ⬜ **B** 7. Test the output against independent references and real files,
+      which finds the silently wrong output that fuzzing does not:
+      - Round-trip text: the text of every example in every port, extracted
+        with MuPDF and pdftotext, equals the strings the example drew. It
+        would have caught the core font spaces, .notdef glyphs and a wrong
+        fallback font. `check-example-pdfs.py` extracts the text spans
+        already.
+      - Images against Pillow: a corpus of PNG, JPEG and BMP files, real ones
+        from GIMP, Photoshop, Paint and phone cameras as well as made ones,
+        decoded to the pixels Pillow decodes them to.
+      - Fonts against fontTools: the widths, character map, ascent, descent,
+        line gap and kerning of every font PDFjet ships and a few popular
+        others.
+      - The reader against real PDFs: the pdf.js and veraPDF test corpora
+        read, merged and split, with the page counts, page sizes and text
+        MuPDF finds.
+
+## After v9.0.3 — features
+
+New features, the first work on the foundation of 9.0.3, from the review of
+`Table` and `Cell` (Sep 18): what clients look for and do not find.
+
 - ⬜ True row spans: `Cell.setRowSpan`, like `setColSpan`, where Example_38
       fakes them today by turning cell borders off. A spanned cell draws its
       text, background and borders once over the rows it covers, and page
-      breaks keep it whole. The table tagging needs it for its `RowSpan`
-      attribute. Redo Example_38 with it.
+      breaks keep it whole. The table tagging gives it a `RowSpan`
+      attribute. Redo Example_38 with it, and its text, which explains the
+      borders left out.
 - ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
       (zebra striping, as `BigTable.setShadingColor`), and a style for the
       header rows, the body and a total row, rather than coloring every cell.
-- S Repeating footer or total rows on every page ("carried forward"
+- ⬜ Repeating footer or total rows on every page ("carried forward"
       subtotals), and keeping a row with the next one across a page break.
-- S Column widths from the table width: percentages, or fit a width and
+- ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
 
 ## Done before this plan (Sep 11–16)
