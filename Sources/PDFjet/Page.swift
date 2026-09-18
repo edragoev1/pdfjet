@@ -536,8 +536,7 @@ public class Page {
                     }
                 }
             }
-        } else if font.markAnchors == nil &&
-                !scalars.contains(where: { Font.isJoinerOrRLM($0.value) }) {    // RLM, ZWNJ, ZWJ
+        } else if !needsShaping(font, scalars) {
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
                 Page.appendCodePointAsHex(glyphOf(font, Int(scalar.value)), &self.buf)
             }
@@ -594,6 +593,9 @@ public class Page {
                 hasMarks = hasMarks || isMark(codePoint)
             }
             var offsets: [Int]? = nil
+            if hasMarks && font.markData != nil {
+                FontStream1.readMarks(font)
+            }
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)
             } else if mirrored == nil && joiners == nil && runEdge == nil {
@@ -876,7 +878,45 @@ public class Page {
         }
     }
 
+    // Returns true if the text has a character that is more than a glyph: an
+    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
+    // place. Marks start at U+0300, so most text is looked at once, with no
+    // more than two comparisons for each character.
+    private func needsShaping(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
+        for scalar in scalars where scalar.value >= 0x0300 {
+            if Font.isJoinerOrRLM(scalar.value) {
+                return true
+            }
+            if (font.markAnchors != nil || font.markData != nil) && isMark(Int(scalar.value)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // True for each 64 characters of the Basic Multilingual Plane that have a
+    // mark among them, so that isMark looks up the category of a character
+    // only when it can be a mark. Greek and most of Cyrillic, like the Latin
+    // letters before U+0300, have none. Made the first time it is needed.
+    private static let markChunks: [Bool] = {
+        var chunks = [Bool](repeating: false, count: 1024)
+        for value in UInt32(0x0300)..<0x10000 {
+            if let scalar = Unicode.Scalar(value) {
+                switch scalar.properties.generalCategory {
+                case .nonspacingMark, .enclosingMark:
+                    chunks[Int(value >> 6)] = true
+                default:
+                    break
+                }
+            }
+        }
+        return chunks
+    }()
+
     private func isMark(_ codePoint: Int) -> Bool {
+        if codePoint < 0x10000 && !Page.markChunks[codePoint >> 6] {
+            return false
+        }
         guard let scalar = Unicode.Scalar(UInt32(codePoint)) else {
             return false
         }

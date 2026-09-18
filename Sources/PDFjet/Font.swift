@@ -40,18 +40,21 @@ public class Font {
     var advanceWidth: [UInt16] = []
     var unicodeToGID: [Int] = []
     // The offsets of the marks that attach to other marks, in font units, by
-    // the glyph IDs of the two marks, or nil. Only a font read from a .otf or
-    // .ttf file has them, from its GPOS table.
+    // the glyph IDs of the two marks, or nil. A font has them from its GPOS
+    // table, read from a .otf or .ttf file or from a stream that keeps them.
     var markToMarkOffsets: [Int: [Int]]?
     // The anchors of the marks, by glyph ID, for each MarkToBase and
     // MarkToLigature lookup subtable, or nil: the class and anchor of each
-    // mark. Only a font read from a .otf or .ttf file has them, from its GPOS
-    // table.
+    // mark. A font has them from its GPOS table, read from a .otf or .ttf file
+    // or from a stream that keeps them.
     var markAnchors: [[Int: [Int]]]?
     // The anchors of the letters and ligatures that the marks go on, by glyph
     // ID, for each subtable in markAnchors, or nil: 1 and an anchor, or 0 and
     // no anchor, for each class of marks.
     var baseAnchors: [[Int: [Int]]]?
+    // Where the marks go, compressed, as a stream font keeps it until a mark
+    // is drawn in the font, or nil.
+    var markData: [UInt8]?
     var cff: Bool = false
     var compressedSize: Int?
     var uncompressedSize: Int?

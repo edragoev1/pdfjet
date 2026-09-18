@@ -397,6 +397,14 @@ class FontStream1 {
             font.unicodeToGID[i] = GetInt16(stream);
         }
 
+        // Where the GPOS table of the font puts the marks, compressed on its
+        // own after the metrics of a stream that has them. It is kept as it is
+        // and read when a mark is drawn in the font; see ReadMarks.
+        if (stream.Position < stream.Length) {
+            font.markData = new byte[GetInt32(stream)];
+            ReadFully(stream, font.markData);
+        }
+
         int flag = inputStream.ReadByte();
         if (flag == 'R') {
             // The tables of an OpenType font that are not in its CFF data,
@@ -407,6 +415,51 @@ class FontStream1 {
         font.cff = flag == 'Y';
         font.uncompressedSize = GetInt32(inputStream);
         font.compressedSize = GetInt32(inputStream);
+    }
+
+    // Reads where the marks go, which GetFontData keeps compressed: for each
+    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
+    // and the anchors of each letter, and then the offsets of the marks that go
+    // on other marks. Done once, the first time a mark is drawn in the font.
+    internal static void ReadMarks(Font font) {
+        MemoryStream stream = new MemoryStream(Decompressor.Inflate(font.markData));
+        int subTables = GetInt32(stream);
+        List<Dictionary<int, int[]>> markAnchors = new List<Dictionary<int, int[]>>(subTables);
+        List<Dictionary<int, int[]>> baseAnchors = new List<Dictionary<int, int[]>>(subTables);
+        for (int i = 0; i < subTables; i++) {
+            int count = GetInt32(stream);
+            Dictionary<int, int[]> marks = new Dictionary<int, int[]>(count);
+            for (int j = 0; j < count; j++) {
+                int gid = GetInt32(stream);
+                int markClass = GetInt32(stream);
+                int x = GetInt32(stream);
+                marks[gid] = new int[] {markClass, x, GetInt32(stream)};
+            }
+            count = GetInt32(stream);
+            Dictionary<int, int[]> bases = new Dictionary<int, int[]>(count);
+            for (int j = 0; j < count; j++) {
+                int gid = GetInt32(stream);
+                int[] anchors = new int[GetInt32(stream)];
+                for (int k = 0; k < anchors.Length; k++) {
+                    anchors[k] = GetInt32(stream);
+                }
+                bases[gid] = anchors;
+            }
+            markAnchors.Add(marks);
+            baseAnchors.Add(bases);
+        }
+        int pairs = GetInt32(stream);
+        Dictionary<int, int[]> markToMarkOffsets = new Dictionary<int, int[]>(pairs);
+        for (int j = 0; j < pairs; j++) {
+            int other = GetInt32(stream);
+            int mark = GetInt32(stream);
+            int dx = GetInt32(stream);
+            markToMarkOffsets[(other << 16) | mark] = new int[] {dx, GetInt32(stream)};
+        }
+        font.markAnchors = markAnchors;
+        font.baseAnchors = baseAnchors;
+        font.markToMarkOffsets = markToMarkOffsets;
+        font.markData = null;
     }
 
     private static void SkipFully(Stream stream, int count) {

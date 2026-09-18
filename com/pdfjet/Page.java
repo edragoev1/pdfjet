@@ -794,8 +794,7 @@ final public class Page {
                     }
                 }
             }
-        } else if (font.markAnchors == null && str.indexOf(0x200F) < 0 && str.indexOf(0x200E) < 0 &&
-                str.indexOf(0x200C) < 0 && str.indexOf(0x200D) < 0) {   // RLM, LRM, ZWNJ, ZWJ
+        } else if (!needsShaping(font, str)) {
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
@@ -855,6 +854,9 @@ final public class Page {
                 }
             }
             int[] offsets = null;
+            if (hasMarks && font.markData != null) {
+                readMarks(font);
+            }
             if (hasMarks && font.markAnchors != null) {
                 offsets = markOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null) {
@@ -1209,6 +1211,34 @@ final public class Page {
         if (offset != null) {
             offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark];
             offsets[2*mark + 1] = offsets[2*other + 1] + offset[1];
+        }
+    }
+
+    // Returns true if the text has a character that is more than a glyph: an
+    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
+    // place. Marks start at U+0300, so most text is looked at once, with no
+    // more than two comparisons for each character.
+    private static boolean needsShaping(Font font, String str) {
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c >= 0x0300) {
+                if (c >= 0x200C && c <= 0x200F) {
+                    return true;
+                }
+                if ((font.markAnchors != null || font.markData != null) && isMark(str.codePointAt(i))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Reads where the marks of a stream font go, the first time one is drawn.
+    private static void readMarks(Font font) {
+        try {
+            FontStream1.readMarks(font);
+        } catch (Exception e) {
+            throw new IllegalStateException("The marks of the font cannot be read.", e);
         }
     }
 

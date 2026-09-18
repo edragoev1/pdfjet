@@ -342,6 +342,57 @@ class FontStream1 {
         return buffer
     }
 
+    // Reads where the marks go, which getFontData keeps compressed: for each
+    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
+    // and the anchors of each letter, and then the offsets of the marks that go
+    // on other marks. Done once, the first time a mark is drawn in the font; a
+    // font whose marks cannot be read draws them where they are.
+    static func readMarks(_ font: Font) {
+        guard let markData = font.markData, let data = try? inflate(markData) else {
+            font.markData = nil
+            return
+        }
+        var offset = 0
+        let subTables = Int(getInt32(data, &offset))
+        var markAnchors = [[Int: [Int]]]()
+        var baseAnchors = [[Int: [Int]]]()
+        for _ in 0..<subTables {
+            var count = Int(getInt32(data, &offset))
+            var marks = [Int: [Int]](minimumCapacity: count)
+            for _ in 0..<count {
+                let gid = Int(getInt32(data, &offset))
+                let markClass = Int(getInt32(data, &offset))
+                let x = Int(getInt32(data, &offset))
+                marks[gid] = [markClass, x, Int(getInt32(data, &offset))]
+            }
+            count = Int(getInt32(data, &offset))
+            var bases = [Int: [Int]](minimumCapacity: count)
+            for _ in 0..<count {
+                let gid = Int(getInt32(data, &offset))
+                let length = Int(getInt32(data, &offset))
+                var anchors = [Int](repeating: 0, count: length)
+                for k in 0..<length {
+                    anchors[k] = Int(getInt32(data, &offset))
+                }
+                bases[gid] = anchors
+            }
+            markAnchors.append(marks)
+            baseAnchors.append(bases)
+        }
+        let pairs = Int(getInt32(data, &offset))
+        var markToMarkOffsets = [Int: [Int]](minimumCapacity: pairs)
+        for _ in 0..<pairs {
+            let other = Int(getInt32(data, &offset))
+            let mark = Int(getInt32(data, &offset))
+            let dx = Int(getInt32(data, &offset))
+            markToMarkOffsets[(other << 16) | mark] = [dx, Int(getInt32(data, &offset))]
+        }
+        font.markAnchors = markAnchors
+        font.baseAnchors = baseAnchors
+        font.markToMarkOffsets = markToMarkOffsets
+        font.markData = nil
+    }
+
     private static func skipFully(_ stream: InputStream, _ count: Int) throws {
         var buffer = [UInt8](repeating: 0, count: 4096)
         var remaining = count
@@ -434,6 +485,15 @@ class FontStream1 {
         font.unicodeToGID = [Int](repeating: 0, count: len)
         for i in 0..<len {
             font.unicodeToGID[i] = getInt(inflated, &offset)
+        }
+
+        // Where the GPOS table of the font puts the marks, compressed on its
+        // own after the metrics of a stream that has them. It is kept as it is
+        // and read when a mark is drawn in the font; see readMarks.
+        if offset < inflated.count {
+            let length = Int(getInt32(inflated, &offset))
+            font.markData = Array(inflated[offset..<(offset + length)])
+            offset += length
         }
 
         var flag = UnicodeScalar(try getInt8(stream))

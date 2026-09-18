@@ -365,6 +365,48 @@ class FontStream1 {
     }
 
     // Fills the buffer: a single read may return fewer bytes than asked for.
+    // Reads where the marks go, which getFontData keeps compressed: for each
+    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
+    // and the anchors of each letter, and then the offsets of the marks that go
+    // on other marks. Done once, the first time a mark is drawn in the font.
+    static void readMarks(Font font) throws Exception {
+        InputStream stream = new ByteArrayInputStream(Decompressor.inflate(font.markData));
+        int subTables = getInt32(stream);
+        List<Map<Integer, int[]>> markAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
+        List<Map<Integer, int[]>> baseAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
+        for (int i = 0; i < subTables; i++) {
+            int count = getInt32(stream);
+            Map<Integer, int[]> marks = new HashMap<Integer, int[]>(2*count);
+            for (int j = 0; j < count; j++) {
+                int gid = getInt32(stream);
+                marks.put(gid, new int[] {getInt32(stream), getInt32(stream), getInt32(stream)});
+            }
+            count = getInt32(stream);
+            Map<Integer, int[]> bases = new HashMap<Integer, int[]>(2*count);
+            for (int j = 0; j < count; j++) {
+                int gid = getInt32(stream);
+                int[] anchors = new int[getInt32(stream)];
+                for (int k = 0; k < anchors.length; k++) {
+                    anchors[k] = getInt32(stream);
+                }
+                bases.put(gid, anchors);
+            }
+            markAnchors.add(marks);
+            baseAnchors.add(bases);
+        }
+        int count = getInt32(stream);
+        Map<Integer, int[]> markToMarkOffsets = new HashMap<Integer, int[]>(2*count);
+        for (int j = 0; j < count; j++) {
+            int other = getInt32(stream);
+            int mark = getInt32(stream);
+            markToMarkOffsets.put((other << 16) | mark, new int[] {getInt32(stream), getInt32(stream)});
+        }
+        font.markAnchors = markAnchors;
+        font.baseAnchors = baseAnchors;
+        font.markToMarkOffsets = markToMarkOffsets;
+        font.markData = null;
+    }
+
     private static void skipFully(InputStream stream, int count) throws Exception {
         byte[] buffer = new byte[4096];
         while (count > 0) {
@@ -426,6 +468,14 @@ class FontStream1 {
         font.unicodeToGID = new int[len];
         for (int i = 0; i < len; i++) {
             font.unicodeToGID[i] = getInt16(stream);
+        }
+
+        // Where the GPOS table of the font puts the marks, compressed on its
+        // own after the metrics of a stream that has them. It is kept as it is
+        // and read when a mark is drawn in the font; see readMarks.
+        if (stream.available() > 0) {
+            font.markData = new byte[getInt32(stream)];
+            readFully(stream, font.markData);
         }
 
         int flag = inputStream.read();

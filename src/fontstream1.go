@@ -399,6 +399,15 @@ func getFontData(font *Font, reader io.Reader) {
 		font.unicodeToGID[i] = int(readUint16())
 	}
 
+	// Where the GPOS table of the font puts the marks, compressed on its own
+	// after the metrics of a stream that has them. It is kept as it is and
+	// read when a mark is drawn in the font; see readMarks.
+	if pos < len(inflated) {
+		length := int(readUint32())
+		font.markData = append([]byte(nil), inflated[pos:pos+length]...)
+		pos += length
+	}
+
 	flag := getUint8(reader)
 	if flag == 'R' {
 		// The tables of an OpenType font that are not in its CFF data,
@@ -412,4 +421,58 @@ func getFontData(font *Font, reader io.Reader) {
 
 	font.uncompressedSize = int(getUint32(reader))
 	font.compressedSize = int(getUint32(reader))
+}
+
+// readMarks reads where the marks go, which the stream font keeps compressed:
+// for each MarkToBase and MarkToLigature subtable the class and anchor of each
+// mark and the anchors of each letter, and then the offsets of the marks that
+// go on other marks. It is done once, the first time a mark is drawn.
+func readMarks(font *Font) {
+	data, err := decompressor.Inflate(font.markData)
+	if err != nil {
+		panic(err)
+	}
+	pos := 0
+	readInt := func() int {
+		v := int32(data[pos])<<24 | int32(data[pos+1])<<16 | int32(data[pos+2])<<8 | int32(data[pos+3])
+		pos += 4
+		return int(v)
+	}
+	subTables := readInt()
+	markAnchors := make([]map[int][]int, 0, subTables)
+	baseAnchors := make([]map[int][]int, 0, subTables)
+	for i := 0; i < subTables; i++ {
+		count := readInt()
+		marks := make(map[int][]int, count)
+		for j := 0; j < count; j++ {
+			gid := readInt()
+			markClass := readInt()
+			x := readInt()
+			marks[gid] = []int{markClass, x, readInt()}
+		}
+		count = readInt()
+		bases := make(map[int][]int, count)
+		for j := 0; j < count; j++ {
+			gid := readInt()
+			anchors := make([]int, readInt())
+			for k := range anchors {
+				anchors[k] = readInt()
+			}
+			bases[gid] = anchors
+		}
+		markAnchors = append(markAnchors, marks)
+		baseAnchors = append(baseAnchors, bases)
+	}
+	pairs := readInt()
+	markToMarkOffsets := make(map[int][2]int, pairs)
+	for j := 0; j < pairs; j++ {
+		other := readInt()
+		mark := readInt()
+		dx := readInt()
+		markToMarkOffsets[(other<<16)|mark] = [2]int{dx, readInt()}
+	}
+	font.markAnchors = markAnchors
+	font.baseAnchors = baseAnchors
+	font.markToMarkOffsets = markToMarkOffsets
+	font.markData = nil
 }

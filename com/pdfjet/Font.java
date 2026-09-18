@@ -68,15 +68,15 @@ final public class Font {
     protected int[] unicodeToGID;
     /**
      * The offsets of the marks that attach to other marks, in font units, by
-     * the glyph IDs of the two marks, or null. Only a font read from a .otf or
-     * .ttf file has them, from its GPOS table.
+     * the glyph IDs of the two marks, or null. A font has them from its GPOS
+     * table, read from a .otf or .ttf file or from a stream that keeps them.
      */
     protected java.util.Map<Integer, int[]> markToMarkOffsets;
     /**
      * The anchors of the marks, by glyph ID, for each MarkToBase and
      * MarkToLigature lookup subtable, or null: the class and anchor of each
-     * mark. Only a font read from a .otf or .ttf file has them, from its GPOS
-     * table.
+     * mark. A font has them from its GPOS table, read from a .otf or .ttf file
+     * or from a stream that keeps them.
      */
     protected java.util.List<java.util.Map<Integer, int[]>> markAnchors;
     /**
@@ -85,6 +85,11 @@ final public class Font {
      * no anchor, for each class of marks.
      */
     protected java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
+    /**
+     * Where the marks go, compressed, as a stream font keeps it until a mark
+     * is drawn in the font, or null.
+     */
+    protected byte[] markData;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
     /** The size of the compressed font data. */

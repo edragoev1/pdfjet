@@ -44,9 +44,10 @@ type Font struct {
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
 	unicodeToGID           []int
-	markToMarkOffsets      map[int][2]int // From the GPOS table of a .otf or .ttf file
+	markToMarkOffsets      map[int][2]int // From the GPOS table, in a .otf, .ttf or .stream file
 	markAnchors            []map[int][]int
 	baseAnchors            []map[int][]int
+	markData               []byte // Where the marks go, compressed, until a mark is drawn
 	cff                    bool
 	compressedSize         int
 	uncompressedSize       int

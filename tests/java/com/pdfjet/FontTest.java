@@ -123,6 +123,28 @@ class FontTest {
         assertArrayEquals(embedded, embeddedFontFile(cffOnly));
     }
 
+    // The content of a page with a line of Thai in the font: po pla, the upper
+    // vowel sara ii on it and the tone mark mai ek above the vowel.
+    private static String thaiContent(String path) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        InputStream in = TestSupport.open(path);
+        Font font;
+        try {
+            font = new Font(pdf, in);
+        } finally {
+            in.close();
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "\u0E1B\u0E35\u0E48").setLocation(50f, 50f).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void aStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() throws Exception {
+        assumeTrue(TestSupport.file("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf").exists(), "the fonts directory is not here");
+        assertEquals(thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"), thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"));
+    }
+
     @Test
     void aCoreFontNumberOutsideTheFourteenIsRejected() throws Exception {
         PDF pdf = TestSupport.newPDF();

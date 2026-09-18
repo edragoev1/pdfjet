@@ -19,10 +19,10 @@ public class Example_27 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Thai, Hebrew, Arabic and Persian text");
 
-        // Thai font, read from the .otf file: a .otf.stream file has no GPOS
-        // table, which places the tone marks above the upper vowels.
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
-        Font f1 = new Font(pdf, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf");
+        // Thai font, whose stream keeps the marks of its GPOS table, which
+        // places the tone marks above the upper vowels.
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream");
+        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.SetSize(12f);
 
         // Hebrew font

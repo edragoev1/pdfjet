@@ -115,6 +115,29 @@ public class FontTest {
         Assert.Equal(embedded, EmbeddedFontFile(cffOnly));
     }
 
+    // The content of a page with a line of Thai in the font: po pla, the upper
+    // vowel sara ii on it and the tone mark mai ek above the vowel.
+    private static string ThaiContent(string path) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font;
+        using (Stream stream = TestSupport.Open(path)) {
+            font = new Font(pdf, stream);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine text = new TextLine(font, "\u0E1B\u0E35\u0E48");
+        text.SetLocation(50f, 50f);
+        text.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void AStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() {
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"))) {
+            return;     // The fonts directory is not here.
+        }
+        Assert.Equal(ThaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"), ThaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"));
+    }
+
     [Fact]
     public void ACoreFontNumberOutsideTheFourteenIsRejected() {
         PDF pdf = TestSupport.NewPDF();

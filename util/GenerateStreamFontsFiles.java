@@ -25,6 +25,10 @@ public class GenerateStreamFontsFiles {
 
     private static boolean useZopfli = true;
 
+    // True to write the format that every version of the library reads: the
+    // CFF data of an OpenType font without its other tables, and no marks.
+    private static boolean oldFormat = false;
+
     /**
      * Generates .ttf.stream or .otf.stream font files from standard TTF or OTF fonts.
      *
@@ -68,6 +72,59 @@ public class GenerateStreamFontsFiles {
             writeInt16(gid, baos);
         }
 
+        // Where the GPOS table of the font puts the marks, after the metrics,
+        // where a library that does not read it stops: for each MarkToBase and
+        // MarkToLigature subtable the class and anchor of each mark and the
+        // anchors of each letter, and then the offsets of the marks that go on
+        // other marks. Every number is an int32, in the order of the glyph IDs.
+        // It is compressed on its own, so that the library keeps it as it is
+        // and reads it only when it draws a mark.
+        if (otf.markAnchors != null && !oldFormat) {
+            ByteArrayOutputStream marksBuf = new ByteArrayOutputStream(32768);
+            writeInt32(otf.markAnchors.size(), marksBuf);
+            for (int i = 0; i < otf.markAnchors.size(); i++) {
+                java.util.Map<Integer, int[]> marks = new java.util.TreeMap<Integer, int[]>(otf.markAnchors.get(i));
+                writeInt32(marks.size(), marksBuf);
+                for (java.util.Map.Entry<Integer, int[]> mark : marks.entrySet()) {
+                    writeInt32(mark.getKey(), marksBuf);
+                    for (int value : mark.getValue()) {     // Class, x and y
+                        writeInt32(value, marksBuf);
+                    }
+                }
+                java.util.Map<Integer, int[]> bases = new java.util.TreeMap<Integer, int[]>(otf.baseAnchors.get(i));
+                writeInt32(bases.size(), marksBuf);
+                for (java.util.Map.Entry<Integer, int[]> base : bases.entrySet()) {
+                    writeInt32(base.getKey(), marksBuf);
+                    writeInt32(base.getValue().length, marksBuf);
+                    for (int value : base.getValue()) {
+                        writeInt32(value, marksBuf);
+                    }
+                }
+            }
+            // The key of a pair is the glyph ID of the mark it goes on, times
+            // 65536, plus the glyph ID of the mark, as the library keeps it.
+            java.util.Map<Integer, int[]> pairs = new java.util.TreeMap<Integer, int[]>(otf.markToMarkOffsets);
+            writeInt32(pairs.size(), marksBuf);
+            for (java.util.Map.Entry<Integer, int[]> pair : pairs.entrySet()) {
+                writeInt32(pair.getKey() >>> 16, marksBuf);
+                writeInt32(pair.getKey() & 0xFFFF, marksBuf);
+                writeInt32(pair.getValue()[0], marksBuf);
+                writeInt32(pair.getValue()[1], marksBuf);
+            }
+            if (GenerateStreamFontsFiles.useZopfli) {
+                compressWithZopfli(fileName, baos, marksBuf.toByteArray(), false);
+            } else {
+                ByteArrayOutputStream buf6 = new ByteArrayOutputStream(0xFFFF);
+                Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+                DeflaterOutputStream dos = new DeflaterOutputStream(buf6, deflater);
+                marksBuf.writeTo(dos);
+                dos.finish();
+                deflater.end();
+                writeInt32(buf6.size(), baos);
+                buf6.writeTo(baos);
+            }
+        }
+
         byte[] buf1 = baos.toByteArray();
         if (GenerateStreamFontsFiles.useZopfli) {
             compressWithZopfli(fileName, fos, buf1, false);
@@ -82,7 +139,7 @@ public class GenerateStreamFontsFiles {
             buf2.writeTo(fos);
         }
 
-        if (otf.cff == true) {
+        if (otf.cff == true && !oldFormat) {
             // The tables that are not in the CFF data, so that the stream
             // holds the whole font: the original is these bytes with the CFF
             // table put back at the offset its table directory entry gives.
@@ -134,7 +191,7 @@ public class GenerateStreamFontsFiles {
 
     private static void compressWithZopfli(
             String fileName,
-            BufferedOutputStream fos,
+            OutputStream fos,
             byte[] buf3,
             boolean uncompressed) throws IOException {
         BufferedOutputStream fos4 =
@@ -188,30 +245,39 @@ public class GenerateStreamFontsFiles {
      * @throws Exception if there is a problem
      */
     public static void main(String[] args) throws Exception {
-        if (args.length < 1) {
+        String directory = null;
+        for (String arg : args) {
+            if (arg.equals("--old-format")) {
+                oldFormat = true;
+            } else if (directory == null && !arg.startsWith("-")) {
+                directory = arg;
+            } else {
+                directory = null;
+                break;
+            }
+        }
+        File file = (directory == null) ? null : new File(directory);
+        if (file == null || !file.isDirectory()) {
             System.err.println("Usage:");
-            System.err.println("    util/generate-stream-fonts-files.sh <directory>");
+            System.err.println("    util/generate-stream-fonts-files.sh [--old-format] <directory>");
+            System.err.println();
+            System.err.println("--old-format writes .otf.stream files that every version of");
+            System.err.println("PDFjet reads: the CFF data of the font without its other tables,");
+            System.err.println("and no GPOS marks. By default the whole font is kept.");
+            System.err.println();
             System.err.println("Example:");
             System.err.println("    util/generate-stream-fonts-files.sh fonts/IBMPlexSans");
             System.exit(1);
         }
-        File file = new File(args[0]);
-        if (file.isDirectory()) {
-            String path = file.getPath();
-            String[] list = file.list();
-            for (String fileName : list) {
-                if (fileName.endsWith(".ttf") || fileName.endsWith(".otf")) {
-                    System.out.println("Reading: " + fileName);
-                    generateStreamFontFile(path + File.separator + fileName);
-                    System.out.println("Writing: " + fileName + ".stream");
-                }
+        String path = file.getPath();
+        String[] list = file.list();
+        java.util.Arrays.sort(list);
+        for (String fileName : list) {
+            if (fileName.endsWith(".ttf") || fileName.endsWith(".otf")) {
+                System.out.println("Reading: " + fileName);
+                generateStreamFontFile(path + File.separator + fileName);
+                System.out.println("Writing: " + fileName + ".stream");
             }
-        } else {
-            System.err.println("Usage:");
-            System.err.println("    util/generate-stream-fonts-files.sh <directory>");
-            System.err.println("Example:");
-            System.err.println("    util/generate-stream-fonts-files.sh fonts/IBMPlexSans");
-            System.exit(1);
         }
     }
 }

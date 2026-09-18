@@ -13,6 +13,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansThai"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -28,10 +29,10 @@ func Example27() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Thai, Hebrew, Arabic and Persian text")
 
-	// Thai font, read from the .otf file: a .otf.stream file has no GPOS table,
-	// which places the tone marks above the upper vowels.
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf")
+	// Thai font, whose stream keeps the marks of its GPOS table, which places
+	// the tone marks above the upper vowels.
+	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
 	// Hebrew font

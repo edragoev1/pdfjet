@@ -698,8 +698,7 @@ public class Page {
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
-        } else if (font.markAnchors == null && str.IndexOf('\u200F') < 0 && str.IndexOf('\u200E') < 0 &&
-                str.IndexOf('\u200C') < 0 && str.IndexOf('\u200D') < 0) {  // RLM, LRM, ZWNJ, ZWJ
+        } else if (!NeedsShaping(font, str)) {
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
@@ -761,6 +760,9 @@ public class Page {
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
             }
             int[] offsets = null;
+            if (hasMarks && font.markData != null) {
+                FontStream1.ReadMarks(font);
+            }
             if (hasMarks && font.markAnchors != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null) {
@@ -1040,9 +1042,67 @@ public class Page {
         }
     }
 
+    // Returns true if the text has a character that is more than a glyph: an
+    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
+    // place. The scans are vectorized; marks start at U+0300, and a character
+    // is looked up only in the 64 characters around it that can have a mark.
+    private static bool NeedsShaping(Font font, string str) {
+        ReadOnlySpan<char> span = str.AsSpan();
+        if (span.IndexOfAnyInRange('\u200C', '\u200F') >= 0) {
+            return true;
+        }
+        if (font.markAnchors == null && font.markData == null) {
+            return false;
+        }
+        int start = span.IndexOfAnyInRange('\u0300', '\uFFFF');
+        if (start < 0) {
+            return false;
+        }
+        for (int i = start; i < str.Length; i++) {
+            char c = str[i];
+            if (c >= 0x0300) {
+                // A pair of surrogates is one code point; either half alone
+                // is a surrogate, never a mark.
+                int codePoint = c;
+                if (char.IsHighSurrogate(c) && i + 1 < str.Length && char.IsLowSurrogate(str[i + 1])) {
+                    codePoint = char.ConvertToUtf32(c, str[i + 1]);
+                }
+                if (IsMark(codePoint)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // True for each 64 characters of the Basic Multilingual Plane that have a
+    // mark among them, so that IsMark looks up the category of a character
+    // only when it can be a mark. Greek and most of Cyrillic, like the Latin
+    // letters before U+0300, have none.
+    private static readonly bool[] markChunks = MarkChunks();
+
+    private static bool[] MarkChunks() {
+        bool[] chunks = new bool[1024];
+        for (int codePoint = 0x0300; codePoint < 0x10000; codePoint++) {
+            if (codePoint < 0xD800 || codePoint > 0xDFFF) {
+                System.Globalization.UnicodeCategory category =
+                        System.Globalization.CharUnicodeInfo.GetUnicodeCategory(codePoint);
+                if (category == System.Globalization.UnicodeCategory.NonSpacingMark ||
+                        category == System.Globalization.UnicodeCategory.EnclosingMark) {
+                    chunks[codePoint >> 6] = true;
+                }
+            }
+        }
+        return chunks;
+    }
+
     private static bool IsMark(int codePoint) {
+        if (codePoint < 0x10000 && !markChunks[codePoint >> 6]) {
+            return false;
+        }
+        // The category of a code point, without a string made for it.
         System.Globalization.UnicodeCategory category =
-                System.Globalization.CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(codePoint), 0);
+                System.Globalization.CharUnicodeInfo.GetUnicodeCategory(codePoint);
         return category == System.Globalization.UnicodeCategory.NonSpacingMark ||
                 category == System.Globalization.UnicodeCategory.EnclosingMark;
     }

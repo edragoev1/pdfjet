@@ -48,11 +48,24 @@ C# `PDF` class is sealed, as the Java class is final.
   after the metrics comes an `R` block with the tables that are not in the
   CFF data, compressed with Zopfli, so that the original `.otf` can be rebuilt
   from the stream byte for byte, as it always could from a `.ttf.stream`. The
-  font files grow by 7.1 MB, 6.7%, and nothing else changes: the four ports
-  skip the block and embed the same CFF data as before, and they still read
-  streams without it. A library older than this one cannot read the new
-  streams, so the fonts directory and the library go together.
-  `util/GenerateStreamFontsFiles.java` writes the block.
+  four ports skip the block and embed the same CFF data as before, and they
+  still read streams without it. A library older than this one cannot read
+  the new `.otf.stream` files, so the fonts directory and the library go
+  together; `util/generate-stream-fonts-files.sh --old-format` writes streams
+  that every version reads.
+- Every `.otf.stream` and `.ttf.stream` font keeps where the GPOS table of the
+  font puts the marks, so a stream font places Thai tone marks, Hebrew and
+  Arabic vowel marks and combining accents as the `.otf` or `.ttf` file does,
+  in all four ports. The data is compressed on its own at the end of the
+  metrics, where an older library stops reading, and it is read the first
+  time a mark is drawn in the font. Loading a Plex font takes as long as
+  before, and a Noto Sans font, which has the most marks, about 0.8 ms more.
+  Example_27 draws its Thai text with `IBMPlexSansThai.Regular` instead of
+  reading the `.otf` file. The mark data adds 7.3 MB to the 272 streams, 5.9 MB
+  of it in Noto Sans.
+- Text is looked at once, rather than four times, to tell if it needs more
+  than a glyph for each character: an RLM, LRM, ZWNJ or ZWJ, or a mark that
+  the font places. Most text has neither and is drawn as before.
 - The C# `PDF` class is `sealed`, as the Java class is `final`, and the Swift
   class is marked `final`, which it already was outside the module. A C#
   program that derived a class from `PDF` no longer compiles; nothing in the

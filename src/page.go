@@ -471,8 +471,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 			}
 		}
-	} else if font.markAnchors == nil && !strings.ContainsRune(text, 0x200F) && !strings.ContainsRune(text, 0x200E) &&
-		!strings.ContainsRune(text, 0x200C) && !strings.ContainsRune(text, 0x200D) { // RLM, LRM, ZWNJ, ZWJ
+	} else if !needsShaping(font, runes) {
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
 				page.appendCodePointAsHex(glyphOf(font, c1))
@@ -526,6 +525,9 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			}
 		}
 		var offsets []int
+		if hasMarks && font.markData != nil {
+			readMarks(font)
+		}
 		if hasMarks && font.markAnchors != nil {
 			offsets = markOffsets(font, codePoints, gids)
 		} else if mirroredAt == nil && joiners == nil && runEdge == nil {
@@ -815,7 +817,43 @@ func placeOnMark(font *Font, gids, x, offsets []int, mark, other int) {
 	}
 }
 
+// needsShaping returns true if the text has a character that is more than a
+// glyph: an RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font
+// puts in place. Marks start at U+0300, so most text is looked at once, with
+// no more than two comparisons for each character.
+func needsShaping(font *Font, runes []rune) bool {
+	for _, c := range runes {
+		if c >= 0x0300 {
+			if c >= 0x200C && c <= 0x200F {
+				return true
+			}
+			if (font.markAnchors != nil || font.markData != nil) && isMark(c) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// markChunks is true for each 64 characters of the Basic Multilingual Plane
+// that have a mark among them, so that isMark looks a character up in the
+// tables of the unicode package only when it can be a mark. Greek and most of
+// Cyrillic, like the Latin letters before U+0300, have none.
+var markChunks = func() (chunks [1024]bool) {
+	for _, table := range []*unicode.RangeTable{unicode.Mn, unicode.Me} {
+		for _, r := range table.R16 {
+			for c := int(r.Lo); c <= int(r.Hi); c += int(r.Stride) {
+				chunks[c>>6] = true
+			}
+		}
+	}
+	return
+}()
+
 func isMark(c rune) bool {
+	if c < 0x10000 && !markChunks[c>>6] {
+		return false
+	}
 	return unicode.In(c, unicode.Mn, unicode.Me)
 }
 

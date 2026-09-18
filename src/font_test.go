@@ -115,3 +115,27 @@ func TestFontAnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData(t *t
 		t.Error("the embedded font files differ")
 	}
 }
+
+// testThaiContent returns the content of a page with a line of Thai in the
+// font: po pla, the upper vowel sara ii on it and the tone mark mai ek above
+// the vowel.
+func testThaiContent(t *testing.T, path string) string {
+	t.Helper()
+	file, err := os.Open(testRepoPath(t, path))
+	if err != nil {
+		t.Skip("the fonts directory is not here")
+	}
+	defer file.Close()
+	pdf := testNewPDF()
+	font := NewFont(pdf, file)
+	page := NewPage(pdf, testLetterPortrait())
+	NewTextLine(font, "\u0E1B\u0E35\u0E48").SetLocation(50, 50).DrawOn(page)
+	return testContent(page)
+}
+
+func TestFontAStreamFontPlacesTheMarksAsTheOpenTypeFontDoes(t *testing.T) {
+	otf := testThaiContent(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf")
+	if stream := testThaiContent(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"); stream != otf {
+		t.Errorf("stream %q\notf %q", stream, otf)
+	}
+}

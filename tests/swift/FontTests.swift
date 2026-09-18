@@ -97,6 +97,24 @@ import Testing
         #expect(embedded == (try embeddedFontFile(cffOnly)))
     }
 
+    // The content of a page with a line of Thai in the font: po pla, the upper
+    // vowel sara ii on it and the tone mark mai ek above the vowel.
+    private func thaiContent(_ path: String) throws -> String {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open(path))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let text = TextLine(font, "\u{0E1B}\u{0E35}\u{0E48}")
+        text.setLocation(50, 50)
+        text.drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"),
+            "the fonts directory is not here"))
+    func aStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() throws {
+        #expect(try thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf") == (try thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream")))
+    }
+
     @Test func aCoreFontNumberOutsideTheFourteenIsRejected() {
         let pdf = TestSupport.newPDF()
         #expect(throws: PDFjetError.self) { try Font(pdf, 0) }
