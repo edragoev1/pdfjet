@@ -556,5 +556,3 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
 - SVG arc flags written without a separator (`0 01`) are not parsed.
 - A UTF-8 encoded surrogate (ED A0 80) reads as one U+FFFD in Java and three in
   Swift, as Unicode recommends.
-- Swift `FlateEncode` does no lazy matching; its files are about 1.18x the size
-  of Java's for Example_43.
