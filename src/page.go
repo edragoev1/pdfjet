@@ -435,25 +435,15 @@ func (page *Page) drawString(
 
 func (page *Page) drawASCIIString(font *Font, text string) {
 	runes := []rune(text)
-	for i, c1 := range runes {
-		if c1 < font.firstChar || c1 > font.lastChar {
-			page.appendByteAsHex(0x20)
-			continue
-		}
+	for i, cp := range runes {
+		c1 := font.coreFontCode(cp)
 		page.appendByteAsHex(byte(c1))
-		if font.isCoreFont && font.kernPairs && i < (len(runes)-1) {
-			c1 -= 32
-			c2 := runes[i+1]
-			if c2 < font.firstChar || c2 > font.lastChar {
-				c2 = 32
-			}
-			for i := 2; i < len(font.metrics[c1]); i += 2 {
-				if font.metrics[c1][i] == int(c2) {
-					page.appendString(">")
-					page.appendInteger(-font.metrics[c1][i+1])
-					page.appendString("<")
-					break
-				}
+		if font.kernPairs && i < (len(runes)-1) {
+			kerning := font.kerning(c1, font.coreFontCode(runes[i+1]))
+			if kerning != 0 {
+				page.appendString(">")
+				page.appendInteger(-kerning)
+				page.appendString("<")
 			}
 		}
 	}

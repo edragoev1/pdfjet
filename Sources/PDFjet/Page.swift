@@ -495,29 +495,14 @@ public class Page {
     private final func drawASCIIString(_ font: Font, _ text: String) {
         let scalars = Array(text.unicodeScalars)
         for i in 0..<scalars.count {
-            let c1 = scalars[i]
-            if c1 < Unicode.Scalar(font.firstChar)! ||
-                    c1 > Unicode.Scalar(font.lastChar)! {
-                appendTwoHexDigits(0x20, &self.buf)
-                continue
-            }
-            appendTwoHexDigits(Int(c1.value), &self.buf)
-            if font.isCoreFont && font.kernPairs && i < (scalars.count - 1) {
-                var c2 = scalars[i + 1]
-                if c2 < Unicode.Scalar(font.firstChar)! ||
-                        c2 > Unicode.Scalar(font.lastChar)! {
-                    c2 = Unicode.Scalar(32)
-                }
-                let index = Int(c1.value - 32)
-                var j = 2
-                while j < font.metrics![index].count {
-                    if Unicode.Scalar(Int(font.metrics![index][j])) == c2 {
-                        append(">")
-                        append(Int(-font.metrics![index][j + 1]))
-                        append("<")
-                        break
-                    }
-                    j += 2
+            let c1 = font.coreFontCode(scalars[i].value)
+            appendTwoHexDigits(c1, &self.buf)
+            if font.kernPairs && i < (scalars.count - 1) {
+                let kerning = font.kerning(c1, font.coreFontCode(scalars[i + 1].value))
+                if kerning != 0 {
+                    append(">")
+                    append(-kerning)
+                    append("<")
                 }
             }
         }

@@ -161,5 +161,26 @@ public class FontTest {
         jp.SetSize(10f);
         TestSupport.AssertXY(500f, 40f, new TextBlock(jp, "日本\n日本").SetLocation(0f, 0f).DrawOn(null));
     }
+
+    [Fact]
+    public void ACoreFontDrawsTheWinAnsiCharactersFrom128To159() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // ’ is 146 in WinAnsi and 222 units wide, where a space is 278.
+        TestSupport.AssertNear(2.22f, font.StringWidth(10f, "\u2019"), 0.001f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Don\u2019t \u20ac5 \u2014 \u201cHi\u201d").SetLocation(10f, 20f).DrawOn(page);
+        Assert.Contains("<446f6e927420803520972093486994>", TestSupport.Content(page).ToLowerInvariant());
+    }
+
+    [Fact]
+    public void ASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        font.SetKernPairs(true);
+        Assert.Equal(font.StringWidth(10f, "T-"), font.StringWidth(10f, "T\u00ad"));
+        Assert.Equal(font.StringWidth(10f, ". "), font.StringWidth(10f, ".\u00a0"));
+        // KPX period space -60
+        TestSupport.AssertNear(4.96f, font.StringWidth(10f, ".\u00a0"), 0.001f);
+    }
 }
 }

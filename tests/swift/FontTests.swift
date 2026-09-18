@@ -133,4 +133,23 @@ import Testing
         jp.setSize(10)
         TestSupport.expectXY(500, 40, TextBlock(jp, "日本\n日本").setLocation(0, 0).drawOn(nil))
     }
+
+    @Test func aCoreFontDrawsTheWinAnsiCharactersFrom128To159() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        // ’ is 146 in WinAnsi and 222 units wide, where a space is 278.
+        TestSupport.expectNear(2.22, font.stringWidth(10, "\u{2019}"), 0.001)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Don\u{2019}t \u{20AC}5 \u{2014} \u{201C}Hi\u{201D}").setLocation(10, 20).drawOn(page)
+        #expect(TestSupport.content(page).lowercased().contains("<446f6e927420803520972093486994>"))
+    }
+
+    @Test func aSoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        font.setKernPairs(true)
+        #expect(font.stringWidth(10, "T-") == font.stringWidth(10, "T\u{00AD}"))
+        #expect(font.stringWidth(10, ". ") == font.stringWidth(10, ".\u{00A0}"))
+        // KPX period space -60
+        TestSupport.expectNear(4.96, font.stringWidth(10, ".\u{00A0}"), 0.001)
+    }
 }

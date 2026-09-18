@@ -60,6 +60,9 @@ type Font struct {
 	isCJK      bool
 	skew15     bool
 	kernPairs  bool
+	// symbolic is true for Symbol and ZapfDingbats, whose characters are the
+	// codes of their own encodings, not WinAnsi.
+	symbolic bool
 
 	ascent             float32
 	descent            float32
@@ -97,6 +100,7 @@ func NewCoreFont(pdf *PDF, coreFont *corefont.CoreFont) *Font {
 	font.bBoxURx = coreFont.BBoxURx
 	font.bBoxURy = coreFont.BBoxURy
 	font.metrics = coreFont.Metrics
+	font.symbolic = coreFont.Name == "Symbol" || coreFont.Name == "ZapfDingbats"
 	font.fontUnderlinePosition = coreFont.UnderlinePosition
 	font.fontUnderlineThickness = coreFont.UnderlineThickness
 	font.fontAscent = coreFont.BBoxURy
@@ -137,6 +141,7 @@ func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 	font.bBoxURx = coreFont.BBoxURx
 	font.bBoxURy = coreFont.BBoxURy
 	font.metrics = coreFont.Metrics
+	font.symbolic = coreFont.Name == "Symbol" || coreFont.Name == "ZapfDingbats"
 	font.fontUnderlinePosition = coreFont.UnderlinePosition
 	font.fontUnderlineThickness = coreFont.UnderlineThickness
 	font.fontAscent = coreFont.BBoxURy
@@ -431,36 +436,116 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	runes := []rune(text)
 	i := 0
 	for i < len(runes) {
-		ch := runes[i]
-		if ch < font.firstChar || ch > font.lastChar {
-			ch = 32
-		}
-
-		ch -= 32
-		w -= float32(font.metrics[ch][1])
+		c1 := font.coreFontCode(runes[i])
+		w -= float32(font.metrics[c1-32][1])
 		if w < 0 {
 			return i
 		}
 
 		if font.kernPairs && i < (len(runes)-1) {
-			c2 := runes[i+1]
-			if c2 < font.firstChar || c2 > font.lastChar {
-				c2 = 32
-			}
-			for j := 2; j < len(font.metrics[ch]); j += 2 {
-				if rune(font.metrics[ch][j]) == c2 {
-					w -= float32(font.metrics[ch][j+1])
-					if w < 0 {
-						return i
-					}
-					break
-				}
+			w -= float32(font.kerning(c1, font.coreFontCode(runes[i+1])))
+			if w < 0 {
+				return i
 			}
 		}
 		i++
 	}
 
 	return i
+}
+
+// coreFontCode returns the code of the character in the encoding of this core
+// font: WinAnsi, which puts ’ at 146, “ and ” at 147 and 148, the dashes at
+// 150 and 151 and € at 128, or, for Symbol and ZapfDingbats, the character
+// itself. A character that is not in the encoding is drawn as a space.
+func (font *Font) coreFontCode(cp rune) int {
+	if !font.symbolic {
+		cp = winAnsiCode(cp)
+	}
+	if cp < 32 || cp > 255 {
+		return 32
+	}
+	return int(cp)
+}
+
+// winAnsiCode returns the WinAnsi code of the character: the character itself
+// below 128 and from 160 to 255, the code of the character WinAnsi puts from
+// 128 to 159, and a space for any other character, the C1 controls U+0080 to
+// U+009F too.
+func winAnsiCode(cp rune) rune {
+	if cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF) {
+		return cp
+	}
+	switch cp {
+	case 0x20AC: // €
+		return 128
+	case 0x201A: // ‚
+		return 130
+	case 0x0192: // ƒ
+		return 131
+	case 0x201E: // „
+		return 132
+	case 0x2026: // …
+		return 133
+	case 0x2020: // †
+		return 134
+	case 0x2021: // ‡
+		return 135
+	case 0x02C6: // ˆ
+		return 136
+	case 0x2030: // ‰
+		return 137
+	case 0x0160: // Š
+		return 138
+	case 0x2039: // ‹
+		return 139
+	case 0x0152: // Œ
+		return 140
+	case 0x017D: // Ž
+		return 142
+	case 0x2018: // ‘
+		return 145
+	case 0x2019: // ’
+		return 146
+	case 0x201C: // “
+		return 147
+	case 0x201D: // ”
+		return 148
+	case 0x2022: // •
+		return 149
+	case 0x2013: // –
+		return 150
+	case 0x2014: // —
+		return 151
+	case 0x02DC: // ˜
+		return 152
+	case 0x2122: // ™
+		return 153
+	case 0x0161: // š
+		return 154
+	case 0x203A: // ›
+		return 155
+	case 0x0153: // œ
+		return 156
+	case 0x017E: // ž
+		return 158
+	case 0x0178: // Ÿ
+		return 159
+	}
+	return 32
+}
+
+// kerning returns the kerning of a pair of characters of this core font, in
+// 1/1000 of the font size: negative when the second character moves closer to
+// the first, and 0 when the font has no kerning for the pair.
+func (font *Font) kerning(c1, c2 int) int {
+	row := font.metrics[c1-32]
+	for j := 2; j < len(row); j += 2 {
+		if row[j] == c2 {
+			return row[j+1]
+		}
+	}
+	return 0
 }
 
 // SetItalic sets the skew15 private variable.
@@ -489,23 +574,11 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 	}
 
 	if font.isCoreFont {
-		for i, c1 := range runes {
-			if c1 < font.firstChar || c1 > font.lastChar {
-				c1 = 0x20
-			}
-			c1 -= 32
-			width += float32(font.metrics[c1][1])
+		for i, cp := range runes {
+			c1 := font.coreFontCode(cp)
+			width += float32(font.metrics[c1-32][1])
 			if font.kernPairs && i < (len(runes)-1) {
-				c2 := runes[i+1]
-				if c2 < font.firstChar || c2 > font.lastChar {
-					c2 = 32
-				}
-				for j := 2; j < len(font.metrics[c1]); j += 2 {
-					if rune(font.metrics[c1][j]) == c2 {
-						width += float32(font.metrics[c1][j+1])
-						break
-					}
-				}
+				width += float32(font.kerning(c1, font.coreFontCode(runes[i+1])))
 			}
 		}
 	} else {

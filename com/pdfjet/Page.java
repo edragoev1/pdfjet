@@ -742,26 +742,15 @@ final public class Page {
 
     private void drawASCIIString(Font font, String str) {
         for (int i = 0; i < str.length(); ) {
-            int c1 = str.codePointAt(i);
-            i += Character.charCount(c1);
-            if (c1 < font.firstChar || c1 > font.lastChar) {
-                appendByteAsHex(0x20);
-                continue;
-            }
+            int c1 = font.coreFontCode(str.codePointAt(i));
+            i += Character.charCount(str.codePointAt(i));
             appendByteAsHex(c1);
-            if (font.isCoreFont && font.kernPairs && i < str.length()) {
-                c1 -= 32;
-                int c2 = str.codePointAt(i);
-                if (c2 < font.firstChar || c2 > font.lastChar) {
-                    c2 = 32;
-                }
-                for (int j = 2; j < font.metrics[c1].length; j += 2) {
-                    if (font.metrics[c1][j] == c2) {
-                        append(">");
-                        append(-font.metrics[c1][j + 1]);
-                        append("<");
-                        break;
-                    }
+            if (font.kernPairs && i < str.length()) {
+                int kerning = font.kerning(c1, font.coreFontCode(str.codePointAt(i)));
+                if (kerning != 0) {
+                    append(">");
+                    append(-kerning);
+                    append("<");
                 }
             }
         }

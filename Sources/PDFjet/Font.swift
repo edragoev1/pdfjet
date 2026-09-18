@@ -67,6 +67,9 @@ public class Font {
     var isCJK = false
     var skew15 = false
     var kernPairs = false
+    // True for Symbol and ZapfDingbats, whose characters are the codes of
+    // their own encodings, not WinAnsi.
+    private var symbolic = false
 
     var ascent: Float = 0.0
     var descent: Float = 0.0
@@ -100,6 +103,7 @@ public class Font {
         self.bBoxURx = font.bBoxURx!
         self.bBoxURy = font.bBoxURy!
         self.metrics = font.metrics
+        self.symbolic = font.name == "Symbol" || font.name == "ZapfDingbats"
         self.fontUnderlinePosition = Int16(font.underlinePosition!)
         self.fontUnderlineThickness = Int16(font.underlineThickness!)
         self.fontAscent = Int16(font.bBoxURy!)
@@ -133,6 +137,7 @@ public class Font {
         self.bBoxURx = font.bBoxURx!
         self.bBoxURy = font.bBoxURy!
         self.metrics = font.metrics
+        self.symbolic = font.name == "Symbol" || font.name == "ZapfDingbats"
         self.fontUnderlinePosition = Int16(font.underlinePosition!)
         self.fontUnderlineThickness = Int16(font.underlineThickness!)
         self.fontAscent = Int16(font.bBoxURy!)
@@ -381,25 +386,10 @@ public class Font {
         let scalars = Array(str!.unicodeScalars)
         if self.isCoreFont {
             for (i, scalar) in scalars.enumerated() {
-                var c1 = Int(scalar.value)
-                if c1 < self.firstChar || c1 > self.lastChar {
-                    c1 = 0x20
-                }
-                c1 -= 32
-                width += Int(metrics![c1][1])
+                let c1 = coreFontCode(scalar.value)
+                width += Int(metrics![c1 - 32][1])
                 if self.kernPairs && i < (scalars.count - 1) {
-                    var c2 = scalars[i + 1].value
-                    if c2 < self.firstChar || c2 > self.lastChar {
-                        c2 = 32
-                    }
-                    var j: Int = 2
-                    while j < metrics![c1].count {
-                        if metrics![c1][j] == c2 {
-                            width += Int(metrics![c1][j + 1])
-                            break
-                        }
-                        j += 2
-                    }
+                    width += kerning(c1, coreFontCode(scalars[i + 1].value))
                 }
             }
         } else {
@@ -547,35 +537,86 @@ public class Font {
         let scalars = Array(str.unicodeScalars)
         var i: Int = 0
         for scalar in scalars {
-            var c1 = Int(scalar.value)
-            if c1 < firstChar || c1 > lastChar {
-                c1 = 32
-            }
-            c1 -= 32
-            w -= Float(metrics![c1][1])
+            let c1 = coreFontCode(scalar.value)
+            w -= Float(metrics![c1 - 32][1])
             if w < 0 {
                 return i
             }
             if kernPairs && i < (scalars.count - 1) {
-                var c2 = scalars[i + 1].value
-                if c2 < firstChar || c2 > lastChar {
-                    c2 = 32
-                }
-                var j: Int = 2
-                while j < metrics![c1].count {
-                    if metrics![c1][j] == c2 {
-                        w -= Float(metrics![c1][j + 1])
-                        if w < 0 {
-                            return i
-                        }
-                        break
-                    }
-                    j += 2
+                w -= Float(kerning(c1, coreFontCode(scalars[i + 1].value)))
+                if w < 0 {
+                    return i
                 }
             }
             i += 1
         }
         return i
+    }
+
+    /// Returns the code of the character in the encoding of this core font:
+    /// WinAnsi, which puts ’ at 146, “ and ” at 147 and 148, the dashes at 150
+    /// and 151 and € at 128, or, for Symbol and ZapfDingbats, the character
+    /// itself. A character that is not in the encoding is drawn as a space.
+    func coreFontCode(_ scalar: UInt32) -> Int {
+        var cp = Int(scalar)
+        if !symbolic {
+            cp = Font.winAnsiCode(cp)
+        }
+        return (cp < 32 || cp > 255) ? 32 : cp
+    }
+
+    // The WinAnsi code of the character: the character itself below 128 and
+    // from 160 to 255, the code of the character WinAnsi puts from 128 to 159,
+    // and a space for any other character, the C1 controls U+0080 to U+009F too.
+    private static func winAnsiCode(_ cp: Int) -> Int {
+        if cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF) {
+            return cp
+        }
+        switch cp {
+        case 0x20AC: return 128    // €
+        case 0x201A: return 130    // ‚
+        case 0x0192: return 131    // ƒ
+        case 0x201E: return 132    // „
+        case 0x2026: return 133    // …
+        case 0x2020: return 134    // †
+        case 0x2021: return 135    // ‡
+        case 0x02C6: return 136    // ˆ
+        case 0x2030: return 137    // ‰
+        case 0x0160: return 138    // Š
+        case 0x2039: return 139    // ‹
+        case 0x0152: return 140    // Œ
+        case 0x017D: return 142    // Ž
+        case 0x2018: return 145    // ‘
+        case 0x2019: return 146    // ’
+        case 0x201C: return 147    // “
+        case 0x201D: return 148    // ”
+        case 0x2022: return 149    // •
+        case 0x2013: return 150    // –
+        case 0x2014: return 151    // —
+        case 0x02DC: return 152    // ˜
+        case 0x2122: return 153    // ™
+        case 0x0161: return 154    // š
+        case 0x203A: return 155    // ›
+        case 0x0153: return 156    // œ
+        case 0x017E: return 158    // ž
+        case 0x0178: return 159    // Ÿ
+        default: return 32
+        }
+    }
+
+    /// Returns the kerning of a pair of characters of this core font, in 1/1000
+    /// of the font size: negative when the second character moves closer to the
+    /// first, and 0 when the font has no kerning for the pair.
+    func kerning(_ c1: Int, _ c2: Int) -> Int {
+        let row = metrics![c1 - 32]
+        var j = 2
+        while j < row.count {
+            if Int(row[j]) == c2 {
+                return Int(row[j + 1])
+            }
+            j += 2
+        }
+        return 0
     }
 
     ///

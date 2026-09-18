@@ -9,9 +9,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 func TestFontCoreFontWidthsComeFromTheAfmMetrics(t *testing.T) {
@@ -159,4 +161,25 @@ func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
 	block := NewTextBlock(jp, "日本\n日本")
 	block.SetLocation(0, 0)
 	testAssertXY(t, 500, 40, block.DrawOn(nil))
+}
+
+func TestFontACoreFontDrawsTheWinAnsiCharactersFrom128To159(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	// ’ is 146 in WinAnsi and 222 units wide, where a space is 278.
+	testNear(t, "the width of ’", 2.22, font.StringWidth(10, "\u2019"), 0.001)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "Don\u2019t \u20ac5 \u2014 \u201cHi\u201d").SetLocation(10, 20).DrawOn(page)
+	if content := strings.ToLower(testContent(page)); !strings.Contains(content, "<446f6e927420803520972093486994>") {
+		t.Errorf("the text is not in WinAnsi: %q", content)
+	}
+}
+
+func TestFontASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	font.SetKernPairs(true)
+	testNear(t, "a soft hyphen", font.StringWidth(10, "T-"), font.StringWidth(10, "T\u00ad"), 0)
+	testNear(t, "a no-break space", font.StringWidth(10, ". "), font.StringWidth(10, ".\u00a0"), 0)
+	// KPX period space -60
+	testNear(t, "a kerned no-break space", 4.96, font.StringWidth(10, ".\u00a0"), 0.001)
 }

@@ -72,6 +72,9 @@ public class Font {
     internal bool isCJK = false;
     internal bool skew15 = false;
     internal bool kernPairs = false;
+    // True for Symbol and ZapfDingbats, whose characters are the codes of
+    // their own encodings, not WinAnsi.
+    private bool symbolic = false;
 
     internal float ascent;
     internal float descent;
@@ -103,6 +106,7 @@ public class Font {
         this.bBoxURx = font.bBoxURx;
         this.bBoxURy = font.bBoxURy;
         this.metrics = font.metrics;
+        this.symbolic = font.name.Equals("Symbol") || font.name.Equals("ZapfDingbats");
         this.fontUnderlinePosition = font.underlinePosition;
         this.fontUnderlineThickness = font.underlineThickness;
         this.fontAscent = font.bBoxURy;
@@ -136,6 +140,7 @@ public class Font {
         this.bBoxURx = font.bBoxURx;
         this.bBoxURy = font.bBoxURy;
         this.metrics = font.metrics;
+        this.symbolic = font.name.Equals("Symbol") || font.name.Equals("ZapfDingbats");
         this.fontUnderlinePosition = font.underlinePosition;
         this.fontUnderlineThickness = font.underlineThickness;
         this.fontAscent = font.bBoxURy;
@@ -356,24 +361,12 @@ public class Font {
 
         if (isCoreFont) {
             for (int i = 0; i < str.Length; ) {
-                int c1 = Util.CodePointAt(str, i);
-                i += (c1 > 0xFFFF) ? 2 : 1;
-                if (c1 < firstChar || c1 > lastChar) {
-                    c1 = 0x20;
-                }
-                c1 -= 32;
-                width += metrics[c1][1];
+                int cp = Util.CodePointAt(str, i);
+                i += (cp > 0xFFFF) ? 2 : 1;
+                int c1 = CoreFontCode(cp);
+                width += metrics[c1 - 32][1];
                 if (kernPairs && i < str.Length) {
-                    int c2 = Util.CodePointAt(str, i);
-                    if (c2 < firstChar || c2 > lastChar) {
-                        c2 = 32;
-                    }
-                    for (int j = 2; j < metrics[c1].Length; j += 2) {
-                        if (metrics[c1][j] == c2) {
-                            width += metrics[c1][j + 1];
-                            break;
-                        }
-                    }
+                    width += Kerning(c1, CoreFontCode(Util.CodePointAt(str, i)));
                 }
             }
         } else {
@@ -511,30 +504,17 @@ public class Font {
 
         int i = 0;
         while (i < str.Length) {
-            int c1 = Util.CodePointAt(str, i);
-            int next = i + ((c1 > 0xFFFF) ? 2 : 1);
-            if (c1 < firstChar || c1 > lastChar) {
-                c1 = 32;
-            }
-
-            c1 -= 32;
-            w -= metrics[c1][1];
+            int cp = Util.CodePointAt(str, i);
+            int next = i + ((cp > 0xFFFF) ? 2 : 1);
+            int c1 = CoreFontCode(cp);
+            w -= metrics[c1 - 32][1];
             if (w < 0) {
                 return i;
             }
             if (kernPairs && next < str.Length) {
-                int c2 = Util.CodePointAt(str, next);
-                if (c2 < firstChar || c2 > lastChar) {
-                    c2 = 32;
-                }
-                for (int j = 2; j < metrics[c1].Length; j += 2) {
-                    if (metrics[c1][j] == c2) {
-                        w -= metrics[c1][j + 1];
-                        if (w < 0) {
-                            return i;
-                        }
-                        break;
-                    }
+                w -= Kerning(c1, CoreFontCode(Util.CodePointAt(str, next)));
+                if (w < 0) {
+                    return i;
                 }
             }
 
@@ -542,6 +522,73 @@ public class Font {
         }
 
         return i;
+    }
+
+    /// <summary>
+    /// Returns the code of the character in the encoding of this core font:
+    /// WinAnsi, which puts ’ at 146, “ and ” at 147 and 148, the dashes at 150
+    /// and 151 and € at 128, or, for Symbol and ZapfDingbats, the character
+    /// itself. A character that is not in the encoding is drawn as a space.
+    /// </summary>
+    internal int CoreFontCode(int cp) {
+        if (!symbolic) {
+            cp = WinAnsiCode(cp);
+        }
+        return (cp < 32 || cp > 255) ? 32 : cp;
+    }
+
+    // The WinAnsi code of the character: the character itself below 128 and
+    // from 160 to 255, the code of the character WinAnsi puts from 128 to 159,
+    // and a space for any other character, the C1 controls U+0080 to U+009F too.
+    private static int WinAnsiCode(int cp) {
+        if (cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF)) {
+            return cp;
+        }
+        switch (cp) {
+            case 0x20AC: return 128;    // €
+            case 0x201A: return 130;    // ‚
+            case 0x0192: return 131;    // ƒ
+            case 0x201E: return 132;    // „
+            case 0x2026: return 133;    // …
+            case 0x2020: return 134;    // †
+            case 0x2021: return 135;    // ‡
+            case 0x02C6: return 136;    // ˆ
+            case 0x2030: return 137;    // ‰
+            case 0x0160: return 138;    // Š
+            case 0x2039: return 139;    // ‹
+            case 0x0152: return 140;    // Œ
+            case 0x017D: return 142;    // Ž
+            case 0x2018: return 145;    // ‘
+            case 0x2019: return 146;    // ’
+            case 0x201C: return 147;    // “
+            case 0x201D: return 148;    // ”
+            case 0x2022: return 149;    // •
+            case 0x2013: return 150;    // –
+            case 0x2014: return 151;    // —
+            case 0x02DC: return 152;    // ˜
+            case 0x2122: return 153;    // ™
+            case 0x0161: return 154;    // š
+            case 0x203A: return 155;    // ›
+            case 0x0153: return 156;    // œ
+            case 0x017E: return 158;    // ž
+            case 0x0178: return 159;    // Ÿ
+            default: return 32;
+        }
+    }
+
+    /// <summary>
+    /// Returns the kerning of a pair of characters of this core font, in 1/1000
+    /// of the font size: negative when the second character moves closer to the
+    /// first, and 0 when the font has no kerning for the pair.
+    /// </summary>
+    internal int Kerning(int c1, int c2) {
+        int[] row = metrics[c1 - 32];
+        for (int j = 2; j < row.Length; j += 2) {
+            if (row[j] == c2) {
+                return row[j + 1];
+            }
+        }
+        return 0;
     }
 
    /// <summary>

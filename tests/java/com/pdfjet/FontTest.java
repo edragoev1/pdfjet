@@ -166,4 +166,26 @@ class FontTest {
         jp.setSize(10f);
         TestSupport.assertXY(500f, 40f, new TextBlock(jp, "日本\n日本").setLocation(0f, 0f).drawOn(null));
     }
+
+    @Test
+    void aCoreFontDrawsTheWinAnsiCharactersFrom128To159() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // ’ is 146 in WinAnsi and 222 units wide, where a space is 278.
+        assertEquals(2.22f, font.stringWidth(10f, "\u2019"), 0.001f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Don\u2019t \u20ac5 \u2014 \u201cHi\u201d").setLocation(10f, 20f).drawOn(page);
+        assertTrue(TestSupport.content(page).toLowerCase().contains("<446f6e927420803520972093486994>"),
+                TestSupport.content(page));
+    }
+
+    @Test
+    void aSoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        font.setKernPairs(true);
+        assertEquals(font.stringWidth(10f, "T-"), font.stringWidth(10f, "T\u00ad"), 0f);
+        assertEquals(font.stringWidth(10f, ". "), font.stringWidth(10f, ".\u00a0"), 0f);
+        // KPX period space -60
+        assertEquals(4.96f, font.stringWidth(10f, ".\u00a0"), 0.001f);
+    }
 }

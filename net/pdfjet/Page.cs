@@ -656,26 +656,16 @@ public class Page {
 
     private void DrawASCIIString(Font font, String str) {
         for (int i = 0; i < str.Length; ) {
-            int c1 = Util.CodePointAt(str, i);
-            i += (c1 > 0xFFFF) ? 2 : 1;
-            if (c1 < font.firstChar || c1 > font.lastChar) {
-                AppendByteAsHex(0x20);
-                continue;
-            }
+            int cp = Util.CodePointAt(str, i);
+            i += (cp > 0xFFFF) ? 2 : 1;
+            int c1 = font.CoreFontCode(cp);
             AppendByteAsHex(c1);
-            if (font.isCoreFont && font.kernPairs && i < str.Length) {
-                c1 -= 32;
-                int c2 = Util.CodePointAt(str, i);
-                if (c2 < font.firstChar || c2 > font.lastChar) {
-                    c2 = 32;
-                }
-                for (int j = 2; j < font.metrics[c1].Length; j += 2) {
-                    if (font.metrics[c1][j] == c2) {
-                        Append(">");
-                        Append(-font.metrics[c1][j + 1]);
-                        Append("<");
-                        break;
-                    }
+            if (font.kernPairs && i < str.Length) {
+                int kerning = font.Kerning(c1, font.CoreFontCode(Util.CodePointAt(str, i)));
+                if (kerning != 0) {
+                    Append(">");
+                    Append(-kerning);
+                    Append("<");
                 }
             }
         }
