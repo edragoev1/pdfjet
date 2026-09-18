@@ -13,6 +13,14 @@ import java.util.List;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
+/**
+ * Example_38.java
+ *
+ * Draws a table whose cells span columns and rows, and explains how. A cell
+ * spans columns with setColSpan, and rows by leaving out the borders between
+ * it and the cells under it. The table is also a check of the geometry of the
+ * cells: their backgrounds meet without gaps and their borders line up.
+ */
 public class Example_38 {
     private Font font;
 
@@ -24,13 +32,34 @@ public class Example_38 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Table Cells That Span Rows and Columns");
         font = new Font(pdf, IBMPlexMono.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
+
+        TextLine title = new TextLine(f1, "Table Cells That Span Rows and Columns");
+        title.setFontSize(18f);
+        title.setLocation(50f, 50f);
+        title.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f2,
+                "The cells of this table span up to five columns and up to four rows, as "
+                + "the name in each cell says: 1x3 is one column wide and three rows tall. "
+                + "A cell spans columns with setColSpan. It spans rows by leaving out its "
+                + "bottom border and the top borders of the cells under it, which continue "
+                + "it and are marked with ^ or left empty. The example is also a check of "
+                + "the geometry of the cells: their backgrounds meet without gaps and their "
+                + "borders line up.");
+        textBlock.setFontSize(11f);
+        textBlock.setLineSpacing(1.3f);
+        textBlock.setLocation(50f, 65f);
+        textBlock.setWidth(500f);
+        float[] xy = textBlock.drawOn(page);
 
         Table table = new Table();
         table.setTableData(createTableData());
         table.setBottomMargin(10f);
-        table.setLocation(50f, 50f);
+        table.setLocation(50f, xy[1] + 20f);
         table.drawOn(page);
 
         pdf.complete();
@@ -251,7 +280,7 @@ public class Example_38 {
         cell.setBorder(Border.TOP, topBorder);
         cell.setBorder(Border.BOTTOM, bottomBorder);
         cell.setTextAlignment(Alignment.CENTER);
-        cell.setBackgroundColor(Color.lightblue);
+        cell.setBackgroundColor(0xD8F0E4);     // A pastel mint
         cell.setBorderWidth(1f);
         return cell;
     }

@@ -12,9 +12,9 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -28,13 +28,34 @@ func Example38() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Table Cells That Span Rows and Columns")
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 
 	page := pdfjet.NewPage(pdf, letter.Landscape())
+
+	title := pdfjet.NewTextLine(f1, "Table Cells That Span Rows and Columns")
+	title.SetFontSize(18.0)
+	title.SetLocation(50.0, 50.0)
+	title.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f2,
+		"The cells of this table span up to five columns and up to four rows, as "+
+			"the name in each cell says: 1x3 is one column wide and three rows tall. "+
+			"A cell spans columns with setColSpan. It spans rows by leaving out its "+
+			"bottom border and the top borders of the cells under it, which continue "+
+			"it and are marked with ^ or left empty. The example is also a check of "+
+			"the geometry of the cells: their backgrounds meet without gaps and their "+
+			"borders line up.")
+	textBlock.SetFontSize(11.0)
+	textBlock.SetLineSpacing(1.3)
+	textBlock.SetLocation(50.0, 65.0)
+	textBlock.SetWidth(500.0)
+	xy := textBlock.DrawOn(page)
 
 	table := pdfjet.NewTable()
 	table.SetTableData(createTableData(font), 0)
 	table.SetBottomMargin(10.0)
-	table.SetLocation(50.0, 50.0)
+	table.SetLocation(50.0, xy[1]+20.0)
 	table.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
@@ -246,7 +267,7 @@ func getCell(
 	cell.SetBorder(border.Top, topBorder)
 	cell.SetBorder(border.Bottom, bottomBorder)
 	cell.SetTextAlignment(alignment.Center)
-	cell.SetBackgroundColor(color.LightBlue)
+	cell.SetBackgroundColor(0xD8F0E4) // A pastel mint
 	cell.SetBorderWidth(1.0)
 	return cell
 }

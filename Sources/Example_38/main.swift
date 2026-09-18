@@ -16,12 +16,33 @@ public class Example_38 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Table Cells That Span Rows and Columns")
         let font = try Font(pdf, IBMPlexMono.Regular)
+        let f1 = try Font(pdf, IBMPlexSans.SemiBold)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
         let page = Page(pdf, Letter.LANDSCAPE)
+
+        let title = TextLine(f1, "Table Cells That Span Rows and Columns")
+        title.setFontSize(18.0)
+        title.setLocation(50.0, 50.0)
+        title.drawOn(page)
+
+        let textBlock = TextBlock(f2,
+                "The cells of this table span up to five columns and up to four rows, as "
+                + "the name in each cell says: 1x3 is one column wide and three rows tall. "
+                + "A cell spans columns with setColSpan. It spans rows by leaving out its "
+                + "bottom border and the top borders of the cells under it, which continue "
+                + "it and are marked with ^ or left empty. The example is also a check of "
+                + "the geometry of the cells: their backgrounds meet without gaps and their "
+                + "borders line up.")
+        textBlock.setFontSize(11.0)
+        textBlock.setLineSpacing(1.3)
+        textBlock.setLocation(50.0, 65.0)
+        textBlock.setWidth(500.0)
+        let xy = textBlock.drawOn(page)
 
         let table = Table()
         table.setTableData(createTableData(font))
         table.setBottomMargin(10.0)
-        table.setLocation(50.0, 50.0)
+        table.setLocation(50.0, xy[1] + 20.0)
         table.drawOn(page)
 
         try pdf.complete()
@@ -230,7 +251,7 @@ public class Example_38 {
         cell.setBorder(Border.TOP, topBorder)
         cell.setBorder(Border.BOTTOM, bottomBorder)
         cell.setTextAlignment(Alignment.CENTER)
-        cell.setBackgroundColor(Color.lightblue)
+        cell.setBackgroundColor(0xD8F0E4)     // A pastel mint
         cell.setBorderWidth(1.0)
         return cell
     }

@@ -25,13 +25,34 @@ public class Example_38 {
         pdf.SetTitle("Table Cells That Span Rows and Columns");
 
         font = new Font(pdf, IBMPlexMono.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);
+
+        TextLine title = new TextLine(f1, "Table Cells That Span Rows and Columns");
+        title.SetFontSize(18f);
+        title.SetLocation(50f, 50f);
+        title.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f2,
+                "The cells of this table span up to five columns and up to four rows, as "
+                + "the name in each cell says: 1x3 is one column wide and three rows tall. "
+                + "A cell spans columns with setColSpan. It spans rows by leaving out its "
+                + "bottom border and the top borders of the cells under it, which continue "
+                + "it and are marked with ^ or left empty. The example is also a check of "
+                + "the geometry of the cells: their backgrounds meet without gaps and their "
+                + "borders line up.");
+        textBlock.SetFontSize(11f);
+        textBlock.SetLineSpacing(1.3f);
+        textBlock.SetLocation(50f, 65f);
+        textBlock.SetWidth(500f);
+        float[] xy = textBlock.DrawOn(page);
 
         Table table = new Table();
         table.SetTableData(CreateTableData());
         table.SetBottomMargin(10f);
-        table.SetLocation(50f, 50f);
+        table.SetLocation(50f, xy[1] + 20f);
         table.DrawOn(page);
 
         pdf.Complete();
@@ -249,7 +270,7 @@ public class Example_38 {
         cell.SetBorder(Border.TOP, topBorder);
         cell.SetBorder(Border.BOTTOM, bottomBorder);
         cell.SetTextAlignment(Alignment.CENTER);
-        cell.SetBackgroundColor(Color.lightblue);
+        cell.SetBackgroundColor(0xD8F0E4);     // A pastel mint
         cell.SetBorderWidth(1f);
         return cell;
     }
