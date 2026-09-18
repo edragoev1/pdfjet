@@ -4,6 +4,9 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+// In the package of the library, whose OTF parser it uses, but kept out of
+// the library: util/generate-stream-fonts-files.sh compiles it on its own.
+package com.pdfjet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -187,10 +190,9 @@ public class GenerateStreamFontsFiles {
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
             System.err.println("Usage:");
-            System.err.println("    ./generate-stream-fonts-files.sh <directory>");
-            System.err.println("Examples:");
-            System.err.println("    ./generate-stream-fonts-files.sh fonts/RedHatText/");
-            System.err.println("    ./generate-stream-fonts-files.sh fonts/SourceCodePro/");
+            System.err.println("    util/generate-stream-fonts-files.sh <directory>");
+            System.err.println("Example:");
+            System.err.println("    util/generate-stream-fonts-files.sh fonts/IBMPlexSans");
             System.exit(1);
         }
         File file = new File(args[0]);
@@ -206,10 +208,9 @@ public class GenerateStreamFontsFiles {
             }
         } else {
             System.err.println("Usage:");
-            System.err.println("    ./generate-stream-fonts-files.sh <directory>");
-            System.err.println("Examples:");
-            System.err.println("    ./generate-stream-fonts-files.sh fonts/RedHatText/");
-            System.err.println("    ./generate-stream-fonts-files.sh fonts/SourceCodePro/");
+            System.err.println("    util/generate-stream-fonts-files.sh <directory>");
+            System.err.println("Example:");
+            System.err.println("    util/generate-stream-fonts-files.sh fonts/IBMPlexSans");
             System.exit(1);
         }
     }
