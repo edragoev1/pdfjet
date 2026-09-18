@@ -9,38 +9,37 @@ import PDFjet
 
 /**
  * Example_31.swift
- * This example draws Hindi and Marathi text, and filled rectangles, first
- * opaque and then half transparent, so the colors mix where they overlap.
+ * This example draws with transparency. A GraphicsState sets the alpha of the
+ * fills and of the strokes: opaque shapes hide what is under them, transparent
+ * ones mix with it, and the stroke of a shape can be more or less transparent
+ * than its fill.
  */
 public class Example_31 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_31.pdf", append: false)!)
 
-        let f1 = try Font(pdf, IBMPlexSansDevanagari.Regular)
-        f1.setSize(13.0)
-
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        f2.setSize(14.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        // Hindi: the second line of the file, after its label.
-        TextLine(f2, "Hindi").setLocation(50.0, 60.0).drawOn(page)
-        let lines = try Content.linesOfTextFile("data/languages/devanagari.txt")
-        var textBlock = TextBlock(f1, lines[1])
-        textBlock.setLineSpacing(1.3)
-        textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(510.0)
-        var xy = textBlock.drawOn(page)
+        var text = TextLine(f2, "Transparency")
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
 
-        TextLine(f2, "Marathi").setLocation(50.0, xy[1] + 35.0).drawOn(page)
-        textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/marathi.txt"))
-        textBlock.setLineSpacing(1.3)
-        textBlock.setLocation(50.0, xy[1] + 45.0)
-        textBlock.setWidth(510.0)
-        xy = textBlock.drawOn(page)
+        let textBlock = TextBlock(f1,
+                "A GraphicsState sets the alpha of the fills and of the strokes that "
+                + "follow it, until the graphics state is restored. Opaque shapes hide "
+                + "what is under them, transparent ones mix with it, and the stroke of "
+                + "a shape can be more or less transparent than its fill.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        let xy = textBlock.drawOn(page)
 
-        let y: Float = xy[1] + 50.0
+        var y: Float = xy[1] + 30.0
         let colors = [Color.blue, Color.green, Color.red]
 
         // Opaque rectangles: each one hides the one under it.
@@ -53,7 +52,7 @@ public class Example_31 {
         // Half transparent rectangles: the colors mix where they overlap.
         TextLine(f2, "50% transparent").setLocation(320.0, y).drawOn(page)
         page.saveGraphicsState()
-        let gs = GraphicsState()
+        var gs = GraphicsState()
         gs.setAlphaStroking(0.5)    // The stroking alpha constant
         gs.setAlphaNonStroking(0.5) // The non-stroking alpha constant
         page.setGraphicsState(gs)
@@ -63,10 +62,63 @@ public class Example_31 {
         }
         page.restoreGraphicsState()
 
+        // The same blue over a gray bar at four levels of alpha.
+        y += 245.0
+        TextLine(f2, "Fill alpha").setLocation(50.0, y).drawOn(page)
+        page.setBrushColor(Color.gray)
+        page.fillRect(50.0, y + 55.0, 506.0, 30.0)
+        let alphas: [Float] = [0.25, 0.5, 0.75, 1.0]
+        for i in 0..<alphas.count {
+            let x: Float = 50.0 + Float(i) * 132.0
+            page.saveGraphicsState()
+            gs = GraphicsState()
+            gs.setAlphaNonStroking(alphas[i])
+            page.setGraphicsState(gs)
+            page.setBrushColor(Color.blue)
+            page.fillRect(x, y + 15.0, 110.0, 110.0)
+            page.restoreGraphicsState()
+
+            text = TextLine(f1, "\(Int((alphas[i] * 100.0).rounded()))%")
+            text.setFontSize(10.0)
+            text.setTextColor(Color.gray)
+            text.setLocation(x, y + 140.0)
+            text.drawOn(page)
+        }
+
+        // A thick stroke and a fill, each transparent on its own: the stroke
+        // shows the fill through it, then the fill shows the stroke.
+        y += 175.0
+        TextLine(f2, "Stroke alpha and fill alpha").setLocation(50.0, y).drawOn(page)
+        let labels = [
+            "Stroke 25%, fill 100%",
+            "Stroke 100%, fill 25%",
+            "Stroke 50%, fill 50%",
+        ]
+        let strokeAndFill: [[Float]] = [[0.25, 1.0], [1.0, 0.25], [0.5, 0.5]]
+        for i in 0..<labels.count {
+            let x: Float = 100.0 + Float(i) * 180.0
+            page.saveGraphicsState()
+            gs = GraphicsState()
+            gs.setAlphaStroking(strokeAndFill[i][0])
+            gs.setAlphaNonStroking(strokeAndFill[i][1])
+            page.setGraphicsState(gs)
+            page.setBrushColor(Color.red)
+            page.fillCircle(x, y + 65.0, 40.0)
+            page.setPenColor(Color.blue)
+            page.setPenWidth(16.0)
+            page.drawCircle(x, y + 65.0, 40.0)
+            page.restoreGraphicsState()
+
+            text = TextLine(f1, labels[i])
+            text.setFontSize(10.0)
+            text.setTextColor(Color.gray)
+            text.setLocation(x - text.getWidth() / 2.0, y + 130.0)
+            text.drawOn(page)
+        }
+
         try pdf.complete()
     }
 }   // End of Example_31.swift
-
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_31()

@@ -28,7 +28,11 @@ producer string is `PDFjet v9.0.1` and CHANGELOG.md has its entry, "planned for
       image too, which Example_33 needs to fit its map on the page. Then 46
       (Sep 17), with a Natural Earth relief map of Europe in
       `images/europe-relief.png` (public domain, source in
-      `images/europe-relief.txt`).
+      `images/europe-relief.txt`). Then 31 again (Sep 17): transparency only,
+      as PDFjet does not shape Devanagari; the Devanagari fonts and the
+      `IBMPlexSansDevanagari` constants are removed (the user's decision).
+      And 28 (Sep 17): fonts from `.otf`, `.ttf` and `.stream` files, so that
+      a client package with few stream fonts still has a font example.
 - ✅ **B** QR codes from version 4 to 40, in the four ports.
       Done (Sep 17): the smallest version from 4 that holds the data, up to
       2,953 bytes at L and 1,273 at H. 310 symbols, every version and level at

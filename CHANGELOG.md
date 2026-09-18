@@ -43,6 +43,15 @@ C# `PDF` class is sealed, as the Java class is final.
   patterns of version 7 and up, and shares its Galois field tables, as the
   other ports do.
 
+### Removed
+- The IBM Plex Sans Devanagari and Noto Sans Devanagari fonts, and the
+  `IBMPlexSansDevanagari` font constants of the four ports. PDFjet has no
+  GSUB engine and no Indic reordering, so it draws Devanagari glyph by glyph,
+  without the conjuncts and the reordering of vowel signs that Hindi and
+  Marathi need, and the fonts only suggested that it could. A program that
+  used the constants no longer compiles; one that passes the path of a
+  Devanagari font file still runs, and draws it as before.
+
 ### Changed
 - The 113 `.otf.stream` fonts, the IBM Plex families, hold the whole font:
   after the metrics comes an `R` block with the tables that are not in the
@@ -238,6 +247,15 @@ C# `PDF` class is sealed, as the Java class is final.
   with a description next to each, each row below the taller of the two; a map
   of Europe scaled to fit the page and a set of labeled SVG icons; and a
   shipment request drawn with the `Form` class.
+- Example_31 shows transparency alone: opaque and half transparent rectangles,
+  a fill at four levels of alpha over a gray bar, and circles whose stroke and
+  fill are transparent on their own. It drew Hindi and Marathi text first,
+  which PDFjet draws glyph by glyph, without the conjuncts and the reordering
+  of vowel signs that Devanagari needs.
+- Example_28 reads IBM Plex Sans from its `.otf` file and Noto Sans from its
+  `.ttf` file, and both from their `.stream` files, and says that any
+  OpenType or TrueType file on the computer is a font for PDFjet. It drew
+  rows of symbols from the Noto Sans Symbols stream.
 - Example_46 draws a shaded relief map of Europe, from the public domain
   Natural Earth data, in three layers that a viewer can show or hide: the
   relief, the lines of latitude and longitude, which are not printed, and

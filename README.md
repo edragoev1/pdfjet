@@ -394,8 +394,8 @@ to the letters they stand for, so the words come out as typed, but:
 - The zero width non-joiner and joiner, as in `می‌خواهم`, are not drawn, but
   each is put in the ActualText of the glyph before it, with a space glyph that
   takes no room standing in for it, so Poppler and MuPDF copy them. A font that
-  has glyphs for them, like IBM Plex Sans Devanagari, draws those instead. A
-  joiner inside a lam-alef ligature is left out.
+  has glyphs for them draws those instead. A joiner inside a lam-alef ligature
+  is left out.
 - Poppler separates an Arabic comma or a period from the word before it, as in
   `مادر ،`, and MuPDF moves numbers, such as `۱۴۰۳`, next to a word beside
   them.

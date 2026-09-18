@@ -9,67 +9,78 @@ import PDFjet
 
 /**
  * Example_28.swift
- * Example that shows how to use the NotoSansSymbols font.
+ * This example reads fonts from OpenType and TrueType files and from the
+ * .stream files of the same fonts. Any .otf or .ttf file on the computer is a
+ * font for PDFjet; a .stream file is the same font, compressed once, so that
+ * it loads and embeds faster.
  */
 public class Example_28 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_28.pdf", append: false)!
-        let pdf = PDF(stream)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_28.pdf", append: false)!)
 
-        let f1 = try Font(pdf, "fonts/NotoSansSymbols/NotoSansSymbols-Regular.ttf.stream")
-        f1.setSize(28.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
-        let page = Page(pdf, Letter.LANDSCAPE)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let x = Float(35.0)
-        var y = Float(55.0)
-        let dy = Float(35.0)
+        var text = TextLine(f2, "Fonts from .otf, .ttf and .stream Files")
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
 
-        drawLineOfText(page, f1, x, y, 0x0041, 0x005A)
-        y += dy
+        var textBlock = TextBlock(f1,
+                "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
+                + "of any .otf or .ttf file on the computer to the Font constructor. "
+                + "The .stream files that come with PDFjet hold the same fonts, "
+                + "compressed once, so that a font loads and embeds faster; the "
+                + "IBMPlexSans and NotoSans constants are their paths. "
+                + "The paragraph below is drawn four times, from the two kinds of file.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        var xy = textBlock.drawOn(page)
 
-        drawLineOfText(page, f1, x, y, 0x0061, 0x007A)
-        y += dy
+        let files = [
+            "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+            "fonts/NotoSans/NotoSans-Regular.ttf",
+            IBMPlexSans.Regular,
+            NotoSans.Regular,
+        ]
+        let kinds = [
+            "OpenType, with CFF outlines, read from the .otf file",
+            "TrueType, read from the .ttf file",
+            "The same OpenType font from its .stream file",
+            "The same TrueType font from its .stream file",
+        ]
+        let sample = "The quick brown fox jumps over the lazy dog. "
+                + "Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. "
+                + "Съешь же ещё этих мягких французских булок, да выпей чаю."
 
-        drawLineOfText(page, f1, x, y, 0x24B6, 0x24CF)
-        y += dy
+        var y: Float = xy[1] + 30.0
+        for i in 0..<files.count {
+            text = TextLine(f2, files[i])
+            text.setFontSize(11.0)
+            text.setLocation(50.0, y)
+            text.drawOn(page)
 
-        drawLineOfText(page, f1, x, y, 0x24D0, 0x24E9)
-        y += dy
+            text = TextLine(f1, kinds[i])
+            text.setFontSize(10.0)
+            text.setTextColor(Color.gray)
+            text.setLocation(50.0, y + 15.0)
+            text.drawOn(page)
 
-        drawLineOfText(page, f1, x, y, 0x24F5, 0x24FE)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x2624, 0x262F)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x2638, 0x2653)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x2669, 0x267E)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x2690, 0x26A9)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x26AD, 0x26BC)
-        y += dy
-
-        drawLineOfText(page, f1, x, y, 0x26E2, 0x26FE)
-        y += dy
+            let font = try Font(pdf, files[i])
+            textBlock = TextBlock(font, sample)
+            textBlock.setFontSize(13.0)
+            textBlock.setLineSpacing(1.4)
+            textBlock.setLocation(50.0, y + 28.0)
+            textBlock.setWidth(512.0)
+            xy = textBlock.drawOn(page)
+            y = xy[1] + 30.0
+        }
 
         try pdf.complete()
-    }
-
-    private func drawLineOfText(
-            _ page: Page, _ f1: Font, _ x: Float, _ y: Float, _ c1: Int, _ c2: Int) {
-        var buf = String()
-        for i in c1...c2 {
-            buf.append(Character(UnicodeScalar(i)!))
-        }
-        let text = TextLine(f1, buf)
-        text.setLocation(x, y)
-        text.drawOn(page)
     }
 }   // End of Example_28.swift
 
