@@ -36,7 +36,7 @@ public class Example_14 {
         caption.setLocation(300.0, xy[1] + 20.0)
         caption.drawOn(page)
 
-        barcode = DataMatrix("PDFjet 9.0.0", DataMatrix.RECTANGLE)
+        barcode = DataMatrix("PDFjet 9.0.1", DataMatrix.RECTANGLE)
         barcode.setLocation(50.0, 250.0)
         barcode.setModuleLength(4.0)
         barcode.setModuleColor(Color.blue)

@@ -7,12 +7,13 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.1 — planned for 2026-10-21
+## v9.0.1 — 2026-09-18
 
 Producer string bumped from `PDFjet v9.0.0` to `PDFjet v9.0.1` in all four
 ports, so `.packaging/package-java.sh` and `.packaging/package-dotnet.sh` name
-their archives v9.0.1. The public API does not change, but for one thing: the
-C# `PDF` class is sealed, as the Java class is final.
+their archives v9.0.1. The public API does not change, but for two things: the
+C# `PDF` class is sealed, as the Java class is final, and the
+`IBMPlexSansDevanagari` font constants are gone with the Devanagari fonts.
 
 ### Added
 - `BaselineDrawable`, a drawable whose location is the baseline of its text
