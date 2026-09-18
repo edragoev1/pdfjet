@@ -16,6 +16,8 @@ import com.pdfjet.fonts.*;
 public class Example_23 {
     public Example_23() throws Exception {
         PDF pdf = new PDF(new FileOutputStream("Example_23.pdf"));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The Ascent and Descent of a Font");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(72f);

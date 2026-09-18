@@ -17,6 +17,8 @@ public class Example_10 {
     public Example_10() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_10.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Switzerland");
 
         Image image1 = new Image(pdf, "images/sz-map.png");
 

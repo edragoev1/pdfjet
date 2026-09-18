@@ -19,6 +19,8 @@ public class Example_14 {
     public Example_14() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_14.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Data Matrix Barcodes");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(10f);

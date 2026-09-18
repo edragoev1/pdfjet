@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -32,6 +33,8 @@ func Example02() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
 	f1.SetSize(14.0)
@@ -49,6 +52,7 @@ func Example02() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
+	textBlock.SetLanguage("ja")
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
@@ -56,6 +60,7 @@ func Example02() {
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
+	textBlock.SetLanguage("ko")
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
@@ -63,6 +68,7 @@ func Example02() {
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
+	textBlock.SetLanguage("zh-Hans")
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)
@@ -70,6 +76,7 @@ func Example02() {
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
+	textBlock.SetLanguage("zh-Hant")
 	textBlock.SetLocation(50.0, 50.0)
 	textBlock.SetWidth(415.0)
 	_ = textBlock.DrawOn(page)

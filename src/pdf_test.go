@@ -418,3 +418,34 @@ func TestPDFTheNameOfAnEmbeddedFileIsATextStringInFAndUF(t *testing.T) {
 	testWant(t, "\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", testUTF16Hex(t, spec.GetValue("/UF")))
 	testWant(t, spec.GetValue("/UF"), spec.GetValue("/F"))
 }
+
+func TestPDFAPointIsAnArtifact(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewPoint(50, 50).DrawOn(page)
+	content := testContent(page)
+	if !strings.HasPrefix(content, "/Artifact BMC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the point is not an artifact: %q", content)
+	}
+}
+
+func TestPDFALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(page)
+	note := NewTextAnnotation()
+	note.SetLocation(70, 100)
+	note.SetContents("A note")
+	note.DrawOn(page)
+	raw := string(doc.complete())
+	if n := strings.Count(raw, "/S /Link\n"); n != 1 {
+		t.Errorf("%d Link elements", n)
+	}
+	if n := strings.Count(raw, "/S /Annot\n"); n != 1 {
+		t.Errorf("%d Annot elements", n)
+	}
+}

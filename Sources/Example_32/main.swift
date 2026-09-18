@@ -13,6 +13,8 @@ import PDFjet
 public class Example_32 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_32.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("The Source Code of Example_02")
         let font = try Font(pdf, JetBrainsMono.Regular)
         font.setSize(10.0)
 

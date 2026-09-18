@@ -20,6 +20,8 @@ public class Example_19 {
     public Example_19() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_19.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Text Next to Images");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

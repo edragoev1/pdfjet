@@ -14,6 +14,8 @@ import PDFjet
 public class Example_14 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_14.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Data Matrix Barcodes")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(10.0)

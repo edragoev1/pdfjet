@@ -13,6 +13,8 @@ import PDFjet
 public class Example_35 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Containers and Stamps")
 
         let page = Page(pdf, Letter.PORTRAIT)
 

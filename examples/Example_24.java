@@ -17,6 +17,8 @@ public class Example_24 {
     public Example_24() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_24.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("JPEG, PNG and BMP Images");
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
 

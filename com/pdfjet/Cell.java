@@ -813,7 +813,9 @@ public class Cell {
                         null,
                         null));
             }
+            page.addArtifactBMC();
             page.drawPoint(point);
+            page.addEMC();
         }
     }
 

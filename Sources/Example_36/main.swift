@@ -15,6 +15,8 @@ import PDFjet
 public class Example_36 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_36.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Maps")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)

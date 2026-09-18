@@ -13,6 +13,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
@@ -26,6 +27,8 @@ func Example21() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("QR Code Error Correction")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)

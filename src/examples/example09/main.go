@@ -19,6 +19,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
@@ -37,6 +38,8 @@ func Example09() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("World View - Communications")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(8.0)

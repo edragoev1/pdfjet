@@ -17,6 +17,8 @@ import PDFjet
 public class Example_28 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_28.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Fonts from .otf, .ttf and .stream Files")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)

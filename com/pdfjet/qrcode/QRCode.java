@@ -133,6 +133,8 @@ final public class QRCode implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         if (page != null) {
+            // The modules carry no text, so they are decorative content.
+            page.addArtifactBMC();
             page.setBrushColor(this.color);
             for (int row = 0; row < modules.length; row++) {
                 for (int col = 0; col < modules.length; col++) {
@@ -141,6 +143,7 @@ final public class QRCode implements Drawable {
                     }
                 }
             }
+            page.addEMC();
         }
         float w = m1*modules.length;
         float h = m1*modules.length;

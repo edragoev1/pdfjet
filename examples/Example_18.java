@@ -20,6 +20,8 @@ public class Example_18 {
     public Example_18() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_18.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("How to Number Pages");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -78,7 +80,9 @@ public class Example_18 {
             line.setStrokeColor(Color.lightgray);
             line.drawOn(page);
 
+            // A page number is an artifact: a screen reader skips it.
             String footer = "Page " + (i + 1) + " of " + pages.size();
+            page.addArtifactBMC();
             page.setBrushColor(Color.black);
             page.drawString(
                     f1,
@@ -86,6 +90,7 @@ public class Example_18 {
                     footer,
                     (page.getWidth() - f1.stringWidth(fontSize, footer))/2f,
                     page.getHeight() - 40f);
+            page.addEMC();
         }
         pdf.addPages(pages);
 

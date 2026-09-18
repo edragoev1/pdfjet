@@ -19,6 +19,8 @@ public class Example_08 {
     public Example_08() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_08.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Electric Vehicle Population");
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         f1.setSize(7f);

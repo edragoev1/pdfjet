@@ -20,6 +20,8 @@ public class Example_42 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_42.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Company Information Form");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

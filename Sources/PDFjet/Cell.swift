@@ -680,7 +680,9 @@ public class Cell {
                         nil,
                         nil))
             }
+            page.addArtifactBMC()
             page.drawPoint(point!)
+            page.addEMC()
         }
     }
 

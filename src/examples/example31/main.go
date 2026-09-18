@@ -14,6 +14,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -26,6 +27,8 @@ func Example31() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Transparency")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -53,13 +56,16 @@ func Example31() {
 
 	// Opaque rectangles: each one hides the one under it.
 	pdfjet.NewTextLine(f2, "Opaque").SetLocation(50.0, y).DrawOn(page)
+	page.AddArtifactBMC() // The shapes carry no text, so they are artifacts.
 	for i := 0; i < len(colors); i++ {
 		page.SetBrushColor(colors[i])
 		page.FillRect(50.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
 	}
+	page.AddEMC()
 
 	// Half transparent rectangles: the colors mix where they overlap.
 	pdfjet.NewTextLine(f2, "50% transparent").SetLocation(320.0, y).DrawOn(page)
+	page.AddArtifactBMC()
 	page.SaveGraphicsState()
 	gs := pdfjet.NewGraphicsState()
 	gs.SetAlphaStroking(0.5)    // The stroking alpha constant
@@ -70,15 +76,19 @@ func Example31() {
 		page.FillRect(320.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
 	}
 	page.RestoreGraphicsState()
+	page.AddEMC()
 
 	// The same blue over a gray bar at four levels of alpha.
 	y += 245.0
 	pdfjet.NewTextLine(f2, "Fill alpha").SetLocation(50.0, y).DrawOn(page)
+	page.AddArtifactBMC()
 	page.SetBrushColor(color.Gray)
 	page.FillRect(50.0, y+55.0, 506.0, 30.0)
+	page.AddEMC()
 	alphas := []float32{0.25, 0.5, 0.75, 1.0}
 	for i := 0; i < len(alphas); i++ {
 		x := 50.0 + float32(i)*132.0
+		page.AddArtifactBMC()
 		page.SaveGraphicsState()
 		gs = pdfjet.NewGraphicsState()
 		gs.SetAlphaNonStroking(alphas[i])
@@ -86,6 +96,7 @@ func Example31() {
 		page.SetBrushColor(color.Blue)
 		page.FillRect(x, y+15.0, 110.0, 110.0)
 		page.RestoreGraphicsState()
+		page.AddEMC()
 
 		text = pdfjet.NewTextLine(f1, fmt.Sprintf("%d%%", int(math.Round(float64(alphas[i]*100.0)))))
 		text.SetFontSize(10.0)
@@ -106,6 +117,7 @@ func Example31() {
 	strokeAndFill := [][2]float32{{0.25, 1.0}, {1.0, 0.25}, {0.5, 0.5}}
 	for i := 0; i < len(labels); i++ {
 		x := 100.0 + float32(i)*180.0
+		page.AddArtifactBMC()
 		page.SaveGraphicsState()
 		gs = pdfjet.NewGraphicsState()
 		gs.SetAlphaStroking(strokeAndFill[i][0])
@@ -117,6 +129,7 @@ func Example31() {
 		page.SetPenWidth(16.0)
 		page.DrawCircle(x, y+65.0, 40.0)
 		page.RestoreGraphicsState()
+		page.AddEMC()
 
 		text = pdfjet.NewTextLine(f1, labels[i])
 		text.SetFontSize(10.0)

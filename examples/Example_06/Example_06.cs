@@ -18,6 +18,8 @@ public class Example_06 {
     public Example_06() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_06.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Attachments and Annotations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);

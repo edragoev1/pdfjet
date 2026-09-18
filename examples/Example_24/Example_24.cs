@@ -16,6 +16,8 @@ public class Example_24 {
     public Example_24() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_24.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("JPEG, PNG and BMP Images");
 
         Font font = new Font(pdf, IBMPlexSans.Regular);
 

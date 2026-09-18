@@ -12,6 +12,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -21,6 +22,8 @@ func Example24() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("JPEG, PNG and BMP Images")
 
 	font := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 

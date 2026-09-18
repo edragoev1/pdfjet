@@ -20,6 +20,8 @@ public class Example_28 {
     public Example_28() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_28.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Fonts from .otf, .ttf and .stream Files");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

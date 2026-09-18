@@ -135,6 +135,8 @@ public class QRCode : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         if let page = page {
+            // The modules carry no text, so they are decorative content.
+            page.addArtifactBMC()
             page.setBrushColor(self.color)
             for row in 0..<modules!.count {
                 for col in 0..<modules!.count {
@@ -143,6 +145,7 @@ public class QRCode : Drawable {
                     }
                 }
             }
+            page.addEMC()
         }
         let w = m1*Float(modules!.count)
         let h = m1*Float(modules!.count)

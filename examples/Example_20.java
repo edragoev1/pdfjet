@@ -21,6 +21,8 @@ class Example_20 {
     public Example_20() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_20.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("PDFjet Software Letterhead");
 
         // Read the logo from a PDF file, and add its fonts and images to this PDF.
         BufferedInputStream bis = new BufferedInputStream(
@@ -47,6 +49,8 @@ class Example_20 {
         float xScale = 0.5f;
         float yScale = 0.5f;
 
+        // The logo is a figure, with an alternate description for screen readers.
+        page.addBDC(StructElem.FIGURE, null, "The PDFjet logo");
         page.drawContents(
                 content.getData(),
                 height,
@@ -54,15 +58,18 @@ class Example_20 {
                 y,
                 xScale,
                 yScale);
+        page.addEMC();
 
         new TextLine(f2, "PDFjet Software").setLocation(390f, 60f).drawOn(page);
         new TextLine(f1, "Unionville, Ontario, Canada").setLocation(390f, 76f).drawOn(page);
         new TextLine(f1, "https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
 
-        // A thin rule under the letterhead.
+        // A thin rule under the letterhead, an artifact.
+        page.addArtifactBMC();
         page.setPenColor(Color.darkred);
         page.setPenWidth(1f);
         page.drawLine(60f, 115f, 552f, 115f);
+        page.addEMC();
 
         TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
         text.setFontSize(16f);
@@ -129,10 +136,12 @@ class Example_20 {
         qr.setLocation(300f, 340f);
         float[] xy = qr.drawOn(page);
 
-        // A frame around the QR code.
+        // A frame around the QR code, an artifact.
+        page.addArtifactBMC();
         page.setPenColor(Color.lightgray);
         page.setPenWidth(0.5f);
         page.drawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+        page.addEMC();
 
         TextLine caption = new TextLine(f1, "A Path with curves");
         caption.setTextColor(Color.gray);

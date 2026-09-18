@@ -13,6 +13,8 @@ import PDFjet
 public class Example_10 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_10.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Switzerland")
 
         let image1 = try Image(pdf, "images/sz-map.png")
 

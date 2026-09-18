@@ -172,6 +172,8 @@ public final class DataMatrix : Drawable {
         let rows = modules.count
         let cols = modules[0].count
         if let page = page {
+            // The modules carry no text, so they are decorative content.
+            page.addArtifactBMC()
             page.setBrushColor(color)
             for row in 0..<rows {
                 var col = 0
@@ -187,6 +189,7 @@ public final class DataMatrix : Drawable {
                     page.fillRect(x + Float(start)*m1, y + Float(row)*m1, Float(col - start)*m1, m1)
                 }
             }
+            page.addEMC()
         }
         return [x + Float(cols)*m1, y + Float(rows)*m1]
     }

@@ -16,6 +16,8 @@ public class Example_17 {
     public Example_17() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_17.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PNG Images from PngSuite");
 
         String fileName = "PngSuite/BASN3P08.PNG";
         FileStream fis = new FileStream(fileName, FileMode.Open, FileAccess.Read);

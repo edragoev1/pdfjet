@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -51,5 +52,16 @@ func TestDataMatrixDrawOnReturnsTheCornerOfTheModules(t *testing.T) {
 	xy := dm.DrawOn(page)
 	if math.Abs(float64(xy[0]-35)) > 0.01 || math.Abs(float64(xy[1]-35)) > 0.01 {
 		t.Errorf("corner %v", xy)
+	}
+}
+
+func TestDataMatrixInAPDFUADocumentTheModulesAreAnArtifact(t *testing.T) {
+	pdf := pdfjet.NewPDF(bufio.NewWriter(new(bytes.Buffer)))
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	NewDataMatrix("PDFjet").DrawOn(page)
+	content := string(page.GetContent())
+	if !strings.HasPrefix(content, "/Artifact BMC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the modules are not an artifact: %q", content)
 	}
 }

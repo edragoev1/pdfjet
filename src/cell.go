@@ -602,7 +602,9 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 				uri:            cell.point.uri,
 			})
 		}
+		page.AddArtifactBMC()
 		page.DrawPoint(cell.point)
+		page.AddEMC()
 	}
 }
 

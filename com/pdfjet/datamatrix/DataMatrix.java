@@ -203,6 +203,8 @@ public final class DataMatrix implements Drawable {
         int rows = modules.length;
         int cols = modules[0].length;
         if (page != null) {
+            // The modules carry no text, so they are decorative content.
+            page.addArtifactBMC();
             page.setBrushColor(color);
             for (int row = 0; row < rows; row++) {
                 int col = 0;
@@ -218,6 +220,7 @@ public final class DataMatrix implements Drawable {
                     page.fillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
             }
+            page.addEMC();
         }
         return new float[] {x + cols*m1, y + rows*m1};
     }

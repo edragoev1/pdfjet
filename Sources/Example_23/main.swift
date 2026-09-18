@@ -13,6 +13,8 @@ import PDFjet
 public class Example_23 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_23.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("The Ascent and Descent of a Font")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(72.0)

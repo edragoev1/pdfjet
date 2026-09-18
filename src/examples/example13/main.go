@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -27,6 +28,8 @@ func Example13() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Winter Reading Scores")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f1.SetSize(7.0)

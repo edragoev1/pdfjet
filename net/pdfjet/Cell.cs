@@ -614,7 +614,9 @@ public class Cell {
                         null,
                         null));
             }
+            page.AddArtifactBMC();
             page.DrawPoint(point);
+            page.AddEMC();
         }
     }
 

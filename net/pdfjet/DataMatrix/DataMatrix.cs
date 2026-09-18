@@ -177,6 +177,8 @@ public class DataMatrix : IDrawable {
         int rows = modules.Length;
         int cols = modules[0].Length;
         if (page != null) {
+            // The modules carry no text, so they are decorative content.
+            page.AddArtifactBMC();
             page.SetBrushColor(color);
             for (int row = 0; row < rows; row++) {
                 int col = 0;
@@ -192,6 +194,7 @@ public class DataMatrix : IDrawable {
                     page.FillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
             }
+            page.AddEMC();
         }
         return new float[] {x + cols*m1, y + rows*m1};
     }

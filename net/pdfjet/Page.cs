@@ -2599,7 +2599,9 @@ public class Page {
         annots.Add(annotation);
         if (pdf.compliance == Compliance.PDF_UA_1) {
             StructElement element = new StructElement();
-            element.structure = StructElem.LINK.Type();
+            // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
+            element.structure = annotation.annotationType.Equals(Annotation.Link) ?
+                    StructElem.LINK.Type() : StructElem.ANNOT.Type();
             element.language = annotation.language;
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;

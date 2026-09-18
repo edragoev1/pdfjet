@@ -16,6 +16,8 @@ public class Example_02 {
     public Example_02() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_02.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages");
 
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.SetSize(14f);
@@ -33,6 +35,7 @@ public class Example_02 {
 
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
+        textBlock.SetLanguage("ja");
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
@@ -41,6 +44,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f2, Content.OfTextFile("data/languages/korean.txt"));
+        textBlock.SetLanguage("ko");
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
@@ -49,6 +53,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
+        textBlock.SetLanguage("zh-Hans");
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);
@@ -57,6 +62,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));
+        textBlock.SetLanguage("zh-Hant");
         textBlock.SetLocation(50f, 50f);
         textBlock.SetWidth(415f);
         textBlock.DrawOn(page);

@@ -184,6 +184,21 @@ import Testing
         #expect(!raw.contains("/ActualText"))
     }
 
+    @Test func pointsAndTwoDimensionalBarcodesAreArtifacts() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let drawables: [Drawable] = [
+                Point(50, 50),
+                try QRCode("https://pdfjet.com", ErrorCorrectionLevel.M),
+                DataMatrix("PDFjet")]
+        for drawable in drawables {
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            _ = drawable.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.hasPrefix("/Artifact BMC\n"), "\(content)")
+            #expect(content.hasSuffix("EMC\n"), "\(content)")
+        }
+    }
+
     private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
 
     // The numbers of the page objects, in page order.
@@ -198,6 +213,24 @@ import Testing
         return regex.matches(in: text, range: NSRange(location: 0, length: string.length)).map {
             string.substring(with: $0.range(at: 1))
         }
+    }
+
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
+        let note = TextAnnotation()
+        note.setLocation(70, 100)
+        note.setContents("A note")
+        _ = note.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /Link\n").count - 1 == 1)
+        #expect(raw.components(separatedBy: "/S /Annot\n").count - 1 == 1)
     }
 
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))

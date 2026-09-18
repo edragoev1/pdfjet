@@ -13,6 +13,8 @@ import PDFjet
 public class Example_08 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_08.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Electric Vehicle Population")
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         f1.setSize(7.0)

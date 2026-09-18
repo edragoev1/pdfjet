@@ -17,6 +17,8 @@ public class Example_17 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_17.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("PNG Images from PngSuite");
 
         String fileName = "PngSuite/BASN3P08.PNG";
         FileInputStream fis = new FileInputStream(fileName);

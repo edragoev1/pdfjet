@@ -2075,7 +2075,11 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	page.annots = append(page.annots, annotation)
 	if page.pdf.compliance == compliance.PDF_UA_1 {
 		element := newStructElement()
-		element.structure = string(structelem.Link)
+		// PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
+		element.structure = string(structelem.Annot)
+		if annotation.annotationType == annotationLink {
+			element.structure = string(structelem.Link)
+		}
 		element.language = annotation.language
 		element.actualText = annotation.actualText
 		element.altDescription = annotation.altDescription

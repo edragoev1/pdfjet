@@ -252,6 +252,8 @@ public class Point : IDrawable {
             return new float[] {x + r, y + r};
         }
 
+        // A point is a marker and carries no text, so it is decorative content.
+        page.AddArtifactBMC();
         page.SaveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);
@@ -268,6 +270,7 @@ public class Point : IDrawable {
         }
         page.DrawPoint(this);
         page.RestoreGraphicsState();
+        page.AddEMC();
 
         return new float[] {x + r, y + r};
     }

@@ -21,6 +21,8 @@ public class Example_38 {
                 new FileStream("Example_38.pdf", FileMode.Create));
 
         PDF pdf = new PDF(bos);
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Table Cells That Span Rows and Columns");
 
         font = new Font(pdf, IBMPlexMono.Regular);
 

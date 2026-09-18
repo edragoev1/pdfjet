@@ -23,6 +23,8 @@ public class Example_33 {
             throw ExampleError(message: "Cannot open Example_33.pdf for writing")
         }
         let pdf = PDF(output)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("SVG Images")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)

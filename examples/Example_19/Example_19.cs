@@ -19,6 +19,8 @@ public class Example_19 {
     public Example_19() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_19.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Text Next to Images");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

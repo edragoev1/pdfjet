@@ -13,6 +13,8 @@ import PDFjet
 public class Example_38 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_38.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Table Cells That Span Rows and Columns")
         let font = try Font(pdf, IBMPlexMono.Regular)
         let page = Page(pdf, Letter.LANDSCAPE)
 

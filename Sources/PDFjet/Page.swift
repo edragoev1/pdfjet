@@ -2338,7 +2338,9 @@ public class Page {
         self.annots.append(annotation)
         if pdf.compliance == Compliance.PDF_UA_1 {
             let element = StructElement()
-            element.structure = StructElem.LINK.rawValue
+            // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
+            element.structure = (annotation.annotationType == Annotation.Link) ?
+                    StructElem.LINK.rawValue : StructElem.ANNOT.rawValue
             element.language = annotation.language
             element.actualText = annotation.actualText
             element.altDescription = annotation.altDescription

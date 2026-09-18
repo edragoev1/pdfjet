@@ -14,6 +14,8 @@ public class Example_02 {
     public init() throws {
         let stream = OutputStream(toFileAtPath: "Example_02.pdf", append: false)
         let pdf = PDF(stream!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("The Universal Declaration of Human Rights in Four Languages")
 
         let f1 = try Font(pdf, IBMPlexSansJP.Regular)
         f1.setSize(14.0)
@@ -31,6 +33,7 @@ public class Example_02 {
 
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
+        textBlock.setLanguage("ja")
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
@@ -39,6 +42,7 @@ public class Example_02 {
 
         textBlock = TextBlock(
                 f2, try Content.ofTextFile("data/languages/korean.txt"))
+        textBlock.setLanguage("ko")
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
@@ -47,6 +51,7 @@ public class Example_02 {
 
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
+        textBlock.setLanguage("zh-Hans")
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)
@@ -55,6 +60,7 @@ public class Example_02 {
 
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
+        textBlock.setLanguage("zh-Hant")
         textBlock.setLocation(50.0, 50.0)
         textBlock.setWidth(415.0)
         textBlock.drawOn(page)

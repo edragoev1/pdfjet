@@ -17,6 +17,8 @@ import PDFjet
 public class Example_31 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_31.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Transparency")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
@@ -44,13 +46,16 @@ public class Example_31 {
 
         // Opaque rectangles: each one hides the one under it.
         TextLine(f2, "Opaque").setLocation(50.0, y).drawOn(page)
+        page.addArtifactBMC()  // The shapes carry no text, so they are artifacts.
         for i in 0..<colors.count {
             page.setBrushColor(colors[i])
             page.fillRect(50.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
         }
+        page.addEMC()
 
         // Half transparent rectangles: the colors mix where they overlap.
         TextLine(f2, "50% transparent").setLocation(320.0, y).drawOn(page)
+        page.addArtifactBMC()
         page.saveGraphicsState()
         var gs = GraphicsState()
         gs.setAlphaStroking(0.5)    // The stroking alpha constant
@@ -61,15 +66,19 @@ public class Example_31 {
             page.fillRect(320.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
         }
         page.restoreGraphicsState()
+        page.addEMC()
 
         // The same blue over a gray bar at four levels of alpha.
         y += 245.0
         TextLine(f2, "Fill alpha").setLocation(50.0, y).drawOn(page)
+        page.addArtifactBMC()
         page.setBrushColor(Color.gray)
         page.fillRect(50.0, y + 55.0, 506.0, 30.0)
+        page.addEMC()
         let alphas: [Float] = [0.25, 0.5, 0.75, 1.0]
         for i in 0..<alphas.count {
             let x: Float = 50.0 + Float(i) * 132.0
+            page.addArtifactBMC()
             page.saveGraphicsState()
             gs = GraphicsState()
             gs.setAlphaNonStroking(alphas[i])
@@ -77,6 +86,7 @@ public class Example_31 {
             page.setBrushColor(Color.blue)
             page.fillRect(x, y + 15.0, 110.0, 110.0)
             page.restoreGraphicsState()
+            page.addEMC()
 
             text = TextLine(f1, "\(Int((alphas[i] * 100.0).rounded()))%")
             text.setFontSize(10.0)
@@ -97,6 +107,7 @@ public class Example_31 {
         let strokeAndFill: [[Float]] = [[0.25, 1.0], [1.0, 0.25], [0.5, 0.5]]
         for i in 0..<labels.count {
             let x: Float = 100.0 + Float(i) * 180.0
+            page.addArtifactBMC()
             page.saveGraphicsState()
             gs = GraphicsState()
             gs.setAlphaStroking(strokeAndFill[i][0])
@@ -108,6 +119,7 @@ public class Example_31 {
             page.setPenWidth(16.0)
             page.drawCircle(x, y + 65.0, 40.0)
             page.restoreGraphicsState()
+            page.addEMC()
 
             text = TextLine(f1, labels[i])
             text.setFontSize(10.0)

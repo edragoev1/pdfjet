@@ -28,6 +28,8 @@ struct Country {
 public class Example_09 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_09.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("World View - Communications")
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(8.0)

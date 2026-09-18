@@ -31,6 +31,8 @@ public class Example_09 {
     public Example_09() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_09.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("World View - Communications");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(8f);

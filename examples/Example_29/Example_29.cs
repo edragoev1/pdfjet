@@ -19,6 +19,8 @@ public class Example_29 {
     public Example_29() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_29.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Text Columns in Table Cells");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);

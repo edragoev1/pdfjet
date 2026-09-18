@@ -2601,7 +2601,9 @@ final public class Page {
         annots.add(annotation);
         if (pdf.compliance == Compliance.PDF_UA_1) {
             StructElement element = new StructElement();
-            element.structure = StructElem.LINK.type;
+            // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
+            element.structure = annotation.annotationType.equals(Annotation.Link) ?
+                    StructElem.LINK.type : StructElem.ANNOT.type;
             element.language = annotation.language;
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;

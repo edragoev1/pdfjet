@@ -17,6 +17,8 @@ public class Example_02 {
     public Example_02() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_02.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The Universal Declaration of Human Rights in Four Languages");
 
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.setSize(14f);
@@ -34,6 +36,7 @@ public class Example_02 {
 
         TextBlock textBlock = new TextBlock(
                 f1, Content.ofTextFile("data/languages/japanese.txt"));
+        textBlock.setLanguage("ja");
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
@@ -42,6 +45,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f2, Content.ofTextFile("data/languages/korean.txt"));
+        textBlock.setLanguage("ko");
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
@@ -50,6 +54,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
+        textBlock.setLanguage("zh-Hans");
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);
@@ -58,6 +63,7 @@ public class Example_02 {
 
         textBlock = new TextBlock(
                 f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
+        textBlock.setLanguage("zh-Hant");
         textBlock.setLocation(50f, 50f);
         textBlock.setWidth(415f);
         textBlock.drawOn(page);

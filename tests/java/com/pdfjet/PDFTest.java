@@ -212,6 +212,40 @@ class PDFTest {
         assertFalse(raw.contains("/ActualText"));
     }
 
+    @Test
+    void pointsAndTwoDimensionalBarcodesAreArtifacts() throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        Drawable[] drawables = {
+                new Point(50f, 50f),
+                new com.pdfjet.qrcode.QRCode("https://pdfjet.com", com.pdfjet.qrcode.ErrorCorrectionLevel.M),
+                new com.pdfjet.datamatrix.DataMatrix("PDFjet")};
+        for (Drawable drawable : drawables) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            drawable.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.startsWith("/Artifact BMC\n"), content);
+            assertTrue(content.endsWith("EMC\n"), content);
+        }
+    }
+
+    @Test
+    void aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 80f).drawOn(page);
+        TextAnnotation note = new TextAnnotation();
+        note.setLocation(70f, 100f);
+        note.setContents("A note");
+        note.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/S /Link\n").length - 1, raw);
+        assertEquals(1, raw.split("/S /Annot\n").length - 1, raw);
+    }
+
     // The numbers of the page objects, in page order.
     private static String[] pageNumbers(byte[] pdf) throws Exception {
         List<PDFobj> pages = new PDF().getPageObjects(TestSupport.read(pdf));

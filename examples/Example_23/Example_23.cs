@@ -16,6 +16,8 @@ public class Example_23 {
     public Example_23() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_23.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("The Ascent and Descent of a Font");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(72f);

@@ -16,6 +16,8 @@ public class Example_25 {
     public Example_25() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_25.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Fruit Donut Chart");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

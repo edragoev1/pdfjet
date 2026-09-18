@@ -304,6 +304,8 @@ public class Point implements Drawable {
             return new float[] {x + r, y + r};
         }
 
+        // A point is a marker and carries no text, so it is decorative content.
+        page.addArtifactBMC();
         page.saveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);
@@ -320,6 +322,7 @@ public class Point implements Drawable {
         }
         page.drawPoint(this);
         page.restoreGraphicsState();
+        page.addEMC();
 
         return new float[] {x + r, y + r};
     }

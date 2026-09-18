@@ -15,6 +15,8 @@ import PDFjet
 public class Example_20 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_20.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PDFjet Software Letterhead")
 
         // Read the logo from a PDF file, and add its fonts and images to this PDF.
         let objects = try pdf.read(
@@ -40,6 +42,8 @@ public class Example_20 {
         let xScale: Float = 0.5
         let yScale: Float = 0.5
 
+        // The logo is a figure, with an alternate description for screen readers.
+        page.addBDC(StructElem.FIGURE, nil, "The PDFjet logo")
         page.drawContents(
                 content.getData(),
                 height,
@@ -47,15 +51,18 @@ public class Example_20 {
                 y,
                 xScale,
                 yScale)
+        page.addEMC()
 
         TextLine(f2, "PDFjet Software").setLocation(390.0, 60.0).drawOn(page)
         TextLine(f1, "Unionville, Ontario, Canada").setLocation(390.0, 76.0).drawOn(page)
         TextLine(f1, "https://pdfjet.com").setLocation(390.0, 92.0).drawOn(page)
 
-        // A thin rule under the letterhead.
+        // A thin rule under the letterhead, an artifact.
+        page.addArtifactBMC()
         page.setPenColor(Color.darkred)
         page.setPenWidth(1.0)
         page.drawLine(60.0, 115.0, 552.0, 115.0)
+        page.addEMC()
 
         let text = TextLine(f2, "The logo on this page was read from a PDF file.")
         text.setFontSize(16.0)
@@ -122,10 +129,12 @@ public class Example_20 {
         qr.setLocation(300.0, 340.0)
         let xy = qr.drawOn(page)
 
-        // A frame around the QR code.
+        // A frame around the QR code, an artifact.
+        page.addArtifactBMC()
         page.setPenColor(Color.lightgray)
         page.setPenWidth(0.5)
         page.drawRect(290.0, 330.0, xy[0] - 280.0, xy[1] - 320.0)
+        page.addEMC()
 
         var caption = TextLine(f1, "A Path with curves")
         caption.setTextColor(Color.gray)

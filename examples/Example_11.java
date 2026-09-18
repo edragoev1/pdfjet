@@ -21,6 +21,8 @@ public class Example_11 {
     public Example_11() throws Exception {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_11.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Linear Barcodes");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);

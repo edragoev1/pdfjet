@@ -125,6 +125,8 @@ public class QRCode : IDrawable {
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
         if (page != null) {
+            // The modules carry no text, so they are decorative content.
+            page.AddArtifactBMC();
             page.SetBrushColor(this.color);
             for (int row = 0; row < modules.Length; row++) {
                 for (int col = 0; col < modules.Length; col++) {
@@ -133,6 +135,7 @@ public class QRCode : IDrawable {
                     }
                 }
             }
+            page.AddEMC();
         }
 
         float w = m1*modules.Length;

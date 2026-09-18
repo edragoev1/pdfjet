@@ -19,6 +19,8 @@ public class Example_11 {
     public Example_11() {
         PDF pdf = new PDF( new BufferedStream(
                 new FileStream("Example_11.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Linear Barcodes");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);

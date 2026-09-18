@@ -14,6 +14,8 @@ import PDFjet
 public class Example_18 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("How to Number Pages")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
@@ -72,7 +74,9 @@ public class Example_18 {
             line.setStrokeColor(Color.lightgray)
             line.drawOn(page)
 
+            // A page number is an artifact: a screen reader skips it.
             let footer = "Page " + String(i + 1) + " of " + String(pages.count)
+            page.addArtifactBMC()
             page.setBrushColor(Color.black)
             page.drawString(
                     f1,
@@ -80,6 +84,7 @@ public class Example_18 {
                     footer,
                     (page.getWidth() - f1.stringWidth(fontSize, footer))/2.0,
                     page.getHeight() - 40.0)
+            page.addEMC()
         }
         pdf.addPages(pages)
 

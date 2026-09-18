@@ -20,6 +20,8 @@ import com.pdfjet.fonts.*;
 public class Example_35 {
     public Example_35() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_35.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Containers and Stamps");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

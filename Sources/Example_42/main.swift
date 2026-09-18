@@ -13,6 +13,8 @@ import PDFjet
 public class Example_42 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_42.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Company Information Form")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)

@@ -18,6 +18,8 @@ public class Example_26 {
     public Example_26() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_26.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Customer Survey");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(11f);

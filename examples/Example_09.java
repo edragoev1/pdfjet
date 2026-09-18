@@ -32,6 +32,8 @@ final public class Example_09 {
     public Example_09() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_09.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("World View - Communications");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.setSize(8f);

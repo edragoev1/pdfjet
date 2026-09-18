@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -115,4 +116,15 @@ func TestQRCodeDrawOnReturnsTheSameCornerEveryTime(t *testing.T) {
 	qr.SetLocation(10, 10)
 	testAssertXY(t, 76, 76, qr.DrawOn(page))
 	testAssertXY(t, 76, 76, qr.DrawOn(page))
+}
+
+func TestQRCodeInAPDFUADocumentTheModulesAreAnArtifact(t *testing.T) {
+	pdf := pdfjet.NewPDF(bufio.NewWriter(new(bytes.Buffer)))
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	NewQRCode("https://pdfjet.com", errorcorrectionlevel.M).DrawOn(page)
+	content := string(page.GetContent())
+	if !strings.HasPrefix(content, "/Artifact BMC\n") || !strings.HasSuffix(content, "EMC\n") {
+		t.Errorf("the modules are not an artifact: %q", content)
+	}
 }

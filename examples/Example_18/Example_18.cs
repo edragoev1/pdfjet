@@ -18,6 +18,8 @@ public class Example_18 {
     public Example_18() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("How to Number Pages");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -76,7 +78,9 @@ public class Example_18 {
             line.SetStrokeColor(Color.lightgray);
             line.DrawOn(page);
 
+            // A page number is an artifact: a screen reader skips it.
             String footer = "Page " + (i + 1) + " of " + pages.Count;
+            page.AddArtifactBMC();
             page.SetBrushColor(Color.black);
             page.DrawString(
                     f1,
@@ -84,6 +88,7 @@ public class Example_18 {
                     footer,
                     (page.GetWidth() - f1.StringWidth(fontSize, footer))/2f,
                     page.GetHeight() - 40f);
+            page.AddEMC();
         }
         pdf.AddPages(pages);
 

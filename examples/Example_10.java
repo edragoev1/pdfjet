@@ -17,6 +17,8 @@ public class Example_10 {
     public Example_10() throws Exception {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_10.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Switzerland");
 
         Image image1 = new Image(pdf, "images/sz-map.png");
 

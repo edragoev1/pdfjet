@@ -19,6 +19,8 @@ class Example_20 {
     public Example_20() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_20.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PDFjet Software Letterhead");
 
         // Read the logo from a PDF file, and add its fonts and images to this PDF.
         BufferedStream bis = new BufferedStream(
@@ -45,6 +47,8 @@ class Example_20 {
         float xScale = 0.5f;
         float yScale = 0.5f;
 
+        // The logo is a figure, with an alternate description for screen readers.
+        page.AddBDC(StructElem.FIGURE, null, "The PDFjet logo");
         page.DrawContents(
                 content.GetData(),
                 height,
@@ -52,15 +56,18 @@ class Example_20 {
                 y,
                 xScale,
                 yScale);
+        page.AddEMC();
 
         new TextLine(f2, "PDFjet Software").SetLocation(390f, 60f).DrawOn(page);
         new TextLine(f1, "Unionville, Ontario, Canada").SetLocation(390f, 76f).DrawOn(page);
         new TextLine(f1, "https://pdfjet.com").SetLocation(390f, 92f).DrawOn(page);
 
-        // A thin rule under the letterhead.
+        // A thin rule under the letterhead, an artifact.
+        page.AddArtifactBMC();
         page.SetPenColor(Color.darkred);
         page.SetPenWidth(1f);
         page.DrawLine(60f, 115f, 552f, 115f);
+        page.AddEMC();
 
         TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
         text.SetFontSize(16f);
@@ -127,10 +134,12 @@ class Example_20 {
         qr.SetLocation(300f, 340f);
         float[] xy = qr.DrawOn(page);
 
-        // A frame around the QR code.
+        // A frame around the QR code, an artifact.
+        page.AddArtifactBMC();
         page.SetPenColor(Color.lightgray);
         page.SetPenWidth(0.5f);
         page.DrawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+        page.AddEMC();
 
         TextLine caption = new TextLine(f1, "A Path with curves");
         caption.SetTextColor(Color.gray);

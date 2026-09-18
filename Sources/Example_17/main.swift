@@ -13,6 +13,8 @@ import PDFjet
 public class Example_17 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_17.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PNG Images from PngSuite")
 
         var fileName = "PngSuite/BASN3P08.PNG"
         var fis = InputStream(fileAtPath: fileName)

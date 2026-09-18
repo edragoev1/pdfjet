@@ -21,6 +21,8 @@ public class Example_38 {
                 new BufferedOutputStream(new FileOutputStream("Example_38.pdf"));
 
         PDF pdf = new PDF(bos);
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Table Cells That Span Rows and Columns");
         font = new Font(pdf, IBMPlexMono.Regular);
 
         Page page = new Page(pdf, Letter.LANDSCAPE);

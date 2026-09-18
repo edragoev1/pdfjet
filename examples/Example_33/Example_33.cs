@@ -18,6 +18,8 @@ public class Example_33 {
     public Example_33() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_33.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("SVG Images");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

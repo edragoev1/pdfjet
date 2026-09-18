@@ -13,6 +13,8 @@ import PDFjet
 public class Example_25 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_25.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Fruit Donut Chart")
 
         let page = Page(pdf, Letter.PORTRAIT)
 

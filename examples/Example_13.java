@@ -19,6 +19,8 @@ final public class Example_13 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_13.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Winter Reading Scores");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.setSize(7f);

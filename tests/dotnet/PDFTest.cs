@@ -205,6 +205,40 @@ public class PDFTest {
         Assert.DoesNotContain("/ActualText", raw);
     }
 
+    [Fact]
+    public void PointsAndTwoDimensionalBarcodesAreArtifacts() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        IDrawable[] drawables = {
+                new Point(50f, 50f),
+                new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M),
+                new DataMatrix("PDFjet")};
+        foreach (IDrawable drawable in drawables) {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            drawable.DrawOn(page);
+            string content = TestSupport.Content(page);
+            Assert.StartsWith("/Artifact BMC\n", content);
+            Assert.EndsWith("EMC\n", content);
+        }
+    }
+
+    [Fact]
+    public void ALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
+        TextAnnotation note = new TextAnnotation();
+        note.SetLocation(70f, 100f);
+        note.SetContents("A note");
+        note.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, raw.Split("/S /Link\n").Length - 1);
+        Assert.Equal(1, raw.Split("/S /Annot\n").Length - 1);
+    }
+
     // The numbers of the page objects, in page order.
     private static string[] PageNumbers(byte[] pdf) {
         List<PDFobj> pages = new PDF().GetPageObjects(TestSupport.Read(pdf));

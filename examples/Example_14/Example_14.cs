@@ -18,6 +18,8 @@ public class Example_14 {
     public Example_14() {
         PDF pdf = new PDF(new BufferedStream(
             new FileStream("Example_14.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Data Matrix Barcodes");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);

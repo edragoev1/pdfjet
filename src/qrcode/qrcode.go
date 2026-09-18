@@ -128,6 +128,8 @@ func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 // @return x and y coordinates of the bottom right corner of this component.
 func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 	if page != nil {
+		// The modules carry no text, so they are decorative content.
+		page.AddArtifactBMC()
 		page.SetBrushColor(qrcode.color)
 		for row := 0; row < len(qrcode.modules); row++ {
 			for col := 0; col < len(qrcode.modules); col++ {
@@ -140,6 +142,7 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 				}
 			}
 		}
+		page.AddEMC()
 	}
 	w := qrcode.m1 * float32(len(qrcode.modules))
 	h := qrcode.m1 * float32(len(qrcode.modules))

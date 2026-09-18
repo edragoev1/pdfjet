@@ -18,6 +18,8 @@ public class Example_42 {
     public Example_42() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_42.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Company Information Form");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

@@ -18,6 +18,8 @@ public class Example_36 {
     public Example_36() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_36.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Maps");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);

@@ -21,6 +21,8 @@ public class Example_31 {
     public Example_31() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_31.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Transparency");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -48,13 +50,16 @@ public class Example_31 {
 
         // Opaque rectangles: each one hides the one under it.
         new TextLine(f2, "Opaque").setLocation(50f, y).drawOn(page);
+        page.addArtifactBMC();  // The shapes carry no text, so they are artifacts.
         for (int i = 0; i < colors.length; i++) {
             page.setBrushColor(colors[i]);
             page.fillRect(50f + i * 60f, y + 15f + i * 30f, 120f, 120f);
         }
+        page.addEMC();
 
         // Half transparent rectangles: the colors mix where they overlap.
         new TextLine(f2, "50% transparent").setLocation(320f, y).drawOn(page);
+        page.addArtifactBMC();
         page.saveGraphicsState();
         GraphicsState gs = new GraphicsState();
         gs.setAlphaStroking(0.5f);      // The stroking alpha constant
@@ -65,15 +70,19 @@ public class Example_31 {
             page.fillRect(320f + i * 60f, y + 15f + i * 30f, 120f, 120f);
         }
         page.restoreGraphicsState();
+        page.addEMC();
 
         // The same blue over a gray bar at four levels of alpha.
         y += 245f;
         new TextLine(f2, "Fill alpha").setLocation(50f, y).drawOn(page);
+        page.addArtifactBMC();
         page.setBrushColor(Color.gray);
         page.fillRect(50f, y + 55f, 506f, 30f);
+        page.addEMC();
         float[] alphas = {0.25f, 0.5f, 0.75f, 1f};
         for (int i = 0; i < alphas.length; i++) {
             float x = 50f + i * 132f;
+            page.addArtifactBMC();
             page.saveGraphicsState();
             gs = new GraphicsState();
             gs.setAlphaNonStroking(alphas[i]);
@@ -81,6 +90,7 @@ public class Example_31 {
             page.setBrushColor(Color.blue);
             page.fillRect(x, y + 15f, 110f, 110f);
             page.restoreGraphicsState();
+            page.addEMC();
 
             text = new TextLine(f1, Math.round(alphas[i] * 100f) + "%");
             text.setFontSize(10f);
@@ -101,6 +111,7 @@ public class Example_31 {
         float[][] strokeAndFill = {{0.25f, 1f}, {1f, 0.25f}, {0.5f, 0.5f}};
         for (int i = 0; i < labels.length; i++) {
             float x = 100f + i * 180f;
+            page.addArtifactBMC();
             page.saveGraphicsState();
             gs = new GraphicsState();
             gs.setAlphaStroking(strokeAndFill[i][0]);
@@ -112,6 +123,7 @@ public class Example_31 {
             page.setPenWidth(16f);
             page.drawCircle(x, y + 65f, 40f);
             page.restoreGraphicsState();
+            page.addEMC();
 
             text = new TextLine(f1, labels[i]);
             text.setFontSize(10f);

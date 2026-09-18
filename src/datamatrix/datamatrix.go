@@ -173,6 +173,8 @@ func (dm *DataMatrix) DrawOn(page *pdfjet.Page) [2]float32 {
 	rows := len(dm.modules)
 	cols := len(dm.modules[0])
 	if page != nil {
+		// The modules carry no text, so they are decorative content.
+		page.AddArtifactBMC()
 		page.SetBrushColor(dm.color)
 		for row := 0; row < rows; row++ {
 			col := 0
@@ -192,6 +194,7 @@ func (dm *DataMatrix) DrawOn(page *pdfjet.Page) [2]float32 {
 					dm.m1)
 			}
 		}
+		page.AddEMC()
 	}
 	return [2]float32{dm.x + float32(cols)*dm.m1, dm.y + float32(rows)*dm.m1}
 }

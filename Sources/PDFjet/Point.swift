@@ -294,6 +294,8 @@ public class Point : Drawable {
             return [self.x + self.r, self.y + self.r]
         }
 
+        // A point is a marker and carries no text, so it is decorative content.
+        page.addArtifactBMC()
         page.saveGraphicsState()
         if fillColor != nil && strokeColor != nil {
             page.setBrushColor(fillColor)
@@ -310,6 +312,7 @@ public class Point : Drawable {
         }
         page.drawPoint(self)
         page.restoreGraphicsState()
+        page.addEMC()
         return [self.x + self.r, self.y + self.r]
     }
 }   // End of Point.swift

@@ -12,6 +12,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 // Example17 is a test case for PNG images.
@@ -20,6 +21,8 @@ func Example17() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("PNG Images from PngSuite")
 
 	image1 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P08.PNG")
 	image2 := pdfjet.NewImageFromFile(pdf, "PngSuite/BASN3P04.PNG")

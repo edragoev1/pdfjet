@@ -16,6 +16,8 @@ import PDFjet
 public class Example_19 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_19.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Text Next to Images")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)

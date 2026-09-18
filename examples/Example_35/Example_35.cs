@@ -17,6 +17,8 @@ public class Example_35 {
     public Example_35() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_35.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Containers and Stamps");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

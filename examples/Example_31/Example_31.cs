@@ -20,6 +20,8 @@ public class Example_31 {
     public Example_31() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_31.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Transparency");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -47,13 +49,16 @@ public class Example_31 {
 
         // Opaque rectangles: each one hides the one under it.
         new TextLine(f2, "Opaque").SetLocation(50f, y).DrawOn(page);
+        page.AddArtifactBMC();  // The shapes carry no text, so they are artifacts.
         for (int i = 0; i < colors.Length; i++) {
             page.SetBrushColor(colors[i]);
             page.FillRect(50f + i * 60f, y + 15f + i * 30f, 120f, 120f);
         }
+        page.AddEMC();
 
         // Half transparent rectangles: the colors mix where they overlap.
         new TextLine(f2, "50% transparent").SetLocation(320f, y).DrawOn(page);
+        page.AddArtifactBMC();
         page.SaveGraphicsState();
         GraphicsState gs = new GraphicsState();
         gs.SetAlphaStroking(0.5f);      // The stroking alpha constant
@@ -64,15 +69,19 @@ public class Example_31 {
             page.FillRect(320f + i * 60f, y + 15f + i * 30f, 120f, 120f);
         }
         page.RestoreGraphicsState();
+        page.AddEMC();
 
         // The same blue over a gray bar at four levels of alpha.
         y += 245f;
         new TextLine(f2, "Fill alpha").SetLocation(50f, y).DrawOn(page);
+        page.AddArtifactBMC();
         page.SetBrushColor(Color.gray);
         page.FillRect(50f, y + 55f, 506f, 30f);
+        page.AddEMC();
         float[] alphas = {0.25f, 0.5f, 0.75f, 1f};
         for (int i = 0; i < alphas.Length; i++) {
             float x = 50f + i * 132f;
+            page.AddArtifactBMC();
             page.SaveGraphicsState();
             gs = new GraphicsState();
             gs.SetAlphaNonStroking(alphas[i]);
@@ -80,6 +89,7 @@ public class Example_31 {
             page.SetBrushColor(Color.blue);
             page.FillRect(x, y + 15f, 110f, 110f);
             page.RestoreGraphicsState();
+            page.AddEMC();
 
             text = new TextLine(f1, Math.Round(alphas[i] * 100f) + "%");
             text.SetFontSize(10f);
@@ -100,6 +110,7 @@ public class Example_31 {
         float[,] strokeAndFill = {{0.25f, 1f}, {1f, 0.25f}, {0.5f, 0.5f}};
         for (int i = 0; i < labels.Length; i++) {
             float x = 100f + i * 180f;
+            page.AddArtifactBMC();
             page.SaveGraphicsState();
             gs = new GraphicsState();
             gs.SetAlphaStroking(strokeAndFill[i, 0]);
@@ -111,6 +122,7 @@ public class Example_31 {
             page.SetPenWidth(16f);
             page.DrawCircle(x, y + 65f, 40f);
             page.RestoreGraphicsState();
+            page.AddEMC();
 
             text = new TextLine(f1, labels[i]);
             text.SetFontSize(10f);

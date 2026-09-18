@@ -19,6 +19,8 @@ public class Example_03 {
         PDF pdf = new PDF(
                 new BufferedOutputStream(
                         new FileOutputStream("Example_03.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Paragraphs in a Text Frame");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(10f);

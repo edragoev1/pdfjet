@@ -13,6 +13,8 @@ import PDFjet
 public class Example_24 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_24.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("JPEG, PNG and BMP Images")
         let font = try Font(pdf, IBMPlexSans.Regular)
 
         let image1 = try Image(pdf, "images/gr-map.jpg")

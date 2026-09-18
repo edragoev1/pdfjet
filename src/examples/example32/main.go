@@ -13,6 +13,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -23,6 +24,8 @@ func Example32() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("The Source Code of Example_02")
 
 	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
 	font.SetSize(10.0)

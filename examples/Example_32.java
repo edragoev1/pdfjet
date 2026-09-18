@@ -18,6 +18,8 @@ public class Example_32 {
     public Example_32() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_32.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The Source Code of Example_02");
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
         font.setSize(10f);

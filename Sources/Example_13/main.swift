@@ -13,6 +13,8 @@ import PDFjet
 public class Example_13 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_13.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Winter Reading Scores")
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         f1.setSize(7.0)

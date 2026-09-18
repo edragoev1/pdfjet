@@ -17,6 +17,8 @@ public class Example_26 {
     public Example_26() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_26.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Customer Survey");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(11f);

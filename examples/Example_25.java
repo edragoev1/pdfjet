@@ -17,6 +17,8 @@ public class Example_25 {
     public Example_25() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_25.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Fruit Donut Chart");
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 

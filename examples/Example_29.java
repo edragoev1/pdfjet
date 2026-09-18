@@ -20,6 +20,8 @@ public class Example_29 {
     public Example_29() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_29.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Text Columns in Table Cells");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(10f);

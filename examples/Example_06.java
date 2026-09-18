@@ -19,6 +19,8 @@ import com.pdfjet.fonts.*;
 public class Example_06 {
     public Example_06() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_06.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Attachments and Annotations");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);

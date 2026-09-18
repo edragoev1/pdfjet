@@ -18,6 +18,8 @@ public class Example_32 {
     public Example_32() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_32.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("The Source Code of Example_02");
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
         font.SetSize(10f);

@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 // Example18
@@ -23,6 +24,8 @@ func Example18() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("How to Number Pages")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -81,7 +84,9 @@ func Example18() {
 		line.SetStrokeColor(color.LightGray)
 		line.DrawOn(page)
 
+		// A page number is an artifact: a screen reader skips it.
 		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint(len(pages))
+		page.AddArtifactBMC()
 		page.SetBrushColor(color.Black)
 		page.DrawStringUsingFontSize(
 			f1,
@@ -89,6 +94,7 @@ func Example18() {
 			footer,
 			(page.GetWidth()-f1.StringWidth(fontSize, footer))/2.0,
 			page.GetHeight()-40.0)
+		page.AddEMC()
 	}
 	pdf.AddPages(pages)
 

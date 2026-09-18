@@ -15,6 +15,8 @@ import PDFjet
 public class Example_06 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_06.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Attachments and Annotations")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)

@@ -17,6 +17,8 @@ public class Example_13 {
     public Example_13() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_13.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Winter Reading Scores");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         f1.SetSize(7f);

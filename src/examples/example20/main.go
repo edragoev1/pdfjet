@@ -14,9 +14,11 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example20 draws a letterhead: a logo read from a PDF file, a maple leaf
@@ -26,6 +28,8 @@ func Example20() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("PDFjet Software Letterhead")
 
 	// Read the logo from a PDF file, and add its fonts and images to this PDF.
 	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
@@ -57,6 +61,8 @@ func Example20() {
 	xScale := float32(0.5)
 	yScale := float32(0.5)
 
+	// The logo is a figure, with an alternate description for screen readers.
+	page.AddBDC(structelem.Figure, "", "", "The PDFjet logo")
 	page.DrawContents(
 		content.GetData(),
 		height,
@@ -64,15 +70,18 @@ func Example20() {
 		y,
 		xScale,
 		yScale)
+	page.AddEMC()
 
 	pdfjet.NewTextLine(f2, "PDFjet Software").SetLocation(390.0, 60.0).DrawOn(page)
 	pdfjet.NewTextLine(f1, "Unionville, Ontario, Canada").SetLocation(390.0, 76.0).DrawOn(page)
 	pdfjet.NewTextLine(f1, "https://pdfjet.com").SetLocation(390.0, 92.0).DrawOn(page)
 
-	// A thin rule under the letterhead.
+	// A thin rule under the letterhead, an artifact.
+	page.AddArtifactBMC()
 	page.SetPenColor(color.DarkRed)
 	page.SetPenWidth(1.0)
 	page.DrawLine(60.0, 115.0, 552.0, 115.0)
+	page.AddEMC()
 
 	text := pdfjet.NewTextLine(f2, "The logo on this page was read from a PDF file.")
 	text.SetFontSize(16.0)
@@ -134,10 +143,12 @@ func Example20() {
 	qr.SetLocation(300.0, 340.0)
 	xy := qr.DrawOn(page)
 
-	// A frame around the QR code.
+	// A frame around the QR code, an artifact.
+	page.AddArtifactBMC()
 	page.SetPenColor(color.LightGray)
 	page.SetPenWidth(0.5)
 	page.DrawRect(290.0, 330.0, xy[0]-280.0, xy[1]-320.0)
+	page.AddEMC()
 
 	caption := pdfjet.NewTextLine(f1, "A Path with curves")
 	caption.SetTextColor(color.Gray)

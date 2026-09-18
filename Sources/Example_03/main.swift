@@ -13,6 +13,8 @@ import PDFjet
 public class Example_03 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_03.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Paragraphs in a Text Frame")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(10.0)

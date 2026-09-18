@@ -215,6 +215,8 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 		return [2]float32{point.x + point.r, point.y + point.r}
 	}
 
+	// A point is a marker and carries no text, so it is decorative content.
+	page.AddArtifactBMC()
 	page.SaveGraphicsState()
 	if point.hasFillColor && point.hasStrokeColor {
 		page.SetBrushColorRGB(point.fillColor)
@@ -231,6 +233,7 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 	}
 	page.DrawPoint(point)
 	page.RestoreGraphicsState()
+	page.AddEMC()
 
 	return [2]float32{point.x + point.r, point.y + point.r}
 }
