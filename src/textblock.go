@@ -400,11 +400,14 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 						sb.WriteRune(ch)
 					} else {
 						if sb.Len() > 0 { // Don't emit an empty line
+							full := []rune(sb.String())
+							end := cjkLineEnd(full, ch)
 							textLines = append(
 								textLines,
-								NewTextLine(textBlock.font, sb.String()))
+								NewTextLine(textBlock.font, string(full[:end])))
+							sb.Reset()
+							sb.WriteString(string(full[end:]))
 						}
-						sb.Reset()
 						sb.WriteRune(ch)
 					}
 				}

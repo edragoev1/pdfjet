@@ -537,9 +537,12 @@ public class TextBlock implements Drawable {
                             sb.appendCodePoint(ch);
                         } else {
                             if (sb.length() > 0) {  // Don't emit an empty line
-                                textLines.add(new TextLine(font, sb.toString()));
+                                String full = sb.toString();
+                                int end = Util.cjkLineEnd(full, ch);
+                                textLines.add(new TextLine(font, full.substring(0, end)));
+                                sb.setLength(0);
+                                sb.append(full, end, full.length());
                             }
-                            sb.setLength(0);
                             sb.appendCodePoint(ch);
                         }
                     }

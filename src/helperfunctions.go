@@ -322,3 +322,36 @@ func isCJK(s string) bool {
 	}
 	return numOfCJK > (count / 2)
 }
+
+// The characters that do not start a line of Chinese or Japanese text: closing
+// brackets and quotes, punctuation, iteration marks, the prolonged sound mark
+// and small kana. And those that do not end one: opening brackets and quotes.
+const (
+	notAtLineStart = ")]},.:;!?、。，．・：；？！゛゜ヽヾゝゞ々〻ー‐゠–〜～）］｝」』】〕〉》〙〗〟’”｠»ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ"
+	notAtLineEnd   = "([{（［｛「『【〔〈《〘〖〝‘“｟«"
+)
+
+// cjkLineEnd returns where a full line of Chinese or Japanese text ends when
+// the next character does not fit on it, by the line breaking rules of these
+// languages (kinsoku shori): when the next character does not start a line, the
+// one before it moves to the next line with it, and so do opening brackets at
+// the end of the line. A line that has no other place to break ends where it is
+// full.
+func cjkLineEnd(line []rune, next rune) int {
+	end := len(line)
+	if strings.ContainsRune(notAtLineStart, next) {
+		for end > 0 {
+			end--
+			if !strings.ContainsRune(notAtLineStart, line[end]) {
+				break
+			}
+		}
+	}
+	for end > 0 && strings.ContainsRune(notAtLineEnd, line[end-1]) {
+		end--
+	}
+	if end == 0 {
+		return len(line)
+	}
+	return end
+}

@@ -319,4 +319,40 @@ class Util {
         }
         return numOfCJK > (str.codePointCount(0, str.length()) / 2);
     }
+
+    // The characters that do not start a line of Chinese or Japanese text: closing
+    // brackets and quotes, punctuation, iteration marks, the prolonged sound mark
+    // and small kana. And those that do not end one: opening brackets and quotes.
+    private static final String NOT_AT_LINE_START =
+            ")]},.:;!?、。，．・：；？！゛゜ヽヾゝゞ々〻ー‐゠–〜～）］｝」』】〕〉》〙〗〟’”｠»ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ";
+    private static final String NOT_AT_LINE_END =
+            "([{（［｛「『【〔〈《〘〖〝‘“｟«";
+
+    /**
+     * Returns where a full line of Chinese or Japanese text ends when the next
+     * character does not fit on it, by the line breaking rules of these languages
+     * (kinsoku shori): when the next character does not start a line, the one
+     * before it moves to the next line with it, and so do opening brackets at the
+     * end of the line. A line that has no other place to break ends where it is full.
+     *
+     * @param line the characters that fit on the line.
+     * @param next the code point of the character that does not fit.
+     * @return the length of the part of the line that stays on it.
+     */
+    static int cjkLineEnd(String line, int next) {
+        int end = line.length();
+        if (NOT_AT_LINE_START.indexOf(next) >= 0) {
+            while (end > 0) {
+                int ch = line.codePointBefore(end);
+                end -= Character.charCount(ch);
+                if (NOT_AT_LINE_START.indexOf(ch) < 0) {
+                    break;
+                }
+            }
+        }
+        while (end > 0 && NOT_AT_LINE_END.indexOf(line.codePointBefore(end)) >= 0) {
+            end -= Character.charCount(line.codePointBefore(end));
+        }
+        return (end > 0) ? end : line.length();
+    }
 }

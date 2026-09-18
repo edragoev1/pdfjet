@@ -543,10 +543,13 @@ public class TextFrame implements Drawable {
             if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, buf.toString() + str) <= w) {
                 buf.appendCodePoint(ch);
             } else {
-                if (buf.length() > 0) {
-                    list.add(buf.toString());
+                String full = buf.toString();
+                int end = Util.cjkLineEnd(full, ch);
+                if (end > 0) {
+                    list.add(full.substring(0, end));
                 }
                 buf.setLength(0);
+                buf.append(full, end, full.length());
                 buf.appendCodePoint(ch);
             }
         }

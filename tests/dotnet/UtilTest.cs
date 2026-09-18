@@ -134,5 +134,15 @@ public sealed class UtilTest : IDisposable {
         Assert.Throws<System.ArgumentException>(() => Util.Split("a,\"b,c", ","));
         Assert.Throws<System.ArgumentException>(() => Util.Split("\"a\"b,c", ","));
     }
+
+    [Fact]
+    public void NoLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
+        Assert.Equal(3, Util.CjkLineEnd("あいう", "え"));
+        Assert.Equal(2, Util.CjkLineEnd("あいう", "。"));  // う moves down with 。
+        Assert.Equal(1, Util.CjkLineEnd("あい」", "。"));  // and so does 」
+        Assert.Equal(2, Util.CjkLineEnd("あい「", "う"));  // 「 moves down
+        Assert.Equal(1, Util.CjkLineEnd("中文", ","));
+        Assert.Equal(1, Util.CjkLineEnd("」", "。"));      // no other place to break
+    }
 }
 }

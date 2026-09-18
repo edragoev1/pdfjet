@@ -172,3 +172,22 @@ func TestUtilLineBreaksAreDrawnAsSpaces(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestUtilNoLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne(t *testing.T) {
+	for _, c := range []struct {
+		line string
+		next rune
+		want int
+	}{
+		{"あいう", 'え', 3},
+		{"あいう", '。', 2}, // う moves down with 。
+		{"あい」", '。', 1}, // and so does 」
+		{"あい「", 'う', 2}, // 「 moves down
+		{"中文", ',', 1},
+		{"」", '。', 1}, // no other place to break
+	} {
+		if got := cjkLineEnd([]rune(c.line), c.next); got != c.want {
+			t.Errorf("cjkLineEnd(%q, %q) = %d, want %d", c.line, c.next, got, c.want)
+		}
+	}
+}

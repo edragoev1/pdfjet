@@ -465,10 +465,13 @@ public class TextFrame : Drawable {
             if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, buf + String(scalar)) <= w {
                 buf.unicodeScalars.append(scalar)
             } else {
-                if !buf.isEmpty {
-                    list.append(buf)
+                let full = Array(buf.unicodeScalars)
+                let end = cjkLineEnd(full, scalar)
+                if end > 0 {
+                    list.append(String(String.UnicodeScalarView(full[0..<end])))
                 }
-                buf = String(scalar)
+                buf = String(String.UnicodeScalarView(full[end...]))
+                buf.unicodeScalars.append(scalar)
             }
         }
         if !buf.isEmpty {

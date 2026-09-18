@@ -369,9 +369,12 @@ public class TextBlock : Drawable {
                             sb.unicodeScalars.append(scalar)
                         } else {
                             if !sb.isEmpty {    // Don't emit an empty line
-                                textLines.append(TextLine(font, sb))
+                                let full = Array(sb.unicodeScalars)
+                                let end = cjkLineEnd(full, scalar)
+                                textLines.append(TextLine(font, String(String.UnicodeScalarView(full[0..<end]))))
+                                sb = String(String.UnicodeScalarView(full[end...]))
                             }
-                            sb = String(scalar)
+                            sb.unicodeScalars.append(scalar)
                         }
                     }
                     if !sb.trim().isEmpty {

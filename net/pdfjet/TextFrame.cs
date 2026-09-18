@@ -480,10 +480,13 @@ public class TextFrame : IDrawable {
             if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, buf.ToString() + ch) <= w) {
                 buf.Append(ch);
             } else {
-                if (buf.Length > 0) {
-                    list.Add(buf.ToString());
+                String full = buf.ToString();
+                int end = Util.CjkLineEnd(full, ch);
+                if (end > 0) {
+                    list.Add(full.Substring(0, end));
                 }
                 buf.Length = 0;
+                buf.Append(full, end, full.Length - end);
                 buf.Append(ch);
             }
         }

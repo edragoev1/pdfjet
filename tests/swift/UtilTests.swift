@@ -124,4 +124,16 @@ import Testing
         #expect(Util.lineBreaksToSpaces("a\r\nb\rc\nd") == "a b c d")
         #expect(Util.lineBreaksToSpaces("no breaks") == "no breaks")
     }
+
+    @Test func noLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
+        func end(_ line: String, _ next: Unicode.Scalar) -> Int {
+            cjkLineEnd(Array(line.unicodeScalars), next)
+        }
+        #expect(end("あいう", "え") == 3)
+        #expect(end("あいう", "。") == 2)  // う moves down with 。
+        #expect(end("あい」", "。") == 1)  // and so does 」
+        #expect(end("あい「", "う") == 2)  // 「 moves down
+        #expect(end("中文", ",") == 1)
+        #expect(end("」", "。") == 1)      // no other place to break
+    }
 }

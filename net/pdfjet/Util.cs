@@ -316,5 +316,43 @@ internal class Util {
     internal static int CharCount(String str, int i) {
         return Char.IsSurrogatePair(str, i) ? 2 : 1;
     }
+
+    // The characters that do not start a line of Chinese or Japanese text: closing
+    // brackets and quotes, punctuation, iteration marks, the prolonged sound mark
+    // and small kana. And those that do not end one: opening brackets and quotes.
+    private const String NOT_AT_LINE_START =
+            ")]},.:;!?、。，．・：；？！゛゜ヽヾゝゞ々〻ー‐゠–〜～）］｝」』】〕〉》〙〗〟’”｠»ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇺㇻㇼㇽㇾㇿ";
+    private const String NOT_AT_LINE_END =
+            "([{（［｛「『【〔〈《〘〖〝‘“｟«";
+
+    /// <summary>
+    /// Returns where a full line of Chinese or Japanese text ends when the next
+    /// character does not fit on it, by the line breaking rules of these languages
+    /// (kinsoku shori): when the next character does not start a line, the one
+    /// before it moves to the next line with it, and so do opening brackets at the
+    /// end of the line. A line that has no other place to break ends where it is full.
+    /// </summary>
+    internal static int CjkLineEnd(String line, String next) {
+        int end = line.Length;
+        if (NOT_AT_LINE_START.Contains(next)) {
+            while (end > 0) {
+                String ch = LastCharacter(line, end);
+                end -= ch.Length;
+                if (!NOT_AT_LINE_START.Contains(ch)) {
+                    break;
+                }
+            }
+        }
+        while (end > 0 && NOT_AT_LINE_END.Contains(LastCharacter(line, end))) {
+            end -= LastCharacter(line, end).Length;
+        }
+        return (end > 0) ? end : line.Length;
+    }
+
+    // The character that ends at index end of the string.
+    private static String LastCharacter(String str, int end) {
+        int count = (end >= 2 && Char.IsSurrogatePair(str, end - 2)) ? 2 : 1;
+        return str.Substring(end - count, count);
+    }
 }
 }   // End of namespace PDFjet.NET

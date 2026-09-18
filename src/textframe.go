@@ -484,10 +484,13 @@ func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, buf.String()+string(ch)) <= tf.w {
 			buf.WriteRune(ch)
 		} else {
-			if buf.Len() > 0 {
-				list = append(list, buf.String())
+			full := []rune(buf.String())
+			end := cjkLineEnd(full, ch)
+			if end > 0 {
+				list = append(list, string(full[:end]))
 			}
 			buf.Reset()
+			buf.WriteString(string(full[end:]))
 			buf.WriteRune(ch)
 		}
 	}

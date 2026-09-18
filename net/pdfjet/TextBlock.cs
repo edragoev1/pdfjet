@@ -367,9 +367,12 @@ public class TextBlock : IDrawable {
                             sb.Append(ch);
                         } else {
                             if (sb.Length > 0) {    // Don't emit an empty line
-                                textLines.Add(new TextLine(font, sb.ToString()));
+                                String full = sb.ToString();
+                                int end = Util.CjkLineEnd(full, ch);
+                                textLines.Add(new TextLine(font, full.Substring(0, end)));
+                                sb.Clear();
+                                sb.Append(full, end, full.Length - end);
                             }
-                            sb.Clear();
                             sb.Append(ch);
                         }
                     }

@@ -147,4 +147,14 @@ class UtilTest {
         assertThrows(IllegalArgumentException.class, () -> Util.split("a,\"b,c", ","));
         assertThrows(IllegalArgumentException.class, () -> Util.split("\"a\"b,c", ","));
     }
+
+    @Test
+    void noLineOfChineseOrJapaneseTextStartsWithAClosingMarkOrEndsWithAnOpeningOne() {
+        assertEquals(3, Util.cjkLineEnd("あいう", "え".codePointAt(0)));
+        assertEquals(2, Util.cjkLineEnd("あいう", "。".codePointAt(0)));    // う moves down with 。
+        assertEquals(1, Util.cjkLineEnd("あい」", "。".codePointAt(0)));    // and so does 」
+        assertEquals(2, Util.cjkLineEnd("あい「", "う".codePointAt(0)));    // 「 moves down
+        assertEquals(1, Util.cjkLineEnd("中文", ','));
+        assertEquals(1, Util.cjkLineEnd("」", "。".codePointAt(0)));        // no other place to break
+    }
 }
