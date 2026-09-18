@@ -19,6 +19,9 @@ public class Example_02 {
         pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages");
 
+        Font f0 = new Font(pdf, IBMPlexSans.Regular);
+        f0.SetSize(12f);
+
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.SetSize(12f);
 
@@ -33,7 +36,9 @@ public class Example_02 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f1, "This block is Japanese.").SetLocation(50f, 50f).DrawOn(page);
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font.
+        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetLocation(50f, 50f).DrawOn(page);
 
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
@@ -44,7 +49,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f2, "This block is Korean.").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f2, Content.OfTextFile("data/languages/korean.txt"));
@@ -55,7 +60,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f3, "This block is Simplified Chinese.").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f3).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
@@ -66,7 +71,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f4, "This block is Traditional Chinese.").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f4).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));

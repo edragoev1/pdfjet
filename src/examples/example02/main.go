@@ -11,6 +11,7 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
@@ -36,6 +37,9 @@ func Example02() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages")
 
+	f0 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f0.SetSize(12.0)
+
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
 	f1.SetSize(12.0)
 
@@ -51,7 +55,9 @@ func Example02() {
 	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	pdfjet.NewTextLine(f1, "This block is Japanese.").SetLocation(50.0, 50.0).DrawOn(page)
+	// The heading is in IBM Plex Sans, and the characters it has no glyph for,
+	// the name of the language, are in the fallback font.
+	pdfjet.NewTextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
 	textBlock.SetLanguage("ja")
@@ -61,7 +67,7 @@ func Example02() {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	pdfjet.NewTextLine(f2, "This block is Korean.").SetLocation(50.0, 50.0).DrawOn(page)
+	pdfjet.NewTextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
 	textBlock.SetLanguage("ko")
@@ -71,7 +77,7 @@ func Example02() {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	pdfjet.NewTextLine(f3, "This block is Simplified Chinese.").SetLocation(50.0, 50.0).DrawOn(page)
+	pdfjet.NewTextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f3).SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/simplified-chinese.txt"))
 	textBlock.SetLanguage("zh-Hans")
@@ -81,7 +87,7 @@ func Example02() {
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	pdfjet.NewTextLine(f4, "This block is Traditional Chinese.").SetLocation(50.0, 50.0).DrawOn(page)
+	pdfjet.NewTextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f4).SetLocation(50.0, 50.0).DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f4, content.OfTextFile("data/languages/traditional-chinese.txt"))
 	textBlock.SetLanguage("zh-Hant")

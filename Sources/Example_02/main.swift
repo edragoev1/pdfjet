@@ -17,6 +17,11 @@ public class Example_02 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("The Universal Declaration of Human Rights in Four Languages")
 
+        let f0 = try Font(pdf, IBMPlexSans.Regular)
+
+        f0.setSize(12.0)
+
+
         let f1 = try Font(pdf, IBMPlexSansJP.Regular)
         f1.setSize(12.0)
 
@@ -31,7 +36,9 @@ public class Example_02 {
 
         var page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f1, "This block is Japanese.").setLocation(50.0, 50.0).drawOn(page)
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font.
+        TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setLocation(50.0, 50.0).drawOn(page)
 
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
@@ -42,7 +49,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f2, "This block is Korean.").setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f2, try Content.ofTextFile("data/languages/korean.txt"))
@@ -53,7 +60,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f3, "This block is Simplified Chinese.").setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f3).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
@@ -64,7 +71,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f4, "This block is Traditional Chinese.").setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f4).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))

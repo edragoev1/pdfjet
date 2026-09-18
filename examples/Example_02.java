@@ -20,6 +20,9 @@ public class Example_02 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("The Universal Declaration of Human Rights in Four Languages");
 
+        Font f0 = new Font(pdf, IBMPlexSans.Regular);
+        f0.setSize(12f);
+
         Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
         f1.setSize(12f);
 
@@ -34,7 +37,10 @@ public class Example_02 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f1, "This block is Japanese.").setLocation(50f, 50f).drawOn(page);
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font. The names are
+        // escapes, so that the source Example_32 prints stays ASCII.
+        new TextLine(f0, "This block is Japanese: \u65e5\u672c\u8a9e").setFallbackFont(f1).setLocation(50f, 50f).drawOn(page);
 
         TextBlock textBlock = new TextBlock(
                 f1, Content.ofTextFile("data/languages/japanese.txt"));
@@ -45,7 +51,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f2, "This block is Korean.").setLocation(50f, 50f).drawOn(page);
+        new TextLine(f0, "This block is Korean: \ud55c\uad6d\uc5b4").setFallbackFont(f2).setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
                 f2, Content.ofTextFile("data/languages/korean.txt"));
@@ -56,7 +62,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f3, "This block is Simplified Chinese.").setLocation(50f, 50f).drawOn(page);
+        new TextLine(f0, "This block is Simplified Chinese: \u7b80\u4f53\u4e2d\u6587").setFallbackFont(f3).setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
                 f3, Content.ofTextFile("data/languages/simplified-chinese.txt"));
@@ -67,7 +73,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f4, "This block is Traditional Chinese.").setLocation(50f, 50f).drawOn(page);
+        new TextLine(f0, "This block is Traditional Chinese: \u7e41\u9ad4\u4e2d\u6587").setFallbackFont(f4).setLocation(50f, 50f).drawOn(page);
 
         textBlock = new TextBlock(
                 f4, Content.ofTextFile("data/languages/traditional-chinese.txt"));
