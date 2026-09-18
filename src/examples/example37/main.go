@@ -37,7 +37,7 @@ func Example37(fileName string) {
 	font1.SetSize(72.0)
 
 	text := pdfjet.NewTextLine(font1, "This is a test!")
-	text.SetLocation(150.0, 350.0)
+	text.SetLocation(84.0, 350.0) // the T lines up with the scanned text
 	text.SetTextColor(color.Peru)
 
 	pages := pdf.GetPageObjects(objects)

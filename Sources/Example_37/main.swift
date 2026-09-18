@@ -21,7 +21,7 @@ public class Example_37 {
         f1.setSize(72.0)
 
         let text = TextLine(f1, "This is a test!")
-        text.setLocation(150.0, 350.0)
+        text.setLocation(84.0, 350.0)    // the T lines up with the scanned text
         text.setTextColor(Color.peru)
 
         let pages = pdf.getPageObjects(from: objects)

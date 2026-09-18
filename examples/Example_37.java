@@ -25,7 +25,7 @@ class Example_37 {
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");
-        text.setLocation(150f, 350f);
+        text.setLocation(84f, 350f);    // the T lines up with the scanned text
         text.setTextColor(Color.peru);
 
         List<PDFobj> pages = pdf.getPageObjects(objects);
