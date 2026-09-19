@@ -172,8 +172,18 @@ final class Puff {
         var last: Int?                              // block information
         var type: Int?
         var error = 0                               // return value
-        // skip the zlib header
-        self.incnt += 2
+        // The zlib header: the Deflate method with a window of at most 32K, a
+        // check that makes the two bytes a multiple of 31, and no preset
+        // dictionary, as the other ports require.
+        if input.count < 2 {
+            throw PuffError.read(error: 2)          // not enough input
+        }
+        let cmf = Int(input[0])
+        let flg = Int(input[1])
+        if cmf & 0x0F != 8 || cmf >> 4 > 7 || (cmf << 8 | flg) % 31 != 0 || flg & 0x20 != 0 {
+            throw PDFjetError(message: "Invalid zlib header")
+        }
+        self.incnt = 2
 
         // process blocks until last block or error
         repeat {
@@ -195,6 +205,17 @@ final class Puff {
                 throw PuffError.read(error: error)  // return with error
             }
         } while last != 1
+
+        // The Adler-32 of the output follows the last block, from the next
+        // whole byte. A stream without it is cut short.
+        if self.incnt + 4 > input.count {
+            throw PuffError.read(error: 2)          // not enough input
+        }
+        let checksum = UInt32(input[self.incnt]) << 24 | UInt32(input[self.incnt + 1]) << 16 |
+                UInt32(input[self.incnt + 2]) << 8 | UInt32(input[self.incnt + 3])
+        if checksum != adler32(output) {
+            throw PDFjetError(message: "Invalid zlib checksum")
+        }
     }
 
     // Called when the output has maxLength bytes and needs another one: a
@@ -364,8 +385,6 @@ final class Puff {
 
         // load at least need bits into value
         while self.bitcnt < need {
-            // >= and not ==: the zlib header is skipped without reading it, so
-            // the input can be shorter than the bytes counted as read.
             if self.incnt >= input.count {
                 throw PuffError.read(error: 1)  // out of input
             }

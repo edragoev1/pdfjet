@@ -257,12 +257,18 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       so by accident). The 873 inputs of the Go corpus, replayed in the four
       ports: no crash in any; Java and C# accept and reject the same inputs
       as Go.
-- ⬜ Swift's `Puff` skips the zlib header and does not check the Adler-32
-      at the end, so Swift decodes corrupt zlib data that Java, C# and Go
+- ✅ Swift's `Puff` skipped the zlib header and did not check the Adler-32
+      at the end, so Swift decoded corrupt zlib data that Java, C# and Go
       reject: 31 of the 873 stream font inputs, and PNG and PDF streams the
-      same way. Check both, in `inflate`, as the other ports do.
-- ⬜ Swift draws the marks of a stream font whose mark data cannot be read
-      where they are; Java, C# and Go fail (47 of the 873 inputs). Pick one.
+      same way. Done (Sep 19): it checks both as the other ports do, and a
+      prefix that has its bytes, as a PNG reads, needs no checksum; the
+      decompressor tests of the four ports check every truncation, a wrong
+      checksum and a wrong header.
+- ✅ Swift drew the marks of a stream font whose mark data cannot be read
+      where they are; Java, C# and Go fail (47 of the 873 inputs). Done (Sep
+      19): Swift fails the document with "The marks of the font cannot be
+      read: ...", which complete() throws. The 873 inputs, replayed: the four
+      ports accept the same 157 and reject the rest.
 - ⬜ **B** 3. PDF/UA as it is claimed: tag a table as a table (below), and
       check the 41 PDF/UA examples with PAC or by the Matterhorn Protocol,
       not only veraPDF, which cannot see what a paragraph stands for.

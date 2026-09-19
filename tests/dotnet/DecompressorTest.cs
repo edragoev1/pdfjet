@@ -114,11 +114,34 @@ public class DecompressorTest {
         data.AsSpan(1000).Fill((byte) 'a');
         byte[] deflated = Compressor.Deflate(data);
         Assert.Equal(data, Decompressor.Inflate(deflated));
-        // The last 4 bytes are the Adler-32 checksum, which not every port checks.
-        for (int length = 0; length < deflated.Length - 4; length++) {
+        // The last 4 bytes are the Adler-32 checksum, which is checked too.
+        for (int length = 0; length < deflated.Length; length++) {
             byte[] truncated = deflated[..length];
             Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(truncated));
         }
+    }
+
+    [Fact]
+    public void InflateRejectsAWrongChecksumOrHeader() {
+        byte[] deflated = Compressor.Deflate(Encoding.ASCII.GetBytes("PDFjet PDFjet PDFjet"));
+        byte[] wrongChecksum = (byte[]) deflated.Clone();
+        wrongChecksum[wrongChecksum.Length - 1] ^= 1;
+        Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(wrongChecksum));
+        byte[] wrongMethod = (byte[]) deflated.Clone();
+        wrongMethod[0] = 0x77;     // Method 7, and the check no longer fits
+        Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(wrongMethod));
+        byte[] wrongCheck = (byte[]) deflated.Clone();
+        wrongCheck[1] ^= 1;
+        Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(wrongCheck));
+    }
+
+    [Fact]
+    public void InflatePrefixWithItsBytesNeedsNoChecksum() {
+        byte[] data = Encoding.ASCII.GetBytes("PDFjet PDFjet PDFjet");
+        byte[] deflated = Compressor.Deflate(data);
+        deflated[deflated.Length - 1] ^= 1;
+        Assert.Equal(data[..5], Decompressor.InflatePrefix(deflated, 5));
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflatePrefix(deflated, 100));
     }
 
     [Fact]

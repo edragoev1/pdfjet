@@ -118,11 +118,34 @@ class DecompressorTest {
         Arrays.fill(data, 1000, 2000, (byte) 'a');
         byte[] deflated = Compressor.deflate(data);
         assertArrayEquals(data, Decompressor.inflate(deflated));
-        // The last 4 bytes are the Adler-32 checksum, which not every port checks.
-        for (int length = 0; length < deflated.length - 4; length++) {
+        // The last 4 bytes are the Adler-32 checksum, which is checked too.
+        for (int length = 0; length < deflated.length; length++) {
             final byte[] truncated = Arrays.copyOf(deflated, length);
             assertThrows(Exception.class, () -> Decompressor.inflate(truncated), "length " + length);
         }
+    }
+
+    @Test
+    void inflateRejectsAWrongChecksumOrHeader() throws Exception {
+        byte[] deflated = Compressor.deflate("PDFjet PDFjet PDFjet".getBytes(StandardCharsets.US_ASCII));
+        final byte[] wrongChecksum = deflated.clone();
+        wrongChecksum[wrongChecksum.length - 1] ^= 1;
+        assertThrows(Exception.class, () -> Decompressor.inflate(wrongChecksum));
+        final byte[] wrongMethod = deflated.clone();
+        wrongMethod[0] = 0x77;     // Method 7, and the check no longer fits
+        assertThrows(Exception.class, () -> Decompressor.inflate(wrongMethod));
+        final byte[] wrongCheck = deflated.clone();
+        wrongCheck[1] ^= 1;
+        assertThrows(Exception.class, () -> Decompressor.inflate(wrongCheck));
+    }
+
+    @Test
+    void inflatePrefixWithItsBytesNeedsNoChecksum() throws Exception {
+        byte[] data = "PDFjet PDFjet PDFjet".getBytes(StandardCharsets.US_ASCII);
+        final byte[] deflated = Compressor.deflate(data);
+        deflated[deflated.length - 1] ^= 1;
+        assertArrayEquals(Arrays.copyOf(data, 5), Decompressor.inflatePrefix(deflated, 5));
+        assertThrows(Exception.class, () -> Decompressor.inflatePrefix(deflated, 100));
     }
 
     @Test

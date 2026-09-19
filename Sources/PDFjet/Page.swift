@@ -579,7 +579,13 @@ public class Page {
             }
             var offsets: [Int]? = nil
             if hasMarks && font.markData != nil {
-                FontStream1.readMarks(font)
+                // Marks that cannot be read would be drawn in the wrong place,
+                // so the document fails, as it does in the other ports.
+                do {
+                    try FontStream1.readMarks(font)
+                } catch {
+                    pdf.fail("The marks of the font cannot be read: \(error)")
+                }
             }
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)

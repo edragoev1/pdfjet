@@ -366,25 +366,31 @@ internal final class FlateEncode {
     }
 
     private func addAdler32(_ output: inout [UInt8], _ input: [UInt8]) {
-        let prime: UInt32 = 65521
-        var s1: UInt32 = 1
-        var s2: UInt32 = 0
-        var i = 0
-        while i < input.count {
-            var chunk = min(5552, input.count - i)
-            while chunk > 0 {
-                s1 &+= UInt32(input[i])
-                s2 &+= s1
-                i += 1
-                chunk -= 1
-            }
-            s1 %= prime
-            s2 %= prime
-        }
-        let adler = (s2 &<< 16) &+ s1
+        let adler = adler32(input)
         output.append(contentsOf: [
             UInt8((adler >> 24) & 0xFF), UInt8((adler >> 16) & 0xFF),
             UInt8((adler >>  8) & 0xFF), UInt8(adler & 0xFF)
         ])
     }
+}
+
+/// Returns the Adler-32 checksum of the data, which ends a zlib stream.
+func adler32(_ data: [UInt8]) -> UInt32 {
+    let prime: UInt32 = 65521
+    var s1: UInt32 = 1
+    var s2: UInt32 = 0
+    var i = 0
+    while i < data.count {
+        // 5552 bytes is the most that the sums can take before they overflow.
+        var chunk = min(5552, data.count - i)
+        while chunk > 0 {
+            s1 &+= UInt32(data[i])
+            s2 &+= s1
+            i += 1
+            chunk -= 1
+        }
+        s1 %= prime
+        s2 %= prime
+    }
+    return (s2 &<< 16) &+ s1
 }

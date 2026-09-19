@@ -436,17 +436,14 @@ class FontStream1 {
     // Reads where the marks go, which getFontData keeps compressed: for each
     // MarkToBase and MarkToLigature subtable the class and anchor of each mark
     // and the anchors of each letter, and then the offsets of the marks that go
-    // on other marks. Done once, the first time a mark is drawn in the font; a
-    // font whose marks cannot be read draws them where they are.
-    static func readMarks(_ font: Font) {
-        defer {
-            font.markData = nil
-        }
-        guard let markData = font.markData,
-                let data = try? inflate(markData, maxFontMetricsLength),
-                let marks = try? readMarks(Metrics(data, "the marks")) else {
+    // on other marks. Done once, the first time a mark is drawn in the font; it
+    // throws when the marks cannot be read, as the other ports do.
+    static func readMarks(_ font: Font) throws {
+        guard let markData = font.markData else {
             return
         }
+        font.markData = nil
+        let marks = try readMarks(Metrics(try inflate(markData, maxFontMetricsLength), "the marks"))
         font.markAnchors = marks.markAnchors
         font.baseAnchors = marks.baseAnchors
         font.markToMarkOffsets = marks.markToMarkOffsets

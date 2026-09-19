@@ -90,12 +90,33 @@ import Testing
         data.append(contentsOf: [UInt8](repeating: UInt8(ascii: "a"), count: 1000))
         let deflated = TestSupport.deflate(data)
         #expect(try TestSupport.inflate(deflated) == data)
-        // The last 4 bytes are the Adler-32 checksum, which not every port checks.
-        for length in 0..<(deflated.count - 4) {
+        // The last 4 bytes are the Adler-32 checksum, which is checked too.
+        for length in 0..<deflated.count {
             #expect(throws: (any Error).self, "length \(length)") {
                 _ = try TestSupport.inflate(Array(deflated.prefix(length)))
             }
         }
+    }
+
+    @Test func inflateRejectsAWrongChecksumOrHeader() {
+        let deflated = TestSupport.deflate(Array("PDFjet PDFjet PDFjet".utf8))
+        var wrongChecksum = deflated
+        wrongChecksum[wrongChecksum.count - 1] ^= 1
+        #expect(throws: (any Error).self) { _ = try TestSupport.inflate(wrongChecksum) }
+        var wrongMethod = deflated
+        wrongMethod[0] = 0x77      // Method 7, and the check no longer fits
+        #expect(throws: (any Error).self) { _ = try TestSupport.inflate(wrongMethod) }
+        var wrongCheck = deflated
+        wrongCheck[1] ^= 1
+        #expect(throws: (any Error).self) { _ = try TestSupport.inflate(wrongCheck) }
+    }
+
+    @Test func inflatePrefixWithItsBytesNeedsNoChecksum() throws {
+        let data = Array("PDFjet PDFjet PDFjet".utf8)
+        var deflated = TestSupport.deflate(data)
+        deflated[deflated.count - 1] ^= 1
+        #expect(try inflatePrefix(deflated, 5) == Array(data.prefix(5)))
+        #expect(throws: (any Error).self) { _ = try inflatePrefix(deflated, 100) }
     }
 
     @Test func theDecodedLengthLimitIs256MiB() {

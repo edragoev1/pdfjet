@@ -99,6 +99,23 @@ import Testing
         }
     }
 
+    @Test func marksThatCannotBeReadFailTheDocument() throws {
+        // The marks say they have 5 subtables, and end.
+        var withMarks = metrics(1000, 32, 0x0301, 1, 0x10000)
+        let marks = TestSupport.deflate([0, 0, 0, 5])
+        int32(&withMarks, Int32(marks.count))
+        withMarks.append(contentsOf: marks)
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, InputStream(data: Data(stream("A", withMarks))))
+        TextLine(font, "e\u{0301}").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        do {
+            try memory.pdf.complete()
+            Issue.record("the document was completed")
+        } catch {
+            #expect("\(error)".contains("The marks of the font cannot be read: Invalid font stream: the marks end too soon."))
+        }
+    }
+
     @Test func aFontFileShorterThanItsSizeIsRejected() {
         #expect(error(Array(stream("A", metrics(1000, 32, 126, 1, 0x10000)).dropLast())) ==
                 "Unexpected end of the font stream.")

@@ -117,11 +117,38 @@ func TestDecompressorInflateRejectsEveryTruncationOfAStream(t *testing.T) {
 	if err != nil || !bytes.Equal(data, inflated) {
 		t.Fatalf("round trip: %v", err)
 	}
-	// The last 4 bytes are the Adler-32 checksum, which not every port checks.
-	for length := 0; length < len(deflated)-4; length++ {
+	// The last 4 bytes are the Adler-32 checksum, which is checked too.
+	for length := 0; length < len(deflated); length++ {
 		if _, err := Inflate(deflated[:length]); err == nil {
 			t.Errorf("length %d: no error", length)
 		}
+	}
+}
+
+func TestDecompressorInflateRejectsAWrongChecksumOrHeader(t *testing.T) {
+	deflated := compressor.Deflate([]byte("PDFjet PDFjet PDFjet"))
+	wrongChecksum := append([]byte(nil), deflated...)
+	wrongChecksum[len(wrongChecksum)-1] ^= 1
+	wrongMethod := append([]byte(nil), deflated...)
+	wrongMethod[0] = 0x77 // Method 7, and the check no longer fits
+	wrongCheck := append([]byte(nil), deflated...)
+	wrongCheck[1] ^= 1
+	for _, data := range [][]byte{wrongChecksum, wrongMethod, wrongCheck} {
+		if _, err := Inflate(data); err == nil {
+			t.Errorf("% x: no error", data[:2])
+		}
+	}
+}
+
+func TestDecompressorInflatePrefixWithItsBytesNeedsNoChecksum(t *testing.T) {
+	data := []byte("PDFjet PDFjet PDFjet")
+	deflated := compressor.Deflate(data)
+	deflated[len(deflated)-1] ^= 1
+	if prefix, err := InflatePrefix(deflated, 5); err != nil || !bytes.Equal(prefix, data[:5]) {
+		t.Errorf("prefix %q, error %v", prefix, err)
+	}
+	if _, err := InflatePrefix(deflated, 100); err == nil {
+		t.Error("the whole stream with a wrong checksum: no error")
 	}
 }
 
