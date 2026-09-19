@@ -898,7 +898,7 @@ public class Page {
             Append("[<");
             AppendCodePointAsHex(space);
             Append("> ");
-            Append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append("] TJ\n");
         }
         Append("EMC\n<");
@@ -935,7 +935,7 @@ public class Page {
         // Where each glyph is drawn before it is moved, in font units.
         int[] x = new int[n];
         for (int i = 1; i < n; i++) {
-            x[i] = x[i - 1] + font.advanceWidth[gids[i - 1]];
+            x[i] = x[i - 1] + font.GlyphAdvance(gids[i - 1]);
         }
         int[] offsets = new int[2*n];
         for (int i = 0; i < n; i++) {
@@ -1173,7 +1173,7 @@ public class Page {
         if (leadingSpace) {
             int space = font.unicodeToGID[0x0020];
             Append("[");
-            Append(1000f * font.advanceWidth[space] / font.unitsPerEm);
+            Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append(" <");
             AppendCodePointAsHex(space);
             Append(">] TJ\n");

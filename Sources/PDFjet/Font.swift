@@ -410,6 +410,13 @@ public class Font {
             return 0
         }
         let gid = (codePoint < firstChar || codePoint > lastChar) ? unicodeToGID[0x20] : unicodeToGID[codePoint]
+        return glyphAdvance(gid)
+    }
+
+    // Returns the advance width of the glyph, in font units. A font can map
+    // characters to glyphs past the end of its advance widths, which get the
+    // width of the first glyph, as in the widths of the PDF font.
+    func glyphAdvance(_ gid: Int) -> Int {
         return Int((gid < advanceWidth.count) ? advanceWidth[gid] : advanceWidth[0])
     }
 

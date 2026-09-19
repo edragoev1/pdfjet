@@ -74,17 +74,9 @@ class FontStream1 {
         byte[] compressed = null;
         byte[] encrypted = null;
         try {
-            ByteArrayOutputStream ms = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int len;
-            while ((len = inputStream.read(buffer)) > 0) {
-                ms.write(buffer, 0, len);
-            }
-            compressed = ms.toByteArray();
+            compressed = readBytes(inputStream, font.compressedSize);
         } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
+            inputStream.close();
         }
         if (pdf.encryption != null) {
             encrypted = AES256.encrypt(compressed, pdf.encryption.getKey());
@@ -350,67 +342,77 @@ class FontStream1 {
         list.clear();
     }
 
-    private static int getInt16(InputStream stream) throws Exception {
-        return stream.read() << 8 | stream.read();
+    // The most bytes the metrics of a stream font decode to, with its marks
+    // compressed in them. IBM Plex Sans JP has 180 KB.
+    private static final int MAX_FONT_METRICS_LENGTH = 16 * 1024 * 1024;
+
+    private static IOException fontStreamError(String what) {
+        return new IOException("Invalid font stream: " + what + ".");
     }
 
-    private static int getInt24(InputStream stream) throws Exception {
-        return stream.read() << 16 |
-                stream.read() << 8 | stream.read();
-    }
-
-    private static int getInt32(InputStream stream) throws Exception {
-        return stream.read() << 24 | stream.read() << 16 |
-                stream.read() << 8 | stream.read();
-    }
-
-    // Fills the buffer: a single read may return fewer bytes than asked for.
-    // Reads where the marks go, which getFontData keeps compressed: for each
-    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
-    // and the anchors of each letter, and then the offsets of the marks that go
-    // on other marks. Done once, the first time a mark is drawn in the font.
-    static void readMarks(Font font) throws Exception {
-        InputStream stream = new ByteArrayInputStream(Decompressor.inflate(font.markData));
-        int subTables = getInt32(stream);
-        List<Map<Integer, int[]>> markAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
-        List<Map<Integer, int[]>> baseAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
-        for (int i = 0; i < subTables; i++) {
-            int count = getInt32(stream);
-            Map<Integer, int[]> marks = new HashMap<Integer, int[]>(2*count);
-            for (int j = 0; j < count; j++) {
-                int gid = getInt32(stream);
-                marks.put(gid, new int[] {getInt32(stream), getInt32(stream), getInt32(stream)});
-            }
-            count = getInt32(stream);
-            Map<Integer, int[]> bases = new HashMap<Integer, int[]>(2*count);
-            for (int j = 0; j < count; j++) {
-                int gid = getInt32(stream);
-                int[] anchors = new int[getInt32(stream)];
-                for (int k = 0; k < anchors.length; k++) {
-                    anchors[k] = getInt32(stream);
-                }
-                bases.put(gid, anchors);
-            }
-            markAnchors.add(marks);
-            baseAnchors.add(bases);
+    // Returns true if the name can be written as a PDF name as it is:
+    // printable ASCII, and none of the characters that end a name or start an
+    // escape.
+    private static boolean isFontName(byte[] name) {
+        if (name.length == 0) {
+            return false;
         }
-        int count = getInt32(stream);
-        Map<Integer, int[]> markToMarkOffsets = new HashMap<Integer, int[]>(2*count);
-        for (int j = 0; j < count; j++) {
-            int other = getInt32(stream);
-            int mark = getInt32(stream);
-            markToMarkOffsets.put((other << 16) | mark, new int[] {getInt32(stream), getInt32(stream)});
+        for (byte b : name) {
+            if (b < 0x21 || b > 0x7E || "()<>[]{}/%#".indexOf(b) != -1) {
+                return false;
+            }
         }
-        font.markAnchors = markAnchors;
-        font.baseAnchors = baseAnchors;
-        font.markToMarkOffsets = markToMarkOffsets;
-        font.markData = null;
+        return true;
     }
 
-    private static void skipFully(InputStream stream, int count) throws Exception {
+    private static int getByte(InputStream stream) throws IOException {
+        int b = stream.read();
+        if (b == -1) {
+            throw new EOFException("Unexpected end of the font stream.");
+        }
+        return b;
+    }
+
+    private static int getInt24(InputStream stream) throws IOException {
+        return getByte(stream) << 16 | getByte(stream) << 8 | getByte(stream);
+    }
+
+    private static long getUInt32(InputStream stream) throws IOException {
+        return (long) getByte(stream) << 24 | (long) getByte(stream) << 16 |
+                (long) getByte(stream) << 8 | (long) getByte(stream);
+    }
+
+    // A size that must fit an int, which any font file does.
+    private static int getSize(InputStream stream) throws IOException {
+        long size = getUInt32(stream);
+        if (size > Integer.MAX_VALUE) {
+            throw fontStreamError("the size of the font file");
+        }
+        return (int) size;
+    }
+
+    // Reads the next length bytes. It reads them as they come, so a length
+    // that the stream does not have takes no memory; a single read may return
+    // fewer bytes than asked for.
+    static byte[] readBytes(InputStream stream, long length) throws IOException {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        long remaining = length;
+        while (remaining > 0) {
+            int n = stream.read(buffer, 0, (int) Math.min(remaining, buffer.length));
+            if (n <= 0) {
+                throw new EOFException("Unexpected end of the font stream.");
+            }
+            buf.write(buffer, 0, n);
+            remaining -= n;
+        }
+        return buf.toByteArray();
+    }
+
+    private static void skipFully(InputStream stream, long count) throws IOException {
         byte[] buffer = new byte[4096];
         while (count > 0) {
-            int n = stream.read(buffer, 0, Math.min(count, buffer.length));
+            int n = stream.read(buffer, 0, (int) Math.min(count, buffer.length));
             if (n <= 0) {
                 throw new EOFException("Unexpected end of the font stream.");
             }
@@ -418,80 +420,179 @@ class FontStream1 {
         }
     }
 
-    private static void readFully(InputStream stream, byte[] buffer) throws Exception {
-        int off = 0;
-        while (off < buffer.length) {
-            int n = stream.read(buffer, off, buffer.length - off);
-            if (n == -1) {
-                throw new EOFException("Unexpected end of the font stream.");
+    // Reads the metrics of a stream font from a byte array, after checking
+    // that the bytes are there.
+    private static final class Metrics {
+        private final byte[] data;
+        private final String what;
+        private int pos = 0;
+
+        Metrics(byte[] data, String what) {
+            this.data = data;
+            this.what = what;
+        }
+
+        int remaining() {
+            return data.length - pos;
+        }
+
+        // Checks that count entries of size bytes follow.
+        void need(int count, int size) throws IOException {
+            if (count < 0 || count > remaining() / size) {
+                throw fontStreamError(what + " end too soon");
             }
-            off += n;
+        }
+
+        int getInt32() throws IOException {
+            need(1, 4);
+            int v = (data[pos] & 0xFF) << 24 | (data[pos + 1] & 0xFF) << 16 |
+                    (data[pos + 2] & 0xFF) << 8 | (data[pos + 3] & 0xFF);
+            pos += 4;
+            return v;
+        }
+
+        // Reads the number of entries of size bytes that follow.
+        int getCount(int size) throws IOException {
+            int count = getInt32();
+            need(count, size);
+            return count;
+        }
+
+        int getUInt16() {
+            int v = (data[pos] & 0xFF) << 8 | (data[pos + 1] & 0xFF);
+            pos += 2;
+            return v;
+        }
+
+        byte[] getBytes(int length) {
+            byte[] bytes = Arrays.copyOfRange(data, pos, pos + length);
+            pos += length;
+            return bytes;
         }
     }
 
+    // Reads where the marks go, which getFontData keeps compressed: for each
+    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
+    // and the anchors of each letter, and then the offsets of the marks that go
+    // on other marks. Done once, the first time a mark is drawn in the font.
+    static void readMarks(Font font) throws Exception {
+        Metrics stream = new Metrics(
+                Decompressor.inflate(font.markData, MAX_FONT_METRICS_LENGTH), "the marks");
+        int subTables = stream.getCount(8);
+        List<Map<Integer, int[]>> markAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
+        List<Map<Integer, int[]>> baseAnchors = new ArrayList<Map<Integer, int[]>>(subTables);
+        for (int i = 0; i < subTables; i++) {
+            int count = stream.getCount(16);
+            Map<Integer, int[]> marks = new HashMap<Integer, int[]>(2*count);
+            for (int j = 0; j < count; j++) {
+                int gid = stream.getInt32();
+                int markClass = stream.getInt32();
+                // The anchors of a letter are 3 ints for each mark class.
+                if (markClass < 0 || markClass > 0xFFFF) {
+                    throw fontStreamError("a mark class");
+                }
+                marks.put(gid, new int[] {markClass, stream.getInt32(), stream.getInt32()});
+            }
+            count = stream.getCount(8);
+            Map<Integer, int[]> bases = new HashMap<Integer, int[]>(2*count);
+            for (int j = 0; j < count; j++) {
+                int gid = stream.getInt32();
+                int[] anchors = new int[stream.getCount(4)];
+                for (int k = 0; k < anchors.length; k++) {
+                    anchors[k] = stream.getInt32();
+                }
+                bases.put(gid, anchors);
+            }
+            markAnchors.add(marks);
+            baseAnchors.add(bases);
+        }
+        int count = stream.getCount(16);
+        Map<Integer, int[]> markToMarkOffsets = new HashMap<Integer, int[]>(2*count);
+        for (int j = 0; j < count; j++) {
+            int other = stream.getInt32();
+            int mark = stream.getInt32();
+            markToMarkOffsets.put((other << 16) | mark, new int[] {stream.getInt32(), stream.getInt32()});
+        }
+        font.markAnchors = markAnchors;
+        font.baseAnchors = baseAnchors;
+        font.markToMarkOffsets = markToMarkOffsets;
+        font.markData = null;
+    }
+
     protected static void getFontData(Font font, InputStream inputStream) throws Exception {
-        int len = inputStream.read();
-        byte[] fontName = new byte[len];
-        readFully(inputStream, fontName);
+        byte[] fontName = readBytes(inputStream, getByte(inputStream));
+        if (!isFontName(fontName)) {
+            throw fontStreamError("the font name");
+        }
         font.name = new String(fontName, StandardCharsets.UTF_8);
+        font.info = new String(readBytes(inputStream, getInt24(inputStream)), StandardCharsets.UTF_8);
 
-        len = getInt24(inputStream);
-        byte[] fontInfo = new byte[len];
-        readFully(inputStream, fontInfo);
-        font.info = new String(fontInfo, StandardCharsets.UTF_8);
-
-        byte[] buf = new byte[getInt32(inputStream)];
-        readFully(inputStream, buf);
-        ByteArrayInputStream stream =
-                new ByteArrayInputStream(Decompressor.inflate(buf));
-
-        font.unitsPerEm = getInt32(stream);
-        font.bBoxLLx = getInt32(stream);
-        font.bBoxLLy = getInt32(stream);
-        font.bBoxURx = getInt32(stream);
-        font.bBoxURy = getInt32(stream);
-        font.fontAscent = getInt32(stream);
-        font.fontDescent = getInt32(stream);
-        font.firstChar = getInt32(stream);
-        font.lastChar = getInt32(stream);
-        font.capHeight = getInt32(stream);
-        font.fontUnderlinePosition = getInt32(stream);
-        font.fontUnderlineThickness = getInt32(stream);
-
-        len = getInt32(stream);
-        font.advanceWidth = new int[len];
-        for (int i = 0; i < len; i++) {
-            font.advanceWidth[i] = getInt16(stream);
+        Metrics metrics = new Metrics(Decompressor.inflate(
+                readBytes(inputStream, getUInt32(inputStream)), MAX_FONT_METRICS_LENGTH), "the metrics");
+        font.unitsPerEm = metrics.getInt32();
+        font.bBoxLLx = metrics.getInt32();
+        font.bBoxLLy = metrics.getInt32();
+        font.bBoxURx = metrics.getInt32();
+        font.bBoxURy = metrics.getInt32();
+        font.fontAscent = metrics.getInt32();
+        font.fontDescent = metrics.getInt32();
+        font.firstChar = metrics.getInt32();
+        font.lastChar = metrics.getInt32();
+        font.capHeight = metrics.getInt32();
+        font.fontUnderlinePosition = metrics.getInt32();
+        font.fontUnderlineThickness = metrics.getInt32();
+        // The range OpenType allows; the sizes of the text are divided by it.
+        if (font.unitsPerEm < 16 || font.unitsPerEm > 16384) {
+            throw fontStreamError("the units per em");
+        }
+        // A character in the range is looked up in unicodeToGID.
+        if (font.firstChar < 0 || font.lastChar > 0xFFFF) {
+            throw fontStreamError("the first or last character");
         }
 
-        len = getInt32(stream);
+        int len = metrics.getCount(2);
+        if (len == 0) {
+            throw fontStreamError("no advance widths");
+        }
+        font.advanceWidth = new int[len];
+        for (int i = 0; i < len; i++) {
+            font.advanceWidth[i] = metrics.getUInt16();
+        }
+
+        len = metrics.getCount(2);
+        if (len != 0x10000) {
+            throw fontStreamError("the character map");
+        }
         font.unicodeToGID = new int[len];
         for (int i = 0; i < len; i++) {
-            font.unicodeToGID[i] = getInt16(stream);
+            font.unicodeToGID[i] = metrics.getUInt16();
         }
 
         // Where the GPOS table of the font puts the marks, compressed on its
         // own after the metrics of a stream that has them. It is kept as it is
-        // and read when a mark is drawn in the font; see readMarks.
-        if (stream.available() > 0) {
-            font.markData = new byte[getInt32(stream)];
-            readFully(stream, font.markData);
+        // and read when a mark is drawn in the font; see readMarks. A font with
+        // no marks has none, or 0 bytes of them.
+        if (metrics.remaining() > 0) {
+            byte[] markData = metrics.getBytes(metrics.getCount(1));
+            if (markData.length > 0) {
+                font.markData = markData;
+            }
         }
         // The line gap of a font that has one follows the marks, where a library
         // that does not read it stops.
-        if (stream.available() > 0) {
-            font.fontLineGap = getInt32(stream);
+        if (metrics.remaining() > 0) {
+            font.fontLineGap = metrics.getInt32();
         }
 
-        int flag = inputStream.read();
+        int flag = getByte(inputStream);
         if (flag == 'R') {
             // The tables of an OpenType font that are not in its CFF data,
             // which keep the font whole; they are not embedded.
-            skipFully(inputStream, getInt32(inputStream));
-            flag = inputStream.read();
+            skipFully(inputStream, getUInt32(inputStream));
+            flag = getByte(inputStream);
         }
         font.cff = flag == 'Y';
-        font.uncompressedSize = getInt32(inputStream);
-        font.compressedSize = getInt32(inputStream);
+        font.uncompressedSize = getSize(inputStream);
+        font.compressedSize = getSize(inputStream);
     }
 }   // End of FontStream1.java

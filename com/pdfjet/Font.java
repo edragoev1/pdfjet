@@ -502,6 +502,13 @@ final public class Font {
             return 0;
         }
         int gid = (cp < firstChar || cp > lastChar) ? unicodeToGID[0x20] : unicodeToGID[cp];
+        return glyphAdvance(gid);
+    }
+
+    // Returns the advance width of the glyph, in font units. A font can map
+    // characters to glyphs past the end of its advance widths, which get the
+    // width of the first glyph, as in the widths of the PDF font.
+    int glyphAdvance(int gid) {
         return (gid < advanceWidth.length) ? advanceWidth[gid] : advanceWidth[0];
     }
 

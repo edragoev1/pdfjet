@@ -449,10 +449,13 @@ func getFontData(font *Font, reader io.Reader) {
 
 	// Where the GPOS table of the font puts the marks, compressed on its own
 	// after the metrics of a stream that has them. It is kept as it is and
-	// read when a mark is drawn in the font; see readMarks.
+	// read when a mark is drawn in the font; see readMarks. A font with no
+	// marks has none, or 0 bytes of them.
 	if pos < len(inflated) {
 		length := readLength(1)
-		font.markData = append([]byte(nil), inflated[pos:pos+length]...)
+		if length > 0 {
+			font.markData = append([]byte(nil), inflated[pos:pos+length]...)
+		}
 		pos += length
 	}
 	// The line gap of a font that has one follows the marks, where a library

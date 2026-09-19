@@ -7,19 +7,16 @@
 import Foundation
 
 class FontStream2 {
-    enum StreamError: Error {
-        case read
-        case write
-    }
-
     static func register(
             _ objects: inout [PDFobj],
             _ font: Font,
             _ stream: InputStream) throws {
         stream.open()
+        defer {
+            stream.close()
+        }
         try FontStream1.getFontData(font, stream)
-        embedFontFile(&objects, font, stream)
-        stream.close()
+        try embedFontFile(&objects, font, stream)
 
         addFontDescriptorObject(&objects, font)
         addCIDFontDictionaryObject(&objects, font)
@@ -95,7 +92,7 @@ class FontStream2 {
     private static func embedFontFile(
             _ objects: inout [PDFobj],
             _ font: Font,
-            _ stream: InputStream) {
+            _ stream: InputStream) throws {
         let metadataObjNumber = addMetadataObject(&objects, font)
 
         let obj = PDFobj()
@@ -116,15 +113,8 @@ class FontStream2 {
             obj.dict.append(String(font.uncompressedSize!))
         }
         obj.dict.append(">>")
-        var buffer2 = [UInt8]()
-        var buffer1 = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer1, maxLength: buffer1.count)
-            if count > 0 {
-                buffer2.append(contentsOf: buffer1[0..<count])
-            }
-        }
-        obj.setStream(&buffer2)
+        var compressed = try FontStream1.readBytes(stream, font.compressedSize!)
+        obj.setStream(&compressed)
         obj.number = objects.count + 1
         objects.append(obj)
 
@@ -305,23 +295,5 @@ class FontStream2 {
         }
         sb.append("endbfchar\n")
         list.removeAll()
-    }
-
-    private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
-        var buffer = [UInt8](repeating: 0, count: 2)
-        if stream.read(&buffer, maxLength: 2) == 2 {
-            var value = UInt16(buffer[0]) << 8
-            value |= UInt16(buffer[1])
-            return value
-        }
-        throw StreamError.read
-    }
-
-    private static func getInt8(_ stream: InputStream) throws -> Int {
-        var buffer = [UInt8](repeating: 0, count: 1)
-        if stream.read(&buffer, maxLength: 1) == 1 {
-            return Int(buffer[0])
-        }
-        throw StreamError.read
     }
 }   // End of FontStream2.swift

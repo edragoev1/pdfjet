@@ -7,19 +7,16 @@
 import Foundation
 
 class FontStream1 {
-    enum StreamError: Error {
-        case read
-        case write
-    }
-
     static func register(
             _ pdf: PDF,
             _ font: Font,
             _ stream: InputStream) throws {
         stream.open()
+        defer {
+            stream.close()
+        }
         try getFontData(font, stream)
-        embedFontFile(pdf, font, stream)
-        stream.close()
+        try embedFontFile(pdf, font, stream)
         addFontDescriptorObject(pdf, font)
         addCIDFontDictionaryObject(pdf, font)
         addToUnicodeCMapObject(pdf, font)
@@ -47,7 +44,7 @@ class FontStream1 {
     }
 
     private static func embedFontFile(
-            _ pdf: PDF, _ font: Font, _ stream: InputStream) {
+            _ pdf: PDF, _ font: Font, _ stream: InputStream) throws {
         // Check if the font file is already embedded
         for f in pdf.fonts {
             if f.fileObjNumber != 0 && f.name == font.name {
@@ -67,16 +64,7 @@ class FontStream1 {
         }
         pdf.append("/Filter /FlateDecode\n")
 
-        var compressed = [UInt8]()
-        compressed.reserveCapacity(font.compressedSize!)
-        var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let count = stream.read(&buffer, maxLength: buffer.count)
-            if count > 0 {
-                compressed.append(contentsOf: buffer[0..<count])
-            }
-        }
-        compressed = pdf.encrypted(compressed)
+        let compressed = pdf.encrypted(try readBytes(stream, font.compressedSize!))
 
         pdf.append("/Length ")
         pdf.append(compressed.count)
@@ -326,71 +314,45 @@ class FontStream1 {
         list.removeAll()
     }
 
-    // Reads count bytes: a single read may return fewer bytes than asked for.
-    private static func readFully(_ stream: InputStream, _ count: Int) throws -> [UInt8] {
-        var buffer = [UInt8](repeating: 0, count: count)
-        var offset = 0
-        while offset < count {
-            let read = buffer.withUnsafeMutableBufferPointer {
-                stream.read($0.baseAddress! + offset, maxLength: count - offset)
-            }
-            if read <= 0 {
-                throw StreamError.read
-            }
-            offset += read
-        }
-        return buffer
+    // The most bytes the metrics of a stream font decode to, with its marks
+    // compressed in them. IBM Plex Sans JP has 180 KB.
+    private static let maxFontMetricsLength = 16 * 1024 * 1024
+
+    private static func fontStreamError(_ what: String) -> PDFjetError {
+        return PDFjetError(message: "Invalid font stream: \(what).")
     }
 
-    // Reads where the marks go, which getFontData keeps compressed: for each
-    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
-    // and the anchors of each letter, and then the offsets of the marks that go
-    // on other marks. Done once, the first time a mark is drawn in the font; a
-    // font whose marks cannot be read draws them where they are.
-    static func readMarks(_ font: Font) {
-        guard let markData = font.markData, let data = try? inflate(markData) else {
-            font.markData = nil
-            return
+    private static let endOfStream = PDFjetError(message: "Unexpected end of the font stream.")
+
+    // Returns true if the name can be written as a PDF name as it is:
+    // printable ASCII, and none of the characters that end a name or start an
+    // escape.
+    private static func isFontName(_ name: [UInt8]) -> Bool {
+        if name.isEmpty {
+            return false
         }
-        var offset = 0
-        let subTables = Int(getInt32(data, &offset))
-        var markAnchors = [[Int: [Int]]]()
-        var baseAnchors = [[Int: [Int]]]()
-        for _ in 0..<subTables {
-            var count = Int(getInt32(data, &offset))
-            var marks = [Int: [Int]](minimumCapacity: count)
-            for _ in 0..<count {
-                let gid = Int(getInt32(data, &offset))
-                let markClass = Int(getInt32(data, &offset))
-                let x = Int(getInt32(data, &offset))
-                marks[gid] = [markClass, x, Int(getInt32(data, &offset))]
+        for b in name {
+            if b < 0x21 || b > 0x7E || Array("()<>[]{}/%#".utf8).contains(b) {
+                return false
             }
-            count = Int(getInt32(data, &offset))
-            var bases = [Int: [Int]](minimumCapacity: count)
-            for _ in 0..<count {
-                let gid = Int(getInt32(data, &offset))
-                let length = Int(getInt32(data, &offset))
-                var anchors = [Int](repeating: 0, count: length)
-                for k in 0..<length {
-                    anchors[k] = Int(getInt32(data, &offset))
-                }
-                bases[gid] = anchors
+        }
+        return true
+    }
+
+    // Reads the next count bytes. It reads them as they come, so a count that
+    // the stream does not have takes no memory; a single read may return fewer
+    // bytes than asked for.
+    static func readBytes(_ stream: InputStream, _ count: Int) throws -> [UInt8] {
+        var bytes = [UInt8]()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while bytes.count < count {
+            let read = stream.read(&buffer, maxLength: min(count - bytes.count, buffer.count))
+            if read <= 0 {
+                throw endOfStream
             }
-            markAnchors.append(marks)
-            baseAnchors.append(bases)
+            bytes.append(contentsOf: buffer[0..<read])
         }
-        let pairs = Int(getInt32(data, &offset))
-        var markToMarkOffsets = [Int: [Int]](minimumCapacity: pairs)
-        for _ in 0..<pairs {
-            let other = Int(getInt32(data, &offset))
-            let mark = Int(getInt32(data, &offset))
-            let dx = Int(getInt32(data, &offset))
-            markToMarkOffsets[(other << 16) | mark] = [dx, Int(getInt32(data, &offset))]
-        }
-        font.markAnchors = markAnchors
-        font.baseAnchors = baseAnchors
-        font.markToMarkOffsets = markToMarkOffsets
-        font.markData = nil
+        return bytes
     }
 
     private static func skipFully(_ stream: InputStream, _ count: Int) throws {
@@ -399,120 +361,217 @@ class FontStream1 {
         while remaining > 0 {
             let read = stream.read(&buffer, maxLength: min(remaining, buffer.count))
             if read <= 0 {
-                throw StreamError.read
+                throw endOfStream
             }
             remaining -= read
         }
     }
 
-    private static func getUInt16(_ stream: InputStream) throws -> UInt16 {
-        let buffer = try readFully(stream, 2)
-        return (UInt16(buffer[0]) << 8) | UInt16(buffer[1])
-    }
-
     private static func getInt8(_ stream: InputStream) throws -> Int {
-        let buffer = try readFully(stream, 1)
-        return Int(buffer[0])
+        return Int(try readBytes(stream, 1)[0])
     }
 
     private static func getInt24(_ stream: InputStream) throws -> Int {
-        let buffer = try readFully(stream, 3)
+        let buffer = try readBytes(stream, 3)
         return (Int(buffer[0]) << 16) | (Int(buffer[1]) << 8) | Int(buffer[2])
     }
 
-    private static func getInt32(_ stream: InputStream) throws -> Int32 {
-        let buffer = try readFully(stream, 4)
-        return (Int32(buffer[0]) << 24) | (Int32(buffer[1]) << 16) |
-                (Int32(buffer[2]) << 8) | Int32(buffer[3])
+    private static func getUInt32(_ stream: InputStream) throws -> Int {
+        let buffer = try readBytes(stream, 4)
+        return (Int(buffer[0]) << 24) | (Int(buffer[1]) << 16) |
+                (Int(buffer[2]) << 8) | Int(buffer[3])
     }
 
-    private static func getUInt16(
-            _ buffer: [UInt8], _ offset: inout Int) -> UInt16 {
-        let value = (UInt16(buffer[offset]) << 8) | UInt16(buffer[offset + 1])
-        offset += 2
-        return value
+    // Reads the metrics of a stream font from a byte array, after checking
+    // that the bytes are there.
+    private struct Metrics {
+        let data: [UInt8]
+        let what: String
+        var offset = 0
+
+        init(_ data: [UInt8], _ what: String) {
+            self.data = data
+            self.what = what
+        }
+
+        var remaining: Int {
+            return data.count - offset
+        }
+
+        // Checks that count entries of size bytes follow.
+        func need(_ count: Int, _ size: Int) throws {
+            if count < 0 || count > remaining / size {
+                throw FontStream1.fontStreamError("\(what) end too soon")
+            }
+        }
+
+        mutating func getInt32() throws -> Int {
+            try need(1, 4)
+            let value = Int32(bitPattern: UInt32(data[offset]) << 24 | UInt32(data[offset + 1]) << 16 |
+                    UInt32(data[offset + 2]) << 8 | UInt32(data[offset + 3]))
+            offset += 4
+            return Int(value)
+        }
+
+        // Reads the number of entries of size bytes that follow.
+        mutating func getCount(_ size: Int) throws -> Int {
+            let count = try getInt32()
+            try need(count, size)
+            return count
+        }
+
+        mutating func getUInt16() -> UInt16 {
+            let value = UInt16(data[offset]) << 8 | UInt16(data[offset + 1])
+            offset += 2
+            return value
+        }
+
+        mutating func getBytes(_ count: Int) -> [UInt8] {
+            let bytes = Array(data[offset..<(offset + count)])
+            offset += count
+            return bytes
+        }
     }
 
-    private static func getInt(
-            _ buffer: [UInt8], _ offset: inout Int) -> Int {
-        let value = (Int(buffer[offset]) << 8) | Int(buffer[offset + 1])
-        offset += 2
-        return value
+    // Reads where the marks go, which getFontData keeps compressed: for each
+    // MarkToBase and MarkToLigature subtable the class and anchor of each mark
+    // and the anchors of each letter, and then the offsets of the marks that go
+    // on other marks. Done once, the first time a mark is drawn in the font; a
+    // font whose marks cannot be read draws them where they are.
+    static func readMarks(_ font: Font) {
+        defer {
+            font.markData = nil
+        }
+        guard let markData = font.markData,
+                let data = try? inflate(markData, maxFontMetricsLength),
+                let marks = try? readMarks(Metrics(data, "the marks")) else {
+            return
+        }
+        font.markAnchors = marks.markAnchors
+        font.baseAnchors = marks.baseAnchors
+        font.markToMarkOffsets = marks.markToMarkOffsets
     }
 
-    private static func getInt32(
-            _ buffer: [UInt8], _ offset: inout Int) -> Int32 {
-        let value = (Int32(buffer[offset]) << 24) | (Int32(buffer[offset + 1]) << 16) |
-                (Int32(buffer[offset + 2]) << 8) | Int32(buffer[offset + 3])
-        offset += 4
-        return value
+    private static func readMarks(_ data: Metrics) throws ->
+            (markAnchors: [[Int: [Int]]], baseAnchors: [[Int: [Int]]], markToMarkOffsets: [Int: [Int]]) {
+        var data = data
+        let subTables = try data.getCount(8)
+        var markAnchors = [[Int: [Int]]]()
+        var baseAnchors = [[Int: [Int]]]()
+        for _ in 0..<subTables {
+            var count = try data.getCount(16)
+            var marks = [Int: [Int]](minimumCapacity: count)
+            for _ in 0..<count {
+                let gid = try data.getInt32()
+                let markClass = try data.getInt32()
+                // The anchors of a letter are 3 ints for each mark class.
+                if markClass < 0 || markClass > 0xFFFF {
+                    throw fontStreamError("a mark class")
+                }
+                let x = try data.getInt32()
+                marks[gid] = [markClass, x, try data.getInt32()]
+            }
+            count = try data.getCount(8)
+            var bases = [Int: [Int]](minimumCapacity: count)
+            for _ in 0..<count {
+                let gid = try data.getInt32()
+                var anchors = [Int](repeating: 0, count: try data.getCount(4))
+                for k in 0..<anchors.count {
+                    anchors[k] = try data.getInt32()
+                }
+                bases[gid] = anchors
+            }
+            markAnchors.append(marks)
+            baseAnchors.append(bases)
+        }
+        let pairs = try data.getCount(16)
+        var markToMarkOffsets = [Int: [Int]](minimumCapacity: pairs)
+        for _ in 0..<pairs {
+            let other = try data.getInt32()
+            let mark = try data.getInt32()
+            let dx = try data.getInt32()
+            markToMarkOffsets[(other << 16) | mark] = [dx, try data.getInt32()]
+        }
+        return (markAnchors, baseAnchors, markToMarkOffsets)
     }
 
     static func getFontData(_ font: Font, _ stream: InputStream) throws {
-        var len = try getInt8(stream)
-        let fontName = try readFully(stream, len)
-        font.name = String(bytes: fontName, encoding: .utf8)!
+        let fontName = try readBytes(stream, try getInt8(stream))
+        if !isFontName(fontName) {
+            throw fontStreamError("the font name")
+        }
+        font.name = String(decoding: fontName, as: UTF8.self)
+        font.info = String(decoding: try readBytes(stream, try getInt24(stream)), as: UTF8.self)
 
-        len = try getInt24(stream)
-        let fontInfo = try readFully(stream, len)
-        font.info = String(bytes: fontInfo, encoding: .utf8)!
-
-        let deflatedLength = Int(try getInt32(stream))
-        let deflated = try readFully(stream, deflatedLength)
-        let inflated = try inflate(deflated)
-
-        var offset = 0
-        font.unitsPerEm = Int(getInt32(inflated, &offset))
-        font.bBoxLLx = Int16(getInt32(inflated, &offset))
-        font.bBoxLLy = Int16(getInt32(inflated, &offset))
-        font.bBoxURx = Int16(getInt32(inflated, &offset))
-        font.bBoxURy = Int16(getInt32(inflated, &offset))
-        font.fontAscent = Int16(getInt32(inflated, &offset))
-        font.fontDescent = Int16(getInt32(inflated, &offset))
-        font.firstChar = Int(getInt32(inflated, &offset))
-        font.lastChar = Int(getInt32(inflated, &offset))
-        font.capHeight = Int16(getInt32(inflated, &offset))
-        font.fontUnderlinePosition = Int16(getInt32(inflated, &offset))
-        font.fontUnderlineThickness = Int16(getInt32(inflated, &offset))
-
-        len = Int(getInt32(inflated, &offset))
-        font.advanceWidth = [UInt16](repeating: 0, count: len)
-        for i in 0..<len {
-            font.advanceWidth[i] = getUInt16(inflated, &offset)
+        var metrics = Metrics(try inflate(
+                try readBytes(stream, try getUInt32(stream)), maxFontMetricsLength), "the metrics")
+        font.unitsPerEm = try metrics.getInt32()
+        font.bBoxLLx = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.bBoxLLy = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.bBoxURx = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.bBoxURy = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.fontAscent = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.fontDescent = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.firstChar = try metrics.getInt32()
+        font.lastChar = try metrics.getInt32()
+        font.capHeight = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.fontUnderlinePosition = Int16(truncatingIfNeeded: try metrics.getInt32())
+        font.fontUnderlineThickness = Int16(truncatingIfNeeded: try metrics.getInt32())
+        // The range OpenType allows; the sizes of the text are divided by it.
+        if font.unitsPerEm < 16 || font.unitsPerEm > 16384 {
+            throw fontStreamError("the units per em")
+        }
+        // A character in the range is looked up in unicodeToGID.
+        if font.firstChar < 0 || font.lastChar > 0xFFFF {
+            throw fontStreamError("the first or last character")
         }
 
-        len = Int(getInt32(inflated, &offset))
+        var len = try metrics.getCount(2)
+        if len == 0 {
+            throw fontStreamError("no advance widths")
+        }
+        font.advanceWidth = [UInt16](repeating: 0, count: len)
+        for i in 0..<len {
+            font.advanceWidth[i] = metrics.getUInt16()
+        }
+
+        len = try metrics.getCount(2)
+        if len != 0x10000 {
+            throw fontStreamError("the character map")
+        }
         font.unicodeToGID = [Int](repeating: 0, count: len)
         for i in 0..<len {
-            font.unicodeToGID[i] = getInt(inflated, &offset)
+            font.unicodeToGID[i] = Int(metrics.getUInt16())
         }
 
         // Where the GPOS table of the font puts the marks, compressed on its
         // own after the metrics of a stream that has them. It is kept as it is
-        // and read when a mark is drawn in the font; see readMarks.
-        if offset < inflated.count {
-            let length = Int(getInt32(inflated, &offset))
-            font.markData = Array(inflated[offset..<(offset + length)])
-            offset += length
+        // and read when a mark is drawn in the font; see readMarks. A font with
+        // no marks has none, or 0 bytes of them.
+        if metrics.remaining > 0 {
+            let markData = metrics.getBytes(try metrics.getCount(1))
+            if !markData.isEmpty {
+                font.markData = markData
+            }
         }
         // The line gap of a font that has one follows the marks, where a library
         // that does not read it stops.
-        if offset < inflated.count {
-            font.fontLineGap = Int16(getInt32(inflated, &offset))
+        if metrics.remaining > 0 {
+            font.fontLineGap = Int16(truncatingIfNeeded: try metrics.getInt32())
         }
 
         var flag = UnicodeScalar(try getInt8(stream))
         if flag == UnicodeScalar("R") {
             // The tables of an OpenType font that are not in its CFF data,
             // which keep the font whole; they are not embedded.
-            try skipFully(stream, Int(try getInt32(stream)))
+            try skipFully(stream, try getUInt32(stream))
             flag = UnicodeScalar(try getInt8(stream))
         }
         if flag == UnicodeScalar("Y") {
             font.cff = true
         }
 
-        font.uncompressedSize = Int(try getInt32(stream))
-        font.compressedSize = Int(try getInt32(stream))
+        font.uncompressedSize = try getUInt32(stream)
+        font.compressedSize = try getUInt32(stream)
     }
 }   // End of FontStream1.swift

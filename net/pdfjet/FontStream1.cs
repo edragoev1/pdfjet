@@ -69,12 +69,8 @@ class FontStream1 {
         }
         pdf.Append("/Filter /FlateDecode\n");
 
-        byte[] compressed = null;
+        byte[] compressed = ReadBytes(stream, font.compressedSize);
         byte[] encrypted = null;
-        using (var ms = new MemoryStream()) {
-            stream.CopyTo(ms);
-            compressed = ms.ToArray();
-        }
         if (pdf.encryption != null) {
             encrypted = AES256.Encrypt(compressed, pdf.encryption.GetKey());
         }
@@ -343,83 +339,197 @@ class FontStream1 {
         list.Clear();
     }
 
-    private static int GetInt16(Stream stream) {
-        return stream.ReadByte() << 8 | stream.ReadByte();
+    // The most bytes the metrics of a stream font decode to, with its marks
+    // compressed in them. IBM Plex Sans JP has 180 KB.
+    private const int MaxFontMetricsLength = 16 * 1024 * 1024;
+
+    private static void FontStreamError(String what) {
+        throw new Exception("Invalid font stream: " + what + ".");
+    }
+
+    // Returns true if the name can be written as a PDF name as it is:
+    // printable ASCII, and none of the characters that end a name or start an
+    // escape.
+    private static bool IsFontName(byte[] name) {
+        if (name.Length == 0) {
+            return false;
+        }
+        foreach (byte b in name) {
+            if (b < 0x21 || b > 0x7E || "()<>[]{}/%#".IndexOf((char) b) != -1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int GetByte(Stream stream) {
+        int b = stream.ReadByte();
+        if (b == -1) {
+            throw new EndOfStreamException("Unexpected end of the font stream.");
+        }
+        return b;
     }
 
     private static int GetInt24(Stream stream) {
-        return stream.ReadByte() << 16 |
-                stream.ReadByte() << 8 | stream.ReadByte();
+        return GetByte(stream) << 16 | GetByte(stream) << 8 | GetByte(stream);
     }
 
-    private static int GetInt32(Stream stream) {
-        return stream.ReadByte() << 24 | stream.ReadByte() << 16 |
-                stream.ReadByte() << 8 | stream.ReadByte();
+    private static long GetUInt32(Stream stream) {
+        return (long) GetByte(stream) << 24 | (long) GetByte(stream) << 16 |
+                (long) GetByte(stream) << 8 | (long) GetByte(stream);
+    }
+
+    // A size that must fit an int, which any font file does.
+    private static int GetSize(Stream stream) {
+        long size = GetUInt32(stream);
+        if (size > int.MaxValue) {
+            FontStreamError("the size of the font file");
+        }
+        return (int) size;
+    }
+
+    // Reads the next length bytes. It reads them as they come, so a length
+    // that the stream does not have takes no memory.
+    internal static byte[] ReadBytes(Stream stream, long length) {
+        using (MemoryStream buf = new MemoryStream()) {
+            byte[] buffer = new byte[4096];
+            while (buf.Length < length) {
+                int bytesRead = stream.Read(buffer, 0, (int) Math.Min(buffer.Length, length - buf.Length));
+                if (bytesRead == 0) {
+                    throw new EndOfStreamException("Unexpected end of the font stream.");
+                }
+                buf.Write(buffer, 0, bytesRead);
+            }
+            return buf.ToArray();
+        }
+    }
+
+    // Reads the metrics of a stream font from a byte array, after checking
+    // that the bytes are there.
+    private sealed class Metrics {
+        private readonly byte[] data;
+        private readonly String what;
+        internal int pos = 0;
+
+        internal Metrics(byte[] data, String what) {
+            this.data = data;
+            this.what = what;
+        }
+
+        internal int Remaining() {
+            return data.Length - pos;
+        }
+
+        // Checks that count entries of size bytes follow.
+        internal void Need(int count, int size) {
+            if (count < 0 || count > Remaining() / size) {
+                FontStreamError(what + " end too soon");
+            }
+        }
+
+        internal int GetInt32() {
+            Need(1, 4);
+            int v = data[pos] << 24 | data[pos + 1] << 16 | data[pos + 2] << 8 | data[pos + 3];
+            pos += 4;
+            return v;
+        }
+
+        // Reads the number of entries of size bytes that follow.
+        internal int GetCount(int size) {
+            int count = GetInt32();
+            Need(count, size);
+            return count;
+        }
+
+        internal int GetUInt16() {
+            int v = data[pos] << 8 | data[pos + 1];
+            pos += 2;
+            return v;
+        }
+
+        internal byte[] GetBytes(int length) {
+            byte[] bytes = new byte[length];
+            Array.Copy(data, pos, bytes, 0, length);
+            pos += length;
+            return bytes;
+        }
     }
 
     internal static void GetFontData(Font font, Stream inputStream) {
-        int len = inputStream.ReadByte();
-        byte[] fontName = new byte[len];
-        ReadFully(inputStream, fontName);
-        font.name = System.Text.Encoding.UTF8.GetString(fontName, 0, len);
+        byte[] fontName = ReadBytes(inputStream, GetByte(inputStream));
+        if (!IsFontName(fontName)) {
+            FontStreamError("the font name");
+        }
+        font.name = System.Text.Encoding.UTF8.GetString(fontName);
+        font.info = System.Text.Encoding.UTF8.GetString(ReadBytes(inputStream, GetInt24(inputStream)));
 
-        len = GetInt24(inputStream);
-        byte[] fontInfo = new byte[len];
-        ReadFully(inputStream, fontInfo);
-        font.info = System.Text.Encoding.UTF8.GetString(fontInfo, 0, len);
-
-        byte[] buf = new byte[GetInt32(inputStream)];
-        ReadFully(inputStream, buf);
-        MemoryStream stream = new MemoryStream(Decompressor.Inflate(buf));
-
-        font.unitsPerEm = GetInt32(stream);
-        font.bBoxLLx = GetInt32(stream);
-        font.bBoxLLy = GetInt32(stream);
-        font.bBoxURx = GetInt32(stream);
-        font.bBoxURy = GetInt32(stream);
-        font.fontAscent = GetInt32(stream);
-        font.fontDescent = GetInt32(stream);
-        font.firstChar = GetInt32(stream);
-        font.lastChar = GetInt32(stream);
-        font.capHeight = GetInt32(stream);
-        font.fontUnderlinePosition = GetInt32(stream);
-        font.fontUnderlineThickness = GetInt32(stream);
-
-        len = GetInt32(stream);
-        font.advanceWidth = new int[len];
-        for (int i = 0; i < len; i++) {
-            font.advanceWidth[i] = GetInt16(stream);
+        Metrics metrics = new Metrics(Decompressor.Inflate(
+                ReadBytes(inputStream, GetUInt32(inputStream)), MaxFontMetricsLength), "the metrics");
+        font.unitsPerEm = metrics.GetInt32();
+        font.bBoxLLx = metrics.GetInt32();
+        font.bBoxLLy = metrics.GetInt32();
+        font.bBoxURx = metrics.GetInt32();
+        font.bBoxURy = metrics.GetInt32();
+        font.fontAscent = metrics.GetInt32();
+        font.fontDescent = metrics.GetInt32();
+        font.firstChar = metrics.GetInt32();
+        font.lastChar = metrics.GetInt32();
+        font.capHeight = metrics.GetInt32();
+        font.fontUnderlinePosition = metrics.GetInt32();
+        font.fontUnderlineThickness = metrics.GetInt32();
+        // The range OpenType allows; the sizes of the text are divided by it.
+        if (font.unitsPerEm < 16 || font.unitsPerEm > 16384) {
+            FontStreamError("the units per em");
+        }
+        // A character in the range is looked up in unicodeToGID.
+        if (font.firstChar < 0 || font.lastChar > 0xFFFF) {
+            FontStreamError("the first or last character");
         }
 
-        len = GetInt32(stream);
+        int len = metrics.GetCount(2);
+        if (len == 0) {
+            FontStreamError("no advance widths");
+        }
+        font.advanceWidth = new int[len];
+        for (int i = 0; i < len; i++) {
+            font.advanceWidth[i] = metrics.GetUInt16();
+        }
+
+        len = metrics.GetCount(2);
+        if (len != 0x10000) {
+            FontStreamError("the character map");
+        }
         font.unicodeToGID = new int[len];
         for (int i = 0; i < len; i++) {
-            font.unicodeToGID[i] = GetInt16(stream);
+            font.unicodeToGID[i] = metrics.GetUInt16();
         }
 
         // Where the GPOS table of the font puts the marks, compressed on its
         // own after the metrics of a stream that has them. It is kept as it is
-        // and read when a mark is drawn in the font; see ReadMarks.
-        if (stream.Position < stream.Length) {
-            font.markData = new byte[GetInt32(stream)];
-            ReadFully(stream, font.markData);
+        // and read when a mark is drawn in the font; see ReadMarks. A font with
+        // no marks has none, or 0 bytes of them.
+        if (metrics.Remaining() > 0) {
+            byte[] markData = metrics.GetBytes(metrics.GetCount(1));
+            if (markData.Length > 0) {
+                font.markData = markData;
+            }
         }
         // The line gap of a font that has one follows the marks, where a library
         // that does not read it stops.
-        if (stream.Position < stream.Length) {
-            font.fontLineGap = GetInt32(stream);
+        if (metrics.Remaining() > 0) {
+            font.fontLineGap = metrics.GetInt32();
         }
 
-        int flag = inputStream.ReadByte();
+        int flag = GetByte(inputStream);
         if (flag == 'R') {
             // The tables of an OpenType font that are not in its CFF data,
             // which keep the font whole; they are not embedded.
-            SkipFully(inputStream, GetInt32(inputStream));
-            flag = inputStream.ReadByte();
+            SkipFully(inputStream, GetUInt32(inputStream));
+            flag = GetByte(inputStream);
         }
         font.cff = flag == 'Y';
-        font.uncompressedSize = GetInt32(inputStream);
-        font.compressedSize = GetInt32(inputStream);
+        font.uncompressedSize = GetSize(inputStream);
+        font.compressedSize = GetSize(inputStream);
     }
 
     // Reads where the marks go, which GetFontData keeps compressed: for each
@@ -427,39 +537,44 @@ class FontStream1 {
     // and the anchors of each letter, and then the offsets of the marks that go
     // on other marks. Done once, the first time a mark is drawn in the font.
     internal static void ReadMarks(Font font) {
-        MemoryStream stream = new MemoryStream(Decompressor.Inflate(font.markData));
-        int subTables = GetInt32(stream);
+        Metrics stream = new Metrics(
+                Decompressor.Inflate(font.markData, MaxFontMetricsLength), "the marks");
+        int subTables = stream.GetCount(8);
         List<Dictionary<int, int[]>> markAnchors = new List<Dictionary<int, int[]>>(subTables);
         List<Dictionary<int, int[]>> baseAnchors = new List<Dictionary<int, int[]>>(subTables);
         for (int i = 0; i < subTables; i++) {
-            int count = GetInt32(stream);
+            int count = stream.GetCount(16);
             Dictionary<int, int[]> marks = new Dictionary<int, int[]>(count);
             for (int j = 0; j < count; j++) {
-                int gid = GetInt32(stream);
-                int markClass = GetInt32(stream);
-                int x = GetInt32(stream);
-                marks[gid] = new int[] {markClass, x, GetInt32(stream)};
+                int gid = stream.GetInt32();
+                int markClass = stream.GetInt32();
+                // The anchors of a letter are 3 ints for each mark class.
+                if (markClass < 0 || markClass > 0xFFFF) {
+                    FontStreamError("a mark class");
+                }
+                int x = stream.GetInt32();
+                marks[gid] = new int[] {markClass, x, stream.GetInt32()};
             }
-            count = GetInt32(stream);
+            count = stream.GetCount(8);
             Dictionary<int, int[]> bases = new Dictionary<int, int[]>(count);
             for (int j = 0; j < count; j++) {
-                int gid = GetInt32(stream);
-                int[] anchors = new int[GetInt32(stream)];
+                int gid = stream.GetInt32();
+                int[] anchors = new int[stream.GetCount(4)];
                 for (int k = 0; k < anchors.Length; k++) {
-                    anchors[k] = GetInt32(stream);
+                    anchors[k] = stream.GetInt32();
                 }
                 bases[gid] = anchors;
             }
             markAnchors.Add(marks);
             baseAnchors.Add(bases);
         }
-        int pairs = GetInt32(stream);
+        int pairs = stream.GetCount(16);
         Dictionary<int, int[]> markToMarkOffsets = new Dictionary<int, int[]>(pairs);
         for (int j = 0; j < pairs; j++) {
-            int other = GetInt32(stream);
-            int mark = GetInt32(stream);
-            int dx = GetInt32(stream);
-            markToMarkOffsets[(other << 16) | mark] = new int[] {dx, GetInt32(stream)};
+            int other = stream.GetInt32();
+            int mark = stream.GetInt32();
+            int dx = stream.GetInt32();
+            markToMarkOffsets[(other << 16) | mark] = new int[] {dx, stream.GetInt32()};
         }
         font.markAnchors = markAnchors;
         font.baseAnchors = baseAnchors;
@@ -467,26 +582,14 @@ class FontStream1 {
         font.markData = null;
     }
 
-    private static void SkipFully(Stream stream, int count) {
+    private static void SkipFully(Stream stream, long count) {
         byte[] buffer = new byte[4096];
         while (count > 0) {
-            int bytesRead = stream.Read(buffer, 0, Math.Min(count, buffer.Length));
+            int bytesRead = stream.Read(buffer, 0, (int) Math.Min(count, buffer.Length));
             if (bytesRead == 0) {
                 throw new EndOfStreamException("Unexpected end of the font stream.");
             }
             count -= bytesRead;
-        }
-    }
-
-    internal static void ReadFully(Stream stream, byte[] buffer) {
-        int totalBytesRead = 0;
-        while (totalBytesRead < buffer.Length) {
-            // Read the remaining bytes into the buffer
-            int bytesRead = stream.Read(buffer, totalBytesRead, buffer.Length - totalBytesRead);
-            if (bytesRead == 0) {
-                throw new EndOfStreamException("Unexpected end of the font stream.");
-            }
-            totalBytesRead += bytesRead;
         }
     }
 }   // End of FontStream1.cs

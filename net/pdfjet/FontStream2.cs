@@ -108,14 +108,9 @@ class FontStream2 {
             obj.dict.Add(font.uncompressedSize.ToString());
         }
         obj.dict.Add(">>");
-        MemoryStream buf2 = new MemoryStream();
-        byte[] buf = new byte[4096];
-        int len;
-        while ((len = stream.Read(buf, 0, buf.Length)) > 0) {
-            buf2.Write(buf, 0, len);
-        }
+        byte[] compressed = FontStream1.ReadBytes(stream, font.compressedSize);
         stream.Close();
-        obj.SetStream(buf2.ToArray());
+        obj.SetStream(compressed);
         obj.number = objects.Count + 1;
         objects.Add(obj);
         font.fileObjNumber = obj.number;

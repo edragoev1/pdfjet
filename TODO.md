@@ -250,8 +250,19 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       name, and `embedFontFile2` looping on a read error. And one in shipped
       fonts: IBM Plex Sans JP maps 15 arrows (↺ …) past its advance widths,
       so "↺" and a combining mark threw in `Page.markOffsets` (Java
-      ArrayIndexOutOfBounds, Swift traps). Java, C# and Swift have the same
-      code and are not fixed yet.
+      ArrayIndexOutOfBounds, Swift traps). Fixed in Java, C# and Swift the
+      same way (Sep 19), with unit tests; Swift also trapped on a name or
+      license that is not UTF-8, a negative length and an `Int16` out of
+      range. A mark block of 0 bytes is no marks in the four ports (Go did
+      so by accident). The 873 inputs of the Go corpus, replayed in the four
+      ports: no crash in any; Java and C# accept and reject the same inputs
+      as Go.
+- ⬜ Swift's `Puff` skips the zlib header and does not check the Adler-32
+      at the end, so Swift decodes corrupt zlib data that Java, C# and Go
+      reject: 31 of the 873 stream font inputs, and PNG and PDF streams the
+      same way. Check both, in `inflate`, as the other ports do.
+- ⬜ Swift draws the marks of a stream font whose mark data cannot be read
+      where they are; Java, C# and Go fail (47 of the 873 inputs). Pick one.
 - ⬜ **B** 3. PDF/UA as it is claimed: tag a table as a table (below), and
       check the 41 PDF/UA examples with PAC or by the Matterhorn Protocol,
       not only veraPDF, which cannot see what a paragraph stands for.

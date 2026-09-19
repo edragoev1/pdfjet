@@ -733,7 +733,7 @@ public class Page {
             append("[<")
             Page.appendCodePointAsHex(space, &self.buf)
             append("> ")
-            append(1000.0 * Float(font.advanceWidth[space]) / Float(font.unitsPerEm))
+            append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append("] TJ\n")
         }
         append("EMC\n<")
@@ -776,7 +776,7 @@ public class Page {
         // Where each glyph is drawn before it is moved, in font units.
         var x = [Int](repeating: 0, count: n)
         for i in stride(from: 1, to: n, by: 1) {
-            x[i] = x[i - 1] + Int(font.advanceWidth[gids[i - 1]])
+            x[i] = x[i - 1] + font.glyphAdvance(gids[i - 1])
         }
         var offsets = [Int](repeating: 0, count: 2*n)
         for i in 0..<n where isMark(codePoints[i]) {
@@ -983,7 +983,7 @@ public class Page {
         if leadingSpace {
             let space = font.unicodeToGID[0x0020]
             append("[")
-            append(1000.0 * Float(font.advanceWidth[space]) / Float(font.unitsPerEm))
+            append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append(" <")
             Page.appendCodePointAsHex(space, &self.buf)
             append(">] TJ\n")

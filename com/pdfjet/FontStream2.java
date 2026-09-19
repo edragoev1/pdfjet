@@ -111,14 +111,9 @@ class FontStream2 {
             obj.dict.add(String.valueOf(font.uncompressedSize));
         }
         obj.dict.add(">>");
-        ByteArrayOutputStream buf2 = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int len;
-        while ((len = inputStream.read(buf, 0, buf.length)) > 0) {
-            buf2.write(buf, 0, len);
-        }
+        byte[] compressed = FontStream1.readBytes(inputStream, font.compressedSize);
         inputStream.close();
-        obj.setStream(buf2.toByteArray());
+        obj.setStream(compressed);
         obj.number = objects.size() + 1;
         objects.add(obj);
         font.fileObjNumber = obj.number;

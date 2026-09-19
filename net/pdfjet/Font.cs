@@ -389,6 +389,13 @@ public class Font {
             return 0;
         }
         int gid = (codePoint < firstChar || codePoint > lastChar) ? unicodeToGID[0x20] : unicodeToGID[codePoint];
+        return GlyphAdvance(gid);
+    }
+
+    // Returns the advance width of the glyph, in font units. A font can map
+    // characters to glyphs past the end of its advance widths, which get the
+    // width of the first glyph, as in the widths of the PDF font.
+    internal int GlyphAdvance(int gid) {
         return (gid < advanceWidth.Length) ? advanceWidth[gid] : advanceWidth[0];
     }
 
