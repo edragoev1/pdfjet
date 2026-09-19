@@ -252,8 +252,10 @@ class FontStream2 {
         if font.unitsPerEm != 1000 {
             k = Float(1000.0) / Float(font.unitsPerEm)
         }
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         obj.dict.append("/DW")
-        obj.dict.append(String(Int32(round(k * Float(font.advanceWidth[0])))))
+        obj.dict.append(String(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1])))))
         obj.dict.append("/W")
         obj.dict.append("[")
         obj.dict.append("0")

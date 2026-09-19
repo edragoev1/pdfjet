@@ -122,4 +122,22 @@ class FontStreamTest {
         byte[] stream = stream("A", metrics(1000, 32, 126, 1, 0x10000));
         assertTrue(error(Arrays.copyOf(stream, stream.length - 1)) instanceof EOFException);
     }
+
+    @Test
+    void aGlyphPastTheAdvanceWidthsHasTheWidthOfTheLastOne() throws Exception {
+        // Two advance widths, 500 and 700, and "A" maps to glyph 5 past them.
+        byte[] metrics = metrics(1000, 32, 126, 2, 0x10000);
+        metrics[52] = (byte) (500 >> 8);
+        metrics[53] = (byte) 500;
+        metrics[54] = (byte) (700 >> 8);
+        metrics[55] = (byte) 700;
+        metrics[61 + 2*'A'] = 5;
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = new Font(pdf, new ByteArrayInputStream(stream("A", metrics)));
+        assertEquals(7f, font.stringWidth(10f, "A"), 0.001f);
+        new TextLine(font, "A").setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/DW 700\n"));
+    }
 }

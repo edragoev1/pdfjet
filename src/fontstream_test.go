@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -100,5 +101,20 @@ func TestFontStreamRejectsANameThatIsNotAPDFName(t *testing.T) {
 	for _, name := range []string{"", "Noto Sans", "Noto/Sans", "Noto(Sans", "Noto#20Sans"} {
 		stream := fuzzJoinFontStream([]byte(name), info, metrics, marks, lineGap, rest, flag, embedded)
 		testWant(t, "Invalid font stream: the font name.", testFontStreamError(stream))
+	}
+}
+
+func TestFontStreamAGlyphPastTheAdvanceWidthsHasTheWidthOfTheLastOne(t *testing.T) {
+	// Two advance widths, 500 and 700, and "A" maps to glyph 5 past them.
+	metrics := testMetrics(1000, 32, 126, 2, 0x10000)
+	binary.BigEndian.PutUint16(metrics[52:], 500)
+	binary.BigEndian.PutUint16(metrics[54:], 700)
+	binary.BigEndian.PutUint16(metrics[60+2*'A':], 5)
+	doc := testNewDoc()
+	font := NewFontStream1(doc.pdf, bytes.NewReader(testFontStreamMetrics(t, metrics)))
+	testNear(t, "width of A", 7, font.StringWidth(10, "A"), testDelta)
+	NewTextLine(font, "A").SetLocation(50, 50).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	if raw := string(doc.complete()); !strings.Contains(raw, "/DW 700\n") {
+		t.Error("the default width of the PDF font is not 700")
 	}
 }

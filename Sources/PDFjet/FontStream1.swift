@@ -237,8 +237,10 @@ class FontStream1 {
         if font.unitsPerEm != 1000 {
             k = Float(1000.0) / Float(font.unitsPerEm)
         }
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         pdf.append("/DW ")
-        pdf.append(Int32(round(k * Float(font.advanceWidth[0]))))
+        pdf.append(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1]))))
         pdf.append(Token.newline)
         var buffer = String()
         pdf.append("/W [0[\n")

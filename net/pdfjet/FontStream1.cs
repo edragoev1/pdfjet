@@ -259,8 +259,10 @@ class FontStream1 {
         pdf.Append(" 0 R\n");
 
         float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         pdf.Append("/DW ");
-        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[0]), MidpointRounding.AwayFromZero));
+        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[font.advanceWidth.Length - 1]), MidpointRounding.AwayFromZero));
         pdf.Append('\n');
 
         pdf.Append("/W [0[\n");

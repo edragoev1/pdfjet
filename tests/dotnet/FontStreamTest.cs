@@ -115,5 +115,23 @@ public class FontStreamTest {
         Array.Resize(ref stream, stream.Length - 1);
         Assert.IsType<EndOfStreamException>(Error(stream));
     }
+
+    [Fact]
+    public void AGlyphPastTheAdvanceWidthsHasTheWidthOfTheLastOne() {
+        // Two advance widths, 500 and 700, and "A" maps to glyph 5 past them.
+        byte[] metrics = Metrics(1000, 32, 126, 2, 0x10000);
+        metrics[52] = (byte) (500 >> 8);
+        metrics[53] = 500 & 0xFF;
+        metrics[54] = (byte) (700 >> 8);
+        metrics[55] = 700 & 0xFF;
+        metrics[61 + 2*'A'] = 5;
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font font = new Font(pdf, new MemoryStream(Stream("A", metrics)));
+        TestSupport.AssertNear(7f, font.StringWidth(10f, "A"), 0.001f);
+        new TextLine(font, "A").SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        Assert.Contains("/DW 700\n", TestSupport.Latin1(output.ToArray()));
+    }
 }
 }   // End of namespace PDFjet.NET

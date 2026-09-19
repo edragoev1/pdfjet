@@ -47,6 +47,24 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- A stream font (`.otf.stream`, `.ttf.stream`) that is not valid fails with
+  "Invalid font stream: ..." or an end of stream error, in all four ports,
+  where it could allocate the gigabytes its lengths gave before reading them,
+  read its metrics and marks past their end, or trap in Swift. The units per
+  em, the character range, the tables, the mark classes and the font name,
+  which is written as a PDF name, are checked, and the font file is embedded
+  at the length the stream gives. Found by fuzzing the Go reader; the fuzz
+  targets are in `src/fontstream_fuzz_test.go`.
+- A glyph past the advance widths of a font, which OpenType allows when the
+  last glyphs share a width, had the width of the first glyph, in measured
+  text and as the `/DW` of the PDF font; it has the width of the last one
+  now. In IBM Plex Sans JP, ↺ and 14 other arrows are such glyphs, and one
+  followed by a combining mark threw an index error, or trapped in Swift. No
+  font PDFjet ships draws a different width, but the `/DW` of most fonts
+  changes, which the glyphs of their `/W` arrays do not use.
+- Swift decoded zlib data with a wrong header or checksum, which the other
+  ports reject, and drew the marks of a stream font whose mark data could not
+  be read where they were; it checks both, and fails the document, now.
 - A fallback font drew only the characters the font had no glyph for until
   the fallback font lacked one: in "abc日本def" the "def", and the spaces and
   digits after Japanese text, were in the fallback font; a character that

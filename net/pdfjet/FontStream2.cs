@@ -238,8 +238,10 @@ class FontStream2 {
         obj.dict.Add("R");
 
         float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         obj.dict.Add("/DW");
-        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[0], MidpointRounding.AwayFromZero)).ToString());
+        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[font.advanceWidth.Length - 1], MidpointRounding.AwayFromZero)).ToString());
         obj.dict.Add("/W");
         obj.dict.Add("[");
         obj.dict.Add("0");

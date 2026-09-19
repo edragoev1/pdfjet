@@ -242,8 +242,10 @@ class FontStream2 {
         obj.dict.add("R");
 
         final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         obj.dict.add("/DW");
-        obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[0])));
+        obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[font.advanceWidth.length - 1])));
         obj.dict.add("/W");
         obj.dict.add("[");
         obj.dict.add("0");

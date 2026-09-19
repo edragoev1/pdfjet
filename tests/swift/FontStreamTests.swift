@@ -120,4 +120,20 @@ import Testing
         #expect(error(Array(stream("A", metrics(1000, 32, 126, 1, 0x10000)).dropLast())) ==
                 "Unexpected end of the font stream.")
     }
+
+    @Test func aGlyphPastTheAdvanceWidthsHasTheWidthOfTheLastOne() throws {
+        // Two advance widths, 500 and 700, and "A" maps to glyph 5 past them.
+        var withWidths = metrics(1000, 32, 126, 2, 0x10000)
+        withWidths[52] = UInt8(500 >> 8)
+        withWidths[53] = UInt8(500 & 0xFF)
+        withWidths[54] = UInt8(700 >> 8)
+        withWidths[55] = UInt8(700 & 0xFF)
+        withWidths[61 + 2*0x41] = 5
+        let memory = MemoryPDF()
+        let font = try Font(memory.pdf, InputStream(data: Data(stream("A", withWidths))))
+        #expect(abs(font.stringWidth(10, "A") - 7) < 0.001)
+        TextLine(font, "A").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        #expect(TestSupport.latin1(memory.bytes).contains("/DW 700\n"))
+    }
 }

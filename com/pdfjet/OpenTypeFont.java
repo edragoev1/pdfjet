@@ -291,8 +291,10 @@ class OpenTypeFont {
         pdf.append(" 0 R\n");
 
         final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
+        // The width of the glyphs past the /W array: those past the advance
+        // widths, which have the width of the last one.
         pdf.append("/DW ");
-        pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[0])));
+        pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[font.advanceWidth.length - 1])));
         pdf.append('\n');
 
         pdf.append("/W [0[\n");

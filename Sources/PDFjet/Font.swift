@@ -413,11 +413,11 @@ public class Font {
         return glyphAdvance(gid)
     }
 
-    // Returns the advance width of the glyph, in font units. A font can map
-    // characters to glyphs past the end of its advance widths, which get the
-    // width of the first glyph, as in the widths of the PDF font.
+    // Returns the advance width of the glyph, in font units. A font can list
+    // fewer advance widths than it has glyphs, and the glyphs past the end have
+    // the width of the last one, as OpenType says and the PDF font's /DW does.
     func glyphAdvance(_ gid: Int) -> Int {
-        return Int((gid < advanceWidth.count) ? advanceWidth[gid] : advanceWidth[0])
+        return Int(advanceWidth[min(gid, advanceWidth.count - 1)])
     }
 
     // Returns true if the font has a glyph for the character. A character past

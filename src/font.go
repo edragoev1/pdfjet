@@ -609,13 +609,11 @@ func (font *Font) advanceWidthOf(c rune) int {
 }
 
 // glyphAdvance returns the advance width of the glyph, in font units. A font
-// can map characters to glyphs past the end of its advance widths, which get
-// the width of the first glyph, as in the widths of the PDF font.
+// can list fewer advance widths than it has glyphs, and the glyphs past the
+// end have the width of the last one, as OpenType says and the PDF font's /DW
+// does.
 func (font *Font) glyphAdvance(gid int) int {
-	if gid < len(font.advanceWidth) {
-		return int(font.advanceWidth[gid])
-	}
-	return int(font.advanceWidth[0])
+	return int(font.advanceWidth[min(gid, len(font.advanceWidth)-1)])
 }
 
 // hasGlyph returns true if the font has a glyph for the character. A character

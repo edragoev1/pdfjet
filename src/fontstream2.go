@@ -243,8 +243,10 @@ func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
 	obj.add("R")
 
 	k := float32(1000.0) / float32(font.unitsPerEm)
+	// The width of the glyphs past the /W array: those past the advance
+	// widths, which have the width of the last one.
 	obj.add("/DW")
-	obj.add(strconv.Itoa(int(math.Round(float64(k * float32(font.advanceWidth[0]))))))
+	obj.add(strconv.Itoa(int(math.Round(float64(k * float32(font.advanceWidth[len(font.advanceWidth)-1]))))))
 	obj.add("/W")
 	obj.add("[")
 	obj.add("0")
