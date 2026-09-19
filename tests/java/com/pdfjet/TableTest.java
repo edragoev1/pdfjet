@@ -217,4 +217,89 @@ class TableTest {
         float[] xy = new Table().setTableData(rows(font, 2, 1), 5).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
         TestSupport.assertXY(expected[0], expected[1], xy);
     }
+    // The number of times the text is in the string.
+    private static int count(String str, String text) {
+        return str.split(java.util.regex.Pattern.quote(text), -1).length - 1;
+    }
+
+    @Test
+    void aTableInAPDFUADocumentIsTaggedAsATable() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(java.util.Arrays.asList(new Cell(font, "Name"), new Cell(font, "Notes"))));
+        data.add(new ArrayList<Cell>(java.util.Arrays.asList(new Cell(font, "a"),
+                new Cell(font, "a note long enough to wrap to four lines"))));
+        Cell spanned = new Cell(font, "spanned").setColSpan(2);
+        data.add(new ArrayList<Cell>(java.util.Arrays.asList(spanned, new Cell(font, ""))));
+        Cell underlined = new Cell(font, "b");
+        underlined.setUnderline(true);
+        data.add(new ArrayList<Cell>(java.util.Arrays.asList(underlined, new Cell(font, "c"))));
+        new Table().setTableData(data, 1).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/S /Table\n"), raw);
+        // The lines of the wrapped note are one row and one cell.
+        assertEquals(4, count(raw, "/S /TR\n"), raw);
+        assertEquals(2, count(raw, "/S /TH\n"), raw);
+        assertEquals(5, count(raw, "/S /TD\n"), raw);
+        assertEquals(2, count(raw, "/A <</O /Table /Scope /Column>>"), raw);
+        assertEquals(1, count(raw, "/A <</O /Table /ColSpan 2>>"), raw);
+        assertEquals(1, raw.split("/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]", -1).length - 1, raw);
+        // The text of the cells, and not the underline, is in P elements.
+        assertEquals(10, count(raw, "/S /P\n"), raw);
+    }
+
+    @Test
+    void theHeaderRowsOnTheNextPagesAreArtifacts() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20f, 20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(2, pages.size());
+        String content = TestSupport.content(pages.get(1));
+        assertTrue(content.startsWith("/Artifact BMC\n"), content);
+        int end = content.indexOf("EMC\n");
+        assertTrue(content.indexOf(TestSupport.hex("r0c1")) < end, content);
+        assertTrue(content.indexOf("BDC") > end, content);
+        for (Page page : pages) {
+            pdf.addPage(page);
+        }
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/S /Table\n"), raw);
+        assertEquals(60, count(raw, "/S /TR\n"), raw);
+        assertEquals(2, count(raw, "/S /TH\n"), raw);
+        assertEquals(118, count(raw, "/S /TD\n"), raw);
+    }
+
+    @Test
+    void aTableIsNotTaggedInADocumentThatIsNotPDFUA() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20f, 20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        String content = TestSupport.content(pages.get(1));
+        assertFalse(content.contains("BMC") || content.contains("BDC") || content.contains("EMC"), content);
+    }
+
+    @Test
+    void aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20f, 20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.addPage(pages.get(1));  // The page with the Table element is left out.
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertFalse(raw.contains("/P 0 0 R"), raw);
+        assertFalse(raw.contains("/K [0 0 R") || raw.contains(" 0 0 R ]"), raw);
+    }
 }

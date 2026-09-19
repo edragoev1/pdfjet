@@ -20,6 +20,11 @@ public class Table : Drawable {
     private var y1: Float = 0.0
     private var firstPageTopMargin: Float = 0.0
     private var bottomMargin: Float = 0.0
+    // The Table element of a PDF/UA document, while the table is drawn, and
+    // the TH or TD elements of the last row, by column, that the rows with
+    // the next lines of its wrapped text add to.
+    private var structElement: StructElement?
+    private var cellElements = [StructElement?]()
 
     ///
     /// Create a table object.
@@ -469,42 +474,100 @@ public class Table : Drawable {
     }
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
-        var x = x1
+        let x = x1
         var y = y1
         if pageNumber == 1 && firstPageTopMargin > 0.0 {
             y = firstPageTopMargin
         }
+        // In a PDF/UA document the table is a Table element, which the rows
+        // drawn on the next pages go on adding to. The header rows are TH
+        // cells the first time they are drawn, and artifacts on the next pages.
+        let first = (rendered == numOfHeaderRows)
+        if let page = page, first || structElement == nil {
+            structElement = page.addStructElement(page.structParent, StructElem.TABLE, nil)
+        }
+        if let page = page, !first && numOfHeaderRows > 0 {
+            page.addArtifactBMC()
+        }
         for i in 0..<min(numOfHeaderRows, tableData.count) {
             let row = tableData[i]
             let h = getMaxCellHeight(row)
-            var j = 0
-            while j < row.count {
-                let cell = row[j]
-                let colspan = cell.getColSpan()
-                var w: Float = 0.0
-                for _ in 0..<colspan {
-                    w += row[j].getWidth()
-                    j += 1
-                }
-                if page != nil {
-                    page!.setBrushColor(cell.textColor)
-                    if i == (numOfHeaderRows - 1) {
+            if let page = page {
+                if i == (numOfHeaderRows - 1) {
+                    for cell in row {
                         cell.setBorder(Border.BOTTOM, true)
                     }
-                    cell.drawOn(page!, x, y, w, h)
                 }
-                x += w
+                drawRow(page, row, x, y, h, first ? StructElem.TH : nil)
             }
-            x = x1
             y += h
         }
+        if let page = page, !first && numOfHeaderRows > 0 {
+            page.addEMC()
+        }
         return [x, y]
+    }
+
+    // Draws the cells of the row. In a PDF/UA document the row is a TR element
+    // and each cell a TH or TD element, which holds what the cell draws; a row
+    // that goes on with the wrapped text of the row above adds to its elements.
+    // With no cell structure the row is not tagged, as it is an artifact.
+    private func drawRow(
+            _ page: Page,
+            _ row: [Cell],
+            _ x: Float,
+            _ y: Float,
+            _ h: Float,
+            _ cellStructure: StructElem?) {
+        let parent = page.structParent
+        let tagged = (structElement != nil && cellStructure != nil)
+        let continued = (row[0].properties & Cell.CONTINUED) != 0
+        var rowElement: StructElement?
+        if tagged && !continued {
+            rowElement = page.addStructElement(structElement, StructElem.TR, nil)
+            if cellElements.count != row.count {
+                cellElements = [StructElement?](repeating: nil, count: row.count)
+            }
+        }
+        var x = x
+        var i = 0
+        while i < row.count {
+            let cell = row[i]
+            let colspan = cell.getColSpan()
+            if tagged {
+                if !continued {
+                    cellElements[i] = page.addStructElement(
+                            rowElement, cellStructure!, getAttributes(cellStructure!, colspan))
+                }
+                page.structParent = (i < cellElements.count) ? cellElements[i] : nil
+            }
+            var w: Float = 0.0
+            for _ in 0..<colspan {
+                w += row[i].getWidth()
+                i += 1
+            }
+            page.setBrushColor(cell.textColor)
+            cell.drawOn(page, x, y, w, h)
+            x += w
+        }
+        page.structParent = parent
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of columns a cell spans, or nil when it has neither.
+    private func getAttributes(_ cellStructure: StructElem, _ colspan: Int) -> String? {
+        if cellStructure == StructElem.TH {
+            return colspan > 1 ?
+                    "<</O /Table /Scope /Column /ColSpan \(colspan)>>" :
+                    "<</O /Table /Scope /Column>>"
+        }
+        return colspan > 1 ? "<</O /Table /ColSpan \(colspan)>>" : nil
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
     // With no page it measures them all and leaves the next row to draw as it is.
     private func drawTableRows(_ page: Page?, _ xy: [Float]) -> [Float] {
-        var x = xy[0]
+        let x = xy[0]
         var y = xy[1]
         var index = (rendered == -1) ? tableData.count : rendered
         let first = index
@@ -518,22 +581,9 @@ public class Table : Drawable {
                 rendered = index
                 return [x, y]
             }
-            var i = 0
-            while i < row.count {
-                let cell = row[i]
-                let colspan = cell.getColSpan()
-                var w: Float = 0.0
-                for _ in 0..<colspan {
-                    w += row[i].getWidth()
-                    i += 1
-                }
-                if page != nil {
-                    page!.setBrushColor(cell.textColor)
-                    cell.drawOn(page!, x, y, w, h)
-                }
-                x += w
+            if let page = page {
+                drawRow(page, row, x, y, h, StructElem.TD)
             }
-            x = x1
             y += h
             index += 1
         }
@@ -785,6 +835,7 @@ public class Table : Drawable {
                     cell2.setVerticalAlignment(cell.getVerticalAlignment())
                     cell2.setTopPadding(0.0)
                     cell2.setBorder(Border.TOP, false)
+                    cell2.properties |= Cell.CONTINUED
                     row2.append(cell2)
                 }
                 tableData2.append(row2)

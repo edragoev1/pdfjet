@@ -27,6 +27,11 @@ public class Table implements Drawable {
     private float y1;
     private float firstPageTopMargin;
     private float bottomMargin;
+    // The Table element of a PDF/UA document, while the table is drawn, and
+    // the TH or TD elements of the last row, by column, that the rows with
+    // the next lines of its wrapped text add to.
+    private StructElement structElement;
+    private StructElement[] cellElements;
 
     /**
      * Create a table object.
@@ -476,30 +481,83 @@ public class Table implements Drawable {
         if (pageNumber == 1 && firstPageTopMargin > 0f) {
             y = firstPageTopMargin;
         }
+        // In a PDF/UA document the table is a Table element, which the rows
+        // drawn on the next pages go on adding to. The header rows are TH
+        // cells the first time they are drawn, and artifacts on the next pages.
+        boolean first = (rendered == numOfHeaderRows);
+        if (page != null && (first || structElement == null)) {
+            structElement = page.addStructElement(page.structParent, StructElem.TABLE, null);
+        }
+        if (page != null && !first && numOfHeaderRows > 0) {
+            page.addArtifactBMC();
+        }
         for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
             List<Cell> row = tableData.get(i);
             float h = getMaxCellHeight(row);
-            int j = 0;
-            while (j < row.size()) {
-                Cell cell = row.get(j);
-                int colspan = cell.getColSpan();
-                float w = 0f;
-                for (int k = 0; k < colspan; k++) {
-                    w += row.get(j++).getWidth();
-                }
-                if (page != null) {
-                    page.setBrushColor(cell.textColor);
-                    if (i == (numOfHeaderRows - 1)) {
+            if (page != null) {
+                if (i == (numOfHeaderRows - 1)) {
+                    for (Cell cell : row) {
                         cell.setBorder(Border.BOTTOM, true);
                     }
-                    cell.drawOn(page, x, y, w, h);
                 }
-                x += w;
+                drawRow(page, row, x, y, h, first ? StructElem.TH : null);
             }
-            x = x1;
             y += h;
         }
+        if (page != null && !first && numOfHeaderRows > 0) {
+            page.addEMC();
+        }
         return new float[] {x, y};
+    }
+
+    // Draws the cells of the row. In a PDF/UA document the row is a TR element
+    // and each cell a TH or TD element, which holds what the cell draws; a row
+    // that goes on with the wrapped text of the row above adds to its elements.
+    // With no cell structure the row is not tagged, as it is an artifact.
+    private void drawRow(Page page, List<Cell> row, float x, float y, float h,
+            StructElem cellStructure) throws Exception {
+        StructElement parent = page.structParent;
+        boolean tagged = (structElement != null && cellStructure != null);
+        boolean continued = (row.get(0).properties & Cell.CONTINUED) != 0;
+        StructElement rowElement = null;
+        if (tagged && !continued) {
+            rowElement = page.addStructElement(structElement, StructElem.TR, null);
+            if (cellElements == null || cellElements.length != row.size()) {
+                cellElements = new StructElement[row.size()];
+            }
+        }
+        int i = 0;
+        while (i < row.size()) {
+            Cell cell = row.get(i);
+            int colspan = cell.getColSpan();
+            if (tagged) {
+                if (!continued) {
+                    cellElements[i] = page.addStructElement(
+                            rowElement, cellStructure, getAttributes(cellStructure, colspan));
+                }
+                page.structParent = (cellElements != null && i < cellElements.length) ?
+                        cellElements[i] : null;
+            }
+            float w = 0f;
+            for (int j = 0; j < colspan; j++) {
+                w += row.get(i++).getWidth();
+            }
+            page.setBrushColor(cell.textColor);
+            cell.drawOn(page, x, y, w, h);
+            x += w;
+        }
+        page.structParent = parent;
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of columns a cell spans, or null when it has neither.
+    private static String getAttributes(StructElem cellStructure, int colspan) {
+        if (cellStructure == StructElem.TH) {
+            return colspan > 1 ?
+                    "<</O /Table /Scope /Column /ColSpan " + colspan + ">>" :
+                    "<</O /Table /Scope /Column>>";
+        }
+        return colspan > 1 ? "<</O /Table /ColSpan " + colspan + ">>" : null;
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
@@ -519,21 +577,9 @@ public class Table implements Drawable {
                 rendered = index;
                 return new float[] {x, y};
             }
-            int i = 0;
-            while (i < row.size()) {
-                Cell cell = row.get(i);
-                int colspan = cell.getColSpan();
-                float w = 0f;
-                for (int j = 0; j < colspan; j++) {
-                    w += row.get(i++).getWidth();
-                }
-                if (page != null) {
-                    page.setBrushColor(cell.textColor);
-                    cell.drawOn(page, x, y, w, h);
-                }
-                x += w;
+            if (page != null) {
+                drawRow(page, row, x, y, h, StructElem.TD);
             }
-            x = x1;
             y += h;
             index++;
         }
@@ -798,6 +844,7 @@ public class Table implements Drawable {
                     cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);
                     cell2.setBorder(Border.TOP, false);
+                    cell2.properties |= Cell.CONTINUED;
                     row2.add(cell2);
                 }
                 tableData2.add(row2);

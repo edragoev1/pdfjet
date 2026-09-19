@@ -24,6 +24,11 @@ public class Table : IDrawable {
     private float y1;
     private float firstPageTopMargin;
     private float bottomMargin;
+    // The Table element of a PDF/UA document, while the table is drawn, and
+    // the TH or TD elements of the last row, by column, that the rows with
+    // the next lines of its wrapped text add to.
+    private StructElement structElement;
+    private StructElement[] cellElements;
 
     /// <summary>
     /// Create a table object.
@@ -437,30 +442,83 @@ public class Table : IDrawable {
         if (pageNumber == 1 && firstPageTopMargin > 0f) {
             y = firstPageTopMargin;
         }
+        // In a PDF/UA document the table is a Table element, which the rows
+        // drawn on the next pages go on adding to. The header rows are TH
+        // cells the first time they are drawn, and artifacts on the next pages.
+        bool first = (rendered == numOfHeaderRows);
+        if (page != null && (first || structElement == null)) {
+            structElement = page.AddStructElement(page.structParent, StructElem.TABLE, null);
+        }
+        if (page != null && !first && numOfHeaderRows > 0) {
+            page.AddArtifactBMC();
+        }
         for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
             List<Cell> row = tableData[i];
             float h = GetMaxCellHeight(row);
-            int j = 0;
-            while (j < row.Count) {
-                Cell cell = row[j];
-                int colspan = cell.GetColSpan();
-                float w = 0f;
-                for (int k = 0; k < colspan; k++) {
-                    w += row[j++].GetWidth();
-                }
-                if (page != null) {
-                    page.SetBrushColor(cell.textColor);
-                    if (i == (numOfHeaderRows - 1)) {
+            if (page != null) {
+                if (i == (numOfHeaderRows - 1)) {
+                    foreach (Cell cell in row) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
-                    cell.DrawOn(page, x, y, w, h);
                 }
-                x += w;
+                DrawRow(page, row, x, y, h, first ? StructElem.TH : (StructElem?) null);
             }
-            x = x1;
             y += h;
         }
+        if (page != null && !first && numOfHeaderRows > 0) {
+            page.AddEMC();
+        }
         return new float[] {x, y};
+    }
+
+    // Draws the cells of the row. In a PDF/UA document the row is a TR element
+    // and each cell a TH or TD element, which holds what the cell draws; a row
+    // that goes on with the wrapped text of the row above adds to its elements.
+    // With no cell structure the row is not tagged, as it is an artifact.
+    private void DrawRow(Page page, List<Cell> row, float x, float y, float h,
+            StructElem? cellStructure) {
+        StructElement parent = page.structParent;
+        bool tagged = (structElement != null && cellStructure != null);
+        bool continued = (row[0].properties & Cell.CONTINUED) != 0;
+        StructElement rowElement = null;
+        if (tagged && !continued) {
+            rowElement = page.AddStructElement(structElement, StructElem.TR, null);
+            if (cellElements == null || cellElements.Length != row.Count) {
+                cellElements = new StructElement[row.Count];
+            }
+        }
+        int i = 0;
+        while (i < row.Count) {
+            Cell cell = row[i];
+            int colspan = cell.GetColSpan();
+            if (tagged) {
+                if (!continued) {
+                    cellElements[i] = page.AddStructElement(
+                            rowElement, cellStructure.Value, GetAttributes(cellStructure.Value, colspan));
+                }
+                page.structParent = (cellElements != null && i < cellElements.Length) ?
+                        cellElements[i] : null;
+            }
+            float w = 0f;
+            for (int j = 0; j < colspan; j++) {
+                w += row[i++].GetWidth();
+            }
+            page.SetBrushColor(cell.textColor);
+            cell.DrawOn(page, x, y, w, h);
+            x += w;
+        }
+        page.structParent = parent;
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of columns a cell spans, or null when it has neither.
+    private static String GetAttributes(StructElem cellStructure, int colspan) {
+        if (cellStructure == StructElem.TH) {
+            return colspan > 1 ?
+                    "<</O /Table /Scope /Column /ColSpan " + colspan + ">>" :
+                    "<</O /Table /Scope /Column>>";
+        }
+        return colspan > 1 ? "<</O /Table /ColSpan " + colspan + ">>" : null;
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
@@ -480,21 +538,9 @@ public class Table : IDrawable {
                 rendered = index;
                 return new float[] {x, y};
             }
-            int i = 0;
-            while (i < row.Count) {
-                Cell cell = row[i];
-                int colspan = cell.GetColSpan();
-                float w = 0f;
-                for (int j = 0; j < colspan; j++) {
-                    w += row[i++].GetWidth();
-                }
-                if (page != null) {
-                    page.SetBrushColor(cell.textColor);
-                    cell.DrawOn(page, x, y, w, h);
-                }
-                x += w;
+            if (page != null) {
+                DrawRow(page, row, x, y, h, StructElem.TD);
             }
-            x = x1;
             y += h;
             index++;
         }
@@ -747,6 +793,7 @@ public class Table : IDrawable {
                     cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);
                     cell2.SetBorder(Border.TOP, false);
+                    cell2.properties |= Cell.CONTINUED;
                     row2.Add(cell2);
                 }
                 tableData2.Add(row2);

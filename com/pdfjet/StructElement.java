@@ -17,7 +17,13 @@ class StructElement {
     int objNumber;
     String structure = null;
     int pageObjNumber;
+    // The marked content this element refers to, or -1 for an element that
+    // groups its kids, like a table row.
     int mcid = 0;
+    // The attributes dictionary, like <</O /Table /Scope /Column>>, or null.
+    String attributes = null;
+    // The parent element, or null for a child of the Document element.
+    StructElement parent = null;
     String language = null;
     String actualText = null;
     String altDescription = null;

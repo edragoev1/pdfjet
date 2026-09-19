@@ -602,7 +602,9 @@ public final class PDF {
         append(parent)
         append(" 0 R\n")
         append("/K [\n")
-        for structElement in self.structElements {
+        // An element whose parent is on a page that is not in the document
+        // is a child of the Document element.
+        for structElement in self.structElements where structElement.parent?.objNumber == nil {
             append(structElement.objNumber!)
             append(Token.objRef)
         }
@@ -615,13 +617,23 @@ public final class PDF {
     private func addStructElementObjects() {
         var structTreeRootObjNumber = getObjNumber() + 1
         structTreeRootObjNumber += self.structElements.count
+        // The object numbers are known first, as an element refers to its
+        // parent and its kids, which may be written before or after it.
+        var objNumber = getObjNumber()
+        for element in self.structElements {
+            objNumber += 1
+            element.objNumber = objNumber
+        }
         for element in self.structElements {
             newObj()
-            element.objNumber = getObjNumber()
             append("<<\n/Type /StructElem /S /")
             append(element.structure!)
             append("\n/P ")
-            append(structTreeRootObjNumber + 2)  // Use the document struct as parent!
+            if let parentObjNumber = element.parent?.objNumber {
+                append(parentObjNumber)
+            } else {
+                append(structTreeRootObjNumber + 2)  // The Document element
+            }
             append(" 0 R /Pg ")
             // The elements get the number of their page when the pages object
             // is written, which addObjects replaces. Fall back to 0 rather
@@ -633,9 +645,25 @@ public final class PDF {
                 append("/K <</Type /OBJR /Obj ")
                 append(element.annotation!.objNumber)
                 append(" 0 R>>\n")
-            } else {
+            } else if element.mcid >= 0 {
                 append("/K ")
                 append(element.mcid)
+                append("\n")
+            } else if !element.kids.isEmpty {
+                append("/K [")
+                // A kid on a page that is not in the document has no number.
+                for kid in element.kids {
+                    if let kidObjNumber = kid.objNumber {
+                        append(kidObjNumber)
+                        append(" 0 R ")
+                    }
+                }
+                append("]\n")
+            }
+
+            if let attributes = element.attributes {
+                append("/A ")
+                append(attributes)
                 append("\n")
             }
 
@@ -688,7 +716,7 @@ public final class PDF {
         for (i, page) in pages.enumerated() {
             buffer.append(String(i))
             buffer.append(" [")
-            for element in page.structures where element.annotation == nil {
+            for element in page.structures where element.annotation == nil && element.mcid >= 0 {
                 buffer.append(" ")
                 buffer.append(String(element.objNumber!))
                 buffer.append(" 0 R")

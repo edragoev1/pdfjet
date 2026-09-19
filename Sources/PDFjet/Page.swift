@@ -93,6 +93,13 @@ public class Page {
     private var savedStates = [State]()
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
     private var markedContentDepth = 0
+    // The markedContentDepth of the outermost artifact, or 0 outside of one.
+    // Content inside an artifact is not tagged, so an addBDC there writes
+    // nothing, and neither does its addEMC.
+    private var artifactDepth = 0
+    // The structure element that the elements of addBDC and addAnnotation
+    // become the kids of, like a table cell, or nil for the Document element.
+    internal var structParent: StructElement?
     // True once the page is added to its PDF.
     internal var added = false
     // True once the content of the page is written to the PDF.
@@ -2272,14 +2279,14 @@ public class Page {
             _ actualText: String?,
             _ altDescription: String?) {
         markedContentDepth += 1
-        if pdf.compliance == Compliance.PDF_UA_1 {
+        if pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0 {
             let element = StructElement()
             element.structure = structure.rawValue
             element.mcid = mcid
             element.language = language
             element.actualText = actualText
             element.altDescription = altDescription
-            structures.append(element)
+            addStructure(element, structParent)
             append("/")
             append(structure.rawValue)
             append(" <</MCID ")
@@ -2293,8 +2300,11 @@ public class Page {
     /// Begins marked content for an artifact when the document is PDF/UA compliant.
     public func addArtifactBMC() {
         markedContentDepth += 1
-        if pdf.compliance == Compliance.PDF_UA_1 {
-            append("/Artifact BMC\n")
+        if artifactDepth == 0 {
+            artifactDepth = markedContentDepth
+            if pdf.compliance == Compliance.PDF_UA_1 {
+                append("/Artifact BMC\n")
+            }
         }
     }
 
@@ -2304,10 +2314,38 @@ public class Page {
             pdf.fail("addEMC was called without a matching addBDC or addArtifactBMC.")
             return
         }
-        markedContentDepth -= 1
-        if pdf.compliance == Compliance.PDF_UA_1 {
-            append("EMC\n")
+        if artifactDepth == 0 || artifactDepth == markedContentDepth {
+            artifactDepth = 0
+            if pdf.compliance == Compliance.PDF_UA_1 {
+                append("EMC\n")
+            }
         }
+        markedContentDepth -= 1
+    }
+
+    // Adds a structure element that groups the elements added after it, like
+    // a table row, as a kid of the parent, or of the Document element when the
+    // parent is nil. Returns nil when the document is not tagged or the
+    // content drawn is an artifact.
+    func addStructElement(
+            _ parent: StructElement?,
+            _ structure: StructElem,
+            _ attributes: String?) -> StructElement? {
+        if pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0 {
+            return nil
+        }
+        let element = StructElement()
+        element.structure = structure.rawValue
+        element.mcid = -1
+        element.attributes = attributes
+        addStructure(element, parent)
+        return element
+    }
+
+    private func addStructure(_ element: StructElement, _ parent: StructElement?) {
+        element.parent = parent
+        parent?.kids.append(element)
+        self.structures.append(element)
     }
 
     func addAnnotation(_ annotation: Annotation) {
@@ -2323,7 +2361,7 @@ public class Page {
             element.actualText = annotation.actualText
             element.altDescription = annotation.altDescription
             element.annotation = annotation
-            self.structures.append(element)
+            addStructure(element, structParent)
         }
     }
 

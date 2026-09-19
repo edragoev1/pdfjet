@@ -25,8 +25,22 @@ This is the first entry in this file; earlier releases were not tracked here.
 - In a PDF/UA document a `Chart`, a `DonutChart` and a `BarChart` are each one
   Figure, with the description `setAltDescription` gives or one made from the
   title or the slices.
+- In a PDF/UA document a `Table` is tagged as a table, in all four ports: a
+  `Table` structure element with a `TR` for each row and a `TH` or `TD` for
+  each cell, which holds the text, text line, text block or image the cell
+  draws, so a screen reader can say "row 3, column Price". Header cells have
+  the `Column` scope, a cell that spans columns a `ColSpan`, and the lines of
+  wrapped cell text are one cell, even across a page break. The header rows
+  are tagged where the table starts and are artifacts where they repeat on
+  the next pages. The structure tree can nest elements for this; the other
+  drawables are children of the Document element as before.
 
 ### Changed
+- In a PDF/UA document the underline and the strikeout of a `Cell` are
+  artifacts, where each was a paragraph with the alternate description
+  "underline" or "strike out", which a screen reader read out after the text.
+  Marked content that a drawable begins inside an artifact is no longer
+  written, since tagged content inside an artifact breaks PDF/UA.
 - Text in IBM Plex Sans JP, SC or TC in a `TextBlock`, `TextColumn` or
   `TextFrame` is twice as tall per line as before, the spacing of the font's
   line gap (see Added). A document that set a line spacing to make up for the

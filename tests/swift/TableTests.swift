@@ -174,4 +174,82 @@ import Testing
         let xy = Table().setTableData(rows(font, 2, 1), 5).setLocation(20, 20).drawOn(Page(pdf, Letter.PORTRAIT))
         TestSupport.expectXY(expected[0], expected[1], xy)
     }
+
+    // The number of times the text is in the string.
+    private func count(_ str: String, _ text: String) -> Int {
+        return str.components(separatedBy: text).count - 1
+    }
+
+    @Test func aTableInAPDFUADocumentIsTaggedAsATable() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        let underlined = Cell(font, "b").setUnderline(true)
+        let data: [[Cell]] = [
+            [Cell(font, "Name"), Cell(font, "Notes")],
+            [Cell(font, "a"), Cell(font, "a note long enough to wrap to four lines")],
+            [Cell(font, "spanned").setColSpan(2), Cell(font, "")],
+            [underlined, Cell(font, "c")]]
+        _ = Table().setTableData(data, 1).setLocation(20, 20).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/S /Table\n") == 1)
+        // The lines of the wrapped note are one row and one cell.
+        #expect(count(raw, "/S /TR\n") == 4)
+        #expect(count(raw, "/S /TH\n") == 2)
+        #expect(count(raw, "/S /TD\n") == 5)
+        #expect(count(raw, "/A <</O /Table /Scope /Column>>") == 2)
+        #expect(count(raw, "/A <</O /Table /ColSpan 2>>") == 1)
+        let fourKids = try NSRegularExpression(
+                pattern: "/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]")
+        #expect(fourKids.numberOfMatches(in: raw, range: NSRange(raw.startIndex..., in: raw)) == 1)
+        // The text of the cells, and not the underline, is in P elements.
+        #expect(count(raw, "/S /P\n") == 10)
+    }
+
+    @Test func theHeaderRowsOnTheNextPagesAreArtifacts() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
+        var pages = [Page]()
+        _ = table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 2)
+        guard pages.count == 2 else { return }
+        let content = TestSupport.content(pages[1])
+        #expect(content.hasPrefix("/Artifact BMC\n"))
+        let end = content.range(of: "EMC\n")!.lowerBound
+        #expect(content.range(of: TestSupport.hex("r0c1"))!.lowerBound < end)
+        #expect(content.range(of: "BDC")!.lowerBound > end)
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/S /Table\n") == 1)
+        #expect(count(raw, "/S /TR\n") == 60)
+        #expect(count(raw, "/S /TH\n") == 2)
+        #expect(count(raw, "/S /TD\n") == 118)
+    }
+
+    @Test func aTableIsNotTaggedInADocumentThatIsNotPDFUA() {
+        let pdf = TestSupport.newPDF()
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20, 20)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        guard pages.count == 2 else { return }
+        let content = TestSupport.content(pages[1])
+        #expect(!content.contains("BMC") && !content.contains("BDC") && !content.contains("EMC"))
+    }
+
+    @Test func aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
+        var pages = [Page]()
+        _ = table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+        guard pages.count == 2 else { return }
+        memory.pdf.addPage(pages[1])    // The page with the Table element is left out.
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(!raw.contains("/P 0 0 R"))
+        #expect(!raw.contains("/K [0 0 R") && !raw.contains(" 0 0 R ]"))
+    }
 }

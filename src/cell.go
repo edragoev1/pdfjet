@@ -54,6 +54,9 @@ type Cell struct {
 const (
 	cellUnderline uint32 = 0x00100000
 	cellStrikeout uint32 = 0x00200000
+	// A cell that a table adds below another to hold the next line of its
+	// wrapped text, which is the same table cell in a PDF/UA document.
+	cellContinued uint32 = 0x00400000
 )
 
 // NewEmptyCell creates a cell without text, like Cell(font) in the other ports.
@@ -715,7 +718,8 @@ func (cell *Cell) getTextWidth() float32 {
 // underlineText underlines the cell text.
 func (cell *Cell) underlineText(page *Page, x, y float32) {
 	descent := cell.font.GetDescent(cell.fontSize)
-	page.AddBDC("P", "", "underline", "underline")
+	// The line is decoration, and the text says what the cell holds.
+	page.AddArtifactBMC()
 	page.SetPenColor(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y+descent)
@@ -727,7 +731,7 @@ func (cell *Cell) underlineText(page *Page, x, y float32) {
 // strikeoutText strikes out the cell text.
 func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	ascent := cell.font.GetAscent(cell.fontSize)
-	page.AddBDC("P", "", "strike out", "strike out")
+	page.AddArtifactBMC()
 	page.SetPenColor(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
 	page.MoveTo(x, y-ascent/3.0)

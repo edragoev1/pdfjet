@@ -9,11 +9,13 @@ import (
 	"bufio"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Table is used to create table objects and draw them on a page.
@@ -26,6 +28,11 @@ type Table struct {
 	x1, y1             float32
 	firstPageTopMargin float32
 	bottomMargin       float32
+	// The Table element of a PDF/UA document, while the table is drawn, and
+	// the TH or TD elements of the last row, by column, that the rows with
+	// the next lines of its wrapped text add to.
+	structElement *structElement
+	cellElements  []*structElement
 }
 
 // NewTable creates table objects.
@@ -406,30 +413,93 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	if pageNumber == 1 && table.firstPageTopMargin > 0.0 {
 		y = table.firstPageTopMargin
 	}
+	// In a PDF/UA document the table is a Table element, which the rows drawn
+	// on the next pages go on adding to. The header rows are TH cells the
+	// first time they are drawn, and artifacts on the next pages.
+	first := (table.rendered == table.numOfHeaderRows)
+	if page != nil && (first || table.structElement == nil) {
+		table.structElement = page.addStructElement(page.structParent, structelem.Table, "")
+	}
+	if page != nil && !first && table.numOfHeaderRows > 0 {
+		page.AddArtifactBMC()
+	}
 	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
 		row := table.tableData[i]
 		h := table.getMaxCellHeight(row)
-		for j := 0; j < len(row); {
-			cell := row[j]
-			colspan := cell.GetColSpan()
-			w := float32(0.0)
-			for k := 0; k < colspan; k++ {
-				w += row[j].GetWidth()
-				j++
-			}
-			if page != nil {
-				page.SetBrushColor(cell.textColor)
-				if i == (table.numOfHeaderRows - 1) {
+		if page != nil {
+			if i == (table.numOfHeaderRows - 1) {
+				for _, cell := range row {
 					cell.properties |= border.Bottom
 				}
-				cell.drawOn(page, x, y, w, h)
 			}
-			x += w
+			cellStructure := structelem.StructElem("")
+			if first {
+				cellStructure = structelem.TH
+			}
+			table.drawRow(page, row, x, y, h, cellStructure)
 		}
-		x = table.x1
 		y += h
 	}
+	if page != nil && !first && table.numOfHeaderRows > 0 {
+		page.AddEMC()
+	}
 	return [2]float32{x, y}
+}
+
+// drawRow draws the cells of the row. In a PDF/UA document the row is a TR
+// element and each cell a TH or TD element, which holds what the cell draws;
+// a row that goes on with the wrapped text of the row above adds to its
+// elements. With no cell structure the row is not tagged, as it is an artifact.
+func (table *Table) drawRow(page *Page, row []*Cell, x, y, h float32, cellStructure structelem.StructElem) {
+	parent := page.structParent
+	tagged := table.structElement != nil && cellStructure != ""
+	continued := (row[0].properties & cellContinued) != 0
+	var rowElement *structElement
+	if tagged && !continued {
+		rowElement = page.addStructElement(table.structElement, structelem.TR, "")
+		if len(table.cellElements) != len(row) {
+			table.cellElements = make([]*structElement, len(row))
+		}
+	}
+	for i := 0; i < len(row); {
+		cell := row[i]
+		colspan := cell.GetColSpan()
+		if tagged {
+			if !continued {
+				table.cellElements[i] = page.addStructElement(
+					rowElement, cellStructure, cellAttributes(cellStructure, colspan))
+			}
+			page.structParent = nil
+			if i < len(table.cellElements) {
+				page.structParent = table.cellElements[i]
+			}
+		}
+		w := float32(0.0)
+		for j := 0; j < colspan; j++ {
+			w += row[i].GetWidth()
+			i++
+		}
+		page.SetBrushColor(cell.textColor)
+		cell.drawOn(page, x, y, w, h)
+		x += w
+	}
+	page.structParent = parent
+}
+
+// cellAttributes returns the attributes of a table cell element: the scope of
+// a header cell and the number of columns a cell spans, or "" when it has
+// neither.
+func cellAttributes(cellStructure structelem.StructElem, colspan int) string {
+	if cellStructure == structelem.TH {
+		if colspan > 1 {
+			return "<</O /Table /Scope /Column /ColSpan " + strconv.Itoa(colspan) + ">>"
+		}
+		return "<</O /Table /Scope /Column>>"
+	}
+	if colspan > 1 {
+		return "<</O /Table /ColSpan " + strconv.Itoa(colspan) + ">>"
+	}
+	return ""
 }
 
 // drawTableRows draws the rows from the next row to draw, as many as fit on
@@ -453,21 +523,9 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 			table.rendered = index
 			return [2]float32{x, y}
 		}
-		for i := 0; i < len(row); {
-			cell := row[i]
-			colspan := cell.GetColSpan()
-			w := float32(0.0)
-			for j := 0; j < colspan; j++ {
-				w += row[i].GetWidth()
-				i++
-			}
-			if page != nil {
-				page.SetBrushColor(cell.textColor)
-				cell.drawOn(page, x, y, w, h)
-			}
-			x += w
+		if page != nil {
+			table.drawRow(page, row, x, y, h, structelem.TD)
 		}
-		x = table.x1
 		y += h
 		index++
 	}
@@ -701,6 +759,7 @@ func (table *Table) wrapAroundCellText() {
 				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
 				cell2.properties &= ^border.Top
+				cell2.properties |= cellContinued
 				row2 = append(row2, cell2)
 			}
 			tableData2 = append(tableData2, row2)

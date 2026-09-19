@@ -56,6 +56,9 @@ public class Cell {
     // are drawn unless setBorder says otherwise.
     private static final int UNDERLINE = 0x00100000;
     private static final int STRIKEOUT = 0x00200000;
+    // A cell that a table adds below another to hold the next line of its
+    // wrapped text, which is the same table cell in a PDF/UA document.
+    static final int CONTINUED = 0x00400000;
     int properties = Border.TOP | Border.LEFT;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
@@ -987,7 +990,8 @@ public class Cell {
 
     private void underlineText(Page page, float x, float y) throws Exception {
         float descent = font.getDescent(fontSize);
-        page.addBDC(StructElem.P, "underline", "underline");
+        // The line is decoration, and the text says what the cell holds.
+        page.addArtifactBMC();
         page.setPenColor(textColor);
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y + descent);
@@ -998,7 +1002,7 @@ public class Cell {
 
     private void strikeoutText(Page page, float x, float y) throws Exception {
         float ascent = font.getAscent(fontSize);
-        page.addBDC(StructElem.P, "strike out", "strike out");
+        page.addArtifactBMC();
         page.setPenColor(textColor);
         page.setPenWidth(font.getUnderlineThickness(fontSize));
         page.moveTo(x, y - ascent/3f);

@@ -244,7 +244,7 @@ CJK line gaps. Nothing is fuzzed. So, in order:
 - ⬜ **B** 3. PDF/UA as it is claimed: tag a table as a table (below), and
       check the 41 PDF/UA examples with PAC or by the Matterhorn Protocol,
       not only veraPDF, which cannot see what a paragraph stands for.
-- ⬜ **B** Tag a table as a table in a PDF/UA document. Every cell's text is
+- ✅ **B** Tag a table as a table in a PDF/UA document. Every cell's text is
       tagged `P` today, so a screen reader cannot say "row 3, column Price",
       and a PAC or Matterhorn audit fails the table, though veraPDF passes
       it, since it cannot know the paragraphs are a table. Write a `Table`
@@ -255,6 +255,16 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       elements nested under a parent, where `Page.addBDC` makes them children
       of the document today. Check with veraPDF and PAC on Examples 08, 13
       and 38.
+      Done (Sep 19) in the four ports: `Table` > `TR` > `TH`/`TD`, and the
+      cell's own elements (`P`, `Figure`, `Link`) inside the cell. Header
+      cells have `/Scope /Column`, spanned cells `/ColSpan`; wrapped lines
+      are one cell (a `Cell.properties` bit, no memory per cell); header rows
+      on the next pages are one artifact. `Page.addStructElement` and
+      `structParent` nest elements; an `addBDC` inside an artifact writes
+      nothing. The `Cell` underline and strikeout are artifacts. Examples
+      08, 09, 13, 15, 29 and 38 pass veraPDF; PAC, which runs on Windows
+      only, is still to do, and so are row headers (`/Scope /Row`) and
+      `RowSpan`, which wait for `Cell.setRowSpan`.
 - ⬜ **B** 4. The manual viewer pass, open since 9.0.0 (Week 4 below):
       Acrobat Reader, Chrome (pdf.js), Firefox, Edge and Preview, not only
       veraPDF and MuPDF.

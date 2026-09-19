@@ -43,6 +43,9 @@ public class Cell {
     // are drawn unless setBorder says otherwise.
     private static let UNDERLINE: UInt32 = 0x00100000
     private static let STRIKEOUT: UInt32 = 0x00200000
+    // A cell that a table adds below another to hold the next line of its
+    // wrapped text, which is the same table cell in a PDF/UA document.
+    internal static let CONTINUED: UInt32 = 0x00400000
     internal var properties: UInt32 = Border.TOP | Border.LEFT
 
     /**
@@ -812,7 +815,8 @@ public class Cell {
 
     private func underlineText(_ page: Page, _ x: Float, _ y: Float) {
         let descent = font.getDescent(fontSize)
-        page.addBDC(StructElem.P, "underline", "underline")
+        // The line is decoration, and the text says what the cell holds.
+        page.addArtifactBMC()
         page.setPenColor(textColor)
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y + descent)
@@ -823,7 +827,7 @@ public class Cell {
 
     private func strikeoutText(_ page: Page, _ x: Float, _ y: Float) {
         let ascent = font.getAscent(fontSize)
-        page.addBDC(StructElem.P, "strike out", "strike out")
+        page.addArtifactBMC()
         page.setPenColor(textColor)
         page.setPenWidth(font.getUnderlineThickness(fontSize))
         page.moveTo(x, y - ascent/3.0)

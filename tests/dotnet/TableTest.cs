@@ -186,5 +186,91 @@ public sealed class TableTest : IDisposable {
         float[] xy = new Table().SetTableData(Rows(font, 2, 1), 5).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         TestSupport.AssertXY(expected[0], expected[1], xy);
     }
+
+    // The number of times the text is in the string.
+    private static int Count(string str, string text) {
+        return str.Split(new string[] {text}, StringSplitOptions.None).Length - 1;
+    }
+
+    [Fact]
+    public void ATableInAPDFUADocumentIsTaggedAsATable() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(new List<Cell> {new Cell(font, "Name"), new Cell(font, "Notes")});
+        data.Add(new List<Cell> {new Cell(font, "a"),
+                new Cell(font, "a note long enough to wrap to four lines")});
+        Cell spanned = new Cell(font, "spanned").SetColSpan(2);
+        data.Add(new List<Cell> {spanned, new Cell(font, "")});
+        Cell underlined = new Cell(font, "b");
+        underlined.SetUnderline(true);
+        data.Add(new List<Cell> {underlined, new Cell(font, "c")});
+        new Table().SetTableData(data, 1).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/S /Table\n"));
+        // The lines of the wrapped note are one row and one cell.
+        Assert.Equal(4, Count(raw, "/S /TR\n"));
+        Assert.Equal(2, Count(raw, "/S /TH\n"));
+        Assert.Equal(5, Count(raw, "/S /TD\n"));
+        Assert.Equal(2, Count(raw, "/A <</O /Table /Scope /Column>>"));
+        Assert.Equal(1, Count(raw, "/A <</O /Table /ColSpan 2>>"));
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(raw,
+                "/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]"));
+        // The text of the cells, and not the underline, is in P elements.
+        Assert.Equal(10, Count(raw, "/S /P\n"));
+    }
+
+    [Fact]
+    public void TheHeaderRowsOnTheNextPagesAreArtifacts() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 2), 1).SetLocation(20f, 20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Equal(2, pages.Count);
+        string content = TestSupport.Content(pages[1]);
+        Assert.StartsWith("/Artifact BMC\n", content);
+        int end = content.IndexOf("EMC\n", StringComparison.Ordinal);
+        Assert.True(content.IndexOf(TestSupport.Hex("r0c1"), StringComparison.Ordinal) < end);
+        Assert.True(content.IndexOf("BDC", StringComparison.Ordinal) > end);
+        foreach (Page page in pages) {
+            pdf.AddPage(page);
+        }
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/S /Table\n"));
+        Assert.Equal(60, Count(raw, "/S /TR\n"));
+        Assert.Equal(2, Count(raw, "/S /TH\n"));
+        Assert.Equal(118, Count(raw, "/S /TD\n"));
+    }
+
+    [Fact]
+    public void ATableIsNotTaggedInADocumentThatIsNotPDFUA() {
+        PDF pdf = new PDF(new System.IO.MemoryStream());
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 2), 1).SetLocation(20f, 20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        string content = TestSupport.Content(pages[1]);
+        Assert.False(content.Contains("BMC") || content.Contains("BDC") || content.Contains("EMC"), content);
+    }
+
+    [Fact]
+    public void ATableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 2), 1).SetLocation(20f, 20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.AddPage(pages[1]);  // The page with the Table element is left out.
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/P 0 0 R", raw);
+        Assert.False(raw.Contains("/K [0 0 R") || raw.Contains(" 0 0 R ]"));
+    }
 }
 }

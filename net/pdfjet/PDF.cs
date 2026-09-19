@@ -568,8 +568,12 @@ public sealed class PDF {
         Append(Token.ObjRef);
         Append("/K [\n");
         foreach (StructElement structElement in this.structElements) {
-            Append(structElement.objNumber);
-            Append(" 0 R\n");
+            // An element whose parent is on a page that is not in the
+            // document is a child of the Document element.
+            if (structElement.parent == null || structElement.parent.objNumber == 0) {
+                Append(structElement.objNumber);
+                Append(" 0 R\n");
+            }
         }
         Append("]\n");
         Append(Token.EndDictionary);
@@ -580,14 +584,23 @@ public sealed class PDF {
     private void AddStructElementObjects() {
         int structTreeRootObjNumber = GetObjNumber() + 1;
         structTreeRootObjNumber += this.structElements.Count;
+        // The object numbers are known first, as an element refers to its
+        // parent and its kids, which may be written before or after it.
+        int objNumber = GetObjNumber();
+        foreach (StructElement element in this.structElements) {
+            element.objNumber = ++objNumber;
+        }
 
         foreach (StructElement element in this.structElements) {
             NewObj();
-            element.objNumber = GetObjNumber();
             Append("<<\n/Type /StructElem /S /");
             Append(element.structure);
             Append("\n/P ");
-            Append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
+            if (element.parent != null && element.parent.objNumber != 0) {
+                Append(element.parent.objNumber);
+            } else {
+                Append(structTreeRootObjNumber + 2);    // The Document element
+            }
             Append(" 0 R /Pg ");
             Append(element.pageObjNumber);
             Append(Token.ObjRef);
@@ -596,9 +609,24 @@ public sealed class PDF {
                 Append("/K <</Type /OBJR /Obj ");
                 Append(element.annotation.objNumber);
                 Append(" 0 R>>\n");
-            } else {
+            } else if (element.mcid >= 0) {
                 Append("/K ");
                 Append(element.mcid);
+                Append("\n");
+            } else if (element.kids.Count > 0) {
+                Append("/K [");
+                foreach (StructElement kid in element.kids) {
+                    if (kid.objNumber != 0) {   // 0 on a page not in the document
+                        Append(kid.objNumber);
+                        Append(" 0 R ");
+                    }
+                }
+                Append("]\n");
+            }
+
+            if (element.attributes != null) {
+                Append("/A ");
+                Append(element.attributes);
                 Append("\n");
             }
 
@@ -651,7 +679,7 @@ public sealed class PDF {
             Append(i);
             Append(" [");
             foreach (StructElement element in pages[i].structures) {
-                if (element.annotation == null) {
+                if (element.annotation == null && element.mcid >= 0) {
                     Append(Token.Space);
                     Append(element.objNumber);
                     Append(" 0 R");

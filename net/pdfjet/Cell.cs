@@ -40,6 +40,9 @@ public class Cell {
     // drawn unless SetBorder says otherwise.
     private const uint UNDERLINE = 0x00100000;
     private const uint STRIKEOUT = 0x00200000;
+    // A cell that a table adds below another to hold the next line of its
+    // wrapped text, which is the same table cell in a PDF/UA document.
+    internal const uint CONTINUED = 0x00400000;
     internal uint properties = Border.TOP | Border.LEFT;
     private String uri;
     private Alignment textAlignment = Alignment.LEFT;
@@ -780,7 +783,8 @@ public class Cell {
 
     private void UnderlineText(Page page, float x, float y) {
         float descent = font.GetDescent(fontSize);
-        page.AddBDC(StructElem.P, "underline", "underline");
+        // The line is decoration, and the text says what the cell holds.
+        page.AddArtifactBMC();
         page.SetPenColor(textColor);
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y + descent);
@@ -791,7 +795,7 @@ public class Cell {
 
     private void StrikeoutText(Page page, float x, float y) {
         float ascent = font.GetAscent(fontSize);
-        page.AddBDC(StructElem.P, "strike out", "strike out");
+        page.AddArtifactBMC();
         page.SetPenColor(textColor);
         page.SetPenWidth(font.GetUnderlineThickness(fontSize));
         page.MoveTo(x, y - ascent/3f);

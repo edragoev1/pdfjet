@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -227,4 +229,101 @@ func TestTableMoreHeaderRowsThanRowsDrawsTheRows(t *testing.T) {
 	expected := NewTable().SetTableData(testRows(font, 2, 1), 1).SetLocation(20, 20).DrawOn(nil)
 	xy := NewTable().SetTableData(testRows(font, 2, 1), 5).SetLocation(20, 20).DrawOn(NewPage(pdf, letter.Portrait()))
 	testAssertXY(t, expected[0], expected[1], xy)
+}
+
+func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	underlined := NewCell(font, "b")
+	underlined.SetUnderline(true)
+	data := [][]*Cell{
+		{NewCell(font, "Name"), NewCell(font, "Notes")},
+		{NewCell(font, "a"), NewCell(font, "a note long enough to wrap to four lines")},
+		{NewCell(font, "spanned").SetColSpan(2), NewCell(font, "")},
+		{underlined, NewCell(font, "c")},
+	}
+	table := NewTable().SetTableData(data, 1)
+	table.SetLocation(20, 20)
+	table.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	raw := string(doc.complete())
+	counts := map[string]int{
+		"/S /Table\n": 1,
+		// The lines of the wrapped note are one row and one cell.
+		"/S /TR\n":                        4,
+		"/S /TH\n":                        2,
+		"/S /TD\n":                        5,
+		"/A <</O /Table /Scope /Column>>": 2,
+		"/A <</O /Table /ColSpan 2>>":     1,
+		// The text of the cells, and not the underline, is in P elements.
+		"/S /P\n": 10,
+	}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+	fourKids := regexp.MustCompile(`/S /TD\n[^\n]*\n/K \[\d+ 0 R \d+ 0 R \d+ 0 R \d+ 0 R \]`)
+	if n := len(fourKids.FindAllString(raw, -1)); n != 1 {
+		t.Errorf("%d cells with the four lines of the note", n)
+	}
+}
+
+func TestTableHeaderRowsOnTheNextPagesAreArtifacts(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	table := NewTable().SetTableData(testRows(testHelvetica(doc.pdf), 60, 2), 1)
+	table.SetLocation(20, 20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	content := testContent(pages[1])
+	if !strings.HasPrefix(content, "/Artifact BMC\n") {
+		t.Errorf("the second page starts with %q", content[:40])
+	}
+	end := strings.Index(content, "EMC\n")
+	if strings.Index(content, testHex("r0c1")) > end || strings.Index(content, "BDC") < end {
+		t.Error("the header row on the second page is not an artifact")
+	}
+	for _, page := range pages {
+		doc.pdf.AddPage(page)
+	}
+	raw := string(doc.complete())
+	counts := map[string]int{"/S /Table\n": 1, "/S /TR\n": 60, "/S /TH\n": 2, "/S /TD\n": 118}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+}
+
+func TestTableIsNotTaggedInADocumentThatIsNotPDFUA(t *testing.T) {
+	pdf := testNewPDF()
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 60, 2), 1)
+	table.SetLocation(20, 20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	content := testContent(pages[1])
+	if strings.Contains(content, "BMC") || strings.Contains(content, "BDC") || strings.Contains(content, "EMC") {
+		t.Error("marked content in a document that is not PDF/UA")
+	}
+}
+
+func TestTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	table := NewTable().SetTableData(testRows(testHelvetica(doc.pdf), 60, 2), 1)
+	table.SetLocation(20, 20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	doc.pdf.AddPage(pages[1]) // The page with the Table element is left out.
+	raw := string(doc.complete())
+	if strings.Contains(raw, "/P 0 0 R") || strings.Contains(raw, "/K [0 0 R") || strings.Contains(raw, " 0 0 R ]") {
+		t.Error("a structure element refers to one that is not in the document")
+	}
 }

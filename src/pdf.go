@@ -588,8 +588,12 @@ func (pdf *PDF) addStructDocumentObject(parent int) int {
 	pdf.appendByteArray(token.ObjRef)
 	pdf.appendString("/K [\n")
 	for _, structElement := range pdf.structElements {
-		pdf.appendInteger(structElement.objNumber)
-		pdf.appendByteArray(token.ObjRef)
+		// An element whose parent is on a page that is not in the document
+		// is a child of the Document element.
+		if structElement.parent == nil || structElement.parent.objNumber == 0 {
+			pdf.appendInteger(structElement.objNumber)
+			pdf.appendByteArray(token.ObjRef)
+		}
 	}
 	pdf.appendString("]\n")
 	pdf.appendByteArray(token.EndDictionary)
@@ -600,13 +604,23 @@ func (pdf *PDF) addStructDocumentObject(parent int) int {
 func (pdf *PDF) addStructElementObjects() {
 	structTreeRootObjNumber := pdf.getObjNumber() + 1
 	structTreeRootObjNumber += len(pdf.structElements)
+	// The object numbers are known first, as an element refers to its parent
+	// and its kids, which may be written before or after it.
+	objNumber := pdf.getObjNumber()
+	for _, element := range pdf.structElements {
+		objNumber++
+		element.objNumber = objNumber
+	}
 	for _, element := range pdf.structElements {
 		pdf.newObj()
-		element.objNumber = pdf.getObjNumber()
 		pdf.appendString("<<\n/Type /StructElem /S /")
 		pdf.appendString(element.structure)
 		pdf.appendString("\n/P ")
-		pdf.appendInteger(structTreeRootObjNumber + 2) // Use the document struct as parent!
+		if element.parent != nil && element.parent.objNumber != 0 {
+			pdf.appendInteger(element.parent.objNumber)
+		} else {
+			pdf.appendInteger(structTreeRootObjNumber + 2) // The Document element
+		}
 		pdf.appendString(" 0 R /Pg ")
 		pdf.appendInteger(element.pageObjNumber)
 		pdf.appendString(" 0 R\n")
@@ -615,9 +629,24 @@ func (pdf *PDF) addStructElementObjects() {
 			pdf.appendString("/K <</Type /OBJR /Obj ")
 			pdf.appendInteger(element.annotation.objNumber)
 			pdf.appendString(" 0 R>>\n")
-		} else {
+		} else if element.mcid >= 0 {
 			pdf.appendString("/K ")
 			pdf.appendInteger(element.mcid)
+			pdf.appendString("\n")
+		} else if len(element.kids) > 0 {
+			pdf.appendString("/K [")
+			for _, kid := range element.kids {
+				if kid.objNumber != 0 { // 0 on a page not in the document
+					pdf.appendInteger(kid.objNumber)
+					pdf.appendString(" 0 R ")
+				}
+			}
+			pdf.appendString("]\n")
+		}
+
+		if element.attributes != "" {
+			pdf.appendString("/A ")
+			pdf.appendString(element.attributes)
 			pdf.appendString("\n")
 		}
 
@@ -670,7 +699,7 @@ func (pdf *PDF) addNumsParentTree() {
 		pdf.appendInteger(i)
 		pdf.appendString(" [")
 		for _, element := range page.structures {
-			if element.annotation == nil {
+			if element.annotation == nil && element.mcid >= 0 {
 				pdf.appendString(" ")
 				pdf.appendInteger(element.objNumber)
 				pdf.appendString(" 0 R")

@@ -82,6 +82,13 @@ final public class Page {
     private final List<State> savedStates = new ArrayList<State>();
     // The addBDC and addArtifactBMC calls that addEMC has not ended yet.
     private int markedContentDepth = 0;
+    // The markedContentDepth of the outermost artifact, or 0 outside of one.
+    // Content inside an artifact is not tagged, so an addBDC there writes
+    // nothing, and neither does its addEMC.
+    private int artifactDepth = 0;
+    // The structure element that the elements of addBDC and addAnnotation
+    // become the kids of, like a table cell, or null for the Document element.
+    StructElement structParent = null;
     // True once the page is added to its PDF.
     boolean added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -2531,14 +2538,14 @@ final public class Page {
             String actualText,
             String altDescription) {
         markedContentDepth++;
-        if (pdf.compliance == Compliance.PDF_UA_1) {
+        if (pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0) {
             StructElement element = new StructElement();
             element.structure = structure.type;
             element.mcid = this.mcid;
             element.language = language;
             element.actualText = actualText;
             element.altDescription = altDescription;
-            this.structures.add(element);
+            addStructure(element, structParent);
 
             append("/");
             append(structure.type);
@@ -2554,8 +2561,11 @@ final public class Page {
      */
     public void addArtifactBMC() {
         markedContentDepth++;
-        if (pdf.compliance == Compliance.PDF_UA_1) {
-            append("/Artifact BMC\n");
+        if (artifactDepth == 0) {
+            artifactDepth = markedContentDepth;
+            if (pdf.compliance == Compliance.PDF_UA_1) {
+                append("/Artifact BMC\n");
+            }
         }
     }
 
@@ -2566,10 +2576,38 @@ final public class Page {
         if (markedContentDepth == 0) {
             pdf.fail(new IllegalStateException("addEMC was called without a matching addBDC or addArtifactBMC."));
         }
-        markedContentDepth--;
-        if (pdf.compliance == Compliance.PDF_UA_1) {
-            append("EMC\n");
+        if (artifactDepth == 0 || artifactDepth == markedContentDepth) {
+            artifactDepth = 0;
+            if (pdf.compliance == Compliance.PDF_UA_1) {
+                append("EMC\n");
+            }
         }
+        markedContentDepth--;
+    }
+
+    // Adds a structure element that groups the elements added after it, like
+    // a table row, as a kid of the parent, or of the Document element when the
+    // parent is null. Returns null when the document is not tagged or the
+    // content drawn is an artifact.
+    StructElement addStructElement(
+            StructElement parent, StructElem structure, String attributes) {
+        if (pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0) {
+            return null;
+        }
+        StructElement element = new StructElement();
+        element.structure = structure.type;
+        element.mcid = -1;
+        element.attributes = attributes;
+        addStructure(element, parent);
+        return element;
+    }
+
+    private void addStructure(StructElement element, StructElement parent) {
+        element.parent = parent;
+        if (parent != null) {
+            parent.addKidStructElem(element);
+        }
+        this.structures.add(element);
     }
 
     void addAnnotation(Annotation annotation) {
@@ -2585,7 +2623,7 @@ final public class Page {
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;
             element.annotation = annotation;
-            this.structures.add(element);
+            addStructure(element, structParent);
         }
     }
 

@@ -612,8 +612,12 @@ final public class PDF {
         append(" 0 R\n");
         append("/K [\n");
         for (StructElement structElement : this.structElements) {
-            append(structElement.objNumber);
-            append(Token.OBJ_REF);
+            // An element whose parent is on a page that is not in the
+            // document is a child of the Document element.
+            if (structElement.parent == null || structElement.parent.objNumber == 0) {
+                append(structElement.objNumber);
+                append(Token.OBJ_REF);
+            }
         }
         append("]\n");
         append(Token.END_DICTIONARY);
@@ -624,14 +628,23 @@ final public class PDF {
     private void addStructElementObjects() throws Exception {
         int structTreeRootObjNumber = getObjNumber() + 1;
         structTreeRootObjNumber += this.structElements.size();
+        // The object numbers are known first, as an element refers to its
+        // parent and its kids, which may be written before or after it.
+        int objNumber = getObjNumber();
+        for (StructElement element : this.structElements) {
+            element.objNumber = ++objNumber;
+        }
 
         for (StructElement element : this.structElements) {
             newObj();
-            element.objNumber = getObjNumber();
             append("<<\n/Type /StructElem /S /");
             append(element.structure);
             append("\n/P ");
-            append(structTreeRootObjNumber + 2);    // Use the document struct as parent!
+            if (element.parent != null && element.parent.objNumber != 0) {
+                append(element.parent.objNumber);
+            } else {
+                append(structTreeRootObjNumber + 2);    // The Document element
+            }
             append(" 0 R /Pg ");
             append(element.pageObjNumber);
             append(Token.OBJ_REF);
@@ -640,9 +653,24 @@ final public class PDF {
                 append("/K <</Type /OBJR /Obj ");
                 append(element.annotation.objNumber);
                 append(" 0 R>>\n");
-            } else {
+            } else if (element.mcid >= 0) {
                 append("/K ");
                 append(element.mcid);
+                append("\n");
+            } else if (!element.kids.isEmpty()) {
+                append("/K [");
+                for (StructElement kid : element.kids) {
+                    if (kid.objNumber != 0) {   // 0 on a page not in the document
+                        append(kid.objNumber);
+                        append(" 0 R ");
+                    }
+                }
+                append("]\n");
+            }
+
+            if (element.attributes != null) {
+                append("/A ");
+                append(element.attributes);
                 append("\n");
             }
 
@@ -697,7 +725,7 @@ final public class PDF {
             append(i);
             append(" [");
             for (StructElement element : pages.get(i).structures) {
-                if (element.annotation == null) {
+                if (element.annotation == null && element.mcid >= 0) {
                     append(Token.SPACE);
                     append(element.objNumber);
                     append(" 0 R");
