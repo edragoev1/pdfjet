@@ -671,7 +671,7 @@ func (page *Page) appendGlyphWithActualText(
 		page.appendString("[<")
 		page.appendCodePointAsHex(space)
 		page.appendString("> ")
-		page.appendFloat32(1000.0 * float32(font.advanceWidth[space]) / float32(font.unitsPerEm))
+		page.appendFloat32(1000.0 * float32(font.glyphAdvance(space)) / float32(font.unitsPerEm))
 		page.appendString("] TJ\n")
 	}
 	page.appendString("EMC\n<")
@@ -710,7 +710,7 @@ func markOffsets(font *Font, codePoints []rune, gids []int) []int {
 	// Where each glyph is drawn before it is moved, in font units.
 	x := make([]int, n)
 	for i := 1; i < n; i++ {
-		x[i] = x[i-1] + int(font.advanceWidth[gids[i-1]])
+		x[i] = x[i-1] + font.glyphAdvance(gids[i-1])
 	}
 	offsets := make([]int, 2*n)
 	for i := 0; i < n; i++ {
@@ -929,7 +929,7 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 	if leadingSpace {
 		space := font.unicodeToGID[0x0020]
 		page.appendString("[")
-		page.appendFloat32(1000 * float32(font.advanceWidth[space]) / float32(font.unitsPerEm))
+		page.appendFloat32(1000 * float32(font.glyphAdvance(space)) / float32(font.unitsPerEm))
 		page.appendString(" <")
 		page.appendCodePointAsHex(space)
 		page.appendString(">] TJ\n")

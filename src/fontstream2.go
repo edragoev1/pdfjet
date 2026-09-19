@@ -106,17 +106,7 @@ func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	}
 	obj.add(">>")
 
-	buf1 := make([]byte, 0)
-	buf2 := make([]byte, 4096) // We need this buffer to be non-zero length!
-	for {
-		n, err := reader.Read(buf2)
-		buf1 = append(buf1, buf2[:n]...)
-		if err == io.EOF {
-			break
-		}
-	}
-
-	obj.setStream(buf1)
+	obj.setStream(readBytes(reader, font.compressedSize))
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	font.fileObjNumber = obj.number

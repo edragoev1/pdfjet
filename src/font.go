@@ -605,6 +605,13 @@ func (font *Font) advanceWidthOf(c rune) int {
 	} else {
 		gid = font.unicodeToGID[c]
 	}
+	return font.glyphAdvance(gid)
+}
+
+// glyphAdvance returns the advance width of the glyph, in font units. A font
+// can map characters to glyphs past the end of its advance widths, which get
+// the width of the first glyph, as in the widths of the PDF font.
+func (font *Font) glyphAdvance(gid int) int {
 	if gid < len(font.advanceWidth) {
 		return int(font.advanceWidth[gid])
 	}

@@ -73,12 +73,8 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 	}
 	pdf.appendString("/Filter /FlateDecode\n")
 
-	var compressed []byte
 	var encrypted []byte
-	compressed, err := io.ReadAll(reader)
-	if err != nil {
-		panic(err)
-	}
+	compressed := readBytes(reader, font.compressedSize)
 	if pdf.encryption != nil {
 		encrypted = pdf.encryption.encrypt(compressed)
 	}
@@ -332,22 +328,53 @@ func writeListTo(sb *strings.Builder, list []string) {
 	sb.WriteString("endbfchar\n")
 }
 
+// The most bytes the metrics of a stream font decode to, with its marks
+// compressed in them. IBM Plex Sans JP has 180 KB.
+const maxFontMetricsLength = 16 * 1024 * 1024
+
+// fontStreamError panics with the message of a stream font that is not valid.
+func fontStreamError(what string) {
+	panic("Invalid font stream: " + what + ".")
+}
+
+// readBytes reads the next length bytes. It reads them as they come, so a
+// length that the stream does not have takes no memory.
+func readBytes(reader io.Reader, length int) []byte {
+	buf, err := io.ReadAll(io.LimitReader(reader, int64(length)))
+	if err != nil {
+		panic(err)
+	}
+	if len(buf) != length {
+		panic("Unexpected end of stream: expected " + strconv.Itoa(length) + " bytes")
+	}
+	return buf
+}
+
+// isFontName returns true if the name can be written as a PDF name as it is:
+// printable ASCII, and none of the characters that end a name or start an
+// escape.
+func isFontName(name []byte) bool {
+	if len(name) == 0 {
+		return false
+	}
+	for _, b := range name {
+		if b < 0x21 || b > 0x7E || strings.IndexByte("()<>[]{}/%#", b) != -1 {
+			return false
+		}
+	}
+	return true
+}
+
 func getFontData(font *Font, reader io.Reader) {
-	length := int(getUint8(reader))
-	fontName := make([]byte, length)
-	readFully(reader, fontName)
+	fontName := readBytes(reader, int(getUint8(reader)))
+	if !isFontName(fontName) {
+		fontStreamError("the font name")
+	}
 	font.name = string(fontName)
+	font.info = string(readBytes(reader, int(getUint24(reader))))
 
-	length = int(getUint24(reader))
-	fontInfo := make([]byte, length)
-	readFully(reader, fontInfo)
-	font.info = string(fontInfo)
-
-	length = int(getUint32(reader))
-	buf := make([]byte, length)
-	readFully(reader, buf)
-
-	inflated, err := decompressor.Inflate(buf)
+	inflated, err := decompressor.InflateWithMaxLength(
+		readBytes(reader, int(getUint32(reader))), maxFontMetricsLength)
 	if err != nil {
 		panic(err)
 	}
@@ -356,17 +383,24 @@ func getFontData(font *Font, reader io.Reader) {
 	// a large CJK font, so reading them one uint16 at a time through a
 	// bytes.Reader -- and the io.Reader interface indirection that goes
 	// with it -- was showing up as real cost. inflated is already a plain
-	// []byte in memory, so read straight out of it with a running offset.
+	// []byte in memory, so read straight out of it with a running offset,
+	// after checking that the bytes are there.
 	pos := 0
+	need := func(count, size int) {
+		if count < 0 || count > (len(inflated)-pos)/size {
+			fontStreamError("the metrics end too soon")
+		}
+	}
 	readInt32 := func() int32 {
+		need(1, 4)
 		v := int32(inflated[pos])<<24 | int32(inflated[pos+1])<<16 | int32(inflated[pos+2])<<8 | int32(inflated[pos+3])
 		pos += 4
 		return v
 	}
-	readUint32 := func() uint32 {
-		v := uint32(inflated[pos])<<24 | uint32(inflated[pos+1])<<16 | uint32(inflated[pos+2])<<8 | uint32(inflated[pos+3])
-		pos += 4
-		return v
+	readLength := func(size int) int {
+		v := readInt32()
+		need(int(v), size)
+		return int(v)
 	}
 	readUint16 := func() uint16 {
 		v := uint16(inflated[pos])<<8 | uint16(inflated[pos+1])
@@ -386,14 +420,28 @@ func getFontData(font *Font, reader io.Reader) {
 	font.capHeight = int16(readInt32())
 	font.fontUnderlinePosition = int16(readInt32())
 	font.fontUnderlineThickness = int16(readInt32())
+	// The range OpenType allows; the sizes of the text are divided by it.
+	if font.unitsPerEm < 16 || font.unitsPerEm > 16384 {
+		fontStreamError("the units per em")
+	}
+	// A character in the range is looked up in unicodeToGID.
+	if font.firstChar < 0 || font.lastChar > 0xFFFF {
+		fontStreamError("the first or last character")
+	}
 
-	length = int(readUint32())
+	length := readLength(2)
+	if length == 0 {
+		fontStreamError("no advance widths")
+	}
 	font.advanceWidth = make([]uint16, length)
 	for i := 0; i < length; i++ {
 		font.advanceWidth[i] = readUint16()
 	}
 
-	length = int(readUint32())
+	length = readLength(2)
+	if length != 0x10000 {
+		fontStreamError("the character map")
+	}
 	font.unicodeToGID = make([]int, length)
 	for i := 0; i < length; i++ {
 		font.unicodeToGID[i] = int(readUint16())
@@ -403,7 +451,7 @@ func getFontData(font *Font, reader io.Reader) {
 	// after the metrics of a stream that has them. It is kept as it is and
 	// read when a mark is drawn in the font; see readMarks.
 	if pos < len(inflated) {
-		length := int(readUint32())
+		length := readLength(1)
 		font.markData = append([]byte(nil), inflated[pos:pos+length]...)
 		pos += length
 	}
@@ -417,8 +465,9 @@ func getFontData(font *Font, reader io.Reader) {
 	if flag == 'R' {
 		// The tables of an OpenType font that are not in its CFF data,
 		// which keep the font whole; they are not embedded.
-		if _, err := io.CopyN(io.Discard, reader, int64(getUint32(reader))); err != nil {
-			panic(err)
+		length := int64(getUint32(reader))
+		if n, _ := io.CopyN(io.Discard, reader, length); n != length {
+			panic("Unexpected end of stream: expected " + strconv.FormatInt(length, 10) + " bytes")
 		}
 		flag = getUint8(reader)
 	}
@@ -433,33 +482,48 @@ func getFontData(font *Font, reader io.Reader) {
 // mark and the anchors of each letter, and then the offsets of the marks that
 // go on other marks. It is done once, the first time a mark is drawn.
 func readMarks(font *Font) {
-	data, err := decompressor.Inflate(font.markData)
+	data, err := decompressor.InflateWithMaxLength(font.markData, maxFontMetricsLength)
 	if err != nil {
 		panic(err)
 	}
 	pos := 0
 	readInt := func() int {
+		if len(data)-pos < 4 {
+			fontStreamError("the marks end too soon")
+		}
 		v := int32(data[pos])<<24 | int32(data[pos+1])<<16 | int32(data[pos+2])<<8 | int32(data[pos+3])
 		pos += 4
 		return int(v)
 	}
-	subTables := readInt()
+	// readCount reads the number of entries of size ints that follow.
+	readCount := func(size int) int {
+		count := readInt()
+		if count < 0 || count > (len(data)-pos)/(4*size) {
+			fontStreamError("the marks end too soon")
+		}
+		return count
+	}
+	subTables := readCount(2)
 	markAnchors := make([]map[int][]int, 0, subTables)
 	baseAnchors := make([]map[int][]int, 0, subTables)
 	for i := 0; i < subTables; i++ {
-		count := readInt()
+		count := readCount(4)
 		marks := make(map[int][]int, count)
 		for j := 0; j < count; j++ {
 			gid := readInt()
 			markClass := readInt()
+			// The anchors of a letter are 3 ints for each mark class.
+			if markClass < 0 || markClass > 0xFFFF {
+				fontStreamError("a mark class")
+			}
 			x := readInt()
 			marks[gid] = []int{markClass, x, readInt()}
 		}
-		count = readInt()
+		count = readCount(2)
 		bases := make(map[int][]int, count)
 		for j := 0; j < count; j++ {
 			gid := readInt()
-			anchors := make([]int, readInt())
+			anchors := make([]int, readCount(1))
 			for k := range anchors {
 				anchors[k] = readInt()
 			}
@@ -468,7 +532,7 @@ func readMarks(font *Font) {
 		markAnchors = append(markAnchors, marks)
 		baseAnchors = append(baseAnchors, bases)
 	}
-	pairs := readInt()
+	pairs := readCount(4)
 	markToMarkOffsets := make(map[int][2]int, pairs)
 	for j := 0; j < pairs; j++ {
 		other := readInt()

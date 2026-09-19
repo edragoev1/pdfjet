@@ -241,6 +241,17 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       the `.stream` fonts and the decompressor. Any input either works or
       fails with a clean error: no hang, no index error, no runaway memory.
       Keep the fuzz targets and their corpora in the repository.
+      Stream fonts in Go done (Sep 19): `FuzzFontStream` (the whole file) and
+      `FuzzFontStreamMetrics` (the metrics and marks, compressed by the
+      target), in `src/fontstream_fuzz_test.go`, 1.1 M and 0.9 M runs clean
+      after the fixes. Found: lengths from the file allocated before reading
+      (4 GB for a 9-byte file), metrics and marks read past their end, no
+      check of the units per em, the character range, the tables or the
+      name, and `embedFontFile2` looping on a read error. And one in shipped
+      fonts: IBM Plex Sans JP maps 15 arrows (↺ …) past its advance widths,
+      so "↺" and a combining mark threw in `Page.markOffsets` (Java
+      ArrayIndexOutOfBounds, Swift traps). Java, C# and Swift have the same
+      code and are not fixed yet.
 - ⬜ **B** 3. PDF/UA as it is claimed: tag a table as a table (below), and
       check the 41 PDF/UA examples with PAC or by the Matterhorn Protocol,
       not only veraPDF, which cannot see what a paragraph stands for.
