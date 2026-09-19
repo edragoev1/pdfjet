@@ -145,11 +145,22 @@ func newBMPImage(reader io.Reader) *bmpImage {
 
 func (image *bmpImage) parseData(reader io.Reader) []byte {
 	// rowsize is 4 * ceil (bpp*width/32.0)
-	bmpImage := make([]byte, 3*image.w*image.h)
 	rowsize := int(4 * ((int64(image.bpp)*int64(image.w) + 31) / 32)) // 4 byte alignment
+	// The rows are read before the image is allocated, so a size that the
+	// stream does not have takes no memory.
+	rows := make([][]byte, 0, min(image.h, 4096))
+	for i := 0; i < image.h-1; i++ {
+		rows = append(rows, getNBytes(reader, rowsize))
+	}
+	// Some files end without the padding of the last row, which holds no
+	// pixels, as Pillow and browsers read them.
+	last := getNBytes(reader, int((int64(image.bpp)*int64(image.w)+7)/8))
+	_, _ = io.CopyN(io.Discard, reader, int64(rowsize-len(last)))
+	rows = append(rows, last)
+	bmpImage := make([]byte, 3*image.w*image.h)
 	index := 0
 	for i := 0; i < image.h; i++ {
-		row := getNBytes(reader, rowsize)
+		row := rows[i]
 		switch image.bpp {
 		case 1:
 			row = image.bit1to8(row, image.w) // opslag i palette
@@ -173,9 +184,6 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 		}
 		if image.palette != nil { // indexed
 			for j := 0; j < image.w; j++ {
-				if int(row[j]) >= len(image.palette) {
-					panic("BMP parse error: imagedata not correct")
-				}
 				bmpImage[index] = image.palette[row[j]][2]
 				index++
 				bmpImage[index] = image.palette[row[j]][1]
@@ -266,10 +274,17 @@ func (image *bmpImage) bit1to8(row []byte, width int) []byte {
 	return ret
 }
 
+// parsePalette reads the colors of the palette. An index past them is drawn
+// black, as browsers draw it, so the palette has the 256 colors an index of 8
+// bits can take.
 func (image *bmpImage) parsePalette(reader io.Reader, size int) {
-	image.palette = make([][]byte, size)
-	for i := 0; i < size; i++ {
-		image.palette[i] = getNBytes(reader, 4)
+	image.palette = make([][]byte, 256)
+	for i := range image.palette {
+		if i < size {
+			image.palette[i] = getNBytes(reader, 4)
+		} else {
+			image.palette[i] = []byte{0, 0, 0, 0}
+		}
 	}
 }
 

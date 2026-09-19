@@ -257,6 +257,19 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       so by accident). The 873 inputs of the Go corpus, replayed in the four
       ports: no crash in any; Java and C# accept and reject the same inputs
       as Go.
+- ✅ BMP in Go done (Sep 19): `FuzzBMPImage` in `src/bmpimage_fuzz_test.go`,
+      whole files, with the BMPs of the examples and the unit tests as seeds;
+      6.6 M runs clean after the fixes. Found two runaway allocations: a
+      76-byte file allocated 1 GB, as `skipNBytes` allocated what it skipped
+      (the offset of the pixels, the rest of a header), and a 54-byte file
+      330 MB, as the image was allocated from its size before its rows were
+      read. The 624 inputs of the corpus, compared with Pillow: the same
+      pixels, but for an offset of the pixels that points back into the
+      header or palette (PDFjet reads on; Pillow goes back) and a gray
+      palette that Pillow reads as gray levels. Made as Pillow and browsers
+      read them: a palette index past the palette is black, as for PNG,
+      where it failed, and the last row can be without its padding. Java, C#
+      and Swift are not changed yet.
 - ✅ PNG in Go done (Sep 19): `FuzzPNGImage` (whole files, the chunk CRCs
       made right) and `FuzzPNGImagePixels` (the header, palette, tRNS and
       rows, compressed by the target), in `src/pngimage_fuzz_test.go`, with

@@ -195,3 +195,22 @@ func TestBMPImageRejectsACompressedImage(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestBMPImageAPaletteIndexPastThePaletteIsBlack(t *testing.T) {
+	// A palette of 2 colors, and the indexes 1 and 5 in the top row.
+	bmp := testBMP(40, 8, 0, nil, []uint32{0x102030, 0x405060}, []byte{0, 0}, []byte{1, 5})
+	want := []byte{0x40, 0x50, 0x60, 0, 0, 0, 0x10, 0x20, 0x30, 0x10, 0x20, 0x30}
+	if got := testBMPDecode(t, bmp); !bytes.Equal(got, want) {
+		t.Errorf("pixels %v", got)
+	}
+}
+
+func TestBMPImageTheLastRowCanBeWithoutItsPadding(t *testing.T) {
+	bmp := testBMP(40, 24, 0, nil, nil, []byte{1, 2, 3, 4, 5, 6}, []byte{7, 8, 9, 10, 11, 12})
+	want := testBMPDecode(t, bmp)
+	// The 2 bytes of padding of the top row, which is the last one.
+	if got := testBMPDecode(t, bmp[:len(bmp)-2]); !bytes.Equal(got, want) {
+		t.Errorf("pixels %v, not %v", got, want)
+	}
+	testWant(t, "Unexpected end of stream: expected 6 bytes", testBMPError(bmp[:len(bmp)-3]))
+}

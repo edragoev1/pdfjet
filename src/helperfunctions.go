@@ -95,8 +95,13 @@ func toHexString(code int) string {
 	return string(b[:])
 }
 
+// skipNBytes skips the next n bytes. It reads them as they come, so a count
+// that the stream does not have, like the offset of the pixels of a BMP file,
+// takes no memory.
 func skipNBytes(reader io.Reader, n int) {
-	getNBytes(reader, n)
+	if skipped, _ := io.CopyN(io.Discard, reader, int64(n)); skipped != int64(n) {
+		panic("Unexpected end of stream: expected " + strconv.Itoa(n) + " bytes")
+	}
 }
 
 func getNBytes(r io.Reader, n int) []byte {

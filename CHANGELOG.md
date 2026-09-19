@@ -47,6 +47,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- A BMP file could allocate a gigabyte for a skip or an image size its data
+  did not have (a 76-byte file 1 GB), in Go; it reads what it skips as it
+  comes, and the rows before it allocates the image. A palette index past
+  the palette is black, as browsers draw it, where it failed, and the last
+  row can end without its padding. Found by fuzzing the Go BMP decoder and
+  comparing it with Pillow.
 - A PNG palette image with an index past its palette colors failed with an
   index error; the pixel is black, as libpng and browsers draw it. A palette
   of no colors or of more than 256 fails with "Incorrect palette length."
