@@ -7,6 +7,7 @@
  * Written by Jonas Krogsböll, who contributed it to PDFjet.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace PDFjet.NET {
@@ -128,43 +129,50 @@ class BMPImage {
 
     private void ParseData(System.IO.Stream stream) {
         // rowsize is 4 * ceil (bpp*width/32.0)
-        image = new byte[w * h * 3];
-
         int rowsize = (int) (4 * ((bpp * (long) w + 31) / 32));   // 4 byte alignment
+        // The rows are read before the image is allocated, so a size that the
+        // stream does not have takes no memory.
+        List<byte[]> rows = new List<byte[]>(Math.Min(h, 4096));
+        for (int i = 0; i < h - 1; i++) {
+            rows.Add(GetBytes(stream, rowsize));
+        }
+        // Some files end without the padding of the last row, which holds no
+        // pixels, as Pillow and browsers read them.
+        byte[] last = GetBytes(stream, (int) ((bpp * (long) w + 7) / 8));
+        stream.Read(new byte[rowsize - last.Length], 0, rowsize - last.Length);
+        rows.Add(last);
+
+        image = new byte[w * h * 3];
         byte[] row;
         int index;
-        try {
-            for (int i = 0; i < h; i++) {
-                row = GetBytes(stream, rowsize);
-                switch (bpp) {
-                case  1: row = Bit1to8(row, w); break;  // opslag i palette
-                case  4: row = Bit4to8(row, w); break;  // opslag i palette
-                case  8: break;                         // opslag i palette
-                case 16: row = MasksTo24(row, w, 2, masks); break;
-                case 24: break;                         // bytes are correct
-                case 32: row = MasksTo24(row, w, 4, masks); break;
-                default:
-                    throw new Exception(
-                            "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
-                }
+        for (int i = 0; i < h; i++) {
+            row = rows[i];
+            switch (bpp) {
+            case  1: row = Bit1to8(row, w); break;  // opslag i palette
+            case  4: row = Bit4to8(row, w); break;  // opslag i palette
+            case  8: break;                         // opslag i palette
+            case 16: row = MasksTo24(row, w, 2, masks); break;
+            case 24: break;                         // bytes are correct
+            case 32: row = MasksTo24(row, w, 4, masks); break;
+            default:
+                throw new Exception(
+                        "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
+            }
 
-                index = topDown ? w*i*3 : w*(h-i-1)*3;
-                if (palette != null) {  // indexed
-                    for (int j = 0; j < w; j++) {
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][2];
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][1];
-                        image[index++] = palette[(row[j]<0)?row[j]+256:row[j]][0];
-                    }
-                } else {                // not indexed
-                    for (int j = 0; j < w*3; j+=3) {
-                        image[index++] = row[j+2];
-                        image[index++] = row[j+1];
-                        image[index++] = row[j];
-                    }
+            index = topDown ? w*i*3 : w*(h-i-1)*3;
+            if (palette != null) {  // indexed
+                for (int j = 0; j < w; j++) {
+                    image[index++] = palette[row[j]][2];
+                    image[index++] = palette[row[j]][1];
+                    image[index++] = palette[row[j]][0];
+                }
+            } else {                // not indexed
+                for (int j = 0; j < w*3; j+=3) {
+                    image[index++] = row[j+2];
+                    image[index++] = row[j+1];
+                    image[index++] = row[j];
                 }
             }
-        } catch (IndexOutOfRangeException) {
-            throw new Exception("BMP parse error: imagedata not correct");
         }
 
         deflated = Compressor.Deflate(image);
@@ -228,10 +236,13 @@ class BMPImage {
         return ret;
     }
 
+    // Reads the colors of the palette. An index past them is drawn black, as
+    // browsers draw it, so the palette has the 256 colors an index of 8 bits
+    // can take.
     private void ParsePalette(System.IO.Stream stream, int size) {
-        palette = new byte[size][];
-        for (int i = 0; i < size; i++) {
-            palette[i] = GetBytes(stream, 4);
+        palette = new byte[256][];
+        for (int i = 0; i < palette.Length; i++) {
+            palette[i] = (i < size) ? GetBytes(stream, 4) : new byte[4];
         }
     }
 

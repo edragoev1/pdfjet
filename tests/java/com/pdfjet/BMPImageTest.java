@@ -186,4 +186,20 @@ class BMPImageTest {
         assertEquals("Compressed BMP images are not supported.",
                 decodeError(bmp(40, 8, 1, null, palette, bytes(1, 2, 1, 3), bytes(0, 1, 0, 0))));
     }
+
+    @Test
+    void aPaletteIndexPastThePaletteIsBlack() throws Exception {
+        // A palette of 2 colors, and the indexes 1 and 5 in the top row.
+        byte[] bmp = bmp(40, 8, 0, null, new int[] {0x102030, 0x405060}, bytes(0, 0), bytes(1, 5));
+        assertArrayEquals(bytes(0x40, 0x50, 0x60, 0, 0, 0, 0x10, 0x20, 0x30, 0x10, 0x20, 0x30), decode(bmp));
+    }
+
+    @Test
+    void theLastRowCanBeWithoutItsPadding() throws Exception {
+        byte[] bmp = bmp(40, 24, 0, null, null, bytes(1, 2, 3, 4, 5, 6), bytes(7, 8, 9, 10, 11, 12));
+        // The 2 bytes of padding of the top row, which is the last one.
+        assertArrayEquals(decode(bmp), decode(java.util.Arrays.copyOf(bmp, bmp.length - 2)));
+        assertEquals("Unexpected end of stream: expected 6 bytes",
+                decodeError(java.util.Arrays.copyOf(bmp, bmp.length - 3)));
+    }
 }

@@ -186,4 +186,17 @@ import Testing
         #expect(decodeError(bmp(40, 8, 1, nil, palette, [1, 2, 1, 3], [0, 1, 0, 0]))
                 == "Compressed BMP images are not supported.")
     }
+
+    @Test func aPaletteIndexPastThePaletteIsBlack() throws {
+        // A palette of 2 colors, and the indexes 1 and 5 in the top row.
+        let image = bmp(40, 8, 0, nil, [0x102030, 0x405060], [0, 0], [1, 5])
+        #expect(try decode(image) == [0x40, 0x50, 0x60, 0, 0, 0, 0x10, 0x20, 0x30, 0x10, 0x20, 0x30])
+    }
+
+    @Test func theLastRowCanBeWithoutItsPadding() throws {
+        let image = bmp(40, 24, 0, nil, nil, [1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12])
+        // The 2 bytes of padding of the top row, which is the last one.
+        #expect(try decode(Array(image.dropLast(2))) == decode(image))
+        #expect(throws: (any Error).self) { _ = try decode(Array(image.dropLast(3))) }
+    }
 }

@@ -215,5 +215,20 @@ public class BMPImageTest {
         Assert.Equal("Compressed BMP images are not supported.",
                 DecodeError(Bmp(40, 8, 1, null, palette, Bytes(1, 2, 1, 3), Bytes(0, 1, 0, 0))));
     }
+
+    [Fact]
+    public void APaletteIndexPastThePaletteIsBlack() {
+        // A palette of 2 colors, and the indexes 1 and 5 in the top row.
+        byte[] bmp = Bmp(40, 8, 0, null, new int[] {0x102030, 0x405060}, Bytes(0, 0), Bytes(1, 5));
+        Assert.Equal(Bytes(0x40, 0x50, 0x60, 0, 0, 0, 0x10, 0x20, 0x30, 0x10, 0x20, 0x30), Decode(bmp));
+    }
+
+    [Fact]
+    public void TheLastRowCanBeWithoutItsPadding() {
+        byte[] bmp = Bmp(40, 24, 0, null, null, Bytes(1, 2, 3, 4, 5, 6), Bytes(7, 8, 9, 10, 11, 12));
+        // The 2 bytes of padding of the top row, which is the last one.
+        Assert.Equal(Decode(bmp), Decode(bmp[..^2]));
+        Assert.Equal("Unexpected end of stream: expected 6 bytes", DecodeError(bmp[..^3]));
+    }
 }
 }

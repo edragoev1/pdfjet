@@ -137,12 +137,26 @@ class BMPImage {
         if w < 0 {
             throw BMPImageError.invalidImageData
         }
-        image = [UInt8](repeating: 0, count: (3 * w * h))
         let rowsize = 4 * ((bpp * w + 31) / 32)         // 4 byte alignment
+        // The rows are read before the image is allocated, so a size that the
+        // stream does not have takes no memory.
+        var rows = [[UInt8]]()
+        rows.reserveCapacity(min(h, 4096))
+        for _ in 0..<(h - 1) {
+            rows.append(try getBytes(stream, rowsize))
+        }
+        // Some files end without the padding of the last row, which holds no
+        // pixels, as Pillow and browsers read them.
+        let last = try getBytes(stream, (bpp * w + 7) / 8)
+        var padding = [UInt8](repeating: 0, count: rowsize - last.count)
+        _ = stream.read(&padding, maxLength: padding.count)
+        rows.append(last)
+
+        image = [UInt8](repeating: 0, count: (3 * w * h))
         var row: [UInt8]
         var index = 0
         for i in 0..<self.h {
-            row = try getBytes(stream, rowsize)
+            row = rows[i]
             if self.bpp == 1 {
                 row = bit1to8(row, w)           // opslag i palette
             } else if self.bpp == 4 {
@@ -163,9 +177,6 @@ class BMPImage {
             if self.palette != nil {
                 // indexed
                 for j in 0..<self.w {
-                    if Int(row[j]) >= self.palette!.count {
-                        throw BMPImageError.invalidImageData
-                    }
                     image![index] = self.palette![Int(row[j])][2]
                     index += 1
                     image![index] = self.palette![Int(row[j])][1]
@@ -258,9 +269,11 @@ class BMPImage {
         if size < 0 {
             throw BMPImageError.invalidImageData
         }
+        // An index past the colors is drawn black, as browsers draw it, so the
+        // palette has the 256 colors an index of 8 bits can take.
         self.palette = [[UInt8]]()
-        for _ in 0..<size {
-            self.palette!.append(try getBytes(stream, 4))
+        for i in 0..<256 {
+            self.palette!.append(i < size ? try getBytes(stream, 4) : [0, 0, 0, 0])
         }
     }
 

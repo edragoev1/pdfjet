@@ -268,8 +268,10 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       header or palette (PDFjet reads on; Pillow goes back) and a gray
       palette that Pillow reads as gray levels. Made as Pillow and browsers
       read them: a palette index past the palette is black, as for PNG,
-      where it failed, and the last row can be without its padding. Java, C#
-      and Swift are not changed yet.
+      where it failed, and the last row can be without its padding. The same
+      in Java, C# and Swift, which allocated the image before its rows too;
+      the 679 inputs of the corpus, replayed in the four ports, decode to the
+      same 551 images and fail the same 128.
 - ✅ PNG in Go done (Sep 19): `FuzzPNGImage` (whole files, the chunk CRCs
       made right) and `FuzzPNGImagePixels` (the header, palette, tRNS and
       rows, compressed by the target), in `src/pngimage_fuzz_test.go`, with

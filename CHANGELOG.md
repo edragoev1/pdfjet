@@ -47,9 +47,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
-- A BMP file could allocate a gigabyte for a skip or an image size its data
-  did not have (a 76-byte file 1 GB), in Go; it reads what it skips as it
-  comes, and the rows before it allocates the image. A palette index past
+- A BMP file could allocate a gigabyte for a skip (in Go) or an image size
+  (in the four ports) its data did not have: a 76-byte file 1 GB. What is
+  skipped is read as it comes, and the rows before the image is allocated. A palette index past
   the palette is black, as browsers draw it, where it failed, and the last
   row can end without its padding. Found by fuzzing the Go BMP decoder and
   comparing it with Pillow.
