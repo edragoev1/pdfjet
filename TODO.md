@@ -257,6 +257,16 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       so by accident). The 873 inputs of the Go corpus, replayed in the four
       ports: no crash in any; Java and C# accept and reject the same inputs
       as Go.
+- ✅ PNG in Go done (Sep 19): `FuzzPNGImage` (whole files, the chunk CRCs
+      made right) and `FuzzPNGImagePixels` (the header, palette, tRNS and
+      rows, compressed by the target), in `src/pngimage_fuzz_test.go`, with
+      the PngSuite images as seeds. Each image PDFjet and Go's image/png both
+      decode is compared sample by sample: the 114 PngSuite images they both
+      decode match, and 3.6 M and 2.8 M runs found no difference. Found one
+      crash: a palette index past the palette (index 32 of 28 colors) read
+      past the PLTE data; it is black now, as in libpng, browsers and
+      image/png, and a PLTE of no colors or more than 256 fails. Java, C# and
+      Swift have the same lookup (Swift traps) and are not fixed yet.
 - ✅ Swift's `Puff` skipped the zlib header and did not check the Adler-32
       at the end, so Swift decoded corrupt zlib data that Java, C# and Go
       reject: 31 of the 873 stream font inputs, and PNG and PDF streams the

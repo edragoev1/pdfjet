@@ -12,10 +12,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
-	"runtime"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -44,38 +41,14 @@ var fuzzFontStreamSeeds = []string{
 // Plane and ones that are not drawn.
 const fuzzFontText = "Ab1 กิ่ ñ é\u0301 שָׁלוֹם مَرْحَبًا 日本 😀 \u200D\uFEFF"
 
-// fuzzMaxTime is much longer than any font PDFjet ships takes to be loaded,
-// drawn with and written, which is a few milliseconds.
-const fuzzMaxTime = 10 * time.Second
-
-// fuzzMaxAlloc is more memory than any font PDFjet ships needs to be loaded,
-// drawn with and written.
-const fuzzMaxAlloc = 256 * 1024 * 1024
-
-// fuzzFontStream loads the stream font in both ways and draws with it. It
-// fails when that ends in a runtime error, not a panic of PDFjet's own, or
-// allocates more than fuzzMaxAlloc, or takes longer than fuzzMaxTime, which
-// ends the fuzzing process so that the fuzzer keeps the input.
+// fuzzFontStream loads the stream font in both ways and draws with it.
 func fuzzFontStream(t *testing.T, stream []byte) {
-	timer := time.AfterFunc(fuzzMaxTime, func() {
-		panic("a font stream of " + strconv.Itoa(len(stream)) + " bytes took longer than " + fuzzMaxTime.String())
+	fuzzRun(t, len(stream), func() {
+		fuzzUseFontStream(t, stream)
 	})
-	defer timer.Stop()
-	var before runtime.MemStats
-	runtime.ReadMemStats(&before)
-	defer func() {
-		if r := recover(); r != nil {
-			if err, ok := r.(runtime.Error); ok {
-				t.Fatalf("runtime error: %v", err)
-			}
-		}
-		var after runtime.MemStats
-		runtime.ReadMemStats(&after)
-		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > fuzzMaxAlloc {
-			t.Fatalf("%d bytes allocated for a font stream of %d bytes", allocated, len(stream))
-		}
-	}()
+}
 
+func fuzzUseFontStream(t *testing.T, stream []byte) {
 	objects := make([]*PDFobj, 0)
 	NewFontStream2(&objects, bytes.NewReader(stream))
 

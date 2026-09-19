@@ -313,3 +313,19 @@ func TestPNGImageATruecolorImageWithASuggestedPaletteIsDecodedAsTruecolor(t *tes
 		t.Errorf("samples %d", got)
 	}
 }
+
+func TestPNGImageAPaletteIndexPastThePaletteIsBlack(t *testing.T) {
+	// A palette of 2 colors, and the indexes 1, 2 and 255.
+	palette := []byte{10, 20, 30, 40, 50, 60}
+	png := newPNGImage(bytes.NewReader(testPNG(3, 1, 8, 3, palette, compressor.Deflate([]byte{0, 1, 2, 255}))))
+	if got := testInflate(t, png.GetData()); !bytes.Equal(got, []byte{40, 50, 60, 0, 0, 0, 0, 0, 0}) {
+		t.Errorf("samples %v", got)
+	}
+}
+
+func TestPNGImageRejectsAPaletteOfNoColorsOrMoreThan256(t *testing.T) {
+	idat := compressor.Deflate([]byte{0, 0})
+	testWant(t, "Incorrect palette length.", testPNGError(testPNG(1, 1, 8, 3, []byte{}, idat)))
+	testWant(t, "Incorrect palette length.", testPNGError(testPNG(1, 1, 8, 3, make([]byte, 3*257), idat)))
+	testWant(t, "Incorrect palette length.", testPNGError(testPNG(1, 1, 8, 3, make([]byte, 4), idat)))
+}

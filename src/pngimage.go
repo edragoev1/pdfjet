@@ -66,10 +66,14 @@ func newPNGImage(reader io.Reader) *pngImage {
 		case "IDAT":
 			image.iDAT = append(image.iDAT, chunk.chunkData...)
 		case "PLTE":
-			image.pLTE = chunk.chunkData
-			if len(image.pLTE)%3 != 0 {
+			// 1 to 256 colors of 3 bytes each.
+			if len(chunk.chunkData)%3 != 0 || len(chunk.chunkData) == 0 || len(chunk.chunkData) > 3*256 {
 				panic("Incorrect palette length.")
 			}
+			// An index past the colors of the palette is drawn black, as
+			// libpng and browsers draw it.
+			image.pLTE = make([]byte, 3*256)
+			copy(image.pLTE, chunk.chunkData)
 		case "tRNS":
 			if image.colorType == 3 {
 				image.tRNS = chunk.chunkData
