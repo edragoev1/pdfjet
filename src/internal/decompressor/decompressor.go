@@ -347,20 +347,37 @@ func inflate(buf []byte, maxLength int, prefix bool) (result []byte, err error) 
 		return nil, fmt.Errorf("invalid zlib data: %w", err)
 	}
 	defer func() {
-		if closeErr := reader.Close(); closeErr != nil && err == nil {
+		// A prefix that has its bytes ignores the rest of the stream, and so
+		// an error the reader found in it, like the end of a stream cut short.
+		closeErr := reader.Close()
+		if closeErr != nil && err == nil && !(prefix && len(result) == maxLength) {
+			result = nil
 			err = fmt.Errorf("failed to close reader: %w", closeErr)
 		}
 	}()
 
 	var inflated bytes.Buffer
 	inflated.Grow(min(len(buf), maxLength))
-	// A prefix reads no further than its length; otherwise one byte more than
-	// the limit tells that the stream decodes to more.
-	limit := int64(maxLength) + 1
 	if prefix {
-		limit = int64(maxLength)
+		// A prefix reads no further than its length, and ignores the rest of
+		// the stream, its checksum too: the reader returns an error found at
+		// the end of the stream with the last bytes before it, which are the
+		// ones the prefix needs.
+		chunk := make([]byte, min(32*1024, maxLength))
+		for inflated.Len() < maxLength {
+			n, err := reader.Read(chunk[:min(len(chunk), maxLength-inflated.Len())])
+			inflated.Write(chunk[:n])
+			if inflated.Len() == maxLength || err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("decompression failed: %w", err)
+			}
+		}
+		return inflated.Bytes(), nil
 	}
-	n, err := io.Copy(&inflated, io.LimitReader(reader, limit))
+	// One byte more than the limit tells that the stream decodes to more.
+	n, err := io.Copy(&inflated, io.LimitReader(reader, int64(maxLength)+1))
 	if err != nil {
 		return nil, fmt.Errorf("decompression failed: %w", err)
 	}

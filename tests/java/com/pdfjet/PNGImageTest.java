@@ -208,6 +208,23 @@ class PNGImageTest {
     }
 
     @Test
+    void aPaletteIndexPastThePaletteIsBlack() throws Exception {
+        // A palette of 2 colors, and the indexes 1, 2 and 255.
+        byte[] palette = {10, 20, 30, 40, 50, 60};
+        PNGImage png = new PNGImage(new ByteArrayInputStream(
+                png(3, 1, 8, 3, palette, Compressor.deflate(new byte[] {0, 1, 2, (byte) 255}))));
+        assertArrayEquals(new byte[] {40, 50, 60, 0, 0, 0, 0, 0, 0}, Decompressor.inflate(png.getData()));
+    }
+
+    @Test
+    void rejectsAPaletteOfNoColorsOrMoreThan256() {
+        byte[] idat = Compressor.deflate(new byte[] {0, 0});
+        assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[0], idat)));
+        assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[3*257], idat)));
+        assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[4], idat)));
+    }
+
+    @Test
     void rejectsAChunkLengthThatTheFileDoesNotHave() {
         byte[] valid = png(1, 1, 8, 2, null, Compressor.deflate(new byte[] {0, 0, 0, 0}));
         // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.

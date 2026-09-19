@@ -185,8 +185,12 @@ final class Puff {
         }
         self.incnt = 2
 
-        // process blocks until last block or error
+        // process blocks until last block or error; a prefix that has its
+        // bytes ignores the rest of the stream, its checksum too
         repeat {
+            if prefix && output.count >= maxLength {
+                return
+            }
             last = try bits(1, &input)              // one if last block
             type = try bits(2, &input)              // block type 0..3
             if type == 0 {
@@ -205,6 +209,9 @@ final class Puff {
                 throw PuffError.read(error: error)  // return with error
             }
         } while last != 1
+        if prefix && output.count >= maxLength {
+            return
+        }
 
         // The Adler-32 of the output follows the last block, from the next
         // whole byte. A stream without it is cut short.

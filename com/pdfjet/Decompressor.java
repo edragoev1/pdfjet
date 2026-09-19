@@ -319,30 +319,17 @@ class Decompressor {
      * MAX_DECODED_LENGTH bytes. Bytes after the end of the stream are ignored.
      */
     static byte[] inflate(byte[] data) throws Exception {
-        return inflate(data, MAX_DECODED_LENGTH, false);
+        return inflate(data, MAX_DECODED_LENGTH);
     }
 
     /** Decodes a zlib stream, which must end and decode to at most maxLength bytes. */
     static byte[] inflate(byte[] data, int maxLength) throws Exception {
-        return inflate(data, maxLength, false);
-    }
-
-    /**
-     * Returns the first length bytes that a zlib stream decodes to, or all of
-     * them when there are fewer, and ignores the rest of the stream. A stream
-     * that ends in the middle, before those bytes, throws.
-     */
-    static byte[] inflatePrefix(byte[] data, int length) throws Exception {
-        return inflate(data, length, true);
-    }
-
-    private static byte[] inflate(byte[] data, int maxLength, boolean prefix) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, maxLength));
         Inflater inflater = new Inflater();
         try {
             inflater.setInput(data);
             byte[] buf = new byte[4096];
-            while (!inflater.finished() && !(prefix && bos.size() == maxLength)) {
+            while (!inflater.finished()) {
                 // At most one byte more than the limit, which tells that the
                 // stream decodes to more.
                 int count = inflater.inflate(
@@ -354,18 +341,49 @@ class Decompressor {
                         (inflater.needsInput() || inflater.needsDictionary())) {
                     throw new DataFormatException("Truncated or invalid Flate stream");
                 }
-                if (bos.size() + count > maxLength) {
-                    if (prefix) {
-                        bos.write(buf, 0, maxLength - bos.size());
-                        break;
-                    }
-                    checkLength(bos.size() + count, maxLength, "Flate");
-                }
+                checkLength(bos.size() + count, maxLength, "Flate");
                 bos.write(buf, 0, count);
             }
         } finally {
             inflater.end();
         }
         return bos.toByteArray();
+    }
+
+    /**
+     * Returns the first length bytes that a zlib stream decodes to, or all of
+     * them when there are fewer, and ignores the rest of the stream. A stream
+     * that ends in the middle, before those bytes, throws.
+     */
+    static byte[] inflatePrefix(byte[] data, int length) throws Exception {
+        // The zlib header is checked as the header of a whole stream is, and
+        // the Deflate data after it is decoded raw, so that nothing after the
+        // first length bytes is read, not even the checksum, which zlib checks
+        // as soon as it reaches it. A stream that ends before those bytes is
+        // decoded again as a whole one, which checks its checksum.
+        if (data.length < 2) {
+            throw new DataFormatException("Truncated or invalid Flate stream");
+        }
+        int cmf = data[0] & 0xFF;
+        int flg = data[1] & 0xFF;
+        if ((cmf & 0x0F) != 8 || (cmf >> 4) > 7 || (cmf << 8 | flg) % 31 != 0 || (flg & 0x20) != 0) {
+            throw new DataFormatException("Invalid zlib header");
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, length));
+        Inflater inflater = new Inflater(true);
+        try {
+            inflater.setInput(data, 2, data.length - 2);
+            byte[] buf = new byte[4096];
+            while (!inflater.finished() && bos.size() < length) {
+                int count = inflater.inflate(buf, 0, Math.min(buf.length, length - bos.size()));
+                if (count == 0 && !inflater.finished() && inflater.needsInput()) {
+                    break;      // Cut short; decoded again below
+                }
+                bos.write(buf, 0, count);
+            }
+        } finally {
+            inflater.end();
+        }
+        return (bos.size() == length) ? bos.toByteArray() : inflate(data, length);
     }
 }

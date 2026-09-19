@@ -320,12 +320,36 @@ class Decompressor {
     /// ignored, as in the other ports.
     /// </summary>
     internal static byte[] Inflate(byte[] data) {
-        return Inflate(data, MAX_DECODED_LENGTH, false);
+        return Inflate(data, MAX_DECODED_LENGTH);
     }
 
     /// <summary>Decodes a zlib stream, which must end and decode to at most maxLength bytes.</summary>
     internal static byte[] Inflate(byte[] data, int maxLength) {
-        return Inflate(data, maxLength, false);
+        using var outStream = new MemoryStream();
+        var inStream = new EndOfInputStream(data);
+        using (var zlib = new ZLibStream(inStream, CompressionMode.Decompress)) {
+            // Not CopyTo: ZLibStream.CopyTo reads all of its input, whether the
+            // stream ends before it or not.
+            byte[] buffer = new byte[65536];
+            while (true) {
+                // At most one byte more than the limit, which tells that the
+                // stream decodes to more.
+                int count = zlib.Read(
+                        buffer, 0, (int) Math.Min(buffer.Length, (long) maxLength - outStream.Length + 1));
+                if (count <= 0) {
+                    break;
+                }
+                CheckLength(outStream.Length + count, maxLength, "Flate");
+                outStream.Write(buffer, 0, count);
+            }
+        }
+        // ZLibStream returns the bytes decoded so far, without an error, when
+        // its input ends first. Its Read reads the input only until the stream
+        // ends, so a read at the end of the input means the stream was cut short.
+        if (inStream.ReadAtEnd) {
+            throw new InvalidDataException("Truncated or invalid Flate stream");
+        }
+        return outStream.ToArray();
     }
 
     /// <summary>
@@ -334,42 +358,32 @@ class Decompressor {
     /// that ends in the middle, before those bytes, throws.
     /// </summary>
     internal static byte[] InflatePrefix(byte[] data, int length) {
-        return Inflate(data, length, true);
-    }
-
-    private static byte[] Inflate(byte[] data, int maxLength, bool prefix) {
+        // The zlib header is checked as the header of a whole stream is, and
+        // the Deflate data after it is decoded raw, so that nothing after the
+        // first length bytes is read, not even the checksum, which zlib checks
+        // as soon as it reaches it. A stream that ends before those bytes is
+        // decoded again as a whole one, which checks its checksum.
+        if (data.Length < 2) {
+            throw new InvalidDataException("Truncated or invalid Flate stream");
+        }
+        int cmf = data[0];
+        int flg = data[1];
+        if ((cmf & 0x0F) != 8 || (cmf >> 4) > 7 || (cmf << 8 | flg) % 31 != 0 || (flg & 0x20) != 0) {
+            throw new InvalidDataException("Invalid zlib header");
+        }
         using var outStream = new MemoryStream();
-        var inStream = new EndOfInputStream(data);
-        using (var zlib = new ZLibStream(inStream, CompressionMode.Decompress)) {
-            // Not CopyTo: ZLibStream.CopyTo reads all of its input, whether the
-            // stream ends before it or not.
+        using (var deflate = new DeflateStream(
+                new MemoryStream(data, 2, data.Length - 2), CompressionMode.Decompress)) {
             byte[] buffer = new byte[65536];
-            while (!(prefix && outStream.Length == maxLength)) {
-                // At most one byte more than the limit, which tells that the
-                // stream decodes to more.
-                int count = zlib.Read(
-                        buffer, 0, (int) Math.Min(buffer.Length, (long) maxLength - outStream.Length + 1));
+            while (outStream.Length < length) {
+                int count = deflate.Read(buffer, 0, (int) Math.Min(buffer.Length, length - outStream.Length));
                 if (count <= 0) {
-                    break;
-                }
-                if (outStream.Length + count > maxLength) {
-                    if (prefix) {
-                        outStream.Write(buffer, 0, (int) (maxLength - outStream.Length));
-                        break;
-                    }
-                    CheckLength(outStream.Length + count, maxLength, "Flate");
+                    break;      // The end, or cut short; decoded again below
                 }
                 outStream.Write(buffer, 0, count);
             }
         }
-        // ZLibStream returns the bytes decoded so far, without an error, when
-        // its input ends first. Its Read reads the input only until the stream
-        // ends, so a read at the end of the input means the stream was cut short;
-        // a prefix that got all of its bytes does not need the rest.
-        if (inStream.ReadAtEnd && !(prefix && outStream.Length == maxLength)) {
-            throw new InvalidDataException("Truncated or invalid Flate stream");
-        }
-        return outStream.ToArray();
+        return (outStream.Length == length) ? outStream.ToArray() : Inflate(data, length);
     }
 
     /// <summary>The input of Inflate, which remembers a read at its end.</summary>

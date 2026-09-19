@@ -265,8 +265,14 @@ CJK line gaps. Nothing is fuzzed. So, in order:
       decode match, and 3.6 M and 2.8 M runs found no difference. Found one
       crash: a palette index past the palette (index 32 of 28 colors) read
       past the PLTE data; it is black now, as in libpng, browsers and
-      image/png, and a PLTE of no colors or more than 256 fails. Java, C# and
-      Swift have the same lookup (Swift traps) and are not fixed yet.
+      image/png, and a PLTE of no colors or more than 256 fails. Fixed the
+      same way in Java, C# and Swift (Swift trapped). The 1,570 inputs of the
+      corpus, replayed in the four ports, found one more difference: after
+      the rows of the image, Java and C# checked the Adler-32 when the stream
+      ended there, and Go failed on a stream cut short there. A prefix now
+      ignores all of the stream after its bytes in the four ports (Java and
+      C# decode it as raw Deflate after checking the zlib header); the four
+      decode the same 1,239 images to the same samples and reject the rest.
 - ✅ Swift's `Puff` skipped the zlib header and did not check the Adler-32
       at the end, so Swift decoded corrupt zlib data that Java, C# and Go
       reject: 31 of the 873 stream font inputs, and PNG and PDF streams the

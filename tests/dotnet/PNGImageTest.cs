@@ -210,6 +210,23 @@ public class PNGImageTest {
     }
 
     [Fact]
+    public void APaletteIndexPastThePaletteIsBlack() {
+        // A palette of 2 colors, and the indexes 1, 2 and 255.
+        byte[] palette = {10, 20, 30, 40, 50, 60};
+        PNGImage png = new PNGImage(new MemoryStream(
+                Png(3, 1, 8, 3, palette, Compressor.Deflate(new byte[] {0, 1, 2, 255}))));
+        Assert.Equal(new byte[] {40, 50, 60, 0, 0, 0, 0, 0, 0}, Decompressor.Inflate(png.GetData()));
+    }
+
+    [Fact]
+    public void RejectsAPaletteOfNoColorsOrMoreThan256() {
+        byte[] idat = Compressor.Deflate(new byte[] {0, 0});
+        Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[0], idat)));
+        Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[3*257], idat)));
+        Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[4], idat)));
+    }
+
+    [Fact]
     public void RejectsAChunkLengthThatTheFileDoesNotHave() {
         byte[] valid = Png(1, 1, 8, 2, null, Compressor.Deflate(new byte[] {0, 0, 0, 0}));
         // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.

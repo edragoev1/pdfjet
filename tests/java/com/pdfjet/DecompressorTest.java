@@ -145,6 +145,10 @@ class DecompressorTest {
         final byte[] deflated = Compressor.deflate(data);
         deflated[deflated.length - 1] ^= 1;
         assertArrayEquals(Arrays.copyOf(data, 5), Decompressor.inflatePrefix(deflated, 5));
+        // All the bytes, and the checksum wrong or cut off.
+        assertArrayEquals(data, Decompressor.inflatePrefix(deflated, data.length));
+        assertArrayEquals(data, Decompressor.inflatePrefix(
+                Arrays.copyOf(deflated, deflated.length - 4), data.length));
         assertThrows(Exception.class, () -> Decompressor.inflatePrefix(deflated, 100));
     }
 

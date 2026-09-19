@@ -141,6 +141,9 @@ public class DecompressorTest {
         byte[] deflated = Compressor.Deflate(data);
         deflated[deflated.Length - 1] ^= 1;
         Assert.Equal(data[..5], Decompressor.InflatePrefix(deflated, 5));
+        // All the bytes, and the checksum wrong or cut off.
+        Assert.Equal(data, Decompressor.InflatePrefix(deflated, data.Length));
+        Assert.Equal(data, Decompressor.InflatePrefix(deflated[..^4], data.Length));
         Assert.ThrowsAny<Exception>(() => Decompressor.InflatePrefix(deflated, 100));
     }
 

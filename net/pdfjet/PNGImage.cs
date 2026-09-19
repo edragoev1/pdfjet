@@ -56,10 +56,15 @@ internal class PNGImage {
             } else if (chunkType.Equals("IDAT")) {
                 iDAT = AppendIdatChunk(iDAT, chunk.GetData());
             } else if (chunkType.Equals("PLTE")) {
-                pLTE = chunk.GetData();
-                if (pLTE.Length % 3 != 0) {
+                // 1 to 256 colors of 3 bytes each.
+                byte[] colors = chunk.GetData();
+                if (colors.Length % 3 != 0 || colors.Length == 0 || colors.Length > 3*256) {
                     throw new Exception("Incorrect palette length.");
                 }
+                // An index past the colors of the palette is drawn black, as
+                // libpng and browsers draw it.
+                pLTE = new byte[3*256];
+                Array.Copy(colors, pLTE, colors.Length);
             } else if (chunkType.Equals("tRNS")) {
                 if (colorType == 3) {
                     tRNS = chunk.GetData();

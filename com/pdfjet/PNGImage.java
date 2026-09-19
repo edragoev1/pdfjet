@@ -62,10 +62,14 @@ class PNGImage {
             } else if (chunkType.equals("IDAT")) {
                 iDAT = appendIdatChunk(iDAT, chunk.getData());
             } else if (chunkType.equals("PLTE")) {
-                pLTE = chunk.getData();
-                if (pLTE.length % 3 != 0) {
+                // 1 to 256 colors of 3 bytes each.
+                byte[] colors = chunk.getData();
+                if (colors.length % 3 != 0 || colors.length == 0 || colors.length > 3*256) {
                     throw new Exception("Incorrect palette length.");
                 }
+                // An index past the colors of the palette is drawn black, as
+                // libpng and browsers draw it.
+                pLTE = Arrays.copyOf(colors, 3*256);
             } else if (chunkType.equals("tRNS")) {
                 if (colorType == 3) {
                     tRNS = chunk.getData();

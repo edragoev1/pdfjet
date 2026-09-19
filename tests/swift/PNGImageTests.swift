@@ -179,6 +179,21 @@ import Testing
         #expect(decodeError(png(1, 1, 8, 2, nil, nil)) == "The PNG image has no image data.")
     }
 
+    @Test func aPaletteIndexPastThePaletteIsBlack() throws {
+        // A palette of 2 colors, and the indexes 1, 2 and 255.
+        let palette: [UInt8] = [10, 20, 30, 40, 50, 60]
+        let image = try PNGImage(InputStream(data: Data(
+                png(3, 1, 8, 3, palette, TestSupport.deflate([0, 1, 2, 255])))))
+        #expect(try TestSupport.inflate(image.getData()) == [40, 50, 60, 0, 0, 0, 0, 0, 0])
+    }
+
+    @Test func rejectsAPaletteOfNoColorsOrMoreThan256() {
+        let idat = TestSupport.deflate([0, 0])
+        #expect(decodeError(png(1, 1, 8, 3, [], idat)) == "Incorrect palette length.")
+        #expect(decodeError(png(1, 1, 8, 3, [UInt8](repeating: 0, count: 3*257), idat)) == "Incorrect palette length.")
+        #expect(decodeError(png(1, 1, 8, 3, [0, 0, 0, 0], idat)) == "Incorrect palette length.")
+    }
+
     @Test func rejectsAChunkLengthThatTheFileDoesNotHave() {
         let valid = png(1, 1, 8, 2, nil, TestSupport.deflate([0, 0, 0, 0]))
         // The IDAT chunk starts after the signature and the 25 bytes of the IHDR chunk.

@@ -56,10 +56,14 @@ class PNGImage {
                 iDAT.append(contentsOf: chunk.getData()!)
                 hasImageData = true
             } else if chunkType == "PLTE" {
-                pLTE = chunk.getData()!
-                if pLTE!.count % 3 != 0 {
+                // 1 to 256 colors of 3 bytes each.
+                let colors = chunk.getData()!
+                if colors.count % 3 != 0 || colors.isEmpty || colors.count > 3*256 {
                     throw PDFjetError(message: "Incorrect palette length.")
                 }
+                // An index past the colors of the palette is drawn black, as
+                // libpng and browsers draw it.
+                pLTE = colors + [UInt8](repeating: 0, count: 3*256 - colors.count)
             } else if chunkType == "tRNS" {
                 if colorType == 3 {
                     tRNS = chunk.getData()

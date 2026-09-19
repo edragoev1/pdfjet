@@ -116,6 +116,9 @@ import Testing
         var deflated = TestSupport.deflate(data)
         deflated[deflated.count - 1] ^= 1
         #expect(try inflatePrefix(deflated, 5) == Array(data.prefix(5)))
+        // All the bytes, and the checksum wrong or cut off.
+        #expect(try inflatePrefix(deflated, data.count) == data)
+        #expect(try inflatePrefix(Array(deflated.dropLast(4)), data.count) == data)
         #expect(throws: (any Error).self) { _ = try inflatePrefix(deflated, 100) }
     }
 

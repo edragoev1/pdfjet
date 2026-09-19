@@ -51,6 +51,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   index error; the pixel is black, as libpng and browsers draw it. A palette
   of no colors or of more than 256 fails with "Incorrect palette length."
   Found by fuzzing the Go PNG decoder against Go's image/png.
+- The image data of a PNG after the rows of the image is ignored in all four
+  ports: Java and C# failed on a wrong Adler-32 when the stream ended right
+  after the rows, and Go on a stream cut short there.
 - A stream font (`.otf.stream`, `.ttf.stream`) that is not valid fails with
   "Invalid font stream: ..." or an end of stream error, in all four ports,
   where it could allocate the gigabytes its lengths gave before reading them,

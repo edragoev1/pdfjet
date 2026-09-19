@@ -147,6 +147,12 @@ func TestDecompressorInflatePrefixWithItsBytesNeedsNoChecksum(t *testing.T) {
 	if prefix, err := InflatePrefix(deflated, 5); err != nil || !bytes.Equal(prefix, data[:5]) {
 		t.Errorf("prefix %q, error %v", prefix, err)
 	}
+	// All the bytes, and the checksum wrong or cut off.
+	for _, stream := range [][]byte{deflated, deflated[:len(deflated)-4]} {
+		if prefix, err := InflatePrefix(stream, len(data)); err != nil || !bytes.Equal(prefix, data) {
+			t.Errorf("prefix %q, error %v", prefix, err)
+		}
+	}
 	if _, err := InflatePrefix(deflated, 100); err == nil {
 		t.Error("the whole stream with a wrong checksum: no error")
 	}
