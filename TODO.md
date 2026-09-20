@@ -485,45 +485,9 @@ These add public API, so they must land in 9.0.0 rather than a minor release.
       looks at every field for line breaks only in rows from memory, so
       Example_43 is identical and as fast in the four ports: a first version
       that looked at every field cost Go 6% and Swift 3%.
-- ✅ **B** `Table` writes 25.2 MB where iText's writes 21.6, because `Cell` sets
-      the brush and the pen for every cell (2,027 `rg` and `RG` on the sample's
-      first page against iText's 675). Skip the operators when the colour has
-      not changed.
-      Done (Sep 16), made a blocker by the user, in `Page` in the four ports.
-      Colours alone took the benchmark to 24.54 MB, as iText's content is not
-      shorter but compresses better; with the pen width and the font also
-      written only when they change it was 24.10 MB, and with `fillRect` as
-      one `re` 21.18 MB, which the user chose. What the content has set is
-      saved and restored with q and Q, and a CMYK colour clears it; `re`
-      writes the width and height as differences of the rounded corners, so
-      the edges stay where the path put them, and a rectangle beyond 100,000
-      points is still a path. The example PDFs render the same in Poppler; in
-      MuPDF the `re` rectangles of Example_13, 15, 38, 39 and 40 differ by a
-      few levels at the edges. Five `Page` tests per port. `check-examples.sh`
-      is clean. Found on the way: compiling `BigTableBench.java` by
-      hand against a directory of library classes let javac compile the
-      library sources of the repository into the output too, where they
-      shadow the build being measured; `benchmarks/run.sh` compiles against
-      the jar and is not affected. The recorded benchmark numbers are stale
-      now (Week 3 item).
 
 ## Week 3 (Oct 1–7): cleanups and documentation
 
-- ✅ **B** CHANGELOG and README for everything weeks 1 and 2 add or change;
-      record the new benchmark numbers in `benchmarks/README.md`.
-      Benchmarks rerun at d2f5d4cb (Sep 16): the Example_43 table, the four
-      ports and `Table` are recorded in the three READMEs and
-      `pdfjet-benchmarks.html`. Left: the text document of `benchmarks/run.sh text`,
-      to be rerun on a freshly rebooted, idle machine, as iText and PDFBox came
-      out 6 to 22% slower than before on the busy one. After that run
-      `BigTable` began filling its rows with one `re` (11.7 MB and 1 to 2%
-      faster), so rerun `benchmarks/run.sh table` with it.
-      Done (Sep 16): both rerun at 7dbfee5d after a reboot, one after the
-      other, and recorded in `benchmarks/README.md` and `pdfjet-benchmarks.html`.
-      iText and PDFBox came within 2% of 4ee4e7cb on the text document, where
-      PDFjet now takes 54 ms against 59 and writes 533,287 bytes; `BigTable`
-      takes 1,599 ms against 1,671, allocates 674 MB against 778 and is within
-      1.3% of the same drawing on `Page`, whose pages still render the same.
 - ✅ S Remove C# `PNGImage.WriteInt`, a private method nothing calls since
       7c15442d, in a commit of its own. Done (Sep 16).
 - ✅ S License headers, in a commit with nothing else in it: 45 library files
