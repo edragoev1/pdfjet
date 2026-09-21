@@ -16,8 +16,9 @@ The checks are:
   * Every figure and every link has a description that is not blank and is not
     a file name.
   * A list is built of L, LI, Lbl and LBody, in that nesting.
-  * The rows of a table are the same number of columns wide, and every header
-    cell says what it heads with a Scope.
+  * The cells of a table tile it: laid out as a browser lays out an HTML
+    table, with ColSpan and RowSpan, they fill every square of the grid and
+    none of them twice. Every header cell says what it heads with a Scope.
 
 A document with no heading, and a table with no header row, are printed as
 notes rather than failures: not every page has a heading, and not every table
@@ -26,7 +27,7 @@ has headers, which is what a reviewer decides.
 import os
 import re
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 
 import pymupdf
 
@@ -80,8 +81,15 @@ class Element:
 
     @property
     def colspan(self):
+        return self.span('ColSpan')
+
+    @property
+    def rowspan(self):
+        return self.span('RowSpan')
+
+    def span(self, name):
         try:
-            return int(self.attributes.get('ColSpan', 1))
+            return max(1, int(self.attributes.get(name, 1)))
         except ValueError:
             return 1
 
@@ -113,12 +121,47 @@ def walk(element, report, rows=None):
         rows = []
         report.tables.append(rows)
     elif element.tag == 'TR' and rows is not None:
-        rows.append([(kid.tag, kid.colspan, kid.attributes.get('Scope'))
+        rows.append([(kid.tag, kid.colspan, kid.rowspan, kid.attributes.get('Scope'))
                      for kid in element.kids()])
     elif element.tag == 'L':
         report.lists.append([kid.tag for kid in element.kids()])
     for kid in element.kids():
         walk(kid, report, rows)
+
+
+def table_shape(rows):
+    """The problems with the shape of a table, laid out as a browser lays out
+    the cells of an HTML table: each cell goes in the first square of its row
+    that no cell above it spans over, and covers ColSpan by RowSpan squares.
+    A row that a span covers whole holds no cell and so is written as no TR,
+    which is why the grid row is found rather than counted off the TRs."""
+    width = sum(colspan for _, colspan, _, _ in rows[0])
+    if width == 0:
+        return ['has a first row of no columns']
+    covered = defaultdict(set)      # The columns each grid row already holds.
+    overlap = False
+    r = 0
+    for row in rows:
+        while len(covered[r]) >= width:
+            r += 1                  # A row the spans above cover whole.
+        c = 0
+        for _, colspan, rowspan, _ in row:
+            while c in covered[r]:
+                c += 1
+            for r2 in range(r, r + rowspan):
+                for c2 in range(c, c + colspan):
+                    if c2 in covered[r2]:
+                        overlap = True
+                    covered[r2].add(c2)
+            c += colspan
+        r += 1
+    problems = []
+    widths = {len(columns) for columns in covered.values()}
+    if widths != {width}:
+        problems.append(f'has rows of {sorted(widths)} columns')
+    if overlap:
+        problems.append('has cells whose spans cover the same square twice')
+    return problems
 
 
 def check(path):
@@ -155,14 +198,12 @@ def check(path):
     for i, rows in enumerate(report.tables, start=1):
         if not rows:
             continue
-        widths = {sum(span for _, span, _ in row) for row in rows}
-        if len(widths) > 1:
-            report.problems.append(
-                f'table {i} has rows of {sorted(widths)} columns')
+        for problem in table_shape(rows):
+            report.problems.append(f'table {i} {problem}')
         headers = [cell for row in rows for cell in row if cell[0] == 'TH']
         if not headers:
             report.notes.append(f'table {i} of {len(rows)} rows has no header row')
-        for _, _, scope in headers:
+        for _, _, _, scope in headers:
             if scope is None:
                 report.problems.append(f'table {i} has a header cell with no Scope')
                 break

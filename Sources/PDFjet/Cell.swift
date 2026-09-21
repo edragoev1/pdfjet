@@ -32,6 +32,10 @@ public class Cell {
     var borderColor: Int32 = Cell.NO_COLOR
 
     private var colspan: Int = 1
+    private var rowspan: Int = 1
+    // The rows of the table as it is drawn that the cell spans, which is its
+    // row span with the rows the wrapped text of each of them needs.
+    var rowsSpanned: Int = 1
     private var uri: String?
 
     // The borders and the underline and strikeout of the text are the bits of
@@ -43,6 +47,9 @@ public class Cell {
     // A cell that a table adds below another to hold the next line of its
     // wrapped text, which is the same table cell in a PDF/UA document.
     internal static let CONTINUED: UInt32 = 0x00400000
+    // A cell that the cell above it spans over, which draws nothing: the cell
+    // that spans the rows draws its text, background and borders over it.
+    internal static let COVERED: UInt32 = 0x00800000
     internal var properties: UInt32 = Border.TOP | Border.LEFT
 
     // Where the three alignments of a cell are in properties, three bits
@@ -543,6 +550,33 @@ public class Cell {
      */
     public func getColSpan() -> Int {
         return self.colspan
+    }
+
+    /**
+     * Sets the number of rows this cell spans, counted from this one, so that
+     * a row span of 2 covers this row and the one under it. The cells the span
+     * covers are not drawn: this cell draws its text, its background and its
+     * borders once over all of them, and a page break moves the whole of it to
+     * the next page. The table keeps its shape, so the rows under this one
+     * still hold a cell at this column, which is left empty. A row span of 1,
+     * the default, spans nothing. Please see Example_38.
+     *
+     * - Parameter rowspan: the number of rows, from 1.
+     * - Returns: this Cell object.
+     */
+    @discardableResult
+    public func setRowSpan(_ rowspan: Int) -> Cell {
+        self.rowspan = (rowspan < 1) ? 1 : rowspan
+        return self
+    }
+
+    /**
+     * Returns the number of rows this cell spans.
+     *
+     * - Returns: the row span value.
+     */
+    public func getRowSpan() -> Int {
+        return self.rowspan
     }
 
     /// Sets whether the specified borders, for example Border.TOP | Border.BOTTOM, are drawn.

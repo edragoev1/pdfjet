@@ -378,6 +378,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 		return [2]float32{table.x1, table.y1} // An empty table draws nothing.
 	}
 	table.wrapAroundCellText()
+	table.applyRowSpans()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
@@ -393,6 +394,7 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 		return [2]float32{table.x1, table.y1} // An empty table needs no page.
 	}
 	table.wrapAroundCellText()
+	table.applyRowSpans()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	var xy [2]float32
@@ -425,9 +427,9 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddArtifactBMC()
 	}
+	heights := table.getRowHeights()
 	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
 		row := table.tableData[i]
-		h := table.getMaxCellHeight(row)
 		if page != nil {
 			if i == (table.numOfHeaderRows - 1) {
 				for _, cell := range row {
@@ -438,9 +440,9 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			if first {
 				cellStructure = structelem.TH
 			}
-			table.drawRow(page, row, x, y, h, cellStructure)
+			table.drawRow(page, row, x, y, heights, i, cellStructure)
 		}
-		y += h
+		y += heights[i]
 	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddEMC()
@@ -452,12 +454,13 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 // element and each cell a TH or TD element, which holds what the cell draws;
 // a row that goes on with the wrapped text of the row above adds to its
 // elements. With no cell structure the row is not tagged, as it is an artifact.
-func (table *Table) drawRow(page *Page, row []*Cell, x, y, h float32, cellStructure structelem.StructElem) {
+func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []float32,
+	rowIndex int, cellStructure structelem.StructElem) {
 	parent := page.structParent
 	tagged := table.structElement != nil && cellStructure != ""
 	continued := (row[0].properties & cellContinued) != 0
 	var rowElement *structElement
-	if tagged && !continued {
+	if tagged && !continued && !allCovered(row) {
 		rowElement = page.addStructElement(table.structElement, structelem.TR, "")
 		if len(table.cellElements) != len(row) {
 			table.cellElements = make([]*structElement, len(row))
@@ -466,10 +469,14 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y, h float32, cellStruct
 	for i := 0; i < len(row); {
 		cell := row[i]
 		colspan := cell.GetColSpan()
-		if tagged {
+		if colspan < 1 {
+			colspan = 1
+		}
+		covered := (cell.properties & cellCovered) != 0
+		if tagged && !covered {
 			if !continued {
-				table.cellElements[i] = page.addStructElement(
-					rowElement, cellStructure, cellAttributes(cellStructure, colspan))
+				table.cellElements[i] = page.addStructElement(rowElement, cellStructure,
+					cellAttributes(cellStructure, colspan, cell.rowsSpanned))
 			}
 			page.structParent = nil
 			if i < len(table.cellElements) {
@@ -481,8 +488,19 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y, h float32, cellStruct
 			w += row[i].GetWidth()
 			i++
 		}
-		page.SetBrushColor(cell.textColor)
-		cell.drawOn(page, x, y, w, h)
+		if !covered {
+			// A cell that spans rows is as tall as all the rows it covers.
+			cellHeight := float32(0.0)
+			end := rowIndex + cell.rowsSpanned
+			if end > len(heights) {
+				end = len(heights)
+			}
+			for r := rowIndex; r < end; r++ {
+				cellHeight += heights[r]
+			}
+			page.SetBrushColor(cell.textColor)
+			cell.drawOn(page, x, y, w, cellHeight)
+		}
 		x += w
 	}
 	page.structParent = parent
@@ -491,17 +509,33 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y, h float32, cellStruct
 // cellAttributes returns the attributes of a table cell element: the scope of
 // a header cell and the number of columns a cell spans, or "" when it has
 // neither.
-func cellAttributes(cellStructure structelem.StructElem, colspan int) string {
-	if cellStructure == structelem.TH {
-		if colspan > 1 {
-			return "<</O /Table /Scope /Column /ColSpan " + strconv.Itoa(colspan) + ">>"
-		}
-		return "<</O /Table /Scope /Column>>"
-	}
+func cellAttributes(cellStructure structelem.StructElem, colspan, rowspan int) string {
+	spans := ""
 	if colspan > 1 {
-		return "<</O /Table /ColSpan " + strconv.Itoa(colspan) + ">>"
+		spans += " /ColSpan " + strconv.Itoa(colspan)
+	}
+	if rowspan > 1 {
+		spans += " /RowSpan " + strconv.Itoa(rowspan)
+	}
+	if cellStructure == structelem.TH {
+		return "<</O /Table /Scope /Column" + spans + ">>"
+	}
+	if spans != "" {
+		return "<</O /Table" + spans + ">>"
 	}
 	return ""
+}
+
+// allCovered is true when every cell of the row is one that a cell above it
+// spans over, so the row holds no cell of its own and is not a row of the
+// table.
+func allCovered(row []*Cell) bool {
+	for _, cell := range row {
+		if (cell.properties & cellCovered) == 0 {
+			return false
+		}
+	}
+	return len(row) > 0
 }
 
 // drawTableRows draws the rows from the next row to draw, as many as fit on
@@ -515,21 +549,29 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		index = len(table.tableData)
 	}
 	first := index
+	heights := table.getRowHeights()
 	for index < len(table.tableData) {
-		row := table.tableData[index]
-		h := table.getMaxCellHeight(row)
+		// The rows a cell spans are drawn together, so that a page break
+		// never cuts one in two.
+		end := table.rowGroupEnd(index)
+		groupHeight := float32(0.0)
+		for r := index; r < end; r++ {
+			groupHeight += heights[r]
+		}
 		// A row that does not fit goes on the next page, unless it is the
 		// first row of this one: a row taller than the page fits no page,
 		// and leaving it for the next page would ask for pages forever.
-		if page != nil && (y+h) > (page.height-table.bottomMargin) && index > first {
+		if page != nil && (y+groupHeight) > (page.height-table.bottomMargin) && index > first {
 			table.rendered = index
 			return [2]float32{x, y}
 		}
-		if page != nil {
-			table.drawRow(page, row, x, y, h, structelem.TD)
+		for r := index; r < end; r++ {
+			if page != nil {
+				table.drawRow(page, table.tableData[r], x, y, heights, r, structelem.TD)
+			}
+			y += heights[r]
 		}
-		y += h
-		index++
+		index = end
 	}
 	if page != nil {
 		table.rendered = -1 // We are done!
@@ -537,16 +579,160 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	return [2]float32{x, y}
 }
 
+// applyRowSpans works out what each cell that spans rows covers, after the
+// text is wrapped: a row of the table is drawn as one row for each line its
+// tallest cell needs, so a cell that spans two rows of the table spans as many
+// rows of the drawing as those two were wrapped into. The cells the span
+// covers are marked, and draw nothing.
+func (table *Table) applyRowSpans() {
+	for _, row := range table.tableData {
+		for _, cell := range row {
+			cell.properties &^= cellCovered
+			cell.rowsSpanned = 1
+		}
+	}
+	for r := 0; r < len(table.tableData); r++ {
+		if table.isContinuation(r) {
+			continue // A span starts in a row of the table, not in the wrap of one.
+		}
+		row := table.tableData[r]
+		for i := 0; i < len(row); {
+			cell := row[i]
+			colspan := cell.GetColSpan()
+			if colspan < 1 {
+				colspan = 1
+			}
+			if cell.GetRowSpan() > 1 && (cell.properties&cellCovered) == 0 {
+				end := table.rowAfter(r, cell.GetRowSpan())
+				ownEnd := table.rowAfter(r, 1)
+				cell.rowsSpanned = end - r
+				// The rows the wrapped text of this cell takes keep their text
+				// and lose the border that would cross the cell.
+				for r2 := r + 1; r2 < ownEnd; r2++ {
+					table.setSpanned(r2, i, colspan, false)
+				}
+				for r2 := ownEnd; r2 < end; r2++ {
+					table.setSpanned(r2, i, colspan, true)
+				}
+			}
+			i += colspan
+		}
+	}
+}
+
+// setSpanned marks the columns of the row that a span covers: a covered cell
+// draws nothing, and a row of the wrapped text of the spanning cell keeps its
+// text without the border under it.
+func (table *Table) setSpanned(r, column, colspan int, covered bool) {
+	row := table.tableData[r]
+	for i := 0; i < len(row); {
+		cell := row[i]
+		if i >= column && i < column+colspan {
+			if covered {
+				cell.properties |= cellCovered
+			} else {
+				cell.properties &^= border.Bottom
+			}
+		}
+		colspan2 := cell.GetColSpan()
+		if colspan2 < 1 {
+			colspan2 = 1
+		}
+		i += colspan2
+	}
+}
+
+// rowAfter returns the index of the row after the count rows of the table that
+// start at r, counting the rows the wrapped text of each of them takes.
+func (table *Table) rowAfter(r, count int) int {
+	index := r
+	for i := 0; i < count && index < len(table.tableData); i++ {
+		index++
+		for index < len(table.tableData) && table.isContinuation(index) {
+			index++
+		}
+	}
+	return index
+}
+
+// isContinuation is true when the row holds the wrapped text of the row above it.
+func (table *Table) isContinuation(r int) bool {
+	row := table.tableData[r]
+	return len(row) > 0 && (row[0].properties&cellContinued) != 0
+}
+
+// getRowHeights returns the height of each row of the table as it is drawn. A
+// cell that spans rows is not what makes its first row tall; the rows it
+// covers hold it together, and the last of them grows when they do not.
+func (table *Table) getRowHeights() []float32 {
+	heights := make([]float32, len(table.tableData))
+	for r, row := range table.tableData {
+		heights[r] = table.getMaxCellHeight(row)
+	}
+	for r, row := range table.tableData {
+		for i, cell := range row {
+			if cell.rowsSpanned < 2 {
+				continue
+			}
+			end := r + cell.rowsSpanned
+			if end > len(table.tableData) {
+				end = len(table.tableData)
+			}
+			have := float32(0.0)
+			for r2 := r; r2 < end; r2++ {
+				have += heights[r2]
+			}
+			needed := cell.GetHeight(getTotalWidth(row, i))
+			if needed > have && end > r {
+				heights[end-1] += needed - have
+			}
+		}
+	}
+	return heights
+}
+
+// rowGroupEnd returns the row after the rows that a span holds together, which
+// a page break keeps on one page.
+func (table *Table) rowGroupEnd(index int) int {
+	end := index + 1
+	for r := index; r < end && r < len(table.tableData); r++ {
+		for _, cell := range table.tableData[r] {
+			if r+cell.rowsSpanned > end {
+				end = r + cell.rowsSpanned
+			}
+		}
+	}
+	if end > len(table.tableData) {
+		end = len(table.tableData)
+	}
+	return end
+}
+
 func (table *Table) getMaxCellHeight(row []*Cell) float32 {
 	var maxCellHeight float32 = 0.0
+	var spanned float32 = 0.0
 	for i, cell := range row {
-		totalWidth := getTotalWidth(row, i)
-		cellHeight := cell.GetHeight(totalWidth)
+		if (cell.properties & cellCovered) != 0 {
+			continue // A cell the one above it draws over.
+		}
+		cellHeight := cell.GetHeight(getTotalWidth(row, i))
+		if cell.rowsSpanned > 1 {
+			// A cell that spans rows is as tall as all of them together, which
+			// getRowHeights shares out; it is the height of the row only when
+			// nothing else is in it.
+			if h := cellHeight / float32(cell.rowsSpanned); h > spanned {
+				spanned = h
+			}
+			continue
+		}
 		if cellHeight > maxCellHeight {
 			maxCellHeight = cellHeight
 		}
 	}
-	return maxCellHeight
+	if maxCellHeight > 0.0 {
+		return maxCellHeight
+	}
+	return spanned
 }
 
 // hasMoreData returns true if the table contains more data that needs to be drawn on a page.

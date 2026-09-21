@@ -272,5 +272,123 @@ public sealed class TableTest : IDisposable {
         Assert.DoesNotContain("/P 0 0 R", raw);
         Assert.False(raw.Contains("/K [0 0 R") || raw.Contains(" 0 0 R ]"));
     }
+    // The y coordinates of the horizontal rules the page draws, top to bottom.
+    private static List<float> Rules(Page page) {
+        SortedSet<float> ys = new SortedSet<float>();
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(TestSupport.Content(page),
+                        "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")) {
+            float y1 = float.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+            float y2 = float.Parse(m.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture);
+            if (Math.Abs(y1 - y2) < 0.01f) {
+                ys.Add(y1);
+            }
+        }
+        List<float> list = new List<float>(ys);
+        list.Reverse();
+        return list;
+    }
+
+    // A table of rows by columns of cells with every border, the cell at 0,0
+    // spanning the rows.
+    private static List<List<Cell>> Spanning(Font font, int rows, int columns, int rowspan) {
+        List<List<Cell>> data = new List<List<Cell>>();
+        for (int r = 0; r < rows; r++) {
+            List<Cell> row = new List<Cell>();
+            for (int c = 0; c < columns; c++) {
+                Cell cell = new Cell(font, (r == 0 && c == 0) ? "spans" : (r < rowspan && c == 0) ? "" : "r" + r + "c" + c);
+                cell.SetWidth(60f);
+                cell.SetBorder(Border.TOP, true);
+                cell.SetBorder(Border.BOTTOM, true);
+                cell.SetBorder(Border.LEFT, true);
+                cell.SetBorder(Border.RIGHT, true);
+                row.Add(cell);
+            }
+            data.Add(row);
+        }
+        data[0][0].SetRowSpan(rowspan);
+        return data;
+    }
+
+    [Fact]
+    public void ACellThatSpansRowsIsDrawnOnceOverAllOfThem() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Table().SetTableData(Spanning(font, 3, 2, 2)).SetLocation(50f, 50f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        // The spanning cell is drawn once, and the cell it covers not at all.
+        Assert.Equal(1, Count(content, TestSupport.Hex("spans")));
+        Assert.Equal(0, Count(content, TestSupport.Hex("r1c0")));
+        Assert.Equal(1, Count(content, TestSupport.Hex("r1c1")));
+        // Its left border runs from the top of its row to the bottom of the
+        // row under it, which is two rows of the three rules the table draws.
+        List<float> ys = Rules(page);
+        Assert.Equal(4, ys.Count);
+        float rowHeight = ys[0] - ys[1];
+        System.Text.RegularExpressions.Match border =
+                System.Text.RegularExpressions.Regex.Match(content, "50 ([-0-9.]+) m\n50 ([-0-9.]+) l");
+        Assert.True(border.Success, content);
+        float top = float.Parse(border.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        float bottom = float.Parse(border.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.True(Math.Abs(2 * rowHeight - (top - bottom)) < 0.01f,
+                "the spanning cell is not two rows tall");
+    }
+
+    [Fact]
+    public void APageBreakKeepsTheRowsOfASpanTogether() {
+        // The rows a cell spans go to the next page with it, so that a span is
+        // never cut in two.
+        foreach (int rowspan in new int[] {1, 2, 3, 4}) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            List<List<Cell>> data = Spanning(font, 60, 2, rowspan);
+            // The span sits where the first page ends.
+            data[0][0].SetRowSpan(1);
+            data[48][0].SetRowSpan(rowspan).SetText("spans");
+            for (int r = 49; r < 48 + rowspan; r++) {
+                data[r][0].SetText("");
+            }
+            Table table = new Table().SetTableData(data).SetLocation(50f, 50f);
+            table.SetBottomMargin(20f);
+            List<Page> pages = new List<Page>();
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            List<string> contents = new List<string>();
+            foreach (Page page in pages) {
+                contents.Add(TestSupport.Content(page));
+            }
+            int spanPage = -1;
+            for (int i = 0; i < contents.Count; i++) {
+                if (Count(contents[i], TestSupport.Hex("spans")) > 0) {
+                    spanPage = i;
+                }
+            }
+            Assert.True(spanPage >= 0, "the spanning cell was not drawn");
+            for (int r = 48; r < 48 + rowspan; r++) {
+                Assert.True(Count(contents[spanPage], TestSupport.Hex("r" + r + "c1")) == 1,
+                        "row " + r + " is not on the page of the span it belongs to");
+            }
+        }
+    }
+
+    [Fact]
+    public void ACellThatSpansRowsSaysSoInAPDFUADocument() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = Spanning(font, 3, 2, 2);
+        data[0][0].SetColSpan(2);
+        data[0][1].SetText("");
+        data[1][1].SetText("");     // The second row is covered whole.
+        new Table().SetTableData(data, 1).SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>"));
+        // A row that a span covers whole holds no cell of its own.
+        Assert.Equal(2, Count(raw, "/S /TR\n"));
+        Assert.Equal(1, Count(raw, "/S /TH\n"));
+        Assert.Equal(2, Count(raw, "/S /TD\n"));
+    }
 }
 }

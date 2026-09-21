@@ -252,4 +252,116 @@ import Testing
         #expect(!raw.contains("/P 0 0 R"))
         #expect(!raw.contains("/K [0 0 R") && !raw.contains(" 0 0 R ]"))
     }
+    // The y coordinates of the horizontal rules the page draws, top to bottom.
+    private func rules(_ page: Page) -> [Float] {
+        let content = TestSupport.content(page)
+        let regex = try! NSRegularExpression(pattern: "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")
+        var ys = Set<Float>()
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let y1 = Float((content as NSString).substring(with: m.range(at: 2)))!
+            let y2 = Float((content as NSString).substring(with: m.range(at: 4)))!
+            if abs(y1 - y2) < 0.01 {
+                ys.insert(y1)
+            }
+        }
+        return ys.sorted(by: >)
+    }
+
+    // A table of rows by columns of cells with every border, the cell at 0,0
+    // spanning the rows.
+    private func spanning(_ font: Font, _ rows: Int, _ columns: Int, _ rowspan: Int) -> [[Cell]] {
+        var data = [[Cell]]()
+        for r in 0..<rows {
+            var row = [Cell]()
+            for c in 0..<columns {
+                let text = (r == 0 && c == 0) ? "spans" : (r < rowspan && c == 0) ? "" : "r\(r)c\(c)"
+                let cell = Cell(font, text)
+                cell.setWidth(60)
+                cell.setBorder(Border.TOP, true)
+                cell.setBorder(Border.BOTTOM, true)
+                cell.setBorder(Border.LEFT, true)
+                cell.setBorder(Border.RIGHT, true)
+                row.append(cell)
+            }
+            data.append(row)
+        }
+        data[0][0].setRowSpan(rowspan)
+        return data
+    }
+
+    @Test func aCellThatSpansRowsIsDrawnOnceOverAllOfThem() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = Table().setTableData(spanning(font, 3, 2, 2)).setLocation(50, 50).drawOn(page)
+        let content = TestSupport.content(page)
+        // The spanning cell is drawn once, and the cell it covers not at all.
+        #expect(count(content, TestSupport.hex("spans")) == 1)
+        #expect(count(content, TestSupport.hex("r1c0")) == 0)
+        #expect(count(content, TestSupport.hex("r1c1")) == 1)
+        // Its left border runs from the top of its row to the bottom of the
+        // row under it, which is two rows of the three rules the table draws.
+        let ys = rules(page)
+        #expect(ys.count == 4)
+        guard ys.count == 4 else { return }
+        let rowHeight = ys[0] - ys[1]
+        let regex = try! NSRegularExpression(pattern: "50 ([-0-9.]+) m\n50 ([-0-9.]+) l")
+        guard let m = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)) else {
+            Issue.record("the spanning cell drew no left border")
+            return
+        }
+        let top = Float((content as NSString).substring(with: m.range(at: 1)))!
+        let bottom = Float((content as NSString).substring(with: m.range(at: 2)))!
+        #expect(abs(2 * rowHeight - (top - bottom)) < 0.01, "the spanning cell is not two rows tall")
+    }
+
+    @Test func aPageBreakKeepsTheRowsOfASpanTogether() {
+        // The rows a cell spans go to the next page with it, so that a span is
+        // never cut in two.
+        for rowspan in [1, 2, 3, 4] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let data = spanning(font, 60, 2, rowspan)
+            // The span sits where the first page ends.
+            data[0][0].setRowSpan(1)
+            data[48][0].setRowSpan(rowspan)
+            data[48][0].setText("spans")
+            for r in 49..<(48 + rowspan) {
+                data[r][0].setText("")
+            }
+            let table = Table().setTableData(data).setLocation(50, 50)
+            table.setBottomMargin(20)
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+            let contents = pages.map { TestSupport.content($0) }
+            var spanPage = -1
+            for i in 0..<contents.count where count(contents[i], TestSupport.hex("spans")) > 0 {
+                spanPage = i
+            }
+            #expect(spanPage >= 0, "the spanning cell was not drawn")
+            guard spanPage >= 0 else { return }
+            for r in 48..<(48 + rowspan) {
+                #expect(count(contents[spanPage], TestSupport.hex("r\(r)c1")) == 1,
+                        "row \(r) is not on the page of the span it belongs to")
+            }
+        }
+    }
+
+    @Test func aCellThatSpansRowsSaysSoInAPDFUADocument() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        let data = spanning(font, 3, 2, 2)
+        data[0][0].setColSpan(2)
+        data[0][1].setText("")
+        data[1][1].setText("")      // The second row is covered whole.
+        _ = Table().setTableData(data, 1).setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>") == 1)
+        // A row that a span covers whole holds no cell of its own.
+        #expect(count(raw, "/S /TR\n") == 2)
+        #expect(count(raw, "/S /TH\n") == 1)
+        #expect(count(raw, "/S /TD\n") == 2)
+    }
 }

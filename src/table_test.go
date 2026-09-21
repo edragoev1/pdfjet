@@ -7,13 +7,17 @@ package pdfjet
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -326,4 +330,140 @@ func TestTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree(t *testing.T) 
 	if strings.Contains(raw, "/P 0 0 R") || strings.Contains(raw, "/K [0 0 R") || strings.Contains(raw, " 0 0 R ]") {
 		t.Error("a structure element refers to one that is not in the document")
 	}
+}
+
+// testSpanningRows returns a table of rows by columns of cells with every
+// border, the cell at 0,0 spanning the rows.
+func testSpanningRows(font *Font, rows, columns, rowspan int) [][]*Cell {
+	data := make([][]*Cell, 0, rows)
+	for r := 0; r < rows; r++ {
+		row := make([]*Cell, 0, columns)
+		for c := 0; c < columns; c++ {
+			text := fmt.Sprintf("r%dc%d", r, c)
+			if r == 0 && c == 0 {
+				text = "spans"
+			} else if r < rowspan && c == 0 {
+				text = ""
+			}
+			cell := NewCell(font, text)
+			cell.SetWidth(60)
+			cell.SetBorder(border.Top, true)
+			cell.SetBorder(border.Bottom, true)
+			cell.SetBorder(border.Left, true)
+			cell.SetBorder(border.Right, true)
+			row = append(row, cell)
+		}
+		data = append(data, row)
+	}
+	data[0][0].SetRowSpan(rowspan)
+	return data
+}
+
+// testRules returns the y of the horizontal rules the page draws, top to bottom.
+func testRules(page *Page) []float64 {
+	re := regexp.MustCompile(`([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l`)
+	seen := map[float64]bool{}
+	ys := make([]float64, 0)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		y1, _ := strconv.ParseFloat(m[2], 64)
+		y2, _ := strconv.ParseFloat(m[4], 64)
+		if math.Abs(y1-y2) < 0.01 && !seen[y1] {
+			seen[y1] = true
+			ys = append(ys, y1)
+		}
+	}
+	sort.Sort(sort.Reverse(sort.Float64Slice(ys)))
+	return ys
+}
+
+func TestTableACellThatSpansRowsIsDrawnOnceOverAllOfThem(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTable().SetTableData(testSpanningRows(font, 3, 2, 2), 0).SetLocation(50, 50).DrawOn(page)
+	content := testContent(page)
+	// The spanning cell is drawn once, and the cell it covers not at all.
+	if strings.Count(content, testHex("spans")) != 1 {
+		t.Error("the spanning cell is not drawn once")
+	}
+	if strings.Contains(content, testHex("r1c0")) {
+		t.Error("a cell the span covers was drawn")
+	}
+	if !strings.Contains(content, testHex("r1c1")) {
+		t.Error("the cell beside the span was not drawn")
+	}
+	// Its left border runs from the top of its row to the bottom of the row
+	// under it, which is two of the rows the table draws.
+	ys := testRules(page)
+	if len(ys) != 4 {
+		t.Fatalf("%d rules: %v", len(ys), ys)
+	}
+	rowHeight := ys[0] - ys[1]
+	m := regexp.MustCompile(`50 ([-0-9.]+) m\n50 ([-0-9.]+) l`).FindStringSubmatch(content)
+	if m == nil {
+		t.Fatal("the left border of the spanning cell was not drawn")
+	}
+	top, _ := strconv.ParseFloat(m[1], 64)
+	bottom, _ := strconv.ParseFloat(m[2], 64)
+	if math.Abs((top-bottom)-2*rowHeight) > 0.01 {
+		t.Errorf("the spanning cell is %g tall, not %g", top-bottom, 2*rowHeight)
+	}
+}
+
+func TestTableAPageBreakKeepsTheRowsOfASpanTogether(t *testing.T) {
+	// The rows a cell spans go to the next page with it, so that a span is
+	// never cut in two.
+	for _, rowspan := range []int{1, 2, 3, 4} {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := testSpanningRows(font, 60, 2, rowspan)
+		data[0][0].SetRowSpan(1)
+		data[48][0].SetRowSpan(rowspan).SetText("spans")
+		for r := 49; r < 48+rowspan; r++ {
+			data[r][0].SetText("")
+		}
+		table := NewTable().SetTableData(data, 0)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		pages := make([]*Page, 0)
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		contents := make([]string, 0, len(pages))
+		for _, page := range pages {
+			contents = append(contents, testContent(page))
+		}
+		spanPage := -1
+		for i, content := range contents {
+			if strings.Contains(content, testHex("spans")) {
+				spanPage = i
+			}
+		}
+		if spanPage < 0 {
+			t.Fatalf("row span %d: the spanning cell was not drawn", rowspan)
+		}
+		for r := 48; r < 48+rowspan; r++ {
+			if !strings.Contains(contents[spanPage], testHex(fmt.Sprintf("r%dc1", r))) {
+				t.Errorf("row span %d: row %d is not on the page of the span", rowspan, r)
+			}
+		}
+	}
+}
+
+func TestTableACellThatSpansRowsSaysSoInAPDFUADocument(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	data := testSpanningRows(font, 3, 2, 2)
+	data[0][0].SetColSpan(2)
+	data[0][1].SetText("")
+	data[1][1].SetText("") // The second row is covered whole.
+	NewTable().SetTableData(data, 1).SetLocation(50, 50).
+		DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	raw := string(doc.complete())
+	if strings.Count(raw, "<</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>") != 1 {
+		t.Error("the spanning cell does not say how many rows it spans")
+	}
+	// A row that a span covers whole holds no cell of its own.
+	testWant(t, "2 rows, 1 header cell, 2 cells", fmt.Sprintf("%d rows, %d header cell, %d cells",
+		strings.Count(raw, "/S /TR\n"), strings.Count(raw, "/S /TH\n"), strings.Count(raw, "/S /TD\n")))
 }

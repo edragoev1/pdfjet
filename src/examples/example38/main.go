@@ -20,7 +20,10 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example38 draws a table of cells that span multiple rows and columns.
+// Example38 draws a table whose cells span columns and rows, and explains how.
+// A cell spans columns with setColSpan and rows with setRowSpan. The table is
+// also a check of the geometry of the cells: their backgrounds meet without
+// gaps and their borders line up.
 func Example38() {
 	pdf, err := pdfjet.NewPDFFile("Example_38.pdf")
 	if err != nil {
@@ -43,11 +46,12 @@ func Example38() {
 	textBlock := pdfjet.NewTextBlock(f2,
 		"The cells of this table span up to five columns and up to four rows, as "+
 			"the name in each cell says: 1x3 is one column wide and three rows tall. "+
-			"A cell spans columns with setColSpan. It spans rows by leaving out its "+
-			"bottom border and the top borders of the cells under it, which continue "+
-			"it and are marked with ^ or left empty. The example is also a check of "+
-			"the geometry of the cells: their backgrounds meet without gaps and their "+
-			"borders line up.")
+			"A cell spans columns with setColSpan and rows with setRowSpan, and draws "+
+			"its text, its background and its borders once over all of them. The table "+
+			"keeps its shape, so every row holds a cell for every column and the cells "+
+			"a span covers are left empty. The example is also a check of the geometry "+
+			"of the cells: their backgrounds meet without gaps and their borders line "+
+			"up.")
 	textBlock.SetFontSize(11.0)
 	textBlock.SetLineSpacing(1.3)
 	textBlock.SetLocation(50.0, 65.0)
@@ -65,210 +69,83 @@ func Example38() {
 	}
 }
 
-/**
- * This will return a 10x10 matrix. The HTML-Like table will be like:
- * <table border="solid">
- * <tr>
- * <td colspan="2" rowspan="2">2x2</td>
- * <td colspan="2">2x1</td>
- * <td colspan="2">2x1</td>
- * <td colspan="2">2x1</td>
- * <td colspan="2">2x1</td>
- * </tr>
- * <tr>
- * <td colspan="2" rowspan="2">2x2</td>
- * <td>1x1</td>
- * <td colspan="5">5x1</td>
- * </tr>
- * <tr>
- * <td rowspan="2">1x2</td>
- * <td>1x1</td>
- * <td colspan="2" rowspan="2">2x2</td>
- * <td rowspan="2">1x2</td>
- * <td colspan="3">3x1</td>
- * </tr>
- * <tr>
- * <td>1x1</td>
- * <td rowspan="3">1x3</td>
- * <td>1x1</td>
- * <td colspan="2">2x1</td>
- * <td rowspan="2">1x2</td>
- * </tr>
- * <tr>
- * <td rowspan="2">1x2</td>
- * <td>1x1</td>
- * <td colspan="2">2x1</td>
- * <td colspan="4" rowspan="4">4x4</td>
- * </tr>
- * <tr>
- * <td>1x1</td>
- * <td rowspan="3">1x3</td>
- * <td rowspan="3">1x3</td>
- * <td rowspan="3">1x3</td>
- * </tr>
- * <tr>
- * <td rowspan="2">1x2</td>
- * <td>1x1</td>
- * <td rowspan="4">1x4</td>
- * </tr>
- * <tr>
- * <td>1x1</td>
- * </tr>
- * <tr>
- * <td rowspan="2">1x2</td>
- * <td>1x1</td>
- * <td colspan="2">2x1</td>
- * <td colspan="2" rowspan="2">2x2</td>
- * <td rowspan="2">1x2</td>
- * <td>1x1</td>
- * <td>1x1</td>
- * </tr>
- * <tr>
- * <td>1x1</td>
- * <td>1x1</td>
- * <td>1x1</td>
- * <td>1x1</td>
- * <td>1x1</td>
- * </tr>
- * </table>
- *
- * @return
- * @throws Exception
- */
+// createTableData returns the cells of a 10 by 10 table whose cells span
+// columns and rows. It is the table of this HTML, cell for cell:
+//
+//	<table border="solid">
+//	<tr><td colspan="2" rowspan="2">2x2</td><td colspan="2">2x1</td>
+//	    <td colspan="2">2x1</td><td colspan="2">2x1</td><td colspan="2">2x1</td></tr>
+//	<tr><td colspan="2" rowspan="2">2x2</td><td>1x1</td><td colspan="5">5x1</td></tr>
+//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2" rowspan="2">2x2</td>
+//	    <td rowspan="2">1x2</td><td colspan="3">3x1</td></tr>
+//	<tr><td>1x1</td><td rowspan="3">1x3</td><td>1x1</td><td colspan="2">2x1</td>
+//	    <td rowspan="2">1x2</td></tr>
+//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2">2x1</td>
+//	    <td colspan="4" rowspan="4">4x4</td></tr>
+//	<tr><td>1x1</td><td rowspan="3">1x3</td><td rowspan="3">1x3</td>
+//	    <td rowspan="3">1x3</td></tr>
+//	<tr><td rowspan="2">1x2</td><td>1x1</td><td rowspan="4">1x4</td></tr>
+//	<tr><td>1x1</td></tr>
+//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2">2x1</td>
+//	    <td colspan="2" rowspan="2">2x2</td><td rowspan="2">1x2</td><td>1x1</td>
+//	    <td>1x1</td></tr>
+//	<tr><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td></tr>
+//	</table>
 func createTableData(font *pdfjet.Font) [][]*pdfjet.Cell {
-	rows := make([][]*pdfjet.Cell, 0)
-
-	for i := 0; i < 10; i++ {
-		row := make([]*pdfjet.Cell, 0)
-		if i == 0 {
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-		} else if i == 1 {
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 5, "5x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-		} else if i == 2 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 3, "3x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		} else if i == 3 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, false))
-			row = append(row, getCell(font, 1, "1x2", true, false))
-		} else if i == 4 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 4, "4x4", true, false))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-		} else if i == 5 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-			row = append(row, getCell(font, 4, "^", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "1x3", true, false))
-		} else if i == 6 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x4", true, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 4, "^", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "", false, false))
-			row = append(row, getCell(font, 1, "^", false, false))
-		} else if i == 7 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 4, "^", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-		} else if i == 8 {
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, false))
-			row = append(row, getCell(font, 2, "2x1", true, true))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 2, "2x2", true, false))
-			row = append(row, getCell(font, 1, "", true, true))
-			row = append(row, getCell(font, 1, "1x2", true, false))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		} else if i == 9 {
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 2, "^", false, true))
-			row = append(row, getCell(font, 1, "", false, true))
-			row = append(row, getCell(font, 1, "^", false, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-			row = append(row, getCell(font, 1, "1x1", true, true))
-		}
-		rows = append(rows, row)
+	// The columns and the rows each cell spans, in the order a browser reads
+	// the cells of the HTML above.
+	spans := [][][2]int{
+		{{2, 2}, {2, 1}, {2, 1}, {2, 1}, {2, 1}},
+		{{2, 2}, {1, 1}, {5, 1}},
+		{{1, 2}, {1, 1}, {2, 2}, {1, 2}, {3, 1}},
+		{{1, 1}, {1, 3}, {1, 1}, {2, 1}, {1, 2}},
+		{{1, 2}, {1, 1}, {2, 1}, {4, 4}},
+		{{1, 1}, {1, 3}, {1, 3}, {1, 3}},
+		{{1, 2}, {1, 1}, {1, 4}},
+		{{1, 1}},
+		{{1, 2}, {1, 1}, {2, 1}, {2, 2}, {1, 2}, {1, 1}, {1, 1}},
+		{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}},
 	}
-
-	return rows
+	columns := 10
+	grid := make([][]*pdfjet.Cell, len(spans))
+	for r := range grid {
+		grid[r] = make([]*pdfjet.Cell, columns)
+	}
+	for r := range spans {
+		c := 0
+		for _, span := range spans[r] {
+			// The next column that no cell of a row above spans over.
+			for c < columns && grid[r][c] != nil {
+				c++
+			}
+			grid[r][c] = getCell(font, span[0], span[1],
+				fmt.Sprintf("%dx%d", span[0], span[1]))
+			// A table keeps its shape, so every row holds a cell for every
+			// column: the cells a span covers are there and are empty.
+			for r2 := r; r2 < r+span[1] && r2 < len(spans); r2++ {
+				for c2 := c; c2 < c+span[0] && c2 < columns; c2++ {
+					if grid[r2][c2] == nil {
+						grid[r2][c2] = getCell(font, 1, 1, "")
+					}
+				}
+			}
+			c += span[0]
+		}
+	}
+	return grid
 }
 
-func getCell(
-	font *pdfjet.Font,
-	colSpan int,
-	text string,
-	topBorder bool,
-	bottomBorder bool) *pdfjet.Cell {
+func getCell(font *pdfjet.Font, colSpan, rowSpan int, text string) *pdfjet.Cell {
 	cell := pdfjet.NewCell(font, text)
 	cell.SetColSpan(colSpan)
+	cell.SetRowSpan(rowSpan)
 	cell.SetWidth(50.0)
-	cell.SetBorder(border.Top, topBorder)
-	cell.SetBorder(border.Bottom, bottomBorder)
+	cell.SetBorder(border.Top, true)
+	cell.SetBorder(border.Bottom, true)
+	cell.SetBorder(border.Left, true)
+	cell.SetBorder(border.Right, true)
 	cell.SetTextAlignment(alignment.Center)
+	cell.SetVerticalAlignment(alignment.Center)
 	cell.SetBackgroundColor(0xD8F0E4) // A pastel mint
 	cell.SetBorderWidth(1.0)
 	return cell

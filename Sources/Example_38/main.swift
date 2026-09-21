@@ -9,6 +9,11 @@ import PDFjet
 
 /**
  * Example_38.swift
+ *
+ * Draws a table whose cells span columns and rows, and explains how. A cell
+ * spans columns with setColSpan and rows with setRowSpan. The table is also a
+ * check of the geometry of the cells: their backgrounds meet without gaps and
+ * their borders line up.
  */
 public class Example_38 {
     public init() throws {
@@ -29,11 +34,12 @@ public class Example_38 {
         let textBlock = TextBlock(f2,
                 "The cells of this table span up to five columns and up to four rows, as "
                 + "the name in each cell says: 1x3 is one column wide and three rows tall. "
-                + "A cell spans columns with setColSpan. It spans rows by leaving out its "
-                + "bottom border and the top borders of the cells under it, which continue "
-                + "it and are marked with ^ or left empty. The example is also a check of "
-                + "the geometry of the cells: their backgrounds meet without gaps and their "
-                + "borders line up.")
+                + "A cell spans columns with setColSpan and rows with setRowSpan, and draws "
+                + "its text, its background and its borders once over all of them. The table "
+                + "keeps its shape, so every row holds a cell for every column and the cells "
+                + "a span covers are left empty. The example is also a check of the geometry "
+                + "of the cells: their backgrounds meet without gaps and their borders line "
+                + "up.")
         textBlock.setFontSize(11.0)
         textBlock.setLineSpacing(1.3)
         textBlock.setLocation(50.0, 65.0)
@@ -50,191 +56,74 @@ public class Example_38 {
     }
 
     /**
-     * This will return a 10x10 matrix. The HTML-Like table will be like:
-     * <table border="solid">
-     * <tr>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * </tr>
-     * <tr>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td>1x1</td>
-     * <td colspan="5">5x1</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td rowspan="2">1x2</td>
-     * <td colspan="3">3x1</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td rowspan="3">1x3</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td rowspan="2">1x2</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="4" rowspan="4">4x4</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td rowspan="3">1x3</td>
-     * <td rowspan="3">1x3</td>
-     * <td rowspan="3">1x3</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td rowspan="4">1x4</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * </tr>
-     * </table>
-     *
-     * @return
-     * @throws Exception
+     * Returns the cells of a 10 by 10 table whose cells span columns and
+     * rows. It is the table of this HTML, cell for cell:
+     * <pre>
+     * &lt;table border="solid"&gt;
+     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="5"&gt;5x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;
+     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td colspan="3"&gt;3x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="4" rowspan="4"&gt;4x4&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;
+     *     &lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="4"&gt;1x4&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;
+     *     &lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;/table&gt;
+     * </pre>
      */
     private func createTableData(_ font: Font) -> [[Cell]] {
-        var rows = [[Cell]]()
-        for i in 0..<10 {
-            var row = [Cell]()
-            if i == 0 {
-                row.append(getCell(font, 2, "2x2", true, false))
-                row.append(getCell(font, 1,    "", true, false))
-                row.append(getCell(font, 2, "2x1", true, true))
-                row.append(getCell(font, 1,    "", true, false))
-                row.append(getCell(font, 2, "2x1", true, true))
-                row.append(getCell(font, 1,    "", true, false))
-                row.append(getCell(font, 2, "2x1", true, true))
-                row.append(getCell(font, 1,    "", true, false))
-                row.append(getCell(font, 2, "2x1", true, true))
-                row.append(getCell(font, 1,    "", true, false))
-            } else if i == 1 {
-                row.append(getCell(font, 2,   "^", false, true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 2, "2x2", true,  false))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 5, "5x1", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-            } else if i == 2 {
-                row.append(getCell(font, 1, "1x2", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 2,   "^", false, true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 2, "2x2", true,  false))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 3, "3x1", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-            } else if i == 3 {
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1, "1x3", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 2,   "^", false, true))
-                row.append(getCell(font, 1,    "", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 2, "2x1", true,  true))
-                row.append(getCell(font, 1,    "", true,  false))
-                row.append(getCell(font, 1, "1x2", true,  false))
-            } else if i == 4 {
-                row.append(getCell(font, 1, "1x2", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1,   "^", false, false))
-                row.append(getCell(font, 2, "2x1", true,  true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 4, "4x4", true,  false))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,   "^", false, true))
-            } else if i == 5 {
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x3", true,  false))
-                row.append(getCell(font, 1, "1x3", true,  false))
-                row.append(getCell(font, 4,   "^", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1, "1x3", true,  false))
-            } else if i == 6 {
-                row.append(getCell(font, 1, "1x2", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1, "1x4", true,  false))
-                row.append(getCell(font, 1,   "^", false, false))
-                row.append(getCell(font, 1,   "^", false, false))
-                row.append(getCell(font, 4,   "^", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1,    "", false, false))
-                row.append(getCell(font, 1,   "^", false, false))
-            } else if i == 7 {
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1,   "^", false, false))
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 4,   "^", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,   "^", false, true))
-            } else if i == 8 {
-                row.append(getCell(font, 1, "1x2", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1,   "^", false, false))
-                row.append(getCell(font, 2, "2x1", true,  true))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 2, "2x2", true,  false))
-                row.append(getCell(font, 1,    "", true,  true))
-                row.append(getCell(font, 1, "1x2", true,  false))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-            } else if i == 9 {
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 1, "1x1", true,  true))
-                row.append(getCell(font, 2,   "^", false, true))
-                row.append(getCell(font, 1,    "", false, true))
-                row.append(getCell(font, 1,   "^", false, true))
-                row.append(getCell(font, 1, "1x1", true, true))
-                row.append(getCell(font, 1, "1x1", true, true))
+        // The columns and the rows each cell spans, in the order a browser
+        // reads the cells of the HTML above.
+        let spans = [
+            [[2, 2], [2, 1], [2, 1], [2, 1], [2, 1]],
+            [[2, 2], [1, 1], [5, 1]],
+            [[1, 2], [1, 1], [2, 2], [1, 2], [3, 1]],
+            [[1, 1], [1, 3], [1, 1], [2, 1], [1, 2]],
+            [[1, 2], [1, 1], [2, 1], [4, 4]],
+            [[1, 1], [1, 3], [1, 3], [1, 3]],
+            [[1, 2], [1, 1], [1, 4]],
+            [[1, 1]],
+            [[1, 2], [1, 1], [2, 1], [2, 2], [1, 2], [1, 1], [1, 1]],
+            [[1, 1], [1, 1], [1, 1], [1, 1], [1, 1]],
+        ]
+        let columns = 10
+        var grid = [[Cell?]](repeating: [Cell?](repeating: nil, count: columns), count: spans.count)
+        for r in 0..<spans.count {
+            var c = 0
+            for span in spans[r] {
+                // The next column that no cell of a row above spans over.
+                while c < columns && grid[r][c] != nil {
+                    c += 1
+                }
+                grid[r][c] = getCell(font, span[0], span[1], "\(span[0])x\(span[1])")
+                // A table keeps its shape, so every row holds a cell for every
+                // column: the cells a span covers are there and are empty.
+                var r2 = r
+                while r2 < r + span[1] && r2 < spans.count {
+                    var c2 = c
+                    while c2 < c + span[0] && c2 < columns {
+                        if grid[r2][c2] == nil {
+                            grid[r2][c2] = getCell(font, 1, 1, "")
+                        }
+                        c2 += 1
+                    }
+                    r2 += 1
+                }
+                c += span[0]
             }
-            rows.append(row)
+        }
+        var rows = [[Cell]]()
+        for row in grid {
+            rows.append(row.map { $0! })
         }
         return rows
     }
@@ -242,16 +131,19 @@ public class Example_38 {
     private func getCell(
             _ font: Font,
             _ colSpan: Int,
-            _ text: String,
-            _ topBorder: Bool,
-            _ bottomBorder: Bool) -> Cell {
+            _ rowSpan: Int,
+            _ text: String) -> Cell {
         let cell = Cell(font, "")
         cell.setColSpan(colSpan)
+        cell.setRowSpan(rowSpan)
         cell.setWidth(50.0)
         cell.setText(text)
-        cell.setBorder(Border.TOP, topBorder)
-        cell.setBorder(Border.BOTTOM, bottomBorder)
+        cell.setBorder(Border.TOP, true)
+        cell.setBorder(Border.BOTTOM, true)
+        cell.setBorder(Border.LEFT, true)
+        cell.setBorder(Border.RIGHT, true)
         cell.setTextAlignment(Alignment.CENTER)
+        cell.setVerticalAlignment(Alignment.CENTER)
         cell.setBackgroundColor(0xD8F0E4)     // A pastel mint
         cell.setBorderWidth(1.0)
         return cell

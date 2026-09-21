@@ -2,8 +2,9 @@
 
 Target: **2026-10-21**, the date v9.0.0 was planned for. v9.0.0 was released
 early, on 2026-09-16 at e957f841, and v9.0.1 on 2026-09-18 at 72c41923, so
-what Oct 21 carries is **v9.0.3**: not new features but a foundation to build
-on after it. Today is Sep 21, so 30 days are left, with one fix release in
+what Oct 21 carries is **v9.0.3**: a foundation to build on after it, and
+one feature, `Cell.setRowSpan`, which the work was far enough ahead to fit in
+(Sep 21). Today is Sep 21, so 30 days are left, with one fix release in
 the middle. This file is the working list; tick items off as they land on
 master.
 
@@ -39,6 +40,12 @@ the core fonts, every CMYK JPEG inverted, a fallback font that stuck, the CJK
 line gaps, and what the first three fuzz targets turned up. Eight kinds of
 untrusted input are read from a file, and five of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
+
+The one exception is `Cell.setRowSpan` (Sep 21). Goals 1 and 2 closed three
+weeks early, the feature is what clients ask `Table` for and could not have,
+and it lands with tests in the four ports and an example that renders alike
+in all of them. Nothing else from "After v9.0.3 -- features" moves up with
+it.
 
 ## The seven goals of v9.0.3
 
@@ -233,8 +240,9 @@ work to Oct 21 is the seven goals below, in this order.
      merged and split, with the page counts, page sizes and text MuPDF finds.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
-   public API of v9.0.1 in the four ports, checked as for 9.0.1 before each
-   tag.
+   public API of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan` in the
+   four ports, checked as for 9.0.1 before each tag. The row spans are the
+   one feature 9.0.3 adds, by the decision of Sep 21; nothing else is.
 
 7. ⬜ **B** Guard against regressions: benchmarks recorded at 9.0.2 and 9.0.3
    against 9.0.1, Example_43's printed time among them, and the JDK 8 build,
@@ -397,6 +405,21 @@ goal 5, the references, which is the first thing to give if anything does.
       `.ttf` holds, the marks of the GPOS table among it. What is left of
       that item is the kerning, a few fonts PDFjet does not ship, and making
       it a check of the repository.
+- ✅ True row spans: `Cell.setRowSpan` (Sep 21), which "After v9.0.3 --
+      features" below had. It ships in 9.0.3 by the decision of Sep 21: the
+      reviews and the fuzzing are far enough ahead that the feature fits
+      before the tag, and it is the one thing clients ask `Table` for that it
+      could not do. A cell spans the rows under it as `setColSpan` spans the
+      columns beside it: it draws its text, its background and its borders
+      once over all of them, the cells it covers draw nothing, and a page
+      break keeps the rows of a span together, so a span is never cut in two.
+      In a PDF/UA document the cell has a `RowSpan` attribute, and a row a
+      span covers whole holds no cell of its own. Example_38 is drawn with it
+      in the four ports -- it faked row spans by turning cell borders off and
+      marking the cells under a span with a caret -- and is now the table of
+      the HTML in its comment, cell for cell; the four ports render it pixel
+      for pixel alike. Three tests in each port: the drawing, the page break
+      at every row span from 1 to 4, and the tagging.
 
 ### Sep 27–Oct 1: release v9.0.2
 
@@ -404,9 +427,11 @@ goal 5, the references, which is the first thing to give if anything does.
       `FontStream1` and `FontStream2`, which no test names. Done on Sep 21,
       above.
 - ⬜ **B** The release checks: `check-examples.sh` clean, the public API that
-      of v9.0.1 in the four ports, the JDK 8 build, the benchmarks recorded
-      against 9.0.1 with Example_43's time, the docs, the packages and the
-      site rebuilt, the CHANGELOG entry dated.
+      of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan` in the four
+      ports, the JDK 8 build, the benchmarks recorded against 9.0.1 with
+      Example_43's time, the docs, the packages and the site rebuilt, the
+      CHANGELOG entry dated. 9.0.2 is cut from master, which has the row
+      spans, so it carries them as well; there is nothing else new in it.
 - ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
 
 ### Oct 2–8: the reader
@@ -419,6 +444,18 @@ goal 5, the references, which is the first thing to give if anything does.
       now, and a Go runtime error fails it.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
+- ⬜ A cell whose text wraps draws its bottom border under every line of it,
+      not under the cell (found Sep 21 beside the row spans, and there since
+      before them). `wrapAroundCellText` copies the properties of the cell,
+      the borders among them, into each row it wraps the text into, so a cell
+      of three lines with `Border.BOTTOM` draws three rules. The rows a cell
+      spans have the same shape -- a cell over two rows is one cell -- and
+      the row spans handle it for themselves by clearing the border of the
+      rows they cover, so this is the same fix one step further: a wrapped
+      row keeps the left and right borders and gives the bottom border to the
+      last row of the wrap and the top border to the first. It changes what
+      every table with wrapped cells and a bottom border draws, so it wants
+      its own tests in the four ports and a look at the example PDFs.
 
 ### Oct 9–14: the rest of the review, and the references
 
@@ -444,7 +481,7 @@ goal 5, the references, which is the first thing to give if anything does.
       printed time among them; the JDK 8 build; the packages and the docs made
       from the tag.
 - ⬜ **B** `check-examples.sh` clean in the four ports, and the public API
-      still that of v9.0.1.
+      still that of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan`.
 - ⬜ Rebuild the site, and date the `## v9.0.3` entry of CHANGELOG.md.
 - Keep Oct 19 and 20 empty: they are the buffer for what the checks find.
 
@@ -470,12 +507,6 @@ New features, the first work on the foundation of 9.0.3, from the review of
 `Table` and `Cell` (Sep 18): what clients look for and do not find. None of
 this is started before Oct 21.
 
-- ⬜ True row spans: `Cell.setRowSpan`, like `setColSpan`, where Example_38
-      fakes them today by turning cell borders off. A spanned cell draws its
-      text, background and borders once over the rows it covers, and page
-      breaks keep it whole. The table tagging gives it a `RowSpan`
-      attribute. Redo Example_38 with it, and its text, which explains the
-      borders left out.
 - ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
       (zebra striping, as `BigTable.setShadingColor`), and a style for the
       header rows, the body and a total row, rather than coloring every cell.

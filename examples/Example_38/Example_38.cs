@@ -12,6 +12,11 @@ using PDFjet.NET;
 
 /**
  * Example_38.cs
+ *
+ * Draws a table whose cells span columns and rows, and explains how. A cell
+ * spans columns with setColSpan and rows with setRowSpan. The table is also a
+ * check of the geometry of the cells: their backgrounds meet without gaps and
+ * their borders line up.
  */
 public class Example_38 {
     Font font = null;
@@ -39,11 +44,12 @@ public class Example_38 {
         TextBlock textBlock = new TextBlock(f2,
                 "The cells of this table span up to five columns and up to four rows, as "
                 + "the name in each cell says: 1x3 is one column wide and three rows tall. "
-                + "A cell spans columns with setColSpan. It spans rows by leaving out its "
-                + "bottom border and the top borders of the cells under it, which continue "
-                + "it and are marked with ^ or left empty. The example is also a check of "
-                + "the geometry of the cells: their backgrounds meet without gaps and their "
-                + "borders line up.");
+                + "A cell spans columns with setColSpan and rows with setRowSpan, and draws "
+                + "its text, its background and its borders once over all of them. The table "
+                + "keeps its shape, so every row holds a cell for every column and the cells "
+                + "a span covers are left empty. The example is also a check of the geometry "
+                + "of the cells: their backgrounds meet without gaps and their borders line "
+                + "up.");
         textBlock.SetFontSize(11f);
         textBlock.SetLineSpacing(1.3f);
         textBlock.SetLocation(50f, 65f);
@@ -58,219 +64,93 @@ public class Example_38 {
 
         pdf.Complete();
     }
+
     /**
-     * This will return a 10x10 matrix. The HTML-Like table will be like:
-     * <table border="solid">
-     * <tr>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2">2x1</td>
-     * </tr>
-     * <tr>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td>1x1</td>
-     * <td colspan="5">5x1</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td rowspan="2">1x2</td>
-     * <td colspan="3">3x1</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td rowspan="3">1x3</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td rowspan="2">1x2</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="4" rowspan="4">4x4</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td rowspan="3">1x3</td>
-     * <td rowspan="3">1x3</td>
-     * <td rowspan="3">1x3</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td rowspan="4">1x4</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * </tr>
-     * <tr>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td colspan="2">2x1</td>
-     * <td colspan="2" rowspan="2">2x2</td>
-     * <td rowspan="2">1x2</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * </tr>
-     * <tr>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * <td>1x1</td>
-     * </tr>
-     * </table>
+     * Returns the cells of a 10 by 10 table whose cells span columns and
+     * rows. It is the table of this HTML, cell for cell:
+     * <pre>
+     * &lt;table border="solid"&gt;
+     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="5"&gt;5x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;
+     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td colspan="3"&gt;3x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="4" rowspan="4"&gt;4x4&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;
+     *     &lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="4"&gt;1x4&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
+     *     &lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;
+     *     &lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
+     * &lt;/table&gt;
+     * </pre>
      *
-     * @return
+     * @return the rows of the table.
      */
     private List<List<Cell>> CreateTableData() {
-        List<List<Cell>> rows = new List<List<Cell>>();
-        for (int i = 0; i < 10; i++) {
-            List<Cell> row = new List<Cell>();
-            switch (i) {
-            case 0:
-                row.Add(GetCell(font, 2, "2x2", true, false));
-                row.Add(GetCell(font, 1,    "", true, false));
-                row.Add(GetCell(font, 2, "2x1", true, true));
-                row.Add(GetCell(font, 1,    "", true, false));
-                row.Add(GetCell(font, 2, "2x1", true, true));
-                row.Add(GetCell(font, 1,    "", true, false));
-                row.Add(GetCell(font, 2, "2x1", true, true));
-                row.Add(GetCell(font, 1,    "", true, false));
-                row.Add(GetCell(font, 2, "2x1", true, true));
-                row.Add(GetCell(font, 1,    "", true, false));
-                break;
-            case 1:
-                row.Add(GetCell(font, 2,   "^", false, true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 2, "2x2", true,  false));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 5, "5x1", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                break;
-            case 2:
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 2,   "^", false, true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 2, "2x2", true,  false));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 3, "3x1", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                break;
-            case 3:
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1, "1x3", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 2,   "^", false, true));
-                row.Add(GetCell(font, 1,    "", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 2, "2x1", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  false));
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                break;
-            case 4:
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                row.Add(GetCell(font, 2, "2x1", true,  true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 4, "4x4", true,  false));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                break;
-            case 5:
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x3", true,  false));
-                row.Add(GetCell(font, 1, "1x3", true,  false));
-                row.Add(GetCell(font, 4,   "^", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1, "1x3", true,  false));
-                break;
-            case 6:
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1, "1x4", true,  false));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                row.Add(GetCell(font, 4,   "^", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1,    "", false, false));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                break;
-            case 7:
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 4,   "^", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                break;
-            case 8:
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1,   "^", false, false));
-                row.Add(GetCell(font, 2, "2x1", true,  true));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 2, "2x2", true,  false));
-                row.Add(GetCell(font, 1,    "", true,  true));
-                row.Add(GetCell(font, 1, "1x2", true,  false));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                break;
-            case 9:
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 2,   "^", false, true));
-                row.Add(GetCell(font, 1,    "", false, true));
-                row.Add(GetCell(font, 1,   "^", false, true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                row.Add(GetCell(font, 1, "1x1", true,  true));
-                break;
+        // The columns and the rows each cell spans, in the order a browser
+        // reads the cells of the HTML above.
+        int[][][] spans = {
+            new int[][] {new int[] {2, 2}, new int[] {2, 1}, new int[] {2, 1}, new int[] {2, 1}, new int[] {2, 1}},
+            new int[][] {new int[] {2, 2}, new int[] {1, 1}, new int[] {5, 1}},
+            new int[][] {new int[] {1, 2}, new int[] {1, 1}, new int[] {2, 2}, new int[] {1, 2}, new int[] {3, 1}},
+            new int[][] {new int[] {1, 1}, new int[] {1, 3}, new int[] {1, 1}, new int[] {2, 1}, new int[] {1, 2}},
+            new int[][] {new int[] {1, 2}, new int[] {1, 1}, new int[] {2, 1}, new int[] {4, 4}},
+            new int[][] {new int[] {1, 1}, new int[] {1, 3}, new int[] {1, 3}, new int[] {1, 3}},
+            new int[][] {new int[] {1, 2}, new int[] {1, 1}, new int[] {1, 4}},
+            new int[][] {new int[] {1, 1}},
+            new int[][] {new int[] {1, 2}, new int[] {1, 1}, new int[] {2, 1}, new int[] {2, 2}, new int[] {1, 2}, new int[] {1, 1}, new int[] {1, 1}},
+            new int[][] {new int[] {1, 1}, new int[] {1, 1}, new int[] {1, 1}, new int[] {1, 1}, new int[] {1, 1}},
+        };
+        int columns = 10;
+        Cell[][] grid = new Cell[spans.Length][];
+        for (int r = 0; r < spans.Length; r++) {
+            grid[r] = new Cell[columns];
+        }
+        for (int r = 0; r < spans.Length; r++) {
+            int c = 0;
+            foreach (int[] span in spans[r]) {
+                // The next column that no cell of a row above spans over.
+                while (c < columns && grid[r][c] != null) {
+                    c++;
+                }
+                grid[r][c] = GetCell(font, span[0], span[1], span[0] + "x" + span[1]);
+                // A table keeps its shape, so every row holds a cell for every
+                // column: the cells a span covers are there and are empty.
+                for (int r2 = r; r2 < r + span[1] && r2 < spans.Length; r2++) {
+                    for (int c2 = c; c2 < c + span[0] && c2 < columns; c2++) {
+                        if (grid[r2][c2] == null) {
+                            grid[r2][c2] = GetCell(font, 1, 1, "");
+                        }
+                    }
+                }
+                c += span[0];
             }
-            rows.Add(row);
+        }
+        List<List<Cell>> rows = new List<List<Cell>>();
+        foreach (Cell[] row in grid) {
+            rows.Add(new List<Cell>(row));
         }
         return rows;
     }
 
-    private Cell GetCell(
-            Font font,
-            int colSpan,
-            String text,
-            bool topBorder,
-            bool bottomBorder) {
+    private Cell GetCell(Font font, int colSpan, int rowSpan, String text) {
         Cell cell = new Cell(font);
         cell.SetColSpan(colSpan);
+        cell.SetRowSpan(rowSpan);
         cell.SetWidth(50f);
         cell.SetText(text);
-        cell.SetBorder(Border.TOP, topBorder);
-        cell.SetBorder(Border.BOTTOM, bottomBorder);
+        cell.SetBorder(Border.TOP, true);
+        cell.SetBorder(Border.BOTTOM, true);
+        cell.SetBorder(Border.LEFT, true);
+        cell.SetBorder(Border.RIGHT, true);
         cell.SetTextAlignment(Alignment.CENTER);
+        cell.SetVerticalAlignment(Alignment.CENTER);
         cell.SetBackgroundColor(0xD8F0E4);     // A pastel mint
         cell.SetBorderWidth(1f);
         return cell;

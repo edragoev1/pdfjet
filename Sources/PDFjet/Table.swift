@@ -441,6 +441,7 @@ public class Table : Drawable {
             return [x1, y1]     // An empty table draws nothing.
         }
         wrapAroundCellText()
+        applyRowSpans()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
         let xy = drawTableRows(page, drawHeaderRows(page, 0))
@@ -463,6 +464,7 @@ public class Table : Drawable {
             return [x1, y1]     // An empty table needs no page.
         }
         wrapAroundCellText()
+        applyRowSpans()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
         var xy: [Float]?
@@ -496,18 +498,18 @@ public class Table : Drawable {
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addArtifactBMC()
         }
+        let heights = getRowHeights()
         for i in 0..<min(numOfHeaderRows, tableData.count) {
             let row = tableData[i]
-            let h = getMaxCellHeight(row)
             if let page = page {
                 if i == (numOfHeaderRows - 1) {
                     for cell in row {
                         cell.setBorder(Border.BOTTOM, true)
                     }
                 }
-                drawRow(page, row, x, y, h, first ? StructElem.TH : nil)
+                drawRow(page, row, x, y, heights, i, first ? StructElem.TH : nil)
             }
-            y += h
+            y += heights[i]
         }
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addEMC()
@@ -524,13 +526,14 @@ public class Table : Drawable {
             _ row: [Cell],
             _ x: Float,
             _ y: Float,
-            _ h: Float,
+            _ heights: [Float],
+            _ rowIndex: Int,
             _ cellStructure: StructElem?) {
         let parent = page.structParent
         let tagged = (structElement != nil && cellStructure != nil)
         let continued = (row[0].properties & Cell.CONTINUED) != 0
         var rowElement: StructElement?
-        if tagged && !continued {
+        if tagged && !continued && !allCovered(row) {
             rowElement = page.addStructElement(structElement, StructElem.TR, nil)
             if cellElements.count != row.count {
                 cellElements = [StructElement?](repeating: nil, count: row.count)
@@ -540,11 +543,12 @@ public class Table : Drawable {
         var i = 0
         while i < row.count {
             let cell = row[i]
-            let colspan = cell.getColSpan()
-            if tagged {
+            let colspan = max(1, cell.getColSpan())
+            let covered = (cell.properties & Cell.COVERED) != 0
+            if tagged && !covered {
                 if !continued {
-                    cellElements[i] = page.addStructElement(
-                            rowElement, cellStructure!, getAttributes(cellStructure!, colspan))
+                    cellElements[i] = page.addStructElement(rowElement, cellStructure!,
+                            getAttributes(cellStructure!, colspan, cell.rowsSpanned))
                 }
                 page.structParent = (i < cellElements.count) ? cellElements[i] : nil
             }
@@ -553,22 +557,44 @@ public class Table : Drawable {
                 w += row[i].getWidth()
                 i += 1
             }
-            page.setBrushColor(cell.textColor)
-            cell.drawOn(page, x, y, w, h)
+            if !covered {
+                // A cell that spans rows is as tall as all the rows it covers.
+                var cellHeight: Float = 0.0
+                for r in rowIndex..<min(rowIndex + cell.rowsSpanned, heights.count) {
+                    cellHeight += heights[r]
+                }
+                page.setBrushColor(cell.textColor)
+                cell.drawOn(page, x, y, w, cellHeight)
+            }
             x += w
         }
         page.structParent = parent
     }
 
-    // The attributes of a table cell element: the scope of a header cell and
-    // the number of columns a cell spans, or nil when it has neither.
-    private func getAttributes(_ cellStructure: StructElem, _ colspan: Int) -> String? {
-        if cellStructure == StructElem.TH {
-            return colspan > 1 ?
-                    "<</O /Table /Scope /Column /ColSpan \(colspan)>>" :
-                    "<</O /Table /Scope /Column>>"
+    // True when every cell of the row is one that a cell above it spans over,
+    // so the row holds no cell of its own and is not a row of the table.
+    private func allCovered(_ row: [Cell]) -> Bool {
+        for cell in row where (cell.properties & Cell.COVERED) == 0 {
+            return false
         }
-        return colspan > 1 ? "<</O /Table /ColSpan \(colspan)>>" : nil
+        return !row.isEmpty
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of rows and columns a cell spans, or nil when it has none.
+    private func getAttributes(
+            _ cellStructure: StructElem, _ colspan: Int, _ rowspan: Int) -> String? {
+        var spans = ""
+        if colspan > 1 {
+            spans += " /ColSpan \(colspan)"
+        }
+        if rowspan > 1 {
+            spans += " /RowSpan \(rowspan)"
+        }
+        if cellStructure == StructElem.TH {
+            return "<</O /Table /Scope /Column" + spans + ">>"
+        }
+        return spans.isEmpty ? nil : "<</O /Table" + spans + ">>"
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
@@ -578,21 +604,29 @@ public class Table : Drawable {
         var y = xy[1]
         var index = (rendered == -1) ? tableData.count : rendered
         let first = index
+        let heights = getRowHeights()
         while index < tableData.count {
-            let row = tableData[index]
-            let h = getMaxCellHeight(row)
+            // The rows a cell spans are drawn together, so that a page break
+            // never cuts one in two.
+            let end = rowGroupEnd(index)
+            var groupHeight: Float = 0.0
+            for r in index..<end {
+                groupHeight += heights[r]
+            }
             // A row that does not fit goes on the next page, unless it is the
             // first row of this one: a row taller than the page fits no page,
             // and leaving it for the next page would ask for pages forever.
-            if page != nil && (y + h) > (page!.height - bottomMargin) && index > first {
+            if page != nil && (y + groupHeight) > (page!.height - bottomMargin) && index > first {
                 rendered = index
                 return [x, y]
             }
-            if let page = page {
-                drawRow(page, row, x, y, h, StructElem.TD)
+            for r in index..<end {
+                if let page = page {
+                    drawRow(page, tableData[r], x, y, heights, r, StructElem.TD)
+                }
+                y += heights[r]
             }
-            y += h
-            index += 1
+            index = end
         }
         if page != nil {
             rendered = -1   // We are done!
@@ -600,17 +634,149 @@ public class Table : Drawable {
         return [x, y]
     }
 
+    // Works out what each cell that spans rows covers, after the text is
+    // wrapped: a row of the table is drawn as one row for each line its
+    // tallest cell needs, so a cell that spans two rows of the table spans as
+    // many rows of the drawing as those two were wrapped into. The cells the
+    // span covers are marked, and draw nothing.
+    private func applyRowSpans() {
+        for row in tableData {
+            for cell in row {
+                cell.properties &= ~Cell.COVERED
+                cell.rowsSpanned = 1
+            }
+        }
+        for r in 0..<tableData.count {
+            if isContinuation(r) {
+                continue    // A span starts in a row of the table, not in the wrap of one.
+            }
+            let row = tableData[r]
+            var i = 0
+            while i < row.count {
+                let cell = row[i]
+                let colspan = max(1, cell.getColSpan())
+                if cell.getRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0 {
+                    let end = rowAfter(r, cell.getRowSpan())
+                    let ownEnd = rowAfter(r, 1)
+                    cell.rowsSpanned = end - r
+                    // The rows the wrapped text of this cell takes keep their
+                    // text and lose the border that would cross the cell.
+                    for r2 in (r + 1)..<max(r + 1, ownEnd) {
+                        setSpanned(r2, i, colspan, false)
+                    }
+                    for r2 in ownEnd..<max(ownEnd, end) {
+                        setSpanned(r2, i, colspan, true)
+                    }
+                }
+                i += colspan
+            }
+        }
+    }
+
+    // Marks the columns of the row that a span covers: a covered cell draws
+    // nothing, and a row of the wrapped text of the spanning cell keeps its
+    // text without the border under it.
+    private func setSpanned(_ r: Int, _ column: Int, _ colspan: Int, _ covered: Bool) {
+        let row = tableData[r]
+        var i = 0
+        while i < row.count {
+            let cell = row[i]
+            if i >= column && i < column + colspan {
+                if covered {
+                    cell.properties |= Cell.COVERED
+                } else {
+                    cell.setBorder(Border.BOTTOM, false)
+                }
+            }
+            i += max(1, cell.getColSpan())
+        }
+    }
+
+    // The index of the row after the count rows of the table that start at r,
+    // counting the rows the wrapped text of each of them takes.
+    private func rowAfter(_ r: Int, _ count: Int) -> Int {
+        var index = r
+        var i = 0
+        while i < count && index < tableData.count {
+            index += 1
+            while index < tableData.count && isContinuation(index) {
+                index += 1
+            }
+            i += 1
+        }
+        return index
+    }
+
+    // True when the row holds the wrapped text of the row above it.
+    private func isContinuation(_ r: Int) -> Bool {
+        let row = tableData[r]
+        return !row.isEmpty && (row[0].properties & Cell.CONTINUED) != 0
+    }
+
+    // The height of each row of the table as it is drawn. A cell that spans
+    // rows is not what makes its first row tall; the rows it covers hold it
+    // together, and the last of them grows when they do not.
+    private func getRowHeights() -> [Float] {
+        var heights = [Float](repeating: 0.0, count: tableData.count)
+        for r in 0..<tableData.count {
+            heights[r] = getMaxCellHeight(tableData[r])
+        }
+        for r in 0..<tableData.count {
+            let row = tableData[r]
+            for i in 0..<row.count {
+                let cell = row[i]
+                if cell.rowsSpanned < 2 {
+                    continue
+                }
+                let end = min(r + cell.rowsSpanned, tableData.count)
+                var have: Float = 0.0
+                for r2 in r..<end {
+                    have += heights[r2]
+                }
+                let needed = cell.getHeight(getTotalWidth(row, i))
+                if needed > have && end > r {
+                    heights[end - 1] += needed - have
+                }
+            }
+        }
+        return heights
+    }
+
+    // The row after the rows that a span holds together, which a page break
+    // keeps on one page.
+    private func rowGroupEnd(_ index: Int) -> Int {
+        var end = index + 1
+        var r = index
+        while r < end && r < tableData.count {
+            for cell in tableData[r] where r + cell.rowsSpanned > end {
+                end = r + cell.rowsSpanned
+            }
+            r += 1
+        }
+        return min(end, tableData.count)
+    }
+
     private func getMaxCellHeight(_ row: [Cell]) -> Float {
         var maxCellHeight: Float = 0.0
+        var spanned: Float = 0.0
         for i in 0..<row.count {
             let cell = row[i]
-            let totalWidth = getTotalWidth(row, i)
-            let cellHeight = cell.getHeight(totalWidth)
+            if (cell.properties & Cell.COVERED) != 0 {
+                continue    // A cell the one above it draws over.
+            }
+            let cellHeight = cell.getHeight(getTotalWidth(row, i))
+            if cell.rowsSpanned > 1 {
+                // A cell that spans rows is as tall as all of them together,
+                // which getRowHeights shares out; it is the height of the row
+                // only when nothing else is in it.
+                spanned = max(spanned, cellHeight / Float(cell.rowsSpanned))
+                continue
+            }
             if cellHeight > maxCellHeight {
                 maxCellHeight = cellHeight
             }
         }
-        return maxCellHeight
+        return (maxCellHeight > 0.0) ? maxCellHeight : spanned
     }
 
     ///

@@ -42,6 +42,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   are tagged where the table starts and are artifacts where they repeat on
   the next pages. The structure tree can nest elements for this; the other
   drawables are children of the Document element as before.
+- `Cell.setRowSpan` spans a cell over the rows under it, as `setColSpan`
+  spans it over the columns beside it, in all four ports. The cell draws its
+  text, its background and its borders once over all the rows it covers, and
+  the cells it covers draw nothing. The table keeps its shape, so every row
+  holds a cell for every column and the cells a span covers are there and are
+  empty, as they are for a column span. A page break keeps the rows of a span
+  together: they go to the next page with it, so a span is never cut in two.
+  In a PDF/UA document the cell has a `RowSpan` attribute, and a row that a
+  span covers whole holds no cell of its own. Example_38 is drawn with it,
+  where it used to fake row spans by turning cell borders off and marking the
+  cells under a span with a caret; it is now the table of the HTML in its
+  comment, cell for cell, and all four ports draw it identically.
+  `check-pdfua-tags.py` lays the cells of a tagged table out on a grid, as a
+  browser lays out an HTML table, and checks that they fill every square of
+  it and none of them twice; it counted the columns of each row before, which
+  a row span makes uneven on purpose.
 
 ### Changed
 - The API reference of `Container` and `Stamp` says what each is good at, what

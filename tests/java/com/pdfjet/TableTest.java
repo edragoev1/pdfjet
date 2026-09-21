@@ -302,4 +302,118 @@ class TableTest {
         assertFalse(raw.contains("/P 0 0 R"), raw);
         assertFalse(raw.contains("/K [0 0 R") || raw.contains(" 0 0 R ]"), raw);
     }
+    // The y coordinates of the horizontal rules the page draws, top to bottom.
+    private static List<Float> rules(Page page) {
+        java.util.TreeSet<Float> ys = new java.util.TreeSet<Float>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "([-0-9.]+) ([-0-9.]+) m\\n([-0-9.]+) ([-0-9.]+) l").matcher(TestSupport.content(page));
+        while (m.find()) {
+            if (Math.abs(Float.parseFloat(m.group(2)) - Float.parseFloat(m.group(4))) < 0.01f) {
+                ys.add(Float.parseFloat(m.group(2)));
+            }
+        }
+        List<Float> list = new ArrayList<Float>(ys);
+        java.util.Collections.reverse(list);
+        return list;
+    }
+
+    // A table of rows by columns of cells with every border, the cell at 0,0
+    // spanning the rows.
+    private static List<List<Cell>> spanning(Font font, int rows, int columns, int rowspan) {
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        for (int r = 0; r < rows; r++) {
+            List<Cell> row = new ArrayList<Cell>();
+            for (int c = 0; c < columns; c++) {
+                Cell cell = new Cell(font, (r == 0 && c == 0) ? "spans" : (r < rowspan && c == 0) ? "" : "r" + r + "c" + c);
+                cell.setWidth(60f);
+                cell.setBorder(Border.TOP, true);
+                cell.setBorder(Border.BOTTOM, true);
+                cell.setBorder(Border.LEFT, true);
+                cell.setBorder(Border.RIGHT, true);
+                row.add(cell);
+            }
+            data.add(row);
+        }
+        data.get(0).get(0).setRowSpan(rowspan);
+        return data;
+    }
+
+    @Test
+    void aCellThatSpansRowsIsDrawnOnceOverAllOfThem() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Table().setTableData(spanning(font, 3, 2, 2)).setLocation(50f, 50f).drawOn(page);
+        String content = TestSupport.content(page);
+        // The spanning cell is drawn once, and the cell it covers not at all.
+        assertEquals(1, count(content, TestSupport.hex("spans")), content);
+        assertEquals(0, count(content, TestSupport.hex("r1c0")), content);
+        assertEquals(1, count(content, TestSupport.hex("r1c1")), content);
+        // Its left border runs from the top of its row to the bottom of the
+        // row under it, which is two rows of the three rules the table draws.
+        List<Float> ys = rules(page);
+        assertEquals(4, ys.size(), ys.toString());
+        float rowHeight = ys.get(0) - ys.get(1);
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "50 ([-0-9.]+) m\\n50 ([-0-9.]+) l").matcher(content);
+        assertTrue(m.find(), content);
+        assertEquals(2 * rowHeight, Float.parseFloat(m.group(1)) - Float.parseFloat(m.group(2)),
+                0.01f, "the spanning cell is not two rows tall");
+    }
+
+    @Test
+    void aPageBreakKeepsTheRowsOfASpanTogether() throws Exception {
+        // The rows a cell spans go to the next page with it, so that a span is
+        // never cut in two.
+        for (int rowspan : new int[] {1, 2, 3, 4}) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<List<Cell>> data = spanning(font, 60, 2, rowspan);
+            // The span sits where the first page ends.
+            data.get(0).get(0).setRowSpan(1);
+            data.get(48).get(0).setRowSpan(rowspan).setText("spans");
+            for (int r = 49; r < 48 + rowspan; r++) {
+                data.get(r).get(0).setText("");
+            }
+            Table table = new Table().setTableData(data).setLocation(50f, 50f);
+            table.setBottomMargin(20f);
+            List<Page> pages = new ArrayList<Page>();
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            List<String> contents = new ArrayList<String>();
+            for (Page page : pages) {
+                contents.add(TestSupport.content(page));
+            }
+            int spanPage = -1;
+            for (int i = 0; i < contents.size(); i++) {
+                if (count(contents.get(i), TestSupport.hex("spans")) > 0) {
+                    spanPage = i;
+                }
+            }
+            assertTrue(spanPage >= 0, "the spanning cell was not drawn");
+            for (int r = 48; r < 48 + rowspan; r++) {
+                assertEquals(1, count(contents.get(spanPage), TestSupport.hex("r" + r + "c1")),
+                        "row " + r + " is not on the page of the span it belongs to");
+            }
+        }
+    }
+
+    @Test
+    void aCellThatSpansRowsSaysSoInAPDFUADocument() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = spanning(font, 3, 2, 2);
+        data.get(0).get(0).setColSpan(2);
+        data.get(0).get(1).setText("");
+        data.get(1).get(1).setText("");     // The second row is covered whole.
+        new Table().setTableData(data, 1).setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>"), raw);
+        // A row that a span covers whole holds no cell of its own.
+        assertEquals(2, count(raw, "/S /TR\n"), raw);
+        assertEquals(1, count(raw, "/S /TH\n"), raw);
+        assertEquals(2, count(raw, "/S /TD\n"), raw);
+    }
 }

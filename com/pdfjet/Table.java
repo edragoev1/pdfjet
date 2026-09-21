@@ -439,6 +439,7 @@ public class Table implements Drawable {
             return new float[] {x1, y1};    // An empty table draws nothing.
         }
         wrapAroundCellText();
+        applyRowSpans();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
         float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
@@ -460,6 +461,7 @@ public class Table implements Drawable {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
         wrapAroundCellText();
+        applyRowSpans();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
         float[] xy = null;
@@ -490,18 +492,18 @@ public class Table implements Drawable {
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addArtifactBMC();
         }
+        float[] heights = getRowHeights();
         for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
             List<Cell> row = tableData.get(i);
-            float h = getMaxCellHeight(row);
             if (page != null) {
                 if (i == (numOfHeaderRows - 1)) {
                     for (Cell cell : row) {
                         cell.setBorder(Border.BOTTOM, true);
                     }
                 }
-                drawRow(page, row, x, y, h, first ? StructElem.TH : null);
+                drawRow(page, row, x, y, heights, i, first ? StructElem.TH : null);
             }
-            y += h;
+            y += heights[i];
         }
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addEMC();
@@ -513,13 +515,13 @@ public class Table implements Drawable {
     // and each cell a TH or TD element, which holds what the cell draws; a row
     // that goes on with the wrapped text of the row above adds to its elements.
     // With no cell structure the row is not tagged, as it is an artifact.
-    private void drawRow(Page page, List<Cell> row, float x, float y, float h,
-            StructElem cellStructure) throws Exception {
+    private void drawRow(Page page, List<Cell> row, float x, float y, float[] heights,
+            int rowIndex, StructElem cellStructure) throws Exception {
         StructElement parent = page.structParent;
         boolean tagged = (structElement != null && cellStructure != null);
         boolean continued = (row.get(0).properties & Cell.CONTINUED) != 0;
         StructElement rowElement = null;
-        if (tagged && !continued) {
+        if (tagged && !continued && !allCovered(row)) {
             rowElement = page.addStructElement(structElement, StructElem.TR, null);
             if (cellElements == null || cellElements.length != row.size()) {
                 cellElements = new StructElement[row.size()];
@@ -528,11 +530,12 @@ public class Table implements Drawable {
         int i = 0;
         while (i < row.size()) {
             Cell cell = row.get(i);
-            int colspan = cell.getColSpan();
-            if (tagged) {
+            int colspan = Math.max(1, cell.getColSpan());
+            boolean covered = (cell.properties & Cell.COVERED) != 0;
+            if (tagged && !covered) {
                 if (!continued) {
-                    cellElements[i] = page.addStructElement(
-                            rowElement, cellStructure, getAttributes(cellStructure, colspan));
+                    cellElements[i] = page.addStructElement(rowElement, cellStructure,
+                            getAttributes(cellStructure, colspan, cell.rowsSpanned));
                 }
                 page.structParent = (cellElements != null && i < cellElements.length) ?
                         cellElements[i] : null;
@@ -541,22 +544,46 @@ public class Table implements Drawable {
             for (int j = 0; j < colspan; j++) {
                 w += row.get(i++).getWidth();
             }
-            page.setBrushColor(cell.textColor);
-            cell.drawOn(page, x, y, w, h);
+            if (!covered) {
+                // A cell that spans rows is as tall as all the rows it covers.
+                float cellHeight = 0f;
+                int end = Math.min(rowIndex + cell.rowsSpanned, heights.length);
+                for (int r = rowIndex; r < end; r++) {
+                    cellHeight += heights[r];
+                }
+                page.setBrushColor(cell.textColor);
+                cell.drawOn(page, x, y, w, cellHeight);
+            }
             x += w;
         }
         page.structParent = parent;
     }
 
-    // The attributes of a table cell element: the scope of a header cell and
-    // the number of columns a cell spans, or null when it has neither.
-    private static String getAttributes(StructElem cellStructure, int colspan) {
-        if (cellStructure == StructElem.TH) {
-            return colspan > 1 ?
-                    "<</O /Table /Scope /Column /ColSpan " + colspan + ">>" :
-                    "<</O /Table /Scope /Column>>";
+    // True when every cell of the row is one that a cell above it spans over,
+    // so the row holds no cell of its own and is not a row of the table.
+    private static boolean allCovered(List<Cell> row) {
+        for (Cell cell : row) {
+            if ((cell.properties & Cell.COVERED) == 0) {
+                return false;
+            }
         }
-        return colspan > 1 ? "<</O /Table /ColSpan " + colspan + ">>" : null;
+        return !row.isEmpty();
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of rows and columns a cell spans, or null when it has none.
+    private static String getAttributes(StructElem cellStructure, int colspan, int rowspan) {
+        StringBuilder spans = new StringBuilder();
+        if (colspan > 1) {
+            spans.append(" /ColSpan ").append(colspan);
+        }
+        if (rowspan > 1) {
+            spans.append(" /RowSpan ").append(rowspan);
+        }
+        if (cellStructure == StructElem.TH) {
+            return "<</O /Table /Scope /Column" + spans + ">>";
+        }
+        return (spans.length() > 0) ? "<</O /Table" + spans + ">>" : null;
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
@@ -564,23 +591,31 @@ public class Table implements Drawable {
     private float[] drawTableRows(Page page, float[] xy) throws Exception {
         float x = xy[0];
         float y = xy[1];
+        float[] heights = getRowHeights();
         int index = (rendered == -1) ? tableData.size() : rendered;
         int first = index;
         while (index < tableData.size()) {
-            List<Cell> row = tableData.get(index);
-            float h = getMaxCellHeight(row);
+            // The rows a cell spans are drawn together, so that a page break
+            // never cuts one in two.
+            int end = rowGroupEnd(index);
+            float groupHeight = 0f;
+            for (int r = index; r < end; r++) {
+                groupHeight += heights[r];
+            }
             // A row that does not fit goes on the next page, unless it is the
             // first row of this one: a row taller than the page fits no page,
             // and leaving it for the next page would ask for pages forever.
-            if (page != null && (y + h) > (page.height - bottomMargin) && index > first) {
+            if (page != null && (y + groupHeight) > (page.height - bottomMargin) && index > first) {
                 rendered = index;
                 return new float[] {x, y};
             }
-            if (page != null) {
-                drawRow(page, row, x, y, h, StructElem.TD);
+            for (int r = index; r < end; r++) {
+                if (page != null) {
+                    drawRow(page, tableData.get(r), x, y, heights, r, StructElem.TD);
+                }
+                y += heights[r];
             }
-            y += h;
-            index++;
+            index = end;
         }
         if (page != null) {
             rendered = -1; // We are done!
@@ -588,17 +623,147 @@ public class Table implements Drawable {
         return new float[] {x, y};
     }
 
+    // Works out what each cell that spans rows covers, after the text is
+    // wrapped: a row of the table is drawn as one row for each line its
+    // tallest cell needs, so a cell that spans two rows of the table spans as
+    // many rows of the drawing as those two were wrapped into. The cells the
+    // span covers are marked, and draw nothing.
+    private void applyRowSpans() {
+        for (List<Cell> row : tableData) {
+            for (Cell cell : row) {
+                cell.properties &= ~Cell.COVERED;
+                cell.rowsSpanned = 1;
+            }
+        }
+        for (int r = 0; r < tableData.size(); r++) {
+            if (isContinuation(r)) {
+                continue;       // A span starts in a row of the table, not in the wrap of one.
+            }
+            List<Cell> row = tableData.get(r);
+            int i = 0;
+            while (i < row.size()) {
+                Cell cell = row.get(i);
+                int colspan = Math.max(1, cell.getColSpan());
+                if (cell.getRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0) {
+                    int end = rowAfter(r, cell.getRowSpan());
+                    int ownEnd = rowAfter(r, 1);
+                    cell.rowsSpanned = end - r;
+                    // The rows the wrapped text of this cell takes keep their
+                    // text and lose the border that would cross the cell.
+                    for (int r2 = r + 1; r2 < ownEnd; r2++) {
+                        setSpanned(r2, i, colspan, false);
+                    }
+                    for (int r2 = ownEnd; r2 < end; r2++) {
+                        setSpanned(r2, i, colspan, true);
+                    }
+                }
+                i += colspan;
+            }
+        }
+    }
+
+    // Marks the columns of the row that a span covers: a covered cell draws
+    // nothing, and a row of the wrapped text of the spanning cell keeps its
+    // text without the border under it.
+    private void setSpanned(int r, int column, int colspan, boolean covered) {
+        List<Cell> row = tableData.get(r);
+        int i = 0;
+        while (i < row.size()) {
+            Cell cell = row.get(i);
+            if (i >= column && i < column + colspan) {
+                if (covered) {
+                    cell.properties |= Cell.COVERED;
+                } else {
+                    cell.setBorder(Border.BOTTOM, false);
+                }
+            }
+            i += Math.max(1, cell.getColSpan());
+        }
+    }
+
+    // The index of the row after the count rows of the table that start at r,
+    // counting the rows the wrapped text of each of them takes.
+    private int rowAfter(int r, int count) {
+        int index = r;
+        for (int i = 0; i < count && index < tableData.size(); i++) {
+            index++;
+            while (index < tableData.size() && isContinuation(index)) {
+                index++;
+            }
+        }
+        return index;
+    }
+
+    // True when the row holds the wrapped text of the row above it.
+    private boolean isContinuation(int r) {
+        List<Cell> row = tableData.get(r);
+        return !row.isEmpty() && (row.get(0).properties & Cell.CONTINUED) != 0;
+    }
+
+    // The height of each row of the table as it is drawn. A cell that spans
+    // rows is not what makes its first row tall; the rows it covers hold it
+    // together, and the last of them grows when they do not.
+    private float[] getRowHeights() throws Exception {
+        float[] heights = new float[tableData.size()];
+        for (int r = 0; r < tableData.size(); r++) {
+            heights[r] = getMaxCellHeight(tableData.get(r));
+        }
+        for (int r = 0; r < tableData.size(); r++) {
+            List<Cell> row = tableData.get(r);
+            for (int i = 0; i < row.size(); i++) {
+                Cell cell = row.get(i);
+                if (cell.rowsSpanned < 2) {
+                    continue;
+                }
+                int end = Math.min(r + cell.rowsSpanned, tableData.size());
+                float have = 0f;
+                for (int r2 = r; r2 < end; r2++) {
+                    have += heights[r2];
+                }
+                float needed = cell.getHeight(getTotalWidth(row, i));
+                if (needed > have && end > r) {
+                    heights[end - 1] += needed - have;
+                }
+            }
+        }
+        return heights;
+    }
+
+    // The row after the rows that a span holds together, which a page break
+    // keeps on one page.
+    private int rowGroupEnd(int index) {
+        int end = index + 1;
+        for (int r = index; r < end && r < tableData.size(); r++) {
+            for (Cell cell : tableData.get(r)) {
+                if (r + cell.rowsSpanned > end) {
+                    end = r + cell.rowsSpanned;
+                }
+            }
+        }
+        return Math.min(end, tableData.size());
+    }
+
     private float getMaxCellHeight(List<Cell> row) throws Exception {
         float maxCellHeight = 0f;
+        float spanned = 0f;
         for (int i = 0; i < row.size(); i++) {
             Cell cell = row.get(i);
-            float totalWidth = getTotalWidth(row, i);
-            float cellHeight = cell.getHeight(totalWidth);
+            if ((cell.properties & Cell.COVERED) != 0) {
+                continue;       // A cell the one above it draws over.
+            }
+            float cellHeight = cell.getHeight(getTotalWidth(row, i));
+            if (cell.rowsSpanned > 1) {
+                // A cell that spans rows is as tall as all of them together,
+                // which getRowHeights shares out; it is the height of the row
+                // only when nothing else is in it.
+                spanned = Math.max(spanned, cellHeight / cell.rowsSpanned);
+                continue;
+            }
             if (cellHeight > maxCellHeight) {
                 maxCellHeight = cellHeight;
             }
         }
-        return maxCellHeight;
+        return (maxCellHeight > 0f) ? maxCellHeight : spanned;
     }
 
     /**

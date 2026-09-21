@@ -404,6 +404,7 @@ public class Table : IDrawable {
             return new float[] {x1, y1};    // An empty table draws nothing.
         }
         WrapAroundCellText();
+        ApplyRowSpans();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
         float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
@@ -423,6 +424,7 @@ public class Table : IDrawable {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
         WrapAroundCellText();
+        ApplyRowSpans();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
         float[] xy = null;
@@ -453,18 +455,18 @@ public class Table : IDrawable {
         if (page != null && !first && numOfHeaderRows > 0) {
             page.AddArtifactBMC();
         }
+        float[] heights = GetRowHeights();
         for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
             List<Cell> row = tableData[i];
-            float h = GetMaxCellHeight(row);
             if (page != null) {
                 if (i == (numOfHeaderRows - 1)) {
                     foreach (Cell cell in row) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }
                 }
-                DrawRow(page, row, x, y, h, first ? StructElem.TH : (StructElem?) null);
+                DrawRow(page, row, x, y, heights, i, first ? StructElem.TH : (StructElem?) null);
             }
-            y += h;
+            y += heights[i];
         }
         if (page != null && !first && numOfHeaderRows > 0) {
             page.AddEMC();
@@ -476,13 +478,13 @@ public class Table : IDrawable {
     // and each cell a TH or TD element, which holds what the cell draws; a row
     // that goes on with the wrapped text of the row above adds to its elements.
     // With no cell structure the row is not tagged, as it is an artifact.
-    private void DrawRow(Page page, List<Cell> row, float x, float y, float h,
-            StructElem? cellStructure) {
+    private void DrawRow(Page page, List<Cell> row, float x, float y, float[] heights,
+            int rowIndex, StructElem? cellStructure) {
         StructElement parent = page.structParent;
         bool tagged = (structElement != null && cellStructure != null);
         bool continued = (row[0].properties & Cell.CONTINUED) != 0;
         StructElement rowElement = null;
-        if (tagged && !continued) {
+        if (tagged && !continued && !AllCovered(row)) {
             rowElement = page.AddStructElement(structElement, StructElem.TR, null);
             if (cellElements == null || cellElements.Length != row.Count) {
                 cellElements = new StructElement[row.Count];
@@ -491,11 +493,12 @@ public class Table : IDrawable {
         int i = 0;
         while (i < row.Count) {
             Cell cell = row[i];
-            int colspan = cell.GetColSpan();
-            if (tagged) {
+            int colspan = (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+            bool covered = (cell.properties & Cell.COVERED) != 0;
+            if (tagged && !covered) {
                 if (!continued) {
-                    cellElements[i] = page.AddStructElement(
-                            rowElement, cellStructure.Value, GetAttributes(cellStructure.Value, colspan));
+                    cellElements[i] = page.AddStructElement(rowElement, cellStructure.Value,
+                            GetAttributes(cellStructure.Value, colspan, cell.rowsSpanned));
                 }
                 page.structParent = (cellElements != null && i < cellElements.Length) ?
                         cellElements[i] : null;
@@ -504,22 +507,46 @@ public class Table : IDrawable {
             for (int j = 0; j < colspan; j++) {
                 w += row[i++].GetWidth();
             }
-            page.SetBrushColor(cell.textColor);
-            cell.DrawOn(page, x, y, w, h);
+            if (!covered) {
+                // A cell that spans rows is as tall as all the rows it covers.
+                float cellHeight = 0f;
+                int end = Math.Min(rowIndex + cell.rowsSpanned, heights.Length);
+                for (int r = rowIndex; r < end; r++) {
+                    cellHeight += heights[r];
+                }
+                page.SetBrushColor(cell.textColor);
+                cell.DrawOn(page, x, y, w, cellHeight);
+            }
             x += w;
         }
         page.structParent = parent;
     }
 
-    // The attributes of a table cell element: the scope of a header cell and
-    // the number of columns a cell spans, or null when it has neither.
-    private static String GetAttributes(StructElem cellStructure, int colspan) {
-        if (cellStructure == StructElem.TH) {
-            return colspan > 1 ?
-                    "<</O /Table /Scope /Column /ColSpan " + colspan + ">>" :
-                    "<</O /Table /Scope /Column>>";
+    // True when every cell of the row is one that a cell above it spans over,
+    // so the row holds no cell of its own and is not a row of the table.
+    private static bool AllCovered(List<Cell> row) {
+        foreach (Cell cell in row) {
+            if ((cell.properties & Cell.COVERED) == 0) {
+                return false;
+            }
         }
-        return colspan > 1 ? "<</O /Table /ColSpan " + colspan + ">>" : null;
+        return row.Count > 0;
+    }
+
+    // The attributes of a table cell element: the scope of a header cell and
+    // the number of rows and columns a cell spans, or null when it has none.
+    private static String GetAttributes(StructElem cellStructure, int colspan, int rowspan) {
+        String spans = "";
+        if (colspan > 1) {
+            spans += " /ColSpan " + colspan;
+        }
+        if (rowspan > 1) {
+            spans += " /RowSpan " + rowspan;
+        }
+        if (cellStructure == StructElem.TH) {
+            return "<</O /Table /Scope /Column" + spans + ">>";
+        }
+        return (spans.Length > 0) ? "<</O /Table" + spans + ">>" : null;
     }
 
     // Draws the rows from the next row to draw, as many as fit on the page.
@@ -529,21 +556,29 @@ public class Table : IDrawable {
         float y = xy[1];
         int index = (rendered == -1) ? tableData.Count : rendered;
         int first = index;
+        float[] heights = GetRowHeights();
         while (index < tableData.Count) {
-            List<Cell> row = tableData[index];
-            float h = GetMaxCellHeight(row);
+            // The rows a cell spans are drawn together, so that a page break
+            // never cuts one in two.
+            int end = RowGroupEnd(index);
+            float groupHeight = 0f;
+            for (int r = index; r < end; r++) {
+                groupHeight += heights[r];
+            }
             // A row that does not fit goes on the next page, unless it is the
             // first row of this one: a row taller than the page fits no page,
             // and leaving it for the next page would ask for pages forever.
-            if (page != null && (y + h) > (page.height - bottomMargin) && index > first) {
+            if (page != null && (y + groupHeight) > (page.height - bottomMargin) && index > first) {
                 rendered = index;
                 return new float[] {x, y};
             }
-            if (page != null) {
-                DrawRow(page, row, x, y, h, StructElem.TD);
+            for (int r = index; r < end; r++) {
+                if (page != null) {
+                    DrawRow(page, tableData[r], x, y, heights, r, StructElem.TD);
+                }
+                y += heights[r];
             }
-            y += h;
-            index++;
+            index = end;
         }
         if (page != null) {
             rendered = -1; // We are done!
@@ -551,17 +586,147 @@ public class Table : IDrawable {
         return new float[] {x, y};
     }
 
+    // Works out what each cell that spans rows covers, after the text is
+    // wrapped: a row of the table is drawn as one row for each line its
+    // tallest cell needs, so a cell that spans two rows of the table spans as
+    // many rows of the drawing as those two were wrapped into. The cells the
+    // span covers are marked, and draw nothing.
+    private void ApplyRowSpans() {
+        foreach (List<Cell> row in tableData) {
+            foreach (Cell cell in row) {
+                cell.properties &= ~Cell.COVERED;
+                cell.rowsSpanned = 1;
+            }
+        }
+        for (int r = 0; r < tableData.Count; r++) {
+            if (IsContinuation(r)) {
+                continue;   // A span starts in a row of the table, not in the wrap of one.
+            }
+            List<Cell> row = tableData[r];
+            int i = 0;
+            while (i < row.Count) {
+                Cell cell = row[i];
+                int colspan = (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+                if (cell.GetRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0) {
+                    int end = RowAfter(r, cell.GetRowSpan());
+                    int ownEnd = RowAfter(r, 1);
+                    cell.rowsSpanned = end - r;
+                    // The rows the wrapped text of this cell takes keep their
+                    // text and lose the border that would cross the cell.
+                    for (int r2 = r + 1; r2 < ownEnd; r2++) {
+                        SetSpanned(r2, i, colspan, false);
+                    }
+                    for (int r2 = ownEnd; r2 < end; r2++) {
+                        SetSpanned(r2, i, colspan, true);
+                    }
+                }
+                i += colspan;
+            }
+        }
+    }
+
+    // Marks the columns of the row that a span covers: a covered cell draws
+    // nothing, and a row of the wrapped text of the spanning cell keeps its
+    // text without the border under it.
+    private void SetSpanned(int r, int column, int colspan, bool covered) {
+        List<Cell> row = tableData[r];
+        int i = 0;
+        while (i < row.Count) {
+            Cell cell = row[i];
+            if (i >= column && i < column + colspan) {
+                if (covered) {
+                    cell.properties |= Cell.COVERED;
+                } else {
+                    cell.SetBorder(Border.BOTTOM, false);
+                }
+            }
+            i += (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+        }
+    }
+
+    // The index of the row after the count rows of the table that start at r,
+    // counting the rows the wrapped text of each of them takes.
+    private int RowAfter(int r, int count) {
+        int index = r;
+        for (int i = 0; i < count && index < tableData.Count; i++) {
+            index++;
+            while (index < tableData.Count && IsContinuation(index)) {
+                index++;
+            }
+        }
+        return index;
+    }
+
+    // True when the row holds the wrapped text of the row above it.
+    private bool IsContinuation(int r) {
+        List<Cell> row = tableData[r];
+        return row.Count > 0 && (row[0].properties & Cell.CONTINUED) != 0;
+    }
+
+    // The height of each row of the table as it is drawn. A cell that spans
+    // rows is not what makes its first row tall; the rows it covers hold it
+    // together, and the last of them grows when they do not.
+    private float[] GetRowHeights() {
+        float[] heights = new float[tableData.Count];
+        for (int r = 0; r < tableData.Count; r++) {
+            heights[r] = GetMaxCellHeight(tableData[r]);
+        }
+        for (int r = 0; r < tableData.Count; r++) {
+            List<Cell> row = tableData[r];
+            for (int i = 0; i < row.Count; i++) {
+                Cell cell = row[i];
+                if (cell.rowsSpanned < 2) {
+                    continue;
+                }
+                int end = Math.Min(r + cell.rowsSpanned, tableData.Count);
+                float have = 0f;
+                for (int r2 = r; r2 < end; r2++) {
+                    have += heights[r2];
+                }
+                float needed = cell.GetHeight(GetTotalWidth(row, i));
+                if (needed > have && end > r) {
+                    heights[end - 1] += needed - have;
+                }
+            }
+        }
+        return heights;
+    }
+
+    // The row after the rows that a span holds together, which a page break
+    // keeps on one page.
+    private int RowGroupEnd(int index) {
+        int end = index + 1;
+        for (int r = index; r < end && r < tableData.Count; r++) {
+            foreach (Cell cell in tableData[r]) {
+                if (r + cell.rowsSpanned > end) {
+                    end = r + cell.rowsSpanned;
+                }
+            }
+        }
+        return Math.Min(end, tableData.Count);
+    }
+
     private float GetMaxCellHeight(List<Cell> row) {
         float maxCellHeight = 0f;
+        float spanned = 0f;
         for (int i = 0; i < row.Count; i++) {
             Cell cell = row[i];
-            float totalWidth = GetTotalWidth(row, i);
-            float cellHeight = cell.GetHeight(totalWidth);
+            if ((cell.properties & Cell.COVERED) != 0) {
+                continue;   // A cell the one above it draws over.
+            }
+            float cellHeight = cell.GetHeight(GetTotalWidth(row, i));
+            if (cell.rowsSpanned > 1) {
+                // A cell that spans rows is as tall as all of them together,
+                // which GetRowHeights shares out; it is the height of the row
+                // only when nothing else is in it.
+                spanned = Math.Max(spanned, cellHeight / cell.rowsSpanned);
+                continue;
+            }
             if (cellHeight > maxCellHeight) {
                 maxCellHeight = cellHeight;
             }
         }
-        return maxCellHeight;
+        return (maxCellHeight > 0f) ? maxCellHeight : spanned;
     }
 
     /// <summary>

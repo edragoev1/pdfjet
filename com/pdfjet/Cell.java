@@ -45,6 +45,10 @@ public class Cell {
     protected int borderColor = NO_COLOR;
 
     private int colspan = 1;
+    private int rowspan = 1;
+    // The rows of the table as it is drawn that the cell spans, which is its
+    // row span with the rows the wrapped text of each of them needs.
+    int rowsSpanned = 1;
     // The borders and the underline and strikeout of the text are the bits of
     // one int, 4 bytes instead of 6 booleans and the padding they need. The
     // four borders are the bits Border gives them; only the top and the left
@@ -54,6 +58,9 @@ public class Cell {
     // A cell that a table adds below another to hold the next line of its
     // wrapped text, which is the same table cell in a PDF/UA document.
     static final int CONTINUED = 0x00400000;
+    // A cell that the cell above it spans over, which draws nothing: the cell
+    // that spans the rows draws its text, background and borders over it.
+    static final int COVERED = 0x00800000;
 
     // Where the three alignments of a cell are in properties, three bits
     // each, and where the four paddings are in padding, a byte each.
@@ -653,6 +660,32 @@ public class Cell {
      */
     public int getColSpan() {
         return this.colspan;
+    }
+
+    /**
+     * Sets the number of rows this cell spans, counted from this one, so that
+     * a row span of 2 covers this row and the one under it. The cells the span
+     * covers are not drawn: this cell draws its text, its background and its
+     * borders once over all of them, and a page break moves the whole of it to
+     * the next page. The table keeps its shape, so the rows under this one
+     * still hold a cell at this column, which is left empty. A row span of 1,
+     * the default, spans nothing. Please see Example_38.
+     *
+     * @param rowspan the number of rows, from 1.
+     * @return this Cell object.
+     */
+    public Cell setRowSpan(int rowspan) {
+        this.rowspan = Math.max(1, rowspan);
+        return this;
+    }
+
+    /**
+     * Returns the number of rows this cell spans.
+     *
+     * @return the row span value.
+     */
+    public int getRowSpan() {
+        return this.rowspan;
     }
 
     /**

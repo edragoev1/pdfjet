@@ -40,6 +40,10 @@ type Cell struct {
 	borderColor     int32
 
 	colspan int32
+	rowspan int32
+	// The rows of the table as it is drawn that the cell spans, which is its
+	// row span with the rows the wrapped text of each of them needs.
+	rowsSpanned int
 	// The borders, the underline and strikeout of the text, and the three
 	// alignments are the bits of one uint32: 4 bytes instead of 6 bools and
 	// three alignments and the padding they need. The four borders are the
@@ -58,6 +62,9 @@ const (
 	// A cell that a table adds below another to hold the next line of its
 	// wrapped text, which is the same table cell in a PDF/UA document.
 	cellContinued uint32 = 0x00400000
+	// A cell that the cell above it spans over, which draws nothing: the
+	// cell that spans the rows draws its text, background and borders over it.
+	cellCovered uint32 = 0x00800000
 )
 
 // Where the three alignments of a cell are in Cell.properties, three bits
@@ -126,6 +133,8 @@ func NewCell(font *Font, text string) *Cell {
 	cell.hasText = true
 	cell.width = 75.0
 	cell.colspan = 1
+	cell.rowspan = 1
+	cell.rowsSpanned = 1
 	cell.SetPadding(2.0)
 	cell.backgroundColor = color.Transparent
 	cell.borderColor = color.Transparent
@@ -495,6 +504,27 @@ func (cell *Cell) SetColSpan(colspan int) *Cell {
 // Returns the column span value.
 func (cell *Cell) GetColSpan() int {
 	return int(cell.colspan)
+}
+
+// SetRowSpan sets the number of rows this cell spans, counted from this one,
+// so that a row span of 2 covers this row and the one under it. The cells the
+// span covers are not drawn: this cell draws its text, its background and its
+// borders once over all of them, and a page break moves the whole of it to the
+// next page. The table keeps its shape, so the rows under this one still hold
+// a cell at this column, which is left empty. A row span of 1, the default,
+// spans nothing. Please see Example_38.
+//   - rowspan: the number of rows, from 1.
+func (cell *Cell) SetRowSpan(rowspan int) *Cell {
+	if rowspan < 1 {
+		rowspan = 1
+	}
+	cell.rowspan = int32(rowspan)
+	return cell
+}
+
+// GetRowSpan returns the number of rows this cell spans.
+func (cell *Cell) GetRowSpan() int {
+	return int(cell.rowspan)
 }
 
 // SetBorder sets whether the specified borders are drawn.
