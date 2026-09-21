@@ -175,6 +175,24 @@ func TestDecompressorInflateRejectsDataThatDecodesToMoreThanTheLimit(t *testing.
 	}
 }
 
+func TestDecompressorInflatePrefixReadsNoSymbolPastTheBytesItNeeds(t *testing.T) {
+	// A zlib stream of one block of fixed codes that is cut short: it gives
+	// 80 bytes and then ends in the middle of the symbol after them. The
+	// prefix of those 80 bytes is there, and one of 81 bytes is not.
+	data := append([]byte{0x78, 0x9C, 0x32}, bytes.Repeat([]byte{0x30}, 80)...)
+	decoded, err := InflatePrefix(data, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEqual(t, "prefix", bytes.Repeat([]byte("0"), 80), decoded)
+	if _, err := InflatePrefix(data, 81); err == nil {
+		t.Error("a prefix of more bytes than the stream gives does not fail")
+	}
+	if _, err := Inflate(data); err == nil {
+		t.Error("a stream that is cut short does not fail")
+	}
+}
+
 func TestDecompressorInflatePrefixReturnsTheFirstBytesAndIgnoresTheRest(t *testing.T) {
 	data := []byte("hello hello hello hello")
 	deflated := compressor.Deflate(data)

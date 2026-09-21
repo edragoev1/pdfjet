@@ -166,6 +166,23 @@ class DecompressorTest {
     }
 
     @Test
+    void inflatePrefixReadsNoSymbolPastTheBytesItNeeds() throws Exception {
+        // A zlib stream of one block of fixed codes that is cut short: it
+        // gives 80 bytes and then ends in the middle of the symbol after
+        // them. The prefix of those 80 bytes is there, and one of 81 is not.
+        byte[] data = new byte[83];
+        data[0] = (byte) 0x78;
+        data[1] = (byte) 0x9C;
+        data[2] = (byte) 0x32;
+        Arrays.fill(data, 3, data.length, (byte) 0x30);
+        byte[] zeros = new byte[80];
+        Arrays.fill(zeros, (byte) '0');
+        assertArrayEquals(zeros, Decompressor.inflatePrefix(data, 80));
+        assertThrows(Exception.class, () -> Decompressor.inflatePrefix(data, 81));
+        assertThrows(Exception.class, () -> Decompressor.inflate(data));
+    }
+
+    @Test
     void inflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() throws Exception {
         byte[] data = ascii("hello hello hello hello");
         final byte[] deflated = Compressor.deflate(data);

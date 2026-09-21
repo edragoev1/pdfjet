@@ -110,7 +110,19 @@ work to Oct 21 is the seven goals below, in this order.
      other ports read as zeros. Of the 2,181 fonts of the replay the four
      ports read the same ones, and draw the same page from every one they
      read.
-   - ⬜ The decompressor.
+   - ✅ The decompressor (Sep 21): `FuzzDecompressor` runs every filter of a
+     PDF stream -- Flate, LZW, ASCIIHex, ASCII85, RunLength and the predictor
+     of a /DecodeParms -- on the same bytes, and `FuzzDeflateRoundTrip`
+     checks that what PDFjet writes compressed reads back as the same bytes
+     and that a prefix of it is its first bytes; 46.5 M and 12.9 M runs
+     clean. The Go decoders, which carry the 256 MiB limit and the parameter
+     guards from the review, took every input. Replaying the corpus in the
+     four ports found one: Swift, whose decoder is a port of `puff.c` and not
+     a library, decoded the symbol after the bytes a prefix asked for, so a
+     stream cut short right after them failed there and read in the other
+     three. Fixed with a unit test in the four ports. Of the 1,066 streams of
+     the replay every port now decodes every one to the same bytes with every
+     filter.
    - ⬜ `PDF.read`: the xref, the object streams and the encryption.
 
 2. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to

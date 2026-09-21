@@ -47,6 +47,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- Swift read one symbol too many from a Flate stream when only the first
+  bytes of it were asked for. `Decompressor.inflatePrefix` returns the first
+  bytes a stream decodes to and ignores the rest of it, but the decoder of
+  Swift, which is a port of Mark Adler's `puff.c` and not a library, decoded
+  the symbol after those bytes before it stopped. A stream cut short right
+  after them then failed in Swift where it read in Java, C# and Go, which is
+  what a font whose file is read in pieces, or a PDF cut short, can look
+  like. Found by fuzzing the Go filters with `FuzzDecompressor`, which runs
+  every filter of a PDF stream -- Flate, LZW, ASCIIHex, ASCII85, RunLength
+  and the predictor of a /DecodeParms -- on the same bytes, and
+  `FuzzDeflateRoundTrip`, which checks that what PDFjet writes compressed
+  reads back as the same bytes; 46.5 M and 12.9 M runs clean. Of the 1,066
+  streams of the replay the four ports now decode every one to the same
+  bytes with every filter.
 - An OpenType or TrueType font (`.otf`, `.ttf`) that is not valid fails with
   "Invalid font file: ..." in all four ports, where it read past the end of
   the file, followed a character map that was not there, made an array of a

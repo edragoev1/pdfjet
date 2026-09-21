@@ -133,6 +133,16 @@ import Testing
         #expect(TestSupport.message(error) == "Flate data decodes to more than 999 bytes")
     }
 
+    @Test func inflatePrefixReadsNoSymbolPastTheBytesItNeeds() throws {
+        // A zlib stream of one block of fixed codes that is cut short: it
+        // gives 80 bytes and then ends in the middle of the symbol after
+        // them. The prefix of those 80 bytes is there, and one of 81 is not.
+        let data: [UInt8] = [0x78, 0x9C, 0x32] + [UInt8](repeating: 0x30, count: 80)
+        #expect(try inflatePrefix(data, 80) == [UInt8](repeating: UInt8(ascii: "0"), count: 80))
+        #expect(throws: (any Error).self) { try inflatePrefix(data, 81) }
+        #expect(throws: (any Error).self) { try inflate(data) }
+    }
+
     @Test func inflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() throws {
         let data = ascii("hello hello hello hello")
         let deflated = TestSupport.deflate(data)

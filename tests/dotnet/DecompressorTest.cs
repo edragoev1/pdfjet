@@ -161,6 +161,27 @@ public class DecompressorTest {
     }
 
     [Fact]
+    public void InflatePrefixReadsNoSymbolPastTheBytesItNeeds() {
+        // A zlib stream of one block of fixed codes that is cut short: it
+        // gives 80 bytes and then ends in the middle of the symbol after
+        // them. The prefix of those 80 bytes is there, and one of 81 is not.
+        byte[] data = new byte[83];
+        data[0] = 0x78;
+        data[1] = 0x9C;
+        data[2] = 0x32;
+        for (int i = 3; i < data.Length; i++) {
+            data[i] = 0x30;
+        }
+        byte[] zeros = new byte[80];
+        for (int i = 0; i < zeros.Length; i++) {
+            zeros[i] = (byte) '0';
+        }
+        Assert.Equal(zeros, Decompressor.InflatePrefix(data, 80));
+        Assert.ThrowsAny<Exception>(() => Decompressor.InflatePrefix(data, 81));
+        Assert.ThrowsAny<Exception>(() => Decompressor.Inflate(data));
+    }
+
+    [Fact]
     public void InflatePrefixReturnsTheFirstBytesAndIgnoresTheRest() {
         byte[] data = Ascii("hello hello hello hello");
         byte[] deflated = Compressor.Deflate(data);

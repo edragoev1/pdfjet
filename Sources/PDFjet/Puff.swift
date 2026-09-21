@@ -516,6 +516,11 @@ final class Puff {
 
         // decode literals and length/distance pairs
         repeat {
+            // A prefix that has its bytes is done, and reads no further: the
+            // symbol after them may not be in a stream that is cut short.
+            if prefix && output.count >= maxLength {
+                return 1
+            }
             symbol = try decode(&lencode, &input)
             if symbol < 0 {
                 return symbol               // invalid symbol
