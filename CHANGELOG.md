@@ -72,7 +72,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   U+001F and U+007F to U+009F, is drawn as a space, and stays in the font of
   its text rather than going to the fallback font. A CJK font that is not
   embedded is drawn as before: the reader's font draws it, and PDFjet does not
-  know which characters that font has.
+  know which characters that font has. PDF/UA and PDF/A forbid `.notdef`, so
+  a PDF/UA or PDF/A document draws a missing character with the font's
+  replacement character U+FFFD, or a question mark, or a space, the first the
+  font has, with the same actual text and that glyph's width, and passes
+  veraPDF; it drew `.notdef` inside the font's range before, and failed.
 - The API reference of `Container` and `Stamp` says what each is good at, what
   it costs and when to use the other, in all four ports. A container takes
   anything drawable -- an image, a table, a chart, a barcode, an annotation --
