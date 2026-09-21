@@ -567,8 +567,27 @@ goal 5, the references, which is the first thing to give if anything does.
 - ✅ **B** Goal 2: review `TextFrame`, `BigTable`, `CompositeTextLine` and
       `Bidi`; then the barcodes, the charts, `Form`, `Container` and `Stamp`.
       This closes goal 2. Done on Sep 21, above.
-- ⬜ **B** Goal 5: round-trip text, images against Pillow, fonts against
-      fontTools.
+- ✅ **B** Goal 5: round-trip text, images against Pillow, fonts against
+      fontTools (Sep 21), a week early. Three checks the Build workflow runs:
+      - `.github/scripts/check-example-text.py`: the strings every example
+        draws, recorded by the Go port built with the texttrace tag, against
+        what MuPDF and pdftotext extract from each port's PDFs, with no
+        .notdef glyph, no character in another font and none off the page.
+        It found Example_32's listing and Example_34's table drawn past the
+        edge of the page, fixed in the four ports.
+      - `tests/references/images`: 884 PNG, JPEG and BMP files -- Pillow's
+        test images, the BMP Suite, PngSuite, the repository's and made
+        ones -- embedded and decoded by MuPDF, against Pillow's pixels. It
+        found the alpha mask of a 32-bit BMP dropped, and an OS/2 BMP refused
+        with the wrong message; fixed in the four ports.
+      - `tests/references/fonts`: the 252 shipped fonts, their `.stream`
+        files, six popular fonts PDFjet does not ship and the 14 core fonts
+        against fontTools and Adobe's AFM files, the 19,046 kerning pairs
+        among it. It found the cap height read past a version 0 or 1 OS/2
+        table, and U+007F measured as a space and drawn as a bullet in the
+        core fonts; fixed in the four ports. Beside it, by decision, a
+        character a font lacks is drawn as .notdef wherever it falls, where it
+        was a space outside the font's range, and a control is a space.
 - ⬜ **B** Goal 3: PAC or Matterhorn over the 41 PDF/UA examples, and the
       fixes it asks for — the last day a tagging fix can land before the
       freeze.

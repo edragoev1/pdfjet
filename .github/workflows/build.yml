@@ -6,10 +6,12 @@
 # unit test fails. The compare job
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
-# declare PDF/A or PDF/UA compliance must pass veraPDF. The java8 job builds the
+# declare PDF/A or PDF/UA compliance must pass veraPDF, and the text MuPDF and
+# pdftotext extract must be the text the examples drew. The java8 job builds the
 # Java port with JDK 8 and runs its examples on Java 8. The corpus job reads,
 # merges and splits the pdf.js and veraPDF test corpora with the Go port and
-# checks what it gets against MuPDF.
+# checks what it gets against MuPDF. The references job checks the images the
+# Go port embeds against Pillow and the fonts it reads against fontTools.
 
 name: Build
 
@@ -92,6 +94,21 @@ jobs:
                   if-no-files-found: error
                   retention-days: 3
 
+            # The strings every Go example draws, which the compare job checks
+            # the text of every port's PDFs against. The examples are built again
+            # with the texttrace tag, which records them.
+            - if: matrix.port == 'go'
+              name: Record the text the examples draw
+              run: .github/scripts/trace-go-examples.sh "$RUNNER_TEMP/text"
+
+            - if: matrix.port == 'go'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: text-trace
+                  path: ${{ runner.temp }}/text/text-trace.jsonl
+                  if-no-files-found: error
+                  retention-days: 3
+
             # The unit tests in tests/<port>, or next to the code in src for Go.
             # The Java script downloads the JUnit console launcher and checks
             # its SHA-256; the C# tests restore xUnit from NuGet.
@@ -151,6 +168,11 @@ jobs:
                   pattern: example-pdfs-*
                   path: ${{ runner.temp }}/pdfs
 
+            - uses: actions/download-artifact@v8
+              with:
+                  name: text-trace
+                  path: ${{ runner.temp }}/text
+
             # veraPDF runs on Java.
             - uses: actions/setup-java@v6
               with:
@@ -206,6 +228,13 @@ jobs:
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-pdfs.py \
                       "$RUNNER_TEMP/pdfs/example-pdfs-{port}"
 
+            # pdftotext, of Poppler, extracts the text beside MuPDF.
+            - name: Check the text of the example PDFs
+              run: |
+                  sudo apt-get install -y -q poppler-utils
+                  "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-text.py \
+                      "$RUNNER_TEMP/text/text-trace.jsonl" "$RUNNER_TEMP/pdfs/example-pdfs-{port}"
+
             # What the tags of the tagged documents stand for, which veraPDF
             # cannot check. The Java PDFs stand for all four ports: the step
             # above has just checked that the content streams of the other
@@ -244,3 +273,41 @@ jobs:
             - name: Check the reader against the corpora
               run: |
                   "$RUNNER_TEMP/venv/bin/python" tests/corpus/check-corpus.py .corpora --port go
+
+    # Checks the images PDFjet embeds against Pillow and the fonts it reads
+    # against fontTools, with tests/references. The images and the fonts are
+    # fetched, not committed, and cached by what their fetch scripts pin.
+    references:
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - name: Install PyMuPDF, Pillow and fontTools
+              run: |
+                  python3 -m venv "$RUNNER_TEMP/venv"
+                  "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2 Pillow==12.3.0 fonttools==4.65.0
+
+            - uses: actions/cache@v6
+              with:
+                  path: |
+                      .images
+                      .reference-fonts
+                  key: references-${{ hashFiles('tests/references/images/fetch-images.sh', 'tests/references/fonts/fetch-fonts.sh') }}
+
+            - name: Fetch the images and the fonts
+              run: |
+                  tests/references/images/fetch-images.sh .images
+                  tests/references/fonts/fetch-fonts.sh .reference-fonts
+
+            - name: Check the images against Pillow
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" tests/references/images/check-images.py .images
+
+            - name: Check the fonts against fontTools
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" tests/references/fonts/check-fonts.py .reference-fonts
