@@ -39,7 +39,7 @@ public class Example_10 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         image1.setLocation(90f, 35f);
-        image1.scaleBy(0.75f);
+        image1.scaleBy(1.25f);     // The image is 120 DPI, so 0.6 of its pixels
         image1.drawOn(page);
 
         // To rotate the column, add it to a Container and rotate that; see Example_35.

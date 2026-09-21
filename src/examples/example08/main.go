@@ -39,7 +39,7 @@ func Example08() {
 	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
 	image.SetAltDescription(
 		"A white Tesla Model X with a black glass roof, seen from the front left.")
-	image.ScaleBy(0.20)
+	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
 
 	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hello, World!")
 	barcode.SetModuleLength(0.75)

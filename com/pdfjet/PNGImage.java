@@ -35,6 +35,16 @@ class PNGImage {
     private byte bitDepth = 8;
     private byte colorType = 0;
 
+    // The size the pHYs chunk gives the image, in points, or 0 when it gives
+    // none: the chunk holds the pixels per unit of each axis, and only unit 1,
+    // the metre, is a physical size. Unit 0 is the ratio of the two axes with
+    // no size to it, so the image keeps the size of its pixels.
+    private float physicalWidth;
+    private float physicalHeight;
+
+    // A metre is 72/0.0254 points.
+    private static final double POINTS_PER_METER = 72.0/0.0254;
+
     /**
      * Used to embed PNG images in the PDF document.
      *
@@ -83,6 +93,8 @@ class PNGImage {
                 if (colorType == 3) {
                     tRNS = chunk.getData();
                 }
+            } else if (chunkType.equals("pHYs")) {
+                readPhysicalSize(chunk.getData());
             }
             // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
             // ports: the samples are embedded as they are.
@@ -139,6 +151,48 @@ class PNGImage {
         }
 
         deflatedImageData = Compressor.deflate(image);
+    }
+
+    // Reads the size the image asks to be drawn at from the pHYs chunk: the
+    // pixels per unit of each axis and the unit they are in. A chunk of
+    // another length, another unit or no pixels at all gives no size, and the
+    // image keeps the size of its pixels; so does one whose size is too large
+    // for a PDF number.
+    private void readPhysicalSize(byte[] data) {
+        if (data.length != 9 || data[8] != 1) {
+            return;
+        }
+        int pixelsPerMeterX = toIntValue(data, 0);
+        int pixelsPerMeterY = toIntValue(data, 4);
+        if (pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0) {
+            return;     // Also for a count above 2^31, which reads negative.
+        }
+        float width = (float) (this.w*POINTS_PER_METER/pixelsPerMeterX);
+        float height = (float) (this.h*POINTS_PER_METER/pixelsPerMeterY);
+        if (FastFloat.isWritable(width) && FastFloat.isWritable(height)) {
+            this.physicalWidth = width;
+            this.physicalHeight = height;
+        }
+    }
+
+    /**
+     * Returns the width in points the pHYs chunk asks for, or 0 when the
+     * image has no pHYs chunk with a size in it.
+     *
+     * @return the width in points, or 0.
+     */
+    public float getPhysicalWidth() {
+        return this.physicalWidth;
+    }
+
+    /**
+     * Returns the height in points the pHYs chunk asks for, or 0 when the
+     * image has no pHYs chunk with a size in it.
+     *
+     * @return the height in points, or 0.
+     */
+    public float getPhysicalHeight() {
+        return this.physicalHeight;
     }
 
     /**

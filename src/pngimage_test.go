@@ -355,3 +355,95 @@ func TestPNGImageRejectsAPaletteOfNoColorsOrMoreThan256(t *testing.T) {
 	testWant(t, "Incorrect palette length.", testPNGError(testPNG(1, 1, 8, 3, make([]byte, 3*257), idat)))
 	testWant(t, "Incorrect palette length.", testPNGError(testPNG(1, 1, 8, 3, make([]byte, 4), idat)))
 }
+
+// testPNGWithPhys returns a truecolor PNG with a pHYs chunk of the given
+// pixels per unit and unit: 1 is the metre and 0 is a ratio of the axes with
+// no size.
+func testPNGWithPhys(width, height int32, x, y uint32, unit byte) []byte {
+	var buf bytes.Buffer
+	buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], uint32(width))
+	binary.BigEndian.PutUint32(ihdr[4:], uint32(height))
+	ihdr[8] = 8
+	ihdr[9] = 2
+	testPNGChunk(&buf, "IHDR", ihdr)
+	phys := make([]byte, 9)
+	binary.BigEndian.PutUint32(phys[0:], x)
+	binary.BigEndian.PutUint32(phys[4:], y)
+	phys[8] = unit
+	testPNGChunk(&buf, "pHYs", phys)
+	testPNGChunk(&buf, "IDAT", compressor.Deflate(make([]byte, int(height)*(1+3*int(width)))))
+	testPNGChunk(&buf, "IEND", []byte{})
+	return buf.Bytes()
+}
+
+func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T) {
+	// A pHYs chunk whose unit is the metre says how large the image is meant
+	// to be, so it is drawn that size rather than one point for each of its
+	// pixels. 11811 pixels per metre is 300 dots per inch, and 380 by 100 of
+	// them are 91.2 by 24 points.
+	path := testRepoPath(t, "images/rgba-8bit-chunks.png")
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	png := newPNGImage(file)
+	file.Close()
+	if png.GetWidth() != 380 || png.GetHeight() != 100 {
+		t.Fatalf("pixels %v x %v", png.GetWidth(), png.GetHeight())
+	}
+	if math.Abs(float64(png.physicalWidth)-91.2) > 0.01 ||
+		math.Abs(float64(png.physicalHeight)-24.0) > 0.01 {
+		t.Errorf("physical size %v x %v", png.physicalWidth, png.physicalHeight)
+	}
+	file, err = os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	image := NewImage(testNewPDF(), file)
+	if math.Abs(float64(image.GetWidth())-91.2) > 0.01 ||
+		math.Abs(float64(image.GetHeight())-24.0) > 0.01 {
+		t.Errorf("the image is drawn %v x %v, not the size it asks for",
+			image.GetWidth(), image.GetHeight())
+	}
+}
+
+func TestPNGImageAnImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel(t *testing.T) {
+	// Most PNG files carry no pHYs chunk, and are drawn as they were.
+	png := testDecodePNG(t, "BASN2C08")
+	if png.physicalWidth != 0.0 || png.physicalHeight != 0.0 {
+		t.Errorf("physical size %v x %v", png.physicalWidth, png.physicalHeight)
+	}
+}
+
+func TestPNGImageAPhysicalSizeChunkThatGivesNoSizeIsPassedOver(t *testing.T) {
+	// Unit 0 is the ratio of the two axes and says nothing about how large the
+	// image is, and a count of zero pixels gives no size either.
+	for _, c := range []struct {
+		what string
+		x, y uint32
+		unit byte
+	}{
+		{"a ratio is not a size", 1, 4, 0},
+		{"no pixels per metre across", 0, 4724, 1},
+		{"no pixels per metre down", 4724, 0, 1},
+	} {
+		png := newPNGImage(bytes.NewReader(testPNGWithPhys(8, 8, c.x, c.y, c.unit)))
+		if png.physicalWidth != 0.0 || png.physicalHeight != 0.0 {
+			t.Errorf("%s: physical size %v x %v", c.what, png.physicalWidth, png.physicalHeight)
+		}
+	}
+}
+
+func TestPNGImageAnImageOfPixelsThatAreNotSquareIsDrawnWithEachAxisOfItsOwnSize(t *testing.T) {
+	// The chunk gives the pixels per metre of each axis on its own, so an
+	// image of 4724 across and 2362 down is twice as tall as it is wide for
+	// the same count of pixels.
+	png := newPNGImage(bytes.NewReader(testPNGWithPhys(20, 20, 4724, 2362, 1)))
+	if math.Abs(float64(png.physicalWidth)-12.0) > 0.01 ||
+		math.Abs(float64(png.physicalHeight)-24.0) > 0.01 {
+		t.Errorf("physical size %v x %v", png.physicalWidth, png.physicalHeight)
+	}
+}

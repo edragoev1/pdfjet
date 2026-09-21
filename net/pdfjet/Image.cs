@@ -85,6 +85,7 @@ public class Image : IDrawable {
                     AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
+            SetPhysicalSize(png);
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
@@ -142,6 +143,7 @@ public class Image : IDrawable {
                     AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
+            SetPhysicalSize(png);
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
@@ -206,6 +208,17 @@ public class Image : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
+    }
+
+    // Draws the image at the size its pHYs chunk asks for, when it has one.
+    // The width and the height are the pixels of the image until here, which
+    // is what the image object of the PDF is written with, and are the size it
+    // is drawn at from here on.
+    private void SetPhysicalSize(PNGImage png) {
+        if (png.GetPhysicalWidth() > 0f && png.GetPhysicalHeight() > 0f) {
+            this.w = png.GetPhysicalWidth();
+            this.h = png.GetPhysicalHeight();
+        }
     }
 
     /// <summary>

@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/crc32util"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
 // pngImage is used to embed PNG images in the PDF document.
@@ -35,6 +36,38 @@ type pngImage struct {
 
 	bitDepth  int
 	colorType int
+
+	// The size the pHYs chunk gives the image, in points, or 0 when it gives
+	// none: the chunk holds the pixels per unit of each axis, and only unit 1,
+	// the metre, is a physical size. Unit 0 is the ratio of the two axes with
+	// no size to it, so the image keeps the size of its pixels.
+	physicalWidth  float32
+	physicalHeight float32
+}
+
+// pointsPerMeter is the points a metre is: 72/0.0254.
+const pointsPerMeter = 72.0 / 0.0254
+
+// readPhysicalSize reads the size the image asks to be drawn at from the pHYs
+// chunk: the pixels per unit of each axis and the unit they are in. A chunk of
+// another length, another unit or no pixels at all gives no size, and the image
+// keeps the size of its pixels; so does one whose size is too large for a PDF
+// number.
+func (image *pngImage) readPhysicalSize(data []byte) {
+	if len(data) != 9 || data[8] != 1 {
+		return
+	}
+	pixelsPerMeterX := toUint32(data, 0)
+	pixelsPerMeterY := toUint32(data, 4)
+	if pixelsPerMeterX == 0 || pixelsPerMeterY == 0 {
+		return
+	}
+	width := float32(float64(image.w) * pointsPerMeter / float64(pixelsPerMeterX))
+	height := float32(float64(image.h) * pointsPerMeter / float64(pixelsPerMeterY))
+	if fastfloat.IsWritable(width) && fastfloat.IsWritable(height) {
+		image.physicalWidth = width
+		image.physicalHeight = height
+	}
 }
 
 // newPNGImage is used to embed PNG images in a PDF document.
@@ -88,6 +121,8 @@ func newPNGImage(reader io.Reader) *pngImage {
 			if image.colorType == 3 {
 				image.tRNS = chunk.chunkData
 			}
+		case "pHYs":
+			image.readPhysicalSize(chunk.chunkData)
 		}
 		// The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
 		// ports: the samples are embedded as they are.

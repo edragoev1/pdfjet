@@ -28,7 +28,7 @@ public class Example_08 {
         let image = try Image(pdf, "images/TeslaX.png")
         image.setAltDescription(
                 "A white Tesla Model X with a black glass roof, seen from the front left.")
-        image.scaleBy(0.20)
+        image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
 
         let barcode = try Barcode(Barcode.CODE_128, "Hello, World!")
         barcode.setModuleLength(0.75)

@@ -34,7 +34,7 @@ public class Example_08 {
         Image image = new Image(pdf, "images/TeslaX.png");
         image.setAltDescription(
                 "A white Tesla Model X with a black glass roof, seen from the front left.");
-        image.scaleBy(0.20f);
+        image.scaleBy(1f/3f);      // The image is 120 DPI, so 0.6 of its pixels
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
         barcode.setModuleLength(0.75f);

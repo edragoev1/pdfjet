@@ -458,6 +458,19 @@ goal 5, the references, which is the first thing to give if anything does.
       way, and one call site of `toHex` already lowercased what it was given,
       which says the mismatch had been met before. The digits of the text
       drawn on a page are capitals in all four ports and are left alone.
+- ✅ A PNG is drawn at the size its `pHYs` chunk asks for (Sep 21), which
+      was reported as `images/rgba-8bit-chunks.png` looking fuzzy in
+      Example_17. It is 380 by 100 pixels at 300 dots per inch, which is 91.2
+      by 24 points, and was drawn 380 by 100 points: four times too large.
+      The decoder was not at fault -- the samples it embeds are the pixels of
+      the file, to the byte -- so the fix is the size. Only unit 1, the
+      metre, is a physical size; unit 0 is a ratio of the axes with no size,
+      and the pixel size is kept for it as it is for a file with no chunk.
+      The image object of the PDF keeps the pixels whatever the chunk says.
+      Five tests in each of the four ports. Ten files in the repository carry
+      the chunk, of which four are used by an example: Example_08 and
+      Example_10 scale theirs by hand and their factors are adjusted so the
+      pages are unchanged, and Example_17 and Example_22 take the new size.
 
 ### Sep 27–Oct 1: release v9.0.2
 

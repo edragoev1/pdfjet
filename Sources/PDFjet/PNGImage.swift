@@ -30,6 +30,16 @@ class PNGImage {
     private var bitDepth = 8
     private var colorType = 0
 
+    // The size the pHYs chunk gives the image, in points, or 0 when it gives
+    // none: the chunk holds the pixels per unit of each axis, and only unit 1,
+    // the metre, is a physical size. Unit 0 is the ratio of the two axes with
+    // no size to it, so the image keeps the size of its pixels.
+    private var physicalWidth: Float = 0.0
+    private var physicalHeight: Float = 0.0
+
+    // A metre is 72/0.0254 points.
+    private static let POINTS_PER_METER = 72.0/0.0254
+
     /**
      * Used to embed PNG images in the PDF document.
      *
@@ -77,6 +87,8 @@ class PNGImage {
                 if colorType == 3 {
                     tRNS = chunk.getData()
                 }
+            } else if chunkType == "pHYs" {
+                readPhysicalSize(chunk.getData()!)
             }
             // The gAMA, cHRM, sBIT and bKGD chunks are ignored, in all four
             // ports: the samples are embedded as they are.
@@ -134,6 +146,40 @@ class PNGImage {
         }
 
         FlateEncode(&deflatedImageData, image)
+    }
+
+    // Reads the size the image asks to be drawn at from the pHYs chunk: the
+    // pixels per unit of each axis and the unit they are in. A chunk of
+    // another length, another unit or no pixels at all gives no size, and the
+    // image keeps the size of its pixels; so does one whose size is too large
+    // for a PDF number.
+    private func readPhysicalSize(_ data: [UInt8]) {
+        if data.count != 9 || data[8] != 1 {
+            return
+        }
+        let pixelsPerMeterX = getUInt32(data, 0)
+        let pixelsPerMeterY = getUInt32(data, 4)
+        if pixelsPerMeterX == 0 || pixelsPerMeterY == 0 {
+            return
+        }
+        let width = Float(Double(self.w)*PNGImage.POINTS_PER_METER/Double(pixelsPerMeterX))
+        let height = Float(Double(self.h)*PNGImage.POINTS_PER_METER/Double(pixelsPerMeterY))
+        if FastFloat.isWritable(width) && FastFloat.isWritable(height) {
+            self.physicalWidth = width
+            self.physicalHeight = height
+        }
+    }
+
+    /// Returns the width in points the pHYs chunk asks for, or 0 when the
+    /// image has no pHYs chunk with a size in it.
+    func getPhysicalWidth() -> Float {
+        return self.physicalWidth
+    }
+
+    /// Returns the height in points the pHYs chunk asks for, or 0 when the
+    /// image has no pHYs chunk with a size in it.
+    func getPhysicalHeight() -> Float {
+        return self.physicalHeight
     }
 
     /// Returns the image width.

@@ -32,7 +32,7 @@ public class Example_08 {
         Image image = new Image(pdf, "images/TeslaX.png");
         image.SetAltDescription(
                 "A white Tesla Model X with a black glass roof, seen from the front left.");
-        image.ScaleBy(0.20f);
+        image.ScaleBy(1f/3f);      // The image is 120 DPI, so 0.6 of its pixels
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
         barcode.SetModuleLength(0.75f);

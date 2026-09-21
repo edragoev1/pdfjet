@@ -48,7 +48,7 @@ func Example10() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	image1.SetLocation(90.0, 35.0)
-	image1.ScaleBy(0.75)
+	image1.ScaleBy(1.25) // The image is 120 DPI, so 0.6 of its pixels
 	image1.DrawOn(page)
 
 	// To rotate the column, add it to a Container and rotate that; see Example_35.

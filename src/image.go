@@ -101,6 +101,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 			}
 			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
+		image.setPhysicalSize(png)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
@@ -154,6 +155,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 			}
 			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
+		image.setPhysicalSize(png)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
@@ -228,6 +230,17 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image.objNumber = pdf.getObjNumber()
 
 	return image
+}
+
+// setPhysicalSize draws the image at the size its pHYs chunk asks for, when it
+// has one. The width and the height are the pixels of the image until here,
+// which is what the image object of the PDF is written with, and are the size
+// it is drawn at from here on.
+func (image *Image) setPhysicalSize(png *pngImage) {
+	if png.physicalWidth > 0.0 && png.physicalHeight > 0.0 {
+		image.w = png.physicalWidth
+		image.h = png.physicalHeight
+	}
 }
 
 // SetLocation sets the location of this image on the page to (x, y).

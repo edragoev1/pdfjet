@@ -317,5 +317,91 @@ public class PNGImageTest {
         Assert.Equal("Interlaced PNG images are not supported.\n"
                 + "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png", e.Message);
     }
+    // A truecolor PNG with a pHYs chunk of the given pixels per unit and unit:
+    // 1 is the metre and 0 is a ratio of the axes with no size.
+    private static byte[] PngWithPhys(int width, int height, int x, int y, int unit) {
+        MemoryStream ms = new MemoryStream();
+        ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
+        byte[] ihdr = new byte[13];
+        PutInt(ihdr, 0, width);
+        PutInt(ihdr, 4, height);
+        ihdr[8] = 8;
+        ihdr[9] = 2;
+        WriteChunk(ms, "IHDR", ihdr);
+        byte[] phys = new byte[9];
+        PutInt(phys, 0, x);
+        PutInt(phys, 4, y);
+        phys[8] = (byte) unit;
+        WriteChunk(ms, "pHYs", phys);
+        WriteChunk(ms, "IDAT", Compressor.Deflate(new byte[height*(1 + 3*width)]));
+        WriteChunk(ms, "IEND", new byte[0]);
+        return ms.ToArray();
+    }
+
+    [Fact]
+    public void ThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() {
+        // A pHYs chunk whose unit is the metre says how large the image is
+        // meant to be, so it is drawn that size rather than one point for each
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
+        // by 100 of them are 91.2 by 24 points.
+        PNGImage png = new PNGImage(TestSupport.Open("images/rgba-8bit-chunks.png"));
+        Assert.Equal(380, png.GetWidth());
+        Assert.Equal(100, png.GetHeight());
+        Assert.True(Math.Abs(png.GetPhysicalWidth() - 91.2f) < 0.01f);
+        Assert.True(Math.Abs(png.GetPhysicalHeight() - 24f) < 0.01f);
+
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("images/rgba-8bit-chunks.png"));
+        Assert.True(Math.Abs(image.GetWidth() - 91.2f) < 0.01f,
+                "the image is not drawn at the size it asks for");
+        Assert.True(Math.Abs(image.GetHeight() - 24f) < 0.01f,
+                "the image is not drawn at the size it asks for");
+    }
+
+    [Fact]
+    public void ThePhysicalSizeLeavesThePixelsOfTheImageObjectAlone() {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the chunk says.
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Image image = new Image(pdf, TestSupport.Open("images/rgba-8bit-chunks.png"));
+        image.SetLocation(0f, 0f);
+        image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Contains("/Width 380\n", raw);
+        Assert.Contains("/Height 100\n", raw);
+    }
+
+    [Fact]
+    public void AnImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() {
+        // Most PNG files carry no pHYs chunk, and are drawn as they were.
+        PNGImage png = new PNGImage(TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Assert.Equal(0f, png.GetPhysicalWidth());
+        Assert.Equal(0f, png.GetPhysicalHeight());
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        Assert.True(Math.Abs(image.GetWidth() - 32f) < 0.01f);
+        Assert.True(Math.Abs(image.GetHeight() - 32f) < 0.01f);
+    }
+
+    [Fact]
+    public void APhysicalSizeChunkThatGivesNoSizeIsPassedOver() {
+        // Unit 0 is the ratio of the two axes and says nothing about how large
+        // the image is, and a count of zero pixels gives no size either.
+        Assert.Equal(0f, new PNGImage(new MemoryStream(PngWithPhys(8, 8, 1, 4, 0))).GetPhysicalWidth());
+        Assert.Equal(0f, new PNGImage(new MemoryStream(PngWithPhys(8, 8, 0, 4724, 1))).GetPhysicalWidth());
+        Assert.Equal(0f, new PNGImage(new MemoryStream(PngWithPhys(8, 8, 4724, 0, 1))).GetPhysicalWidth());
+    }
+
+    [Fact]
+    public void AnImageOfPixelsThatAreNotSquareIsDrawnWithEachAxisOfItsOwnSize() {
+        // The chunk gives the pixels per metre of each axis on its own, so an
+        // image of 4724 across and 2362 down is twice as tall as it is wide
+        // for the same count of pixels.
+        PNGImage png = new PNGImage(new MemoryStream(PngWithPhys(20, 20, 4724, 2362, 1)));
+        Assert.True(Math.Abs(png.GetPhysicalWidth() - 12f) < 0.01f);
+        Assert.True(Math.Abs(png.GetPhysicalHeight() - 24f) < 0.01f);
+    }
 }
 }

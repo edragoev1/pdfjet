@@ -162,6 +162,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A PNG is drawn at the size its `pHYs` chunk asks for, in all four ports.
+  The chunk holds the pixels per unit of each axis, and a PNG written at 300
+  or 120 dots per inch was drawn at one point for each of its pixels, which
+  is 72 dots per inch: `images/rgba-8bit-chunks.png` is 380 by 100 pixels at
+  300 dpi, 91.2 by 24 points, and Example_17 drew it 380 by 100 points, four
+  times too large and visibly soft. Only unit 1, the metre, is a physical
+  size; unit 0 is the ratio of the two axes with no size to it, and an image
+  with that, with no `pHYs` chunk, or with one that asks for a size too large
+  for a PDF number, is drawn at one point for each pixel as before. The two
+  axes are read on their own, so an image of pixels that are not square is
+  drawn with each of them at its own size. The image object of the PDF holds
+  the pixels of the image whatever the chunk says. Ten of the files in the
+  repository carry the chunk; Example_08 and Example_10 scale theirs by hand
+  and their factors are adjusted, so the only example page that changes is
+  Example_17, where the image is now drawn at its own size and is sharp, and
+  Example_22, where the arrow of the go-to action is 12 points instead of 20.
 - The Swift port writes the hexadecimal digits of a string object in small
   letters, as the Java, C# and Go ports do. It wrote them in capitals, so the
   same document was not the same bytes in the four ports: Example_22 had

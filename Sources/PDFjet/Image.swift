@@ -100,6 +100,7 @@ public class Image : Drawable {
                     addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
                 }
             }
+            setPhysicalSize(png)
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
             w = Float(bmp.getWidth())
@@ -154,6 +155,7 @@ public class Image : Drawable {
                     addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
                 }
             }
+            setPhysicalSize(png)
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
             data = bmp.getData()
@@ -215,6 +217,17 @@ public class Image : Drawable {
     }
 
     ///
+    // Draws the image at the size its pHYs chunk asks for, when it has one.
+    // The width and the height are the pixels of the image until here, which
+    // is what the image object of the PDF is written with, and are the size it
+    // is drawn at from here on.
+    private func setPhysicalSize(_ png: PNGImage) {
+        if png.getPhysicalWidth() > 0.0 && png.getPhysicalHeight() > 0.0 {
+            self.w = png.getPhysicalWidth()
+            self.h = png.getPhysicalHeight()
+        }
+    }
+
     /// Sets the location of this image on the page to (x, y).
     ///
     /// - Parameter x: the x coordinate of the top left corner of the image.

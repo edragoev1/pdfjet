@@ -268,4 +268,84 @@ import Testing
         #expect(TestSupport.message(error) ==
                 "Interlaced PNG images are not supported.\nConvert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")
     }
+    // A truecolor PNG with a pHYs chunk of the given pixels per unit and unit:
+    // 1 is the metre and 0 is a ratio of the axes with no size.
+    private func pngWithPhys(
+            _ width: Int32, _ height: Int32, _ x: UInt32, _ y: UInt32, _ unit: UInt8) -> [UInt8] {
+        var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        var ihdr = [UInt8]()
+        PNGImageTests.bigEndian32(UInt32(bitPattern: width), &ihdr)
+        PNGImageTests.bigEndian32(UInt32(bitPattern: height), &ihdr)
+        ihdr.append(contentsOf: [8, 2, 0, 0, 0])
+        chunk(&bytes, "IHDR", ihdr)
+        var phys = [UInt8]()
+        PNGImageTests.bigEndian32(x, &phys)
+        PNGImageTests.bigEndian32(y, &phys)
+        phys.append(unit)
+        chunk(&bytes, "pHYs", phys)
+        chunk(&bytes, "IDAT", TestSupport.deflate(
+                [UInt8](repeating: 0, count: Int(height)*(1 + 3*Int(width)))))
+        chunk(&bytes, "IEND", [])
+        return bytes
+    }
+
+    @Test func thePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() throws {
+        // A pHYs chunk whose unit is the metre says how large the image is
+        // meant to be, so it is drawn that size rather than one point for each
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
+        // by 100 of them are 91.2 by 24 points.
+        let png = try PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"))
+        #expect(png.getWidth() == 380)
+        #expect(png.getHeight() == 100)
+        #expect(abs(png.getPhysicalWidth() - 91.2) < 0.01)
+        #expect(abs(png.getPhysicalHeight() - 24.0) < 0.01)
+
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/rgba-8bit-chunks.png"))
+        #expect(abs(image.getWidth() - 91.2) < 0.01, "the image is not drawn at the size it asks for")
+        #expect(abs(image.getHeight() - 24.0) < 0.01, "the image is not drawn at the size it asks for")
+    }
+
+    @Test func thePhysicalSizeLeavesThePixelsOfTheImageObjectAlone() throws {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the chunk says.
+        let memory = MemoryPDF()
+        let image = try Image(memory.pdf, TestSupport.open("images/rgba-8bit-chunks.png"))
+        image.setLocation(0.0, 0.0)
+        image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.contains("/Width 380\n"), "the image object lost the pixels of the image")
+        #expect(raw.contains("/Height 100\n"), "the image object lost the pixels of the image")
+    }
+
+    @Test func anImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() throws {
+        // Most PNG files carry no pHYs chunk, and are drawn as they were.
+        let png = try PNGImage(TestSupport.open("PngSuite/BASN2C08.PNG"))
+        #expect(png.getPhysicalWidth() == 0.0)
+        #expect(png.getPhysicalHeight() == 0.0)
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("PngSuite/BASN2C08.PNG"))
+        #expect(abs(image.getWidth() - 32.0) < 0.01)
+        #expect(abs(image.getHeight() - 32.0) < 0.01)
+    }
+
+    @Test func aPhysicalSizeChunkThatGivesNoSizeIsPassedOver() throws {
+        // Unit 0 is the ratio of the two axes and says nothing about how large
+        // the image is, and a count of zero pixels gives no size either.
+        for (what, x, y, unit) in [("a ratio is not a size", UInt32(1), UInt32(4), UInt8(0)),
+                                   ("no pixels per metre across", 0, 4724, 1),
+                                   ("no pixels per metre down", 4724, 0, 1)] {
+            let png = try PNGImage(InputStream(data: Data(pngWithPhys(8, 8, x, y, unit))))
+            #expect(png.getPhysicalWidth() == 0.0, "\(what)")
+            #expect(png.getPhysicalHeight() == 0.0, "\(what)")
+        }
+    }
+
+    @Test func anImageOfPixelsThatAreNotSquareIsDrawnWithEachAxisOfItsOwnSize() throws {
+        // The chunk gives the pixels per metre of each axis on its own, so an
+        // image of 4724 across and 2362 down is twice as tall as it is wide
+        // for the same count of pixels.
+        let png = try PNGImage(InputStream(data: Data(pngWithPhys(20, 20, 4724, 2362, 1))))
+        #expect(abs(png.getPhysicalWidth() - 12.0) < 0.01)
+        #expect(abs(png.getPhysicalHeight() - 24.0) < 0.01)
+    }
 }

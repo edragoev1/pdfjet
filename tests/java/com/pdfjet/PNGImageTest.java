@@ -325,4 +325,89 @@ class PNGImageTest {
         assertEquals("Interlaced PNG images are not supported.\n"
                 + "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png", e.getMessage());
     }
+
+    // A one pixel truecolor PNG with a pHYs chunk of the given pixels per unit
+    // and unit: 1 is the metre and 0 is a ratio of the axes with no size.
+    private static byte[] pngWithPhys(int width, int height, int x, int y, int unit) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
+        ByteBuffer ihdr = ByteBuffer.allocate(13);
+        ihdr.putInt(width).putInt(height).put((byte) 8).put((byte) 2)
+                .put((byte) 0).put((byte) 0).put((byte) 0);
+        chunk(bos, "IHDR", ihdr.array());
+        chunk(bos, "pHYs", ByteBuffer.allocate(9).putInt(x).putInt(y).put((byte) unit).array());
+        byte[] rows = new byte[height*(1 + 3*width)];
+        chunk(bos, "IDAT", Compressor.deflate(rows));
+        chunk(bos, "IEND", new byte[0]);
+        return bos.toByteArray();
+    }
+
+    @Test
+    void thePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() throws Exception {
+        // A pHYs chunk whose unit is the metre says how large the image is
+        // meant to be, so it is drawn that size rather than one point for each
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
+        // by 100 of them are 91.2 by 24 points.
+        PNGImage png = new PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"));
+        assertEquals(380, png.getWidth());
+        assertEquals(100, png.getHeight());
+        assertEquals(91.2f, png.getPhysicalWidth(), 0.01f);
+        assertEquals(24f, png.getPhysicalHeight(), 0.01f);
+
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("images/rgba-8bit-chunks.png"));
+        assertEquals(91.2f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
+        assertEquals(24f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
+    }
+
+    @Test
+    void thePhysicalSizeLeavesThePixelsOfTheImageObjectAlone() throws Exception {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the chunk says.
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Image image = new Image(pdf, TestSupport.open("images/rgba-8bit-chunks.png"));
+        image.setLocation(0f, 0f);
+        image.drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains("/Width 380\n"), "the image object lost the pixels of the image");
+        assertTrue(raw.contains("/Height 100\n"), "the image object lost the pixels of the image");
+    }
+
+    @Test
+    void anImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() throws Exception {
+        // Most PNG files carry no pHYs chunk, and are drawn as they were.
+        PNGImage png = new PNGImage(TestSupport.open("PngSuite/BASN2C08.PNG"));
+        assertEquals(0f, png.getPhysicalWidth());
+        assertEquals(0f, png.getPhysicalHeight());
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        assertEquals(32f, image.getWidth(), 0.01f);
+        assertEquals(32f, image.getHeight(), 0.01f);
+    }
+
+    @Test
+    void aPhysicalSizeChunkThatGivesNoSizeIsPassedOver() throws Exception {
+        // Unit 0 is the ratio of the two axes and says nothing about how large
+        // the image is, and a count of zero pixels gives no size either. The
+        // image keeps the size of its pixels for both, and for a chunk that is
+        // not the nine bytes the format has.
+        assertEquals(0f, new PNGImage(new ByteArrayInputStream(
+                pngWithPhys(8, 8, 1, 4, 0))).getPhysicalWidth(), "a ratio is not a size");
+        assertEquals(0f, new PNGImage(new ByteArrayInputStream(
+                pngWithPhys(8, 8, 0, 4724, 1))).getPhysicalWidth(), "no pixels per metre");
+        assertEquals(0f, new PNGImage(new ByteArrayInputStream(
+                pngWithPhys(8, 8, 4724, 0, 1))).getPhysicalWidth(), "no pixels per metre");
+    }
+
+    @Test
+    void anImageOfPixelsThatAreNotSquareIsDrawnWithEachAxisOfItsOwnSize() throws Exception {
+        // The chunk gives the pixels per metre of each axis on its own, so an
+        // image of 4724 across and 2362 down is twice as tall as it is wide
+        // for the same count of pixels.
+        PNGImage png = new PNGImage(new ByteArrayInputStream(pngWithPhys(20, 20, 4724, 2362, 1)));
+        assertEquals(12f, png.getPhysicalWidth(), 0.01f);
+        assertEquals(24f, png.getPhysicalHeight(), 0.01f);
+    }
 }
