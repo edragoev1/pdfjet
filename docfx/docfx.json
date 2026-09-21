@@ -23,9 +23,10 @@
             }
         ],
         "output": "../docs/dotnet",
-        "template": [ "default", "modern" ],
+        "template": [ "default", "modern", "template" ],
         "globalMetadata": {
             "_appName": "PDFjet",
+            "_appLogoPath": "logo.svg",
             "_appTitle": "PDFjet for .NET",
             "_enableSearch": true
         }

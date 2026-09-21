@@ -1,0 +1,20 @@
+/* The logo of pdfjet.com is a wordmark of 224 by 72, which the navbar would
+   draw at its full size: the template gives it no size of its own. The name
+   beside it says the name a second time, so it is left without a size; the
+   logo carries the name as its alternative text, which a screen reader
+   reads. */
+.navbar-brand {
+    font-size: 0;
+}
+
+#logo {
+    height: 28px;
+    width: auto;
+}
+
+/* The "jet" of the logo is a dark slate, which the dark theme would draw
+   against a dark background, so it is light there; the reds are the ones the
+   logo is published with. */
+[data-bs-theme="dark"] #logo {
+    content: url("logo-dark.svg");
+}
