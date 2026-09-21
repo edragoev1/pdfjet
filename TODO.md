@@ -18,7 +18,7 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
   it is under `## Unreleased` in CHANGELOG.md: the PDF/UA examples and the
   table tagging, kinsoku, the font line gap, the WinAnsi characters and
   kerning of the core fonts, the fallback font rule, the CMYK JPEG marker,
-  and the font stream, PNG and BMP fixes that fuzzing found.
+  and the font stream, PNG, BMP and JPEG fixes that fuzzing found.
 - **Oct 15** — code freeze: fixes only, each with its check.
 - **Oct 21** — v9.0.3.
 
@@ -30,7 +30,7 @@ check passed: 23 in the reviews of `Cell`, `Table`, `TextBlock`, `TextColumn`
 and `PDF`; then 32-bit BMPs in the wrong colors, ’ and € drawn as spaces in
 the core fonts, every CMYK JPEG inverted, a fallback font that stuck, the CJK
 line gaps, and what the first three fuzz targets turned up. Eight kinds of
-untrusted input are read from a file, and three of them are fuzzed. So the
+untrusted input are read from a file, and four of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
 
 ## The seven goals of v9.0.3
@@ -63,7 +63,19 @@ work to Oct 21 is the seven goals below, in this order.
      reject the same inputs as Go.
    - ✅ PNG (Sep 19), against Go's `image/png`, and BMP (Sep 19), against
      Pillow; both fixed in the four ports.
-   - ⬜ JPEG, against an independent decoder, as PNG and BMP were.
+   - ✅ JPEG (Sep 20), against Go's `image/jpeg`: `FuzzJPGImage` fuzzes whole
+     files, and every header image/jpeg reads gives PDFjet the same width,
+     height, color components and Adobe marker; 62 M runs clean after the
+     fixes. Found the markers with no parameter segment — a restart marker,
+     TEM, a nested SOI and the 0xFF 0x00 of a stuffed 0xFF byte — read as if
+     they had a length, which skipped over the frame header; and an APP14
+     segment taken for Adobe's on its first five bytes, unmarked by an APP14
+     of another kind after it, or missed when it follows the frame header,
+     where libjpeg's `jpeg_read_header` reads to the scan. Fixed in the four
+     ports with unit tests; the 678 inputs of the Go corpus replayed in the
+     four ports read the same width, height, components and Adobe marker from
+     every one. The review beside it found a JPEG of other than eight bits per
+     color component embedded as if it had eight, which is refused now.
    - ⬜ SVG paths, and `SVGImage`.
    - ⬜ OTF and TTF, the `Font` loaders.
    - ⬜ The decompressor.
@@ -109,12 +121,15 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Sep 20–26: the decoders, `Page` and `TextLine`
 
-- ⬜ **B** Goal 2: fuzz JPEG, then SVG paths, then OTF and TTF, then the
-      decompressor, fixing each failure in the four ports as the first three
-      targets were fixed.
+- ⬜ **B** Goal 2: JPEG is done (Sep 20); fuzz SVG paths, then OTF and TTF,
+      then the decompressor, fixing each failure in the four ports as the
+      first four targets were fixed.
 - ⬜ **B** Goal 1: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
       `SVGImage`, the classes the same week's fuzzing reads; then `Page` and
-      `TextLine`, the two with the widest exposure.
+      `TextLine`, the two with the widest exposure. One of `JPGImage` for that
+      review, which the fuzzing did not cover because image/jpeg rejects it
+      too: the length of the frame header, which PDFjet does not check against
+      the number of components, as libjpeg does.
 - ⬜ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands.
 
 ### Sep 27–Oct 1: release v9.0.2

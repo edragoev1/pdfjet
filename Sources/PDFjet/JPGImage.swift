@@ -64,6 +64,13 @@ class JPGImage {
     let M_SOF14: UInt8 = 0xCE
     let M_SOF15: UInt8 = 0xCF
     let M_APP14: UInt8 = 0xEE
+    // The markers that stand alone, with no parameter segment to skip.
+    let M_TEM: UInt8   = 0x01       // Temporary, for arithmetic coding
+    let M_RST0: UInt8  = 0xD0       // ReSTart 0 to 7
+    let M_RST7: UInt8  = 0xD7
+    let M_SOI: UInt8   = 0xD8       // Start Of Image
+    let M_EOI: UInt8   = 0xD9       // End Of Image
+    let M_SOS: UInt8   = 0xDA       // Start Of Scan, the end of the header
 
     var width: UInt16 = 0
     var height: UInt16 = 0
@@ -112,6 +119,17 @@ class JPGImage {
 
         while true {
             let ch = try nextMarker(&buffer)
+
+            // The standalone markers carry no parameter segment, so there is
+            // nothing to skip after them; reading two bytes of one as a length
+            // would skip over the frame header that follows.
+            if ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7) {
+                continue
+            }
+            if ch == M_EOI {
+                throw JPGImageError.endsBeforeTheFrameHeader
+            }
+
             // Note that marker codes 0xC4, 0xC8, 0xCC are not,
             // and must not be treated as SOFn. C4 in particular
             // is actually DHT.
@@ -128,8 +146,15 @@ class JPGImage {
                     ch == M_SOF13 ||    // Differential sequential, arithmetic
                     ch == M_SOF14 ||    // Differential progressive, arithmetic
                     ch == M_SOF15 {     // Differential lossless, arithmetic
-                // Skip 3 bytes to get to the image height and width
-                index += 3
+                // The length of the frame header, then the sample precision:
+                // a PDF image stream of DCTDecode data delivers eight bits per
+                // color component, so a JPEG of another precision, a 12-bit one
+                // among them, cannot be embedded as it is.
+                let segment = index
+                let length = try getUInt16(&buffer)
+                if try readByte(&buffer) != 8 {
+                    throw JPGImageError.unsupportedSamplePrecision
+                }
                 height = try getUInt16(&buffer)
                 width = try getUInt16(&buffer)
                 colorComponents = try readByte(&buffer)
@@ -138,12 +163,46 @@ class JPGImage {
                         (colorComponents != 1 && colorComponents != 3 && colorComponents != 4) {
                     throw JPGImageError.invalidDimensionsOrComponentCount
                 }
+                // The component specifications fill the rest of the frame
+                // header; they can hold any bytes, the 0xFF of a marker among
+                // them, so the markers are read after the whole segment.
+                let end = segment + Int(length)
+                if end > index && end <= buffer.count {
+                    index = end
+                    readAdobeMarker(&buffer)
+                }
                 break
             } else if ch == M_APP14 {
                 try readAPP14(&buffer)
             } else {
                 try skipVariable(&buffer)
             }
+        }
+    }
+
+    // Reads the markers from the frame header to the scan, for an APP14 segment:
+    // libjpeg reads a header to the scan too, so a segment that follows the frame
+    // header says that Adobe software wrote the image as one before it does. The
+    // frame header is all the image needs, so whatever cannot be read after it
+    // leaves the image as it is.
+    private func readAdobeMarker(_ buffer: inout [UInt8]) {
+        do {
+            while true {
+                let ch = try nextMarker(&buffer)
+                if ch == M_SOS || ch == M_EOI {
+                    return
+                }
+                if ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7) {
+                    continue
+                }
+                if ch == M_APP14 {
+                    try readAPP14(&buffer)
+                } else {
+                    try skipVariable(&buffer)
+                }
+            }
+        } catch {
+            return
         }
     }
 
@@ -168,24 +227,29 @@ class JPGImage {
 
     // Find the next JPEG marker and return its marker code.
     // Non-FF garbage between markers is skipped over.
-    // Duplicate FF bytes are legal padding and are swallowed.
+    // Duplicate FF bytes are legal padding and are swallowed, and an FF byte
+    // that a zero byte follows is data and not a marker, so the search goes on.
     // NB: this routine must not be used after seeing SOS marker,
     // since it will not deal correctly with FF/00 sequences in the
     // compressed image data...
     private func nextMarker(_ buffer: inout [UInt8]) throws -> UInt8 {
-        // Find 0xFF byte; skip any non-FF garbage.
-        var ch = try readByte(&buffer)
-        while ch != 0xFF {
-            ch = try readByte(&buffer)
+        while true {
+            // Find 0xFF byte; skip any non-FF garbage.
+            var ch = try readByte(&buffer)
+            while ch != 0xFF {
+                ch = try readByte(&buffer)
+            }
+
+            // Get the marker code byte, swallowing any duplicate FF bytes.
+            // Extra FFs are legal as pad bytes.
+            repeat {
+                ch = try readByte(&buffer)
+            } while ch == 0xFF
+
+            if ch != 0x00 {
+                return ch
+            }
         }
-
-        // Get the marker code byte, swallowing any duplicate FF bytes.
-        // Extra FFs are legal as pad bytes.
-        repeat {
-            ch = try readByte(&buffer)
-        } while ch == 0xFF
-
-        return ch
     }
 
     // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
@@ -198,7 +262,12 @@ class JPGImage {
         guard end <= buffer.count else {
             throw JPGImageError.unexpectedEndOfJPEGData
         }
-        adobe = end - index >= 5 && buffer[index..<(index + 5)].elementsEqual(Array("Adobe".utf8))
+        // Adobe's segment is twelve bytes: "Adobe", the version, two flags and
+        // the color transform. A shorter one is not Adobe's, as in libjpeg. An
+        // APP14 segment of another kind after it does not unmark the image.
+        if end - index >= 12 && buffer[index..<(index + 5)].elementsEqual(Array("Adobe".utf8)) {
+            adobe = true
+        }
         index = end
     }
 
@@ -231,4 +300,6 @@ enum JPGImageError: Error {
     case unexpectedEndOfJPEGData
     case invalidDimensionsOrComponentCount
     case invalidSegmentLength
+    case endsBeforeTheFrameHeader
+    case unsupportedSamplePrecision
 }   // End of JPGImage.swift

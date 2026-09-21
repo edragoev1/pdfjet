@@ -109,6 +109,26 @@ This is the first entry in this file; earlier releases were not tracked here.
   when an APP14 marker says that Adobe software wrote it, which stores the inks
   inverted; every CMYK JPEG had the array, so one from other software came out
   as a negative.
+- A JPEG whose header holds a marker with no parameter segment — a restart
+  marker, TEM, a nested SOI, or the 0xFF 0x00 of a stuffed 0xFF byte — had the
+  two bytes after it read as a length, which skipped over the frame header, so
+  the image failed to load or was drawn at the wrong size; those markers carry
+  nothing to skip, as in libjpeg, and a JPEG that ends at its EOI marker before
+  the frame header fails with a message. An APP14 segment says that Adobe
+  software wrote the image, and so that the inks of a CMYK image are inverted,
+  only when it is the twelve bytes Adobe writes, as in libjpeg, where its first
+  five were enough; and an APP14 segment of another kind after Adobe's no
+  longer unmarks the image, which wrote such a CMYK image as a negative. The
+  segment is looked for from the start of the file to the scan, as libjpeg's
+  `jpeg_read_header` reads a header, where PDFjet stopped at the frame header
+  and missed one that follows it. Found by fuzzing the Go reader against Go's
+  image/jpeg; the fuzz target is in `src/jpgimage_fuzz_test.go`.
+- A JPEG of other than eight bits per color component, a 12-bit one among
+  them, was embedded with `/BitsPerComponent 8` whatever the sample precision
+  of its frame header said, so it was drawn as noise; it fails with "The JPEG
+  has 12 bits per color component, not 8." now, in the four ports. A PDF image
+  stream of DCTDecode data delivers eight bit samples, and each color component
+  value occupies a byte (ISO 32000-1, 7.4.8 and Table 89).
 - Chinese and Japanese text in a `TextBlock` or `TextFrame` no longer starts a
   line with a closing mark, punctuation such as 。 and 、, or a small kana, nor
   ends one with an opening bracket (kinsoku shori): the character before such a

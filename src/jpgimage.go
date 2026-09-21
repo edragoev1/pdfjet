@@ -44,6 +44,7 @@ package pdfjet
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -77,6 +78,13 @@ const (
 	mSOF14 = uint8(0xCE)
 	mSOF15 = uint8(0xCF)
 	mAPP14 = uint8(0xEE)
+	// The markers that stand alone, with no parameter segment to skip.
+	mTEM  = uint8(0x01) // Temporary, for arithmetic coding
+	mRST0 = uint8(0xD0) // ReSTart 0 to 7
+	mRST7 = uint8(0xD7)
+	mSOI  = uint8(0xD8) // Start Of Image
+	mEOI  = uint8(0xD9) // End Of Image
+	mSOS  = uint8(0xDA) // Start Of Scan, the end of the header
 )
 
 // newJPGImage is the constructor.
@@ -127,6 +135,16 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			return nil, err
 		}
 
+		// The standalone markers carry no parameter segment, so there is
+		// nothing to skip after them; reading two bytes of one as a length
+		// would skip over the frame header that follows.
+		if ch == mTEM || ch == mSOI || (ch >= mRST0 && ch <= mRST7) {
+			continue
+		}
+		if ch == mEOI {
+			return nil, errors.New("Error: The JPEG ends before its frame header.")
+		}
+
 		// Note that marker codes 0xC4, 0xC8, 0xCC are not,
 		// and must not be treated as SOFn. C4 in particular
 		// is actually DHT.
@@ -145,8 +163,23 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			mSOF14, // Differential progressive, arithmetic
 			mSOF15: // Differential lossless, arithmetic
 
-			// Skip 3 bytes to get to the image height and width
-			image.index += 3
+			// The length of the frame header, then the sample precision: a
+			// PDF image stream of DCTDecode data delivers eight bits per
+			// color component, so a JPEG of another precision, a 12-bit one
+			// among them, cannot be embedded as it is.
+			segment := image.index
+			length, err := image.getUint16(buffer)
+			if err != nil {
+				return nil, err
+			}
+			precision, err := image.getByte(buffer)
+			if err != nil {
+				return nil, err
+			}
+			if precision != 8 {
+				return nil, fmt.Errorf(
+					"Error: The JPEG has %d bits per color component, not 8.", precision)
+			}
 			height, err := image.getUint16(buffer)
 			if err != nil {
 				return nil, err
@@ -168,6 +201,13 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 				return nil, errors.New("Error: Invalid JPEG dimensions or component count.")
 			}
 
+			// The component specifications fill the rest of the frame
+			// header; they can hold any bytes, the 0xFF of a marker among
+			// them, so the markers are read after the whole segment.
+			if end := segment + int(length); end > image.index && end <= len(buffer) {
+				image.index = end
+				image.readAdobeMarker(buffer)
+			}
 			return image, nil
 
 		case mAPP14:
@@ -179,6 +219,32 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			if err := image.skipVariable(buffer); err != nil {
 				return nil, err
 			}
+		}
+	}
+}
+
+// readAdobeMarker reads the markers from the frame header to the scan, for an
+// APP14 segment: libjpeg reads a header to the scan too, so a segment that
+// follows the frame header says that Adobe software wrote the image as one
+// before it does. The frame header is all the image needs, so whatever cannot
+// be read after it leaves the image as it is.
+func (image *jpgImage) readAdobeMarker(buffer []byte) {
+	for {
+		ch, err := image.nextMarker(buffer)
+		if err != nil || ch == mSOS || ch == mEOI {
+			return
+		}
+		if ch == mTEM || ch == mSOI || (ch >= mRST0 && ch <= mRST7) {
+			continue
+		}
+		if ch == mAPP14 {
+			if image.readAPP14(buffer) != nil {
+				return
+			}
+			continue
+		}
+		if image.skipVariable(buffer) != nil {
+			return
 		}
 	}
 }
@@ -210,26 +276,32 @@ func (image *jpgImage) getUint16(buffer []byte) (uint16, error) {
 
 // nextMarker finds the next JPEG marker and returns its marker code.
 // Non-FF garbage between markers is skipped over. Duplicate FF bytes
-// are legal padding and are swallowed.
+// are legal padding and are swallowed, and an FF byte that a zero byte
+// follows is data and not a marker, so the search goes on.
 // NB: this routine must not be used after the SOS marker, since it
 // does not deal correctly with FF/00 sequences in compressed data.
 func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
-	// Find 0xFF byte; skip any non-FF garbage.
-	ch, err := image.getByte(buffer)
-	if err != nil {
-		return 0, err
-	}
-	for ch != 0xFF {
-		if ch, err = image.getByte(buffer); err != nil {
+	for {
+		// Find 0xFF byte; skip any non-FF garbage.
+		ch, err := image.getByte(buffer)
+		if err != nil {
 			return 0, err
 		}
-	}
+		for ch != 0xFF {
+			if ch, err = image.getByte(buffer); err != nil {
+				return 0, err
+			}
+		}
 
-	// Get the marker code byte, swallowing any duplicate FF bytes.
-	// Extra FFs are legal as pad bytes.
-	for {
-		if ch, err = image.getByte(buffer); err != nil || ch != 0xFF {
-			return ch, err
+		// Get the marker code byte, swallowing any duplicate FF bytes.
+		// Extra FFs are legal as pad bytes.
+		for ch == 0xFF {
+			if ch, err = image.getByte(buffer); err != nil {
+				return 0, err
+			}
+		}
+		if ch != 0x00 {
+			return ch, nil
 		}
 	}
 }
@@ -248,7 +320,12 @@ func (image *jpgImage) readAPP14(buffer []byte) error {
 	if end > len(buffer) {
 		return io.ErrUnexpectedEOF
 	}
-	image.adobe = end-image.index >= 5 && string(buffer[image.index:image.index+5]) == "Adobe"
+	// Adobe's segment is twelve bytes: "Adobe", the version, two flags and
+	// the color transform. A shorter one is not Adobe's, as in libjpeg. An
+	// APP14 segment of another kind after it does not unmark the image.
+	if end-image.index >= 12 && string(buffer[image.index:image.index+5]) == "Adobe" {
+		image.adobe = true
+	}
 	image.index = end
 	return nil
 }

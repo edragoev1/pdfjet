@@ -64,6 +64,13 @@ class JPGImage {
     const char M_SOF14 = (char) 0x00CE;
     const char M_SOF15 = (char) 0x00CF;
     const char M_APP14 = (char) 0x00EE;
+    // The markers that stand alone, with no parameter segment to skip.
+    const char M_TEM   = (char) 0x0001;  // Temporary, for arithmetic coding
+    const char M_RST0  = (char) 0x00D0;  // ReSTart 0 to 7
+    const char M_RST7  = (char) 0x00D7;
+    const char M_SOI   = (char) 0x00D8;  // Start Of Image
+    const char M_EOI   = (char) 0x00D9;  // End Of Image
+    const char M_SOS   = (char) 0x00DA;  // Start Of Scan, the end of the header
 
     int width;      // The image width in pixels
     int height;     // The image height in pixels
@@ -112,6 +119,17 @@ class JPGImage {
         bool foundSOFn = false;
         while (true) {
             char ch = NextMarker(stream);
+
+            // The standalone markers carry no parameter segment, so there is
+            // nothing to skip after them; reading two bytes of one as a length
+            // would skip over the frame header that follows.
+            if (ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7)) {
+                continue;
+            }
+            if (ch == M_EOI) {
+                throw new IOException("Error: The JPEG ends before its frame header.");
+            }
+
             switch (ch) {
                 // Note that marker codes 0xC4, 0xC8, 0xCC are not,
                 // and must not be treated as SOFn. C4 in particular
@@ -129,16 +147,28 @@ class JPGImage {
                 case M_SOF13:   // Differential sequential, arithmetic
                 case M_SOF14:   // Differential progressive, arithmetic
                 case M_SOF15:   // Differential lossless, arithmetic
-                // Skip 3 bytes to get to the image height and width
-                ReadByte(stream);
-                ReadByte(stream);
-                ReadByte(stream);
+                // The length of the frame header, then the sample precision:
+                // a PDF image stream of DCTDecode data delivers eight bits per
+                // color component, so a JPEG of another precision, a 12-bit one
+                // among them, cannot be embedded as it is.
+                int length = GetUInt16(stream);
+                int precision = ReadByte(stream);
+                if (precision != 8) {
+                    throw new IOException(
+                            "Error: The JPEG has " + precision + " bits per color component, not 8.");
+                }
                 height = GetUInt16(stream);
                 width = GetUInt16(stream);
                 colorComponents = ReadByte(stream);
                 if (width <= 0 || height <= 0 ||
                     (colorComponents != 1 && colorComponents != 3 && colorComponents != 4)) {
                     throw new IOException("Invalid JPEG dimensions or component count.");
+                }
+                // The component specifications fill the rest of the frame
+                // header; they can hold any bytes, the 0xFF of a marker among
+                // them, so the markers are read after the whole segment.
+                if (length >= 8) {
+                    ReadAdobeMarker(stream, length - 8);
                 }
                 foundSOFn = true;
                 break;
@@ -158,6 +188,35 @@ class JPGImage {
         }
     }
 
+    // Reads the markers from the frame header to the scan, for an APP14 segment:
+    // libjpeg reads a header to the scan too, so a segment that follows the frame
+    // header says that Adobe software wrote the image as one before it does. The
+    // frame header is all the image needs, so whatever cannot be read after it
+    // leaves the image as it is.
+    private void ReadAdobeMarker(Stream stream, int skip) {
+        try {
+            for (int i = 0; i < skip; i++) {
+                ReadByte(stream);
+            }
+            while (true) {
+                char ch = NextMarker(stream);
+                if (ch == M_SOS || ch == M_EOI) {
+                    return;
+                }
+                if (ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7)) {
+                    continue;
+                }
+                if (ch == M_APP14) {
+                    ReadAPP14(stream);
+                } else {
+                    SkipVariable(stream);
+                }
+            }
+        } catch (IOException) {
+            return;
+        }
+    }
+
     private int ReadByte(Stream stream) {
         int b = stream.ReadByte();
         if (b < 0) {
@@ -171,14 +230,19 @@ class JPGImage {
     }
 
     // Skip any non-marker bytes and duplicate FF padding, then return the marker code.
+    // An FF byte that a zero byte follows is data and not a marker, so the search goes on.
     // NB: not valid after the SOS marker (doesn't handle FF/00 in compressed data).
     private char NextMarker(Stream stream) {
-        while (ReadByte(stream) != 0x00FF) { /* skip garbage */ }
-        int ch;
-        do {
-            ch = ReadByte(stream);
-        } while (ch == 0x00FF);
-        return (char) ch;
+        while (true) {
+            while (ReadByte(stream) != 0x00FF) { /* skip garbage */ }
+            int ch;
+            do {
+                ch = ReadByte(stream);
+            } while (ch == 0x00FF);
+            if (ch != 0x0000) {
+                return (char) ch;
+            }
+        }
     }
 
     // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
@@ -191,9 +255,14 @@ class JPGImage {
         for (int i = 0; i < segment.Length; i++) {
             segment[i] = (byte) ReadByte(stream);   // throws on EOF
         }
-        adobe = segment.Length >= 5 &&
+        // Adobe's segment is twelve bytes: "Adobe", the version, two flags and
+        // the color transform. A shorter one is not Adobe's, as in libjpeg. An
+        // APP14 segment of another kind after it does not unmark the image.
+        if (segment.Length >= 12 &&
                 segment[0] == 'A' && segment[1] == 'd' && segment[2] == 'o' &&
-                segment[3] == 'b' && segment[4] == 'e';
+                segment[3] == 'b' && segment[4] == 'e') {
+            adobe = true;
+        }
     }
 
     // Most types of marker are followed by a variable-length parameter
