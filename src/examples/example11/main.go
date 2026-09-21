@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example11 draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
@@ -38,6 +39,7 @@ func Example11() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "Linear Barcodes")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(70.0, 80.0)
 	text.DrawOn(page)

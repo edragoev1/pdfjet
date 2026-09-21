@@ -18,6 +18,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pdf417"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example12 draws a PDF417 barcode that holds a whole source file, with an
@@ -36,6 +37,7 @@ func Example12() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "PDF417 Barcode")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(70.0, 80.0)
 	text.DrawOn(page)

@@ -7,7 +7,8 @@
 # build-*.sh scripts and their unit tests with the test-*.sh scripts, as the
 # workflow's port jobs do, builds and tests the Java port again with JDK 8, as
 # its java (JDK 8) job does, then checks the example PDFs with
-# .github/scripts/check-example-pdfs.py, as its compare job does.
+# .github/scripts/check-example-pdfs.py and their tags with
+# .github/scripts/check-pdfua-tags.py, as its compare job does.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -116,4 +117,9 @@ if ! JAVA_HOME="$JAVA8_HOME" PATH="$JAVA8_HOME/bin:$PATH" \
     exit 1
 fi
 
-"$WORK/venv/bin/python" .github/scripts/check-example-pdfs.py "$WORK/pdfs/{port}"
+"$WORK/venv/bin/python" .github/scripts/check-example-pdfs.py "$WORK/pdfs/{port}" || exit 1
+
+# What the tags of the tagged documents stand for, which veraPDF cannot check.
+# The Java PDFs stand for all four ports: check-example-pdfs.py has just
+# checked that the content streams of the other three are the same.
+"$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java"

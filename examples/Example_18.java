@@ -57,6 +57,7 @@ public class Example_18 {
             line.drawOn(page);
 
             TextLine title = new TextLine(f2, titles[i]);
+            title.setStructureType(StructElem.H1);
             title.setFontSize(20f);
             title.setLocation(70f, 120f);
             title.drawOn(page);

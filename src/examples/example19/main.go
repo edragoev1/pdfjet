@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example19 uses the TextBlock component to draw text next to images. The
@@ -33,6 +34,7 @@ func Example19() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "Text Next to Images")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(50.0, 80.0)
 	text.DrawOn(page)

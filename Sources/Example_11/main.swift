@@ -28,6 +28,7 @@ public class Example_11 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let text = TextLine(f2, "Linear Barcodes")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(70.0, 80.0)
         text.drawOn(page)

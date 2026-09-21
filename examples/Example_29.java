@@ -32,6 +32,7 @@ public class Example_29 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Text Columns in Table Cells");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(50f, 70f);
         text.drawOn(page);

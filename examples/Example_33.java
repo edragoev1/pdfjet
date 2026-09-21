@@ -28,6 +28,7 @@ public class Example_33 {
         Page page = new Page(pdf, A4.PORTRAIT);
 
         TextLine text = new TextLine(f2, "SVG Images");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(50f, 80f);
         text.drawOn(page);

@@ -38,6 +38,7 @@ public class Example_38 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         TextLine title = new TextLine(f1, "Table Cells That Span Rows and Columns");
+        title.setStructureType(StructElem.H1);
         title.setFontSize(18f);
         title.setLocation(50f, 50f);
         title.drawOn(page);

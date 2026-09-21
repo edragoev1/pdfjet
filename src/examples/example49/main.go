@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example49 draws a menu with paragraphs that mix fonts, sizes and colors,
@@ -43,6 +44,7 @@ func Example49() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	title := pdfjet.NewTextLine(f3, "Café Menu")
+	title.SetStructureType(structelem.H1)
 	title.SetFontSize(28.0)
 	title.SetLocation(70.0, 100.0)
 	title.DrawOn(page)

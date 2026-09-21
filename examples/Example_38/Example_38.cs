@@ -31,6 +31,7 @@ public class Example_38 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
 
         TextLine title = new TextLine(f1, "Table Cells That Span Rows and Columns");
+        title.SetStructureType(StructElem.H1);
         title.SetFontSize(18f);
         title.SetLocation(50f, 50f);
         title.DrawOn(page);

@@ -33,6 +33,7 @@ public class Example_26 {
         float y = 90f;
 
         TextLine text = new TextLine(f2, "Customer Survey");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(x, y);
         text.drawOn(page);

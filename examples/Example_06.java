@@ -34,6 +34,7 @@ public class Example_06 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Attachments and annotations");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(70f, 80f);
         text.drawOn(page);
@@ -45,7 +46,7 @@ public class Example_06 {
         text.drawOn(page);
 
         // File attachments. The files are stored inside the PDF.
-        new TextLine(f2, "Attached files").setLocation(70f, 160f).drawOn(page);
+        new TextLine(f2, "Attached files").setStructureType(StructElem.H2).setLocation(70f, 160f).drawOn(page);
 
         FileAttachment attachment = new FileAttachment(file1);
         attachment.setLocation(70f, 175f);
@@ -68,7 +69,7 @@ public class Example_06 {
                 .setLocation(105f, 227f).drawOn(page);
 
         // A note, and a link.
-        new TextLine(f2, "A note and a link").setLocation(70f, 290f).drawOn(page);
+        new TextLine(f2, "A note and a link").setStructureType(StructElem.H2).setLocation(70f, 290f).drawOn(page);
 
         TextAnnotation textAnnotation = new TextAnnotation();
         textAnnotation.setLocation(70f, 305f);

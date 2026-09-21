@@ -25,6 +25,7 @@ public class Example_45 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         var text = TextLine(f2, "Shipment Request")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(56.0, 80.0)
         text.drawOn(page)

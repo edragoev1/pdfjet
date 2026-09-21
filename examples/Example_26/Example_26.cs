@@ -32,6 +32,7 @@ public class Example_26 {
         float y = 90f;
 
         TextLine text = new TextLine(f2, "Customer Survey");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(x, y);
         text.DrawOn(page);

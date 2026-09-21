@@ -31,6 +31,7 @@ public class Example_11 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Linear Barcodes");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(70f, 80f);
         text.DrawOn(page);

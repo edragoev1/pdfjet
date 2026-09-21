@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/qrcode"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example21 draws the same web address as a QR code with each of the four
@@ -36,6 +37,7 @@ func Example21() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "QR Code Error Correction")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(70.0, 80.0)
 	text.DrawOn(page)

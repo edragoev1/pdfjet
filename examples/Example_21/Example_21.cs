@@ -28,6 +28,7 @@ public class Example_21 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "QR Code Error Correction");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(70f, 80f);
         text.DrawOn(page);

@@ -33,6 +33,7 @@ public class Example_11 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Linear Barcodes");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(70f, 80f);
         text.drawOn(page);

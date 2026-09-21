@@ -29,6 +29,7 @@ public class Example_31 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Transparency");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(50f, 80f);
         text.DrawOn(page);

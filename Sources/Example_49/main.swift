@@ -33,6 +33,7 @@ public class Example_49 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let title = TextLine(f3, "Café Menu")
+        title.setStructureType(StructElem.H1)
         title.setFontSize(28.0)
         title.setLocation(70.0, 100.0)
         title.drawOn(page)

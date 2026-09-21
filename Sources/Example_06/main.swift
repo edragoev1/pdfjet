@@ -30,6 +30,7 @@ public class Example_06 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         var text = TextLine(f2, "Attachments and annotations")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(70.0, 80.0)
         text.drawOn(page)
@@ -41,7 +42,7 @@ public class Example_06 {
         text.drawOn(page)
 
         // File attachments. The files are stored inside the PDF.
-        TextLine(f2, "Attached files").setLocation(70.0, 160.0).drawOn(page)
+        TextLine(f2, "Attached files").setStructureType(StructElem.H2).setLocation(70.0, 160.0).drawOn(page)
 
         var attachment = FileAttachment(file1)
         attachment.setLocation(70.0, 175.0)
@@ -64,7 +65,7 @@ public class Example_06 {
                 .setLocation(105.0, 227.0).drawOn(page)
 
         // A note, and a link.
-        TextLine(f2, "A note and a link").setLocation(70.0, 290.0).drawOn(page)
+        TextLine(f2, "A note and a link").setStructureType(StructElem.H2).setLocation(70.0, 290.0).drawOn(page)
 
         let textAnnotation = TextAnnotation()
         textAnnotation.setLocation(70.0, 305.0)

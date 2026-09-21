@@ -38,6 +38,7 @@ public class Example_49 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine title = new TextLine(f3, "Café Menu");
+        title.setStructureType(StructElem.H1);
         title.setFontSize(28f);
         title.setLocation(70f, 100f);
         title.drawOn(page);

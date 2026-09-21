@@ -30,6 +30,7 @@ public class Example_12 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "PDF417 Barcode");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(70f, 80f);
         text.drawOn(page);

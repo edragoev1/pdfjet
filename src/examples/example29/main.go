@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example29 draws a table whose cells hold text columns: each paragraph of
@@ -36,6 +37,7 @@ func Example29() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "Text Columns in Table Cells")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(50.0, 70.0)
 	text.DrawOn(page)

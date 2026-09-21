@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example06 attaches two files to a page, and adds a note, a link and
@@ -39,6 +40,7 @@ func Example06() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "Attachments and annotations")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(70.0, 80.0)
 	text.DrawOn(page)
@@ -50,7 +52,7 @@ func Example06() {
 	text.DrawOn(page)
 
 	// File attachments. The files are stored inside the PDF.
-	pdfjet.NewTextLine(f2, "Attached files").SetLocation(70.0, 160.0).DrawOn(page)
+	pdfjet.NewTextLine(f2, "Attached files").SetStructureType(structelem.H2).SetLocation(70.0, 160.0).DrawOn(page)
 
 	attachment := pdfjet.NewFileAttachment(file1)
 	attachment.SetLocation(70.0, 175.0)
@@ -73,7 +75,7 @@ func Example06() {
 		SetLocation(105.0, 227.0).DrawOn(page)
 
 	// A note, and a link.
-	pdfjet.NewTextLine(f2, "A note and a link").SetLocation(70.0, 290.0).DrawOn(page)
+	pdfjet.NewTextLine(f2, "A note and a link").SetStructureType(structelem.H2).SetLocation(70.0, 290.0).DrawOn(page)
 
 	textAnnotation := pdfjet.NewTextAnnotation()
 	textAnnotation.SetLocation(70.0, 305.0)

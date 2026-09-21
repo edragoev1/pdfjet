@@ -58,6 +58,7 @@ public class Example_36 {
         Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
         TextLine text = new TextLine(f2, "Maps");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(24f);
         text.setLocation(50f, 80f);
         text.drawOn(contents);

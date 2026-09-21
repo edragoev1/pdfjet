@@ -55,6 +55,7 @@ public class Example_18 {
             line.DrawOn(page);
 
             TextLine title = new TextLine(f2, titles[i]);
+            title.SetStructureType(StructElem.H1);
             title.SetFontSize(20f);
             title.SetLocation(70f, 120f);
             title.DrawOn(page);

@@ -37,6 +37,7 @@ public class Example_49 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine title = new TextLine(f3, "Café Menu");
+        title.SetStructureType(StructElem.H1);
         title.SetFontSize(28f);
         title.SetLocation(70f, 100f);
         title.DrawOn(page);

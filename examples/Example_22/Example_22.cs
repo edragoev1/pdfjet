@@ -43,6 +43,7 @@ public class Example_22 {
         page.AddDestination("contents", 0f, 0f);
 
         TextLine text = new TextLine(f2, "Contents");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(24f);
         text.SetLocation(90f, 100f);
         text.DrawOn(page);

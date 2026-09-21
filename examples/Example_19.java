@@ -29,6 +29,7 @@ public class Example_19 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Text Next to Images");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(50f, 80f);
         text.drawOn(page);

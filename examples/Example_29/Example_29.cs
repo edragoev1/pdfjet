@@ -31,6 +31,7 @@ public class Example_29 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Text Columns in Table Cells");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(50f, 70f);
         text.DrawOn(page);

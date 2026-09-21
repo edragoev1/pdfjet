@@ -44,6 +44,7 @@ public class Example_22 {
         page.addDestination("contents", 0f, 0f);
 
         TextLine text = new TextLine(f2, "Contents");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(24f);
         text.setLocation(90f, 100f);
         text.drawOn(page);

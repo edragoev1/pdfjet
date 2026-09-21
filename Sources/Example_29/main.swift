@@ -27,6 +27,7 @@ public class Example_29 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let text = TextLine(f2, "Text Columns in Table Cells")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(50.0, 70.0)
         text.drawOn(page)

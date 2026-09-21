@@ -39,6 +39,7 @@ public class Example_48 {
 
         // A bookmark without a number.
         title = new Title(f2, "The structure of a PDF file", x, y);
+        title.GetTextLine().SetStructureType(StructElem.H1);
         toc.AddBookmark(page, title);
         title.DrawOn(page);
 

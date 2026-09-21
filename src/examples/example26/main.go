@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/mark"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example26 draws a survey with check boxes and radio buttons.
@@ -39,6 +40,7 @@ func Example26() {
 	var y float32 = 90.0
 
 	text := pdfjet.NewTextLine(f2, "Customer Survey")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(x, y)
 	text.DrawOn(page)

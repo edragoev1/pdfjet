@@ -36,6 +36,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   drawables are children of the Document element as before.
 
 ### Changed
+- The heading of a page is tagged as a heading in the examples that have one,
+  where every one of them was a paragraph: 19 H1 and 2 H2 over the 39 PDF/UA
+  examples. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF
+  cannot check, since it cannot see what a paragraph stands for; the new
+  `.github/scripts/check-pdfua-tags.py` reads the structure tree and reports
+  what the Matterhorn Protocol leaves to a reviewer — the heading levels, the
+  descriptions of the figures and the links, the nesting of the lists and the
+  header cells of the tables — and runs in `check-examples.sh` and in the
+  Build workflow beside veraPDF.
 - In a PDF/UA document the underline and the strikeout of a `Cell` are
   artifacts, where each was a paragraph with the alternate description
   "underline" or "strike out", which a screen reader read out after the text.

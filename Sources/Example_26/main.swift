@@ -29,6 +29,7 @@ public class Example_26 {
         var y: Float = 90.0
 
         let text = TextLine(f2, "Customer Survey")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(x, y)
         text.drawOn(page)

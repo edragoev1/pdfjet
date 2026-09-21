@@ -25,6 +25,7 @@ public class Example_21 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         var text = TextLine(f2, "QR Code Error Correction")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
         text.setLocation(70.0, 80.0)
         text.drawOn(page)

@@ -30,6 +30,7 @@ public class Example_28 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Fonts from .otf, .ttf and .stream Files");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(50f, 80f);
         text.drawOn(page);

@@ -33,6 +33,7 @@ public class Example_06 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Attachments and annotations");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(70f, 80f);
         text.DrawOn(page);
@@ -44,7 +45,7 @@ public class Example_06 {
         text.DrawOn(page);
 
         // File attachments. The files are stored inside the PDF.
-        new TextLine(f2, "Attached files").SetLocation(70f, 160f).DrawOn(page);
+        new TextLine(f2, "Attached files").SetStructureType(StructElem.H2).SetLocation(70f, 160f).DrawOn(page);
 
         FileAttachment attachment = new FileAttachment(file1);
         attachment.SetLocation(70f, 175f);
@@ -67,7 +68,7 @@ public class Example_06 {
                 .SetLocation(105f, 227f).DrawOn(page);
 
         // A note, and a link.
-        new TextLine(f2, "A note and a link").SetLocation(70f, 290f).DrawOn(page);
+        new TextLine(f2, "A note and a link").SetStructureType(StructElem.H2).SetLocation(70f, 290f).DrawOn(page);
 
         TextAnnotation textAnnotation = new TextAnnotation();
         textAnnotation.SetLocation(70f, 305f);

@@ -32,6 +32,7 @@ public class Example_45 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "Shipment Request");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(56f, 80f);
         text.drawOn(page);

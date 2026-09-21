@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example38 draws a table of cells that span multiple rows and columns.
@@ -34,6 +35,7 @@ func Example38() {
 	page := pdfjet.NewPage(pdf, letter.Landscape())
 
 	title := pdfjet.NewTextLine(f1, "Table Cells That Span Rows and Columns")
+	title.SetStructureType(structelem.H1)
 	title.SetFontSize(18.0)
 	title.SetLocation(50.0, 50.0)
 	title.DrawOn(page)

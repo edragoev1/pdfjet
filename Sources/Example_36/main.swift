@@ -53,6 +53,7 @@ public class Example_36 {
         let contents = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
         var text = TextLine(f2, "Maps")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(24.0)
         text.setLocation(50.0, 80.0)
         text.drawOn(contents)

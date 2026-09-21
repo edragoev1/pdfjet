@@ -151,10 +151,26 @@ work to Oct 21 is the seven goals below, in this order.
    test names; `TextFrame`, `BigTable`, `CompositeTextLine` and `Bidi`; the
    barcodes, the charts, `Form`, `Container` and `Stamp`.
 
-3. ⬜ **B** PDF/UA as it is claimed: check the 41 PDF/UA examples with PAC or
-   by the Matterhorn Protocol, not only veraPDF, which cannot see what a
-   paragraph stands for. Tagging a table as a table, which this goal waited
-   on, landed on Sep 19 (b09231fd).
+3. ⬜ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
+   veraPDF, which cannot see what a paragraph stands for. PAC runs on Windows
+   only, so the checks it would make by hand are in
+   `.github/scripts/check-pdfua-tags.py`, which reads the structure tree of
+   every tagged example: the heading levels, the descriptions of the figures
+   and the links, the nesting of the lists, and the header cells and the
+   widths of the rows of the tables. It runs in `check-examples.sh` and in the
+   Build workflow. There are 39 PDF/UA examples, not 41: Example_30 is
+   encrypted and Example_43 has its `setCompliance` commented out and stays
+   that way. What the first run found is fixed (Sep 21): not one heading was
+   tagged as a heading in any of them, though 23 draw a visible title, so
+   every title was a paragraph. What is left for this goal:
+   - ⬜ `TextColumn`, `Paragraph` and `Chart` cannot tag a heading, so the
+     titles of Example_03, Example_10 and Example_39 are still paragraphs.
+     `setStructureType` is on `TextLine` alone.
+   - ⬜ No example uses the L, LI, Lbl and LBody tags, so a list that is drawn
+     reads as paragraphs.
+   - ⬜ PAC itself, or the Matterhorn conditions that need eyes on a page:
+     the reading order of each page, whether a colour alone carries meaning,
+     and whether each Alt says what its figure shows.
 
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
    Windows opens Example_30 with `hello` and `world`, shows print allowed and

@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example36 draws two map pages first and their contents page last, and
@@ -62,6 +63,7 @@ func Example36() {
 	contents := pdfjet.NewPageDetached(pdf, a4.Portrait())
 
 	text := pdfjet.NewTextLine(f2, "Maps")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(24.0)
 	text.SetLocation(50.0, 80.0)
 	text.DrawOn(contents)

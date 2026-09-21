@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example22 links a contents page to three chapters, and each chapter
@@ -49,6 +50,7 @@ func Example22() {
 	page.AddDestinationAt("contents", 0.0, 0.0)
 
 	text := pdfjet.NewTextLine(f2, "Contents")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(24.0)
 	text.SetLocation(90.0, 100.0)
 	text.DrawOn(page)

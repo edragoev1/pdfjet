@@ -21,6 +21,7 @@ public class Example_38 {
         let page = Page(pdf, Letter.LANDSCAPE)
 
         let title = TextLine(f1, "Table Cells That Span Rows and Columns")
+        title.setStructureType(StructElem.H1)
         title.setFontSize(18.0)
         title.setLocation(50.0, 50.0)
         title.drawOn(page)

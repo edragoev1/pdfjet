@@ -40,6 +40,7 @@ public class Example_22 {
         page.addDestination("contents", 0.0, 0.0)
 
         var text = TextLine(f2, "Contents")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(24.0)
         text.setLocation(90.0, 100.0)
         text.drawOn(page)

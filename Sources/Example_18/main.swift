@@ -51,6 +51,7 @@ public class Example_18 {
             line.drawOn(page)
 
             let title = TextLine(f2, titles[i])
+            title.setStructureType(StructElem.H1)
             title.setFontSize(20.0)
             title.setLocation(70.0, 120.0)
             title.drawOn(page)

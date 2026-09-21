@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example18
@@ -61,6 +62,7 @@ func Example18() {
 		line.DrawOn(page)
 
 		title := pdfjet.NewTextLine(f2, titles[i])
+		title.SetStructureType(structelem.H1)
 		title.SetFontSize(20.0)
 		title.SetLocation(70.0, 120.0)
 		title.DrawOn(page)

@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example48 draws the outline of a short guide to the structure of a PDF
@@ -42,6 +43,7 @@ func Example48() {
 
 	// A bookmark without a number.
 	title := pdfjet.NewTitle(f2, "The structure of a PDF file", x, y)
+	title.GetTextLine().SetStructureType(structelem.H1)
 	toc.AddBookmark(page, title)
 	title.DrawOn(page)
 

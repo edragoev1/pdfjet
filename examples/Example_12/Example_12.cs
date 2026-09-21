@@ -29,6 +29,7 @@ public class Example_12 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "PDF417 Barcode");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(70f, 80f);
         text.DrawOn(page);

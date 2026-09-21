@@ -30,6 +30,7 @@ public class Example_21 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         TextLine text = new TextLine(f2, "QR Code Error Correction");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
         text.setLocation(70f, 80f);
         text.drawOn(page);

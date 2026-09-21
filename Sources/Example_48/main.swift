@@ -38,6 +38,7 @@ public class Example_48 {
 
         // A bookmark without a number.
         var title = Title(f2, "The structure of a PDF file", x, y)
+        title.getTextLine().setStructureType(StructElem.H1)
         toc.addBookmark(page, title)
         title.drawOn(page)
 

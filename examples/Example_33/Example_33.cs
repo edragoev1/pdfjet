@@ -27,6 +27,7 @@ public class Example_33 {
         Page page = new Page(pdf, A4.PORTRAIT);
 
         TextLine text = new TextLine(f2, "SVG Images");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
         text.SetLocation(50f, 80f);
         text.DrawOn(page);

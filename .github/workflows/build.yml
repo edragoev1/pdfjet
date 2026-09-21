@@ -129,7 +129,8 @@ jobs:
             - name: Run the unit tests
               run: bash -e test-java.sh
 
-    # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py.
+    # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py,
+    # and what the tags of the tagged ones stand for with check-pdfua-tags.py.
     compare:
         needs: build
         runs-on: ubuntu-24.04
@@ -202,3 +203,12 @@ jobs:
               run: |
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-pdfs.py \
                       "$RUNNER_TEMP/pdfs/example-pdfs-{port}"
+
+            # What the tags of the tagged documents stand for, which veraPDF
+            # cannot check. The Java PDFs stand for all four ports: the step
+            # above has just checked that the content streams of the other
+            # three are the same.
+            - name: Check what the PDF/UA tags stand for
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-pdfua-tags.py \
+                      "$RUNNER_TEMP/pdfs/example-pdfs-java"
