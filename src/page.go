@@ -1024,7 +1024,7 @@ func (page *Page) SaveGraphicsState() {
 	page.savedStates = append(page.savedStates, newSavedState(
 		page.brushColor, page.brushColorWritten, page.penColor, page.penColorWritten,
 		page.penWidth, page.penWidthWritten, page.writtenFont, page.writtenFontSize,
-		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern))
+		page.lineCapStyle, page.lineJoinStyle, page.strokeDashPattern, page.height))
 	page.appendString("q\n")
 }
 
@@ -1066,6 +1066,10 @@ func (page *Page) RestoreGraphicsState() {
 		page.lineCapStyle = state.lineCapStyle
 		page.lineJoinStyle = state.lineJoinStyle
 		page.strokeDashPattern = state.strokeDashPattern
+		// Transform divides the height of the page by the vertical scale, so
+		// the y coordinates that follow are measured in the space it made;
+		// the state the transformation was saved before has the height back.
+		page.height = state.height
 	}
 	page.appendString("Q\n")
 }

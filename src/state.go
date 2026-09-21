@@ -23,6 +23,9 @@ type savedState struct {
 	lineCapStyle      capstyle.CapStyle
 	lineJoinStyle     joinstyle.JoinStyle
 	strokeDashPattern string
+	// The height of the page, which Transform divides by the vertical scale
+	// and which every y coordinate is measured from.
+	height float32
 }
 
 // newSavedState constructs state objects.
@@ -37,7 +40,8 @@ func newSavedState(
 	writtenFontSize float32,
 	lineCapStyle capstyle.CapStyle,
 	lineJoinStyle joinstyle.JoinStyle,
-	strokeDashPattern string) *savedState {
+	strokeDashPattern string,
+	height float32) *savedState {
 	state := new(savedState)
 	state.pen = [3]float32{pen[0], pen[1], pen[2]}
 	state.brush = [3]float32{brush[0], brush[1], brush[2]}
@@ -50,6 +54,7 @@ func newSavedState(
 	state.lineCapStyle = lineCapStyle
 	state.lineJoinStyle = lineJoinStyle
 	state.strokeDashPattern = strokeDashPattern
+	state.height = height
 	return state
 }
 
@@ -81,4 +86,9 @@ func (state *savedState) getLineJoinStyle() joinstyle.JoinStyle {
 // GetStrokeDashPattern returns the line pattern.
 func (state *savedState) getStrokeDashPattern() string {
 	return state.strokeDashPattern
+}
+
+// getHeight returns the height of the page.
+func (state *savedState) getHeight() float32 {
+	return state.height
 }

@@ -2189,7 +2189,7 @@ public class Page {
     public void SaveGraphicsState() {
         savedStates.Add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern));
+                lineCapStyle, lineJoinStyle, strokeDashPattern, height));
         Append("q\n");
     }
 
@@ -2239,6 +2239,11 @@ public class Page {
             lineCapStyle = state.GetLineCapStyle();
             lineJoinStyle = state.GetLineJoinStyle();
             strokeDashPattern = state.GetStrokeDashPattern();
+            // Transform divides the height of the page by the vertical scale,
+            // so the y coordinates that follow are measured in the space it
+            // made; the state the transformation was saved before has the
+            // height back.
+            height = state.GetHeight();
         }
         Append("Q\n");
     }

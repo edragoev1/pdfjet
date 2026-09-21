@@ -242,8 +242,14 @@ change code; the checks that must hold at the tag run after the freeze.
       viewBox that is not four numbers; and an image tagged as a paragraph
       rather than a Figure in a PDF/UA document. The `tRNS` chunk of a
       grayscale or truecolor PNG is a feature, below.
-- ⬜ **B** Goal 2: review `Page` and `TextLine`, the two with the widest
-      exposure.
+- ✅ Goal 2: `Page` and `TextLine` are reviewed (Sep 21). The public API, the
+      literals each port writes into a content stream, and the fields the
+      graphics state saves and restores are the same in the four ports, and
+      the nine `Page` methods no example or test used were read and run. Two
+      findings, fixed in the four ports with tests: the underline and the
+      strikeout of a tagged text line were structure elements that repeat the
+      text, and `transform` left the height of the page divided by its
+      vertical scale after the state was restored.
 - ⬜ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands.
 
 ### Sep 27–Oct 1: release v9.0.2

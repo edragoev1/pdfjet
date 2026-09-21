@@ -20,6 +20,25 @@ import Testing
         TestSupport.expectNear(10 + line.getWidth(), xy[0])
     }
 
+    @Test func theUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts() throws {
+        // The line is decoration: an element of its own, described as
+        // "Underlined text: " and the text, is read after the text again.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Title")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let line = TextLine(TestSupport.helvetica(memory.pdf), "Hello")
+        line.setUnderline(true)
+        line.setStrikeout(true)
+        _ = line.setLocation(10, 20)
+        line.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "/Artifact BMC\n").count - 1 == 2, "\(content)")
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /P\n").count - 1 == 1, "the text line is more than one element")
+        #expect(!raw.contains("/Alt "), "the lines describe themselves")
+    }
+
     @Test func emptyTextDrawsNothingAndReturnsTheLocation() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)

@@ -59,6 +59,24 @@ import Testing
         #expect(TestSupport.content(page) == "0 0 0 rg\nq\n0 0 1 rg\nQ\n0 0 1 rg\n")
     }
 
+    @Test func transformScalesTheHeightUntilTheStateIsRestored() {
+        // transform divides the height of the page by the vertical scale, so
+        // the y coordinates that follow are measured in the space it made. A
+        // restore has the height back, where every coordinate after it was
+        // measured from the scaled height.
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        var values = [Float](repeating: 0.0, count: 9)
+        values[Page.MSCALE_X] = 2.0
+        values[Page.MSCALE_Y] = 2.0
+        page.moveTo(10, 100)
+        page.saveGraphicsState()
+        page.transform(values)
+        page.moveTo(10, 100)
+        page.restoreGraphicsState()
+        page.moveTo(10, 100)
+        #expect(TestSupport.content(page) == "10 692 m\nq\n2 0 0 2 0 0 cm\n10 296 m\nQ\n10 692 m\n")
+    }
+
     @Test func anRgbColorAfterACmykColorIsWritten() {
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
         page.setBrushColor(Color.black)

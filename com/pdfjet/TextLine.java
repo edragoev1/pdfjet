@@ -690,7 +690,9 @@ public class TextLine implements BaselineDrawable {
             double yAdjust = font.getUnderlinePosition(fontSize) * Math.cos(radians) + verticalOffset;
             double x2 = x + (lineLength * Math.cos(radians));
             double y2 = y - (lineLength * Math.sin(radians));
-            page.addBDC(structureType, language, null, "Underlined text: " + text);
+            // The line is decoration, and the text says what it is drawn
+            // under; a description of its own is read after the text again.
+            page.addArtifactBMC();
             page.moveTo((float) (x + xAdjust), (float) (y + yAdjust));
             page.lineTo((float) (x2 + xAdjust), (float) (y2 + yAdjust));
             page.strokePath();
@@ -708,7 +710,7 @@ public class TextLine implements BaselineDrawable {
             double yAdjust = (font.getBodyHeight(fontSize) / 4.0) * Math.cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.cos(radians);
             double y2 = y - lineLength * Math.sin(radians);
-            page.addBDC(structureType, language, null, "Strikethrough text: " + text);
+            page.addArtifactBMC();
             page.moveTo((float) (x - xAdjust), (float) (y - yAdjust));
             page.lineTo((float) (x2 - xAdjust), (float) (y2 - yAdjust));
             page.strokePath();

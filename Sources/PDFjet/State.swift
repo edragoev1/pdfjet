@@ -18,6 +18,9 @@ class State {
     private var lineCapStyle: CapStyle
     private var lineJoinStyle: JoinStyle
     private var linePattern: String
+    // The height of the page, which transform divides by the vertical scale
+    // and which every y coordinate is measured from.
+    private var height: Float
 
     /// Creates a snapshot of the pen and brush colors, pen width, line cap and join styles and dash pattern.
     public init(
@@ -31,7 +34,8 @@ class State {
             _ writtenFontSize: Float,
             _ lineCapStyle: CapStyle,
             _ lineJoinStyle: JoinStyle,
-            _ linePattern: String) {
+            _ linePattern: String,
+            _ height: Float) {
         self.pen = [pen[0], pen[1], pen[2]]
         self.brush = [brush[0], brush[1], brush[2]]
         self.penWritten = penWritten
@@ -43,6 +47,12 @@ class State {
         self.lineCapStyle = lineCapStyle
         self.lineJoinStyle = lineJoinStyle
         self.linePattern = linePattern
+        self.height = height
+    }
+
+    /// Returns the height of the page.
+    public func getHeight() -> Float {
+        return self.height
     }
 
     /// Returns the pen color.

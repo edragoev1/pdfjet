@@ -75,6 +75,26 @@ class PageTest {
     }
 
     @Test
+    void transformScalesTheHeightUntilTheStateIsRestored() throws Exception {
+        // transform divides the height of the page by the vertical scale, so
+        // the y coordinates that follow are measured in the space it made. A
+        // restore has the height back, where every coordinate after it was
+        // measured from the scaled height.
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        float[] values = new float[9];
+        values[Page.MSCALE_X] = 2f;
+        values[Page.MSCALE_Y] = 2f;
+        page.moveTo(10f, 100f);
+        page.saveGraphicsState();
+        page.transform(values);
+        page.moveTo(10f, 100f);
+        page.restoreGraphicsState();
+        page.moveTo(10f, 100f);
+        assertEquals("10 692 m\nq\n2 0 0 2 0 0 cm\n10 296 m\nQ\n10 692 m\n",
+                TestSupport.content(page));
+    }
+
+    @Test
     void anRgbColorAfterACmykColorIsWritten() throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         page.setBrushColor(Color.black);

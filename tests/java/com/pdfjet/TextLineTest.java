@@ -28,6 +28,27 @@ class TextLineTest {
     }
 
     @Test
+    void theUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts() throws Exception {
+        // The line is decoration: an element of its own, described as
+        // "Underlined text: " and the text, is read after the text again.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine line = new TextLine(TestSupport.helvetica(pdf), "Hello");
+        line.setUnderline(true);
+        line.setStrikeout(true);
+        line.setLocation(10f, 20f);
+        line.drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(2, content.split("/Artifact BMC\n", -1).length - 1, content);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/S /P\n", -1).length - 1, "the text line is more than one element");
+        assertFalse(raw.contains("/Alt "), "the lines describe themselves");
+    }
+
+    @Test
     void emptyTextDrawsNothingAndReturnsTheLocation() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

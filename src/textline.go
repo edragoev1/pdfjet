@@ -504,7 +504,9 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := underlinePosition*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
-		page.AddBDC(textLine.structureType, textLine.language, "", "Underlined text: "+textLine.text)
+		// The line is decoration, and the text says what it is drawn under;
+		// a description of its own is read after the text again.
+		page.AddArtifactBMC()
 		page.MoveTo(float32(float64(textLine.x)+xAdjust), float32(float64(textLine.y)+yAdjust))
 		page.LineTo(float32(x2+xAdjust), float32(y2+yAdjust))
 		page.StrokePath()
@@ -523,7 +525,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(verticalOffset)
 		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
 		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
-		page.AddBDC(textLine.structureType, textLine.language, "", "Strikethrough text: "+textLine.text)
+		page.AddArtifactBMC()
 		page.MoveTo(float32(float64(textLine.x)-xAdjust), float32(float64(textLine.y)-yAdjust))
 		page.LineTo(float32(x2-xAdjust), float32(y2-yAdjust))
 		page.StrokePath()

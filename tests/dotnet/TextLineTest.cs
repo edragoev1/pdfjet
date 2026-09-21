@@ -9,6 +9,27 @@ using Xunit;
 namespace PDFjet.NET {
 public class TextLineTest {
     [Fact]
+    public void TheUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts() {
+        // The line is decoration: an element of its own, described as
+        // "Underlined text: " and the text, is read after the text again.
+        System.IO.MemoryStream output = new System.IO.MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine line = new TextLine(TestSupport.Helvetica(pdf), "Hello");
+        line.SetUnderline(true);
+        line.SetStrikeout(true);
+        line.SetLocation(10f, 20f);
+        line.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Equal(2, content.Split("/Artifact BMC\n").Length - 1);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Assert.Equal(1, raw.Split("/S /P\n").Length - 1);
+        Assert.DoesNotContain("/Alt ", raw);
+    }
+
+    [Fact]
     public void DrawOnWritesTheTextAsHexAtTheFlippedY() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

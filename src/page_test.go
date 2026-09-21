@@ -224,6 +224,27 @@ func TestPageQAndQKeepWhatTheContentHasWritten(t *testing.T) {
 	}
 }
 
+func TestPageTransformScalesTheHeightUntilTheStateIsRestored(t *testing.T) {
+	// Transform divides the height of the page by the vertical scale, so the
+	// y coordinates that follow are measured in the space it made. A restore
+	// has the height back, where every coordinate after it was measured from
+	// the scaled height.
+	page := testNewPage()
+	values := make([]float32, 9)
+	values[MScaleX] = 2
+	values[MScaleY] = 2
+	page.MoveTo(10, 100)
+	page.SaveGraphicsState()
+	page.Transform(values)
+	page.MoveTo(10, 100)
+	page.RestoreGraphicsState()
+	page.MoveTo(10, 100)
+	want := "10 692 m\nq\n2 0 0 2 0 0 cm\n10 296 m\nQ\n10 692 m\n"
+	if got := testContent(page); got != want {
+		t.Errorf("content %q", got)
+	}
+}
+
 func TestPageAnRgbColorAfterACmykColorIsWritten(t *testing.T) {
 	page := testNewPage()
 	page.SetBrushColor(color.Black)

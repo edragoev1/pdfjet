@@ -123,6 +123,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The underline and the strikeout of a `TextLine` in a PDF/UA document are
+  artifacts, in all four ports, where each was a structure element of its own
+  whose alternate description was "Underlined text: " or "Strikethrough text: "
+  and the whole text, which a screen reader reads after the text again. A
+  `Cell` was fixed this way in v9.0.1; a text line drawn on a page was not.
+  The tagged examples hold eight fewer paragraph elements.
+- `Page.transform` divides the height of the page by the vertical scale, and
+  the height is now saved and restored with the graphics state, in all four
+  ports. It was left divided, so every y coordinate after the restore was
+  measured from the scaled height: a line drawn at y 100 of a Letter page went
+  to 296 instead of 692 after a `q`, a transform by 2 and a `Q`.
 - A JPEG whose frame header is not the length of its component
   specifications, three bytes for each component after its eight, is refused
   in all four ports, where PDFjet read the header and embedded the file.

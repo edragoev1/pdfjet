@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -77,6 +78,30 @@ func TestTextLineUnderlineAddsAStrokedLine(t *testing.T) {
 	line.DrawOn(underlined)
 	if !strings.Contains(testContent(underlined), "\nS\n") {
 		t.Error("underlined text has no stroke")
+	}
+}
+
+func TestTextLineTheUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts(t *testing.T) {
+	// The line is decoration: an element of its own, described as "Underlined
+	// text: " and the text, is read after the text again.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	page := NewPage(doc.pdf, letter.Portrait())
+	line := NewTextLine(testHelvetica(doc.pdf), "Hello")
+	line.SetUnderline(true)
+	line.SetStrikeout(true)
+	line.SetLocation(10, 20)
+	line.DrawOn(page)
+	if got := strings.Count(testContent(page), "/Artifact BMC\n"); got != 2 {
+		t.Errorf("the two lines are %d artifacts", got)
+	}
+	raw := string(doc.complete())
+	if got := strings.Count(raw, "/S /P\n"); got != 1 {
+		t.Errorf("the text line is %d elements, not one", got)
+	}
+	if strings.Contains(raw, "/Alt ") {
+		t.Error("the lines describe themselves")
 	}
 }
 

@@ -554,7 +554,9 @@ public class TextLine : IBaselineDrawable {
             double yAdjust = font.GetUnderlinePosition(fontSize) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBDC(structureType, language, null, "Underlined text: " + text);
+            // The line is decoration, and the text says what it is drawn
+            // under; a description of its own is read after the text again.
+            page.AddArtifactBMC();
             page.MoveTo((float) (x + xAdjust), (float) (y + yAdjust));
             page.LineTo((float) (x2 + xAdjust), (float) (y2 + yAdjust));
             page.StrokePath();
@@ -572,7 +574,7 @@ public class TextLine : IBaselineDrawable {
             double yAdjust = (font.GetBodyHeight(fontSize) / 4f) * Math.Cos(radians) + verticalOffset;
             double x2 = x + lineLength * Math.Cos(radians);
             double y2 = y - lineLength * Math.Sin(radians);
-            page.AddBDC(structureType, language, null, "Strikethrough text: " + text);
+            page.AddArtifactBMC();
             page.MoveTo((float) (x - xAdjust), (float) (y - yAdjust));
             page.LineTo((float) (x2 - xAdjust), (float) (y2 - yAdjust));
             page.StrokePath();

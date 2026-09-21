@@ -18,6 +18,9 @@ class State {
     private CapStyle lineCapStyle;
     private JoinStyle lineJoinStyle;
     private String strokeDashPattern;
+    // The height of the page, which transform divides by the vertical scale
+    // and which every y coordinate is measured from.
+    private float height;
 
     public State(
             float[] brushColor,
@@ -30,7 +33,8 @@ class State {
             float writtenFontSize,
             CapStyle lineCapStyle,
             JoinStyle lineJoinStyle,
-            String strokeDashPattern) {
+            String strokeDashPattern,
+            float height) {
         // Copies of the colors, so the saved state does not change with the
         // arrays of the page after it is saved.
         this.brushColor = new float[] { brushColor[0], brushColor[1], brushColor[2] };
@@ -44,6 +48,11 @@ class State {
         this.lineCapStyle = lineCapStyle;
         this.lineJoinStyle = lineJoinStyle;
         this.strokeDashPattern = strokeDashPattern;
+        this.height = height;
+    }
+
+    public float getHeight() {
+        return height;
     }
 
     public float[] getBrushColor() {

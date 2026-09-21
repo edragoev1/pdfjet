@@ -607,7 +607,9 @@ public class TextLine : BaselineDrawable {
             let yAdjust = Double(font!.getUnderlinePosition(fontSize)) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
             let y2 = Double(y) - Double(lineLength) * sin(radians)
-            page!.addBDC(structureType, language, "", "Underlined text: " + text!)
+            // The line is decoration, and the text says what it is drawn
+            // under; a description of its own is read after the text again.
+            page!.addArtifactBMC()
             page!.moveTo(Float(Double(x) + xAdjust), Float(Double(y) + yAdjust))
             page!.lineTo(Float(x2 + xAdjust), Float(y2 + yAdjust))
             page!.strokePath()
@@ -625,7 +627,7 @@ public class TextLine : BaselineDrawable {
             let yAdjust = Double(font!.getBodyHeight(fontSize) / 4.0) * cos(radians) + Double(verticalOffset)
             let x2 = Double(x) + Double(lineLength) * cos(radians)
             let y2 = Double(y) - Double(lineLength) * sin(radians)
-            page!.addBDC(structureType, language, "", "Strikethrough text: " + text!)
+            page!.addArtifactBMC()
             page!.moveTo(Float(Double(x) - xAdjust), Float(Double(y) - yAdjust))
             page!.lineTo(Float(x2 - xAdjust), Float(y2 - yAdjust))
             page!.strokePath()

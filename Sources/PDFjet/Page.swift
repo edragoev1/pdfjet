@@ -1045,7 +1045,7 @@ public class Page {
     public func saveGraphicsState() {
         savedStates.append(State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern))
+                lineCapStyle, lineJoinStyle, strokeDashPattern, height))
         append("q\n")
     }
 
@@ -1091,6 +1091,10 @@ public class Page {
         lineCapStyle = state.getLineCapStyle()
         lineJoinStyle = state.getLineJoinStyle()
         strokeDashPattern = state.getLinePattern()
+        // transform divides the height of the page by the vertical scale, so
+        // the y coordinates that follow are measured in the space it made;
+        // the state the transformation was saved before has the height back.
+        height = state.getHeight()
         append("Q\n")
     }
 

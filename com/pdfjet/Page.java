@@ -2265,7 +2265,7 @@ final public class Page {
     public void saveGraphicsState() {
         savedStates.add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
-                lineCapStyle, lineJoinStyle, strokeDashPattern));
+                lineCapStyle, lineJoinStyle, strokeDashPattern, height));
         append("q\n");
     }
 
@@ -2315,6 +2315,11 @@ final public class Page {
             lineCapStyle = state.getLineCapStyle();
             lineJoinStyle = state.getLineJoinStyle();
             strokeDashPattern = state.getStrokeDashPattern();
+            // transform divides the height of the page by the vertical scale,
+            // so the y coordinates that follow are measured in the space it
+            // made; the state the transformation was saved before has the
+            // height back.
+            height = state.getHeight();
         }
         append("Q\n");
     }
