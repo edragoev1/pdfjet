@@ -56,7 +56,14 @@ final public class PDF {
     // The structure elements of the pages of the document, in page order.
     // complete() collects them, so a detached page that was never added has
     // no part in the structure tree.
-    private final List<StructElement> structElements = new ArrayList<StructElement>();
+    private final List<StructElement> annotElements = new ArrayList<StructElement>();
+    // The elements of the Document element, by number.
+    private final List<Integer> documentKids = new ArrayList<Integer>();
+    // The structure tree root, the parent tree and the Document element take
+    // three numbers reserved before the first element is written.
+    private int structTreeRootNumber = 0;
+    private int parentTreeNumber = 0;
+    private int documentElementNumber = 0;
 
     // The first misuse of the API. The call that finds it throws, and complete()
     // then refuses to finish the document, as the file would be broken even if
@@ -567,14 +574,13 @@ final public class PDF {
     }
 
     private void addPagesObject() throws Exception {
-        newObj();
+        setObjOffset(pagesObjNumber, byteCount);
+        append(pagesObjNumber);
+        append(Token.NEW_OBJ);
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Pages\n");
         append("/Kids [\n");
         for (Page page : pages) {
-            if (compliance != Compliance.PDF_1_7) {
-                page.setStructElementsPageObjNumber(page.objNumber);
-            }
             append(page.objNumber);
             append(Token.OBJ_REF);
         }
@@ -586,24 +592,39 @@ final public class PDF {
         endObj();
     }
 
+    // Reserves the numbers of the structure tree root, the parent tree and
+    // the Document element, which the elements written with their pages refer
+    // to before the three are written.
+    void reserveStructTreeNumbers() {
+        if (structTreeRootNumber == 0) {
+            structTreeRootNumber = reserveObjNumber();
+            parentTreeNumber = reserveObjNumber();
+            documentElementNumber = reserveObjNumber();
+        }
+    }
+
     private int addStructTreeRootObject() throws Exception {
-        newObj();
+        setObjOffset(structTreeRootNumber, byteCount);
+        append(structTreeRootNumber);
+        append(" 0 obj\n");
         append(Token.BEGIN_DICTIONARY);
         append("/Type /StructTreeRoot\n");
         append("/ParentTree ");
-        append(getObjNumber() + 1);
+        append(parentTreeNumber);
         append(" 0 R\n");
         append("/K [\n");
-        append(getObjNumber() + 2);
+        append(documentElementNumber);
         append(Token.OBJ_REF);
         append("]\n");
         append(Token.END_DICTIONARY);
         endObj();
-        return getObjNumber();
+        return structTreeRootNumber;
     }
 
     private int addStructDocumentObject(int parent) throws Exception {
-        newObj();
+        setObjOffset(documentElementNumber, byteCount);
+        append(documentElementNumber);
+        append(" 0 obj\n");
         append(Token.BEGIN_DICTIONARY);
         append("/Type /StructElem\n");
         append("/S /Document\n");
@@ -611,39 +632,61 @@ final public class PDF {
         append(parent);
         append(" 0 R\n");
         append("/K [\n");
-        for (StructElement structElement : this.structElements) {
-            // An element whose parent is on a page that is not in the
-            // document is a child of the Document element.
-            if (structElement.parent == null || structElement.parent.objNumber == 0) {
-                append(structElement.objNumber);
-                append(Token.OBJ_REF);
-            }
+        for (Integer number : this.documentKids) {
+            append(number.intValue());
+            append(Token.OBJ_REF);
         }
         append("]\n");
         append(Token.END_DICTIONARY);
         endObj();
-        return getObjNumber();
+        return documentElementNumber;
     }
 
-    private void addStructElementObjects() throws Exception {
-        int structTreeRootObjNumber = getObjNumber() + 1;
-        structTreeRootObjNumber += this.structElements.size();
-        // The object numbers are known first, as an element refers to its
-        // parent and its kids, which may be written before or after it.
-        int objNumber = getObjNumber();
-        for (StructElement element : this.structElements) {
-            element.objNumber = ++objNumber;
+    // Writes the structure elements of a page that is written, so that a
+    // document of many pages holds no more of them than the page it is
+    // drawing. What it keeps is the elements that are still open and the ones
+    // of an annotation, whose object is written when the document is completed.
+    private void addPageStructElements(Page page) throws Exception {
+        if (compliance == Compliance.PDF_1_7 || page.structures.isEmpty()) {
+            return;
         }
+        List<StructElement> kept = new ArrayList<StructElement>();
+        for (StructElement element : page.structures) {
+            if (element.mcid >= 0) {
+                while (page.mcidNumbers.size() <= element.mcid) {
+                    page.mcidNumbers.add(0);
+                }
+                page.mcidNumbers.set(element.mcid, element.objNumber);
+            }
+            if (element.parent == null) {
+                documentKids.add(element.objNumber);
+            }
+            if (element.annotation != null) {
+                annotElements.add(element);
+            }
+            if (element.open || element.annotation != null) {
+                kept.add(element);
+                continue;
+            }
+            addStructElementObject(element);
+        }
+        page.structures = kept;
+    }
 
-        for (StructElement element : this.structElements) {
-            newObj();
+    // Writes one structure element, under the number it was given when it was
+    // made.
+    private void addStructElementObject(StructElement element) throws Exception {
+        {
+            setObjOffset(element.objNumber, byteCount);
+            append(element.objNumber);
+            append(" 0 obj\n");
             append("<<\n/Type /StructElem /S /");
             append(element.structure);
             append("\n/P ");
-            if (element.parent != null && element.parent.objNumber != 0) {
+            if (element.parent != null) {
                 append(element.parent.objNumber);
             } else {
-                append(structTreeRootObjNumber + 2);    // The Document element
+                append(documentElementNumber);
             }
             append(" 0 R /Pg ");
             append(element.pageObjNumber);
@@ -659,11 +702,9 @@ final public class PDF {
                 append("\n");
             } else if (!element.kids.isEmpty()) {
                 append("/K [");
-                for (StructElement kid : element.kids) {
-                    if (kid.objNumber != 0) {   // 0 on a page not in the document
-                        append(kid.objNumber);
-                        append(" 0 R ");
-                    }
+                for (Integer kid : element.kids) {
+                    append(kid.intValue());
+                    append(" 0 R ");
                 }
                 append("]\n");
             }
@@ -714,7 +755,9 @@ final public class PDF {
     }
 
     private void addNumsParentTree() throws Exception {
-        newObj();
+        setObjOffset(parentTreeNumber, byteCount);
+        append(parentTreeNumber);
+        append(Token.NEW_OBJ);
         append(Token.BEGIN_DICTIONARY);
         append("/Nums [\n");
         // The keys must be listed in increasing order, so the page entries -
@@ -724,19 +767,18 @@ final public class PDF {
         for (int i = 0; i < pages.size(); i++) {
             append(i);
             append(" [");
-            for (StructElement element : pages.get(i).structures) {
-                if (element.annotation == null && element.mcid >= 0) {
-                    append(Token.SPACE);
-                    append(element.objNumber);
-                    append(" 0 R");
-                }
+            for (Integer number : pages.get(i).mcidNumbers) {
+                append(Token.SPACE);
+                append(number.intValue());
+                append(" 0 R");
             }
             append("]\n");
+            pages.get(i).mcidNumbers = new ArrayList<Integer>();
         }
         // The annotations follow, keyed by the /StructParent values handed out
         // by addAnnotDictionaries(), which continue where the pages left off.
         int structParent = pages.size();
-        for (StructElement element : this.structElements) {
+        for (StructElement element : this.annotElements) {
             if (element.annotation != null) {
                 append(structParent++);
                 append(Token.SPACE);
@@ -887,24 +929,14 @@ final public class PDF {
         append("]\n");
     }
 
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added.
     private void setDestinationObjNumbers() {
-        int numberOfAnnotations = 0;
         for (Page page : pages) {
-            numberOfAnnotations += page.annots.size();
-        }
-        // The page objects are written after the annotations, in the order of
-        // the pages; a merged page has the number reserved for it.
-        int index = 0;
-        for (Page page : pages) {
-            if (page.mergedDict != null) {
-                continue;
-            }
             for (Destination destination : page.destinations) {
-                destination.pageObjNumber =
-                        getObjNumber() + numberOfAnnotations + index + 1;
+                destination.pageObjNumber = page.objNumber;
                 destinations.put(destination.name, destination);
             }
-            index++;
         }
     }
 
@@ -912,15 +944,7 @@ final public class PDF {
         setDestinationObjNumbers();
         addAnnotDictionaries();
 
-        // Calculate the object number of the Pages object, which comes after
-        // the objects of the pages drawn with PDFjet.
-        int drawnPages = 0;
-        for (Page page : pages) {
-            if (page.mergedDict == null) {
-                drawnPages++;
-            }
-        }
-        pagesObjNumber = getObjNumber() + drawnPages + 1;
+        pagesObjNumber = reserveObjNumber();
 
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
@@ -935,9 +959,10 @@ final public class PDF {
                 append(Token.END_OBJ);
                 continue;
             }
-            // Page object
-            newObj();
-            page.objNumber = getObjNumber();
+            // Page object, under the number it was given when it was added.
+            setObjOffset(page.objNumber, byteCount);
+            append(page.objNumber);
+            append(Token.NEW_OBJ);
             append(Token.BEGIN_DICTIONARY);
             append("/Type /Page\n");
             append("/Parent ");
@@ -1051,6 +1076,7 @@ final public class PDF {
             endObj();
             page.contents.add(getObjNumber());
         }
+        addPageStructElements(page);
     }
 
     private int addAnnotationObject(Annotation annot, int index) throws Exception {
@@ -1222,7 +1248,7 @@ final public class PDF {
 
     private void addAnnotDictionaries() throws Exception {
         int index = pages.size();
-        for (StructElement element : this.structElements) {
+        for (StructElement element : this.annotElements) {
             if (element.annotation != null) {
                 index = addAnnotationObject(element.annotation, index);
                 element.annotation.structParentWritten = true;
@@ -1321,6 +1347,13 @@ final public class PDF {
             fail(new IllegalStateException("The page was already added to the PDF."));
         }
         page.added = true;
+        if (page.objNumber == 0) {
+            page.objNumber = reserveObjNumber();
+        }
+        // A page that was drawn before it was added has elements of its own.
+        if (compliance != Compliance.PDF_1_7) {
+            page.setStructElementsPageObjNumber(page.objNumber);
+        }
         pages.add(page);
         if (prevPage != null) {
             addPageContent(prevPage);
@@ -1450,7 +1483,7 @@ final public class PDF {
     private static final String[] INHERITED = {"/Resources", "/MediaBox", "/CropBox", "/Rotate"};
 
     // Reserves the next object number for an object written later.
-    private int reserveObjNumber() {
+    int reserveObjNumber() {
         objOffset.add(0L);
         return objOffset.size();
     }
@@ -1704,9 +1737,6 @@ final public class PDF {
             addPageContent(prevPage);
         }
         completed = true;
-        for (Page page : pages) {
-            structElements.addAll(page.structures);
-        }
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();
@@ -1719,7 +1749,15 @@ final public class PDF {
 
         int structTreeRootObjNumber = 0;
         if (compliance != Compliance.PDF_1_7) {
-            addStructElementObjects();
+            // The elements of every page are written with it; the ones still
+            // open and the ones of the annotations are what is left.
+            for (Page page : pages) {
+                for (StructElement element : page.structures) {
+                    addStructElementObject(element);
+                }
+                page.structures = new ArrayList<StructElement>();
+            }
+            reserveStructTreeNumbers();
             structTreeRootObjNumber = addStructTreeRootObject();
             addNumsParentTree();
             addStructDocumentObject(structTreeRootObjNumber);

@@ -87,6 +87,7 @@ type Page struct {
 	annots       []*annotationObject
 	destinations []*Destination
 	structures   []*structElement
+	mcidNumbers  []int // The number of the element of each marked content
 
 	mcid int
 
@@ -2019,6 +2020,14 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 // AddBDC begins marked content for a structure element with BDC, when the
 // document is PDF/UA compliant.
 func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, altDescription string) {
+	page.addBDC(structure, language, actualText, altDescription, "")
+}
+
+// addBDC begins the marked content of a structure element that has attributes
+// of its own, like a table cell that holds its text and nothing else and so
+// needs no paragraph under it.
+func (page *Page) addBDC(
+	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
 	page.markedContentDepth++
 	if page.pdf.compliance == compliance.PDF_UA_1 && page.artifactDepth == 0 {
 		element := newStructElement()
@@ -2027,6 +2036,7 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 		element.language = language
 		element.actualText = actualText
 		element.altDescription = altDescription
+		element.attributes = attributes
 		page.addStructure(element, page.structParent)
 
 		page.appendString("/")
@@ -2070,6 +2080,14 @@ func (page *Page) AddEMC() {
 // element when the parent is nil. It returns nil when the document is not
 // tagged or the content drawn is an artifact.
 func (page *Page) addStructElement(parent *structElement, structure structelem.StructElem, attributes string) *structElement {
+	return page.addStructElementOpen(parent, structure, attributes, false)
+}
+
+// addStructElementOpen adds a structure element that groups its kids. An open
+// element is one a drawable goes on adding to after the page it was made on is
+// written, like the Table of a table that runs over pages.
+func (page *Page) addStructElementOpen(
+	parent *structElement, structure structelem.StructElem, attributes string, open bool) *structElement {
 	if page.pdf.compliance != compliance.PDF_UA_1 || page.artifactDepth != 0 {
 		return nil
 	}
@@ -2077,14 +2095,22 @@ func (page *Page) addStructElement(parent *structElement, structure structelem.S
 	element.structure = string(structure)
 	element.mcid = -1
 	element.attributes = attributes
+	element.open = open
 	page.addStructure(element, parent)
 	return element
 }
 
+// addStructure gives the element its object number, which its parent and its
+// kids refer to before it is written, and adds it to its parent and to the
+// page. A parent keeps the numbers of its kids and not the kids, so that a
+// page can write its elements and let go of them.
 func (page *Page) addStructure(element, parent *structElement) {
+	page.pdf.reserveStructTreeNumbers()
+	element.objNumber = page.pdf.reserveObjNumber()
+	element.pageObjNumber = page.objNumber
 	element.parent = parent
 	if parent != nil {
-		parent.kids = append(parent.kids, element)
+		parent.kids = append(parent.kids, element.objNumber)
 	}
 	page.structures = append(page.structures, element)
 }

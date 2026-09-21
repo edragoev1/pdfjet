@@ -484,7 +484,8 @@ public class Table implements Drawable {
         // cells the first time they are drawn, and artifacts on the next pages.
         boolean first = (rendered == numOfHeaderRows);
         if (page != null && (first || structElement == null)) {
-            structElement = page.addStructElement(page.structParent, StructElem.TABLE, null);
+            structElement = page.addStructElement(
+                    page.structParent, StructElem.TABLE, null, true);
         }
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addArtifactBMC();

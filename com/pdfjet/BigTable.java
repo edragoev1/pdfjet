@@ -17,9 +17,10 @@ import java.util.*;
  * Use this class if you have a lot of data. The rows are read from a
  * delimited text file, or from an Iterable, one at a time, and each page is
  * written as soon as it is full, so the memory stays flat however many rows
- * there are. In a PDF/UA document it does not: the table is tagged as a
- * table, which gives every cell a structure element, and they are held until
- * the document is written.
+ * there are. A PDF/UA document holds no more than that either: the table is
+ * tagged as a table, and the structure elements of a page are written with
+ * it. What is left is one cross-reference entry for each of them, which every
+ * object of a PDF has.
  */
 public class BigTable {
     private final PDF pdf;
@@ -257,7 +258,8 @@ public class BigTable {
         // are drawn, and an artifact where they repeat on the next pages.
         StructElem header = null;
         if (structElement == null) {
-            structElement = page.addStructElement(page.structParent, StructElem.TABLE, null);
+            structElement = page.addStructElement(
+                    page.structParent, StructElem.TABLE, null, true);
             header = StructElem.TH;
         }
         drawFieldsAndLine(headerFields, f1, header);
@@ -360,9 +362,11 @@ public class BigTable {
                 xText = (vertLines[i + 1] - this.padding) - font.stringWidth(text);
             }
             if (tagged) {
-                page.structParent = page.addStructElement(
-                        rowElement, cellStructure, cellAttributes(cellStructure));
-                page.addBDC(StructElem.P, null, null, text);
+                // A cell holds its text and nothing else, so the cell element
+                // holds the marked content of the text: it needs no paragraph
+                // of its own, which would be another object for every cell.
+                page.structParent = rowElement;
+                page.addBDC(cellStructure, null, null, text, cellAttributes(cellStructure));
             } else {
                 page.addArtifactBMC();
             }

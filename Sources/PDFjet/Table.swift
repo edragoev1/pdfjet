@@ -490,7 +490,8 @@ public class Table : Drawable {
         // cells the first time they are drawn, and artifacts on the next pages.
         let first = (rendered == numOfHeaderRows)
         if let page = page, first || structElement == nil {
-            structElement = page.addStructElement(page.structParent, StructElem.TABLE, nil)
+            structElement = page.addStructElement(
+                    page.structParent, StructElem.TABLE, nil, true)
         }
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addArtifactBMC()

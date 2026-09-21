@@ -226,8 +226,8 @@ public sealed class BigTableTest : IDisposable {
     [Fact]
     public void IsTaggedAsATableInAPDFUADocument() {
         // The table is one Table element over all its pages: a TR for each
-        // row, a TH for each header field the first time the header is drawn
-        // and a TD for each field of a row, each holding the text in a P.
+        // row, and a TH for each header field the first time the header is
+        // drawn or a TD for each field of a row, each holding its own text.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
         pdf.SetTitle("Title");
@@ -249,7 +249,8 @@ public sealed class BigTableTest : IDisposable {
         Assert.Equal(101, Count(raw, "/S /TR\n"));
         Assert.Equal(3, Count(raw, "/S /TH\n"));
         Assert.Equal(300, Count(raw, "/S /TD\n"));
-        Assert.Equal(303, Count(raw, "/S /P\n"));
+        // A cell holds the text itself and has no paragraph under it.
+        Assert.Equal(0, Count(raw, "/S /P\n"));
         Assert.Equal(3, Count(raw, "/A <</O /Table /Scope /Column>>"));
     }
 

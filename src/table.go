@@ -419,7 +419,8 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	// first time they are drawn, and artifacts on the next pages.
 	first := (table.rendered == table.numOfHeaderRows)
 	if page != nil && (first || table.structElement == nil) {
-		table.structElement = page.addStructElement(page.structParent, structelem.Table, "")
+		table.structElement = page.addStructElementOpen(
+			page.structParent, structelem.Table, "", true)
 	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddArtifactBMC()

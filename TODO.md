@@ -168,11 +168,13 @@ work to Oct 21 is the seven goals below, in this order.
      `setStructureType` is on `TextLine` alone.
    - ⬜ No example uses the L, LI, Lbl and LBody tags, so a list that is drawn
      reads as paragraphs.
-   - ⬜ A tagged `BigTable` is as large as the rows it draws, since every cell
-     is a structure element that is held until the document is written: the
-     29 MB data file of Example_43 makes 378 MB rather than 11.6 MB, and
-     900 MB of memory. Writing the structure tree as the pages are written
-     would keep the flat memory that `BigTable` is for.
+   - ✅ A tagged `BigTable` held every structure element until the document
+     was written, so the 29 MB data file of Example_43 took 778 MB of heap
+     (Sep 21). The elements of a page are written with the page now, and a
+     cell holds its text rather than a paragraph under it: 86 MB, against 13
+     MB for the same document untagged, and the file went from 384 MB to
+     249 MB. What is left is one cross-reference entry per object, which
+     every object of a PDF has.
    - ⬜ PAC itself, or the Matterhorn conditions that need eyes on a page:
      the reading order of each page, whether a colour alone carries meaning,
      and whether each Alt says what its figure shows.

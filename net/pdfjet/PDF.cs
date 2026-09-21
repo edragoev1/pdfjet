@@ -54,7 +54,14 @@ public sealed class PDF {
     // The structure elements of the pages of the document, in page order.
     // Complete() collects them, so a detached page that was never added has
     // no part in the structure tree.
-    private readonly List<StructElement> structElements = new List<StructElement>();
+    private readonly List<StructElement> annotElements = new List<StructElement>();
+    // The elements of the Document element, by number.
+    private readonly List<int> documentKids = new List<int>();
+    // The structure tree root, the parent tree and the Document element take
+    // three numbers reserved before the first element is written.
+    private int structTreeRootNumber = 0;
+    private int parentTreeNumber = 0;
+    private int documentElementNumber = 0;
 
     // The first misuse of the API. The call that finds it throws, and Complete()
     // then refuses to finish the document, as the file would be broken even if
@@ -523,14 +530,13 @@ public sealed class PDF {
     }
 
     private void AddPagesObject() {
-        NewObj();
+        SetObjOffset(pagesObjNumber, byteCount);
+        Append(pagesObjNumber);
+        Append(Token.NewObj);
         Append(Token.BeginDictionary);
         Append("/Type /Pages\n");
         Append("/Kids [\n");
         foreach (Page page in pages) {
-            if (compliance != Compliance.PDF_1_7) {
-                page.SetStructElementsPageObjNumber(page.objNumber);
-            }
             Append(page.objNumber);
             Append(" 0 R\n");
         }
@@ -542,24 +548,39 @@ public sealed class PDF {
         EndObj();
     }
 
+    // Reserves the numbers of the structure tree root, the parent tree and
+    // the Document element, which the elements written with their pages refer
+    // to before the three are written.
+    internal void ReserveStructTreeNumbers() {
+        if (structTreeRootNumber == 0) {
+            structTreeRootNumber = ReserveObjNumber();
+            parentTreeNumber = ReserveObjNumber();
+            documentElementNumber = ReserveObjNumber();
+        }
+    }
+
     private int AddStructTreeRootObject() {
-        NewObj();
+        SetObjOffset(structTreeRootNumber, byteCount);
+        Append(structTreeRootNumber);
+        Append(Token.NewObj);
         Append(Token.BeginDictionary);
         Append("/Type /StructTreeRoot\n");
         Append("/ParentTree ");
-        Append(GetObjNumber() + 1);
+        Append(parentTreeNumber);
         Append(Token.ObjRef);
         Append("/K [\n");
-        Append(GetObjNumber() + 2);
+        Append(documentElementNumber);
         Append(Token.ObjRef);
         Append("]\n");
         Append(Token.EndDictionary);
         EndObj();
-        return GetObjNumber();
+        return structTreeRootNumber;
     }
 
     private int AddStructDocumentObject(int parent) {
-        NewObj();
+        SetObjOffset(documentElementNumber, byteCount);
+        Append(documentElementNumber);
+        Append(Token.NewObj);
         Append(Token.BeginDictionary);
         Append("/Type /StructElem\n");
         Append("/S /Document\n");
@@ -567,39 +588,61 @@ public sealed class PDF {
         Append(parent);
         Append(Token.ObjRef);
         Append("/K [\n");
-        foreach (StructElement structElement in this.structElements) {
-            // An element whose parent is on a page that is not in the
-            // document is a child of the Document element.
-            if (structElement.parent == null || structElement.parent.objNumber == 0) {
-                Append(structElement.objNumber);
-                Append(" 0 R\n");
-            }
+        foreach (int number in this.documentKids) {
+            Append(number);
+            Append(" 0 R\n");
         }
         Append("]\n");
         Append(Token.EndDictionary);
         EndObj();
-        return GetObjNumber();
+        return documentElementNumber;
     }
 
-    private void AddStructElementObjects() {
-        int structTreeRootObjNumber = GetObjNumber() + 1;
-        structTreeRootObjNumber += this.structElements.Count;
-        // The object numbers are known first, as an element refers to its
-        // parent and its kids, which may be written before or after it.
-        int objNumber = GetObjNumber();
-        foreach (StructElement element in this.structElements) {
-            element.objNumber = ++objNumber;
+    // Writes the structure elements of a page that is written, so that a
+    // document of many pages holds no more of them than the page it is
+    // drawing. What it keeps is the elements that are still open and the ones
+    // of an annotation, whose object is written when the document is completed.
+    private void AddPageStructElements(Page page) {
+        if (compliance == Compliance.PDF_1_7 || page.structures.Count == 0) {
+            return;
         }
+        List<StructElement> kept = new List<StructElement>();
+        foreach (StructElement element in page.structures) {
+            if (element.mcid >= 0) {
+                while (page.mcidNumbers.Count <= element.mcid) {
+                    page.mcidNumbers.Add(0);
+                }
+                page.mcidNumbers[element.mcid] = element.objNumber;
+            }
+            if (element.parent == null) {
+                documentKids.Add(element.objNumber);
+            }
+            if (element.annotation != null) {
+                annotElements.Add(element);
+            }
+            if (element.open || element.annotation != null) {
+                kept.Add(element);
+                continue;
+            }
+            AddStructElementObject(element);
+        }
+        page.structures = kept;
+    }
 
-        foreach (StructElement element in this.structElements) {
-            NewObj();
+    // Writes one structure element, under the number it was given when it was
+    // made.
+    private void AddStructElementObject(StructElement element) {
+        {
+            SetObjOffset(element.objNumber, byteCount);
+            Append(element.objNumber);
+            Append(Token.NewObj);
             Append("<<\n/Type /StructElem /S /");
             Append(element.structure);
             Append("\n/P ");
-            if (element.parent != null && element.parent.objNumber != 0) {
+            if (element.parent != null) {
                 Append(element.parent.objNumber);
             } else {
-                Append(structTreeRootObjNumber + 2);    // The Document element
+                Append(documentElementNumber);
             }
             Append(" 0 R /Pg ");
             Append(element.pageObjNumber);
@@ -615,11 +658,9 @@ public sealed class PDF {
                 Append("\n");
             } else if (element.kids.Count > 0) {
                 Append("/K [");
-                foreach (StructElement kid in element.kids) {
-                    if (kid.objNumber != 0) {   // 0 on a page not in the document
-                        Append(kid.objNumber);
-                        Append(" 0 R ");
-                    }
+                foreach (int kid in element.kids) {
+                    Append(kid);
+                    Append(" 0 R ");
                 }
                 Append("]\n");
             }
@@ -668,7 +709,9 @@ public sealed class PDF {
     }
 
     private void AddNumsParentTree() {
-        NewObj();
+        SetObjOffset(parentTreeNumber, byteCount);
+        Append(parentTreeNumber);
+        Append(Token.NewObj);
         Append(Token.BeginDictionary);
         Append("/Nums [\n");
         // The keys must be listed in increasing order, so the page entries -
@@ -678,19 +721,18 @@ public sealed class PDF {
         for (int i = 0; i < pages.Count; i++) {
             Append(i);
             Append(" [");
-            foreach (StructElement element in pages[i].structures) {
-                if (element.annotation == null && element.mcid >= 0) {
-                    Append(Token.Space);
-                    Append(element.objNumber);
-                    Append(" 0 R");
-                }
+            foreach (int number in pages[i].mcidNumbers) {
+                Append(Token.Space);
+                Append(number);
+                Append(" 0 R");
             }
             Append("]\n");
+            pages[i].mcidNumbers = new List<int>();
         }
         // The annotations follow, keyed by the /StructParent values handed out
         // by AddAnnotDictionaries(), which continue where the pages left off.
         int structParent = pages.Count;
-        foreach (StructElement element in this.structElements) {
+        foreach (StructElement element in this.annotElements) {
             if (element.annotation != null) {
                 Append(structParent++);
                 Append(Token.Space);
@@ -837,40 +879,21 @@ public sealed class PDF {
         Append("]\n");
     }
 
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added.
     private void SetDestinationObjNumbers() {
-        int numberOfAnnotations = 0;
         foreach (Page page in pages) {
-            numberOfAnnotations += page.annots.Count;
-        }
-        // The page objects are written after the annotations, in the order of
-        // the pages; a merged page has the number reserved for it.
-        int index = 0;
-        foreach (Page page in pages) {
-            if (page.mergedDict != null) {
-                continue;
-            }
             foreach (Destination destination in page.destinations) {
-                destination.pageObjNumber =
-                        GetObjNumber() + numberOfAnnotations + index + 1;
+                destination.pageObjNumber = page.objNumber;
                 destinations[destination.name] = destination;
             }
-            index++;
         }
     }
 
     private void AddAllPages(int resObjNumber) {
         SetDestinationObjNumbers();
         AddAnnotDictionaries();
-
-        // Calculate the object number of the Pages object, which comes after
-        // the objects of the pages drawn with PDFjet.
-        int drawnPages = 0;
-        foreach (Page page in pages) {
-            if (page.mergedDict == null) {
-                drawnPages++;
-            }
-        }
-        pagesObjNumber = GetObjNumber() + drawnPages + 1;
+        pagesObjNumber = ReserveObjNumber();
 
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
@@ -886,9 +909,10 @@ public sealed class PDF {
                 continue;
             }
 
-            // Page object
-            NewObj();
-            page.objNumber = GetObjNumber();
+            // Page object, under the number it was given when it was added.
+            SetObjOffset(page.objNumber, byteCount);
+            Append(page.objNumber);
+            Append(Token.NewObj);
             Append(Token.BeginDictionary);
             Append("/Type /Page\n");
             Append("/Parent ");
@@ -990,6 +1014,7 @@ public sealed class PDF {
             EndObj();
             page.contents.Add(GetObjNumber());
         }
+        AddPageStructElements(page);
     }
 
     private int AddAnnotationObject(Annotation annot, int index) {
@@ -1161,7 +1186,7 @@ public sealed class PDF {
 
     private void AddAnnotDictionaries() {
         int index = pages.Count;
-        foreach (StructElement element in this.structElements) {
+        foreach (StructElement element in this.annotElements) {
             if (element.annotation != null) {
                 index = AddAnnotationObject(element.annotation, index);
                 element.annotation.structParentWritten = true;
@@ -1255,6 +1280,13 @@ public sealed class PDF {
             Fail(new InvalidOperationException("The page was already added to the PDF."));
         }
         page.added = true;
+        if (page.objNumber == 0) {
+            page.objNumber = ReserveObjNumber();
+        }
+        // A page that was drawn before it was added has elements of its own.
+        if (compliance != Compliance.PDF_1_7) {
+            page.SetStructElementsPageObjNumber(page.objNumber);
+        }
         pages.Add(page);
         if (prevPage != null) {
             AddPageContent(prevPage);
@@ -1381,7 +1413,7 @@ public sealed class PDF {
     private static readonly String[] INHERITED = {"/Resources", "/MediaBox", "/CropBox", "/Rotate"};
 
     // Reserves the next object number for an object written later.
-    private int ReserveObjNumber() {
+    internal int ReserveObjNumber() {
         objOffset.Add(0L);
         return objOffset.Count;
     }
@@ -1628,9 +1660,6 @@ public sealed class PDF {
             AddPageContent(prevPage);
         }
         completed = true;
-        foreach (Page page in pages) {
-            structElements.AddRange(page.structures);
-        }
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = AddMetadataObject("", false);
             outputIntentObjNumber = AddOutputIntentObject();
@@ -1643,7 +1672,15 @@ public sealed class PDF {
 
         int structTreeRootObjNumber = 0;
         if (compliance != Compliance.PDF_1_7) {
-            AddStructElementObjects();
+            // The elements of every page are written with it; the ones still
+            // open and the ones of the annotations are what is left.
+            foreach (Page page in pages) {
+                foreach (StructElement element in page.structures) {
+                    AddStructElementObject(element);
+                }
+                page.structures = new List<StructElement>();
+            }
+            ReserveStructTreeNumbers();
             structTreeRootObjNumber = AddStructTreeRootObject();
             AddNumsParentTree();
             AddStructDocumentObject(structTreeRootObjNumber);

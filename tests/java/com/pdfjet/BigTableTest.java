@@ -274,8 +274,8 @@ class BigTableTest {
     @Test
     void isTaggedAsATableInAPDFUADocument() throws Exception {
         // The table is one Table element over all its pages: a TR for each
-        // row, a TH for each header field the first time the header is drawn
-        // and a TD for each field of a row, each holding the text in a P.
+        // row, and a TH for each header field the first time the header is
+        // drawn or a TD for each field of a row, each holding its own text.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
         pdf.setTitle("Title");
@@ -297,7 +297,8 @@ class BigTableTest {
         assertEquals(101, count(raw, "/S /TR\n"), raw);
         assertEquals(3, count(raw, "/S /TH\n"), raw);
         assertEquals(300, count(raw, "/S /TD\n"), raw);
-        assertEquals(303, count(raw, "/S /P\n"), raw);
+        // A cell holds the text itself and has no paragraph under it.
+        assertEquals(0, count(raw, "/S /P\n"), raw);
         assertEquals(3, count(raw, "/A <</O /Table /Scope /Column>>"), raw);
     }
 

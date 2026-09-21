@@ -62,10 +62,14 @@ type PDF struct {
 	importedExtGStates        []string
 	uuid                      string
 	prevPage                  *Page
-	err                       error // The first misuse of the API or error writing to the writer; Complete returns it.
-	completed                 bool  // True after Complete.
-	pagesCreated              int   // The pages made for this document, added or detached.
-	structElements            []*structElement
+	err                       error            // The first misuse of the API or error writing to the writer; Complete returns it.
+	completed                 bool             // True after Complete.
+	pagesCreated              int              // The pages made for this document, added or detached.
+	annotElements             []*structElement // The elements of the annotations
+	documentKids              []int            // The elements of the Document element, by number
+	structTreeRootNumber      int              // Reserved with the two numbers after it,
+	parentTreeNumber          int              // the parent tree and the Document element,
+	documentElementNumber     int              // before the first element is written
 	contentStreamsCompression bool
 	file                      *os.File
 }
@@ -543,14 +547,13 @@ func (pdf *PDF) addResourcesObject() int {
 }
 
 func (pdf *PDF) addPagesObject() {
-	pdf.newObj()
+	pdf.setObjOffset(pdf.pagesObjNumber, pdf.byteCount)
+	pdf.appendInteger(pdf.pagesObjNumber)
+	pdf.appendString(" 0 obj\n")
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Pages\n")
 	pdf.appendString("/Kids [\n")
 	for _, page := range pdf.pages {
-		if pdf.compliance != compliance.PDF_1_7 {
-			page.setStructElementsPageObjNumber(page.objNumber)
-		}
 		pdf.appendInteger(page.objNumber)
 		pdf.appendString(" 0 R\n")
 	}
@@ -563,23 +566,27 @@ func (pdf *PDF) addPagesObject() {
 }
 
 func (pdf *PDF) addStructTreeRootObject() int {
-	pdf.newObj()
+	pdf.setObjOffset(pdf.structTreeRootNumber, pdf.byteCount)
+	pdf.appendInteger(pdf.structTreeRootNumber)
+	pdf.appendString(" 0 obj\n")
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructTreeRoot\n")
 	pdf.appendString("/ParentTree ")
-	pdf.appendInteger(pdf.getObjNumber() + 1)
+	pdf.appendInteger(pdf.parentTreeNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("/K [\n")
-	pdf.appendInteger(pdf.getObjNumber() + 2)
+	pdf.appendInteger(pdf.documentElementNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("]\n")
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endObj()
-	return pdf.getObjNumber()
+	return pdf.structTreeRootNumber
 }
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
-	pdf.newObj()
+	pdf.setObjOffset(pdf.documentElementNumber, pdf.byteCount)
+	pdf.appendInteger(pdf.documentElementNumber)
+	pdf.appendString(" 0 obj\n")
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /StructElem\n")
 	pdf.appendString("/S /Document\n")
@@ -587,39 +594,41 @@ func (pdf *PDF) addStructDocumentObject(parent int) int {
 	pdf.appendInteger(parent)
 	pdf.appendByteArray(token.ObjRef)
 	pdf.appendString("/K [\n")
-	for _, structElement := range pdf.structElements {
-		// An element whose parent is on a page that is not in the document
-		// is a child of the Document element.
-		if structElement.parent == nil || structElement.parent.objNumber == 0 {
-			pdf.appendInteger(structElement.objNumber)
-			pdf.appendByteArray(token.ObjRef)
-		}
+	for _, number := range pdf.documentKids {
+		pdf.appendInteger(number)
+		pdf.appendByteArray(token.ObjRef)
 	}
 	pdf.appendString("]\n")
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endObj()
-	return pdf.getObjNumber()
+	return pdf.documentElementNumber
 }
 
-func (pdf *PDF) addStructElementObjects() {
-	structTreeRootObjNumber := pdf.getObjNumber() + 1
-	structTreeRootObjNumber += len(pdf.structElements)
-	// The object numbers are known first, as an element refers to its parent
-	// and its kids, which may be written before or after it.
-	objNumber := pdf.getObjNumber()
-	for _, element := range pdf.structElements {
-		objNumber++
-		element.objNumber = objNumber
+// reserveStructTreeNumbers reserves the numbers of the structure tree root,
+// the parent tree and the Document element, which the elements written with
+// their pages refer to before the three are written.
+func (pdf *PDF) reserveStructTreeNumbers() {
+	if pdf.structTreeRootNumber == 0 {
+		pdf.structTreeRootNumber = pdf.reserveObjNumber()
+		pdf.parentTreeNumber = pdf.reserveObjNumber()
+		pdf.documentElementNumber = pdf.reserveObjNumber()
 	}
-	for _, element := range pdf.structElements {
-		pdf.newObj()
+}
+
+// addStructElementObject writes one structure element, under the number it was
+// given when it was made.
+func (pdf *PDF) addStructElementObject(element *structElement) {
+	{
+		pdf.setObjOffset(element.objNumber, pdf.byteCount)
+		pdf.appendInteger(element.objNumber)
+		pdf.appendString(" 0 obj\n")
 		pdf.appendString("<<\n/Type /StructElem /S /")
 		pdf.appendString(element.structure)
 		pdf.appendString("\n/P ")
-		if element.parent != nil && element.parent.objNumber != 0 {
+		if element.parent != nil {
 			pdf.appendInteger(element.parent.objNumber)
 		} else {
-			pdf.appendInteger(structTreeRootObjNumber + 2) // The Document element
+			pdf.appendInteger(pdf.documentElementNumber)
 		}
 		pdf.appendString(" 0 R /Pg ")
 		pdf.appendInteger(element.pageObjNumber)
@@ -636,10 +645,8 @@ func (pdf *PDF) addStructElementObjects() {
 		} else if len(element.kids) > 0 {
 			pdf.appendString("/K [")
 			for _, kid := range element.kids {
-				if kid.objNumber != 0 { // 0 on a page not in the document
-					pdf.appendInteger(kid.objNumber)
-					pdf.appendString(" 0 R ")
-				}
+				pdf.appendInteger(kid)
+				pdf.appendString(" 0 R ")
 			}
 			pdf.appendString("]\n")
 		}
@@ -688,7 +695,9 @@ func (pdf *PDF) addStructElementObjects() {
 }
 
 func (pdf *PDF) addNumsParentTree() {
-	pdf.newObj()
+	pdf.setObjOffset(pdf.parentTreeNumber, pdf.byteCount)
+	pdf.appendInteger(pdf.parentTreeNumber)
+	pdf.appendString(" 0 obj\n")
 	pdf.appendString("<<\n")
 	pdf.appendString("/Nums [\n")
 	// The keys must be listed in increasing order, so the page entries - whose
@@ -698,19 +707,18 @@ func (pdf *PDF) addNumsParentTree() {
 	for i, page := range pdf.pages {
 		pdf.appendInteger(i)
 		pdf.appendString(" [")
-		for _, element := range page.structures {
-			if element.annotation == nil && element.mcid >= 0 {
-				pdf.appendString(" ")
-				pdf.appendInteger(element.objNumber)
-				pdf.appendString(" 0 R")
-			}
+		for _, number := range page.mcidNumbers {
+			pdf.appendString(" ")
+			pdf.appendInteger(number)
+			pdf.appendString(" 0 R")
 		}
 		pdf.appendString("]\n")
+		page.mcidNumbers = nil
 	}
 	// The annotations follow, keyed by the /StructParent values handed out by
 	// addAnnotDictionaries, which continue where the pages left off.
 	structParent := len(pdf.pages)
-	for _, element := range pdf.structElements {
+	for _, element := range pdf.annotElements {
 		if element.annotation != nil {
 			pdf.appendInteger(structParent)
 			structParent++
@@ -861,24 +869,14 @@ func (pdf *PDF) addPageBox(boxName string, page *Page, rect []float32) {
 	pdf.appendString("]\n")
 }
 
+// setDestinationObjNumbers gives every destination the object number of the
+// page it is on, which the page was given when it was added.
 func (pdf *PDF) setDestinationObjNumbers() {
-	numberOfAnnotations := 0
 	for _, page := range pdf.pages {
-		numberOfAnnotations += len(page.annots)
-	}
-	// The page objects are written after the annotations, in the order of the
-	// pages; a merged page has the number reserved for it.
-	index := 0
-	for _, page := range pdf.pages {
-		if page.mergedDict != nil {
-			continue
-		}
 		for _, destination := range page.destinations {
-			destination.pageObjNumber =
-				pdf.getObjNumber() + numberOfAnnotations + index + 1
+			destination.pageObjNumber = page.objNumber
 			pdf.destinations[destination.name] = destination
 		}
-		index++
 	}
 }
 
@@ -888,13 +886,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 
 	// Calculate the object number of the Pages object, which comes after the
 	// objects of the pages drawn with PDFjet.
-	drawnPages := 0
-	for _, page := range pdf.pages {
-		if page.mergedDict == nil {
-			drawnPages++
-		}
-	}
-	pdf.pagesObjNumber = pdf.getObjNumber() + drawnPages + 1
+	pdf.pagesObjNumber = pdf.reserveObjNumber()
 
 	for i, page := range pdf.pages {
 		if page.mergedDict != nil {
@@ -908,9 +900,10 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 			pdf.appendString("endobj\n")
 			continue
 		}
-		// Page object
-		pdf.newObj()
-		page.objNumber = pdf.getObjNumber()
+		// Page object, under the number it was given when it was added.
+		pdf.setObjOffset(page.objNumber, pdf.byteCount)
+		pdf.appendInteger(page.objNumber)
+		pdf.appendString(" 0 obj\n")
 		pdf.appendString("<<\n")
 		pdf.appendString("/Type /Page\n")
 		pdf.appendString("/Parent ")
@@ -1014,6 +1007,46 @@ func (pdf *PDF) addPageContent(page *Page) {
 		pdf.endObj()
 		page.contents = append(page.contents, pdf.getObjNumber())
 	}
+	pdf.addPageStructElements(page)
+}
+
+// addPageStructElements writes the structure elements of a page that is
+// written, so that a document of many pages holds no more of them than the
+// page it is drawing. What it keeps is the elements that are still open, the
+// ones of an annotation, whose object is written when the document is
+// completed, and the number of each element of the page by its marked
+// content, which the parent tree is written from.
+func (pdf *PDF) addPageStructElements(page *Page) {
+	if pdf.compliance == compliance.PDF_1_7 || len(page.structures) == 0 {
+		return
+	}
+	elements := page.structures
+	kept := elements[:0]
+	for _, element := range elements {
+		if element.mcid >= 0 {
+			for len(page.mcidNumbers) <= element.mcid {
+				page.mcidNumbers = append(page.mcidNumbers, 0)
+			}
+			page.mcidNumbers[element.mcid] = element.objNumber
+		}
+		if element.parent == nil {
+			pdf.documentKids = append(pdf.documentKids, element.objNumber)
+		}
+		if element.annotation != nil {
+			pdf.annotElements = append(pdf.annotElements, element)
+		}
+		if element.open || element.annotation != nil {
+			kept = append(kept, element)
+			continue
+		}
+		pdf.addStructElementObject(element)
+	}
+	// The elements that were written are let go of: the tail of the array
+	// that is left over still points at them.
+	for i := len(kept); i < len(elements); i++ {
+		elements[i] = nil
+	}
+	page.structures = kept
 }
 
 func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
@@ -1186,7 +1219,7 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 
 func (pdf *PDF) addAnnotDictionaries() {
 	index := len(pdf.pages)
-	for _, element := range pdf.structElements {
+	for _, element := range pdf.annotElements {
 		if element.annotation != nil {
 			index = pdf.addAnnotationObject(element.annotation, index)
 			element.annotation.structParentWritten = true
@@ -1288,6 +1321,13 @@ func (pdf *PDF) AddPage(page *Page) {
 		return
 	}
 	page.added = true
+	if page.objNumber == 0 {
+		page.objNumber = pdf.reserveObjNumber()
+	}
+	// A page that was drawn before it was added has elements of its own.
+	if pdf.compliance != compliance.PDF_1_7 {
+		page.setStructElementsPageObjNumber(page.objNumber)
+	}
 	pdf.pages = append(pdf.pages, page)
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
@@ -1676,11 +1716,6 @@ func (pdf *PDF) Complete() error {
 		}
 	}
 	pdf.completed = true
-	// The structure elements of the pages that were added, in page order: a
-	// detached page that was never added has no part in the structure tree.
-	for _, page := range pdf.pages {
-		pdf.structElements = append(pdf.structElements, page.structures...)
-	}
 	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()
@@ -1693,7 +1728,15 @@ func (pdf *PDF) Complete() error {
 
 	structTreeRootObjNumber := 0
 	if pdf.compliance != compliance.PDF_1_7 {
-		pdf.addStructElementObjects()
+		// The elements of every page are written with it; the ones still open
+		// and the ones of the annotations are what is left.
+		for _, page := range pdf.pages {
+			for _, element := range page.structures {
+				pdf.addStructElementObject(element)
+			}
+			page.structures = nil
+		}
+		pdf.reserveStructTreeNumbers()
 		structTreeRootObjNumber = pdf.addStructTreeRootObject()
 		pdf.addNumsParentTree()
 		pdf.addStructDocumentObject(structTreeRootObjNumber)

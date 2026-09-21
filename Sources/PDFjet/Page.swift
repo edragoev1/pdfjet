@@ -53,6 +53,10 @@ public class Page {
     internal var annots: [Annotation] = []
     internal var destinations: [Destination] = []
     internal var structures = [StructElement]()
+    // The object number of the element of each marked content, which the
+    // parent tree is written from. The elements themselves are written with
+    // the page and let go of.
+    internal var mcidNumbers = [Int]()
     internal var buf = [UInt8]()
 
     internal var cropBox: [Float]?
@@ -2286,6 +2290,18 @@ public class Page {
             _ language: String?,
             _ actualText: String?,
             _ altDescription: String?) {
+        addBDC(structure, language, actualText, altDescription, nil)
+    }
+
+    // Begins the marked content of a structure element that has attributes of
+    // its own, like a table cell that holds its text and nothing else and so
+    // needs no paragraph under it.
+    func addBDC(
+            _ structure: StructElem,
+            _ language: String?,
+            _ actualText: String?,
+            _ altDescription: String?,
+            _ attributes: String?) {
         markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0 {
             let element = StructElement()
@@ -2294,6 +2310,7 @@ public class Page {
             element.language = language
             element.actualText = actualText
             element.altDescription = altDescription
+            element.attributes = attributes
             addStructure(element, structParent)
             append("/")
             append(structure.rawValue)
@@ -2339,6 +2356,17 @@ public class Page {
             _ parent: StructElement?,
             _ structure: StructElem,
             _ attributes: String?) -> StructElement? {
+        return addStructElement(parent, structure, attributes, false)
+    }
+
+    // Adds a structure element that groups its kids. An open element is one a
+    // drawable goes on adding to after the page it was made on is written,
+    // like the Table of a table that runs over pages.
+    func addStructElement(
+            _ parent: StructElement?,
+            _ structure: StructElem,
+            _ attributes: String?,
+            _ open: Bool) -> StructElement? {
         if pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0 {
             return nil
         }
@@ -2346,13 +2374,19 @@ public class Page {
         element.structure = structure.rawValue
         element.mcid = -1
         element.attributes = attributes
+        element.open = open
         addStructure(element, parent)
         return element
     }
 
+    // Gives the element its object number, which its parent and its kids refer
+    // to before it is written, and adds it to its parent and to the page.
     private func addStructure(_ element: StructElement, _ parent: StructElement?) {
+        pdf.reserveStructTreeNumbers()
+        element.objNumber = pdf.reserveObjNumber()
+        element.pageObjNumber = self.objNumber
         element.parent = parent
-        parent?.kids.append(element)
+        parent?.kids.append(element.objNumber ?? 0)
         self.structures.append(element)
     }
 

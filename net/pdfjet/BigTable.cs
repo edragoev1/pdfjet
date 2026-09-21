@@ -14,9 +14,10 @@ namespace PDFjet.NET {
     /// <summary>
     /// A table for large amounts of data, read row by row from a delimited text file or
     /// from an IEnumerable. Each page is written as soon as it is full, so the memory
-    /// stays flat however many rows there are. In a PDF/UA document it does not: the
-    /// table is tagged as a table, which gives every cell a structure element, and they
-    /// are held until the document is written.
+    /// stays flat however many rows there are. A PDF/UA document holds no more than
+    /// that either: the table is tagged as a table, and the structure elements of a
+    /// page are written with it. What is left is one cross-reference entry for each of
+    /// them, which every object of a PDF has.
     /// </summary>
     public class BigTable {
         private readonly PDF pdf;
@@ -220,7 +221,8 @@ namespace PDFjet.NET {
             // they are drawn, and an artifact where they repeat on the next pages.
             StructElem? header = null;
             if (structElement == null) {
-                structElement = page.AddStructElement(page.structParent, StructElem.TABLE, null);
+                structElement = page.AddStructElement(
+                        page.structParent, StructElem.TABLE, null, true);
                 header = StructElem.TH;
             }
             DrawFieldsAndLine(headerFields, f1, header);
@@ -323,9 +325,13 @@ namespace PDFjet.NET {
                     xText = (vertLines[i + 1] - this.padding) - font.StringWidth(text);
                 }
                 if (tagged) {
-                    page.structParent = page.AddStructElement(
-                            rowElement, cellStructure.Value, CellAttributes(cellStructure.Value));
-                    page.AddBDC(StructElem.P, null, null, text);
+                    // A cell holds its text and nothing else, so the cell
+                    // element holds the marked content of the text: it needs
+                    // no paragraph of its own, which would be another object
+                    // for every cell.
+                    page.structParent = rowElement;
+                    page.AddBDC(cellStructure.Value, null, null, text,
+                            CellAttributes(cellStructure.Value));
                 } else {
                     page.AddArtifactBMC();
                 }

@@ -18,7 +18,12 @@ type structElement struct {
 	actualText     string
 	altDescription string
 	annotation     *annotationObject
-	kids           []*structElement
+	kids           []int // The object numbers of the kids
+	// open is true for an element that a drawable goes on adding to after the
+	// page it was made on is written, like the Table of a table that runs over
+	// pages. It is written when the document is completed; every other element
+	// is written with its page and let go of.
+	open bool
 }
 
 func newStructElement() *structElement {

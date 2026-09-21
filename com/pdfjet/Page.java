@@ -105,7 +105,7 @@ final public class Page {
     /** The destinations on this page. */
     protected final List<Destination> destinations= new ArrayList<Destination>();
     /** The structure elements on this page. */
-    protected final List<StructElement> structures = new ArrayList<StructElement>();
+    protected List<StructElement> structures = new ArrayList<StructElement>();
 
     private int mcid = 0;
 
@@ -2502,6 +2502,11 @@ final public class Page {
         drawWord(font, buf2, color, highlightColors);
     }
 
+    // The object number of the element of each marked content, which the
+    // parent tree is written from. The elements themselves are written with
+    // the page and let go of.
+    List<Integer> mcidNumbers = new ArrayList<Integer>();
+
     void setStructElementsPageObjNumber(int pageObjNumber) {
         for (StructElement element : structures) {
             element.pageObjNumber = pageObjNumber;
@@ -2537,6 +2542,18 @@ final public class Page {
             String language,
             String actualText,
             String altDescription) {
+        addBDC(structure, language, actualText, altDescription, null);
+    }
+
+    // Begins the marked content of a structure element that has attributes of
+    // its own, like a table cell that holds its text and nothing else and so
+    // needs no paragraph under it.
+    void addBDC(
+            StructElem structure,
+            String language,
+            String actualText,
+            String altDescription,
+            String attributes) {
         markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0) {
             StructElement element = new StructElement();
@@ -2545,6 +2562,7 @@ final public class Page {
             element.language = language;
             element.actualText = actualText;
             element.altDescription = altDescription;
+            element.attributes = attributes;
             addStructure(element, structParent);
 
             append("/");
@@ -2591,6 +2609,14 @@ final public class Page {
     // content drawn is an artifact.
     StructElement addStructElement(
             StructElement parent, StructElem structure, String attributes) {
+        return addStructElement(parent, structure, attributes, false);
+    }
+
+    // Adds a structure element that groups its kids. An open element is one a
+    // drawable goes on adding to after the page it was made on is written,
+    // like the Table of a table that runs over pages.
+    StructElement addStructElement(
+            StructElement parent, StructElem structure, String attributes, boolean open) {
         if (pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0) {
             return null;
         }
@@ -2598,14 +2624,20 @@ final public class Page {
         element.structure = structure.type;
         element.mcid = -1;
         element.attributes = attributes;
+        element.open = open;
         addStructure(element, parent);
         return element;
     }
 
+    // Gives the element its object number, which its parent and its kids refer
+    // to before it is written, and adds it to its parent and to the page.
     private void addStructure(StructElement element, StructElement parent) {
+        pdf.reserveStructTreeNumbers();
+        element.objNumber = pdf.reserveObjNumber();
+        element.pageObjNumber = this.objNumber;
         element.parent = parent;
         if (parent != null) {
-            parent.addKidStructElem(element);
+            parent.addKidObjNumber(element.objNumber);
         }
         this.structures.add(element);
     }

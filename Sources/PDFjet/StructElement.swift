@@ -19,7 +19,14 @@ class StructElement {
     // The parent element, or nil for a child of the Document element. The
     // pages hold the elements, so the parent does not hold on to them.
     weak var parent: StructElement?
-    var kids = [StructElement]()
+    // The object numbers of the kids. A parent keeps the numbers and not the
+    // kids, so that a page can write its elements and let go of them.
+    var kids = [Int]()
+    // True for an element a drawable goes on adding to after the page it was
+    // made on is written, like the Table of a table that runs over pages. It
+    // is written when the document is completed; every other element is
+    // written with its page and let go of.
+    var open = false
     var language: String?
     var altDescription: String?
     var actualText: String?

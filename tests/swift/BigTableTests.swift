@@ -205,8 +205,8 @@ import Testing
 
     @Test func isTaggedAsATableInAPDFUADocument() throws {
         // The table is one Table element over all its pages: a TR for each
-        // row, a TH for each header field the first time the header is drawn
-        // and a TD for each field of a row, each holding the text in a P.
+        // row, and a TH for each header field the first time the header is
+        // drawn or a TD for each field of a row, each holding its own text.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
@@ -230,7 +230,8 @@ import Testing
         #expect(count(raw, "/S /TR\n") == 101)
         #expect(count(raw, "/S /TH\n") == 3)
         #expect(count(raw, "/S /TD\n") == 300)
-        #expect(count(raw, "/S /P\n") == 303)
+        // A cell holds the text itself and has no paragraph under it.
+        #expect(count(raw, "/S /P\n") == 0)
         #expect(count(raw, "/A <</O /Table /Scope /Column>>") == 3)
     }
 

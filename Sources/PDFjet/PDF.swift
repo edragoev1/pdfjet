@@ -48,7 +48,14 @@ public final class PDF {
     // The structure elements of the pages of the document, in page order.
     // complete() collects them, so a detached page that was never added has
     // no part in the structure tree.
-    private var structElements = [StructElement]()
+    private var annotElements = [StructElement]()
+    // The elements of the Document element, by number.
+    private var documentKids = [Int]()
+    // The structure tree root, the parent tree and the Document element take
+    // three numbers reserved before the first element is written.
+    private var structTreeRootNumber = 0
+    private var parentTreeNumber = 0
+    private var documentElementNumber = 0
     private var contentStreamsCompression = true
     var encryption: Encryption?
 
@@ -557,14 +564,13 @@ public final class PDF {
     }
 
     private func addPagesObject() {
-        newObj()
+        setObjOffset(pagesObjNumber, byteCount)
+        append(pagesObjNumber)
+        append(Token.newObj)
         append(Token.beginDictionary)
         append("/Type /Pages\n")
         append("/Kids [\n")
         for page in pages {
-            if compliance != Compliance.PDF_1_7 {
-                page.setStructElementsPageObjNumber(page.objNumber)
-            }
             append(page.objNumber)
             append(Token.objRef)
         }
@@ -577,24 +583,39 @@ public final class PDF {
     }
 
     private func addStructTreeRootObject() -> Int {
-        newObj()
+        setObjOffset(structTreeRootNumber, byteCount)
+        append(structTreeRootNumber)
+        append(" 0 obj\n")
         append(Token.beginDictionary)
         append("/Type /StructTreeRoot\n")
         append("/ParentTree ")
-        append(getObjNumber() + 1)
+        append(parentTreeNumber)
         append(Token.objRef)
         append("/K [\n")
-        append(getObjNumber() + 2)
+        append(documentElementNumber)
         append(Token.objRef)
         append("]\n")
         append(Token.endDictionary)
         endObj()
-        return getObjNumber()
+        return structTreeRootNumber
+    }
+
+    // Reserves the numbers of the structure tree root, the parent tree and
+    // the Document element, which the elements written with their pages refer
+    // to before the three are written.
+    func reserveStructTreeNumbers() {
+        if structTreeRootNumber == 0 {
+            structTreeRootNumber = reserveObjNumber()
+            parentTreeNumber = reserveObjNumber()
+            documentElementNumber = reserveObjNumber()
+        }
     }
 
     @discardableResult
     private func addStructDocumentObject(_ parent: Int) -> Int {
-        newObj()
+        setObjOffset(documentElementNumber, byteCount)
+        append(documentElementNumber)
+        append(" 0 obj\n")
         append(Token.beginDictionary)
         append("/Type /StructElem\n")
         append("/S /Document\n")
@@ -602,37 +623,61 @@ public final class PDF {
         append(parent)
         append(" 0 R\n")
         append("/K [\n")
-        // An element whose parent is on a page that is not in the document
-        // is a child of the Document element.
-        for structElement in self.structElements where structElement.parent?.objNumber == nil {
-            append(structElement.objNumber!)
+        for number in self.documentKids {
+            append(number)
             append(Token.objRef)
         }
         append("]\n")
         append(Token.endDictionary)
         endObj()
-        return getObjNumber()
+        return documentElementNumber
     }
 
-    private func addStructElementObjects() {
-        var structTreeRootObjNumber = getObjNumber() + 1
-        structTreeRootObjNumber += self.structElements.count
-        // The object numbers are known first, as an element refers to its
-        // parent and its kids, which may be written before or after it.
-        var objNumber = getObjNumber()
-        for element in self.structElements {
-            objNumber += 1
-            element.objNumber = objNumber
+    // Writes the structure elements of a page that is written, so that a
+    // document of many pages holds no more of them than the page it is
+    // drawing. What it keeps is the elements that are still open and the ones
+    // of an annotation, whose object is written when the document is completed.
+    private func addPageStructElements(_ page: Page) {
+        if compliance == Compliance.PDF_1_7 || page.structures.isEmpty {
+            return
         }
-        for element in self.structElements {
-            newObj()
+        var kept = [StructElement]()
+        for element in page.structures {
+            if element.mcid >= 0 {
+                while page.mcidNumbers.count <= element.mcid {
+                    page.mcidNumbers.append(0)
+                }
+                page.mcidNumbers[element.mcid] = element.objNumber ?? 0
+            }
+            if element.parent == nil {
+                documentKids.append(element.objNumber ?? 0)
+            }
+            if element.annotation != nil {
+                annotElements.append(element)
+            }
+            if element.open || element.annotation != nil {
+                kept.append(element)
+                continue
+            }
+            addStructElementObject(element)
+        }
+        page.structures = kept
+    }
+
+    // Writes one structure element, under the number it was given when it was
+    // made.
+    private func addStructElementObject(_ element: StructElement) {
+        do {
+            setObjOffset(element.objNumber ?? 0, byteCount)
+            append(element.objNumber ?? 0)
+            append(" 0 obj\n")
             append("<<\n/Type /StructElem /S /")
             append(element.structure!)
             append("\n/P ")
             if let parentObjNumber = element.parent?.objNumber {
                 append(parentObjNumber)
             } else {
-                append(structTreeRootObjNumber + 2)  // The Document element
+                append(documentElementNumber)
             }
             append(" 0 R /Pg ")
             // The elements get the number of their page when the pages object
@@ -651,12 +696,9 @@ public final class PDF {
                 append("\n")
             } else if !element.kids.isEmpty {
                 append("/K [")
-                // A kid on a page that is not in the document has no number.
                 for kid in element.kids {
-                    if let kidObjNumber = kid.objNumber {
-                        append(kidObjNumber)
-                        append(" 0 R ")
-                    }
+                    append(kid)
+                    append(" 0 R ")
                 }
                 append("]\n")
             }
@@ -703,8 +745,8 @@ public final class PDF {
     private func addNumsParentTree() {
         var buffer = String()
 
-        objOffset.append(byteCount)
-        buffer.append(String(objOffset.count))
+        setObjOffset(parentTreeNumber, byteCount)
+        buffer.append(String(parentTreeNumber))
         buffer.append(" 0 obj\n")
 
         buffer.append("<<\n")
@@ -716,17 +758,18 @@ public final class PDF {
         for (i, page) in pages.enumerated() {
             buffer.append(String(i))
             buffer.append(" [")
-            for element in page.structures where element.annotation == nil && element.mcid >= 0 {
+            for number in page.mcidNumbers {
                 buffer.append(" ")
-                buffer.append(String(element.objNumber!))
+                buffer.append(String(number))
                 buffer.append(" 0 R")
             }
             buffer.append("]\n")
+            page.mcidNumbers = [Int]()
         }
         // The annotations follow, keyed by the /StructParent values handed out
         // by addAnnotDictionaries(), which continue where the pages left off.
         var index = pages.count
-        for element in self.structElements {
+        for element in self.annotElements {
             if element.annotation != nil {
                 buffer.append(String(index))
                 buffer.append(" ")
@@ -859,36 +902,21 @@ public final class PDF {
         append("]\n")
     }
 
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added.
     private func setDestinationObjNumbers() {
-        var numberOfAnnotations = 0
         for page in pages {
-            numberOfAnnotations += page.annots.count
-        }
-        // The page objects are written after the annotations, in the order of
-        // the pages; a merged page has the number reserved for it.
-        var index = 0
-        for page in pages {
-            if page.mergedDict != nil {
-                continue
-            }
             for destination in page.destinations {
-                destination.pageObjNumber = getObjNumber() + numberOfAnnotations + index + 1
+                destination.pageObjNumber = page.objNumber
                 destinations[destination.name!] = destination
             }
-            index += 1
         }
     }
 
     private func addAllPages(_ resObjNumber: Int) {
         setDestinationObjNumbers()
         addAnnotDictionaries()
-        // Calculate the object number of the Pages object, which comes after
-        // the objects of the pages drawn with PDFjet.
-        var drawnPages = 0
-        for page in pages where page.mergedDict == nil {
-            drawnPages += 1
-        }
-        pagesObjNumber = getObjNumber() + drawnPages + 1
+        pagesObjNumber = reserveObjNumber()
         for (i, page) in pages.enumerated() {
             if let mergedDict = page.mergedDict {
                 var dict = mergedDict
@@ -901,9 +929,10 @@ public final class PDF {
                 append(Token.endObj)
                 continue
             }
-            // Page object
-            newObj()
-            page.objNumber = getObjNumber()
+            // Page object, under the number it was given when it was added.
+            setObjOffset(page.objNumber, byteCount)
+            append(page.objNumber)
+            append(Token.newObj)
             append(Token.beginDictionary)
             append("/Type /Page\n")
             append("/Parent ")
@@ -1003,6 +1032,7 @@ public final class PDF {
             endObj()
             page.contents.append(getObjNumber())
         }
+        addPageStructElements(page)
     }
 
     @discardableResult
@@ -1178,7 +1208,7 @@ public final class PDF {
 
     private func addAnnotDictionaries() {
         var index = self.pages.count
-        for element in self.structElements {
+        for element in self.annotElements {
             if element.annotation != nil {
                 index = addAnnotationObject(element.annotation!, index)
                 element.annotation!.structParentWritten = true
@@ -1268,6 +1298,13 @@ public final class PDF {
             return
         }
         page.added = true
+        if page.objNumber == 0 {
+            page.objNumber = reserveObjNumber()
+        }
+        // A page that was drawn before it was added has elements of its own.
+        if compliance != Compliance.PDF_1_7 {
+            page.setStructElementsPageObjNumber(page.objNumber)
+        }
         pages.append(page)
         if prevPage != nil {
             addPageContent(prevPage!)
@@ -1309,9 +1346,6 @@ public final class PDF {
             throw PDFjetError(message: error)
         }
         completed = true
-        for page in pages {
-            structElements.append(contentsOf: page.structures)
-        }
         if compliance != Compliance.PDF_1_7 {
             metadataObjNumber = addMetadataObject("", false)
             outputIntentObjNumber = addOutputIntentObject()
@@ -1324,7 +1358,15 @@ public final class PDF {
 
         var structTreeRootObjNumber = 0
         if compliance != Compliance.PDF_1_7 {
-            addStructElementObjects()
+            // The elements of every page are written with it; the ones still
+            // open and the ones of the annotations are what is left.
+            for page in pages {
+                for element in page.structures {
+                    addStructElementObject(element)
+                }
+                page.structures = [StructElement]()
+            }
+            reserveStructTreeNumbers()
             structTreeRootObjNumber = addStructTreeRootObject()
             addNumsParentTree()
             addStructDocumentObject(structTreeRootObjNumber)
@@ -2307,7 +2349,7 @@ public final class PDF {
     private static let inheritedKeys = ["/Resources", "/MediaBox", "/CropBox", "/Rotate"]
 
     // Reserves the next object number for an object written later.
-    private func reserveObjNumber() -> Int {
+    func reserveObjNumber() -> Int {
         objOffset.append(0)
         return objOffset.count
     }

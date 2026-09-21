@@ -24,9 +24,11 @@ import (
 
 // BigTable is a table for large amounts of data, read row by row from a
 // delimited text file or from an iterator. Each page is written as soon as it
-// is full, so the memory stays flat however many rows there are. In a PDF/UA
-// document it does not: the table is tagged as a table, which gives every
-// cell a structure element, and they are held until the document is written.
+// is full, so the memory stays flat however many rows there are. A PDF/UA
+// document holds no more than that either: the table is tagged as a table,
+// and the structure elements of a page are written with it. What is left is
+// one cross-reference entry for each of them, which every object of a PDF
+// has.
 type BigTable struct {
 	pdf             *PDF
 	f1              *Font
@@ -219,7 +221,8 @@ func (bt *BigTable) newPage() {
 	// drawn, and an artifact where they repeat on the next pages.
 	header := structelem.StructElem("")
 	if bt.structElement == nil {
-		bt.structElement = bt.page.addStructElement(bt.page.structParent, structelem.Table, "")
+		bt.structElement = bt.page.addStructElementOpen(
+			bt.page.structParent, structelem.Table, "", true)
 		header = structelem.TH
 	}
 	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header)
@@ -329,9 +332,11 @@ func (bt *BigTable) drawFieldsAndLine(
 			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
 		}
 		if tagged {
-			bt.page.structParent = bt.page.addStructElement(
-				rowElement, cellStructure, bigTableCellAttributes(cellStructure))
-			bt.page.AddBDC(structelem.P, "", "", text)
+			// A cell holds its text and nothing else, so the cell element
+			// holds the marked content of the text: it needs no paragraph of
+			// its own, which would be another object for every cell.
+			bt.page.structParent = rowElement
+			bt.page.addBDC(cellStructure, "", "", text, bigTableCellAttributes(cellStructure))
 		} else {
 			bt.page.AddArtifactBMC()
 		}

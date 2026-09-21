@@ -27,6 +27,13 @@ internal class StructElement {
     internal String actualText = null;
     internal String altDescription = null;
     internal Annotation annotation = null;
-    internal List<StructElement> kids = new List<StructElement>();
+    // The object numbers of the kids. A parent keeps the numbers and not the
+    // kids, so that a page can write its elements and let go of them.
+    internal List<int> kids = new List<int>();
+    // True for an element a drawable goes on adding to after the page it was
+    // made on is written, like the Table of a table that runs over pages. It
+    // is written when the document is completed; every other element is
+    // written with its page and let go of.
+    internal bool open = false;
 }
 }   // End of namespace PDFjet.NET

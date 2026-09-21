@@ -25,10 +25,7 @@ func Example43() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
-	// A tagged table has a structure element for every cell, and they are
-	// held until the document is written, so a PDF/UA document of this table
-	// is as large as the rows it draws. The whole file, which is 2000+ pages,
-	// is the one to time the library with, without the compliance above.
+	// The whole file is 2000+ pages and is the one to time the library with.
 	fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 	// fileName := "data/Electric_Vehicle_Population_Data.csv"
 	// fileName := "data/Electric_Vehicle_Population_5_Lines.csv"

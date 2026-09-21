@@ -276,8 +276,8 @@ func TestBigTableAHeaderWithFewerFieldsThanColumnsIsRefused(t *testing.T) {
 
 func TestBigTableIsTaggedAsATableInAPDFUADocument(t *testing.T) {
 	// The table is one Table element over all its pages: a TR for each row,
-	// a TH for each header field the first time the header is drawn and a TD
-	// for each field of a row, each holding the text in a P.
+	// and a TH for each header field the first time the header is drawn or a
+	// TD for each field of a row, each holding the text of its cell.
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1)
 	doc.pdf.SetTitle("Title")
@@ -301,10 +301,11 @@ func TestBigTableIsTaggedAsATableInAPDFUADocument(t *testing.T) {
 	counts := map[string]int{
 		"/S /Table\n": 1,
 		// The 100 rows of the data, and the header row of the first page.
-		"/S /TR\n":                        101,
-		"/S /TH\n":                        3,
-		"/S /TD\n":                        300,
-		"/S /P\n":                         303,
+		"/S /TR\n": 101,
+		"/S /TH\n": 3,
+		"/S /TD\n": 300,
+		// A cell holds the text itself and has no paragraph under it.
+		"/S /P\n":                         0,
 		"/A <</O /Table /Scope /Column>>": 3,
 	}
 	for text, want := range counts {
