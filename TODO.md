@@ -7,11 +7,10 @@ on after it. Today is Sep 21, so 30 days are left, with one fix release in
 the middle. This file is the working list; tick items off as they land on
 master.
 
-The work runs ahead of the calendar below. Goal 1 is closed, and of goal 2
-the image classes, `Page`, `TextLine` and the whole reader are reviewed --
-the reader eleven days before the Oct 2-8 week the plan gave it, and the
-`Font` loaders, which the Sep 27-Oct 1 week had. What is left before the
-Oct 1 release is the release checks.
+The work runs ahead of the calendar below. Goals 1 and 2 are closed: every
+class of the library is read end to end, three weeks before the Oct 9-14 week
+that was to finish it. What is left before the Oct 1 release is the release
+checks.
 
 What is done is in CHANGELOG.md and in the git history; this file lists only
 what is left.
@@ -156,7 +155,7 @@ work to Oct 21 is the seven goals below, in this order.
      inputs the corpus held then, none crashes or traps in any port, and all
      four read the same pages from the 1,076 whose password is valid UTF-8.
 
-2. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to
+2. ✅ **B** Finish the class-by-class review, as on Sep 17: one class end to
    end in the four ports, each finding proved by running it, fixed in the four
    ports with a test, and the example pages it touches rendered before and
    after. By exposure, and in this order: ✅ `Page` and `TextLine`; ✅ `Image`,
@@ -165,7 +164,7 @@ work to Oct 21 is the seven goals below, in this order.
    names;
    ✅ the reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`,
    which no test names; ✅ `TextFrame`, `BigTable`, `CompositeTextLine` and
-   `Bidi`; the barcodes, the charts, `Form`, `Container` and `Stamp`.
+   `Bidi`; ✅ the barcodes, the charts, `Form`, `Container` and `Stamp`.
 
 3. ⬜ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
    veraPDF, which cannot see what a paragraph stands for. PAC runs on Windows
@@ -246,14 +245,14 @@ work to Oct 21 is the seven goals below, in this order.
 Four and a half weeks. The reviews and the fuzzing run first because they
 change code; the checks that must hold at the tag run after the freeze.
 
-Where it stands on Sep 21: the Sep 20-26 week is done, the review of the
-`Font` loaders that the Sep 27-Oct 1 week had, two of the three blockers of
-the Oct 2-8 week -- the review and the fuzzing of the reader -- and the fonts
-of goal 5, which the Oct 9-14 week had. That buys more than a week. It goes
-to the work that has to be done by hand and cannot be hurried at the end --
-goal 4, the viewer pass, and goal 3, the Matterhorn conditions that need eyes
-on a page -- and to the rest of goal 5, the references, which is the first
-thing to give if anything does.
+Where it stands on Sep 21: the Sep 20-26 week is done, and with it the
+review of the `Font` loaders that the Sep 27-Oct 1 week had, two of the three
+blockers of the Oct 2-8 week -- the review and the fuzzing of the reader --
+and, of the Oct 9-14 week, the rest of goal 2 and the fonts of goal 5. Goal 2
+is closed. That buys about two weeks. They go to the work that has to be done
+by hand and cannot be hurried at the end -- goal 4, the viewer pass, and goal
+3, the Matterhorn conditions that need eyes on a page -- and to the rest of
+goal 5, the references, which is the first thing to give if anything does.
 
 ### Sep 20–26: the decoders, `Page`, `TextLine` and the reader
 
@@ -376,8 +375,19 @@ thing to give if anything does.
       and only a `TextFrame` and a `Table` draw something else the second
       time, which is what makes them flow from page to page. The axis ranges
       of `Chart` were checked over 200,000 random ranges: each one holds its
-      data, has grid lines and is finite. What is left of this block is
-      reading `BarChart`, `DonutChart`, `Form` and `Stamp` end to end.
+      data, has grid lines and is finite.
+- ✅ Goal 2 is done (Sep 21): `BarChart`, `DonutChart`, `Form` and `Stamp`
+      close the last block, which the Oct 9-14 week had. One finding, fixed
+      in the four ports with a test: a `Chart` and a `BarChart` set the pen,
+      the brush and the dash pattern of the page to the default of a page
+      when they were done, and a `DonutChart` left the black pen of its
+      pointers and the color of its last slice, so a line drawn after a chart
+      came out in the wrong pen. They save the graphics state and restore it
+      now, as a `Stamp` and a `CalendarMonth` do. The five example pages that
+      draw a chart render pixel for pixel as they did. `Form` and `Stamp`
+      hold: a `Stamp` refuses a core or a CJK font, whose glyphs it has no
+      map for, refuses a page of another PDF and one drawn before `complete`,
+      and puts back the graphics state it changed.
 - ✅ Goal 5, in part: the 252 fonts PDFjet ships read against fontTools
       (Sep 21), which the Oct 9-14 week has. Every one gives the same name,
       units per em, ascent, descent, line gap, cap height, underline position
@@ -412,9 +422,9 @@ thing to give if anything does.
 
 ### Oct 9–14: the rest of the review, and the references
 
-- ⬜ **B** Goal 2: review `TextFrame`, `BigTable`, `CompositeTextLine` and
+- ✅ **B** Goal 2: review `TextFrame`, `BigTable`, `CompositeTextLine` and
       `Bidi`; then the barcodes, the charts, `Form`, `Container` and `Stamp`.
-      This closes goal 2.
+      This closes goal 2. Done on Sep 21, above.
 - ⬜ **B** Goal 5: round-trip text, images against Pillow, fonts against
       fontTools.
 - ⬜ **B** Goal 3: PAC or Matterhorn over the 41 PDF/UA examples, and the

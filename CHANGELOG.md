@@ -136,6 +136,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A `Chart`, a `BarChart` and a `DonutChart` leave the page with the pen, the
+  brush and the dash pattern they found on it, in all four ports, as a `Stamp`
+  and a `CalendarMonth` do. `Chart` and `BarChart` set them to the default of
+  a page when they were done, which is not what the caller had, and
+  `DonutChart` left the black pen of its pointers and the color of its last
+  slice: a line drawn after a chart came out in the wrong pen. They save the
+  graphics state and restore it now, which also keeps the font and the line
+  styles. The five example pages that draw a chart render pixel for pixel as
+  they did. Found in the review of the barcodes, the charts, `Form`,
+  `Container` and `Stamp` of Sep 21.
 - A `Container` draws its annotations where it draws them, however often it is
   drawn, in all four ports. It moved the corners of every annotation it holds
   by its own location on each drawing, so a container on a second page put its

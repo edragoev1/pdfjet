@@ -320,6 +320,11 @@ public class Chart : IDrawable {
 
         // The chart is one figure, described by its alternate description.
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
+        // The pen, the brush and the dash pattern of the caller are kept,
+        // as a Stamp and a CalendarMonth keep them: the chart set them to its
+        // own and then to the default of a page, which is not what the caller
+        // had.
+        page.SaveGraphicsState();
 
         // Draw chart title (centered, top), the subtitle and then the legend under it
         float titleBaseline = y1 + 1.5f * f1.GetBodyHeight(f1.GetSize());
@@ -443,9 +448,7 @@ public class Chart : IDrawable {
                 x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2,
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
-        page.SetDefaultPenWidth();
-        page.SetDefaultStrokeDashPattern();
-        page.SetPenColor(Color.black);
+        page.RestoreGraphicsState();
         page.AddEMC();
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};

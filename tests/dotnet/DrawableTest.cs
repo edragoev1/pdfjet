@@ -181,5 +181,32 @@ public class DrawableTest {
         }
         Assert.True(failures.Count == 0, string.Join("\n", failures));
     }
+    [Fact]
+    public void AChartLeavesThePageWithThePenItFoundOnIt() {
+        // The charts set the pen to their own and then to the default of a
+        // page, so a line drawn after one came out in the default pen rather
+        // than the pen the caller had set. A Stamp and a CalendarMonth keep
+        // the pen of the caller; the charts do now too.
+        foreach (string name in new string[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
+            foreach (var entry in Drawables()) {
+                if (entry.Key != name) {
+                    continue;
+                }
+                PDF pdf = TestSupport.NewPDF();
+                Page page = new Page(pdf, Letter.PORTRAIT);
+                page.SetPenColor(Color.red);
+                page.SetPenWidth(3f);
+                IDrawable drawable = entry.Value(pdf, TestSupport.Helvetica(pdf));
+                drawable.SetLocation(300f, 400f);
+                drawable.DrawOn(page);
+                int drawn = page.GetContent().Length;
+                // Setting the same pen again writes nothing when it is still set.
+                page.SetPenColor(Color.red);
+                page.SetPenWidth(3f);
+                Assert.True(drawn == page.GetContent().Length,
+                        name + " left the page with another pen");
+            }
+        }
+    }
 }
 }

@@ -284,6 +284,10 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
+	// The pen, the brush and the dash pattern of the caller are kept, as a
+	// Stamp and a CalendarMonth keep them: the chart set them to its own and
+	// then to the default of a page, which is not what the caller had.
+	page.SaveGraphicsState()
 
 	// Draw chart title, the subtitle and then the legend under it
 	titleBaseline := chart.y1 + 1.5*chart.f1.bodyHeight
@@ -420,9 +424,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
-	page.SetDefaultPenWidth()
-	page.SetDefaultStrokeDashPattern()
-	page.SetPenColor(color.Black)
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}

@@ -253,6 +253,10 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	}
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", dc.getAltDescription(total))
+	// The pen, the brush and the dash pattern of the caller are kept, as a
+	// Stamp and a CalendarMonth keep them: the chart left the page with the
+	// black pen of its pointers and the color of its last slice.
+	page.SaveGraphicsState()
 
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
@@ -285,6 +289,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 				colorToRGB(color.White), nil)
 		}
 	}
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	return [2]float32{xc + dc.r1, yc + dc.r1}

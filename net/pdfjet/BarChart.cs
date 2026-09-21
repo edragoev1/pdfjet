@@ -475,6 +475,9 @@ public class BarChart : IDrawable {
 
         // The chart is one figure, described by its alternate description.
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
+        // The pen, the brush and the dash pattern of the caller are kept,
+        // as a Stamp and a CalendarMonth keep them.
+        page.SaveGraphicsState();
 
         // Title, the subtitle and then the legend under it
         page.SetBrushColor(Color.black);
@@ -620,9 +623,7 @@ public class BarChart : IDrawable {
         page.SetTextRotation(0);
         page.DrawString(f2, f2.GetSize(), xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);
 
-        page.SetDefaultPenWidth();
-        page.SetDefaultStrokeDashPattern();
-        page.SetPenColor(Color.black);
+        page.RestoreGraphicsState();
         page.AddEMC();
 
         return new float[] {x1 + w, y1 + h};

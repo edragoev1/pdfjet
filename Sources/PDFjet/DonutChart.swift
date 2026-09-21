@@ -238,6 +238,10 @@ public class DonutChart : Drawable {
         }
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription(total))
+        // The pen, the brush and the dash pattern of the caller are kept,
+        // as a Stamp and a CalendarMonth keep them: the chart left the page
+        // with the black pen of its pointers and the color of its last slice.
+        page.saveGraphicsState()
         var angle: Float = 0.0
         for slice in slices! {
             if slice.value <= 0.0 {
@@ -266,6 +270,7 @@ public class DonutChart : Drawable {
                         Util.toRGB(Color.white), nil)
             }
         }
+        page.restoreGraphicsState()
         page.addEMC()
         return [xc + r1, yc + r1]
     }

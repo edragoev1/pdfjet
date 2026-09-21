@@ -369,6 +369,11 @@ public class Chart : Drawable {
 
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
+        // The pen, the brush and the dash pattern of the caller are kept,
+        // as a Stamp and a CalendarMonth keep them: the chart set them to its
+        // own and then to the default of a page, which is not what the caller
+        // had.
+        page.saveGraphicsState()
 
         // Draw chart title, the subtitle and then the legend under it
         let legend = drawLegend && hasSeriesNames()
@@ -492,9 +497,7 @@ public class Chart : Drawable {
                 x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2,
                 y4 - f2.bodyHeight / 2)
 
-        page.setDefaultPenWidth()
-        page.setDefaultStrokeDashPattern()
-        page.setPenColor(Color.black)
+        page.restoreGraphicsState()
         page.addEMC()
 
         return [self.x1 + self.w, self.y1 + self.h]

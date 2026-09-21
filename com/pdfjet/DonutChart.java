@@ -255,6 +255,10 @@ public class DonutChart implements Drawable {
         }
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, null, altDescription(total));
+        // The pen, the brush and the dash pattern of the caller are kept, as
+        // a Stamp and a CalendarMonth keep them: the chart left the page with
+        // the black pen of its pointers and the color of its last slice.
+        page.saveGraphicsState();
         float angle = 0.0f;
         for (Slice slice : slices) {
             if (slice.value <= 0.0f) {
@@ -283,6 +287,7 @@ public class DonutChart implements Drawable {
                         Util.toRGB(Color.white), null);
             }
         }
+        page.restoreGraphicsState();
         page.addEMC();
         return new float[] {xc + r1, yc + r1};
     }

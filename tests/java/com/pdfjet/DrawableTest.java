@@ -192,4 +192,26 @@ class DrawableTest {
         }
         assertEquals(new ArrayList<String>(), failures);
     }
+    @Test
+    void aChartLeavesThePageWithThePenItFoundOnIt() throws Exception {
+        // The charts set the pen to their own and then to the default of a
+        // page, so a line drawn after one came out in the default pen rather
+        // than the pen the caller had set. A Stamp and a CalendarMonth keep
+        // the pen of the caller; the charts do now too.
+        for (String name : new String[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
+            PDF pdf = TestSupport.newPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            page.setPenColor(Color.red);
+            page.setPenWidth(3f);
+            Drawable drawable = drawables().get(name).make(pdf, TestSupport.helvetica(pdf));
+            drawable.setLocation(300f, 400f);
+            drawable.drawOn(page);
+            int drawn = page.getContent().length;
+            // Setting the same pen again writes nothing when it is still set.
+            page.setPenColor(Color.red);
+            page.setPenWidth(3f);
+            assertEquals(drawn, page.getContent().length,
+                    name + " left the page with another pen");
+        }
+    }
 }

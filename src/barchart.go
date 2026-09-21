@@ -437,6 +437,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
+	// The pen, the brush and the dash pattern of the caller are kept, as a
+	// Stamp and a CalendarMonth keep them.
+	page.SaveGraphicsState()
 
 	// Title, the subtitle and then the legend under it
 	page.SetBrushColor(color.Black)
@@ -640,9 +643,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	page.drawString(f2, f2.size, chart.xAxisTitle, x5+((x6-x5)-f2.StringWidth(f2.size, chart.xAxisTitle))/2.0,
 		y2-bodyHeight/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
 
-	page.SetDefaultPenWidth()
-	page.SetDefaultStrokeDashPattern()
-	page.SetPenColor(color.Black)
+	page.RestoreGraphicsState()
 	page.AddEMC()
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}

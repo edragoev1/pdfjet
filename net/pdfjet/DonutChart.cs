@@ -238,6 +238,11 @@ namespace PDFjet.NET {
             }
             // The chart is one figure, described by its alternate description.
             page.AddBDC(StructElem.FIGURE, null, AltDescription(total));
+            // The pen, the brush and the dash pattern of the caller are
+            // kept, as a Stamp and a CalendarMonth keep them: the chart left
+            // the page with the black pen of its pointers and the color of
+            // its last slice.
+            page.SaveGraphicsState();
             float angle = 0.0f;
             foreach (Slice slice in slices) {
                 if (slice.value <= 0.0f) {
@@ -267,6 +272,7 @@ namespace PDFjet.NET {
                         Util.ToRGB(Color.white), null);
                 }
             }
+            page.RestoreGraphicsState();
             page.AddEMC();
             return new float[] {xc + r1, yc + r1};
         }

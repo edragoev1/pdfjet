@@ -166,4 +166,27 @@ import Testing
         }
         #expect(failures.isEmpty, "\(failures)")
     }
+    @Test func aChartLeavesThePageWithThePenItFoundOnIt() throws {
+        // The charts set the pen to their own and then to the default of a
+        // page, so a line drawn after one came out in the default pen rather
+        // than the pen the caller had set. A Stamp and a CalendarMonth keep
+        // the pen of the caller; the charts do now too.
+        for name in ["Chart", "BarChart", "DonutChart", "Stamp"] {
+            for (drawableName, make) in DrawableTests.drawables() where drawableName == name {
+                let pdf = TestSupport.newPDF()
+                let page = Page(pdf, Letter.PORTRAIT)
+                page.setPenColor(Color.red)
+                page.setPenWidth(3)
+                let drawable = try make(pdf, TestSupport.helvetica(pdf))
+                _ = drawable.setLocation(300, 400)
+                _ = drawable.drawOn(page)
+                let drawn = page.getContent().count
+                // Setting the same pen again writes nothing when it is still set.
+                page.setPenColor(Color.red)
+                page.setPenWidth(3)
+                #expect(page.getContent().count == drawn,
+                        "\(name) left the page with another pen")
+            }
+        }
+    }
 }

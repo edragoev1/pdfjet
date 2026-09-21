@@ -571,6 +571,9 @@ public class BarChart : Drawable {
 
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
+        // The pen, the brush and the dash pattern of the caller are kept,
+        // as a Stamp and a CalendarMonth keep them.
+        page.saveGraphicsState()
 
         // Title, the subtitle and then the legend under it
         page.setBrushColor(Color.black)
@@ -716,9 +719,7 @@ public class BarChart : Drawable {
         page.setTextRotation(0)
         page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0)
 
-        page.setDefaultPenWidth()
-        page.setDefaultStrokeDashPattern()
-        page.setPenColor(Color.black)
+        page.restoreGraphicsState()
         page.addEMC()
 
         return [x1 + w, y1 + h]

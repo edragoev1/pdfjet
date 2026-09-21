@@ -297,3 +297,31 @@ func TestDrawableEveryDrawableDrawsTheSameThingEveryTime(t *testing.T) {
 		t.Errorf("%v", failures)
 	}
 }
+
+func TestDrawableAChartLeavesThePageWithThePenItFoundOnIt(t *testing.T) {
+	// The charts set the pen to their own and then to the default of a page,
+	// so a line drawn after one came out in the default pen rather than the
+	// pen the caller had set. A Stamp and a CalendarMonth keep the pen of the
+	// caller; the charts do now too.
+	for _, name := range []string{"Chart", "BarChart", "DonutChart", "Stamp"} {
+		for _, maker := range testDrawables() {
+			if maker.name != name {
+				continue
+			}
+			pdf, font := testNewDrawablePDF()
+			page := pdfjet.NewPage(pdf, letter.Portrait())
+			page.SetPenColor(color.Red)
+			page.SetPenWidth(3)
+			drawable := maker.make(t, pdf, font)
+			drawable.SetLocation(300, 400)
+			drawable.DrawOn(page)
+			drawn := len(page.GetContent())
+			// Setting the same pen again writes nothing when it is still set.
+			page.SetPenColor(color.Red)
+			page.SetPenWidth(3)
+			if len(page.GetContent()) != drawn {
+				t.Errorf("%s left the page with another pen", name)
+			}
+		}
+	}
+}
