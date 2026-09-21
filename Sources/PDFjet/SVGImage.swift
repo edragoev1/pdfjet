@@ -84,7 +84,7 @@ public class SVGImage : Drawable {
                 try readPathAttributes(attributes)
             }
         }
-        processPaths(paths ?? [])
+        try processPaths(paths ?? [])
     }
 
     private func readSVGAttributes(_ attributes: [(String, String)]) throws {
@@ -289,7 +289,7 @@ public class SVGImage : Drawable {
         }
     }
 
-    func processPaths(_ paths: [SVGPath]) {
+    func processPaths(_ paths: [SVGPath]) throws {
         var box: [Float] = Array(repeating: 0.0, count: 4)
         if let viewBox = viewBox {
             let list = viewBox.trim()
@@ -315,7 +315,7 @@ public class SVGImage : Drawable {
         for path in paths {
             guard let data = path.data else { continue }
             path.operations = SVG.getOperations(data)
-            path.operations = SVG.toPDF(path.operations ?? [])
+            path.operations = try SVG.toPDF(path.operations ?? [])
             if viewBox != nil {
                 for op in path.operations ?? [] {
                     op.x = (op.x - box[0]) * w / box[2]
@@ -445,6 +445,9 @@ public class SVGImage : Drawable {
     }
 
     private func drawPath(_ path: SVGPath, _ page: Page) {
+        if path.operations == nil || path.operations!.isEmpty {
+            return  // A path of no operations draws nothing, not even its colors.
+        }
         // none on the path wins over the color of the svg element; a color
         // that is not set, or not understood, is taken from the svg element.
         let noFill = path.fillNone || (path.fill == Color.transparent && self.fillNone)

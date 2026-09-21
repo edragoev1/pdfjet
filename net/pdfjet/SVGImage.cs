@@ -270,6 +270,9 @@ public class SVGImage : IDrawable {
     }
 
     private void drawPath(SVGPath path, Page page) {
+        if (path.operations == null || path.operations.Count == 0) {
+            return;     // A path of no operations draws nothing, not even its colors.
+        }
         // none on the path wins over the color of the svg element; a color
         // that is not set, or not understood, is taken from the svg element.
         bool noFill = path.fillNone || (path.fill == Color.transparent && this.fillNone);

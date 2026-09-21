@@ -39,36 +39,55 @@ class SVG {
     }
 
     /// Parses SVG path data into a list of path operations.
+    // Returns true when the character separates the numbers of path data: the
+    // white space of SVG 1.1 section 8.3.9, which is the white space of XML.
+    // Path data is often written over several lines.
+    private static func isSpace(_ ch: Character) -> Bool {
+        return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
+    }
+
+    // Returns true when the number so far ends with the e of an exponent, so
+    // that the sign of the exponent belongs to it: the numbers of path data
+    // are written as SVG 1.1 section 8.3.9 gives them, sign, digits, point
+    // and exponent.
+    private static func afterExponent(_ buf: String) -> Bool {
+        return buf.hasSuffix("e") || buf.hasSuffix("E")
+    }
+
     static func getOperations(_ path: String) -> [PathOp] {
         var operations = [PathOp]()
-        var op: PathOp?
+        // Path data starts with a command; the numbers before the first one
+        // belong to this operation, which is not added to the list.
+        var op = PathOp(" ")
         var buf = String()
         var token = false
         for ch in path {
             if isCommand(ch) {          // open path
                 if token {
-                    op!.args.append(buf)
+                    op.args.append(buf)
                     buf = ""
                 }
                 token = false
                 op = PathOp(ch)
-                operations.append(op!)
-            } else if ch == " " || ch == "," {
+                operations.append(op)
+            } else if isSpace(ch) || ch == "," {
                 if token {
-                    op!.args.append(buf)
+                    op.args.append(buf)
                     buf = ""
                 }
                 token = false
-            } else if ch == "-" {
-                if token {
-                    op!.args.append(buf)
+            } else if ch == "-" || ch == "+" {
+                // The sign starts a number, unless it is the sign of an
+                // exponent: 1e-3 is one number, and 10-3 is two.
+                if token && !afterExponent(buf) {
+                    op.args.append(buf)
                     buf = ""
                 }
                 token = true
                 buf.append(ch)
             } else if ch == "." {
                 if buf.contains(".") {
-                    op!.args.append(buf)
+                    op.args.append(buf)
                     buf = ""
                 }
                 token = true
@@ -79,15 +98,27 @@ class SVG {
             }
         }
         if token {  // The last number of a path that does not end with Z
-            op!.args.append(buf)
+            op.args.append(buf)
         }
         return operations
     }
 
+    /// Returns the argument as a number, and throws when it is not one, as the
+    /// other ports fail on such path data rather than stopping the program.
+    private static func number(_ args: [String], _ i: Int) throws -> Float {
+        guard i < args.count, let value = Float(args[i]) else {
+            throw PDFjetError(message: "Invalid path data: " +
+                    (i < args.count ? args[i] : "missing argument"))
+        }
+        return value
+    }
+
     /// Converts SVG path operations to PDF path operations.
-    static func toPDF(_ list: [PathOp]) -> [PathOp] {
+    static func toPDF(_ list: [PathOp]) throws -> [PathOp] {
         var operations = [PathOp]()
-        var lastOp: PathOp?
+        // The current point starts at the origin: path data that begins with a
+        // command that needs one is drawn from there rather than stopping.
+        var lastOp = PathOp(" ")
         var x0: Float = 0.0 // Start of subpath
         var y0: Float = 0.0
         for op in list {
@@ -95,11 +126,11 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 2) {
                     let pathOp: PathOp
-                    var x = Float(op.args[i])!
-                    var y = Float(op.args[i + 1])!
-                    if op.cmd == "m" && lastOp != nil {
-                        x += lastOp!.x
-                        y += lastOp!.y
+                    var x = try number(op.args, i)
+                    var y = try number(op.args, i + 1)
+                    if op.cmd == "m" {
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     if i == 0 {
                         x0 = x
@@ -115,11 +146,11 @@ class SVG {
             } else if op.cmd == "L" || op.cmd == "l" {
                 var i: Int = 0
                 while i <= (op.args.count - 2) {
-                    var x = Float(op.args[i])!
-                    var y = Float(op.args[i + 1])!
-                    if op.cmd == "l" && lastOp != nil {
-                        x += lastOp!.x
-                        y += lastOp!.y
+                    var x = try number(op.args, i)
+                    var y = try number(op.args, i + 1)
+                    if op.cmd == "l" {
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     let pathOp = PathOp("L", x, y)
                     operations.append(pathOp)
@@ -129,11 +160,11 @@ class SVG {
             } else if op.cmd == "H" || op.cmd == "h" {
                 var i: Int = 0
                 while i < op.args.count {
-                    var x = Float(op.args[i])!
-                    if op.cmd == "h" && lastOp != nil {
-                        x += lastOp!.x
+                    var x = try number(op.args, i)
+                    if op.cmd == "h" {
+                        x += lastOp.x
                     }
-                    let pathOp = PathOp("L", x, lastOp!.y)
+                    let pathOp = PathOp("L", x, lastOp.y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 1
@@ -141,11 +172,11 @@ class SVG {
             } else if op.cmd == "V" || op.cmd == "v" {
                 var i: Int = 0
                 while i < op.args.count {
-                    var y = Float(op.args[i])!
-                    if op.cmd == "v" && lastOp != nil {
-                        y += lastOp!.y
+                    var y = try number(op.args, i)
+                    if op.cmd == "v" {
+                        y += lastOp.y
                     }
-                    let pathOp = PathOp("L", lastOp!.x, y)
+                    let pathOp = PathOp("L", lastOp.x, y)
                     operations.append(pathOp)
                     lastOp = pathOp
                     i += 1
@@ -154,22 +185,22 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 4) {
                     let pathOp = PathOp("C")
-                    var x1 = Float(op.args[i])!
-                    var y1 = Float(op.args[i + 1])!
-                    var x = Float(op.args[i + 2])!
-                    var y = Float(op.args[i + 3])!
+                    var x1 = try number(op.args, i)
+                    var y1 = try number(op.args, i + 1)
+                    var x = try number(op.args, i + 2)
+                    var y = try number(op.args, i + 3)
                     if op.cmd == "q" {
-                        x1 += lastOp!.x
-                        y1 += lastOp!.y
-                        x += lastOp!.x
-                        y += lastOp!.y
+                        x1 += lastOp.x
+                        y1 += lastOp.y
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     // Save the original control point
                     pathOp.x1q = x1
                     pathOp.y1q = y1
                     // Calculate the coordinates of the cubic control points
-                    let x1c = lastOp!.x + (2.0/3.0)*(x1 - lastOp!.x)
-                    let y1c = lastOp!.y + (2.0/3.0)*(y1 - lastOp!.y)
+                    let x1c = lastOp.x + (2.0/3.0)*(x1 - lastOp.x)
+                    let y1c = lastOp.y + (2.0/3.0)*(y1 - lastOp.y)
                     let x2c = x + (2.0/3.0)*(x1 - x)
                     let y2c = y + (2.0/3.0)*(y1 - y)
                     pathOp.setCubicPoints(x1c, y1c, x2c, y2c, x, y)
@@ -181,22 +212,22 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 2) {
                     let pathOp = PathOp("C")
-                    var x1 = lastOp!.x
-                    var y1 = lastOp!.y
-                    if lastOp!.cmd == "C" {
+                    var x1 = lastOp.x
+                    var y1 = lastOp.y
+                    if lastOp.cmd == "C" {
                         // Find the reflection control point
-                        x1 = 2*lastOp!.x - lastOp!.x1q
-                        y1 = 2*lastOp!.y - lastOp!.y1q
+                        x1 = 2*lastOp.x - lastOp.x1q
+                        y1 = 2*lastOp.y - lastOp.y1q
                     }
-                    var x = Float(op.args[i])!
-                    var y = Float(op.args[i + 1])!
+                    var x = try number(op.args, i)
+                    var y = try number(op.args, i + 1)
                     if op.cmd == "t" {
-                        x += lastOp!.x
-                        y += lastOp!.y
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     // Calculate the coordinates of the cubic control points
-                    let x1c = lastOp!.x + (2.0/3.0)*(x1 - lastOp!.x)
-                    let y1c = lastOp!.y + (2.0/3.0)*(y1 - lastOp!.y)
+                    let x1c = lastOp.x + (2.0/3.0)*(x1 - lastOp.x)
+                    let y1c = lastOp.y + (2.0/3.0)*(y1 - lastOp.y)
                     let x2c = x + (2.0/3.0)*(x1 - x)
                     let y2c = y + (2.0/3.0)*(y1 - y)
                     pathOp.setCubicPoints(x1c, y1c, x2c, y2c, x, y)
@@ -208,19 +239,19 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 6) {
                     let pathOp = PathOp("C")
-                    var x1 = Float(op.args[i])!
-                    var y1 = Float(op.args[i + 1])!
-                    var x2 = Float(op.args[i + 2])!
-                    var y2 = Float(op.args[i + 3])!
-                    var x = Float(op.args[i + 4])!
-                    var y = Float(op.args[i + 5])!
+                    var x1 = try number(op.args, i)
+                    var y1 = try number(op.args, i + 1)
+                    var x2 = try number(op.args, i + 2)
+                    var y2 = try number(op.args, i + 3)
+                    var x = try number(op.args, i + 4)
+                    var y = try number(op.args, i + 5)
                     if op.cmd == "c" {
-                        x1 += lastOp!.x
-                        y1 += lastOp!.y
-                        x2 += lastOp!.x
-                        y2 += lastOp!.y
-                        x += lastOp!.x
-                        y += lastOp!.y
+                        x1 += lastOp.x
+                        y1 += lastOp.y
+                        x2 += lastOp.x
+                        y2 += lastOp.y
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     pathOp.setCubicPoints(x1, y1, x2, y2, x, y)
                     operations.append(pathOp)
@@ -231,22 +262,22 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 4) {
                     let pathOp = PathOp("C")
-                    var x1 = lastOp!.x
-                    var y1 = lastOp!.y
-                    if lastOp!.cmd == "C" {
+                    var x1 = lastOp.x
+                    var y1 = lastOp.y
+                    if lastOp.cmd == "C" {
                         // Find the reflection control point
-                        x1 = 2*lastOp!.x - lastOp!.x2
-                        y1 = 2*lastOp!.y - lastOp!.y2
+                        x1 = 2*lastOp.x - lastOp.x2
+                        y1 = 2*lastOp.y - lastOp.y2
                     }
-                    var x2 = Float(op.args[i])!
-                    var y2 = Float(op.args[i + 1])!
-                    var x = Float(op.args[i + 2])!
-                    var y = Float(op.args[i + 3])!
+                    var x2 = try number(op.args, i)
+                    var y2 = try number(op.args, i + 1)
+                    var x = try number(op.args, i + 2)
+                    var y = try number(op.args, i + 3)
                     if op.cmd == "s" {
-                        x2 += lastOp!.x
-                        y2 += lastOp!.y
-                        x += lastOp!.x
-                        y += lastOp!.y
+                        x2 += lastOp.x
+                        y2 += lastOp.y
+                        x += lastOp.x
+                        y += lastOp.y
                     }
                     pathOp.setCubicPoints(x1, y1, x2, y2, x, y)
                     operations.append(pathOp)
@@ -256,18 +287,18 @@ class SVG {
             } else if op.cmd == "A" || op.cmd == "a" {
                 var i: Int = 0
                 while i <= (op.args.count - 7) {
-                    let rx = Float(op.args[i])!
-                    let ry = Float(op.args[i + 1])!
-                    let rotation = Float(op.args[i + 2])!
+                    let rx = try number(op.args, i)
+                    let ry = try number(op.args, i + 1)
+                    let rotation = try number(op.args, i + 2)
                     let largeArc = op.args[i + 3] != "0"
                     let sweep = op.args[i + 4] != "0"
-                    var x = Float(op.args[i + 5])!
-                    var y = Float(op.args[i + 6])!
+                    var x = try number(op.args, i + 5)
+                    var y = try number(op.args, i + 6)
                     if op.cmd == "a" {
-                        x += lastOp!.x
-                        y += lastOp!.y
+                        x += lastOp.x
+                        y += lastOp.y
                     }
-                    lastOp = addArc(&operations, lastOp!, rx, ry, rotation, largeArc, sweep, x, y)
+                    lastOp = addArc(&operations, lastOp, rx, ry, rotation, largeArc, sweep, x, y)
                     i += 7
                 }
             } else if op.cmd == "Z" || op.cmd == "z" {

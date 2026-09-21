@@ -123,6 +123,31 @@ This is the first entry in this file; earlier releases were not tracked here.
   `jpeg_read_header` reads a header, where PDFjet stopped at the frame header
   and missed one that follows it. Found by fuzzing the Go reader against Go's
   image/jpeg; the fuzz target is in `src/jpgimage_fuzz_test.go`.
+- SVG path data written over more than one line was read wrong, and in Go it
+  failed the image with "invalid path data": only a space and a comma
+  separated the numbers, so a line feed or a tab between them made one number
+  of two. The white space of SVG 1.1 section 8.3.9, which is the white space
+  of XML, separates them now. Java, C# and Swift drew such a path because
+  their XML parsers turn the white space of an attribute into spaces, where
+  Go's does not.
+- SVG path data with a number written in exponent notation, `1.5e-3` or
+  `1000E-2`, failed with "invalid path data": the sign of the exponent was
+  read as the start of the next number, so the image was refused. A sign
+  belongs to the number when it follows the `e` of an exponent, and a `+`
+  starts a number where nothing separates it from the one before, as SVG 1.1
+  writes them.
+- An SVG path threw or trapped in Java, C# and Swift where Go drew it: path
+  data that starts with a number rather than a command threw a null pointer
+  exception, as did a `<path>` element with no `d` attribute in Java and C#;
+  path data whose first command needs a current point, `L90 40` or
+  `Q10 10 90 40`, threw there and trapped in Swift, and an argument that is
+  not a number trapped in Swift, where the other ports fail with a message.
+  The numbers before the first command are left out, the current point starts
+  at the origin, a path without data draws nothing, and Swift fails on an
+  argument that is not a number, as in Go. A path of no operations now draws
+  nothing at all, where it wrote its colors and a fill operator with no path.
+  Found by fuzzing the Go SVG reader and replaying its corpus in the four
+  ports; the fuzz targets are in `src/svgimage_fuzz_test.go`.
 - A JPEG of other than eight bits per color component, a 12-bit one among
   them, was embedded with `/BitsPerComponent 8` whatever the sample precision
   of its frame header said, so it was drawn as noise; it fails with "The JPEG

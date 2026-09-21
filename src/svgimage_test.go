@@ -133,3 +133,78 @@ func TestSVGImageAPathWithoutColorsOrWithAnUnknownFillIsFilledBlack(t *testing.T
 		t.Errorf("%q != %q", gradient, unset)
 	}
 }
+
+// The numbers of path data are written as SVG 1.1 section 8.3.9 gives them:
+// a sign, digits, a point and an exponent, and a sign or a point starts the
+// next number where no space or comma separates them.
+
+func TestSVGImageReadsTheNumbersOfPathDataAsSVGWritesThem(t *testing.T) {
+	// Every path draws the line from 10, 10 to 90, 40, written another way.
+	for _, data := range []string{
+		"M10 10 L90 40",
+		"M10,10L90,40",
+		"M 1e1 1e1 L 9e1 4e1",
+		"M 1000e-2 1000e-2 L 9000e-2 4000e-2",
+		"M 1000E-2 1000E-2 L 9000E-2 4000E-2",
+		"M+10+10L+90+40",
+		"M 10.0 10.0 L 90.0 40.0",
+		"M 10 10 L 9e+1 4e+1",
+		"M10 10\nL90 40", // Path data is often written over several lines
+		"M10\t10\tL90\t40",
+		"M10 10\r\nL90 40",
+	} {
+		svg := `<svg width="100" height="50"><path d="` + data + `"/></svg>`
+		image, err := NewSVGImage(strings.NewReader(svg))
+		if err != nil {
+			t.Errorf("%q: %v", data, err)
+			continue
+		}
+		page := testNewPage()
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, "10 782 m\n90 752 l\n") {
+			t.Errorf("%q draws %q", data, content)
+		}
+	}
+}
+
+func TestSVGImagePathDataThatStartsWithANumberDrawsNothing(t *testing.T) {
+	// Path data starts with a moveto; the numbers before the first command
+	// belong to no operation, and are left out rather than read as one.
+	for _, data := range []string{"10 10 L90 40", ".5.5L90 40", "-10L90 40"} {
+		image, err := NewSVGImage(strings.NewReader(
+			`<svg width="100" height="50"><path d="` + data + `"/></svg>`))
+		if err != nil {
+			t.Errorf("%q: %v", data, err)
+			continue
+		}
+		page := testNewPage()
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content := testContent(page); strings.Contains(content, " m\n") {
+			t.Errorf("%q draws %q", data, content)
+		}
+	}
+}
+
+func TestSVGImageAPathWithoutDataDrawsNothing(t *testing.T) {
+	// A path element without a d attribute is one the other ports threw on.
+	content := testDrawSVG(t, `<svg width="100" height="50"><path/><path d="M10 10 L90 40"/></svg>`)
+	if !strings.Contains(content, "10 782 m\n90 752 l\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImagePathDataThatNeedsTheCurrentPointStartsAtTheOrigin(t *testing.T) {
+	// The first command of the path data needs a current point, which the
+	// other ports left unset: they threw, or trapped in Swift.
+	for _, data := range []string{
+		"L90 40", "H90", "V40", "Q10 10 90 40", "T90 40",
+		"C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40",
+	} {
+		content := testDrawSVG(t, `<svg width="100" height="50"><path d="`+data+`"/></svg>`)
+		if !strings.Contains(content, " l\n") && !strings.Contains(content, " c\n") {
+			t.Errorf("%q draws %q", data, content)
+		}
+	}
+}

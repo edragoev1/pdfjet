@@ -30,22 +30,12 @@ check passed: 23 in the reviews of `Cell`, `Table`, `TextBlock`, `TextColumn`
 and `PDF`; then 32-bit BMPs in the wrong colors, ’ and € drawn as spaces in
 the core fonts, every CMYK JPEG inverted, a fallback font that stuck, the CJK
 line gaps, and what the first three fuzz targets turned up. Eight kinds of
-untrusted input are read from a file, and four of them are fuzzed. So the
+untrusted input are read from a file, and five of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
 
 ## The seven goals of v9.0.3
 
-1. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to
-   end in the four ports, each finding proved by running it, fixed in the four
-   ports with a test, and the example pages it touches rendered before and
-   after. By exposure, and in this order: `Page` and `TextLine`; `Image`,
-   `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; `Font` and its loaders `OTF`,
-   `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test names; the
-   reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`, which no
-   test names; `TextFrame`, `BigTable`, `CompositeTextLine` and `Bidi`; the
-   barcodes, the charts, `Form`, `Container` and `Stamp`.
-
-2. ⬜ **B** Fuzz the parsers of untrusted input with Go's fuzzing, and fix each
+1. ⬜ **B** Fuzz the parsers of untrusted input with Go's fuzzing, and fix each
    failure in the four ports, which share the logic. Any input either works or
    fails with a clean error: no hang, no index error, no runaway memory. The
    targets and their corpora stay in the repository, in `src/*_fuzz_test.go`
@@ -76,10 +66,33 @@ work to Oct 21 is the seven goals below, in this order.
      four ports read the same width, height, components and Adobe marker from
      every one. The review beside it found a JPEG of other than eight bits per
      color component embedded as if it had eight, which is refused now.
-   - ⬜ SVG paths, and `SVGImage`.
+   - ✅ SVG paths and `SVGImage` (Sep 20): `FuzzSVGImage` fuzzes whole
+     documents, and `FuzzSVGPath` the path data, which it writes twice out of
+     the same numbers, plainly and as the formats of the input give them —
+     12, 12.0, 1200e-2, +12, with a space, a comma or nothing before them —
+     and the two must draw the same picture; 9.1 M and 23.8 M runs clean after
+     the fixes. Found path data written over more than one line read as one
+     number, where Go's XML parser leaves the line feed, and a number written
+     with an exponent read as two; and, in the other three ports, a throw or a
+     trap on path data that starts with a number, on a first command that
+     needs a current point, on a `<path>` with no `d`, and, in Swift, on an
+     argument that is not a number. Fixed in the four ports with unit tests;
+     of the 482 inputs of the Go corpus, every one the ports read draws the
+     same content in all four, and none crashes. What they still differ on is
+     which malformed XML their parsers accept.
    - ⬜ OTF and TTF, the `Font` loaders.
    - ⬜ The decompressor.
    - ⬜ `PDF.read`: the xref, the object streams and the encryption.
+
+2. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to
+   end in the four ports, each finding proved by running it, fixed in the four
+   ports with a test, and the example pages it touches rendered before and
+   after. By exposure, and in this order: `Page` and `TextLine`; `Image`,
+   `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; `Font` and its loaders `OTF`,
+   `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test names; the
+   reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`, which no
+   test names; `TextFrame`, `BigTable`, `CompositeTextLine` and `Bidi`; the
+   barcodes, the charts, `Form`, `Container` and `Stamp`.
 
 3. ⬜ **B** PDF/UA as it is claimed: check the 41 PDF/UA examples with PAC or
    by the Matterhorn Protocol, not only veraPDF, which cannot see what a
@@ -121,10 +134,10 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Sep 20–26: the decoders, `Page` and `TextLine`
 
-- ⬜ **B** Goal 2: JPEG is done (Sep 20); fuzz SVG paths, then OTF and TTF,
-      then the decompressor, fixing each failure in the four ports as the
-      first four targets were fixed.
-- ⬜ **B** Goal 1: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
+- ⬜ **B** Goal 1: JPEG and SVG are done (Sep 20); fuzz OTF and TTF, then the
+      decompressor, fixing each failure in the four ports as the first five
+      targets were fixed.
+- ⬜ **B** Goal 2: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
       `SVGImage`, the classes the same week's fuzzing reads; then `Page` and
       `TextLine`, the two with the widest exposure. One of `JPGImage` for that
       review, which the fuzzing did not cover because image/jpeg rejects it
@@ -134,7 +147,7 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Sep 27–Oct 1: release v9.0.2
 
-- ⬜ **B** Goal 1: review `Font` and its loaders `OTF`, `OpenTypeFont`,
+- ⬜ **B** Goal 2: review `Font` and its loaders `OTF`, `OpenTypeFont`,
       `FontStream1` and `FontStream2`, which no test names.
 - ⬜ **B** The release checks: `check-examples.sh` clean, the public API that
       of v9.0.1 in the four ports, the JDK 8 build, the benchmarks recorded
@@ -144,18 +157,18 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Oct 2–8: the reader
 
-- ⬜ **B** Goal 1: review `PDF.read`, the merge and the split, `PDFobj` and
+- ⬜ **B** Goal 2: review `PDF.read`, the merge and the split, `PDFobj` and
       `Decryptor`, which no test names.
-- ⬜ **B** Goal 2: fuzz `PDF.read` — the xref, the object streams and the
+- ⬜ **B** Goal 1: fuzz `PDF.read` — the xref, the object streams and the
       encryption — the last and largest target, next to its review.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
 
 ### Oct 9–14: the rest of the review, and the references
 
-- ⬜ **B** Goal 1: review `TextFrame`, `BigTable`, `CompositeTextLine` and
+- ⬜ **B** Goal 2: review `TextFrame`, `BigTable`, `CompositeTextLine` and
       `Bidi`; then the barcodes, the charts, `Form`, `Container` and `Stamp`.
-      This closes goal 1.
+      This closes goal 2.
 - ⬜ **B** Goal 5: round-trip text, images against Pillow, fonts against
       fontTools.
 - ⬜ **B** Goal 3: PAC or Matterhorn over the 41 PDF/UA examples, and the
@@ -190,7 +203,7 @@ In this order, and none of it moves the date:
 - Goal 5 is the first to give: the reader against real PDFs is worth most and
   is already in the Oct 2–8 week; the images, fonts and round-trip text can
   land in 9.0.4.
-- The last block of goal 1 — the barcodes, the charts, `Form`, `Container`
+- The last block of goal 2 — the barcodes, the charts, `Form`, `Container`
   and `Stamp` — is the least exposed and the easiest to carry over.
 - The features below do not start before Oct 21 in any case.
 - Goals 3, 4, 6 and 7 do not give: they are what "rock solid" is claimed on.

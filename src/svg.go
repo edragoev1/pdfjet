@@ -48,6 +48,21 @@ func isCommand(ch rune) bool {
 	return false
 }
 
+// isSVGSpace reports whether the character separates the numbers of path
+// data: the white space of SVG 1.1 section 8.3.9, which is the white space of
+// XML. Path data is often written over several lines.
+func isSVGSpace(ch rune) bool {
+	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+}
+
+// afterExponent reports whether the number so far ends with the e of an
+// exponent, so that the sign of the exponent belongs to it: the numbers of
+// path data are written as SVG 1.1 section 8.3.9 gives them, sign, digits,
+// point and exponent.
+func afterExponent(number string) bool {
+	return strings.HasSuffix(number, "e") || strings.HasSuffix(number, "E")
+}
+
 // GetOperations parses svgParser path data into a list of path operations.
 func (svg *svgParser) getOperations(path string) []*svgPathOp {
 	operations := make([]*svgPathOp, 0)
@@ -63,14 +78,16 @@ func (svg *svgParser) getOperations(path string) []*svgPathOp {
 			token = false
 			op = newSVGPathOp(ch)
 			operations = append(operations, op)
-		} else if ch == ' ' || ch == ',' {
+		} else if isSVGSpace(ch) || ch == ',' {
 			if token {
 				op.args = append(op.args, buf.String())
 				buf.Reset()
 			}
 			token = false
-		} else if ch == '-' {
-			if token {
+		} else if ch == '-' || ch == '+' {
+			// The sign starts a number, unless it is the sign of an exponent:
+			// 1e-3 is one number, and 10-3 is two.
+			if token && !afterExponent(buf.String()) {
 				op.args = append(op.args, buf.String())
 				buf.Reset()
 			}

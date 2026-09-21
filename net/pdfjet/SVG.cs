@@ -43,9 +43,30 @@ namespace PDFjet.NET {
         }
 
         /// <summary>Parses SVG path data into a list of path operations.</summary>
+        // Returns true when the character separates the numbers of path data: the
+        // white space of SVG 1.1 section 8.3.9, which is the white space of XML.
+        // Path data is often written over several lines.
+        private static bool IsSpace(char ch) {
+            return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+        }
+
+        // Returns true when the number so far ends with the e of an exponent, so
+        // that the sign of the exponent belongs to it: the numbers of path data
+        // are written as SVG 1.1 section 8.3.9 gives them, sign, digits, point
+        // and exponent.
+        private static bool AfterExponent(StringBuilder buf) {
+            if (buf.Length == 0) {
+                return false;
+            }
+            char last = buf[buf.Length - 1];
+            return last == 'e' || last == 'E';
+        }
+
         internal static List<PathOp> GetOperations(String path) {
             List<PathOp> operations = new List<PathOp>();
-            PathOp op = null;
+            // Path data starts with a command; the numbers before the first one
+            // belong to this operation, which is not added to the list.
+            PathOp op = new PathOp(' ');
             StringBuilder buf = new StringBuilder();
             bool token = false;
             foreach (char ch in path) {
@@ -57,14 +78,16 @@ namespace PDFjet.NET {
                     token = false;
                     op = new PathOp(ch);
                     operations.Add(op);
-                } else if (ch == ' ' || ch == ',') {
+                } else if (IsSpace(ch) || ch == ',') {
                     if (token) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
                     token = false;
-                } else if (ch == '-') {
-                    if (token) {
+                } else if (ch == '-' || ch == '+') {
+                    // The sign starts a number, unless it is the sign of an
+                    // exponent: 1e-3 is one number, and 10-3 is two.
+                    if (token && !AfterExponent(buf)) {
                         op.args.Add(buf.ToString());
                         buf.Length = 0;
                     }
@@ -91,7 +114,9 @@ namespace PDFjet.NET {
         /// <summary>Converts SVG path operations to PDF path operations.</summary>
         internal static List<PathOp> ToPDF(List<PathOp> list) {
             List<PathOp> operations = new List<PathOp>();
-            PathOp lastOp = null;
+            // The current point starts at the origin: path data that begins with a
+            // command that needs one is drawn from there rather than throwing.
+            PathOp lastOp = new PathOp(' ');
             PathOp pathOp = null;
             float x0 = 0f;  // Start of subpath
             float y0 = 0f;
@@ -100,7 +125,7 @@ namespace PDFjet.NET {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
                         float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        if (op.cmd == 'm' && lastOp != null) {
+                        if (op.cmd == 'm' ) {
                             x += lastOp.x;
                             y += lastOp.y;
                         }
@@ -118,7 +143,7 @@ namespace PDFjet.NET {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
                         float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        if (op.cmd == 'l' && lastOp != null) {
+                        if (op.cmd == 'l' ) {
                             x += lastOp.x;
                             y += lastOp.y;
                         }
@@ -129,7 +154,7 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'H' || op.cmd == 'h') {
                     foreach (String arg in op.args) {
                         float x = float.Parse(arg, CultureInfo.InvariantCulture);
-                        if (op.cmd == 'h' && lastOp != null) {
+                        if (op.cmd == 'h' ) {
                             x += lastOp.x;
                         }
                         pathOp = new PathOp('L', x, lastOp.y);
@@ -139,7 +164,7 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'V' || op.cmd == 'v') {
                     foreach (String arg in op.args) {
                         float y = float.Parse(arg, CultureInfo.InvariantCulture);
-                        if (op.cmd == 'v' && lastOp != null) {
+                        if (op.cmd == 'v' ) {
                             y += lastOp.y;
                         }
                         pathOp = new PathOp('L', lastOp.x, y);

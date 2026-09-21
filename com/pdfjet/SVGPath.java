@@ -16,7 +16,7 @@ class SVGPath {
     SVGPath() {
     }
 
-    String data;                    // The SVG path data
+    String data = "";               // The SVG path data; a path without it draws nothing
     List<PathOp> operations;        // The PDF path operations
     int fill = Color.transparent;   // The fill color or transparent don't fill
     int stroke = Color.transparent; // The stroke color or transparent don't stroke

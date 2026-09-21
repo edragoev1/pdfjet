@@ -312,6 +312,9 @@ func isNone(value string) bool {
 }
 
 func (image *SVGImage) drawPath(path *svgPath, page *Page) {
+	if len(path.operations) == 0 {
+		return // A path of no operations draws nothing, not even its colors.
+	}
 	// none on the path wins over the color of the svg element; a color that
 	// is not set is taken from the svg element.
 	noFill := path.fillNone || (path.fill == color.Transparent && image.fillNone)

@@ -11,7 +11,7 @@ namespace PDFjet.NET {
 /// <summary>One SVG path with its PDF path operations, colors and stroke width.</summary>
 internal class SVGPath {
     /// <summary>The SVG path data.</summary>
-    internal String data;                     // The SVG path data
+    internal String data = "";                // The SVG path data; a path without it draws nothing
     /// <summary>The PDF path operations.</summary>
     internal List<PathOp> operations;         // The PDF path operations
     /// <summary>The fill color, or Color.transparent to not fill the path.</summary>

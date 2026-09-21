@@ -53,9 +53,30 @@ class SVG {
      * @param path the path.
      * @return the list of SVG path operation.
      */
+    // Returns true when the character separates the numbers of path data: the
+    // white space of SVG 1.1 section 8.3.9, which is the white space of XML.
+    // Path data is often written over several lines.
+    private static boolean isSpace(char ch) {
+        return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+    }
+
+    // Returns true when the number so far ends with the e of an exponent, so
+    // that the sign of the exponent belongs to it: the numbers of path data
+    // are written as SVG 1.1 section 8.3.9 gives them, sign, digits, point
+    // and exponent.
+    private static boolean afterExponent(StringBuilder buf) {
+        if (buf.length() == 0) {
+            return false;
+        }
+        char last = buf.charAt(buf.length() - 1);
+        return last == 'e' || last == 'E';
+    }
+
     static List<PathOp> getOperations(String path) {
         List<PathOp> operations = new ArrayList<PathOp>();
-        PathOp op = null;
+        // Path data starts with a command; the numbers before the first one
+        // belong to this operation, which is not added to the list.
+        PathOp op = new PathOp(' ');
         StringBuilder buf = new StringBuilder();
         boolean token = false;
         for (int i = 0; i < path.length(); i++) {
@@ -68,14 +89,16 @@ class SVG {
                 token = false;
                 op = new PathOp(ch);
                 operations.add(op);
-            } else if (ch == ' ' || ch == ',') {
+            } else if (isSpace(ch) || ch == ',') {
                 if (token) {
                     op.args.add(buf.toString());
                     buf.setLength(0);
                 }
                 token = false;
-            } else if (ch == '-') {
-                if (token) {
+            } else if (ch == '-' || ch == '+') {
+                // The sign starts a number, unless it is the sign of an
+                // exponent: 1e-3 is one number, and 10-3 is two.
+                if (token && !afterExponent(buf)) {
                     op.args.add(buf.toString());
                     buf.setLength(0);
                 }
@@ -107,7 +130,9 @@ class SVG {
      */
     static List<PathOp> toPDF(List<PathOp> list) {
         List<PathOp> operations = new ArrayList<PathOp>();
-        PathOp lastOp = null;
+        // The current point starts at the origin: path data that begins with a
+        // command that needs one is drawn from there rather than throwing.
+        PathOp lastOp = new PathOp(' ');
         PathOp pathOp = null;
         float x0 = 0f;  // Start of subpath
         float y0 = 0f;
@@ -116,7 +141,7 @@ class SVG {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.parseFloat(op.args.get(i));
                     float y = Float.parseFloat(op.args.get(i + 1));
-                    if (op.cmd == 'm' && lastOp != null) {
+                    if (op.cmd == 'm' ) {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
@@ -134,7 +159,7 @@ class SVG {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.parseFloat(op.args.get(i));
                     float y = Float.parseFloat(op.args.get(i + 1));
-                    if (op.cmd == 'l' && lastOp != null) {
+                    if (op.cmd == 'l' ) {
                         x += lastOp.x;
                         y += lastOp.y;
                     }
@@ -145,7 +170,7 @@ class SVG {
             } else if (op.cmd == 'H' || op.cmd == 'h') {
                 for (String arg : op.args) {
                     float x = Float.parseFloat(arg);
-                    if (op.cmd == 'h' && lastOp != null) {
+                    if (op.cmd == 'h' ) {
                         x += lastOp.x;
                     }
                     pathOp = new PathOp('L', x, lastOp.y);
@@ -155,7 +180,7 @@ class SVG {
             } else if (op.cmd == 'V' || op.cmd == 'v') {
                 for (String arg : op.args) {
                     float y = Float.parseFloat(arg);
-                    if (op.cmd == 'v' && lastOp != null) {
+                    if (op.cmd == 'v' ) {
                         y += lastOp.y;
                     }
                     pathOp = new PathOp('L', lastOp.x, y);
