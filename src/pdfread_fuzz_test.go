@@ -69,7 +69,7 @@ func fuzzReadPDF(data []byte, password string) string {
 // object stream, which PDFjet reads and does not write.
 func fuzzPDFSeeds(f *testing.F) [][]byte {
 	seeds := [][]byte{fuzzPDFDocument(f, ""), fuzzPDFDocument(f, "secret"), fuzzPDFStreamXref()}
-	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "pdfjet-5.81-logo.pdf"} {
+	for _, name := range []string{"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"} {
 		data, err := os.ReadFile("../data/testPDFs/" + name)
 		if err != nil {
 			f.Fatal(err)

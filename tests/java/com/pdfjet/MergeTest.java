@@ -256,7 +256,7 @@ class MergeTest {
     void mergesTheTestDocuments() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        for (String name : new String[] {"scanned-linearized.pdf", "rc65-16e.pdf", "pdfjet-5.81-logo.pdf"}) {
+        for (String name : new String[] {"scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"}) {
             pdf.merge(new PDF().read(TestSupport.open("data/testPDFs/" + name)));
         }
         pdf.complete();
