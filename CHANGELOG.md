@@ -162,6 +162,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A `BigTable` wider than the page it is drawn on is cut back to it, in all
+  four ports. Its columns are as wide as their widest field, which can come
+  to more than the page holds: the nine columns of Example_43 came to 795
+  points of a 792 point landscape page, so the last of them was drawn off the
+  right edge, where it is lost. The columns are cut from the last one on, and
+  no further than the width of the mark below, so the table keeps the widths
+  it asked for as far as the page allows. A field of a column that was cut is
+  drawn with as much of its text as fits, ending in " ..." in place of the
+  last four characters of it, so the reader can see it was cut; the cell of a
+  PDF/UA structure tree keeps the whole of the text, which is what a screen
+  reader reads. A column that was not cut is as wide as its widest field, so
+  every field of it is drawn whole and none is measured as it is drawn, which
+  is what keeps a table of 2000+ pages as quick as it was. Example_43 is the
+  one example that changes.
 - A cell whose text wraps draws the border under it once, under the last of
   its lines, in all four ports. The rows a table wraps a cell into are one
   cell -- they hold the lines of its text and are one cell of a PDF/UA

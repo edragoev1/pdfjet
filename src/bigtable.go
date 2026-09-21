@@ -30,19 +30,24 @@ import (
 // one cross-reference entry for each of them, which every object of a PDF
 // has.
 type BigTable struct {
-	pdf             *PDF
-	f1              *Font
-	f2              *Font
-	pageSize        pagesize.PageSize
-	x               float32
-	y               float32
-	yText           float32
-	pages           []*Page
-	page            *Page
-	widths          []float32
-	headerFields    []string
-	alignment       []alignment.Alignment
-	vertLines       []float32
+	pdf          *PDF
+	f1           *Font
+	f2           *Font
+	pageSize     pagesize.PageSize
+	x            float32
+	y            float32
+	yText        float32
+	pages        []*Page
+	page         *Page
+	widths       []float32
+	headerFields []string
+	alignment    []alignment.Alignment
+	vertLines    []float32
+	// The width the text of each column has when the table is too wide for
+	// the page and the last of its columns are cut back to fit it, or nil
+	// when the table fits: a column that is as wide as its widest field
+	// holds every field of it whole and needs no measuring as it is drawn.
+	clipped         []float32
 	bottomMargin    float32
 	padding         float32
 	highlight       bool
@@ -335,9 +340,18 @@ func (bt *BigTable) drawFieldsAndLine(
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
+		// A column the page was too narrow for holds as much of the text as
+		// fits it, ending in " ..."; the cell of the structure tree keeps the
+		// whole of the text, which is what a reader reads. A column that was
+		// not cut is as wide as its widest field, so every field of it is
+		// drawn whole and none is measured here.
+		drawn := text
+		if bt.clipped != nil && bt.clipped[i] < bt.widths[i] {
+			drawn = bigTableFit(text, font, bt.clipped[i])
+		}
 		xText := bt.vertLines[i] + bt.padding
 		if bt.alignment[i] == alignment.Right {
-			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
+			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, drawn)
 		}
 		if tagged {
 			// A cell holds its text and nothing else, so the cell element
@@ -348,7 +362,7 @@ func (bt *BigTable) drawFieldsAndLine(
 		} else {
 			bt.page.AddArtifactBMC()
 		}
-		bt.page.drawTextLine(font, text, xText, bt.yText)
+		bt.page.drawTextLine(font, drawn, xText, bt.yText)
 		bt.page.AddEMC()
 	}
 	bt.page.structParent = parent
@@ -550,15 +564,82 @@ func (bt *BigTable) measure(fields []string, font *Font) {
 	}
 }
 
-// setVertLines sets the x coordinates of the vertical lines from the location,
-// the column widths and the padding.
+// bigTableEllipsis is the mark that ends a field whose text was cut to fit its
+// column, which takes the place of the last four characters of what fits.
+const bigTableEllipsis = " ..."
+
+// setVertLines puts each vertical line where the columns before it end, and
+// cuts the last of the columns back when they run past the right edge of the
+// page: a column as wide as its widest field is what the table asks for, and a
+// table wider than its page draws the last of its columns off the edge, where
+// they are lost. The columns are cut from the last one back, so the table
+// keeps the widths it asked for as far as the page allows, and the fields of a
+// column that was cut are drawn with the end of their text replaced by " ...".
 func (bt *BigTable) setVertLines() {
+	widths := make([]float32, len(bt.widths))
+	copy(widths, bt.widths)
+	// The table is drawn between the margin it starts at and the same margin
+	// on the right of the page.
+	room := bt.pageSize.GetWidth() - 2*bt.x - float32(len(widths))*2*bt.padding
+	least := bt.f1.StringWidth(bt.f1.size, bigTableEllipsis)
+	if width := bt.f2.StringWidth(bt.f2.size, bigTableEllipsis); width > least {
+		least = width
+	}
+	var total float32 = 0.0
+	for _, width := range widths {
+		total += width
+	}
+	bt.clipped = nil
+	for i := len(widths) - 1; i >= 0 && total > room; i-- {
+		cut := total - room
+		if room := widths[i] - least; cut > room {
+			cut = room
+		}
+		if cut > 0.0 {
+			widths[i] -= cut
+			total -= cut
+			if bt.clipped == nil {
+				bt.clipped = make([]float32, len(bt.widths))
+				copy(bt.clipped, bt.widths)
+			}
+			bt.clipped[i] = widths[i]
+		}
+	}
 	vertLineX := bt.x
 	bt.vertLines[0] = vertLineX
-	for i := 0; i < len(bt.widths); i++ {
-		vertLineX += bt.widths[i] + 2*bt.padding
+	for i := 0; i < len(widths); i++ {
+		vertLineX += widths[i] + 2*bt.padding
 		bt.vertLines[i+1] = vertLineX
 	}
+}
+
+// bigTableFit returns the text as much of it as fits the width, ending in the
+// mark that says it was cut. The mark takes the place of the last four
+// characters of what fits, rather than being added to them, so the text stays
+// inside the column. The text is cut between runes, never inside one.
+func bigTableFit(text string, font *Font, width float32) string {
+	if font.StringWidth(font.size, text) <= width {
+		return text
+	}
+	runes := []rune(text)
+	end := 0 // The most runes that fit.
+	high := len(runes)
+	for end < high {
+		middle := end + (high-end+1)/2
+		if font.StringWidth(font.size, string(runes[:middle])) <= width {
+			end = middle
+		} else {
+			high = middle - 1
+		}
+	}
+	end -= len([]rune(bigTableEllipsis))
+	if end < 0 {
+		end = 0
+	}
+	for end > 0 && font.StringWidth(font.size, string(runes[:end])+bigTableEllipsis) > width {
+		end--
+	}
+	return string(runes[:end]) + bigTableEllipsis
 }
 
 // Complete draws the rows, then the vertical lines, with the footer on every

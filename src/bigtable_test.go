@@ -10,6 +10,7 @@ import (
 	"iter"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -392,5 +393,113 @@ func TestBigTableAColumnIsAsWideAsTheFontOfEachRowDrawsIt(t *testing.T) {
 	if width := float64(f2.StringWidth(f2.size, "wwww")); positions[2][0]+width > positions[3][0] {
 		t.Errorf("the row runs into the next column: %g + %g > %g",
 			positions[2][0], width, positions[3][0])
+	}
+}
+
+// testTooWideBigTable returns a table of one column of the given text, drawn
+// on a letter page in a font wide enough that the text may not fit it.
+func testTooWideBigTable(t *testing.T, pdf *PDF, font *Font, text string) *BigTable {
+	t.Helper()
+	table := NewBigTable(pdf, font, font, letter.Portrait()).SetNumberOfColumns(1)
+	table.SetTableRows([]string{"Header"}, slices.Values([][]string{{text}}))
+	table.SetLocation(0, 20)
+	table.SetFooter("", nil)
+	if err := table.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	return table
+}
+
+// testDrawnText returns the strings the page draws, in the order they are
+// drawn. A core font draws a character as the one byte of its code.
+func testDrawnText(page *Page) []string {
+	re := regexp.MustCompile(`\[<([0-9A-Fa-f]*)>\] TJ`)
+	out := make([]string, 0)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		text := make([]byte, 0, len(m[1])/2)
+		for i := 0; i+1 < len(m[1]); i += 2 {
+			b, _ := strconv.ParseUint(m[1][i:i+2], 16, 8)
+			text = append(text, byte(b))
+		}
+		out = append(out, string(text))
+	}
+	return out
+}
+
+func TestBigTableATableTooWideForItsPageIsCutBackToItAndSaysSo(t *testing.T) {
+	// The columns of a table are as wide as their widest field, which can come
+	// to more than the page holds; the last of them were drawn off the right
+	// edge, where they are lost. They are cut back to the page now, and a
+	// field that was cut ends in " ..." to say it was.
+	doc := testNewDoc()
+	font := NewCoreFont(doc.pdf, corefont.Helvetica())
+	font.SetSize(24.0)
+	text := "A string that is far too long to fit across the width of a letter page"
+	table := testTooWideBigTable(t, doc.pdf, font, text)
+	page := table.GetPages()[0]
+	drawn := testDrawnText(page)
+	if len(drawn) != 2 {
+		t.Fatalf("the page drew %v", drawn)
+	}
+	if !strings.HasSuffix(drawn[1], " ...") {
+		t.Fatalf("the field does not say it was cut: %q", drawn[1])
+	}
+	if !strings.HasPrefix(text, strings.TrimSuffix(drawn[1], " ...")) {
+		t.Errorf("the text drawn is not the start of the text: %q", drawn[1])
+	}
+	// What is drawn fits the page, which the whole of the text does not.
+	if font.StringWidth(font.size, text) <= letter.Portrait().GetWidth() {
+		t.Fatal("the text fits the page")
+	}
+	if width := font.StringWidth(font.size, drawn[1]); width > letter.Portrait().GetWidth() {
+		t.Errorf("the text drawn does not fit the page: %v", width)
+	}
+	// And the vertical lines of the table are on the page with it.
+	re := regexp.MustCompile(`([-0-9.]+) [-0-9.]+ m`)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		x, _ := strconv.ParseFloat(m[1], 64)
+		if x > float64(letter.Portrait().GetWidth()) {
+			t.Errorf("a line of the table is off the page at x=%v", x)
+		}
+	}
+}
+
+func TestBigTableATableThatFitsItsPageIsNotCut(t *testing.T) {
+	// Nothing is measured or cut when the columns fit, and no field of a table
+	// that fits ends in the mark of one that was cut.
+	doc := testNewDoc()
+	font := NewCoreFont(doc.pdf, corefont.Helvetica())
+	font.SetSize(24.0)
+	text := "Short enough"
+	table := testTooWideBigTable(t, doc.pdf, font, text)
+	if drawn := testDrawnText(table.GetPages()[0]); !reflect.DeepEqual(drawn, []string{"Header", text}) {
+		t.Errorf("the page drew %v", drawn)
+	}
+}
+
+func TestBigTableTheCellOfACutFieldKeepsTheWholeOfItsText(t *testing.T) {
+	// A field the page was too narrow for is drawn cut, but a reader is read
+	// the whole of it: the cell of the structure tree keeps it.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := NewCoreFont(doc.pdf, corefont.Helvetica())
+	font.SetSize(24.0)
+	text := "A string that is far too long to fit across the width of a letter page"
+	table := testTooWideBigTable(t, doc.pdf, font, text)
+	// The content of a page is written out and let go by Complete().
+	drawn := testDrawnText(table.GetPages()[0])
+	raw := string(doc.complete())
+	// An Alt is written as the UTF-16 of the text, after a byte order mark.
+	var alt strings.Builder
+	alt.WriteString("feff")
+	for _, r := range text {
+		alt.WriteString(fmt.Sprintf("%04x", r))
+	}
+	if !strings.Contains(raw, "/Alt <"+alt.String()+">") {
+		t.Error("the cell does not keep the whole of the text")
+	}
+	if !strings.HasSuffix(drawn[1], " ...") || drawn[1] == text {
+		t.Errorf("the field was not drawn cut: %q", drawn[1])
 	}
 }

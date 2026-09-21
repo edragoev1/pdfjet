@@ -36,6 +36,11 @@ public class BigTable {
     private String[] headerFields;
     private Alignment[] alignment;
     private float[] vertLines;
+    // The width the text of each column has when the table is too wide for
+    // the page and the last of its columns are cut back to fit it, or null
+    // when the table fits: a column that is as wide as its widest field
+    // holds every field of it whole and needs no measuring as it is drawn.
+    private float[] clipped;
     private float bottomMargin = 20.0f;
     private float padding = 2.0f;
     private boolean highlightRow = true;
@@ -363,9 +368,16 @@ public class BigTable {
         }
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
+            // A column the page was too narrow for holds as much of the text
+            // as fits it, ending in " ..."; the cell of the structure tree
+            // keeps the whole of the text, which is what a reader reads. A
+            // column that was not cut is as wide as its widest field, so
+            // every field of it is drawn whole and none is measured here.
+            String drawn = (clipped != null && clipped[i] < widths[i])
+                    ? fit(text, font, clipped[i]) : text;
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
-                xText = (vertLines[i + 1] - this.padding) - font.stringWidth(text);
+                xText = (vertLines[i + 1] - this.padding) - font.stringWidth(drawn);
             }
             if (tagged) {
                 // A cell holds its text and nothing else, so the cell element
@@ -376,7 +388,7 @@ public class BigTable {
             } else {
                 page.addArtifactBMC();
             }
-            page.drawTextLine(font, text, xText, this.yText);
+            page.drawTextLine(font, drawn, xText, this.yText);
             page.addEMC();
         }
         page.structParent = parent;
@@ -622,13 +634,74 @@ public class BigTable {
 
     // Sets the x coordinates of the vertical lines from the location, the
     // column widths and the padding.
+    // Puts each vertical line where the columns before it end, and cuts the
+    // last of the columns back when they run past the right edge of the page:
+    // a column as wide as its widest field is what the table asks for, and a
+    // table wider than its page draws the last of its columns off the edge,
+    // where they are lost. The columns are cut from the last one back, so the
+    // table keeps the widths it asked for as far as the page allows, and the
+    // fields of a column that was cut are drawn with the end of their text
+    // replaced by " ...".
     private void setVertLines() {
+        float[] widths = this.widths.clone();
+        // The table is drawn between the margin it starts at and the same
+        // margin on the right of the page.
+        float room = pageSize.getWidth() - 2*this.x - widths.length*2*this.padding;
+        float least = Math.max(f1.stringWidth(ELLIPSIS), f2.stringWidth(ELLIPSIS));
+        float total = 0f;
+        for (float width : widths) {
+            total += width;
+        }
+        this.clipped = null;
+        for (int i = widths.length - 1; i >= 0 && total > room; i--) {
+            float cut = Math.min(total - room, Math.max(widths[i] - least, 0f));
+            if (cut > 0f) {
+                widths[i] -= cut;
+                total -= cut;
+                if (this.clipped == null) {
+                    this.clipped = this.widths.clone();
+                }
+                this.clipped[i] = widths[i];
+            }
+        }
         float vertLineX = this.x;
         this.vertLines[0] = vertLineX;
         for (int i = 0; i < widths.length; i++) {
-            vertLineX += this.widths[i] + 2*this.padding;
+            vertLineX += widths[i] + 2*this.padding;
             this.vertLines[i + 1] = vertLineX;
         }
+    }
+
+    // The mark that ends a field whose text was cut to fit its column, which
+    // takes the place of the last four characters of what fits.
+    private static final String ELLIPSIS = " ...";
+
+    // The text as much of it as fits the width, ending in the mark that says
+    // it was cut. The mark takes the place of the last four characters of what
+    // fits, rather than being added to them, so the text stays inside the
+    // column; a character built from a surrogate pair is not cut in half.
+    private static String fit(String text, Font font, float width) {
+        if (font.stringWidth(text) <= width) {
+            return text;
+        }
+        int end = 0;                    // The most characters that fit.
+        int high = text.length();
+        while (end < high) {
+            int middle = end + (high - end + 1)/2;
+            if (font.stringWidth(text.substring(0, middle)) <= width) {
+                end = middle;
+            } else {
+                high = middle - 1;
+            }
+        }
+        end = Math.max(0, end - ELLIPSIS.length());
+        while (end > 0 && font.stringWidth(text.substring(0, end) + ELLIPSIS) > width) {
+            end--;
+        }
+        if (end > 0 && Character.isHighSurrogate(text.charAt(end - 1))) {
+            end--;
+        }
+        return text.substring(0, end) + ELLIPSIS;
     }
 
     /**

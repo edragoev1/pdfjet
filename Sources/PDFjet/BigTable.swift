@@ -26,6 +26,11 @@ public class BigTable {
     private var headerFields: [String] = []
     private var alignment: [Alignment] = []
     private var vertLines: [Float] = []
+    // The width the text of each column has when the table is too wide for
+    // the page and the last of its columns are cut back to fit it, or nil
+    // when the table fits: a column that is as wide as its widest field holds
+    // every field of it whole and needs no measuring as it is drawn.
+    private var clipped: [Float]?
     private var bottomMargin: Float = 20.0
     private var padding: Float = 2.0
     private var highlightRow: Bool = true
@@ -315,9 +320,18 @@ public class BigTable {
         }
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
+            // A column the page was too narrow for holds as much of the text
+            // as fits it, ending in " ..."; the cell of the structure tree
+            // keeps the whole of the text, which is what a reader reads. A
+            // column that was not cut is as wide as its widest field, so every
+            // field of it is drawn whole and none is measured here.
+            var drawn = text
+            if let clipped = self.clipped, clipped[i] < widths[i] {
+                drawn = BigTable.fit(text, font, clipped[i])
+            }
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
-                xText = (vertLines[i + 1] - self.padding) - font.stringWidth(text)
+                xText = (vertLines[i + 1] - self.padding) - font.stringWidth(drawn)
             }
             if tagged {
                 // A cell holds its text and nothing else, so the cell element
@@ -329,7 +343,7 @@ public class BigTable {
             } else {
                 page!.addArtifactBMC()
             }
-            page!.drawTextLine(font, text, xText, self.yText)
+            page!.drawTextLine(font, drawn, xText, self.yText)
             page!.addEMC()
         }
         page!.structParent = parent
@@ -497,13 +511,74 @@ public class BigTable {
 
     // Sets the x coordinates of the vertical lines from the location, the
     // column widths and the padding.
+    // The mark that ends a field whose text was cut to fit its column, which
+    // takes the place of the last four characters of what fits.
+    private static let ELLIPSIS = " ..."
+
+    // Puts each vertical line where the columns before it end, and cuts the
+    // last of the columns back when they run past the right edge of the page:
+    // a column as wide as its widest field is what the table asks for, and a
+    // table wider than its page draws the last of its columns off the edge,
+    // where they are lost. The columns are cut from the last one back, so the
+    // table keeps the widths it asked for as far as the page allows, and the
+    // fields of a column that was cut are drawn with the end of their text
+    // replaced by " ...".
     private func setVertLines() {
+        var widths = self.widths
+        // The table is drawn between the margin it starts at and the same
+        // margin on the right of the page.
+        let room = pageSize.getWidth() - 2 * self.x - Float(widths.count) * 2 * self.padding
+        let least = max(f1.stringWidth(BigTable.ELLIPSIS), f2.stringWidth(BigTable.ELLIPSIS))
+        var total: Float = 0.0
+        for width in widths {
+            total += width
+        }
+        self.clipped = nil
+        var i = widths.count - 1
+        while i >= 0 && total > room {
+            let cut = min(total - room, max(widths[i] - least, 0.0))
+            if cut > 0.0 {
+                widths[i] -= cut
+                total -= cut
+                if self.clipped == nil {
+                    self.clipped = self.widths
+                }
+                self.clipped![i] = widths[i]
+            }
+            i -= 1
+        }
         var vertLineX = self.x
         vertLines[0] = vertLineX
         for i in 0..<widths.count {
             vertLineX += widths[i] + 2 * padding
             vertLines[i + 1] = vertLineX
         }
+    }
+
+    // The text as much of it as fits the width, ending in the mark that says
+    // it was cut. The mark takes the place of the last four characters of
+    // what fits, rather than being added to them, so the text stays inside
+    // the column. The text is cut between characters, never inside one.
+    private static func fit(_ text: String, _ font: Font, _ width: Float) -> String {
+        if font.stringWidth(text) <= width {
+            return text
+        }
+        let characters = Array(text)
+        var end = 0             // The most characters that fit.
+        var high = characters.count
+        while end < high {
+            let middle = end + (high - end + 1) / 2
+            if font.stringWidth(String(characters[0..<middle])) <= width {
+                end = middle
+            } else {
+                high = middle - 1
+            }
+        }
+        end = max(0, end - ELLIPSIS.count)
+        while end > 0 && font.stringWidth(String(characters[0..<end]) + ELLIPSIS) > width {
+            end -= 1
+        }
+        return String(characters[0..<end]) + ELLIPSIS
     }
 
     /// Draws the rows, then the vertical lines, with the footer on every page. The pages are

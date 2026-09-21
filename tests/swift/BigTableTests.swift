@@ -307,4 +307,94 @@ import Testing
                 "the row runs into the next column")
     }
 
+    // A table of one column of the given text, drawn on a letter page in a
+    // font wide enough that the text may not fit it.
+    private func tooWide(_ pdf: PDF, _ font: Font, _ text: String) throws -> BigTable {
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(1)
+        table.setTableData(["Header"], [[text]])
+        table.setLocation(0, 20)
+        table.setFooter(nil, nil)
+        try table.complete()
+        return table
+    }
+
+    // The strings the page draws, in the order they are drawn. A core font
+    // draws a character as the one byte of its code.
+    private func drawnText(_ page: Page) -> [String] {
+        let content = TestSupport.latin1(page.getContent())
+        let regex = try! NSRegularExpression(pattern: "\\[<([0-9A-Fa-f]*)>\\] TJ")
+        var list = [String]()
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let hex = (content as NSString).substring(with: m.range(at: 1))
+            var text = ""
+            var i = hex.startIndex
+            while let next = hex.index(i, offsetBy: 2, limitedBy: hex.endIndex) {
+                text.append(Character(UnicodeScalar(UInt8(hex[i..<next], radix: 16)!)))
+                i = next
+            }
+            list.append(text)
+        }
+        return list
+    }
+
+    @Test func aTableTooWideForItsPageIsCutBackToItAndSaysSo() throws {
+        // The columns of a table are as wide as their widest field, which can
+        // come to more than the page holds; the last of them were drawn off
+        // the right edge, where they are lost. They are cut back to the page
+        // now, and a field that was cut ends in " ..." to say it was.
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, CoreFont.HELVETICA).setSize(24)
+        let text = "A string that is far too long to fit across the width of a letter page"
+        let table = try tooWide(pdf, font, text)
+        let page = table.getPages()[0]
+        let drawn = drawnText(page)
+        #expect(drawn.count == 2)
+        guard drawn.count == 2 else { return }
+        #expect(drawn[1].hasSuffix(" ..."), "the field does not say it was cut: \(drawn[1])")
+        #expect(text.hasPrefix(String(drawn[1].dropLast(4))),
+                "the text drawn is not the start of the text: \(drawn[1])")
+        // What is drawn fits the page, which the whole of the text does not.
+        #expect(font.stringWidth(text) > Letter.PORTRAIT.getWidth(), "the text fits the page")
+        #expect(font.stringWidth(drawn[1]) <= Letter.PORTRAIT.getWidth(),
+                "the text drawn does not fit the page")
+        // And the vertical lines of the table are on the page with it.
+        let content = TestSupport.content(page)
+        let regex = try! NSRegularExpression(pattern: "([-0-9.]+) [-0-9.]+ m")
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let x = Float((content as NSString).substring(with: m.range(at: 1)))!
+            #expect(x <= Letter.PORTRAIT.getWidth(), "a line of the table is off the page at x=\(x)")
+        }
+    }
+
+    @Test func aTableThatFitsItsPageIsNotCut() throws {
+        // Nothing is measured or cut when the columns fit, and no field of a
+        // table that fits ends in the mark of one that was cut.
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, CoreFont.HELVETICA).setSize(24)
+        let text = "Short enough"
+        let table = try tooWide(pdf, font, text)
+        #expect(drawnText(table.getPages()[0]) == ["Header", text])
+    }
+
+    @Test func theCellOfACutFieldKeepsTheWholeOfItsText() throws {
+        // A field the page was too narrow for is drawn cut, but a reader is
+        // read the whole of it: the cell of the structure tree keeps it.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = try Font(memory.pdf, CoreFont.HELVETICA).setSize(24)
+        let text = "A string that is far too long to fit across the width of a letter page"
+        let table = try tooWide(memory.pdf, font, text)
+        // The content of a page is written out and let go by complete().
+        let drawn = drawnText(table.getPages()[0])
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        // An Alt is written as the UTF-16 of the text, after a byte order mark.
+        var alt = "FEFF"
+        for unit in text.utf16 {
+            alt += String(format: "%04X", unit)
+        }
+        #expect(raw.contains("/Alt <" + alt + ">"), "the cell does not keep the whole of the text")
+        #expect(drawn.count == 2 && drawn[1].hasSuffix(" ...") && drawn[1] != text)
+    }
 }

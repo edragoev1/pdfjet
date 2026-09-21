@@ -434,6 +434,19 @@ goal 5, the references, which is the first thing to give if anything does.
       both wraps and spans rows drawing its border under the whole span. No
       example draws a wrapped cell with a bottom border, so no example PDF
       changes, and the four ports still render all 51 alike.
+- ✅ A `BigTable` wider than its page is cut back to it (Sep 21), which
+      "Known and accepted" had as a defect of Example_43: its nine columns
+      are as wide as their widest field, which came to 795 points of a 792
+      point landscape page, so the last column was drawn off the right edge
+      and lost. `setVertLines` cuts the columns back from the last one on,
+      down to the width of the mark at the least, so the table keeps the
+      widths it asked for as far as the page allows; a field of a column that
+      was cut is drawn with as much of its text as fits, ending in " ..." to
+      say it was cut, and the cell of a PDF/UA structure tree keeps the whole
+      of the text, which is what a reader is read. A column that was not cut
+      is as wide as its widest field, so no field of it is measured as it is
+      drawn: Example_43 takes the same time it did. Three tests in each of
+      the four ports. Example_43 is the one example that changes.
 
 ### Sep 27–Oct 1: release v9.0.2
 
@@ -458,6 +471,18 @@ goal 5, the references, which is the first thing to give if anything does.
       now, and a Go runtime error fails it.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
+- ⬜ The Swift port writes the hexadecimal of a text string in capitals
+      where the other three write it in small letters, so the same document
+      is not the same bytes in the four ports (found Sep 21 beside the
+      `BigTable` width, and there since before it). Example_22 has
+      `/Title <feff0049` in Java, C# and Go and `/Title <FEFF0049` in Swift,
+      and every Alt, ActualText, bookmark title and information entry is the
+      same. Both are valid PDF and draw the same, so `check-examples.sh`,
+      which compares the rendering and the content streams, passes either
+      way; `PDF.swift` holds the digits as `0123456789ABCDEF` and one call
+      site already lowercases what `toHex` returns, which says the mismatch
+      was met before. Changing the digits changes the bytes of every tagged
+      or bookmarked Swift document, so it wants its own look at the examples.
 
 ### Oct 9–14: the rest of the review, and the references
 
@@ -535,11 +560,6 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-- The table of Example_43 is wider than the page it is drawn on: its nine
-  columns are as wide as their widest field, which comes to 795 points of a
-  792 point landscape page, so the last column is cut off at the right edge.
-  A table as wide as the page needs the column widths that `Table` is to get
-  after 9.0.3, below, or fewer columns in the example.
 - A character above the BMP, from U+10000 up, is not drawn: the character map
   of a font is read into 65,536 entries. 144 of the fonts PDFjet ships have
   glyphs up there, the bold italic alphabet of IBM Plex Math and the CJK

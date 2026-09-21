@@ -375,4 +375,99 @@ class BigTableTest {
                         + f2.stringWidth("wwww") + " > " + positions.get(3)[0]);
     }
 
+
+    // A table of one column of the given text, drawn on a letter page in a
+    // font wide enough that the text may not fit it.
+    private static BigTable tooWide(PDF pdf, Font font, String text) throws Exception {
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(1);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {text});
+        table.setTableData(new String[] {"Header"}, rows);
+        table.setLocation(0f, 20f);
+        table.setFooter(null, null);
+        table.complete();
+        return table;
+    }
+
+    // The strings the page draws, in the order they are drawn.
+    private static List<String> drawnText(Page page) {
+        List<String> list = new ArrayList<String>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[<([0-9A-Fa-f]*)>\\] TJ")
+                .matcher(TestSupport.latin1(page.getContent()));
+        while (m.find()) {
+            // A core font draws a character as the one byte of its code.
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i + 1 < m.group(1).length(); i += 2) {
+                text.append((char) Integer.parseInt(m.group(1).substring(i, i + 2), 16));
+            }
+            list.add(text.toString());
+        }
+        return list;
+    }
+
+    @Test
+    void aTableTooWideForItsPageIsCutBackToItAndSaysSo() throws Exception {
+        // The columns of a table are as wide as their widest field, which can
+        // come to more than the page holds; the last of them were drawn off
+        // the right edge, where they are lost. They are cut back to the page
+        // now, and a field that was cut ends in " ..." to say it was.
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA).setSize(24f);
+        String text = "A string that is far too long to fit across the width of a letter page";
+        BigTable table = tooWide(pdf, font, text);
+        Page page = table.getPages().get(0);
+        List<String> drawn = drawnText(page);
+        assertEquals(2, drawn.size(), drawn.toString());
+        assertTrue(drawn.get(1).endsWith(" ..."), drawn.get(1));
+        assertTrue(text.startsWith(drawn.get(1).substring(0, drawn.get(1).length() - 4)),
+                "the text drawn is not the start of the text: " + drawn.get(1));
+        // What is drawn fits the page, which the whole of the text does not.
+        assertTrue(font.stringWidth(text) > Letter.PORTRAIT.getWidth(), "the text fits the page");
+        assertTrue(font.stringWidth(drawn.get(1)) <= Letter.PORTRAIT.getWidth(),
+                "the text drawn does not fit the page: " + font.stringWidth(drawn.get(1)));
+        // And the vertical lines of the table are on the page with it.
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([-0-9.]+) [-0-9.]+ m")
+                .matcher(TestSupport.content(page));
+        while (m.find()) {
+            assertTrue(Float.parseFloat(m.group(1)) <= Letter.PORTRAIT.getWidth(),
+                    "a line of the table is off the page at x=" + m.group(1));
+        }
+    }
+
+    @Test
+    void aTableThatFitsItsPageIsNotCut() throws Exception {
+        // Nothing is measured or cut when the columns fit, and no field of a
+        // table that fits ends in the mark of one that was cut.
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA).setSize(24f);
+        String text = "Short enough";
+        BigTable table = tooWide(pdf, font, text);
+        List<String> drawn = drawnText(table.getPages().get(0));
+        assertEquals(Arrays.asList("Header", text), drawn);
+    }
+
+    @Test
+    void theCellOfACutFieldKeepsTheWholeOfItsText() throws Exception {
+        // A field the page was too narrow for is drawn cut, but a reader is
+        // read the whole of it: the cell of the structure tree keeps it.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, CoreFont.HELVETICA).setSize(24f);
+        String text = "A string that is far too long to fit across the width of a letter page";
+        BigTable table = tooWide(pdf, font, text);   // Its pages are added as they are drawn.
+        // The content of a page is written out and let go by complete().
+        List<String> drawn = drawnText(table.getPages().get(0));
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        // An Alt is written as the UTF-16 of the text, after a byte order mark.
+        StringBuilder alt = new StringBuilder();
+        for (byte b : ("\uFEFF" + text).getBytes(StandardCharsets.UTF_16BE)) {
+            alt.append(String.format("%02x", b & 0xFF));
+        }
+        assertTrue(raw.contains("/Alt <" + alt + ">"),
+                "the cell does not keep the whole of the text");
+        assertTrue(drawn.get(1).endsWith(" ...") && !drawn.get(1).equals(text), drawn.get(1));
+    }
 }

@@ -325,5 +325,96 @@ public sealed class BigTableTest : IDisposable {
                 "the row runs into the next column");
     }
 
+    // A table of one column of the given text, drawn on a letter page in a
+    // font wide enough that the text may not fit it.
+    private static BigTable TooWide(PDF pdf, Font font, string text) {
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(1);
+        List<string[]> rows = new List<string[]>();
+        rows.Add(new string[] {text});
+        table.SetTableData(new string[] {"Header"}, rows);
+        table.SetLocation(0f, 20f);
+        table.SetFooter(null, null);
+        table.Complete();
+        return table;
+    }
+
+    // The strings the page draws, in the order they are drawn.
+    private static List<string> DrawnText(Page page) {
+        List<string> list = new List<string>();
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(
+                        TestSupport.Latin1(page.GetContent()), @"\[<([0-9A-Fa-f]*)>\] TJ")) {
+            // A core font draws a character as the one byte of its code.
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i + 1 < m.Groups[1].Value.Length; i += 2) {
+                text.Append((char) Convert.ToInt32(m.Groups[1].Value.Substring(i, 2), 16));
+            }
+            list.Add(text.ToString());
+        }
+        return list;
+    }
+
+    [Fact]
+    public void ATableTooWideForItsPageIsCutBackToItAndSaysSo() {
+        // The columns of a table are as wide as their widest field, which can
+        // come to more than the page holds; the last of them were drawn off
+        // the right edge, where they are lost. They are cut back to the page
+        // now, and a field that was cut ends in " ..." to say it was.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA).SetSize(24f);
+        string text = "A string that is far too long to fit across the width of a letter page";
+        BigTable table = TooWide(pdf, font, text);
+        Page page = table.GetPages()[0];
+        List<string> drawn = DrawnText(page);
+        Assert.Equal(2, drawn.Count);
+        Assert.EndsWith(" ...", drawn[1]);
+        Assert.StartsWith(drawn[1].Substring(0, drawn[1].Length - 4), text);
+        // What is drawn fits the page, which the whole of the text does not.
+        Assert.True(font.StringWidth(text) > Letter.PORTRAIT.GetWidth(), "the text fits the page");
+        Assert.True(font.StringWidth(drawn[1]) <= Letter.PORTRAIT.GetWidth(),
+                "the text drawn does not fit the page");
+        // And the vertical lines of the table are on the page with it.
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(
+                        TestSupport.Content(page), "([-0-9.]+) [-0-9.]+ m")) {
+            Assert.True(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)
+                    <= Letter.PORTRAIT.GetWidth(), "a line of the table is off the page");
+        }
+    }
+
+    [Fact]
+    public void ATableThatFitsItsPageIsNotCut() {
+        // Nothing is measured or cut when the columns fit, and no field of a
+        // table that fits ends in the mark of one that was cut.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA).SetSize(24f);
+        string text = "Short enough";
+        BigTable table = TooWide(pdf, font, text);
+        Assert.Equal(new List<string> {"Header", text}, DrawnText(table.GetPages()[0]));
+    }
+
+    [Fact]
+    public void TheCellOfACutFieldKeepsTheWholeOfItsText() {
+        // A field the page was too narrow for is drawn cut, but a reader is
+        // read the whole of it: the cell of the structure tree keeps it.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, CoreFont.HELVETICA).SetSize(24f);
+        string text = "A string that is far too long to fit across the width of a letter page";
+        BigTable table = TooWide(pdf, font, text);   // Its pages are added as they are drawn.
+        // The content of a page is written out and let go by Complete().
+        List<string> drawn = DrawnText(table.GetPages()[0]);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        // An Alt is written as the UTF-16 of the text, after a byte order mark.
+        StringBuilder alt = new StringBuilder();
+        foreach (byte b in Encoding.BigEndianUnicode.GetBytes("﻿" + text)) {
+            alt.Append(b.ToString("x2"));
+        }
+        Assert.Contains("/Alt <" + alt + ">", raw);
+        Assert.True(drawn[1].EndsWith(" ...") && drawn[1] != text, drawn[1]);
+    }
 }
 }
