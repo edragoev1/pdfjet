@@ -94,14 +94,17 @@ import Testing
 
     // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
     // chunk when there is a palette, and one IDAT chunk.
+    /// A PNG file, with the compression and the filter method of its IHDR
+    /// chunk, which are 0 in every PNG file that is defined.
     private func png(
             _ width: Int32, _ height: Int32, _ bitDepth: UInt8, _ colorType: UInt8,
-            _ palette: [UInt8]?, _ idat: [UInt8]?) -> [UInt8] {
+            _ palette: [UInt8]?, _ idat: [UInt8]?,
+            compression: UInt8 = 0, filter: UInt8 = 0) -> [UInt8] {
         var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
         var ihdr = [UInt8]()
         PNGImageTests.bigEndian32(UInt32(bitPattern: width), &ihdr)
         PNGImageTests.bigEndian32(UInt32(bitPattern: height), &ihdr)
-        ihdr.append(contentsOf: [bitDepth, colorType, 0, 0, 0])
+        ihdr.append(contentsOf: [bitDepth, colorType, compression, filter, 0])
         chunk(&bytes, "IHDR", ihdr)
         if let palette = palette {
             chunk(&bytes, "PLTE", palette)
@@ -192,6 +195,19 @@ import Testing
         #expect(decodeError(png(1, 1, 8, 3, [], idat)) == "Incorrect palette length.")
         #expect(decodeError(png(1, 1, 8, 3, [UInt8](repeating: 0, count: 3*257), idat)) == "Incorrect palette length.")
         #expect(decodeError(png(1, 1, 8, 3, [0, 0, 0, 0], idat)) == "Incorrect palette length.")
+    }
+
+    @Test func rejectsAnUnknownCompressionOrFilterMethod() throws {
+        // Only the deflate compression method and the adaptive filter method
+        // are defined. libpng refuses a file of another one, and so does
+        // Pillow for the filter method, where the rows of this one would be
+        // read as if it were 0.
+        let idat = TestSupport.deflate([0, 0])
+        #expect(decodeError(png(1, 1, 8, 0, nil, idat, compression: 1))
+                == "Unknown PNG compression method.")
+        #expect(decodeError(png(1, 1, 8, 0, nil, idat, filter: 1))
+                == "Unknown PNG filter method.")
+        _ = try PNGImage(InputStream(data: Data(png(1, 1, 8, 0, nil, idat))))
     }
 
     @Test func rejectsAChunkLengthThatTheFileDoesNotHave() {

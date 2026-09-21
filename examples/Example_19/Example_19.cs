@@ -67,6 +67,9 @@ public class Example_19 {
         float y = xy[1] + 25f;
         for (int i = 0; i < imageFiles.Length; i++) {
             Image image = new Image(pdf, imageFiles[i]);
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.SetAltDescription(descriptions[i]);
             image.ResizeWidth(200f);
             image.SetLocation(x1, y);
             float[] imageXY = image.DrawOn(page);

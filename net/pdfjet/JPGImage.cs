@@ -164,6 +164,16 @@ class JPGImage {
                     (colorComponents != 1 && colorComponents != 3 && colorComponents != 4)) {
                     throw new IOException("Invalid JPEG dimensions or component count.");
                 }
+                // The frame header holds three bytes for each component after
+                // its eight, as libjpeg checks: a header of another length is
+                // the "Bogus SOF length" of libjpeg and the "Bogus marker
+                // length" of MuPDF, so the readers a PDF is drawn with refuse
+                // the image where PDFjet embedded it.
+                if (length != 3*colorComponents + 8) {
+                    throw new IOException("Error: The JPEG frame header is " + length +
+                            " bytes, not the " + (3*colorComponents + 8) +
+                            " of its " + colorComponents + " color components.");
+                }
                 // The component specifications fill the rest of the frame
                 // header; they can hold any bytes, the 0xFF of a marker among
                 // them, so the markers are read after the whole segment.

@@ -99,6 +99,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   `TextFrame` is twice as tall per line as before, the spacing of the font's
   line gap (see Added). A document that set a line spacing to make up for the
   missing gap gets more space than before.
+- An `Image` and an `SVGImage` on a page of a PDF/UA document are a Figure
+  with the description `setAltDescription` gives, in all four ports, where
+  every one of them was a paragraph. PDF/UA asks for a figure to be tagged as
+  one and described, so a screen reader can say what it shows instead of
+  reading an empty paragraph; drawing one with no description on a tagged page
+  now fails with a message, as the other PDF/UA misuse does. The nine examples
+  that draw images in a tagged document describe every one of them, 79 in all,
+  and the structure tree of the examples holds 85 Figure elements instead of 6.
+  veraPDF passed the paragraphs, since it cannot see that the content is an
+  image; a Figure with no description fails its clause 7.3.
 - A `Cell` keeps its four paddings in the four bytes of one integer and its
   text alignment, vertical alignment and marker alignment in three bits each
   of the flags it already had, in all four ports, instead of four floats and
@@ -113,6 +123,32 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A JPEG whose frame header is not the length of its component
+  specifications, three bytes for each component after its eight, is refused
+  in all four ports, where PDFjet read the header and embedded the file.
+  libjpeg refuses it as a "Bogus SOF length" and so does every reader a PDF is
+  drawn with: MuPDF drew nothing of `images/610-30x30.jpg` with a length three
+  bytes out, and said "jpeg error: Bogus marker length". Found by reading
+  `JPGImage` against libjpeg in the review of Sep 21; the 7 JPEG files of the
+  repository are all of the right length.
+- A PNG whose IHDR names a compression or a filter method other than 0, the
+  only ones the format defines, is refused in all four ports. PDFjet read the
+  rows of such a file as if the method were 0, where libpng refuses both and
+  Pillow refuses the filter method.
+- The width and the height of an `<svg>` element are read the same way in the
+  four ports, and a length with a unit is read at last: `48`, `48px` and
+  `48pt` are 48 points, and `pc`, `in`, `mm` and `cm` are converted, so the
+  `210mm` of a page-size SVG file is 595.28 points. Go refused the whole file,
+  and Java, C# and Swift took the size as 0, which scaled every path of a file
+  with a viewBox to the origin and drew nothing. A size PDFjet cannot read, a
+  percentage among them, and a size the file does not give, now leave the
+  drawing the size of its viewBox. A viewBox that is not four numbers, or
+  whose width or height is zero, fails with the same message in the four
+  ports: Java and C# threw an index out of bounds or wrote coordinates that
+  are not numbers, and Swift drew nothing at all.
+- Example_17 draws `OI2N2C16.PNG` and `OI2N0G16.PNG`, the PngSuite images of
+  two IDAT chunks, where it drew the four-chunk file twice and said the first
+  of them had two, so the two-chunk case was never read.
 - A PDF that is not valid fails with a message or is read for what it holds,
   in all four ports, where reading one could take gigabytes of memory, read
   past the end of the file, or trap in Swift. An object numbered higher than

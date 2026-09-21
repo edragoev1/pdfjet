@@ -2311,6 +2311,13 @@ public class Page {
             _ attributes: String?) {
         markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0 {
+            // A figure stands for what it draws, which only the one who draws
+            // it can say, so PDF/UA asks for a description of every one.
+            if structure == StructElem.FIGURE &&
+                    (altDescription == nil || altDescription!.trimmingCharacters(
+                        in: .whitespacesAndNewlines).isEmpty) {
+                pdf.fail("A figure of a PDF/UA document needs an alternative description.")
+            }
             // The marked content of a paragraph that is drawn word by word
             // belongs to the one element of the paragraph.
             if let parent = mcidParent {

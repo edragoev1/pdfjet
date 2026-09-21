@@ -43,6 +43,8 @@ public class Example_33 {
         float[] xy = textBlock.DrawOn(page);
 
         SVGImage map = new SVGImage("images/svg-test/europe.svg");
+        map.SetAltDescription(
+                "A map of Europe drawn from an SVG file, the countries filled in peachpuff, Spain in aliceblue and Austria outlined in olive.");
         map.ScaleBy(0.5f);
         map.SetLocation((page.GetWidth() - map.GetWidth()) / 2f, xy[1] + 20f);
         xy = map.DrawOn(page);
@@ -93,6 +95,9 @@ public class Example_33 {
             float yIcon = y + (i / 6) * 90f;
 
             SVGImage icon = new SVGImage(iconFiles[i]);
+            // The name under an icon says what it stands for, and so does
+            // its description.
+            icon.SetAltDescription("The " + iconNames[i] + " icon.");
             icon.SetLocation(x, yIcon);
             float[] iconXY = icon.DrawOn(page);
 

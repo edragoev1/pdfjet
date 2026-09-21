@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -230,6 +231,55 @@ class SVGImageTest {
         for (int i = 0; i < paths.length; i++) {
             String content = draw("<svg width=\"200\" height=\"200\"><path d=\"" + paths[i] + "\"/></svg>");
             assertEquals(curves[i], curves(content), paths[i] + " draws " + content);
+        }
+    }
+
+    private static SVGImage image(String svg) throws Exception {
+        return new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void aSizeWithAUnitIsReadInPoints() throws Exception {
+        // A number is in the user unit of the file, which PDFjet draws as a
+        // point, and so is a number in px; the units of length are converted.
+        String[] sizes = {"48", "48px", "48pt", "1in", "1pc", "210mm", "21cm", " 48 "};
+        float[] points = {48f, 48f, 48f, 72f, 12f, 595.2756f, 595.2756f, 48f};
+        for (int i = 0; i < sizes.length; i++) {
+            SVGImage svg = image("<svg width=\"" + sizes[i] + "\" height=\"" + sizes[i] + "\"/>");
+            assertEquals(points[i], svg.getWidth(), 0.001f, sizes[i]);
+            assertEquals(points[i], svg.getHeight(), 0.001f, sizes[i]);
+        }
+    }
+
+    @Test
+    void aSizeThatCannotBeReadIsTheSizeOfTheViewBox() throws Exception {
+        // Scaling the paths by a width of zero would draw every one of them
+        // at the origin, so a size in a unit PDFjet cannot read, a percentage
+        // among them, and a size the file does not give, leave the drawing
+        // 1:1 with its viewBox.
+        String[] svgs = {
+            "<svg viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"10em\" height=\"5em\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+        };
+        for (String svg : svgs) {
+            assertEquals(100f, image(svg).getWidth(), 0f, svg);
+            assertEquals(50f, image(svg).getHeight(), 0f, svg);
+            assertTrue(draw(svg).contains("10 782 m\n90 752 l\n"), svg);
+        }
+    }
+
+    @Test
+    void aViewBoxThatIsNotFourNumbersOrHasNoSizeFails() {
+        String[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
+        String[] messages = {
+            "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
+            "its width and height cannot be zero.", "its width and height cannot be zero.",
+        };
+        for (int i = 0; i < boxes.length; i++) {
+            String svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
+            Exception e = assertThrows(Exception.class, () -> image(svg));
+            assertEquals("Invalid SVG viewBox \"" + boxes[i] + "\": " + messages[i], e.getMessage());
         }
     }
 

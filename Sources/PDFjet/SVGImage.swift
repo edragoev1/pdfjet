@@ -87,12 +87,37 @@ public class SVGImage : Drawable {
         try processPaths(paths ?? [])
     }
 
+    // The units of a length of an SVG file, in points. A number without a
+    // unit is in the user unit of the file, which PDFjet draws as a point,
+    // and so is a number in px.
+    private static let units: [(String, Float)] = [
+        ("px", 1.0), ("pt", 1.0), ("pc", 12.0),
+        ("in", 72.0), ("mm", 72.0/25.4), ("cm", 72.0/2.54),
+    ]
+
+    // Returns the width or the height of the svg element in points, and 0 for
+    // a length that PDFjet cannot read, a percentage among them, which leaves
+    // the size to the viewBox.
+    private static func parseLength(_ value: String) -> Float {
+        var text = value.trim()
+        var scale: Float = 1.0
+        for (suffix, points) in units where text.hasSuffix(suffix) {
+            text = String(text.dropLast(suffix.count)).trim()
+            scale = points
+            break
+        }
+        guard let number = Float(text) else {
+            return 0.0
+        }
+        return number*scale
+    }
+
     private func readSVGAttributes(_ attributes: [(String, String)]) throws {
         for (name, value) in attributes {
             if name == "width" {
-                self.w = Float(value.trim()) ?? 0.0
+                self.w = SVGImage.parseLength(value)
             } else if name == "height" {
-                self.h = Float(value.trim()) ?? 0.0
+                self.h = SVGImage.parseLength(value)
             } else if name == "viewBox" {
                 self.viewBox = value
             } else if name == "fill" {
@@ -296,21 +321,31 @@ public class SVGImage : Drawable {
                 .components(separatedBy: .whitespaces)
                 .filter { !$0.isEmpty }
             guard list.count == 4 else {
-                return
+                throw PDFjetError(message: "Invalid SVG viewBox \"\(viewBox)\": four numbers are needed.")
             }
             guard let bx0 = Float(list[0]),
                   let bx1 = Float(list[1]),
                   let bx2 = Float(list[2]),
                   let bx3 = Float(list[3]) else {
-                return
+                throw PDFjetError(message: "Invalid SVG viewBox \"\(viewBox)\": four numbers are needed.")
             }
             guard bx2 != 0.0, bx3 != 0.0 else {
-                return  // degenerate viewBox: division would produce NaN
+                throw PDFjetError(
+                    message: "Invalid SVG viewBox \"\(viewBox)\": its width and height cannot be zero.")
             }
             box[0] = bx0
             box[1] = bx1
             box[2] = bx2
             box[3] = bx3
+            // A size the file does not give, or one in a unit PDFjet cannot
+            // read, leaves the drawing the size of its viewBox, where scaling
+            // it by a width of zero would draw every path at the origin.
+            if w == 0.0 {
+                w = box[2]
+            }
+            if h == 0.0 {
+                h = box[3]
+            }
         }
         for path in paths {
             guard let data = path.data else { continue }
@@ -534,7 +569,7 @@ public class SVGImage : Drawable {
         guard let page = page else {
             return [self.x + self.w, self.y + self.h]   // Measured, not drawn
         }
-        page.addBDC(StructElem.P, language, actualText, altDescription)
+        page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
         for path in paths ?? [] {
             drawPath(path, page)
         }

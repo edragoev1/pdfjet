@@ -335,7 +335,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	if image.w == 0 || image.h == 0 {
 		return [2]float32{image.x + image.w, image.y + image.h} // A zero size image paints nothing.
 	}
-	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
+	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
 
 	switch image.degrees {

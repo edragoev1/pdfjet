@@ -129,6 +129,20 @@ public sealed class JPGImageTest {
     }
 
     [Fact]
+    public void AFrameHeaderOfTheWrongLengthFails() {
+        // The frame header holds three bytes for each component after its
+        // eight, which libjpeg checks; a reader a PDF is drawn with refuses an
+        // image of another length, where MuPDF draws nothing and says "Bogus
+        // marker length", so PDFjet does not embed one.
+        foreach (int wrong in new int[] {17 - 3, 17 + 3}) {
+            byte[] jpeg = JpegOf(new byte[0], 3);
+            jpeg[5] = (byte) wrong;     // The low byte of the length of the frame header
+            Assert.Throws<IOException>(() => new JPGImage(new MemoryStream(jpeg)));
+        }
+        new JPGImage(new MemoryStream(JpegOf(new byte[0], 3)));
+    }
+
+    [Fact]
     public void OnlyTheWholeAdobeAPP14SegmentMarksTheImage() {
         Assert.True(new JPGImage(new MemoryStream(JpegOf(ADOBE_APP14, 4))).IsAdobe());
 

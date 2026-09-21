@@ -21,6 +21,8 @@ public class Example_10 {
         pdf.SetTitle("Switzerland");
 
         Image image1 = new Image(pdf, "images/sz-map.png");
+        image1.SetAltDescription(
+                "A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);

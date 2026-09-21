@@ -23,6 +23,10 @@ public class Example_36 {
 
         let titles = ["Europe", "Spain"]
         let files = ["images/ee-map.png", "images/spain-admin.jpg"]
+        let descriptions = [
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
+        ]
 
         // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
         var mapPages = [Page]()
@@ -36,6 +40,7 @@ public class Example_36 {
 
             // Scale the image to the width of the page between the margins.
             let image = try Image(pdf, files[i])
+            image.setAltDescription(descriptions[i])
             image.scaleBy((page.getWidth() - 100.0) / image.getWidth())
             image.setLocation(50.0, 100.0)
             image.drawOn(page)

@@ -44,6 +44,8 @@ public class Example_33 {
         float[] xy = textBlock.drawOn(page);
 
         SVGImage map = new SVGImage("images/svg-test/europe.svg");
+        map.setAltDescription(
+                "A map of Europe drawn from an SVG file, the countries filled in peachpuff, Spain in aliceblue and Austria outlined in olive.");
         map.scaleBy(0.5f);
         map.setLocation((page.getWidth() - map.getWidth()) / 2f, xy[1] + 20f);
         xy = map.drawOn(page);
@@ -94,6 +96,9 @@ public class Example_33 {
             float yIcon = y + (i / 6) * 90f;
 
             SVGImage icon = new SVGImage(iconFiles[i]);
+            // The name under an icon says what it stands for, and so does
+            // its description.
+            icon.setAltDescription("The " + iconNames[i] + " icon.");
             icon.setLocation(x, yIcon);
             float[] iconXY = icon.drawOn(page);
 

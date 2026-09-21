@@ -17,6 +17,8 @@ public class Example_10 {
         pdf.setTitle("Switzerland")
 
         let image1 = try Image(pdf, "images/sz-map.png")
+        image1.setAltDescription(
+                "A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(10.0)

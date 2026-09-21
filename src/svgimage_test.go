@@ -282,3 +282,60 @@ func TestSVGImageAnArcOfWholeQuarterTurnsIsDrawnInThatManyCurves(t *testing.T) {
 		}
 	}
 }
+
+func TestSVGImageASizeWithAUnitIsReadInPoints(t *testing.T) {
+	// A number is in the user unit of the file, which PDFjet draws as a
+	// point, and so is a number in px; the units of length are converted.
+	for svg, want := range map[string][2]float32{
+		`<svg width="48" height="24"/>`:       {48, 24},
+		`<svg width="48px" height="24px"/>`:   {48, 24},
+		`<svg width="48pt" height="24pt"/>`:   {48, 24},
+		`<svg width="1in" height="2in"/>`:     {72, 144},
+		`<svg width="1pc" height="2pc"/>`:     {12, 24},
+		`<svg width="210mm" height="297mm"/>`: {595.2756, 841.8898},
+		`<svg width="21cm" height="29.7cm"/>`: {595.2756, 841.8898},
+		`<svg width=" 48 " height=" 24 "/>`:   {48, 24},
+	} {
+		image := testNewSVG(t, svg)
+		testNear(t, svg+" width", want[0], image.GetWidth(), 0.001)
+		testNear(t, svg+" height", want[1], image.GetHeight(), 0.001)
+	}
+}
+
+func TestSVGImageASizeThatCannotBeReadIsTheSizeOfTheViewBox(t *testing.T) {
+	// Scaling the paths by a width of zero would draw every one of them at
+	// the origin, so a size in a unit PDFjet cannot read, a percentage among
+	// them, and a size the file does not give, leave the drawing 1:1 with its
+	// viewBox.
+	for _, svg := range []string{
+		`<svg viewBox="0 0 100 50"><path d="M10 10 L90 40"/></svg>`,
+		`<svg width="100%" height="100%" viewBox="0 0 100 50"><path d="M10 10 L90 40"/></svg>`,
+		`<svg width="10em" height="5em" viewBox="0 0 100 50"><path d="M10 10 L90 40"/></svg>`,
+	} {
+		image := testNewSVG(t, svg)
+		if image.GetWidth() != 100 || image.GetHeight() != 50 {
+			t.Errorf("%s: size %v x %v", svg, image.GetWidth(), image.GetHeight())
+		}
+		page := testNewPage()
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, "10 782 m\n90 752 l\n") {
+			t.Errorf("%s: content %q", svg, content)
+		}
+	}
+}
+
+func TestSVGImageAViewBoxThatIsNotFourNumbersOrHasNoSizeFails(t *testing.T) {
+	for svg, want := range map[string]string{
+		`<svg width="10" height="10" viewBox="0 0"/>`:          `Invalid SVG viewBox "0 0": four numbers are needed.`,
+		`<svg width="10" height="10" viewBox="0 0 10 10 10"/>`: `Invalid SVG viewBox "0 0 10 10 10": four numbers are needed.`,
+		`<svg width="10" height="10" viewBox="0 0 ten 10"/>`:   `Invalid SVG viewBox "0 0 ten 10": four numbers are needed.`,
+		`<svg width="10" height="10" viewBox="0 0 0 10"/>`:     `Invalid SVG viewBox "0 0 0 10": its width and height cannot be zero.`,
+		`<svg width="10" height="10" viewBox="0 0 10 0"/>`:     `Invalid SVG viewBox "0 0 10 0": its width and height cannot be zero.`,
+	} {
+		_, err := NewSVGImage(strings.NewReader(svg))
+		if err == nil || err.Error() != want {
+			t.Errorf("%s: %v", svg, err)
+		}
+	}
+}

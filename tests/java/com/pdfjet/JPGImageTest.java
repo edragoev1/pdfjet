@@ -134,6 +134,21 @@ class JPGImageTest {
     }
 
     @Test
+    void aFrameHeaderOfTheWrongLengthFails() throws Exception {
+        // The frame header holds three bytes for each component after its
+        // eight, which libjpeg checks; a reader a PDF is drawn with refuses an
+        // image of another length, where MuPDF draws nothing and says "Bogus
+        // marker length", so PDFjet does not embed one.
+        for (int wrong : new int[] {17 - 3, 17 + 3}) {
+            byte[] jpeg = jpegOf(new byte[0], 3);
+            jpeg[5] = (byte) wrong;     // The low byte of the length of the frame header
+            assertThrows(IOException.class,
+                    () -> new JPGImage(new ByteArrayInputStream(jpeg)));
+        }
+        new JPGImage(new ByteArrayInputStream(jpegOf(new byte[0], 3)));
+    }
+
+    @Test
     void onlyTheWholeAdobeAPP14SegmentMarksTheImage() throws Exception {
         assertTrue(new JPGImage(new ByteArrayInputStream(
                 jpegOf(ADOBE_APP14, 4))).isAdobe());

@@ -128,10 +128,18 @@ class PNGImageTest {
     // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
     // chunk when there is a palette, and one IDAT chunk.
     private static byte[] png(int width, int height, int bitDepth, int colorType, byte[] palette, byte[] idat) {
+        return png(width, height, bitDepth, colorType, 0, 0, palette, idat);
+    }
+
+    // The same file with the compression and the filter method of its IHDR
+    // chunk, which are 0 in every PNG file that is defined.
+    private static byte[] png(int width, int height, int bitDepth, int colorType,
+            int compression, int filter, byte[] palette, byte[] idat) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
         ByteBuffer ihdr = ByteBuffer.allocate(13);
-        ihdr.putInt(width).putInt(height).put((byte) bitDepth).put((byte) colorType);
+        ihdr.putInt(width).putInt(height).put((byte) bitDepth).put((byte) colorType)
+                .put((byte) compression).put((byte) filter);
         chunk(bos, "IHDR", ihdr.array());
         if (palette != null) {
             chunk(bos, "PLTE", palette);
@@ -222,6 +230,20 @@ class PNGImageTest {
         assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[0], idat)));
         assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[3*257], idat)));
         assertEquals("Incorrect palette length.", decodeError(png(1, 1, 8, 3, new byte[4], idat)));
+    }
+
+    @Test
+    void rejectsAnUnknownCompressionOrFilterMethod() throws Exception {
+        // Only the deflate compression method and the adaptive filter method
+        // are defined. libpng refuses a file of another one, and so does
+        // Pillow for the filter method, where the rows of this one would be
+        // read as if it were 0.
+        byte[] idat = Compressor.deflate(new byte[] {0, 0});
+        assertEquals("Unknown PNG compression method.",
+                decodeError(png(1, 1, 8, 0, 1, 0, null, idat)));
+        assertEquals("Unknown PNG filter method.",
+                decodeError(png(1, 1, 8, 0, 0, 1, null, idat)));
+        new PNGImage(new ByteArrayInputStream(png(1, 1, 8, 0, 0, 0, null, idat)));
     }
 
     @Test

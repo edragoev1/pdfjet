@@ -192,6 +192,13 @@ func TestPNGImageRejectsInterlacedImagesWithAClearError(t *testing.T) {
 // type, a PLTE chunk when there is a palette, and one IDAT chunk when there is
 // image data.
 func testPNG(width, height int32, bitDepth, colorType byte, palette, idat []byte) []byte {
+	return testPNGOf(width, height, bitDepth, colorType, 0, 0, palette, idat)
+}
+
+// testPNGOf returns the same file with the compression and the filter method
+// of its IHDR chunk, which are 0 in every PNG file that is defined.
+func testPNGOf(width, height int32, bitDepth, colorType, compression, filter byte,
+	palette, idat []byte) []byte {
 	var buf bytes.Buffer
 	buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
 	ihdr := make([]byte, 13)
@@ -199,6 +206,8 @@ func testPNG(width, height int32, bitDepth, colorType byte, palette, idat []byte
 	binary.BigEndian.PutUint32(ihdr[4:], uint32(height))
 	ihdr[8] = bitDepth
 	ihdr[9] = colorType
+	ihdr[10] = compression
+	ihdr[11] = filter
 	testPNGChunk(&buf, "IHDR", ihdr)
 	if palette != nil {
 		testPNGChunk(&buf, "PLTE", palette)
@@ -282,6 +291,23 @@ func TestPNGImageRejectsAnInvalidSizeBitDepthColorTypeOrPalette(t *testing.T) {
 	testWant(t, "Invalid PNG bit depth 200 for color type 2.", testPNGError(testPNG(1, 1, 200, 2, nil, idat)))
 	testWant(t, "The PNG palette image has no PLTE chunk.", testPNGError(testPNG(1, 1, 8, 3, nil, idat)))
 	testWant(t, "The PNG image has no image data.", testPNGError(testPNG(1, 1, 8, 2, nil, nil)))
+}
+
+func TestPNGImageRejectsAnUnknownCompressionOrFilterMethod(t *testing.T) {
+	// Only the deflate compression method and the adaptive filter method are
+	// defined. libpng refuses a file of another one, and so does Pillow for
+	// the filter method, where the rows of this one would be read as if it
+	// were 0.
+	idat := compressor.Deflate([]byte{0, 0})
+	testWant(t, "Unknown PNG compression method.",
+		testPNGError(testPNGOf(1, 1, 8, 0, 1, 0, nil, idat)))
+	testWant(t, "Unknown PNG filter method.",
+		testPNGError(testPNGOf(1, 1, 8, 0, 0, 1, nil, idat)))
+	if _, panicked := testPanic(func() {
+		newPNGImage(bytes.NewReader(testPNGOf(1, 1, 8, 0, 0, 0, nil, idat)))
+	}); panicked {
+		t.Error("a file of the methods that are defined is refused")
+	}
 }
 
 func TestPNGImageRejectsAChunkLengthThatTheFileDoesNotHave(t *testing.T) {

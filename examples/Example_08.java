@@ -32,6 +32,8 @@ public class Example_08 {
         f3.setSize(7f);
 
         Image image = new Image(pdf, "images/TeslaX.png");
+        image.setAltDescription(
+                "A white Tesla Model X with a black glass roof, seen from the front left.");
         image.scaleBy(0.20f);
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");

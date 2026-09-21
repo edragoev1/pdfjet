@@ -30,6 +30,8 @@ func Example10() {
 	pdf.SetTitle("Switzerland")
 
 	image1 := pdfjet.NewImageFromFile(pdf, "images/sz-map.png")
+	image1.SetAltDescription(
+		"A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)

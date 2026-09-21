@@ -211,6 +211,53 @@ import Testing
         }
     }
 
+    @Test func aSizeWithAUnitIsReadInPoints() throws {
+        // A number is in the user unit of the file, which PDFjet draws as a
+        // point, and so is a number in px; the units of length are converted.
+        let sizes: [(String, Float)] = [
+            ("48", 48.0), ("48px", 48.0), ("48pt", 48.0), ("1in", 72.0), ("1pc", 12.0),
+            ("210mm", 595.2756), ("21cm", 595.2756), (" 48 ", 48.0),
+        ]
+        for (size, points) in sizes {
+            let svg = try image("<svg width=\"" + size + "\" height=\"" + size + "\"/>")
+            #expect(abs(svg.getWidth() - points) < 0.001, "\(size)")
+            #expect(abs(svg.getHeight() - points) < 0.001, "\(size)")
+        }
+    }
+
+    @Test func aSizeThatCannotBeReadIsTheSizeOfTheViewBox() throws {
+        // Scaling the paths by a width of zero would draw every one of them
+        // at the origin, so a size in a unit PDFjet cannot read, a percentage
+        // among them, and a size the file does not give, leave the drawing
+        // 1:1 with its viewBox.
+        let svgs = [
+            "<svg viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"10em\" height=\"5em\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+        ]
+        for svg in svgs {
+            #expect(try image(svg).getWidth() == 100, "\(svg)")
+            #expect(try image(svg).getHeight() == 50, "\(svg)")
+            #expect(try draw(svg).contains("10 782 m\n90 752 l\n"), "\(svg)")
+        }
+    }
+
+    @Test func aViewBoxThatIsNotFourNumbersOrHasNoSizeFails() throws {
+        let boxes = [
+            ("0 0", "four numbers are needed."),
+            ("0 0 10 10 10", "four numbers are needed."),
+            ("0 0 ten 10", "four numbers are needed."),
+            ("0 0 0 10", "its width and height cannot be zero."),
+            ("0 0 10 0", "its width and height cannot be zero."),
+        ]
+        for (box, message) in boxes {
+            let error = #expect(throws: (any Error).self) {
+                _ = try image("<svg width=\"10\" height=\"10\" viewBox=\"" + box + "\"/>")
+            }
+            #expect(TestSupport.message(error) == "Invalid SVG viewBox \"" + box + "\": " + message)
+        }
+    }
+
     private func curves(_ content: String) -> Int {
         return content.components(separatedBy: " c\n").count - 1
     }

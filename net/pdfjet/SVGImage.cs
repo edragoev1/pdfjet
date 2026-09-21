@@ -83,22 +83,40 @@ public class SVGImage : IDrawable {
         ProcessPaths(paths);
     }
 
+    // The units of a length of an SVG file, in points. A number without a
+    // unit is in the user unit of the file, which PDFjet draws as a point,
+    // and so is a number in px.
+    private static readonly string[] UNITS = {"px", "pt", "pc", "in", "mm", "cm"};
+    private static readonly float[] POINTS = {1f, 1f, 12f, 72f, 72f/25.4f, 72f/2.54f};
+
+    // Returns the width or the height of the svg element in points, and 0 for
+    // a length that PDFjet cannot read, a percentage among them, which leaves
+    // the size to the viewBox.
+    private static float ParseLength(String value) {
+        string text = value.Trim();
+        float scale = 1f;
+        for (int i = 0; i < UNITS.Length; i++) {
+            if (text.EndsWith(UNITS[i])) {
+                text = text.Substring(0, text.Length - UNITS[i].Length).Trim();
+                scale = POINTS[i];
+                break;
+            }
+        }
+        float number;
+        if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number)) {
+            return 0f;
+        }
+        return number*scale;
+    }
+
     private void ReadSVGAttributes(XmlReader reader) {
         while (reader.MoveToNextAttribute()) {
             String name = reader.LocalName;
             String value = reader.Value;
             if (name.Equals("width")) {
-                try {
-                    this.w = float.Parse(value, CultureInfo.InvariantCulture);
-                } catch (Exception) {
-                    this.w = 0f;
-                }
+                this.w = ParseLength(value);
             } else if (name.Equals("height")) {
-                try {
-                    this.h = float.Parse(value, CultureInfo.InvariantCulture);
-                } catch (Exception) {
-                    this.h = 0f;
-                }
+                this.h = ParseLength(value);
             } else if (name.Equals("viewBox")) {
                 this.viewBox = value;
             } else if (name.Equals("fill")) {
@@ -148,10 +166,27 @@ public class SVGImage : IDrawable {
         if (viewBox != null) {
             String[] list = viewBox.Trim().Split(default(char[]),
                     StringSplitOptions.RemoveEmptyEntries);
-            box[0] = float.Parse(list[0], CultureInfo.InvariantCulture);
-            box[1] = float.Parse(list[1], CultureInfo.InvariantCulture);
-            box[2] = float.Parse(list[2], CultureInfo.InvariantCulture);
-            box[3] = float.Parse(list[3], CultureInfo.InvariantCulture);
+            if (list.Length != 4) {
+                throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                if (!float.TryParse(list[i], NumberStyles.Float, CultureInfo.InvariantCulture, out box[i])) {
+                    throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+                }
+            }
+            if (box[2] == 0f || box[3] == 0f) {
+                throw new Exception(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+            }
+            // A size the file does not give, or one in a unit PDFjet cannot
+            // read, leaves the drawing the size of its viewBox, where scaling
+            // it by a width of zero would draw every path at the origin.
+            if (w == 0f) {
+                w = box[2];
+            }
+            if (h == 0f) {
+                h = box[3];
+            }
         }
         foreach (SVGPath path in paths) {
             path.operations = SVG.GetOperations(path.data);
@@ -354,7 +389,7 @@ public class SVGImage : IDrawable {
         if (page == null) {
             return new float[] {x + w, y + h};  // Measured, not drawn
         }
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
         foreach (SVGPath path in paths) {
             drawPath(path, page);
         }

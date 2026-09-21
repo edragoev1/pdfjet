@@ -333,7 +333,7 @@ public class Image : IDrawable {
         if (w == 0f || h == 0f) {
             return new float[] {x + w, y + h};  // A zero size image paints nothing.
         }
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
         page.SaveGraphicsState();
 
         if (degrees == 0) {

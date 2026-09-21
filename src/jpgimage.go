@@ -200,6 +200,16 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 				(colorComponents != 1 && colorComponents != 3 && colorComponents != 4) {
 				return nil, errors.New("Error: Invalid JPEG dimensions or component count.")
 			}
+			// The frame header holds three bytes for each component after
+			// its eight, as libjpeg checks: a header of another length is
+			// the "Bogus SOF length" of libjpeg and the "Bogus marker
+			// length" of MuPDF, so the readers a PDF is drawn with refuse
+			// the image where PDFjet embedded it.
+			if int(length) != 3*int(colorComponents)+8 {
+				return nil, fmt.Errorf(
+					"Error: The JPEG frame header is %d bytes, not the %d of its %d color components.",
+					length, 3*int(colorComponents)+8, colorComponents)
+			}
 
 			// The component specifications fill the rest of the frame
 			// header; they can hold any bytes, the 0xFF of a marker among

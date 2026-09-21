@@ -48,6 +48,8 @@ public class Example_33 {
         var xy = textBlock.drawOn(page)
 
         let map = try loadSVG("images/svg-test/europe.svg")
+        map.setAltDescription(
+                "A map of Europe drawn from an SVG file, the countries filled in peachpuff, Spain in aliceblue and Austria outlined in olive.")
         map.scaleBy(0.5)
         map.setLocation((page.getWidth() - map.getWidth()) / 2.0, xy[1] + 20.0)
         xy = map.drawOn(page)
@@ -98,6 +100,9 @@ public class Example_33 {
             let yIcon: Float = y + Float(i / 6) * 90.0
 
             let icon = try loadSVG(iconFiles[i])
+            // The name under an icon says what it stands for, and so does
+            // its description.
+            icon.setAltDescription("The " + iconNames[i] + " icon.")
             icon.setLocation(x, yIcon)
             let iconXY = icon.drawOn(page)
 

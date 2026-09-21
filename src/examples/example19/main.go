@@ -73,6 +73,9 @@ func Example19() {
 	y := xy[1] + 25.0
 	for i := 0; i < len(imageFiles); i++ {
 		image := pdfjet.NewImageFromFile(pdf, imageFiles[i])
+		// The text beside a map describes it, so it describes it to a screen
+		// reader too.
+		image.SetAltDescription(descriptions[i])
 		image.ResizeWidth(200.0)
 		image.SetLocation(x1, y)
 		imageXY := image.DrawOn(page)

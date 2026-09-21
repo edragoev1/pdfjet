@@ -28,6 +28,10 @@ public class Example_36 {
 
         String[] titles = {"Europe", "Spain"};
         String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
+        String[] descriptions = {
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
+        };
 
         // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
         Page[] mapPages = new Page[titles.length];
@@ -41,6 +45,7 @@ public class Example_36 {
 
             // Scale the image to the width of the page between the margins.
             Image image = new Image(pdf, files[i]);
+            image.setAltDescription(descriptions[i]);
             image.scaleBy((page.getWidth() - 100f) / image.getWidth());
             image.setLocation(50f, 100f);
             image.drawOn(page);

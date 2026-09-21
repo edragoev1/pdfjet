@@ -100,22 +100,40 @@ public class SVGImage implements Drawable {
         processPaths(paths);
     }
 
+    // The units of a length of an SVG file, in points. A number without a
+    // unit is in the user unit of the file, which PDFjet draws as a point,
+    // and so is a number in px.
+    private static final String[] UNITS = {"px", "pt", "pc", "in", "mm", "cm"};
+    private static final float[] POINTS = {1f, 1f, 12f, 72f, 72f/25.4f, 72f/2.54f};
+
+    // Returns the width or the height of the svg element in points, and 0 for
+    // a length that PDFjet cannot read, a percentage among them, which leaves
+    // the size to the viewBox.
+    private static float parseLength(String value) {
+        String text = value.trim();
+        float scale = 1f;
+        for (int i = 0; i < UNITS.length; i++) {
+            if (text.endsWith(UNITS[i])) {
+                text = text.substring(0, text.length() - UNITS[i].length()).trim();
+                scale = POINTS[i];
+                break;
+            }
+        }
+        try {
+            return Float.parseFloat(text)*scale;
+        } catch (NumberFormatException e) {
+            return 0f;
+        }
+    }
+
     private void readSVGAttributes(XMLStreamReader reader) {
         for (int i = 0; i < reader.getAttributeCount(); i++) {
             String name = reader.getAttributeLocalName(i);
             String value = reader.getAttributeValue(i);
             if (name.equals("width")) {
-                try {
-                    this.w = Float.parseFloat(value);
-                } catch (NumberFormatException e) {
-                    this.w = 0f;
-                }
+                this.w = parseLength(value);
             } else if (name.equals("height")) {
-                try {
-                    this.h = Float.parseFloat(value);
-                } catch (NumberFormatException e) {
-                    this.h = 0f;
-                }
+                this.h = parseLength(value);
             } else if (name.equals("viewBox")) {
                 this.viewBox = value;
             } else if (name.equals("fill")) {
@@ -158,14 +176,33 @@ public class SVGImage implements Drawable {
         paths.add(path);
     }
 
-    private void processPaths(List<SVGPath> paths) {
+    private void processPaths(List<SVGPath> paths) throws Exception {
         float[] box = new float[4];
         if (viewBox != null) {
             String[] list = viewBox.trim().split("\\s+");
-            box[0] = Float.parseFloat(list[0]);
-            box[1] = Float.parseFloat(list[1]);
-            box[2] = Float.parseFloat(list[2]);
-            box[3] = Float.parseFloat(list[3]);
+            if (list.length != 4) {
+                throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            }
+            for (int i = 0; i < 4; i++) {
+                try {
+                    box[i] = Float.parseFloat(list[i]);
+                } catch (NumberFormatException e) {
+                    throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+                }
+            }
+            if (box[2] == 0f || box[3] == 0f) {
+                throw new Exception(
+                        "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
+            }
+            // A size the file does not give, or one in a unit PDFjet cannot
+            // read, leaves the drawing the size of its viewBox, where scaling
+            // it by a width of zero would draw every path at the origin.
+            if (w == 0f) {
+                w = box[2];
+            }
+            if (h == 0f) {
+                h = box[3];
+            }
         }
         for (SVGPath path : paths) {
             path.operations = SVG.getOperations(path.data);
@@ -386,7 +423,7 @@ public class SVGImage implements Drawable {
         if (page == null) {
             return new float[] {x + w, y + h};  // Measured, not drawn
         }
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
         for (SVGPath path : paths) {
             drawPath(path, page);
         }

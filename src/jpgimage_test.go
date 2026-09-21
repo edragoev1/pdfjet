@@ -123,6 +123,23 @@ func TestJPGImageAJPEGOfOtherThanEightBitsPerComponentFails(t *testing.T) {
 	}
 }
 
+func TestJPGImageAFrameHeaderOfTheWrongLengthFails(t *testing.T) {
+	// The frame header holds three bytes for each component after its eight,
+	// which libjpeg checks; a reader a PDF is drawn with refuses an image of
+	// another length, where MuPDF draws nothing and says "Bogus marker
+	// length", so PDFjet does not embed one.
+	for _, wrong := range []byte{17 - 3, 17 + 3} {
+		jpeg := testJPEG(nil, 3)
+		jpeg[5] = wrong // The low byte of the length of the frame header
+		if _, err := newJPGImage(bytes.NewReader(jpeg)); err == nil {
+			t.Errorf("a frame header of %d bytes, not 17, is read", wrong)
+		}
+	}
+	if _, err := newJPGImage(bytes.NewReader(testJPEG(nil, 3))); err != nil {
+		t.Errorf("a frame header of 17 bytes fails: %v", err)
+	}
+}
+
 func TestJPGImageOnlyTheWholeAdobeAPP14SegmentMarksTheImage(t *testing.T) {
 	image, err := newJPGImage(bytes.NewReader(testJPEG(testAdobeAPP14, 4)))
 	if err != nil || !image.isAdobe() {

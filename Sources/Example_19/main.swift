@@ -64,6 +64,9 @@ public class Example_19 {
         var y: Float = xy[1] + 25.0
         for i in 0..<imageFiles.count {
             let image = try Image(pdf, imageFiles[i])
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.setAltDescription(descriptions[i])
             image.resizeWidth(200.0)
             image.setLocation(x1, y)
             let imageXY = image.drawOn(page)

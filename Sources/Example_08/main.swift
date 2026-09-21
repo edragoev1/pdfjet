@@ -26,6 +26,8 @@ public class Example_08 {
         f3.setSize(7.0)
 
         let image = try Image(pdf, "images/TeslaX.png")
+        image.setAltDescription(
+                "A white Tesla Model X with a black glass roof, seen from the front left.")
         image.scaleBy(0.20)
 
         let barcode = try Barcode(Barcode.CODE_128, "Hello, World!")

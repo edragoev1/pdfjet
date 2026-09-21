@@ -102,6 +102,13 @@ public class PNGImageTest {
     // A PNG file with the IHDR of the size, bit depth and color type, a PLTE
     // chunk when there is a palette, and one IDAT chunk.
     private static byte[] Png(int width, int height, int bitDepth, int colorType, byte[] palette, byte[] idat) {
+        return Png(width, height, bitDepth, colorType, 0, 0, palette, idat);
+    }
+
+    // The same file with the compression and the filter method of its IHDR
+    // chunk, which are 0 in every PNG file that is defined.
+    private static byte[] Png(int width, int height, int bitDepth, int colorType,
+            int compression, int filter, byte[] palette, byte[] idat) {
         MemoryStream ms = new MemoryStream();
         ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
         byte[] ihdr = new byte[13];
@@ -109,6 +116,8 @@ public class PNGImageTest {
         PutInt(ihdr, 4, height);
         ihdr[8] = (byte) bitDepth;
         ihdr[9] = (byte) colorType;
+        ihdr[10] = (byte) compression;
+        ihdr[11] = (byte) filter;
         WriteChunk(ms, "IHDR", ihdr);
         if (palette != null) {
             WriteChunk(ms, "PLTE", palette);
@@ -224,6 +233,20 @@ public class PNGImageTest {
         Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[0], idat)));
         Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[3*257], idat)));
         Assert.Equal("Incorrect palette length.", DecodeError(Png(1, 1, 8, 3, new byte[4], idat)));
+    }
+
+    [Fact]
+    public void RejectsAnUnknownCompressionOrFilterMethod() {
+        // Only the deflate compression method and the adaptive filter method
+        // are defined. libpng refuses a file of another one, and so does
+        // Pillow for the filter method, where the rows of this one would be
+        // read as if it were 0.
+        byte[] idat = Compressor.Deflate(new byte[] {0, 0});
+        Assert.Equal("Unknown PNG compression method.",
+                DecodeError(Png(1, 1, 8, 0, 1, 0, null, idat)));
+        Assert.Equal("Unknown PNG filter method.",
+                DecodeError(Png(1, 1, 8, 0, 0, 1, null, idat)));
+        new PNGImage(new MemoryStream(Png(1, 1, 8, 0, 0, 0, null, idat)));
     }
 
     [Fact]

@@ -68,6 +68,9 @@ public class Example_19 {
         float y = xy[1] + 25f;
         for (int i = 0; i < imageFiles.length; i++) {
             Image image = new Image(pdf, imageFiles[i]);
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.setAltDescription(descriptions[i]);
             image.resizeWidth(200f);
             image.setLocation(x1, y);
             float[] imageXY = image.drawOn(page);

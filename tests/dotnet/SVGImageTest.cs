@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -231,6 +232,51 @@ public class SVGImageTest {
         for (int i = 0; i < paths.Length; i++) {
             string content = Draw("<svg width=\"200\" height=\"200\"><path d=\"" + paths[i] + "\"/></svg>");
             Assert.True(curves[i] == Curves(content), paths[i] + " draws " + content);
+        }
+    }
+
+    [Fact]
+    public void ASizeWithAUnitIsReadInPoints() {
+        // A number is in the user unit of the file, which PDFjet draws as a
+        // point, and so is a number in px; the units of length are converted.
+        string[] sizes = {"48", "48px", "48pt", "1in", "1pc", "210mm", "21cm", " 48 "};
+        float[] points = {48f, 48f, 48f, 72f, 12f, 595.2756f, 595.2756f, 48f};
+        for (int i = 0; i < sizes.Length; i++) {
+            SVGImage svg = Parse("<svg width=\"" + sizes[i] + "\" height=\"" + sizes[i] + "\"/>");
+            Assert.Equal(points[i], svg.GetWidth(), 3);
+            Assert.Equal(points[i], svg.GetHeight(), 3);
+        }
+    }
+
+    [Fact]
+    public void ASizeThatCannotBeReadIsTheSizeOfTheViewBox() {
+        // Scaling the paths by a width of zero would draw every one of them
+        // at the origin, so a size in a unit PDFjet cannot read, a percentage
+        // among them, and a size the file does not give, leave the drawing
+        // 1:1 with its viewBox.
+        string[] svgs = {
+            "<svg viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+            "<svg width=\"10em\" height=\"5em\" viewBox=\"0 0 100 50\"><path d=\"M10 10 L90 40\"/></svg>",
+        };
+        foreach (string svg in svgs) {
+            Assert.Equal(100f, Parse(svg).GetWidth());
+            Assert.Equal(50f, Parse(svg).GetHeight());
+            Assert.Contains("10 782 m\n90 752 l\n", Draw(svg));
+        }
+    }
+
+    [Fact]
+    public void AViewBoxThatIsNotFourNumbersOrHasNoSizeFails() {
+        string[] boxes = {"0 0", "0 0 10 10 10", "0 0 ten 10", "0 0 0 10", "0 0 10 0"};
+        string[] messages = {
+            "four numbers are needed.", "four numbers are needed.", "four numbers are needed.",
+            "its width and height cannot be zero.", "its width and height cannot be zero.",
+        };
+        for (int i = 0; i < boxes.Length; i++) {
+            string svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
+            Exception e = Assert.Throws<Exception>(() => Parse(svg));
+            Assert.Equal("Invalid SVG viewBox \"" + boxes[i] + "\": " + messages[i], e.Message);
         }
     }
 

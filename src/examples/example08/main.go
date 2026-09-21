@@ -37,6 +37,8 @@ func Example08() {
 	f3.SetSize(7.0)
 
 	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
+	image.SetAltDescription(
+		"A white Tesla Model X with a black glass roof, seen from the front left.")
 	image.ScaleBy(0.20)
 
 	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hello, World!")

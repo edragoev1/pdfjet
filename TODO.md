@@ -233,12 +233,17 @@ change code; the checks that must hold at the tag run after the freeze.
       BMP, JPEG, SVG, OTF and TTF, the decompressor and `PDF.read` are in
       `src/*_fuzz_test.go`, and every failure they found is fixed in the four
       ports with a test.
-- ⬜ **B** Goal 2: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
-      `SVGImage`, the classes the same week's fuzzing reads; then `Page` and
-      `TextLine`, the two with the widest exposure. One of `JPGImage` for that
-      review, which the fuzzing did not cover because image/jpeg rejects it
-      too: the length of the frame header, which PDFjet does not check against
-      the number of components, as libjpeg does.
+- ✅ Goal 2: `Image`, `PNGImage`, `JPGImage`, `SVG` and `SVGImage` are
+      reviewed (Sep 21). Four findings fixed in the four ports with tests: the
+      length of a JPEG frame header against the number of components, as
+      libjpeg checks it; the compression and the filter method of a PNG IHDR,
+      as libpng checks them; the width and the height of an `<svg>` element,
+      which each port read differently and none read with a unit, and a
+      viewBox that is not four numbers; and an image tagged as a paragraph
+      rather than a Figure in a PDF/UA document. The `tRNS` chunk of a
+      grayscale or truecolor PNG is a feature, below.
+- ⬜ **B** Goal 2: review `Page` and `TextLine`, the two with the widest
+      exposure.
 - ⬜ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands.
 
 ### Sep 27–Oct 1: release v9.0.2
@@ -323,6 +328,14 @@ this is started before Oct 21.
       subtotals), and keeping a row with the next one across a page break.
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
+- ⬜ The transparent color of a grayscale or truecolor PNG: a `tRNS` chunk on
+      color type 0 or 2 names one sample value that is transparent, which
+      PDFjet ignores, so those pixels are drawn opaque where a browser and
+      libpng leave them clear. A palette image already gets its alpha from
+      `tRNS`. PDF writes it as `/Mask` with the range of each component, in
+      the bit depth the image is embedded at. Found in the review of Sep 21;
+      `TestPNGImageTruecolorTransparencyIsIgnored` is the test that records
+      today's behavior in the four ports.
 
 ## Known and accepted (document, do not fix)
 

@@ -18,9 +18,17 @@ public class Example_24 {
         let font = try Font(pdf, IBMPlexSans.Regular)
 
         let image1 = try Image(pdf, "images/gr-map.jpg")
+        image1.setAltDescription(
+                "A map of Greece with its cities, roads and airports, the Ionian Sea to the west, the Aegean Sea to the east and Crete to the south.")
         let image2 = try Image(pdf, "images/ee-map.png")
+        image2.setAltDescription(
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.")
         let image3 = try Image(pdf, "images/rgb24pal.bmp")
+        image3.setAltDescription(
+                "The letters BMP in white over bars of red, green, blue, yellow, magenta and cyan.")
         let image4 = try Image(pdf, "images/cmyk.jpg")
+        image4.setAltDescription(
+                "A CMYK test chart: rows of cyan, magenta, yellow and black from 0 to 100 percent in steps of 10, and bars of red, green, blue and rich black.")
 
         var page = Page(pdf, Letter.PORTRAIT)
         let textLine1 = TextLine(font, "This is a JPEG image.")

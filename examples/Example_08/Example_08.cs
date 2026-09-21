@@ -30,6 +30,8 @@ public class Example_08 {
         f3.SetSize(7f);
 
         Image image = new Image(pdf, "images/TeslaX.png");
+        image.SetAltDescription(
+                "A white Tesla Model X with a black glass roof, seen from the front left.");
         image.ScaleBy(0.20f);
 
         Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");

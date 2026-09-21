@@ -75,17 +75,9 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 			for _, attr := range start.Attr {
 				switch attr.Name.Local {
 				case "width":
-					w, err := parseDim(attr.Value)
-					if err != nil {
-						return nil, fmt.Errorf("invalid SVG width: %w", err)
-					}
-					image.w = w
+					image.w = parseLength(attr.Value)
 				case "height":
-					h, err := parseDim(attr.Value)
-					if err != nil {
-						return nil, fmt.Errorf("invalid SVG height: %w", err)
-					}
-					image.h = h
+					image.h = parseLength(attr.Value)
 				case "viewBox":
 					image.viewBox = attr.Value
 				case "fill":
@@ -150,12 +142,39 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 }
 
 // parseDim parses an svgParser dimension value such as "100".
-func parseDim(value string) (float32, error) {
-	v, err := strconv.ParseFloat(strings.TrimSpace(value), 32)
-	if err != nil {
-		return 0, fmt.Errorf("%q: %w", value, err)
+// svgUnits are the units of a length of an SVG file, in points. A number
+// without a unit is in the user unit of the file, which PDFjet draws as a
+// point, and so is a number in px.
+var svgUnits = []struct {
+	suffix string
+	points float32
+}{
+	{"px", 1.0},
+	{"pt", 1.0},
+	{"pc", 12.0},
+	{"in", 72.0},
+	{"mm", 72.0 / 25.4},
+	{"cm", 72.0 / 2.54},
+}
+
+// parseLength returns the width or the height of the svg element in points,
+// and 0 for a length that PDFjet cannot read, a percentage among them, which
+// leaves the size to the viewBox.
+func parseLength(value string) float32 {
+	value = strings.TrimSpace(value)
+	scale := float32(1.0)
+	for _, unit := range svgUnits {
+		if strings.HasSuffix(value, unit.suffix) {
+			value = strings.TrimSpace(strings.TrimSuffix(value, unit.suffix))
+			scale = unit.points
+			break
+		}
 	}
-	return float32(v), nil
+	number, err := strconv.ParseFloat(value, 32)
+	if err != nil {
+		return 0.0
+	}
+	return float32(number) * scale
 }
 
 // parseFloatLenient parses a numeric attribute value, treating an empty
@@ -177,17 +196,26 @@ func (image *SVGImage) processPaths(paths []*svgPath) error {
 	if image.viewBox != "" {
 		list := strings.Fields(strings.TrimSpace(image.viewBox))
 		if len(list) != 4 {
-			return fmt.Errorf("invalid viewBox %q: expected 4 values, got %d", image.viewBox, len(list))
+			return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
 		}
 		for i := range box {
 			val, err := strconv.ParseFloat(list[i], 32)
 			if err != nil {
-				return fmt.Errorf("invalid viewBox %q: %w", image.viewBox, err)
+				return fmt.Errorf("Invalid SVG viewBox %q: four numbers are needed.", image.viewBox)
 			}
 			box[i] = float32(val)
 		}
 		if box[2] == 0 || box[3] == 0 {
-			return fmt.Errorf("degenerate viewBox %q: zero width or height", image.viewBox)
+			return fmt.Errorf("Invalid SVG viewBox %q: its width and height cannot be zero.", image.viewBox)
+		}
+		// A size the file does not give, or one in a unit PDFjet cannot read,
+		// leaves the drawing the size of its viewBox, where scaling it by a
+		// width of zero would draw every path at the origin.
+		if image.w == 0.0 {
+			image.w = box[2]
+		}
+		if image.h == 0.0 {
+			image.h = box[3]
 		}
 	}
 
@@ -399,7 +427,7 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{image.x + image.w, image.y + image.h} // Measured, not drawn
 	}
-	page.AddBDC(structelem.P, image.language, image.actualText, image.altDescription)
+	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}

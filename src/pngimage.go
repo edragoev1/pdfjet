@@ -59,6 +59,16 @@ func newPNGImage(reader io.Reader) *pngImage {
 			image.bitDepth = int(chunk.chunkData[8])    // BitDepth
 			image.colorType = int(chunk.chunkData[9])   // Color Type
 
+			// Only the deflate compression method and the adaptive filter
+			// method are defined, and libpng refuses a file of another one,
+			// where the rows of this one would be read as if it were 0.
+			if chunk.chunkData[10] != 0 {
+				panic("Unknown PNG compression method.")
+			}
+			if chunk.chunkData[11] != 0 {
+				panic("Unknown PNG filter method.")
+			}
+
 			if chunk.chunkData[12] == 1 {
 				panic("Interlaced PNG images are not supported.\n" +
 					"Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png")

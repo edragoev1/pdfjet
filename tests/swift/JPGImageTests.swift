@@ -112,6 +112,21 @@ import Testing
         _ = try JPGImage(InputStream(data: Data(jpegOf([], 3))))
     }
 
+    @Test func aFrameHeaderOfTheWrongLengthFails() throws {
+        // The frame header holds three bytes for each component after its
+        // eight, which libjpeg checks; a reader a PDF is drawn with refuses an
+        // image of another length, where MuPDF draws nothing and says "Bogus
+        // marker length", so PDFjet does not embed one.
+        for wrong: UInt8 in [17 - 3, 17 + 3] {
+            var jpeg = jpegOf([], 3)
+            jpeg[5] = wrong     // The low byte of the length of the frame header
+            #expect(throws: JPGImageError.bogusFrameHeaderLength) {
+                try JPGImage(InputStream(data: Data(jpeg)))
+            }
+        }
+        _ = try JPGImage(InputStream(data: Data(jpegOf([], 3))))
+    }
+
     @Test func onlyTheWholeAdobeAPP14SegmentMarksTheImage() throws {
         #expect(try JPGImage(InputStream(data: Data(jpegOf(adobeAPP14, 4)))).isAdobe())
 

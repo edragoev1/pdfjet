@@ -53,6 +53,8 @@ func Example33() error {
 	if err != nil {
 		return err
 	}
+	svgMap.SetAltDescription(
+		"A map of Europe drawn from an SVG file, the countries filled in peachpuff, Spain in aliceblue and Austria outlined in olive.")
 	svgMap.ScaleBy(0.5)
 	svgMap.SetLocation((page.GetWidth()-svgMap.GetWidth())/2.0, xy[1]+20.0)
 	xy = svgMap.DrawOn(page)
@@ -106,6 +108,9 @@ func Example33() error {
 		if err != nil {
 			return err
 		}
+		// The name under an icon says what it stands for, and so does its
+		// description.
+		icon.SetAltDescription("The " + iconNames[i] + " icon.")
 		icon.SetLocation(x, yIcon)
 		iconXY := icon.DrawOn(page)
 

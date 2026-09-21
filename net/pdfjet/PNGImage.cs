@@ -48,6 +48,15 @@ internal class PNGImage {
                 this.h = (int) ToUInt32(chunk.GetData(), 4);    // Height
                 this.bitDepth = chunk.GetData()[8];             // Bit Depth
                 this.colorType = chunk.GetData()[9];            // Color Type
+                // Only the deflate compression method and the adaptive filter
+                // method are defined, and libpng refuses a file of another
+                // one, where the rows of this one would be read as if it were 0.
+                if (chunk.GetData()[10] != 0) {
+                    throw new Exception("Unknown PNG compression method.");
+                }
+                if (chunk.GetData()[11] != 0) {
+                    throw new Exception("Unknown PNG filter method.");
+                }
 
                 if (chunk.GetData()[12] == 1) {
                     throw new Exception("Interlaced PNG images are not supported.\n" +

@@ -370,7 +370,7 @@ final public class Image implements Drawable {
         if (w == 0f || h == 0f) {
             return new float[] {x + w, y + h};  // A zero size image paints nothing.
         }
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
         page.saveGraphicsState();
 
         if (degrees == 0) {
