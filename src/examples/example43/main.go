@@ -28,7 +28,6 @@ func Example43() {
 	// The whole file is 2000+ pages and is the one to time the library with.
 	fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
 	// fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName := "data/Electric_Vehicle_Population_5_Lines.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	f1.SetSize(10.0)

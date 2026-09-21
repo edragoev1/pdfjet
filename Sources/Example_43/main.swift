@@ -19,7 +19,6 @@ public class Example_43 {
         // The whole file is 2000+ pages and is the one to time the library with.
         let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
         // let fileName = "data/Electric_Vehicle_Population_Data.csv"
-        // let fileName = "data/Electric_Vehicle_Population_5_Lines.csv"
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         f1.setSize(10.0)

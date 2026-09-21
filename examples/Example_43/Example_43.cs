@@ -22,7 +22,6 @@ public class Example_43 {
         // The whole file is 2000+ pages and is the one to time the library with.
         String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
         // String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_5_Lines.csv";
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
         f1.SetSize(10f);
