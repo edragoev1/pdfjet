@@ -407,7 +407,7 @@ func (s *Stamp) drawEncodedText(font *Font, str string) {
 			continue
 		}
 		gid := glyphOf(font, codePoint)
-		if gid == 0 && !isControl(codePoint) {
+		if font.lacks(codePoint) {
 			s.appendString("> Tj\n/Span <</ActualText <")
 			s.appendString(toUTF16Hex(textOf(font, codePoint)))
 			s.appendString(">>> BDC\n<")

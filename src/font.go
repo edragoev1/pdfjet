@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bufio"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"io"
 	"os"
 	"strings"
@@ -626,8 +627,8 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 // advanceWidthOf returns the advance width, in font units, of the glyph that
 // Page draws for the character, the one glyphOf gives: none for an RLM, LRM,
 // ZWNJ, ZWJ or byte order mark, which are not drawn, that of a space for a
-// control character and that of .notdef for a character the font does not
-// have.
+// control character and that of the glyph missingGlyph gives for a character
+// the font does not have.
 func (font *Font) advanceWidthOf(c rune) int {
 	if isJoinerOrRLM(c) || c == 0xFEFF {
 		return 0
@@ -655,7 +656,35 @@ func (font *Font) hasGlyph(c rune) bool {
 	if font.isCoreFont {
 		return c == 32 || font.coreFontCode(c) != 32
 	}
-	return !font.isCJK && glyphOf(font, c) != 0
+	return !font.isCJK && !font.lacks(c)
+}
+
+// lacks returns true if the font has no glyph for the character, which is not
+// a control character. The character map of the font is read from its first
+// to its last character, so a character outside that range has no glyph.
+func (font *Font) lacks(c rune) bool {
+	if isControl(c) {
+		return false
+	}
+	return c < font.firstChar || c > font.lastChar || font.unicodeToGID[c] == 0
+}
+
+// missingGlyph returns the glyph a character the font does not have is drawn
+// with: .notdef, glyph 0, in a document of no compliance. PDF/UA and PDF/A
+// forbid .notdef -- ISO 14289-1 7.21.8 and ISO 19005-2 6.2.11.8 -- so a
+// compliant document draws the replacement character U+FFFD of the font, or a
+// question mark, or a space, the first the font has, and the character is its
+// actual text. A font of a PDF that was read is of no compliance.
+func (font *Font) missingGlyph() int {
+	if font.pdf == nil || font.pdf.compliance == compliance.PDF_1_7 {
+		return 0
+	}
+	for _, c := range []rune{0xFFFD, '?', ' '} {
+		if c >= font.firstChar && c <= font.lastChar && font.unicodeToGID[c] != 0 {
+			return font.unicodeToGID[c]
+		}
+	}
+	return 0
 }
 
 // fontOf returns the font, of the font and its fallback font, that draws the

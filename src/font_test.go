@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"os"
 	"strings"
 	"testing"
@@ -246,6 +247,47 @@ func TestFontAStampDrawsACharacterTheFontDoesNotHaveWithNotdef(t *testing.T) {
 		font.unicodeToGID['a'], font.unicodeToGID[0x20])
 	if content := stamp.buf.String(); !strings.Contains(content, want) {
 		t.Errorf("%q is not in %q", want, content)
+	}
+}
+
+func TestFontACompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef(t *testing.T) {
+	// PDF/UA and PDF/A forbid .notdef, so a PDF/UA document draws the
+	// replacement character of the font, as wide as it is, with the missing
+	// character as its actual text, and never glyph 0.
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	font := testIBMPlexSans(t, pdf)
+	replacement := font.unicodeToGID[0xFFFD]
+	if replacement == 0 {
+		t.Fatal("IBM Plex Sans has no U+FFFD")
+	}
+	width := float32(font.glyphAdvance(replacement)) * 10 / float32(font.unitsPerEm)
+	testNear(t, "a character in the range", width, font.StringWidth(10, "ก"), 0.001)
+	testNear(t, "a character past the range", width, font.StringWidth(10, "\U0001F600"), 0.001)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "ก\U0001F600").SetLocation(10, 20).DrawOn(page)
+	content := testContent(page)
+	glyph := fmt.Sprintf("<%04X> Tj\nEMC\n", replacement)
+	for _, want := range []string{
+		"/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph,
+		"/Span <</ActualText <FEFFD83DDE00>>> BDC\n" + glyph,
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("%q is not in %q", want, content)
+		}
+	}
+	if strings.Contains(content, "<0000>") {
+		t.Errorf(".notdef is drawn: %q", content)
+	}
+	// The stamp draws it so too.
+	stamp := NewStamp(pdf).SetSize(100, 50)
+	stamp.DrawText(font, 10, 5, 20, "ก")
+	if want := "/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph; !strings.Contains(stamp.buf.String(), want) {
+		t.Errorf("%q is not in %q", want, stamp.buf.String())
+	}
+	// The character still has no glyph, so a fallback font draws it.
+	if font.hasGlyph(0x0E01) {
+		t.Error("a missing character has a glyph")
 	}
 }
 
