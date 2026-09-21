@@ -45,17 +45,36 @@ public class Example_22 {
         text.setLocation(90.0, 100.0)
         text.drawOn(page)
 
+        // The contents are a list: each item is the number of its chapter,
+        // which labels the item, and the title of the chapter, which is the
+        // body of the item and the link to it. A reader reads them as the
+        // items of a list and not as lines of text that follow one another.
         var y: Float = 150.0
+        page.beginStructElement(StructElem.L)
         for i in 0..<chapters.count {
-            text = TextLine(f1, "Chapter " + String(i + 1) + ": " + chapters[i])
+            page.beginStructElement(StructElem.LI)
+            let label = "Chapter " + String(i + 1) + ":"
+            text = TextLine(f1, label)
+            text.setStructureType(StructElem.LBL)
+            text.setFontSize(14.0)
+            text.setLocation(90.0, y)
+            text.drawOn(page)
+
+            // The title, its underline and its link are the body of the item,
+            // which is what an LI may hold beside its label.
+            page.beginStructElement(StructElem.LBODY)
+            text = TextLine(f1, chapters[i])
             text.setFontSize(14.0)
             text.setTextColor(Color.blue)
             text.setUnderline(true)
             text.setGoToAction("chapter" + String(i + 1))
-            text.setLocation(90.0, y)
+            text.setLocation(90.0 + f1.stringWidth(14.0, label + " "), y)
             text.drawOn(page)
+            page.endStructElement()
+            page.endStructElement()
             y += 30.0
         }
+        page.endStructElement()
 
         for i in 0..<chapters.count {
             page = Page(pdf, Letter.PORTRAIT)

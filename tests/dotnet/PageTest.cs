@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -254,5 +255,45 @@ public class PageTest {
         page.DrawContents(System.Text.Encoding.Latin1.GetBytes("BT ET"), 100f, 0f, 0f, 1f, 1f);
         Assert.Contains("BT ET\nQ\n", TestSupport.Content(page));
     }
+    [Fact]
+    public void BeginStructElementGroupsWhatIsDrawnIntoAList() {
+        // The items of a list are drawn one at a time, so nothing but the page
+        // can hold them together: L for the list, LI for each item, and Lbl
+        // and LBody for the label and the body of the item.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.BeginStructElement(StructElem.L);
+        string[] items = {"one", "two"};
+        for (int i = 0; i < items.Length; i++) {
+            page.BeginStructElement(StructElem.LI);
+            new TextLine(font, (i + 1) + ".").SetStructureType(StructElem.LBL)
+                    .SetLocation(50f, 50f + 20f*i).DrawOn(page);
+            page.BeginStructElement(StructElem.LBODY);
+            new TextLine(font, items[i]).SetLocation(70f, 50f + 20f*i).DrawOn(page);
+            page.EndStructElement();
+            page.EndStructElement();
+        }
+        page.EndStructElement();
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, raw.Split(new string[] {"/S /L\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /LI\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /Lbl\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /LBody\n"}, StringSplitOptions.None).Length - 1);
+    }
+
+    [Fact]
+    public void EndStructElementWithoutABeginIsRefused() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Exception e = Assert.ThrowsAny<Exception>(() => page.EndStructElement());
+        Assert.Equal("EndStructElement was called without a matching BeginStructElement.",
+                e.Message);
+    }
+
 }
 }

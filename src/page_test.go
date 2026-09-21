@@ -6,12 +6,15 @@
 package pdfjet
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 func TestPageANewPageTracksTheDefaultGraphicsState(t *testing.T) {
@@ -280,5 +283,47 @@ func TestPageImportedContentIsSeparatedFromTheOperatorAfterIt(t *testing.T) {
 	page.DrawContents([]byte("BT ET"), 100, 0, 0, 1, 1)
 	if content := testContent(page); !strings.Contains(content, "BT ET\nQ\n") {
 		t.Error(content)
+	}
+}
+
+func TestPageBeginStructElementGroupsWhatIsDrawnIntoAList(t *testing.T) {
+	// The items of a list are drawn one at a time, so nothing but the page
+	// can hold them together: L for the list, LI for each item, and Lbl and
+	// LBody for the label and the body of the item.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	page.BeginStructElement(structelem.L)
+	for i, item := range []string{"one", "two"} {
+		page.BeginStructElement(structelem.LI)
+		NewTextLine(font, strconv.Itoa(i+1)+".").SetStructureType(structelem.Lbl).
+			SetLocation(50, float32(50+20*i)).DrawOn(page)
+		page.BeginStructElement(structelem.LBody)
+		NewTextLine(font, item).SetLocation(70, float32(50+20*i)).DrawOn(page)
+		page.EndStructElement()
+		page.EndStructElement()
+	}
+	page.EndStructElement()
+	raw := string(doc.complete())
+	counts := map[string]int{
+		"/S /L\n": 1, "/S /LI\n": 2, "/S /Lbl\n": 2, "/S /LBody\n": 2,
+	}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+}
+
+func TestPageEndStructElementWithoutABeginIsRefused(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	NewPage(doc.pdf, letter.Portrait()).EndStructElement()
+	if err := doc.pdf.Complete(); err == nil ||
+		!strings.Contains(err.Error(), "without a matching BeginStructElement") {
+		t.Errorf("want the mistake, got %v", err)
 	}
 }

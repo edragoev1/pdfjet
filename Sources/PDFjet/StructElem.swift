@@ -49,6 +49,8 @@ public enum StructElem: String {
     case L = "L"
     /// The LI structure element.
     case LI = "LI"
+    /// The LBody structure element, the body of a list item.
+    case LBODY = "LBody"
     /// The Table structure element.
     case TABLE = "Table"
     /// The TR structure element.

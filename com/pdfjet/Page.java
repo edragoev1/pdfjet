@@ -89,6 +89,9 @@ final public class Page {
     // The structure element that the elements of addBDC and addAnnotation
     // become the kids of, like a table cell, or null for the Document element.
     StructElement structParent = null;
+    // The elements that beginStructElement was called for and endStructElement
+    // has not been called for yet, innermost last.
+    private final List<StructElement> structElementStack = new ArrayList<StructElement>();
     // While this is set, the marked content of what is drawn belongs to it
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
@@ -2626,6 +2629,32 @@ final public class Page {
     StructElement addStructElement(
             StructElement parent, StructElem structure, String attributes) {
         return addStructElement(parent, structure, attributes, false);
+    }
+
+    /**
+     * Begins a structure element of a PDF/UA document that what is drawn until
+     * endStructElement becomes the kids of, like the L of a list whose items
+     * are drawn one at a time. The calls nest, and every one needs its
+     * endStructElement. In a document that is not PDF/UA both do nothing.
+     *
+     * @param structure the structure element type.
+     */
+    public void beginStructElement(StructElem structure) {
+        StructElement element = addStructElement(structParent, structure, null);
+        structElementStack.add(structParent);
+        if (element != null) {
+            structParent = element;
+        }
+    }
+
+    /** Ends the structure element that beginStructElement began. */
+    public void endStructElement() {
+        if (structElementStack.isEmpty()) {
+            pdf.fail(new IllegalStateException(
+                    "endStructElement was called without a matching beginStructElement."));
+            return;
+        }
+        structParent = structElementStack.remove(structElementStack.size() - 1);
     }
 
     // Adds a structure element that groups its kids. An open element is one a

@@ -99,6 +99,9 @@ type Page struct {
 	// The structure element that the elements of AddBDC and addAnnotation
 	// become the kids of, like a table cell, or nil for the Document element.
 	structParent *structElement
+	// The elements that BeginStructElement was called for and EndStructElement
+	// has not been called for yet, innermost last.
+	structElementStack []*structElement
 	// While this is set, the marked content of what is drawn belongs to it
 	// rather than to an element of its own: a paragraph is one element,
 	// however many words it is drawn one at a time.
@@ -2098,6 +2101,43 @@ func (page *Page) AddEMC() {
 // tagged or the content drawn is an artifact.
 func (page *Page) addStructElement(parent *structElement, structure structelem.StructElem, attributes string) *structElement {
 	return page.addStructElementOpen(parent, structure, attributes, false)
+}
+
+// BeginStructElement begins a structure element of a PDF/UA document that
+// what is drawn until EndStructElement becomes the kids of, like the L of a
+// list whose items are drawn one at a time. The calls nest, and every one
+// needs its EndStructElement. In a document that is not PDF/UA both do
+// nothing.
+//
+// A list of two items is:
+//
+//	page.BeginStructElement(structelem.L)
+//	for i, item := range items {
+//		page.BeginStructElement(structelem.LI)
+//		pdfjet.NewTextLine(font, strconv.Itoa(i+1)+".").
+//			SetStructureType(structelem.Lbl).SetLocation(70, y).DrawOn(page)
+//		pdfjet.NewTextLine(font, item).
+//			SetStructureType(structelem.LBody).SetLocation(90, y).DrawOn(page)
+//		page.EndStructElement()
+//	}
+//	page.EndStructElement()
+func (page *Page) BeginStructElement(structure structelem.StructElem) {
+	element := page.addStructElement(page.structParent, structure, "")
+	page.structElementStack = append(page.structElementStack, page.structParent)
+	if element != nil {
+		page.structParent = element
+	}
+}
+
+// EndStructElement ends the structure element that BeginStructElement began.
+func (page *Page) EndStructElement() {
+	if len(page.structElementStack) == 0 {
+		page.pdf.fail("EndStructElement was called without a matching BeginStructElement.")
+		return
+	}
+	last := len(page.structElementStack) - 1
+	page.structParent = page.structElementStack[last]
+	page.structElementStack = page.structElementStack[:last]
 }
 
 // addStructElementOpen adds a structure element that groups its kids. An open

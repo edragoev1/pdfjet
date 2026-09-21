@@ -58,6 +58,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   paragraph under it, which halves the objects of a tagged table: the document
   of the whole file went from 384 MB to 249 MB, and the time from 4.4 to 3.0
   seconds.
+- The contents of Example_22 are tagged as a list, which no example was: an
+  `L` of an `LI` for each chapter, each holding the `Lbl` of its number and
+  the `LBody` of its title and the link to it. A list is drawn one item at a
+  time and nothing could hold the items together, so `Page.beginStructElement`
+  and `endStructElement` group what is drawn between them into a structure
+  element of any type; they nest, and do nothing in a document that is not
+  PDF/UA. `StructElem` has `LBody`, which all four ports were missing.
 - A paragraph of a `TextColumn` or a `TextFrame` is one structure element in
   a PDF/UA document, of the type `Paragraph.setStructureType` gives it: a
   heading with `StructElem.H1` to `H6`, and a paragraph, which it is, with

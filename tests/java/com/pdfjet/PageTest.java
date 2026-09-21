@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -270,4 +271,45 @@ class PageTest {
         page.drawContents("BT ET".getBytes("ISO-8859-1"), 100f, 0f, 0f, 1f, 1f);
         assertTrue(TestSupport.content(page).contains("BT ET\nQ\n"), TestSupport.content(page));
     }
+    @Test
+    void beginStructElementGroupsWhatIsDrawnIntoAList() throws Exception {
+        // The items of a list are drawn one at a time, so nothing but the page
+        // can hold them together: L for the list, LI for each item, and Lbl
+        // and LBody for the label and the body of the item.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.beginStructElement(StructElem.L);
+        String[] items = {"one", "two"};
+        for (int i = 0; i < items.length; i++) {
+            page.beginStructElement(StructElem.LI);
+            new TextLine(font, (i + 1) + ".").setStructureType(StructElem.LBL)
+                    .setLocation(50f, 50f + 20f*i).drawOn(page);
+            page.beginStructElement(StructElem.LBODY);
+            new TextLine(font, items[i]).setLocation(70f, 50f + 20f*i).drawOn(page);
+            page.endStructElement();
+            page.endStructElement();
+        }
+        page.endStructElement();
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/S /L\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /LI\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /Lbl\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /LBody\n", -1).length - 1, raw);
+    }
+
+    @Test
+    void endStructElementWithoutABeginIsRefused() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        final Page page = new Page(pdf, Letter.PORTRAIT);
+        Exception e = assertThrows(IllegalStateException.class,
+                () -> page.endStructElement());
+        assertEquals("endStructElement was called without a matching beginStructElement.",
+                e.getMessage());
+    }
+
 }

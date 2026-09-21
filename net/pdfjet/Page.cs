@@ -95,6 +95,9 @@ public class Page {
     // The structure element that the elements of AddBDC and AddAnnotation
     // become the kids of, like a table cell, or null for the Document element.
     internal StructElement structParent = null;
+    // The elements that BeginStructElement was called for and EndStructElement
+    // has not been called for yet, innermost last.
+    private readonly List<StructElement> structElementStack = new List<StructElement>();
     // While this is set, the marked content of what is drawn belongs to it
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
@@ -2478,6 +2481,30 @@ public class Page {
     internal StructElement AddStructElement(
             StructElement parent, StructElem structure, String attributes) {
         return AddStructElement(parent, structure, attributes, false);
+    }
+
+    /// <summary>
+    /// Begins a structure element of a PDF/UA document that what is drawn until
+    /// EndStructElement becomes the kids of, like the L of a list whose items are
+    /// drawn one at a time. The calls nest, and every one needs its EndStructElement.
+    /// In a document that is not PDF/UA both do nothing.
+    /// </summary>
+    public void BeginStructElement(StructElem structure) {
+        StructElement element = AddStructElement(structParent, structure, null);
+        structElementStack.Add(structParent);
+        if (element != null) {
+            structParent = element;
+        }
+    }
+
+    /// <summary>Ends the structure element that BeginStructElement began.</summary>
+    public void EndStructElement() {
+        if (structElementStack.Count == 0) {
+            throw new Exception(
+                    "EndStructElement was called without a matching BeginStructElement.");
+        }
+        structParent = structElementStack[structElementStack.Count - 1];
+        structElementStack.RemoveAt(structElementStack.Count - 1);
     }
 
     // Adds a structure element that groups its kids. An open element is one a

@@ -50,6 +50,8 @@ public enum StructElem {
     L,
     /// <summary>The LI structure element.</summary>
     LI,
+    /// <summary>The LBody structure element, the body of a list item.</summary>
+    LBODY,
     /// <summary>The Table structure element.</summary>
     TABLE,
     /// <summary>The TR structure element.</summary>
@@ -94,6 +96,7 @@ internal static class StructElemExtensions {
         "Annot",
         "L",
         "LI",
+        "LBody",
         "Table",
         "TR",
         "TH",

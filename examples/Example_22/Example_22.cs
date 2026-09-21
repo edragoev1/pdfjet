@@ -48,17 +48,36 @@ public class Example_22 {
         text.SetLocation(90f, 100f);
         text.DrawOn(page);
 
+        // The contents are a list: each item is the number of its chapter,
+        // which labels the item, and the title of the chapter, which is the
+        // body of the item and the link to it. A reader reads them as the
+        // items of a list and not as lines of text that follow one another.
         float y = 150f;
+        page.BeginStructElement(StructElem.L);
         for (int i = 0; i < chapters.Length; i++) {
-            text = new TextLine(f1, "Chapter " + (i + 1) + ": " + chapters[i]);
+            page.BeginStructElement(StructElem.LI);
+            String label = "Chapter " + (i + 1) + ":";
+            text = new TextLine(f1, label);
+            text.SetStructureType(StructElem.LBL);
+            text.SetFontSize(14f);
+            text.SetLocation(90f, y);
+            text.DrawOn(page);
+
+            // The title, its underline and its link are the body of the item,
+            // which is what an LI may hold beside its label.
+            page.BeginStructElement(StructElem.LBODY);
+            text = new TextLine(f1, chapters[i]);
             text.SetFontSize(14f);
             text.SetTextColor(Color.blue);
             text.SetUnderline(true);
             text.SetGoToAction("chapter" + (i + 1));
-            text.SetLocation(90f, y);
+            text.SetLocation(90f + f1.StringWidth(14f, label + " "), y);
             text.DrawOn(page);
+            page.EndStructElement();
+            page.EndStructElement();
             y += 30f;
         }
+        page.EndStructElement();
 
         for (int i = 0; i < chapters.Length; i++) {
             page = new Page(pdf, Letter.PORTRAIT);

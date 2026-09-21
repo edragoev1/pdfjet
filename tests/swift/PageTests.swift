@@ -229,4 +229,38 @@ import Testing
         page.drawContents(TestSupport.bytes("BT ET"), 100, 0, 0, 1, 1)
         #expect(TestSupport.content(page).contains("BT ET\nQ\n"), "\(TestSupport.content(page))")
     }
+    @Test func beginStructElementGroupsWhatIsDrawnIntoAList() throws {
+        // The items of a list are drawn one at a time, so nothing but the page
+        // can hold them together: L for the list, LI for each item, and Lbl
+        // and LBody for the label and the body of the item.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        page.beginStructElement(StructElem.L)
+        for (i, item) in ["one", "two"].enumerated() {
+            page.beginStructElement(StructElem.LI)
+            TextLine(font, "\(i + 1).").setStructureType(StructElem.LBL)
+                    .setLocation(50.0, 50.0 + 20.0*Float(i)).drawOn(page)
+            page.beginStructElement(StructElem.LBODY)
+            TextLine(font, item).setLocation(70.0, 50.0 + 20.0*Float(i)).drawOn(page)
+            page.endStructElement()
+            page.endStructElement()
+        }
+        page.endStructElement()
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /L\n").count - 1 == 1)
+        #expect(raw.components(separatedBy: "/S /LI\n").count - 1 == 2)
+        #expect(raw.components(separatedBy: "/S /Lbl\n").count - 1 == 2)
+        #expect(raw.components(separatedBy: "/S /LBody\n").count - 1 == 2)
+    }
+
+    @Test func endStructElementWithoutABeginIsRefused() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        Page(memory.pdf, Letter.PORTRAIT).endStructElement()
+        #expect(throws: (any Error).self) { try memory.pdf.complete() }
+    }
+
 }

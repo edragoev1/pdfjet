@@ -49,17 +49,36 @@ public class Example_22 {
         text.setLocation(90f, 100f);
         text.drawOn(page);
 
+        // The contents are a list: each item is the number of its chapter,
+        // which labels the item, and the title of the chapter, which is the
+        // body of the item and the link to it. A reader reads them as the
+        // items of a list and not as lines of text that follow one another.
         float y = 150f;
+        page.beginStructElement(StructElem.L);
         for (int i = 0; i < chapters.length; i++) {
-            text = new TextLine(f1, "Chapter " + (i + 1) + ": " + chapters[i]);
+            page.beginStructElement(StructElem.LI);
+            String label = "Chapter " + (i + 1) + ":";
+            text = new TextLine(f1, label);
+            text.setStructureType(StructElem.LBL);
+            text.setFontSize(14f);
+            text.setLocation(90f, y);
+            text.drawOn(page);
+
+            // The title, its underline and its link are the body of the item,
+            // which is what an LI may hold beside its label.
+            page.beginStructElement(StructElem.LBODY);
+            text = new TextLine(f1, chapters[i]);
             text.setFontSize(14f);
             text.setTextColor(Color.blue);
             text.setUnderline(true);
             text.setGoToAction("chapter" + (i + 1));
-            text.setLocation(90f, y);
+            text.setLocation(90f + f1.stringWidth(14f, label + " "), y);
             text.drawOn(page);
+            page.endStructElement();
+            page.endStructElement();
             y += 30f;
         }
+        page.endStructElement();
 
         for (int i = 0; i < chapters.length; i++) {
             page = new Page(pdf, Letter.PORTRAIT);

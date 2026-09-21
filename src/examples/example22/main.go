@@ -55,17 +55,36 @@ func Example22() {
 	text.SetLocation(90.0, 100.0)
 	text.DrawOn(page)
 
+	// The contents are a list: each item is the number of its chapter, which
+	// labels the item, and the title of the chapter, which is the body of the
+	// item and the link to it. A reader reads them as the items of a list and
+	// not as lines of text that happen to follow one another.
 	y := float32(150.0)
+	page.BeginStructElement(structelem.L)
 	for i := 0; i < len(chapters); i++ {
-		text = pdfjet.NewTextLine(f1, "Chapter "+fmt.Sprint(i+1)+": "+chapters[i])
+		page.BeginStructElement(structelem.LI)
+		label := "Chapter " + fmt.Sprint(i+1) + ":"
+		text = pdfjet.NewTextLine(f1, label)
+		text.SetStructureType(structelem.Lbl)
+		text.SetFontSize(14.0)
+		text.SetLocation(90.0, y)
+		text.DrawOn(page)
+
+		// The title, its underline and its link are the body of the item,
+		// which is what an LI may hold beside its label.
+		page.BeginStructElement(structelem.LBody)
+		text = pdfjet.NewTextLine(f1, chapters[i])
 		text.SetFontSize(14.0)
 		text.SetTextColor(color.Blue)
 		text.SetUnderline(true)
 		text.SetGoToAction("chapter" + fmt.Sprint(i+1))
-		text.SetLocation(90.0, y)
+		text.SetLocation(90.0+f1.StringWidth(14.0, label+" "), y)
 		text.DrawOn(page)
+		page.EndStructElement()
+		page.EndStructElement()
 		y += 30.0
 	}
+	page.EndStructElement()
 
 	for i := 0; i < len(chapters); i++ {
 		page = pdfjet.NewPage(pdf, letter.Portrait())

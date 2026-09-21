@@ -172,16 +172,15 @@ work to Oct 21 is the seven goals below, in this order.
      paragraphs and Example_03 had 48 for 26. The titles of Example_03 and
      Example_10 are headings now. A `Chart` needed nothing: it is one Figure
      with an alternate description, and its title belongs inside it.
-   - ⬜ No example uses the L, LI, Lbl and LBody tags. This is not a tagging
-     change but a feature: `LI` is only valid inside `L`, and nothing can
-     group drawables into an `L`. What it needs is either a way to open and
-     close a structure element around what is drawn, or for a `TextColumn` and
-     a `TextFrame` to wrap a run of `LI` paragraphs in an `L` of their own.
-     The two places a list is drawn are the numbered paragraphs of
-     Example_03, whose numbers are drawn
-     in a second pass and so would read after all the text rather than each
-     before its own paragraph, and the contents of Example_22, which is a list
-     of `TextLine` and would tag cleanly.
+   - ✅ The contents of Example_22 are tagged as a list (Sep 21), which no
+     example did: an `L` of an `LI` for each chapter, each with the `Lbl` of
+     its number and the `LBody` of its title and the link to it.
+     `Page.beginStructElement` and `endStructElement` group what is drawn
+     between them, which nothing could do before, and `LBody` was missing
+     from `StructElem` in all four ports. The numbered paragraphs of
+     Example_03 are a list too, and are not tagged as one: their numbers are
+     drawn in a second pass, after all the text, so they would read after it
+     rather than each before its own paragraph.
    - ✅ A tagged `BigTable` held every structure element until the document
      was written, so the 29 MB data file of Example_43 took 778 MB of heap
      (Sep 21). The elements of a page are written with the page now, and a

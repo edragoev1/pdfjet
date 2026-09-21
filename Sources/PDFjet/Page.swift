@@ -104,6 +104,9 @@ public class Page {
     // The structure element that the elements of addBDC and addAnnotation
     // become the kids of, like a table cell, or nil for the Document element.
     internal var structParent: StructElement?
+    // The elements that beginStructElement was called for and endStructElement
+    // has not been called for yet, innermost last.
+    internal var structElementStack = [StructElement?]()
     // While this is set, the marked content of what is drawn belongs to it
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
@@ -2374,6 +2377,27 @@ public class Page {
             _ structure: StructElem,
             _ attributes: String?) -> StructElement? {
         return addStructElement(parent, structure, attributes, false)
+    }
+
+    /// Begins a structure element of a PDF/UA document that what is drawn until
+    /// endStructElement becomes the kids of, like the L of a list whose items are
+    /// drawn one at a time. The calls nest, and every one needs its
+    /// endStructElement. In a document that is not PDF/UA both do nothing.
+    public func beginStructElement(_ structure: StructElem) {
+        let element = addStructElement(structParent, structure, nil)
+        structElementStack.append(structParent)
+        if element != nil {
+            structParent = element
+        }
+    }
+
+    /// Ends the structure element that beginStructElement began.
+    public func endStructElement() {
+        if structElementStack.isEmpty {
+            pdf.fail("endStructElement was called without a matching beginStructElement.")
+            return
+        }
+        structParent = structElementStack.removeLast()
     }
 
     // Adds a structure element that groups its kids. An open element is one a

@@ -32,6 +32,7 @@ const (
 	Annot               = "Annot"
 	L                   = "L"
 	LI                  = "LI"
+	LBody               = "LBody"
 	Table               = "Table"
 	TR                  = "TR"
 	TH                  = "TH"

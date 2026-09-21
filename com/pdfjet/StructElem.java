@@ -56,6 +56,8 @@ public enum StructElem {
     L("L"),
     /** The LI structure element. */
     LI("LI"),
+    /** The LBody structure element, the body of a list item. */
+    LBODY("LBody"),
     // Tables
     /** The Table structure element. */
     TABLE("Table"),
