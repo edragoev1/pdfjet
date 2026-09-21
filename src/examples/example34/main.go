@@ -66,7 +66,8 @@ func Example34() {
 
 	table.SetTableData(tableData, 2)
 	table.SetBottomMargin(15.0)
-	table.SetLocation(70.0, 30.0)
+	// The table is about 555 points wide: at x = 30 it fits on the page.
+	table.SetLocation(30.0, 30.0)
 	table.SetTextColorInRow(6, color.Blue)
 	table.SetTextColorInRow(39, color.Red)
 	table.SetFontInRow(26, f3)

@@ -28,7 +28,9 @@ func Example32() {
 	pdf.SetTitle("The Source Code of Example_02")
 
 	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
-	font.SetSize(10.0)
+	// The longest lines of Example_02 are 143 characters: at 8 points a
+	// landscape page holds them.
+	font.SetSize(8.0)
 
 	colors := make(map[string]int32)
 	colors["new"] = color.Red
@@ -36,7 +38,7 @@ func Example32() {
 	colors["void"] = color.Green
 	grayColor := [3]float32{0.2, 0.2, 0.2}
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+	page := pdfjet.NewPage(pdf, letter.Landscape())
 	x := float32(50.0)
 	y := float32(50.0)
 	leading := font.GetBodyHeight(font.GetSize())
@@ -45,7 +47,7 @@ func Example32() {
 		pdfjet.NewTextLine(font, line).SetTextColorRGB(grayColor).SetHighlightColors(colors).SetLocation(x, y).DrawOn(page)
 		y += leading
 		if y > (page.GetHeight() - 20.0) {
-			page = pdfjet.NewPage(pdf, letter.Portrait())
+			page = pdfjet.NewPage(pdf, letter.Landscape())
 			y = 50.0
 		}
 	}

@@ -216,7 +216,7 @@ Flows a long text through the columns of a page and on to the next pages with te
 Draws rows of an image with text next to it. The drawOn methods of the image and the text block return where they end, so each row starts below the taller of the two.
 
 @example 32 Source code with highlighted keywords
-Draws the source of Example 02 in JetBrains Mono, with its keywords in colors, starting a new page when one is full.
+Draws the source of Example 02 in JetBrains Mono on landscape pages, wide enough for its longest lines, with its keywords in colors, starting a new page when one is full.
 
 # Tables
 

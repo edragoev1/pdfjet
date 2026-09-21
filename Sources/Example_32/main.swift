@@ -16,7 +16,9 @@ public class Example_32 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("The Source Code of Example_02")
         let font = try Font(pdf, JetBrainsMono.Regular)
-        font.setSize(10.0)
+        // The longest lines of Example_02 are 143 characters: at 8 points a
+        // landscape page holds them.
+        font.setSize(8.0)
 
         var colors = [String:Int32]()
         colors["new"] = Color.red
@@ -24,7 +26,7 @@ public class Example_32 {
         colors["void"] = Color.green
         let grayColor: [Float] = [0.2, 0.2, 0.2]
 
-        var page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.LANDSCAPE)
         let x: Float = 50.0
         var y: Float = 50.0
         let leading = font.getBodyHeight()
@@ -33,7 +35,7 @@ public class Example_32 {
             TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page)
             y += leading
             if y > (page.getHeight() - 20.0) {
-                page = Page(pdf, Letter.PORTRAIT)
+                page = Page(pdf, Letter.LANDSCAPE)
                 y = 50.0
             }
         }

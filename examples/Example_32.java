@@ -22,7 +22,9 @@ public class Example_32 {
         pdf.setTitle("The Source Code of Example_02");
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
-        font.setSize(10f);
+        // The longest lines of Example_02 are 143 characters: at 8 points a
+        // landscape page holds them.
+        font.setSize(8f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
         colors.put("new", Color.red);
@@ -30,7 +32,7 @@ public class Example_32 {
         colors.put("void", Color.green);
         float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Page page = new Page(pdf, Letter.LANDSCAPE);
         float x = 50f;
         float y = 50f;
         float leading = font.getBodyHeight();
@@ -39,7 +41,7 @@ public class Example_32 {
             new TextLine(font, line).setTextColor(grayColor).setHighlightColors(colors).setLocation(x, y).drawOn(page);
             y += leading;
             if (y > (page.getHeight() - 20f)) {
-                page = new Page(pdf, Letter.PORTRAIT);
+                page = new Page(pdf, Letter.LANDSCAPE);
                 y = 50f;
             }
         }

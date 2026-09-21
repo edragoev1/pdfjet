@@ -55,7 +55,8 @@ final public class Example_34 {
 
         table.setTableData(tableData, 2);
         table.setBottomMargin(15f);
-        table.setLocation(70f, 30f);
+        // The table is about 555 points wide: at x = 30 it fits on the page.
+        table.setLocation(30f, 30f);
         table.setTextColorInRow(6, Color.blue);
         table.setTextColorInRow(39, Color.red);
         table.setFontInRow(26, f3);
