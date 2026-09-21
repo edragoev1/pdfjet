@@ -7,7 +7,9 @@
 # then checks the PDFs: each example must render the same, with the same text
 # and drawing instructions, in every port as in Java, and the examples that
 # declare PDF/A or PDF/UA compliance must pass veraPDF. The java8 job builds the
-# Java port with JDK 8 and runs its examples on Java 8.
+# Java port with JDK 8 and runs its examples on Java 8. The corpus job reads,
+# merges and splits the pdf.js and veraPDF test corpora with the Go port and
+# checks what it gets against MuPDF.
 
 name: Build
 
@@ -212,3 +214,33 @@ jobs:
               run: |
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-pdfua-tags.py \
                       "$RUNNER_TEMP/pdfs/example-pdfs-java"
+
+    # Checks the reader against real PDFs with tests/corpus/check-corpus.py.
+    # The corpora are fetched, not committed, and cached by the commits that
+    # fetch-corpora.sh pins.
+    corpus:
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - name: Install PyMuPDF
+              run: |
+                  python3 -m venv "$RUNNER_TEMP/venv"
+                  "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2
+
+            - uses: actions/cache@v6
+              with:
+                  path: .corpora
+                  key: corpora-${{ hashFiles('tests/corpus/fetch-corpora.sh') }}
+
+            - name: Fetch the corpora
+              run: tests/corpus/fetch-corpora.sh .corpora
+
+            - name: Check the reader against the corpora
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" tests/corpus/check-corpus.py .corpora --port go

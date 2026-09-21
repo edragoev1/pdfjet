@@ -1,0 +1,51 @@
+# Files of the corpora whose difference from MuPDF is understood, as
+# "path: reason", the path relative to the folder fetch-corpora.sh fills. A
+# file listed here that passes fails the check: take it off when it is fixed.
+#
+# "Bug" is a fault of the reader that is to be fixed; the others are what the
+# reader does by design.
+
+# Bug: GetPageSize does not follow a /MediaBox that is a reference, or whose
+# numbers are, and gives Letter; the merged pages keep the right box.
+pdfjs/test/pdfs/bug852992_reduced.pdf: bug: /MediaBox 4 0 R
+pdfjs/test/pdfs/issue17056.pdf: bug: /MediaBox 68 0 R
+pdfjs/test/pdfs/issue18030.pdf: bug: /MediaBox 13 0 R
+pdfjs/test/pdfs/issue19207.pdf: bug: /MediaBox 11 0 R
+pdfjs/test/pdfs/issue7872.pdf: bug: /MediaBox [4 0 R 5 0 R 6 0 R 7 0 R]
+# Bug: GetPageSize gives an empty /MediaBox as 0x0, where MuPDF and pdf.js draw
+# the page as Letter.
+pdfjs/test/pdfs/boundingBox_invalid.pdf: bug: /MediaBox [0 0 0 0]
+
+# Bug: a stream whose /Length is missing or wrong is cut to that length, and
+# the merge writes it cut. MuPDF and pdf.js look for the endstream keyword
+# when it is not where /Length says.
+pdfjs/test/pdfs/issue1293r.pdf: bug: a stream with no /Length is written empty
+pdfjs/test/pdfs/issue6069.pdf: bug: a /Length too short cuts the stream
+pdfjs/test/pdfs/issue6108.pdf: bug: a /Length too short cuts the stream
+
+# Bug: an object numbered higher than the file has bytes is refused, a guard
+# the fuzzing added against a file of a few bytes taking gigabytes. A PDF may
+# number its objects as it likes, and MuPDF reads this one.
+pdfjs/test/pdfs/issue16091.pdf: bug: object 156337 in a file of 107355 bytes
+
+# To be decided: the reader decodes every stream as it reads it, so a stream
+# that cannot be inflated, an image or a page's content, makes the whole file
+# unreadable, though a merge copies the stream as it is. MuPDF decodes what
+# it can and reads the rest.
+pdfjs/test/pdfs/bug1019475_1.pdf: a Flate stream cut short
+pdfjs/test/pdfs/bug1050040.pdf: a Flate stream with a wrong checksum
+pdfjs/test/pdfs/comments.pdf: a Flate stream cut short
+pdfjs/test/pdfs/highlights.pdf: a Flate stream cut short
+pdfjs/test/pdfs/issue11045.pdf: a Flate stream cut short
+pdfjs/test/pdfs/issue11651.pdf: a Flate stream with a wrong checksum
+pdfjs/test/pdfs/issue3885.pdf: a Flate stream cut short
+pdfjs/test/pdfs/issue7665.pdf: a Flate stream with no zlib header
+pdfjs/test/pdfs/multiple-filters-length-zero.pdf: a Flate stream of length 0
+pdfjs/test/pdfs/poppler-90-0-fuzzed.pdf: a corrupt Flate stream
+verapdf/Isartor test files/PDFA-1b/6.1 File structure/6.1.7 Stream objects/isartor-6-1-7-t01-fail-a.pdf: a Flate stream with no zlib header
+verapdf/PDF_A-2b/6.2 Graphics/6.2.3 Output intent/veraPDF test suite 6-2-3-t01-fail-b.pdf: a Flate stream with no zlib header
+verapdf/PDF_A-4/6.2 Graphics/6.2.3 Output intent/veraPDF test suite 6-2-3-t01-fail-b.pdf: a Flate stream with no zlib header
+
+# The BrotliDecode filter, proposed for PDF and not in ISO 32000, which the
+# reader does not decode: its object stream is refused as malformed.
+pdfjs/test/pdfs/Brotli-Prototype-FileA.pdf: BrotliDecode is not supported
