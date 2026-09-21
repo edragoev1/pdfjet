@@ -160,9 +160,11 @@ work to Oct 21 is the seven goals below, in this order.
    widths of the rows of the tables. It runs in `check-examples.sh` and in the
    Build workflow. There are 39 PDF/UA examples, not 41: Example_30 is
    encrypted and Example_43 has its `setCompliance` commented out and stays
-   that way. What the first run found is fixed (Sep 21): not one heading was
-   tagged as a heading in any of them, though 23 draw a visible title, so
-   every title was a paragraph. What is left for this goal:
+   that way: a tagged table of 2000+ pages is an object for every cell, which
+   is 249 MB rather than 11.8 MB, and the example says so. What the first run
+   found is fixed (Sep 21): not one heading was tagged as a heading in any of
+   them, though 23 draw a visible title, so every title was a paragraph. What
+   is left for this goal:
    - ⬜ `TextColumn`, `Paragraph` and `Chart` cannot tag a heading, so the
      titles of Example_03, Example_10 and Example_39 are still paragraphs.
      `setStructureType` is on `TextLine` alone.

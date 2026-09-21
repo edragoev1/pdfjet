@@ -13,12 +13,19 @@ import PDFjet
 public class Example_43 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_43.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
+        // Uncomment the line below to make this a PDF/UA document. A BigTable
+        // is tagged as a table: a TR for each row, holding a TH or a TD with
+        // the text of each cell, which is what a screen reader reads a table
+        // from. It is off here because of what it costs at this size: every
+        // tagged cell is an object of its own, so this document goes from
+        // 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB. The
+        // 10-page file below is the size to see the tagging at.
+        // pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Electric Vehicle Population Data")    // Required for PDF/UA !
 
-        // The whole file is 2000+ pages and is the one to time the library with.
-        let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
-        // let fileName = "data/Electric_Vehicle_Population_Data.csv"
+        // Used for performance testing. Results in 2000+ pages PDF.
+        let fileName = "data/Electric_Vehicle_Population_Data.csv"
+        // let fileName = "data/Electric_Vehicle_Population_10_Pages.csv"
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         f1.setSize(10.0)

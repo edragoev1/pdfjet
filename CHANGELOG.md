@@ -41,7 +41,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   Column scope for each field of the header the first time it is drawn or a TD
   for each field of a row, each holding the text of its cell. The header where
   it repeats on the next pages, the row shading, the lines and the page number
-  are artifacts. Example_43 is a PDF/UA document now.
+  are artifacts. Example_43, which draws a table of 2000+ pages, says in a
+  comment how to turn it on and what it costs at that size: every tagged cell
+  is an object of its own, so the document goes from 5,108 objects and 11.8 MB
+  to 1.25 million objects and 249 MB. It is left off there for that reason.
 - The structure elements of a page are written with the page, so a tagged
   document holds no more of them than the page it is drawing. They were all
   held until the document was written, which is what a structure tree of one
