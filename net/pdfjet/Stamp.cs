@@ -399,7 +399,7 @@ public class Stamp : IDrawable {
             // does not have is drawn in a marked content span with the
             // character as its actual text, as on a page.
             int gid = Page.GlyphOf(font, codePoint);
-            if (gid == 0 && !Font.IsControl(codePoint)) {
+            if (font.Lacks(codePoint)) {
                 Append("> Tj\n/Span <</ActualText <");
                 Append(Page.ToUTF16Hex(Page.TextOf(font, codePoint)));
                 Append(">>> BDC\n<");

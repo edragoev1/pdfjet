@@ -250,6 +250,40 @@ public class FontTest {
     }
 
     [Fact]
+    public void ACompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef() {
+        // PDF/UA and PDF/A forbid .notdef, so a PDF/UA document draws the
+        // replacement character of the font, as wide as it is, with the missing
+        // character as its actual text, and never glyph 0.
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        Font font = IBMPlexSans(pdf);
+        if (font == null) {
+            return;     // The fonts directory is not here.
+        }
+        int replacement = font.unicodeToGID[0xFFFD];
+        Assert.True(replacement != 0, "IBM Plex Sans has no U+FFFD");
+        float width = font.GlyphAdvance(replacement) * 10f / font.unitsPerEm;
+        TestSupport.AssertNear(width, font.StringWidth(10f, "ก"), 0.001f, "a character in the range");
+        TestSupport.AssertNear(width, font.StringWidth(10f, "\U0001F600"), 0.001f, "a character past the range");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "ก\U0001F600").SetLocation(10f, 20f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        string glyph = "<" + replacement.ToString("X4") + "> Tj\nEMC\n";
+        Assert.Contains("/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph, content);
+        Assert.Contains("/Span <</ActualText <FEFFD83DDE00>>> BDC\n" + glyph, content);
+        Assert.DoesNotContain("<0000>", content);
+        // The stamp draws it so too.
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
+        stamp.DrawText(font, 10f, 5f, 20f, "ก");
+        stamp.Complete();
+        pdf.Complete();
+        Assert.Contains("/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph, TestSupport.Latin1(stream.ToArray()));
+        // The character still has no glyph, so a fallback font draws it.
+        Assert.False(font.HasGlyph(0x0E01), "a missing character has a glyph");
+    }
+
+    [Fact]
     public void AControlCharacterStaysInTheFontOfItsText() {
         // A control character is drawn as a space by the font, not by the
         // fallback font: the fallback font would draw it as a space too.

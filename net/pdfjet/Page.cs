@@ -761,7 +761,7 @@ public class Page {
                     codePoints[n] = codePoint;
                     gids[n] = GlyphOf(font, codePoint);
                     hasMarks |= IsMark(codePoint);
-                    hasNotdef |= IsNotdef(codePoints, gids, n);
+                    hasNotdef |= IsMissing(font, codePoints, n);
                     n++;
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
@@ -852,10 +852,10 @@ public class Page {
             Font font, int[] codePoints, int[] gids, bool[] mirrored, int[] offsets, int i, int end) {
         int wordStart = i;
         int wordEnd = end;
-        while (wordStart < wordEnd && InOwnSpan(codePoints, gids, mirrored, wordStart)) {
+        while (wordStart < wordEnd && InOwnSpan(font, codePoints, mirrored, wordStart)) {
             wordStart++;
         }
-        while (wordEnd > wordStart && InOwnSpan(codePoints, gids, mirrored, wordEnd - 1)) {
+        while (wordEnd > wordStart && InOwnSpan(font, codePoints, mirrored, wordEnd - 1)) {
             wordEnd--;
         }
         if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {
@@ -872,7 +872,7 @@ public class Page {
     private void AppendGlyphs(
             Font font, int[] codePoints, int[] gids, bool[] mirrored, int start, int end) {
         for (int k = start; k < end; k++) {
-            if (InOwnSpan(codePoints, gids, mirrored, k)) {
+            if (InOwnSpan(font, codePoints, mirrored, k)) {
                 AppendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 AppendCodePointAsHex(gids[k]);
@@ -941,33 +941,33 @@ public class Page {
     }
 
     // Returns the glyph ID the character is drawn with: that of a space for a
-    // control character, which has no glyph to draw, and .notdef, glyph 0, for
-    // a character the font does not have, so that a reader sees a box where
-    // the character is missing and not a space, as other PDF writers draw it.
-    // The character map of the font is read from its first to its last
-    // character, so a character outside that range has no glyph.
+    // control character, which has no glyph to draw, and for a character the
+    // font does not have the glyph MissingGlyph gives, .notdef in a document of
+    // no compliance, so that a reader sees a box where the character is missing
+    // and not a space, as other PDF writers draw it.
     internal static int GlyphOf(Font font, int codePoint) {
         if (Font.IsControl(codePoint)) {
             return font.unicodeToGID[0x0020];
         }
-        if (codePoint < font.firstChar || codePoint > font.lastChar) {
-            return 0;
+        if (font.Lacks(codePoint)) {
+            return font.MissingGlyph();
         }
         return font.unicodeToGID[codePoint];
     }
 
-    // Returns true if the glyph at k is .notdef, the glyph of a character the
-    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
-    // A control character is drawn as a space even when the font has none.
-    private static bool IsNotdef(int[] codePoints, int[] gids, int k) {
-        return gids[k] == 0 && !Font.IsControl(codePoints[k]);
+    // Returns true if the character at k is one the font does not have, which
+    // is drawn with the glyph MissingGlyph gives. The ToUnicode map of the font
+    // maps that glyph to U+FFFD or to the character it is, so it is drawn in a
+    // span whose actual text is the character that is missing.
+    private static bool IsMissing(Font font, int[] codePoints, int k) {
+        return font.Lacks(codePoints[k]);
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its
     // own, with the text it stands for as its actual text: a character Bidi
-    // mirrored, and a character the font does not have, drawn with .notdef.
-    private static bool InOwnSpan(int[] codePoints, int[] gids, bool[] mirrored, int k) {
-        return (mirrored != null && mirrored[k]) || IsNotdef(codePoints, gids, k);
+    // mirrored, and a character the font does not have.
+    private static bool InOwnSpan(Font font, int[] codePoints, bool[] mirrored, int k) {
+        return (mirrored != null && mirrored[k]) || IsMissing(font, codePoints, k);
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -1080,8 +1080,8 @@ public class Page {
 
     // Returns true if the text has a character that is more than a glyph: an
     // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
-    // place, or a character the font does not have, whose .notdef glyph is
-    // drawn with the character as its actual text. Vectorized scans settle
+    // place, or a character the font does not have, whose glyph is drawn with
+    // the character as its actual text. Vectorized scans settle
     // text before U+0300, where there are no joiners or marks, and Greek and
     // Cyrillic text; from there each character is one bit of a table, so that
     // CJK text costs a load and a test for each.
@@ -1129,7 +1129,7 @@ public class Page {
     // every font, whose range is 16 bits.
     private static bool HasNotdef(Font font, string str) {
         foreach (char c in str) {
-            if (c != 0xFEFF && GlyphOf(font, c) == 0 && !Font.IsControl(c)) {
+            if (c != 0xFEFF && font.Lacks(c)) {
                 return true;
             }
         }
