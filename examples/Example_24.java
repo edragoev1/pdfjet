@@ -59,7 +59,8 @@ public class Example_24 {
         TextLine textLine4 = new TextLine(font, "This is a CMYK JPEG image, with its inks stored inverted, as Photoshop saves them.");
         textLine4.setLocation(50f, 50f);
         point = textLine4.drawOn(page);
-        image4.setLocation(50f, point[1] + 5f).scaleBy(0.425f).drawOn(page);
+        // The image is 300 DPI, so its size is 72/300 of its pixels.
+        image4.setLocation(50f, point[1] + 5f).scaleBy(0.425f*300f/72f).drawOn(page);
 
         pdf.complete();
     }

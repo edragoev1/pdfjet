@@ -63,6 +63,7 @@ class JPGImage {
     static final char M_SOF13 = (char) 0x00CD;
     static final char M_SOF14 = (char) 0x00CE;
     static final char M_SOF15 = (char) 0x00CF;
+    static final char M_APP0  = (char) 0x00E0;  // The JFIF segment, among others
     static final char M_APP14 = (char) 0x00EE;
     // The markers that stand alone, with no parameter segment to skip.
     static final char M_TEM   = (char) 0x0001;  // Temporary, for arithmetic coding
@@ -78,6 +79,13 @@ class JPGImage {
     // True when an APP14 segment says that Adobe software wrote the image,
     // which stores the inks of a CMYK image inverted, 255 for no ink.
     boolean adobe;
+    // The pixel density of the JFIF segment and the unit it is in: 1 is the
+    // inch and 2 the centimetre, and 0 is the ratio of the two axes with no
+    // size to it. The segment comes before the frame header, so the size the
+    // image asks for is worked out after the frame header gives its pixels.
+    private int densityUnit;
+    private int xDensity;
+    private int yDensity;
     byte[] data;
 
     public JPGImage(InputStream inputStream) throws Exception {
@@ -183,6 +191,10 @@ class JPGImage {
                 foundSOFn = true;
                 break;
 
+                case M_APP0:
+                readAPP0(is);
+                break;
+
                 case M_APP14:
                 readAPP14(is);
                 break;
@@ -256,6 +268,61 @@ class JPGImage {
     }
 
     // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
+    // Reads the pixel density of a JFIF segment, which is the first segment of
+    // a JFIF file: "JFIF", a zero byte, the version, the unit of the density
+    // and the density of each axis. A segment of another kind, the JFXX
+    // extension among them, is passed over. The resolution an Exif segment
+    // holds is not read: it is a TIFF image file directory, which is a format
+    // of its own, and a JFIF segment is what the density of a JPEG is.
+    private void readAPP0(InputStream is) throws IOException {
+        int length = getUInt16(is);
+        if (length < 2) {
+            throw new IOException("Invalid marker segment length.");
+        }
+        byte[] segment = new byte[length - 2];
+        for (int i = 0; i < segment.length; i++) {
+            segment[i] = (byte) readByte(is);   // throws on EOF
+        }
+        if (segment.length >= 12 &&
+                segment[0] == 'J' && segment[1] == 'F' && segment[2] == 'I' &&
+                segment[3] == 'F' && segment[4] == 0) {
+            densityUnit = segment[7] & 0xFF;
+            xDensity = ((segment[8] & 0xFF) << 8) | (segment[9] & 0xFF);
+            yDensity = ((segment[10] & 0xFF) << 8) | (segment[11] & 0xFF);
+        }
+    }
+
+    // The points a unit of the density is: an inch is 72 of them and a
+    // centimetre 72/2.54. Unit 0 is a ratio of the axes with no size to it.
+    private double pointsPerUnit() {
+        if (densityUnit == 1) {
+            return 72.0;
+        } else if (densityUnit == 2) {
+            return 72.0/2.54;
+        }
+        return 0.0;
+    }
+
+    // The size the image asks to be drawn at, in points, or 0 when the JFIF
+    // segment gives none: no segment, a unit that is a ratio rather than a
+    // size, no density at all, or a size too large for a PDF number.
+    float getPhysicalWidth() {
+        return physicalSize(this.width, this.xDensity);
+    }
+
+    float getPhysicalHeight() {
+        return physicalSize(this.height, this.yDensity);
+    }
+
+    private float physicalSize(int pixels, int density) {
+        double points = pointsPerUnit();
+        if (points == 0.0 || density <= 0 || xDensity <= 0 || yDensity <= 0) {
+            return 0f;
+        }
+        float size = (float) (pixels*points/density);
+        return FastFloat.isWritable(size) ? size : 0f;
+    }
+
     private void readAPP14(InputStream is) throws IOException {
         int length = getUInt16(is);
         if (length < 2) {

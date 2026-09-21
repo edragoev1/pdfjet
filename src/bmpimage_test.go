@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"os"
 	"testing"
 )
 
@@ -213,4 +214,52 @@ func TestBMPImageTheLastRowCanBeWithoutItsPadding(t *testing.T) {
 		t.Errorf("pixels %v, not %v", got, want)
 	}
 	testWant(t, "Unexpected end of stream: expected 6 bytes", testBMPError(bmp[:len(bmp)-3]))
+}
+
+func TestBMPImageThePixelsPerMeterOfTheHeaderGiveTheSizeTheImageIsDrawnAt(t *testing.T) {
+	// The header of a BMP holds the pixels per metre of each axis.
+	// palette.bmp is 100 by 100 pixels at 4724 per metre, which is 120 dots
+	// per inch and 60 by 60 points.
+	path := testRepoPath(t, "images/palette.bmp")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bmp := newBMPImage(bytes.NewReader(data))
+	if bmp.getWidth() != 100 || bmp.getHeight() != 100 {
+		t.Fatalf("pixels %v x %v", bmp.getWidth(), bmp.getHeight())
+	}
+	if math.Abs(float64(bmp.physicalWidth)-60.0) > 0.05 ||
+		math.Abs(float64(bmp.physicalHeight)-60.0) > 0.05 {
+		t.Errorf("physical size %v x %v", bmp.physicalWidth, bmp.physicalHeight)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	image := NewImage(testNewPDF(), file)
+	if math.Abs(float64(image.GetWidth())-60.0) > 0.05 ||
+		math.Abs(float64(image.GetHeight())-60.0) > 0.05 {
+		t.Errorf("the image is drawn %v x %v, not the size it asks for",
+			image.GetWidth(), image.GetHeight())
+	}
+}
+
+func TestBMPImageAHeaderWithNoPixelsPerMeterLeavesTheSizeOfThePixels(t *testing.T) {
+	// Most writers leave the two fields at 0, which says nothing about how
+	// large the image is, so it keeps one point for each of its pixels. The
+	// header is built here because the files of the repository both carry a
+	// resolution.
+	data, err := os.ReadFile(testRepoPath(t, "images/palette.bmp"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 38; i < 46; i++ {
+		data[i] = 0
+	}
+	bmp := newBMPImage(bytes.NewReader(data))
+	if bmp.physicalWidth != 0.0 || bmp.physicalHeight != 0.0 {
+		t.Errorf("physical size %v x %v", bmp.physicalWidth, bmp.physicalHeight)
+	}
 }

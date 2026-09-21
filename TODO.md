@@ -471,6 +471,20 @@ goal 5, the references, which is the first thing to give if anything does.
       the chunk, of which four are used by an example: Example_08 and
       Example_10 scale theirs by hand and their factors are adjusted so the
       pages are unchanged, and Example_17 and Example_22 take the new size.
+- ✅ A JPEG and a BMP are drawn at the size they ask for too (Sep 21), which
+      makes the three formats agree: the JFIF density of a JPEG and the
+      pixels per metre of a BMP header say the same thing the `pHYs` chunk of
+      a PNG does, and reading one and not the others is the worse of the two
+      inconsistencies. Three tests in each port for the JPEG and two for the
+      BMP. `cmyk.jpg` and `spain-admin.jpg` are 300 dpi and `palette.bmp` is
+      120; Example_19 and Example_36 size their image from its width and are
+      unchanged, and the factor of Example_24 is adjusted.
+      What is left of it: the resolution an Exif segment of a JPEG holds is
+      not read, so a JPEG whose resolution is only in its Exif -- a scan or a
+      photograph -- is still drawn at one point for each pixel. Exif is a
+      TIFF image file directory, a format of its own, and parsing it is new
+      code in a reader of untrusted input, which is worth its own work and
+      its own fuzzing rather than riding along here.
 
 ### Sep 27–Oct 1: release v9.0.2
 

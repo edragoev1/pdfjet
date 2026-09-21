@@ -21,6 +21,14 @@ class BMPImage {
     private int bpp;
     private byte[][] palette;
     private int[] masks;    // The red, green and blue masks of a 16 or 32 bit pixel
+    // The size the header gives the image, in points, or 0 when it gives
+    // none: the pixels per metre of each axis, which most writers leave at 0.
+    private float physicalWidth;
+    private float physicalHeight;
+
+    // A metre is 72/0.0254 points.
+    private const double POINTS_PER_METER = 72.0/0.0254;
+
     private bool topDown;   // If the first row is the top row
 
     private const int BI_RGB = 0;
@@ -88,7 +96,10 @@ class BMPImage {
                 throw new Exception(
                         "The BMP image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
             }
-            SkipNBytes(stream, 12);
+            SkipNBytes(stream, 4);                      // The size of the pixels
+            int pixelsPerMeterX = ReadSignedInt(stream);
+            int pixelsPerMeterY = ReadSignedInt(stream);
+            SetPhysicalSize(pixelsPerMeterX, pixelsPerMeterY);
             int colorsUsed = ReadSignedInt(stream);
             SkipNBytes(stream, 4);
             long read = 54;     // The bytes read so far
@@ -299,6 +310,38 @@ class BMPImage {
         val <<= 8;
         val |= (uint) buf[ 0 ] & 0xff;
         return (int)val;
+    }
+
+    // Works out the size the image asks to be drawn at from the pixels per
+    // metre of the header. Most writers leave the two at 0, and a size too
+    // large for a PDF number is passed over; the image keeps the size of its
+    // pixels for both.
+    private void SetPhysicalSize(int pixelsPerMeterX, int pixelsPerMeterY) {
+        if (pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0) {
+            return;
+        }
+        float width = (float) (this.w*POINTS_PER_METER/pixelsPerMeterX);
+        float height = (float) (this.h*POINTS_PER_METER/pixelsPerMeterY);
+        if (FastFloat.IsWritable(width) && FastFloat.IsWritable(height)) {
+            this.physicalWidth = width;
+            this.physicalHeight = height;
+        }
+    }
+
+    /// <summary>
+    /// Returns the width in points the header asks for, or 0 when the header
+    /// gives no size.
+    /// </summary>
+    public float GetPhysicalWidth() {
+        return this.physicalWidth;
+    }
+
+    /// <summary>
+    /// Returns the height in points the header asks for, or 0 when the header
+    /// gives no size.
+    /// </summary>
+    public float GetPhysicalHeight() {
+        return this.physicalHeight;
     }
 
     public int GetWidth() {

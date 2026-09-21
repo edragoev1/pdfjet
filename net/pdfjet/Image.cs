@@ -69,6 +69,7 @@ public class Image : IDrawable {
                 invertedInks = jpg.IsAdobe();
                 AddImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
+            SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
@@ -85,13 +86,14 @@ public class Image : IDrawable {
                     AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-            SetPhysicalSize(png);
+            SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
             w = bmp.GetWidth();
             h = bmp.GetHeight();
             AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
+            SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
 
         inputStream.Dispose();
@@ -127,6 +129,7 @@ public class Image : IDrawable {
                 invertedInks = jpg.IsAdobe();
                 AddImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
+            SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
@@ -143,13 +146,14 @@ public class Image : IDrawable {
                     AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-            SetPhysicalSize(png);
+            SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
             w = bmp.GetWidth();
             h = bmp.GetHeight();
             AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+            SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
         inputStream.Close();
     }
@@ -210,14 +214,16 @@ public class Image : IDrawable {
         return SetLocation(x, y);
     }
 
-    // Draws the image at the size its pHYs chunk asks for, when it has one.
+    // Draws the image at the size the file asks for, when it asks for one: the
+    // pHYs chunk of a PNG, the JFIF density of a JPEG or the pixels per metre
+    // of a BMP.
     // The width and the height are the pixels of the image until here, which
     // is what the image object of the PDF is written with, and are the size it
     // is drawn at from here on.
-    private void SetPhysicalSize(PNGImage png) {
-        if (png.GetPhysicalWidth() > 0f && png.GetPhysicalHeight() > 0f) {
-            this.w = png.GetPhysicalWidth();
-            this.h = png.GetPhysicalHeight();
+    private void SetPhysicalSize(float width, float height) {
+        if (width > 0f && height > 0f) {
+            this.w = width;
+            this.h = height;
         }
     }
 

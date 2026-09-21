@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -197,5 +198,54 @@ class JPGImageTest {
         before.write(app14('N', 'o', 't', ' ', 'A', 'd', 'o', 'b', 'e', 0, 0, 0));
         assertTrue(new JPGImage(new ByteArrayInputStream(
                 jpegOf(before.toByteArray(), 4))).isAdobe());
+    }
+
+    @Test
+    void theJfifDensityGivesTheSizeTheImageIsDrawnAt() throws Exception {
+        // The JFIF segment of a JPEG holds the pixel density and the unit it
+        // is in, and says how large the image is meant to be. cmyk.jpg is
+        // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
+        JPGImage jpg = new JPGImage(TestSupport.open("images/cmyk.jpg"));
+        assertEquals(1200, jpg.getWidth());
+        assertEquals(800, jpg.getHeight());
+        assertEquals(288f, jpg.getPhysicalWidth(), 0.01f);
+        assertEquals(192f, jpg.getPhysicalHeight(), 0.01f);
+
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("images/cmyk.jpg"));
+        assertEquals(288f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
+        assertEquals(192f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
+    }
+
+    @Test
+    void aJfifDensityThatGivesNoSizeIsPassedOver() throws Exception {
+        // Unit 0 of the JFIF segment is the ratio of the two axes and says
+        // nothing about how large the image is, and a JPEG with no JFIF
+        // segment at all gives no size either. Both keep one point for each
+        // of their pixels.
+        JPGImage ratio = new JPGImage(TestSupport.open("images/italy-admin.jpg"));
+        assertEquals(0f, ratio.getPhysicalWidth(), "a ratio is not a size");
+        JPGImage none = new JPGImage(TestSupport.open("images/gr-map.jpg"));
+        assertEquals(0f, none.getPhysicalWidth(), "there is no JFIF segment");
+
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("images/italy-admin.jpg"));
+        assertEquals(ratio.getWidth(), image.getWidth(), 0.01f);
+        assertEquals(ratio.getHeight(), image.getHeight(), 0.01f);
+    }
+
+    @Test
+    void theJfifDensityLeavesThePixelsOfTheImageObjectAlone() throws Exception {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the segment says.
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Image image = new Image(pdf, TestSupport.open("images/cmyk.jpg"));
+        image.setLocation(0f, 0f);
+        image.drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image");
+        assertTrue(raw.contains("/Height 800\n"), "the image object lost the pixels of the image");
     }
 }

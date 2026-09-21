@@ -58,7 +58,8 @@ public class Example_24 {
         TextLine textLine4 = new TextLine(font, "This is a CMYK JPEG image, with its inks stored inverted, as Photoshop saves them.");
         textLine4.SetLocation(50f, 50f);
         point = textLine4.DrawOn(page);
-        image4.SetLocation(50f, point[1] + 5f).ScaleBy(0.425f).DrawOn(page);
+        // The image is 300 DPI, so its size is 72/300 of its pixels.
+        image4.SetLocation(50f, point[1] + 5f).ScaleBy(0.425f*300f/72f).DrawOn(page);
 
         pdf.Complete();
     }

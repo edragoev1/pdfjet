@@ -190,5 +190,54 @@ public sealed class JPGImageTest {
         before.Write(App14('N', 'o', 't', ' ', 'A', 'd', 'o', 'b', 'e', 0, 0, 0));
         Assert.True(new JPGImage(new MemoryStream(JpegOf(before.ToArray(), 4))).IsAdobe());
     }
+    [Fact]
+    public void TheJfifDensityGivesTheSizeTheImageIsDrawnAt() {
+        // The JFIF segment of a JPEG holds the pixel density and the unit it
+        // is in, and says how large the image is meant to be. cmyk.jpg is
+        // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
+        JPGImage jpg = new JPGImage(TestSupport.Open("images/cmyk.jpg"));
+        Assert.Equal(1200, jpg.GetWidth());
+        Assert.Equal(800, jpg.GetHeight());
+        Assert.True(Math.Abs(jpg.GetPhysicalWidth() - 288f) < 0.01f);
+        Assert.True(Math.Abs(jpg.GetPhysicalHeight() - 192f) < 0.01f);
+
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("images/cmyk.jpg"));
+        Assert.True(Math.Abs(image.GetWidth() - 288f) < 0.01f,
+                "the image is not drawn at the size it asks for");
+        Assert.True(Math.Abs(image.GetHeight() - 192f) < 0.01f,
+                "the image is not drawn at the size it asks for");
+    }
+
+    [Fact]
+    public void AJfifDensityThatGivesNoSizeIsPassedOver() {
+        // Unit 0 of the JFIF segment is the ratio of the two axes and says
+        // nothing about how large the image is, and a JPEG with no JFIF
+        // segment at all gives no size either.
+        JPGImage ratio = new JPGImage(TestSupport.Open("images/italy-admin.jpg"));
+        Assert.Equal(0f, ratio.GetPhysicalWidth());
+        JPGImage none = new JPGImage(TestSupport.Open("images/gr-map.jpg"));
+        Assert.Equal(0f, none.GetPhysicalWidth());
+
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("images/italy-admin.jpg"));
+        Assert.True(Math.Abs(image.GetWidth() - ratio.GetWidth()) < 0.01f);
+        Assert.True(Math.Abs(image.GetHeight() - ratio.GetHeight()) < 0.01f);
+    }
+
+    [Fact]
+    public void TheJfifDensityLeavesThePixelsOfTheImageObjectAlone() {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the segment says.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Image image = new Image(pdf, TestSupport.Open("images/cmyk.jpg"));
+        image.SetLocation(0f, 0f);
+        image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Contains("/Width 1200\n", raw);
+        Assert.Contains("/Height 800\n", raw);
+    }
 }
 }

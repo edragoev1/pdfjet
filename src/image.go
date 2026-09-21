@@ -85,6 +85,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 			image.invertedInks = jpg.isAdobe()
 			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
 		}
+		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		data := png.GetData()
@@ -101,13 +102,14 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 			}
 			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
-		image.setPhysicalSize(png)
+		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
 		image.w = bmp.getWidth()
 		image.h = bmp.getHeight()
 		image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
+		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
 
 	return image
@@ -139,6 +141,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 			image.invertedInks = jpg.isAdobe()
 			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
 		}
+		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		data := png.GetData()
@@ -155,13 +158,14 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 			}
 			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
 		}
-		image.setPhysicalSize(png)
+		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
 		image.w = bmp.getWidth()
 		image.h = bmp.getHeight()
 		image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
+		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
 
 	return image
@@ -232,14 +236,15 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	return image
 }
 
-// setPhysicalSize draws the image at the size its pHYs chunk asks for, when it
-// has one. The width and the height are the pixels of the image until here,
+// setPhysicalSize draws the image at the size the file asks for, when it asks
+// for one: the pHYs chunk of a PNG, the JFIF density of a JPEG or the pixels
+// per metre of a BMP. The width and the height are the pixels of the image until here,
 // which is what the image object of the PDF is written with, and are the size
 // it is drawn at from here on.
-func (image *Image) setPhysicalSize(png *pngImage) {
-	if png.physicalWidth > 0.0 && png.physicalHeight > 0.0 {
-		image.w = png.physicalWidth
-		image.h = png.physicalHeight
+func (image *Image) setPhysicalSize(width, height float32) {
+	if width > 0.0 && height > 0.0 {
+		image.w = width
+		image.h = height
 	}
 }
 

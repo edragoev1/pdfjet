@@ -63,6 +63,7 @@ class JPGImage {
     let M_SOF13: UInt8 = 0xCD
     let M_SOF14: UInt8 = 0xCE
     let M_SOF15: UInt8 = 0xCF
+    let M_APP0: UInt8 = 0xE0   // The JFIF segment, among others
     let M_APP14: UInt8 = 0xEE
     // The markers that stand alone, with no parameter segment to skip.
     let M_TEM: UInt8   = 0x01       // Temporary, for arithmetic coding
@@ -78,6 +79,13 @@ class JPGImage {
     // True when an APP14 segment says that Adobe software wrote the image,
     // which stores the inks of a CMYK image inverted, 255 for no ink.
     var adobe = false
+    // The pixel density of the JFIF segment and the unit it is in: 1 is the
+    // inch and 2 the centimetre, and 0 is the ratio of the two axes with no
+    // size to it. The segment comes before the frame header, so the size the
+    // image asks for is worked out after the frame header gives its pixels.
+    private var densityUnit: UInt8 = 0
+    private var xDensity: UInt16 = 0
+    private var yDensity: UInt16 = 0
     var data: [UInt8]
     var index = 0
 
@@ -180,6 +188,8 @@ class JPGImage {
                     readAdobeMarker(&buffer)
                 }
                 break
+            } else if ch == M_APP0 {
+                try readAPP0(&buffer)
             } else if ch == M_APP14 {
                 try readAPP14(&buffer)
             } else {
@@ -261,6 +271,61 @@ class JPGImage {
     }
 
     // Reads an APP14 segment, which Adobe software writes starting with "Adobe".
+    // Reads the pixel density of a JFIF segment, which is the first segment of
+    // a JFIF file: "JFIF", a zero byte, the version, the unit of the density
+    // and the density of each axis. A segment of another kind, the JFXX
+    // extension among them, is passed over. The resolution an Exif segment
+    // holds is not read: it is a TIFF image file directory, which is a format
+    // of its own, and a JFIF segment is what the density of a JPEG is.
+    private func readAPP0(_ buffer: inout [UInt8]) throws {
+        let length = try getUInt16(&buffer)
+        if length < 2 {
+            throw JPGImageError.invalidSegmentLength
+        }
+        let end = index + Int(length) - 2
+        guard end <= buffer.count else {
+            throw JPGImageError.unexpectedEndOfJPEGData
+        }
+        if end - index >= 12 &&
+                buffer[index..<(index + 5)].elementsEqual([0x4A, 0x46, 0x49, 0x46, 0x00]) {
+            densityUnit = buffer[index + 7]
+            xDensity = UInt16(buffer[index + 8]) << 8 | UInt16(buffer[index + 9])
+            yDensity = UInt16(buffer[index + 10]) << 8 | UInt16(buffer[index + 11])
+        }
+        index = end
+    }
+
+    // The points a unit of the density is: an inch is 72 of them and a
+    // centimetre 72/2.54. Unit 0 is a ratio of the axes with no size to it.
+    private func pointsPerUnit() -> Double {
+        if densityUnit == 1 {
+            return 72.0
+        } else if densityUnit == 2 {
+            return 72.0/2.54
+        }
+        return 0.0
+    }
+
+    // The size the image asks to be drawn at, in points, or 0 when the JFIF
+    // segment gives none: no segment, a unit that is a ratio rather than a
+    // size, no density at all, or a size too large for a PDF number.
+    func getPhysicalWidth() -> Float {
+        return physicalSize(self.width, self.xDensity)
+    }
+
+    func getPhysicalHeight() -> Float {
+        return physicalSize(self.height, self.yDensity)
+    }
+
+    private func physicalSize(_ pixels: UInt16, _ density: UInt16) -> Float {
+        let points = pointsPerUnit()
+        if points == 0.0 || density == 0 || xDensity == 0 || yDensity == 0 {
+            return 0.0
+        }
+        let size = Float(Double(pixels)*points/Double(density))
+        return FastFloat.isWritable(size) ? size : 0.0
+    }
+
     private func readAPP14(_ buffer: inout [UInt8]) throws {
         let length = try getUInt16(&buffer)
         if length < 2 {

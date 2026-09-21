@@ -85,6 +85,7 @@ public class Image : Drawable {
                 invertedInks = jpg.isAdobe()
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceCMYK", 8)
             }
+            setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             w = Float(png.getWidth())
@@ -100,12 +101,13 @@ public class Image : Drawable {
                     addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
                 }
             }
-            setPhysicalSize(png)
+            setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
+            setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
         }
     }
 
@@ -137,6 +139,7 @@ public class Image : Drawable {
                 invertedInks = jpg.isAdobe()
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceCMYK", 8)
             }
+            setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             data = png.getData()
@@ -155,13 +158,14 @@ public class Image : Drawable {
                     addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
                 }
             }
-            setPhysicalSize(png)
+            setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
             data = bmp.getData()
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
+            setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
         }
     }
 
@@ -217,14 +221,16 @@ public class Image : Drawable {
     }
 
     ///
-    // Draws the image at the size its pHYs chunk asks for, when it has one.
+    // Draws the image at the size the file asks for, when it asks for one: the
+    // pHYs chunk of a PNG, the JFIF density of a JPEG or the pixels per metre
+    // of a BMP.
     // The width and the height are the pixels of the image until here, which
     // is what the image object of the PDF is written with, and are the size it
     // is drawn at from here on.
-    private func setPhysicalSize(_ png: PNGImage) {
-        if png.getPhysicalWidth() > 0.0 && png.getPhysicalHeight() > 0.0 {
-            self.w = png.getPhysicalWidth()
-            self.h = png.getPhysicalHeight()
+    private func setPhysicalSize(_ width: Float, _ height: Float) {
+        if width > 0.0 && height > 0.0 {
+            self.w = width
+            self.h = height
         }
     }
 

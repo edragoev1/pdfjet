@@ -161,4 +161,47 @@ import Testing
         let before = adobeAPP14 + app14(Array("Not Adobe".utf8) + [0, 0, 0])
         #expect(try JPGImage(InputStream(data: Data(jpegOf(before, 4)))).isAdobe())
     }
+    @Test func theJfifDensityGivesTheSizeTheImageIsDrawnAt() throws {
+        // The JFIF segment of a JPEG holds the pixel density and the unit it
+        // is in, and says how large the image is meant to be. cmyk.jpg is
+        // 1200 by 800 pixels at 300 dots per inch, which is 288 by 192 points.
+        let jpg = try JPGImage(TestSupport.open("images/cmyk.jpg"))
+        #expect(jpg.getWidth() == 1200)
+        #expect(jpg.getHeight() == 800)
+        #expect(abs(jpg.getPhysicalWidth() - 288.0) < 0.01)
+        #expect(abs(jpg.getPhysicalHeight() - 192.0) < 0.01)
+
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/cmyk.jpg"))
+        #expect(abs(image.getWidth() - 288.0) < 0.01, "the image is not drawn at the size it asks for")
+        #expect(abs(image.getHeight() - 192.0) < 0.01, "the image is not drawn at the size it asks for")
+    }
+
+    @Test func aJfifDensityThatGivesNoSizeIsPassedOver() throws {
+        // Unit 0 of the JFIF segment is the ratio of the two axes and says
+        // nothing about how large the image is, and a JPEG with no JFIF
+        // segment at all gives no size either.
+        for (what, name) in [("a ratio is not a size", "images/italy-admin.jpg"),
+                             ("there is no JFIF segment", "images/gr-map.jpg")] {
+            let jpg = try JPGImage(TestSupport.open(name))
+            #expect(jpg.getPhysicalWidth() == 0.0, "\(what)")
+            #expect(jpg.getPhysicalHeight() == 0.0, "\(what)")
+        }
+        let jpg = try JPGImage(TestSupport.open("images/italy-admin.jpg"))
+        let image = try Image(TestSupport.newPDF(), TestSupport.open("images/italy-admin.jpg"))
+        #expect(abs(image.getWidth() - Float(jpg.getWidth())) < 0.01)
+        #expect(abs(image.getHeight() - Float(jpg.getHeight())) < 0.01)
+    }
+
+    @Test func theJfifDensityLeavesThePixelsOfTheImageObjectAlone() throws {
+        // The size the image is drawn at is not the size of its samples: the
+        // image object of the PDF holds the pixels, whatever the segment says.
+        let memory = MemoryPDF()
+        let image = try Image(memory.pdf, TestSupport.open("images/cmyk.jpg"))
+        image.setLocation(0.0, 0.0)
+        image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image")
+        #expect(raw.contains("/Height 800\n"), "the image object lost the pixels of the image")
+    }
 }

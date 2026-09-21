@@ -15,6 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
 // bmpImage describes BMP image object.
@@ -26,6 +27,30 @@ type bmpImage struct {
 	palette  [][]byte
 	masks    []uint32 // The red, green and blue masks of a 16 or 32 bit pixel
 	topDown  bool     // If the first row is the top row
+
+	// The size the header gives the image, in points, or 0 when it gives
+	// none: the pixels per metre of each axis, which most writers leave at 0.
+	physicalWidth  float32
+	physicalHeight float32
+}
+
+// bmpPointsPerMeter is the points a metre is: 72/0.0254.
+const bmpPointsPerMeter = 72.0 / 0.0254
+
+// setPhysicalSize works out the size the image asks to be drawn at from the
+// pixels per metre of the header. Most writers leave the two at 0, and a size
+// too large for a PDF number is passed over; the image keeps the size of its
+// pixels for both.
+func (image *bmpImage) setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY int) {
+	if pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0 {
+		return
+	}
+	width := float32(float64(image.w) * bmpPointsPerMeter / float64(pixelsPerMeterX))
+	height := float32(float64(image.h) * bmpPointsPerMeter / float64(pixelsPerMeterY))
+	if fastfloat.IsWritable(width) && fastfloat.IsWritable(height) {
+		image.physicalWidth = width
+		image.physicalHeight = height
+	}
 }
 
 const (
@@ -98,7 +123,10 @@ func newBMPImage(reader io.Reader) *bmpImage {
 			rowSize*int64(image.h) > decompressor.MaxDecodedLength {
 			panic(fmt.Sprintf("The BMP image is larger than %d bytes.", decompressor.MaxDecodedLength))
 		}
-		skipNBytes(reader, 12)
+		skipNBytes(reader, 4) // The size of the pixels
+		pixelsPerMeterX := readSignedInt(reader)
+		pixelsPerMeterY := readSignedInt(reader)
+		image.setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY)
 		colorsUsed := readSignedInt(reader)
 		skipNBytes(reader, 4)
 		read := 54 // The bytes read so far

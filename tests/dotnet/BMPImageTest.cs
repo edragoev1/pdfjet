@@ -230,5 +230,38 @@ public class BMPImageTest {
         Assert.Equal(Decode(bmp), Decode(bmp[..^2]));
         Assert.Equal("Unexpected end of stream: expected 6 bytes", DecodeError(bmp[..^3]));
     }
+    [Fact]
+    public void ThePixelsPerMeterOfTheHeaderGiveTheSizeTheImageIsDrawnAt() {
+        // The header of a BMP holds the pixels per metre of each axis.
+        // palette.bmp is 100 by 100 pixels at 4724 per metre, which is 120
+        // dots per inch and 60 by 60 points.
+        BMPImage bmp = new BMPImage(TestSupport.Open("images/palette.bmp"));
+        Assert.Equal(100, bmp.GetWidth());
+        Assert.Equal(100, bmp.GetHeight());
+        Assert.True(Math.Abs(bmp.GetPhysicalWidth() - 60f) < 0.05f);
+        Assert.True(Math.Abs(bmp.GetPhysicalHeight() - 60f) < 0.05f);
+
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("images/palette.bmp"));
+        Assert.True(Math.Abs(image.GetWidth() - 60f) < 0.05f,
+                "the image is not drawn at the size it asks for");
+        Assert.True(Math.Abs(image.GetHeight() - 60f) < 0.05f,
+                "the image is not drawn at the size it asks for");
+    }
+
+    [Fact]
+    public void AHeaderWithNoPixelsPerMeterLeavesTheSizeOfThePixels() {
+        // Most writers leave the two fields at 0, which says nothing about
+        // how large the image is, so it keeps one point for each of its
+        // pixels. The header is built here because the files of the
+        // repository both carry a resolution.
+        byte[] bmp = System.IO.File.ReadAllBytes(TestSupport.RepoPath("images/palette.bmp"));
+        for (int i = 38; i < 46; i++) {
+            bmp[i] = 0;
+        }
+        BMPImage image = new BMPImage(new System.IO.MemoryStream(bmp));
+        Assert.Equal(0f, image.GetPhysicalWidth());
+        Assert.Equal(0f, image.GetPhysicalHeight());
+    }
 }
 }

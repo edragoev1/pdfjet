@@ -48,6 +48,7 @@ import (
 	"io"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
 // jpgImage describes JPG image object.
@@ -58,8 +59,15 @@ type jpgImage struct {
 	// adobe is true when an APP14 segment says that Adobe software wrote the
 	// image, which stores the inks of a CMYK image inverted, 255 for no ink.
 	adobe bool
-	data  []byte
-	index int
+	// The pixel density of the JFIF segment and the unit it is in: 1 is the
+	// inch and 2 the centimetre, and 0 is the ratio of the two axes with no
+	// size to it. The segment comes before the frame header, so the size the
+	// image asks for is worked out after the frame header gives its pixels.
+	densityUnit uint8
+	xDensity    uint16
+	yDensity    uint16
+	data        []byte
+	index       int
 }
 
 // Constants
@@ -77,6 +85,7 @@ const (
 	mSOF13 = uint8(0xCD)
 	mSOF14 = uint8(0xCE)
 	mSOF15 = uint8(0xCF)
+	mAPP0  = uint8(0xE0) // The JFIF segment, among others
 	mAPP14 = uint8(0xEE)
 	// The markers that stand alone, with no parameter segment to skip.
 	mTEM  = uint8(0x01) // Temporary, for arithmetic coding
@@ -220,6 +229,11 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			}
 			return image, nil
 
+		case mAPP0:
+			if err := image.readAPP0(buffer); err != nil {
+				return nil, err
+			}
+
 		case mAPP14:
 			if err := image.readAPP14(buffer); err != nil {
 				return nil, err
@@ -318,6 +332,68 @@ func (image *jpgImage) nextMarker(buffer []byte) (uint8, error) {
 
 // readAPP14 reads an APP14 segment, which Adobe software writes starting with
 // "Adobe".
+// readAPP0 reads the pixel density of a JFIF segment, which is the first
+// segment of a JFIF file: "JFIF", a zero byte, the version, the unit of the
+// density and the density of each axis. A segment of another kind, the JFXX
+// extension among them, is passed over. The resolution an Exif segment holds
+// is not read: it is a TIFF image file directory, which is a format of its
+// own, and a JFIF segment is what the density of a JPEG is.
+func (image *jpgImage) readAPP0(buffer []byte) error {
+	length, err := image.getUint16(buffer)
+	if err != nil {
+		return err
+	}
+	if length < 2 {
+		return errors.New("Error: Length includes itself, so must be at least 2.")
+	}
+	end := image.index + int(length) - 2
+	if end > len(buffer) {
+		return io.ErrUnexpectedEOF
+	}
+	if end-image.index >= 12 && string(buffer[image.index:image.index+5]) == "JFIF\x00" {
+		image.densityUnit = buffer[image.index+7]
+		image.xDensity = uint16(buffer[image.index+8])<<8 | uint16(buffer[image.index+9])
+		image.yDensity = uint16(buffer[image.index+10])<<8 | uint16(buffer[image.index+11])
+	}
+	image.index = end
+	return nil
+}
+
+// pointsPerUnit returns the points a unit of the density is: an inch is 72 of
+// them and a centimetre 72/2.54. Unit 0 is a ratio of the axes with no size.
+func (image *jpgImage) pointsPerUnit() float64 {
+	if image.densityUnit == 1 {
+		return 72.0
+	} else if image.densityUnit == 2 {
+		return 72.0 / 2.54
+	}
+	return 0.0
+}
+
+// GetPhysicalWidth returns the size the image asks to be drawn at, in points,
+// or 0 when the JFIF segment gives none: no segment, a unit that is a ratio
+// rather than a size, no density at all, or a size too large for a PDF number.
+func (image *jpgImage) GetPhysicalWidth() float32 {
+	return image.physicalSize(image.width, image.xDensity)
+}
+
+// GetPhysicalHeight returns the height the image asks to be drawn at.
+func (image *jpgImage) GetPhysicalHeight() float32 {
+	return image.physicalSize(image.height, image.yDensity)
+}
+
+func (image *jpgImage) physicalSize(pixels, density uint16) float32 {
+	points := image.pointsPerUnit()
+	if points == 0.0 || density == 0 || image.xDensity == 0 || image.yDensity == 0 {
+		return 0.0
+	}
+	size := float32(float64(pixels) * points / float64(density))
+	if !fastfloat.IsWritable(size) {
+		return 0.0
+	}
+	return size
+}
+
 func (image *jpgImage) readAPP14(buffer []byte) error {
 	length, err := image.getUint16(buffer)
 	if err != nil {

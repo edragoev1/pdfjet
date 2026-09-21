@@ -20,6 +20,14 @@ class BMPImage {
     private var masks = [UInt32]()      // The red, green and blue masks of a 16 or 32 bit pixel
     private var topDown: Bool = false   // If the first row is the top row
 
+    // The size the header gives the image, in points, or 0 when it gives
+    // none: the pixels per metre of each axis, which most writers leave at 0.
+    private var physicalWidth: Float = 0.0
+    private var physicalHeight: Float = 0.0
+
+    // A metre is 72/0.0254 points.
+    private static let POINTS_PER_METER = 72.0/0.0254
+
     private let BI_RGB = 0
     private let BI_BITFIELDS = 3
 
@@ -92,7 +100,10 @@ class BMPImage {
                     samples > MAX_DECODED_LENGTH || rows > MAX_DECODED_LENGTH {
                 throw PDFjetError(message: "The BMP image is larger than \(MAX_DECODED_LENGTH) bytes.")
             }
-            try skipNBytes(stream, 12)
+            try skipNBytes(stream, 4)   // The size of the pixels
+            let pixelsPerMeterX = try readSignedInt(stream)
+            let pixelsPerMeterY = try readSignedInt(stream)
+            setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY)
             let colorsUsed = try readSignedInt(stream)
             try skipNBytes(stream, 4)
             var read = 54       // The bytes read so far
@@ -331,6 +342,34 @@ class BMPImage {
     }
 
     /// Returns the image width.
+    // Works out the size the image asks to be drawn at from the pixels per
+    // metre of the header. Most writers leave the two at 0, and a size too
+    // large for a PDF number is passed over; the image keeps the size of its
+    // pixels for both.
+    private func setPhysicalSize(_ pixelsPerMeterX: Int, _ pixelsPerMeterY: Int) {
+        if pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0 {
+            return
+        }
+        let width = Float(Double(self.w)*BMPImage.POINTS_PER_METER/Double(pixelsPerMeterX))
+        let height = Float(Double(self.h)*BMPImage.POINTS_PER_METER/Double(pixelsPerMeterY))
+        if FastFloat.isWritable(width) && FastFloat.isWritable(height) {
+            self.physicalWidth = width
+            self.physicalHeight = height
+        }
+    }
+
+    /// Returns the width in points the header asks for, or 0 when the header
+    /// gives no size.
+    public func getPhysicalWidth() -> Float {
+        return self.physicalWidth
+    }
+
+    /// Returns the height in points the header asks for, or 0 when the header
+    /// gives no size.
+    public func getPhysicalHeight() -> Float {
+        return self.physicalHeight
+    }
+
     public func getWidth() -> Int {
         return self.w
     }

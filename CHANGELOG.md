@@ -162,6 +162,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A JPEG is drawn at the size the density of its JFIF segment asks for and a
+  BMP at the size the pixels per metre of its header ask for, in all four
+  ports, as a PNG is drawn at the size of its `pHYs` chunk below. The three
+  formats all carry the size the image is meant to be, and honouring it for
+  one of them and not the others is the worse of the two inconsistencies.
+  Unit 0 of a JFIF segment is the ratio of the two axes with no size to it,
+  and an image with that, with no JFIF segment, or with a BMP header whose
+  two fields are 0, which is what most writers leave them at, is drawn at one
+  point for each pixel as before. The resolution an Exif segment of a JPEG
+  holds is not read: it is a TIFF image file directory, a format of its own,
+  and the JFIF segment is what the density of a JPEG is. `images/cmyk.jpg`
+  and `images/spain-admin.jpg` are 300 dpi and `images/palette.bmp` is 120
+  dpi; Example_19 and Example_36 size their image from its width so they are
+  unchanged, and the factor Example_24 scales by is adjusted so its page is
+  unchanged too. `images/rgb24pal.bmp` says 2835 pixels per metre, which is
+  72.009 dpi rather than 72, so it is drawn 126.98 by 63.99 points instead of
+  127 by 64.
 - A PNG is drawn at the size its `pHYs` chunk asks for, in all four ports.
   The chunk holds the pixels per unit of each axis, and a PNG written at 300
   or 120 dots per inch was drawn at one point for each of its pixels, which

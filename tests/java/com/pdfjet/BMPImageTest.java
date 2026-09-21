@@ -202,4 +202,34 @@ class BMPImageTest {
         assertEquals("Unexpected end of stream: expected 6 bytes",
                 decodeError(java.util.Arrays.copyOf(bmp, bmp.length - 3)));
     }
+
+    @Test
+    void thePixelsPerMeterOfTheHeaderGiveTheSizeTheImageIsDrawnAt() throws Exception {
+        // The header of a BMP holds the pixels per metre of each axis.
+        // palette.bmp is 100 by 100 pixels at 4724 per metre, which is 120
+        // dots per inch and 60 by 60 points.
+        BMPImage bmp = new BMPImage(TestSupport.open("images/palette.bmp"));
+        assertEquals(100, bmp.getWidth());
+        assertEquals(100, bmp.getHeight());
+        assertEquals(60f, bmp.getPhysicalWidth(), 0.05f);
+        assertEquals(60f, bmp.getPhysicalHeight(), 0.05f);
+
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("images/palette.bmp"));
+        assertEquals(60f, image.getWidth(), 0.05f, "the image is not drawn at the size it asks for");
+        assertEquals(60f, image.getHeight(), 0.05f, "the image is not drawn at the size it asks for");
+    }
+
+    @Test
+    void aHeaderWithNoPixelsPerMeterLeavesTheSizeOfThePixels() throws Exception {
+        // Most writers leave the two fields at 0, which says nothing about
+        // how large the image is, so it keeps one point for each of its
+        // pixels. The header is built here because the files of the
+        // repository both carry a resolution.
+        byte[] bmp = java.nio.file.Files.readAllBytes(TestSupport.file("images/palette.bmp").toPath());
+        java.util.Arrays.fill(bmp, 38, 46, (byte) 0);       // The two fields
+        BMPImage image = new BMPImage(new java.io.ByteArrayInputStream(bmp));
+        assertEquals(0f, image.getPhysicalWidth());
+        assertEquals(0f, image.getPhysicalHeight());
+    }
 }

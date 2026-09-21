@@ -86,6 +86,7 @@ final public class Image implements Drawable {
                 invertedInks = jpg.isAdobe();
                 addImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
+            setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.getData();
@@ -102,13 +103,14 @@ final public class Image implements Drawable {
                     addImage(pdf, data, png.getAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-            setPhysicalSize(png);
+            setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.getData();
             w = bmp.getWidth();
             h = bmp.getHeight();
             addImage(pdf, data, null, imageType, "DeviceRGB", 8);
+            setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
 
         inputStream.close();
@@ -142,6 +144,7 @@ final public class Image implements Drawable {
                 invertedInks = jpg.isAdobe();
                 addImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
+            setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.getData();
@@ -158,13 +161,14 @@ final public class Image implements Drawable {
                     addImageToObjects(objects, data, png.getAlpha(), imageType, "DeviceRGB", 8);
                 }
             }
-            setPhysicalSize(png);
+            setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.getData();
             w = bmp.getWidth();
             h = bmp.getHeight();
             addImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+            setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
         inputStream.close();
     }
@@ -226,14 +230,15 @@ final public class Image implements Drawable {
         objNumber = pdf.getObjNumber();
     }
 
-    // Draws the image at the size its pHYs chunk asks for, when it has one.
-    // The width and the height are the pixels of the image until here, which
-    // is what the image object of the PDF is written with, and are the size it
-    // is drawn at from here on.
-    private void setPhysicalSize(PNGImage png) {
-        if (png.getPhysicalWidth() > 0f && png.getPhysicalHeight() > 0f) {
-            this.w = png.getPhysicalWidth();
-            this.h = png.getPhysicalHeight();
+    // Draws the image at the size the file asks for, when it asks for one: the
+    // pHYs chunk of a PNG, the JFIF density of a JPEG or the pixels per metre
+    // of a BMP. The width and the height are the pixels of the image until
+    // here, which is what the image object of the PDF is written with, and are
+    // the size it is drawn at from here on.
+    private void setPhysicalSize(float width, float height) {
+        if (width > 0f && height > 0f) {
+            this.w = width;
+            this.h = height;
         }
     }
 

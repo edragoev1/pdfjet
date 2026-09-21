@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -188,5 +189,63 @@ func TestJPGImageAnotherAPP14SegmentDoesNotUnmarkAnAdobeImage(t *testing.T) {
 	image, err := newJPGImage(bytes.NewReader(testJPEG(before, 4)))
 	if err != nil || !image.isAdobe() {
 		t.Errorf("the APP14 segment after Adobe's unmarks the image: %v", err)
+	}
+}
+
+func TestJPGImageTheJfifDensityGivesTheSizeTheImageIsDrawnAt(t *testing.T) {
+	// The JFIF segment of a JPEG holds the pixel density and the unit it is
+	// in, and says how large the image is meant to be. cmyk.jpg is 1200 by
+	// 800 pixels at 300 dots per inch, which is 288 by 192 points.
+	path := testRepoPath(t, "images/cmyk.jpg")
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jpg, err := newJPGImage(file)
+	file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jpg.getWidth() != 1200 || jpg.getHeight() != 800 {
+		t.Fatalf("pixels %v x %v", jpg.getWidth(), jpg.getHeight())
+	}
+	if math.Abs(float64(jpg.GetPhysicalWidth())-288.0) > 0.01 ||
+		math.Abs(float64(jpg.GetPhysicalHeight())-192.0) > 0.01 {
+		t.Errorf("physical size %v x %v", jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
+	}
+	file, err = os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	image := NewImage(testNewPDF(), file)
+	if math.Abs(float64(image.GetWidth())-288.0) > 0.01 ||
+		math.Abs(float64(image.GetHeight())-192.0) > 0.01 {
+		t.Errorf("the image is drawn %v x %v, not the size it asks for",
+			image.GetWidth(), image.GetHeight())
+	}
+}
+
+func TestJPGImageAJfifDensityThatGivesNoSizeIsPassedOver(t *testing.T) {
+	// Unit 0 of the JFIF segment is the ratio of the two axes and says
+	// nothing about how large the image is, and a JPEG with no JFIF segment
+	// at all gives no size either.
+	for _, c := range []struct{ what, name string }{
+		{"a ratio is not a size", "images/italy-admin.jpg"},
+		{"there is no JFIF segment", "images/gr-map.jpg"},
+	} {
+		file, err := os.Open(testRepoPath(t, c.name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		jpg, err := newJPGImage(file)
+		file.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if jpg.GetPhysicalWidth() != 0.0 || jpg.GetPhysicalHeight() != 0.0 {
+			t.Errorf("%s: physical size %v x %v", c.what,
+				jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
+		}
 	}
 }
