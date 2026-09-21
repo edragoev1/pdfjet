@@ -43,7 +43,11 @@ class Example_20 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Draw the content of the first page of the logo PDF, at half its size.
-        float height = 72f;     // The logo height in points.
+        // DrawContents anchors the content by the point that is height points
+        // above the origin of its page, which it puts at x and y here. The
+        // logo is in the top left corner of its page, so that point is the top
+        // of the page and the height to give is the height of the page.
+        float height = Letter.PORTRAIT.GetHeight();
         float x = 60f;
         float y = 40f;
         float xScale = 0.5f;

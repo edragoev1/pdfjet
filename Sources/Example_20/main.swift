@@ -38,7 +38,11 @@ public class Example_20 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         // Draw the content of the first page of the logo PDF, at half its size.
-        let height: Float = 72.0    // The logo height in points.
+        // drawContents anchors the content by the point that is height points
+        // above the origin of its page, which it puts at x and y here. The
+        // logo is in the top left corner of its page, so that point is the top
+        // of the page and the height to give is the height of the page.
+        let height: Float = Letter.PORTRAIT.getHeight()
         let x: Float = 60.0
         let y: Float = 40.0
         let xScale: Float = 0.5

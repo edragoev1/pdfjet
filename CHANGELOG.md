@@ -589,9 +589,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   which it reads, Example_41 merges, the merge tests of the four ports read
   and `FuzzPDFRead` seeds, is written from `images/readme/pdfjet-logo.svg` by
   `util/make-logo-pdf.sh`, so the logo is vector paths on a Letter page and
-  the file is 2,333 bytes instead of 76,062. It replaces the logo PDFjet 5.81
+  the file is 2,378 bytes instead of 76,062. It replaces the logo PDFjet 5.81
   wrote in 2016, which held the wordmark as text in an embedded Dosis-Bold
-  font.
+  font. The logo is in the top left corner of its page, where a reader opens
+  the file at and where a one page logo belongs; it was in the bottom left
+  corner. Example_20 draws the same letterhead as before: `drawContents`
+  anchors the content by the point that is `height` points above the origin
+  of its page, and with the logo at the top of its page that point is the top
+  of the page, so the height to pass is the height of the page and no longer
+  the height of the logo. The page Example_41 merges is the file itself, so
+  the logo is at the top of it now.
 - 28 more examples are PDF/UA documents: 02, 03, 06, 08, 09, 10, 11, 13, 14,
   17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and 45,
   and 39 and 40 before them. The ones that are not use core fonts or fonts that
