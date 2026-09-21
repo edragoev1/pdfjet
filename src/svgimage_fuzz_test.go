@@ -60,12 +60,15 @@ func FuzzSVGImage(f *testing.F) {
 // written twice, plainly and as the formats of the input give them, and the
 // two must draw the same picture: a number of path data is the same number
 // written 12, 12.0, 1200e-2 or +12, with a comma, a space or nothing before
-// it where its sign or its point separates it from the one before.
+// it where its sign, its point or the flag of an arc separates it from the
+// one before.
 func FuzzSVGPath(f *testing.F) {
 	f.Add("MLHVQTCSAZ", []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, []byte{0})
 	f.Add("mlhvqtcsaz", []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, []byte{1, 2, 3})
 	f.Add("MAAAA", []byte{1, 1, 0, 0, 1, 2, 2, 0, 1, 0, 3, 3}, []byte{2})
 	f.Add("MLCQ", []byte{5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, []byte{2, 4, 5, 3})
+	// The flags of these arcs are written with no separator after them.
+	f.Add("MAAA", []byte{1, 1, 4, 4, 0, 0, 1, 20, 20, 4, 4, 0, 1, 0, 30, 30}, []byte{1, 3, 5})
 	f.Fuzz(func(t *testing.T, commands string, numbers, formats []byte) {
 		plain := fuzzSVGPathData(commands, numbers, nil)
 		written := fuzzSVGPathData(commands, numbers, formats)
@@ -91,6 +94,7 @@ func fuzzSVGPathData(commands string, numbers, formats []byte) string {
 	}
 	var data strings.Builder
 	next := 0
+	afterFlag := false
 	number := func(flag bool) (int, byte) {
 		value, format := 0, byte(0)
 		if next < len(numbers) {
@@ -112,17 +116,26 @@ func fuzzSVGPathData(commands string, numbers, formats []byte) string {
 			continue
 		}
 		data.WriteByte(command)
+		afterFlag = false
 		for j := 0; j < count; j++ {
 			// The large arc and the sweep of an arc are flags, not numbers:
 			// one character, 0 or 1, which no format of a number applies to.
 			flag := command&^0x20 == 'A' && (j == 3 || j == 4)
 			value, format := number(flag)
 			if flag {
-				fmt.Fprintf(&data, " %d", value)
+				// A flag is one character, so nothing has to separate it from
+				// what follows: SVG 1.1 section 8.3.9 needs a separator before
+				// the first flag, and none after either of them, which is why
+				// minifiers write "0 0120 20" for "0 0 1 20 20".
+				if j == 3 || format%2 == 0 {
+					data.WriteByte(' ')
+				}
+				fmt.Fprintf(&data, "%d", value)
+				afterFlag = j == 4 && format%2 == 1
 				continue
 			}
 			text := fuzzSVGNumber(value, format)
-			if !strings.HasPrefix(text, "-") && !strings.HasPrefix(text, "+") {
+			if !strings.HasPrefix(text, "-") && !strings.HasPrefix(text, "+") && !afterFlag {
 				// A number that does not begin with its sign needs a space or
 				// a comma before it; the first one follows the command.
 				if j == 0 || format%2 == 0 {
@@ -131,6 +144,7 @@ func fuzzSVGPathData(commands string, numbers, formats []byte) string {
 					data.WriteByte(',')
 				}
 			}
+			afterFlag = false
 			data.WriteString(text)
 		}
 		data.WriteByte(' ')

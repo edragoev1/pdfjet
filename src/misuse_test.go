@@ -52,7 +52,10 @@ func TestMisuseANumberThatIsNotFiniteOrTooLargeIsRefused(t *testing.T) {
 		page := NewPage(pdf, letter.Portrait())
 		page.DrawLine(10, 10, bad, 200)
 		testRecorded(t, pdf, "A coordinate, size or width is NaN, infinite or too large for a PDF.")
-		if content := testContent(page); strings.Contains(content, "NaN") || strings.Contains(content, "Inf") {
+		// The number is written 0, so that the operator keeps its operands
+		// and the content stream is valid syntax whatever the reader does
+		// with it.
+		if content := testContent(page); content != "10 782 m\n0 592 l\nS\n" {
 			t.Errorf("content %q", content)
 		}
 		testRefused(t, pdf, "A coordinate, size or width is NaN, infinite or too large for a PDF.")

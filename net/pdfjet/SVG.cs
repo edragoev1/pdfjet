@@ -62,6 +62,18 @@ namespace PDFjet.NET {
             return last == 'e' || last == 'E';
         }
 
+        // Returns true when the next argument of the operation is one of the two
+        // flags of an elliptical arc. SVG 1.1 section 8.3.9 writes a flag as a
+        // single character, which needs no separator from what follows, so that
+        // the seven arguments of an arc are often written as "10 10 0 0120 20".
+        private static bool IsArcFlag(PathOp op) {
+            if (op.cmd != 'A' && op.cmd != 'a') {
+                return false;
+            }
+            int argument = op.args.Count % 7;
+            return argument == 3 || argument == 4;
+        }
+
         internal static List<PathOp> GetOperations(String path) {
             List<PathOp> operations = new List<PathOp>();
             // Path data starts with a command; the numbers before the first one
@@ -100,6 +112,8 @@ namespace PDFjet.NET {
                     }
                     token = true;
                     buf.Append(ch);
+                } else if (!token && IsArcFlag(op) && (ch == '0' || ch == '1')) {
+                    op.args.Add(ch.ToString());
                 } else {
                     token = true;
                     buf.Append(ch);
@@ -325,13 +339,21 @@ namespace PDFjet.NET {
                 rx *= (float) Math.Sqrt(lambda);
                 ry *= (float) Math.Sqrt(lambda);
             }
-            double rx2 = (double) rx * rx;
-            double ry2 = (double) ry * ry;
-            double num = rx2 * ry2 - rx2 * y1p * y1p - ry2 * x1p * x1p;
-            double den = rx2 * y1p * y1p + ry2 * x1p * x1p;
-            double coef = Math.Sqrt(Math.Max(0.0, num / den));
-            if (largeArc == sweep) {
-                coef = -coef;
+            // The center is on the line through the middle of the chord, this far
+            // from it. Radii that were scaled to fit put it on the chord itself: the
+            // arc is half the ellipse, and what follows is exact. Computing it there
+            // would be the square root of the difference of two nearly equal numbers,
+            // which the ports do not round alike.
+            double coef = 0.0;
+            if (lambda <= 1.0) {
+                double rx2 = (double) rx * rx;
+                double ry2 = (double) ry * ry;
+                double num = rx2 * ry2 - rx2 * y1p * y1p - ry2 * x1p * x1p;
+                double den = rx2 * y1p * y1p + ry2 * x1p * x1p;
+                coef = Math.Sqrt(Math.Max(0.0, num / den));
+                if (largeArc == sweep) {
+                    coef = -coef;
+                }
             }
             double cxp = coef * rx * y1p / ry;
             double cyp = -coef * ry * x1p / rx;
@@ -348,7 +370,16 @@ namespace PDFjet.NET {
             } else if (sweep && delta < 0.0) {
                 delta += 2.0 * Math.PI;
             }
-            int segments = (int) Math.Ceiling(Math.Abs(delta) / (Math.PI / 2.0));
+            // The arc is drawn in pieces of at most a quarter turn. A sweep that
+            // is a whole number of quarter turns is not split once more for a
+            // rounding error: it is computed with atan2, whose last bit differs
+            // between the ports, so that the same arc would be drawn with
+            // another number of curves in each.
+            double quarters = Math.Abs(delta) / (Math.PI / 2.0);
+            int segments = (int) Math.Ceiling(quarters - 1e-9);
+            if (segments < 1 && quarters > 0.0) {
+                segments = 1;   // A sweep smaller than the tolerance is still one piece.
+            }
             if (segments == 0) {
                 return lastOp;
             }

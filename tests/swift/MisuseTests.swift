@@ -31,6 +31,11 @@ import Testing
             let page = Page(pdf, Letter.PORTRAIT)
             page.drawLine(10, 10, bad, 200)
             #expect(pdf.error == notWritable)
+            // The number is written 0, so that the operator keeps its operands
+            // and the content stream is valid syntax whatever the reader makes
+            // of it, as in Go.
+            #expect(TestSupport.content(page) == "10 782 m\n0 592 l\nS\n",
+                    "\(TestSupport.content(page))")
             #expect(completeMessage(pdf) == earlier + notWritable)
         }
         let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)

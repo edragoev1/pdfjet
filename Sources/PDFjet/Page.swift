@@ -2175,8 +2175,10 @@ public class Page {
 
     func append(_ val: Float) {
         if !FastFloat.isWritable(val) {
+            // The misuse is recorded, and the number is written all the same:
+            // FastFloat writes 0 for it, so the operator keeps its operands
+            // and the content stream stays valid syntax, as in the other ports.
             pdf.fail(FastFloat.NOT_WRITABLE)
-            return
         }
         if written {
             failWritten()

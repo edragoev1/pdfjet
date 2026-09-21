@@ -166,5 +166,80 @@ public class SVGImageTest {
             Assert.True(content.Contains(" l\n") || content.Contains(" c\n"), data + " draws " + content);
         }
     }
+
+    [Fact]
+    public void TheFlagsOfAnArcAreOneCharacterAndNeedNoSeparator() {
+        // SVG 1.1 section 8.3.9 writes each flag of an elliptical arc as a
+        // single character, so that nothing has to separate it from what
+        // follows. Every path here draws the two half circles of the first.
+        string separated = Draw("<svg width=\"100\" height=\"50\">" +
+                "<path d=\"M10 10 A 20 20 0 0 1 50 10 A 20 20 0 1 0 90 10\"/></svg>");
+        string[] paths = {
+            "M10 10 A20 20 0 01 50 10 A20 20 0 10 90 10",
+            "M10 10 A20 20 0 0150 10 A20 20 0 1090 10",
+            "M10 10A20 20 0 0150,10A20 20 0 1090,10",
+            "M10 10 a20 20 0 0140 0 a20 20 0 1040 0",
+            "M10 10 A20,20,0,0,1,50,10 A20,20,0,1,0,90,10",
+        };
+        foreach (string data in paths) {
+            string content = Draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/></svg>");
+            Assert.Equal(separated, content);
+        }
+    }
+
+    [Fact]
+    public void OnlyTheFlagsOfAnArcAreReadOneCharacterAtATime() {
+        // The radii, the rotation and the end point of an arc are numbers like
+        // any other, and the digits of every other command are too.
+        string content = Draw("<svg width=\"100\" height=\"50\">" +
+                "<path d=\"M10 10 A10 10 0 0 1 10 40 L10 10 A10 10 0 0 0 10 40\"/></svg>");
+        string other = Draw("<svg width=\"100\" height=\"50\">" +
+                "<path d=\"M10 10 A10 10 0 01 10 40 L10 10 A10 10 0 00 10 40\"/></svg>");
+        Assert.Equal(content, other);
+        Assert.True(content.Contains("10 782 m\n") && content.Contains(" c\n"), content);
+    }
+
+    [Fact]
+    public void ArcRadiiTooSmallForTheEndPointsAreScaledToFitThem() {
+        // SVG 1.1 section F.6.6 scales up radii too small to reach the end
+        // points until the ellipse just does: the arc is then half of it,
+        // whichever way the large arc flag points, and the same as the arc of
+        // the fitting radii.
+        string fitted = Draw("<svg width=\"200\" height=\"200\"><path d=\"M0 0 A50 50 0 0 1 100 0\"/></svg>");
+        Assert.Equal(2, Curves(fitted));
+        string[] paths = {
+            "M0 0 A10 10 0 0 1 100 0",
+            "M0 0 A1 1 0 0 1 100 0",
+            "M0 0 A10 10 0 1 1 100 0",
+        };
+        foreach (string data in paths) {
+            Assert.Equal(fitted, Draw("<svg width=\"200\" height=\"200\"><path d=\"" + data + "\"/></svg>"));
+        }
+    }
+
+    [Fact]
+    public void AnArcOfWholeQuarterTurnsIsDrawnInThatManyCurves() {
+        // An arc is drawn in pieces of at most a quarter turn. One of exactly a
+        // quarter, a half or a whole turn is not split once more for the last
+        // bit of the sweep, which the four ports do not compute alike.
+        string[] paths = {
+            "A 120 120 120 0 0 120 120",    // A quarter turn, of the fuzz corpus
+            "M10 10 A 20 20 0 0 1 50 10",
+            "M0 0 A50 50 0 0 1 100 0",
+        };
+        int[] curves = {1, 2, 2};
+        for (int i = 0; i < paths.Length; i++) {
+            string content = Draw("<svg width=\"200\" height=\"200\"><path d=\"" + paths[i] + "\"/></svg>");
+            Assert.True(curves[i] == Curves(content), paths[i] + " draws " + content);
+        }
+    }
+
+    private static int Curves(string content) {
+        int count = 0;
+        for (int i = content.IndexOf(" c\n"); i != -1; i = content.IndexOf(" c\n", i + 1)) {
+            count++;
+        }
+        return count;
+    }
 }
 }

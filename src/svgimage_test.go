@@ -208,3 +208,77 @@ func TestSVGImagePathDataThatNeedsTheCurrentPointStartsAtTheOrigin(t *testing.T)
 		}
 	}
 }
+
+func TestSVGImageTheFlagsOfAnArcAreOneCharacterAndNeedNoSeparator(t *testing.T) {
+	// SVG 1.1 section 8.3.9 writes each flag of an elliptical arc as a single
+	// character, so that nothing has to separate it from what follows. Every
+	// path here draws the two half circles of the separated one.
+	separated := testDrawSVG(t, `<svg width="100" height="50">`+
+		`<path d="M10 10 A 20 20 0 0 1 50 10 A 20 20 0 1 0 90 10"/></svg>`)
+	for _, data := range []string{
+		"M10 10 A20 20 0 01 50 10 A20 20 0 10 90 10",
+		"M10 10 A20 20 0 0150 10 A20 20 0 1090 10",
+		"M10 10A20 20 0 0150,10A20 20 0 1090,10",
+		"M10 10 a20 20 0 0140 0 a20 20 0 1040 0",
+		"M10 10 A20,20,0,0,1,50,10 A20,20,0,1,0,90,10",
+	} {
+		content := testDrawSVG(t, `<svg width="100" height="50"><path d="`+data+`"/></svg>`)
+		if content != separated {
+			t.Errorf("%q draws %q, not %q", data, content, separated)
+		}
+	}
+}
+
+func TestSVGImageOnlyTheFlagsOfAnArcAreReadOneCharacterAtATime(t *testing.T) {
+	// The radii, the rotation and the end point of an arc are numbers like any
+	// other, and the digits of every other command are too.
+	content := testDrawSVG(t, `<svg width="100" height="50">`+
+		`<path d="M10 10 A10 10 0 0 1 10 40 L10 10 A10 10 0 0 0 10 40"/></svg>`)
+	other := testDrawSVG(t, `<svg width="100" height="50">`+
+		`<path d="M10 10 A10 10 0 01 10 40 L10 10 A10 10 0 00 10 40"/></svg>`)
+	if content != other {
+		t.Errorf("%q != %q", content, other)
+	}
+	if !strings.Contains(content, "10 782 m\n") || !strings.Contains(content, " c\n") {
+		t.Errorf("content %q", content)
+	}
+}
+
+func TestSVGImageArcRadiiTooSmallForTheEndPointsAreScaledToFitThem(t *testing.T) {
+	// SVG 1.1 section F.6.6 scales up radii too small to reach the end points
+	// until the ellipse just does: the arc is then half of it, whichever way
+	// the large arc flag points, and the same as the arc of the fitting radii.
+	fitted := testDrawSVG(t, `<svg width="200" height="200"><path d="M0 0 A50 50 0 0 1 100 0"/></svg>`)
+	if strings.Count(fitted, " c\n") != 2 {
+		t.Fatalf("half an ellipse is %q", fitted)
+	}
+	for _, data := range []string{
+		"M0 0 A10 10 0 0 1 100 0",
+		"M0 0 A1 1 0 0 1 100 0",
+		"M0 0 A10 10 0 1 1 100 0",
+	} {
+		content := testDrawSVG(t, `<svg width="200" height="200"><path d="`+data+`"/></svg>`)
+		if content != fitted {
+			t.Errorf("%q draws %q, not %q", data, content, fitted)
+		}
+	}
+}
+
+func TestSVGImageAnArcOfWholeQuarterTurnsIsDrawnInThatManyCurves(t *testing.T) {
+	// An arc is drawn in pieces of at most a quarter turn. One of exactly a
+	// quarter, a half or a whole turn is not split once more for the last bit
+	// of the sweep, which the four ports do not compute alike.
+	for _, arc := range []struct {
+		data   string
+		curves int
+	}{
+		{"A 120 120 120 0 0 120 120", 1}, // A quarter turn, of the fuzz corpus
+		{"M10 10 A 20 20 0 0 1 50 10", 2},
+		{"M0 0 A50 50 0 0 1 100 0", 2},
+	} {
+		content := testDrawSVG(t, `<svg width="200" height="200"><path d="`+arc.data+`"/></svg>`)
+		if curves := strings.Count(content, " c\n"); curves != arc.curves {
+			t.Errorf("%q is %d curves, not %d: %q", arc.data, curves, arc.curves, content)
+		}
+	}
+}

@@ -523,7 +523,6 @@ public class Stamp : Drawable {
         }
         if !FastFloat.isWritable(value) {
             pdf.fail(FastFloat.NOT_WRITABLE)
-            return
         }
         self.buf.append(contentsOf: FastFloat.toByteArray(value))
     }

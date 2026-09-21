@@ -2829,8 +2829,10 @@ func (pdf *PDF) appendInteger(value int) {
 
 func (pdf *PDF) appendFloat32(f float32) {
 	if !fastfloat.IsWritable(f) {
+		// The misuse is recorded, and the number is written all the same:
+		// fastfloat writes 0 for it, so the object keeps its syntax, as in
+		// the other ports.
 		pdf.fail(notWritable)
-		return
 	}
 	pdf.appendByteArray(fastfloat.ToByteArray(f))
 }

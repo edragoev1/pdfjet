@@ -63,6 +63,18 @@ func afterExponent(number string) bool {
 	return strings.HasSuffix(number, "e") || strings.HasSuffix(number, "E")
 }
 
+// isArcFlag reports whether the next argument of the operation is one of the
+// two flags of an elliptical arc. SVG 1.1 section 8.3.9 writes a flag as a
+// single character, which needs no separator from what follows, so that the
+// seven arguments of an arc are often written as "10 10 0 0120 20".
+func isArcFlag(op *svgPathOp) bool {
+	if op.cmd != 'A' && op.cmd != 'a' {
+		return false
+	}
+	argument := len(op.args) % 7
+	return argument == 3 || argument == 4
+}
+
 // GetOperations parses svgParser path data into a list of path operations.
 func (svg *svgParser) getOperations(path string) []*svgPathOp {
 	operations := make([]*svgPathOp, 0)
@@ -100,6 +112,8 @@ func (svg *svgParser) getOperations(path string) []*svgPathOp {
 			}
 			token = true
 			buf.WriteRune(ch)
+		} else if !token && isArcFlag(op) && (ch == '0' || ch == '1') {
+			op.args = append(op.args, string(ch))
 		} else {
 			token = true
 			buf.WriteRune(ch)
@@ -427,13 +441,21 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 		rx *= float32(math.Sqrt(lambda))
 		ry *= float32(math.Sqrt(lambda))
 	}
-	rx2 := float64(rx) * float64(rx)
-	ry2 := float64(ry) * float64(ry)
-	num := rx2*ry2 - rx2*y1p*y1p - ry2*x1p*x1p
-	den := rx2*y1p*y1p + ry2*x1p*x1p
-	coef := math.Sqrt(math.Max(0.0, num/den))
-	if largeArc == sweep {
-		coef = -coef
+	// The center is on the line through the middle of the chord, this far
+	// from it. Radii that were scaled to fit put it on the chord itself: the
+	// arc is half the ellipse, and what follows is exact. Computing it there
+	// would be the square root of the difference of two nearly equal numbers,
+	// which the ports do not round alike.
+	coef := 0.0
+	if lambda <= 1.0 {
+		rx2 := float64(rx) * float64(rx)
+		ry2 := float64(ry) * float64(ry)
+		num := rx2*ry2 - rx2*y1p*y1p - ry2*x1p*x1p
+		den := rx2*y1p*y1p + ry2*x1p*x1p
+		coef = math.Sqrt(math.Max(0.0, num/den))
+		if largeArc == sweep {
+			coef = -coef
+		}
 	}
 	cxp := coef * float64(rx) * y1p / float64(ry)
 	cyp := -coef * float64(ry) * x1p / float64(rx)
@@ -450,7 +472,16 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 	} else if sweep && delta < 0.0 {
 		delta += 2.0 * math.Pi
 	}
-	segments := int(math.Ceil(math.Abs(delta) / (math.Pi / 2.0)))
+	// The arc is drawn in pieces of at most a quarter turn. A sweep that is a
+	// whole number of quarter turns is not split once more for a rounding
+	// error: it is computed with atan2, whose last bit differs between the
+	// ports, so that the same arc would be drawn with another number of
+	// curves in each.
+	quarters := math.Abs(delta) / (math.Pi / 2.0)
+	segments := int(math.Ceil(quarters - 1e-9))
+	if segments < 1 && quarters > 0.0 {
+		segments = 1 // A sweep smaller than the tolerance is still one piece.
+	}
 	if segments == 0 {
 		return lastOp
 	}

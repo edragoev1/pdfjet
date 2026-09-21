@@ -69,17 +69,25 @@ work to Oct 21 is the seven goals below, in this order.
    - ✅ SVG paths and `SVGImage` (Sep 20): `FuzzSVGImage` fuzzes whole
      documents, and `FuzzSVGPath` the path data, which it writes twice out of
      the same numbers, plainly and as the formats of the input give them —
-     12, 12.0, 1200e-2, +12, with a space, a comma or nothing before them —
-     and the two must draw the same picture; 9.1 M and 23.8 M runs clean after
-     the fixes. Found path data written over more than one line read as one
-     number, where Go's XML parser leaves the line feed, and a number written
-     with an exponent read as two; and, in the other three ports, a throw or a
-     trap on path data that starts with a number, on a first command that
+     12, 12.0, 1200e-2, +12, with a space, a comma or nothing before them, and
+     the flags of an arc with or without a separator after them — and the two
+     must draw the same picture; 8.6 M and 26.3 M runs clean after the fixes.
+     Found path data written over more than one line read as one number, where
+     Go's XML parser leaves the line feed, a number written with an exponent
+     read as two, and the flags of an elliptical arc written with no separator
+     after them, as minifiers write them, taken for one number with what
+     follows, which dropped the arc; and, in the other three ports, a throw or
+     a trap on path data that starts with a number, on a first command that
      needs a current point, on a `<path>` with no `d`, and, in Swift, on an
-     argument that is not a number. Fixed in the four ports with unit tests;
-     of the 482 inputs of the Go corpus, every one the ports read draws the
-     same content in all four, and none crashes. What they still differ on is
-     which malformed XML their parsers accept.
+     argument that is not a number. Replaying the corpus in the four ports
+     found two more: an arc of a whole number of quarter turns drawn with one
+     curve more in one port than in another, since they do not round `atan2`
+     alike, and a number a PDF cannot hold left out of the content stream in
+     Swift, where the other three write 0 and keep the operator's operands.
+     Fixed in the four ports with unit tests; of the 2,897 documents of the
+     replay — the corpus of both targets, and the 50 icons — every one the
+     ports read draws the same content in all four, and none crashes. What
+     they still differ on is which malformed XML their parsers accept.
    - ⬜ OTF and TTF, the `Font` loaders.
    - ⬜ The decompressor.
    - ⬜ `PDF.read`: the xref, the object streams and the encryption.
@@ -239,6 +247,5 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-- SVG arc flags written without a separator (`0 01`) are not parsed.
 - A UTF-8 encoded surrogate (ED A0 80) reads as one U+FFFD in Java and three in
   Swift, as Unicode recommends.

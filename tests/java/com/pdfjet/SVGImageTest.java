@@ -165,4 +165,79 @@ class SVGImageTest {
             assertTrue(content.contains(" l\n") || content.contains(" c\n"), data + " draws " + content);
         }
     }
+
+    @Test
+    void theFlagsOfAnArcAreOneCharacterAndNeedNoSeparator() throws Exception {
+        // SVG 1.1 section 8.3.9 writes each flag of an elliptical arc as a
+        // single character, so that nothing has to separate it from what
+        // follows. Every path here draws the two half circles of the first.
+        String separated = draw("<svg width=\"100\" height=\"50\">"
+                + "<path d=\"M10 10 A 20 20 0 0 1 50 10 A 20 20 0 1 0 90 10\"/></svg>");
+        String[] paths = {
+            "M10 10 A20 20 0 01 50 10 A20 20 0 10 90 10",
+            "M10 10 A20 20 0 0150 10 A20 20 0 1090 10",
+            "M10 10A20 20 0 0150,10A20 20 0 1090,10",
+            "M10 10 a20 20 0 0140 0 a20 20 0 1040 0",
+            "M10 10 A20,20,0,0,1,50,10 A20,20,0,1,0,90,10",
+        };
+        for (String data : paths) {
+            String content = draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/></svg>");
+            assertEquals(separated, content, data);
+        }
+    }
+
+    @Test
+    void onlyTheFlagsOfAnArcAreReadOneCharacterAtATime() throws Exception {
+        // The radii, the rotation and the end point of an arc are numbers like
+        // any other, and the digits of every other command are too.
+        String content = draw("<svg width=\"100\" height=\"50\">"
+                + "<path d=\"M10 10 A10 10 0 0 1 10 40 L10 10 A10 10 0 0 0 10 40\"/></svg>");
+        String other = draw("<svg width=\"100\" height=\"50\">"
+                + "<path d=\"M10 10 A10 10 0 01 10 40 L10 10 A10 10 0 00 10 40\"/></svg>");
+        assertEquals(content, other);
+        assertTrue(content.contains("10 782 m\n") && content.contains(" c\n"), content);
+    }
+
+    @Test
+    void arcRadiiTooSmallForTheEndPointsAreScaledToFitThem() throws Exception {
+        // SVG 1.1 section F.6.6 scales up radii too small to reach the end
+        // points until the ellipse just does: the arc is then half of it,
+        // whichever way the large arc flag points, and the same as the arc of
+        // the fitting radii.
+        String fitted = draw("<svg width=\"200\" height=\"200\"><path d=\"M0 0 A50 50 0 0 1 100 0\"/></svg>");
+        assertEquals(2, curves(fitted), fitted);
+        String[] paths = {
+            "M0 0 A10 10 0 0 1 100 0",
+            "M0 0 A1 1 0 0 1 100 0",
+            "M0 0 A10 10 0 1 1 100 0",
+        };
+        for (String data : paths) {
+            assertEquals(fitted, draw("<svg width=\"200\" height=\"200\"><path d=\"" + data + "\"/></svg>"), data);
+        }
+    }
+
+    @Test
+    void anArcOfWholeQuarterTurnsIsDrawnInThatManyCurves() throws Exception {
+        // An arc is drawn in pieces of at most a quarter turn. One of exactly a
+        // quarter, a half or a whole turn is not split once more for the last
+        // bit of the sweep, which the four ports do not compute alike.
+        String[] paths = {
+            "A 120 120 120 0 0 120 120",    // A quarter turn, of the fuzz corpus
+            "M10 10 A 20 20 0 0 1 50 10",
+            "M0 0 A50 50 0 0 1 100 0",
+        };
+        int[] curves = {1, 2, 2};
+        for (int i = 0; i < paths.length; i++) {
+            String content = draw("<svg width=\"200\" height=\"200\"><path d=\"" + paths[i] + "\"/></svg>");
+            assertEquals(curves[i], curves(content), paths[i] + " draws " + content);
+        }
+    }
+
+    private static int curves(String content) {
+        int count = 0;
+        for (int i = content.indexOf(" c\n"); i != -1; i = content.indexOf(" c\n", i + 1)) {
+            count++;
+        }
+        return count;
+    }
 }

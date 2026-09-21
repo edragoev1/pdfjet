@@ -136,6 +136,30 @@ This is the first entry in this file; earlier releases were not tracked here.
   belongs to the number when it follows the `e` of an exponent, and a `+`
   starts a number where nothing separates it from the one before, as SVG 1.1
   writes them.
+- An SVG elliptical arc whose flags are written without a separator after
+  them, `A10 10 0 0120 20` for `A10 10 0 0 1 20 20`, drew nothing: the two
+  flags and the number that follows were read as one number, so the arc had
+  six arguments where it needs seven, and it was dropped without a message.
+  A flag of an arc is one character, `0` or `1`, which SVG 1.1 section 8.3.9
+  needs no separator after, and which is how minifiers write path data. Only
+  the two flags are read this way; the radii, the rotation and the end point
+  of an arc are numbers like any other.
+- An SVG elliptical arc was drawn with one cubic curve more in one port than
+  in another. An arc is drawn in pieces of at most a quarter turn, and the
+  sweep it is cut into them by is computed with `atan2`, whose last bit the
+  four languages do not agree on, so an arc of a whole number of quarter turns
+  fell on either side of the cut. A sweep is now taken as a whole number of
+  quarter turns when it is within a rounding error of one, and the center of
+  an arc whose radii were too small for its end points, and were scaled up to
+  fit them, is the middle of the chord rather than a square root of the
+  difference of two nearly equal numbers. The curves drawn are the same arc as
+  before. Found by replaying the Go SVG fuzz corpus in the four ports.
+- A coordinate, size or width a PDF cannot hold — NaN, an infinity or a number
+  of 2^31 or more — was left out of the content stream by Swift, so the
+  operator lost an operand and the stream was no longer valid syntax; Go left
+  such a number out of an object of the document. The misuse is recorded as
+  before, and the number is written `0`, as Java and C# write it. Found by
+  replaying the Go SVG fuzz corpus in the four ports.
 - An SVG path threw or trapped in Java, C# and Swift where Go drew it: path
   data that starts with a number rather than a command threw a null pointer
   exception, as did a `<path>` element with no `d` attribute in Java and C#;

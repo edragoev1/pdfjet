@@ -1498,7 +1498,6 @@ public final class PDF {
     func append(_ val: Float) {
         if !FastFloat.isWritable(val) {
             fail(FastFloat.NOT_WRITABLE)
-            return
         }
         append(FastFloat.toByteArray(val))
     }
