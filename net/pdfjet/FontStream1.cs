@@ -352,7 +352,7 @@ class FontStream1 {
     // Returns true if the name can be written as a PDF name as it is:
     // printable ASCII, and none of the characters that end a name or start an
     // escape.
-    private static bool IsFontName(byte[] name) {
+    internal static bool IsFontName(byte[] name) {
         if (name.Length == 0) {
             return false;
         }

@@ -329,7 +329,7 @@ class FontStream1 {
     // Returns true if the name can be written as a PDF name as it is:
     // printable ASCII, and none of the characters that end a name or start an
     // escape.
-    private static func isFontName(_ name: [UInt8]) -> Bool {
+    static func isFontName(_ name: [UInt8]) -> Bool {
         if name.isEmpty {
             return false
         }

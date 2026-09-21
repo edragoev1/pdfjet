@@ -40,6 +40,20 @@ internal class OTF {
     private int cffOff;
     private int cffLen;
     private int index = 0;
+    private int gposWork;
+
+    // The most work the GPOS table of a font is read with, counted in the
+    // glyphs of the coverage tables it names and in the pairs its mark
+    // lookups place: each mark against each letter or mark it goes on. The
+    // lookups, the subtables and the ranges of a coverage table all say their
+    // own count, so a table that claims more than a font holds is stopped
+    // here rather than read to an end it does not have. Of the 252 fonts
+    // PDFjet ships the most this takes is 62,954, in Noto Sans.
+    private const int MAX_GPOS_WORK = 1 << 20;
+
+    private static Exception FontError(String what) {
+        return new Exception("Invalid font file: " + what + ".");
+    }
 
     /// <summary>Parses the font read from the stream.</summary>
     public OTF(Stream stream) {
@@ -55,6 +69,7 @@ internal class OTF {
             throw new Exception(
                     "OTF version == " + version + " is not supported.");
         }
+        gposWork = MAX_GPOS_WORK;
 
         int numOfTables   = ReadUInt16();
         int searchRange   = ReadUInt16();
@@ -87,7 +102,24 @@ internal class OTF {
         }
 
         // This table must be processed last
+        if (cmapTable == null) {
+            throw FontError("no character map");
+        }
         Cmap(cmapTable);
+
+        // The sizes of the text are divided by the units per em, and the
+        // width of every glyph past the advance widths is that of the last one.
+        if (unitsPerEm < 16 || unitsPerEm > 16384) {
+            throw FontError("the units per em");
+        }
+        if (advanceWidth == null || advanceWidth.Length == 0) {
+            throw FontError("no advance widths");
+        }
+        // The name goes into the PDF as the name of the font, as the name of
+        // a stream font does.
+        if (fontName == null || !FontStream1.IsFontName(Encoding.UTF8.GetBytes(fontName))) {
+            throw FontError("the font name");
+        }
 
         if (cff) {
             compressed = Compressor.Deflate(buf, cffOff, cffLen);
@@ -140,10 +172,13 @@ internal class OTF {
             int length = ReadUInt16();
             int offset = ReadUInt16();
 
+            int start = table.offset + stringOffset + offset;
+            if (start < 0 || length > buf.Length - start) {
+                continue;   // A name record outside the font is left out.
+            }
             if (platformID == 1 && encodingID == 0 && languageID == 0) {
                 // Macintosh
-                String str = Encoding.UTF8.GetString(
-                        buf, table.offset + stringOffset + offset, length);
+                String str = Encoding.UTF8.GetString(buf, start, length);
                 if (nameID == 6) {
                     fontName = str;
                 } else {
@@ -152,8 +187,7 @@ internal class OTF {
                 }
             } else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
                 // Windows
-                String str = Encoding.BigEndianUnicode.GetString(
-                        buf, table.offset + stringOffset + offset, length);
+                String str = Encoding.BigEndianUnicode.GetString(buf, start, length);
                 if (nameID == 6) {
                     fontName = str;
                 } else {
@@ -193,6 +227,9 @@ internal class OTF {
         index = tableOffset + subtableOffset;
 
         int format   = ReadUInt16();
+        if (format != 4) {
+            throw FontError("the character map is not format 4");
+        }
         int tableLen = ReadUInt16();
         int language = ReadUInt16();
         int segCount = ReadUInt16() / 2;
@@ -219,7 +256,14 @@ internal class OTF {
             idRangeOffset[i] = ReadUInt16();
         }
 
-        int[] glyphIdArray = new int[(tableLen - (16 + 8*segCount)) / 2];
+        // The glyph ID array is the rest of the subtable, after its header and
+        // the four arrays of the segments. A length that leaves none of it is
+        // read as none, not as an array of a negative size.
+        int glyphIdLen = (tableLen - (16 + 8*segCount)) / 2;
+        if (glyphIdLen < 0) {
+            glyphIdLen = 0;
+        }
+        int[] glyphIdArray = new int[glyphIdLen];
         for (int i = 0; i < glyphIdArray.Length; i++) {
             glyphIdArray[i] = ReadUInt16();
         }
@@ -238,7 +282,13 @@ internal class OTF {
                 } else {
                     offset /= 2;
                     offset -= segCount - seg;
-                    gid = glyphIdArray[offset + (ch - startCount[seg])];
+                    int i = offset + (ch - startCount[seg]);
+                    if (i < 0 || i >= glyphIdArray.Length) {
+                        // The segment points outside the glyph ID array, so it
+                        // gives this character no glyph.
+                        continue;
+                    }
+                    gid = glyphIdArray[i];
                     if (gid != 0) {
                         // Same as above: wrap the *sum* to unsigned 16 bits,
                         // not idDelta on its own (which is already in range
@@ -269,6 +319,9 @@ internal class OTF {
     }
 
     private void CFF_(FontTable table) {
+        if (table.offset < 0 || table.length < 0 || table.length > buf.Length - table.offset) {
+            throw FontError("the CFF table is not in the font");
+        }
         this.cff = true;
         this.cffOff = table.offset;
         this.cffLen = table.length;
@@ -284,11 +337,12 @@ internal class OTF {
         baseAnchors = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>>();
         int lookupList = table.offset + GetUInt16(table.offset + 8);
         int lookupCount = GetUInt16(lookupList);
-        for (int i = 0; i < lookupCount; i++) {
+        for (int i = 0; i < lookupCount && gposWork > 0; i++) {
             int lookup = lookupList + GetUInt16(lookupList + 2 + 2*i);
             int lookupType = GetUInt16(lookup);
             int subTableCount = GetUInt16(lookup + 4);
-            for (int j = 0; j < subTableCount; j++) {
+            for (int j = 0; j < subTableCount && gposWork > 0; j++) {
+                gposWork--;
                 int subTable = lookup + GetUInt16(lookup + 6 + 2*j);
                 int type = lookupType;
                 if (type == 9) {    // An extension lookup holds the subtable
@@ -325,6 +379,10 @@ internal class OTF {
         }
         System.Collections.Generic.Dictionary<int, int[]> bases = new System.Collections.Generic.Dictionary<int, int[]>();
         for (int b = 0; b < baseGlyphs.Length; b++) {
+            if (gposWork < classCount) {
+                break;
+            }
+            gposWork -= classCount;
             // The anchor offsets are from the base array, or from the ligature
             // attach table of a ligature.
             int table = baseArray;
@@ -361,6 +419,10 @@ internal class OTF {
         int mark1Array = subTable + GetUInt16(subTable + 8);
         int mark2Array = subTable + GetUInt16(subTable + 10);
         for (int m1 = 0; m1 < mark1Glyphs.Length; m1++) {
+            if (gposWork < mark2Glyphs.Length) {
+                break;
+            }
+            gposWork -= mark2Glyphs.Length;
             int markClass = GetUInt16(mark1Array + 2 + 4*m1);
             int anchor1 = mark1Array + GetUInt16(mark1Array + 4 + 4*m1);
             for (int m2 = 0; m2 < mark2Glyphs.Length; m2++) {
@@ -383,6 +445,10 @@ internal class OTF {
     private int[] Coverage(int offset) {
         int format = GetUInt16(offset);
         int count = GetUInt16(offset + 2);
+        if (count > gposWork) {
+            count = gposWork;
+        }
+        gposWork -= count;
         if (format == 1) {
             int[] list = new int[count];
             for (int i = 0; i < count; i++) {
@@ -400,14 +466,22 @@ internal class OTF {
                 size = Math.Max(size, GetUInt16(range + 4) + end - start + 1);
             }
         }
+        // A coverage table lists each glyph once, and a glyph ID is 16 bits.
+        if (size > 0x10000) {
+            size = 0x10000;
+        }
         int[] glyphs = new int[size];
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count && gposWork > 0; i++) {
             int range = offset + 4 + 6*i;
             int start = GetUInt16(range);
             int end = GetUInt16(range + 2);
             int coverageIndex = GetUInt16(range + 4);
-            for (int glyph = start; glyph <= end; glyph++) {
-                glyphs[coverageIndex + glyph - start] = glyph;
+            for (int glyph = start; glyph <= end && gposWork > 0; glyph++) {
+                gposWork--;
+                int i2 = coverageIndex + glyph - start;
+                if (i2 < size) {
+                    glyphs[i2] = glyph;
+                }
             }
         }
         return glyphs;
@@ -443,11 +517,21 @@ internal class OTF {
         return segment;
     }
 
+    // Throws unless the next count bytes of the font are there. The index runs
+    // past the end when a table of the directory points outside the font.
+    private void Need(int count) {
+        if (index < 0 || count > buf.Length - index) {
+            throw FontError("the font ends too soon");
+        }
+    }
+
     private byte ReadByte() {
+        Need(1);
         return buf[index++];
     }
 
     private UInt16 ReadUInt16() {
+        Need(2);
         UInt32 val = 0;
         val |= ((UInt32) buf[index++]) << 8;
         val |= ((UInt32) buf[index++]);
@@ -455,6 +539,7 @@ internal class OTF {
     }
 
     private UInt32 ReadUInt32() {
+        Need(4);
         UInt32 val = 0;
         val |= ((UInt32) buf[index++]) << 24;
         val |= ((UInt32) buf[index++]) << 16;

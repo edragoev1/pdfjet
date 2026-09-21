@@ -47,6 +47,28 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- An OpenType or TrueType font (`.otf`, `.ttf`) that is not valid fails with
+  "Invalid font file: ..." in all four ports, where it read past the end of
+  the file, followed a character map that was not there, made an array of a
+  negative size, or took every byte of memory there is reading a GPOS table
+  that says it holds more than any font does. Every read of a font now checks
+  that its bytes are there. A font is refused when it has no character map,
+  when its character map is not the format 4 subtable PDFjet reads, when its
+  units per em are outside the range OpenType allows, when it has no advance
+  widths, when its CFF table is not inside the file, or when its name is not
+  one a PDF name can hold, as a stream font with such a name is refused. A
+  name record outside the font, and a character map segment that points
+  outside its glyph ID array, are left out rather than read. The mark lookups
+  of the GPOS table are read for as much work as a font needs: the most the
+  252 fonts PDFjet ships take is 62,954 of the 1,048,576 pairs and glyphs
+  allowed. Java also failed with a null pointer on a font with no name, and
+  Swift trapped on a font with no `OS/2` or `post` table, which the other two
+  ports read as zeros. Found by fuzzing the Go font loaders with
+  `FuzzOpenTypeFont`, which fuzzes a whole file, and `FuzzOpenTypeFontTables`,
+  which fuzzes each table PDFjet reads on its own and joins them into a font
+  whose directory is right; 1.8 M and 8.5 M runs clean after the fixes. Of
+  the 2,181 fonts of the replay, the four ports read the same ones and draw
+  the same page from every one they read.
 - The four ports read the same text from bytes that are not UTF-8. Java read
   an encoded surrogate, the three bytes ED A0 80, as one U+FFFD, and Go read a
   sequence cut short at the end of a file as one U+FFFD a byte, where C# and

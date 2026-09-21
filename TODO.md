@@ -88,7 +88,28 @@ work to Oct 21 is the seven goals below, in this order.
      replay — the corpus of both targets, and the 50 icons — every one the
      ports read draws the same content in all four, and none crashes. What
      they still differ on is which malformed XML their parsers accept.
-   - ⬜ OTF and TTF, the `Font` loaders.
+   - ✅ OTF and TTF, the `Font` loaders (Sep 21): `FuzzOpenTypeFont` fuzzes a
+     whole `.otf` or `.ttf` file, and `FuzzOpenTypeFontTables` each table
+     PDFjet reads on its own, joined into a font whose directory is right, so
+     that a change reaches a parser rather than moving the offsets of the
+     other tables; 1.8 M and 8.5 M runs clean after the fixes. Found every
+     read of a font unchecked, so that a truncated file, or a table of the
+     directory pointing outside the file, read past its end; a character map
+     that is not there followed; a glyph ID array of a negative size; a
+     character map segment read outside that array; a name record read
+     outside the font; a CFF table read past the end of the file to be
+     embedded; units per em of 0 divided by; no advance widths indexed at -1;
+     and a GPOS table that says it holds more lookups, subtables or coverage
+     glyphs than any font does taking every byte of memory there is. Fixed in
+     the four ports with unit tests; the mark lookups are read for the work a
+     font needs, of which the 252 fonts PDFjet ships take at most 62,954 of
+     the 1,048,576 allowed. Replaying the corpus in the four ports found two
+     more: a font with no name, which Java failed on with a null pointer and
+     which is refused in all four now, as a stream font with no name is, and
+     a font with no `OS/2` or `post` table, which Swift trapped on and the
+     other ports read as zeros. Of the 2,181 fonts of the replay the four
+     ports read the same ones, and draw the same page from every one they
+     read.
    - ⬜ The decompressor.
    - ⬜ `PDF.read`: the xref, the object streams and the encryption.
 
@@ -142,9 +163,9 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Sep 20–26: the decoders, `Page` and `TextLine`
 
-- ⬜ **B** Goal 1: JPEG and SVG are done (Sep 20); fuzz OTF and TTF, then the
-      decompressor, fixing each failure in the four ports as the first five
-      targets were fixed.
+- ⬜ **B** Goal 1: JPEG and SVG are done (Sep 20) and OTF and TTF (Sep 21);
+      fuzz the decompressor, fixing each failure in the four ports as the
+      first seven targets were fixed.
 - ⬜ **B** Goal 2: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
       `SVGImage`, the classes the same week's fuzzing reads; then `Page` and
       `TextLine`, the two with the widest exposure. One of `JPGImage` for that

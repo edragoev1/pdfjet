@@ -355,7 +355,7 @@ class FontStream1 {
     // Returns true if the name can be written as a PDF name as it is:
     // printable ASCII, and none of the characters that end a name or start an
     // escape.
-    private static boolean isFontName(byte[] name) {
+    static boolean isFontName(byte[] name) {
         if (name.length == 0) {
             return false;
         }
