@@ -27,6 +27,24 @@ public class Paragraph {
     // The structure element of the paragraph in a PDF/UA document, which is a
     // paragraph unless it is set to a heading; see SetStructureType.
     internal StructElem structureType = StructElem.P;
+    // The label of a paragraph that is an item of a list, and how far to the
+    // left of the text it is drawn; see SetListLabel.
+    internal TextLine listLabel = null;
+    internal float listLabelIndent = 0f;
+
+    /// <summary>
+    /// Makes this paragraph an item of a list, labelled by the text line, which is
+    /// drawn indent points to the left of the text of the paragraph and on the
+    /// baseline of its first line. A run of paragraphs that have a label is a list:
+    /// in a PDF/UA document it is an L of an LI for each paragraph, each holding the
+    /// Lbl of its label and the LBody of its text, so that a reader reads the label
+    /// of an item before the item, however the two are drawn.
+    /// </summary>
+    public Paragraph SetListLabel(TextLine label, float indent) {
+        this.listLabel = label;
+        this.listLabelIndent = indent;
+        return this;
+    }
 
     /// <summary>
     /// Sets the structure element type of this paragraph, for a PDF/UA document:

@@ -46,6 +46,15 @@ public class Example_03 {
                 .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
         paragraphs.Add(paragraph);
 
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+            paragraphNumber++;
+        }
+
         TextFrame text = new TextFrame(paragraphs);
         text.SetLocation(70f, 50f);
         text.SetWidth(500f);
@@ -53,17 +62,6 @@ public class Example_03 {
         text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
-        int paragraphNumber = 1;
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
-                        .DrawOn(page);
-                paragraphNumber++;
-            }
-        }
 
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
         colorMap["Physics"] = Color.red;
@@ -76,9 +74,12 @@ public class Example_03 {
                 p.SetStructureType(StructElem.H1);
                 p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
                 p.GetTextLines()[0].SetTextColor(Color.navy);
+                paragraphNumber = 1;
             } else {
                 p.SetTextColor(Color.gray);
                 p.SetHighlightColors(colorMap);
+                p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+                paragraphNumber++;
             }
         }
 
@@ -89,18 +90,13 @@ public class Example_03 {
         text.SetBorderColor(Color.blue);
         text.DrawOn(page);
 
-        paragraphNumber = 1;
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
         foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, paragraphNumber.ToString() + ".")
-                        .SetLocation(p.GetTextX() - 15f, p.GetTextY())
-                        .DrawOn(page);
+            if (!p.StartsWith("**")) {
                 new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
                         .SetStrokeColor(Color.navy)
                         .SetStrokeWidth(1f).DrawOn(page);
-                paragraphNumber++;
             }
         }
 

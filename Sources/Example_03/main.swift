@@ -42,6 +42,15 @@ public class Example_03 {
                 .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
         paragraphs.append(paragraph)
 
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+            paragraphNumber += 1
+        }
+
         var text = TextFrame(paragraphs)
         text.setLocation(70.0, 50.0)
         text.setWidth(500.0)
@@ -49,17 +58,6 @@ public class Example_03 {
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 
-        var paragraphNumber: Int = 1
-        for p in paragraphs {
-            if p.startsWith("**") {
-                paragraphNumber = 1
-            } else {
-                TextLine(f2, String(paragraphNumber) + ".")
-                        .setLocation(p.getTextX() - 15.0, p.getTextY())
-                        .drawOn(page)
-                paragraphNumber += 1
-            }
-        }
 
         var colorMap = [String: Int32]()
         colorMap["Physics"] = Color.red
@@ -67,14 +65,19 @@ public class Example_03 {
         colorMap["Experimentation"] =  Color.orange
         colorMap["science"] = Color.blue
         paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
+        // The paragraphs under each heading are a numbered list.
+        paragraphNumber = 1
         for p in paragraphs {
             if (p.startsWith("**")) {
                 p.setStructureType(StructElem.H1)
                 p.getTextLines()[0].setFont(f2).setFontSize(24.0)
                 p.getTextLines()[0].setTextColor(Color.navy)
+                paragraphNumber = 1
             } else {
                 p.setTextColor(Color.gray)
                 p.setHighlightColors(colorMap)
+                p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+                paragraphNumber += 1
             }
         }
 
@@ -85,19 +88,12 @@ public class Example_03 {
         text.setBorderColor(Color.blue)
         text.drawOn(page)
 
-        paragraphNumber = 1
-        for p in paragraphs {
-            if p.startsWith("**") {
-                paragraphNumber = 1
-            } else {
-                TextLine(f2, String(paragraphNumber) + ".")
-                        .setLocation(p.getTextX() - 15.0, p.getTextY())
-                        .drawOn(page)
-                Line(p.getX1() - 3.0, p.getY1(), p.getX1() - 3.0, p.getY2())
-                        .setStrokeColor(Color.navy)
-                        .setStrokeWidth(1.0).drawOn(page)
-                paragraphNumber += 1
-            }
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        for p in paragraphs where !p.startsWith("**") {
+            Line(p.getX1() - 3.0, p.getY1(), p.getX1() - 3.0, p.getY2())
+                    .setStrokeColor(Color.navy)
+                    .setStrokeWidth(1.0).drawOn(page)
         }
 
         try pdf.complete()

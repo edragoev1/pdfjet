@@ -6,9 +6,13 @@
 package pdfjet
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // testParagraphDistance draws two paragraphs of one line and returns how far
@@ -110,4 +114,40 @@ func TestTextFrameAJustifiedParagraphLeavesItsLastRowAsItIs(t *testing.T) {
 	}
 	testNear(t, "y2", left.GetY2(), justified.GetY2(), testDelta)
 	testNear(t, "x2", left.GetX2(), justified.GetX2(), testDelta)
+}
+
+func TestTextFrameParagraphsWithALabelAreAList(t *testing.T) {
+	// The label of an item is drawn where the item begins, so that it reads
+	// before the text of the item and not after all of the text.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	paragraphs := make([]*Paragraph, 0)
+	for i, text := range []string{"alpha beta", "gamma delta"} {
+		paragraphs = append(paragraphs, NewParagraph().
+			Add(NewTextLine(font, text)).
+			SetListLabel(NewTextLine(font, strconv.Itoa(i+1)+"."), 15))
+	}
+	// A paragraph with no label ends the list.
+	paragraphs = append(paragraphs, NewParagraph().Add(NewTextLine(font, "epsilon")))
+	frame := NewTextFrameFromParagraphs(paragraphs)
+	frame.SetLocation(70, 50)
+	frame.SetWidth(300)
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame.DrawOn(page)
+	content := testContent(page)
+	// The label of an item is drawn before the text of the item.
+	if strings.Index(content, testHex("1.")) > strings.Index(content, testHex("alpha")) {
+		t.Error("the label of the first item is drawn after its text")
+	}
+	raw := string(doc.complete())
+	counts := map[string]int{
+		"/S /L\n": 1, "/S /LI\n": 2, "/S /Lbl\n": 2, "/S /LBody\n": 2,
+	}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
 }

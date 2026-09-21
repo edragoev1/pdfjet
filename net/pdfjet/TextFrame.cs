@@ -57,6 +57,10 @@ public class TextFrame : IDrawable {
     // its own there, since an element belongs to the page it is drawn on.
     private Paragraph elementParagraph;
     private StructElement element;
+    // Whether a list, and an item of it, are open: a run of paragraphs that
+    // have a label is one list.
+    private bool inList;
+    private bool inItem;
     private StructElement savedParent;
     private StructElement savedMcidParent;
 
@@ -208,6 +212,7 @@ public class TextFrame : IDrawable {
         elementParagraph = null;
         element = null;
         float bottom = DrawParagraphs(page);
+        CloseList(page);
         if (h > 0f) {
             bottom = y + h;
         }
@@ -380,12 +385,29 @@ public class TextFrame : IDrawable {
     // Makes the text that is drawn next belong to the structure element of the
     // paragraph. A paragraph is one element, however many rows and words it is
     // drawn in.
-    private void BeginParagraphElement(Page page, Paragraph paragraph) {
+    private void BeginParagraphElement(Page page, Paragraph paragraph, float x, float y) {
         if (page == null || paragraph == null) {
             return;
         }
         if (paragraph != elementParagraph) {
             elementParagraph = paragraph;
+            CloseItem(page);
+            if (paragraph.listLabel != null) {
+                // The label of the item is drawn where the item begins, so
+                // that a reader reads it before the text of the item.
+                if (!inList) {
+                    page.BeginStructElement(StructElem.L);
+                    inList = true;
+                }
+                page.BeginStructElement(StructElem.LI);
+                paragraph.listLabel.SetStructureType(StructElem.LBL);
+                paragraph.listLabel.SetLocation(x - paragraph.listLabelIndent, y);
+                paragraph.listLabel.DrawOn(page);
+                page.BeginStructElement(StructElem.LBODY);
+                inItem = true;
+            } else {
+                CloseList(page);
+            }
             element = page.AddStructElement(page.structParent, paragraph.structureType, null);
         }
         if (element == null) {
@@ -403,6 +425,27 @@ public class TextFrame : IDrawable {
         }
         page.structParent = savedParent;
         page.mcidParent = savedMcidParent;
+    }
+
+    // Ends the item of the list that is open, if there is one.
+    private void CloseItem(Page page) {
+        if (inItem) {
+            page.EndStructElement();    // The LBody
+            page.EndStructElement();    // The LI
+            inItem = false;
+        }
+    }
+
+    // Ends the list that is open, if there is one.
+    private void CloseList(Page page) {
+        if (page == null) {
+            return;
+        }
+        CloseItem(page);
+        if (inList) {
+            page.EndStructElement();    // The L
+            inList = false;
+        }
     }
 
     private void DrawRow(Page page, bool lastRowOfParagraph) {
@@ -424,7 +467,7 @@ public class TextFrame : IDrawable {
                 shift = (w - rowWidth) / 2f;
             }
             foreach (RowPart part in row) {
-                BeginParagraphElement(page, part.paragraph);
+                BeginParagraphElement(page, part.paragraph, part.x + shift, yText);
                 part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
                 EndParagraphElement(page);
                 if (part.startsParagraph) {
@@ -463,7 +506,7 @@ public class TextFrame : IDrawable {
                 }
                 if (end > start) {
                     String word = text.Substring(start, end - start);
-                    BeginParagraphElement(page, part.paragraph);
+                    BeginParagraphElement(page, part.paragraph, xWord, yText);
                     part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
                     EndParagraphElement(page);
                     xWord += Width(part.textLine, word);

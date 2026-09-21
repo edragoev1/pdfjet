@@ -56,6 +56,10 @@ public class TextFrame implements Drawable {
     // its own there, since an element belongs to the page it is drawn on.
     private Paragraph elementParagraph;
     private StructElement element;
+    // Whether a list, and an item of it, are open: a run of paragraphs that
+    // have a label is one list.
+    private boolean inList;
+    private boolean inItem;
 
     // The text of the row being drawn, drawn when the row is complete, so that it
     // can be aligned: each part is a text line with some of its text.
@@ -267,6 +271,7 @@ public class TextFrame implements Drawable {
         elementParagraph = null;
         element = null;
         float bottom = drawParagraphs(page);
+        closeList(page);
         if (h > 0f) {
             bottom = y + h;
         }
@@ -442,12 +447,30 @@ public class TextFrame implements Drawable {
     private StructElement savedParent;
     private StructElement savedMcidParent;
 
-    private void beginParagraphElement(Page page, Paragraph paragraph) {
+    private void beginParagraphElement(Page page, Paragraph paragraph, float x, float y)
+            throws Exception {
         if (page == null || paragraph == null) {
             return;
         }
         if (paragraph != elementParagraph) {
             elementParagraph = paragraph;
+            closeItem(page);
+            if (paragraph.listLabel != null) {
+                // The label of the item is drawn where the item begins, so
+                // that a reader reads it before the text of the item.
+                if (!inList) {
+                    page.beginStructElement(StructElem.L);
+                    inList = true;
+                }
+                page.beginStructElement(StructElem.LI);
+                paragraph.listLabel.setStructureType(StructElem.LBL);
+                paragraph.listLabel.setLocation(x - paragraph.listLabelIndent, y);
+                paragraph.listLabel.drawOn(page);
+                page.beginStructElement(StructElem.LBODY);
+                inItem = true;
+            } else {
+                closeList(page);
+            }
             element = page.addStructElement(page.structParent, paragraph.structureType, null);
         }
         if (element == null) {
@@ -465,6 +488,27 @@ public class TextFrame implements Drawable {
         }
         page.structParent = savedParent;
         page.mcidParent = savedMcidParent;
+    }
+
+    // Ends the item of the list that is open, if there is one.
+    private void closeItem(Page page) {
+        if (inItem) {
+            page.endStructElement();    // The LBody
+            page.endStructElement();    // The LI
+            inItem = false;
+        }
+    }
+
+    // Ends the list that is open, if there is one.
+    private void closeList(Page page) {
+        if (page == null) {
+            return;
+        }
+        closeItem(page);
+        if (inList) {
+            page.endStructElement();    // The L
+            inList = false;
+        }
     }
 
     private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
@@ -486,7 +530,7 @@ public class TextFrame implements Drawable {
                 shift = (w - rowWidth) / 2f;
             }
             for (RowPart part : row) {
-                beginParagraphElement(page, part.paragraph);
+                beginParagraphElement(page, part.paragraph, part.x + shift, yText);
                 part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page);
                 endParagraphElement(page);
                 if (part.startsParagraph) {
@@ -525,7 +569,7 @@ public class TextFrame implements Drawable {
                 }
                 if (end > start) {
                     String word = text.substring(start, end);
-                    beginParagraphElement(page, part.paragraph);
+                    beginParagraphElement(page, part.paragraph, xWord, yText);
                     part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page);
                     endParagraphElement(page);
                     xWord += width(part.textLine, word);

@@ -54,6 +54,10 @@ public class TextFrame : Drawable {
     // its own there, since an element belongs to the page it is drawn on.
     private var elementParagraph: Paragraph?
     private var element: StructElement?
+    // Whether a list, and an item of it, are open: a run of paragraphs that
+    // have a label is one list.
+    private var inList = false
+    private var inItem = false
     private var savedParent: StructElement?
     private var savedMcidParent: StructElement?
 
@@ -195,6 +199,7 @@ public class TextFrame : Drawable {
         elementParagraph = nil
         element = nil
         var bottom = drawParagraphs(page)
+        closeList(page)
         if h > 0.0 {
             bottom = y + h
         }
@@ -370,12 +375,30 @@ public class TextFrame : Drawable {
     // Makes the text that is drawn next belong to the structure element of the
     // paragraph. A paragraph is one element, however many rows and words it is
     // drawn in.
-    private func beginParagraphElement(_ page: Page?, _ paragraph: Paragraph?) {
+    private func beginParagraphElement(
+            _ page: Page?, _ paragraph: Paragraph?, _ x: Float, _ y: Float) {
         guard let page = page, let paragraph = paragraph else {
             return
         }
         if paragraph !== elementParagraph {
             elementParagraph = paragraph
+            closeItem(page)
+            if let label = paragraph.listLabel {
+                // The label of the item is drawn where the item begins, so
+                // that a reader reads it before the text of the item.
+                if !inList {
+                    page.beginStructElement(StructElem.L)
+                    inList = true
+                }
+                page.beginStructElement(StructElem.LI)
+                label.setStructureType(StructElem.LBL)
+                label.setLocation(x - paragraph.listLabelIndent, y)
+                label.drawOn(page)
+                page.beginStructElement(StructElem.LBODY)
+                inItem = true
+            } else {
+                closeList(page)
+            }
             element = page.addStructElement(page.structParent, paragraph.structureType, nil)
         }
         if element == nil {
@@ -393,6 +416,27 @@ public class TextFrame : Drawable {
         }
         page.structParent = savedParent
         page.mcidParent = savedMcidParent
+    }
+
+    // Ends the item of the list that is open, if there is one.
+    private func closeItem(_ page: Page) {
+        if inItem {
+            page.endStructElement()     // The LBody
+            page.endStructElement()     // The LI
+            inItem = false
+        }
+    }
+
+    // Ends the list that is open, if there is one.
+    private func closeList(_ page: Page?) {
+        guard let page = page else {
+            return
+        }
+        closeItem(page)
+        if inList {
+            page.endStructElement()     // The L
+            inList = false
+        }
     }
 
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
@@ -414,7 +458,7 @@ public class TextFrame : Drawable {
                 shift = (w - rowWidth) / 2.0
             }
             for part in row {
-                beginParagraphElement(page, part.paragraph)
+                beginParagraphElement(page, part.paragraph, part.x + shift, yText)
                 part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
                 endParagraphElement(page)
                 if part.startsParagraph {
@@ -451,7 +495,7 @@ public class TextFrame : Drawable {
                 }
                 if end > start {
                     let word = String(String.UnicodeScalarView(text[start..<end]))
-                    beginParagraphElement(page, part.paragraph)
+                    beginParagraphElement(page, part.paragraph, xWord, yText)
                     part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
                     endParagraphElement(page)
                     xWord += TextFrame.width(part.textLine, word)

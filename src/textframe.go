@@ -12,6 +12,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // TextFrame is paragraphs of text lines, wrapped at the width of the frame,
@@ -50,6 +51,10 @@ type TextFrame struct {
 	// its own there, since an element belongs to the page it is drawn on.
 	elementParagraph *Paragraph
 	element          *structElement
+	// Whether a list, and an item of it, are open: a run of paragraphs that
+	// have a label is one list.
+	inList bool
+	inItem bool
 
 	// The row of text being drawn: where the text goes next, whether the row
 	// can take more text, whether the frame has a row yet, and where the next
@@ -198,6 +203,7 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	tf.elementParagraph = nil
 	tf.element = nil
 	bottom := tf.drawParagraphs(page)
+	tf.closeList(page)
 	if tf.h > 0 {
 		bottom = tf.y + tf.h
 	}
@@ -396,7 +402,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		for _, part := range tf.row {
 			line := part.textLine.copyWithText(part.text)
 			line.SetLocation(part.x+shift, tf.yText)
-			restore := tf.beginParagraphElement(page, part.paragraph)
+			restore := tf.beginParagraphElement(page, part.paragraph, part.x+shift, tf.yText)
 			line.DrawOn(page)
 			restore()
 			if part.startsParagraph {
@@ -414,12 +420,30 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 // structure element of the paragraph, and returns what puts back the element
 // it belonged to before. A paragraph is one element, however many rows and
 // words it is drawn in.
-func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph) func() {
+func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph, x, y float32) func() {
 	if page == nil || paragraph == nil {
 		return func() {}
 	}
 	if paragraph != tf.elementParagraph {
 		tf.elementParagraph = paragraph
+		tf.closeItem(page)
+		if paragraph.listLabel != nil {
+			// The label of the item is drawn where the item begins, so that a
+			// reader reads it before the text of the item.
+			if !tf.inList {
+				page.BeginStructElement(structelem.L)
+				tf.inList = true
+			}
+			page.BeginStructElement(structelem.LI)
+			label := paragraph.listLabel
+			label.SetStructureType(structelem.Lbl)
+			label.SetLocation(x-paragraph.listLabelIndent, y)
+			label.DrawOn(page)
+			page.BeginStructElement(structelem.LBody)
+			tf.inItem = true
+		} else {
+			tf.closeList(page)
+		}
 		tf.element = page.addStructElement(page.structParent, paragraph.structureType, "")
 	}
 	if tf.element == nil {
@@ -428,6 +452,27 @@ func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph) fun
 	parent, mcidParent := page.structParent, page.mcidParent
 	page.structParent, page.mcidParent = tf.element, tf.element
 	return func() { page.structParent, page.mcidParent = parent, mcidParent }
+}
+
+// closeItem ends the item of the list that is open, if there is one.
+func (tf *TextFrame) closeItem(page *Page) {
+	if tf.inItem {
+		page.EndStructElement() // The LBody
+		page.EndStructElement() // The LI
+		tf.inItem = false
+	}
+}
+
+// closeList ends the list that is open, if there is one.
+func (tf *TextFrame) closeList(page *Page) {
+	if page == nil {
+		return
+	}
+	tf.closeItem(page)
+	if tf.inList {
+		page.EndStructElement() // The L
+		tf.inList = false
+	}
 }
 
 // drawJustifiedRow draws the words of the row one by one, with the width left
@@ -460,7 +505,7 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
 				word := text[start:end]
 				line := part.textLine.copyWithText(word)
 				line.SetLocation(xWord, tf.yText)
-				restore := tf.beginParagraphElement(page, part.paragraph)
+				restore := tf.beginParagraphElement(page, part.paragraph, xWord, tf.yText)
 				line.DrawOn(page)
 				restore()
 				xWord += textWidth(part.textLine, word)

@@ -9,6 +9,9 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class TextFrameTest {
@@ -107,4 +110,37 @@ class TextFrameTest {
         assertEquals(left.getY2(), justified.getY2(), TestSupport.DELTA);
         assertEquals(left.getX2(), justified.getX2(), TestSupport.DELTA);
     }
+    @Test
+    void paragraphsWithALabelAreAList() throws Exception {
+        // The label of an item is drawn where the item begins, so that it
+        // reads before the text of the item and not after all of the text.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
+        String[] texts = {"alpha beta", "gamma delta"};
+        for (int i = 0; i < texts.length; i++) {
+            paragraphs.add(new Paragraph().add(new TextLine(font, texts[i]))
+                    .setListLabel(new TextLine(font, (i + 1) + "."), 15f));
+        }
+        // A paragraph with no label ends the list.
+        paragraphs.add(new Paragraph().add(new TextLine(font, "epsilon")));
+        TextFrame frame = new TextFrame(paragraphs);
+        frame.setLocation(70f, 50f);
+        frame.setWidth(300f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        frame.drawOn(page);
+        String content = TestSupport.latin1(page.getContent());
+        // The label of an item is drawn before the text of the item.
+        assertTrue(content.indexOf(TestSupport.hex("1.")) < content.indexOf(TestSupport.hex("alpha")),
+                content);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, raw.split("/S /L\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /LI\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /Lbl\n", -1).length - 1, raw);
+        assertEquals(2, raw.split("/S /LBody\n", -1).length - 1, raw);
+    }
+
 }

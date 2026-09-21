@@ -93,4 +93,34 @@ import Testing
         TestSupport.expectNear(left.getY2(), justified.getY2())
         TestSupport.expectNear(left.getX2(), justified.getX2())
     }
+    @Test func paragraphsWithALabelAreAList() throws {
+        // The label of an item is drawn where the item begins, so that it
+        // reads before the text of the item and not after all of the text.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        var paragraphs = [Paragraph]()
+        for (i, text) in ["alpha beta", "gamma delta"].enumerated() {
+            paragraphs.append(Paragraph().add(TextLine(font, text))
+                    .setListLabel(TextLine(font, "\(i + 1)."), 15.0))
+        }
+        // A paragraph with no label ends the list.
+        paragraphs.append(Paragraph().add(TextLine(font, "epsilon")))
+        let frame = TextFrame(paragraphs)
+        frame.setLocation(70.0, 50.0)
+        frame.setWidth(300.0)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        _ = frame.drawOn(page)
+        let content = TestSupport.content(page)
+        // The label of an item is drawn before the text of the item.
+        #expect(content.range(of: TestSupport.hex("1."))!.lowerBound
+                < content.range(of: TestSupport.hex("alpha"))!.lowerBound)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /L\n").count - 1 == 1)
+        #expect(raw.components(separatedBy: "/S /LI\n").count - 1 == 2)
+        #expect(raw.components(separatedBy: "/S /Lbl\n").count - 1 == 2)
+        #expect(raw.components(separatedBy: "/S /LBody\n").count - 1 == 2)
+    }
+
 }

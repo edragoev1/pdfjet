@@ -65,6 +65,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   and `endStructElement` group what is drawn between them into a structure
   element of any type; they nest, and do nothing in a document that is not
   PDF/UA. `StructElem` has `LBody`, which all four ports were missing.
+- `Paragraph.setListLabel` makes a paragraph of a `TextFrame` an item of a
+  list, labelled by a text line that the frame draws to the left of it and on
+  the baseline of its first line. A run of paragraphs that have a label is an
+  L of an LI for each, each holding the Lbl of its label and the LBody of its
+  text. The numbered paragraphs of Example_03 are two such lists: their
+  numbers were drawn in a second pass, after all of the text, so a reader
+  read every number after every paragraph rather than each before its own.
+  The example draws what it drew, to the point.
 - A paragraph of a `TextColumn` or a `TextFrame` is one structure element in
   a PDF/UA document, of the type `Paragraph.setStructureType` gives it: a
   heading with `StructElem.H1` to `H6`, and a paragraph, which it is, with

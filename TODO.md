@@ -178,9 +178,11 @@ work to Oct 21 is the seven goals below, in this order.
      `Page.beginStructElement` and `endStructElement` group what is drawn
      between them, which nothing could do before, and `LBody` was missing
      from `StructElem` in all four ports. The numbered paragraphs of
-     Example_03 are a list too, and are not tagged as one: their numbers are
-     drawn in a second pass, after all the text, so they would read after it
-     rather than each before its own paragraph.
+     Example_03 are two lists of their own: their numbers were drawn in a
+     second pass, after all the text, and would have read after it, so
+     `Paragraph.setListLabel` gives a paragraph the label of its item and a
+     `TextFrame` draws it where the item begins. The example draws what it
+     drew, to the point.
    - ✅ A tagged `BigTable` held every structure element until the document
      was written, so the 29 MB data file of Example_43 took 778 MB of heap
      (Sep 21). The elements of a page are written with the page now, and a

@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -104,5 +105,37 @@ public class TextFrameTest {
         TestSupport.AssertNear(left.GetY2(), justified.GetY2(), TestSupport.DELTA);
         TestSupport.AssertNear(left.GetX2(), justified.GetX2(), TestSupport.DELTA);
     }
+    [Fact]
+    public void ParagraphsWithALabelAreAList() {
+        // The label of an item is drawn where the item begins, so that it
+        // reads before the text of the item and not after all of the text.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        string[] texts = {"alpha beta", "gamma delta"};
+        for (int i = 0; i < texts.Length; i++) {
+            paragraphs.Add(new Paragraph().Add(new TextLine(font, texts[i]))
+                    .SetListLabel(new TextLine(font, (i + 1) + "."), 15f));
+        }
+        // A paragraph with no label ends the list.
+        paragraphs.Add(new Paragraph().Add(new TextLine(font, "epsilon")));
+        TextFrame frame = new TextFrame(paragraphs);
+        frame.SetLocation(70f, 50f);
+        frame.SetWidth(300f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        frame.DrawOn(page);
+        string content = TestSupport.Latin1(page.GetContent());
+        // The label of an item is drawn before the text of the item.
+        Assert.True(content.IndexOf(TestSupport.Hex("1.")) < content.IndexOf(TestSupport.Hex("alpha")));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, raw.Split(new string[] {"/S /L\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /LI\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /Lbl\n"}, StringSplitOptions.None).Length - 1);
+        Assert.Equal(2, raw.Split(new string[] {"/S /LBody\n"}, StringSplitOptions.None).Length - 1);
+    }
+
 }
 }

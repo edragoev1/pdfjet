@@ -53,6 +53,15 @@ func Example03() {
 	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
 	paragraphs = append(paragraphs, paragraph)
 
+	// The two paragraphs are a numbered list. The number of a paragraph is
+	// its label, which the text frame draws to the left of it and reads
+	// before it.
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+		paragraphNumber++
+	}
+
 	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
 	text.SetLocation(70.0, 50.0)
 	text.SetWidth(500.0)
@@ -60,32 +69,27 @@ func Example03() {
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
-	paragraphNumber := 1
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			paragraphNumber = 1
-		} else {
-			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
-			textLine.DrawOn(page)
-			paragraphNumber++
-		}
-	}
-
 	colorMap := make(map[string]int32)
 	colorMap["Physics"] = color.Red
 	colorMap["physics"] = color.Red
 	colorMap["Experimentation"] = color.Orange
 	colorMap["science"] = color.Blue
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	// The paragraphs under each heading are a numbered list. The number of a
+	// paragraph is its label, which the text frame draws to the left of it
+	// and reads before it.
+	paragraphNumber = 1
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
 			p.SetStructureType(structelem.H1)
 			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
 			p.GetTextLines()[0].SetTextColor(color.Navy)
+			paragraphNumber = 1
 		} else {
 			p.SetTextColor(color.Gray)
 			p.SetHighlightColors(colorMap)
+			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+			paragraphNumber++
 		}
 	}
 
@@ -96,17 +100,12 @@ func Example03() {
 	text.SetBorderColor(color.Blue)
 	text.DrawOn(page)
 
-	paragraphNumber = 1
+	// The rule beside each paragraph reaches from its top to its bottom,
+	// which the frame knows only after it has drawn it.
 	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			paragraphNumber = 1
-		} else {
-			textLine := pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+".")
-			textLine.SetLocation(p.GetTextX()-15.0, p.GetTextY())
-			textLine.DrawOn(page)
+		if !p.StartsWith("**") {
 			pdfjet.NewLine(
 				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
-			paragraphNumber++
 		}
 	}
 

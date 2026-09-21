@@ -48,6 +48,15 @@ public class Example_03 {
                 .add(new TextLine(f3, "This text is using italic font.").setTextColor(Color.green));
         paragraphs.add(paragraph);
 
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        int paragraphNumber = 1;
+        for (Paragraph p : paragraphs) {
+            p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
+            paragraphNumber++;
+        }
+
         TextFrame text = new TextFrame(paragraphs);
         text.setLocation(70f, 50f);
         text.setWidth(500f);
@@ -55,17 +64,6 @@ public class Example_03 {
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 
-        int paragraphNumber = 1;
-        for (Paragraph p : paragraphs) {
-            if (p.startsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.getTextX() - 15f, p.getTextY())
-                        .drawOn(page);
-                paragraphNumber++;
-            }
-        }
 
         Map<String, Integer> colorMap = new HashMap<String, Integer>();
         colorMap.put("Physics", Color.red);
@@ -73,14 +71,19 @@ public class Example_03 {
         colorMap.put("Experimentation", Color.orange);
         colorMap.put("science", Color.blue);
         paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
+        // The paragraphs under each heading are a numbered list.
+        paragraphNumber = 1;
         for (Paragraph p : paragraphs) {
             if (p.startsWith("**")) {
                 p.setStructureType(StructElem.H1);
                 p.getTextLines().get(0).setFont(f2).setFontSize(24f);
                 p.getTextLines().get(0).setTextColor(Color.navy);
+                paragraphNumber = 1;
             } else {
                 p.setTextColor(Color.gray);
                 p.setHighlightColors(colorMap);
+                p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
+                paragraphNumber++;
             }
         }
 
@@ -91,18 +94,13 @@ public class Example_03 {
         text.setBorderColor(Color.blue);
         text.drawOn(page);
 
-        paragraphNumber = 1;
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
         for (Paragraph p : paragraphs) {
-            if (p.startsWith("**")) {
-                paragraphNumber = 1;
-            } else {
-                new TextLine(f2, String.valueOf(paragraphNumber) + ".")
-                        .setLocation(p.getTextX() - 15f, p.getTextY())
-                        .drawOn(page);
+            if (!p.startsWith("**")) {
                 new Line(p.getX1() - 3f, p.getY1(), p.getX1() - 3f, p.getY2())
                         .setStrokeColor(Color.navy)
                         .setStrokeWidth(1f).drawOn(page);
-                paragraphNumber++;
             }
         }
 
