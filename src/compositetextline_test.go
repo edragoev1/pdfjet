@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
@@ -168,6 +169,26 @@ func TestCompositeTextLineAFormulaSuperscriptsTheChargeAfterACircumflex(t *testi
 	empty.AddFormula(font, "")
 	if empty.GetNumberOfTextLines() != 0 {
 		t.Errorf("components %d", empty.GetNumberOfTextLines())
+	}
+}
+
+func TestCompositeTextLineAFormulaIsOneStructureElement(t *testing.T) {
+	// The components are the runs of one formula, so a screen reader reads
+	// C6H12O6 and not six elements of "C", "6", "H", "12", "O" and "6".
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	composite := NewCompositeTextLine(50, 100)
+	composite.SetFontSize(14)
+	composite.AddFormula(font, "C6H12O6")
+	composite.DrawOn(page)
+	if got := strings.Count(testContent(page), "BDC\n"); got != 6 {
+		t.Errorf("the six components are marked %d times", got)
+	}
+	if got := strings.Count(string(doc.complete()), "/S /P\n"); got != 1 {
+		t.Errorf("the formula is %d elements, not one", got)
 	}
 }
 

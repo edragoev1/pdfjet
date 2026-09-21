@@ -150,6 +150,24 @@ import Testing
         #expect(empty.getNumberOfTextLines() == 0)
     }
 
+    @Test func aFormulaIsOneStructureElement() throws {
+        // The components are the runs of one formula, so a screen reader
+        // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
+        // and "6".
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Title")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let composite = CompositeTextLine(50.0, 100.0)
+        composite.setFontSize(14.0)
+        composite.addFormula(TestSupport.helvetica(memory.pdf), "C6H12O6")
+        composite.drawOn(page)
+        #expect(TestSupport.content(page).components(separatedBy: "BDC\n").count - 1 == 6)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.components(separatedBy: "/S /P\n").count - 1 == 1,
+                "the formula is more than one element")
+    }
+
     @Test func aCellDrawsALineOfTextOnItsBaselineWhateverItsAlignment() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

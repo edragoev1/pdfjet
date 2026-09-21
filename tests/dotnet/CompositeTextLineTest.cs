@@ -101,6 +101,24 @@ public class CompositeTextLineTest {
     }
 
     [Fact]
+    public void AFormulaIsOneStructureElement() {
+        // The components are the runs of one formula, so a screen reader
+        // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
+        // and "6".
+        System.IO.MemoryStream output = new System.IO.MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        CompositeTextLine composite = new CompositeTextLine(50f, 100f);
+        composite.SetFontSize(14f);
+        composite.AddFormula(TestSupport.Helvetica(pdf), "C6H12O6");
+        composite.DrawOn(page);
+        Assert.Equal(6, TestSupport.Content(page).Split("BDC\n").Length - 1);
+        pdf.Complete();
+        Assert.Equal(1, TestSupport.Latin1(output.ToArray()).Split("/S /P\n").Length - 1);
+    }
+
+    [Fact]
     public void AFormulaSubscriptsTheAtomCounts() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         CompositeTextLine water = new CompositeTextLine(0f, 0f);

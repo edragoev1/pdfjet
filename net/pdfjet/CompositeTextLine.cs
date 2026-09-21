@@ -383,11 +383,30 @@ public class CompositeTextLine : IBaselineDrawable {
         // A composite text line with no component reaches its own location.
         float xMax = position[X];
         float yMax = position[Y];
+        // The components are the runs of one formula, so a screen reader
+        // reads H2SO4 rather than four elements of "H", "2", "SO" and "4".
+        StructElement savedParent = null;
+        StructElement savedMcidParent = null;
+        StructElement element = null;
+        if (page != null && page.mcidParent == null) {
+            // A paragraph that already owns what is drawn needs no element.
+            element = page.AddStructElement(page.structParent, StructElem.P, null);
+        }
+        if (element != null) {
+            savedParent = page.structParent;
+            savedMcidParent = page.mcidParent;
+            page.structParent = element;
+            page.mcidParent = element;
+        }
         // Loop through all the text lines and draw them on the page
         foreach (TextLine textLine in textLines) {
             float[] xy = textLine.DrawOn(page);
             xMax = Math.Max(xMax, xy[0]);
             yMax = Math.Max(yMax, xy[1]);
+        }
+        if (element != null) {
+            page.structParent = savedParent;
+            page.mcidParent = savedMcidParent;
         }
         return new float[] {xMax, yMax};
     }

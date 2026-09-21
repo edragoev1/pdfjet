@@ -99,6 +99,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   `TextFrame` is twice as tall per line as before, the spacing of the font's
   line gap (see Added). A document that set a line spacing to make up for the
   missing gap gets more space than before.
+- A `CompositeTextLine` in a PDF/UA document is one structure element, in all
+  four ports, where every part of it was one: the six runs of C6H12O6 were six
+  paragraphs of "C", "6", "H", "12", "O" and "6", which a screen reader reads
+  one at a time. A line that a paragraph already owns, as in a table cell that
+  draws one, is left to that paragraph.
 - An `Image` and an `SVGImage` on a page of a PDF/UA document are a Figure
   with the description `setAltDescription` gives, in all four ports, where
   every one of them was a paragraph. PDF/UA asks for a figure to be tagged as
@@ -377,15 +382,25 @@ This is the first entry in this file; earlier releases were not tracked here.
   paragraph gap is 0.
 
 ### Examples
+- Example_15 draws chemical formulas rather than 300 cells of filler. It was
+  a table of 60 rows by 5 columns over three pages where every body cell read
+  "Hello 1 2" and every cell of the header row and the first column drew the
+  same H2O, 64 times; the text set on those cells was never drawn, since the
+  composite line replaced it. It is one page now: 29 formulas in five
+  sections, the compounds from water to potassium alum, the organic ones from
+  glucose to palmitic acid, the ions, the isotopes and four reactions, each
+  drawn with `CompositeTextLine.addFormula` and each one structure element.
+  The example is still the only one of `CompositeTextLine`, of
+  `Cell.setCompositeTextLine` — which it no longer uses — and of a script
+  position. Its line in `examples-java.html` and `examples-dotnet.html` says
+  what it draws now.
 - Example_20 draws the logo of pdfjet.com. `data/testPDFs/PDFjetLogo.pdf`,
-  which it reads and Example_41 merges, is written from
-  `images/readme/pdfjet-logo.svg` by `util/make-logo-pdf.sh`, so the logo is
-  vector paths on a Letter page and the file is 2,333 bytes instead of 76,062.
-  The file it replaces, the logo PDFjet 5.81 wrote in 2016 with the wordmark
-  as text in an embedded Dosis-Bold font, is kept as
-  `data/testPDFs/pdfjet-5.81-logo.pdf`, which the merge tests of the four
-  ports and the seeds of `FuzzPDFRead` read, since a document with an embedded
-  Type0 font is worth reading in a test.
+  which it reads, Example_41 merges, the merge tests of the four ports read
+  and `FuzzPDFRead` seeds, is written from `images/readme/pdfjet-logo.svg` by
+  `util/make-logo-pdf.sh`, so the logo is vector paths on a Letter page and
+  the file is 2,333 bytes instead of 76,062. It replaces the logo PDFjet 5.81
+  wrote in 2016, which held the wordmark as text in an embedded Dosis-Bold
+  font.
 - 28 more examples are PDF/UA documents: 02, 03, 06, 08, 09, 10, 11, 13, 14,
   17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and 45,
   and 39 and 40 before them. The ones that are not use core fonts or fonts that

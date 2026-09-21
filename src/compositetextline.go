@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/scriptposition"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // CompositeTextLine constructs composite text line objects.
@@ -332,6 +333,23 @@ func (composite *CompositeTextLine) GetWidth() float32 {
 	return width
 }
 
+// beginElement opens the structure element of a PDF/UA document that the
+// components of this composite text line belong to, and returns the call that
+// closes it. The components are the runs of one formula, so a screen reader
+// reads H2SO4 rather than four elements of "H", "2", "SO" and "4".
+func (composite *CompositeTextLine) beginElement(page *Page) func() {
+	if page.mcidParent != nil {
+		return func() {} // A paragraph already owns what is drawn.
+	}
+	element := page.addStructElement(page.structParent, structelem.P, "")
+	if element == nil {
+		return func() {} // The document is not tagged, or this is an artifact.
+	}
+	parent, mcidParent := page.structParent, page.mcidParent
+	page.structParent, page.mcidParent = element, element
+	return func() { page.structParent, page.mcidParent = parent, mcidParent }
+}
+
 // DrawOn draws this line on the specified page.
 //   - page: the page to draw this line on.
 //
@@ -340,6 +358,9 @@ func (composite *CompositeTextLine) DrawOn(page *Page) [2]float32 {
 	// A composite text line with no component reaches its own location.
 	xMax := float64(composite.position[composite.x])
 	yMax := float64(composite.position[composite.y])
+	if page != nil {
+		defer composite.beginElement(page)()
+	}
 	// Loop through all the text lines and draw them on the page
 	for _, textLine := range composite.textLines {
 		xy := textLine.DrawOn(page)

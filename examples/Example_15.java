@@ -7,85 +7,136 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_15.java
+ * This example draws chemical formulas with CompositeTextLine: the digits of
+ * a formula are subscripts, the charge of an ion and the mass number of an
+ * isotope are superscripts.
  */
 public class Example_15 {
+    // The sections of the page: the formulas as CompositeTextLine.addFormula
+    // reads them, and what each one is called.
+    private static final String[][] COMPOUNDS = {
+        {"H2O", "Water"},
+        {"CO2", "Carbon dioxide"},
+        {"NaCl", "Sodium chloride"},
+        {"H2SO4", "Sulfuric acid"},
+        {"NaHCO3", "Sodium bicarbonate"},
+        {"Fe2O3", "Iron(III) oxide"},
+        {"Ca(OH)2", "Calcium hydroxide"},
+        {"CuSO4·5H2O", "Copper(II) sulfate"},
+        {"(NH4)3PO4", "Ammonium phosphate"},
+        {"KAl(SO4)2", "Potassium alum"},
+    };
+
+    private static final String[][] ORGANIC = {
+        {"C6H12O6", "Glucose"},
+        {"CH3COOH", "Acetic acid"},
+        {"C8H10N4O2", "Caffeine"},
+        {"C9H8O4", "Aspirin"},
+        {"C2H5OH", "Ethanol"},
+        {"CH3(CH2)14COOH", "Palmitic acid"},
+    };
+
+    private static final String[][] IONS = {
+        {"Na^+", "Sodium"},
+        {"Ca^2+", "Calcium"},
+        {"NH4^+", "Ammonium"},
+        {"OH^-", "Hydroxide"},
+        {"SO4^2-", "Sulfate"},
+        {"PO4^3-", "Phosphate"},
+    };
+
+    private static final String[][] ISOTOPES = {
+        {"^3H", "Tritium"},
+        {"^14C", "Carbon-14"},
+        {"^235U", "Uranium-235"},
+    };
+
+    private static final String[][] REACTIONS = {
+        {"2H2 + O2 → 2H2O", "Hydrogen burns"},
+        {"N2 + 3H2 → 2NH3", "Ammonia, the Haber process"},
+        {"CaCO3 → CaO + CO2", "Limestone is calcined"},
+        {"CH4 + 2O2 → CO2 + 2H2O", "Methane burns"},
+    };
+
     public Example_15() throws Exception {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_15.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("PDF/UA compliant PDF");
+        pdf.setTitle("Chemical Formulas");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        Font f3 = new Font(pdf, IBMPlexSans.Regular);
-        Font f4 = new Font(pdf, IBMPlexSans.Bold);
-        Font f5 = new Font(pdf, IBMPlexSans.Regular);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-        List<Cell> row = null;
-        Cell cell = null;
-        for (int i = 0; i < 60; i++) {
-            row = new ArrayList<Cell>();
-            for (int j = 0; j < 5; j++) {
-                if (i == 0) {
-                    cell = new Cell(f1);
-                } else {
-                    cell = new Cell(f2);
-                }
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-                cell.setTopPadding(10f);
-                cell.setBottomPadding(10f);
-                cell.setLeftPadding(10f);
-                cell.setRightPadding(10f);
+        TextLine title = new TextLine(f2, "Chemical Formulas");
+        title.setFontSize(18f);
+        title.setStructureType(StructElem.H1);
+        title.setLocation(60f, 70f);
+        title.drawOn(page);
 
-                cell.setText("Hello " + i + " " + j);
+        TextBlock intro = new TextBlock(f1,
+                "A CompositeTextLine draws one line of text out of parts that sit on "
+                + "the baseline, above it or below it. AddFormula reads a formula and "
+                + "places its parts: the digits that follow an element or a bracket are "
+                + "subscripts, and what follows a circumflex is a superscript, the "
+                + "charge of an ion or the mass number of an isotope. Each formula "
+                + "below is one line and, in this tagged document, one structure "
+                + "element, so a screen reader reads the formula and not its parts.");
+        intro.setFontSize(11f);
+        intro.setLineSpacing(1.5f);
+        intro.setLocation(60f, 90f);
+        intro.setWidth(492f);
+        float[] xy = intro.drawOn(page);
 
-                CompositeTextLine composite = new CompositeTextLine(0f, 0f);
-                composite.setFontSize(12.0f);
-                TextLine line1 = new TextLine(f3, "H");
-                TextLine line2 = new TextLine(f4, "2");
-                TextLine line3 = new TextLine(f5, "O");
-
-                line2.setScriptPosition(ScriptPosition.SUBSCRIPT);
-
-                composite.addComponent(line1);
-                composite.addComponent(line2);
-                composite.addComponent(line3);
-
-                if (i == 0 || j == 0) {
-                    cell.setCompositeTextLine(composite);
-                    cell.setBackgroundColor(Color.deepskyblue);
-                } else {
-                    cell.setBackgroundColor(Color.dodgerblue);
-                }
-                cell.setBorderColor(Color.lightgray);
-                cell.setTextColor(Color.black);
-                row.add(cell);
-            }
-            tableData.add(row);
-        }
-
-        Table table = new Table();
-        table.setTableData(tableData, 2);
-        table.setBottomMargin(15f);
-        table.setLocation(70f, 30f);
-        table.autoAdjustColumnWidths();
-
-        List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, A4.PORTRAIT);
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
+        float y = xy[1] + 26f;
+        y = drawSection(page, f1, f2, "Compounds", COMPOUNDS, 2, 266f, 150f, y);
+        y = drawSection(page, f1, f2, "Organic compounds", ORGANIC, 2, 266f, 150f, y);
+        y = drawSection(page, f1, f2, "Ions", IONS, 3, 170f, 60f, y);
+        y = drawSection(page, f1, f2, "Isotopes", ISOTOPES, 3, 170f, 60f, y);
+        drawSection(page, f1, f2, "Reactions", REACTIONS, 1, 0f, 210f, y);
 
         pdf.complete();
+    }
+
+    // Draws the heading of a section and its formulas in the number of
+    // columns, and returns the y where the next section begins.
+    private float drawSection(Page page, Font f1, Font f2, String title,
+            String[][] items, int columns, float columnWidth, float nameOffset, float y)
+            throws Exception {
+        TextLine heading = new TextLine(f2, title);
+        heading.setFontSize(13f);
+        heading.setStructureType(StructElem.H2);
+        heading.setLocation(60f, y);
+        heading.drawOn(page);
+
+        y += 22f;
+        for (int i = 0; i < items.length; i++) {
+            float x = 70f + (i % columns)*columnWidth;
+            drawFormula(page, f1, items[i][0], items[i][1], x, y + (i / columns)*24f, nameOffset);
+        }
+        int rows = (items.length + columns - 1) / columns;
+        return y + rows*24f + 10f;
+    }
+
+    // Draws the formula at the location and its name the offset to the right of it.
+    private void drawFormula(Page page, Font font, String formula, String name,
+            float x, float y, float nameOffset) throws Exception {
+        CompositeTextLine composite = new CompositeTextLine(x, y);
+        composite.setFontSize(14f);
+        composite.addFormula(font, formula);
+        composite.drawOn(page);
+
+        TextLine text = new TextLine(font, name);
+        text.setFontSize(10f);
+        text.setTextColor(Color.gray);
+        text.setLocation(x + nameOffset, y);
+        text.drawOn(page);
     }
 
     public static void main(String[] args) throws Exception {

@@ -402,11 +402,30 @@ public class CompositeTextLine : BaselineDrawable {
         // A composite text line with no component reaches its own location.
         var xMax: Float = position[X]
         var yMax: Float = position[Y]
+        // The components are the runs of one formula, so a screen reader
+        // reads H2SO4 rather than four elements of "H", "2", "SO" and "4".
+        var savedParent: StructElement?
+        var savedMcidParent: StructElement?
+        var element: StructElement?
+        if let page = page, page.mcidParent == nil {
+            // A paragraph that already owns what is drawn needs no element.
+            element = page.addStructElement(page.structParent, StructElem.P, nil)
+        }
+        if let element = element, let page = page {
+            savedParent = page.structParent
+            savedMcidParent = page.mcidParent
+            page.structParent = element
+            page.mcidParent = element
+        }
         // Loop through all the text lines and draw them on the page
         for textLine in textLines {
             let xy: [Float] = textLine.drawOn(page)
             xMax = max(xMax, xy[0])
             yMax = max(yMax, xy[1])
+        }
+        if element != nil, let page = page {
+            page.structParent = savedParent
+            page.mcidParent = savedMcidParent
         }
         return [xMax, yMax]
     }

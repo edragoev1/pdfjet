@@ -162,6 +162,25 @@ class CompositeTextLineTest {
     }
 
     @Test
+    void aFormulaIsOneStructureElement() throws Exception {
+        // The components are the runs of one formula, so a screen reader
+        // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
+        // and "6".
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        CompositeTextLine composite = new CompositeTextLine(50f, 100f);
+        composite.setFontSize(14f);
+        composite.addFormula(TestSupport.helvetica(pdf), "C6H12O6");
+        composite.drawOn(page);
+        assertEquals(6, TestSupport.content(page).split("BDC\n", -1).length - 1);
+        pdf.complete();
+        assertEquals(1, TestSupport.latin1(bos.toByteArray()).split("/S /P\n", -1).length - 1,
+                "the formula is more than one element");
+    }
+
+    @Test
     void aCellDrawsALineOfTextOnItsBaselineWhateverItsAlignment() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
