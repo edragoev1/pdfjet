@@ -674,19 +674,19 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 					for _, token := range tokens {
 						tokenWidth := textBlock.font.StringWidthUsingFallbackFont(
 							textBlock.fallbackFont, textBlock.font.size, token)
-						tokenWidth += cell.leftPadding + cell.rightPadding
+						tokenWidth += cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)
 						if tokenWidth > maxColWidths[i] {
 							maxColWidths[i] = tokenWidth
 						}
 					}
 				} else if cell.drawable != nil {
-					drawableWidth := measureDrawable(cell.drawable)[0] + cell.leftPadding + cell.rightPadding
+					drawableWidth := measureDrawable(cell.drawable)[0] + cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)
 					if drawableWidth > maxColWidths[i] {
 						maxColWidths[i] = drawableWidth
 					}
 				} else if cell.hasText {
 					textWidth := cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, cell.text)
-					textWidth += cell.leftPadding + cell.rightPadding
+					textWidth += cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)
 					if textWidth > maxColWidths[i] {
 						maxColWidths[i] = textWidth
 					}
@@ -709,7 +709,7 @@ func getTotalWidth(row []*Cell, index int) float32 {
 	for i := 0; i < colspan; i++ {
 		cellWidth += row[index+i].GetWidth()
 	}
-	cellWidth -= cell.leftPadding + row[index+(colspan-1)].rightPadding
+	cellWidth -= cell.paddingAt(cellLeftPadding) + row[index+(colspan-1)].paddingAt(cellRightPadding)
 	return cellWidth
 }
 

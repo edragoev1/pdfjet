@@ -18,12 +18,11 @@ public class Cell {
     internal String text;
     internal IDrawable drawable;    // The image, barcode, text block, text column or other drawable
     internal Point point;
-    private Alignment markerAlignment = Alignment.RIGHT;
     internal float width = 75f;
-    internal float topPadding = 2f;
-    internal float bottomPadding = 2f;
-    internal float leftPadding = 2f;
-    internal float rightPadding = 2f;
+    // The four paddings are the four bytes of one uint, 4 bytes instead of 16
+    // for every cell. A padding is kept to the nearest quarter of a point,
+    // between 0 and 63.75, which is more than the text of a cell needs.
+    private uint padding;
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
     // for every cell; NO_COLOR marks a background or a border that is not set.
@@ -45,17 +44,55 @@ public class Cell {
     internal const uint CONTINUED = 0x00400000;
     internal uint properties = Border.TOP | Border.LEFT;
     private String uri;
-    private Alignment textAlignment = Alignment.LEFT;
-    private Alignment valign = Alignment.TOP;
+
+    // Where the three alignments of a cell are in properties, three bits
+    // each, and where the four paddings are in padding, a byte each.
+    private const int MARKER_ALIGNMENT = 0;
+    private const int TEXT_ALIGNMENT = 3;
+    private const int VALIGN = 6;
+    private const uint ALIGNMENT_BITS = 0x7;
+
+    private const int TOP_PADDING = 0;
+    private const int BOTTOM_PADDING = 8;
+    private const int LEFT_PADDING = 16;
+    private const int RIGHT_PADDING = 24;
+    private const uint PADDING_BITS = 0xFF;
+    // A padding is kept in quarters of a point.
+    private const float PADDING_SCALE = 4f;
+
+    // The alignment at the bits of properties.
+    private Alignment AlignmentAt(int shift) {
+        return (Alignment) ((properties >> shift) & ALIGNMENT_BITS);
+    }
+
+    // Keeps the alignment in the bits of properties.
+    private void SetAlignmentAt(int shift, Alignment alignment) {
+        properties = (properties & ~(ALIGNMENT_BITS << shift))
+                | (((uint) alignment & ALIGNMENT_BITS) << shift);
+    }
+
+    // The padding at the byte of padding, in points.
+    private float PaddingAt(int shift) {
+        return ((padding >> shift) & PADDING_BITS) / PADDING_SCALE;
+    }
+
+    // Keeps the padding in the byte of padding, to the nearest quarter of a
+    // point and between 0 and 63.75.
+    private void SetPaddingAt(int shift, float points) {
+        int quarters = (int) (points * PADDING_SCALE + 0.5f);
+        if (quarters < 0) {
+            quarters = 0;
+        } else if (quarters > PADDING_BITS) {
+            quarters = (int) PADDING_BITS;
+        }
+        padding = (padding & ~(PADDING_BITS << shift)) | ((uint) quarters << shift);
+    }
 
     /// <summary>
     ///  Creates a cell object and sets the font.
     /// </summary>
     /// <param name="font">the font.</param>
-    public Cell(Font font) {
-        this.font = font;
-        this.fontSize = font.GetSize();
-        this.fallbackFont = font;
+    public Cell(Font font) : this(font, null) {
     }
 
     /// <summary>
@@ -68,6 +105,13 @@ public class Cell {
         this.fontSize = font.GetSize();
         this.fallbackFont = font;
         this.text = text;
+        SetPaddingAt(TOP_PADDING, 2f);
+        SetPaddingAt(BOTTOM_PADDING, 2f);
+        SetPaddingAt(LEFT_PADDING, 2f);
+        SetPaddingAt(RIGHT_PADDING, 2f);
+        SetAlignmentAt(MARKER_ALIGNMENT, Alignment.RIGHT);
+        SetAlignmentAt(TEXT_ALIGNMENT, Alignment.LEFT);
+        SetAlignmentAt(VALIGN, Alignment.TOP);
     }
 
     /// <summary>
@@ -194,7 +238,7 @@ public class Cell {
     /// <returns>this Cell object.</returns>
     public Cell SetMarker(Point point, Alignment alignment) {
         this.point = point;
-        this.markerAlignment = alignment;
+        SetAlignmentAt(MARKER_ALIGNMENT, alignment);
         return this;
     }
 
@@ -227,7 +271,7 @@ public class Cell {
 
     /// <summary>Sets the text column drawn in this cell, widens the cell to fit it and clears the cell text.</summary>
     public Cell SetTextColumn(TextColumn textColumn) {
-        this.width = textColumn.GetWidth() + this.leftPadding + this.rightPadding;
+        this.width = textColumn.GetWidth() + PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING);
         return SetDrawable(textColumn);
     }
 
@@ -250,7 +294,7 @@ public class Cell {
     public Cell SetWidth(float width) {
         this.width = width;
         if (drawable is TextBlock textBlock) {
-            textBlock.SetWidth(this.width - (this.leftPadding + this.rightPadding));
+            textBlock.SetWidth(this.width - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
         }
         return this;
     }
@@ -268,13 +312,13 @@ public class Cell {
     /// </summary>
     /// <param name="padding">the top padding.</param>
     public Cell SetTopPadding(float padding) {
-        this.topPadding = padding;
+        SetPaddingAt(TOP_PADDING, padding);
         return this;
     }
 
     /// <summary>Returns the top padding.</summary>
     public float GetTopPadding() {
-        return this.topPadding;
+        return PaddingAt(TOP_PADDING);
     }
 
     /// <summary>
@@ -282,13 +326,13 @@ public class Cell {
     /// </summary>
     /// <param name="padding">the bottom padding.</param>
     public Cell SetBottomPadding(float padding) {
-        this.bottomPadding = padding;
+        SetPaddingAt(BOTTOM_PADDING, padding);
         return this;
     }
 
     /// <summary>Returns the bottom padding.</summary>
     public float GetBottomPadding() {
-        return this.bottomPadding;
+        return PaddingAt(BOTTOM_PADDING);
     }
 
     /// <summary>
@@ -296,7 +340,7 @@ public class Cell {
     /// </summary>
     /// <param name="padding">the left padding.</param>
     public Cell SetLeftPadding(float padding) {
-        this.leftPadding = padding;
+        SetPaddingAt(LEFT_PADDING, padding);
         return this;
     }
 
@@ -305,7 +349,7 @@ public class Cell {
     /// </summary>
     /// <param name="padding">the right padding.</param>
     public Cell SetRightPadding(float padding) {
-        this.rightPadding = padding;
+        SetPaddingAt(RIGHT_PADDING, padding);
         return this;
     }
 
@@ -314,10 +358,10 @@ public class Cell {
     /// </summary>
     /// <param name="padding">the right padding.</param>
     public Cell SetPadding(float padding) {
-        this.topPadding = padding;
-        this.bottomPadding = padding;
-        this.leftPadding = padding;
-        this.rightPadding = padding;
+        SetPaddingAt(TOP_PADDING, padding);
+        SetPaddingAt(BOTTOM_PADDING, padding);
+        SetPaddingAt(LEFT_PADDING, padding);
+        SetPaddingAt(RIGHT_PADDING, padding);
         return this;
     }
 
@@ -330,18 +374,18 @@ public class Cell {
         if (drawable is IBaselineDrawable) {
             // A line of text is drawn on the baseline of the cell text, so the
             // cell makes room for the ascent and the descent of both.
-            cellHeight = Ascent() + Descent() + topPadding + bottomPadding;
+            cellHeight = Ascent() + Descent() + PaddingAt(TOP_PADDING) + PaddingAt(BOTTOM_PADDING);
         } else if ((text == null || text.Equals("")) && drawable != null) {   // The text is drawn first
             if (drawable is TextBlock textBlock) {
                 textBlock.SetWidth(width);
             }
-            cellHeight = Measure(drawable)[1] + topPadding + bottomPadding;
+            cellHeight = Measure(drawable)[1] + PaddingAt(TOP_PADDING) + PaddingAt(BOTTOM_PADDING);
         } else if (text != null) {
             float fontHeight = font.GetBodyHeight(fontSize);
             if (fallbackFont != null && fallbackFont.GetBodyHeight(fontSize) > fontHeight) {
                 fontHeight = fallbackFont.GetBodyHeight(fontSize);
             }
-            cellHeight = fontHeight + topPadding + bottomPadding;
+            cellHeight = fontHeight + PaddingAt(TOP_PADDING) + PaddingAt(BOTTOM_PADDING);
         }
         return cellHeight;
     }
@@ -475,7 +519,7 @@ public class Cell {
     /// Supported values: Alignment.LEFT, Alignment.RIGHT, Alignment.CENTER and Alignment.JUSTIFY,
     /// which draws the single line of cell text left aligned.</param>
     public Cell SetTextAlignment(Alignment alignment) {
-        this.textAlignment = alignment;
+        SetAlignmentAt(TEXT_ALIGNMENT, alignment);
         return this;
     }
 
@@ -484,7 +528,7 @@ public class Cell {
     /// </summary>
     /// <returns>the horizontal alignment.</returns>
     public Alignment GetTextAlignment() {
-        return this.textAlignment;
+        return AlignmentAt(TEXT_ALIGNMENT);
     }
 
     /// <summary>
@@ -494,7 +538,7 @@ public class Cell {
     /// Supported values: Alignment.TOP, Alignment.CENTER and Alignment.BOTTOM.</param>
     /// <returns>this Cell object.</returns>
     public Cell SetVerticalAlignment(Alignment alignment) {
-        this.valign = alignment;
+        SetAlignmentAt(VALIGN, alignment);
         return this;
     }
 
@@ -503,7 +547,7 @@ public class Cell {
     /// </summary>
     /// <returns>the vertical alignment.</returns>
     public Alignment GetVerticalAlignment() {
-        return this.valign;
+        return AlignmentAt(VALIGN);
     }
 
     /// <summary>
@@ -549,12 +593,12 @@ public class Cell {
 
     /// <summary>Returns the left padding.</summary>
     public float GetLeftPadding() {
-        return this.leftPadding;
+        return PaddingAt(LEFT_PADDING);
     }
 
     /// <summary>Returns the right padding.</summary>
     public float GetRightPadding() {
-        return this.rightPadding;
+        return PaddingAt(RIGHT_PADDING);
     }
 
     /// <summary>
@@ -574,28 +618,28 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             DrawText(page, x, y, w, h);
         } else if (drawable is TextBlock textBlock) {
-            textBlock.SetLocation(x + leftPadding, y + topPadding);
-            textBlock.SetWidth(w - (leftPadding + rightPadding));
+            textBlock.SetLocation(x + PaddingAt(LEFT_PADDING), y + PaddingAt(TOP_PADDING));
+            textBlock.SetWidth(w - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
             textBlock.DrawOn(page);
         } else if (drawable != null) {
             if (GetTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = Measure(drawable)[0];
-                drawable.SetLocation((x + w) - (drawableWidth + rightPadding), y + topPadding);
+                drawable.SetLocation((x + w) - (drawableWidth + PaddingAt(RIGHT_PADDING)), y + PaddingAt(TOP_PADDING));
             } else if (GetTextAlignment() == Alignment.CENTER) {
                 float drawableWidth = Measure(drawable)[0];
-                drawable.SetLocation((x + w/2f) - drawableWidth/2f, y + topPadding);
+                drawable.SetLocation((x + w/2f) - drawableWidth/2f, y + PaddingAt(TOP_PADDING));
             } else {
-                drawable.SetLocation(x + leftPadding, y + topPadding);
+                drawable.SetLocation(x + PaddingAt(LEFT_PADDING), y + PaddingAt(TOP_PADDING));
             }
             drawable.DrawOn(page);
         }
 
         DrawBorders(page, x, y, w, h);
         if (point != null) {
-            if (markerAlignment == Alignment.LEFT) {
+            if (AlignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
                 point.x = x + 2*point.r;
-            } else if (markerAlignment == Alignment.RIGHT) {
-                point.x = (x + w) - this.rightPadding/2;
+            } else if (AlignmentAt(MARKER_ALIGNMENT) == Alignment.RIGHT) {
+                point.x = (x + w) - PaddingAt(RIGHT_PADDING)/2;
             }
             point.y = y + h/2;
             page.SetBrushColor(point.GetFillColor());
@@ -687,25 +731,25 @@ public class Cell {
             float cellH) {
         float ascent = Ascent();
         float yText;
-        if (valign == Alignment.TOP) {
-            yText = y + ascent + this.topPadding;
-        } else if (valign == Alignment.CENTER) {
+        if (AlignmentAt(VALIGN) == Alignment.TOP) {
+            yText = y + ascent + PaddingAt(TOP_PADDING);
+        } else if (AlignmentAt(VALIGN) == Alignment.CENTER) {
             yText = y + cellH/2 + ascent/2;
-        } else if (valign == Alignment.BOTTOM) {
-            yText = (y + cellH) - this.bottomPadding;
+        } else if (AlignmentAt(VALIGN) == Alignment.BOTTOM) {
+            yText = (y + cellH) - PaddingAt(BOTTOM_PADDING);
         } else {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
         float xText;
         if (GetTextAlignment() == Alignment.RIGHT) {
-            xText = (x + cellW) - (GetTextWidth() + this.rightPadding);
+            xText = (x + cellW) - (GetTextWidth() + PaddingAt(RIGHT_PADDING));
         } else if (GetTextAlignment() == Alignment.CENTER) {
-            xText = x + this.leftPadding +
-                    (((cellW - (leftPadding + rightPadding)) - GetTextWidth()) / 2);
+            xText = x + PaddingAt(LEFT_PADDING) +
+                    (((cellW - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING))) - GetTextWidth()) / 2);
         } else {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
-            xText = x + this.leftPadding;
+            xText = x + PaddingAt(LEFT_PADDING);
         }
         IBaselineDrawable line = drawable as IBaselineDrawable;
         if (line == null) {

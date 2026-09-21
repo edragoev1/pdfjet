@@ -707,19 +707,19 @@ public class Table : IDrawable {
                         String[] tokens = Util.SplitOnWhitespace(textBlock.textContent);
                         foreach (String token in tokens) {
                             float tokenWidth = textBlock.font.StringWidth(textBlock.fallbackFont, token);
-                            tokenWidth += cell.leftPadding + cell.rightPadding;
+                            tokenWidth += cell.GetLeftPadding() + cell.GetRightPadding();
                             if (tokenWidth > maxColWidths[i]) {
                                 maxColWidths[i] = tokenWidth;
                             }
                         }
                     } else if (cell.drawable != null) {
-                        float drawableWidth = Cell.Measure(cell.drawable)[0] + cell.leftPadding + cell.rightPadding;
+                        float drawableWidth = Cell.Measure(cell.drawable)[0] + cell.GetLeftPadding() + cell.GetRightPadding();
                         if (drawableWidth > maxColWidths[i]) {
                             maxColWidths[i] = drawableWidth;
                         }
                     } else if (cell.text != null) {
                         float textWidth = cell.font.StringWidth(cell.fallbackFont, cell.fontSize, cell.text);
-                        textWidth += cell.leftPadding + cell.rightPadding;
+                        textWidth += cell.GetLeftPadding() + cell.GetRightPadding();
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
                         }
@@ -742,7 +742,7 @@ public class Table : IDrawable {
         for (int i = 0; i < colspan; i++) {
             cellWidth += row[index + i].GetWidth();
         }
-        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding);
+        cellWidth -= (cell.GetLeftPadding() + row[index + (colspan - 1)].GetRightPadding());
         return cellWidth;
     }
 
@@ -782,8 +782,8 @@ public class Table : IDrawable {
                     cell2.SetFallbackFont(cell.GetFallbackFont());
                     cell2.SetFontSize(cell.fontSize);
                     cell2.SetWidth(cell.GetWidth());
-                    cell2.SetLeftPadding(cell.leftPadding);
-                    cell2.SetRightPadding(cell.rightPadding);
+                    cell2.SetLeftPadding(cell.GetLeftPadding());
+                    cell2.SetRightPadding(cell.GetRightPadding());
                     cell2.backgroundColor = cell.backgroundColor;
                     cell2.SetBorderWidth(cell.GetBorderWidth());
                     cell2.borderColor = cell.borderColor;

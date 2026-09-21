@@ -756,19 +756,19 @@ public class Table : Drawable {
                         let tokens = textBlock.textContent.splitOnWhitespace()
                         for token in tokens {
                             var tokenWidth = textBlock.font.stringWidth(textBlock.fallbackFont, token)
-                            tokenWidth += cell.leftPadding + cell.rightPadding
+                            tokenWidth += cell.getLeftPadding() + cell.getRightPadding()
                             if tokenWidth > maxColWidths[i] {
                                 maxColWidths[i] = tokenWidth
                             }
                         }
                     } else if let drawable = cell.drawable {
-                        let drawableWidth = Cell.measure(drawable)[0] + cell.leftPadding + cell.rightPadding
+                        let drawableWidth = Cell.measure(drawable)[0] + cell.getLeftPadding() + cell.getRightPadding()
                         if drawableWidth > maxColWidths[i] {
                             maxColWidths[i] = drawableWidth
                         }
                     } else if cell.text != nil {
                         var textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text)
-                        textWidth += cell.leftPadding + cell.rightPadding
+                        textWidth += cell.getLeftPadding() + cell.getRightPadding()
                         if textWidth > maxColWidths[i] {
                             maxColWidths[i] = textWidth
                         }
@@ -791,7 +791,7 @@ public class Table : Drawable {
         for i in 0..<colspan {
             cellWidth += row[index + i].getWidth()
         }
-        cellWidth -= (cell.leftPadding + row[index + (colspan - 1)].rightPadding)
+        cellWidth -= (cell.getLeftPadding() + row[index + (colspan - 1)].getRightPadding())
         return cellWidth
     }
 

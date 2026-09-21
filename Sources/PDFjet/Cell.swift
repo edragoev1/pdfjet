@@ -17,12 +17,11 @@ public class Cell {
     var text: String?
     var drawable: Drawable?     // The image, barcode, text block, text column or other drawable
     var point: Point?
-    private var markerAlignment = Alignment.RIGHT
     var width: Float = 75.0
-    var topPadding: Float = 2.0
-    var bottomPadding: Float = 2.0
-    var leftPadding: Float = 2.0
-    var rightPadding: Float = 2.0
+    // The four paddings are the four bytes of one UInt32, 4 bytes instead of
+    // 16 for every cell. A padding is kept to the nearest quarter of a point,
+    // between 0 and 63.75, which is more than the text of a cell needs.
+    private var padding: UInt32 = 0
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
     // for every cell; NO_COLOR marks a background or a border that is not set.
@@ -34,8 +33,6 @@ public class Cell {
 
     private var colspan: Int = 1
     private var uri: String?
-    private var textAlignment = Alignment.LEFT
-    private var valign = Alignment.TOP
 
     // The borders and the underline and strikeout of the text are the bits of
     // one UInt32, 4 bytes instead of 6 Bools and the padding they need. The
@@ -47,6 +44,49 @@ public class Cell {
     // wrapped text, which is the same table cell in a PDF/UA document.
     internal static let CONTINUED: UInt32 = 0x00400000
     internal var properties: UInt32 = Border.TOP | Border.LEFT
+
+    // Where the three alignments of a cell are in properties, three bits
+    // each, and where the four paddings are in padding, a byte each.
+    private static let markerAlignmentShift: UInt32 = 0
+    private static let textAlignmentShift: UInt32 = 3
+    private static let valignShift: UInt32 = 6
+    private static let alignmentBits: UInt32 = 0x7
+
+    private static let topPaddingShift: UInt32 = 0
+    private static let bottomPaddingShift: UInt32 = 8
+    private static let leftPaddingShift: UInt32 = 16
+    private static let rightPaddingShift: UInt32 = 24
+    private static let paddingBits: UInt32 = 0xFF
+    // A padding is kept in quarters of a point.
+    private static let paddingScale: Float = 4.0
+
+    // The alignment at the bits of properties.
+    private func alignmentAt(_ shift: UInt32) -> Alignment {
+        return Alignment(rawValue: (properties >> shift) & Cell.alignmentBits) ?? Alignment.LEFT
+    }
+
+    // Keeps the alignment in the bits of properties.
+    private func setAlignmentAt(_ shift: UInt32, _ alignment: Alignment) {
+        properties = (properties & ~(Cell.alignmentBits << shift))
+                | ((alignment.rawValue & Cell.alignmentBits) << shift)
+    }
+
+    // The padding at the byte of padding, in points.
+    private func paddingAt(_ shift: UInt32) -> Float {
+        return Float((padding >> shift) & Cell.paddingBits) / Cell.paddingScale
+    }
+
+    // Keeps the padding in the byte of padding, to the nearest quarter of a
+    // point and between 0 and 63.75.
+    private func setPaddingAt(_ shift: UInt32, _ points: Float) {
+        var quarters = Int(points * Cell.paddingScale + 0.5)
+        if quarters < 0 {
+            quarters = 0
+        } else if quarters > Int(Cell.paddingBits) {
+            quarters = Int(Cell.paddingBits)
+        }
+        padding = (padding & ~(Cell.paddingBits << shift)) | (UInt32(quarters) << shift)
+    }
 
     /**
      * Creates a cell object and sets the font and, optionally, the cell text.
@@ -60,6 +100,13 @@ public class Cell {
         self.fallbackFont = font
         self.fontSize = font.size
         self.text = text
+        setPaddingAt(Cell.topPaddingShift, 2.0)
+        setPaddingAt(Cell.bottomPaddingShift, 2.0)
+        setPaddingAt(Cell.leftPaddingShift, 2.0)
+        setPaddingAt(Cell.rightPaddingShift, 2.0)
+        setAlignmentAt(Cell.markerAlignmentShift, Alignment.RIGHT)
+        setAlignmentAt(Cell.textAlignmentShift, Alignment.LEFT)
+        setAlignmentAt(Cell.valignShift, Alignment.TOP)
     }
 
     /**
@@ -198,7 +245,7 @@ public class Cell {
     @discardableResult
     public func setMarker(_ point: Point?, _ alignment: Alignment) -> Cell {
         self.point = point
-        self.markerAlignment = alignment
+        setAlignmentAt(Cell.markerAlignmentShift, alignment)
         return self
     }
 
@@ -245,7 +292,7 @@ public class Cell {
     public func setWidth(_ width: Float) -> Cell {
         self.width = width
         if let textBlock = drawable as? TextBlock {
-            textBlock.setWidth(self.width - (self.leftPadding + self.rightPadding))
+            textBlock.setWidth(self.width - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
         }
         return self
     }
@@ -256,7 +303,7 @@ public class Cell {
     ///
     @discardableResult
     public func setTextColumn(_ textColumn: TextColumn) -> Cell {
-        self.width = textColumn.getWidth() + self.leftPadding + self.rightPadding
+        self.width = textColumn.getWidth() + paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)
         return setDrawable(textColumn)
     }
 
@@ -290,13 +337,13 @@ public class Cell {
      */
     @discardableResult
     public func setTopPadding(_ padding: Float) -> Cell {
-        self.topPadding = padding
+        setPaddingAt(Cell.topPaddingShift, padding)
         return self
     }
 
     /// Returns the top padding.
     public func getTopPadding() -> Float {
-        return self.topPadding
+        return paddingAt(Cell.topPaddingShift)
     }
 
     /**
@@ -307,13 +354,13 @@ public class Cell {
      */
     @discardableResult
     public func setBottomPadding(_ padding: Float) -> Cell {
-        self.bottomPadding = padding
+        setPaddingAt(Cell.bottomPaddingShift, padding)
         return self
     }
 
     /// Returns the bottom padding.
     public func getBottomPadding() -> Float {
-        return self.bottomPadding
+        return paddingAt(Cell.bottomPaddingShift)
     }
 
     /**
@@ -324,13 +371,13 @@ public class Cell {
      */
     @discardableResult
     public func setLeftPadding(_ padding: Float) -> Cell {
-        self.leftPadding = padding
+        setPaddingAt(Cell.leftPaddingShift, padding)
         return self
     }
 
     /// Returns the left padding.
     public func getLeftPadding() -> Float {
-        return self.leftPadding
+        return paddingAt(Cell.leftPaddingShift)
     }
 
     /**
@@ -341,13 +388,13 @@ public class Cell {
      */
     @discardableResult
     public func setRightPadding(_ padding: Float) -> Cell {
-        self.rightPadding = padding
+        setPaddingAt(Cell.rightPaddingShift, padding)
         return self
     }
 
     /// Returns the right padding.
     public func getRightPadding() -> Float {
-        return self.rightPadding
+        return paddingAt(Cell.rightPaddingShift)
     }
 
     /**
@@ -358,10 +405,10 @@ public class Cell {
      */
     @discardableResult
     public func setPadding(_ padding: Float) -> Cell {
-        self.topPadding = padding
-        self.bottomPadding = padding
-        self.leftPadding = padding
-        self.rightPadding = padding
+        setPaddingAt(Cell.topPaddingShift, padding)
+        setPaddingAt(Cell.bottomPaddingShift, padding)
+        setPaddingAt(Cell.leftPaddingShift, padding)
+        setPaddingAt(Cell.rightPaddingShift, padding)
         return self
     }
 
@@ -375,19 +422,19 @@ public class Cell {
         if drawable is BaselineDrawable {
             // A line of text is drawn on the baseline of the cell text, so the
             // cell makes room for the ascent and the descent of both.
-            return ascentOfCell() + descentOfCell() + topPadding + bottomPadding
+            return ascentOfCell() + descentOfCell() + paddingAt(Cell.topPaddingShift) + paddingAt(Cell.bottomPaddingShift)
         }
         if let drawable = drawable, text == nil || text == "" {   // The text is drawn first
             if let textBlock = drawable as? TextBlock {
                 textBlock.setWidth(width)
             }
-            cellHeight = Cell.measure(drawable)[1] + topPadding + bottomPadding
+            cellHeight = Cell.measure(drawable)[1] + paddingAt(Cell.topPaddingShift) + paddingAt(Cell.bottomPaddingShift)
         } else if text != nil {
             var fontHeight = font.getBodyHeight(fontSize)
             if fallbackFont != nil && fallbackFont!.getBodyHeight(fontSize) > fontHeight {
                 fontHeight = fallbackFont!.getBodyHeight(fontSize)
             }
-            cellHeight = fontHeight + topPadding + bottomPadding
+            cellHeight = fontHeight + paddingAt(Cell.topPaddingShift) + paddingAt(Cell.bottomPaddingShift)
         }
         return cellHeight
     }
@@ -530,7 +577,7 @@ public class Cell {
      */
     @discardableResult
     public func setTextAlignment(_ alignment: Alignment) -> Cell {
-        self.textAlignment = alignment
+        setAlignmentAt(Cell.textAlignmentShift, alignment)
         return self
     }
 
@@ -540,7 +587,7 @@ public class Cell {
      * - Returns: the horizontal text alignment.
      */
     public func getTextAlignment() -> Alignment {
-        return self.textAlignment
+        return alignmentAt(Cell.textAlignmentShift)
     }
 
     /**
@@ -552,7 +599,7 @@ public class Cell {
      */
     @discardableResult
     public func setVerticalAlignment(_ alignment: Alignment) -> Cell {
-        self.valign = alignment
+        setAlignmentAt(Cell.valignShift, alignment)
         return self
     }
 
@@ -562,7 +609,7 @@ public class Cell {
      * - Returns: the vertical alignment.
      */
     public func getVerticalAlignment() -> Alignment {
-        return self.valign
+        return alignmentAt(Cell.valignShift)
     }
 
     /**
@@ -640,28 +687,28 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h)
         } else if let textBlock = drawable as? TextBlock {
-            textBlock.setLocation(x + leftPadding, y + topPadding)
-            textBlock.setWidth(w - (leftPadding + rightPadding))
+            textBlock.setLocation(x + paddingAt(Cell.leftPaddingShift), y + paddingAt(Cell.topPaddingShift))
+            textBlock.setWidth(w - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
             textBlock.drawOn(page)
         } else if let drawable = drawable {
             if getTextAlignment() == Alignment.RIGHT {
                 let drawableWidth = Cell.measure(drawable)[0]
-                drawable.setLocation((x + w) - (drawableWidth + rightPadding), y + topPadding)
+                drawable.setLocation((x + w) - (drawableWidth + paddingAt(Cell.rightPaddingShift)), y + paddingAt(Cell.topPaddingShift))
             } else if getTextAlignment() == Alignment.CENTER {
                 let drawableWidth = Cell.measure(drawable)[0]
-                drawable.setLocation((x + w/2.0) - drawableWidth/2.0, y + topPadding)
+                drawable.setLocation((x + w/2.0) - drawableWidth/2.0, y + paddingAt(Cell.topPaddingShift))
             } else {
-                drawable.setLocation(x + leftPadding, y + topPadding)
+                drawable.setLocation(x + paddingAt(Cell.leftPaddingShift), y + paddingAt(Cell.topPaddingShift))
             }
             drawable.drawOn(page)
         }
 
         drawBorders(page, x, y, w, h)
         if point != nil {
-            if markerAlignment == Alignment.LEFT {
+            if alignmentAt(Cell.markerAlignmentShift) == Alignment.LEFT {
                 point!.x = x + 2*point!.r
-            } else if markerAlignment == Alignment.RIGHT {
-                point!.x = (x + w) - self.rightPadding/2
+            } else if alignmentAt(Cell.markerAlignmentShift) == Alignment.RIGHT {
+                point!.x = (x + w) - paddingAt(Cell.rightPaddingShift)/2
             }
             point!.y = y + h/2
             page.setBrushColor(point!.getFillColor())
@@ -746,25 +793,25 @@ public class Cell {
             _ cellH: Float) {
         let ascent = ascentOfCell()
         var yText: Float
-        if valign == Alignment.TOP {
-            yText = y + ascent + self.topPadding
-        } else if valign == Alignment.CENTER {
+        if alignmentAt(Cell.valignShift) == Alignment.TOP {
+            yText = y + ascent + paddingAt(Cell.topPaddingShift)
+        } else if alignmentAt(Cell.valignShift) == Alignment.CENTER {
             yText = y + cellH/2 + ascent/2
-        } else if valign == Alignment.BOTTOM {
-            yText = (y + cellH) - self.bottomPadding
+        } else if alignmentAt(Cell.valignShift) == Alignment.BOTTOM {
+            yText = (y + cellH) - paddingAt(Cell.bottomPaddingShift)
         } else {
             fatalError("Invalid vertical text alignment option.")
         }
 
         var xText: Float
         if getTextAlignment() == Alignment.RIGHT {
-            xText = (x + cellW) - (getTextWidth() + self.rightPadding)
+            xText = (x + cellW) - (getTextWidth() + paddingAt(Cell.rightPaddingShift))
         } else if getTextAlignment() == Alignment.CENTER {
-            xText = x + self.leftPadding +
-                    (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2)
+            xText = x + paddingAt(Cell.leftPaddingShift) +
+                    (((cellW - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift))) - getTextWidth()) / 2)
         } else {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
-            xText = x + self.leftPadding
+            xText = x + paddingAt(Cell.leftPaddingShift)
         }
         let line = drawable as? BaselineDrawable
         if line == nil {

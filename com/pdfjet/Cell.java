@@ -25,17 +25,12 @@ public class Cell {
     protected Drawable drawable;
     /** The point drawn in this cell. */
     protected Point point;
-    private Alignment markerAlignment = Alignment.RIGHT;
     /** The width of this cell. */
     protected float width = 75f;
-    /** The top padding. */
-    protected float topPadding = 2f;
-    /** The bottom padding. */
-    protected float bottomPadding = 2f;
-    /** The left padding. */
-    protected float leftPadding = 2f;
-    /** The right padding. */
-    protected float rightPadding = 2f;
+    // The four paddings are the four bytes of one int, 4 bytes instead of 16
+    // for every cell. A padding is kept to the nearest quarter of a point,
+    // between 0 and 63.75, which is more than the text of a cell needs.
+    private int padding;
 
     // The colors are packed 0xRRGGBB values, 4 bytes each instead of an array
     // for every cell; NO_COLOR marks a background or a border that is not set.
@@ -59,10 +54,55 @@ public class Cell {
     // A cell that a table adds below another to hold the next line of its
     // wrapped text, which is the same table cell in a PDF/UA document.
     static final int CONTINUED = 0x00400000;
+
+    // Where the three alignments of a cell are in properties, three bits
+    // each, and where the four paddings are in padding, a byte each.
+    private static final int MARKER_ALIGNMENT = 0;
+    private static final int TEXT_ALIGNMENT = 3;
+    private static final int VALIGN = 6;
+    private static final int ALIGNMENT_BITS = 0x7;
+
+    private static final int TOP_PADDING = 0;
+    private static final int BOTTOM_PADDING = 8;
+    private static final int LEFT_PADDING = 16;
+    private static final int RIGHT_PADDING = 24;
+    private static final int PADDING_BITS = 0xFF;
+    // A padding is kept in quarters of a point.
+    private static final float PADDING_SCALE = 4f;
+
+    // Alignment.values() copies its array on every call, so the alignments
+    // are taken from one array that is made once.
+    private static final Alignment[] ALIGNMENTS = Alignment.values();
+
+    // The alignment at the bits of properties.
+    private Alignment alignmentAt(int shift) {
+        return ALIGNMENTS[(properties >> shift) & ALIGNMENT_BITS];
+    }
+
+    // Keeps the alignment in the bits of properties.
+    private void setAlignmentAt(int shift, Alignment alignment) {
+        properties = (properties & ~(ALIGNMENT_BITS << shift))
+                | ((alignment.ordinal() & ALIGNMENT_BITS) << shift);
+    }
+
+    // The padding at the byte of padding, in points.
+    private float paddingAt(int shift) {
+        return ((padding >> shift) & PADDING_BITS) / PADDING_SCALE;
+    }
+
+    // Keeps the padding in the byte of padding, to the nearest quarter of a
+    // point and between 0 and 63.75.
+    private void setPaddingAt(int shift, float points) {
+        int quarters = (int) (points * PADDING_SCALE + 0.5f);
+        if (quarters < 0) {
+            quarters = 0;
+        } else if (quarters > PADDING_BITS) {
+            quarters = PADDING_BITS;
+        }
+        padding = (padding & ~(PADDING_BITS << shift)) | (quarters << shift);
+    }
     int properties = Border.TOP | Border.LEFT;
     private String uri;
-    private Alignment textAlignment = Alignment.LEFT;
-    private Alignment valign = Alignment.TOP;
 
     /**
      * Creates a cell object and sets the font.
@@ -70,9 +110,7 @@ public class Cell {
      * @param font the font.
      */
     public Cell(Font font) {
-        this.font = font;
-        this.fontSize = font.getSize();
-        this.fallbackFont = font;
+        this(font, null);
     }
 
     /**
@@ -86,6 +124,13 @@ public class Cell {
         this.fontSize = font.getSize();
         this.fallbackFont = font;
         this.text = text;
+        setPaddingAt(TOP_PADDING, 2f);
+        setPaddingAt(BOTTOM_PADDING, 2f);
+        setPaddingAt(LEFT_PADDING, 2f);
+        setPaddingAt(RIGHT_PADDING, 2f);
+        setAlignmentAt(MARKER_ALIGNMENT, Alignment.RIGHT);
+        setAlignmentAt(TEXT_ALIGNMENT, Alignment.LEFT);
+        setAlignmentAt(VALIGN, Alignment.TOP);
     }
 
     /**
@@ -237,7 +282,7 @@ public class Cell {
      */
     public Cell setMarker(Point point, Alignment alignment) {
         this.point = point;
-        this.markerAlignment = alignment;
+        setAlignmentAt(MARKER_ALIGNMENT, alignment);
         return this;
     }
 
@@ -300,7 +345,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTextColumn(TextColumn textColumn) {
-        this.width = textColumn.getWidth() + this.leftPadding + this.rightPadding;
+        this.width = textColumn.getWidth() + paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING);
         return setDrawable(textColumn);
     }
 
@@ -322,7 +367,7 @@ public class Cell {
     public Cell setWidth(float width) {
         this.width = width;
         if (drawable instanceof TextBlock) {
-            ((TextBlock) drawable).setWidth(this.width - (this.leftPadding + this.rightPadding));
+            ((TextBlock) drawable).setWidth(this.width - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
         }
         return this;
     }
@@ -343,7 +388,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTopPadding(float padding) {
-        this.topPadding = padding;
+        setPaddingAt(TOP_PADDING, padding);
         return this;
     }
 
@@ -353,7 +398,7 @@ public class Cell {
      * @return the top padding.
      */
     public float getTopPadding() {
-        return this.topPadding;
+        return paddingAt(TOP_PADDING);
     }
 
     /**
@@ -363,7 +408,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setBottomPadding(float padding) {
-        this.bottomPadding = padding;
+        setPaddingAt(BOTTOM_PADDING, padding);
         return this;
     }
 
@@ -373,7 +418,7 @@ public class Cell {
      * @return the bottom padding.
      */
     public float getBottomPadding() {
-        return this.bottomPadding;
+        return paddingAt(BOTTOM_PADDING);
     }
 
     /**
@@ -383,7 +428,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setLeftPadding(float padding) {
-        this.leftPadding = padding;
+        setPaddingAt(LEFT_PADDING, padding);
         return this;
     }
 
@@ -393,7 +438,7 @@ public class Cell {
      * @return the left padding.
      */
     public float getLeftPadding() {
-        return this.leftPadding;
+        return paddingAt(LEFT_PADDING);
     }
 
     /**
@@ -403,7 +448,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setRightPadding(float padding) {
-        this.rightPadding = padding;
+        setPaddingAt(RIGHT_PADDING, padding);
         return this;
     }
 
@@ -413,7 +458,7 @@ public class Cell {
      * @return the right padding.
      */
     public float getRightPadding() {
-        return this.rightPadding;
+        return paddingAt(RIGHT_PADDING);
     }
 
     /**
@@ -423,10 +468,10 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setPadding(float padding) {
-        this.topPadding = padding;
-        this.bottomPadding = padding;
-        this.leftPadding = padding;
-        this.rightPadding = padding;
+        setPaddingAt(TOP_PADDING, padding);
+        setPaddingAt(BOTTOM_PADDING, padding);
+        setPaddingAt(LEFT_PADDING, padding);
+        setPaddingAt(RIGHT_PADDING, padding);
         return this;
     }
 
@@ -499,18 +544,18 @@ public class Cell {
         if (drawable instanceof BaselineDrawable) {
             // A line of text is drawn on the baseline of the cell text, so the
             // cell makes room for the ascent and the descent of both.
-            cellHeight = ascent() + descent() + topPadding + bottomPadding;
+            cellHeight = ascent() + descent() + paddingAt(TOP_PADDING) + paddingAt(BOTTOM_PADDING);
         } else if ((text == null || text.equals("")) && drawable != null) {    // The text is drawn first
             if (drawable instanceof TextBlock) {
                 ((TextBlock) drawable).setWidth(width);
             }
-            cellHeight = measure(drawable)[1] + topPadding + bottomPadding;
+            cellHeight = measure(drawable)[1] + paddingAt(TOP_PADDING) + paddingAt(BOTTOM_PADDING);
         } else if (text != null) {
             float fontHeight = font.getBodyHeight(fontSize);
             if (fallbackFont != null && fallbackFont.getBodyHeight(fontSize) > fontHeight) {
                 fontHeight = fallbackFont.getBodyHeight(fontSize);
             }
-            cellHeight = fontHeight + topPadding + bottomPadding;
+            cellHeight = fontHeight + paddingAt(TOP_PADDING) + paddingAt(BOTTOM_PADDING);
         }
         return cellHeight;
     }
@@ -654,7 +699,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setTextAlignment(Alignment alignment) {
-        this.textAlignment = alignment;
+        setAlignmentAt(TEXT_ALIGNMENT, alignment);
         return this;
     }
 
@@ -664,7 +709,7 @@ public class Cell {
      * @return the horizontal text alignment.
      */
     public Alignment getTextAlignment() {
-        return this.textAlignment;
+        return alignmentAt(TEXT_ALIGNMENT);
     }
 
     /**
@@ -675,7 +720,7 @@ public class Cell {
      * @return this Cell object.
      */
     public Cell setVerticalAlignment(Alignment alignment) {
-        this.valign = alignment;
+        setAlignmentAt(VALIGN, alignment);
         return this;
     }
 
@@ -685,7 +730,7 @@ public class Cell {
      * @return the vertical alignment.
      */
     public Alignment getVerticalAlignment() {
-        return this.valign;
+        return alignmentAt(VALIGN);
     }
 
     /**
@@ -773,28 +818,28 @@ public class Cell {
             drawText(page, x, y, w, h);
         } else if (drawable instanceof TextBlock) {
             TextBlock textBlock = (TextBlock) drawable;
-            textBlock.setLocation(x + leftPadding, y + topPadding);
-            textBlock.setWidth(w - (leftPadding + rightPadding));
+            textBlock.setLocation(x + paddingAt(LEFT_PADDING), y + paddingAt(TOP_PADDING));
+            textBlock.setWidth(w - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
             textBlock.drawOn(page);
         } else if (drawable != null) {
             if (getTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = measure(drawable)[0];
-                drawable.setLocation((x + w) - (drawableWidth + rightPadding), y + topPadding);
+                drawable.setLocation((x + w) - (drawableWidth + paddingAt(RIGHT_PADDING)), y + paddingAt(TOP_PADDING));
             } else if (getTextAlignment() == Alignment.CENTER) {
                 float drawableWidth = measure(drawable)[0];
-                drawable.setLocation((x + w/2f) - drawableWidth/2f, y + topPadding);
+                drawable.setLocation((x + w/2f) - drawableWidth/2f, y + paddingAt(TOP_PADDING));
             } else {
-                drawable.setLocation(x + leftPadding, y + topPadding);
+                drawable.setLocation(x + paddingAt(LEFT_PADDING), y + paddingAt(TOP_PADDING));
             }
             drawable.drawOn(page);
         }
 
         drawBorders(page, x, y, w, h);
         if (point != null) {
-            if (markerAlignment == Alignment.LEFT) {
+            if (alignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
                 point.x = x + 2*point.r;
-            } else if (markerAlignment == Alignment.RIGHT) {
-                point.x = (x + w) - this.rightPadding/2;
+            } else if (alignmentAt(MARKER_ALIGNMENT) == Alignment.RIGHT) {
+                point.x = (x + w) - paddingAt(RIGHT_PADDING)/2;
             }
             point.y = y + h/2;
             page.setBrushColor(point.getFillColor());
@@ -893,25 +938,25 @@ public class Cell {
             float cellH) throws Exception {
         float ascent = ascent();
         float yText;
-        if (valign == Alignment.TOP) {
-            yText = y + ascent + this.topPadding;
-        } else if (valign == Alignment.CENTER) {
+        if (alignmentAt(VALIGN) == Alignment.TOP) {
+            yText = y + ascent + paddingAt(TOP_PADDING);
+        } else if (alignmentAt(VALIGN) == Alignment.CENTER) {
             yText = y + cellH/2 + ascent/2;
-        } else if (valign == Alignment.BOTTOM) {
-            yText = (y + cellH) - this.bottomPadding;
+        } else if (alignmentAt(VALIGN) == Alignment.BOTTOM) {
+            yText = (y + cellH) - paddingAt(BOTTOM_PADDING);
         } else {
             throw new Exception("Invalid vertical text alignment option.");
         }
 
         float xText;
         if (getTextAlignment() == Alignment.RIGHT) {
-            xText = (x + cellW) - (getTextWidth() + this.rightPadding);
+            xText = (x + cellW) - (getTextWidth() + paddingAt(RIGHT_PADDING));
         } else if (getTextAlignment() == Alignment.CENTER) {
-            xText = x + this.leftPadding +
-                    (((cellW - (leftPadding + rightPadding)) - getTextWidth()) / 2);
+            xText = x + paddingAt(LEFT_PADDING) +
+                    (((cellW - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING))) - getTextWidth()) / 2);
         } else {
             // Alignment.LEFT, and Alignment.JUSTIFY, which a single line of text cannot use.
-            xText = x + this.leftPadding;
+            xText = x + paddingAt(LEFT_PADDING);
         }
         BaselineDrawable line = (drawable instanceof BaselineDrawable)
                 ? (BaselineDrawable) drawable : null;

@@ -99,6 +99,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   `TextFrame` is twice as tall per line as before, the spacing of the font's
   line gap (see Added). A document that set a line spacing to make up for the
   missing gap gets more space than before.
+- A `Cell` keeps its four paddings in the four bytes of one integer and its
+  text alignment, vertical alignment and marker alignment in three bits each
+  of the flags it already had, in all four ports, instead of four floats and
+  two enum references. A padding is kept to the nearest quarter of a point,
+  between 0 and 63.75, as a color given as floats is kept to the nearest of
+  256 steps; every padding the examples and the tests use is exact, and the
+  pages they draw are byte for byte the same. The setters and getters are
+  unchanged. In Go a cell is 112 bytes instead of 144, and Example_43 drawn
+  with `Table`, 1,122,453 cells, takes 161 MB of heap instead of 195. In Java
+  the same document allocates 1,338 MB instead of 1,364 and finishes in a 328
+  MB heap instead of 352. The Swift `Alignment` enum is `UInt32`-backed, with
+  the values of the other three ports.
 
 ### Fixed
 - A PDF that is not valid fails with a message or is read for what it holds,

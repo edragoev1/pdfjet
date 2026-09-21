@@ -9,17 +9,19 @@
  * Used to specify the horizontal and vertical alignment, for example of the
  * text in a Cell, TextBlock, Paragraph or TextColumn.
  */
-public enum Alignment {
+/// The values are the same as the ordinals of the other three ports, so that
+/// a Cell can keep three alignments in the bits of one integer.
+public enum Alignment: UInt32 {
     /// Aligns to the left.
-    case LEFT
+    case LEFT = 0
     /// Aligns to the right.
-    case RIGHT
+    case RIGHT = 1
     /// Centers horizontally or vertically.
-    case CENTER
+    case CENTER = 2
     /// Justifies the text.
-    case JUSTIFY
+    case JUSTIFY = 3
     /// Aligns to the top.
-    case TOP
+    case TOP = 4
     /// Aligns to the bottom.
-    case BOTTOM
+    case BOTTOM = 5
 }

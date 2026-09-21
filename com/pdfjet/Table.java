@@ -755,19 +755,19 @@ public class Table implements Drawable {
                         String[] tokens = Util.splitOnWhitespace(textBlock.textContent);
                         for (String token : tokens) {
                             float tokenWidth = textBlock.font.stringWidth(textBlock.fallbackFont, token);
-                            tokenWidth += cell.leftPadding + cell.rightPadding;
+                            tokenWidth += cell.getLeftPadding() + cell.getRightPadding();
                             if (tokenWidth > maxColWidths[i]) {
                                 maxColWidths[i] = tokenWidth;
                             }
                         }
                     } else if (cell.drawable != null) {
-                        float drawableWidth = Cell.measure(cell.drawable)[0] + cell.leftPadding + cell.rightPadding;
+                        float drawableWidth = Cell.measure(cell.drawable)[0] + cell.getLeftPadding() + cell.getRightPadding();
                         if (drawableWidth > maxColWidths[i]) {
                             maxColWidths[i] = drawableWidth;
                         }
                     } else if (cell.text != null) {
                         float textWidth = cell.font.stringWidth(cell.fallbackFont, cell.fontSize, cell.text);
-                        textWidth += cell.leftPadding + cell.rightPadding;
+                        textWidth += cell.getLeftPadding() + cell.getRightPadding();
                         if (textWidth > maxColWidths[i]) {
                             maxColWidths[i] = textWidth;
                         }
@@ -790,7 +790,7 @@ public class Table implements Drawable {
         for (int i = 0; i < colspan; i++) {
             cellWidth += row.get(index + i).getWidth();
         }
-        cellWidth -= (cell.leftPadding + row.get(index + (colspan - 1)).rightPadding);
+        cellWidth -= (cell.getLeftPadding() + row.get(index + (colspan - 1)).getRightPadding());
         return cellWidth;
     }
 
@@ -831,8 +831,8 @@ public class Table implements Drawable {
                     cell2.setFallbackFont(cell.getFallbackFont());
                     cell2.setFontSize(cell.fontSize);
                     cell2.setWidth(cell.getWidth());
-                    cell2.setLeftPadding(cell.leftPadding);
-                    cell2.setRightPadding(cell.rightPadding);
+                    cell2.setLeftPadding(cell.getLeftPadding());
+                    cell2.setRightPadding(cell.getRightPadding());
                     cell2.backgroundColor = cell.backgroundColor;
                     cell2.setBorderWidth(cell.getBorderWidth());
                     cell2.borderColor = cell.borderColor;

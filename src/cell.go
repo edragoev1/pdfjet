@@ -13,19 +13,23 @@ import (
 
 // Cell is used to create table cell objects.
 // See the Table class for more information.
+// The fields are in the order of their size, so that a cell takes no bytes
+// for the padding between them that it does not have to.
 type Cell struct {
-	font            *Font
-	fallbackFont    *Font
-	fontSize        float32
-	text            string
-	drawable        Drawable // The image, barcode, text block, text column or other drawable
-	point           *Point
-	markerAlignment alignment.Alignment
-	width           float32
-	topPadding      float32
-	bottomPadding   float32
-	leftPadding     float32
-	rightPadding    float32
+	text     string
+	drawable Drawable // The image, barcode, text block, text column or other drawable
+	uri      string
+
+	font         *Font
+	fallbackFont *Font
+	point        *Point
+
+	fontSize float32
+	width    float32
+	// The four paddings are the four bytes of one uint32, 4 bytes instead of
+	// 16 for every cell. A padding is kept to the nearest quarter of a point,
+	// between 0 and 63.75, which is more than the text of a cell needs.
+	padding uint32
 
 	// The colors are packed 0xRRGGBB values, 4 bytes each instead of a
 	// [3]float32 for every cell; color.Transparent marks a background or a
@@ -35,16 +39,13 @@ type Cell struct {
 	borderWidth     float32
 	borderColor     int32
 
-	colspan int
-	// The borders and the underline and strikeout of the text are the bits of
-	// one uint32, 4 bytes instead of 6 bools and the padding they need. The
-	// four borders are the bits the border package gives them; only the top
-	// and the left are drawn unless SetBorder says otherwise.
+	colspan int32
+	// The borders, the underline and strikeout of the text, and the three
+	// alignments are the bits of one uint32: 4 bytes instead of 6 bools and
+	// three alignments and the padding they need. The four borders are the
+	// bits the border package gives them; only the top and the left are drawn
+	// unless SetBorder says otherwise.
 	properties uint32
-
-	textAlignment alignment.Alignment
-	uri           string
-	valign        alignment.Alignment
 
 	// Last, so that the byte it needs comes out of the padding of the struct.
 	hasText bool // Java's null text is a cell without text, which is 0 tall
@@ -58,6 +59,51 @@ const (
 	// wrapped text, which is the same table cell in a PDF/UA document.
 	cellContinued uint32 = 0x00400000
 )
+
+// Where the three alignments of a cell are in Cell.properties, three bits
+// each, and where the four paddings are in Cell.padding, a byte each.
+const (
+	cellMarkerAlignment = 0
+	cellTextAlignment   = 3
+	cellValign          = 6
+	cellAlignmentBits   = 0x7
+
+	cellTopPadding    = 0
+	cellBottomPadding = 8
+	cellLeftPadding   = 16
+	cellRightPadding  = 24
+	cellPaddingBits   = 0xFF
+	// A padding is kept in quarters of a point.
+	cellPaddingScale = 4.0
+)
+
+// alignmentAt returns the alignment at the bits of properties.
+func (cell *Cell) alignmentAt(shift uint32) alignment.Alignment {
+	return alignment.Alignment((cell.properties >> shift) & cellAlignmentBits)
+}
+
+// setAlignmentAt keeps the alignment in the bits of properties.
+func (cell *Cell) setAlignmentAt(shift uint32, align alignment.Alignment) {
+	cell.properties = (cell.properties &^ (cellAlignmentBits << shift)) |
+		(uint32(align)&cellAlignmentBits)<<shift
+}
+
+// paddingAt returns the padding at the byte of padding, in points.
+func (cell *Cell) paddingAt(shift uint32) float32 {
+	return float32((cell.padding>>shift)&cellPaddingBits) / cellPaddingScale
+}
+
+// setPaddingAt keeps the padding in the byte of padding, to the nearest
+// quarter of a point and between 0 and 63.75.
+func (cell *Cell) setPaddingAt(shift uint32, points float32) {
+	quarters := int(points*cellPaddingScale + 0.5)
+	if quarters < 0 {
+		quarters = 0
+	} else if quarters > cellPaddingBits {
+		quarters = cellPaddingBits
+	}
+	cell.padding = (cell.padding &^ (cellPaddingBits << shift)) | uint32(quarters)<<shift
+}
 
 // NewEmptyCell creates a cell without text, like Cell(font) in the other ports.
 // It is 0 tall until it gets text, an image or a barcode.
@@ -73,7 +119,6 @@ func NewEmptyCell(font *Font) *Cell {
 //   - text: the text.
 func NewCell(font *Font, text string) *Cell {
 	cell := new(Cell)
-	cell.markerAlignment = alignment.Right
 	cell.font = font
 	cell.fallbackFont = font
 	cell.fontSize = font.size
@@ -81,16 +126,14 @@ func NewCell(font *Font, text string) *Cell {
 	cell.hasText = true
 	cell.width = 75.0
 	cell.colspan = 1
-	cell.topPadding = 2.0
-	cell.bottomPadding = 2.0
-	cell.leftPadding = 2.0
-	cell.rightPadding = 2.0
+	cell.SetPadding(2.0)
 	cell.backgroundColor = color.Transparent
 	cell.borderColor = color.Transparent
 	cell.textColor = color.Black
 	cell.properties = border.Top | border.Left
-	cell.textAlignment = alignment.Left
-	cell.valign = alignment.Top
+	cell.setAlignmentAt(cellMarkerAlignment, alignment.Right)
+	cell.setAlignmentAt(cellTextAlignment, alignment.Left)
+	cell.setAlignmentAt(cellValign, alignment.Top)
 	return cell
 }
 
@@ -197,7 +240,7 @@ func (cell *Cell) GetBarcode() *Barcode {
 //   - align: alignment.Left or alignment.Right.
 func (cell *Cell) SetMarker(point *Point, align alignment.Alignment) *Cell {
 	cell.point = point
-	cell.markerAlignment = align
+	cell.setAlignmentAt(cellMarkerAlignment, align)
 	return cell
 }
 
@@ -217,7 +260,7 @@ func (cell *Cell) SetTextBlock(textBlock *TextBlock) *Cell {
 // SetTextColumn sets the text column drawn in this cell, widens the cell to fit it
 // and clears the cell text.
 func (cell *Cell) SetTextColumn(textColumn *TextColumn) *Cell {
-	cell.width = textColumn.w + cell.leftPadding + cell.rightPadding
+	cell.width = textColumn.w + cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)
 	return cell.SetDrawable(textColumn)
 }
 
@@ -257,7 +300,7 @@ func (cell *Cell) GetTextBlock() *TextBlock {
 func (cell *Cell) SetWidth(width float32) *Cell {
 	cell.width = width
 	if textBlock, ok := cell.drawable.(*TextBlock); ok {
-		textBlock.SetWidth(cell.width - (cell.leftPadding + cell.rightPadding))
+		textBlock.SetWidth(cell.width - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 	}
 	return cell
 }
@@ -271,58 +314,58 @@ func (cell *Cell) GetWidth() float32 {
 // SetTopPadding sets the top padding of this cell.
 //   - padding: the top padding.
 func (cell *Cell) SetTopPadding(padding float32) *Cell {
-	cell.topPadding = padding
+	cell.setPaddingAt(cellTopPadding, padding)
 	return cell
 }
 
 // GetTopPadding returns the top padding of this cell.
 func (cell *Cell) GetTopPadding() float32 {
-	return cell.topPadding
+	return cell.paddingAt(cellTopPadding)
 }
 
 // SetBottomPadding sets the bottom padding of this cell.
 //   - padding: the bottom padding.
 func (cell *Cell) SetBottomPadding(padding float32) *Cell {
-	cell.bottomPadding = padding
+	cell.setPaddingAt(cellBottomPadding, padding)
 	return cell
 }
 
 // GetBottomPadding returns the bottom padding of this cell.
 func (cell *Cell) GetBottomPadding() float32 {
-	return cell.bottomPadding
+	return cell.paddingAt(cellBottomPadding)
 }
 
 // SetLeftPadding sets the left padding of this cell.
 //   - padding: the left padding.
 func (cell *Cell) SetLeftPadding(padding float32) *Cell {
-	cell.leftPadding = padding
+	cell.setPaddingAt(cellLeftPadding, padding)
 	return cell
 }
 
 // GetLeftPadding returns the left padding of this cell.
 func (cell *Cell) GetLeftPadding() float32 {
-	return cell.leftPadding
+	return cell.paddingAt(cellLeftPadding)
 }
 
 // SetRightPadding sets the right padding of this cell.
 //   - padding: the right padding.
 func (cell *Cell) SetRightPadding(padding float32) *Cell {
-	cell.rightPadding = padding
+	cell.setPaddingAt(cellRightPadding, padding)
 	return cell
 }
 
 // GetRightPadding returns the right padding of this cell.
 func (cell *Cell) GetRightPadding() float32 {
-	return cell.rightPadding
+	return cell.paddingAt(cellRightPadding)
 }
 
 // SetPadding sets the top, bottom, left and right paddings of this cell.
 //   - padding: the right padding.
 func (cell *Cell) SetPadding(padding float32) *Cell {
-	cell.topPadding = padding
-	cell.bottomPadding = padding
-	cell.leftPadding = padding
-	cell.rightPadding = padding
+	cell.setPaddingAt(cellTopPadding, padding)
+	cell.setPaddingAt(cellBottomPadding, padding)
+	cell.setPaddingAt(cellLeftPadding, padding)
+	cell.setPaddingAt(cellRightPadding, padding)
 	return cell
 }
 
@@ -333,18 +376,18 @@ func (cell *Cell) GetHeight(width float32) float32 {
 	if _, ok := cell.drawable.(BaselineDrawable); ok {
 		// A line of text is drawn on the baseline of the cell text, so the
 		// cell makes room for the ascent and the descent of both.
-		cellHeight = cell.ascent() + cell.descent() + cell.topPadding + cell.bottomPadding
+		cellHeight = cell.ascent() + cell.descent() + cell.paddingAt(cellTopPadding) + cell.paddingAt(cellBottomPadding)
 	} else if cell.text == "" && cell.drawable != nil { // The text is drawn first
 		if textBlock, ok := cell.drawable.(*TextBlock); ok {
 			textBlock.SetWidth(width)
 		}
-		cellHeight = measureDrawable(cell.drawable)[1] + cell.topPadding + cell.bottomPadding
+		cellHeight = measureDrawable(cell.drawable)[1] + cell.paddingAt(cellTopPadding) + cell.paddingAt(cellBottomPadding)
 	} else if cell.hasText {
 		fontHeight := cell.font.GetBodyHeight(cell.fontSize)
 		if cell.fallbackFont != nil && cell.fallbackFont.GetBodyHeight(cell.fontSize) > fontHeight {
 			fontHeight = cell.fallbackFont.GetBodyHeight(cell.fontSize)
 		}
-		cellHeight = fontHeight + cell.topPadding + cell.bottomPadding
+		cellHeight = fontHeight + cell.paddingAt(cellTopPadding) + cell.paddingAt(cellBottomPadding)
 	}
 	return cellHeight
 }
@@ -444,14 +487,14 @@ func (cell *Cell) GetTextColor() [3]float32 {
 // SetColSpan sets the number of columns this cell spans.
 //   - colspan: the specified column span value.
 func (cell *Cell) SetColSpan(colspan int) *Cell {
-	cell.colspan = colspan
+	cell.colspan = int32(colspan)
 	return cell
 }
 
 // GetColSpan returns the number of columns this cell spans.
 // Returns the column span value.
 func (cell *Cell) GetColSpan() int {
-	return cell.colspan
+	return int(cell.colspan)
 }
 
 // SetBorder sets whether the specified borders are drawn.
@@ -483,14 +526,14 @@ func (cell *Cell) SetBorders(visible bool) *Cell {
 // Supported values: alignment.Left, alignment.Right, alignment.Center and
 // alignment.Justify, which draws the single line of cell text left aligned.
 func (cell *Cell) SetTextAlignment(textAlignment alignment.Alignment) *Cell {
-	cell.textAlignment = textAlignment
+	cell.setAlignmentAt(cellTextAlignment, textAlignment)
 	return cell
 }
 
 // GetTextAlignment returns the text alignment.
 // Returns the text horizontal alignment code.
 func (cell *Cell) GetTextAlignment() alignment.Alignment {
-	return cell.textAlignment
+	return cell.alignmentAt(cellTextAlignment)
 }
 
 // SetVerticalAlignment sets the cell text vertical alignment.
@@ -498,14 +541,14 @@ func (cell *Cell) GetTextAlignment() alignment.Alignment {
 //
 // Supported values: alignment.Top, alignment.Center and alignment.Bottom.
 func (cell *Cell) SetVerticalAlignment(valign alignment.Alignment) *Cell {
-	cell.valign = valign
+	cell.setAlignmentAt(cellValign, valign)
 	return cell
 }
 
 // GetVerticalAlignment returns the cell text vertical alignment.
 // Returns the vertical alignment code.
 func (cell *Cell) GetVerticalAlignment() alignment.Alignment {
-	return cell.valign
+	return cell.alignmentAt(cellValign)
 }
 
 // SetUnderline sets the underline text parameter.
@@ -566,29 +609,29 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		// A line of text is drawn instead of the cell text, on its baseline.
 		cell.drawText(page, x, y, w, h)
 	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
-		textBlock.SetLocation(x+cell.leftPadding, y+cell.topPadding)
-		textBlock.SetWidth(w - (cell.leftPadding + cell.rightPadding))
+		textBlock.SetLocation(x+cell.paddingAt(cellLeftPadding), y+cell.paddingAt(cellTopPadding))
+		textBlock.SetWidth(w - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 		textBlock.DrawOn(page)
 	} else if cell.drawable != nil {
-		if cell.textAlignment == alignment.Right {
+		if cell.alignmentAt(cellTextAlignment) == alignment.Right {
 			drawableWidth := measureDrawable(cell.drawable)[0]
-			cell.drawable.SetLocation((x+w)-(drawableWidth+cell.rightPadding), y+cell.topPadding)
-		} else if cell.textAlignment == alignment.Center {
+			cell.drawable.SetLocation((x+w)-(drawableWidth+cell.paddingAt(cellRightPadding)), y+cell.paddingAt(cellTopPadding))
+		} else if cell.alignmentAt(cellTextAlignment) == alignment.Center {
 			drawableWidth := measureDrawable(cell.drawable)[0]
-			cell.drawable.SetLocation((x+w/2.0)-drawableWidth/2.0, y+cell.topPadding)
+			cell.drawable.SetLocation((x+w/2.0)-drawableWidth/2.0, y+cell.paddingAt(cellTopPadding))
 		} else {
-			cell.drawable.SetLocation(x+cell.leftPadding, y+cell.topPadding)
+			cell.drawable.SetLocation(x+cell.paddingAt(cellLeftPadding), y+cell.paddingAt(cellTopPadding))
 		}
 		cell.drawable.DrawOn(page)
 	}
 
 	cell.drawBorders(page, x, y, w, h)
 	if cell.point != nil {
-		switch cell.markerAlignment {
+		switch cell.alignmentAt(cellMarkerAlignment) {
 		case alignment.Left:
 			cell.point.x = x + 2*cell.point.r
 		case alignment.Right:
-			cell.point.x = (x + w) - cell.rightPadding/2
+			cell.point.x = (x + w) - cell.paddingAt(cellRightPadding)/2
 		}
 		cell.point.y = y + h/2
 		if cell.point.hasFillColor {
@@ -654,26 +697,26 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	ascent := cell.ascent()
 	var yText float32
-	switch cell.valign {
+	switch cell.alignmentAt(cellValign) {
 	case alignment.Top:
-		yText = y + ascent + cell.topPadding
+		yText = y + ascent + cell.paddingAt(cellTopPadding)
 	case alignment.Center:
 		yText = y + cellH/2.0 + ascent/2.0
 	case alignment.Bottom:
-		yText = (y + cellH) - cell.bottomPadding
+		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
 	default:
 		panic("Invalid vertical text alignment option.")
 	}
 
 	var xText float32
-	if cell.textAlignment == alignment.Right {
-		xText = (x + cellW) - (cell.getTextWidth() + cell.rightPadding)
-	} else if cell.textAlignment == alignment.Center {
-		xText = x + cell.leftPadding +
-			(((cellW - (cell.leftPadding + cell.rightPadding)) - cell.getTextWidth()) / 2)
+	if cell.alignmentAt(cellTextAlignment) == alignment.Right {
+		xText = (x + cellW) - (cell.getTextWidth() + cell.paddingAt(cellRightPadding))
+	} else if cell.alignmentAt(cellTextAlignment) == alignment.Center {
+		xText = x + cell.paddingAt(cellLeftPadding) +
+			(((cellW - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding))) - cell.getTextWidth()) / 2)
 	} else {
 		// alignment.Left, and alignment.Justify, which a single line of text cannot use.
-		xText = x + cell.leftPadding
+		xText = x + cell.paddingAt(cellLeftPadding)
 	}
 	line, hasLine := cell.drawable.(BaselineDrawable)
 	if !hasLine {
