@@ -62,6 +62,12 @@ func (obj *PDFobj) GetData() []byte {
 // decrypted stream replaces the encrypted one, so that it can be copied.
 func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDFobj {
 	if obj.stream == nil {
+		// A /Length the PDF does not have is checked before the stream is
+		// made, so that a file of a few bytes that says its stream is a
+		// gigabyte takes no memory.
+		if length < 0 || obj.streamOffset < 0 || length > len(buf)-obj.streamOffset {
+			panic("The stream of an object is not in the PDF.")
+		}
 		obj.stream = make([]byte, length)
 		copy(obj.stream, buf[obj.streamOffset:obj.streamOffset+length])
 		if dec != nil {
@@ -228,33 +234,21 @@ func (obj *PDFobj) setNumber(number int) *PDFobj {
 	return obj
 }
 
-// GetValue returns the dictionary value for the specified key.
+// GetValue returns the dictionary value for the specified key, or "" when the
+// object has no such key. A dictionary or an array that the PDF ends in the
+// middle of is closed where it ends, since a PDF that was read can hold
+// anything.
 func (obj *PDFobj) GetValue(key string) string {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == key {
+			if i+1 >= len(obj.dict) {
+				return ""
+			}
 			token := obj.dict[i+1]
 			if token == "<<" {
-				var sb strings.Builder
-				sb.WriteString("<< ")
-				i += 2
-				for obj.dict[i] != ">>" {
-					sb.WriteString(obj.dict[i])
-					sb.WriteString(" ")
-					i++
-				}
-				sb.WriteString(">>")
-				return sb.String()
+				return obj.valueUpTo(i+2, ">>", "<< ")
 			} else if token == "[" {
-				var sb strings.Builder
-				sb.WriteString("[ ")
-				i += 2
-				for obj.dict[i] != "]" {
-					sb.WriteString(obj.dict[i])
-					sb.WriteString(" ")
-					i++
-				}
-				sb.WriteString("]")
-				return sb.String()
+				return obj.valueUpTo(i+2, "]", "[ ")
 			}
 			return token
 		}
@@ -262,34 +256,53 @@ func (obj *PDFobj) GetValue(key string) string {
 	return ""
 }
 
-// getObjectNumbers returns the object numbers.
+// valueUpTo returns the tokens from the index up to the closing one, with the
+// opening before them and the closing after them.
+func (obj *PDFobj) valueUpTo(i int, closing, opening string) string {
+	var sb strings.Builder
+	sb.WriteString(opening)
+	for i < len(obj.dict) && obj.dict[i] != closing {
+		sb.WriteString(obj.dict[i])
+		sb.WriteString(" ")
+		i++
+	}
+	sb.WriteString(closing)
+	return sb.String()
+}
+
+// getObjectNumbers returns the object numbers of the key, which is one
+// reference or an array of them. A dictionary that ends in the middle of
+// them, or a token that is not a number where one belongs, ends the list: a
+// PDF that was read can hold anything.
 func (obj *PDFobj) getObjectNumbers(key string) []int {
 	numbers := make([]int, 0)
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
 		if token == key {
 			i++
+			if i >= len(obj.dict) {
+				break
+			}
 			str := obj.dict[i]
 			if str == "[" {
 				for {
 					i++
+					if i >= len(obj.dict) {
+						break
+					}
 					str = obj.dict[i]
 					if str == "]" {
 						break
 					}
 					objNumber, err := strconv.Atoi(str)
 					if err != nil {
-						panic(err)
+						break
 					}
 					numbers = append(numbers, objNumber)
 					i++ // 0
 					i++ // R
 				}
-			} else {
-				objNumber, err := strconv.Atoi(str)
-				if err != nil {
-					panic(err)
-				}
+			} else if objNumber, err := strconv.Atoi(str); err == nil {
 				numbers = append(numbers, objNumber)
 			}
 			break
@@ -357,7 +370,10 @@ func (obj *PDFobj) getLengthFromObject(objects []*PDFobj, number int) int {
 func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 	numbers := obj.getObjectNumbers("/Contents")
 	if len(numbers) == 1 {
-		contents := objects[numbers[0]-1]
+		contents := objectNumbered(objects, numbers[0])
+		if contents == nil {
+			return nil
+		}
 		if contents.stream != nil {
 			return contents
 		}
@@ -367,7 +383,7 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 		for i != -1 && i+3 < len(contents.dict) && contents.dict[i+3] == "R" {
 			number, err := strconv.Atoi(contents.dict[i+1])
 			if err != nil {
-				panic(err)
+				break
 			}
 			numbers = append(numbers, number)
 			i += 3
@@ -377,12 +393,16 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 		return nil
 	}
 	if len(numbers) == 1 {
-		return objects[numbers[0]-1]
+		return objectNumbered(objects, numbers[0])
 	}
 	content := newPDFobj()
 	content.data = make([]byte, 0)
 	for _, number := range numbers {
-		if data := objects[number-1].data; data != nil {
+		page := objectNumbered(objects, number)
+		if page == nil {
+			continue
+		}
+		if data := page.data; data != nil {
 			content.data = append(content.data, data...)
 			content.data = append(content.data, '\n') // A stream can end in the middle of a line.
 		}
@@ -394,18 +414,31 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 func (obj *PDFobj) GetResourcesObject(objects []*PDFobj) *PDFobj {
 	for i, token := range obj.dict {
 		if token == "/Resources" {
+			if i+1 >= len(obj.dict) {
+				return nil
+			}
 			token = obj.dict[i+1]
 			if token == "<<" {
 				return obj
 			}
 			objNumber, err := strconv.Atoi(token)
 			if err != nil {
-				panic(err)
+				return nil
 			}
-			return objects[objNumber-1]
+			return objectNumbered(objects, objNumber)
 		}
 	}
 	return nil
+}
+
+// objectNumbered returns the object with the number, or nil when the PDF that
+// was read does not have one: a reference can name an object that is not in
+// the file.
+func objectNumbered(objects []*PDFobj, number int) *PDFobj {
+	if number < 1 || number > len(objects) {
+		return nil
+	}
+	return objects[number-1]
 }
 
 // AddCoreFontResource adds a core font to the resources of this page and returns it.

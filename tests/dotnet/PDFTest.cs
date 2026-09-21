@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -395,5 +396,69 @@ public class PDFTest {
         Assert.Equal("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.Utf16Hex(spec.GetValue("/UF")));
         Assert.Equal(spec.GetValue("/UF"), spec.GetValue("/F"));
     }
+    // The PDFs that are not valid, as the Go fuzz target of the reader found
+    // them: each fails with a message or reads what it can, and none reads
+    // past the file, allocates what the file does not have or traps in Swift.
+
+    // The message that reading the PDF fails with, or "(no error)" when it
+    // is read.
+    private static string ReadError(string raw) {
+        try {
+            TestSupport.Read(Encoding.Latin1.GetBytes(raw));
+            return "(no error)";
+        } catch (Exception e) {
+            return e.Message;
+        }
+    }
+
+    [Fact]
+    public void AnObjectNumberedHigherThanTheFileHasBytesIsRefused() {
+        // One object of every number up to the one it says would take
+        // gigabytes of memory for a file of 31 bytes.
+        Assert.Equal("The PDF of 31 bytes cannot hold an object numbered 44444441.",
+                ReadError("44444441 0 obj/Filter/Fl streil"));
+    }
+
+    [Fact]
+    public void AStreamLongerThanTheFileIsRefused() {
+        // The bytes of the stream are counted before it is made, so that a
+        // file of a few bytes that says its stream is a gigabyte takes no
+        // memory.
+        Assert.Equal("The stream of an object is not in the PDF.",
+                ReadError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"));
+    }
+
+    [Fact]
+    public void AnObjectStreamThatIsNotANumberIsRefused() {
+        Assert.Equal("The object stream of the PDF is malformed: \"x\" is not a number.",
+                ReadError("1 0 obj<</Type/ObjStm/First x>>stream\n\nendstream endobj"));
+        // An object stream with no stream of its own has no objects.
+        Assert.Equal("(no error)", ReadError("1 0 obj 1 0 obj/Type/ObjStm/First 0"));
+    }
+
+    [Fact]
+    public void AReferenceToAnObjectThatIsNotThereHasNoContents() {
+        // A page whose /Contents names an object the PDF does not have, and
+        // one whose dictionary ends where a value belongs.
+        List<PDFobj> objects = TestSupport.Read(Encoding.Latin1.GetBytes(
+                "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                + "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                + "3 0 obj<</Type/Page/Parent 2 0 R/Contents 99 0 R>>endobj\n"));
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        Assert.Single(pages);
+        Assert.Null(pages[0].GetContentObject(objects));
+        Assert.Null(pages[0].GetResourcesObject(objects));
+        Assert.Equal("", pages[0].GetValue("/Contents2"));
+    }
+
+    [Fact]
+    public void ADictionaryThatEndsInTheMiddleOfAValueIsClosedThere() {
+        List<PDFobj> objects = TestSupport.Read(
+                Encoding.Latin1.GetBytes("1 0 obj<</Type/Catalog/Kids[3 0 R\n"));
+        Assert.Single(objects);
+        Assert.Equal("[ 3 0 R ]", objects[0].GetValue("/Kids"));
+        Assert.Equal("", objects[0].GetValue("/Nothing"));
+    }
+
 }
 }

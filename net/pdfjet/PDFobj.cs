@@ -57,6 +57,12 @@ public class PDFobj {
     // stream replaces the encrypted one, so that it can be copied.
     internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor) {
         if (this.stream == null) {
+            // A /Length the PDF does not have is checked before the stream is
+            // made, so that a file of a few bytes that says its stream is a
+            // gigabyte takes no memory.
+            if (length < 0 || streamOffset < 0 || length > buf.Length - streamOffset) {
+                throw new Exception("The stream of an object is not in the PDF.");
+            }
             this.stream = new byte[length];
             Array.Copy(buf, streamOffset, stream, 0, length);
             if (decryptor != null) {
@@ -207,29 +213,14 @@ public class PDFobj {
     public String GetValue(String key) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals(key)) {
+                if (i + 1 >= dict.Count) {
+                    return "";
+                }
                 String token = dict[i + 1];
                 if (token.Equals("<<")) {
-                    StringBuilder buffer = new StringBuilder();
-                    buffer.Append("<< ");
-                    i += 2;
-                    while (!dict[i].Equals(">>")) {
-                        buffer.Append(dict[i]);
-                        buffer.Append(" ");
-                        i += 1;
-                    }
-                    buffer.Append(">>");
-                    return buffer.ToString();
+                    return ValueUpTo(i + 2, ">>", "<< ");
                 } else if (token.Equals("[")) {
-                    StringBuilder buffer = new StringBuilder();
-                    buffer.Append("[ ");
-                    i += 2;
-                    while (!dict[i].Equals("]")) {
-                        buffer.Append(dict[i]);
-                        buffer.Append(" ");
-                        i += 1;
-                    }
-                    buffer.Append("]");
-                    return buffer.ToString();
+                    return ValueUpTo(i + 2, "]", "[ ");
                 } else {
                     return token;
                 }
@@ -238,29 +229,66 @@ public class PDFobj {
         return "";
     }
 
+    // Returns the tokens from the index up to the closing one, with the
+    // opening before them and the closing after them.
+    private String ValueUpTo(int i, String closing, String opening) {
+        StringBuilder buffer = new StringBuilder();
+        buffer.Append(opening);
+        while (i < dict.Count && !dict[i].Equals(closing)) {
+            buffer.Append(dict[i]);
+            buffer.Append(" ");
+            i += 1;
+        }
+        buffer.Append(closing);
+        return buffer.ToString();
+    }
+
+    // Returns the object numbers of the key, which is one reference or an
+    // array of them. A dictionary that ends in the middle of them, or a token
+    // that is not a number where one belongs, ends the list: a PDF that was
+    // read can hold anything.
     internal List<Int32> GetObjectNumbers(String key) {
         List<Int32> numbers = new List<Int32>();
         for (int i = 0; i < dict.Count; i++) {
             String token = dict[i];
             if (token.Equals(key)) {
-                String str = dict[++i];
+                if (++i >= dict.Count) {
+                    break;
+                }
+                String str = dict[i];
+                int number;
                 if (str.Equals("[")) {
                     while (true) {
-                        str = dict[++i];
+                        if (++i >= dict.Count) {
+                            break;
+                        }
+                        str = dict[i];
                         if (str.Equals("]")) {
                             break;
                         }
-                        numbers.Add(Int32.Parse(str));
+                        if (!Int32.TryParse(str, out number)) {
+                            break;
+                        }
+                        numbers.Add(number);
                         ++i;    // 0
                         ++i;    // R
                     }
-                } else {
-                    numbers.Add(Int32.Parse(str));
+                } else if (Int32.TryParse(str, out number)) {
+                    numbers.Add(number);
                 }
                 break;
             }
         }
         return numbers;
+    }
+
+    // Returns the object with the number, or null when the PDF that was read
+    // does not have one: a reference can name an object that is not in the file.
+    private static PDFobj ObjectNumbered(List<PDFobj> objects, int number) {
+        if (number < 1 || number > objects.Count) {
+            return null;
+        }
+        return objects[number - 1];
     }
 
     /// <summary>Returns the width and height from the /MediaBox of this page.</summary>
@@ -310,7 +338,10 @@ public class PDFobj {
     public PDFobj GetContentObject(List<PDFobj> objects) {
         List<Int32> numbers = GetObjectNumbers("/Contents");
         if (numbers.Count == 1) {
-            PDFobj obj = objects[numbers[0] - 1];
+            PDFobj obj = ObjectNumbered(objects, numbers[0]);
+            if (obj == null) {
+                return null;
+            }
             if (obj.stream != null) {
                 return obj;
             }
@@ -318,7 +349,11 @@ public class PDFobj {
             numbers = new List<Int32>();
             int i = obj.dict.IndexOf("[");
             while (i != -1 && i + 3 < obj.dict.Count && obj.dict[i + 3].Equals("R")) {
-                numbers.Add(Int32.Parse(obj.dict[i + 1]));
+                int number;
+                if (!Int32.TryParse(obj.dict[i + 1], out number)) {
+                    break;
+                }
+                numbers.Add(number);
                 i += 3;
             }
         }
@@ -326,11 +361,15 @@ public class PDFobj {
             return null;
         }
         if (numbers.Count == 1) {
-            return objects[numbers[0] - 1];
+            return ObjectNumbered(objects, numbers[0]);
         }
         MemoryStream buf = new MemoryStream();
         foreach (int number in numbers) {
-            byte[] bytes = objects[number - 1].data;
+            PDFobj page = ObjectNumbered(objects, number);
+            if (page == null) {
+                continue;
+            }
+            byte[] bytes = page.data;
             if (bytes != null) {
                 buf.Write(bytes, 0, bytes.Length);
                 buf.WriteByte((byte) '\n');     // A stream can end in the middle of a line.
@@ -345,11 +384,18 @@ public class PDFobj {
     public PDFobj GetResourcesObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
+                if (i + 1 >= dict.Count) {
+                    return null;
+                }
                 String token = dict[i + 1];
                 if (token.Equals("<<")) {
                     return this;
                 }
-                return objects[Int32.Parse(token) - 1];
+                int number;
+                if (!Int32.TryParse(token, out number)) {
+                    return null;
+                }
+                return ObjectNumbered(objects, number);
             }
         }
         return null;

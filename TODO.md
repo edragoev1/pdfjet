@@ -35,7 +35,7 @@ work to Oct 21 is the seven goals below, in this order.
 
 ## The seven goals of v9.0.3
 
-1. ⬜ **B** Fuzz the parsers of untrusted input with Go's fuzzing, and fix each
+1. ✅ **B** Fuzz the parsers of untrusted input with Go's fuzzing, and fix each
    failure in the four ports, which share the logic. Any input either works or
    fails with a clean error: no hang, no index error, no runaway memory. The
    targets and their corpora stay in the repository, in `src/*_fuzz_test.go`
@@ -92,7 +92,7 @@ work to Oct 21 is the seven goals below, in this order.
      whole `.otf` or `.ttf` file, and `FuzzOpenTypeFontTables` each table
      PDFjet reads on its own, joined into a font whose directory is right, so
      that a change reaches a parser rather than moving the offsets of the
-     other tables; 1.8 M and 8.5 M runs clean after the fixes. Found every
+     other tables; 21 M and 8.5 M runs clean after the fixes. Found every
      read of a font unchecked, so that a truncated file, or a table of the
      directory pointing outside the file, read past its end; a character map
      that is not there followed; a glyph ID array of a negative size; a
@@ -123,7 +123,23 @@ work to Oct 21 is the seven goals below, in this order.
      three. Fixed with a unit test in the four ports. Of the 1,066 streams of
      the replay every port now decodes every one to the same bytes with every
      filter.
-   - ⬜ `PDF.read`: the xref, the object streams and the encryption.
+   - ✅ `PDF.read`: the xref, the object streams and the encryption (Sep 21).
+     `FuzzPDFRead` fuzzes the bytes of a PDF and the password it is read with,
+     and reads, pages and merges what it gets; its seeds are documents PDFjet
+     writes, the three PDFs of `data/testPDFs` that other programs wrote, and
+     one built for it with a cross-reference stream and an object stream,
+     which PDFjet reads and does not write and no test covered; 95 M runs
+     clean after the fixes. Found an object numbered higher than the file has
+     bytes making one empty object of every number up to it, which took 7 GB
+     for a file of 31 bytes; a /Length longer than the file allocated before
+     its bytes were found not to be there; an object stream with no stream of
+     its own, and one whose header is not a number, failing differently in
+     each port; and `getValue`, `getObjectNumbers`, `getContentObject` and
+     `getResourcesObject` reading past the end of the tokens on a dictionary
+     that ends where a value belongs or a reference to an object that is not
+     in the file. Fixed in the four ports with unit tests. Of the 1,257 PDFs
+     of the replay the four ports read the same ones and draw the same pages
+     from every one.
 
 2. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to
    end in the four ports, each finding proved by running it, fixed in the four
@@ -175,9 +191,10 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Sep 20–26: the decoders, `Page` and `TextLine`
 
-- ⬜ **B** Goal 1: JPEG and SVG are done (Sep 20) and OTF and TTF (Sep 21);
-      fuzz the decompressor, fixing each failure in the four ports as the
-      first seven targets were fixed.
+- ✅ **B** Goal 1 is done: the eight targets of the `.stream` fonts, PNG,
+      BMP, JPEG, SVG, OTF and TTF, the decompressor and `PDF.read` are in
+      `src/*_fuzz_test.go`, and every failure they found is fixed in the four
+      ports with a test.
 - ⬜ **B** Goal 2: review `Image`, `PNGImage`, `JPGImage`, `SVG` and
       `SVGImage`, the classes the same week's fuzzing reads; then `Page` and
       `TextLine`, the two with the widest exposure. One of `JPGImage` for that

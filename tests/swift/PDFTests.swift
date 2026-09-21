@@ -374,4 +374,65 @@ import Testing
         #expect(TestSupport.utf16Hex(spec.getValue("/UF")) == "\u{dc}bersicht \u{2013} r\u{e9}sum\u{e9}.txt")
         #expect(spec.getValue("/F") == spec.getValue("/UF"))
     }
+    // The PDFs that are not valid, as the Go fuzz target of the reader found
+    // them: each fails with a message or reads what it can, and none reads
+    // past the file, allocates what the file does not have or traps.
+
+    // The message that reading the PDF fails with, or "(no error)" when it
+    // is read.
+    private func readError(_ raw: String) -> String {
+        do {
+            _ = try TestSupport.read(raw.unicodeScalars.map { UInt8($0.value) })
+            return "(no error)"
+        } catch let error as PDFjetError {
+            return error.message
+        } catch {
+            return "\(error)"
+        }
+    }
+
+    @Test func anObjectNumberedHigherThanTheFileHasBytesIsRefused() {
+        // One object of every number up to the one it says would take
+        // gigabytes of memory for a file of 31 bytes.
+        #expect(readError("44444441 0 obj/Filter/Fl streil")
+                == "The PDF of 31 bytes cannot hold an object numbered 44444441.")
+    }
+
+    @Test func aStreamLongerThanTheFileIsRefused() {
+        // The bytes of the stream are counted before it is made, so that a
+        // file of a few bytes that says its stream is a gigabyte takes no
+        // memory.
+        #expect(readError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj")
+                == "The stream of an object is not in the PDF.")
+    }
+
+    @Test func anObjectStreamThatIsNotANumberIsRefused() {
+        #expect(readError("1 0 obj<</Type/ObjStm/First x>>stream\n\nendstream endobj")
+                == "The object stream of the PDF is malformed: \"x\" is not a number.")
+        // An object stream with no stream of its own has no objects.
+        #expect(readError("1 0 obj 1 0 obj/Type/ObjStm/First 0") == "(no error)")
+    }
+
+    @Test func aReferenceToAnObjectThatIsNotThereHasNoContents() throws {
+        // A page whose /Contents names an object the PDF does not have, and
+        // one whose dictionary ends where a value belongs.
+        let raw = "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                + "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                + "3 0 obj<</Type/Page/Parent 2 0 R/Contents 99 0 R>>endobj\n"
+        let objects = try TestSupport.read(raw.unicodeScalars.map { UInt8($0.value) })
+        let pages = TestSupport.pageObjects(objects)
+        #expect(pages.count == 1)
+        #expect(pages[0].getContentObject(objects) == nil)
+        #expect(pages[0].getResourcesObject(objects) == nil)
+        #expect(pages[0].getValue("/Contents2") == "")
+    }
+
+    @Test func aDictionaryThatEndsInTheMiddleOfAValueIsClosedThere() throws {
+        let raw = "1 0 obj<</Type/Catalog/Kids[3 0 R\n"
+        let objects = try TestSupport.read(raw.unicodeScalars.map { UInt8($0.value) })
+        #expect(objects.count == 1)
+        #expect(objects[0].getValue("/Kids") == "[ 3 0 R ]")
+        #expect(objects[0].getValue("/Nothing") == "")
+    }
+
 }

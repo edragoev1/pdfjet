@@ -1823,7 +1823,13 @@ public sealed class PDF {
         byteCount += baos.Length;
     }
 
-    internal List<PDFobj> GetSortedObjects(List<PDFobj> objects) {
+    // Returns the objects by their number, with an empty object at the number
+    // of every one the PDF does not have, so that the object a reference names
+    // is the one at its number. Every object of a PDF takes bytes of its file,
+    // so a number larger than the file has bytes is one no PDF can hold, and
+    // the empty objects up to it would take the memory a file of a few bytes
+    // never names.
+    internal List<PDFobj> GetSortedObjects(List<PDFobj> objects, int size) {
         List<PDFobj> sorted = new List<PDFobj>();
 
         int maxObjNumber = 0;
@@ -1831,6 +1837,10 @@ public sealed class PDF {
             if (obj.number > maxObjNumber) {
                 maxObjNumber = obj.number;
             }
+        }
+        if (maxObjNumber > size) {
+            throw new Exception("The PDF of " + size
+                    + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
 
         for (int number = 1; number <= maxObjNumber; number++) {
@@ -1840,7 +1850,9 @@ public sealed class PDF {
         }
 
         foreach (PDFobj obj in objects) {
-            sorted[obj.number - 1] = obj;
+            if (obj.number > 0) {
+                sorted[obj.number - 1] = obj;
+            }
         }
 
         return sorted;
@@ -1897,18 +1909,24 @@ public sealed class PDF {
             }
 
             if (type.Equals("/ObjStm")) {
-                int first = Int32.Parse(obj.GetValue("/First"));
-                PDFobj o2 = GetObject(obj.data, 0, first);
-                int count = o2.dict.Count;
-                for (int i = 0; i < count; i += 2) {
+                // A malformed object stream is an error, as in the other
+                // ports, and not a reason to stop the program.
+                int first = ObjectStreamNumber(obj.GetValue("/First"));
+                // An object stream with no stream of its own has no objects,
+                // as it has in the Go and Swift ports.
+                byte[] data = obj.data ?? new byte[0];
+                PDFobj o2 = GetObject(data, 0, Math.Min(first, data.Length));
+                for (int i = 0; i + 1 < o2.dict.Count; i += 2) {
                     String num = o2.dict[i];
-                    int off = Int32.Parse(o2.dict[i + 1]);
-                    int end = obj.data.Length;
-                    if (i <= count - 4) {
-                        end = first + Int32.Parse(o2.dict[i + 3]);
+                    int number = ObjectStreamNumber(num);
+                    int off = ObjectStreamNumber(o2.dict[i + 1]);
+                    int end = data.Length;
+                    if (i <= o2.dict.Count - 4) {
+                        end = Math.Min(first + ObjectStreamNumber(o2.dict[i + 3]),
+                                data.Length);
                     }
-                    PDFobj o3 = GetObject(obj.data, first + off, end);
-                    o3.SetNumber(Int32.Parse(num));
+                    PDFobj o3 = GetObject(data, first + off, end);
+                    o3.SetNumber(number);
                     o3.dict.Insert(0, "obj");
                     o3.dict.Insert(0, "0");
                     o3.dict.Insert(0, num);
@@ -1919,7 +1937,17 @@ public sealed class PDF {
             }
         }
 
-        return GetSortedObjects(objects2);
+        return GetSortedObjects(objects2, buf.Length);
+    }
+
+    // Returns the number in the header of an object stream.
+    private int ObjectStreamNumber(String token) {
+        int number;
+        if (Int32.TryParse(token, out number) && number >= 0) {
+            return number;
+        }
+        throw new Exception("The object stream of the PDF is malformed: \""
+                + token + "\" is not a number.");
     }
 
     private bool Process(

@@ -1519,13 +1519,23 @@ public final class PDF {
         self.byteCount += buf.count
     }
 
-    func getSortedObjects(_ objects: [PDFobj]) -> [PDFobj] {
+    // Returns the objects by their number, with an empty object at the number
+    // of every one the PDF does not have, so that the object a reference names
+    // is the one at its number. Every object of a PDF takes bytes of its file,
+    // so a number larger than the file has bytes is one no PDF can hold, and
+    // the empty objects up to it would take the memory a file of a few bytes
+    // never names.
+    func getSortedObjects(_ objects: [PDFobj], _ size: Int) throws -> [PDFobj] {
         var sorted = [PDFobj]()
         var maxObjNumber = 0
         for obj in objects {
             if obj.number > maxObjNumber {
                 maxObjNumber = obj.number
             }
+        }
+        if maxObjNumber > size {
+            throw PDFjetError(message: "The PDF of \(size) bytes cannot hold "
+                    + "an object numbered \(maxObjNumber).")
         }
         for number in stride(from: 1, through: maxObjNumber, by: 1) {
             let obj = PDFobj()
@@ -1593,7 +1603,7 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, obj.getLength(objects1), decryptor)
+                try obj.setStreamAndData(&buffer1, try obj.getLength(objects1), decryptor)
             }
             if type == "/ObjStm" {
                 // A malformed object stream is an error, as in the other
@@ -1618,7 +1628,7 @@ public final class PDF {
                 objects2.append(obj)
             }
         }
-        return getSortedObjects(objects2)
+        return try getSortedObjects(objects2, buffer1.count)
     }
 
     // Returns the number in the header of an object stream.

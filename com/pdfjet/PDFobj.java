@@ -83,6 +83,12 @@ public class PDFobj {
     // stream replaces the encrypted one, so that it can be copied.
     void setStreamAndData(byte[] buf, int length, Decryptor decryptor) throws Exception {
         if (this.stream == null) {
+            // A /Length the PDF does not have is checked before the stream is
+            // made, so that a file of a few bytes that says its stream is a
+            // gigabyte takes no memory.
+            if (length < 0 || streamOffset < 0 || length > buf.length - streamOffset) {
+                throw new Exception("The stream of an object is not in the PDF.");
+            }
             this.stream = new byte[length];
             System.arraycopy(buf, streamOffset, stream, 0, length);
             if (decryptor != null) {
@@ -248,29 +254,14 @@ public class PDFobj {
     public String getValue(String key) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals(key)) {
+                if (i + 1 >= dict.size()) {
+                    return "";
+                }
                 String token = dict.get(i + 1);
                 if (token.equals("<<")) {
-                    StringBuilder buffer = new StringBuilder();
-                    buffer.append("<< ");
-                    i += 2;
-                    while (!dict.get(i).equals(">>")) {
-                        buffer.append(dict.get(i));
-                        buffer.append(" ");
-                        i += 1;
-                    }
-                    buffer.append(">>");
-                    return buffer.toString();
+                    return valueUpTo(i + 2, ">>", "<< ");
                 } else if (token.equals("[")) {
-                    StringBuilder buffer = new StringBuilder();
-                    buffer.append("[ ");
-                    i += 2;
-                    while (!dict.get(i).equals("]")) {
-                        buffer.append(dict.get(i));
-                        buffer.append(" ");
-                        i += 1;
-                    }
-                    buffer.append("]");
-                    return buffer.toString();
+                    return valueUpTo(i + 2, "]", "[ ");
                 } else {
                     return token;
                 }
@@ -279,35 +270,84 @@ public class PDFobj {
         return "";
     }
 
+    // Returns the tokens from the index up to the closing one, with the
+    // opening before them and the closing after them.
+    private String valueUpTo(int i, String closing, String opening) {
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(opening);
+        while (i < dict.size() && !dict.get(i).equals(closing)) {
+            buffer.append(dict.get(i));
+            buffer.append(" ");
+            i += 1;
+        }
+        buffer.append(closing);
+        return buffer.toString();
+    }
+
     /**
      * Returns the object numbers referenced by the specified dictionary key.
      *
      * @param key the key, for example "/Contents".
      * @return the object numbers.
      */
+    // Returns the object numbers of the key, which is one reference or an
+    // array of them. A dictionary that ends in the middle of them, or a token
+    // that is not a number where one belongs, ends the list: a PDF that was
+    // read can hold anything.
     List<Integer> getObjectNumbers(String key) {
         List<Integer> numbers = new ArrayList<Integer>();
         for (int i = 0; i < dict.size(); i++) {
             String token = dict.get(i);
             if (token.equals(key)) {
-                String str = dict.get(++i);
+                if (++i >= dict.size()) {
+                    break;
+                }
+                String str = dict.get(i);
                 if (str.equals("[")) {
                     while (true) {
-                        str = dict.get(++i);
+                        if (++i >= dict.size()) {
+                            break;
+                        }
+                        str = dict.get(i);
                         if (str.equals("]")) {
                             break;
                         }
-                        numbers.add(Integer.valueOf(str));
+                        Integer number = toObjectNumber(str);
+                        if (number == null) {
+                            break;
+                        }
+                        numbers.add(number);
                         ++i;    // 0
                         ++i;    // R
                     }
                 } else {
-                    numbers.add(Integer.valueOf(str));
+                    Integer number = toObjectNumber(str);
+                    if (number != null) {
+                        numbers.add(number);
+                    }
                 }
                 break;
             }
         }
         return numbers;
+    }
+
+    // Returns the object number of the token, or null when it is not one.
+    private static Integer toObjectNumber(String token) {
+        try {
+            return Integer.valueOf(token);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    // Returns the object with the number, or null when the PDF that was read
+    // does not have one: a reference can name an object that is not in the file.
+    private static PDFobj objectNumbered(List<PDFobj> objects, int number) {
+        if (number < 1 || number > objects.size()) {
+            return null;
+        }
+        return objects.get(number - 1);
     }
 
     /**
@@ -377,7 +417,10 @@ public class PDFobj {
     public PDFobj getContentObject(List<PDFobj> objects) {
         List<Integer> numbers = getObjectNumbers("/Contents");
         if (numbers.size() == 1) {
-            PDFobj obj = objects.get(numbers.get(0) - 1);
+            PDFobj obj = objectNumbered(objects, numbers.get(0));
+            if (obj == null) {
+                return null;
+            }
             if (obj.stream != null) {
                 return obj;
             }
@@ -385,7 +428,11 @@ public class PDFobj {
             numbers = new ArrayList<Integer>();
             int i = obj.dict.indexOf("[");
             while (i != -1 && i + 3 < obj.dict.size() && obj.dict.get(i + 3).equals("R")) {
-                numbers.add(Integer.valueOf(obj.dict.get(i + 1)));
+                Integer number = toObjectNumber(obj.dict.get(i + 1));
+                if (number == null) {
+                    break;
+                }
+                numbers.add(number);
                 i += 3;
             }
         }
@@ -393,11 +440,15 @@ public class PDFobj {
             return null;
         }
         if (numbers.size() == 1) {
-            return objects.get(numbers.get(0) - 1);
+            return objectNumbered(objects, numbers.get(0));
         }
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         for (int number : numbers) {
-            byte[] data = objects.get(number - 1).data;
+            PDFobj page = objectNumbered(objects, number);
+            if (page == null) {
+                continue;
+            }
+            byte[] data = page.data;
             if (data != null) {
                 buf.write(data, 0, data.length);
                 buf.write('\n');    // A stream can end in the middle of a line.
@@ -417,11 +468,18 @@ public class PDFobj {
     public PDFobj getResourcesObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
+                if (i + 1 >= dict.size()) {
+                    return null;
+                }
                 String token = dict.get(i + 1);
                 if (token.equals("<<")) {
                     return this;
                 }
-                return objects.get(Integer.parseInt(token) - 1);
+                Integer number = toObjectNumber(token);
+                if (number == null) {
+                    return null;
+                }
+                return objectNumbered(objects, number);
             }
         }
         return null;

@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -404,4 +405,69 @@ class PDFTest {
         assertEquals("\u00dcbersicht \u2013 r\u00e9sum\u00e9.txt", TestSupport.utf16Hex(spec.getValue("/UF")));
         assertEquals(spec.getValue("/UF"), spec.getValue("/F"));
     }
+    // The PDFs that are not valid, as the Go fuzz target of the reader found
+    // them: each fails with a message or reads what it can, and none reads
+    // past the file, allocates what the file does not have or traps in Swift.
+
+    // The message that reading the PDF fails with, or "(no error)" when it
+    // is read.
+    private static String readError(String raw) throws Exception {
+        try {
+            TestSupport.read(raw.getBytes("ISO-8859-1"));
+            return "(no error)";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @Test
+    void anObjectNumberedHigherThanTheFileHasBytesIsRefused() throws Exception {
+        // One object of every number up to the one it says would take
+        // gigabytes of memory for a file of 31 bytes.
+        assertEquals("The PDF of 31 bytes cannot hold an object numbered 44444441.",
+                readError("44444441 0 obj/Filter/Fl streil"));
+    }
+
+    @Test
+    void aStreamLongerThanTheFileIsRefused() throws Exception {
+        // The bytes of the stream are counted before it is made, so that a
+        // file of a few bytes that says its stream is a gigabyte takes no
+        // memory.
+        assertEquals("The stream of an object is not in the PDF.",
+                readError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"));
+    }
+
+    @Test
+    void anObjectStreamThatIsNotANumberIsRefused() throws Exception {
+        assertEquals("The object stream of the PDF is malformed: \"x\" is not a number.",
+                readError("1 0 obj<</Type/ObjStm/First x>>stream\n\nendstream endobj"));
+        // An object stream with no stream of its own has no objects.
+        assertEquals("(no error)", readError("1 0 obj 1 0 obj/Type/ObjStm/First 0"));
+    }
+
+    @Test
+    void aReferenceToAnObjectThatIsNotThereHasNoContents() throws Exception {
+        // A page whose /Contents names an object the PDF does not have, and
+        // one whose dictionary ends where a value belongs.
+        List<PDFobj> objects = TestSupport.read((
+                "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                + "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                + "3 0 obj<</Type/Page/Parent 2 0 R/Contents 99 0 R>>endobj\n"
+                ).getBytes("ISO-8859-1"));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertEquals(1, pages.size());
+        assertNull(pages.get(0).getContentObject(objects));
+        assertNull(pages.get(0).getResourcesObject(objects));
+        assertEquals("", pages.get(0).getValue("/Contents2"));
+    }
+
+    @Test
+    void aDictionaryThatEndsInTheMiddleOfAValueIsClosedThere() throws Exception {
+        List<PDFobj> objects = TestSupport.read(
+                "1 0 obj<</Type/Catalog/Kids[3 0 R\n".getBytes("ISO-8859-1"));
+        assertEquals(1, objects.size());
+        assertEquals("[ 3 0 R ]", objects.get(0).getValue("/Kids"));
+        assertEquals("", objects.get(0).getValue("/Nothing"));
+    }
+
 }

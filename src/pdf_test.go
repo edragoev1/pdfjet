@@ -449,3 +449,73 @@ func TestPDFALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement(t *testin
 		t.Errorf("%d Annot elements", n)
 	}
 }
+
+// The PDFs that are not valid, as the Go fuzz target of the reader found
+// them: each fails with a message or reads what it can, and none reads past
+// the file, allocates what the file does not have or traps in Swift.
+
+// testReadError returns the message that reading the PDF fails with, or
+// "(no error)" when it is read.
+func testReadError(t *testing.T, raw string) string {
+	t.Helper()
+	if _, err := testNewPDF().Read([]byte(raw)); err != nil {
+		return err.Error()
+	}
+	return "(no error)"
+}
+
+func TestPDFAnObjectNumberedHigherThanTheFileHasBytesIsRefused(t *testing.T) {
+	// One object of every number up to the one it says would take gigabytes
+	// of memory for a file of 31 bytes.
+	testWant(t, "The PDF of 31 bytes cannot hold an object numbered 44444441.",
+		testReadError(t, "44444441 0 obj/Filter/Fl streil"))
+}
+
+func TestPDFAStreamLongerThanTheFileIsRefused(t *testing.T) {
+	// The bytes of the stream are counted before it is made, so that a file
+	// of a few bytes that says its stream is a gigabyte takes no memory.
+	testWant(t, "The stream of an object is not in the PDF.",
+		testReadError(t, "1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"))
+}
+
+func TestPDFAnObjectStreamThatIsNotANumberIsRefused(t *testing.T) {
+	testWant(t, `The object stream of the PDF is malformed: "x" is not a number.`,
+		testReadError(t, "1 0 obj<</Type/ObjStm/First x>>stream\n\nendstream endobj"))
+	// An object stream with no stream of its own has no objects.
+	testWant(t, "(no error)", testReadError(t, "1 0 obj 1 0 obj/Type/ObjStm/First 0"))
+}
+
+func TestPDFAReferenceToAnObjectThatIsNotThereHasNoContents(t *testing.T) {
+	// A page whose /Contents names an object the PDF does not have, and one
+	// whose dictionary ends where a value belongs.
+	objects, err := testNewPDF().Read([]byte(
+		"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n" +
+			"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
+			"3 0 obj<</Type/Page/Parent 2 0 R/Contents 99 0 R>>endobj\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pages := testNewPDF().GetPageObjects(objects)
+	if len(pages) != 1 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	if pages[0].GetContentObject(objects) != nil {
+		t.Error("a page whose contents are not in the PDF has contents")
+	}
+	if pages[0].GetResourcesObject(objects) != nil {
+		t.Error("a page with no resources has resources")
+	}
+	testWant(t, "", pages[0].GetValue("/Contents2"))
+}
+
+func TestPDFADictionaryThatEndsInTheMiddleOfAValueIsClosedThere(t *testing.T) {
+	objects, err := testNewPDF().Read([]byte("1 0 obj<</Type/Catalog/Kids[3 0 R\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(objects) != 1 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "[ 3 0 R ]", objects[0].GetValue("/Kids"))
+	testWant(t, "", objects[0].GetValue("/Nothing"))
+}

@@ -47,6 +47,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- A PDF that is not valid fails with a message or is read for what it holds,
+  in all four ports, where reading one could take gigabytes of memory, read
+  past the end of the file, or trap in Swift. An object numbered higher than
+  the file has bytes made one empty object of every number up to it, so a
+  31-byte file numbered 44,444,441 took 7 GB; a /Length longer than the file
+  was allocated before the bytes were found not to be there; an object stream
+  with no stream of its own, or one whose header is not a number, failed
+  differently in each port; and a dictionary that ends where a value belongs,
+  or a reference to an object that is not in the file, read past the end of
+  the tokens in `getValue`, `getObjectNumbers`, `getContentObject` and
+  `getResourcesObject`. A dictionary or an array is now closed where the PDF
+  ends, a reference to an object that is not there has no value, and the
+  object streams are read alike in the four ports. Found by fuzzing the Go
+  reader with `FuzzPDFRead`, which fuzzes the bytes of a PDF and the password
+  it is read with, and reads, pages and merges what it gets; 95 M runs clean
+  after the fixes. Of the 1,257 PDFs of the replay the four ports read the
+  same ones and draw the same pages from every one.
 - Swift read one symbol too many from a Flate stream when only the first
   bytes of it were asked for. `Decompressor.inflatePrefix` returns the first
   bytes a stream decodes to and ignores the rest of it, but the decoder of
@@ -80,7 +97,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   ports read as zeros. Found by fuzzing the Go font loaders with
   `FuzzOpenTypeFont`, which fuzzes a whole file, and `FuzzOpenTypeFontTables`,
   which fuzzes each table PDFjet reads on its own and joins them into a font
-  whose directory is right; 1.8 M and 8.5 M runs clean after the fixes. Of
+  whose directory is right; 21 M and 8.5 M runs clean after the fixes. Of
   the 2,181 fonts of the replay, the four ports read the same ones and draw
   the same page from every one they read.
 - The four ports read the same text from bytes that are not UTF-8. Java read

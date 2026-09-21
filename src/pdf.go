@@ -1824,7 +1824,13 @@ func (pdf *PDF) SetPageMode(pageMode pagemode.PageMode) *PDF {
 	return pdf
 }
 
-func (pdf *PDF) getSortedObjects(objects []*PDFobj) []*PDFobj {
+// getSortedObjects returns the objects by their number, with an empty object
+// at the number of every one the PDF does not have, so that the object a
+// reference names is the one at its number. Every object of a PDF takes bytes
+// of its file, so a number larger than the file has bytes is one no PDF can
+// hold, and the empty objects up to it would take the memory a file of a few
+// bytes never names.
+func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int) ([]*PDFobj, error) {
 	sorted := make([]*PDFobj, 0)
 
 	maxObjNumber := 0
@@ -1832,6 +1838,10 @@ func (pdf *PDF) getSortedObjects(objects []*PDFobj) []*PDFobj {
 		if obj.number > maxObjNumber {
 			maxObjNumber = obj.number
 		}
+	}
+	if maxObjNumber > size {
+		return nil, fmt.Errorf(
+			"The PDF of %d bytes cannot hold an object numbered %d.", size, maxObjNumber)
 	}
 
 	for number := 1; number <= maxObjNumber; number++ {
@@ -1841,10 +1851,12 @@ func (pdf *PDF) getSortedObjects(objects []*PDFobj) []*PDFobj {
 	}
 
 	for _, obj := range objects {
-		sorted[obj.number-1] = obj
+		if obj.number > 0 {
+			sorted[obj.number-1] = obj
+		}
 	}
 
-	return sorted
+	return sorted, nil
 }
 
 func contains(slice []string, text string) bool {
@@ -1919,34 +1931,37 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 
 		if objType == "/ObjStm" {
-			first, err := strconv.Atoi(obj.GetValue("/First"))
+			// A malformed object stream is an error, as in the other ports,
+			// and not a reason to stop the program.
+			first, err := objectStreamNumber(obj.GetValue("/First"))
 			if err != nil {
 				return nil, err
 			}
-			o2 := getObject(obj.GetData(), 0, first)
-			count := len(o2.dict)
-			for i := 0; i < count; i += 2 {
-				num, err := strconv.Atoi(o2.dict[i])
+			data := obj.GetData()
+			o2 := getObject(data, 0, min(first, len(data)))
+			for i := 0; i+1 < len(o2.dict); i += 2 {
+				num := o2.dict[i]
+				number, err := objectStreamNumber(num)
 				if err != nil {
 					return nil, err
 				}
-				off, err := strconv.Atoi(o2.dict[i+1])
+				off, err := objectStreamNumber(o2.dict[i+1])
 				if err != nil {
 					return nil, err
 				}
-				end := len(obj.GetData())
-				if i <= count-4 {
-					tmp, err := strconv.Atoi(o2.dict[i+3])
+				end := len(data)
+				if i <= len(o2.dict)-4 {
+					tmp, err := objectStreamNumber(o2.dict[i+3])
 					if err != nil {
 						return nil, err
 					}
-					end = first + tmp
+					end = min(first+tmp, len(data))
 				}
-				o3 := getObject(obj.GetData(), first+off, end)
-				o3.setNumber(num)
+				o3 := getObject(data, first+off, end)
+				o3.setNumber(number)
 				o3.dict = insertStringAt(o3.dict, "obj", 0)
 				o3.dict = insertStringAt(o3.dict, "0", 0)
-				o3.dict = insertStringAt(o3.dict, strconv.Itoa(num), 0)
+				o3.dict = insertStringAt(o3.dict, num, 0)
 				objects2 = append(objects2, o3)
 			}
 		} else {
@@ -1954,7 +1969,17 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 	}
 
-	return pdf.getSortedObjects(objects2), nil
+	return pdf.getSortedObjects(objects2, len(buf))
+}
+
+// objectStreamNumber returns the number in the header of an object stream.
+func objectStreamNumber(token string) (int, error) {
+	number, err := strconv.Atoi(token)
+	if err != nil || number < 0 {
+		return 0, fmt.Errorf(
+			"The object stream of the PDF is malformed: %q is not a number.", token)
+	}
+	return number, nil
 }
 
 func process(obj *PDFobj, sb *strings.Builder, buf []byte, off int) bool {

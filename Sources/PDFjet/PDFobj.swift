@@ -62,6 +62,12 @@ public final class PDFobj {
     final func setStreamAndData(
             _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil) throws {
         if stream == nil {
+            // A /Length the PDF does not have is checked before the stream is
+            // made, so that a file of a few bytes that says its stream is a
+            // gigabyte takes no memory.
+            if length < 0 || streamOffset < 0 || length > buffer.count - streamOffset {
+                throw PDFjetError(message: "The stream of an object is not in the PDF.")
+            }
             var copied = Array(buffer[streamOffset..<streamOffset + length])
             if let decryptor = decryptor {
                 copied = decryptor.decryptStream(self, copied)
@@ -213,29 +219,14 @@ public final class PDFobj {
         var i = 0
         while i < dict.count {
             if key == dict[i] {
+                if i + 1 >= dict.count {
+                    return ""
+                }
                 let token = dict[i + 1]
                 if token == "<<" {
-                    var buffer = String()
-                    buffer.append("<< ")
-                    i += 2
-                    while dict[i] != ">>" {
-                        buffer.append(dict[i])
-                        buffer.append(" ")
-                        i += 1
-                    }
-                    buffer.append(">>")
-                    return buffer
+                    return valueUpTo(i + 2, ">>", "<< ")
                 } else if token == "[" {
-                    var buffer = String()
-                    buffer.append("[ ")
-                    i += 2
-                    while dict[i] != "]" {
-                        buffer.append(dict[i])
-                        buffer.append(" ")
-                        i += 1
-                    }
-                    buffer.append("]")
-                    return buffer
+                    return valueUpTo(i + 2, "]", "[ ")
                 } else {
                     return token
                 }
@@ -245,6 +236,24 @@ public final class PDFobj {
         return ""
     }
 
+    // Returns the tokens from the index up to the closing one, with the
+    // opening before them and the closing after them.
+    private final func valueUpTo(_ start: Int, _ closing: String, _ opening: String) -> String {
+        var buffer = opening
+        var i = start
+        while i < dict.count && dict[i] != closing {
+            buffer.append(dict[i])
+            buffer.append(" ")
+            i += 1
+        }
+        buffer.append(closing)
+        return buffer
+    }
+
+    // Returns the object numbers of the key, which is one reference or an
+    // array of them. A dictionary that ends in the middle of them, or a token
+    // that is not a number where one belongs, ends the list: a PDF that was
+    // read can hold anything.
     final func getObjectNumbers(_ key: String) -> [Int] {
         var numbers = [Int]()
         var i = 0
@@ -252,18 +261,24 @@ public final class PDFobj {
             let token = dict[i]
             if token == key {
                 i += 1
+                if i >= dict.count {
+                    break
+                }
                 if dict[i] == "[" {
                     while true {
                         i += 1
-                        if dict[i] == "]" {
+                        if i >= dict.count || dict[i] == "]" {
                             break
                         }
-                        numbers.append(Int(dict[i])!)
+                        guard let number = Int(dict[i]) else {
+                            break
+                        }
+                        numbers.append(number)
                         i += 1  // 0
                         i += 1  // R
                     }
-                } else {
-                    numbers.append(Int(dict[i])!)
+                } else if let number = Int(dict[i]) {
+                    numbers.append(number)
                 }
 
                 break
@@ -285,16 +300,28 @@ public final class PDFobj {
         return Letter.PORTRAIT
     }
 
-    final func getLength(_ objects: [PDFobj]) -> Int {
+    // The /Length of the stream of this object, which is a number or a
+    // reference to an object that holds one. A dictionary that ends where the
+    // length is read, or a length that is not a number, throws, as it fails
+    // in the other three ports.
+    final func getLength(_ objects: [PDFobj]) throws -> Int {
         for i in 0..<dict.count {
             if dict[i] == "/Length" {
-                let number = Int(dict[i + 1])!
-                if dict[i + 2] == "0" &&
-                        dict[i + 3] == "R" {
-                    return getLength(number, from: objects)
-                } else {
-                    return number
+                guard i + 1 < dict.count, let number = Int(dict[i + 1]) else {
+                    throw PDFjetError(message: "The /Length of a stream is not a number.")
                 }
+                guard i + 2 < dict.count else {
+                    throw PDFjetError(message: "The dictionary ends after the /Length.")
+                }
+                if dict[i + 2] == "0" {
+                    guard i + 3 < dict.count else {
+                        throw PDFjetError(message: "The dictionary ends after the /Length.")
+                    }
+                    if dict[i + 3] == "R" {
+                        return try getLength(number, from: objects)
+                    }
+                }
+                return number
             }
         }
         return 0
@@ -304,16 +331,24 @@ public final class PDFobj {
     // are in the order of the cross-reference, not of their numbers.
     private final func getLength(
             _ number: Int,
-            from objects: [PDFobj]) -> Int {
+            from objects: [PDFobj]) throws -> Int {
         for obj in objects where obj.number == number {
-            return Int(obj.dict[3])!
+            guard obj.dict.count > 3, let length = Int(obj.dict[3]) else {
+                throw PDFjetError(message: "The /Length of a stream is not a number.")
+            }
+            return length
         }
         return 0
     }
 
+    // Returns the object with the number, or nil when the PDF that was read
+    // does not have one: a reference can name an object that is not in the file.
     private final func getObject(
             number: Int,
             from objects: [PDFobj]) -> PDFobj? {
+        if number < 1 || number > objects.count {
+            return nil
+        }
         return objects[number - 1]
     }
 
@@ -329,7 +364,9 @@ public final class PDFobj {
     public final func getContentObject(_ objects: [PDFobj]) -> PDFobj? {
         var numbers = getObjectNumbers("/Contents")
         if numbers.count == 1 {
-            let object = objects[numbers[0] - 1]
+            guard let object = getObject(number: numbers[0], from: objects) else {
+                return nil
+            }
             if object.stream != nil {
                 return object
             }
@@ -337,7 +374,10 @@ public final class PDFobj {
             numbers = [Int]()
             var i = object.dict.firstIndex(of: "[") ?? -1
             while i != -1 && i + 3 < object.dict.count && object.dict[i + 3] == "R" {
-                numbers.append(Int(object.dict[i + 1])!)
+                guard let number = Int(object.dict[i + 1]) else {
+                    break
+                }
+                numbers.append(number)
                 i += 3
             }
         }
@@ -345,11 +385,13 @@ public final class PDFobj {
             return nil
         }
         if numbers.count == 1 {
-            return objects[numbers[0] - 1]
+            return getObject(number: numbers[0], from: objects)
         }
         let content = PDFobj()
         for number in numbers {
-            let object = objects[number - 1]
+            guard let object = getObject(number: number, from: objects) else {
+                continue
+            }
             if object.stream != nil {
                 content.data.append(contentsOf: object.data)
                 content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
@@ -366,11 +408,17 @@ public final class PDFobj {
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
+                if i + 1 >= dict.count {
+                    return nil
+                }
                 let token = dict[i + 1]
                 if token == "<<" {
                     return self
                 }
-                return getObject(number: Int(token)!, from: objects)
+                guard let number = Int(token) else {
+                    return nil
+                }
+                return getObject(number: number, from: objects)
             }
             i += 1
         }

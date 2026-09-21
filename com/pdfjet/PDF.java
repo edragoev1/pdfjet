@@ -1969,7 +1969,13 @@ final public class PDF {
         byteCount += baos.size();
     }
 
-    private List<PDFobj> getSortedObjects(List<PDFobj> objects) {
+    // Returns the objects by their number, with an empty object at the number
+    // of every one the PDF does not have, so that the object a reference names
+    // is the one at its number. Every object of a PDF takes bytes of its file,
+    // so a number larger than the file has bytes is one no PDF can hold, and
+    // the empty objects up to it would take the memory a file of a few bytes
+    // never names.
+    private List<PDFobj> getSortedObjects(List<PDFobj> objects, int size) throws Exception {
         List<PDFobj> sorted = new ArrayList<PDFobj>();
 
         int maxObjNumber = 0;
@@ -1977,6 +1983,10 @@ final public class PDF {
             if (obj.number > maxObjNumber) {
                 maxObjNumber = obj.number;
             }
+        }
+        if (maxObjNumber > size) {
+            throw new Exception("The PDF of " + size
+                    + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
 
         for (int number = 1; number <= maxObjNumber; number++) {
@@ -1986,7 +1996,9 @@ final public class PDF {
         }
 
         for (PDFobj obj : objects) {
-            sorted.set(obj.number - 1, obj);
+            if (obj.number > 0) {
+                sorted.set(obj.number - 1, obj);
+            }
         }
 
         return sorted;
@@ -2052,18 +2064,24 @@ final public class PDF {
             }
 
             if (type.equals("/ObjStm")) {
-                int first = Integer.parseInt(obj.getValue("/First"));
-                PDFobj o2 = getObject(obj.data, 0, first);
-                int count = o2.dict.size();
-                for (int i = 0; i < count; i += 2) {
+                // A malformed object stream is an error, as in the other
+                // ports, and not a reason to stop the program.
+                int first = objectStreamNumber(obj.getValue("/First"));
+                // An object stream with no stream of its own has no objects,
+                // as it has in the Go and Swift ports.
+                byte[] data = (obj.data == null) ? new byte[0] : obj.data;
+                PDFobj o2 = getObject(data, 0, Math.min(first, data.length));
+                for (int i = 0; i + 1 < o2.dict.size(); i += 2) {
                     String num = o2.dict.get(i);
-                    int off = Integer.parseInt(o2.dict.get(i + 1));
-                    int end = obj.data.length;
-                    if (i <= count - 4) {
-                        end = first + Integer.parseInt(o2.dict.get(i + 3));
+                    int number = objectStreamNumber(num);
+                    int off = objectStreamNumber(o2.dict.get(i + 1));
+                    int end = data.length;
+                    if (i <= o2.dict.size() - 4) {
+                        end = Math.min(first + objectStreamNumber(o2.dict.get(i + 3)),
+                                data.length);
                     }
-                    PDFobj o3 = getObject(obj.data, first + off, end);
-                    o3.setNumber(Integer.parseInt(num));
+                    PDFobj o3 = getObject(data, first + off, end);
+                    o3.setNumber(number);
                     o3.dict.add(0, "obj");
                     o3.dict.add(0, "0");
                     o3.dict.add(0, num);
@@ -2074,7 +2092,21 @@ final public class PDF {
             }
         }
 
-        return getSortedObjects(objects2);
+        return getSortedObjects(objects2, buf.length);
+    }
+
+    // Returns the number in the header of an object stream.
+    private int objectStreamNumber(String token) throws Exception {
+        try {
+            int number = Integer.parseInt(token);
+            if (number >= 0) {
+                return number;
+            }
+        } catch (NumberFormatException e) {
+            // The message below says what is wrong with it.
+        }
+        throw new Exception("The object stream of the PDF is malformed: \""
+                + token + "\" is not a number.");
     }
 
     private boolean process(
