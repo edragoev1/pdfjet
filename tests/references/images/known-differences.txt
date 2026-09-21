@@ -101,9 +101,8 @@ pillow/Tests/images/hopper_rle8.bmp: compressed BMPs are not supported
 pillow/Tests/images/hopper_rle8_grayscale.bmp: compressed BMPs are not supported
 pillow/Tests/images/hopper_rle8_row_overflow.bmp: compressed BMPs are not supported
 
-# The 12-byte header of OS/2 1.x BMPs is refused, as bmpimage.go says; the
-# message is that of the bit depth, which is read before the header size is
-# checked, from where a larger header has it.
+# The 12-byte header of OS/2 1.x BMPs is refused, as bmpimage.go says, with a
+# message that gives its size.
 bmpsuite/g/pal8os2.bmp: OS/2 1.x BMPs are not supported
 bmpsuite/q/pal8os2-hs.bmp: OS/2 1.x BMPs are not supported
 bmpsuite/q/pal8os2sp.bmp: OS/2 1.x BMPs are not supported
@@ -116,7 +115,7 @@ pillow/Tests/images/bmp/q/pal8os2sp.bmp: OS/2 1.x BMPs are not supported
 # folder, and against g/rgb24.bmp: the colors are the same, or 1 lower where
 # a color of fewer than 8 bits is scaled, which PDFjet floors as Pillow does
 # for the layouts it reads and the BMP Suite rounds. The alpha of the rgba
-# files is dropped, as in the other BMPs with an alpha mask.
+# files, which becomes the soft mask, is the same as that of the PNGs.
 bmpsuite/b/rgb16-880.bmp: bitfields that Pillow does not read
 bmpsuite/g/rgb32bf.bmp: bitfields that Pillow does not read
 bmpsuite/q/rgb16-231.bmp: bitfields that Pillow does not read
@@ -132,6 +131,17 @@ pillow/Tests/images/bmp/g/rgb32bf.bmp: bitfields that Pillow does not read
 pillow/Tests/images/bmp/q/rgb16-231.bmp: bitfields that Pillow does not read
 pillow/Tests/images/bmp/q/rgb32-111110.bmp: bitfields that Pillow does not read
 pillow/Tests/images/bmp/q/rgba16-4444.bmp: bitfields that Pillow does not read
+
+# Pillow reads the colors of 16-bit pixels and not their alpha mask, which
+# PDFjet reads as browsers do. Checked by hand against the reference PNG of
+# the BMP Suite: the alpha is the same, and the colors that are not wholly
+# transparent are the same or 1 lower, as above.
+bmpsuite/q/rgba16-5551.bmp: Pillow does not read the alpha of 16-bit pixels
+
+# The alpha of every pixel is 0, which Pillow keeps and browsers do not: a
+# writer that does not know of the alpha leaves it at 0, and Chrome and
+# Firefox draw the image opaque. So does PDFjet.
+pillow/Tests/images/rgb32bf-abgr.bmp: an alpha of 0 in every pixel is drawn opaque
 
 # A header of 66 bytes, which no version of the format has. PDFjet reads a
 # header of any size from 40 bytes up, and its pixels are those of g/pal1.bmp.

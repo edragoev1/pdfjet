@@ -228,4 +228,78 @@ import Testing
         #expect(bmp.getPhysicalWidth() == 0.0)
         #expect(bmp.getPhysicalHeight() == 0.0)
     }
+
+    @Test func rejectsAnOS2HeaderForItsSize() {
+        // The 12 byte header of OS/2 1.x has a width and a height of 2 bytes,
+        // so the bit depth is not where a header of 40 bytes has it: the
+        // message says that the header is not supported, and not that the bit
+        // depth is not. Here the bit depth is 8, with a palette of 3 bytes a
+        // color.
+        var bytes: [UInt8] = [0x42, 0x4D]
+        for value in [26 + 6 + 4, 0, 26 + 6, 12] {
+            littleEndian32(Int32(value), &bytes)
+        }
+        bytes.append(contentsOf: [2, 0, 2, 0, 1, 0, 8, 0])
+        bytes.append(contentsOf: [0, 0, 0, 255, 255, 255])
+        bytes.append(contentsOf: [0, 1, 0, 0, 1, 0, 0, 0])
+        #expect(decodeError(bytes) == "Unsupported BMP header of 12 bytes.")
+    }
+
+    // The masks of 32 bit pixels of blue, green, red and alpha bytes.
+    private static let masksBGRA: [UInt32] = [0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000]
+
+    private func expectAlpha(_ want: [UInt8]?, _ bmp: [UInt8],
+            sourceLocation: SourceLocation = #_sourceLocation) throws {
+        let image = try BMPImage(stream(bmp))
+        #expect(try TestSupport.inflate(image.getData()) == BMPImageTests.rgb, sourceLocation: sourceLocation)
+        if let want = want {
+            let alpha = try #require(image.getAlpha(), sourceLocation: sourceLocation)
+            #expect(try TestSupport.inflate(alpha) == want, sourceLocation: sourceLocation)
+        } else {
+            #expect(image.getAlpha() == nil, sourceLocation: sourceLocation)
+        }
+    }
+
+    @Test func theAlphaMaskOfAHeaderOf56BytesOrMoreIsRead() throws {
+        // Blue and white of alpha 0x80 and 0xFF, red and green of 0 and 0x40.
+        let bottom: [UInt8] = [255, 0, 0, 0x80, 255, 255, 255, 0xFF]
+        let top: [UInt8] = [0, 0, 255, 0, 0, 255, 0, 0x40]
+        try expectAlpha([0, 0x40, 0x80, 0xFF], bmp(124, 32, 3, BMPImageTests.masksBGRA, nil, bottom, top))
+        try expectAlpha([0, 0x40, 0x80, 0xFF], bmp(56, 32, 3, BMPImageTests.masksBGRA, nil, bottom, top))
+        // 4 bits of alpha, and of each color: 4 of 15 is 68.
+        try expectAlpha([0, 68, 136, 255], bmp(108, 16, 3, [0x0F00, 0x00F0, 0x000F, 0xF000], nil,
+                shorts(0x800F, 0xFFFF), shorts(0x0F00, 0x40F0)))
+    }
+
+    @Test func hasNoAlphaWithoutAnAlphaMaskOrWhenEveryPixelHasAnAlphaOf0() throws {
+        let top: [UInt8] = [255, 0, 0, 0x12, 255, 255, 255, 0x34]
+        let bottom: [UInt8] = [0, 0, 255, 0x56, 0, 255, 0, 0x78]
+        let masks = Array(BMPImageTests.masksBGRA.prefix(3))
+        // The fourth byte of a pixel without masks is not a color, and the
+        // masks of a BI_RGB image, in a larger header, are not read.
+        try expectAlpha(nil, bmp(40, 32, 0, nil, nil, top, bottom))
+        try expectAlpha(nil, bmp(124, 32, 0, BMPImageTests.masksBGRA, nil, top, bottom))
+        // The masks after a header of 40 bytes, and in one of 52, have no
+        // alpha; nor has an alpha mask of 0.
+        try expectAlpha(nil, bmp(40, 32, 3, masks, nil, top, bottom))
+        try expectAlpha(nil, bmp(52, 32, 3, masks, nil, top, bottom))
+        try expectAlpha(nil, bmp(124, 32, 3, [0xFF0000, 0xFF00, 0xFF, 0], nil, top, bottom))
+        // Browsers draw an image whose alpha is 0 in every pixel opaque:
+        // writers that do not know of the alpha leave it at 0.
+        try expectAlpha(nil, bmp(124, 32, 3, BMPImageTests.masksBGRA, nil,
+                [255, 0, 0, 0, 255, 255, 255, 0], [0, 0, 255, 0, 0, 255, 0, 0]))
+    }
+
+    @Test func theAlphaIsTheSoftMaskOfTheImage() throws {
+        for alpha: UInt8 in [0x80, 0] {
+            let image = bmp(124, 32, 3, BMPImageTests.masksBGRA, nil,
+                    [255, 0, 0, alpha, 255, 255, 255, 0], [0, 0, 255, 0, 0, 255, 0, 0])
+            let memory = MemoryPDF()
+            let drawn = try Image(memory.pdf, InputStream(data: Data(image)))
+            _ = drawn.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            try memory.pdf.complete()
+            let raw = TestSupport.latin1(memory.bytes)
+            #expect(raw.contains("/SMask") == (alpha != 0), "alpha \(alpha): a soft mask")
+        }
+    }
 }

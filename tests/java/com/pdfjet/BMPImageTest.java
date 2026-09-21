@@ -8,6 +8,8 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
@@ -120,7 +122,9 @@ class BMPImageTest {
         buf.putInt(headerSize).putInt(2).putInt(2).putShort((short) 1).putShort((short) bitsPerPixel);
         buf.putInt(compression).putInt(2 * rowSize).putInt(2835).putInt(2835).putInt(colors).putInt(0);
         if (masks != null) {
-            buf.putInt(masks[0]).putInt(masks[1]).putInt(masks[2]);
+            for (int mask : masks) {
+                buf.putInt(mask);
+            }
         }
         buf.position(offset - 4 * colors);      // The rest of a larger header is 0
         for (int i = 0; i < colors; i++) {
@@ -231,5 +235,80 @@ class BMPImageTest {
         BMPImage image = new BMPImage(new java.io.ByteArrayInputStream(bmp));
         assertEquals(0f, image.getPhysicalWidth());
         assertEquals(0f, image.getPhysicalHeight());
+    }
+
+    @Test
+    void rejectsAnOS2HeaderForItsSize() {
+        // The 12 byte header of OS/2 1.x has a width and a height of 2 bytes,
+        // so the bit depth is not where a header of 40 bytes has it: the
+        // message says that the header is not supported, and not that the bit
+        // depth is not. Here the bit depth is 8, with a palette of 3 bytes a
+        // color.
+        ByteBuffer buf = ByteBuffer.allocate(26 + 6 + 8).order(ByteOrder.LITTLE_ENDIAN);
+        buf.put((byte) 'B').put((byte) 'M').putInt(26 + 6 + 4).putInt(0).putInt(26 + 6).putInt(12);
+        buf.putShort((short) 2).putShort((short) 2).putShort((short) 1).putShort((short) 8);
+        buf.put(bytes(0, 0, 0, 255, 255, 255)).put(bytes(0, 1, 0, 0, 1, 0, 0, 0));
+        assertEquals("Unsupported BMP header of 12 bytes.", decodeError(buf.array()));
+    }
+
+    // The masks of 32 bit pixels of blue, green, red and alpha bytes.
+    private static final int[] MASKS_BGRA = {0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000};
+
+    private static void assertAlpha(byte[] want, byte[] bmp) throws Exception {
+        BMPImage image = new BMPImage(new ByteArrayInputStream(bmp));
+        assertArrayEquals(RGB, Decompressor.inflate(image.getData()));
+        if (want == null) {
+            assertNull(image.getAlpha());
+        } else {
+            assertNotNull(image.getAlpha());
+            assertArrayEquals(want, Decompressor.inflate(image.getAlpha()));
+        }
+    }
+
+    @Test
+    void theAlphaMaskOfAHeaderOf56BytesOrMoreIsRead() throws Exception {
+        // Blue and white of alpha 0x80 and 0xFF, red and green of 0 and 0x40.
+        byte[] bottom = bytes(255, 0, 0, 0x80, 255, 255, 255, 0xFF);
+        byte[] top = bytes(0, 0, 255, 0, 0, 255, 0, 0x40);
+        assertAlpha(bytes(0, 0x40, 0x80, 0xFF), bmp(124, 32, 3, MASKS_BGRA, null, bottom, top));
+        assertAlpha(bytes(0, 0x40, 0x80, 0xFF), bmp(56, 32, 3, MASKS_BGRA, null, bottom, top));
+        // 4 bits of alpha, and of each color: 4 of 15 is 68.
+        assertAlpha(bytes(0, 68, 136, 255), bmp(108, 16, 3, new int[] {0x0F00, 0x00F0, 0x000F, 0xF000}, null,
+                shorts(0x800F, 0xFFFF), shorts(0x0F00, 0x40F0)));
+    }
+
+    @Test
+    void hasNoAlphaWithoutAnAlphaMaskOrWhenEveryPixelHasAnAlphaOf0() throws Exception {
+        byte[] top = bytes(255, 0, 0, 0x12, 255, 255, 255, 0x34);
+        byte[] bottom = bytes(0, 0, 255, 0x56, 0, 255, 0, 0x78);
+        int[] masks = Arrays.copyOf(MASKS_BGRA, 3);
+        // The fourth byte of a pixel without masks is not a color, and the
+        // masks of a BI_RGB image, in a larger header, are not read.
+        assertAlpha(null, bmp(40, 32, 0, null, null, top, bottom));
+        assertAlpha(null, bmp(124, 32, 0, MASKS_BGRA, null, top, bottom));
+        // The masks after a header of 40 bytes, and in one of 52, have no
+        // alpha; nor has an alpha mask of 0.
+        assertAlpha(null, bmp(40, 32, 3, masks, null, top, bottom));
+        assertAlpha(null, bmp(52, 32, 3, masks, null, top, bottom));
+        assertAlpha(null, bmp(124, 32, 3, new int[] {0xFF0000, 0xFF00, 0xFF, 0}, null, top, bottom));
+        // Browsers draw an image whose alpha is 0 in every pixel opaque:
+        // writers that do not know of the alpha leave it at 0.
+        assertAlpha(null, bmp(124, 32, 3, MASKS_BGRA, null,
+                bytes(255, 0, 0, 0, 255, 255, 255, 0), bytes(0, 0, 255, 0, 0, 255, 0, 0)));
+    }
+
+    @Test
+    void theAlphaIsTheSoftMaskOfTheImage() throws Exception {
+        for (int alpha : new int[] {0x80, 0}) {
+            byte[] bmp = bmp(124, 32, 3, MASKS_BGRA, null,
+                    bytes(255, 0, 0, alpha, 255, 255, 255, 0), bytes(0, 0, 255, 0, 0, 255, 0, 0));
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            Image image = new Image(pdf, new ByteArrayInputStream(bmp));
+            image.drawOn(new Page(pdf, Letter.PORTRAIT));
+            pdf.complete();
+            String raw = TestSupport.latin1(bos.toByteArray());
+            assertEquals(alpha != 0, raw.contains("/SMask"), "alpha " + alpha + ": a soft mask");
+        }
     }
 }

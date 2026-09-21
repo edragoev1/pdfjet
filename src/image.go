@@ -108,7 +108,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 		data := bmp.getData()
 		image.w = bmp.getWidth()
 		image.h = bmp.getHeight()
-		image.addImageToPDF(pdf, data, nil, imageType, device.RGB, 8)
+		image.addImageToPDF(pdf, data, bmp.getAlpha(), imageType, device.RGB, 8)
 		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
 
@@ -164,7 +164,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		data := bmp.getData()
 		image.w = bmp.getWidth()
 		image.h = bmp.getHeight()
-		image.addImageToObjects(objects, data, nil, imageType, device.RGB, 8)
+		image.addImageToObjects(objects, data, bmp.getAlpha(), imageType, device.RGB, 8)
 		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
 

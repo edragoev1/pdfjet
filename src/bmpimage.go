@@ -28,6 +28,11 @@ type bmpImage struct {
 	masks    []uint32 // The red, green and blue masks of a 16 or 32 bit pixel
 	topDown  bool     // If the first row is the top row
 
+	// The alpha mask of a 16 or 32 bit pixel, or 0 for an opaque image, and
+	// the deflated alpha of the pixels, or nil for an image drawn opaque.
+	alphaMask     uint32
+	deflatedAlpha []byte
+
 	// The size the header gives the image, in points, or 0 when it gives
 	// none: the pixels per metre of each axis, which most writers leave at 0.
 	physicalWidth  float32
@@ -86,6 +91,13 @@ func newBMPImage(reader io.Reader) *bmpImage {
 		skipNBytes(reader, 8)
 		offset := readSignedInt(reader) // Where the pixels start
 		headerSize := readSignedInt(reader)
+		// The older OS/2 header is 12 bytes; the others start with the 40
+		// bytes of the BITMAPINFOHEADER. The size is checked first: the width
+		// and the height of the OS/2 header are 2 bytes each, so the fields
+		// that follow are not where the larger headers have them.
+		if headerSize < 40 {
+			panic(fmt.Sprintf("Unsupported BMP header of %d bytes.", headerSize))
+		}
 		image.w = readSignedInt(reader)
 		image.h = readSignedInt(reader)
 		if image.h < 0 {
@@ -111,11 +123,6 @@ func newBMPImage(reader io.Reader) *bmpImage {
 		if compression != biRGB && !(compression == biBitfields && (image.bpp == 16 || image.bpp == 32)) {
 			panic("Compressed BMP images are not supported.")
 		}
-		// The older OS/2 header is 12 bytes; the others start with the 40
-		// bytes of the BITMAPINFOHEADER.
-		if headerSize < 40 {
-			panic(fmt.Sprintf("Unsupported BMP header of %d bytes.", headerSize))
-		}
 		rowSize := 4 * ((int64(image.bpp)*int64(image.w) + 31) / 32)
 		// A height of at most the limit keeps the products in an int64.
 		if int64(image.h) > decompressor.MaxDecodedLength ||
@@ -139,6 +146,13 @@ func newBMPImage(reader io.Reader) *bmpImage {
 			image.masks = []uint32{
 				uint32(readSignedInt(reader)), uint32(readSignedInt(reader)), uint32(readSignedInt(reader))}
 			read += 12
+			// The alpha mask follows them in a header of 56 bytes or more: the
+			// BITMAPV3INFOHEADER and the V4 and V5 headers. The masks after a
+			// header of 40 bytes, and those of the 52 byte one, have none.
+			if headerSize >= 56 {
+				image.alphaMask = uint32(readSignedInt(reader))
+				read += 4
+			}
 		} else if image.bpp == 16 {
 			image.masks = []uint32{0x7C00, 0x03E0, 0x001F}
 		} else if image.bpp == 32 {
@@ -186,6 +200,10 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 	_, _ = io.CopyN(io.Discard, reader, int64(rowsize-len(last)))
 	rows = append(rows, last)
 	bmpImage := make([]byte, 3*image.w*image.h)
+	var alpha []byte
+	if image.alphaMask != 0 {
+		alpha = make([]byte, image.w*image.h)
+	}
 	index := 0
 	for i := 0; i < image.h; i++ {
 		row := rows[i]
@@ -210,6 +228,9 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 		} else {
 			index = image.w * (image.h - i - 1) * 3
 		}
+		if alpha != nil {
+			masksToAlpha(rows[i], image.w, image.bpp/8, image.alphaMask, alpha[index/3:])
+		}
 		if image.palette != nil { // indexed
 			for j := 0; j < image.w; j++ {
 				bmpImage[index] = image.palette[row[j]][2]
@@ -231,6 +252,12 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 		}
 	}
 	image.deflated = compressor.Deflate(bmpImage)
+	// An image whose alpha is 0 in every pixel is drawn opaque, as browsers
+	// draw it: writers that do not know of the alpha leave it at 0. One whose
+	// alpha is 255 in every pixel needs no soft mask.
+	if alpha != nil && !allBytesAre(alpha, 0) && !allBytesAre(alpha, 255) {
+		image.deflatedAlpha = compressor.Deflate(alpha)
+	}
 
 	return bmpImage
 }
@@ -242,16 +269,42 @@ func masksTo24(row []byte, width, bytesPerPixel int, masks []uint32) []byte {
 	ret := make([]byte, 3*width)
 	j := 0
 	for i := 0; i < width*bytesPerPixel; i += bytesPerPixel {
-		pixel := uint32(row[i]) | uint32(row[i+1])<<8
-		if bytesPerPixel == 4 {
-			pixel |= uint32(row[i+2])<<16 | uint32(row[i+3])<<24
-		}
+		pixel := pixelAt(row, i, bytesPerPixel)
 		ret[j] = colorOf(pixel, masks[2])
 		ret[j+1] = colorOf(pixel, masks[1])
 		ret[j+2] = colorOf(pixel, masks[0])
 		j += 3
 	}
 	return ret
+}
+
+// masksToAlpha writes the alpha of a row of 16 or 32 bit little endian pixels,
+// under the alpha mask, to the start of alpha, from 0 to 255.
+func masksToAlpha(row []byte, width, bytesPerPixel int, mask uint32, alpha []byte) {
+	j := 0
+	for i := 0; i < width*bytesPerPixel; i += bytesPerPixel {
+		alpha[j] = colorOf(pixelAt(row, i, bytesPerPixel), mask)
+		j++
+	}
+}
+
+// pixelAt returns the 16 or 32 bit little endian pixel at the offset of the row.
+func pixelAt(row []byte, offset, bytesPerPixel int) uint32 {
+	pixel := uint32(row[offset]) | uint32(row[offset+1])<<8
+	if bytesPerPixel == 4 {
+		pixel |= uint32(row[offset+2])<<16 | uint32(row[offset+3])<<24
+	}
+	return pixel
+}
+
+// allBytesAre reports whether every byte of the slice is the value.
+func allBytesAre(data []byte, value byte) bool {
+	for _, b := range data {
+		if b != value {
+			return false
+		}
+	}
+	return true
 }
 
 // colorOf returns the color of the pixel under the mask, from 0 to 255.
@@ -351,4 +404,10 @@ func (image *bmpImage) getHeight() float32 {
 // GetData returns the compressed image data.
 func (image *bmpImage) getData() []byte {
 	return image.deflated
+}
+
+// getAlpha returns the deflated alpha of the pixels, one byte a pixel, or nil
+// when the image is opaque.
+func (image *bmpImage) getAlpha() []byte {
+	return image.deflatedAlpha
 }

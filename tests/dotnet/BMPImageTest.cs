@@ -146,7 +146,9 @@ public class BMPImageTest {
         writer.Write(compression); writer.Write(2 * rowSize); writer.Write(2835); writer.Write(2835);
         writer.Write(colors); writer.Write(0);
         if (masks != null) {
-            writer.Write(masks[0]); writer.Write(masks[1]); writer.Write(masks[2]);
+            foreach (int mask in masks) {
+                writer.Write(mask);
+            }
         }
         writer.Seek(offset - 4 * colors, SeekOrigin.Begin);     // The rest of a larger header is 0
         for (int i = 0; i < colors; i++) {
@@ -262,6 +264,85 @@ public class BMPImageTest {
         BMPImage image = new BMPImage(new System.IO.MemoryStream(bmp));
         Assert.Equal(0f, image.GetPhysicalWidth());
         Assert.Equal(0f, image.GetPhysicalHeight());
+    }
+
+    [Fact]
+    public void RejectsAnOS2HeaderForItsSize() {
+        // The 12 byte header of OS/2 1.x has a width and a height of 2 bytes,
+        // so the bit depth is not where a header of 40 bytes has it: the
+        // message says that the header is not supported, and not that the bit
+        // depth is not. Here the bit depth is 8, with a palette of 3 bytes a
+        // color.
+        MemoryStream ms = new MemoryStream();
+        BinaryWriter w = new BinaryWriter(ms);     // little endian
+        w.Write((byte) 'B'); w.Write((byte) 'M');
+        w.Write(26 + 6 + 4); w.Write(0); w.Write(26 + 6); w.Write(12);
+        w.Write((short) 2); w.Write((short) 2); w.Write((short) 1); w.Write((short) 8);
+        w.Write(Bytes(0, 0, 0, 255, 255, 255));
+        w.Write(Bytes(0, 1, 0, 0, 1, 0, 0, 0));
+        w.Flush();
+        Assert.Equal("Unsupported BMP header of 12 bytes.", DecodeError(ms.ToArray()));
+    }
+
+    // The masks of 32 bit pixels of blue, green, red and alpha bytes.
+    private static readonly int[] MASKS_BGRA = {0x00FF0000, 0x0000FF00, 0x000000FF, unchecked((int) 0xFF000000)};
+
+    private static void AssertAlpha(byte[] want, byte[] bmp) {
+        BMPImage image = new BMPImage(new MemoryStream(bmp));
+        Assert.Equal(RGB, Decompressor.Inflate(image.GetData()));
+        if (want == null) {
+            Assert.Null(image.GetAlpha());
+        } else {
+            Assert.NotNull(image.GetAlpha());
+            Assert.Equal(want, Decompressor.Inflate(image.GetAlpha()));
+        }
+    }
+
+    [Fact]
+    public void TheAlphaMaskOfAHeaderOf56BytesOrMoreIsRead() {
+        // Blue and white of alpha 0x80 and 0xFF, red and green of 0 and 0x40.
+        byte[] bottom = Bytes(255, 0, 0, 0x80, 255, 255, 255, 0xFF);
+        byte[] top = Bytes(0, 0, 255, 0, 0, 255, 0, 0x40);
+        AssertAlpha(Bytes(0, 0x40, 0x80, 0xFF), Bmp(124, 32, 3, MASKS_BGRA, null, bottom, top));
+        AssertAlpha(Bytes(0, 0x40, 0x80, 0xFF), Bmp(56, 32, 3, MASKS_BGRA, null, bottom, top));
+        // 4 bits of alpha, and of each color: 4 of 15 is 68.
+        AssertAlpha(Bytes(0, 68, 136, 255), Bmp(108, 16, 3, new int[] {0x0F00, 0x00F0, 0x000F, 0xF000}, null,
+                Shorts(0x800F, 0xFFFF), Shorts(0x0F00, 0x40F0)));
+    }
+
+    [Fact]
+    public void HasNoAlphaWithoutAnAlphaMaskOrWhenEveryPixelHasAnAlphaOf0() {
+        byte[] top = Bytes(255, 0, 0, 0x12, 255, 255, 255, 0x34);
+        byte[] bottom = Bytes(0, 0, 255, 0x56, 0, 255, 0, 0x78);
+        int[] masks = MASKS_BGRA[..3];
+        // The fourth byte of a pixel without masks is not a color, and the
+        // masks of a BI_RGB image, in a larger header, are not read.
+        AssertAlpha(null, Bmp(40, 32, 0, null, null, top, bottom));
+        AssertAlpha(null, Bmp(124, 32, 0, MASKS_BGRA, null, top, bottom));
+        // The masks after a header of 40 bytes, and in one of 52, have no
+        // alpha; nor has an alpha mask of 0.
+        AssertAlpha(null, Bmp(40, 32, 3, masks, null, top, bottom));
+        AssertAlpha(null, Bmp(52, 32, 3, masks, null, top, bottom));
+        AssertAlpha(null, Bmp(124, 32, 3, new int[] {0xFF0000, 0xFF00, 0xFF, 0}, null, top, bottom));
+        // Browsers draw an image whose alpha is 0 in every pixel opaque:
+        // writers that do not know of the alpha leave it at 0.
+        AssertAlpha(null, Bmp(124, 32, 3, MASKS_BGRA, null,
+                Bytes(255, 0, 0, 0, 255, 255, 255, 0), Bytes(0, 0, 255, 0, 0, 255, 0, 0)));
+    }
+
+    [Fact]
+    public void TheAlphaIsTheSoftMaskOfTheImage() {
+        foreach (int alpha in new int[] {0x80, 0}) {
+            byte[] bmp = Bmp(124, 32, 3, MASKS_BGRA, null,
+                    Bytes(255, 0, 0, alpha, 255, 255, 255, 0), Bytes(0, 0, 255, 0, 0, 255, 0, 0));
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            Image image = new Image(pdf, new MemoryStream(bmp));
+            image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+            pdf.Complete();
+            string raw = TestSupport.Latin1(output.ToArray());
+            Assert.True(raw.Contains("/SMask") == (alpha != 0), "alpha " + alpha + ": a soft mask");
+        }
     }
 }
 }

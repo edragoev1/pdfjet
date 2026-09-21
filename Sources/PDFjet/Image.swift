@@ -106,7 +106,7 @@ public class Image : Drawable {
             let bmp = try BMPImage(stream)
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
-            addImage(pdf, bmp.getData(), [UInt8](), imageType, "DeviceRGB", 8)
+            addImage(pdf, bmp.getData(), bmp.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
         }
     }
@@ -162,6 +162,7 @@ public class Image : Drawable {
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
             data = bmp.getData()
+            alpha = bmp.getAlpha() ?? [UInt8]()
             w = Float(bmp.getWidth())
             h = Float(bmp.getHeight())
             addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)

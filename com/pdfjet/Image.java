@@ -109,7 +109,7 @@ final public class Image implements Drawable {
             data = bmp.getData();
             w = bmp.getWidth();
             h = bmp.getHeight();
-            addImage(pdf, data, null, imageType, "DeviceRGB", 8);
+            addImage(pdf, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
 
@@ -167,7 +167,7 @@ final public class Image implements Drawable {
             data = bmp.getData();
             w = bmp.getWidth();
             h = bmp.getHeight();
-            addImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+            addImageToObjects(objects, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
         inputStream.close();

@@ -21,6 +21,10 @@ class BMPImage {
     private int bpp;
     private byte[][] palette;
     private int[] masks;    // The red, green and blue masks of a 16 or 32 bit pixel
+    // The alpha mask of a 16 or 32 bit pixel, or 0 for an opaque image, and
+    // the deflated alpha of the pixels, or null for an image drawn opaque.
+    private int alphaMask;
+    private byte[] deflatedAlpha;
     // The size the header gives the image, in points, or 0 when it gives
     // none: the pixels per metre of each axis, which most writers leave at 0.
     private float physicalWidth;
@@ -59,6 +63,13 @@ class BMPImage {
             SkipNBytes(stream, 8);
             int offset = ReadSignedInt(stream);     // Where the pixels start
             int headerSize = ReadSignedInt(stream);
+            // The older OS/2 header is 12 bytes; the others start with the 40
+            // bytes of the BITMAPINFOHEADER. The size is checked first: the
+            // width and the height of the OS/2 header are 2 bytes each, so the
+            // fields that follow are not where the larger headers have them.
+            if (headerSize < 40) {
+                throw new Exception("Unsupported BMP header of " + headerSize + " bytes.");
+            }
             w = ReadSignedInt(stream);
             h = ReadSignedInt(stream);
             if (h < 0) {
@@ -83,11 +94,6 @@ class BMPImage {
             if (compression != BI_RGB && !(compression == BI_BITFIELDS && (bpp == 16 || bpp == 32))) {
                 throw new Exception("Compressed BMP images are not supported.");
             }
-            // The older OS/2 header is 12 bytes; the others start with the 40
-            // bytes of the BITMAPINFOHEADER.
-            if (headerSize < 40) {
-                throw new Exception("Unsupported BMP header of " + headerSize + " bytes.");
-            }
             long rowSize = 4 * ((bpp * (long) w + 31) / 32);
             // A height of at most the limit keeps the products in a long.
             if (h > Decompressor.MAX_DECODED_LENGTH ||
@@ -111,6 +117,14 @@ class BMPImage {
             if (compression == BI_BITFIELDS) {
                 masks = new int[] {ReadSignedInt(stream), ReadSignedInt(stream), ReadSignedInt(stream)};
                 read += 12;
+                // The alpha mask follows them in a header of 56 bytes or more:
+                // the BITMAPV3INFOHEADER and the V4 and V5 headers. The masks
+                // after a header of 40 bytes, and those of the 52 byte one,
+                // have none.
+                if (headerSize >= 56) {
+                    alphaMask = ReadSignedInt(stream);
+                    read += 4;
+                }
             } else if (bpp == 16) {
                 masks = new int[] {0x7C00, 0x03E0, 0x001F};
             } else if (bpp == 32) {
@@ -154,6 +168,7 @@ class BMPImage {
         rows.Add(last);
 
         image = new byte[w * h * 3];
+        byte[] alpha = (alphaMask != 0) ? new byte[w * h] : null;
         byte[] row;
         int index;
         for (int i = 0; i < h; i++) {
@@ -171,6 +186,9 @@ class BMPImage {
             }
 
             index = topDown ? w*i*3 : w*(h-i-1)*3;
+            if (alpha != null) {
+                MasksToAlpha(rows[i], w, bpp / 8, alphaMask, alpha, index / 3);
+            }
             if (palette != null) {  // indexed
                 for (int j = 0; j < w; j++) {
                     image[index++] = palette[row[j]][2];
@@ -187,6 +205,12 @@ class BMPImage {
         }
 
         deflated = Compressor.Deflate(image);
+        // An image whose alpha is 0 in every pixel is drawn opaque, as
+        // browsers draw it: writers that do not know of the alpha leave it at
+        // 0. One whose alpha is 255 in every pixel needs no soft mask.
+        if (alpha != null && !AllBytesAre(alpha, 0) && !AllBytesAre(alpha, 255)) {
+            deflatedAlpha = Compressor.Deflate(alpha);
+        }
     }
 
     // Converts a row of 16 or 32 bit little endian pixels to blue, green and
@@ -196,15 +220,41 @@ class BMPImage {
         byte[] ret = new byte[width * 3];
         int j = 0;
         for (int i = 0; i < width * bytesPerPixel; i += bytesPerPixel) {
-            int pixel = row[i] | row[i + 1] << 8;
-            if (bytesPerPixel == 4) {
-                pixel |= row[i + 2] << 16 | row[i + 3] << 24;
-            }
+            int pixel = PixelAt(row, i, bytesPerPixel);
             ret[j++] = (byte) ColorOf(pixel, masks[2]);
             ret[j++] = (byte) ColorOf(pixel, masks[1]);
             ret[j++] = (byte) ColorOf(pixel, masks[0]);
         }
         return ret;
+    }
+
+    // Writes the alpha of a row of 16 or 32 bit little endian pixels, under
+    // the alpha mask, to alpha from the start, from 0 to 255.
+    private static void MasksToAlpha(
+            byte[] row, int width, int bytesPerPixel, int mask, byte[] alpha, int start) {
+        int j = start;
+        for (int i = 0; i < width * bytesPerPixel; i += bytesPerPixel) {
+            alpha[j++] = (byte) ColorOf(PixelAt(row, i, bytesPerPixel), mask);
+        }
+    }
+
+    // Returns the 16 or 32 bit little endian pixel at the offset of the row.
+    private static int PixelAt(byte[] row, int offset, int bytesPerPixel) {
+        int pixel = row[offset] | row[offset + 1] << 8;
+        if (bytesPerPixel == 4) {
+            pixel |= row[offset + 2] << 16 | row[offset + 3] << 24;
+        }
+        return pixel;
+    }
+
+    // Reports whether every byte of the array is the value.
+    private static bool AllBytesAre(byte[] data, byte value) {
+        foreach (byte b in data) {
+            if (b != value) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Returns the color of the pixel under the mask, from 0 to 255.
@@ -354,6 +404,12 @@ class BMPImage {
 
     public byte[] GetData() {
         return this.deflated;
+    }
+
+    // Returns the deflated alpha of the pixels, one byte a pixel, or null when
+    // the image is opaque.
+    public byte[] GetAlpha() {
+        return this.deflatedAlpha;
     }
 }
 }   // End of namespace PDFjet.NET

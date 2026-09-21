@@ -92,7 +92,7 @@ public class Image : IDrawable {
             data = bmp.GetData();
             w = bmp.GetWidth();
             h = bmp.GetHeight();
-            AddImage(pdf, data, null, imageType, "DeviceRGB", 8);
+            AddImage(pdf, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
             SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
 
@@ -152,7 +152,7 @@ public class Image : IDrawable {
             data = bmp.GetData();
             w = bmp.GetWidth();
             h = bmp.GetHeight();
-            AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 8);
+            AddImageToObjects(objects, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
             SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
         inputStream.Close();

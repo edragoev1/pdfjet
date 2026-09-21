@@ -48,6 +48,10 @@ func FuzzBMPImage(f *testing.F) {
 	f.Add(testBMP(40, 24, 0, nil, nil, []byte{0, 0, 255, 0, 255, 0}, []byte{255, 0, 0, 255, 255, 255}))
 	f.Add(testBMP(40, 32, 0, nil, nil, []byte{0, 0, 255, 0, 0, 255, 0, 0}, []byte{255, 0, 0, 0, 1, 2, 3, 4}))
 	f.Add(testBMP(124, 32, 3, masks32, nil, []byte{0, 0, 255, 0, 0, 255, 0, 0}, []byte{255, 0, 0, 0, 1, 2, 3, 4}))
+	// An alpha mask, of 32 and 16 bit pixels, in the headers of 56 bytes and
+	// more that have one.
+	f.Add(testBMP(124, 32, 3, testMasksBGRA, nil, []byte{0, 0, 255, 0x80, 0, 255, 0, 0}, []byte{255, 0, 0, 0xFF, 1, 2, 3, 4}))
+	f.Add(testBMP(56, 16, 3, []uint32{0x0F00, 0x00F0, 0x000F, 0xF000}, nil, testShorts(0x0F00, 0x40F0), testShorts(0x800F, 0xFFFF)))
 	f.Add(testBMP24(true))
 	f.Add(testBMP24(false))
 	f.Fuzz(func(t *testing.T, bmp []byte) {

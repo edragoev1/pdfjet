@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -261,5 +262,89 @@ func TestBMPImageAHeaderWithNoPixelsPerMeterLeavesTheSizeOfThePixels(t *testing.
 	bmp := newBMPImage(bytes.NewReader(data))
 	if bmp.physicalWidth != 0.0 || bmp.physicalHeight != 0.0 {
 		t.Errorf("physical size %v x %v", bmp.physicalWidth, bmp.physicalHeight)
+	}
+}
+
+func TestBMPImageRejectsAnOS2HeaderForItsSize(t *testing.T) {
+	// The 12 byte header of OS/2 1.x has a width and a height of 2 bytes, so
+	// the bit depth is not where a header of 40 bytes has it: the message
+	// says that the header is not supported, and not that the bit depth is
+	// not. Here the bit depth is 8, with a palette of 3 bytes a color.
+	var buf bytes.Buffer
+	le := binary.LittleEndian
+	buf.WriteString("BM")
+	_ = binary.Write(&buf, le, []uint32{26 + 6 + 4, 0, 26 + 6, 12})
+	_ = binary.Write(&buf, le, []uint16{2, 2, 1, 8})
+	buf.Write([]byte{0, 0, 0, 255, 255, 255})
+	buf.Write([]byte{0, 1, 0, 0, 1, 0, 0, 0})
+	testWant(t, "Unsupported BMP header of 12 bytes.", testBMPError(buf.Bytes()))
+}
+
+// The masks of 32 bit pixels of blue, green, red and alpha bytes.
+var testMasksBGRA = []uint32{0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000}
+
+func TestBMPImageTheAlphaMaskOfAHeaderOf56BytesOrMoreIsRead(t *testing.T) {
+	for name, bmp := range map[string][]byte{
+		// Blue and white of alpha 0x80 and 0xFF, red and green of 0 and 0x40.
+		"32 bits in a 124 byte header": testBMP(124, 32, 3, testMasksBGRA, nil,
+			[]byte{255, 0, 0, 0x80, 255, 255, 255, 0xFF}, []byte{0, 0, 255, 0, 0, 255, 0, 0x40}),
+		"32 bits in a 56 byte header": testBMP(56, 32, 3, testMasksBGRA, nil,
+			[]byte{255, 0, 0, 0x80, 255, 255, 255, 0xFF}, []byte{0, 0, 255, 0, 0, 255, 0, 0x40}),
+		// 4 bits of alpha, and of each color: 5 of 15 is 85.
+		"4 bits a color and 4 of alpha": testBMP(108, 16, 3, []uint32{0x0F00, 0x00F0, 0x000F, 0xF000}, nil,
+			testShorts(0x800F, 0xFFFF), testShorts(0x0F00, 0x40F0)),
+	} {
+		image := newBMPImage(bytes.NewReader(bmp))
+		if got := testInflate(t, image.getData()); !bytes.Equal(got, testRGB) {
+			t.Errorf("%s: samples %v", name, got)
+		}
+		want := []byte{0, 0x40, 0x80, 0xFF}
+		if name == "4 bits a color and 4 of alpha" {
+			want = []byte{0, 68, 136, 255}
+		}
+		if image.getAlpha() == nil {
+			t.Errorf("%s: no alpha", name)
+		} else if got := testInflate(t, image.getAlpha()); !bytes.Equal(got, want) {
+			t.Errorf("%s: alpha %v", name, got)
+		}
+	}
+}
+
+func TestBMPImageHasNoAlphaWithoutAnAlphaMaskOrWhenEveryPixelHasAnAlphaOf0(t *testing.T) {
+	top, bottom := []byte{255, 0, 0, 0x12, 255, 255, 255, 0x34}, []byte{0, 0, 255, 0x56, 0, 255, 0, 0x78}
+	for name, bmp := range map[string][]byte{
+		// The fourth byte of a pixel without masks is not a color, and the
+		// masks of a BI_RGB image, in a larger header, are not read.
+		"no masks":            testBMP(40, 32, 0, nil, nil, top, bottom),
+		"the masks of BI_RGB": testBMP(124, 32, 0, testMasksBGRA, nil, top, bottom),
+		"the masks after 40":  testBMP(40, 32, 3, testMasksBGRA[:3], nil, top, bottom),
+		"the 52 byte header":  testBMP(52, 32, 3, testMasksBGRA[:3], nil, top, bottom),
+		"an alpha mask of 0":  testBMP(124, 32, 3, []uint32{0xFF0000, 0xFF00, 0xFF, 0}, nil, top, bottom),
+		// Browsers draw an image whose alpha is 0 in every pixel opaque:
+		// writers that do not know of the alpha leave it at 0.
+		"alpha 0 in every pixel": testBMP(124, 32, 3, testMasksBGRA, nil,
+			[]byte{255, 0, 0, 0, 255, 255, 255, 0}, []byte{0, 0, 255, 0, 0, 255, 0, 0}),
+	} {
+		image := newBMPImage(bytes.NewReader(bmp))
+		if got := testInflate(t, image.getData()); !bytes.Equal(got, testRGB) {
+			t.Errorf("%s: samples %v", name, got)
+		}
+		if image.getAlpha() != nil {
+			t.Errorf("%s: alpha %v", name, testInflate(t, image.getAlpha()))
+		}
+	}
+}
+
+func TestBMPImageTheAlphaIsTheSoftMaskOfTheImage(t *testing.T) {
+	for _, alpha := range []byte{0x80, 0} {
+		bmp := testBMP(124, 32, 3, testMasksBGRA, nil,
+			[]byte{255, 0, 0, alpha, 255, 255, 255, 0}, []byte{0, 0, 255, 0, 0, 255, 0, 0})
+		doc := testNewDoc()
+		image := NewImage(doc.pdf, bytes.NewReader(bmp))
+		image.DrawOn(NewPage(doc.pdf, testLetterPortrait()))
+		raw := string(doc.complete())
+		if strings.Contains(raw, "/SMask") != (alpha != 0) {
+			t.Errorf("alpha %d: a soft mask is %v", alpha, strings.Contains(raw, "/SMask"))
+		}
 	}
 }

@@ -20,6 +20,11 @@ class BMPImage {
     private var masks = [UInt32]()      // The red, green and blue masks of a 16 or 32 bit pixel
     private var topDown: Bool = false   // If the first row is the top row
 
+    // The alpha mask of a 16 or 32 bit pixel, or 0 for an opaque image, and
+    // the deflated alpha of the pixels, or nil for an image drawn opaque.
+    private var alphaMask: UInt32 = 0
+    private var deflatedAlpha: [UInt8]?
+
     // The size the header gives the image, in points, or 0 when it gives
     // none: the pixels per metre of each axis, which most writers leave at 0.
     private var physicalWidth: Float = 0.0
@@ -65,6 +70,13 @@ class BMPImage {
             try skipNBytes(stream, 8)
             let offset = try readSignedInt(stream)      // Where the pixels start
             let headerSize = try readSignedInt(stream)
+            // The older OS/2 header is 12 bytes; the others start with the 40
+            // bytes of the BITMAPINFOHEADER. The size is checked first: the
+            // width and the height of the OS/2 header are 2 bytes each, so the
+            // fields that follow are not where the larger headers have them.
+            if headerSize < 40 {
+                throw PDFjetError(message: "Unsupported BMP header of \(headerSize) bytes.")
+            }
             self.w = try readSignedInt(stream)
             self.h = try readSignedInt(stream)
             if self.h < 0 {
@@ -87,11 +99,6 @@ class BMPImage {
             // data is not read as pixels.
             if compression != BI_RGB && !(compression == BI_BITFIELDS && (bpp == 16 || bpp == 32)) {
                 throw PDFjetError(message: "Compressed BMP images are not supported.")
-            }
-            // The older OS/2 header is 12 bytes; the others start with the 40
-            // bytes of the BITMAPINFOHEADER.
-            if headerSize < 40 {
-                throw PDFjetError(message: "Unsupported BMP header of \(headerSize) bytes.")
             }
             let rowSize = 4 * ((bpp * w + 31) / 32)     // w is an Int32 and bpp at most 32
             let (samples, samplesOverflow) = (3 * w).multipliedReportingOverflow(by: h)
@@ -117,6 +124,14 @@ class BMPImage {
                     masks.append(UInt32(truncatingIfNeeded: try readSignedInt(stream)))
                 }
                 read += 12
+                // The alpha mask follows them in a header of 56 bytes or more:
+                // the BITMAPV3INFOHEADER and the V4 and V5 headers. The masks
+                // after a header of 40 bytes, and those of the 52 byte one,
+                // have none.
+                if headerSize >= 56 {
+                    alphaMask = UInt32(truncatingIfNeeded: try readSignedInt(stream))
+                    read += 4
+                }
             } else if bpp == 16 {
                 masks = [0x7C00, 0x03E0, 0x001F]
             } else if bpp == 32 {
@@ -164,6 +179,7 @@ class BMPImage {
         rows.append(last)
 
         image = [UInt8](repeating: 0, count: (3 * w * h))
+        var alpha: [UInt8]? = (alphaMask != 0) ? [UInt8](repeating: 0, count: w * h) : nil
         var row: [UInt8]
         var index = 0
         for i in 0..<self.h {
@@ -185,6 +201,9 @@ class BMPImage {
             }
 
             index = topDown ? 3*w*i : 3*w*((h - i) - 1)
+            if alpha != nil {
+                masksToAlpha(rows[i], w, bpp / 8, alphaMask, &alpha!, index / 3)
+            }
             if self.palette != nil {
                 // indexed
                 for j in 0..<self.w {
@@ -212,6 +231,13 @@ class BMPImage {
 
         deflated = [UInt8]()
         FlateEncode(&deflated!, image!)
+        // An image whose alpha is 0 in every pixel is drawn opaque, as
+        // browsers draw it: writers that do not know of the alpha leave it at
+        // 0. One whose alpha is 255 in every pixel needs no soft mask.
+        if let alpha = alpha, !allBytesAre(alpha, 0), !allBytesAre(alpha, 255) {
+            deflatedAlpha = [UInt8]()
+            FlateEncode(&deflatedAlpha!, alpha)
+        }
     }
 
     // Converts a row of 16 or 32 bit little endian pixels to blue, green and
@@ -222,10 +248,7 @@ class BMPImage {
         var j = 0
         var i = 0
         while i < width * bytesPerPixel {
-            var pixel = UInt32(row[i]) | UInt32(row[i + 1]) << 8
-            if bytesPerPixel == 4 {
-                pixel |= UInt32(row[i + 2]) << 16 | UInt32(row[i + 3]) << 24
-            }
+            let pixel = pixelAt(row, i, bytesPerPixel)
             ret[j] = colorOf(pixel, masks[2])
             ret[j + 1] = colorOf(pixel, masks[1])
             ret[j + 2] = colorOf(pixel, masks[0])
@@ -233,6 +256,36 @@ class BMPImage {
             i += bytesPerPixel
         }
         return ret
+    }
+
+    // Writes the alpha of a row of 16 or 32 bit little endian pixels, under
+    // the alpha mask, to alpha from the start, from 0 to 255.
+    private func masksToAlpha(_ row: [UInt8], _ width: Int, _ bytesPerPixel: Int, _ mask: UInt32,
+            _ alpha: inout [UInt8], _ start: Int) {
+        var j = start
+        var i = 0
+        while i < width * bytesPerPixel {
+            alpha[j] = colorOf(pixelAt(row, i, bytesPerPixel), mask)
+            j += 1
+            i += bytesPerPixel
+        }
+    }
+
+    // Returns the 16 or 32 bit little endian pixel at the offset of the row.
+    private func pixelAt(_ row: [UInt8], _ offset: Int, _ bytesPerPixel: Int) -> UInt32 {
+        var pixel = UInt32(row[offset]) | UInt32(row[offset + 1]) << 8
+        if bytesPerPixel == 4 {
+            pixel |= UInt32(row[offset + 2]) << 16 | UInt32(row[offset + 3]) << 24
+        }
+        return pixel
+    }
+
+    // Reports whether every byte of the array is the value.
+    private func allBytesAre(_ data: [UInt8], _ value: UInt8) -> Bool {
+        for b in data where b != value {
+            return false
+        }
+        return true
     }
 
     // Returns the color of the pixel under the mask, from 0 to 255.
@@ -382,5 +435,11 @@ class BMPImage {
     /// Returns the compressed image data.
     public func getData() -> [UInt8] {
         return self.deflated!
+    }
+
+    /// Returns the deflated alpha of the pixels, one byte a pixel, or nil when
+    /// the image is opaque.
+    func getAlpha() -> [UInt8]? {
+        return self.deflatedAlpha
     }
 }
