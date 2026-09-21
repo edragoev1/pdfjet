@@ -1,0 +1,144 @@
+# Images of the corpus whose difference from Pillow is understood, as
+# "path: reason", the path as check-images.py prints it: relative to the
+# folder fetch-images.sh fills for pillow/ and bmpsuite/, to the repository
+# for PngSuite/ and images/, and made/ for the ones the check makes. A file
+# listed here that passes fails the check: take it off when it is fixed.
+
+# Interlaced PNGs are refused, with a message that says how to convert them,
+# as pngImage documents.
+pillow/Tests/images/pil123p.png: interlaced PNGs are not supported
+pillow/Tests/images/pil123rgba.png: interlaced PNGs are not supported
+PngSuite/BASI0G01.PNG: interlaced PNGs are not supported
+PngSuite/BASI0G02.PNG: interlaced PNGs are not supported
+PngSuite/BASI0G04.PNG: interlaced PNGs are not supported
+PngSuite/BASI0G08.PNG: interlaced PNGs are not supported
+PngSuite/BASI0G16.PNG: interlaced PNGs are not supported
+PngSuite/BASI2C08.PNG: interlaced PNGs are not supported
+PngSuite/BASI2C16.PNG: interlaced PNGs are not supported
+PngSuite/BASI3P01.PNG: interlaced PNGs are not supported
+PngSuite/BASI3P02.PNG: interlaced PNGs are not supported
+PngSuite/BASI3P04.PNG: interlaced PNGs are not supported
+PngSuite/BASI3P08.PNG: interlaced PNGs are not supported
+PngSuite/BASI4A08.PNG: interlaced PNGs are not supported
+PngSuite/BASI4A16.PNG: interlaced PNGs are not supported
+PngSuite/BASI6A08.PNG: interlaced PNGs are not supported
+PngSuite/BASI6A16.PNG: interlaced PNGs are not supported
+PngSuite/BGAI4A08.PNG: interlaced PNGs are not supported
+PngSuite/BGAI4A16.PNG: interlaced PNGs are not supported
+PngSuite/S01I3P01.PNG: interlaced PNGs are not supported
+PngSuite/S02I3P01.PNG: interlaced PNGs are not supported
+PngSuite/S03I3P01.PNG: interlaced PNGs are not supported
+PngSuite/S04I3P01.PNG: interlaced PNGs are not supported
+PngSuite/S05I3P02.PNG: interlaced PNGs are not supported
+PngSuite/S06I3P02.PNG: interlaced PNGs are not supported
+PngSuite/S07I3P02.PNG: interlaced PNGs are not supported
+PngSuite/S08I3P02.PNG: interlaced PNGs are not supported
+PngSuite/S09I3P02.PNG: interlaced PNGs are not supported
+PngSuite/S32I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S33I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S34I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S35I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S36I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S37I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S38I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S39I3P04.PNG: interlaced PNGs are not supported
+PngSuite/S40I3P04.PNG: interlaced PNGs are not supported
+
+# A PNG with alpha and 16 bits a sample, gray and alpha or RGBA, is refused
+# with "unsupported bit depth"; 16-bit gray and RGB without alpha are read.
+pillow/Tests/images/apng/mode_16bit.png: 16-bit RGBA is refused
+bmpsuite/html/rgba32-61754.png: 16-bit RGBA is refused
+bmpsuite/html/rgba32-81284.png: 16-bit RGBA is refused
+PngSuite/BASN4A16.PNG: 16-bit gray and alpha is refused
+PngSuite/BASN6A16.PNG: 16-bit RGBA is refused
+PngSuite/BGAN6A16.PNG: 16-bit RGBA is refused
+PngSuite/BGGN4A16.PNG: 16-bit gray and alpha is refused
+PngSuite/BGYN6A16.PNG: 16-bit RGBA is refused
+
+# The transparent color the tRNS chunk of a grayscale or truecolor PNG names
+# is ignored, and those pixels are drawn opaque: a feature for after 9.0.3 in
+# TODO.md, recorded by TestPNGImageTruecolorTransparencyIsIgnored. The
+# samples are the same.
+pillow/Tests/images/1_trns.png: the tRNS chunk of a grayscale PNG is ignored
+pillow/Tests/images/l_trns.png: the tRNS chunk of a grayscale PNG is ignored
+pillow/Tests/images/rgb_trns.png: the tRNS chunk of a truecolor PNG is ignored
+pillow/Tests/images/caption_6_33_22.png: the tRNS chunk of a truecolor PNG is ignored
+bmpsuite/html/rgb16faketrns.png: the tRNS chunk of a truecolor PNG is ignored
+bmpsuite/html/rgba16-5551.png: the tRNS chunk of a truecolor PNG is ignored
+PngSuite/TBBN2C16.PNG: the tRNS chunk of a truecolor PNG is ignored
+PngSuite/TBGN2C16.PNG: the tRNS chunk of a truecolor PNG is ignored
+PngSuite/TBRN2C08.PNG: the tRNS chunk of a truecolor PNG is ignored
+made/gray-trns.png: the tRNS chunk of a grayscale PNG is ignored
+made/rgb-trns.png: the tRNS chunk of a truecolor PNG is ignored
+
+# PDFjet ignores the chunks of an animated PNG and the text chunks, and draws
+# the image of its IDAT chunks, where Pillow refuses the file: for frame
+# sequence errors, and for a zTXt chunk that decompresses past its limit.
+pillow/Tests/images/apng/chunk_no_fctl.png: the APNG chunks are ignored
+pillow/Tests/images/png_decompression_dos.png: the text chunks are ignored
+
+# RLE4 and RLE8 BMPs are refused, as bmpimage.go says, and not read as if
+# their data were pixels.
+bmpsuite/b/badrle4bis.bmp: compressed BMPs are not supported
+bmpsuite/b/badrle4.bmp: compressed BMPs are not supported
+bmpsuite/b/badrle4ter.bmp: compressed BMPs are not supported
+bmpsuite/b/badrlebis.bmp: compressed BMPs are not supported
+bmpsuite/b/badrle.bmp: compressed BMPs are not supported
+bmpsuite/b/badrleter.bmp: compressed BMPs are not supported
+bmpsuite/b/rletopdown.bmp: compressed BMPs are not supported
+bmpsuite/g/pal4rle.bmp: compressed BMPs are not supported
+bmpsuite/g/pal8rle.bmp: compressed BMPs are not supported
+bmpsuite/q/pal4rlecut.bmp: compressed BMPs are not supported
+bmpsuite/q/pal4rletrns.bmp: compressed BMPs are not supported
+bmpsuite/q/pal8rletrns.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/b/badrle.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/b/rletopdown.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/g/pal4rle.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/g/pal8rle.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/q/pal4rletrns.bmp: compressed BMPs are not supported
+pillow/Tests/images/bmp/q/pal8rletrns.bmp: compressed BMPs are not supported
+pillow/Tests/images/hopper_rle8.bmp: compressed BMPs are not supported
+pillow/Tests/images/hopper_rle8_grayscale.bmp: compressed BMPs are not supported
+pillow/Tests/images/hopper_rle8_row_overflow.bmp: compressed BMPs are not supported
+
+# The 12-byte header of OS/2 1.x BMPs is refused, as bmpimage.go says; the
+# message is that of the bit depth, which is read before the header size is
+# checked, from where a larger header has it.
+bmpsuite/g/pal8os2.bmp: OS/2 1.x BMPs are not supported
+bmpsuite/q/pal8os2-hs.bmp: OS/2 1.x BMPs are not supported
+bmpsuite/q/pal8os2sp.bmp: OS/2 1.x BMPs are not supported
+bmpsuite/q/pal8os2-sz.bmp: OS/2 1.x BMPs are not supported
+pillow/Tests/images/bmp/g/pal8os2.bmp: OS/2 1.x BMPs are not supported
+pillow/Tests/images/bmp/q/pal8os2sp.bmp: OS/2 1.x BMPs are not supported
+
+# Pillow reads only the bitfields of a few layouts, and PDFjet reads any.
+# Checked by hand against the reference PNGs of the BMP Suite, in its html
+# folder, and against g/rgb24.bmp: the colors are the same, or 1 lower where
+# a color of fewer than 8 bits is scaled, which PDFjet floors as Pillow does
+# for the layouts it reads and the BMP Suite rounds. The alpha of the rgba
+# files is dropped, as in the other BMPs with an alpha mask.
+bmpsuite/b/rgb16-880.bmp: bitfields that Pillow does not read
+bmpsuite/g/rgb32bf.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgb16-231.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgb16-3103.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgb32-111110.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgb32-7187.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgba16-1924.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgba16-4444.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgba32-1010102.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgba32-61754.bmp: bitfields that Pillow does not read
+bmpsuite/q/rgba32-81284.bmp: bitfields that Pillow does not read
+pillow/Tests/images/bmp/g/rgb32bf.bmp: bitfields that Pillow does not read
+pillow/Tests/images/bmp/q/rgb16-231.bmp: bitfields that Pillow does not read
+pillow/Tests/images/bmp/q/rgb32-111110.bmp: bitfields that Pillow does not read
+pillow/Tests/images/bmp/q/rgba16-4444.bmp: bitfields that Pillow does not read
+
+# A header of 66 bytes, which no version of the format has. PDFjet reads a
+# header of any size from 40 bytes up, and its pixels are those of g/pal1.bmp.
+bmpsuite/b/badheadersize.bmp: a header size that Pillow refuses
+pillow/Tests/images/bmp/b/badheadersize.bmp: a header size that Pillow refuses
+
+# A JPEG of 4 by 4 pixels with 4:2:0 chroma, all of it edge: the upsampling of
+# libjpeg 9 in MuPDF and of libjpeg-turbo in Pillow differ by 21 on average.
+# The PDF's samples are those MuPDF decodes the file to.
+pillow/Tests/images/app13.jpg: MuPDF and Pillow upsample the chroma differently

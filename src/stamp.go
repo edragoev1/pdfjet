@@ -396,6 +396,9 @@ func (s *Stamp) Complete() {
 
 // drawEncodedText appends the glyph IDs of the text as hexadecimal.
 func (s *Stamp) drawEncodedText(font *Font, str string) {
+	if traceText != nil {
+		traceText(s, font, str)
+	}
 	for _, codePoint := range str {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue
@@ -475,6 +478,9 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	}
 	if s.width == 0 || s.height == 0 || s.scaleX == 0 || s.scaleY == 0 {
 		return [2]float32{s.x + s.width, s.y + s.height} // Nothing to paint.
+	}
+	if traceStamp != nil {
+		traceStamp(s, page)
 	}
 	page.AddBDC(structelem.P, s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()

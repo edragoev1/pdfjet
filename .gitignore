@@ -28,3 +28,5 @@ __pycache__/
 # The booklets that booklet/build.sh writes
 booklet/*.pdf
 .corpora/
+.images/
+.reference-fonts/

@@ -1726,6 +1726,9 @@ func (pdf *PDF) Complete() error {
 	if len(pdf.pages) == 0 && pdf.pagesObjNumber == 0 {
 		return pdf.fail("A PDF needs at least one page.")
 	}
+	if traceComplete != nil {
+		traceComplete(pdf)
+	}
 	if pdf.prevPage != nil {
 		pdf.addPageContent(pdf.prevPage)
 		if pdf.err != nil {

@@ -443,7 +443,19 @@ func (page *Page) drawString(
 	page.appendString("ET\n")
 }
 
+// The hooks that a build with the texttrace tag sets, in texttrace.go, to
+// record the text the examples draw: .github/scripts/check-example-text.py
+// compares it with the text extracted from the PDFs. They are nil otherwise.
+var (
+	traceText     func(owner any, font *Font, text string) // The owner is a *Page or a *Stamp.
+	traceStamp    func(stamp *Stamp, page *Page)
+	traceComplete func(pdf *PDF)
+)
+
 func (page *Page) drawASCIIString(font *Font, text string) {
+	if traceText != nil {
+		traceText(page, font, text)
+	}
 	runes := []rune(text)
 	for i, cp := range runes {
 		c1 := font.coreFontCode(cp)
@@ -460,6 +472,9 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 }
 
 func (page *Page) drawUnicodeString(font *Font, text string) {
+	if traceText != nil {
+		traceText(page, font, text)
+	}
 	runes := []rune(text)
 	if font.isCJK {
 		for _, c1 := range runes {

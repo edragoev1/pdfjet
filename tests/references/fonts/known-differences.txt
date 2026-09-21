@@ -1,0 +1,4 @@
+# Differences from fontTools and the AFM files that are understood, as
+# "font field: reason": the font as check-fonts.py names it, the field as it
+# names the problem. A difference listed here that is gone fails the check:
+# take it off when it is fixed.
