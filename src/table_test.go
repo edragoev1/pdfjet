@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -466,4 +467,138 @@ func TestTableACellThatSpansRowsSaysSoInAPDFUADocument(t *testing.T) {
 	// A row that a span covers whole holds no cell of its own.
 	testWant(t, "2 rows, 1 header cell, 2 cells", fmt.Sprintf("%d rows, %d header cell, %d cells",
 		strings.Count(raw, "/S /TR\n"), strings.Count(raw, "/S /TH\n"), strings.Count(raw, "/S /TD\n")))
+}
+
+const testLongText = "one two three four five six seven eight nine ten eleven twelve"
+
+// testWrapping returns a one row table of a cell that wraps and a cell that
+// does not, each with every border.
+func testWrapping(font *Font) [][]*Cell {
+	row := make([]*Cell, 0)
+	for _, text := range []string{testLongText, "one"} {
+		cell := NewCell(font, text)
+		cell.SetWidth(60.0)
+		cell.SetBorders(true)
+		row = append(row, cell)
+	}
+	return [][]*Cell{row}
+}
+
+func TestTableACellWhoseTextWrapsDrawsOneBorderUnderIt(t *testing.T) {
+	// The rows a table wraps the text of a cell into are one cell, so the
+	// border under it is drawn once, under the last of its lines. Each of
+	// those rows kept the borders of the cell, so a cell of seven lines drew
+	// seven rules across itself.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	table := NewTable()
+	table.SetTableData(testWrapping(font), 0)
+	table.SetLocation(50, 50)
+	xy := table.DrawOn(page)
+	if table.GetRow(0)[0].GetText() == testLongText {
+		t.Fatal("the text did not wrap")
+	}
+	// The table draws two rules: the one over the row and the one under it.
+	ys := testRules(page)
+	if len(ys) != 2 {
+		t.Fatalf("the table drew %d rules, not 2: %v", len(ys), ys)
+	}
+	if math.Abs(ys[0]-float64(page.height-50.0)) > 0.01 {
+		t.Errorf("the rule over the row is at %v, not %v", ys[0], page.height-50.0)
+	}
+	if math.Abs(ys[1]-float64(page.height-xy[1])) > 0.01 {
+		t.Errorf("the rule under the row is at %v, not %v", ys[1], page.height-xy[1])
+	}
+}
+
+func TestTableTheRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn(t *testing.T) {
+	// The left and the right borders are drawn down every row of the wrap,
+	// which is what makes the rows one cell; only the top and the bottom of
+	// the cell are drawn once.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	table := NewTable()
+	table.SetTableData(testWrapping(font), 0)
+	table.SetLocation(50, 50)
+	xy := table.DrawOn(page)
+	// A vertical rule of each row of the wrap, down each of the three edges
+	// the two cells have between and beside them.
+	re := regexp.MustCompile(`([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l`)
+	down := map[string]float64{}
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		if m[1] == m[3] {
+			y1, _ := strconv.ParseFloat(m[2], 64)
+			y2, _ := strconv.ParseFloat(m[4], 64)
+			down[m[1]] += math.Abs(y1 - y2)
+		}
+	}
+	edges := make([]string, 0, len(down))
+	for x := range down {
+		edges = append(edges, x)
+	}
+	sort.Strings(edges)
+	if want := []string{"110", "170", "50"}; !reflect.DeepEqual(edges, want) {
+		t.Fatalf("the table drew rules down %v, not %v", edges, want)
+	}
+	height := float64(xy[1] - 50.0)
+	// The edge between the two cells is the right border of the one and the
+	// left border of the other, so it is drawn twice.
+	for x, want := range map[string]float64{"50": height, "110": 2 * height, "170": height} {
+		if math.Abs(down[x]-want) > 0.01 {
+			t.Errorf("the rules down x=%s run %v, not %v", x, down[x], want)
+		}
+	}
+}
+
+// testRulesAcrossTheFirstColumn returns the y of every rule the page draws
+// across the first column, in the order they are drawn and with none left out.
+func testRulesAcrossTheFirstColumn(page *Page) []float64 {
+	re := regexp.MustCompile(`50 ([-0-9.]+) m\n110 ([-0-9.]+) l`)
+	ys := make([]float64, 0)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		if m[1] == m[2] {
+			y, _ := strconv.ParseFloat(m[1], 64)
+			ys = append(ys, y)
+		}
+	}
+	return ys
+}
+
+func TestTableACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan(t *testing.T) {
+	// A cell that spans rows is drawn over all of them at once, so its bottom
+	// border is drawn under the whole span and not at the end of the rows its
+	// own text wraps into, which is where a cell that spans no rows draws it.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	data := testSpanningRows(font, 3, 2, 2)
+	data[0][0].SetText(testLongText)
+	page := NewPage(doc.pdf, letter.Portrait())
+	table := NewTable()
+	table.SetTableData(data, 0)
+	table.SetLocation(50, 50)
+	xy := table.DrawOn(page)
+	if table.GetRow(0)[0].GetText() == testLongText {
+		t.Fatal("the text did not wrap")
+	}
+	// The rule over the span, the one under it, the one over the row below it,
+	// which is the same line drawn by that row, and the one under the table.
+	// The rows the text wrapped into draw none of their own.
+	ys := testRulesAcrossTheFirstColumn(page)
+	if len(ys) != 4 {
+		t.Fatalf("the table drew %d rules across the first column, not 4: %v", len(ys), ys)
+	}
+	if math.Abs(ys[0]-float64(page.height-50.0)) > 0.01 {
+		t.Errorf("the rule over the span is at %v, not %v", ys[0], page.height-50.0)
+	}
+	if math.Abs(ys[1]-ys[2]) > 0.01 {
+		t.Errorf("the span ends at %v and the row under it starts at %v", ys[1], ys[2])
+	}
+	if !(ys[1] < ys[0] && ys[1] > ys[3]) {
+		t.Errorf("the rule under the span, %v, is not between %v and %v", ys[1], ys[0], ys[3])
+	}
+	if math.Abs(ys[3]-float64(page.height-xy[1])) > 0.01 {
+		t.Errorf("the rule under the table is at %v, not %v", ys[3], page.height-xy[1])
+	}
 }

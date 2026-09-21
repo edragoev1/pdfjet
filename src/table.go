@@ -927,9 +927,22 @@ func (table *Table) wrapAroundCellText() {
 			}
 			lines = append(lines, cellLines)
 		}
+		// A cell whose text wraps is one cell drawn as the rows its lines
+		// take, so the border under it belongs under the last of them and not
+		// under every line of it. A cell that spans rows is drawn over all of
+		// them at once and so draws its own bottom border under the whole of
+		// it; applyRowSpans clears the rows of its wrap.
+		bottomBorder := make([]bool, len(row))
+		for i, cell := range row {
+			bottomBorder[i] = maxNumVerCells > 1 && cell.GetRowSpan() == 1 &&
+				cell.GetBorder(border.Bottom)
+			if bottomBorder[i] {
+				cell.SetBorder(border.Bottom, false)
+			}
+		}
 		for i := 1; i < maxNumVerCells; i++ {
 			row2 := make([]*Cell, 0)
-			for _, cell := range row {
+			for j, cell := range row {
 				cell2 := NewCell(cell.GetFont(), "")
 				cell2.hasText = false // Java's new Cell(font) has no text
 				cell2.SetFallbackFont(cell.GetFallbackFont())
@@ -947,6 +960,7 @@ func (table *Table) wrapAroundCellText() {
 				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
 				cell2.properties &= ^border.Top
+				cell2.SetBorder(border.Bottom, bottomBorder[j] && i == maxNumVerCells-1)
 				cell2.properties |= cellContinued
 				row2 = append(row2, cell2)
 			}

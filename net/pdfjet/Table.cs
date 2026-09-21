@@ -940,9 +940,24 @@ public class Table : IDrawable {
                     maxNumVerCells = cellLines.Count;
                 }
             }
+            // A cell whose text wraps is one cell drawn as the rows its lines
+            // take, so the border under it belongs under the last of them and
+            // not under every line of it. A cell that spans rows is drawn over
+            // all of them at once and so draws its own bottom border under the
+            // whole of it; ApplyRowSpans clears the rows of its wrap.
+            bool[] bottomBorder = new bool[row.Count];
+            for (int i = 0; i < row.Count; i++) {
+                Cell cell = row[i];
+                bottomBorder[i] = maxNumVerCells > 1 && cell.GetRowSpan() == 1
+                        && cell.GetBorder(Border.BOTTOM);
+                if (bottomBorder[i]) {
+                    cell.SetBorder(Border.BOTTOM, false);
+                }
+            }
             for (int i = 1; i < maxNumVerCells; i++) {
                 List<Cell> row2 = new List<Cell>();
-                foreach (Cell cell in row) {
+                for (int j = 0; j < row.Count; j++) {
+                    Cell cell = row[j];
                     Cell cell2 = new Cell(cell.GetFont());
                     cell2.SetFallbackFont(cell.GetFallbackFont());
                     cell2.SetFontSize(cell.fontSize);
@@ -959,6 +974,7 @@ public class Table : IDrawable {
                     cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);
                     cell2.SetBorder(Border.TOP, false);
+                    cell2.SetBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;
                     row2.Add(cell2);
                 }

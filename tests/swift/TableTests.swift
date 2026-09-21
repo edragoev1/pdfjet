@@ -364,4 +364,110 @@ import Testing
         #expect(count(raw, "/S /TH\n") == 1)
         #expect(count(raw, "/S /TD\n") == 2)
     }
+    private let longText = "one two three four five six seven eight nine ten eleven twelve"
+
+    // A one row table of a cell that wraps and a cell that does not, each with
+    // every border.
+    private func wrapping(_ font: Font) -> [[Cell]] {
+        var row = [Cell]()
+        for text in [longText, "one"] {
+            let cell = Cell(font, text)
+            cell.setWidth(60)
+            cell.setBorders(true)
+            row.append(cell)
+        }
+        return [row]
+    }
+
+    @Test func aCellWhoseTextWrapsDrawsOneBorderUnderIt() {
+        // The rows a table wraps the text of a cell into are one cell, so the
+        // border under it is drawn once, under the last of its lines. Each of
+        // those rows kept the borders of the cell, so a cell of seven lines
+        // drew seven rules across itself.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(wrapping(font)).setLocation(50, 50)
+        let xy = table.drawOn(page)
+        #expect(table.getRow(0)[0].getText() != longText, "the text did not wrap")
+        // The table draws two rules: the one over the row and the one under it.
+        let ys = rules(page)
+        #expect(ys.count == 2)
+        guard ys.count == 2 else { return }
+        #expect(abs(ys[0] - (page.height - 50)) < 0.01, "the rule over the row")
+        #expect(abs(ys[1] - (page.height - xy[1])) < 0.01, "the rule under the row")
+    }
+
+    @Test func theRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn() {
+        // The left and the right borders are drawn down every row of the wrap,
+        // which is what makes the rows one cell; only the top and the bottom
+        // of the cell are drawn once.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(wrapping(font)).setLocation(50, 50)
+        let xy = table.drawOn(page)
+        // A vertical rule of each row of the wrap, down each of the three
+        // edges the two cells have between and beside them.
+        let content = TestSupport.content(page)
+        let regex = try! NSRegularExpression(pattern: "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")
+        var down = [String: Float]()
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let x1 = (content as NSString).substring(with: m.range(at: 1))
+            let x2 = (content as NSString).substring(with: m.range(at: 3))
+            if x1 == x2 {
+                let y1 = Float((content as NSString).substring(with: m.range(at: 2)))!
+                let y2 = Float((content as NSString).substring(with: m.range(at: 4)))!
+                down[x1, default: 0] += abs(y1 - y2)
+            }
+        }
+        #expect(down.keys.sorted() == ["110", "170", "50"])
+        let height = xy[1] - 50
+        // The edge between the two cells is the right border of the one and
+        // the left border of the other, so it is drawn twice.
+        #expect(abs((down["50"] ?? 0) - height) < 0.01, "the left edge of the row")
+        #expect(abs((down["110"] ?? 0) - 2 * height) < 0.01, "the edge between the cells")
+        #expect(abs((down["170"] ?? 0) - height) < 0.01, "the right edge of the row")
+    }
+    // The y of every rule the page draws across the first column, in the order
+    // they are drawn and with none of them left out.
+    private func rulesAcrossTheFirstColumn(_ page: Page) -> [Float] {
+        let content = TestSupport.content(page)
+        let regex = try! NSRegularExpression(pattern: "50 ([-0-9.]+) m\n110 ([-0-9.]+) l")
+        var ys = [Float]()
+        for m in regex.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+            let y1 = (content as NSString).substring(with: m.range(at: 1))
+            let y2 = (content as NSString).substring(with: m.range(at: 2))
+            if y1 == y2 {
+                ys.append(Float(y1)!)
+            }
+        }
+        return ys
+    }
+
+    @Test func aCellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan() {
+        // A cell that spans rows is drawn over all of them at once, so its
+        // bottom border is drawn under the whole span and not at the end of
+        // the rows its own text wraps into, which is where a cell that spans
+        // no rows draws it.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let data = spanning(font, 3, 2, 2)
+        data[0][0].setText(longText)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(data).setLocation(50, 50)
+        let xy = table.drawOn(page)
+        #expect(table.getRow(0)[0].getText() != longText, "the text did not wrap")
+        // The rule over the span, the one under it, the one over the row below
+        // it, which is the same line drawn by that row, and the one under the
+        // table. The rows the text wrapped into draw none of their own.
+        let ys = rulesAcrossTheFirstColumn(page)
+        #expect(ys.count == 4)
+        guard ys.count == 4 else { return }
+        #expect(abs(ys[0] - (page.height - 50)) < 0.01, "the rule over the span")
+        #expect(abs(ys[1] - ys[2]) < 0.01, "the span and the row under it do not meet")
+        #expect(ys[1] < ys[0] && ys[1] > ys[3],
+                "the rule under the span is not between the top and the bottom of the table")
+        #expect(abs(ys[3] - (page.height - xy[1])) < 0.01, "the rule under the table")
+    }
 }

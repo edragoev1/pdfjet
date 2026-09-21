@@ -988,10 +988,23 @@ public class Table : Drawable {
                     maxNumVerCells = cellLines.count
                 }
             }
+            // A cell whose text wraps is one cell drawn as the rows its lines
+            // take, so the border under it belongs under the last of them and
+            // not under every line of it. A cell that spans rows is drawn over
+            // all of them at once and so draws its own bottom border under the
+            // whole of it; applyRowSpans clears the rows of its wrap.
+            var bottomBorder = [Bool](repeating: false, count: row.count)
+            for (i, cell) in row.enumerated() {
+                bottomBorder[i] = maxNumVerCells > 1 && cell.getRowSpan() == 1
+                        && cell.getBorder(Border.BOTTOM)
+                if bottomBorder[i] {
+                    cell.setBorder(Border.BOTTOM, false)
+                }
+            }
             var k = 1
             while k < maxNumVerCells {
                 var row2 = [Cell]()
-                for cell in row {
+                for (j, cell) in row.enumerated() {
                     let cell2 = Cell(cell.getFont())
                     cell2.setFallbackFont(cell.getFallbackFont())
                     cell2.setFontSize(cell.fontSize)
@@ -1008,6 +1021,7 @@ public class Table : Drawable {
                     cell2.setVerticalAlignment(cell.getVerticalAlignment())
                     cell2.setTopPadding(0.0)
                     cell2.setBorder(Border.TOP, false)
+                    cell2.setBorder(Border.BOTTOM, bottomBorder[j] && k == maxNumVerCells - 1)
                     cell2.properties |= Cell.CONTINUED
                     row2.append(cell2)
                 }

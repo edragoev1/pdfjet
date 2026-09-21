@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,7 +17,9 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -415,5 +418,116 @@ class TableTest {
         assertEquals(2, count(raw, "/S /TR\n"), raw);
         assertEquals(1, count(raw, "/S /TH\n"), raw);
         assertEquals(2, count(raw, "/S /TD\n"), raw);
+    }
+
+    private static final String LONG_TEXT =
+            "one two three four five six seven eight nine ten eleven twelve";
+
+    // A one row table of a cell that wraps and a cell that does not, each with
+    // every border.
+    private static List<List<Cell>> wrapping(Font font) {
+        List<Cell> row = new ArrayList<Cell>();
+        for (String text : new String[] {LONG_TEXT, "one"}) {
+            Cell cell = new Cell(font, text);
+            cell.setWidth(60f);
+            cell.setBorders(true);
+            row.add(cell);
+        }
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(row);
+        return data;
+    }
+
+    @Test
+    void aCellWhoseTextWrapsDrawsOneBorderUnderIt() throws Exception {
+        // The rows a table wraps the text of a cell into are one cell, so the
+        // border under it is drawn once, under the last of its lines. Each of
+        // those rows kept the borders of the cell, so a cell of seven lines
+        // drew seven rules across itself.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(wrapping(font)).setLocation(50f, 50f);
+        float[] xy = table.drawOn(page);
+        assertNotEquals(LONG_TEXT, table.getRow(0).get(0).getText(), "the text did not wrap");
+        // The table draws two rules: the one over the row and the one under it.
+        List<Float> ys = rules(page);
+        assertEquals(2, ys.size(), ys.toString());
+        assertEquals(page.height - 50f, ys.get(0), 0.01f, "the rule over the row");
+        assertEquals(page.height - xy[1], ys.get(1), 0.01f, "the rule under the row");
+    }
+
+    @Test
+    void theRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn() throws Exception {
+        // The left and the right borders are drawn down every row of the wrap,
+        // which is what makes the rows one cell; only the top and the bottom
+        // of the cell are drawn once.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(wrapping(font)).setLocation(50f, 50f);
+        float[] xy = table.drawOn(page);
+        String content = TestSupport.content(page);
+        // A vertical rule of each row of the wrap, down each of the three
+        // edges the two cells have between and beside them.
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "([-0-9.]+) ([-0-9.]+) m\\n([-0-9.]+) ([-0-9.]+) l").matcher(content);
+        Map<String, Float> down = new java.util.TreeMap<String, Float>();
+        while (m.find()) {
+            if (m.group(1).equals(m.group(3))) {
+                float height = Float.parseFloat(m.group(2)) - Float.parseFloat(m.group(4));
+                Float sum = down.get(m.group(1));
+                down.put(m.group(1), (sum == null ? 0f : sum) + Math.abs(height));
+            }
+        }
+        assertEquals(new ArrayList<String>(Arrays.asList("110", "170", "50")),
+                new ArrayList<String>(down.keySet()), down.toString());
+        float height = xy[1] - 50f;
+        // The edge between the two cells is the right border of the one and
+        // the left border of the other, so it is drawn twice.
+        assertEquals(height, down.get("50"), 0.01f, "the left edge of the row");
+        assertEquals(2 * height, down.get("110"), 0.01f, "the edge between the cells");
+        assertEquals(height, down.get("170"), 0.01f, "the right edge of the row");
+    }
+
+    // The y of every rule the page draws across the first column, in the order
+    // they are drawn and with none of them left out.
+    private static List<Float> rulesAcrossTheFirstColumn(Page page) {
+        List<Float> ys = new ArrayList<Float>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "50 ([-0-9.]+) m\\n110 ([-0-9.]+) l").matcher(TestSupport.content(page));
+        while (m.find()) {
+            if (m.group(1).equals(m.group(2))) {
+                ys.add(Float.parseFloat(m.group(1)));
+            }
+        }
+        return ys;
+    }
+
+    @Test
+    void aCellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan() throws Exception {
+        // A cell that spans rows is drawn over all of them at once, so its
+        // bottom border is drawn under the whole span and not at the end of
+        // the rows its own text wraps into, which is where a cell that spans
+        // no rows draws it.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = spanning(font, 3, 2, 2);
+        data.get(0).get(0).setText(LONG_TEXT);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(data).setLocation(50f, 50f);
+        float[] xy = table.drawOn(page);
+        assertNotEquals(LONG_TEXT, table.getRow(0).get(0).getText(), "the text did not wrap");
+        // The rule over the span, the one under it, the one over the row below
+        // it, which is the same line drawn by that row, and the one under the
+        // table. The rows the text wrapped into draw none of their own.
+        List<Float> ys = rulesAcrossTheFirstColumn(page);
+        assertEquals(4, ys.size(), ys.toString());
+        assertEquals(page.height - 50f, ys.get(0), 0.01f, "the rule over the span");
+        assertEquals(ys.get(1), ys.get(2), 0.01f,
+                "the span and the row under it do not meet");
+        assertTrue(ys.get(1) < ys.get(0) && ys.get(1) > ys.get(3),
+                "the rule under the span is not between the top and the bottom of the table");
+        assertEquals(page.height - xy[1], ys.get(3), 0.01f, "the rule under the table");
     }
 }

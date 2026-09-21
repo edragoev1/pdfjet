@@ -162,6 +162,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A cell whose text wraps draws the border under it once, under the last of
+  its lines, in all four ports. The rows a table wraps a cell into are one
+  cell -- they hold the lines of its text and are one cell of a PDF/UA
+  structure tree -- but each of them kept the borders of the cell it came
+  from, so a cell of seven lines drew seven rules across itself and a table
+  of wrapped cells came out ruled like a ledger. The top border stays on the
+  first of the rows, as it was, the bottom border moves to the last, and the
+  left and right borders are drawn down all of them, which is what makes the
+  rows read as one cell. A cell that spans rows is drawn over all of them at
+  once and so draws its own bottom border under the whole of it, unchanged.
+  None of the 51 examples draws a wrapped cell with a bottom border, so no
+  example PDF changes.
 - A `Chart`, a `BarChart` and a `DonutChart` leave the page with the pen, the
   brush and the dash pattern they found on it, in all four ports, as a `Stamp`
   and a `CalendarMonth` do. `Chart` and `BarChart` set them to the default of

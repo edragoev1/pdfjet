@@ -420,6 +420,20 @@ goal 5, the references, which is the first thing to give if anything does.
       the HTML in its comment, cell for cell; the four ports render it pixel
       for pixel alike. Three tests in each port: the drawing, the page break
       at every row span from 1 to 4, and the tagging.
+- ✅ A cell whose text wraps drew its bottom border under every line of it
+      and not under the cell (found and fixed Sep 21, beside the row spans,
+      and there since before them). `wrapAroundCellText` copied the
+      properties of the cell, the borders among them, into each row it wraps
+      the text into, so a cell of seven lines drew seven rules across itself.
+      The bottom border moves to the last row of the wrap, the top border
+      stays on the first, and the left and the right are drawn down all of
+      them, which is what makes the rows read as one cell; a cell that spans
+      rows is drawn over all of them at once and keeps its own bottom border.
+      Three tests in each of the four ports: the one rule under the cell, the
+      rules down its three edges running its whole height, and a cell that
+      both wraps and spans rows drawing its border under the whole span. No
+      example draws a wrapped cell with a bottom border, so no example PDF
+      changes, and the four ports still render all 51 alike.
 
 ### Sep 27–Oct 1: release v9.0.2
 
@@ -444,18 +458,6 @@ goal 5, the references, which is the first thing to give if anything does.
       now, and a Go runtime error fails it.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
-- ⬜ A cell whose text wraps draws its bottom border under every line of it,
-      not under the cell (found Sep 21 beside the row spans, and there since
-      before them). `wrapAroundCellText` copies the properties of the cell,
-      the borders among them, into each row it wraps the text into, so a cell
-      of three lines with `Border.BOTTOM` draws three rules. The rows a cell
-      spans have the same shape -- a cell over two rows is one cell -- and
-      the row spans handle it for themselves by clearing the border of the
-      rows they cover, so this is the same fix one step further: a wrapped
-      row keeps the left and right borders and gives the bottom border to the
-      last row of the wrap and the top border to the first. It changes what
-      every table with wrapped cells and a bottom border draws, so it wants
-      its own tests in the four ports and a look at the example PDFs.
 
 ### Oct 9–14: the rest of the review, and the references
 

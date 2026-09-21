@@ -989,9 +989,24 @@ public class Table implements Drawable {
                     maxNumVerCells = cellLines.size();
                 }
             }
+            // A cell whose text wraps is one cell drawn as the rows its lines
+            // take, so the border under it belongs under the last of them and
+            // not under every line of it. A cell that spans rows is drawn over
+            // all of them at once and so draws its own bottom border under the
+            // whole of it; applyRowSpans clears the rows of its wrap.
+            boolean[] bottomBorder = new boolean[row.size()];
+            for (int i = 0; i < row.size(); i++) {
+                Cell cell = row.get(i);
+                bottomBorder[i] = maxNumVerCells > 1 && cell.getRowSpan() == 1
+                        && cell.getBorder(Border.BOTTOM);
+                if (bottomBorder[i]) {
+                    cell.setBorder(Border.BOTTOM, false);
+                }
+            }
             for (int i = 1; i < maxNumVerCells; i++) {
                 List<Cell> row2 = new ArrayList<Cell>();
-                for (Cell cell : row) {
+                for (int j = 0; j < row.size(); j++) {
+                    Cell cell = row.get(j);
                     Cell cell2 = new Cell(cell.getFont());
                     cell2.setFallbackFont(cell.getFallbackFont());
                     cell2.setFontSize(cell.fontSize);
@@ -1008,6 +1023,7 @@ public class Table implements Drawable {
                     cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);
                     cell2.setBorder(Border.TOP, false);
+                    cell2.setBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;
                     row2.add(cell2);
                 }

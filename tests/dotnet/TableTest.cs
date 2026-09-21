@@ -390,5 +390,113 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(1, Count(raw, "/S /TH\n"));
         Assert.Equal(2, Count(raw, "/S /TD\n"));
     }
+    private const string LONG_TEXT =
+            "one two three four five six seven eight nine ten eleven twelve";
+
+    // A one row table of a cell that wraps and a cell that does not, each with
+    // every border.
+    private static List<List<Cell>> Wrapping(Font font) {
+        List<Cell> row = new List<Cell>();
+        foreach (string text in new string[] {LONG_TEXT, "one"}) {
+            Cell cell = new Cell(font, text);
+            cell.SetWidth(60f);
+            cell.SetBorders(true);
+            row.Add(cell);
+        }
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(row);
+        return data;
+    }
+
+    [Fact]
+    public void ACellWhoseTextWrapsDrawsOneBorderUnderIt() {
+        // The rows a table wraps the text of a cell into are one cell, so the
+        // border under it is drawn once, under the last of its lines. Each of
+        // those rows kept the borders of the cell, so a cell of seven lines
+        // drew seven rules across itself.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Wrapping(font)).SetLocation(50f, 50f);
+        float[] xy = table.DrawOn(page);
+        Assert.NotEqual(LONG_TEXT, table.GetRow(0)[0].GetText());
+        // The table draws two rules: the one over the row and the one under it.
+        List<float> ys = Rules(page);
+        Assert.Equal(2, ys.Count);
+        Assert.True(Math.Abs(page.height - 50f - ys[0]) < 0.01f, "the rule over the row");
+        Assert.True(Math.Abs(page.height - xy[1] - ys[1]) < 0.01f, "the rule under the row");
+    }
+
+    [Fact]
+    public void TheRowsACellWrapsIntoAreOneCellOfEveryBorderButTheirOwn() {
+        // The left and the right borders are drawn down every row of the wrap,
+        // which is what makes the rows one cell; only the top and the bottom
+        // of the cell are drawn once.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Wrapping(font)).SetLocation(50f, 50f);
+        float[] xy = table.DrawOn(page);
+        // A vertical rule of each row of the wrap, down each of the three
+        // edges the two cells have between and beside them.
+        SortedDictionary<string, float> down = new SortedDictionary<string, float>(StringComparer.Ordinal);
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(TestSupport.Content(page),
+                        "([-0-9.]+) ([-0-9.]+) m\n([-0-9.]+) ([-0-9.]+) l")) {
+            if (m.Groups[1].Value == m.Groups[3].Value) {
+                float y1 = float.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture);
+                float y2 = float.Parse(m.Groups[4].Value, System.Globalization.CultureInfo.InvariantCulture);
+                float sum;
+                down.TryGetValue(m.Groups[1].Value, out sum);
+                down[m.Groups[1].Value] = sum + Math.Abs(y1 - y2);
+            }
+        }
+        Assert.Equal(new List<string> {"110", "170", "50"}, new List<string>(down.Keys));
+        float height = xy[1] - 50f;
+        // The edge between the two cells is the right border of the one and
+        // the left border of the other, so it is drawn twice.
+        Assert.True(Math.Abs(height - down["50"]) < 0.01f, "the left edge of the row");
+        Assert.True(Math.Abs(2 * height - down["110"]) < 0.01f, "the edge between the cells");
+        Assert.True(Math.Abs(height - down["170"]) < 0.01f, "the right edge of the row");
+    }
+    // The y of every rule the page draws across the first column, in the order
+    // they are drawn and with none of them left out.
+    private static List<float> RulesAcrossTheFirstColumn(Page page) {
+        List<float> ys = new List<float>();
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(TestSupport.Content(page),
+                        "50 ([-0-9.]+) m\n110 ([-0-9.]+) l")) {
+            if (m.Groups[1].Value == m.Groups[2].Value) {
+                ys.Add(float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+        return ys;
+    }
+
+    [Fact]
+    public void ACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan() {
+        // A cell that spans rows is drawn over all of them at once, so its
+        // bottom border is drawn under the whole span and not at the end of
+        // the rows its own text wraps into, which is where a cell that spans
+        // no rows draws it.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = Spanning(font, 3, 2, 2);
+        data[0][0].SetText(LONG_TEXT);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().SetTableData(data).SetLocation(50f, 50f);
+        float[] xy = table.DrawOn(page);
+        Assert.NotEqual(LONG_TEXT, table.GetRow(0)[0].GetText());
+        // The rule over the span, the one under it, the one over the row below
+        // it, which is the same line drawn by that row, and the one under the
+        // table. The rows the text wrapped into draw none of their own.
+        List<float> ys = RulesAcrossTheFirstColumn(page);
+        Assert.Equal(4, ys.Count);
+        Assert.True(Math.Abs(page.height - 50f - ys[0]) < 0.01f, "the rule over the span");
+        Assert.True(Math.Abs(ys[1] - ys[2]) < 0.01f, "the span and the row under it do not meet");
+        Assert.True(ys[1] < ys[0] && ys[1] > ys[3],
+                "the rule under the span is not between the top and the bottom of the table");
+        Assert.True(Math.Abs(page.height - xy[1] - ys[3]) < 0.01f, "the rule under the table");
+    }
 }
 }
