@@ -328,17 +328,17 @@ import Testing
     @Test func thePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() throws {
         // A pHYs chunk whose unit is the metre says how large the image is
         // meant to be, so it is drawn that size rather than one point for each
-        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
-        // by 100 of them are 91.2 by 24 points.
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
+        // by 400 of them are 364.8 by 96 points.
         let png = try PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"))
-        #expect(png.getWidth() == 380)
-        #expect(png.getHeight() == 100)
-        #expect(abs(png.getPhysicalWidth() - 91.2) < 0.01)
-        #expect(abs(png.getPhysicalHeight() - 24.0) < 0.01)
+        #expect(png.getWidth() == 1520)
+        #expect(png.getHeight() == 400)
+        #expect(abs(png.getPhysicalWidth() - 364.8) < 0.01)
+        #expect(abs(png.getPhysicalHeight() - 96.0) < 0.01)
 
         let image = try Image(TestSupport.newPDF(), TestSupport.open("images/rgba-8bit-chunks.png"))
-        #expect(abs(image.getWidth() - 91.2) < 0.01, "the image is not drawn at the size it asks for")
-        #expect(abs(image.getHeight() - 24.0) < 0.01, "the image is not drawn at the size it asks for")
+        #expect(abs(image.getWidth() - 364.8) < 0.01, "the image is not drawn at the size it asks for")
+        #expect(abs(image.getHeight() - 96.0) < 0.01, "the image is not drawn at the size it asks for")
     }
 
     @Test func thePhysicalSizeLeavesThePixelsOfTheImageObjectAlone() throws {
@@ -350,8 +350,8 @@ import Testing
         image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
-        #expect(raw.contains("/Width 380\n"), "the image object lost the pixels of the image")
-        #expect(raw.contains("/Height 100\n"), "the image object lost the pixels of the image")
+        #expect(raw.contains("/Width 1520\n"), "the image object lost the pixels of the image")
+        #expect(raw.contains("/Height 400\n"), "the image object lost the pixels of the image")
     }
 
     @Test func anImageWithNoPhysicalSizeIsDrawnAtOnePointForEachPixel() throws {

@@ -388,18 +388,18 @@ class PNGImageTest {
     void thePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() throws Exception {
         // A pHYs chunk whose unit is the metre says how large the image is
         // meant to be, so it is drawn that size rather than one point for each
-        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
-        // by 100 of them are 91.2 by 24 points.
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
+        // by 400 of them are 364.8 by 96 points.
         PNGImage png = new PNGImage(TestSupport.open("images/rgba-8bit-chunks.png"));
-        assertEquals(380, png.getWidth());
-        assertEquals(100, png.getHeight());
-        assertEquals(91.2f, png.getPhysicalWidth(), 0.01f);
-        assertEquals(24f, png.getPhysicalHeight(), 0.01f);
+        assertEquals(1520, png.getWidth());
+        assertEquals(400, png.getHeight());
+        assertEquals(364.8f, png.getPhysicalWidth(), 0.01f);
+        assertEquals(96f, png.getPhysicalHeight(), 0.01f);
 
         PDF pdf = TestSupport.newPDF();
         Image image = new Image(pdf, TestSupport.open("images/rgba-8bit-chunks.png"));
-        assertEquals(91.2f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
-        assertEquals(24f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
+        assertEquals(364.8f, image.getWidth(), 0.01f, "the image is not drawn at the size it asks for");
+        assertEquals(96f, image.getHeight(), 0.01f, "the image is not drawn at the size it asks for");
     }
 
     @Test
@@ -413,8 +413,8 @@ class PNGImageTest {
         image.drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
-        assertTrue(raw.contains("/Width 380\n"), "the image object lost the pixels of the image");
-        assertTrue(raw.contains("/Height 100\n"), "the image object lost the pixels of the image");
+        assertTrue(raw.contains("/Width 1520\n"), "the image object lost the pixels of the image");
+        assertTrue(raw.contains("/Height 400\n"), "the image object lost the pixels of the image");
     }
 
     @Test

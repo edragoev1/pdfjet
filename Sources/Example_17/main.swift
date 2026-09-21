@@ -10,120 +10,98 @@ import PDFjet
 /**
  * Example_17.swift
  *
- * Draws a PNG image of each kind PDFjet reads and says what each one is: the
- * color types and the bit depths, the two ways a PNG carries transparency,
- * and a PNG that asks to be drawn at 300 dots per inch. The images of the
- * grid are from PngSuite, the test images of the PNG format, drawn at four
- * times their 32 by 32 pixels so their samples can be seen; the samples
- * themselves are checked in PNGImageTests, against the whole of PngSuite.
+ * Draws a line chart of two series over the same years: a Chart with a Series
+ * for each line, drawn with setDrawPath so the points are joined, and the
+ * markers left visible so each year can be read off the line.
  */
 public class Example_17 {
-    // The images of the grid: the file, what it is, the description of it,
-    // and whether it carries transparency, which is drawn over a color so it
-    // can be seen.
-    private let images = [
-        ("BASN3P08", "Palette, 8 bits", "Vertical bands of red, orange, yellow, green, cyan, blue and magenta, each shading from black at the top to white at the bottom, from a palette of 256 colors.", "no"),
-        ("BASN0G08", "Grayscale, 8 bits", "Horizontal bands of gray, each shading from black at the top to white at the bottom, 8 bits a pixel.", "no"),
-        ("BASN2C08", "Truecolor, 8 bits", "Horizontal bands of yellow, magenta, cyan and gray, each shading from pale at the top of the band to full color at the bottom of it, in 8 bit color.", "no"),
-        ("BASN0G16", "Grayscale, 16 bits", "A ramp of 16 bit gray samples that brightens from black at the left to white near the right edge and falls away again.", "no"),
-        ("BASN2C16", "Truecolor, 16 bits", "Red, green and blue of 16 bit samples mixed across the square: yellow at the top left, green at the top right, red at the bottom left and blue at the bottom right.", "no"),
-        ("BASN6A08", "Truecolor with alpha", "A rainbow that shades from red at the top to blue at the bottom, which its alpha channel fades from transparent at the left to opaque at the right, over a yellow square.", "yes"),
-        ("BASN4A08", "Grayscale with alpha", "A gray ramp from white at the top to black at the bottom, which its alpha channel fades from transparent at the left to opaque at the right, over a yellow square.", "yes"),
-        ("TP1N3P08", "Palette with transparency", "A black cube with the word NeXT on it in colored letters, and transparent pixels around it from the tRNS chunk of its palette, over a yellow square.", "yes"),
-    ]
+    // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
+    // and kind, which Example_43 draws as a table: the rows of the file whose
+    // "Electric Vehicle Type" begins with "Battery Electric" and with
+    // "Plug-in Hybrid", counted by the "Model Year" column. The file holds
+    // 124,716 rows, of which 124,419 are registered in Washington State, and
+    // model years from 1997; the years before 2011 are a few dozen vehicles
+    // in all and are left out here.
+    private let years =
+            [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+    private let battery =
+            [ 753,  798, 2936, 1805, 3612, 3891, 4458, 9946, 8576, 9315, 14755, 23507, 11853]
+    private let hybrid =
+            [  75,  870, 1645, 1804, 1323, 1811, 4100, 4278, 1874, 1611,  3541,  4015,  1500]
 
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_17.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("PNG Images")
+        pdf.setTitle("Electric Vehicles by Model Year")
 
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let title = TextLine(f1, "PNG Images")
+        let title = TextLine(f1, "Electric Vehicles by Model Year")
         title.setStructureType(StructElem.H1)
         title.setFontSize(18.0)
         title.setLocation(50.0, 50.0)
         title.drawOn(page)
 
         let textBlock = TextBlock(f2,
-                "PDFjet reads a PNG of any color type and bit depth the format has: a " +
-                "palette, grayscale or truecolor image of 1, 2, 4, 8 or 16 bits a " +
-                "sample. The samples go into the PDF as they are, so an image is " +
-                "embedded once and drawn at any size without being resampled. The two " +
-                "ways a PNG carries transparency -- the alpha channel of a truecolor " +
-                "or grayscale image, and the tRNS chunk of a palette -- both become " +
-                "the soft mask of the image, which is why the three below let the " +
-                "yellow square behind them through. An interlaced PNG is refused with " +
-                "a message that says how to convert it.")
+                "A line chart is a Chart with a Series for each line: the points of the " +
+                "series are added in the order they are joined, and setDrawPath draws " +
+                "the line through them. The markers are left visible here so that the " +
+                "count for each model year can be read off the line; setShape with " +
+                "Shape.INVISIBLE leaves the line alone.\n\n" +
+                "The counts are the vehicles of " +
+                "data/Electric_Vehicle_Population_Data.csv, the file Example_43 draws " +
+                "as a table of 2,546 pages, by model year and by kind.")
         textBlock.setFontSize(11.0)
         textBlock.setLineSpacing(1.4)
-        textBlock.setLocation(50.0, 70.0)
+        textBlock.setLocation(50.0, 72.0)
         textBlock.setWidth(512.0)
         let xy = textBlock.drawOn(page)
 
-        // The grid: four across, each image over the name of what it is.
-        let size: Float = 128.0         // 32 pixels drawn at four times their size
-        let columnWidth: Float = 128.0
-        let rowHeight: Float = 168.0
-        let top = xy[1] + 24.0
-        for (i, row) in images.enumerated() {
-            let x = 50.0 + Float(i%4)*columnWidth
-            let y = top + Float(i/4)*rowHeight
+        f1.setSize(12.0)
+        f2.setSize(9.0)
 
-            // A transparent image is drawn over a color, which its soft mask
-            // lets through where the image is not opaque.
-            if row.3 == "yes" {
-                page.addArtifactBMC()
-                page.setBrushColor(0xFFE9A0)        // A pale yellow
-                page.fillRect(x, y, size, size)
-                page.addEMC()
-            }
+        let chart = Chart(f1, f2)
+        chart.setLocation(70.0, xy[1] + 30.0)
+        chart.setSize(480.0, 340.0)
+        chart.setTitle("Battery electric and plug-in hybrid vehicles")
+        chart.setSubtitle("Registrations in the Washington State data file")
+        chart.setXAxisTitle("Model year")
+        chart.setYAxisTitle("Vehicles")
+        // The years and the counts are whole numbers, so the axis labels are.
+        chart.setMaximumFractionDigits(0)
+        // The axes are set rather than worked out from the points, so that
+        // every label of the years is a year: 2011 to 2023 in six steps is one
+        // every two years, where the range a chart picks for itself would be
+        // 2010 to 2025 in steps of two and a half.
+        chart.setXAxisMinMax(2011.0, 2023.0, 6)
+        chart.setYAxisMinMax(0.0, 25000.0, 5)
+        chart.setAltDescription(
+                "A line chart of the vehicles of the data file by model year, from 2011 " +
+                "to 2023. Battery electric vehicles rise from 753 in 2011 to 23,507 in " +
+                "2022 and fall to 11,853 in 2023, the last model year of the file. " +
+                "Plug-in hybrids stay far lower, from 75 in 2011 to a high of 4,278 in " +
+                "2018 and 1,500 in 2023.")
 
-            let image = try Image(pdf, "PngSuite/" + row.0 + ".PNG")
-            image.setAltDescription(row.2)
-            image.scaleBy(4.0)
-            image.setLocation(x, y)
-            image.drawOn(page)
-
-            let caption = TextLine(f2, row.1)
-            caption.setFontSize(9.0)
-            caption.setLocation(x, y + size + 14.0)
-            caption.drawOn(page)
+        let batterySeries = chart.addSeries("Battery electric")
+                .setDrawPath(true)
+                .setStrokeColor(0x1D3557)       // navy blue
+                .setStrokeWidth(1.5)
+        for (i, year) in years.enumerated() {
+            batterySeries.addPoint(Float(year), Float(battery[i]))
         }
 
-        // A PNG from outside PngSuite, which carries the chunks a file written
-        // by a drawing program has and asks to be drawn at 300 dots per inch.
-        let y = top + 2*rowHeight + 10.0
-        let heading = TextLine(f1, "A PNG that asks for its own size")
-        heading.setStructureType(StructElem.H2)
-        heading.setFontSize(13.0)
-        heading.setLocation(50.0, y)
-        heading.drawOn(page)
+        let hybridSeries = chart.addSeries("Plug-in hybrid")
+                .setDrawPath(true)
+                .setStrokeColor(0xC1121F)       // deep red
+                .setStrokeWidth(1.5)
+        for (i, year) in years.enumerated() {
+            hybridSeries.addPoint(Float(year), Float(hybrid[i]))
+        }
 
-        let note = TextBlock(f2,
-                "The pHYs chunk of a PNG says how large the image is meant to be. This " +
-                "one is 380 by 100 pixels at 300 dots per inch, so it is drawn 91.2 by " +
-                "24 points: a quarter of the size it would be at one point for each " +
-                "pixel, and sharp for it. It carries an iCCP color profile, a bKGD " +
-                "background, a tIME timestamp and two IDAT chunks.")
-        note.setFontSize(11.0)
-        note.setLineSpacing(1.4)
-        note.setLocation(50.0, y + 16.0)
-        note.setWidth(512.0)
-        let xy2 = note.drawOn(page)
-
-        let chunks = try Image(pdf, "images/rgba-8bit-chunks.png")
-        chunks.setAltDescription(
-                "Three half transparent circles in red, green and blue that overlap, " +
-                "beside the heading 8-bit RGBA PNG, 380 by 100, and the note that the " +
-                "image has anti-aliased text and half transparent circles on a " +
-                "transparent background, not interlaced, with iCCP, bKGD, pHYs, tIME " +
-                "and two IDAT chunks.")
-        chunks.setLocation(50.0, xy2[1] + 14.0)
-        chunks.drawOn(page)
+        chart.drawOn(page)
 
         try pdf.complete()
     }

@@ -610,6 +610,30 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_17 draws a line chart, which no example did: a `Chart` with a
+  `Series` for each line, the points added in the order they are joined and
+  `setDrawPath` drawing the line through them. The two lines are the electric
+  vehicles of `data/Electric_Vehicle_Population_Data.csv`, the file
+  Example_43 draws as a table of 2,546 pages, counted by model year and by
+  kind -- battery electric against plug-in hybrid, 2011 to 2023. The axes are
+  set with `setXAxisMinMax` and `setYAxisMinMax` rather than worked out from
+  the points, so that every label of the years is a year. The other charts
+  are Example_09, a scatter with a trend line, Example_25, a donut, and
+  Example_39 and Example_40, bars.
+- Example_24 draws the PNG pages Example_17 drew: a palette, grayscale and
+  truecolor image of 8 and 16 bits, the alpha channel and the `tRNS` chunk
+  that carry transparency, each over a yellow square so the soft mask can be
+  seen, and the PNG that asks to be drawn at 300 dots per inch. It is the
+  example of the image formats, so they belong with the JPEG, the PNG, the
+  BMP and the CMYK JPEG it drew already; it is five pages now.
+- `images/rgba-8bit-chunks.png` is drawn again at 1520 by 400 pixels, four
+  times the 380 by 100 it was, so that at the 300 dots per inch its `pHYs`
+  chunk asks for it is drawn 364.8 by 96 points rather than 91.2 by 24. It is
+  drawn rather than enlarged, since enlarging adds no detail: the circles and
+  the text are laid out again at the new size in IBM Plex Sans, the font the
+  examples use, and it carries the same iCCP, bKGD, pHYs, tIME and two IDAT
+  chunks its own text names. The text now says 1520 by 400, which is what it
+  is.
 - Example_17 draws a PNG of each kind PDFjet reads and says what each one is,
   where it drew 55 images of PngSuite on one page with nothing to tell them
   apart: the website called it a test case, which is what it was. It is a

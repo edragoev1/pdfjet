@@ -248,10 +248,10 @@ Draws a table of the countries of a data file, whose last cell spans the columns
 PNG, JPEG, BMP and SVG images, drawn and scaled, with the pages of a document added in reading order.
 
 @example 24 JPEG, PNG, BMP and CMYK JPEG images
-Draws a JPEG, a PNG, a BMP and a CMYK JPEG saved as Photoshop saves one, with its inks stored inverted.
+Draws a JPEG, a PNG, a BMP and a CMYK JPEG saved as Photoshop saves one, with its inks stored inverted; then a PNG of each color type and bit depth the format has, the two ways a PNG carries transparency, and a PNG that asks to be drawn at 300 dots per inch.
 
-@example 17 PNG images
-Draws a PNG of each kind PDFjet reads and says what each one is: the color types and the bit depths, the alpha channel and the tRNS chunk that carry transparency, and the pHYs chunk that asks for a size.
+@example 17 A line chart
+Draws a line chart of two series over the same years: a Chart with a Series for each line, drawn with setDrawPath so the points are joined. The data is the electric vehicles of data/Electric_Vehicle_Population_Data.csv by model year and by kind.
 
 @example 33 SVG images
 Draws an SVG map of Europe, scaled to fit the page, and a set of SVG icons, each with its name. SVG images are drawn as vector graphics, so they stay sharp at any zoom.

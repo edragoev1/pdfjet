@@ -501,6 +501,17 @@ goal 5, the references, which is the first thing to give if anything does.
       whole. Example_17 itself draws one image of each kind with what it is
       written under it, a description for a screen reader, and the yellow
       square behind the transparent ones that shows the soft mask works.
+- ✅ Example_17 is a line chart (Sep 21), which no example was: the charts
+      were a scatter with a trend line, a donut and two of bars. It draws two
+      series over the same years with `setDrawPath` -- the electric vehicles
+      of `data/Electric_Vehicle_Population_Data.csv` by model year and kind,
+      battery electric against plug-in hybrid, counted from the file rather
+      than recalled. The PNG pages it drew moved to Example_24, which is the
+      example of the image formats and is five pages now.
+      `images/rgba-8bit-chunks.png` is drawn again at 1520 by 400 pixels, so
+      at the 300 dots per inch it asks for it is 364.8 by 96 points: four
+      times the size it was and sharp, since it is drawn at the new size
+      rather than enlarged from the old one.
 
 ### Sep 27–Oct 1: release v9.0.2
 

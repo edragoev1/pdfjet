@@ -378,19 +378,19 @@ public class PNGImageTest {
     public void ThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt() {
         // A pHYs chunk whose unit is the metre says how large the image is
         // meant to be, so it is drawn that size rather than one point for each
-        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 380
-        // by 100 of them are 91.2 by 24 points.
+        // of its pixels. 11811 pixels per metre is 300 dots per inch, and 1520
+        // by 400 of them are 364.8 by 96 points.
         PNGImage png = new PNGImage(TestSupport.Open("images/rgba-8bit-chunks.png"));
-        Assert.Equal(380, png.GetWidth());
-        Assert.Equal(100, png.GetHeight());
-        Assert.True(Math.Abs(png.GetPhysicalWidth() - 91.2f) < 0.01f);
-        Assert.True(Math.Abs(png.GetPhysicalHeight() - 24f) < 0.01f);
+        Assert.Equal(1520, png.GetWidth());
+        Assert.Equal(400, png.GetHeight());
+        Assert.True(Math.Abs(png.GetPhysicalWidth() - 364.8f) < 0.01f);
+        Assert.True(Math.Abs(png.GetPhysicalHeight() - 96f) < 0.01f);
 
         PDF pdf = TestSupport.NewPDF();
         Image image = new Image(pdf, TestSupport.Open("images/rgba-8bit-chunks.png"));
-        Assert.True(Math.Abs(image.GetWidth() - 91.2f) < 0.01f,
+        Assert.True(Math.Abs(image.GetWidth() - 364.8f) < 0.01f,
                 "the image is not drawn at the size it asks for");
-        Assert.True(Math.Abs(image.GetHeight() - 24f) < 0.01f,
+        Assert.True(Math.Abs(image.GetHeight() - 96f) < 0.01f,
                 "the image is not drawn at the size it asks for");
     }
 
@@ -405,8 +405,8 @@ public class PNGImageTest {
         image.DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
-        Assert.Contains("/Width 380\n", raw);
-        Assert.Contains("/Height 100\n", raw);
+        Assert.Contains("/Width 1520\n", raw);
+        Assert.Contains("/Height 400\n", raw);
     }
 
     [Fact]

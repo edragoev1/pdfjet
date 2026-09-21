@@ -418,8 +418,8 @@ func testPNGWithPhys(width, height int32, x, y uint32, unit byte) []byte {
 func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T) {
 	// A pHYs chunk whose unit is the metre says how large the image is meant
 	// to be, so it is drawn that size rather than one point for each of its
-	// pixels. 11811 pixels per metre is 300 dots per inch, and 380 by 100 of
-	// them are 91.2 by 24 points.
+	// pixels. 11811 pixels per metre is 300 dots per inch, and 1520 by 400 of
+	// them are 364.8 by 96 points.
 	path := testRepoPath(t, "images/rgba-8bit-chunks.png")
 	file, err := os.Open(path)
 	if err != nil {
@@ -427,11 +427,11 @@ func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T)
 	}
 	png := newPNGImage(file)
 	file.Close()
-	if png.GetWidth() != 380 || png.GetHeight() != 100 {
+	if png.GetWidth() != 1520 || png.GetHeight() != 400 {
 		t.Fatalf("pixels %v x %v", png.GetWidth(), png.GetHeight())
 	}
-	if math.Abs(float64(png.physicalWidth)-91.2) > 0.01 ||
-		math.Abs(float64(png.physicalHeight)-24.0) > 0.01 {
+	if math.Abs(float64(png.physicalWidth)-364.8) > 0.01 ||
+		math.Abs(float64(png.physicalHeight)-96.0) > 0.01 {
 		t.Errorf("physical size %v x %v", png.physicalWidth, png.physicalHeight)
 	}
 	file, err = os.Open(path)
@@ -440,8 +440,8 @@ func TestPNGImageThePhysicalSizeChunkGivesTheSizeTheImageIsDrawnAt(t *testing.T)
 	}
 	defer file.Close()
 	image := NewImage(testNewPDF(), file)
-	if math.Abs(float64(image.GetWidth())-91.2) > 0.01 ||
-		math.Abs(float64(image.GetHeight())-24.0) > 0.01 {
+	if math.Abs(float64(image.GetWidth())-364.8) > 0.01 ||
+		math.Abs(float64(image.GetHeight())-96.0) > 0.01 {
 		t.Errorf("the image is drawn %v x %v, not the size it asks for",
 			image.GetWidth(), image.GetHeight())
 	}
