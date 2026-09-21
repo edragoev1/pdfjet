@@ -186,6 +186,26 @@ public class TextColumn : Drawable {
 
     private func drawParagraphOn(
             _ page: Page?, _ paragraph: Paragraph, _ lastParagraph: Bool) -> [Float] {
+        // In a PDF/UA document the paragraph is one structure element, which
+        // the words it is drawn one at a time all belong to.
+        var parent: StructElement?
+        var mcidParent: StructElement?
+        var element: StructElement?
+        if let page = page {
+            element = page.addStructElement(page.structParent, paragraph.structureType, nil)
+            if element != nil {
+                parent = page.structParent
+                mcidParent = page.mcidParent
+                page.structParent = element
+                page.mcidParent = element
+            }
+        }
+        defer {
+            if element != nil, let page = page {
+                page.structParent = parent
+                page.mcidParent = mcidParent
+            }
+        }
         let alignment = paragraph.explicitAlignment ? paragraph.alignment : self.alignment
         var list = [TextLine]()
         var lineHeight: Float = 0.0

@@ -24,6 +24,20 @@ public class Paragraph {
     internal Alignment alignment = Alignment.LEFT;
     // True after SetTextAlignment. Otherwise the alignment of the text column applies.
     internal bool explicitAlignment = false;
+    // The structure element of the paragraph in a PDF/UA document, which is a
+    // paragraph unless it is set to a heading; see SetStructureType.
+    internal StructElem structureType = StructElem.P;
+
+    /// <summary>
+    /// Sets the structure element type of this paragraph, for a PDF/UA document:
+    /// StructElem.H1 to StructElem.H6 for a heading, and StructElem.P, which it is,
+    /// for a paragraph. The paragraph is one element however many lines and words it
+    /// is drawn in.
+    /// </summary>
+    public Paragraph SetStructureType(StructElem structureType) {
+        this.structureType = structureType;
+        return this;
+    }
 
     /// <summary>
     /// Constructor for creating paragraph objects.

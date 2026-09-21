@@ -204,6 +204,32 @@ public class TextColumn implements Drawable {
 
     private float[] drawParagraphOn(
             Page page, Paragraph paragraph, boolean lastParagraph) throws Exception {
+        // In a PDF/UA document the paragraph is one structure element, which
+        // the words it is drawn one at a time all belong to.
+        StructElement parent = null;
+        StructElement mcidParent = null;
+        StructElement element = null;
+        if (page != null) {
+            element = page.addStructElement(page.structParent, paragraph.structureType, null);
+            if (element != null) {
+                parent = page.structParent;
+                mcidParent = page.mcidParent;
+                page.structParent = element;
+                page.mcidParent = element;
+            }
+        }
+        try {
+            return drawParagraphText(page, paragraph, lastParagraph);
+        } finally {
+            if (element != null) {
+                page.structParent = parent;
+                page.mcidParent = mcidParent;
+            }
+        }
+    }
+
+    private float[] drawParagraphText(
+            Page page, Paragraph paragraph, boolean lastParagraph) throws Exception {
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new ArrayList<TextLine>();
         float lineHeight = 0f;

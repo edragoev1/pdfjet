@@ -642,6 +642,16 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 			pdf.appendString("/K ")
 			pdf.appendInteger(element.mcid)
 			pdf.appendString("\n")
+		} else if len(element.mcids) > 0 {
+			// The marked contents of a paragraph drawn word by word.
+			pdf.appendString("/K [")
+			for i, mcid := range element.mcids {
+				if i > 0 {
+					pdf.appendString(" ")
+				}
+				pdf.appendInteger(mcid)
+			}
+			pdf.appendString("]\n")
 		} else if len(element.kids) > 0 {
 			pdf.appendString("/K [")
 			for _, kid := range element.kids {
@@ -1023,11 +1033,18 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 	elements := page.structures
 	kept := elements[:0]
 	for _, element := range elements {
-		if element.mcid >= 0 {
-			for len(page.mcidNumbers) <= element.mcid {
+		setMcidNumber := func(mcid int) {
+			if mcid < 0 {
+				return
+			}
+			for len(page.mcidNumbers) <= mcid {
 				page.mcidNumbers = append(page.mcidNumbers, 0)
 			}
-			page.mcidNumbers[element.mcid] = element.objNumber
+			page.mcidNumbers[mcid] = element.objNumber
+		}
+		setMcidNumber(element.mcid)
+		for _, mcid := range element.mcids {
+			setMcidNumber(mcid)
 		}
 		if element.parent == nil {
 			pdf.documentKids = append(pdf.documentKids, element.objNumber)

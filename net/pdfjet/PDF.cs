@@ -608,11 +608,15 @@ public sealed class PDF {
         }
         List<StructElement> kept = new List<StructElement>();
         foreach (StructElement element in page.structures) {
+            List<int> mcids = new List<int>(element.mcids);
             if (element.mcid >= 0) {
-                while (page.mcidNumbers.Count <= element.mcid) {
+                mcids.Add(element.mcid);
+            }
+            foreach (int mcid in mcids) {
+                while (page.mcidNumbers.Count <= mcid) {
                     page.mcidNumbers.Add(0);
                 }
-                page.mcidNumbers[element.mcid] = element.objNumber;
+                page.mcidNumbers[mcid] = element.objNumber;
             }
             if (element.parent == null) {
                 documentKids.Add(element.objNumber);
@@ -656,6 +660,16 @@ public sealed class PDF {
                 Append("/K ");
                 Append(element.mcid);
                 Append("\n");
+            } else if (element.mcids.Count > 0) {
+                // The marked contents of a paragraph drawn word by word.
+                Append("/K [");
+                for (int i = 0; i < element.mcids.Count; i++) {
+                    if (i > 0) {
+                        Append(Token.Space);
+                    }
+                    Append(element.mcids[i]);
+                }
+                Append("]\n");
             } else if (element.kids.Count > 0) {
                 Append("/K [");
                 foreach (int kid in element.kids) {

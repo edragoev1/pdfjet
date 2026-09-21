@@ -44,6 +44,13 @@ type TextFrame struct {
 	tokens         []string
 	tokenIndex     int
 
+	// The paragraph whose structure element the text of the rows belongs to,
+	// and the element. A paragraph is one element however many rows it takes;
+	// one that the frame draws the rest of on another page gets an element of
+	// its own there, since an element belongs to the page it is drawn on.
+	elementParagraph *Paragraph
+	element          *structElement
+
 	// The row of text being drawn: where the text goes next, whether the row
 	// can take more text, whether the frame has a row yet, and where the next
 	// row goes.
@@ -188,6 +195,8 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	}
 	startToken := tf.tokenIndex
 
+	tf.elementParagraph = nil
+	tf.element = nil
 	bottom := tf.drawParagraphs(page)
 	if tf.h > 0 {
 		bottom = tf.y + tf.h
@@ -387,7 +396,9 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		for _, part := range tf.row {
 			line := part.textLine.copyWithText(part.text)
 			line.SetLocation(part.x+shift, tf.yText)
+			restore := tf.beginParagraphElement(page, part.paragraph)
 			line.DrawOn(page)
+			restore()
 			if part.startsParagraph {
 				part.paragraph.xText += shift
 			}
@@ -397,6 +408,26 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		}
 	}
 	tf.row = tf.row[:0]
+}
+
+// beginParagraphElement makes the text that is drawn next belong to the
+// structure element of the paragraph, and returns what puts back the element
+// it belonged to before. A paragraph is one element, however many rows and
+// words it is drawn in.
+func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph) func() {
+	if page == nil || paragraph == nil {
+		return func() {}
+	}
+	if paragraph != tf.elementParagraph {
+		tf.elementParagraph = paragraph
+		tf.element = page.addStructElement(page.structParent, paragraph.structureType, "")
+	}
+	if tf.element == nil {
+		return func() {}
+	}
+	parent, mcidParent := page.structParent, page.mcidParent
+	page.structParent, page.mcidParent = tf.element, tf.element
+	return func() { page.structParent, page.mcidParent = parent, mcidParent }
 }
 
 // drawJustifiedRow draws the words of the row one by one, with the width left
@@ -429,7 +460,9 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
 				word := text[start:end]
 				line := part.textLine.copyWithText(word)
 				line.SetLocation(xWord, tf.yText)
+				restore := tf.beginParagraphElement(page, part.paragraph)
 				line.DrawOn(page)
+				restore()
 				xWord += textWidth(part.textLine, word)
 			}
 			if end < len(text) {

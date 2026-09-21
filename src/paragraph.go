@@ -10,6 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Paragraph is used to create paragraph objects.
@@ -20,6 +21,9 @@ type Paragraph struct {
 	alignment                    alignment.Alignment
 	// True after SetTextAlignment. Otherwise the alignment of the text column applies.
 	explicitAlignment bool
+	// The structure element of the paragraph in a PDF/UA document, which is
+	// a paragraph unless it is set to a heading; see SetStructureType.
+	structureType structelem.StructElem
 }
 
 // NewParagraph creates a paragraph.
@@ -27,6 +31,17 @@ func NewParagraph() *Paragraph {
 	paragraph := new(Paragraph)
 	paragraph.lines = make([]*TextLine, 0)
 	paragraph.alignment = alignment.Left
+	paragraph.structureType = structelem.P
+	return paragraph
+}
+
+// SetStructureType sets the structure element type of this paragraph, for a
+// PDF/UA document: structelem.H1 to structelem.H6 for a heading, and
+// structelem.P, which it is, for a paragraph. The paragraph is one element
+// however many lines and words it is drawn in.
+func (paragraph *Paragraph) SetStructureType(
+	structureType structelem.StructElem) *Paragraph {
+	paragraph.structureType = structureType
 	return paragraph
 }
 

@@ -58,6 +58,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   paragraph under it, which halves the objects of a tagged table: the document
   of the whole file went from 384 MB to 249 MB, and the time from 4.4 to 3.0
   seconds.
+- A paragraph of a `TextColumn` or a `TextFrame` is one structure element in
+  a PDF/UA document, of the type `Paragraph.setStructureType` gives it: a
+  heading with `StructElem.H1` to `H6`, and a paragraph, which it is, with
+  `StructElem.P`. A paragraph is drawn word by word, and every word was a
+  structure element of its own, so a screen reader read each word as its own
+  paragraph: Example_10 had 240 elements for its 7 paragraphs and Example_03
+  had 48 for its 26. The words of a paragraph are the marked contents of its
+  one element now, and the titles of Example_03 and Example_10 are headings.
 - The heading of a page is tagged as a heading in the examples that have one,
   where every one of them was a paragraph: 19 H1 and 2 H2 over the 39 PDF/UA
   examples. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF

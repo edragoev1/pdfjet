@@ -652,11 +652,15 @@ final public class PDF {
         }
         List<StructElement> kept = new ArrayList<StructElement>();
         for (StructElement element : page.structures) {
+            List<Integer> mcids = new ArrayList<Integer>(element.mcids);
             if (element.mcid >= 0) {
-                while (page.mcidNumbers.size() <= element.mcid) {
+                mcids.add(element.mcid);
+            }
+            for (Integer mcid : mcids) {
+                while (page.mcidNumbers.size() <= mcid.intValue()) {
                     page.mcidNumbers.add(0);
                 }
-                page.mcidNumbers.set(element.mcid, element.objNumber);
+                page.mcidNumbers.set(mcid.intValue(), element.objNumber);
             }
             if (element.parent == null) {
                 documentKids.add(element.objNumber);
@@ -700,6 +704,16 @@ final public class PDF {
                 append("/K ");
                 append(element.mcid);
                 append("\n");
+            } else if (!element.mcids.isEmpty()) {
+                // The marked contents of a paragraph drawn word by word.
+                append("/K [");
+                for (int i = 0; i < element.mcids.size(); i++) {
+                    if (i > 0) {
+                        append(Token.SPACE);
+                    }
+                    append(element.mcids.get(i).intValue());
+                }
+                append("]\n");
             } else if (!element.kids.isEmpty()) {
                 append("/K [");
                 for (Integer kid : element.kids) {

@@ -73,6 +73,7 @@ public class Example_03 {
         paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
         foreach (Paragraph p in paragraphs) {
             if (p.StartsWith("**")) {
+                p.SetStructureType(StructElem.H1);
                 p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
                 p.GetTextLines()[0].SetTextColor(Color.navy);
             } else {

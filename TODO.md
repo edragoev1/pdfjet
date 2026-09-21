@@ -165,11 +165,23 @@ work to Oct 21 is the seven goals below, in this order.
    found is fixed (Sep 21): not one heading was tagged as a heading in any of
    them, though 23 draw a visible title, so every title was a paragraph. What
    is left for this goal:
-   - ⬜ `TextColumn`, `Paragraph` and `Chart` cannot tag a heading, so the
-     titles of Example_03, Example_10 and Example_39 are still paragraphs.
-     `setStructureType` is on `TextLine` alone.
-   - ⬜ No example uses the L, LI, Lbl and LBody tags, so a list that is drawn
-     reads as paragraphs.
+   - ✅ A paragraph of a `TextColumn` or a `TextFrame` is one structure
+     element of the type `Paragraph.setStructureType` gives it (Sep 21). Each
+     was drawn word by word and every word was an element of its own, so a
+     reader read each word as a paragraph: Example_10 had 240 of them for 7
+     paragraphs and Example_03 had 48 for 26. The titles of Example_03 and
+     Example_10 are headings now. A `Chart` needed nothing: it is one Figure
+     with an alternate description, and its title belongs inside it.
+   - ⬜ No example uses the L, LI, Lbl and LBody tags. This is not a tagging
+     change but a feature: `LI` is only valid inside `L`, and nothing can
+     group drawables into an `L`. What it needs is either a way to open and
+     close a structure element around what is drawn, or for a `TextColumn` and
+     a `TextFrame` to wrap a run of `LI` paragraphs in an `L` of their own.
+     The two places a list is drawn are the numbered paragraphs of
+     Example_03, whose numbers are drawn
+     in a second pass and so would read after all the text rather than each
+     before its own paragraph, and the contents of Example_22, which is a list
+     of `TextLine` and would tag cleanly.
    - ✅ A tagged `BigTable` held every structure element until the document
      was written, so the 29 MB data file of Example_43 took 778 MB of heap
      (Sep 21). The elements of a page are written with the page now, and a

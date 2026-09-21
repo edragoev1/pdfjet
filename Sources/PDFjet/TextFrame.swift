@@ -48,6 +48,14 @@ public class TextFrame : Drawable {
     private var rowPlaced = false
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
+    // The paragraph whose structure element the text of the rows belongs to,
+    // and the element. A paragraph is one element however many rows it takes;
+    // one that the frame draws the rest of on another page gets an element of
+    // its own there, since an element belongs to the page it is drawn on.
+    private var elementParagraph: Paragraph?
+    private var element: StructElement?
+    private var savedParent: StructElement?
+    private var savedMcidParent: StructElement?
 
     // The text of the row being drawn, drawn when the row is complete, so that it
     // can be aligned: each part is a text line with some of its text.
@@ -184,6 +192,8 @@ public class TextFrame : Drawable {
         let startTokens = tokens
         let startToken = tokenIndex
 
+        elementParagraph = nil
+        element = nil
         var bottom = drawParagraphs(page)
         if h > 0.0 {
             bottom = y + h
@@ -357,6 +367,34 @@ public class TextFrame : Drawable {
     // the vertical offset and the link, as TextColumn does. A paragraph aligned to
     // the right or to the center moves the row, and a justified one widens the
     // spaces of every row but its last.
+    // Makes the text that is drawn next belong to the structure element of the
+    // paragraph. A paragraph is one element, however many rows and words it is
+    // drawn in.
+    private func beginParagraphElement(_ page: Page?, _ paragraph: Paragraph?) {
+        guard let page = page, let paragraph = paragraph else {
+            return
+        }
+        if paragraph !== elementParagraph {
+            elementParagraph = paragraph
+            element = page.addStructElement(page.structParent, paragraph.structureType, nil)
+        }
+        if element == nil {
+            return
+        }
+        savedParent = page.structParent
+        savedMcidParent = page.mcidParent
+        page.structParent = element
+        page.mcidParent = element
+    }
+
+    private func endParagraphElement(_ page: Page?) {
+        guard let page = page, element != nil else {
+            return
+        }
+        page.structParent = savedParent
+        page.mcidParent = savedMcidParent
+    }
+
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
         if row.isEmpty {
             return
@@ -376,7 +414,9 @@ public class TextFrame : Drawable {
                 shift = (w - rowWidth) / 2.0
             }
             for part in row {
+                beginParagraphElement(page, part.paragraph)
                 part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
+                endParagraphElement(page)
                 if part.startsParagraph {
                     part.paragraph.xText += shift
                 }
@@ -411,7 +451,9 @@ public class TextFrame : Drawable {
                 }
                 if end > start {
                     let word = String(String.UnicodeScalarView(text[start..<end]))
+                    beginParagraphElement(page, part.paragraph)
                     part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
+                    endParagraphElement(page)
                     xWord += TextFrame.width(part.textLine, word)
                 }
                 if end < text.count {

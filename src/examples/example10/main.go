@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example10 shows how to lay out paragraphs in a text column.
@@ -55,9 +56,11 @@ func Example10() {
 
 	p1 := pdfjet.NewParagraph()
 	p1.SetTextAlignment(alignment.Center)
+	p1.SetStructureType(structelem.H1)
 	p1.Add(pdfjet.NewTextLine(f2, "Switzerland"))
 
 	p2 := pdfjet.NewParagraph()
+	p2.SetStructureType(structelem.H2)
 	p2.Add(pdfjet.NewTextLine(f2, "Introduction"))
 
 	var buf strings.Builder
@@ -91,6 +94,7 @@ func Example10() {
 	p3.Add(text)
 
 	p4 := pdfjet.NewParagraph()
+	p4.SetStructureType(structelem.H2)
 	p4.Add(pdfjet.NewTextLine(f3, "Economy"))
 
 	buf.Reset()

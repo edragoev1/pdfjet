@@ -11,7 +11,9 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 const testEightWords = "alpha beta gamma delta epsilon zeta eta theta"
@@ -159,4 +161,42 @@ func TestTextColumnTheUnderlineOfALineStopsAtItsTextAndRunsThroughIt(t *testing.
 	lastTokenX := testLastXOfFirstLine(testPositions(testContent(page)))
 	testNear(t, "underline end", lastTokenX+font.StringWidth(font.GetSize(), "zeta"),
 		endOfFirstLine, testDelta)
+}
+
+func TestTextColumnAParagraphIsOneStructureElementOfTheTypeItIsGiven(t *testing.T) {
+	// The words of a paragraph are drawn one at a time, and each was an
+	// element of its own, so a reader read every word as a paragraph.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	column := NewTextColumn()
+	column.SetWidth(200)
+	column.SetLocation(100, 100)
+	column.AddParagraph(NewParagraph().
+		SetStructureType(structelem.H1).Add(NewTextLine(font, testEightWords)))
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, testEightWords)))
+	page := NewPage(doc.pdf, letter.Portrait())
+	column.DrawOn(page)
+	content := testContent(page)
+	// The eight words of each paragraph are its marked contents.
+	if got := strings.Count(content, "/H1 <</MCID"); got != 8 {
+		t.Errorf("the heading has %d marked contents, not 8", got)
+	}
+	if got := strings.Count(content, "/P <</MCID"); got != 8 {
+		t.Errorf("the paragraph has %d marked contents, not 8", got)
+	}
+	raw := string(doc.complete())
+	counts := map[string]int{
+		"/S /H1\n": 1,
+		"/S /P\n":  1,
+	}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+	if !strings.Contains(raw, "/K [0 1 2 3 4 5 6 7]") {
+		t.Error("the heading does not hold the marked contents of its words")
+	}
 }

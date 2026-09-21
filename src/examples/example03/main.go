@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example03 draws paragraphs of styled text with the Text component on Letter paper.
@@ -79,6 +80,7 @@ func Example03() {
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	for _, p := range paragraphs {
 		if p.StartsWith("**") {
+			p.SetStructureType(structelem.H1)
 			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
 			p.GetTextLines()[0].SetTextColor(color.Navy)
 		} else {

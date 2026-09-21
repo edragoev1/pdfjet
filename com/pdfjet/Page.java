@@ -89,6 +89,10 @@ final public class Page {
     // The structure element that the elements of addBDC and addAnnotation
     // become the kids of, like a table cell, or null for the Document element.
     StructElement structParent = null;
+    // While this is set, the marked content of what is drawn belongs to it
+    // rather than to an element of its own: a paragraph is one element,
+    // however many words it is drawn one at a time.
+    StructElement mcidParent = null;
     // True once the page is added to its PDF.
     boolean added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -2556,6 +2560,18 @@ final public class Page {
             String attributes) {
         markedContentDepth++;
         if (pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0) {
+            // The marked content of a paragraph that is drawn word by word
+            // belongs to the one element of the paragraph.
+            if (mcidParent != null) {
+                mcidParent.mcids.add(this.mcid);
+                append("/");
+                append(mcidParent.structure);
+                append(" <</MCID ");
+                append(mcid++);
+                append(">>\n");
+                append("BDC\n");
+                return;
+            }
             StructElement element = new StructElement();
             element.structure = structure.type;
             element.mcid = this.mcid;

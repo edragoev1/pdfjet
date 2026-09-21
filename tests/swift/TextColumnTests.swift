@@ -142,4 +142,33 @@ import Testing
         #expect(abs(endOfFirstLine - (lastTokenX + font.stringWidth(font.getSize(), "zeta")))
                 < TestSupport.delta)
     }
+    private func count(_ str: String, _ text: String) -> Int {
+        return str.components(separatedBy: text).count - 1
+    }
+
+    @Test func aParagraphIsOneStructureElementOfTheTypeItIsGiven() throws {
+        // The words of a paragraph are drawn one at a time, and each was an
+        // element of its own, so a reader read every word as a paragraph.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        let column = TextColumn()
+        column.setWidth(200.0)
+        column.setLocation(100.0, 100.0)
+        column.addParagraph(Paragraph()
+                .setStructureType(StructElem.H1).add(TextLine(font, eightWords)))
+        column.addParagraph(Paragraph().add(TextLine(font, eightWords)))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        column.drawOn(page)
+        let content = TestSupport.content(page)
+        // The eight words of each paragraph are its marked contents.
+        #expect(count(content, "/H1 <</MCID") == 8)
+        #expect(count(content, "/P <</MCID") == 8)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/S /H1\n") == 1)
+        #expect(count(raw, "/S /P\n") == 1)
+        #expect(raw.contains("/K [0 1 2 3 4 5 6 7]"))
+    }
+
 }

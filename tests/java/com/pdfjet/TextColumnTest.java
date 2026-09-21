@@ -163,4 +163,36 @@ class TextColumnTest {
         assertEquals(lastTokenX + font.stringWidth(font.getSize(), "zeta"), endOfFirstLine,
                 TestSupport.DELTA);
     }
+    // The number of times the text is in the string.
+    private static int count(String str, String text) {
+        return str.split(java.util.regex.Pattern.quote(text), -1).length - 1;
+    }
+
+    @Test
+    void aParagraphIsOneStructureElementOfTheTypeItIsGiven() throws Exception {
+        // The words of a paragraph are drawn one at a time, and each was an
+        // element of its own, so a reader read every word as a paragraph.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.setWidth(200f);
+        column.setLocation(100f, 100f);
+        column.addParagraph(new Paragraph()
+                .setStructureType(StructElem.H1).add(new TextLine(font, EIGHT_WORDS)));
+        column.addParagraph(new Paragraph().add(new TextLine(font, EIGHT_WORDS)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.drawOn(page);
+        String content = TestSupport.latin1(page.getContent());
+        // The eight words of each paragraph are its marked contents.
+        assertEquals(8, count(content, "/H1 <</MCID"), content);
+        assertEquals(8, count(content, "/P <</MCID"), content);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/S /H1\n"), raw);
+        assertEquals(1, count(raw, "/S /P\n"), raw);
+        assertTrue(raw.contains("/K [0 1 2 3 4 5 6 7]"), raw);
+    }
+
 }

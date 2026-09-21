@@ -170,6 +170,31 @@ public class TextColumn : IDrawable {
     }
 
     private float[] DrawParagraphOn(Page page, Paragraph paragraph, bool lastParagraph) {
+        // In a PDF/UA document the paragraph is one structure element, which
+        // the words it is drawn one at a time all belong to.
+        StructElement parent = null;
+        StructElement mcidParent = null;
+        StructElement element = null;
+        if (page != null) {
+            element = page.AddStructElement(page.structParent, paragraph.structureType, null);
+            if (element != null) {
+                parent = page.structParent;
+                mcidParent = page.mcidParent;
+                page.structParent = element;
+                page.mcidParent = element;
+            }
+        }
+        try {
+            return DrawParagraphText(page, paragraph, lastParagraph);
+        } finally {
+            if (element != null) {
+                page.structParent = parent;
+                page.mcidParent = mcidParent;
+            }
+        }
+    }
+
+    private float[] DrawParagraphText(Page page, Paragraph paragraph, bool lastParagraph) {
         Alignment alignment = paragraph.explicitAlignment ? paragraph.alignment : this.alignment;
         List<TextLine> list = new List<TextLine>();
         float lineHeight = 0f;

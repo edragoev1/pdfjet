@@ -43,9 +43,11 @@ public class Example_10 {
 
         let p1 = Paragraph()
         p1.setTextAlignment(Alignment.CENTER)
+        p1.setStructureType(StructElem.H1)
         p1.add(TextLine(f2, "Switzerland"))
 
         let p2 = Paragraph()
+        p2.setStructureType(StructElem.H2)
         p2.add(TextLine(f2, "Introduction"))
 
         var buf = String()
@@ -79,6 +81,7 @@ public class Example_10 {
         p3.add(text)
 
         let p4 = Paragraph()
+        p4.setStructureType(StructElem.H2)
         p4.add(TextLine(f3, "Economy"))
 
         buf = String()

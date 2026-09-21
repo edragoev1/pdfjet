@@ -104,6 +104,10 @@ public class Page {
     // The structure element that the elements of addBDC and addAnnotation
     // become the kids of, like a table cell, or nil for the Document element.
     internal var structParent: StructElement?
+    // While this is set, the marked content of what is drawn belongs to it
+    // rather than to an element of its own: a paragraph is one element,
+    // however many words it is drawn one at a time.
+    internal var mcidParent: StructElement?
     // True once the page is added to its PDF.
     internal var added = false
     // True once the content of the page is written to the PDF.
@@ -2304,6 +2308,19 @@ public class Page {
             _ attributes: String?) {
         markedContentDepth += 1
         if pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0 {
+            // The marked content of a paragraph that is drawn word by word
+            // belongs to the one element of the paragraph.
+            if let parent = mcidParent {
+                parent.mcids.append(mcid)
+                append("/")
+                append(parent.structure!)
+                append(" <</MCID ")
+                append(mcid)
+                append(Token.endDictionary)
+                append("BDC\n")
+                mcid += 1
+                return
+            }
             let element = StructElement()
             element.structure = structure.rawValue
             element.mcid = mcid

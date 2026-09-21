@@ -75,6 +75,7 @@ public class Example_03 {
         paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
         for (Paragraph p : paragraphs) {
             if (p.startsWith("**")) {
+                p.setStructureType(StructElem.H1);
                 p.getTextLines().get(0).setFont(f2).setFontSize(24f);
                 p.getTextLines().get(0).setTextColor(Color.navy);
             } else {

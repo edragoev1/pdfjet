@@ -99,6 +99,10 @@ type Page struct {
 	// The structure element that the elements of AddBDC and addAnnotation
 	// become the kids of, like a table cell, or nil for the Document element.
 	structParent *structElement
+	// While this is set, the marked content of what is drawn belongs to it
+	// rather than to an element of its own: a paragraph is one element,
+	// however many words it is drawn one at a time.
+	mcidParent *structElement
 
 	markedContentDepth int      // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
 	added              bool     // True once the page is added to its PDF
@@ -2030,6 +2034,19 @@ func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
 	page.markedContentDepth++
 	if page.pdf.compliance == compliance.PDF_UA_1 && page.artifactDepth == 0 {
+		// The marked content of a paragraph that is drawn word by word
+		// belongs to the one element of the paragraph.
+		if parent := page.mcidParent; parent != nil {
+			parent.mcids = append(parent.mcids, page.mcid)
+			page.appendString("/")
+			page.appendString(parent.structure)
+			page.appendString(" <</MCID ")
+			page.appendInteger(page.mcid)
+			page.mcid++
+			page.appendString(">>\n")
+			page.appendString("BDC\n")
+			return
+		}
 		element := newStructElement()
 		element.structure = string(structure)
 		element.mcid = page.mcid

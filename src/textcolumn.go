@@ -144,6 +144,16 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 
 func (textColumn *TextColumn) drawParagraphOn(
 	page *Page, paragraph *Paragraph, lastParagraph bool) [2]float32 {
+	// In a PDF/UA document the paragraph is one structure element, which the
+	// words it is drawn one at a time all belong to.
+	if page != nil {
+		if element := page.addStructElement(
+			page.structParent, paragraph.structureType, ""); element != nil {
+			parent, mcidParent := page.structParent, page.mcidParent
+			page.structParent, page.mcidParent = element, element
+			defer func() { page.structParent, page.mcidParent = parent, mcidParent }()
+		}
+	}
 	textAlignment := textColumn.alignment
 	if paragraph.explicitAlignment {
 		textAlignment = paragraph.alignment

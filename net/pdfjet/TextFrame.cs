@@ -51,6 +51,14 @@ public class TextFrame : IDrawable {
     private bool rowPlaced;
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
+    // The paragraph whose structure element the text of the rows belongs to,
+    // and the element. A paragraph is one element however many rows it takes;
+    // one that the frame draws the rest of on another page gets an element of
+    // its own there, since an element belongs to the page it is drawn on.
+    private Paragraph elementParagraph;
+    private StructElement element;
+    private StructElement savedParent;
+    private StructElement savedMcidParent;
 
     // The text of the row being drawn, drawn when the row is complete, so that it
     // can be aligned: each part is a text line with some of its text.
@@ -197,6 +205,8 @@ public class TextFrame : IDrawable {
         List<String> startTokens = (tokens == null) ? null : new List<String>(tokens);
         int startToken = tokenIndex;
 
+        elementParagraph = null;
+        element = null;
         float bottom = DrawParagraphs(page);
         if (h > 0f) {
             bottom = y + h;
@@ -367,6 +377,34 @@ public class TextFrame : IDrawable {
     // the vertical offset and the link, as TextColumn does. A paragraph aligned to
     // the right or to the center moves the row, and a justified one widens the
     // spaces of every row but its last.
+    // Makes the text that is drawn next belong to the structure element of the
+    // paragraph. A paragraph is one element, however many rows and words it is
+    // drawn in.
+    private void BeginParagraphElement(Page page, Paragraph paragraph) {
+        if (page == null || paragraph == null) {
+            return;
+        }
+        if (paragraph != elementParagraph) {
+            elementParagraph = paragraph;
+            element = page.AddStructElement(page.structParent, paragraph.structureType, null);
+        }
+        if (element == null) {
+            return;
+        }
+        savedParent = page.structParent;
+        savedMcidParent = page.mcidParent;
+        page.structParent = element;
+        page.mcidParent = element;
+    }
+
+    private void EndParagraphElement(Page page) {
+        if (page == null || element == null) {
+            return;
+        }
+        page.structParent = savedParent;
+        page.mcidParent = savedMcidParent;
+    }
+
     private void DrawRow(Page page, bool lastRowOfParagraph) {
         if (row.Count == 0) {
             return;
@@ -386,7 +424,9 @@ public class TextFrame : IDrawable {
                 shift = (w - rowWidth) / 2f;
             }
             foreach (RowPart part in row) {
+                BeginParagraphElement(page, part.paragraph);
                 part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
+                EndParagraphElement(page);
                 if (part.startsParagraph) {
                     part.paragraph.xText += shift;
                 }
@@ -423,7 +463,9 @@ public class TextFrame : IDrawable {
                 }
                 if (end > start) {
                     String word = text.Substring(start, end - start);
+                    BeginParagraphElement(page, part.paragraph);
                     part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
+                    EndParagraphElement(page);
                     xWord += Width(part.textLine, word);
                 }
                 if (end < text.Length) {

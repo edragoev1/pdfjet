@@ -30,6 +30,9 @@ internal class StructElement {
     // The object numbers of the kids. A parent keeps the numbers and not the
     // kids, so that a page can write its elements and let go of them.
     internal List<int> kids = new List<int>();
+    // The marked contents of an element that holds several of them, like a
+    // paragraph whose words are drawn one at a time.
+    internal List<int> mcids = new List<int>();
     // True for an element a drawable goes on adding to after the page it was
     // made on is written, like the Table of a table that runs over pages. It
     // is written when the document is completed; every other element is

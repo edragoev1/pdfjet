@@ -643,11 +643,15 @@ public final class PDF {
         }
         var kept = [StructElement]()
         for element in page.structures {
+            var mcids = element.mcids
             if element.mcid >= 0 {
-                while page.mcidNumbers.count <= element.mcid {
+                mcids.append(element.mcid)
+            }
+            for mcid in mcids {
+                while page.mcidNumbers.count <= mcid {
                     page.mcidNumbers.append(0)
                 }
-                page.mcidNumbers[element.mcid] = element.objNumber ?? 0
+                page.mcidNumbers[mcid] = element.objNumber ?? 0
             }
             if element.parent == nil {
                 documentKids.append(element.objNumber ?? 0)
@@ -694,6 +698,16 @@ public final class PDF {
                 append("/K ")
                 append(element.mcid)
                 append("\n")
+            } else if !element.mcids.isEmpty {
+                // The marked contents of a paragraph drawn word by word.
+                append("/K [")
+                for (i, mcid) in element.mcids.enumerated() {
+                    if i > 0 {
+                        append(Token.space)
+                    }
+                    append(mcid)
+                }
+                append("]\n")
             } else if !element.kids.isEmpty {
                 append("/K [")
                 for kid in element.kids {

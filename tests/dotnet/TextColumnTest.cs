@@ -149,5 +149,37 @@ public class TextColumnTest {
         Assert.Equal(lastTokenX + font.StringWidth(font.GetSize(), "zeta"), endOfFirstLine,
                 TestSupport.DELTA);
     }
+    // The number of times the text is in the string.
+    private static int Count(string str, string text) {
+        return str.Split(new string[] {text}, StringSplitOptions.None).Length - 1;
+    }
+
+    [Fact]
+    public void AParagraphIsOneStructureElementOfTheTypeItIsGiven() {
+        // The words of a paragraph are drawn one at a time, and each was an
+        // element of its own, so a reader read every word as a paragraph.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.SetWidth(200f);
+        column.SetLocation(100f, 100f);
+        column.AddParagraph(new Paragraph()
+                .SetStructureType(StructElem.H1).Add(new TextLine(font, EIGHT_WORDS)));
+        column.AddParagraph(new Paragraph().Add(new TextLine(font, EIGHT_WORDS)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.DrawOn(page);
+        string content = TestSupport.Latin1(page.GetContent());
+        // The eight words of each paragraph are its marked contents.
+        Assert.Equal(8, Count(content, "/H1 <</MCID"));
+        Assert.Equal(8, Count(content, "/P <</MCID"));
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/S /H1\n"));
+        Assert.Equal(1, Count(raw, "/S /P\n"));
+        Assert.Contains("/K [0 1 2 3 4 5 6 7]", raw);
+    }
+
 }
 }   // End of namespace PDFjet.NET
