@@ -2705,7 +2705,12 @@ final public class PDF {
     }
 
     /**
-     * Returns the page objects.
+     * Returns the page objects, each holding the entries it inherits from the
+     * page tree: /Resources, /MediaBox, /CropBox and /Rotate, which a PDF can
+     * write once on a node above the pages rather than on every page. A page
+     * that has an entry of its own keeps it, and the entries are added to the
+     * page the first time it is returned, so that getPageSize and
+     * getResourcesObject read what the page is.
      *
      * @param objects the objects.
      * @return the page objects.
@@ -2736,9 +2741,31 @@ final public class PDF {
             }
             PDFobj obj = objects.get(number - 1);
             if (isPageObject(obj)) {
+                addInheritedEntries(obj, objects);
                 pages.add(obj);
             } else {
                 getPageObjects(obj, objects, pages, visited);
+            }
+        }
+    }
+
+    // Adds to the page the entries it inherits from the page tree and does
+    // not have itself. A page of another program's PDF often carries no
+    // /MediaBox or /Resources of its own, and read() gives the objects as the
+    // file has them, so the page holds what it is only after this.
+    private static void addInheritedEntries(PDFobj page, List<PDFobj> objects) {
+        int open = page.dict.indexOf("<<");
+        if (open == -1) {
+            return;
+        }
+        for (String key : INHERITED) {
+            if (entryIndex(valueOf(page), key) != -1) {
+                continue;       // An entry of its own.
+            }
+            List<String> value = inheritedValue(page, key, objects);
+            if (value != null) {
+                page.dict.addAll(open + 1, value);
+                page.dict.add(open + 1, key);
             }
         }
     }
@@ -2826,7 +2853,11 @@ final public class PDF {
             return entries;
         }
         if (isInteger(dict.get(i))) {   // "/XObject 12 0 R"
-            dict = objects.get(Integer.parseInt(dict.get(i)) - 1).getDict();
+            int number = toInteger(dict.get(i));
+            if (number < 1 || number > objects.size()) {
+                return entries;     // An object that the PDF does not have.
+            }
+            dict = objects.get(number - 1).getDict();
             i = dict.indexOf("<<");
             if (i == -1) {
                 return entries;

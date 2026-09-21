@@ -291,13 +291,28 @@ public class PDFobj {
         return objects[number - 1];
     }
 
-    /// <summary>Returns the width and height from the /MediaBox of this page.</summary>
+    /// <summary>
+    /// Returns the width and height of the page, which its /MediaBox gives as
+    /// the two corners of a rectangle, in either order. A page with no
+    /// /MediaBox of its own, or one that is not four numbers, is letter size.
+    /// PDF.GetPageObjects gives a page the box it inherits from the page
+    /// tree, which a page of another program's PDF often does not carry
+    /// itself.
+    /// </summary>
     public PageSize GetPageSize() {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/MediaBox")) {
-                return new PageSize(
-                        float.Parse(dict[i + 4], CultureInfo.InvariantCulture),
-                        float.Parse(dict[i + 5], CultureInfo.InvariantCulture));
+                if (!TokenAt(dict, i + 1).Equals("[")) {
+                    break;
+                }
+                float[] box = new float[4];
+                for (int j = 0; j < 4; j++) {
+                    if (!float.TryParse(TokenAt(dict, i + 2 + j), NumberStyles.Float,
+                            CultureInfo.InvariantCulture, out box[j])) {
+                        return Letter.PORTRAIT;
+                    }
+                }
+                return new PageSize(Math.Abs(box[2] - box[0]), Math.Abs(box[3] - box[1]));
             }
         }
         return Letter.PORTRAIT;
@@ -307,13 +322,19 @@ public class PDFobj {
         for (int i = 0; i < dict.Count; i++) {
             String token = dict[i];
             if (token.Equals("/Length")) {
-                int number = Int32.Parse(dict[i + 1]);
-                if (dict[i + 2].Equals("0") &&
-                        dict[i + 3].Equals("R")) {
-                    return GetLength(objects, number);
-                } else {
-                    return number;
+                int number = ToLength(TokenAt(dict, i + 1));
+                if (i + 2 >= dict.Count) {
+                    throw new Exception("The dictionary ends after the /Length.");
                 }
+                if (dict[i + 2].Equals("0")) {
+                    if (i + 3 >= dict.Count) {
+                        throw new Exception("The dictionary ends after the /Length.");
+                    }
+                    if (dict[i + 3].Equals("R")) {
+                        return GetLength(objects, number);
+                    }
+                }
+                return number;
             }
         }
         return 0;
@@ -322,10 +343,20 @@ public class PDFobj {
     internal int GetLength(List<PDFobj> objects, int number) {
         foreach (PDFobj obj in objects) {
             if (obj.number == number) {
-                return Int32.Parse(obj.dict[3]);
+                return ToLength(TokenAt(obj.dict, 3));
             }
         }
         return 0;
+    }
+
+    // Returns the length the token holds, which a PDF that was read can write
+    // as anything.
+    private static int ToLength(String token) {
+        int length;
+        if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
+            throw new Exception("The /Length of a stream is not a number.");
+        }
+        return length;
     }
 
     /// <summary>
@@ -380,6 +411,29 @@ public class PDFobj {
         return content;
     }
 
+    // Returns the token at the index, or an empty string when the dictionary
+    // of an object that was read ends before it.
+    private static String TokenAt(List<String> dict, int index) {
+        return (index < 0 || index >= dict.Count) ? "" : dict[index];
+    }
+
+    // Returns the object that the token names, or null when the token is not
+    // the number of an object the PDF has: a page of a file that was changed
+    // can name an object that is not in it.
+    private static PDFobj ObjectAt(List<PDFobj> objects, String token) {
+        int number;
+        if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
+            return null;
+        }
+        return ObjectNumbered(objects, number);
+    }
+
+    // Returns the index to insert at, which is the end of the dictionary when
+    // the index is past it.
+    private static int IndexAt(List<String> dict, int index) {
+        return (index < 0) ? 0 : Math.Min(index, dict.Count);
+    }
+
     /// <summary>Returns the resources object of this page.</summary>
     public PDFobj GetResourcesObject(List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
@@ -422,14 +476,22 @@ public class PDFobj {
         obj.number = objects.Count + 1;
         objects.Add(obj);
 
+        // The first /Resources of the page is the one, and the font is added
+        // to it once: adding it to the page again, after a resources object
+        // that names the page itself has grown the page dictionary, never
+        // ended.
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
-                String token = dict[++i];
-                if (token.Equals("<<")) {                   // Direct resources object
+                String token = TokenAt(dict, i + 1);
+                if (token.Equals("<<")) {           // Direct resources object
                     AddFontResource(this, objects, font.fontID, obj.number);
-                } else if (token[0] >= '0' && token[0] <= '9') {        // Indirect resources object
-                    AddFontResource(objects[Int32.Parse(token) - 1], objects, font.fontID, obj.number);
+                } else {                            // Indirect resources object
+                    PDFobj resources = ObjectAt(objects, token);
+                    if (resources != null) {
+                        AddFontResource(resources, objects, font.fontID, obj.number);
+                    }
                 }
+                break;
             }
         }
 
@@ -451,20 +513,21 @@ public class PDFobj {
             // entries follow its first "<<".
             int i = obj.dict.IndexOf("/Resources");
             i = (i == -1) ? obj.dict.IndexOf("<<") + 1 : i + 2;
-            obj.dict.InsertRange(i, new String[] {"/Font", "<<", ">>"});
+            obj.dict.InsertRange(IndexAt(obj.dict, i), new String[] {"/Font", "<<", ">>"});
         }
 
         for (int i = 0; i < obj.dict.Count; i++) {
             if (obj.dict[i].Equals("/Font")) {
-                String token = obj.dict[i + 1];
+                String token = TokenAt(obj.dict, i + 1);
                 if (token.Equals("<<")) {
                     obj.dict.Insert(i + 2, "/" + fontID);
                     obj.dict.Insert(i + 3, number.ToString());
                     obj.dict.Insert(i + 4, "0");
                     obj.dict.Insert(i + 5, "R");
                     return;
-                } else if (token[0] >= '0' && token[0] <= '9') {
-                    PDFobj o2 = objects[Int32.Parse(token) - 1];
+                }
+                PDFobj o2 = ObjectAt(objects, token);
+                if (o2 != null) {
                     for (int j = 0; j < o2.dict.Count; j++) {
                         if (o2.dict[j].Equals("<<")) {
                             o2.dict.Insert(j + 1, "/" + fontID);
@@ -486,11 +549,11 @@ public class PDFobj {
         }
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals(type)) {
-                dict.InsertRange(i + 2, list);
+                dict.InsertRange(IndexAt(dict, i + 2), list);
                 return;
             }
         }
-        if (dict[3].Equals("<<")) {
+        if (TokenAt(dict, 3).Equals("<<")) {
             dict.InsertRange(4, list);
             return;
         }
@@ -504,11 +567,14 @@ public class PDFobj {
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
             if (token.Equals(type)) {
-                token = obj.dict[i + 1];
+                token = TokenAt(obj.dict, i + 1);
                 if (token.Equals("<<")) {
                     InsertNewObject(obj.dict, list, type);
                 } else {
-                    InsertNewObject(objects[Int32.Parse(token) - 1].dict, list, type);
+                    PDFobj o2 = ObjectAt(objects, token);
+                    if (o2 != null) {
+                        InsertNewObject(o2.dict, list, type);
+                    }
                 }
                 return;
             }
@@ -518,7 +584,7 @@ public class PDFobj {
         String[] array = {type, "<<", tag + number, number, "0", "R", ">>"};
         for (int i = 0; i < obj.dict.Count; i++) {
             if (obj.dict[i].Equals("/Resources")) {
-                obj.dict.InsertRange(i + 2, array);
+                obj.dict.InsertRange(IndexAt(obj.dict, i + 2), array);
                 return;
             }
         }
@@ -534,11 +600,14 @@ public class PDFobj {
     public void AddResource(Image image, List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
-                String token = dict[i + 1];
+                String token = TokenAt(dict, i + 1);
                 if (token.Equals("<<")) {       // Direct resources object
                     AddResource("/XObject", this, objects, image.objNumber);
                 } else {                        // Indirect resources object
-                    AddResource("/XObject", objects[Int32.Parse(token) - 1], objects, image.objNumber);
+                    PDFobj resources = ObjectAt(objects, token);
+                    if (resources != null) {
+                        AddResource("/XObject", resources, objects, image.objNumber);
+                    }
                 }
                 return;
             }
@@ -549,11 +618,14 @@ public class PDFobj {
     public void AddResource(Font font, List<PDFobj> objects) {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
-                String token = dict[i + 1];
+                String token = TokenAt(dict, i + 1);
                 if (token.Equals("<<")) {       // Direct resources object
                     AddResource("/Font", this, objects, font.objNumber);
                 } else {                        // Indirect resources object
-                    AddResource("/Font", objects[Int32.Parse(token) - 1], objects, font.objNumber);
+                    PDFobj resources = ObjectAt(objects, token);
+                    if (resources != null) {
+                        AddResource("/Font", resources, objects, font.objNumber);
+                    }
                 }
                 return;
             }
@@ -571,23 +643,24 @@ public class PDFobj {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
-                String token = dict[i];
+                String token = TokenAt(dict, i);
                 if (token.Equals("[")) {
-                    // Array of content objects
-                    while (true) {
-                        i += 1;
-                        token = dict[i];
-                        if (token.Equals("]")) {
+                    // Array of content objects, which can end before its "]".
+                    for (i += 1; i < dict.Count; i += 3) {
+                        if (dict[i].Equals("]")) {
                             dict.Insert(i, "R");
                             dict.Insert(i, "0");
                             dict.Insert(i, objNumber);
                             return;
                         }
-                        i += 2;     // Skip the 0 and R
                     }
+                    return;
                 } else {
                     // Single content object
-                    PDFobj obj2 = objects[Int32.Parse(token) - 1];
+                    PDFobj obj2 = ObjectAt(objects, token);
+                    if (obj2 == null) {
+                        return;
+                    }
                     if (obj2.data == null && obj2.stream == null) {
                         // This is not a stream object!
                         for (int j = 0; j < obj2.dict.Count; j++) {
@@ -598,6 +671,9 @@ public class PDFobj {
                                 return;
                             }
                         }
+                    }
+                    if (!TokenAt(dict, i + 1).Equals("0") || !TokenAt(dict, i + 2).Equals("R")) {
+                        return;     // Not a whole "n 0 R" to put in an array.
                     }
                     dict.Insert(i, "[");
                     dict.Insert(i + 4, "]");
@@ -625,17 +701,20 @@ public class PDFobj {
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
-                String token = dict[i];
+                String token = TokenAt(dict, i);
                 if (token.Equals("[")) {
                     // Array of content object streams
                     i += 1;
-                    dict.Insert(i, "R");
-                    dict.Insert(i, "0");
-                    dict.Insert(i, objNumber);
+                    dict.Insert(IndexAt(dict, i), "R");
+                    dict.Insert(IndexAt(dict, i), "0");
+                    dict.Insert(IndexAt(dict, i), objNumber);
                     return;
                 } else {
                     // Single content object
-                    PDFobj obj2 = objects[Int32.Parse(token) - 1];
+                    PDFobj obj2 = ObjectAt(objects, token);
+                    if (obj2 == null) {
+                        return;
+                    }
                     if (obj2.data == null && obj2.stream == null) {
                         // This is not a stream object!
                         for (int j = 0; j < obj2.dict.Count; j++) {
@@ -647,6 +726,9 @@ public class PDFobj {
                                 return;
                             }
                         }
+                    }
+                    if (!TokenAt(dict, i + 1).Equals("0") || !TokenAt(dict, i + 2).Equals("R")) {
+                        return;     // Not a whole "n 0 R" to put in an array.
                     }
                     dict.Insert(i, "[");
                     dict.Insert(i + 4, "]");
@@ -679,12 +761,11 @@ public class PDFobj {
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
-                String token = dict[i + 1];
+                String token = TokenAt(dict, i + 1);
                 if (token.Equals("<<")) {
                     obj = this;
                     index = i + 2;
-                } else {
-                    obj = objects[Int32.Parse(token) - 1];
+                } else if ((obj = ObjectAt(objects, token)) != null) {
                     for (int j = 0; j < obj.dict.Count; j++) {
                         if (obj.dict[j].Equals("<<")) {
                             index = j + 1;
@@ -707,10 +788,14 @@ public class PDFobj {
         if (k == obj.dict.Count) {
             obj.dict.InsertRange(index, new String[] {"/ExtGState", "<<", ">>"});
             index += 2;
-        } else if (obj.dict[k + 1].Equals("<<")) {
+        } else if (TokenAt(obj.dict, k + 1).Equals("<<")) {
             index = k + 2;
         } else {                                    // "/ExtGState 12 0 R"
-            obj = objects[Int32.Parse(obj.dict[k + 1]) - 1];
+            PDFobj extGState = ObjectAt(objects, TokenAt(obj.dict, k + 1));
+            if (extGState == null) {
+                return this;
+            }
+            obj = extGState;
             index = obj.dict.IndexOf("<<") + 1;
         }
         gsNumber = GetMaxGSNumber(obj);

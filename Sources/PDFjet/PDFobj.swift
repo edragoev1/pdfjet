@@ -288,13 +288,28 @@ public final class PDFobj {
         return numbers
     }
 
-    /// Returns the width and height from the /MediaBox of this page.
+    /// Returns the width and height of the page, which its /MediaBox gives as
+    /// the two corners of a rectangle, in either order. A page with no
+    /// /MediaBox of its own, or one that is not four numbers, is letter size.
+    /// PDF.getPageObjects gives a page the box it inherits from the page
+    /// tree, which a page of another program's PDF often does not carry
+    /// itself.
     ///
     /// - Returns: the page size.
     public final func getPageSize() -> PageSize {
         for i in 0..<dict.count {
             if dict[i] == "/MediaBox" {
-                return PageSize(Float(dict[i + 4])!, Float(dict[i + 5])!)
+                if tokenAt(dict, i + 1) != "[" {
+                    break
+                }
+                var box = [Float](repeating: 0.0, count: 4)
+                for j in 0..<4 {
+                    guard let value = Float(tokenAt(dict, i + 2 + j)) else {
+                        return Letter.PORTRAIT
+                    }
+                    box[j] = value
+                }
+                return PageSize(abs(box[2] - box[0]), abs(box[3] - box[1]))
             }
         }
         return Letter.PORTRAIT
@@ -350,6 +365,31 @@ public final class PDFobj {
             return nil
         }
         return objects[number - 1]
+    }
+
+    // Returns the token at the index, or an empty string when the dictionary
+    // of an object that was read ends before it.
+    private final func tokenAt(_ dict: [String], _ index: Int) -> String {
+        if index < 0 || index >= dict.count {
+            return ""
+        }
+        return dict[index]
+    }
+
+    // Returns the object that the token names, or nil when the token is not
+    // the number of an object the PDF has: a page of a file that was changed
+    // can name an object that is not in it.
+    private final func objectAt(_ objects: [PDFobj], _ token: String) -> PDFobj? {
+        guard let number = Int(token) else {
+            return nil
+        }
+        return getObject(number: number, from: objects)
+    }
+
+    // Returns the index to insert at, which is the end of the dictionary when
+    // the index is past it.
+    private final func indexAt(_ dict: [String], _ index: Int) -> Int {
+        return (index < 0) ? 0 : min(index, dict.count)
     }
 
     ///
@@ -452,17 +492,20 @@ public final class PDFobj {
         obj.number = objects.count + 1
         objects.append(obj)
 
+        // The first /Resources of the page is the one, and the font is added
+        // to it once: adding it to the page again, after a resources object
+        // that names the page itself has grown the page dictionary, never
+        // ended.
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
-                i += 1
-                let token = dict[i]
+                let token = tokenAt(dict, i + 1)
                 if token == "<<" {                  // Direct resources object
                     addFontResource(self, objects, font.fontID!, obj.number)
-                } else if firstCharIsDigit(token) {   // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: objects)!
+                } else if let object = objectAt(objects, token) {  // Indirect
                     addFontResource(object, objects, font.fontID!, obj.number)
                 }
+                break
             }
             i += 1
         }
@@ -493,21 +536,20 @@ public final class PDFobj {
             } else {
                 i = (obj.dict.firstIndex(of: "<<") ?? -1) + 1
             }
-            obj.dict.insert(contentsOf: ["/Font", "<<", ">>"], at: i)
+            obj.dict.insert(contentsOf: ["/Font", "<<", ">>"], at: indexAt(obj.dict, i))
         }
 
         i = 0
         while i < obj.dict.count {
             if obj.dict[i] == "/Font" {
-                let token = obj.dict[i + 1]
+                let token = tokenAt(obj.dict, i + 1)
                 if token == "<<" {
                     obj.dict.insert("/" + fontID, at: i + 2)
                     obj.dict.insert(String(number), at: i + 3)
                     obj.dict.insert("0", at: i + 4)
                     obj.dict.insert("R", at: i + 5)
                     return
-                } else if firstCharIsDigit(token) {
-                    let o2 = getObject(number: Int(token)!, from: objects)!
+                } else if let o2 = objectAt(objects, token) {
                     var j = 0
                     while j < o2.dict.count {
                         if o2.dict[j] == "<<" {
@@ -534,11 +576,11 @@ public final class PDFobj {
         }
         for i in 0..<dict.count {
             if dict[i] == type {
-                dict.insert(contentsOf: list, at: i + 2)
+                dict.insert(contentsOf: list, at: indexAt(dict, i + 2))
                 return
             }
         }
-        if dict[3] == "<<" {
+        if tokenAt(dict, 3) == "<<" {
             dict.insert(contentsOf: list, at: 4)
             return
         }
@@ -554,11 +596,10 @@ public final class PDFobj {
         var list = [tag + number, number, "0", "R"]
         for i in 0..<obj.dict.count {
             if obj.dict[i] == type {
-                let token = obj.dict[i + 1]
+                let token = tokenAt(obj.dict, i + 1)
                 if token == "<<" {
                     insertNewObject(&obj.dict, &list, type)
-                } else {
-                    let object = getObject(number: Int(token)!, from: objects)!
+                } else if let object = objectAt(objects, token) {
                     insertNewObject(&object.dict, &list, type)
                 }
                 return
@@ -569,7 +610,7 @@ public final class PDFobj {
         list = [type, "<<", tag + number, number, "0", "R", ">>"]
         for i in 0..<obj.dict.count {
             if obj.dict[i] == "/Resources" {
-                obj.dict.insert(contentsOf: list, at: i + 2)
+                obj.dict.insert(contentsOf: list, at: indexAt(obj.dict, i + 2))
                 return
             }
         }
@@ -590,11 +631,10 @@ public final class PDFobj {
             _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
-                let token = dict[i + 1]
+                let token = tokenAt(dict, i + 1)
                 if token == "<<" {      // Direct resources object
                     addResource("/XObject", self, objects, image.objNumber!)
-                } else {                  // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: objects)!
+                } else if let object = objectAt(objects, token) {  // Indirect
                     addResource("/XObject", object, objects, image.objNumber!)
                 }
                 return
@@ -611,23 +651,15 @@ public final class PDFobj {
             _ objects: inout [PDFobj]) {
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
-                let token = dict[i + 1]
+                let token = tokenAt(dict, i + 1)
                 if token == "<<" {      // Direct resources object
                     addResource("/Font", self, objects, font.objNumber)
-                } else {                  // Indirect resources object
-                    let object = getObject(number: Int(token)!, from: objects)!
+                } else if let object = objectAt(objects, token) {  // Indirect
                     addResource("/Font", object, objects, font.objNumber)
                 }
                 return
             }
         }
-    }
-
-    private final func firstCharIsDigit(_ str: String) -> Bool {
-        if let scalar = str.unicodeScalars.first {
-            return scalar >= "0" && scalar <= "9"
-        }
-        return false
     }
 
     /// Adds a content stream to this page.
@@ -642,22 +674,25 @@ public final class PDFobj {
         while i < dict.count {
             if dict[i] == "/Contents" {
                 i += 1
-                var token = dict[i]
+                let token = tokenAt(dict, i)
                 if token == "[" {
-                    while true {
-                        i += 1
-                        token = dict[i]
-                        if token == "]" {
+                    // Array of content objects, which can end before its "]".
+                    i += 1
+                    while i < dict.count {
+                        if dict[i] == "]" {
                             dict.insert("R", at: i)
                             dict.insert("0", at: i)
                             dict.insert(objNumber, at: i)
                             return
                         }
-                        i += 2  // Skip the 0 and R
+                        i += 3  // Skip the number, the 0 and the R
                     }
+                    return
                 } else {
                     // Single content object
-                    let obj2 = objects[Int(token)! - 1]
+                    guard let obj2 = objectAt(objects, token) else {
+                        return
+                    }
                     if obj2.data.count == 0 && obj2.stream == nil {
                         // This is not a stream object!
                         var j = 0
@@ -670,6 +705,9 @@ public final class PDFobj {
                             }
                             j += 1
                         }
+                    }
+                    if tokenAt(dict, i + 1) != "0" || tokenAt(dict, i + 2) != "R" {
+                        return  // Not a whole "n 0 R" to put in an array.
                     }
                     dict.insert("[", at: i)
                     dict.insert("]", at: i + 4)
@@ -702,17 +740,19 @@ public final class PDFobj {
         while i < dict.count {
             if dict[i] == "/Contents" {
                 i += 1
-                let token = dict[i]
+                let token = tokenAt(dict, i)
                 if token == "[" {
                     // Array of content object streams
                     i += 1
-                    dict.insert("R", at: i)
-                    dict.insert("0", at: i)
-                    dict.insert(objNumber, at: i)
+                    dict.insert("R", at: indexAt(dict, i))
+                    dict.insert("0", at: indexAt(dict, i))
+                    dict.insert(objNumber, at: indexAt(dict, i))
                     return
                 } else {
                     // Single content object
-                    let obj2 = objects[Int(token)! - 1]
+                    guard let obj2 = objectAt(objects, token) else {
+                        return
+                    }
                     if obj2.data.count == 0 && obj2.stream == nil {
                         // This is not a stream object!
                         var j = 0
@@ -726,6 +766,9 @@ public final class PDFobj {
                             }
                             j += 1
                         }
+                    }
+                    if tokenAt(dict, i + 1) != "0" || tokenAt(dict, i + 2) != "R" {
+                        return  // Not a whole "n 0 R" to put in an array.
                     }
                     dict.insert("[", at: i)
                     dict.insert("]", at: i + 4)
@@ -759,12 +802,12 @@ public final class PDFobj {
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
-                let token = dict[i + 1]
+                let token = tokenAt(dict, i + 1)
                 if token == "<<" {
                     obj = self
                     index = i + 2
-                } else {
-                    obj = objects[Int(token)! - 1]
+                } else if let object = objectAt(objects, token) {
+                    obj = object
                     var j = 0
                     while j < obj!.dict.count {
                         if obj!.dict[j] == "<<" {
@@ -790,10 +833,13 @@ public final class PDFobj {
         if k == resources.dict.count {
             resources.dict.insert(contentsOf: ["/ExtGState", "<<", ">>"], at: index)
             index += 2
-        } else if resources.dict[k + 1] == "<<" {
+        } else if tokenAt(resources.dict, k + 1) == "<<" {
             index = k + 2
         } else {                                        // "/ExtGState 12 0 R"
-            resources = objects[Int(resources.dict[k + 1])! - 1]
+            guard let object = objectAt(objects, tokenAt(resources.dict, k + 1)) else {
+                return self
+            }
+            resources = object
             index = (resources.dict.firstIndex(of: "<<") ?? -1) + 1
         }
         gsNumber = getMaxGSNumber(resources)

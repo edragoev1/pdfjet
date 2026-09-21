@@ -2534,7 +2534,14 @@ public sealed class PDF {
         return null;
     }
 
-    /// <summary>Returns the page objects.</summary>
+    /// <summary>
+    /// Returns the page objects, each holding the entries it inherits from
+    /// the page tree: /Resources, /MediaBox, /CropBox and /Rotate, which a
+    /// PDF can write once on a node above the pages rather than on every
+    /// page. A page that has an entry of its own keeps it, and the entries
+    /// are added to the page the first time it is returned, so that
+    /// GetPageSize and GetResourcesObject read what the page is.
+    /// </summary>
     public List<PDFobj> GetPageObjects(List<PDFobj> objects) {
         List<PDFobj> pages = new List<PDFobj>();
         PDFobj pagesObject = GetPagesObject(objects);
@@ -2561,9 +2568,31 @@ public sealed class PDF {
             }
             PDFobj obj = objects[number - 1];
             if (IsPageObject(obj)) {
+                AddInheritedEntries(obj, objects);
                 pages.Add(obj);
             } else {
                 GetPageObjects(obj, objects, pages, visited);
+            }
+        }
+    }
+
+    // Adds to the page the entries it inherits from the page tree and does
+    // not have itself. A page of another program's PDF often carries no
+    // /MediaBox or /Resources of its own, and Read gives the objects as the
+    // file has them, so the page holds what it is only after this.
+    private static void AddInheritedEntries(PDFobj page, List<PDFobj> objects) {
+        int open = page.dict.IndexOf("<<");
+        if (open == -1) {
+            return;
+        }
+        foreach (String key in INHERITED) {
+            if (EntryIndex(ValueOf(page), key) != -1) {
+                continue;       // An entry of its own.
+            }
+            List<String> value = InheritedValue(page, key, objects);
+            if (value != null) {
+                page.dict.InsertRange(open + 1, value);
+                page.dict.Insert(open + 1, key);
             }
         }
     }
@@ -2652,7 +2681,11 @@ public sealed class PDF {
             return entries;
         }
         if (IsInteger(dict[i])) {   // "/XObject 12 0 R"
-            dict = objects[Int32.Parse(dict[i]) - 1].GetDict();
+            int number = ToInteger(dict[i]);
+            if (number < 1 || number > objects.Count) {
+                return entries;     // An object that the PDF does not have.
+            }
+            dict = objects[number - 1].GetDict();
             i = dict.IndexOf("<<");
             if (i == -1) {
                 return entries;

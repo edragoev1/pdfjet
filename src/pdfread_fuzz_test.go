@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -31,13 +33,41 @@ import (
 // fuzzes. An input that fails is kept in testdata/fuzz, and go test runs it
 // from then on.
 
-// fuzzReadPDF reads the bytes as a PDF and uses what it read as a merge does,
-// and returns what the ports are compared on: the objects, the pages and what
-// each page draws.
-func fuzzReadPDF(data []byte, password string) string {
+// fuzzSafe runs the function and reports what it did. A panic of PDFjet's
+// own is the error of a port that panics where the others throw, and is what
+// the input did; a Go runtime error -- an index out of range, a nil pointer
+// or a division by zero -- is a bug of the reader, and fails the test where
+// the ports that do not recover from it would crash.
+func fuzzSafe(t *testing.T, what string, fn func()) (failed bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(runtime.Error); ok {
+				t.Fatalf("%s: runtime error: %v\n%s", what, err, debug.Stack())
+			}
+			failed = true
+		}
+	}()
+	fn()
+	return false
+}
+
+// fuzzCheckError fails the test when reading ended in a Go runtime error,
+// which ReadWithPassword recovers from and returns as an ordinary error: the
+// other three ports do not recover, so the same input crashes there.
+func fuzzCheckError(t *testing.T, what string, err error) {
+	if _, ok := err.(runtime.Error); ok {
+		t.Fatalf("%s: runtime error: %v", what, err)
+	}
+}
+
+// fuzzReadPDF reads the bytes as a PDF and uses what it read as a merge, a
+// split and a stamp do, and returns what the ports are compared on: the
+// objects, the pages, the size of each page and what each page draws.
+func fuzzReadPDF(t *testing.T, data []byte, password string) string {
 	pdf := NewPDF(bufio.NewWriter(io.Discard))
 	objects, err := pdf.ReadWithPassword(data, password)
 	if err != nil {
+		fuzzCheckError(t, "read", err)
 		return "error"
 	}
 	var report strings.Builder
@@ -45,6 +75,17 @@ func fuzzReadPDF(data []byte, password string) string {
 	pages := NewPDF(bufio.NewWriter(io.Discard)).GetPageObjects(objects)
 	fmt.Fprintf(&report, " pages=%d", len(pages))
 	for _, page := range pages {
+		if fuzzSafe(t, "getPageSize", func() {
+			size := page.GetPageSize()
+			fmt.Fprintf(&report, " size=%gx%g", size.GetWidth(), size.GetHeight())
+		}) {
+			report.WriteString(" size=error")
+		}
+		if fuzzSafe(t, "getResourcesObject", func() {
+			page.GetResourcesObject(objects)
+		}) {
+			report.WriteString(" resources=error")
+		}
 		content := page.GetContentObject(objects)
 		if content == nil {
 			report.WriteString(" page=none")
@@ -54,12 +95,50 @@ func fuzzReadPDF(data []byte, password string) string {
 	}
 	// The merge writes the objects that were read into a document of its own.
 	merged := NewPDF(bufio.NewWriter(io.Discard))
-	if err := merged.Merge(objects); err != nil {
-		fmt.Fprintf(&report, " merge=error")
-	} else if err := merged.Complete(); err != nil {
-		fmt.Fprintf(&report, " merge=error")
-	} else {
-		report.WriteString(" merge=ok")
+	if fuzzSafe(t, "merge", func() {
+		if err := merged.Merge(objects); err != nil {
+			report.WriteString(" merge=error")
+		} else if err := merged.Complete(); err != nil {
+			report.WriteString(" merge=error")
+		} else {
+			report.WriteString(" merge=ok")
+		}
+	}) {
+		report.WriteString(" merge=error")
+	}
+	// The split merges one page of what was read into a document of its own.
+	if len(pages) > 0 {
+		split := NewPDF(bufio.NewWriter(io.Discard))
+		if fuzzSafe(t, "split", func() {
+			if err := split.MergePages(objects, 1); err != nil {
+				report.WriteString(" split=error")
+			} else if err := split.Complete(); err != nil {
+				report.WriteString(" split=error")
+			} else {
+				report.WriteString(" split=ok")
+			}
+		}) {
+			report.WriteString(" split=error")
+		}
+	}
+	// The stamp writes the objects that were read as they are, with the fonts
+	// and the images of their pages, and draws on a page of them.
+	stamp := NewPDF(bufio.NewWriter(io.Discard))
+	if fuzzSafe(t, "stamp", func() {
+		stamp.AddResourceObjects(objects)
+		if err := stamp.AddObjects(objects); err != nil {
+			report.WriteString(" stamp=error")
+			return
+		}
+		if len(pages) > 0 {
+			font := pages[0].AddCoreFontResource(corefont.Helvetica(), &objects)
+			pages[0].AddContent([]byte("BT /F1 12 Tf 50 50 Td (x) Tj ET\n"), &objects)
+			pages[0].SetGraphicsState(NewGraphicsState(), &objects)
+			_ = font
+		}
+		report.WriteString(" stamp=ok")
+	}) {
+		report.WriteString(" stamp=error")
 	}
 	return report.String()
 }
@@ -167,7 +246,7 @@ func FuzzPDFRead(f *testing.F) {
 	f.Add([]byte{}, "")
 	f.Fuzz(func(t *testing.T, data []byte, password string) {
 		fuzzRun(t, len(data), func() {
-			fuzzReadPDF(data, password)
+			fuzzReadPDF(t, data, password)
 		})
 	})
 }

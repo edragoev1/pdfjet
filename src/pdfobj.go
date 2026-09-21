@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"errors"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -311,19 +313,27 @@ func (obj *PDFobj) getObjectNumbers(key string) []int {
 	return numbers
 }
 
-// GetPageSize returns the page size.
+// GetPageSize returns the width and height of the page, which its /MediaBox
+// gives as the two corners of a rectangle, in either order. A page with no
+// /MediaBox of its own, or one that is not four numbers, is letter size.
+// PDF.GetPageObjects gives a page the box it inherits from the page tree,
+// which a page of another program's PDF often does not carry itself.
 func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/MediaBox" {
-			f1, err1 := strconv.ParseFloat(obj.dict[i+4], 32)
-			if err1 != nil {
-				panic(err1)
+			if tokenAt(obj.dict, i+1) != "[" {
+				break
 			}
-			f2, err2 := strconv.ParseFloat(obj.dict[i+5], 32)
-			if err2 != nil {
-				panic(err2)
+			box := [4]float64{}
+			for j := 0; j < 4; j++ {
+				value, err := strconv.ParseFloat(tokenAt(obj.dict, i+2+j), 32)
+				if err != nil {
+					return letter.Portrait()
+				}
+				box[j] = value
 			}
-			return pagesize.NewPageSize(float32(f1), float32(f2))
+			return pagesize.NewPageSize(
+				float32(math.Abs(box[2]-box[0])), float32(math.Abs(box[3]-box[1])))
 		}
 	}
 	return letter.Portrait()
@@ -334,13 +344,20 @@ func (obj *PDFobj) getLength(objects []*PDFobj) int {
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
 		if token == "/Length" {
-			number, err := strconv.Atoi(obj.dict[i+1])
+			number, err := strconv.Atoi(tokenAt(obj.dict, i+1))
 			if err != nil {
-				panic(err)
+				panic(errors.New("The /Length of a stream is not a number."))
 			}
-			if obj.dict[i+2] == "0" &&
-				obj.dict[i+3] == "R" {
-				return obj.getLengthFromObject(objects, number)
+			if i+2 >= len(obj.dict) {
+				panic(errors.New("The dictionary ends after the /Length."))
+			}
+			if obj.dict[i+2] == "0" {
+				if i+3 >= len(obj.dict) {
+					panic(errors.New("The dictionary ends after the /Length."))
+				}
+				if obj.dict[i+3] == "R" {
+					return obj.getLengthFromObject(objects, number)
+				}
 			}
 			return number
 		}
@@ -352,9 +369,9 @@ func (obj *PDFobj) getLength(objects []*PDFobj) int {
 func (obj *PDFobj) getLengthFromObject(objects []*PDFobj, number int) int {
 	for _, obj := range objects {
 		if obj.number == number {
-			length, err := strconv.Atoi(obj.dict[3])
+			length, err := strconv.Atoi(tokenAt(obj.dict, 3))
 			if err != nil {
-				panic(err)
+				panic(errors.New("The /Length of a stream is not a number."))
 			}
 			return length
 		}
@@ -441,6 +458,35 @@ func objectNumbered(objects []*PDFobj, number int) *PDFobj {
 	return objects[number-1]
 }
 
+// tokenAt returns the token at the index, or an empty string when the
+// dictionary of an object that was read ends before it.
+func tokenAt(dict []string, index int) string {
+	if index < 0 || index >= len(dict) {
+		return ""
+	}
+	return dict[index]
+}
+
+// objectAt returns the object that the token names, or nil when the token is
+// not the number of an object the PDF has: a page of a file that was changed
+// can name an object that is not in it.
+func objectAt(objects []*PDFobj, token string) *PDFobj {
+	number, err := strconv.Atoi(token)
+	if err != nil {
+		return nil
+	}
+	return objectNumbered(objects, number)
+}
+
+// indexAt returns the index to insert at, which is the end of the dictionary
+// when the index is past it.
+func indexAt(dict []string, index int) int {
+	if index < 0 {
+		return 0
+	}
+	return min(index, len(dict))
+}
+
 // AddCoreFontResource adds a core font to the resources of this page and returns it.
 func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
 	font := newCoreFontForPDFobj(coreFont)
@@ -461,19 +507,18 @@ func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*
 	obj2.number = len(*objects) + 1
 	*objects = append(*objects, obj2)
 
+	// The first /Resources of the page is the one, and the font is added to
+	// it once: adding it to the page again, after a resources object that
+	// names the page itself has grown the page dictionary, never ended.
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/Resources" {
-			i++
-			token := obj.dict[i]
+			token := tokenAt(obj.dict, i+1)
 			if token == "<<" { // Direct resources object
 				obj.addFontResource(obj, objects, font.fontID, obj2.number)
-			} else if token[0] >= '0' && token[0] <= '9' { // Indirect resources object
-				objNumber, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
-				}
-				obj.addFontResource((*objects)[objNumber-1], objects, font.fontID, obj2.number)
+			} else if resources := objectAt(*objects, token); resources != nil {
+				obj.addFontResource(resources, objects, font.fontID, obj2.number) // Indirect
 			}
+			break
 		}
 	}
 
@@ -499,24 +544,19 @@ func (obj *PDFobj) addFontResource(obj2 *PDFobj, objects *[]*PDFobj, fontID stri
 		} else {
 			i += 2
 		}
-		obj2.dict = insertArrayAt(obj2.dict, []string{"/Font", "<<", ">>"}, i)
+		obj2.dict = insertArrayAt(obj2.dict, []string{"/Font", "<<", ">>"}, indexAt(obj2.dict, i))
 	}
 
 	for i := 0; i < len(obj2.dict); i++ {
 		if obj2.dict[i] == "/Font" {
-			token := obj2.dict[i+1]
+			token := tokenAt(obj2.dict, i+1)
 			if token == "<<" {
 				obj2.dict = insertStringAt(obj2.dict, "/"+fontID, i+2)
 				obj2.dict = insertStringAt(obj2.dict, strconv.Itoa(number), i+3)
 				obj2.dict = insertStringAt(obj2.dict, "0", i+4)
 				obj2.dict = insertStringAt(obj2.dict, "R", i+5)
 				return
-			} else if token[0] >= '0' && token[0] <= '9' {
-				index, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
-				}
-				obj3 := (*objects)[index-1]
+			} else if obj3 := objectAt(*objects, token); obj3 != nil {
 				for j := 0; j < len(obj3.dict); j++ {
 					if obj3.dict[j] == "<<" {
 						obj3.dict = insertStringAt(obj3.dict, "/"+fontID, j+1)
@@ -540,10 +580,10 @@ func insertNewObject(dict, list []string, objType string) []string {
 	for i := 0; i < len(dict); i++ {
 		token := dict[i]
 		if token == objType {
-			return insertArrayAt(dict, list, i+2)
+			return insertArrayAt(dict, list, indexAt(dict, i+2))
 		}
 	}
-	if dict[3] == "<<" {
+	if tokenAt(dict, 3) == "<<" {
 		return insertArrayAt(dict, list, 4)
 	}
 	return dict
@@ -560,15 +600,10 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 	for i := 0; i < len(obj.dict); i++ {
 		token := obj.dict[i]
 		if token == objType {
-			token = obj.dict[i+1]
+			token = tokenAt(obj.dict, i+1)
 			if token == "<<" {
 				obj.dict = insertNewObject(obj.dict, list, objType)
-			} else {
-				n, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
-				}
-				obj2 := (*objects)[n-1]
+			} else if obj2 := objectAt(*objects, token); obj2 != nil {
 				obj2.dict = insertNewObject(obj2.dict, list, objType)
 			}
 			return
@@ -579,7 +614,7 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 	list = []string{objType, "<<", tag + number, number, "0", "R", ">>"}
 	for i, token := range obj.dict {
 		if token == "/Resources" {
-			obj.dict = insertArrayAt(obj.dict, list, i+2)
+			obj.dict = insertArrayAt(obj.dict, list, indexAt(obj.dict, i+2))
 			return
 		}
 	}
@@ -595,15 +630,11 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
 	for i, token := range obj.dict {
 		if token == "/Resources" {
-			token = obj.dict[i+1]
+			token = tokenAt(obj.dict, i+1)
 			if token == "<<" { // Direct resources object
 				addResource("/XObject", obj, objects, image.objNumber)
-			} else { // Indirect resources object
-				objNumber, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
-				}
-				addResource("/XObject", (*objects)[objNumber-1], objects, image.objNumber)
+			} else if resources := objectAt(*objects, token); resources != nil {
+				addResource("/XObject", resources, objects, image.objNumber) // Indirect resources object
 			}
 			return
 		}
@@ -614,15 +645,11 @@ func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
 func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
 	for i, token := range obj.dict {
 		if token == "/Resources" {
-			token = obj.dict[i+1]
+			token = tokenAt(obj.dict, i+1)
 			if token == "<<" { // Direct resources object
 				addResource("/Font", obj, objects, font.objNumber)
-			} else { // Indirect resources object
-				objNumber, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
-				}
-				addResource("/Font", (*objects)[objNumber-1], objects, font.objNumber)
+			} else if resources := objectAt(*objects, token); resources != nil {
+				addResource("/Font", resources, objects, font.objNumber) // Indirect resources object
 			}
 			return
 		}
@@ -640,27 +667,24 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/Contents" {
 			i++
-			token := obj.dict[i]
+			token := tokenAt(obj.dict, i)
 			if token == "[" {
-				// Array of content objects
-				for {
-					i++
-					token = obj.dict[i]
-					if token == "]" {
+				// Array of content objects, which can end before its "]".
+				for i++; i < len(obj.dict); i += 3 {
+					if obj.dict[i] == "]" {
 						obj.dict = insertStringAt(obj.dict, "R", i)
 						obj.dict = insertStringAt(obj.dict, "0", i)
 						obj.dict = insertStringAt(obj.dict, objNumber, i)
 						return
 					}
-					i += 2 // Skip the 0 and R
 				}
+				return
 			} else {
 				// Single content object
-				index, err := strconv.Atoi(token)
-				if err != nil {
-					panic(err)
+				obj3 := objectAt(*objects, token)
+				if obj3 == nil {
+					return
 				}
-				obj3 := (*objects)[index-1]
 				if obj3.data == nil && obj3.stream == nil {
 					// This is not a stream object!
 					for j := 0; j < len(obj3.dict); j++ {
@@ -671,6 +695,9 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 							return
 						}
 					}
+				}
+				if tokenAt(obj.dict, i+1) != "0" || tokenAt(obj.dict, i+2) != "R" {
+					return // Not a whole "n 0 R" to put in an array.
 				}
 				obj.dict = insertStringAt(obj.dict, "[", i)
 				obj.dict = insertStringAt(obj.dict, "]", i+4)
@@ -697,7 +724,7 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/Contents" {
 			i++
-			token := obj.dict[i]
+			token := tokenAt(obj.dict, i)
 			if token == "[" {
 				// Array of content object streams
 				i++
@@ -707,11 +734,10 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 				return
 			}
 			// Single content object
-			index, err := strconv.Atoi(token)
-			if err != nil {
-				panic(err)
+			obj3 := objectAt(*objects, token)
+			if obj3 == nil {
+				return
 			}
-			obj3 := (*objects)[index-1]
 			if obj3.data == nil && obj3.stream == nil {
 				// This is not a stream object!
 				for j := 0; j < len(obj3.dict); j++ {
@@ -723,6 +749,9 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 						return
 					}
 				}
+			}
+			if tokenAt(obj.dict, i+1) != "0" || tokenAt(obj.dict, i+2) != "R" {
+				return // Not a whole "n 0 R" to put in an array.
 			}
 			obj.dict = insertStringAt(obj.dict, "[", i)
 			obj.dict = insertStringAt(obj.dict, "]", i+4)
@@ -755,16 +784,12 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	index := -1
 	for i, token := range obj.dict {
 		if token == "/Resources" {
-			token2 := obj.dict[i+1]
+			token2 := tokenAt(obj.dict, i+1)
 			if token2 == "<<" {
 				resources = obj
 				index = i + 2
-			} else {
-				index2, err := strconv.Atoi(token2)
-				if err != nil {
-					panic(err)
-				}
-				resources = (*objects)[index2-1]
+			} else if o := objectAt(*objects, token2); o != nil {
+				resources = o
 				for j := 0; j < len(resources.dict); j++ {
 					if resources.dict[j] == "<<" {
 						index = j + 1
@@ -787,14 +812,14 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 	if i == len(resources.dict) {
 		resources.dict = insertArrayAt(resources.dict, []string{"/ExtGState", "<<", ">>"}, index)
 		index += 2
-	} else if resources.dict[i+1] == "<<" {
+	} else if tokenAt(resources.dict, i+1) == "<<" {
 		index = i + 2
 	} else { // "/ExtGState 12 0 R"
-		number, err := strconv.Atoi(resources.dict[i+1])
-		if err != nil {
-			panic(err)
+		o := objectAt(*objects, tokenAt(resources.dict, i+1))
+		if o == nil {
+			return obj
 		}
-		resources = (*objects)[number-1]
+		resources = o
 		index = slices.Index(resources.dict, "<<") + 1
 	}
 	obj.gsNumber = getMaxGSNumber(resources)

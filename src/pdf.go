@@ -2598,7 +2598,12 @@ func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
 	return nil
 }
 
-// GetPageObjects returns all page objects.
+// GetPageObjects returns the page objects, each holding the entries it
+// inherits from the page tree: /Resources, /MediaBox, /CropBox and /Rotate,
+// which a PDF can write once on a node above the pages rather than on every
+// page. A page that has an entry of its own keeps it, and the entries are
+// added to the page the first time it is returned, so that GetPageSize and
+// GetResourcesObject read what the page is.
 func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 	pages := make([]*PDFobj, 0)
 	if pagesObject := pdf.getPagesObject(objects); pagesObject != nil {
@@ -2621,9 +2626,29 @@ func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFo
 		}
 		obj := objects[number-1]
 		if isPageObject(obj) {
+			addInheritedEntries(obj, objects)
 			*pages = append(*pages, obj)
 		} else {
 			pdf.getPageObjects(obj, objects, pages, visited)
+		}
+	}
+}
+
+// addInheritedEntries adds to the page the entries it inherits from the page
+// tree and does not have itself. A page of another program's PDF often
+// carries no /MediaBox or /Resources of its own, and Read gives the objects
+// as the file has them, so the page holds what it is only after this.
+func addInheritedEntries(page *PDFobj, objects []*PDFobj) {
+	open := slices.Index(page.dict, "<<")
+	if open == -1 {
+		return
+	}
+	for _, key := range inheritedKeys {
+		if dictEntryIndex(objectValue(page), key) != -1 {
+			continue // An entry of its own.
+		}
+		if value := inheritedPageValue(page, key, objects); value != nil {
+			page.dict = insertArrayAt(page.dict, append([]string{key}, value...), open+1)
 		}
 	}
 }

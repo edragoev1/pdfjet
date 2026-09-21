@@ -15,6 +15,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
@@ -518,4 +519,144 @@ func TestPDFADictionaryThatEndsInTheMiddleOfAValueIsClosedThere(t *testing.T) {
 	}
 	testWant(t, "[ 3 0 R ]", objects[0].GetValue("/Kids"))
 	testWant(t, "", objects[0].GetValue("/Nothing"))
+}
+
+func TestPDFALengthThatIsNotANumberIsAnError(t *testing.T) {
+	// The /Length is read for every stream, so a PDF that writes anything
+	// there, or that ends before it, has to fail with a message: it read past
+	// the tokens in the Java, C# and Go ports.
+	testWant(t, "The /Length of a stream is not a number.",
+		testReadError(t, "1 0 obj<</Length stream\nx\nendstream endobj"))
+	testWant(t, "The stream of an object is not in the PDF.",
+		testReadError(t, "1 0 obj<</Length 1 stream"))
+	// A /Length that names an object with no length of its own.
+	testWant(t, "The /Length of a stream is not a number.",
+		testReadError(t, "1 0 obj<</Length 2 0 R>>stream\nx\nendstream endobj\n2 0 obj endobj"))
+}
+
+func TestPDFAMediaBoxThatIsNotFourNumbersIsLetterSize(t *testing.T) {
+	// The size of a page is read from its /MediaBox, which a PDF that was
+	// read can write as anything: it was four tokens past the key, which
+	// trapped in Swift and read past the tokens in the other ports.
+	for _, box := range []string{"[0 0 612", "[a b c d]", "5 0 R", "[]", ""} {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			"<< /Type /Page /Parent 2 0 R /MediaBox "+box+" >>"))
+		size := testNewPDF().GetPageObjects(objects)[0].GetPageSize()
+		if size.GetWidth() != 612 || size.GetHeight() != 792 {
+			t.Errorf("%s: %gx%g", box, size.GetWidth(), size.GetHeight())
+		}
+	}
+}
+
+func TestPDFThePageSizeIsTheDistanceBetweenTheCornersOfTheMediaBox(t *testing.T) {
+	// The box is a rectangle of two opposite corners, in either order, and
+	// its origin is not always 0 0: the size is what lies between them.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [9 9 621 801] >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [612 792 0 0] >>"))
+	for _, page := range testNewPDF().GetPageObjects(objects) {
+		size := page.GetPageSize()
+		if size.GetWidth() != 612 || size.GetHeight() != 792 {
+			t.Errorf("%gx%g", size.GetWidth(), size.GetHeight())
+		}
+	}
+}
+
+// The pages of a PDF that a stamp is drawn on, each with a dictionary that
+// ends where a value belongs or that names an object the file does not have.
+var testBrokenPages = []string{
+	"<< /Type /Page /Parent 2 0 R /Resources",
+	"<< /Type /Page /Parent 2 0 R /Resources 99 0 R /Contents 99 0 R >>",
+	"<< /Type /Page /Parent 2 0 R /Resources << /Font 99 0 R >> /Contents",
+	"<< /Type /Page /Parent 2 0 R /Resources << /XObject 99 0 R >> /Contents 4 0 R >>",
+	"<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R /MediaBox [0 0 612",
+	"<< /Type /Page /Parent 2 0 R /Contents [ 4 0 R",
+	"<< /Type /Page /Parent 2 0 R /Contents 4",
+	"<< /Type /Page /Parent 2 0 R /Resources << /ExtGState 99 0 R >> /Contents 4 0 R >>",
+}
+
+func TestPDFAPageHoldsTheEntriesItInheritsFromThePageTree(t *testing.T) {
+	// /Resources, /MediaBox, /CropBox and /Rotate can be written once on a
+	// node above the pages, and a page of another program's PDF often carries
+	// none of them: such a page read as letter size whatever its size was,
+	// and had no resources, so its fonts and images were not copied. The page
+	// that has one of its own keeps it.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842]"+
+			" /Resources << /Font << /F1 5 0 R >> >> /Rotate 90 >>",
+		"<< /Type /Page /Parent 2 0 R >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"))
+	pages := testNewPDF().GetPageObjects(objects)
+	size := pages[0].GetPageSize()
+	if size.GetWidth() != 595 || size.GetHeight() != 842 {
+		t.Errorf("the inherited size is %gx%g", size.GetWidth(), size.GetHeight())
+	}
+	if pages[0].GetResourcesObject(objects) == nil {
+		t.Error("a page that inherits its resources has none")
+	}
+	testWant(t, "90", pages[0].GetValue("/Rotate"))
+	if pages[1].GetPageSize().GetWidth() != 612 {
+		t.Error("a page with a box of its own lost it")
+	}
+	// The entries are added once, however often the pages are returned.
+	count := len(pages[0].GetDict())
+	if again := len(testNewPDF().GetPageObjects(objects)[0].GetDict()); again != count {
+		t.Errorf("the page grew from %d to %d tokens", count, again)
+	}
+}
+
+func TestPDFAResourcesObjectThatNamesItsOwnPageIsAddedToOnce(t *testing.T) {
+	// The font was added to the page for every "/Resources" left in its
+	// dictionary, and adding it grew that dictionary, so a resources object
+	// whose /Font names the page itself never ended.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 5 0 R >>",
+		"<< /Font 3 0 R >>",
+		"<< /Length 5 >>\nstream\nHELLO\nendstream"))
+	page := testNewPDF().GetPageObjects(objects)[0]
+	page.AddCoreFontResource(corefont.Helvetica(), &objects)
+	if len(page.GetDict()) > 32 {
+		t.Errorf("the page grew to %d tokens", len(page.GetDict()))
+	}
+}
+
+func TestPDFAStampOnAPageWhoseDictionaryIsBrokenDrawsNothing(t *testing.T) {
+	// Every one of these crashed a port: the methods that add a font, an
+	// image, a content stream or a graphics state to a page that was read
+	// indexed its dictionary and the objects of the PDF unchecked.
+	for _, page := range testBrokenPages {
+		objects := testRead(t, testPDFWithObjects(
+			"<< /Type /Catalog /Pages 2 0 R >>",
+			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+			page,
+			"<< /Length 5 >>\nstream\nHELLO\nendstream"))
+		pages := testNewPDF().GetPageObjects(objects)
+		if len(pages) != 1 {
+			t.Fatalf("%s: pages %d", page, len(pages))
+		}
+		obj := pages[0]
+		obj.AddCoreFontResource(corefont.Helvetica(), &objects)
+		obj.AddContent([]byte("BT ET\n"), &objects)
+		obj.AddPrefixContent([]byte("q Q\n"), &objects)
+		obj.SetGraphicsState(NewGraphicsState().SetAlphaStroking(0.5), &objects)
+		// The objects that were read are written as they are.
+		stamped := testNewDoc()
+		if err := stamped.pdf.AddObjects(objects); err != nil {
+			t.Fatalf("%s: %v", page, err)
+		}
+		stamped.complete()
+		// The fonts and the images of the pages are copied into a new PDF.
+		imported := testNewDoc()
+		imported.pdf.AddResourceObjects(objects)
+		NewPage(imported.pdf, letter.Portrait())
+		imported.complete()
+	}
 }

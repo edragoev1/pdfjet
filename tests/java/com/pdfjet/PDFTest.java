@@ -462,6 +462,142 @@ class PDFTest {
     }
 
     @Test
+    void aLengthThatIsNotANumberIsAnError() throws Exception {
+        // The /Length is read for every stream, so a PDF that writes anything
+        // there, or that ends before it, has to fail with a message: it read
+        // past the tokens in the Java, C# and Go ports.
+        assertEquals("The /Length of a stream is not a number.",
+                readError("1 0 obj<</Length stream\nx\nendstream endobj"));
+        assertEquals("The stream of an object is not in the PDF.",
+                readError("1 0 obj<</Length 1 stream"));
+        // A /Length that names an object with no length of its own.
+        assertEquals("The /Length of a stream is not a number.",
+                readError("1 0 obj<</Length 2 0 R>>stream\nx\nendstream endobj\n2 0 obj endobj"));
+    }
+
+    @Test
+    void aMediaBoxThatIsNotFourNumbersIsLetterSize() throws Exception {
+        // The size of a page is read from its /MediaBox, which a PDF that was
+        // read can write as anything: it was four tokens past the key, which
+        // trapped in Swift and read past the tokens in the other ports.
+        String[] boxes = {"[0 0 612", "[a b c d]", "5 0 R", "[]", ""};
+        for (String box : boxes) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox " + box + " >>",
+            }));
+            PageSize size = new PDF().getPageObjects(objects).get(0).getPageSize();
+            assertEquals(612f, size.getWidth(), 0f, box);
+            assertEquals(792f, size.getHeight(), 0f, box);
+        }
+    }
+
+    @Test
+    void thePageSizeIsTheDistanceBetweenTheCornersOfTheMediaBox() throws Exception {
+        // The box is a rectangle of two opposite corners, in either order, and
+        // its origin is not always 0 0: the size is what lies between them.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [9 9 621 801] >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [612 792 0 0] >>",
+        }));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertEquals(612f, pages.get(0).getPageSize().getWidth(), 0f);
+        assertEquals(792f, pages.get(0).getPageSize().getHeight(), 0f);
+        assertEquals(612f, pages.get(1).getPageSize().getWidth(), 0f);
+        assertEquals(792f, pages.get(1).getPageSize().getHeight(), 0f);
+    }
+
+    // The pages of a PDF that a stamp is drawn on, each with a dictionary that
+    // ends where a value belongs or that names an object the file does not have.
+    private static final String[] BROKEN_PAGES = {
+        "<< /Type /Page /Parent 2 0 R /Resources",
+        "<< /Type /Page /Parent 2 0 R /Resources 99 0 R /Contents 99 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << /Font 99 0 R >> /Contents",
+        "<< /Type /Page /Parent 2 0 R /Resources << /XObject 99 0 R >> /Contents 4 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R /MediaBox [0 0 612",
+        "<< /Type /Page /Parent 2 0 R /Contents [ 4 0 R",
+        "<< /Type /Page /Parent 2 0 R /Contents 4",
+        "<< /Type /Page /Parent 2 0 R /Resources << /ExtGState 99 0 R >> /Contents 4 0 R >>",
+    };
+
+    @Test
+    void aPageHoldsTheEntriesItInheritsFromThePageTree() throws Exception {
+        // /Resources, /MediaBox, /CropBox and /Rotate can be written once on
+        // a node above the pages, and a page of another program's PDF often
+        // carries none of them: such a page read as letter size whatever its
+        // size was, and had no resources, so its fonts and images were not
+        // copied. The page that has one of its own keeps it.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Rotate 90 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        }));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertEquals(595f, pages.get(0).getPageSize().getWidth(), 0f);
+        assertEquals(842f, pages.get(0).getPageSize().getHeight(), 0f);
+        assertNotNull(pages.get(0).getResourcesObject(objects));
+        assertEquals("90", pages.get(0).getValue("/Rotate"));
+        assertEquals(612f, pages.get(1).getPageSize().getWidth(), 0f);
+        // The entries are added once, however often the pages are returned.
+        int size = pages.get(0).getDict().size();
+        assertEquals(size, new PDF().getPageObjects(objects).get(0).getDict().size());
+    }
+
+    @Test
+    void aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws Exception {
+        // The font was added to the page for every "/Resources" left in its
+        // dictionary, and adding it grew that dictionary, so a resources
+        // object whose /Font names the page itself never ended.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 5 0 R >>",
+            "<< /Font 3 0 R >>",
+            "<< /Length 5 >>\nstream\nHELLO\nendstream",
+        }));
+        PDFobj page = new PDF().getPageObjects(objects).get(0);
+        page.addResource(CoreFont.HELVETICA, objects);
+        assertTrue(page.getDict().size() <= 32, page.getDict().toString());
+    }
+
+    @Test
+    void aStampOnAPageWhoseDictionaryIsBrokenDrawsNothing() throws Exception {
+        // Every one of these crashed a port: the methods that add a font, an
+        // image, a content stream or a graphics state to a page that was read
+        // indexed its dictionary and the objects of the PDF unchecked.
+        for (String page : BROKEN_PAGES) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                page,
+                "<< /Length 5 >>\nstream\nHELLO\nendstream",
+            }));
+            List<PDFobj> pages = new PDF().getPageObjects(objects);
+            assertEquals(1, pages.size(), page);
+            PDFobj obj = pages.get(0);
+            obj.addResource(CoreFont.HELVETICA, objects);
+            obj.addContent("BT ET\n".getBytes(StandardCharsets.US_ASCII), objects);
+            obj.addPrefixContent("q Q\n".getBytes(StandardCharsets.US_ASCII), objects);
+            obj.setGraphicsState(new GraphicsState().setAlphaStroking(0.5f), objects);
+            // The objects that were read are written as they are.
+            PDF stamped = new PDF(new ByteArrayOutputStream());
+            stamped.addObjects(objects);
+            stamped.complete();
+            // The fonts and the images of the pages are copied into a new PDF.
+            PDF imported = new PDF(new ByteArrayOutputStream());
+            imported.addResourceObjects(objects);
+            new Page(imported, Letter.PORTRAIT);
+            imported.complete();
+        }
+    }
+
+    @Test
     void aDictionaryThatEndsInTheMiddleOfAValueIsClosedThere() throws Exception {
         List<PDFobj> objects = TestSupport.read(
                 "1 0 obj<</Type/Catalog/Kids[3 0 R\n".getBytes("ISO-8859-1"));

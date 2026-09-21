@@ -452,6 +452,140 @@ public class PDFTest {
     }
 
     [Fact]
+    public void ALengthThatIsNotANumberIsAnError() {
+        // The /Length is read for every stream, so a PDF that writes anything
+        // there, or that ends before it, has to fail with a message: it read
+        // past the tokens in the Java, C# and Go ports.
+        Assert.Equal("The /Length of a stream is not a number.",
+                ReadError("1 0 obj<</Length stream\nx\nendstream endobj"));
+        Assert.Equal("The stream of an object is not in the PDF.",
+                ReadError("1 0 obj<</Length 1 stream"));
+        // A /Length that names an object with no length of its own.
+        Assert.Equal("The /Length of a stream is not a number.",
+                ReadError("1 0 obj<</Length 2 0 R>>stream\nx\nendstream endobj\n2 0 obj endobj"));
+    }
+
+    [Fact]
+    public void AMediaBoxThatIsNotFourNumbersIsLetterSize() {
+        // The size of a page is read from its /MediaBox, which a PDF that was
+        // read can write as anything: it was four tokens past the key, which
+        // trapped in Swift and read past the tokens in the other ports.
+        foreach (string box in new string[] {"[0 0 612", "[a b c d]", "5 0 R", "[]", ""}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox " + box + " >>",
+            }));
+            PageSize size = new PDF().GetPageObjects(objects)[0].GetPageSize();
+            Assert.Equal(612f, size.GetWidth());
+            Assert.Equal(792f, size.GetHeight());
+        }
+    }
+
+    [Fact]
+    public void ThePageSizeIsTheDistanceBetweenTheCornersOfTheMediaBox() {
+        // The box is a rectangle of two opposite corners, in either order, and
+        // its origin is not always 0 0: the size is what lies between them.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [9 9 621 801] >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [612 792 0 0] >>",
+        }));
+        foreach (PDFobj page in new PDF().GetPageObjects(objects)) {
+            Assert.Equal(612f, page.GetPageSize().GetWidth());
+            Assert.Equal(792f, page.GetPageSize().GetHeight());
+        }
+    }
+
+    // The pages of a PDF that a stamp is drawn on, each with a dictionary that
+    // ends where a value belongs or that names an object the file does not have.
+    private static readonly string[] BrokenPages = {
+        "<< /Type /Page /Parent 2 0 R /Resources",
+        "<< /Type /Page /Parent 2 0 R /Resources 99 0 R /Contents 99 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << /Font 99 0 R >> /Contents",
+        "<< /Type /Page /Parent 2 0 R /Resources << /XObject 99 0 R >> /Contents 4 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R /MediaBox [0 0 612",
+        "<< /Type /Page /Parent 2 0 R /Contents [ 4 0 R",
+        "<< /Type /Page /Parent 2 0 R /Contents 4",
+        "<< /Type /Page /Parent 2 0 R /Resources << /ExtGState 99 0 R >> /Contents 4 0 R >>",
+    };
+
+    [Fact]
+    public void APageHoldsTheEntriesItInheritsFromThePageTree() {
+        // /Resources, /MediaBox, /CropBox and /Rotate can be written once on
+        // a node above the pages, and a page of another program's PDF often
+        // carries none of them: such a page read as letter size whatever its
+        // size was, and had no resources, so its fonts and images were not
+        // copied. The page that has one of its own keeps it.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Rotate 90 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        }));
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        Assert.Equal(595f, pages[0].GetPageSize().GetWidth());
+        Assert.Equal(842f, pages[0].GetPageSize().GetHeight());
+        Assert.NotNull(pages[0].GetResourcesObject(objects));
+        Assert.Equal("90", pages[0].GetValue("/Rotate"));
+        Assert.Equal(612f, pages[1].GetPageSize().GetWidth());
+        // The entries are added once, however often the pages are returned.
+        int size = pages[0].GetDict().Count;
+        Assert.Equal(size, new PDF().GetPageObjects(objects)[0].GetDict().Count);
+    }
+
+    [Fact]
+    public void AResourcesObjectThatNamesItsOwnPageIsAddedToOnce() {
+        // The font was added to the page for every "/Resources" left in its
+        // dictionary, and adding it grew that dictionary, so a resources
+        // object whose /Font names the page itself never ended.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 5 0 R >>",
+            "<< /Font 3 0 R >>",
+            "<< /Length 5 >>\nstream\nHELLO\nendstream",
+        }));
+        PDFobj page = new PDF().GetPageObjects(objects)[0];
+        page.AddResource(CoreFont.HELVETICA, objects);
+        Assert.True(page.GetDict().Count <= 32, String.Join(" ", page.GetDict()));
+    }
+
+    [Fact]
+    public void AStampOnAPageWhoseDictionaryIsBrokenDrawsNothing() {
+        // Every one of these crashed a port: the methods that add a font, an
+        // image, a content stream or a graphics state to a page that was read
+        // indexed its dictionary and the objects of the PDF unchecked.
+        foreach (string page in BrokenPages) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                page,
+                "<< /Length 5 >>\nstream\nHELLO\nendstream",
+            }));
+            List<PDFobj> pages = new PDF().GetPageObjects(objects);
+            Assert.Single(pages);
+            PDFobj obj = pages[0];
+            obj.AddResource(CoreFont.HELVETICA, objects);
+            obj.AddContent(Encoding.ASCII.GetBytes("BT ET\n"), objects);
+            obj.AddPrefixContent(Encoding.ASCII.GetBytes("q Q\n"), objects);
+            obj.SetGraphicsState(new GraphicsState().SetAlphaStroking(0.5f), objects);
+            // The objects that were read are written as they are.
+            PDF stamped = new PDF(new MemoryStream());
+            stamped.AddObjects(objects);
+            stamped.Complete();
+            // The fonts and the images of the pages are copied into a new PDF.
+            PDF imported = new PDF(new MemoryStream());
+            imported.AddResourceObjects(objects);
+            new Page(imported, Letter.PORTRAIT);
+            imported.Complete();
+        }
+    }
+
+    [Fact]
     public void ADictionaryThatEndsInTheMiddleOfAValueIsClosedThere() {
         List<PDFobj> objects = TestSupport.Read(
                 Encoding.Latin1.GetBytes("1 0 obj<</Type/Catalog/Kids[3 0 R\n"));

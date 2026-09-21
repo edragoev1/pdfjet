@@ -383,10 +383,12 @@ final class Decryptor {
         if (method != AES_256) {
             int number = obj.number;
             int generation = 0;
-            try {
-                generation = Integer.parseInt(obj.dict.get(1));
-            } catch (NumberFormatException e) {
-                generation = 0;
+            if (obj.dict.size() > 1) {
+                try {
+                    generation = Integer.parseInt(obj.dict.get(1));
+                } catch (NumberFormatException e) {
+                    generation = 0;
+                }
             }
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.update(key);

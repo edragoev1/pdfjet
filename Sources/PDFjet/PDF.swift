@@ -2644,7 +2644,12 @@ public final class PDF {
         return nil
     }
 
-    /// Returns the page objects.
+    /// Returns the page objects, each holding the entries it inherits from
+    /// the page tree: /Resources, /MediaBox, /CropBox and /Rotate, which a
+    /// PDF can write once on a node above the pages rather than on every
+    /// page. A page that has an entry of its own keeps it, and the entries
+    /// are added to the page the first time it is returned, so that
+    /// getPageSize and getResourcesObject read what the page is.
     public func getPageObjects(from objects: [PDFobj]) -> [PDFobj] {
         var pageObjects = [PDFobj]()
         if let pagesObject = getPagesObject(objects) {
@@ -2671,9 +2676,28 @@ public final class PDF {
             }
             let object = objects[number - 1]
             if isPageObject(object) {
+                PDF.addInheritedEntries(object, objects)
                 pages.append(object)
             } else {
                 getPageObjects(object, &pages, objects, &visited)
+            }
+        }
+    }
+
+    // Adds to the page the entries it inherits from the page tree and does
+    // not have itself. A page of another program's PDF often carries no
+    // /MediaBox or /Resources of its own, and read gives the objects as the
+    // file has them, so the page holds what it is only after this.
+    private static func addInheritedEntries(_ page: PDFobj, _ objects: [PDFobj]) {
+        guard let open = page.dict.firstIndex(of: "<<") else {
+            return
+        }
+        for key in inheritedKeys {
+            if entryIndex(valueOf(page), key) != -1 {
+                continue        // An entry of its own.
+            }
+            if let value = inheritedValue(page, key, objects) {
+                page.dict.insert(contentsOf: [key] + value, at: open + 1)
             }
         }
     }

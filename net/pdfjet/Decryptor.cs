@@ -340,7 +340,7 @@ internal sealed class Decryptor {
         byte[] objectKey = key;
         if (method != AES_256) {
             int number = obj.number;
-            int generation = Int32.TryParse(obj.dict[1], out int value) ? value : 0;
+            int generation = (obj.dict.Count > 1 && Int32.TryParse(obj.dict[1], out int value)) ? value : 0;
             byte[] salt = (method == AES_128) ? new byte[] {(byte) 's', (byte) 'A', (byte) 'l', (byte) 'T'} : new byte[0];
             byte[] hash = MD5.HashData(Concat(key, new byte[] {
                     (byte) number, (byte) (number >> 8), (byte) (number >> 16),

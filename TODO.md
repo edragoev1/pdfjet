@@ -139,17 +139,24 @@ work to Oct 21 is the seven goals below, in this order.
      that ends where a value belongs or a reference to an object that is not
      in the file. Fixed in the four ports with unit tests. Of the 1,257 PDFs
      of the replay the four ports read the same ones and draw the same pages
-     from every one.
+     from every one. Beside the review of the reader, later on Sep 21, the
+     target was made to fail on a Go runtime error, which
+     `ReadWithPassword` recovers from and returns like any other error, so
+     that every index error of the reader was invisible to it; and to drive
+     what a merge, a split and a stamp do with what was read. It found a
+     hang in a second; 56 M runs are clean after the fixes. Of the 1,481
+     inputs the corpus held then, none crashes or traps in any port, and all
+     four read the same pages from the 1,076 whose password is valid UTF-8.
 
 2. ⬜ **B** Finish the class-by-class review, as on Sep 17: one class end to
    end in the four ports, each finding proved by running it, fixed in the four
    ports with a test, and the example pages it touches rendered before and
-   after. By exposure, and in this order: `Page` and `TextLine`; `Image`,
+   after. By exposure, and in this order: ✅ `Page` and `TextLine`; ✅ `Image`,
    `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; `Font` and its loaders `OTF`,
-   `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test names; the
-   reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`, which no
-   test names; `TextFrame`, `BigTable`, `CompositeTextLine` and `Bidi`; the
-   barcodes, the charts, `Form`, `Container` and `Stamp`.
+   `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test names;
+   ✅ the reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`,
+   which no test names; `TextFrame`, `BigTable`, `CompositeTextLine` and
+   `Bidi`; the barcodes, the charts, `Form`, `Container` and `Stamp`.
 
 3. ⬜ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
    veraPDF, which cannot see what a paragraph stands for. PAC runs on Windows
@@ -250,6 +257,46 @@ change code; the checks that must hold at the tag run after the freeze.
       strikeout of a tagged text line were structure elements that repeat the
       text, and `transform` left the height of the page divided by its
       vertical scale after the state was restored.
+- ✅ Goal 2: the reader is reviewed (Sep 21), which the calendar had in the
+      Oct 2-8 week: `PDF.read`, the merge, the split, `PDFobj` and
+      `Decryptor`, end to end in the four ports. The public API of `PDFobj`
+      is the same in all four. Seven findings, fixed in the four ports with
+      tests, all in what a PDF that was read is used for rather than in
+      reading it: the `PDFobj` methods that add a font, an image, a content
+      stream or a graphics state to a page indexed its dictionary and named
+      its objects unchecked, which threw in Java, C# and Go and trapped in
+      Swift, and `addResource(coreFont)` never ended on a resources object
+      whose `/Font` names its own page, taking every byte of memory for a
+      file of 1,264 bytes; a `/Length` that is not a number read past the
+      tokens in Java, C# and Go, where Swift already said what was wrong;
+      `getPageSize` read the fourth and fifth token after a `/MediaBox`
+      whatever they were, and took the last two numbers of the box for the
+      size, which is 9 points out on a page whose box does not start at
+      `0 0`; the `/XObject` of a page that names an object the file does not
+      have threw in Java and C#, where Go and Swift checked it; and the
+      generation number of an object with none was read in Java and C#. An
+      eighth finding, which is not about a broken PDF: a page inherits
+      `/Resources`, `/MediaBox`, `/CropBox` and `/Rotate` from the page tree,
+      and a page of another program's PDF often carries none of them, as the
+      form of Example_50 does, so `getPageSize` read every such page as
+      letter size whatever its size was and `getResourcesObject` found
+      nothing; `getPageObjects` fills them in now, which needs no new method
+      and so leaves the API of v9.0.1 as it is. The reader examples -- 20,
+      37, 41 and 51 -- write the same bytes as before in the Java and Go
+      ports, and Example_50's page is written with the `/MediaBox` it
+      inherits, in all four ports alike.
+- ✅ Goal 1: `FuzzPDFRead` fails on a Go runtime error (Sep 21), which it read
+      as an ordinary error before, since `ReadWithPassword` recovers from a
+      panic and returns it: every index error of the reader was invisible to
+      the fuzzer. It drives the merge, the split and the stamp as well: the
+      page size, the resources, `MergePages`, `AddObjects`,
+      `AddResourceObjects` and the `PDFobj` methods that add to a page. It
+      found the hang above in a second, and 56 M runs are clean after the
+      fixes. The 1,481 inputs the corpus held then replayed in the four
+      ports: none crashes or traps, and of the 1,076 whose password is valid
+      UTF-8 -- the rest have no Swift equivalent, as a Swift string holds no
+      other bytes -- all four read the same objects, the same pages, the same
+      page size and the same content, and merge and split the same ones.
 - ⬜ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands.
 
 ### Sep 27–Oct 1: release v9.0.2
@@ -264,10 +311,12 @@ change code; the checks that must hold at the tag run after the freeze.
 
 ### Oct 2–8: the reader
 
-- ⬜ **B** Goal 2: review `PDF.read`, the merge and the split, `PDFobj` and
-      `Decryptor`, which no test names.
-- ⬜ **B** Goal 1: fuzz `PDF.read` — the xref, the object streams and the
-      encryption — the last and largest target, next to its review.
+- ✅ **B** Goal 2: review `PDF.read`, the merge and the split, `PDFobj` and
+      `Decryptor`, which no test names. Done on Sep 21, above.
+- ✅ **B** Goal 1: fuzz `PDF.read` — the xref, the object streams and the
+      encryption — the last and largest target, next to its review. Done on
+      Sep 21, above; the target reaches the merge, the split and the stamp
+      now, and a Go runtime error fails it.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
 

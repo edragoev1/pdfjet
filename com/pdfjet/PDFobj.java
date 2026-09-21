@@ -350,17 +350,50 @@ public class PDFobj {
         return objects.get(number - 1);
     }
 
+    // Returns the token at the index, or an empty string when the dictionary
+    // of an object that was read ends before it.
+    private static String tokenAt(List<String> dict, int index) {
+        return (index < 0 || index >= dict.size()) ? "" : dict.get(index);
+    }
+
+    // Returns the object that the token names, or null when the token is not
+    // the number of an object the PDF has: a page of a file that was changed
+    // can name an object that is not in it.
+    private static PDFobj objectAt(List<PDFobj> objects, String token) {
+        Integer number = toObjectNumber(token);
+        return (number == null) ? null : objectNumbered(objects, number);
+    }
+
+    // Returns the index to insert at, which is the end of the dictionary when
+    // the index is past it.
+    private static int indexAt(List<String> dict, int index) {
+        return (index < 0) ? 0 : Math.min(index, dict.size());
+    }
+
     /**
-     * Returns the PDF page size.
+     * Returns the width and height of the page, which its /MediaBox gives as
+     * the two corners of a rectangle, in either order. A page with no
+     * /MediaBox of its own, or one that is not four numbers, is letter size.
+     * PDF.getPageObjects gives a page the box it inherits from the page tree,
+     * which a page of another program's PDF often does not carry itself.
      *
      * @return the PDF page size.
      */
     public PageSize getPageSize() {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/MediaBox")) {
-                return new PageSize(
-                        Float.parseFloat(dict.get(i + 4)),
-                        Float.parseFloat(dict.get(i + 5)));
+                if (!tokenAt(dict, i + 1).equals("[")) {
+                    break;
+                }
+                float[] box = new float[4];
+                for (int j = 0; j < 4; j++) {
+                    try {
+                        box[j] = Float.parseFloat(tokenAt(dict, i + 2 + j));
+                    } catch (NumberFormatException e) {
+                        return Letter.PORTRAIT;
+                    }
+                }
+                return new PageSize(Math.abs(box[2] - box[0]), Math.abs(box[3] - box[1]));
             }
         }
         return Letter.PORTRAIT;
@@ -372,20 +405,36 @@ public class PDFobj {
      * @param objects the objects in the PDF.
      * @return the length of the stream.
      */
-    int getLength(List<PDFobj> objects) {
+    int getLength(List<PDFobj> objects) throws Exception {
         for (int i = 0; i < dict.size(); i++) {
             String token = dict.get(i);
             if (token.equals("/Length")) {
-                int number = Integer.parseInt(dict.get(i + 1));
-                if (dict.get(i + 2).equals("0") &&
-                        dict.get(i + 3).equals("R")) {
-                    return getLength(objects, number);
-                } else {
-                    return number;
+                int number = toLength(tokenAt(dict, i + 1));
+                if (i + 2 >= dict.size()) {
+                    throw new Exception("The dictionary ends after the /Length.");
                 }
+                if (dict.get(i + 2).equals("0")) {
+                    if (i + 3 >= dict.size()) {
+                        throw new Exception("The dictionary ends after the /Length.");
+                    }
+                    if (dict.get(i + 3).equals("R")) {
+                        return getLength(objects, number);
+                    }
+                }
+                return number;
             }
         }
         return 0;
+    }
+
+    // Returns the length the token holds, which a PDF that was read can write
+    // as anything.
+    private static int toLength(String token) throws Exception {
+        try {
+            return Integer.parseInt(token);
+        } catch (NumberFormatException e) {
+            throw new Exception("The /Length of a stream is not a number.");
+        }
     }
 
     /**
@@ -395,10 +444,10 @@ public class PDFobj {
      * @param number the object number.
      * @return the length.
      */
-    int getLength(List<PDFobj> objects, int number) {
+    int getLength(List<PDFobj> objects, int number) throws Exception {
         for (PDFobj obj : objects) {
             if (obj.number == number) {
-                return Integer.parseInt(obj.dict.get(3));
+                return toLength(tokenAt(obj.dict, 3));
             }
         }
         return 0;
@@ -512,14 +561,22 @@ public class PDFobj {
         obj.number = objects.size() + 1;
         objects.add(obj);
 
+        // The first /Resources of the page is the one, and the font is added
+        // to it once: adding it to the page again, after a resources object
+        // that names the page itself has grown the page dictionary, never
+        // ended.
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
-                String token = dict.get(++i);
-                if (token.equals("<<")) {                       // Direct resources object
+                String token = tokenAt(dict, i + 1);
+                if (token.equals("<<")) {           // Direct resources object
                     addFontResource(this, objects, font.fontID, obj.number);
-                } else if (token.charAt(0) >= '0' && token.charAt(0) <= '9') {  // Indirect resources object
-                    addFontResource(objects.get(Integer.parseInt(token) - 1), objects, font.fontID, obj.number);
+                } else {                            // Indirect resources object
+                    PDFobj resources = objectAt(objects, token);
+                    if (resources != null) {
+                        addFontResource(resources, objects, font.fontID, obj.number);
+                    }
                 }
+                break;
             }
         }
 
@@ -541,20 +598,21 @@ public class PDFobj {
             // entries follow its first "<<".
             int i = obj.dict.indexOf("/Resources");
             i = (i == -1) ? obj.dict.indexOf("<<") + 1 : i + 2;
-            obj.dict.addAll(i, Arrays.asList("/Font", "<<", ">>"));
+            obj.dict.addAll(indexAt(obj.dict, i), Arrays.asList("/Font", "<<", ">>"));
         }
 
         for (int i = 0; i < obj.dict.size(); i++) {
             if (obj.dict.get(i).equals("/Font")) {
-                String token = obj.dict.get(i + 1);
+                String token = tokenAt(obj.dict, i + 1);
                 if (token.equals("<<")) {
                     obj.dict.add(i + 2, "/" + fontID);
                     obj.dict.add(i + 3, String.valueOf(number));
                     obj.dict.add(i + 4, "0");
                     obj.dict.add(i + 5, "R");
                     return;
-                } else if (token.charAt(0) >= '0' && token.charAt(0) <= '9') {
-                    PDFobj o2 = objects.get(Integer.parseInt(token) - 1);
+                }
+                PDFobj o2 = objectAt(objects, token);
+                if (o2 != null) {
                     for (int j = 0; j < o2.dict.size(); j++) {
                         if (o2.dict.get(j).equals("<<")) {
                             o2.dict.add(j + 1, "/" + fontID);
@@ -578,11 +636,11 @@ public class PDFobj {
         }
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals(type)) {
-                dict.addAll(i + 2, list);
+                dict.addAll(indexAt(dict, i + 2), list);
                 return;
             }
         }
-        if (dict.get(3).equals("<<")) {
+        if (tokenAt(dict, 3).equals("<<")) {
             dict.addAll(4, list);
             return;
         }
@@ -596,11 +654,14 @@ public class PDFobj {
         for (int i = 0; i < obj.dict.size(); i++) {
             String token = obj.dict.get(i);
             if (token.equals(type)) {
-                token = obj.dict.get(i + 1);
+                token = tokenAt(obj.dict, i + 1);
                 if (token.equals("<<")) {
                     insertNewObject(obj.dict, list, type);
                 } else {
-                    insertNewObject(objects.get(Integer.parseInt(token) - 1).dict, list, type);
+                    PDFobj o2 = objectAt(objects, token);
+                    if (o2 != null) {
+                        insertNewObject(o2.dict, list, type);
+                    }
                 }
                 return;
             }
@@ -610,7 +671,7 @@ public class PDFobj {
         list = Arrays.asList(type, "<<", tag + number, number, "0", "R", ">>");
         for (int i = 0; i < obj.dict.size(); i++) {
             if (obj.dict.get(i).equals("/Resources")) {
-                obj.dict.addAll(i + 2, list);
+                obj.dict.addAll(indexAt(obj.dict, i + 2), list);
                 return;
             }
         }
@@ -631,11 +692,14 @@ public class PDFobj {
     public void addResource(Image image, List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
-                String token = dict.get(i + 1);
+                String token = tokenAt(dict, i + 1);
                 if (token.equals("<<")) {   // Direct resources object
                     addResource("/XObject", this, objects, image.objNumber);
                 } else {                    // Indirect resources object
-                    addResource("/XObject", objects.get(Integer.parseInt(token) - 1), objects, image.objNumber);
+                    PDFobj resources = objectAt(objects, token);
+                    if (resources != null) {
+                        addResource("/XObject", resources, objects, image.objNumber);
+                    }
                 }
                 return;
             }
@@ -651,11 +715,14 @@ public class PDFobj {
     public void addResource(Font font, List<PDFobj> objects) {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
-                String token = dict.get(i + 1);
+                String token = tokenAt(dict, i + 1);
                 if (token.equals("<<")) {   // Direct resources object
                     addResource("/Font", this, objects, font.objNumber);
                 } else {                    // Indirect resources object
-                    addResource("/Font", objects.get(Integer.parseInt(token) - 1), objects, font.objNumber);
+                    PDFobj resources = objectAt(objects, token);
+                    if (resources != null) {
+                        addResource("/Font", resources, objects, font.objNumber);
+                    }
                 }
                 return;
             }
@@ -678,23 +745,24 @@ public class PDFobj {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
                 i += 1;
-                String token = dict.get(i);
+                String token = tokenAt(dict, i);
                 if (token.equals("[")) {
-                    // Array of content objects
-                    while (true) {
-                        i += 1;
-                        token = dict.get(i);
-                        if (token.equals("]")) {
+                    // Array of content objects, which can end before its "]".
+                    for (i += 1; i < dict.size(); i += 3) {
+                        if (dict.get(i).equals("]")) {
                             dict.add(i, "R");
                             dict.add(i, "0");
                             dict.add(i, objNumber);
                             return;
                         }
-                        i += 2;     // Skip the 0 and R
                     }
+                    return;
                 } else {
                     // Single content object
-                    PDFobj obj2 = objects.get(Integer.parseInt(token) - 1);
+                    PDFobj obj2 = objectAt(objects, token);
+                    if (obj2 == null) {
+                        return;
+                    }
                     if (obj2.data == null && obj2.stream == null) {
                         // This is not a stream object!
                         for (int j = 0; j < obj2.dict.size(); j++) {
@@ -705,6 +773,9 @@ public class PDFobj {
                                 return;
                             }
                         }
+                    }
+                    if (!tokenAt(dict, i + 1).equals("0") || !tokenAt(dict, i + 2).equals("R")) {
+                        return;     // Not a whole "n 0 R" to put in an array.
                     }
                     dict.add(i, "[");
                     dict.add(i + 4, "]");
@@ -735,17 +806,20 @@ public class PDFobj {
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
                 i += 1;
-                String token = dict.get(i);
+                String token = tokenAt(dict, i);
                 if (token.equals("[")) {
                     // Array of content object streams
                     i += 1;
-                    dict.add(i, "R");
-                    dict.add(i, "0");
-                    dict.add(i, objNumber);
+                    dict.add(indexAt(dict, i), "R");
+                    dict.add(indexAt(dict, i), "0");
+                    dict.add(indexAt(dict, i), objNumber);
                     return;
                 } else {
                     // Single content object
-                    PDFobj obj2 = objects.get(Integer.parseInt(token) - 1);
+                    PDFobj obj2 = objectAt(objects, token);
+                    if (obj2 == null) {
+                        return;
+                    }
                     if (obj2.data == null && obj2.stream == null) {
                         // This is not a stream object!
                         for (int j = 0; j < obj2.dict.size(); j++) {
@@ -757,6 +831,9 @@ public class PDFobj {
                                 return;
                             }
                         }
+                    }
+                    if (!tokenAt(dict, i + 1).equals("0") || !tokenAt(dict, i + 2).equals("R")) {
+                        return;     // Not a whole "n 0 R" to put in an array.
                     }
                     dict.add(i, "[");
                     dict.add(i + 4, "]");
@@ -798,12 +875,11 @@ public class PDFobj {
         int index = -1;
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
-                String token = dict.get(i + 1);
+                String token = tokenAt(dict, i + 1);
                 if (token.equals("<<")) {
                     obj = this;
                     index = i + 2;
-                } else {
-                    obj = objects.get(Integer.parseInt(token) - 1);
+                } else if ((obj = objectAt(objects, token)) != null) {
                     for (int j = 0; j < obj.dict.size(); j++) {
                         if (obj.dict.get(j).equals("<<")) {
                             index = j + 1;
@@ -826,10 +902,14 @@ public class PDFobj {
         if (i == obj.dict.size()) {
             obj.dict.addAll(index, Arrays.asList("/ExtGState", "<<", ">>"));
             index += 2;
-        } else if (obj.dict.get(i + 1).equals("<<")) {
+        } else if (tokenAt(obj.dict, i + 1).equals("<<")) {
             index = i + 2;
         } else {                                // "/ExtGState 12 0 R"
-            obj = objects.get(Integer.parseInt(obj.dict.get(i + 1)) - 1);
+            PDFobj extGState = objectAt(objects, tokenAt(obj.dict, i + 1));
+            if (extGState == null) {
+                return this;
+            }
+            obj = extGState;
             index = obj.dict.indexOf("<<") + 1;
         }
         gsNumber = getMaxGSNumber(obj);

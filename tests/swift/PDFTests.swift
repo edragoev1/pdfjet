@@ -427,6 +427,136 @@ import Testing
         #expect(pages[0].getValue("/Contents2") == "")
     }
 
+    @Test func aLengthThatIsNotANumberIsAnError() {
+        // The /Length is read for every stream, so a PDF that writes anything
+        // there, or that ends before it, has to fail with a message: it read
+        // past the tokens in the Java, C# and Go ports.
+        #expect(readError("1 0 obj<</Length stream\nx\nendstream endobj")
+                == "The /Length of a stream is not a number.")
+        #expect(readError("1 0 obj<</Length 1 stream")
+                == "The stream of an object is not in the PDF.")
+        // A /Length that names an object with no length of its own.
+        #expect(readError("1 0 obj<</Length 2 0 R>>stream\nx\nendstream endobj\n2 0 obj endobj")
+                == "The /Length of a stream is not a number.")
+    }
+
+    @Test func aMediaBoxThatIsNotFourNumbersIsLetterSize() throws {
+        // The size of a page is read from its /MediaBox, which a PDF that was
+        // read can write as anything: it was four tokens past the key, which
+        // trapped in Swift and read past the tokens in the other ports.
+        for box in ["[0 0 612", "[a b c d]", "5 0 R", "[]", ""] {
+            let objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox " + box + " >>",
+            ]))
+            let size = TestSupport.pageObjects(objects)[0].getPageSize()
+            #expect(size.getWidth() == 612, "\(box)")
+            #expect(size.getHeight() == 792, "\(box)")
+        }
+    }
+
+    @Test func thePageSizeIsTheDistanceBetweenTheCornersOfTheMediaBox() throws {
+        // The box is a rectangle of two opposite corners, in either order, and
+        // its origin is not always 0 0: the size is what lies between them.
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [9 9 621 801] >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [612 792 0 0] >>",
+        ]))
+        for page in TestSupport.pageObjects(objects) {
+            #expect(page.getPageSize().getWidth() == 612)
+            #expect(page.getPageSize().getHeight() == 792)
+        }
+    }
+
+    // The pages of a PDF that a stamp is drawn on, each with a dictionary that
+    // ends where a value belongs or that names an object the file does not have.
+    private static let brokenPages = [
+        "<< /Type /Page /Parent 2 0 R /Resources",
+        "<< /Type /Page /Parent 2 0 R /Resources 99 0 R /Contents 99 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << /Font 99 0 R >> /Contents",
+        "<< /Type /Page /Parent 2 0 R /Resources << /XObject 99 0 R >> /Contents 4 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R /MediaBox [0 0 612",
+        "<< /Type /Page /Parent 2 0 R /Contents [ 4 0 R",
+        "<< /Type /Page /Parent 2 0 R /Contents 4",
+        "<< /Type /Page /Parent 2 0 R /Resources << /ExtGState 99 0 R >> /Contents 4 0 R >>",
+    ]
+
+    @Test func aPageHoldsTheEntriesItInheritsFromThePageTree() throws {
+        // /Resources, /MediaBox, /CropBox and /Rotate can be written once on
+        // a node above the pages, and a page of another program's PDF often
+        // carries none of them: such a page read as letter size whatever its
+        // size was, and had no resources, so its fonts and images were not
+        // copied. The page that has one of its own keeps it.
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842]"
+                    + " /Resources << /Font << /F1 5 0 R >> >> /Rotate 90 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        ]))
+        let pages = TestSupport.pageObjects(objects)
+        #expect(pages[0].getPageSize().getWidth() == 595)
+        #expect(pages[0].getPageSize().getHeight() == 842)
+        #expect(pages[0].getResourcesObject(objects) != nil)
+        #expect(pages[0].getValue("/Rotate") == "90")
+        #expect(pages[1].getPageSize().getWidth() == 612)
+        // The entries are added once, however often the pages are returned.
+        let count = pages[0].getDict().count
+        #expect(TestSupport.pageObjects(objects)[0].getDict().count == count)
+    }
+
+    @Test func aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws {
+        // The font was added to the page for every "/Resources" left in its
+        // dictionary, and adding it grew that dictionary, so a resources
+        // object whose /Font names the page itself never ended.
+        var objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 5 0 R >>",
+            "<< /Font 3 0 R >>",
+            "<< /Length 5 >>\nstream\nHELLO\nendstream",
+        ]))
+        let page = TestSupport.pageObjects(objects)[0]
+        _ = try page.addResource(CoreFont.HELVETICA, &objects)
+        #expect(page.getDict().count <= 32, "\(page.getDict())")
+    }
+
+    @Test func aStampOnAPageWhoseDictionaryIsBrokenDrawsNothing() throws {
+        // Every one of these crashed a port: the methods that add a font, an
+        // image, a content stream or a graphics state to a page that was read
+        // indexed its dictionary and the objects of the PDF unchecked.
+        for page in PDFTests.brokenPages {
+            var objects = try TestSupport.read(pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                page,
+                "<< /Length 5 >>\nstream\nHELLO\nendstream",
+            ]))
+            let pages = TestSupport.pageObjects(objects)
+            #expect(pages.count == 1, "\(page)")
+            let obj = pages[0]
+            _ = try obj.addResource(CoreFont.HELVETICA, &objects)
+            var content = Array("BT ET\n".utf8)
+            obj.addContent(&content, &objects)
+            var prefix = Array("q Q\n".utf8)
+            obj.addPrefixContent(&prefix, &objects)
+            _ = obj.setGraphicsState(GraphicsState().setAlphaStroking(0.5), &objects)
+            // The objects that were read are written as they are.
+            let stamped = MemoryPDF()
+            try stamped.pdf.addObjects(objects)
+            try stamped.pdf.complete()
+            // The fonts and the images of the pages are copied into a new PDF.
+            let imported = MemoryPDF()
+            imported.pdf.addResourceObjects(from: objects)
+            _ = Page(imported.pdf, Letter.PORTRAIT)
+            try imported.pdf.complete()
+        }
+    }
+
     @Test func aDictionaryThatEndsInTheMiddleOfAValueIsClosedThere() throws {
         let raw = "1 0 obj<</Type/Catalog/Kids[3 0 R\n"
         let objects = try TestSupport.read(raw.unicodeScalars.map { UInt8($0.value) })

@@ -128,6 +128,67 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A page that `PDF.getPageObjects` returns holds the entries it inherits from
+  the page tree -- `/Resources`, `/MediaBox`, `/CropBox` and `/Rotate` -- in
+  all four ports. A PDF may write them once on a node above the pages rather
+  than on every page, as the form of Example_50 does, and `read` gives the
+  objects as the file has them: `getPageSize` read every such page as letter
+  size whatever its size was, and `getResourcesObject` found nothing, so
+  `addResourceObjects` copied none of the fonts and images of its pages. A
+  page that has an entry of its own keeps it, the entries are added once
+  however often the pages are returned, and a merge, which resolved them for
+  itself, is unchanged. The page of Example_50 is written with its
+  `/MediaBox` now, 52 bytes more.
+- The methods of `PDFobj` that add a font, an image, a content stream or a
+  graphics state to a page of a PDF that was read check the tokens they index
+  and the objects they name, in all four ports. Every one of them read the
+  token after a key without looking, and took the number after `/Resources`,
+  `/Font`, `/XObject`, `/ExtGState` or `/Contents` for an object of the file:
+  a page whose dictionary ends where a value belongs, or that names an object
+  the file does not have, threw in Java, C# and Go and trapped in Swift, which
+  ends the program. A page that does not hold what a method needs is left as
+  it is now. Found in the review of the reader of Sep 21 and by the fuzz
+  target, which drives these methods now.
+- `PDFobj.addResource(coreFont, objects)` adds the font to the first
+  `/Resources` of the page and stops, in all four ports. It went on over the
+  whole page dictionary, and adding the font grows it, so a resources object
+  whose `/Font` names its own page grew the dictionary without end: a PDF of
+  1,264 bytes took every byte of memory there is. A page has one `/Resources`,
+  so nothing else changes.
+- The `/Length` of a stream that is not a number, and a dictionary that ends
+  where it belongs, fail with a message in Java, C# and Go, as they do in
+  Swift. `/Length` is read for every stream of a PDF that is read, and the
+  value, the two tokens after it and the fourth token of the object a
+  reference names were all read without looking: `<< /Length stream` threw a
+  `NumberFormatException` in Java, and a `/Length` that names an object of
+  three tokens an index error there and in C#, where Go turned the index
+  error into an error of its own and Swift already said what was wrong.
+- `PDFobj.getPageSize` returns letter size for a `/MediaBox` that is not four
+  numbers, in all four ports, where it read the fourth and fifth token after
+  the key whatever they were: `[0 0 612` read past the tokens in Java, C# and
+  Go, and trapped in Swift, as `[a b c d]` did.
+- `PDFobj.getPageSize` measures the page between the corners of its
+  `/MediaBox`, in all four ports, where it took the last two numbers of the
+  box for the width and the height. The box is a rectangle of two opposite
+  corners, in either order, and its origin is not always `0 0`: a page whose
+  box is `[9 9 621 801]` is 612 by 792 points, not 621 by 801, and a stamp
+  placed by the width was 9 points off on every such page.
+- The `/XObject`, `/Font` and `/ExtGState` of the resources of a page can be
+  an object of their own, and the Java and C# ports took the number of that
+  object without checking it, where Go and Swift did: `addResourceObjects`
+  threw on a page whose `/XObject` names an object the file does not have.
+- The generation number that the key of an object is made from is read only
+  when the object has one, in the Java and C# ports as in Go and Swift.
+- The fuzz target of the reader, `FuzzPDFRead`, fails on a Go runtime error
+  where it read one as an ordinary error before. `PDF.ReadWithPassword`
+  recovers from a panic and returns it, which is how the Go port carries the
+  errors the other ports throw, and an index out of range came back the same
+  way: every index error of the reader was invisible to the fuzzer, though
+  the same input throws in Java and C# and traps in Swift. The target also
+  drives what a merge, a split and a stamp do with what was read -- the page
+  size, the resources, `MergePages`, `AddObjects`, `AddResourceObjects` and
+  the `PDFobj` methods that add to a page -- and fails on a runtime error in
+  any of them.
 - The underline and the strikeout of a `TextLine` in a PDF/UA document are
   artifacts, in all four ports, where each was a structure element of its own
   whose alternate description was "Underlined text: " or "Strikethrough text: "
