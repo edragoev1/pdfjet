@@ -41,6 +41,42 @@ public class PNGImageTest {
         new[] {"F04N0G08", "32", "32", "0", "8", "1024", "b8006228", "", ""},
         new[] {"S01N3P01", "1", "1", "3", "1", "3", "d243369f", "", ""},
         new[] {"S05N3P02", "5", "5", "3", "2", "75", "1242b6fb", "", ""},
+        new[] {"BGAN6A08", "32", "32", "6", "8", "3072", "a9b0c6b5", "1024", "fa6029ad"},
+        new[] {"F01N0G08", "32", "32", "0", "8", "1024", "1868217f", "", ""},
+        new[] {"F02N0G08", "32", "32", "0", "8", "1024", "79b9c9de", "", ""},
+        new[] {"F03N0G08", "32", "32", "0", "8", "1024", "a373c644", "", ""},
+        new[] {"OI1N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        new[] {"OI1N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"OI2N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        new[] {"OI2N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"OI4N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        new[] {"OI4N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"OI9N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        new[] {"OI9N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        new[] {"S02N3P01", "2", "2", "3", "1", "12", "9e931d85", "", ""},
+        new[] {"S03N3P01", "3", "3", "3", "1", "27", "6916380e", "", ""},
+        new[] {"S04N3P01", "4", "4", "3", "1", "48", "c2e0d49b", "", ""},
+        new[] {"S06N3P02", "6", "6", "3", "2", "108", "d7589540", "", ""},
+        new[] {"S07N3P02", "7", "7", "3", "2", "147", "d2ccf489", "", ""},
+        new[] {"S08N3P02", "8", "8", "3", "2", "192", "2ba1b03e", "", ""},
+        new[] {"S09N3P02", "9", "9", "3", "2", "243", "9762d2ed", "", ""},
+        new[] {"S32N3P04", "32", "32", "3", "4", "3072", "ad01f44d", "", ""},
+        new[] {"S33N3P04", "33", "33", "3", "4", "3267", "d2f4ae68", "", ""},
+        new[] {"S34N3P04", "34", "34", "3", "4", "3468", "bbeda3f7", "", ""},
+        new[] {"S35N3P04", "35", "35", "3", "4", "3675", "99293acf", "", ""},
+        new[] {"S36N3P04", "36", "36", "3", "4", "3888", "f51a96e0", "", ""},
+        new[] {"S37N3P04", "37", "37", "3", "4", "4107", "920758a4", "", ""},
+        new[] {"S38N3P04", "38", "38", "3", "4", "4332", "eb3bf324", "", ""},
+        new[] {"S39N3P04", "39", "39", "3", "4", "4563", "c06d7da1", "", ""},
+        new[] {"S40N3P04", "40", "40", "3", "4", "4800", "0d4658a0", "", ""},
+        new[] {"TBBN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        new[] {"TBGN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        new[] {"TBWN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        new[] {"TBYN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        new[] {"Z00N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        new[] {"Z03N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        new[] {"Z06N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        new[] {"Z09N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
     };
 
     private static PNGImage Decode(string name) {
@@ -402,6 +438,54 @@ public class PNGImageTest {
         PNGImage png = new PNGImage(new MemoryStream(PngWithPhys(20, 20, 4724, 2362, 1)));
         Assert.True(Math.Abs(png.GetPhysicalWidth() - 12f) < 0.01f);
         Assert.True(Math.Abs(png.GetPhysicalHeight() - 24f) < 0.01f);
+    }
+    // The name of a file whose samples must be those of another, and why: the
+    // PngSuite images of these groups are one image written in several ways,
+    // so a decoder that reads them all gets the same pixels from each.
+    private static readonly string[][] SAME = {
+        new[] {"BASN0G16", "OI1N0G16", "OI2N0G16", "OI4N0G16", "OI9N0G16"},
+        new[] {"BASN2C16", "OI1N2C16", "OI2N2C16", "OI4N2C16", "OI9N2C16"},
+        new[] {"Z00N2C08", "Z03N2C08", "Z06N2C08", "Z09N2C08"},
+        new[] {"TP1N3P08", "TBBN3P08", "TBGN3P08", "TBWN3P08", "TBYN3P08"},
+        new[] {"BASN6A08", "BGAN6A08"},
+    };
+
+    [Fact]
+    public void TheImagesThatAreOneImageWrittenSeveralWaysDecodeAlike() {
+        // The IDAT chunks of an image may be split any way the writer likes,
+        // its data deflated at any level, and a background color or a
+        // background with alpha carried beside it; none of that is the image.
+        // These are the groups of PngSuite that say so, and each of them is
+        // one image: a decoder that reads the four OI files differently, or
+        // the four Z files, has read the chunks and not the image.
+        foreach (string[] group in SAME) {
+            string first = TestSupport.Crc32(Decompressor.Inflate(Decode(group[0]).GetData()));
+            for (int i = 1; i < group.Length; i++) {
+                Assert.True(first == TestSupport.Crc32(Decompressor.Inflate(Decode(group[i]).GetData())),
+                        group[i] + " does not have the samples of " + group[0]);
+            }
+        }
+    }
+
+    [Fact]
+    public void AnImageOfEverySizeFromOneToFortyPixelsIsDecodedWhole() {
+        // The rows of a palette image of 1, 2 or 4 bits end in the bits that
+        // pad them to a byte, and a width that is not a whole number of bytes
+        // is where a decoder reads the padding as pixels or loses the last
+        // ones. PngSuite has a file of every such width.
+        string[] names = {"S01N3P01", "S02N3P01", "S03N3P01", "S04N3P01",
+                "S05N3P02", "S06N3P02", "S07N3P02", "S08N3P02", "S09N3P02",
+                "S32N3P04", "S33N3P04", "S34N3P04", "S35N3P04", "S36N3P04",
+                "S37N3P04", "S38N3P04", "S39N3P04", "S40N3P04"};
+        foreach (string name in names) {
+            PNGImage png = Decode(name);
+            // The number in the name is the width and the height of the file.
+            int size = int.Parse(name.Substring(1, 2));
+            Assert.Equal(size, png.GetWidth());
+            Assert.Equal(size, png.GetHeight());
+            // A palette image is three bytes a pixel, whatever its bit depth.
+            Assert.Equal(3*size*size, Decompressor.Inflate(png.GetData()).Length);
+        }
     }
 }
 }

@@ -250,8 +250,8 @@ PNG, JPEG, BMP and SVG images, drawn and scaled, with the pages of a document ad
 @example 24 JPEG, PNG, BMP and CMYK JPEG images
 Draws a JPEG, a PNG, a BMP and a CMYK JPEG saved as Photoshop saves one, with its inks stored inverted.
 
-@example 17 PNG images from PngSuite
-Draws PNG images of every kind from PngSuite, the test images of the PNG format: palettes, grayscale, alpha and 16-bit samples.
+@example 17 PNG images
+Draws a PNG of each kind PDFjet reads and says what each one is: the color types and the bit depths, the alpha channel and the tRNS chunk that carry transparency, and the pHYs chunk that asks for a size.
 
 @example 33 SVG images
 Draws an SVG map of Europe, scaled to fit the page, and a set of SVG icons, each with its name. SVG images are drawn as vector graphics, so they stay sharp at any zoom.

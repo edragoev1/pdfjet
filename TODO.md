@@ -489,6 +489,18 @@ goal 5, the references, which is the first thing to give if anything does.
       TIFF image file directory, a format of its own, and parsing it is new
       code in a reader of untrusted input, which is worth its own work and
       its own fuzzing rather than riding along here.
+- ✅ Example_17 is an example rather than a test case (Sep 21). It drew 55
+      PngSuite images on one page with nothing to tell them apart, and the
+      website called it a test case; of the 53 files it drew, 36 had no test
+      of their own, so it was the only thing reading them and it read them
+      only as far as not throwing. `PNGImageTest` covers all of them now, 22
+      files to 58, with the samples of each checked against Pillow as well as
+      against this decoder, and two tests that say what the files are for:
+      the groups that are one image written several ways decode alike, and
+      the palette images of every width from 1 to 40 pixels are decoded
+      whole. Example_17 itself draws one image of each kind with what it is
+      written under it, a description for a screen reader, and the yellow
+      square behind the transparent ones that shows the soft mask works.
 
 ### Sep 27–Oct 1: release v9.0.2
 

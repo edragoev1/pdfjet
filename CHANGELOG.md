@@ -610,6 +610,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_17 draws a PNG of each kind PDFjet reads and says what each one is,
+  where it drew 55 images of PngSuite on one page with nothing to tell them
+  apart: the website called it a test case, which is what it was. It is a
+  palette, grayscale and truecolor image of 8 and 16 bits, the alpha channel
+  and the `tRNS` chunk that carry transparency -- each drawn over a yellow
+  square so the soft mask can be seen -- and the `pHYs` chunk that asks for a
+  size, each with what it is written under it and a description a screen
+  reader can read. The images it no longer draws are covered by the tests
+  instead, which check their samples rather than drawing them: `PNGImageTest`
+  goes from 22 files to 58 in all four ports, and every CRC of the table was
+  read from Pillow as well as from this decoder. Two tests beside it say what
+  the new files are for: the images that are one image written in several
+  ways -- in one, two, four and nine `IDAT` chunks, at four deflate levels,
+  and with a background chunk beside them -- decode to the same samples, and
+  the palette images of every width from 1 to 40 pixels are decoded whole,
+  which is where the bits that pad a row to a byte are read as pixels or the
+  last ones are lost.
 - Example_15 draws chemical formulas rather than 300 cells of filler. It was
   a table of 60 rows by 5 columns over three pages where every body cell read
   "Hello 1 2" and every cell of the header row and the first column drew the

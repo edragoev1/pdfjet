@@ -29,6 +29,12 @@ import org.junit.jupiter.api.Test;
  * and palette images, and the alpha of BASN6A08, BASN4A08 and TP1N3P08, to the
  * same samples, and Pillow the colors of BASN6A08 and the gray of BASN4A08; the
  * 1, 2, 4 and 16 bit grayscale and 16 bit RGB samples keep their bit depth here.
+ * Every CRC of the table was read from Pillow as well as from this decoder.
+ *
+ * <p>The table covers the bit depths and the color types, the five filter
+ * types, the four deflate levels, the images written in one, two, four and
+ * nine IDAT chunks, the palette images of every width from 1 to 40 pixels,
+ * and the transparency of a palette against four background colors.
  */
 class PNGImageTest {
     // name, width, height, color type, bit depth, sample bytes, sample CRC, alpha bytes, alpha CRC
@@ -55,6 +61,42 @@ class PNGImageTest {
         {"F04N0G08", "32", "32", "0", "8", "1024", "b8006228", "", ""},
         {"S01N3P01", "1", "1", "3", "1", "3", "d243369f", "", ""},
         {"S05N3P02", "5", "5", "3", "2", "75", "1242b6fb", "", ""},
+        {"BGAN6A08", "32", "32", "6", "8", "3072", "a9b0c6b5", "1024", "fa6029ad"},
+        {"F01N0G08", "32", "32", "0", "8", "1024", "1868217f", "", ""},
+        {"F02N0G08", "32", "32", "0", "8", "1024", "79b9c9de", "", ""},
+        {"F03N0G08", "32", "32", "0", "8", "1024", "a373c644", "", ""},
+        {"OI1N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        {"OI1N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"OI2N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        {"OI2N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"OI4N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        {"OI4N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"OI9N0G16", "32", "32", "0", "16", "2048", "9362f0f0", "", ""},
+        {"OI9N2C16", "32", "32", "2", "16", "6144", "c278125a", "", ""},
+        {"S02N3P01", "2", "2", "3", "1", "12", "9e931d85", "", ""},
+        {"S03N3P01", "3", "3", "3", "1", "27", "6916380e", "", ""},
+        {"S04N3P01", "4", "4", "3", "1", "48", "c2e0d49b", "", ""},
+        {"S06N3P02", "6", "6", "3", "2", "108", "d7589540", "", ""},
+        {"S07N3P02", "7", "7", "3", "2", "147", "d2ccf489", "", ""},
+        {"S08N3P02", "8", "8", "3", "2", "192", "2ba1b03e", "", ""},
+        {"S09N3P02", "9", "9", "3", "2", "243", "9762d2ed", "", ""},
+        {"S32N3P04", "32", "32", "3", "4", "3072", "ad01f44d", "", ""},
+        {"S33N3P04", "33", "33", "3", "4", "3267", "d2f4ae68", "", ""},
+        {"S34N3P04", "34", "34", "3", "4", "3468", "bbeda3f7", "", ""},
+        {"S35N3P04", "35", "35", "3", "4", "3675", "99293acf", "", ""},
+        {"S36N3P04", "36", "36", "3", "4", "3888", "f51a96e0", "", ""},
+        {"S37N3P04", "37", "37", "3", "4", "4107", "920758a4", "", ""},
+        {"S38N3P04", "38", "38", "3", "4", "4332", "eb3bf324", "", ""},
+        {"S39N3P04", "39", "39", "3", "4", "4563", "c06d7da1", "", ""},
+        {"S40N3P04", "40", "40", "3", "4", "4800", "0d4658a0", "", ""},
+        {"TBBN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        {"TBGN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        {"TBWN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        {"TBYN3P08", "32", "32", "3", "8", "3072", "8b0a6c2c", "1024", "f83b2838"},
+        {"Z00N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        {"Z03N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        {"Z06N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
+        {"Z09N2C08", "32", "32", "2", "8", "3072", "f8f7d651", "", ""},
     };
 
     private static String crc(byte[] data) {
@@ -409,5 +451,55 @@ class PNGImageTest {
         PNGImage png = new PNGImage(new ByteArrayInputStream(pngWithPhys(20, 20, 4724, 2362, 1)));
         assertEquals(12f, png.getPhysicalWidth(), 0.01f);
         assertEquals(24f, png.getPhysicalHeight(), 0.01f);
+    }
+
+    // The name of a file whose samples must be those of another, and why: the
+    // PngSuite images of these groups are one image written in several ways,
+    // so a decoder that reads them all gets the same pixels from each.
+    private static final String[][] SAME = {
+        {"BASN0G16", "OI1N0G16", "OI2N0G16", "OI4N0G16", "OI9N0G16"},
+        {"BASN2C16", "OI1N2C16", "OI2N2C16", "OI4N2C16", "OI9N2C16"},
+        {"Z00N2C08", "Z03N2C08", "Z06N2C08", "Z09N2C08"},
+        {"TP1N3P08", "TBBN3P08", "TBGN3P08", "TBWN3P08", "TBYN3P08"},
+        {"BASN6A08", "BGAN6A08"},
+    };
+
+    @Test
+    void theImagesThatAreOneImageWrittenSeveralWaysDecodeAlike() throws Exception {
+        // The IDAT chunks of an image may be split any way the writer likes,
+        // its data deflated at any level, and a background color or a
+        // background with alpha carried beside it; none of that is the image.
+        // These are the groups of PngSuite that say so, and each of them is
+        // one image: a decoder that reads the four OI files differently, or
+        // the four Z files, has read the chunks and not the image.
+        for (String[] group : SAME) {
+            byte[] first = Decompressor.inflate(decode(group[0]).getData());
+            for (int i = 1; i < group.length; i++) {
+                PNGImage png = decode(group[i]);
+                assertEquals(crc(first), crc(Decompressor.inflate(png.getData())),
+                        group[i] + " does not have the samples of " + group[0]);
+            }
+        }
+    }
+
+    @Test
+    void anImageOfEverySizeFromOneToFortyPixelsIsDecodedWhole() throws Exception {
+        // The rows of a palette image of 1, 2 or 4 bits end in the bits that
+        // pad them to a byte, and a width that is not a whole number of bytes
+        // is where a decoder reads the padding as pixels or loses the last
+        // ones. PngSuite has a file of every such width.
+        String[] names = {"S01N3P01", "S02N3P01", "S03N3P01", "S04N3P01",
+                "S05N3P02", "S06N3P02", "S07N3P02", "S08N3P02", "S09N3P02",
+                "S32N3P04", "S33N3P04", "S34N3P04", "S35N3P04", "S36N3P04",
+                "S37N3P04", "S38N3P04", "S39N3P04", "S40N3P04"};
+        for (String name : names) {
+            PNGImage png = decode(name);
+            // The number in the name is the width and the height of the file.
+            int size = Integer.parseInt(name.substring(1, 3));
+            assertEquals(size, png.getWidth(), name);
+            assertEquals(size, png.getHeight(), name);
+            // A palette image is three bytes a pixel, whatever its bit depth.
+            assertEquals(3*size*size, Decompressor.inflate(png.getData()).length, name);
+        }
     }
 }
