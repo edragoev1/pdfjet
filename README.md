@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/readme/pdfjet-logo.png" alt="PDFjet" width="320">
+  <img src="images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
 </p>
 
 <h3 align="center">Fast, dependency-free PDF generation for Java, C#, Go and Swift</h3>

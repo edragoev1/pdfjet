@@ -409,9 +409,11 @@ public class Booklet {
         centered(body, 18f, "Fast, dependency-free PDF generation", 0xD6E4F0, 196f, StructElem.P);
         centered(body, 18f, "for Java, C#, Go and Swift", 0xD6E4F0, 222f, StructElem.P);
 
-        Image logo = new Image(pdf, "images/readme/pdfjet-logo.png");
+        // The logo of pdfjet.com, drawn from its SVG file with PDFjet itself,
+        // so it stays sharp at any size the booklet is printed at.
+        SVGImage logo = new SVGImage("images/readme/pdfjet-logo.svg");
         logo.setAltDescription("The PDFjet logo");
-        logo.scaleBy(0.5f);
+        logo.scaleBy(320f / logo.getWidth());
         logo.setLocation(306f - logo.getWidth() / 2f, 350f);
         float[] xy = logo.drawOn(page);
 
