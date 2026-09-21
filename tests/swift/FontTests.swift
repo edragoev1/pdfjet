@@ -210,6 +210,41 @@ import Testing
 
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
             "the fonts directory is not here"))
+    func aCompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef() throws {
+        // PDF/UA and PDF/A forbid .notdef, so a PDF/UA document draws the
+        // replacement character of the font, as wide as it is, with the missing
+        // character as its actual text, and never glyph 0.
+        let memory = MemoryPDF()
+        memory.pdf.setCompliance(Compliance.PDF_UA_1)
+        let font = try ibmPlexSans(memory.pdf)
+        let replacement = font.unicodeToGID[0xFFFD]
+        try #require(replacement != 0, "IBM Plex Sans has no U+FFFD")
+        let width = Float(font.glyphAdvance(replacement)) * 10 / Float(font.unitsPerEm)
+        TestSupport.expectNear(width, font.stringWidth(10, "\u{0E01}"), 0.001, "a character in the range")
+        TestSupport.expectNear(width, font.stringWidth(10, "\u{1F600}"), 0.001, "a character past the range")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextLine(font, "\u{0E01}\u{1F600}").setLocation(10, 20).drawOn(page)
+        let content = TestSupport.content(page)
+        let glyph = String(format: "<%04X> Tj\nEMC\n", replacement)
+        for want in [
+                "/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph,
+                "/Span <</ActualText <FEFFD83DDE00>>> BDC\n" + glyph] {
+            #expect(content.contains(want), "\(want) is not in \(content)")
+        }
+        #expect(!content.contains("<0000>"), ".notdef is drawn: \(content)")
+        // The stamp draws it so too.
+        let stamp = Stamp(memory.pdf).setSize(100, 50)
+        stamp.drawText(font, 10, 5, 20, "\u{0E01}")
+        try stamp.complete()
+        try memory.pdf.complete()
+        let want = "/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph
+        #expect(TestSupport.latin1(memory.bytes).contains(want), "\(want) is not in the stamp")
+        // The character still has no glyph, so a fallback font draws it.
+        #expect(!font.hasGlyph(0x0E01), "a missing character has a glyph")
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+            "the fonts directory is not here"))
     func aControlCharacterStaysInTheFontOfItsText() throws {
         // A control character is drawn as a space by the font, not by the
         // fallback font: the fallback font would draw it as a space too.

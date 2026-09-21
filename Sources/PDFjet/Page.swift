@@ -593,7 +593,7 @@ public class Page {
                 codePoints.append(codePoint)
                 gids.append(Page.glyphOf(font, codePoint))
                 hasMarks = hasMarks || isMark(codePoint)
-                hasNotdef = hasNotdef || isNotdef(codePoints, gids, gids.count - 1)
+                hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }
             var offsets: [Int]? = nil
             if hasMarks && font.markData != nil {
@@ -690,10 +690,10 @@ public class Page {
             _ i: Int, _ end: Int) {
         var wordStart = i
         var wordEnd = end
-        while wordStart < wordEnd && inOwnSpan(codePoints, gids, mirrored, wordStart) {
+        while wordStart < wordEnd && inOwnSpan(font, codePoints, mirrored, wordStart) {
             wordStart += 1
         }
-        while wordEnd > wordStart && inOwnSpan(codePoints, gids, mirrored, wordEnd - 1) {
+        while wordEnd > wordStart && inOwnSpan(font, codePoints, mirrored, wordEnd - 1) {
             wordEnd -= 1
         }
         if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {
@@ -710,7 +710,7 @@ public class Page {
     private func appendGlyphs(
             _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ start: Int, _ end: Int) {
         for k in start..<end {
-            if inOwnSpan(codePoints, gids, mirrored, k) {
+            if inOwnSpan(font, codePoints, mirrored, k) {
                 appendGlyphWithActualText(font, codePoints, gids, nil, mirrored, nil, k)
             } else {
                 Page.appendCodePointAsHex(gids[k], &self.buf)
@@ -785,33 +785,33 @@ public class Page {
     }
 
     // Returns the glyph ID the character is drawn with: that of a space for a
-    // control character, which has no glyph to draw, and .notdef, glyph 0, for
-    // a character the font does not have, so that a reader sees a box where
-    // the character is missing and not a space, as other PDF writers draw it.
-    // The character map of the font is read from its first to its last
-    // character, so a character outside that range has no glyph.
+    // control character, which has no glyph to draw, and for a character the
+    // font does not have the glyph missingGlyph gives, .notdef in a document
+    // of no compliance, so that a reader sees a box where the character is
+    // missing and not a space, as other PDF writers draw it.
     static func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
         if Font.isControl(codePoint) {
             return font.unicodeToGID[0x0020]
         }
-        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
-            return 0
+        if font.lacks(codePoint) {
+            return font.missingGlyph()
         }
         return font.unicodeToGID[codePoint]
     }
 
-    // Returns true if the glyph at k is .notdef, the glyph of a character the
-    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
-    // A control character is drawn as a space even when the font has none.
-    private func isNotdef(_ codePoints: [Int], _ gids: [Int], _ k: Int) -> Bool {
-        return gids[k] == 0 && !Font.isControl(codePoints[k])
+    // Returns true if the character at k is one the font does not have, which
+    // is drawn with the glyph missingGlyph gives. The ToUnicode map of the
+    // font maps that glyph to U+FFFD or to the character it is, so it is drawn
+    // in a span whose actual text is the character that is missing.
+    private func isMissing(_ font: Font, _ codePoints: [Int], _ k: Int) -> Bool {
+        return font.lacks(codePoints[k])
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its
     // own, with the text it stands for as its actual text: a character Bidi
-    // mirrored, and a character the font does not have, drawn with .notdef.
-    private func inOwnSpan(_ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ k: Int) -> Bool {
-        return mirrored?[k] == true || isNotdef(codePoints, gids, k)
+    // mirrored, and a character the font does not have.
+    private func inOwnSpan(_ font: Font, _ codePoints: [Int], _ mirrored: [Bool]?, _ k: Int) -> Bool {
+        return mirrored?[k] == true || isMissing(font, codePoints, k)
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -916,8 +916,8 @@ public class Page {
 
     // Returns true if the text has a character that is more than a glyph: an
     // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
-    // place, or a character the font does not have, whose .notdef glyph is
-    // drawn with the character as its actual text. Marks start at U+0300, so
+    // place, or a character the font does not have, whose glyph is drawn with
+    // the character as its actual text. Marks start at U+0300, so
     // most text is looked at once, with no more than two comparisons and the
     // lookup of its glyph for each character.
     private func needsShaping(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
@@ -931,7 +931,7 @@ public class Page {
                     return true
                 }
             }
-            if codePoint != 0xFEFF && Page.glyphOf(font, codePoint) == 0 && !Font.isControl(codePoint) {
+            if codePoint != 0xFEFF && font.lacks(codePoint) {
                 return true
             }
         }

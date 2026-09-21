@@ -16,6 +16,9 @@ public class Font {
     var objNumber = 0
     // The identity of the PDF the font was added to, or nil for a font of an existing PDF.
     var pdfIdentity: UUID?
+    // The compliance of the PDF the font was added to, which is set before
+    // fonts are added, or PDF_1_7 for a font of an existing PDF.
+    var compliance = Compliance.PDF_1_7
     var fontID: String?
 
     // The object number of the embedded font file
@@ -98,6 +101,7 @@ public class Font {
     ///
     public init(_ pdf: PDF, _ coreFont: Int) throws {
         self.pdfIdentity = pdf.identity
+        self.compliance = pdf.compliance
         let font = try CoreFont(coreFont)
         self.isCoreFont = true
         self.name = font.name!
@@ -157,6 +161,7 @@ public class Font {
     ///
     public init(_ pdf: PDF, _ font: CJKFont) {
         self.pdfIdentity = pdf.identity
+        self.compliance = pdf.compliance
         var fontName: String?
         if (font == CJKFont.ADOBE_MING_STD_LIGHT) {             // Chinese (Traditional) font
             fontName = "AdobeMingStd-Light"
@@ -267,6 +272,7 @@ public class Font {
     ///
     public init(_ pdf: PDF, _ stream: InputStream) throws {
         self.pdfIdentity = pdf.identity
+        self.compliance = pdf.compliance
         let bytes = try Content.getFromStream(stream)
         if Font.isOpenTypeFont(bytes) {
             try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
@@ -297,6 +303,7 @@ public class Font {
     ///
     public init(_ pdf: PDF, _ fontPath: String) throws {
         self.pdfIdentity = pdf.identity
+        self.compliance = pdf.compliance
         guard FileManager.default.fileExists(atPath: fontPath),
                 let inputStream = InputStream(fileAtPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
@@ -434,8 +441,8 @@ public class Font {
     // Returns the advance width, in font units, of the glyph that Page draws
     // for the character, the one glyphOf gives: none for an RLM, LRM, ZWNJ,
     // ZWJ or byte order mark, which are not drawn, that of a space for a
-    // control character and that of .notdef for a character the font does not
-    // have.
+    // control character and that of the glyph missingGlyph gives for a
+    // character the font does not have.
     private func advanceWidthOf(_ codePoint: Int) -> Int {
         if Font.isJoinerOrRLM(UInt32(codePoint)) || codePoint == 0xFEFF {
             return 0
@@ -460,7 +467,35 @@ public class Font {
         if isCoreFont {
             return codePoint == 32 || coreFontCode(UInt32(codePoint)) != 32
         }
-        return !isCJK && Page.glyphOf(self, codePoint) != 0
+        return !isCJK && !lacks(codePoint)
+    }
+
+    // Returns true if the font has no glyph for the character, which is not a
+    // control character. The character map of the font is read from its first
+    // to its last character, so a character outside that range has no glyph.
+    func lacks(_ codePoint: Int) -> Bool {
+        if Font.isControl(codePoint) {
+            return false
+        }
+        return codePoint < firstChar || codePoint > lastChar ||
+                codePoint >= unicodeToGID.count || unicodeToGID[codePoint] == 0
+    }
+
+    // Returns the glyph a character the font does not have is drawn with:
+    // .notdef, glyph 0, in a document of no compliance. PDF/UA and PDF/A
+    // forbid .notdef -- ISO 14289-1 7.21.8 and ISO 19005-2 6.2.11.8 -- so a
+    // compliant document draws the replacement character U+FFFD of the font,
+    // or a question mark, or a space, the first the font has, and the
+    // character is its actual text. A font of a PDF that was read is of no
+    // compliance.
+    func missingGlyph() -> Int {
+        if compliance == Compliance.PDF_1_7 {
+            return 0
+        }
+        for codePoint in [0xFFFD, 0x3F, 0x20] where !lacks(codePoint) {
+            return unicodeToGID[codePoint]
+        }
+        return 0
     }
 
     // Returns the font, of the font and its fallback font, that draws the
