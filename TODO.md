@@ -238,7 +238,6 @@ this is started before Oct 21.
 
 ## Known and accepted (document, do not fix)
 
-- Urdu is drawn in Naskh; Nastaliq fonts need GSUB and are not supported.
 - Only Arabic and Persian letters are shaped.
 - No explicit bidi embedding, override or isolate controls.
 - Poppler separates an Arabic comma from its word; MuPDF moves numbers next to
