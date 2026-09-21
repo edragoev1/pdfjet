@@ -1503,7 +1503,7 @@ final public class PDF {
     }
 
     // Returns true when the tokens at index i are a reference: "n g R".
-    private static boolean isReference(List<String> tokens, int i) {
+    static boolean isReference(List<String> tokens, int i) {
         return i + 2 < tokens.size()
                 && tokens.get(i + 2).equals("R")
                 && isObjectNumber(tokens.get(i))
@@ -1564,7 +1564,7 @@ final public class PDF {
         return value;
     }
 
-    private static List<String> valueOf(PDFobj obj) {
+    static List<String> valueOf(PDFobj obj) {
         List<String> dict = obj.dict;
         int start = (dict.size() >= 3 && dict.get(2).equals("obj")) ? 3 : 0;
         int end = dict.size();
@@ -1602,7 +1602,7 @@ final public class PDF {
     }
 
     // Returns the index after the value that starts at index i.
-    private static int valueEnd(List<String> tokens, int i) {
+    static int valueEnd(List<String> tokens, int i) {
         if (i >= tokens.size()) {
             return tokens.size();
         }
@@ -1627,7 +1627,7 @@ final public class PDF {
 
     // Returns the index of the key of an entry of the dictionary, not of a
     // dictionary inside it, or -1.
-    private static int entryIndex(List<String> tokens, String key) {
+    static int entryIndex(List<String> tokens, String key) {
         if (tokens.isEmpty() || !tokens.get(0).equals("<<")) {
             return -1;
         }
@@ -2021,12 +2021,18 @@ final public class PDF {
         byteCount += baos.size();
     }
 
+    // The highest object number read in a file of any size: its empty objects
+    // take about 30 MB.
+    private static final int MIN_OBJ_NUMBER_LIMIT = 262144;
+
     // Returns the objects by their number, with an empty object at the number
     // of every one the PDF does not have, so that the object a reference names
-    // is the one at its number. Every object of a PDF takes bytes of its file,
-    // so a number larger than the file has bytes is one no PDF can hold, and
-    // the empty objects up to it would take the memory a file of a few bytes
-    // never names.
+    // is the one at its number. A PDF may number its objects as it likes, and
+    // one that kept the numbers of the document it was cut from has few
+    // objects and high numbers, so a number up to MIN_OBJ_NUMBER_LIMIT is read
+    // in any file, and a larger one in a file that has as many bytes. The empty
+    // objects up to a larger number would take the memory a file of a few
+    // bytes never names.
     private List<PDFobj> getSortedObjects(List<PDFobj> objects, int size) throws Exception {
         List<PDFobj> sorted = new ArrayList<PDFobj>();
 
@@ -2036,7 +2042,7 @@ final public class PDF {
                 maxObjNumber = obj.number;
             }
         }
-        if (maxObjNumber > size) {
+        if (maxObjNumber > Math.max(size, MIN_OBJ_NUMBER_LIMIT)) {
             throw new Exception("The PDF of " + size
                     + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
@@ -2275,7 +2281,7 @@ final public class PDF {
         return obj;
     }
 
-    private static boolean isWhiteSpace(int c) {
+    static boolean isWhiteSpace(int c) {
         return c == 0x00        // Null
             || c == 0x09        // Horizontal Tab
             || c == 0x0A        // Line Feed (LF)
@@ -2509,7 +2515,7 @@ final public class PDF {
         return i > off && j > i && k > j && m > k && startsWith(buf, m, "obj");
     }
 
-    private static boolean startsWith(byte[] buf, int off, String str) {
+    static boolean startsWith(byte[] buf, int off, String str) {
         if (off + str.length() > buf.length) {
             return false;
         }
@@ -2521,7 +2527,7 @@ final public class PDF {
         return true;
     }
 
-    private static int indexOf(byte[] buf, String str, int from) {
+    static int indexOf(byte[] buf, String str, int from) {
         for (int i = Math.max(from, 0); i + str.length() <= buf.length; i++) {
             if (startsWith(buf, i, str)) {
                 return i;
@@ -2742,6 +2748,7 @@ final public class PDF {
             PDFobj obj = objects.get(number - 1);
             if (isPageObject(obj)) {
                 addInheritedEntries(obj, objects);
+                resolveMediaBox(obj, objects);
                 pages.add(obj);
             } else {
                 getPageObjects(obj, objects, pages, visited);
@@ -2768,6 +2775,64 @@ final public class PDF {
                 page.dict.add(open + 1, key);
             }
         }
+    }
+
+    // Writes the /MediaBox of the page as the array of numbers it is, when it
+    // is an object of its own, "/MediaBox 4 0 R", or holds references to its
+    // numbers, "[4 0 R 5 0 R 6 0 R 7 0 R]", so that getPageSize reads it. A box
+    // that is not four numbers then is left as it is: a reference to anything
+    // else, like the page itself, would grow the page each time it is read.
+    private static void resolveMediaBox(PDFobj page, List<PDFobj> objects) {
+        int open = page.dict.indexOf("<<");
+        if (open == -1) {
+            return;
+        }
+        List<String> tokens = page.dict.subList(open, page.dict.size());
+        int i = entryIndex(tokens, "/MediaBox");
+        if (i == -1) {
+            return;
+        }
+        int start = open + i + 1;
+        int end = open + valueEnd(tokens, i + 1);
+        List<String> value = page.dict.subList(start, end);
+        if (isReference(value, 0)) {
+            PDFobj obj = PDFobj.objectNumbered(objects, Integer.parseInt(value.get(0)));
+            if (obj == null) {
+                return;
+            }
+            value = valueOf(obj);
+        }
+        if (value.isEmpty() || !value.get(0).equals("[")) {
+            return;
+        }
+        List<String> box = new ArrayList<String>();
+        for (int j = 0; j < value.size(); j++) {
+            if (isReference(value, j)) {
+                PDFobj obj = PDFobj.objectNumbered(objects, Integer.parseInt(value.get(j)));
+                if (obj == null) {
+                    return;
+                }
+                box.addAll(valueOf(obj));
+                j += 2;
+            } else {
+                box.add(value.get(j));
+            }
+            if (box.size() > 6) {
+                return;
+            }
+        }
+        if (box.size() != 6 || !box.get(0).equals("[") || !box.get(5).equals("]")) {
+            return;
+        }
+        for (String number : box.subList(1, 5)) {
+            try {
+                Double.parseDouble(number);
+            } catch (NumberFormatException e) {
+                return;
+            }
+        }
+        page.dict.subList(start, end).clear();
+        page.dict.addAll(start, box);
     }
 
     private boolean isPageObject(PDFobj obj) {

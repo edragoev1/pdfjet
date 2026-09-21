@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.DataFormatException;
 
 /**
  * An object of a PDF that was read with PDF.read, which holds the tokens of
@@ -83,6 +84,11 @@ public class PDFobj {
     // stream replaces the encrypted one, so that it can be copied.
     void setStreamAndData(byte[] buf, int length, Decryptor decryptor) throws Exception {
         if (this.stream == null) {
+            int actual = streamLength(buf, streamOffset, length);
+            if (actual != length) {
+                length = actual;
+                setLength(length);
+            }
             // A /Length the PDF does not have is checked before the stream is
             // made, so that a file of a few bytes that says its stream is a
             // gigabyte takes no memory.
@@ -95,14 +101,71 @@ public class PDFobj {
                 this.stream = decryptor.decryptStream(this, stream);
                 setLength(stream.length);
             }
-            this.data = decode(stream);
+            this.data = decodeStream();
         }
     }
 
-    // Sets the /Length of the stream, replacing a reference to the length.
+    // Returns the decoded stream. A cross-reference stream or an object stream
+    // that cannot be decoded throws, as the objects in it cannot be read. Any
+    // other stream that cannot be decoded, like an image or the content of a
+    // page that is cut short, has no data: the rest of the PDF is read, and a
+    // merge copies the stream as it is.
+    private byte[] decodeStream() throws Exception {
+        String type = getValue("/Type");
+        if (type.equals("/XRef") || type.equals("/ObjStm")) {
+            return decode(stream);
+        }
+        try {
+            return decode(stream);
+        } catch (DataFormatException e) {
+            return null;
+        }
+    }
+
+    // Returns the length of the stream that starts at the offset. It is the
+    // /Length when the endstream keyword follows it, as it must; when it does
+    // not -- a /Length that is missing, too short or too long -- the stream
+    // ends at the end of line before the next endstream, as MuPDF and pdf.js
+    // read it. A stream with no endstream after it keeps its /Length.
+    static int streamLength(byte[] buf, int offset, int length) {
+        if (offset < 0 || offset > buf.length) {
+            return length;
+        }
+        if (length >= 0 && length <= buf.length - offset) {
+            int i = offset + length;
+            while (i < buf.length && PDF.isWhiteSpace(buf[i])) {
+                i++;
+            }
+            if (PDF.startsWith(buf, i, "endstream")) {
+                return length;
+            }
+        }
+        int end = PDF.indexOf(buf, "endstream", offset);
+        if (end == -1) {
+            return length;
+        }
+        if (end > offset && buf[end - 1] == '\n') {
+            end--;
+        }
+        if (end > offset && buf[end - 1] == '\r') {
+            end--;
+        }
+        return end - offset;
+    }
+
+    // Sets the /Length of the stream, replacing a reference to the length, and
+    // adds it to a stream dictionary that has none.
     private void setLength(int length) {
         int i = dict.indexOf("/Length");
-        if (i == -1 || i + 1 >= dict.size()) {
+        if (i == -1) {
+            int open = dict.indexOf("<<");
+            if (open != -1) {
+                dict.add(open + 1, String.valueOf(length));
+                dict.add(open + 1, "/Length");
+            }
+            return;
+        }
+        if (i + 1 >= dict.size()) {
             return;
         }
         if (i + 3 < dict.size() && dict.get(i + 3).equals("R")) {
@@ -343,7 +406,7 @@ public class PDFobj {
 
     // Returns the object with the number, or null when the PDF that was read
     // does not have one: a reference can name an object that is not in the file.
-    private static PDFobj objectNumbered(List<PDFobj> objects, int number) {
+    static PDFobj objectNumbered(List<PDFobj> objects, int number) {
         if (number < 1 || number > objects.size()) {
             return null;
         }
@@ -373,9 +436,11 @@ public class PDFobj {
     /**
      * Returns the width and height of the page, which its /MediaBox gives as
      * the two corners of a rectangle, in either order. A page with no
-     * /MediaBox of its own, or one that is not four numbers, is letter size.
-     * PDF.getPageObjects gives a page the box it inherits from the page tree,
-     * which a page of another program's PDF often does not carry itself.
+     * /MediaBox of its own, one that is not four numbers, or an empty one is
+     * letter size, as MuPDF and pdf.js draw it. PDF.getPageObjects gives a
+     * page the box it inherits from the page tree, which a page of another
+     * program's PDF often does not carry itself, and the numbers of a box
+     * that is an object of its own or refers to them.
      *
      * @return the PDF page size.
      */
@@ -393,7 +458,12 @@ public class PDFobj {
                         return Letter.PORTRAIT;
                     }
                 }
-                return new PageSize(Math.abs(box[2] - box[0]), Math.abs(box[3] - box[1]));
+                float width = Math.abs(box[2] - box[0]);
+                float height = Math.abs(box[3] - box[1]);
+                if (width == 0f || height == 0f) {
+                    return Letter.PORTRAIT;
+                }
+                return new PageSize(width, height);
             }
         }
         return Letter.PORTRAIT;

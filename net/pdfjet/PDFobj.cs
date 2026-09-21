@@ -57,6 +57,11 @@ public class PDFobj {
     // stream replaces the encrypted one, so that it can be copied.
     internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor) {
         if (this.stream == null) {
+            int actual = StreamLength(buf, streamOffset, length);
+            if (actual != length) {
+                length = actual;
+                SetLength(length);
+            }
             // A /Length the PDF does not have is checked before the stream is
             // made, so that a file of a few bytes that says its stream is a
             // gigabyte takes no memory.
@@ -69,14 +74,70 @@ public class PDFobj {
                 this.stream = decryptor.DecryptStream(this, stream);
                 SetLength(stream.Length);
             }
-            this.data = Decode(stream);
+            this.data = DecodeStream();
         }
     }
 
-    // Sets the /Length of the stream, replacing a reference to the length.
+    // Returns the decoded stream. A cross-reference stream or an object stream
+    // that cannot be decoded throws, as the objects in it cannot be read. Any
+    // other stream that cannot be decoded, like an image or the content of a
+    // page that is cut short, has no data: the rest of the PDF is read, and a
+    // merge copies the stream as it is.
+    private byte[] DecodeStream() {
+        String type = GetValue("/Type");
+        if (type.Equals("/XRef") || type.Equals("/ObjStm")) {
+            return Decode(stream);
+        }
+        try {
+            return Decode(stream);
+        } catch (InvalidDataException) {
+            return null;
+        }
+    }
+
+    // Returns the length of the stream that starts at the offset. It is the
+    // /Length when the endstream keyword follows it, as it must; when it does
+    // not -- a /Length that is missing, too short or too long -- the stream
+    // ends at the end of line before the next endstream, as MuPDF and pdf.js
+    // read it. A stream with no endstream after it keeps its /Length.
+    private static int StreamLength(byte[] buf, int offset, int length) {
+        if (offset < 0 || offset > buf.Length) {
+            return length;
+        }
+        if (length >= 0 && length <= buf.Length - offset) {
+            int i = offset + length;
+            while (i < buf.Length && PDF.IsWhiteSpace(buf[i])) {
+                i++;
+            }
+            if (PDF.StartsWith(buf, i, "endstream")) {
+                return length;
+            }
+        }
+        int end = PDF.IndexOf(buf, "endstream", offset);
+        if (end == -1) {
+            return length;
+        }
+        if (end > offset && buf[end - 1] == '\n') {
+            end--;
+        }
+        if (end > offset && buf[end - 1] == '\r') {
+            end--;
+        }
+        return end - offset;
+    }
+
+    // Sets the /Length of the stream, replacing a reference to the length,
+    // and adds it to a stream dictionary that has none.
     private void SetLength(int length) {
         int i = dict.IndexOf("/Length");
-        if (i == -1 || i + 1 >= dict.Count) {
+        if (i == -1) {
+            int open = dict.IndexOf("<<");
+            if (open != -1) {
+                dict.InsertRange(open + 1, new String[] {"/Length", length.ToString()});
+            }
+            return;
+        }
+        if (i + 1 >= dict.Count) {
             return;
         }
         if (i + 3 < dict.Count && dict[i + 3].Equals("R")) {
@@ -284,7 +345,7 @@ public class PDFobj {
 
     // Returns the object with the number, or null when the PDF that was read
     // does not have one: a reference can name an object that is not in the file.
-    private static PDFobj ObjectNumbered(List<PDFobj> objects, int number) {
+    internal static PDFobj ObjectNumbered(List<PDFobj> objects, int number) {
         if (number < 1 || number > objects.Count) {
             return null;
         }
@@ -294,10 +355,11 @@ public class PDFobj {
     /// <summary>
     /// Returns the width and height of the page, which its /MediaBox gives as
     /// the two corners of a rectangle, in either order. A page with no
-    /// /MediaBox of its own, or one that is not four numbers, is letter size.
-    /// PDF.GetPageObjects gives a page the box it inherits from the page
-    /// tree, which a page of another program's PDF often does not carry
-    /// itself.
+    /// /MediaBox of its own, one that is not four numbers, or an empty one is
+    /// letter size, as MuPDF and pdf.js draw it. PDF.GetPageObjects gives a
+    /// page the box it inherits from the page tree, which a page of another
+    /// program's PDF often does not carry itself, and the numbers of a box
+    /// that is an object of its own or refers to them.
     /// </summary>
     public PageSize GetPageSize() {
         for (int i = 0; i < dict.Count; i++) {
@@ -312,7 +374,12 @@ public class PDFobj {
                         return Letter.PORTRAIT;
                     }
                 }
-                return new PageSize(Math.Abs(box[2] - box[0]), Math.Abs(box[3] - box[1]));
+                float width = Math.Abs(box[2] - box[0]);
+                float height = Math.Abs(box[3] - box[1]);
+                if (width == 0f || height == 0f) {
+                    return Letter.PORTRAIT;
+                }
+                return new PageSize(width, height);
             }
         }
         return Letter.PORTRAIT;

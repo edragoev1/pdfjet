@@ -474,9 +474,56 @@ func TestPDFAnObjectNumberedHigherThanTheFileHasBytesIsRefused(t *testing.T) {
 
 func TestPDFAStreamLongerThanTheFileIsRefused(t *testing.T) {
 	// The bytes of the stream are counted before it is made, so that a file
-	// of a few bytes that says its stream is a gigabyte takes no memory.
+	// of a few bytes that says its stream is a gigabyte takes no memory. A
+	// stream that has its endstream ends there, whatever its /Length says.
 	testWant(t, "The stream of an object is not in the PDF.",
+		testReadError(t, "1 0 obj<</Length 1000000000>>stream\nx"))
+	testWant(t, "(no error)",
 		testReadError(t, "1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"))
+}
+
+func TestPDFAStreamWhoseLengthIsWrongEndsAtItsEndstream(t *testing.T) {
+	// A /Length that is too short, too long or missing, as pdf.js tests it
+	// in issue6108, issue6069 and issue1293r: the stream ends at the end of
+	// line before endstream, as MuPDF and pdf.js read it, and not at the
+	// /Length, which cut the page's content when it was merged. The /Length
+	// is set to it, so that the stream is written whole.
+	for _, dict := range []string{"<< /Length 3 >>", "<< /Length 300 >>", "<< >>", "<< /Length 16 >>"} {
+		objects := testRead(t, testPDFWithObjects(dict+"\nstream\nBT (Hello) Tj ET\nendstream"))
+		testWant(t, "BT (Hello) Tj ET", string(objects[0].GetData()))
+		testWant(t, "16", objects[0].GetValue("/Length"))
+	}
+	// A /Length that is right is kept, though the stream holds "endstream".
+	objects := testRead(t, testPDFWithObjects("<< /Length 11 >>\nstream\nendstream x\nendstream"))
+	testWant(t, "endstream x", string(objects[0].GetData()))
+}
+
+func TestPDFAStreamThatCannotBeDecodedHasNoData(t *testing.T) {
+	// A Flate stream cut short or with a wrong checksum, as pdf.js tests them
+	// in comments.pdf and bug1050040: the rest of the PDF is read, and a
+	// merge copies the stream as it is. It made the whole PDF unreadable.
+	objects := testRead(t, testPDFWithObjects("<< /Length 5 /Filter /FlateDecode >>\nstream\nabcde\nendstream"))
+	if data := objects[0].GetData(); data != nil {
+		t.Errorf("data %q", data)
+	}
+	testWant(t, "abcde", string(objects[0].stream))
+	// The objects of an object stream that cannot be decoded cannot be read.
+	testWant(t, "invalid zlib data: zlib: invalid header",
+		testReadError(t, "1 0 obj<</Type/ObjStm/N 1/First 4/Length 5/Filter/FlateDecode>>stream\nabcde\nendstream endobj"))
+}
+
+func TestPDFAnObjectNumberedHigherThanTheFileHasBytesIsRead(t *testing.T) {
+	// A PDF cut from a larger document can keep its object numbers, as pdf.js
+	// tests it in issue16091: 41 objects numbered up to 156341 in a file of
+	// 107,355 bytes, which MuPDF reads.
+	objects, err := testNewPDF().Read([]byte("156337 0 obj<</Type/Catalog>>endobj\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(objects) != 156337 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "/Catalog", objects[156336].GetValue("/Type"))
 }
 
 func TestPDFAnObjectStreamThatIsNotANumberIsRefused(t *testing.T) {
@@ -538,7 +585,7 @@ func TestPDFAMediaBoxThatIsNotFourNumbersIsLetterSize(t *testing.T) {
 	// The size of a page is read from its /MediaBox, which a PDF that was
 	// read can write as anything: it was four tokens past the key, which
 	// trapped in Swift and read past the tokens in the other ports.
-	for _, box := range []string{"[0 0 612", "[a b c d]", "5 0 R", "[]", ""} {
+	for _, box := range []string{"[0 0 612", "[a b c d]", "5 0 R", "[]", "", "[0 0 0 0]", "[0 0 612 0]"} {
 		objects := testRead(t, testPDFWithObjects(
 			"<< /Type /Catalog /Pages 2 0 R >>",
 			"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -548,6 +595,38 @@ func TestPDFAMediaBoxThatIsNotFourNumbersIsLetterSize(t *testing.T) {
 			t.Errorf("%s: %gx%g", box, size.GetWidth(), size.GetHeight())
 		}
 	}
+}
+
+func TestPDFAMediaBoxThatIsAnObjectOrRefersToItsNumbersIsRead(t *testing.T) {
+	// A box that is an object of its own, inherited here, and one whose
+	// numbers are, as pdf.js tests them in bug852992_reduced and issue7872:
+	// the size of both pages was letter size.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox 5 0 R >>",
+		"<< /Type /Page /Parent 2 0 R >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 6 0 R 7 0 R] >>",
+		"[0 0 540 190]",
+		"250",
+		"50"))
+	pages := testNewPDF().GetPageObjects(objects)
+	for i, want := range [][2]float32{{540, 190}, {250, 50}} {
+		size := pages[i].GetPageSize()
+		if size.GetWidth() != want[0] || size.GetHeight() != want[1] {
+			t.Errorf("page %d: %gx%g", i+1, size.GetWidth(), size.GetHeight())
+		}
+	}
+	testWant(t, "[ 0 0 250 50 ]", pages[1].GetValue("/MediaBox"))
+
+	// A box that refers to the page itself is left as it is, as the fuzz
+	// target found it: the page, listed three times, grew each time it was
+	// read, to 600 MB.
+	objects = testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [3 0 R 0 612 792] >>"))
+	pages = testNewPDF().GetPageObjects(objects)
+	testWant(t, "[ 3 0 R 0 612 792 ]", pages[2].GetValue("/MediaBox"))
 }
 
 func TestPDFThePageSizeIsTheDistanceBetweenTheCornersOfTheMediaBox(t *testing.T) {

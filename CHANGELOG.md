@@ -162,6 +162,31 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The reader, `PDF.read`, against the test PDFs of pdf.js and veraPDF, in all
+  four ports. `tests/corpus/check-corpus.py` reads, merges and splits each of
+  their 3,888 files and compares the pages with MuPDF's; it found:
+  - A stream whose `/Length` is missing, too short or too long was cut to it,
+    and a merge wrote the page's content cut: the text of a page was gone.
+    The stream now ends at the end of line before its `endstream` when the
+    `/Length` does not, as MuPDF and pdf.js read it, and the `/Length` is set
+    to what the stream is.
+  - One stream that could not be decoded, like a Flate stream cut short or
+    with a wrong checksum, made the whole PDF unreadable. Only a
+    cross-reference stream or an object stream, whose objects are needed,
+    fails the read now; any other such stream has no data, `getData` returns
+    none, and a merge copies it as it is.
+  - A PDF whose `/CF` dictionary, or a crypt filter in it, is an object of
+    its own was read as if it were not encrypted, and its streams and strings
+    were merged still encrypted.
+  - `getPageSize` did not follow a `/MediaBox` that is an object of its own or
+    whose numbers are, and gave letter size; `getPageObjects` now writes such
+    a box as the four numbers it is. An empty box is letter size, as MuPDF
+    and pdf.js draw it, and not 0 by 0.
+  - A PDF with an object numbered higher than it has bytes was refused, a
+    guard the fuzzing added against a file of a few bytes taking gigabytes of
+    memory; a PDF cut from a larger document keeps the numbers of its objects,
+    like the 41 objects numbered up to 156,341 in 107 KB of one pdf.js tests.
+    Numbers up to 262,144 are read in a file of any size now.
 - A JPEG is drawn at the size the density of its JFIF segment asks for and a
   BMP at the size the pixels per metre of its header ask for, in all four
   ports, as a PNG is drawn at the size of its `pHYs` chunk below. The three

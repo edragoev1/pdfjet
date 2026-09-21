@@ -1884,12 +1884,18 @@ func (pdf *PDF) SetPageMode(pageMode pagemode.PageMode) *PDF {
 	return pdf
 }
 
+// minObjNumberLimit is the highest object number read in a file of any size:
+// its empty objects take about 30 MB.
+const minObjNumberLimit = 262144
+
 // getSortedObjects returns the objects by their number, with an empty object
 // at the number of every one the PDF does not have, so that the object a
-// reference names is the one at its number. Every object of a PDF takes bytes
-// of its file, so a number larger than the file has bytes is one no PDF can
-// hold, and the empty objects up to it would take the memory a file of a few
-// bytes never names.
+// reference names is the one at its number. A PDF may number its objects as it
+// likes, and one that kept the numbers of the document it was cut from has
+// few objects and high numbers, so a number up to minObjNumberLimit is read in
+// any file, and a larger one in a file that has as many bytes. The empty
+// objects up to a larger number would take the memory a file of a few bytes
+// never names.
 func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int) ([]*PDFobj, error) {
 	sorted := make([]*PDFobj, 0)
 
@@ -1899,7 +1905,7 @@ func (pdf *PDF) getSortedObjects(objects []*PDFobj, size int) ([]*PDFobj, error)
 			maxObjNumber = obj.number
 		}
 	}
-	if maxObjNumber > size {
+	if maxObjNumber > max(size, minObjNumberLimit) {
 		return nil, fmt.Errorf(
 			"The PDF of %d bytes cannot hold an object numbered %d.", size, maxObjNumber)
 	}
@@ -2627,6 +2633,7 @@ func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFo
 		obj := objects[number-1]
 		if isPageObject(obj) {
 			addInheritedEntries(obj, objects)
+			resolveMediaBox(obj, objects)
 			*pages = append(*pages, obj)
 		} else {
 			pdf.getPageObjects(obj, objects, pages, visited)
@@ -2651,6 +2658,63 @@ func addInheritedEntries(page *PDFobj, objects []*PDFobj) {
 			page.dict = insertArrayAt(page.dict, append([]string{key}, value...), open+1)
 		}
 	}
+}
+
+// resolveMediaBox writes the /MediaBox of the page as the array of numbers it
+// is, when it is an object of its own, "/MediaBox 4 0 R", or holds references
+// to its numbers, "[4 0 R 5 0 R 6 0 R 7 0 R]", so that GetPageSize reads it.
+// A box that is not four numbers then is left as it is: a reference to
+// anything else, like the page itself, would grow the page each time it is
+// read.
+func resolveMediaBox(page *PDFobj, objects []*PDFobj) {
+	open := slices.Index(page.dict, "<<")
+	if open == -1 {
+		return
+	}
+	i := dictEntryIndex(page.dict[open:], "/MediaBox")
+	if i == -1 {
+		return
+	}
+	start := open + i + 1
+	end := open + dictValueEnd(page.dict[open:], i+1)
+	value := page.dict[start:end]
+	if isObjectReference(value, 0) {
+		number, _ := strconv.Atoi(value[0])
+		obj := objectNumbered(objects, number)
+		if obj == nil {
+			return
+		}
+		value = objectValue(obj)
+	}
+	if len(value) == 0 || value[0] != "[" {
+		return
+	}
+	box := []string{}
+	for j := 0; j < len(value); j++ {
+		if isObjectReference(value, j) {
+			number, _ := strconv.Atoi(value[j])
+			obj := objectNumbered(objects, number)
+			if obj == nil {
+				return
+			}
+			box = append(box, objectValue(obj)...)
+			j += 2
+		} else {
+			box = append(box, value[j])
+		}
+		if len(box) > 6 {
+			return
+		}
+	}
+	if len(box) != 6 || box[0] != "[" || box[5] != "]" {
+		return
+	}
+	for _, number := range box[1:5] {
+		if _, err := strconv.ParseFloat(number, 64); err != nil {
+			return
+		}
+	}
+	page.dict = slices.Concat(page.dict[:start], box, page.dict[end:])
 }
 
 func isPageObject(obj *PDFobj) bool {

@@ -1575,12 +1575,18 @@ public final class PDF {
         self.byteCount += buf.count
     }
 
+    // The highest object number read in a file of any size: its empty objects
+    // take about 30 MB.
+    private static let minObjNumberLimit = 262144
+
     // Returns the objects by their number, with an empty object at the number
     // of every one the PDF does not have, so that the object a reference names
-    // is the one at its number. Every object of a PDF takes bytes of its file,
-    // so a number larger than the file has bytes is one no PDF can hold, and
-    // the empty objects up to it would take the memory a file of a few bytes
-    // never names.
+    // is the one at its number. A PDF may number its objects as it likes, and
+    // one that kept the numbers of the document it was cut from has few
+    // objects and high numbers, so a number up to minObjNumberLimit is read in
+    // any file, and a larger one in a file that has as many bytes. The empty
+    // objects up to a larger number would take the memory a file of a few
+    // bytes never names.
     func getSortedObjects(_ objects: [PDFobj], _ size: Int) throws -> [PDFobj] {
         var sorted = [PDFobj]()
         var maxObjNumber = 0
@@ -1589,7 +1595,7 @@ public final class PDF {
                 maxObjNumber = obj.number
             }
         }
-        if maxObjNumber > size {
+        if maxObjNumber > max(size, PDF.minObjNumberLimit) {
             throw PDFjetError(message: "The PDF of \(size) bytes cannot hold "
                     + "an object numbered \(maxObjNumber).")
         }
@@ -2369,7 +2375,7 @@ public final class PDF {
     }
 
     // Returns true when the tokens at index i are a reference: "n g R".
-    private static func isReference(_ tokens: [String], _ i: Int) -> Bool {
+    static func isReference(_ tokens: [String], _ i: Int) -> Bool {
         return i + 2 < tokens.count
                 && tokens[i + 2] == "R"
                 && isObjectNumber(tokens[i])
@@ -2430,7 +2436,7 @@ public final class PDF {
         return value
     }
 
-    private static func valueOf(_ obj: PDFobj) -> [String] {
+    static func valueOf(_ obj: PDFobj) -> [String] {
         let dict = obj.dict
         let start = (dict.count >= 3 && dict[2] == "obj") ? 3 : 0
         var end = dict.count
@@ -2468,7 +2474,7 @@ public final class PDF {
     }
 
     // Returns the index after the value that starts at index i.
-    private static func valueEnd(_ tokens: [String], _ i: Int) -> Int {
+    static func valueEnd(_ tokens: [String], _ i: Int) -> Int {
         if i >= tokens.count {
             return tokens.count
         }
@@ -2493,7 +2499,7 @@ public final class PDF {
 
     // Returns the index of the key of an entry of the dictionary, not of a
     // dictionary inside it, or -1.
-    private static func entryIndex(_ tokens: [String], _ key: String) -> Int {
+    static func entryIndex(_ tokens: [String], _ key: String) -> Int {
         if tokens.isEmpty || tokens[0] != "<<" {
             return -1
         }
@@ -2676,6 +2682,7 @@ public final class PDF {
             let object = objects[number - 1]
             if isPageObject(object) {
                 PDF.addInheritedEntries(object, objects)
+                PDF.resolveMediaBox(object, objects)
                 pages.append(object)
             } else {
                 getPageObjects(object, &pages, objects, &visited)
@@ -2699,6 +2706,69 @@ public final class PDF {
                 page.dict.insert(contentsOf: [key] + value, at: open + 1)
             }
         }
+    }
+
+    // Writes the /MediaBox of the page as the array of numbers it is, when it
+    // is an object of its own, "/MediaBox 4 0 R", or holds references to its
+    // numbers, "[4 0 R 5 0 R 6 0 R 7 0 R]", so that getPageSize reads it. A
+    // box that is not four numbers then is left as it is: a reference to
+    // anything else, like the page itself, would grow the page each time it
+    // is read.
+    private static func resolveMediaBox(_ page: PDFobj, _ objects: [PDFobj]) {
+        guard let open = page.dict.firstIndex(of: "<<") else {
+            return
+        }
+        let tokens = Array(page.dict[open...])
+        let i = entryIndex(tokens, "/MediaBox")
+        if i == -1 {
+            return
+        }
+        let start = open + i + 1
+        let end = open + valueEnd(tokens, i + 1)
+        var value = Array(page.dict[start..<end])
+        if isReference(value, 0) {
+            guard let obj = objectNumbered(objects, value[0]) else {
+                return
+            }
+            value = valueOf(obj)
+        }
+        if value.first != "[" {
+            return
+        }
+        var box = [String]()
+        var j = 0
+        while j < value.count {
+            if isReference(value, j) {
+                guard let obj = objectNumbered(objects, value[j]) else {
+                    return
+                }
+                box.append(contentsOf: valueOf(obj))
+                j += 2
+            } else {
+                box.append(value[j])
+            }
+            if box.count > 6 {
+                return
+            }
+            j += 1
+        }
+        if box.count != 6 || box[0] != "[" || box[5] != "]" {
+            return
+        }
+        for number in box[1..<5] where Double(number) == nil {
+            return
+        }
+        page.dict.replaceSubrange(start..<end, with: box)
+    }
+
+    // Returns the object with the number, or nil when the PDF that was read
+    // does not have one: a reference can name an object that is not in the
+    // file.
+    private static func objectNumbered(_ objects: [PDFobj], _ token: String) -> PDFobj? {
+        guard let number = Int(token), number >= 1, number <= objects.count else {
+            return nil
+        }
+        return objects[number - 1]
     }
 
     private func isPageObject(_ object: PDFobj) -> Bool {

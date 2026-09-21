@@ -31,10 +31,10 @@ final class Decryptor {
     };
 
     // The methods of the crypt filters.
-    private static final int NONE = 0;
-    private static final int RC4 = 1;
-    private static final int AES_128 = 2;
-    private static final int AES_256 = 3;
+    static final int NONE = 0;
+    static final int RC4 = 1;
+    static final int AES_128 = 2;
+    static final int AES_256 = 3;
 
     /** The object number of the encryption dictionary. */
     final int objNumber;
@@ -87,10 +87,10 @@ final class Decryptor {
         if (i != -1 && i + 2 < trailer.dict.size() && trailer.dict.get(i + 1).equals("[")) {
             id = toBytes(trailer.dict.get(i + 2));
         }
-        return new Decryptor(encrypt, id, password);
+        return new Decryptor(encrypt, objects, id, password);
     }
 
-    private Decryptor(PDFobj encrypt, byte[] id, String password) throws Exception {
+    private Decryptor(PDFobj encrypt, List<PDFobj> objects, byte[] id, String password) throws Exception {
         this.objNumber = encrypt.number;
         if (!encrypt.getValue("/Filter").equals("/Standard")) {
             throw new Exception("The security handler of the PDF is not supported: " +
@@ -103,8 +103,8 @@ final class Decryptor {
             this.streamMethod = RC4;
             this.stringMethod = RC4;
         } else if (v == 4 || v == 5) {
-            this.streamMethod = getMethod(encrypt, encrypt.getValue("/StmF"));
-            this.stringMethod = getMethod(encrypt, encrypt.getValue("/StrF"));
+            this.streamMethod = getMethod(encrypt, encrypt.getValue("/StmF"), objects);
+            this.stringMethod = getMethod(encrypt, encrypt.getValue("/StrF"), objects);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /V " + v);
         }
@@ -147,36 +147,48 @@ final class Decryptor {
                 "The PDF needs a password." : "The password of the PDF is not correct.");
     }
 
-    // Returns the method of the crypt filter with the name in the /CF dictionary.
-    private static int getMethod(PDFobj encrypt, String name) {
-        List<String> dict = encrypt.dict;
-        int level = 0;
-        for (int i = dict.indexOf("/CF") + 1; i > 0 && i < dict.size(); i++) {
-            String token = dict.get(i);
-            if (token.equals("<<")) {
-                level++;
-            } else if (token.equals(">>")) {
-                if (--level == 0) {
-                    break;
-                }
-            } else if (level == 1 && token.equals(name)) {
-                for (int j = i + 1; j + 1 < dict.size() && !dict.get(j).equals(">>"); j++) {
-                    if (dict.get(j).equals("/CFM")) {
-                        String method = dict.get(j + 1);
-                        if (method.equals("/V2")) {
-                            return RC4;
-                        } else if (method.equals("/AESV2")) {
-                            return AES_128;
-                        } else if (method.equals("/AESV3")) {
-                            return AES_256;
-                        }
-                        break;
-                    }
-                }
-                break;
+    // Returns the method of the crypt filter with the name in the /CF
+    // dictionary. The /CF dictionary and each filter in it can be an object of
+    // its own, as pdf.js tests it in issue7665: the streams and the strings of
+    // that PDF were left encrypted.
+    static int getMethod(PDFobj encrypt, String name, List<PDFobj> objects) {
+        List<String> filters = cryptDictValue(PDF.valueOf(encrypt), "/CF", objects);
+        List<String> filter = cryptDictValue(filters, name, objects);
+        List<String> method = cryptDictValue(filter, "/CFM", objects);
+        if (method != null && method.size() == 1) {
+            if (method.get(0).equals("/V2")) {
+                return RC4;
+            } else if (method.get(0).equals("/AESV2")) {
+                return AES_128;
+            } else if (method.get(0).equals("/AESV3")) {
+                return AES_256;
             }
         }
         return NONE;                    // Like /Identity, the default.
+    }
+
+    // Returns the value of the entry of the dictionary, or of the object it
+    // refers to, or null. The objects are the ones the PDF lists, not yet
+    // sorted by their number, and the last one of a number is the newest.
+    private static List<String> cryptDictValue(List<String> dict, String key, List<PDFobj> objects) {
+        if (dict == null) {
+            return null;
+        }
+        int i = PDF.entryIndex(dict, key);
+        if (i == -1) {
+            return null;
+        }
+        List<String> value = dict.subList(i + 1, PDF.valueEnd(dict, i + 1));
+        if (!PDF.isReference(value, 0)) {
+            return value;
+        }
+        PDFobj referred = null;
+        for (PDFobj obj : objects) {
+            if (String.valueOf(obj.number).equals(value.get(0))) {
+                referred = obj;
+            }
+        }
+        return (referred == null) ? null : PDF.valueOf(referred);
     }
 
     // Computes the key of revisions 2 to 4 from the password with algorithm 2

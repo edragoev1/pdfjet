@@ -35,7 +35,7 @@ final class Decryptor {
     ]
 
     // The methods of the crypt filters.
-    private enum Method {
+    enum Method {
         case identity
         case rc4
         case aes128
@@ -91,10 +91,10 @@ final class Decryptor {
                 trailer.dict[k + 1] == "[" {
             id = toBytes(trailer.dict[k + 2])
         }
-        return try Decryptor(encrypt, id, password)
+        return try Decryptor(encrypt, objects, id, password)
     }
 
-    private init(_ encrypt: PDFobj, _ id: [UInt8], _ password: String) throws {
+    private init(_ encrypt: PDFobj, _ objects: [PDFobj], _ id: [UInt8], _ password: String) throws {
         if encrypt.getValue("/Filter") != "/Standard" {
             throw DecryptorError.notSupported(
                     "The security handler of the PDF is not supported: " + encrypt.getValue("/Filter"))
@@ -106,8 +106,8 @@ final class Decryptor {
             self.streamMethod = .rc4
             self.stringMethod = .rc4
         } else if v == 4 || v == 5 {
-            self.streamMethod = Decryptor.getMethod(encrypt, encrypt.getValue("/StmF"))
-            self.stringMethod = Decryptor.getMethod(encrypt, encrypt.getValue("/StrF"))
+            self.streamMethod = Decryptor.getCryptMethod(encrypt, encrypt.getValue("/StmF"), objects)
+            self.stringMethod = Decryptor.getCryptMethod(encrypt, encrypt.getValue("/StrF"), objects)
         } else {
             throw DecryptorError.notSupported("The encryption of the PDF is not supported: /V \(v)")
         }
@@ -129,45 +129,50 @@ final class Decryptor {
         self.encryptMetadata = encryptMetadata
     }
 
-    // Returns the method of the crypt filter with the name in the /CF dictionary.
-    private static func getMethod(_ encrypt: PDFobj, _ name: String) -> Method {
-        let dict = encrypt.dict
-        guard let cf = dict.firstIndex(of: "/CF") else {
-            return .identity
-        }
-        var level = 0
-        var i = cf + 1
-        while i < dict.count {
-            let token = dict[i]
-            if token == "<<" {
-                level += 1
-            } else if token == ">>" {
-                level -= 1
-                if level == 0 {
-                    break
-                }
-            } else if level == 1 && token == name {
-                var j = i + 1
-                while j + 1 < dict.count && dict[j] != ">>" {
-                    if dict[j] == "/CFM" {
-                        switch dict[j + 1] {
-                        case "/V2":
-                            return .rc4
-                        case "/AESV2":
-                            return .aes128
-                        case "/AESV3":
-                            return .aes256
-                        default:
-                            return .identity
-                        }
-                    }
-                    j += 1
-                }
+    // Returns the method of the crypt filter with the name in the /CF
+    // dictionary. The /CF dictionary and each filter in it can be an object of
+    // its own, as pdf.js tests it in issue7665: the streams and the strings of
+    // that PDF were left encrypted.
+    static func getCryptMethod(_ encrypt: PDFobj, _ name: String, _ objects: [PDFobj]) -> Method {
+        let filters = cryptDictValue(PDF.valueOf(encrypt), "/CF", objects)
+        let filter = cryptDictValue(filters, name, objects)
+        let method = cryptDictValue(filter, "/CFM", objects)
+        if method.count == 1 {
+            switch method[0] {
+            case "/V2":
+                return .rc4
+            case "/AESV2":
+                return .aes128
+            case "/AESV3":
+                return .aes256
+            default:
                 break
             }
-            i += 1
         }
         return .identity            // Like /Identity, the default.
+    }
+
+    // Returns the value of the entry of the dictionary, or of the object it
+    // refers to, or an empty array. The objects are the ones the PDF lists,
+    // not yet sorted by their number, and the last one of a number is the
+    // newest.
+    private static func cryptDictValue(_ dict: [String], _ key: String, _ objects: [PDFobj]) -> [String] {
+        let i = PDF.entryIndex(dict, key)
+        if i == -1 {
+            return []
+        }
+        let value = Array(dict[(i + 1)..<PDF.valueEnd(dict, i + 1)])
+        if !PDF.isReference(value, 0) {
+            return value
+        }
+        var referred: PDFobj?
+        for obj in objects where String(obj.number) == value[0] {
+            referred = obj
+        }
+        guard let obj = referred else {
+            return []
+        }
+        return PDF.valueOf(obj)
     }
 
     // Returns the UTF-8 bytes of the password, at most 127 of them, which is

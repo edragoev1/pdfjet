@@ -99,5 +99,33 @@ public class EncryptionTest {
         Assert.Equal(-3388, access);
         Assert.True(((UserAccess) access).HasFlag(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY));
     }
+
+    [Fact]
+    public void ACryptFilterThatIsAnObjectOfItsOwnIsFollowed() {
+        // The /CF dictionary and the filter in it as objects of their own, as
+        // pdf.js tests them in issue7665: the method was not found, and the
+        // streams and the strings of the PDF were left encrypted.
+        Func<int, string, PDFobj> obj = (number, raw) => {
+            PDFobj o = new PDF().GetObject(System.Text.Encoding.Latin1.GetBytes(raw), 0);
+            o.number = number;
+            return o;
+        };
+        List<PDFobj> objects = new List<PDFobj> {
+            obj(7, "7 0 obj << /StdCF 8 0 R >> endobj"),
+            obj(8, "8 0 obj << /AuthEvent /DocOpen /CFM /AESV3 /Length 32 >> endobj"),
+            obj(9, "9 0 obj << /StdCF << /CFM /AESV2 >> >> endobj"),
+        };
+        var cases = new (string cf, int want)[] {
+            ("7 0 R", Decryptor.AES_256),
+            ("9 0 R", Decryptor.AES_128),
+            ("<< /StdCF 8 0 R >>", Decryptor.AES_256),
+            ("<< /StdCF << /CFM /V2 >> >>", Decryptor.RC4),
+            ("99 0 R", Decryptor.NONE),
+        };
+        foreach (var c in cases) {
+            PDFobj encrypt = obj(6, "6 0 obj << /Filter /Standard /V 5 /CF " + c.cf + " /StmF /StdCF >> endobj");
+            Assert.Equal((c.cf, c.want), (c.cf, Decryptor.GetMethod(encrypt, "/StdCF", objects)));
+        }
+    }
 }
 }

@@ -544,24 +544,23 @@ goal 5, the references, which is the first thing to give if anything does.
       the merged pages' boxes, rotation and text with MuPDF's. The text is
       compared with the original's without the tagging, the form fields and
       the optional content, which Merge leaves out; the corpus job of the
-      Build workflow runs it. No crash and no hang; 3,831 files pass, 33 are
-      broken past what MuPDF reads or repairs, and 24 differ, each in
-      `tests/corpus/known-differences.txt`:
-      - Bug: `GetPageSize` does not follow a `/MediaBox` that is a reference
-        or holds references, and gives Letter (5 files); and gives an empty
-        box as 0x0 where MuPDF and pdf.js give Letter (1).
-      - Bug: a stream whose `/Length` is missing or too short is cut to it,
-        and merged cut, where MuPDF and pdf.js look for `endstream` (3).
-      - Bug: the guard against an object numbered higher than the file has
-        bytes refuses a PDF that MuPDF reads (1).
-      - To decide: every stream is decoded as it is read, so one Flate stream
-        that cannot be inflated makes the whole file unreadable, though a
-        merge copies it as it is (13).
-      - BrotliDecode is not supported (1).
+      Build workflow runs it. No crash and no hang. It found five bugs of
+      the reader, fixed in the four ports with unit tests (Sep 21): a stream
+      whose `/Length` is missing or wrong was cut to it, and merged cut; a
+      stream that cannot be inflated made the whole file unreadable, where
+      only a cross-reference or object stream does now and any other has no
+      data; a `/CF` dictionary or crypt filter that is an object of its own
+      left the file read as not encrypted; `GetPageSize` did not follow a
+      `/MediaBox` that is a reference or holds references, and gave an empty
+      one as 0x0; and the guard against object numbers higher than the file
+      has bytes refused a PDF MuPDF reads. Fuzzing the fixes found a box that
+      refers to its page growing the page each time it was read, fixed
+      before it landed. 3,857 files pass now, 30 are broken past what MuPDF
+      reads or repairs, and one differs: BrotliDecode, which is not
+      supported, in `tests/corpus/known-differences.txt`.
 
-      What is left: the fixes in the four ports, the harness of the other
-      three, the 459 pdf.js files that are links, and the corpus as seeds of
-      `FuzzPDFRead`.
+      What is left: the harness of the other three ports, the 459 pdf.js
+      files that are links, and the corpus as seeds of `FuzzPDFRead`.
 
 ### Oct 9–14: the rest of the review, and the references
 

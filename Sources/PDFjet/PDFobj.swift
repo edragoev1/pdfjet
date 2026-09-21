@@ -62,6 +62,12 @@ public final class PDFobj {
     final func setStreamAndData(
             _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil) throws {
         if stream == nil {
+            var length = length
+            let actual = PDFobj.streamLength(buffer, streamOffset, length)
+            if actual != length {
+                length = actual
+                setLength(length)
+            }
             // A /Length the PDF does not have is checked before the stream is
             // made, so that a file of a few bytes that says its stream is a
             // gigabyte takes no memory.
@@ -74,13 +80,86 @@ public final class PDFobj {
                 setLength(copied.count)
             }
             stream = copied
-            data = try decode(copied)
+            data = try decodeStream(copied)
         }
     }
 
-    // Sets the /Length of the stream, replacing a reference to the length.
+    // Returns the decoded stream. A cross-reference stream or an object stream
+    // that cannot be decoded throws, as the objects in it cannot be read. Any
+    // other stream that cannot be decoded, like an image or the content of a
+    // page that is cut short, has no data: the rest of the PDF is read, and a
+    // merge copies the stream as it is.
+    private final func decodeStream(_ stream: [UInt8]) throws -> [UInt8] {
+        let type = getValue("/Type")
+        if type == "/XRef" || type == "/ObjStm" {
+            return try decode(stream)
+        }
+        do {
+            return try decode(stream)
+        } catch {
+            return []
+        }
+    }
+
+    // Returns the length of the stream that starts at the offset. It is the
+    // /Length when the endstream keyword follows it, as it must; when it does
+    // not -- a /Length that is missing, too short or too long -- the stream
+    // ends at the end of line before the next endstream, as MuPDF and pdf.js
+    // read it. A stream with no endstream after it keeps its /Length.
+    private static func streamLength(_ buf: [UInt8], _ offset: Int, _ length: Int) -> Int {
+        if offset < 0 || offset > buf.count {
+            return length
+        }
+        let keyword = Array("endstream".utf8)
+        if length >= 0 && length <= buf.count - offset {
+            var i = offset + length
+            while i < buf.count && isWhiteSpace(buf[i]) {
+                i += 1
+            }
+            if startsWith(buf, i, keyword) {
+                return length
+            }
+        }
+        var end = offset
+        while !startsWith(buf, end, keyword) {
+            if end + keyword.count > buf.count {
+                return length
+            }
+            end += 1
+        }
+        if end > offset && buf[end - 1] == 0x0A {
+            end -= 1
+        }
+        if end > offset && buf[end - 1] == 0x0D {
+            end -= 1
+        }
+        return end - offset
+    }
+
+    private static func isWhiteSpace(_ c: UInt8) -> Bool {
+        return c == 0x00 || c == 0x09 || c == 0x0A || c == 0x0C || c == 0x0D || c == 0x20
+    }
+
+    private static func startsWith(_ buf: [UInt8], _ off: Int, _ str: [UInt8]) -> Bool {
+        if off < 0 || off > buf.count - str.count {
+            return false
+        }
+        for i in 0..<str.count where buf[off + i] != str[i] {
+            return false
+        }
+        return true
+    }
+
+    // Sets the /Length of the stream, replacing a reference to the length, and
+    // adds it to a stream dictionary that has none.
     private final func setLength(_ length: Int) {
-        guard let i = dict.firstIndex(of: "/Length"), i + 1 < dict.count else {
+        guard let i = dict.firstIndex(of: "/Length") else {
+            if let open = dict.firstIndex(of: "<<") {
+                dict.insert(contentsOf: ["/Length", String(length)], at: open + 1)
+            }
+            return
+        }
+        if i + 1 >= dict.count {
             return
         }
         if i + 3 < dict.count && dict[i + 3] == "R" {
@@ -290,10 +369,11 @@ public final class PDFobj {
 
     /// Returns the width and height of the page, which its /MediaBox gives as
     /// the two corners of a rectangle, in either order. A page with no
-    /// /MediaBox of its own, or one that is not four numbers, is letter size.
-    /// PDF.getPageObjects gives a page the box it inherits from the page
-    /// tree, which a page of another program's PDF often does not carry
-    /// itself.
+    /// /MediaBox of its own, one that is not four numbers, or an empty one is
+    /// letter size, as MuPDF and pdf.js draw it. PDF.getPageObjects gives a
+    /// page the box it inherits from the page tree, which a page of another
+    /// program's PDF often does not carry itself, and the numbers of a box
+    /// that is an object of its own or refers to them.
     ///
     /// - Returns: the page size.
     public final func getPageSize() -> PageSize {
@@ -309,7 +389,12 @@ public final class PDFobj {
                     }
                     box[j] = value
                 }
-                return PageSize(abs(box[2] - box[0]), abs(box[3] - box[1]))
+                let width = abs(box[2] - box[0])
+                let height = abs(box[3] - box[1])
+                if width == 0 || height == 0 {
+                    return Letter.PORTRAIT
+                }
+                return PageSize(width, height)
             }
         }
         return Letter.PORTRAIT

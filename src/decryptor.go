@@ -94,10 +94,10 @@ func getDecryptor(trailer *PDFobj, objects []*PDFobj, password string) (*decrypt
 	if i != -1 && i+2 < len(trailer.dict) && trailer.dict[i+1] == "[" {
 		id = toBytes(trailer.dict[i+2])
 	}
-	return newDecryptor(encrypt, id, password)
+	return newDecryptor(encrypt, objects, id, password)
 }
 
-func newDecryptor(encrypt *PDFobj, id []byte, password string) (*decryptor, error) {
+func newDecryptor(encrypt *PDFobj, objects []*PDFobj, id []byte, password string) (*decryptor, error) {
 	d := &decryptor{objNumber: encrypt.number}
 	if encrypt.GetValue("/Filter") != "/Standard" {
 		return nil, errors.New("The security handler of the PDF is not supported: " +
@@ -110,8 +110,8 @@ func newDecryptor(encrypt *PDFobj, id []byte, password string) (*decryptor, erro
 		d.streamMethod = cryptRC4
 		d.stringMethod = cryptRC4
 	} else if v == 4 || v == 5 {
-		d.streamMethod = getCryptMethod(encrypt, encrypt.GetValue("/StmF"))
-		d.stringMethod = getCryptMethod(encrypt, encrypt.GetValue("/StrF"))
+		d.streamMethod = getCryptMethod(encrypt, encrypt.GetValue("/StmF"), objects)
+		d.stringMethod = getCryptMethod(encrypt, encrypt.GetValue("/StrF"), objects)
 	} else {
 		return nil, fmt.Errorf("The encryption of the PDF is not supported: /V %d", v)
 	}
@@ -140,37 +140,46 @@ func newDecryptor(encrypt *PDFobj, id []byte, password string) (*decryptor, erro
 }
 
 // getCryptMethod returns the method of the crypt filter with the name in the
-// /CF dictionary.
-func getCryptMethod(encrypt *PDFobj, name string) int {
-	dict := encrypt.dict
-	level := 0
-	for i := slices.Index(dict, "/CF") + 1; i > 0 && i < len(dict); i++ {
-		token := dict[i]
-		if token == "<<" {
-			level++
-		} else if token == ">>" {
-			level--
-			if level == 0 {
-				break
-			}
-		} else if level == 1 && token == name {
-			for j := i + 1; j+1 < len(dict) && dict[j] != ">>"; j++ {
-				if dict[j] == "/CFM" {
-					switch dict[j+1] {
-					case "/V2":
-						return cryptRC4
-					case "/AESV2":
-						return cryptAES128
-					case "/AESV3":
-						return cryptAES256
-					}
-					break
-				}
-			}
-			break
-		}
+// /CF dictionary. The /CF dictionary and each filter in it can be an object of
+// its own, as pdf.js tests it in issue7665: the streams and the strings of
+// that PDF were left encrypted.
+func getCryptMethod(encrypt *PDFobj, name string, objects []*PDFobj) int {
+	filters := cryptDictValue(objectValue(encrypt), "/CF", objects)
+	filter := cryptDictValue(filters, name, objects)
+	switch method := cryptDictValue(filter, "/CFM", objects); {
+	case len(method) != 1:
+	case method[0] == "/V2":
+		return cryptRC4
+	case method[0] == "/AESV2":
+		return cryptAES128
+	case method[0] == "/AESV3":
+		return cryptAES256
 	}
 	return cryptNone // Like /Identity, the default.
+}
+
+// cryptDictValue returns the value of the entry of the dictionary, or of the
+// object it refers to, or nil. The objects are the ones the PDF lists, not
+// yet sorted by their number, and the last one of a number is the newest.
+func cryptDictValue(dict []string, key string, objects []*PDFobj) []string {
+	i := dictEntryIndex(dict, key)
+	if i == -1 {
+		return nil
+	}
+	value := dict[i+1 : dictValueEnd(dict, i+1)]
+	if !isObjectReference(value, 0) {
+		return value
+	}
+	var referred *PDFobj
+	for _, obj := range objects {
+		if strconv.Itoa(obj.number) == value[0] {
+			referred = obj
+		}
+	}
+	if referred == nil {
+		return nil
+	}
+	return objectValue(referred)
 }
 
 // utf8Password returns the UTF-8 bytes of the password, at most 127 of them,

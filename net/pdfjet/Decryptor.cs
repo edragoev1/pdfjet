@@ -27,10 +27,10 @@ internal sealed class Decryptor {
     };
 
     // The methods of the crypt filters.
-    private const int NONE = 0;
-    private const int RC4 = 1;
-    private const int AES_128 = 2;
-    private const int AES_256 = 3;
+    internal const int NONE = 0;
+    internal const int RC4 = 1;
+    internal const int AES_128 = 2;
+    internal const int AES_256 = 3;
 
     // The object number of the encryption dictionary.
     internal readonly int objNumber;
@@ -76,10 +76,10 @@ internal sealed class Decryptor {
         if (i != -1 && i + 2 < trailer.dict.Count && trailer.dict[i + 1].Equals("[")) {
             id = ToBytes(trailer.dict[i + 2]);
         }
-        return new Decryptor(encrypt, id, password);
+        return new Decryptor(encrypt, objects, id, password);
     }
 
-    private Decryptor(PDFobj encrypt, byte[] id, String password) {
+    private Decryptor(PDFobj encrypt, List<PDFobj> objects, byte[] id, String password) {
         this.objNumber = encrypt.number;
         if (!encrypt.GetValue("/Filter").Equals("/Standard")) {
             throw new Exception("The security handler of the PDF is not supported: " +
@@ -92,8 +92,8 @@ internal sealed class Decryptor {
             this.streamMethod = RC4;
             this.stringMethod = RC4;
         } else if (v == 4 || v == 5) {
-            this.streamMethod = GetMethod(encrypt, encrypt.GetValue("/StmF"));
-            this.stringMethod = GetMethod(encrypt, encrypt.GetValue("/StrF"));
+            this.streamMethod = GetMethod(encrypt, encrypt.GetValue("/StmF"), objects);
+            this.stringMethod = GetMethod(encrypt, encrypt.GetValue("/StrF"), objects);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /V " + v);
         }
@@ -139,36 +139,51 @@ internal sealed class Decryptor {
                 "The PDF needs a password." : "The password of the PDF is not correct.");
     }
 
-    // Returns the method of the crypt filter with the name in the /CF dictionary.
-    private static int GetMethod(PDFobj encrypt, String name) {
-        List<String> dict = encrypt.dict;
-        int level = 0;
-        for (int i = dict.IndexOf("/CF") + 1; i > 0 && i < dict.Count; i++) {
-            String token = dict[i];
-            if (token.Equals("<<")) {
-                level++;
-            } else if (token.Equals(">>")) {
-                if (--level == 0) {
-                    break;
-                }
-            } else if (level == 1 && token.Equals(name)) {
-                for (int j = i + 1; j + 1 < dict.Count && !dict[j].Equals(">>"); j++) {
-                    if (dict[j].Equals("/CFM")) {
-                        String method = dict[j + 1];
-                        if (method.Equals("/V2")) {
-                            return RC4;
-                        } else if (method.Equals("/AESV2")) {
-                            return AES_128;
-                        } else if (method.Equals("/AESV3")) {
-                            return AES_256;
-                        }
-                        break;
-                    }
-                }
-                break;
+    // Returns the method of the crypt filter with the name in the /CF
+    // dictionary. The /CF dictionary and each filter in it can be an object of
+    // its own, as pdf.js tests it in issue7665: the streams and the strings of
+    // that PDF were left encrypted.
+    internal static int GetMethod(PDFobj encrypt, String name, List<PDFobj> objects) {
+        List<String> filters = DictValue(PDF.ValueOf(encrypt), "/CF", objects);
+        List<String> filter = DictValue(filters, name, objects);
+        List<String> method = DictValue(filter, "/CFM", objects);
+        if (method != null && method.Count == 1) {
+            if (method[0].Equals("/V2")) {
+                return RC4;
+            } else if (method[0].Equals("/AESV2")) {
+                return AES_128;
+            } else if (method[0].Equals("/AESV3")) {
+                return AES_256;
             }
         }
         return NONE;                    // Like /Identity, the default.
+    }
+
+    // Returns the value of the entry of the dictionary, or of the object it
+    // refers to, or null. The objects are the ones the PDF lists, not yet
+    // sorted by their number, and the last one of a number is the newest.
+    private static List<String> DictValue(List<String> dict, String key, List<PDFobj> objects) {
+        if (dict == null) {
+            return null;
+        }
+        int i = PDF.EntryIndex(dict, key);
+        if (i == -1) {
+            return null;
+        }
+        List<String> value = dict.GetRange(i + 1, PDF.ValueEnd(dict, i + 1) - (i + 1));
+        if (!PDF.IsReference(value, 0)) {
+            return value;
+        }
+        PDFobj referred = null;
+        foreach (PDFobj obj in objects) {
+            if (obj.number.ToString().Equals(value[0])) {
+                referred = obj;
+            }
+        }
+        if (referred == null) {
+            return null;
+        }
+        return PDF.ValueOf(referred);
     }
 
     // Computes the key of revisions 2 to 4 from the password with algorithm 2

@@ -86,4 +86,32 @@ import Testing
         #expect(access == -3388)
         #expect(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(Permissions(access).getAccess()))
     }
+
+    @Test func aCryptFilterThatIsAnObjectOfItsOwnIsFollowed() {
+        // The /CF dictionary and the filter in it as objects of their own, as
+        // pdf.js tests them in issue7665: the method was not found, and the
+        // streams and the strings of the PDF were left encrypted.
+        func object(_ number: Int, _ raw: String) -> PDFobj {
+            let obj = PDFobj()
+            obj.dict = raw.split(separator: " ").map(String.init)
+            obj.number = number
+            return obj
+        }
+        let objects = [
+            object(7, "7 0 obj << /StdCF 8 0 R >> endobj"),
+            object(8, "8 0 obj << /AuthEvent /DocOpen /CFM /AESV3 /Length 32 >> endobj"),
+            object(9, "9 0 obj << /StdCF << /CFM /AESV2 >> >> endobj"),
+        ]
+        let cases: [(String, Decryptor.Method)] = [
+            ("7 0 R", .aes256),
+            ("9 0 R", .aes128),
+            ("<< /StdCF 8 0 R >>", .aes256),
+            ("<< /StdCF << /CFM /V2 >> >>", .rc4),
+            ("99 0 R", .identity),
+        ]
+        for (cf, want) in cases {
+            let encrypt = object(6, "6 0 obj << /Filter /Standard /V 5 /CF " + cf + " /StmF /StdCF >> endobj")
+            #expect(Decryptor.getCryptMethod(encrypt, "/StdCF", objects) == want, "/CF \(cf)")
+        }
+    }
 }

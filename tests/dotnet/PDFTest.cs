@@ -423,9 +423,59 @@ public class PDFTest {
     public void AStreamLongerThanTheFileIsRefused() {
         // The bytes of the stream are counted before it is made, so that a
         // file of a few bytes that says its stream is a gigabyte takes no
-        // memory.
+        // memory. A stream that has its endstream ends there, whatever its
+        // /Length says.
         Assert.Equal("The stream of an object is not in the PDF.",
+                ReadError("1 0 obj<</Length 1000000000>>stream\nx"));
+        Assert.Equal("(no error)",
                 ReadError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"));
+    }
+
+    [Fact]
+    public void AStreamWhoseLengthIsWrongEndsAtItsEndstream() {
+        // A /Length that is too short, too long or missing, as pdf.js tests it
+        // in issue6108, issue6069 and issue1293r: the stream ends at the end of
+        // line before endstream, as MuPDF and pdf.js read it, and not at the
+        // /Length, which cut the page's content when it was merged. The /Length
+        // is set to it, so that the stream is written whole.
+        foreach (string dict in new string[] {"<< /Length 3 >>", "<< /Length 300 >>", "<< >>", "<< /Length 16 >>"}) {
+            List<PDFobj> read = TestSupport.Read(PdfWithObjects(new string[] {
+                dict + "\nstream\nBT (Hello) Tj ET\nendstream",
+            }));
+            Assert.Equal("BT (Hello) Tj ET", TestSupport.Latin1(read[0].GetData()));
+            Assert.Equal("16", read[0].GetValue("/Length"));
+        }
+        // A /Length that is right is kept, though the stream holds "endstream".
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Length 11 >>\nstream\nendstream x\nendstream",
+        }));
+        Assert.Equal("endstream x", TestSupport.Latin1(objects[0].GetData()));
+    }
+
+    [Fact]
+    public void AStreamThatCannotBeDecodedHasNoData() {
+        // A Flate stream cut short or with a wrong checksum, as pdf.js tests them
+        // in comments.pdf and bug1050040: the rest of the PDF is read, and a
+        // merge copies the stream as it is. It made the whole PDF unreadable.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Length 5 /Filter /FlateDecode >>\nstream\nabcde\nendstream",
+        }));
+        Assert.Null(objects[0].GetData());
+        Assert.Equal("abcde", TestSupport.Latin1(objects[0].stream));
+        // The objects of an object stream that cannot be decoded cannot be read.
+        Assert.Equal("The archive entry was compressed using an unsupported compression method.",
+                ReadError("1 0 obj<</Type/ObjStm/N 1/First 4/Length 5/Filter/FlateDecode>>stream\nabcde\nendstream endobj"));
+    }
+
+    [Fact]
+    public void AnObjectNumberedHigherThanTheFileHasBytesIsRead() {
+        // A PDF cut from a larger document can keep its object numbers, as pdf.js
+        // tests it in issue16091: 41 objects numbered up to 156341 in a file of
+        // 107,355 bytes, which MuPDF reads.
+        List<PDFobj> objects = TestSupport.Read(
+                Encoding.Latin1.GetBytes("156337 0 obj<</Type/Catalog>>endobj\n"));
+        Assert.Equal(156337, objects.Count);
+        Assert.Equal("/Catalog", objects[156336].GetValue("/Type"));
     }
 
     [Fact]
@@ -470,7 +520,7 @@ public class PDFTest {
         // The size of a page is read from its /MediaBox, which a PDF that was
         // read can write as anything: it was four tokens past the key, which
         // trapped in Swift and read past the tokens in the other ports.
-        foreach (string box in new string[] {"[0 0 612", "[a b c d]", "5 0 R", "[]", ""}) {
+        foreach (string box in new string[] {"[0 0 612", "[a b c d]", "5 0 R", "[]", "", "[0 0 0 0]", "[0 0 612 0]"}) {
             List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
                 "<< /Type /Catalog /Pages 2 0 R >>",
                 "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -480,6 +530,41 @@ public class PDFTest {
             Assert.Equal(612f, size.GetWidth());
             Assert.Equal(792f, size.GetHeight());
         }
+    }
+
+    [Fact]
+    public void AMediaBoxThatIsAnObjectOrRefersToItsNumbersIsRead() {
+        // A box that is an object of its own, inherited here, and one whose
+        // numbers are, as pdf.js tests them in bug852992_reduced and issue7872:
+        // the size of both pages was letter size.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox 5 0 R >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 6 0 R 7 0 R] >>",
+            "[0 0 540 190]",
+            "250",
+            "50",
+        }));
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        float[][] sizes = {new float[] {540f, 190f}, new float[] {250f, 50f}};
+        for (int i = 0; i < sizes.Length; i++) {
+            PageSize size = pages[i].GetPageSize();
+            Assert.Equal(sizes[i][0], size.GetWidth());
+            Assert.Equal(sizes[i][1], size.GetHeight());
+        }
+        Assert.Equal("[ 0 0 250 50 ]", pages[1].GetValue("/MediaBox"));
+
+        // A box that refers to the page itself is left as it is, as the fuzz
+        // target found it: the page, listed three times, grew each time it was
+        // read, to 600 MB.
+        objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [3 0 R 0 612 792] >>",
+        }));
+        pages = new PDF().GetPageObjects(objects);
+        Assert.Equal("[ 3 0 R 0 612 792 ]", pages[2].GetValue("/MediaBox"));
     }
 
     [Fact]

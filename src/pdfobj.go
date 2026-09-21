@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"errors"
 	"math"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -64,6 +65,10 @@ func (obj *PDFobj) GetData() []byte {
 // decrypted stream replaces the encrypted one, so that it can be copied.
 func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDFobj {
 	if obj.stream == nil {
+		if actual := streamLength(buf, obj.streamOffset, length); actual != length {
+			length = actual
+			obj.setLength(length)
+		}
 		// A /Length the PDF does not have is checked before the stream is
 		// made, so that a file of a few bytes that says its stream is a
 		// gigabyte takes no memory.
@@ -76,15 +81,73 @@ func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDF
 			obj.stream = dec.decryptStream(obj, obj.stream)
 			obj.setLength(len(obj.stream))
 		}
-		obj.data = obj.decode(obj.stream)
+		obj.data = obj.decodeStream()
 	}
 	return obj
 }
 
-// setLength sets the /Length of the stream, replacing a reference to the length.
+// decodeStream returns the decoded stream. A cross-reference stream or an
+// object stream that cannot be decoded panics, as the objects in it cannot be
+// read. Any other stream that cannot be decoded, like an image or the content
+// of a page that is cut short, has no data: the rest of the PDF is read, and a
+// merge copies the stream as it is.
+func (obj *PDFobj) decodeStream() (data []byte) {
+	if objType := obj.GetValue("/Type"); objType == "/XRef" || objType == "/ObjStm" {
+		return obj.decode(obj.stream)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+			data = nil
+		}
+	}()
+	return obj.decode(obj.stream)
+}
+
+// streamLength returns the length of the stream that starts at the offset.
+// It is the /Length when the endstream keyword follows it, as it must; when it
+// does not -- a /Length that is missing, too short or too long -- the stream
+// ends at the end of line before the next endstream, as MuPDF and pdf.js read
+// it. A stream with no endstream after it keeps its /Length.
+func streamLength(buf []byte, offset, length int) int {
+	if offset < 0 || offset > len(buf) {
+		return length
+	}
+	if length >= 0 && length <= len(buf)-offset {
+		i := offset + length
+		for i < len(buf) && isWhiteSpace(int(buf[i])) {
+			i++
+		}
+		if startsWith(buf, i, "endstream") {
+			return length
+		}
+	}
+	end := indexOf(buf, "endstream", offset)
+	if end == -1 {
+		return length
+	}
+	if end > offset && buf[end-1] == '\n' {
+		end--
+	}
+	if end > offset && buf[end-1] == '\r' {
+		end--
+	}
+	return end - offset
+}
+
+// setLength sets the /Length of the stream, replacing a reference to the
+// length, and adds it to a stream dictionary that has none.
 func (obj *PDFobj) setLength(length int) {
 	i := slices.Index(obj.dict, "/Length")
-	if i == -1 || i+1 >= len(obj.dict) {
+	if i == -1 {
+		if open := slices.Index(obj.dict, "<<"); open != -1 {
+			obj.dict = insertArrayAt(obj.dict, []string{"/Length", strconv.Itoa(length)}, open+1)
+		}
+		return
+	}
+	if i+1 >= len(obj.dict) {
 		return
 	}
 	if i+3 < len(obj.dict) && obj.dict[i+3] == "R" {
@@ -315,9 +378,11 @@ func (obj *PDFobj) getObjectNumbers(key string) []int {
 
 // GetPageSize returns the width and height of the page, which its /MediaBox
 // gives as the two corners of a rectangle, in either order. A page with no
-// /MediaBox of its own, or one that is not four numbers, is letter size.
-// PDF.GetPageObjects gives a page the box it inherits from the page tree,
-// which a page of another program's PDF often does not carry itself.
+// /MediaBox of its own, one that is not four numbers, or an empty one is
+// letter size, as MuPDF and pdf.js draw it. PDF.GetPageObjects gives a page
+// the box it inherits from the page tree, which a page of another program's
+// PDF often does not carry itself, and the numbers of a box that is an object
+// of its own or refers to them.
 func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 	for i := 0; i < len(obj.dict); i++ {
 		if obj.dict[i] == "/MediaBox" {
@@ -332,8 +397,11 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 				}
 				box[j] = value
 			}
-			return pagesize.NewPageSize(
-				float32(math.Abs(box[2]-box[0])), float32(math.Abs(box[3]-box[1])))
+			width, height := math.Abs(box[2]-box[0]), math.Abs(box[3]-box[1])
+			if width == 0 || height == 0 {
+				return letter.Portrait()
+			}
+			return pagesize.NewPageSize(float32(width), float32(height))
 		}
 	}
 	return letter.Portrait()

@@ -432,9 +432,60 @@ class PDFTest {
     void aStreamLongerThanTheFileIsRefused() throws Exception {
         // The bytes of the stream are counted before it is made, so that a
         // file of a few bytes that says its stream is a gigabyte takes no
-        // memory.
+        // memory. A stream that has its endstream ends there, whatever its
+        // /Length says.
         assertEquals("The stream of an object is not in the PDF.",
+                readError("1 0 obj<</Length 1000000000>>stream\nx"));
+        assertEquals("(no error)",
                 readError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj"));
+    }
+
+    @Test
+    void aStreamWhoseLengthIsWrongEndsAtItsEndstream() throws Exception {
+        // A /Length that is too short, too long or missing, as pdf.js tests it
+        // in issue6108, issue6069 and issue1293r: the stream ends at the end of
+        // line before endstream, as MuPDF and pdf.js read it, and not at the
+        // /Length, which cut the page's content when it was merged. The /Length
+        // is set to it, so that the stream is written whole.
+        String[] dicts = {"<< /Length 3 >>", "<< /Length 300 >>", "<< >>", "<< /Length 16 >>"};
+        for (String dict : dicts) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+                dict + "\nstream\nBT (Hello) Tj ET\nendstream",
+            }));
+            assertEquals("BT (Hello) Tj ET", TestSupport.latin1(objects.get(0).getData()), dict);
+            assertEquals("16", objects.get(0).getValue("/Length"), dict);
+        }
+        // A /Length that is right is kept, though the stream holds "endstream".
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Length 11 >>\nstream\nendstream x\nendstream",
+        }));
+        assertEquals("endstream x", TestSupport.latin1(objects.get(0).getData()));
+    }
+
+    @Test
+    void aStreamThatCannotBeDecodedHasNoData() throws Exception {
+        // A Flate stream cut short or with a wrong checksum, as pdf.js tests
+        // them in comments.pdf and bug1050040: the rest of the PDF is read, and
+        // a merge copies the stream as it is. It made the whole PDF unreadable.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Length 5 /Filter /FlateDecode >>\nstream\nabcde\nendstream",
+        }));
+        assertNull(objects.get(0).getData());
+        assertEquals("abcde", TestSupport.latin1(objects.get(0).stream));
+        // The objects of an object stream that cannot be decoded cannot be read.
+        assertEquals("incorrect header check",
+                readError("1 0 obj<</Type/ObjStm/N 1/First 4/Length 5/Filter/FlateDecode>>stream\nabcde\nendstream endobj"));
+    }
+
+    @Test
+    void anObjectNumberedHigherThanTheFileHasBytesIsRead() throws Exception {
+        // A PDF cut from a larger document can keep its object numbers, as
+        // pdf.js tests it in issue16091: 41 objects numbered up to 156341 in a
+        // file of 107,355 bytes, which MuPDF reads.
+        List<PDFobj> objects = TestSupport.read(
+                "156337 0 obj<</Type/Catalog>>endobj\n".getBytes("ISO-8859-1"));
+        assertEquals(156337, objects.size());
+        assertEquals("/Catalog", objects.get(156336).getValue("/Type"));
     }
 
     @Test
@@ -480,7 +531,7 @@ class PDFTest {
         // The size of a page is read from its /MediaBox, which a PDF that was
         // read can write as anything: it was four tokens past the key, which
         // trapped in Swift and read past the tokens in the other ports.
-        String[] boxes = {"[0 0 612", "[a b c d]", "5 0 R", "[]", ""};
+        String[] boxes = {"[0 0 612", "[a b c d]", "5 0 R", "[]", "", "[0 0 0 0]", "[0 0 612 0]"};
         for (String box : boxes) {
             List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
                 "<< /Type /Catalog /Pages 2 0 R >>",
@@ -491,6 +542,41 @@ class PDFTest {
             assertEquals(612f, size.getWidth(), 0f, box);
             assertEquals(792f, size.getHeight(), 0f, box);
         }
+    }
+
+    @Test
+    void aMediaBoxThatIsAnObjectOrRefersToItsNumbersIsRead() throws Exception {
+        // A box that is an object of its own, inherited here, and one whose
+        // numbers are, as pdf.js tests them in bug852992_reduced and issue7872:
+        // the size of both pages was letter size.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox 5 0 R >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 6 0 R 7 0 R] >>",
+            "[0 0 540 190]",
+            "250",
+            "50",
+        }));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        float[][] sizes = {{540f, 190f}, {250f, 50f}};
+        for (int i = 0; i < sizes.length; i++) {
+            PageSize size = pages.get(i).getPageSize();
+            assertEquals(sizes[i][0], size.getWidth(), 0f, "page " + (i + 1));
+            assertEquals(sizes[i][1], size.getHeight(), 0f, "page " + (i + 1));
+        }
+        assertEquals("[ 0 0 250 50 ]", pages.get(1).getValue("/MediaBox"));
+
+        // A box that refers to the page itself is left as it is, as the fuzz
+        // target found it: the page, listed three times, grew each time it was
+        // read, to 600 MB.
+        objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [3 0 R 0 612 792] >>",
+        }));
+        pages = new PDF().getPageObjects(objects);
+        assertEquals("[ 3 0 R 0 612 792 ]", pages.get(2).getValue("/MediaBox"));
     }
 
     @Test

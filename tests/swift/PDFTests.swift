@@ -401,9 +401,50 @@ import Testing
     @Test func aStreamLongerThanTheFileIsRefused() {
         // The bytes of the stream are counted before it is made, so that a
         // file of a few bytes that says its stream is a gigabyte takes no
-        // memory.
-        #expect(readError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj")
+        // memory. A stream that has its endstream ends there, whatever its
+        // /Length says.
+        #expect(readError("1 0 obj<</Length 1000000000>>stream\nx")
                 == "The stream of an object is not in the PDF.")
+        #expect(readError("1 0 obj<</Length 1000000000>>stream\nx\nendstream endobj")
+                == "(no error)")
+    }
+
+    @Test func aStreamWhoseLengthIsWrongEndsAtItsEndstream() throws {
+        // A /Length that is too short, too long or missing, as pdf.js tests it
+        // in issue6108, issue6069 and issue1293r: the stream ends at the end of
+        // line before endstream, as MuPDF and pdf.js read it, and not at the
+        // /Length, which cut the page's content when it was merged. The
+        // /Length is set to it, so that the stream is written whole.
+        for dict in ["<< /Length 3 >>", "<< /Length 300 >>", "<< >>", "<< /Length 16 >>"] {
+            let objects = try TestSupport.read(pdfWithObjects([dict + "\nstream\nBT (Hello) Tj ET\nendstream"]))
+            #expect(TestSupport.latin1(objects[0].getData()) == "BT (Hello) Tj ET", "\(dict)")
+            #expect(objects[0].getValue("/Length") == "16", "\(dict)")
+        }
+        // A /Length that is right is kept, though the stream holds "endstream".
+        let objects = try TestSupport.read(pdfWithObjects(["<< /Length 11 >>\nstream\nendstream x\nendstream"]))
+        #expect(TestSupport.latin1(objects[0].getData()) == "endstream x")
+    }
+
+    @Test func aStreamThatCannotBeDecodedHasNoData() throws {
+        // A Flate stream cut short or with a wrong checksum, as pdf.js tests
+        // them in comments.pdf and bug1050040: the rest of the PDF is read,
+        // and a merge copies the stream as it is. It made the whole PDF
+        // unreadable.
+        let objects = try TestSupport.read(pdfWithObjects(["<< /Length 5 /Filter /FlateDecode >>\nstream\nabcde\nendstream"]))
+        #expect(objects[0].getData().isEmpty)
+        #expect(TestSupport.latin1(objects[0].stream ?? []) == "abcde")
+        // The objects of an object stream that cannot be decoded cannot be read.
+        #expect(readError("1 0 obj<</Type/ObjStm/N 1/First 4/Length 5/Filter/FlateDecode>>stream\nabcde\nendstream endobj")
+                == "Invalid zlib header")
+    }
+
+    @Test func anObjectNumberedHigherThanTheFileHasBytesIsRead() throws {
+        // A PDF cut from a larger document can keep its object numbers, as
+        // pdf.js tests it in issue16091: 41 objects numbered up to 156341 in
+        // a file of 107,355 bytes, which MuPDF reads.
+        let objects = try TestSupport.read(TestSupport.bytes("156337 0 obj<</Type/Catalog>>endobj\n"))
+        try #require(objects.count == 156337)
+        #expect(objects[156336].getValue("/Type") == "/Catalog")
     }
 
     @Test func anObjectStreamThatIsNotANumberIsRefused() {
@@ -444,7 +485,7 @@ import Testing
         // The size of a page is read from its /MediaBox, which a PDF that was
         // read can write as anything: it was four tokens past the key, which
         // trapped in Swift and read past the tokens in the other ports.
-        for box in ["[0 0 612", "[a b c d]", "5 0 R", "[]", ""] {
+        for box in ["[0 0 612", "[a b c d]", "5 0 R", "[]", "", "[0 0 0 0]", "[0 0 612 0]"] {
             let objects = try TestSupport.read(pdfWithObjects([
                 "<< /Type /Catalog /Pages 2 0 R >>",
                 "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -469,6 +510,39 @@ import Testing
             #expect(page.getPageSize().getWidth() == 612)
             #expect(page.getPageSize().getHeight() == 792)
         }
+    }
+
+    @Test func aMediaBoxThatIsAnObjectOrRefersToItsNumbersIsRead() throws {
+        // A box that is an object of its own, inherited here, and one whose
+        // numbers are, as pdf.js tests them in bug852992_reduced and
+        // issue7872: the size of both pages was letter size.
+        var objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox 5 0 R >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 6 0 R 7 0 R] >>",
+            "[0 0 540 190]",
+            "250",
+            "50",
+        ]))
+        var pages = TestSupport.pageObjects(objects)
+        for (i, want) in [(Float(540), Float(190)), (Float(250), Float(50))].enumerated() {
+            let size = pages[i].getPageSize()
+            #expect(size.getWidth() == want.0, "page \(i + 1)")
+            #expect(size.getHeight() == want.1, "page \(i + 1)")
+        }
+        #expect(pages[1].getValue("/MediaBox") == "[ 0 0 250 50 ]")
+
+        // A box that refers to the page itself is left as it is, as the fuzz
+        // target found it: the page, listed three times, grew each time it was
+        // read, to 600 MB.
+        objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [3 0 R 0 612 792] >>",
+        ]))
+        pages = TestSupport.pageObjects(objects)
+        #expect(pages[2].getValue("/MediaBox") == "[ 3 0 R 0 612 792 ]")
     }
 
     // The pages of a PDF that a stamp is drawn on, each with a dictionary that

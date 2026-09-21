@@ -143,3 +143,34 @@ func TestEncryptionPdfUaGrantsExtractionForAccessibility(t *testing.T) {
 		t.Error("no extraction for accessibility")
 	}
 }
+
+func TestEncryptionACryptFilterThatIsAnObjectOfItsOwnIsFollowed(t *testing.T) {
+	// The /CF dictionary and the filter in it as objects of their own, as
+	// pdf.js tests them in issue7665: the method was not found, and the
+	// streams and the strings of the PDF were left encrypted.
+	object := func(number int, raw string) *PDFobj {
+		obj := getObjectAt([]byte(raw), 0)
+		obj.number = number
+		return obj
+	}
+	objects := []*PDFobj{
+		object(7, "7 0 obj << /StdCF 8 0 R >> endobj"),
+		object(8, "8 0 obj << /AuthEvent /DocOpen /CFM /AESV3 /Length 32 >> endobj"),
+		object(9, "9 0 obj << /StdCF << /CFM /AESV2 >> >> endobj"),
+	}
+	for _, c := range []struct {
+		cf   string
+		want int
+	}{
+		{"7 0 R", cryptAES256},
+		{"9 0 R", cryptAES128},
+		{"<< /StdCF 8 0 R >>", cryptAES256},
+		{"<< /StdCF << /CFM /V2 >> >>", cryptRC4},
+		{"99 0 R", cryptNone},
+	} {
+		encrypt := object(6, "6 0 obj << /Filter /Standard /V 5 /CF "+c.cf+" /StmF /StdCF >> endobj")
+		if got := getCryptMethod(encrypt, "/StdCF", objects); got != c.want {
+			t.Errorf("/CF %s: method %d, want %d", c.cf, got, c.want)
+		}
+	}
+}

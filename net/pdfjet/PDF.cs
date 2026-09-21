@@ -1433,7 +1433,7 @@ public sealed class PDF {
     }
 
     // Returns true when the tokens at index i are a reference: "n g R".
-    private static bool IsReference(List<String> tokens, int i) {
+    internal static bool IsReference(List<String> tokens, int i) {
         return i + 2 < tokens.Count
                 && tokens[i + 2].Equals("R")
                 && IsObjectNumber(tokens[i])
@@ -1494,7 +1494,7 @@ public sealed class PDF {
         return value;
     }
 
-    private static List<String> ValueOf(PDFobj obj) {
+    internal static List<String> ValueOf(PDFobj obj) {
         List<String> dict = obj.dict;
         int start = (dict.Count >= 3 && dict[2].Equals("obj")) ? 3 : 0;
         int end = dict.Count;
@@ -1532,7 +1532,7 @@ public sealed class PDF {
     }
 
     // Returns the index after the value that starts at index i.
-    private static int ValueEnd(List<String> tokens, int i) {
+    internal static int ValueEnd(List<String> tokens, int i) {
         if (i >= tokens.Count) {
             return tokens.Count;
         }
@@ -1557,7 +1557,7 @@ public sealed class PDF {
 
     // Returns the index of the key of an entry of the dictionary, not of a
     // dictionary inside it, or -1.
-    private static int EntryIndex(List<String> tokens, String key) {
+    internal static int EntryIndex(List<String> tokens, String key) {
         if (tokens.Count == 0 || !tokens[0].Equals("<<")) {
             return -1;
         }
@@ -1874,12 +1874,18 @@ public sealed class PDF {
         byteCount += baos.Length;
     }
 
+    // The highest object number read in a file of any size: its empty objects
+    // take about 30 MB.
+    private const int MIN_OBJ_NUMBER_LIMIT = 262144;
+
     // Returns the objects by their number, with an empty object at the number
     // of every one the PDF does not have, so that the object a reference names
-    // is the one at its number. Every object of a PDF takes bytes of its file,
-    // so a number larger than the file has bytes is one no PDF can hold, and
-    // the empty objects up to it would take the memory a file of a few bytes
-    // never names.
+    // is the one at its number. A PDF may number its objects as it likes, and
+    // one that kept the numbers of the document it was cut from has few objects
+    // and high numbers, so a number up to MIN_OBJ_NUMBER_LIMIT is read in any
+    // file, and a larger one in a file that has as many bytes. The empty
+    // objects up to a larger number would take the memory a file of a few
+    // bytes never names.
     internal List<PDFobj> GetSortedObjects(List<PDFobj> objects, int size) {
         List<PDFobj> sorted = new List<PDFobj>();
 
@@ -1889,7 +1895,7 @@ public sealed class PDF {
                 maxObjNumber = obj.number;
             }
         }
-        if (maxObjNumber > size) {
+        if (maxObjNumber > Math.Max(size, MIN_OBJ_NUMBER_LIMIT)) {
             throw new Exception("The PDF of " + size
                     + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
@@ -2041,7 +2047,7 @@ public sealed class PDF {
         return str.Substring(start, end - start);
     }
 
-    private PDFobj GetObject(byte[] buf, int off) {
+    internal PDFobj GetObject(byte[] buf, int off) {
         if (off < 0 || off >= buf.Length) {
             return new PDFobj();    // An offset outside of the PDF has no tokens.
         }
@@ -2130,7 +2136,7 @@ public sealed class PDF {
         return obj;
     }
 
-    private static bool IsWhiteSpace(int c) {
+    internal static bool IsWhiteSpace(int c) {
         return c == 0x00        // Null
             || c == 0x09        // Horizontal Tab
             || c == 0x0A        // Line Feed (LF)
@@ -2354,7 +2360,7 @@ public sealed class PDF {
         return i > off && j > i && k > j && m > k && StartsWith(buf, m, "obj");
     }
 
-    private static bool StartsWith(byte[] buf, int off, String str) {
+    internal static bool StartsWith(byte[] buf, int off, String str) {
         if (off + str.Length > buf.Length) {
             return false;
         }
@@ -2366,7 +2372,7 @@ public sealed class PDF {
         return true;
     }
 
-    private static int IndexOf(byte[] buf, String str, int from) {
+    internal static int IndexOf(byte[] buf, String str, int from) {
         for (int i = Math.Max(from, 0); i + str.Length <= buf.Length; i++) {
             if (StartsWith(buf, i, str)) {
                 return i;
@@ -2569,6 +2575,7 @@ public sealed class PDF {
             PDFobj obj = objects[number - 1];
             if (IsPageObject(obj)) {
                 AddInheritedEntries(obj, objects);
+                ResolveMediaBox(obj, objects);
                 pages.Add(obj);
             } else {
                 GetPageObjects(obj, objects, pages, visited);
@@ -2595,6 +2602,63 @@ public sealed class PDF {
                 page.dict.Insert(open + 1, key);
             }
         }
+    }
+
+    // Writes the /MediaBox of the page as the array of numbers it is, when it
+    // is an object of its own, "/MediaBox 4 0 R", or holds references to its
+    // numbers, "[4 0 R 5 0 R 6 0 R 7 0 R]", so that GetPageSize reads it. A
+    // box that is not four numbers then is left as it is: a reference to
+    // anything else, like the page itself, would grow the page each time it is
+    // read.
+    private static void ResolveMediaBox(PDFobj page, List<PDFobj> objects) {
+        int open = page.dict.IndexOf("<<");
+        if (open == -1) {
+            return;
+        }
+        List<String> tokens = page.dict.GetRange(open, page.dict.Count - open);
+        int i = EntryIndex(tokens, "/MediaBox");
+        if (i == -1) {
+            return;
+        }
+        int start = open + i + 1;
+        int end = open + ValueEnd(tokens, i + 1);
+        List<String> value = page.dict.GetRange(start, end - start);
+        if (IsReference(value, 0)) {
+            PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[0]));
+            if (obj == null) {
+                return;
+            }
+            value = ValueOf(obj);
+        }
+        if (value.Count == 0 || !value[0].Equals("[")) {
+            return;
+        }
+        List<String> box = new List<String>();
+        for (int j = 0; j < value.Count; j++) {
+            if (IsReference(value, j)) {
+                PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[j]));
+                if (obj == null) {
+                    return;
+                }
+                box.AddRange(ValueOf(obj));
+                j += 2;
+            } else {
+                box.Add(value[j]);
+            }
+            if (box.Count > 6) {
+                return;
+            }
+        }
+        if (box.Count != 6 || !box[0].Equals("[") || !box[5].Equals("]")) {
+            return;
+        }
+        for (int j = 1; j < 5; j++) {
+            if (!Double.TryParse(box[j], NumberStyles.Float, CultureInfo.InvariantCulture, out _)) {
+                return;
+            }
+        }
+        page.dict.RemoveRange(start, end - start);
+        page.dict.InsertRange(start, box);
     }
 
     private bool IsPageObject(PDFobj obj) {
