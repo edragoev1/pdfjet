@@ -774,6 +774,11 @@ final public class Page {
         // is often the hottest per-character loop in the library.
         int length = str.length();
         if (font.isCJK) {
+            // A CJK font that is not embedded is drawn by the characters
+            // themselves, through a UCS-2 CMap, with the glyphs of the
+            // reader's font. PDFjet does not know which characters that font
+            // has, and so has no .notdef to draw: a character past its range
+            // is a space.
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
@@ -807,6 +812,7 @@ final public class Page {
             boolean[] runEdge = null;   // An LRM before the glyph at the index
             int n = 0;
             boolean hasMarks = false;
+            boolean hasNotdef = false;
             boolean afterRLM = false;
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
@@ -841,6 +847,7 @@ final public class Page {
                     codePoints[n] = cp;
                     gids[n] = glyphOf(font, cp);
                     hasMarks |= isMark(cp);
+                    hasNotdef |= isNotdef(codePoints, gids, n);
                     n++;
                 }
             }
@@ -850,7 +857,7 @@ final public class Page {
             }
             if (hasMarks && font.markAnchors != null) {
                 offsets = markOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null && joiners == null && runEdge == null) {
+            } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int i = 0; i < n; i++) {
                     appendCodePointAsHex(gids[i]);
                 }
@@ -924,15 +931,16 @@ final public class Page {
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,
     // in a marked content span with the text of the word when it has moved
-    // marks, with the mirrored characters at its ends in spans of their own.
+    // marks, with the mirrored characters and the .notdef glyphs at its ends
+    // in spans of their own.
     private void appendWord(
             Font font, int[] codePoints, int[] gids, boolean[] mirrored, int[] offsets, int i, int end) {
         int from = i;
         int to = end;
-        while (mirrored != null && from < to && mirrored[from]) {
+        while (from < to && inOwnSpan(codePoints, gids, mirrored, from)) {
             from++;
         }
-        while (mirrored != null && to > from && mirrored[to - 1]) {
+        while (to > from && inOwnSpan(codePoints, gids, mirrored, to - 1)) {
             to--;
         }
         if (offsets != null && isMoved(offsets, from, to)) {
@@ -944,10 +952,12 @@ final public class Page {
         }
     }
 
+    // Draws the glyphs from one index to another, each character Bidi mirrored
+    // and each .notdef glyph in a span of its own.
     private void appendGlyphs(
             Font font, int[] codePoints, int[] gids, boolean[] mirrored, int from, int to) {
         for (int k = from; k < to; k++) {
-            if (mirrored != null && mirrored[k]) {
+            if (inOwnSpan(codePoints, gids, mirrored, k)) {
                 appendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 appendCodePointAsHex(gids[k]);
@@ -1000,11 +1010,14 @@ final public class Page {
         append("EMC\n<");
     }
 
-    // Returns the text the glyph of the code point maps to: a glyph missing
-    // from the font is a space, and an Arabic letter form is its letter.
-    private static String textOf(Font font, int cp) {
+    // Returns the text the glyph of the code point maps to: a control
+    // character is a space, as it is drawn, and an Arabic letter form is its
+    // letter. A character the font does not have is itself, though it is
+    // drawn with .notdef, so that a copy of the text is the text that was
+    // written.
+    static String textOf(Font font, int cp) {
         String letters = Bidi.lettersOf(cp);
-        if (cp < font.firstChar || cp > font.lastChar) {
+        if (Font.isControl(cp)) {
             return " ";
         } else if (letters != null) {
             return letters;
@@ -1059,11 +1072,34 @@ final public class Page {
         append("> Tj\nEMC\n<");
     }
 
-    private static int glyphOf(Font font, int cp) {
-        if (cp < font.firstChar || cp > font.lastChar) {
+    // Returns the glyph ID the character is drawn with: that of a space for a
+    // control character, which has no glyph to draw, and .notdef, glyph 0, for
+    // a character the font does not have, so that a reader sees a box where
+    // the character is missing and not a space, as other PDF writers draw it.
+    // The character map of the font is read from its first to its last
+    // character, so a character outside that range has no glyph.
+    static int glyphOf(Font font, int cp) {
+        if (Font.isControl(cp)) {
             return font.unicodeToGID[0x0020];
         }
+        if (cp < font.firstChar || cp > font.lastChar) {
+            return 0;
+        }
         return font.unicodeToGID[cp];
+    }
+
+    // Returns true if the glyph at k is .notdef, the glyph of a character the
+    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
+    // A control character is drawn as a space even when the font has none.
+    private static boolean isNotdef(int[] codePoints, int[] gids, int k) {
+        return gids[k] == 0 && !Font.isControl(codePoints[k]);
+    }
+
+    // Returns true if the glyph at k is drawn in a marked content span of its
+    // own, with the text it stands for as its actual text: a character Bidi
+    // mirrored, and a character the font does not have, drawn with .notdef.
+    private static boolean inOwnSpan(int[] codePoints, int[] gids, boolean[] mirrored, int k) {
+        return (mirrored != null && mirrored[k]) || isNotdef(codePoints, gids, k);
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -1206,9 +1242,11 @@ final public class Page {
     }
 
     // Returns true if the text has a character that is more than a glyph: an
-    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
-    // place. Marks start at U+0300, so most text is looked at once, with no
-    // more than two comparisons for each character.
+    // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
+    // place, or a character the font does not have, whose .notdef glyph is
+    // drawn with the character as its actual text. Marks start at U+0300, so
+    // most text is looked at once, with no more than two comparisons and the
+    // lookup of its glyph for each character.
     private static boolean needsShaping(Font font, String str) {
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
@@ -1219,6 +1257,9 @@ final public class Page {
                 if ((font.markAnchors != null || font.markData != null) && isMark(str.codePointAt(i))) {
                     return true;
                 }
+            }
+            if (c != 0xFEFF && glyphOf(font, str.codePointAt(i)) == 0 && !Font.isControl(c)) {
+                return true;
             }
         }
         return false;
@@ -3171,7 +3212,7 @@ final public class Page {
      * Returns the string as a PDF text string, in UTF-16BE with a byte order
      * mark, written in hexadecimal.
      */
-    private static String toUTF16Hex(String str) {
+    static String toUTF16Hex(String str) {
         final String digits = "0123456789ABCDEF";
         StringBuilder sb = new StringBuilder("FEFF");
         for (int i = 0; i < str.length(); i++) {

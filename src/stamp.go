@@ -394,7 +394,10 @@ func (s *Stamp) Complete() {
 	s.objNumber = s.pdf.getObjNumber()
 }
 
-// drawEncodedText appends the glyph IDs of the text as hexadecimal.
+// drawEncodedText appends the glyph IDs of the text as hexadecimal, the glyphs
+// Page draws. The .notdef glyph of a character the font does not have is drawn
+// in a marked content span with the character as its actual text, as on a
+// page.
 func (s *Stamp) drawEncodedText(font *Font, str string) {
 	if traceText != nil {
 		traceText(s, font, str)
@@ -403,13 +406,16 @@ func (s *Stamp) drawEncodedText(font *Font, str string) {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue
 		}
-		var gid int
-		if codePoint < font.firstChar || codePoint > font.lastChar {
-			gid = font.unicodeToGID[0x0020] // Use space fallback
+		gid := glyphOf(font, codePoint)
+		if gid == 0 && !isControl(codePoint) {
+			s.appendString("> Tj\n/Span <</ActualText <")
+			s.appendString(toUTF16Hex(textOf(font, codePoint)))
+			s.appendString(">>> BDC\n<")
+			s.appendCodePointAsHex(gid)
+			s.appendString("> Tj\nEMC\n<")
 		} else {
-			gid = font.unicodeToGID[codePoint]
+			s.appendCodePointAsHex(gid)
 		}
-		s.appendCodePointAsHex(gid)
 	}
 }
 

@@ -477,6 +477,10 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 	}
 	runes := []rune(text)
 	if font.isCJK {
+		// A CJK font that is not embedded is drawn by the characters
+		// themselves, through a UCS-2 CMap, with the glyphs of the reader's
+		// font. PDFjet does not know which characters that font has, and so
+		// has no .notdef to draw: a character past its range is a space.
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
 				if c1 < font.firstChar || c1 > font.lastChar {
@@ -505,6 +509,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		var joiners []rune
 		var runEdge []bool // An LRM before the glyph at the index
 		hasMarks := false
+		hasNotdef := false
 		afterRLM := false
 		for _, c1 := range runes {
 			if c1 == 0x200F { // RLM
@@ -537,6 +542,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				codePoints = append(codePoints, c1)
 				gids = append(gids, glyphOf(font, c1))
 				hasMarks = hasMarks || isMark(c1)
+				hasNotdef = hasNotdef || isNotdef(codePoints, gids, len(gids)-1)
 			}
 		}
 		var offsets []int
@@ -545,7 +551,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		}
 		if hasMarks && font.markAnchors != nil {
 			offsets = markOffsets(font, codePoints, gids)
-		} else if mirroredAt == nil && joiners == nil && runEdge == nil {
+		} else if mirroredAt == nil && joiners == nil && runEdge == nil && !hasNotdef {
 			for _, gid := range gids {
 				page.appendCodePointAsHex(gid)
 			}
@@ -620,14 +626,15 @@ func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, 
 
 // appendWord draws the glyphs of a word, or of the part of a word before a
 // joiner, in a marked content span with the text of the word when it has moved
-// marks, with the mirrored characters at its ends in spans of their own.
+// marks, with the mirrored characters and the .notdef glyphs at its ends in
+// spans of their own.
 func (page *Page) appendWord(
 	font *Font, codePoints []rune, gids []int, mirroredAt []bool, offsets []int, i, end int) {
 	wordStart, wordEnd := i, end
-	for mirroredAt != nil && wordStart < wordEnd && mirroredAt[wordStart] {
+	for wordStart < wordEnd && inOwnSpan(codePoints, gids, mirroredAt, wordStart) {
 		wordStart++
 	}
-	for mirroredAt != nil && wordEnd > wordStart && mirroredAt[wordEnd-1] {
+	for wordEnd > wordStart && inOwnSpan(codePoints, gids, mirroredAt, wordEnd-1) {
 		wordEnd--
 	}
 	if offsets != nil && isMoved(offsets, wordStart, wordEnd) {
@@ -640,10 +647,10 @@ func (page *Page) appendWord(
 }
 
 // appendGlyphs draws the glyphs from start to end, each character Bidi mirrored
-// in a span of its own.
+// and each .notdef glyph in a span of its own.
 func (page *Page) appendGlyphs(font *Font, codePoints []rune, gids []int, mirroredAt []bool, start, end int) {
 	for k := start; k < end; k++ {
-		if mirroredAt != nil && mirroredAt[k] {
+		if inOwnSpan(codePoints, gids, mirroredAt, k) {
 			page.appendGlyphWithActualText(font, codePoints, gids, nil, mirroredAt, nil, k)
 		} else {
 			page.appendCodePointAsHex(gids[k])
@@ -700,10 +707,12 @@ func (page *Page) appendGlyphWithActualText(
 	page.appendString("EMC\n<")
 }
 
-// textOf returns the text the glyph of the character maps to: a glyph missing
-// from the font is a space, and an Arabic letter form is its letter.
+// textOf returns the text the glyph of the character maps to: a control
+// character is a space, as it is drawn, and an Arabic letter form is its
+// letter. A character the font does not have is itself, though it is drawn
+// with .notdef, so that a copy of the text is the text that was written.
 func textOf(font *Font, c rune) string {
-	if c < font.firstChar || c > font.lastChar {
+	if isControl(c) {
 		return " "
 	} else if letters := lettersOf(c); letters != nil {
 		return string(letters)
@@ -711,13 +720,34 @@ func textOf(font *Font, c rune) string {
 	return string(c)
 }
 
-// glyphOf returns the glyph ID of the character, or of a space if the font does
-// not have the character.
+// glyphOf returns the glyph ID the character is drawn with: that of a space
+// for a control character, which has no glyph to draw, and .notdef, glyph 0,
+// for a character the font does not have, so that a reader sees a box where
+// the character is missing and not a space, as other PDF writers draw it. The
+// character map of the font is read from its first to its last character, so
+// a character outside that range has no glyph.
 func glyphOf(font *Font, c rune) int {
-	if c < font.firstChar || c > font.lastChar {
+	if isControl(c) {
 		return font.unicodeToGID[0x0020]
 	}
+	if c < font.firstChar || c > font.lastChar {
+		return 0
+	}
 	return font.unicodeToGID[c]
+}
+
+// isNotdef returns true if the glyph at k is .notdef, the glyph of a character
+// the font does not have, which the ToUnicode map of the font maps to U+FFFD.
+// A control character is drawn as a space even when the font has none.
+func isNotdef(codePoints []rune, gids []int, k int) bool {
+	return gids[k] == 0 && !isControl(codePoints[k])
+}
+
+// inOwnSpan returns true if the glyph at k is drawn in a marked content span
+// of its own, with the text it stands for as its actual text: a character Bidi
+// mirrored, and a character the font does not have, drawn with .notdef.
+func inOwnSpan(codePoints []rune, gids []int, mirroredAt []bool, k int) bool {
+	return (mirroredAt != nil && mirroredAt[k]) || isNotdef(codePoints, gids, k)
 }
 
 // markOffsets returns the offsets that move the marks to where the GPOS table
@@ -833,9 +863,11 @@ func placeOnMark(font *Font, gids, x, offsets []int, mark, other int) {
 }
 
 // needsShaping returns true if the text has a character that is more than a
-// glyph: an RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font
-// puts in place. Marks start at U+0300, so most text is looked at once, with
-// no more than two comparisons for each character.
+// glyph: an RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts
+// in place, or a character the font does not have, whose .notdef glyph is
+// drawn with the character as its actual text. Marks start at U+0300, so most
+// text is looked at once, with no more than two comparisons and the lookup of
+// its glyph for each character.
 func needsShaping(font *Font, runes []rune) bool {
 	for _, c := range runes {
 		if c >= 0x0300 {
@@ -845,6 +877,9 @@ func needsShaping(font *Font, runes []rune) bool {
 			if (font.markAnchors != nil || font.markData != nil) && isMark(c) {
 				return true
 			}
+		}
+		if c != 0xFEFF && glyphOf(font, c) == 0 && !isControl(c) {
+			return true
 		}
 	}
 	return false

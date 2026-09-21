@@ -501,11 +501,12 @@ func (font *Font) coreFontCode(cp rune) int {
 }
 
 // winAnsiCode returns the WinAnsi code of the character: the character itself
-// below 128 and from 160 to 255, the code of the character WinAnsi puts from
-// 128 to 159, and a space for any other character, the C1 controls U+0080 to
-// U+009F too.
+// below 127 and from 160 to 255, the code of the character WinAnsi puts from
+// 128 to 159, and a space for any other character, the controls U+007F to
+// U+009F too. WinAnsi draws a bullet at 127, ISO 32000, Annex D, where the
+// widths of the core fonts have a space.
 func winAnsiCode(cp rune) rune {
-	if cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF) {
+	if cp < 0x7F || (cp >= 0xA0 && cp <= 0xFF) {
 		return cp
 	}
 	switch cp {
@@ -623,20 +624,15 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 }
 
 // advanceWidthOf returns the advance width, in font units, of the glyph that
-// Page draws for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order
-// mark, which are not drawn, and that of a space for a character the font does
-// not cover.
+// Page draws for the character, the one glyphOf gives: none for an RLM, LRM,
+// ZWNJ, ZWJ or byte order mark, which are not drawn, that of a space for a
+// control character and that of .notdef for a character the font does not
+// have.
 func (font *Font) advanceWidthOf(c rune) int {
 	if isJoinerOrRLM(c) || c == 0xFEFF {
 		return 0
 	}
-	gid := 0
-	if c < font.firstChar || c > font.lastChar {
-		gid = font.unicodeToGID[0x20]
-	} else {
-		gid = font.unicodeToGID[c]
-	}
-	return font.glyphAdvance(gid)
+	return font.glyphAdvance(glyphOf(font, c))
 }
 
 // glyphAdvance returns the advance width of the glyph, in font units. A font
@@ -647,14 +643,19 @@ func (font *Font) glyphAdvance(gid int) int {
 	return int(font.advanceWidth[min(gid, len(font.advanceWidth)-1)])
 }
 
-// hasGlyph returns true if the font has a glyph for the character. A character
-// past the end of the glyph table of the font, like an emoji, has none, and a
-// core font has the characters of its encoding.
+// hasGlyph returns true if the font has a glyph for the character, so that it
+// is not drawn with .notdef and the fallback font is not needed for it. A
+// character past the end of the glyph table of the font, like an emoji, has
+// none. A control character is drawn as a space, and a core font has the
+// characters of its encoding.
 func (font *Font) hasGlyph(c rune) bool {
+	if isControl(c) {
+		c = 0x20
+	}
 	if font.isCoreFont {
 		return c == 32 || font.coreFontCode(c) != 32
 	}
-	return int(c) < len(font.unicodeToGID) && font.unicodeToGID[c] != 0
+	return !font.isCJK && glyphOf(font, c) != 0
 }
 
 // fontOf returns the font, of the font and its fallback font, that draws the
@@ -720,4 +721,11 @@ func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontS
 // the glyph before or after them an actual text.
 func isJoinerOrRLM(ch rune) bool {
 	return ch == 0x200F || ch == 0x200E || ch == 0x200C || ch == 0x200D
+}
+
+// isControl returns true for the C0 and C1 control characters and DEL, U+0000
+// to U+001F and U+007F to U+009F, which have no glyph to draw: they are drawn
+// as a space.
+func isControl(ch rune) bool {
+	return ch < 0x20 || (ch >= 0x7F && ch <= 0x9F)
 }

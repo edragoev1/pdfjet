@@ -190,3 +190,63 @@ func TestOTFAGposTableIsNotReadPastTheWorkAFontNeeds(t *testing.T) {
 	patched = testOpenTypeWith(patched, lookup+4, 0xFFFF)
 	testWant(t, "(no panic)", testOpenTypeFontDraws(patched))
 }
+
+// testOpenTypeCapHeight returns the cap height PDFjet reads of the font.
+func testOpenTypeCapHeight(font []byte) int {
+	return int(newOpenTypeFont(bytes.NewReader(font)).capHeight)
+}
+
+// testOpenTypeLength returns the font with the length of the table of the
+// name in its directory changed.
+func testOpenTypeLength(t *testing.T, font []byte, name string, length int) []byte {
+	t.Helper()
+	patched := append([]byte(nil), font...)
+	binary.BigEndian.PutUint32(patched[testOpenTypeEntry(t, font, name)+12:], uint32(length))
+	return patched
+}
+
+func TestOTFTheCapHeightIsReadOnlyFromAnOS2TableThatHasIt(t *testing.T) {
+	// The cap height of both fonts, sCapHeight in OS/2 and the top of the H,
+	// is 714, so sCapHeight is changed to 999 to tell the two apart. Noto
+	// Sans Thai has the short offsets of loca, and Noto Sans the long ones.
+	for _, path := range []string{"fonts/NotoSansThai/NotoSansThai-Regular.ttf",
+		"fonts/NotoSans/NotoSans-Regular.ttf"} {
+		font := testOpenTypeFontBytes(t, path)
+		os2 := testOpenTypeTable(t, font, "OS/2")
+		font = testOpenTypeWith(font, os2+88, 999)
+		if got := testOpenTypeCapHeight(font); got != 999 {
+			t.Errorf("%s, version 4: %d", path, got)
+		}
+		// A version 1 table ends before sCapHeight: the 999 is not its own.
+		if got := testOpenTypeCapHeight(testOpenTypeWith(font, os2, 1)); got != 714 {
+			t.Errorf("%s, version 1: %d, not the top of the H", path, got)
+		}
+		// Nor is it of a version 2 table that ends before it.
+		if got := testOpenTypeCapHeight(testOpenTypeLength(t, font, "OS/2", 88)); got != 714 {
+			t.Errorf("%s, a table of 88 bytes: %d, not the top of the H", path, got)
+		}
+	}
+}
+
+func TestOTFAFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent(t *testing.T) {
+	// IBM Plex Sans has CFF outlines, and so no glyf table to find the top
+	// of the H in; its ascent is 1025. Noto Sans Thai without its loca
+	// table has no offset for its H; its ascent is 1061.
+	otf := testOpenTypeFontBytes(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
+	if got := testOpenTypeCapHeight(testOpenTypeWith(otf, testOpenTypeTable(t, otf, "OS/2"), 1)); got != 1025 {
+		t.Errorf("CFF outlines: %d", got)
+	}
+	ttf := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	ttf = testOpenTypeWith(ttf, testOpenTypeTable(t, ttf, "OS/2"), 1)
+	if got := testOpenTypeCapHeight(testOpenTypeWithout(t, ttf, "loca")); got != 1061 {
+		t.Errorf("no loca table: %d", got)
+	}
+	// A loca table that ends before the offsets of the H, and a glyf table
+	// that ends before the header of the H.
+	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "loca", 4)); got != 1061 {
+		t.Errorf("a loca table of 4 bytes: %d", got)
+	}
+	if got := testOpenTypeCapHeight(testOpenTypeLength(t, ttf, "glyf", 4)); got != 1061 {
+		t.Errorf("a glyf table of 4 bytes: %d", got)
+	}
+}

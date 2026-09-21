@@ -401,13 +401,19 @@ public class Stamp : Drawable {
             let codePoint = Int(scalar.value)
             if codePoint == 0xFEFF { continue } // Skip BOM
 
-            let gid: Int
-            if codePoint < font.firstChar || codePoint > font.lastChar {
-                gid = font.unicodeToGID[0x0020] // Space fallback
+            // The glyphs Page draws. The .notdef glyph of a character the font
+            // does not have is drawn in a marked content span with the
+            // character as its actual text, as on a page.
+            let gid = Page.glyphOf(font, codePoint)
+            if gid == 0 && !Font.isControl(codePoint) {
+                append("> Tj\n/Span <</ActualText <")
+                append(Page.toUTF16Hex(Page.textOf(font, codePoint)))
+                append(">>> BDC\n<")
+                appendCodePointAsHex(gid)
+                append("> Tj\nEMC\n<")
             } else {
-                gid = font.unicodeToGID[codePoint]
+                appendCodePointAsHex(gid)
             }
-            appendCodePointAsHex(gid)
         }
     }
 

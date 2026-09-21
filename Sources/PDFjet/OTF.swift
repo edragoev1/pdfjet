@@ -34,6 +34,10 @@ class OTF {
     var firstChar: Int? = 0
     var lastChar: Int? = 0
     var capHeight: Int16? = 0
+    var hasCapHeight = false
+    var indexToLocFormat = 0
+    var loca: FontTable?
+    var glyf: FontTable?
     var postVersion: UInt32? = 0
     var italicAngle: UInt32? = 0
     var underlinePosition: Int16? = 0
@@ -106,6 +110,8 @@ class OTF {
             else if table.name == "CFF " { try CFF_(table) }
             else if table.name == "GPOS" { GPOS(table) }
             else if table.name == "cmap" { cmapTable = table }
+            else if table.name == "loca" { loca = table }
+            else if table.name == "glyf" { glyf = table }
             index = k       // Restore the index
         }
 
@@ -114,6 +120,17 @@ class OTF {
             throw OTF.fontError("no character map")
         }
         try cmap(cmapTable)
+
+        // A font without the cap height of a version 2 OS/2 table has the top
+        // of its H, as the glyph is drawn, or else its ascent: the cap height
+        // goes into the font descriptor, where a reader fits text in a box
+        // with it.
+        if !hasCapHeight {
+            capHeight = ascent
+            if let top = glyphTop(unicodeToGID[0x48]) {     // H
+                capHeight = top
+            }
+        }
 
         // The sizes of the text are divided by the units per em, and the
         // width of every glyph past the advance widths is that of the last one.
@@ -146,6 +163,7 @@ class OTF {
         self.bBoxLLy = try readInt16()
         self.bBoxURx = try readInt16()
         self.bBoxURy = try readInt16()
+        self.indexToLocFormat = tableUInt16(table, 50) ?? 0
     }
 
     private func hhea(_ table: FontTable) throws {
@@ -161,8 +179,41 @@ class OTF {
         index = table.offset! + 64
         firstChar = Int(try readUInt16())
         lastChar  = Int(try readUInt16())
-        index += 20
-        capHeight = try readInt16()
+        // sCapHeight is in the table from its version 2 on. Where it would be
+        // in a version 0 or 1 table are the bytes after the table, often those
+        // of the next table.
+        if let version = tableUInt16(table, 0), version >= 2 {
+            if let value = tableUInt16(table, 88) {
+                capHeight = Int16(truncatingIfNeeded: value)
+                hasCapHeight = true
+            }
+        }
+    }
+
+    // Returns the top of the bounding box of the glyph, the yMax of its header
+    // in the glyf table, at the offset the loca table gives it. It returns nil
+    // for a font with CFF outlines, which has no glyf table, for glyph 0, and
+    // for a glyph with no outline, which has no header.
+    private func glyphTop(_ gid: Int) -> Int16? {
+        guard gid != 0, let loca = loca, let glyf = glyf else {
+            return nil
+        }
+        var start: Int?
+        var end: Int?
+        if indexToLocFormat == 0 {
+            // The short offsets are half the offsets.
+            start = tableUInt16(loca, 2*gid).map { 2*$0 }
+            end = tableUInt16(loca, 2*gid + 2).map { 2*$0 }
+        } else {
+            start = tableUInt32(loca, 4*gid)
+            end = tableUInt32(loca, 4*gid + 4)
+        }
+        // The header of a glyph is 10 bytes: the number of contours, then
+        // xMin, yMin, xMax and yMax.
+        guard let start = start, let end = end, end - start >= 10 else {
+            return nil
+        }
+        return tableUInt16(glyf, start + 8).map { Int16(truncatingIfNeeded: $0) }
     }
 
     private func n4me(_ table: FontTable) throws {
@@ -552,6 +603,28 @@ class OTF {
             return 0
         }
         return Int(buf[offset]) << 8 | Int(buf[offset + 1])
+    }
+
+    // Returns the 16 bits at the offset in the table, or nil when the table or
+    // the font ends before them: a table can be shorter than its version says,
+    // and the directory can point past the end of the font.
+    private func tableUInt16(_ table: FontTable, _ at: Int) -> Int? {
+        let offset = table.offset ?? -1
+        let length = table.length ?? -1
+        if at < 0 || offset < 0 || offset > buf.count || length < 0 ||
+                at > length - 2 || at > buf.count - offset - 2 {
+            return nil
+        }
+        return uint16(at: offset + at)
+    }
+
+    // Returns the 32 bits at the offset in the table, as tableUInt16 returns
+    // 16.
+    private func tableUInt32(_ table: FontTable, _ at: Int) -> Int? {
+        guard let high = tableUInt16(table, at), let low = tableUInt16(table, at + 2) else {
+            return nil
+        }
+        return high << 16 | low
     }
 
     private func int16(at offset: Int) -> Int {

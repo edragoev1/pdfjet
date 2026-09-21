@@ -395,10 +395,19 @@ public class Stamp : IDrawable {
 
             if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
 
-            int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                ? font.unicodeToGID[0x0020]         // Use space fallback
-                : font.unicodeToGID[codePoint];
-            AppendCodePointAsHex(gid);
+            // The glyphs Page draws. The .notdef glyph of a character the font
+            // does not have is drawn in a marked content span with the
+            // character as its actual text, as on a page.
+            int gid = Page.GlyphOf(font, codePoint);
+            if (gid == 0 && !Font.IsControl(codePoint)) {
+                Append("> Tj\n/Span <</ActualText <");
+                Append(Page.ToUTF16Hex(Page.TextOf(font, codePoint)));
+                Append(">>> BDC\n<");
+                AppendCodePointAsHex(gid);
+                Append("> Tj\nEMC\n<");
+            } else {
+                AppendCodePointAsHex(gid);
+            }
         }
     }
 

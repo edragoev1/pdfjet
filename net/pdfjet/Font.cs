@@ -411,15 +411,15 @@ public class Font {
     }
 
     // Returns the advance width, in font units, of the glyph that Page draws
-    // for the character: none for an RLM, LRM, ZWNJ, ZWJ or byte order mark,
-    // which are not drawn, and that of a space for a character the font does
-    // not cover.
+    // for the character, the one GlyphOf gives: none for an RLM, LRM, ZWNJ,
+    // ZWJ or byte order mark, which are not drawn, that of a space for a
+    // control character and that of .notdef for a character the font does not
+    // have.
     private int AdvanceWidthOf(int codePoint) {
         if (IsJoinerOrRLM(codePoint) || codePoint == 0xFEFF) {
             return 0;
         }
-        int gid = (codePoint < firstChar || codePoint > lastChar) ? unicodeToGID[0x20] : unicodeToGID[codePoint];
-        return GlyphAdvance(gid);
+        return GlyphAdvance(Page.GlyphOf(this, codePoint));
     }
 
     // Returns the advance width of the glyph, in font units. A font can list
@@ -429,14 +429,19 @@ public class Font {
         return advanceWidth[Math.Min(gid, advanceWidth.Length - 1)];
     }
 
-    // Returns true if the font has a glyph for the character. A character past
-    // the end of the glyph table of the font, like an emoji, has none, and a
-    // core font has the characters of its encoding.
+    // Returns true if the font has a glyph for the character, so that it is
+    // not drawn with .notdef and the fallback font is not needed for it. A
+    // character past the end of the glyph table of the font, like an emoji,
+    // has none. A control character is drawn as a space, and a core font has
+    // the characters of its encoding.
     internal bool HasGlyph(int codePoint) {
+        if (IsControl(codePoint)) {
+            codePoint = 0x20;
+        }
         if (isCoreFont) {
             return codePoint == 32 || CoreFontCode(codePoint) != 32;
         }
-        return codePoint < unicodeToGID.Length && unicodeToGID[codePoint] != 0;
+        return !isCJK && Page.GlyphOf(this, codePoint) != 0;
     }
 
     // Returns the font, of the font and its fallback font, that draws the
@@ -600,11 +605,13 @@ public class Font {
         return (cp < 32 || cp > 255) ? 32 : cp;
     }
 
-    // The WinAnsi code of the character: the character itself below 128 and
+    // The WinAnsi code of the character: the character itself below 127 and
     // from 160 to 255, the code of the character WinAnsi puts from 128 to 159,
-    // and a space for any other character, the C1 controls U+0080 to U+009F too.
+    // and a space for any other character, the controls U+007F to U+009F too.
+    // WinAnsi draws a bullet at 127, ISO 32000, Annex D, where the widths of
+    // the core fonts have a space.
     private static int WinAnsiCode(int cp) {
-        if (cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF)) {
+        if (cp < 0x7F || (cp >= 0xA0 && cp <= 0xFF)) {
             return cp;
         }
         switch (cp) {
@@ -674,6 +681,13 @@ public class Font {
     // before or after them an actual text.
     internal static bool IsJoinerOrRLM(int ch) {
         return ch == 0x200F || ch == 0x200E || ch == 0x200C || ch == 0x200D;
+    }
+
+    // Returns true for the C0 and C1 control characters and DEL, U+0000 to
+    // U+001F and U+007F to U+009F, which have no glyph to draw: they are drawn
+    // as a space.
+    internal static bool IsControl(int ch) {
+        return ch < 0x20 || (ch >= 0x7F && ch <= 0x9F);
     }
 
     /// <summary>

@@ -181,5 +181,50 @@ public class OTFTest {
         int lookup = lookupList + UInt16(font, lookupList + 2);
         Draws(With(With(font, lookupList, 0xFFFF), lookup + 4, 0xFFFF));
     }
+
+    // The cap height PDFjet reads of the font.
+    private static int CapHeight(byte[] font) {
+        return new OTF(new MemoryStream(font)).capHeight;
+    }
+
+    // The font with the length of the table of the name in its directory changed.
+    private static byte[] Length(byte[] font, string name, int length) {
+        int entry = Entry(font, name);
+        return With(With(font, entry + 12, length >> 16), entry + 14, length & 0xFFFF);
+    }
+
+    [Fact]
+    public void TheCapHeightIsReadOnlyFromAnOS2TableThatHasIt() {
+        // The cap height of both fonts, sCapHeight in OS/2 and the top of the
+        // H, is 714, so sCapHeight is changed to 999 to tell the two apart.
+        // Noto Sans Thai has the short offsets of loca, and Noto Sans the long
+        // ones.
+        foreach (string path in new string[] {THAI, "fonts/NotoSans/NotoSans-Regular.ttf"}) {
+            byte[] font = FontBytes(path);
+            int os2 = Table(font, "OS/2");
+            font = With(font, os2 + 88, 999);
+            Assert.Equal(999, CapHeight(font));
+            // A version 1 table ends before sCapHeight: the 999 is not its own.
+            Assert.Equal(714, CapHeight(With(font, os2, 1)));
+            // Nor is it of a version 2 table that ends before it.
+            Assert.Equal(714, CapHeight(Length(font, "OS/2", 88)));
+        }
+    }
+
+    [Fact]
+    public void AFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() {
+        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
+        // of the H in; its ascent is 1025. Noto Sans Thai without its loca
+        // table has no offset for its H; its ascent is 1061.
+        byte[] otf = FontBytes(PLEX);
+        Assert.Equal(1025, CapHeight(With(otf, Table(otf, "OS/2"), 1)));
+        byte[] ttf = FontBytes(THAI);
+        ttf = With(ttf, Table(ttf, "OS/2"), 1);
+        Assert.Equal(1061, CapHeight(Without(ttf, "loca")));
+        // A loca table that ends before the offsets of the H, and a glyf table
+        // that ends before the header of the H.
+        Assert.Equal(1061, CapHeight(Length(ttf, "loca", 4)));
+        Assert.Equal(1061, CapHeight(Length(ttf, "glyf", 4)));
+    }
 }
 }   // End of namespace PDFjet.NET

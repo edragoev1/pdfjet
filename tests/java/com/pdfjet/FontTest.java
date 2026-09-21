@@ -180,6 +180,90 @@ class FontTest {
     }
 
     @Test
+    void aCoreFontDrawsDeleteAsASpace() throws Exception {
+        // WinAnsi draws a bullet at 127, where the widths of the core fonts
+        // have a space: U+007F is a control, drawn as a space as the C1
+        // controls are.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        assertEquals(font.stringWidth(10f, " "), font.stringWidth(10f, "\u007f"), 0f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a\u007fb\u0085c").setLocation(10f, 20f).drawOn(page);
+        assertTrue(TestSupport.content(page).contains("<6120622063>"), TestSupport.content(page));
+    }
+
+    // IBM Plex Sans, read from its stream file. Its space is 236 units wide
+    // and its .notdef 472, of 1000 units to the em; it has the characters
+    // from U+0020 to U+FFFD, and no Thai.
+    private static Font ibmPlexSans(PDF pdf) throws Exception {
+        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").exists(), "the fonts directory is not here");
+        return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+    }
+
+    @Test
+    void aCharacterTheFontDoesNotHaveIsDrawnWithNotdef() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = ibmPlexSans(pdf);
+        // ก, U+0E01, is in the range of the font and not in the font, and 😀,
+        // U+1F600, is past its range: both are drawn with .notdef, as wide as
+        // it is. A control character is drawn as a space.
+        assertEquals(4.72f, font.stringWidth(10f, "ก"), 0.001f);
+        assertEquals(4.72f, font.stringWidth(10f, "😀"), 0.001f);
+        for (String c : new String[] {"\t", "\u007f", "\u0085"}) {
+            assertEquals(2.36f, font.stringWidth(10f, c), 0.001f, String.format("U+%04X", (int) c.charAt(0)));
+        }
+        // The width of the text that fits is that of the glyphs drawn.
+        assertEquals(2, font.setSize(10f).getFitChars("กก", 9.5f));
+        // The glyph of a missing character is .notdef, in a span whose actual
+        // text is the character, so that a copy of the text has it and not
+        // the U+FFFD the ToUnicode map gives .notdef. A control is the space
+        // glyph.
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "ก\t😀").setLocation(10f, 20f).drawOn(page);
+        String content = TestSupport.content(page);
+        String space = String.format("%04X", font.unicodeToGID[0x20]);
+        for (String want : new String[] {
+                "/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">",
+                "/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n"}) {
+            assertTrue(content.contains(want), content);
+        }
+        // The text a glyph maps to is the character, and a space for a control.
+        assertEquals("ก", Page.textOf(font, 0x0E01));
+        assertEquals(" ", Page.textOf(font, 0x0085));
+    }
+
+    @Test
+    void aStampDrawsACharacterTheFontDoesNotHaveWithNotdef() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = ibmPlexSans(pdf);
+        new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
+        stamp.drawText(font, 10f, 5f, 20f, "aก\t");
+        stamp.complete();
+        pdf.complete();
+        String want = String.format("<%04X> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<%04X> Tj\n",
+                font.unicodeToGID['a'], font.unicodeToGID[0x20]);
+        String out = TestSupport.latin1(bos.toByteArray());
+        assertTrue(out.contains(want), out);
+    }
+
+    @Test
+    void aControlCharacterStaysInTheFontOfItsText() throws Exception {
+        // A control character is drawn as a space by the font, not by the
+        // fallback font: the fallback font would draw it as a space too.
+        PDF pdf = TestSupport.newPDF();
+        Font latin = ibmPlexSans(pdf);
+        Font helvetica = TestSupport.helvetica(pdf);
+        for (Font font : new Font[] {latin, helvetica}) {
+            for (int c : new int[] {'\t', 0x7F, 0x85}) {
+                assertTrue(font.hasGlyph(c), font.name + String.format(" has no glyph for U+%04X", c));
+            }
+        }
+        assertTrue(!latin.hasGlyph(0x0E01) && !latin.hasGlyph(0x1F600), "a character drawn with .notdef has a glyph");
+    }
+
+    @Test
     void aSoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() throws Exception {
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         font.setKernPairs(true);

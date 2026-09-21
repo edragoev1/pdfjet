@@ -522,6 +522,11 @@ public class Page {
     private final func drawUnicodeString(_ font: Font, _ text: String) {
         let scalars = Array(text.unicodeScalars)
         if font.isCJK {
+            // A CJK font that is not embedded is drawn by the characters
+            // themselves, through a UCS-2 CMap, with the glyphs of the
+            // reader's font. PDFjet does not know which characters that font
+            // has, and so has no .notdef to draw: a character past its range
+            // is a space.
             for scalar in scalars {
                 if scalar.value != 0xFEFF {     // BOM
                     if scalar < Unicode.Scalar(font.firstChar)! ||
@@ -534,7 +539,7 @@ public class Page {
             }
         } else if !needsShaping(font, scalars) {
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
-                Page.appendCodePointAsHex(glyphOf(font, Int(scalar.value)), &self.buf)
+                Page.appendCodePointAsHex(Page.glyphOf(font, Int(scalar.value)), &self.buf)
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
@@ -549,6 +554,7 @@ public class Page {
             var joiners: [Int]? = nil
             var runEdge: [Bool]? = nil      // An LRM before the glyph at the index
             var hasMarks = false
+            var hasNotdef = false
             var afterRLM = false
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
                 if scalar.value == 0x200F {     // RLM
@@ -585,8 +591,9 @@ public class Page {
                 }
                 afterRLM = false
                 codePoints.append(codePoint)
-                gids.append(glyphOf(font, codePoint))
+                gids.append(Page.glyphOf(font, codePoint))
                 hasMarks = hasMarks || isMark(codePoint)
+                hasNotdef = hasNotdef || isNotdef(codePoints, gids, gids.count - 1)
             }
             var offsets: [Int]? = nil
             if hasMarks && font.markData != nil {
@@ -600,7 +607,7 @@ public class Page {
             }
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)
-            } else if mirrored == nil && joiners == nil && runEdge == nil {
+            } else if mirrored == nil && joiners == nil && runEdge == nil && !hasNotdef {
                 for gid in gids {
                     Page.appendCodePointAsHex(gid, &self.buf)
                 }
@@ -658,11 +665,11 @@ public class Page {
             _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int]?, _ start: Int, _ end: Int) {
         var text = "\u{200E}"
         for k in start..<end {
-            text.append(textOf(font, codePoints[k]))
+            text.append(Page.textOf(font, codePoints[k]))
         }
         text.append("\u{200E}")
         append("> Tj\n/Span <</ActualText <")
-        append(toUTF16Hex(text))
+        append(Page.toUTF16Hex(text))
         append(">>> BDC\n<")
         for k in start..<end {
             if let offsets = offsets, offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
@@ -676,19 +683,18 @@ public class Page {
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,
     // in a marked content span with the text of the word when it has moved
-    // marks, with the mirrored characters at its ends in spans of their own.
+    // marks, with the mirrored characters and the .notdef glyphs at its ends
+    // in spans of their own.
     private func appendWord(
             _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ offsets: [Int]?,
             _ i: Int, _ end: Int) {
         var wordStart = i
         var wordEnd = end
-        if let mirrored = mirrored {
-            while wordStart < wordEnd && mirrored[wordStart] {
-                wordStart += 1
-            }
-            while wordEnd > wordStart && mirrored[wordEnd - 1] {
-                wordEnd -= 1
-            }
+        while wordStart < wordEnd && inOwnSpan(codePoints, gids, mirrored, wordStart) {
+            wordStart += 1
+        }
+        while wordEnd > wordStart && inOwnSpan(codePoints, gids, mirrored, wordEnd - 1) {
+            wordEnd -= 1
         }
         if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {
             appendGlyphs(font, codePoints, gids, mirrored, i, wordStart)
@@ -699,10 +705,12 @@ public class Page {
         }
     }
 
+    // Draws the glyphs from start to end, each character Bidi mirrored and
+    // each .notdef glyph in a span of its own.
     private func appendGlyphs(
             _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ start: Int, _ end: Int) {
         for k in start..<end {
-            if mirrored?[k] == true {
+            if inOwnSpan(codePoints, gids, mirrored, k) {
                 appendGlyphWithActualText(font, codePoints, gids, nil, mirrored, nil, k)
             } else {
                 Page.appendCodePointAsHex(gids[k], &self.buf)
@@ -728,13 +736,13 @@ public class Page {
         if mirrored?[k] == true {
             text.unicodeScalars.append(Unicode.Scalar(Bidi.mirrored(UInt32(codePoint))!)!)
         } else {
-            text.append(textOf(font, codePoint))
+            text.append(Page.textOf(font, codePoint))
         }
         if joiner != 0 {
             text.unicodeScalars.append(Unicode.Scalar(UInt32(joiner))!)
         }
         append("> Tj\n/Span <</ActualText <")
-        append(toUTF16Hex(text))
+        append(Page.toUTF16Hex(text))
         append(">>> BDC\n")
         if let offsets = offsets, offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
             append("<")
@@ -756,10 +764,13 @@ public class Page {
         append("EMC\n<")
     }
 
-    // Returns the text the glyph of the code point maps to: a glyph missing
-    // from the font is a space, and an Arabic letter form is its letter.
-    private func textOf(_ font: Font, _ codePoint: Int) -> String {
-        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+    // Returns the text the glyph of the code point maps to: a control
+    // character is a space, as it is drawn, and an Arabic letter form is its
+    // letter. A character the font does not have is itself, though it is
+    // drawn with .notdef, so that a copy of the text is the text that was
+    // written.
+    static func textOf(_ font: Font, _ codePoint: Int) -> String {
+        if Font.isControl(codePoint) {
             return " "
         }
         var text = ""
@@ -773,11 +784,34 @@ public class Page {
         return text
     }
 
-    private func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
-        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+    // Returns the glyph ID the character is drawn with: that of a space for a
+    // control character, which has no glyph to draw, and .notdef, glyph 0, for
+    // a character the font does not have, so that a reader sees a box where
+    // the character is missing and not a space, as other PDF writers draw it.
+    // The character map of the font is read from its first to its last
+    // character, so a character outside that range has no glyph.
+    static func glyphOf(_ font: Font, _ codePoint: Int) -> Int {
+        if Font.isControl(codePoint) {
             return font.unicodeToGID[0x0020]
         }
+        if codePoint < Int(font.firstChar) || codePoint > Int(font.lastChar) {
+            return 0
+        }
         return font.unicodeToGID[codePoint]
+    }
+
+    // Returns true if the glyph at k is .notdef, the glyph of a character the
+    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
+    // A control character is drawn as a space even when the font has none.
+    private func isNotdef(_ codePoints: [Int], _ gids: [Int], _ k: Int) -> Bool {
+        return gids[k] == 0 && !Font.isControl(codePoints[k])
+    }
+
+    // Returns true if the glyph at k is drawn in a marked content span of its
+    // own, with the text it stands for as its actual text: a character Bidi
+    // mirrored, and a character the font does not have, drawn with .notdef.
+    private func inOwnSpan(_ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ k: Int) -> Bool {
+        return mirrored?[k] == true || isNotdef(codePoints, gids, k)
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -881,15 +915,23 @@ public class Page {
     }
 
     // Returns true if the text has a character that is more than a glyph: an
-    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
-    // place. Marks start at U+0300, so most text is looked at once, with no
-    // more than two comparisons for each character.
+    // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
+    // place, or a character the font does not have, whose .notdef glyph is
+    // drawn with the character as its actual text. Marks start at U+0300, so
+    // most text is looked at once, with no more than two comparisons and the
+    // lookup of its glyph for each character.
     private func needsShaping(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
-        for scalar in scalars where scalar.value >= 0x0300 {
-            if Font.isJoinerOrRLM(scalar.value) {
-                return true
+        for scalar in scalars {
+            let codePoint = Int(scalar.value)
+            if codePoint >= 0x0300 {
+                if Font.isJoinerOrRLM(scalar.value) {
+                    return true
+                }
+                if (font.markAnchors != nil || font.markData != nil) && isMark(codePoint) {
+                    return true
+                }
             }
-            if (font.markAnchors != nil || font.markData != nil) && isMark(Int(scalar.value)) {
+            if codePoint != 0xFEFF && Page.glyphOf(font, codePoint) == 0 && !Font.isControl(codePoint) {
                 return true
             }
         }
@@ -992,10 +1034,10 @@ public class Page {
         let leadingSpace = isMoved(offsets, start, start + 1)
         var text = leadingSpace ? " " : ""
         for k in start..<end {
-            text.append(textOf(font, codePoints[k]))    // The text the glyphs map to
+            text.append(Page.textOf(font, codePoints[k]))    // The text the glyphs map to
         }
         append("> Tj\n/Span <</ActualText <")
-        append(toUTF16Hex(text))
+        append(Page.toUTF16Hex(text))
         append(">>> BDC\n")
         if leadingSpace {
             let space = font.unicodeToGID[0x0020]
@@ -2783,7 +2825,7 @@ public class Page {
         let hasLanguage = language != nil && !language!.isEmpty
         if hasLanguage {
             append("/Span <</Lang <")
-            append(toUTF16Hex(language!))
+            append(Page.toUTF16Hex(language!))
             append(">>> BDC\n")
         }
         append("BT\n")
@@ -2905,7 +2947,7 @@ public class Page {
 
     /// Returns the string as a PDF text string, in UTF-16BE with a byte order
     /// mark, written in hexadecimal.
-    private func toUTF16Hex(_ str: String) -> String {
+    static func toUTF16Hex(_ str: String) -> String {
         let digits = Array("0123456789ABCDEF")
         var hex = "FEFF"
         for unit in str.utf16 {

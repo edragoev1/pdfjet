@@ -542,10 +542,19 @@ public class Stamp implements Drawable {
 
             if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
 
-            int gid = (codePoint < font.firstChar || codePoint > font.lastChar)
-                ? font.unicodeToGID[0x0020]         // Use space fallback
-                : font.unicodeToGID[codePoint];
-            appendCodePointAsHex(gid);
+            // The glyphs Page draws. The .notdef glyph of a character the font
+            // does not have is drawn in a marked content span with the
+            // character as its actual text, as on a page.
+            int gid = Page.glyphOf(font, codePoint);
+            if (gid == 0 && !Font.isControl(codePoint)) {
+                append("> Tj\n/Span <</ActualText <");
+                append(Page.toUTF16Hex(Page.textOf(font, codePoint)));
+                append(">>> BDC\n<");
+                appendCodePointAsHex(gid);
+                append("> Tj\nEMC\n<");
+            } else {
+                appendCodePointAsHex(gid);
+            }
         }
     }
 

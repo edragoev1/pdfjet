@@ -175,6 +175,99 @@ public class FontTest {
     }
 
     [Fact]
+    public void ACoreFontDrawsDeleteAsASpace() {
+        // WinAnsi draws a bullet at 127, where the widths of the core fonts
+        // have a space: U+007F is a control, drawn as a space as the C1
+        // controls are.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Assert.Equal(font.StringWidth(10f, " "), font.StringWidth(10f, "\u007f"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a\u007fb\u0085c").SetLocation(10f, 20f).DrawOn(page);
+        Assert.Contains("<6120622063>", TestSupport.Content(page));
+    }
+
+    // IBM Plex Sans, read from its stream file, or null when the fonts
+    // directory is not here. Its space is 236 units wide and its .notdef 472,
+    // of 1000 units to the em; it has the characters from U+0020 to U+FFFD,
+    // and no Thai.
+    private static Font IBMPlexSans(PDF pdf) {
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))) {
+            return null;
+        }
+        return new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+    }
+
+    [Fact]
+    public void ACharacterTheFontDoesNotHaveIsDrawnWithNotdef() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = IBMPlexSans(pdf);
+        if (font == null) {
+            return;     // The fonts directory is not here.
+        }
+        // ก, U+0E01, is in the range of the font and not in the font, and 😀,
+        // U+1F600, is past its range: both are drawn with .notdef, as wide as
+        // it is. A control character is drawn as a space.
+        TestSupport.AssertNear(4.72f, font.StringWidth(10f, "ก"), 0.001f, "a character in the range");
+        TestSupport.AssertNear(4.72f, font.StringWidth(10f, "\U0001F600"), 0.001f, "a character past the range");
+        foreach (string c in new string[] {"\t", "\u007f", "\u0085"}) {
+            TestSupport.AssertNear(2.36f, font.StringWidth(10f, c), 0.001f, "U+" + ((int) c[0]).ToString("X4"));
+        }
+        // The width of the text that fits is that of the glyphs drawn.
+        Assert.Equal(2, font.SetSize(10f).GetFitChars("กก", 9.5f));
+        // The glyph of a missing character is .notdef, in a span whose actual
+        // text is the character, so that a copy of the text has it and not
+        // the U+FFFD the ToUnicode map gives .notdef. A control is the space
+        // glyph.
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "ก\t\U0001F600").SetLocation(10f, 20f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        string space = font.unicodeToGID[0x20].ToString("X4");
+        Assert.Contains("/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">", content);
+        Assert.Contains("/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n", content);
+        // The text a glyph maps to is the character, and a space for a control.
+        Assert.Equal("ก", Page.TextOf(font, 0x0E01));
+        Assert.Equal(" ", Page.TextOf(font, 0x0085));
+    }
+
+    [Fact]
+    public void AStampDrawsACharacterTheFontDoesNotHaveWithNotdef() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = IBMPlexSans(pdf);
+        if (font == null) {
+            return;     // The fonts directory is not here.
+        }
+        new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
+        stamp.DrawText(font, 10f, 5f, 20f, "aก\t");
+        stamp.Complete();
+        pdf.Complete();
+        string want = "<" + font.unicodeToGID['a'].ToString("X4") +
+                "> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" +
+                font.unicodeToGID[0x20].ToString("X4") + "> Tj\n";
+        Assert.Contains(want, TestSupport.Latin1(stream.ToArray()));
+    }
+
+    [Fact]
+    public void AControlCharacterStaysInTheFontOfItsText() {
+        // A control character is drawn as a space by the font, not by the
+        // fallback font: the fallback font would draw it as a space too.
+        PDF pdf = TestSupport.NewPDF();
+        Font latin = IBMPlexSans(pdf);
+        if (latin == null) {
+            return;     // The fonts directory is not here.
+        }
+        Font helvetica = TestSupport.Helvetica(pdf);
+        foreach (Font font in new Font[] {latin, helvetica}) {
+            foreach (int c in new int[] {'\t', 0x7F, 0x85}) {
+                Assert.True(font.HasGlyph(c), font.name + " has no glyph for U+" + c.ToString("X4"));
+            }
+        }
+        Assert.False(latin.HasGlyph(0x0E01) || latin.HasGlyph(0x1F600), "a character drawn with .notdef has a glyph");
+    }
+
+    [Fact]
     public void ASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         font.SetKernPairs(true);

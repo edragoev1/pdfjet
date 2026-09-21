@@ -26,6 +26,10 @@ internal class OTF {
     internal int firstChar;
     internal int lastChar;
     internal int capHeight;
+    internal bool hasCapHeight = false;
+    internal int indexToLocFormat;
+    internal FontTable loca;
+    internal FontTable glyf;
     internal long postVersion;
     internal long italicAngle;
     internal short underlinePosition;
@@ -98,6 +102,8 @@ internal class OTF {
             else if (table.name.Equals("CFF ")) { CFF_(table); }
             else if (table.name.Equals("GPOS")) { GPOS(table); }
             else if (table.name.Equals("cmap")) { cmapTable = table; }
+            else if (table.name.Equals("loca")) { loca = table; }
+            else if (table.name.Equals("glyf")) { glyf = table; }
             index = k;      // Restore the index
         }
 
@@ -106,6 +112,18 @@ internal class OTF {
             throw FontError("no character map");
         }
         Cmap(cmapTable);
+
+        // A font without the cap height of a version 2 OS/2 table has the top
+        // of its H, as the glyph is drawn, or else its ascent: the cap height
+        // goes into the font descriptor, where a reader fits text in a box
+        // with it.
+        if (!hasCapHeight) {
+            capHeight = ascent;
+            int top = GlyphTop(unicodeToGID['H']);
+            if (top != NO_VALUE) {
+                capHeight = top;
+            }
+        }
 
         // The sizes of the text are divided by the units per em, and the
         // width of every glyph past the advance widths is that of the last one.
@@ -137,6 +155,7 @@ internal class OTF {
         bBoxLLy = (short) ReadUInt16();
         bBoxURx = (short) ReadUInt16();
         bBoxURy = (short) ReadUInt16();
+        indexToLocFormat = Math.Max(TableUInt16(table, 50), 0);
     }
 
     private void Hhea(FontTable table) {
@@ -152,8 +171,44 @@ internal class OTF {
         index = table.offset + 64;
         firstChar = ReadUInt16();
         lastChar  = ReadUInt16();
-        index += 20;
-        capHeight = ReadUInt16();
+        // sCapHeight is in the table from its version 2 on. Where it would be
+        // in a version 0 or 1 table are the bytes after the table, often those
+        // of the next table.
+        int version = TableUInt16(table, 0);
+        if (version != NO_VALUE && version >= 2) {
+            int value = TableUInt16(table, 88);
+            if (value != NO_VALUE) {
+                capHeight = (short) value;
+                hasCapHeight = true;
+            }
+        }
+    }
+
+    // Returns the top of the bounding box of the glyph, the yMax of its header
+    // in the glyf table, at the offset the loca table gives it. It returns
+    // NO_VALUE for a font with CFF outlines, which has no glyf table, for
+    // glyph 0, and for a glyph with no outline, which has no header.
+    private int GlyphTop(int gid) {
+        if (gid == 0 || loca == null || glyf == null) {
+            return NO_VALUE;
+        }
+        long start;
+        long end;
+        if (indexToLocFormat == 0) {
+            // The short offsets are half the offsets.
+            start = 2L * TableUInt16(loca, 2*gid);
+            end = 2L * TableUInt16(loca, 2*gid + 2);
+        } else {
+            start = TableUInt32(loca, 4*gid);
+            end = TableUInt32(loca, 4*gid + 4);
+        }
+        // The header of a glyph is 10 bytes: the number of contours, then
+        // xMin, yMin, xMax and yMax.
+        if (start < 0 || end < 0 || end - start < 10 || start > int.MaxValue - 8) {
+            return NO_VALUE;
+        }
+        int yMax = TableUInt16(glyf, (int) start + 8);
+        return (yMax == NO_VALUE) ? NO_VALUE : (short) yMax;
     }
 
     private void Name(FontTable table) {
@@ -495,6 +550,31 @@ internal class OTF {
             return 0;
         }
         return (buf[offset] << 8) | buf[offset + 1];
+    }
+
+    // What TableUInt16 and TableUInt32 return for a value that is not there.
+    private const int NO_VALUE = int.MinValue;
+
+    // Returns the 16 bits at the offset in the table, or NO_VALUE when the
+    // table or the font ends before them: a table can be shorter than its
+    // version says, and the directory can point past the end of the font.
+    private int TableUInt16(FontTable table, int at) {
+        if (at < 0 || table.offset < 0 || table.offset > buf.Length || table.length < 0 ||
+                at > table.length - 2 || at > buf.Length - table.offset - 2) {
+            return NO_VALUE;
+        }
+        return GetUInt16(table.offset + at);
+    }
+
+    // Returns the 32 bits at the offset in the table, as TableUInt16 returns
+    // 16, and -1 when they are not there.
+    private long TableUInt32(FontTable table, int at) {
+        int high = TableUInt16(table, at);
+        int low = TableUInt16(table, at + 2);
+        if (high == NO_VALUE || low == NO_VALUE) {
+            return -1;
+        }
+        return ((long) high << 16) | (long) low;
     }
 
     private int GetInt16(int offset) {

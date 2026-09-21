@@ -60,6 +60,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   a row span makes uneven on purpose.
 
 ### Changed
+- A character an embedded font does not have is drawn with its `.notdef`
+  glyph, glyph 0, in all four ports, as other PDF writers draw it, so that a
+  reader sees a box where it is missing rather than a space. It was drawn as a
+  space when it was outside the range of characters of the font's OS/2 table,
+  and with `.notdef` only when it was inside it, where a copy of the text gave
+  U+FFFD. `StringWidth` and `GetFitChars` give it the width of `.notdef`, and
+  it is drawn in a marked content span with the character as its actual text,
+  so that a copy of the text has it and not the U+FFFD that the ToUnicode map
+  gives `.notdef`; a `Stamp` draws it so too. A control character, U+0000 to
+  U+001F and U+007F to U+009F, is drawn as a space, and stays in the font of
+  its text rather than going to the fallback font. A CJK font that is not
+  embedded is drawn as before: the reader's font draws it, and PDFjet does not
+  know which characters that font has.
 - The API reference of `Container` and `Stamp` says what each is good at, what
   it costs and when to use the other, in all four ports. A container takes
   anything drawable -- an image, a table, a chart, a barcode, an annotation --
@@ -162,6 +175,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- Two differences from fontTools and Adobe's AFM files that
+  `tests/references/fonts/check-fonts.py` found, in all four ports:
+  - The cap height of a font whose OS/2 table is version 0 or 1, which has no
+    `sCapHeight`, was read from the bytes after the table, often those of the
+    next table: DejaVu Sans got 0 and Bitstream Vera Sans 1. It is now the top
+    of the glyph of H in the `glyf` table, 1493 for both, and the ascent of a
+    font with CFF outlines or no H. A version 2 table that ends before
+    `sCapHeight` has none either.
+  - U+007F was drawn in a core font with code 127, which WinAnsiEncoding
+    draws as a bullet, 350 units wide in Helvetica and Times, where the widths
+    of PDFjet gave it a space's. It is a space now, as U+0080 to U+009F are.
 - The reader, `PDF.read`, against the test PDFs of pdf.js and veraPDF, in all
   four ports. `tests/corpus/check-corpus.py` reads, merges and splits each of
   their 3,888 files and compares the pages with MuPDF's; it found:

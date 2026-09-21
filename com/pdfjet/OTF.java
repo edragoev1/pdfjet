@@ -27,6 +27,10 @@ class OTF {
     int firstChar;
     int lastChar;
     short capHeight;
+    boolean hasCapHeight = false;
+    int indexToLocFormat;
+    FontTable loca;
+    FontTable glyf;
     long postVersion;
     long italicAngle;
     short underlinePosition;
@@ -105,6 +109,8 @@ class OTF {
             else if (table.name.equals("CFF ")) { CFF_(table); }
             else if (table.name.equals("GPOS")) { GPOS(table); }
             else if (table.name.equals("cmap")) { cmapTable = table; }
+            else if (table.name.equals("loca")) { loca = table; }
+            else if (table.name.equals("glyf")) { glyf = table; }
             index = k;      // Restore the index
         }
 
@@ -113,6 +119,18 @@ class OTF {
             throw fontError("no character map");
         }
         cmap(cmapTable);
+
+        // A font without the cap height of a version 2 OS/2 table has the top
+        // of its H, as the glyph is drawn, or else its ascent: the cap height
+        // goes into the font descriptor, where a reader fits text in a box
+        // with it.
+        if (!hasCapHeight) {
+            capHeight = ascent;
+            int top = glyphTop(unicodeToGID['H']);
+            if (top != NO_VALUE) {
+                capHeight = (short) top;
+            }
+        }
 
         // The sizes of the text are divided by the units per em, and the
         // width of every glyph past the advance widths is that of the last one.
@@ -149,6 +167,7 @@ class OTF {
         bBoxLLy = readInt16();
         bBoxURx = readInt16();
         bBoxURy = readInt16();
+        indexToLocFormat = Math.max(tableUInt16(table, 50), 0);
     }
 
     private void hhea(FontTable table) throws IOException {
@@ -164,8 +183,44 @@ class OTF {
         index = table.offset + 64;
         firstChar = readUInt16();
         lastChar  = readUInt16();
-        index += 20;
-        capHeight = readInt16();
+        // sCapHeight is in the table from its version 2 on. Where it would be
+        // in a version 0 or 1 table are the bytes after the table, often those
+        // of the next table.
+        int version = tableUInt16(table, 0);
+        if (version != NO_VALUE && version >= 2) {
+            int value = tableUInt16(table, 88);
+            if (value != NO_VALUE) {
+                capHeight = (short) value;
+                hasCapHeight = true;
+            }
+        }
+    }
+
+    // Returns the top of the bounding box of the glyph, the yMax of its header
+    // in the glyf table, at the offset the loca table gives it. It returns
+    // NO_VALUE for a font with CFF outlines, which has no glyf table, for
+    // glyph 0, and for a glyph with no outline, which has no header.
+    private int glyphTop(int gid) {
+        if (gid == 0 || loca == null || glyf == null) {
+            return NO_VALUE;
+        }
+        long start;
+        long end;
+        if (indexToLocFormat == 0) {
+            // The short offsets are half the offsets.
+            start = 2L * tableUInt16(loca, 2*gid);
+            end = 2L * tableUInt16(loca, 2*gid + 2);
+        } else {
+            start = tableUInt32(loca, 4*gid);
+            end = tableUInt32(loca, 4*gid + 4);
+        }
+        // The header of a glyph is 10 bytes: the number of contours, then
+        // xMin, yMin, xMax and yMax.
+        if (start < 0 || end < 0 || end - start < 10 || start > Integer.MAX_VALUE - 8) {
+            return NO_VALUE;
+        }
+        int yMax = tableUInt16(glyf, (int) start + 8);
+        return (yMax == NO_VALUE) ? NO_VALUE : (short) yMax;
     }
 
     private void name(FontTable table) throws IOException {
@@ -507,6 +562,31 @@ class OTF {
             return 0;
         }
         return ((buf[offset] & 0xFF) << 8) | (buf[offset + 1] & 0xFF);
+    }
+
+    // What tableUInt16 and tableUInt32 return for a value that is not there.
+    private static final int NO_VALUE = Integer.MIN_VALUE;
+
+    // Returns the 16 bits at the offset in the table, or NO_VALUE when the
+    // table or the font ends before them: a table can be shorter than its
+    // version says, and the directory can point past the end of the font.
+    private int tableUInt16(FontTable table, int at) {
+        if (at < 0 || table.offset < 0 || table.offset > buf.length || table.length < 0 ||
+                at > table.length - 2 || at > buf.length - table.offset - 2) {
+            return NO_VALUE;
+        }
+        return getUInt16(table.offset + at);
+    }
+
+    // Returns the 32 bits at the offset in the table, as tableUInt16 returns
+    // 16, and -1 when they are not there.
+    private long tableUInt32(FontTable table, int at) {
+        int high = tableUInt16(table, at);
+        int low = tableUInt16(table, at + 2);
+        if (high == NO_VALUE || low == NO_VALUE) {
+            return -1;
+        }
+        return ((long) high << 16) | low;
     }
 
     private int getInt16(int offset) {

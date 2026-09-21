@@ -686,6 +686,11 @@ public class Page {
             return;
         }
         if (font.isCJK) {
+            // A CJK font that is not embedded is drawn by the characters
+            // themselves, through a UCS-2 CMap, with the glyphs of the
+            // reader's font. PDFjet does not know which characters that font
+            // has, and so has no .notdef to draw: a character past its range
+            // is a space.
             int i = 0;
             while (i < str.Length) {
                 int codePoint = char.ConvertToUtf32(str, i);
@@ -721,6 +726,7 @@ public class Page {
             bool[] runEdge = null;      // An LRM before the glyph at the index
             int n = 0;
             bool hasMarks = false;
+            bool hasNotdef = false;
             bool afterRLM = false;
             int i = 0;
             while (i < str.Length) {
@@ -755,6 +761,7 @@ public class Page {
                     codePoints[n] = codePoint;
                     gids[n] = GlyphOf(font, codePoint);
                     hasMarks |= IsMark(codePoint);
+                    hasNotdef |= IsNotdef(codePoints, gids, n);
                     n++;
                 }
                 i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
@@ -765,7 +772,7 @@ public class Page {
             }
             if (hasMarks && font.markAnchors != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
-            } else if (mirrored == null && joiners == null && runEdge == null) {
+            } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int k = 0; k < n; k++) {
                     AppendCodePointAsHex(gids[k]);
                 }
@@ -839,15 +846,16 @@ public class Page {
 
     // Draws the glyphs of a word, or of the part of a word before a joiner,
     // in a marked content span with the text of the word when it has moved
-    // marks, with the mirrored characters at its ends in spans of their own.
+    // marks, with the mirrored characters and the .notdef glyphs at its ends
+    // in spans of their own.
     private void AppendWord(
             Font font, int[] codePoints, int[] gids, bool[] mirrored, int[] offsets, int i, int end) {
         int wordStart = i;
         int wordEnd = end;
-        while (mirrored != null && wordStart < wordEnd && mirrored[wordStart]) {
+        while (wordStart < wordEnd && InOwnSpan(codePoints, gids, mirrored, wordStart)) {
             wordStart++;
         }
-        while (mirrored != null && wordEnd > wordStart && mirrored[wordEnd - 1]) {
+        while (wordEnd > wordStart && InOwnSpan(codePoints, gids, mirrored, wordEnd - 1)) {
             wordEnd--;
         }
         if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {
@@ -859,10 +867,12 @@ public class Page {
         }
     }
 
+    // Draws the glyphs from start to end, each character Bidi mirrored and
+    // each .notdef glyph in a span of its own.
     private void AppendGlyphs(
             Font font, int[] codePoints, int[] gids, bool[] mirrored, int start, int end) {
         for (int k = start; k < end; k++) {
-            if (mirrored != null && mirrored[k]) {
+            if (InOwnSpan(codePoints, gids, mirrored, k)) {
                 AppendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 AppendCodePointAsHex(gids[k]);
@@ -915,11 +925,14 @@ public class Page {
         Append("EMC\n<");
     }
 
-    // Returns the text the glyph of the code point maps to: a glyph missing
-    // from the font is a space, and an Arabic letter form is its letter.
-    private static String TextOf(Font font, int codePoint) {
+    // Returns the text the glyph of the code point maps to: a control
+    // character is a space, as it is drawn, and an Arabic letter form is its
+    // letter. A character the font does not have is itself, though it is
+    // drawn with .notdef, so that a copy of the text is the text that was
+    // written.
+    internal static String TextOf(Font font, int codePoint) {
         String letters = Bidi.LettersOf(codePoint);
-        if (codePoint < font.firstChar || codePoint > font.lastChar) {
+        if (Font.IsControl(codePoint)) {
             return " ";
         } else if (letters != null) {
             return letters;
@@ -927,11 +940,34 @@ public class Page {
         return char.ConvertFromUtf32(codePoint);
     }
 
-    private static int GlyphOf(Font font, int codePoint) {
+    // Returns the glyph ID the character is drawn with: that of a space for a
+    // control character, which has no glyph to draw, and .notdef, glyph 0, for
+    // a character the font does not have, so that a reader sees a box where
+    // the character is missing and not a space, as other PDF writers draw it.
+    // The character map of the font is read from its first to its last
+    // character, so a character outside that range has no glyph.
+    internal static int GlyphOf(Font font, int codePoint) {
+        if (Font.IsControl(codePoint)) {
+            return font.unicodeToGID[0x0020];
+        }
         if (codePoint < font.firstChar || codePoint > font.lastChar) {
-            return font.unicodeToGID[0x0020];               // Space fallback
+            return 0;
         }
         return font.unicodeToGID[codePoint];
+    }
+
+    // Returns true if the glyph at k is .notdef, the glyph of a character the
+    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
+    // A control character is drawn as a space even when the font has none.
+    private static bool IsNotdef(int[] codePoints, int[] gids, int k) {
+        return gids[k] == 0 && !Font.IsControl(codePoints[k]);
+    }
+
+    // Returns true if the glyph at k is drawn in a marked content span of its
+    // own, with the text it stands for as its actual text: a character Bidi
+    // mirrored, and a character the font does not have, drawn with .notdef.
+    private static bool InOwnSpan(int[] codePoints, int[] gids, bool[] mirrored, int k) {
+        return (mirrored != null && mirrored[k]) || IsNotdef(codePoints, gids, k);
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -1043,11 +1079,16 @@ public class Page {
     }
 
     // Returns true if the text has a character that is more than a glyph: an
-    // RLM, LRM, ZWNJ or ZWJ, or a mark that the GPOS table of the font puts in
-    // place. Vectorized scans settle text before U+0300, where there is
-    // neither, and Greek and Cyrillic text; from there each character is one
-    // bit of a table, so that CJK text costs a load and a test for each.
+    // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
+    // place, or a character the font does not have, whose .notdef glyph is
+    // drawn with the character as its actual text. Vectorized scans settle
+    // text before U+0300, where there are no joiners or marks, and Greek and
+    // Cyrillic text; from there each character is one bit of a table, so that
+    // CJK text costs a load and a test for each.
     private static bool NeedsShaping(Font font, string str) {
+        if (HasNotdef(font, str)) {
+            return true;
+        }
         ReadOnlySpan<char> span = str.AsSpan();
         if (font.markAnchors == null && font.markData == null) {
             return span.IndexOfAnyInRange('\u200C', '\u200F') >= 0;
@@ -1076,6 +1117,19 @@ public class Page {
             // is looked up; either half alone is a surrogate, never a mark.
             if (i + 1 < str.Length && char.IsLowSurrogate(str[i + 1]) &&
                     IsMark(char.ConvertToUtf32(c, str[i + 1]))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Returns true if the text has a character the font does not have: the
+    // glyph of each character is looked up. A character outside the Basic
+    // Multilingual Plane, a pair of surrogates, is past the last character of
+    // every font, whose range is 16 bits.
+    private static bool HasNotdef(Font font, string str) {
+        foreach (char c in str) {
+            if (c != 0xFEFF && GlyphOf(font, c) == 0 && !Font.IsControl(c)) {
                 return true;
             }
         }
@@ -2858,7 +2912,7 @@ public class Page {
 
     // Returns the string as a PDF text string, in UTF-16BE with a byte order
     // mark, written in hexadecimal.
-    private static String ToUTF16Hex(String str) {
+    internal static String ToUTF16Hex(String str) {
         StringBuilder sb = new StringBuilder("FEFF");
         foreach (char ch in str) {
             sb.Append(((int) ch).ToString("X4"));

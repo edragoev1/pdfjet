@@ -43,6 +43,10 @@ type openTypeFont struct {
 	firstChar          rune
 	lastChar           rune
 	capHeight          int16
+	hasCapHeight       bool
+	indexToLocFormat   int
+	loca               *fontTable
+	glyf               *fontTable
 	postVersion        uint32
 	italicAngle        uint32
 	underlinePosition  int16
@@ -125,6 +129,10 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 			getGposTable(otf, table)
 		case "cmap":
 			cmapTable = table
+		case "loca":
+			otf.loca = table
+		case "glyf":
+			otf.glyf = table
 		}
 		otf.index = k // Restore the index
 	}
@@ -134,6 +142,16 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 		fontError("no character map")
 	}
 	getCmapTable(otf, cmapTable)
+
+	// A font without the cap height of a version 2 OS/2 table has the top of
+	// its H, as the glyph is drawn, or else its ascent: the cap height goes
+	// into the font descriptor, where a reader fits text in a box with it.
+	if !otf.hasCapHeight {
+		otf.capHeight = otf.ascent
+		if top, ok := otf.glyphTop(otf.unicodeToGID['H']); ok {
+			otf.capHeight = top
+		}
+	}
 
 	// The sizes of the text are divided by the units per em, and the width of
 	// every glyph past the advance widths is that of the last one.
@@ -177,6 +195,7 @@ func getHeadTable(otf *openTypeFont, table *fontTable) {
 	otf.bBoxLLy = readInt16(otf)
 	otf.bBoxURx = readInt16(otf)
 	otf.bBoxURy = readInt16(otf)
+	otf.indexToLocFormat, _ = otf.tableUint16(table, 50)
 }
 
 func getHheaTable(otf *openTypeFont, table *fontTable) {
@@ -192,8 +211,43 @@ func getOs2Table(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 64
 	otf.firstChar = rune(readUint16(otf))
 	otf.lastChar = rune(readUint16(otf))
-	otf.index += 20
-	otf.capHeight = int16(readUint16(otf))
+	// sCapHeight is in the table from its version 2 on. Where it would be in
+	// a version 0 or 1 table are the bytes after the table, often those of
+	// the next table.
+	if version, ok := otf.tableUint16(table, 0); ok && version >= 2 {
+		if capHeight, ok := otf.tableUint16(table, 88); ok {
+			otf.capHeight = int16(capHeight)
+			otf.hasCapHeight = true
+		}
+	}
+}
+
+// glyphTop returns the top of the bounding box of the glyph, the yMax of its
+// header in the glyf table, at the offset the loca table gives it. It returns
+// false for a font with CFF outlines, which has no glyf table, for glyph 0,
+// and for a glyph with no outline, which has no header.
+func (otf *openTypeFont) glyphTop(gid int) (int16, bool) {
+	if gid == 0 || otf.loca == nil || otf.glyf == nil {
+		return 0, false
+	}
+	var start, end int
+	var ok1, ok2 bool
+	if otf.indexToLocFormat == 0 {
+		// The short offsets are half the offsets.
+		start, ok1 = otf.tableUint16(otf.loca, 2*gid)
+		end, ok2 = otf.tableUint16(otf.loca, 2*gid+2)
+		start, end = 2*start, 2*end
+	} else {
+		start, ok1 = otf.tableUint32(otf.loca, 4*gid)
+		end, ok2 = otf.tableUint32(otf.loca, 4*gid+4)
+	}
+	// The header of a glyph is 10 bytes: the number of contours, then xMin,
+	// yMin, xMax and yMax.
+	if !ok1 || !ok2 || end-start < 10 {
+		return 0, false
+	}
+	yMax, ok := otf.tableUint16(otf.glyf, start+8)
+	return int16(yMax), ok
 }
 
 func getNameTable(otf *openTypeFont, table *fontTable) {
@@ -544,6 +598,25 @@ func (otf *openTypeFont) uint16At(offset int) int {
 		return 0
 	}
 	return int(otf.buf[offset])<<8 | int(otf.buf[offset+1])
+}
+
+// tableUint16 returns the 16 bits at the offset in the table, and false when
+// the table or the font ends before them: a table can be shorter than its
+// version says, and the directory can point past the end of the font.
+func (otf *openTypeFont) tableUint16(table *fontTable, at int) (int, bool) {
+	if at < 0 || table.offset < 0 || table.offset > len(otf.buf) || table.length < 0 ||
+		at > table.length-2 || at > len(otf.buf)-table.offset-2 {
+		return 0, false
+	}
+	return otf.uint16At(table.offset + at), true
+}
+
+// tableUint32 returns the 32 bits at the offset in the table, as tableUint16
+// returns 16.
+func (otf *openTypeFont) tableUint32(table *fontTable, at int) (int, bool) {
+	high, ok1 := otf.tableUint16(table, at)
+	low, ok2 := otf.tableUint16(table, at+2)
+	return high<<16 | low, ok1 && ok2
 }
 
 func (otf *openTypeFont) int16At(offset int) int {

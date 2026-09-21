@@ -17,9 +17,12 @@ from. The check fails on a font when the port:
 - reads a different PostScript name (name ID 6, Windows before Macintosh),
   units per em or bounding box (head), ascent, descent or line gap (hhea,
   which PDFjet uses rather than the typographic or Windows metrics of OS/2),
-  cap height (sCapHeight of OS/2, which a version 0 or 1 table does not
-  have), underline position or thickness (post), first or last character
-  (OS/2), or kind of outlines (a CFF table or not);
+  cap height, underline position or thickness (post), first or last character
+  (OS/2), or kind of outlines (a CFF table or not). The cap height is
+  sCapHeight of OS/2 when the table is version 2 or later; a version 0 or 1
+  table does not have it, and then it is the top, yMax, of the glyph of H in
+  the glyf table when the font has TrueType outlines and an H, and else the
+  ascent of hhea;
 - reads a different number of advance widths (numberOfHMetrics), or a
   different width for any of them (hmtx);
 - maps any character to a different glyph than the Windows Unicode BMP
@@ -28,9 +31,10 @@ from. The check fails on a font when the port:
 - leaves out a character of the BMP that fontTools' best character map has,
   because it is outside that range or only in another subtable;
 - gives StringWidth, for any character of the BMP, another width than the
-  font's: that of its glyph, of the space for a character outside the range,
-  of .notdef for one in the range the font does not have, and none for the
-  ZWNJ, ZWJ, LRM, RLM and BOM;
+  font's: that of its glyph; that of .notdef, which PDFjet draws, for a
+  character the font does not have, in the range or outside it; that of the
+  space for a control character, U+0000 to U+001F and U+007F to U+009F; and
+  none for the ZWNJ, ZWJ, LRM, RLM and BOM;
 - reads a mark of a MarkToBase or MarkToLigature subtable of GPOS with a
   different class or anchor, a base or ligature with different anchors (the
   anchors of the first letter of a ligature), or a mark on a mark with a
@@ -40,9 +44,10 @@ A core font fails when the port reads a different name, bounding box or
 underline from its AFM file; an ascent or descent other than the top and the
 bottom of that bounding box, which PDFjet uses in place of the AFM's Ascender
 and Descender; draws a character with another code than WinAnsiEncoding
-gives it (Symbol and ZapfDingbats: the code of the character itself); gives
-it another width than the AFM gives the glyph WinAnsiEncoding has at that
-code; or kerns a pair of characters by another amount than the AFM's KPX
+gives it (Symbol and ZapfDingbats: the code of the character itself), but
+for U+007F, a control that PDFjet draws as a space where WinAnsiEncoding has
+a bullet; gives it another width than the AFM gives the glyph
+WinAnsiEncoding has at that code; or kerns a pair of characters by another amount than the AFM's KPX
 lines, or kerns a pair they do not have. A KPX pair of a glyph WinAnsi does
 not have, like Lcaron, cannot be drawn and is counted, not failed, and so is
 a code of Symbol or ZapfDingbats that has no glyph, as the AFM gives it no
@@ -79,6 +84,8 @@ FONTTOOLS = '4.65.0'
 TOLERANCE = 0.01
 # The characters StringWidth gives no width: they are not drawn.
 NOT_DRAWN = {0x200C, 0x200D, 0x200E, 0x200F, 0xFEFF}
+# The control characters, which PDFjet draws as a space.
+CONTROLS = set(range(0x20)) | set(range(0x7F, 0xA0))
 CORE_FONTS = ['Courier', 'Courier-Bold', 'Courier-BoldOblique', 'Courier-Oblique',
               'Helvetica', 'Helvetica-Bold', 'Helvetica-BoldOblique', 'Helvetica-Oblique',
               'Symbol', 'Times-Bold', 'Times-BoldItalic', 'Times-Italic', 'Times-Roman',
@@ -201,6 +208,21 @@ def has_kerning(font):
     return False
 
 
+def cap_height(font):
+    """sCapHeight of OS/2, else the top of the H of glyf, else the ascent."""
+    os2 = font['OS/2']
+    if os2.version >= 2:
+        return os2.sCapHeight
+    # The H PDFjet reads: that of the (3, 1) subtable, in the range of OS/2.
+    subtable = windows_bmp_cmap(font)
+    h = subtable.cmap.get(0x48) if subtable else None
+    if 'glyf' in font and h is not None and os2.usFirstCharIndex <= 0x48 <= os2.usLastCharIndex:
+        glyph = font['glyf'][h]
+        if font.getGlyphID(h) != 0 and hasattr(glyph, 'yMax'):  # An empty glyph has no box.
+            return glyph.yMax
+    return font['hhea'].ascent
+
+
 def reference_of(path):
     """What fontTools reads of a font, in the terms of the harness."""
     font = TTFont(path, lazy=True)
@@ -216,14 +238,13 @@ def reference_of(path):
         'ascent': hhea.ascent,
         'descent': hhea.descent,
         'lineGap': hhea.lineGap,
-        'capHeight': os2.sCapHeight if os2.version >= 2 else None,
+        'capHeight': cap_height(font),
         'underlinePosition': post.underlinePosition,
         'underlineThickness': post.underlineThickness,
         'firstChar': first,
         'lastChar': last,
         'cff': 'CFF ' in font,
         'widths': widths,
-        'os2Version': os2.version,
     }
     subtable = windows_bmp_cmap(font)
     ref['cmapFormat'] = subtable.format if subtable else None
@@ -248,7 +269,6 @@ def reference_of(path):
 def expected_advances(ref):
     """The width StringWidth should give each character of the BMP."""
     widths, cmap = ref['widths'], ref['cmap']
-    first, last = ref['firstChar'], ref['lastChar']
     advances = {}
     for c in range(0x10000):
         if 0xD800 <= c <= 0xDFFF:
@@ -256,7 +276,10 @@ def expected_advances(ref):
         if c in NOT_DRAWN:
             advances[c] = 0
             continue
-        gid = cmap.get(c, 0) if first <= c <= last else cmap.get(0x20, 0)
+        # A character the font does not have, one outside the range from the
+        # first to the last among them, which the cmap leaves out, is drawn
+        # with .notdef, glyph 0.
+        gid = cmap.get(0x20, 0) if c in CONTROLS else cmap.get(c, 0)
         advances[c] = widths[min(gid, len(widths) - 1)]
     return advances
 
@@ -274,10 +297,7 @@ def compare_font(port, ref):
                 'underlineThickness', 'firstChar', 'lastChar', 'cff']:
         if port[key] != ref[key]:
             problems.append(f'{key}: {port[key]}, fontTools {ref[key]}')
-    if ref['capHeight'] is None:
-        problems.append(f'capHeight: {port["capHeight"]}, but the version {ref["os2Version"]} '
-                        f'OS/2 table has no sCapHeight')
-    elif port['capHeight'] != ref['capHeight']:
+    if port['capHeight'] != ref['capHeight']:
         problems.append(f'capHeight: {port["capHeight"]}, fontTools {ref["capHeight"]}')
 
     if len(port['widths']) != len(ref['widths']):
@@ -396,6 +416,9 @@ def check_core_font(args):
                 char_of[c] = ord(bytes([c]).decode('cp1252'))
             except UnicodeDecodeError:
                 pass  # 129, 141, 143, 144 and 157 have no character.
+        # U+007F, a control, is drawn as a space: 127 draws a bullet, which
+        # the widths of the core fonts do not have.
+        del char_of[127]
     port_chars = {int(c): u for c, u in port['coreChars'].items()}
     if port_chars != char_of:
         wrong = sorted(c for c in set(port_chars) | set(char_of) if port_chars.get(c) != char_of.get(c))

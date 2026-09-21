@@ -169,4 +169,47 @@ import Testing
         let lookup = lookupList + uint16(data, lookupList + 2)
         try draws(with(with(data, lookupList, 0xFFFF), lookup + 4, 0xFFFF))
     }
+
+    // The cap height PDFjet reads of the font.
+    private func capHeight(_ font: [UInt8]) throws -> Int {
+        return Int(try OTF(InputStream(data: Data(font))).capHeight!)
+    }
+
+    // The font with the length of the table of the name in its directory changed.
+    private func length(_ font: [UInt8], _ name: String, _ length: Int) -> [UInt8] {
+        let entry = entry(font, name)
+        return with(with(font, entry + 12, length >> 16), entry + 14, length & 0xFFFF)
+    }
+
+    @Test func theCapHeightIsReadOnlyFromAnOS2TableThatHasIt() throws {
+        // The cap height of both fonts, sCapHeight in OS/2 and the top of the
+        // H, is 714, so sCapHeight is changed to 999 to tell the two apart.
+        // Noto Sans Thai has the short offsets of loca, and Noto Sans the long
+        // ones.
+        for path in [thai, "fonts/NotoSans/NotoSans-Regular.ttf"] {
+            var data = font(path)
+            let os2 = table(data, "OS/2")
+            data = with(data, os2 + 88, 999)
+            #expect(try capHeight(data) == 999, "\(path), version 4")
+            // A version 1 table ends before sCapHeight: the 999 is not its own.
+            #expect(try capHeight(with(data, os2, 1)) == 714, "\(path), version 1")
+            // Nor is it of a version 2 table that ends before it.
+            #expect(try capHeight(length(data, "OS/2", 88)) == 714, "\(path), a table of 88 bytes")
+        }
+    }
+
+    @Test func aFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() throws {
+        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
+        // of the H in; its ascent is 1025. Noto Sans Thai without its loca
+        // table has no offset for its H; its ascent is 1061.
+        let otf = font(plex)
+        #expect(try capHeight(with(otf, table(otf, "OS/2"), 1)) == 1025, "CFF outlines")
+        var ttf = font(thai)
+        ttf = with(ttf, table(ttf, "OS/2"), 1)
+        #expect(try capHeight(without(ttf, "loca")) == 1061, "no loca table")
+        // A loca table that ends before the offsets of the H, and a glyf table
+        // that ends before the header of the H.
+        #expect(try capHeight(length(ttf, "loca", 4)) == 1061, "a loca table of 4 bytes")
+        #expect(try capHeight(length(ttf, "glyf", 4)) == 1061, "a glyf table of 4 bytes")
+    }
 }

@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -172,6 +173,97 @@ func TestFontACoreFontDrawsTheWinAnsiCharactersFrom128To159(t *testing.T) {
 	NewTextLine(font, "Don\u2019t \u20ac5 \u2014 \u201cHi\u201d").SetLocation(10, 20).DrawOn(page)
 	if content := strings.ToLower(testContent(page)); !strings.Contains(content, "<446f6e927420803520972093486994>") {
 		t.Errorf("the text is not in WinAnsi: %q", content)
+	}
+}
+
+func TestFontACoreFontDrawsDeleteAsASpace(t *testing.T) {
+	// WinAnsi draws a bullet at 127, where the widths of the core fonts have
+	// a space: U+007F is a control, drawn as a space as the C1 controls are.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	testNear(t, "the width of U+007F", font.StringWidth(10, " "), font.StringWidth(10, "\u007f"), 0)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "a\u007fb\u0085c").SetLocation(10, 20).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "<6120622063>") {
+		t.Errorf("U+007F and U+0085 are not spaces: %q", content)
+	}
+}
+
+// testIBMPlexSans returns IBM Plex Sans, read from its stream file. Its space
+// is 236 units wide and its .notdef 472, of 1000 units to the em; it has the
+// characters from U+0020 to U+FFFD, and no Thai.
+func testIBMPlexSans(t *testing.T, pdf *PDF) *Font {
+	t.Helper()
+	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	if err != nil {
+		t.Skip("the fonts directory is not here")
+	}
+	defer file.Close()
+	return NewFont(pdf, file)
+}
+
+func TestFontACharacterTheFontDoesNotHaveIsDrawnWithNotdef(t *testing.T) {
+	pdf := testNewPDF()
+	font := testIBMPlexSans(t, pdf)
+	// ก, U+0E01, is in the range of the font and not in the font, and 😀,
+	// U+1F600, is past its range: both are drawn with .notdef, as wide as
+	// it is. A control character is drawn as a space.
+	testNear(t, "a character in the range", 4.72, font.StringWidth(10, "ก"), 0.001)
+	testNear(t, "a character past the range", 4.72, font.StringWidth(10, "\U0001F600"), 0.001)
+	for _, c := range []string{"\t", "\u007f", "\u0085"} {
+		testNear(t, fmt.Sprintf("the control %U", []rune(c)[0]), 2.36, font.StringWidth(10, c), 0.001)
+	}
+	// The width of the text that fits is that of the glyphs drawn.
+	if got := font.SetSize(10).GetFitChars("กก", 9.5); got != 2 {
+		t.Errorf("%d characters fit in 9.5 points", got)
+	}
+	// The glyph of a missing character is .notdef, in a span whose actual
+	// text is the character, so that a copy of the text has it and not the
+	// U+FFFD the ToUnicode map gives .notdef. A control is the space glyph.
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "ก\t\U0001F600").SetLocation(10, 20).DrawOn(page)
+	content := testContent(page)
+	space := fmt.Sprintf("%04X", font.unicodeToGID[0x20])
+	for _, want := range []string{
+		"/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">",
+		"/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n",
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("%q is not in %q", want, content)
+		}
+	}
+	// The text a glyph maps to is the character, and a space for a control.
+	testWant(t, "ก", textOf(font, 0x0E01))
+	testWant(t, " ", textOf(font, 0x0085))
+}
+
+func TestFontAStampDrawsACharacterTheFontDoesNotHaveWithNotdef(t *testing.T) {
+	pdf := testNewPDF()
+	font := testIBMPlexSans(t, pdf)
+	stamp := NewStamp(pdf).SetSize(100, 50)
+	stamp.DrawText(font, 10, 5, 20, "aก\t")
+	want := fmt.Sprintf("<%04X> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<%04X> Tj\n",
+		font.unicodeToGID['a'], font.unicodeToGID[0x20])
+	if content := stamp.buf.String(); !strings.Contains(content, want) {
+		t.Errorf("%q is not in %q", want, content)
+	}
+}
+
+func TestFontAControlCharacterStaysInTheFontOfItsText(t *testing.T) {
+	// A control character is drawn as a space by the font, not by the
+	// fallback font: the fallback font would draw it as a space too.
+	pdf := testNewPDF()
+	latin := testIBMPlexSans(t, pdf)
+	helvetica := testHelvetica(pdf)
+	for _, font := range []*Font{latin, helvetica} {
+		for _, c := range []rune{'\t', 0x7F, 0x85} {
+			if !font.hasGlyph(c) {
+				t.Errorf("%s has no glyph for %U", font.name, c)
+			}
+		}
+	}
+	if latin.hasGlyph(0x0E01) || latin.hasGlyph(0x1F600) {
+		t.Error("a character drawn with .notdef has a glyph")
 	}
 }
 

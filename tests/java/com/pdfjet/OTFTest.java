@@ -178,4 +178,49 @@ class OTFTest {
         int lookup = lookupList + uint16(font, lookupList + 2);
         draws(with(with(font, lookupList, 0xFFFF), lookup + 4, 0xFFFF));
     }
+
+    // The cap height PDFjet reads of the font.
+    private static int capHeight(byte[] font) throws Exception {
+        return new OTF(new ByteArrayInputStream(font)).capHeight;
+    }
+
+    // The font with the length of the table of the name in its directory changed.
+    private static byte[] length(byte[] font, String name, int length) {
+        int entry = entry(font, name);
+        return with(with(font, entry + 12, length >>> 16), entry + 14, length & 0xFFFF);
+    }
+
+    @Test
+    void theCapHeightIsReadOnlyFromAnOS2TableThatHasIt() throws Exception {
+        // The cap height of both fonts, sCapHeight in OS/2 and the top of the
+        // H, is 714, so sCapHeight is changed to 999 to tell the two apart.
+        // Noto Sans Thai has the short offsets of loca, and Noto Sans the long
+        // ones.
+        for (String path : new String[] {THAI, "fonts/NotoSans/NotoSans-Regular.ttf"}) {
+            byte[] font = font(path);
+            int os2 = table(font, "OS/2");
+            font = with(font, os2 + 88, 999);
+            assertEquals(999, capHeight(font), path + ", version 4");
+            // A version 1 table ends before sCapHeight: the 999 is not its own.
+            assertEquals(714, capHeight(with(font, os2, 1)), path + ", version 1");
+            // Nor is it of a version 2 table that ends before it.
+            assertEquals(714, capHeight(length(font, "OS/2", 88)), path + ", a table of 88 bytes");
+        }
+    }
+
+    @Test
+    void aFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent() throws Exception {
+        // IBM Plex Sans has CFF outlines, and so no glyf table to find the top
+        // of the H in; its ascent is 1025. Noto Sans Thai without its loca
+        // table has no offset for its H; its ascent is 1061.
+        byte[] otf = font(PLEX);
+        assertEquals(1025, capHeight(with(otf, table(otf, "OS/2"), 1)), "CFF outlines");
+        byte[] ttf = font(THAI);
+        ttf = with(ttf, table(ttf, "OS/2"), 1);
+        assertEquals(1061, capHeight(without(ttf, "loca")), "no loca table");
+        // A loca table that ends before the offsets of the H, and a glyf table
+        // that ends before the header of the H.
+        assertEquals(1061, capHeight(length(ttf, "loca", 4)), "a loca table of 4 bytes");
+        assertEquals(1061, capHeight(length(ttf, "glyf", 4)), "a glyf table of 4 bytes");
+    }
 }

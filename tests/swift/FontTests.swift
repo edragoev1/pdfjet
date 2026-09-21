@@ -144,6 +144,86 @@ import Testing
         #expect(TestSupport.content(page).lowercased().contains("<446f6e927420803520972093486994>"))
     }
 
+    @Test func aCoreFontDrawsDeleteAsASpace() {
+        // WinAnsi draws a bullet at 127, where the widths of the core fonts
+        // have a space: U+007F is a control, drawn as a space as the C1
+        // controls are.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        #expect(font.stringWidth(10, " ") == font.stringWidth(10, "\u{7F}"))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "a\u{7F}b\u{85}c").setLocation(10, 20).drawOn(page)
+        #expect(TestSupport.content(page).contains("<6120622063>"))
+    }
+
+    // IBM Plex Sans, read from its stream file. Its space is 236 units wide
+    // and its .notdef 472, of 1000 units to the em; it has the characters
+    // from U+0020 to U+FFFD, and no Thai.
+    private func ibmPlexSans(_ pdf: PDF) throws -> Font {
+        return try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func aCharacterTheFontDoesNotHaveIsDrawnWithNotdef() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try ibmPlexSans(pdf)
+        // ก, U+0E01, is in the range of the font and not in the font, and 😀,
+        // U+1F600, is past its range: both are drawn with .notdef, as wide as
+        // it is. A control character is drawn as a space.
+        TestSupport.expectNear(4.72, font.stringWidth(10, "\u{0E01}"), 0.001, "a character in the range")
+        TestSupport.expectNear(4.72, font.stringWidth(10, "\u{1F600}"), 0.001, "a character past the range")
+        for c in ["\t", "\u{7F}", "\u{85}"] {
+            TestSupport.expectNear(2.36, font.stringWidth(10, c), 0.001, "\(c.unicodeScalars.first!.value)")
+        }
+        // The width of the text that fits is that of the glyphs drawn.
+        #expect(font.setSize(10).getFitChars("\u{0E01}\u{0E01}", 9.5) == 2)
+        // The glyph of a missing character is .notdef, in a span whose actual
+        // text is the character, so that a copy of the text has it and not
+        // the U+FFFD the ToUnicode map gives .notdef. A control is the space
+        // glyph.
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "\u{0E01}\t\u{1F600}").setLocation(10, 20).drawOn(page)
+        let content = TestSupport.content(page)
+        let space = String(format: "%04X", font.unicodeToGID[0x20])
+        #expect(content.contains("/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<\(space)>"))
+        #expect(content.contains("/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n"))
+        // The text a glyph maps to is the character, and a space for a control.
+        #expect(Page.textOf(font, 0x0E01) == "\u{0E01}")
+        #expect(Page.textOf(font, 0x0085) == " ")
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func aStampDrawsACharacterTheFontDoesNotHaveWithNotdef() throws {
+        let memory = MemoryPDF()
+        let font = try ibmPlexSans(memory.pdf)
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        let stamp = Stamp(memory.pdf).setSize(100, 50)
+        stamp.drawText(font, 10, 5, 20, "a\u{0E01}\t")
+        try stamp.complete()
+        try memory.pdf.complete()
+        let want = String(format: "<%04X> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<%04X> Tj\n",
+                font.unicodeToGID[0x61], font.unicodeToGID[0x20])
+        #expect(TestSupport.latin1(memory.bytes).contains(want))
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"),
+            "the fonts directory is not here"))
+    func aControlCharacterStaysInTheFontOfItsText() throws {
+        // A control character is drawn as a space by the font, not by the
+        // fallback font: the fallback font would draw it as a space too.
+        let pdf = TestSupport.newPDF()
+        let latin = try ibmPlexSans(pdf)
+        let helvetica = TestSupport.helvetica(pdf)
+        for font in [latin, helvetica] {
+            for c in [0x09, 0x7F, 0x85] {
+                #expect(font.hasGlyph(c), "\(font.name) has no glyph for \(c)")
+            }
+        }
+        #expect(!latin.hasGlyph(0x0E01) && !latin.hasGlyph(0x1F600), "a character drawn with .notdef has a glyph")
+    }
+
     @Test func aSoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
         let font = TestSupport.helvetica(TestSupport.newPDF())
         font.setKernPairs(true)
