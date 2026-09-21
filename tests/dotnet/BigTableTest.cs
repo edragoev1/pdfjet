@@ -6,6 +6,8 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text;
 using Xunit;
 
@@ -268,6 +270,59 @@ public sealed class BigTableTest : IDisposable {
         foreach (string text in new string[] {"/S /Table\n", "/S /TR\n", "BDC\n", "/Artifact BMC\n"}) {
             Assert.Equal(0, Count(raw, text));
         }
+    }
+
+    // The x coordinate and the length of the text the page draws, in order.
+    private static List<float[]> TextPositions(Page page) {
+        List<float[]> list = new List<float[]>();
+        foreach (Match m in Regex.Matches(TestSupport.Latin1(page.GetContent()),
+                @"([-0-9.]+) [-0-9.]+ Td\n(?:/F\d+ [0-9.]+ Tf\n)?\[<([0-9A-Fa-f]*)>\] TJ")) {
+            list.Add(new float[] {
+                    float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture),
+                    m.Groups[2].Value.Length / 2f});
+        }
+        return list;
+    }
+
+    [Fact]
+    public void TheAlignmentOfAColumnTheTableDoesNotHaveIsRefused() {
+        // The alignment of a column was written into the array of them
+        // whatever the column was, and there is no array before SetTableData.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT).SetNumberOfColumns(2);
+        Assert.Equal("The table has no column 0: set the alignment of a column after SetTableData.",
+                Assert.Throws<ArgumentException>(() => table.SetTextAlignment(0, Alignment.RIGHT)).Message);
+        table.SetTableData(new string[] {"A", "B"}, Rows());
+        table.SetTextAlignment(1, Alignment.RIGHT);
+        Assert.Equal("The table has no column 2: set the alignment of a column after SetTableData.",
+                Assert.Throws<ArgumentException>(() => table.SetTextAlignment(2, Alignment.RIGHT)).Message);
+    }
+
+    [Fact]
+    public void AColumnIsAsWideAsTheFontOfEachRowDrawsIt() {
+        // The columns were measured with the header font whatever font a row
+        // was drawn with, so a body font wider than the header font ran over
+        // the column on its right.
+        PDF pdf = TestSupport.NewPDF();
+        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD).SetSize(8f);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA).SetSize(14f);
+        BigTable table = new BigTable(pdf, f1, f2, Letter.PORTRAIT);
+        table.SetNumberOfColumns(2);
+        List<string[]> rows = new List<string[]>();
+        rows.Add(new string[] {"wwww", "xx"});
+        table.SetTableData(new string[] {"A", "B"}, rows);
+        table.SetLocation(50f, 50f);
+        table.SetFooter(null, null);
+        table.Complete();
+
+        List<float[]> positions = TextPositions(table.GetPages()[0]);
+        Assert.Equal(4, positions.Count);
+        // The header "A" ends before "B" starts, and so does the row under it.
+        Assert.True(positions[0][0] + f1.StringWidth("A") <= positions[1][0],
+                "the header runs into the next column");
+        Assert.True(positions[2][0] + f2.StringWidth("wwww") <= positions[3][0],
+                "the row runs into the next column");
     }
 
 }

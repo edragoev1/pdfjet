@@ -109,9 +109,17 @@ public class BigTable {
         return self
     }
 
-    /// Sets the text alignment of the specified column.
+    /// Sets the text alignment of the specified column, which is one of the
+    /// columns of the table. Call it after setTableData, which makes the
+    /// columns: a column that the table does not have is recorded on the PDF
+    /// as misuse, and the alignment is left as it was.
     @discardableResult
     public func setTextAlignment(_ column: Int, _ alignment: Alignment) -> BigTable {
+        if column < 0 || column >= self.alignment.count {
+            pdf.fail("The table has no column \(column): "
+                    + "set the alignment of a column after setTableData.")
+            return self
+        }
         self.alignment[column] = alignment
         return self
     }
@@ -452,7 +460,7 @@ public class BigTable {
         self.widths = [Float](repeating: 0.0, count: numberOfColumns)
         self.alignment = [Alignment](repeating: Alignment.LEFT, count: numberOfColumns)
 
-        measure(header)
+        measure(header, f1)
         var rowNumber = 0
         for fields in IteratorSequence(rows()) {
             if fields.count < fieldsNeeded {
@@ -463,7 +471,7 @@ public class BigTable {
                     alignment[i] = getAlignment(fields[columns[i]])
                 }
             }
-            measure(fields)
+            measure(fields, f2)
             rowNumber += 1
         }
         self.dataRows = rowNumber
@@ -474,10 +482,13 @@ public class BigTable {
 
     // Widens the columns to fit the fields of a row. The widths are those of
     // the text, and setVertLines adds the padding, so it can be set later.
-    private func measure(_ fields: [String]) {
+    // Widens the columns to fit the fields of a row, measured in the font the
+    // row is drawn with: the header font for the header and the body font for
+    // a row under it.
+    private func measure(_ fields: [String], _ font: Font) {
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
-            let width = f1.stringWidth(text)
+            let width = font.stringWidth(text)
             if width > widths[i] {
                 widths[i] = width
             }

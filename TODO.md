@@ -164,7 +164,7 @@ work to Oct 21 is the seven goals below, in this order.
    `OTF`, `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test
    names;
    ✅ the reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`,
-   which no test names; `TextFrame`, `BigTable`, `CompositeTextLine` and
+   which no test names; ✅ `TextFrame`, `BigTable`, `CompositeTextLine` and
    `Bidi`; the barcodes, the charts, `Form`, `Container` and `Stamp`.
 
 3. ⬜ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
@@ -339,6 +339,24 @@ thing to give if anything does.
       well as the name, so a font read twice, or read from a `.otf` and from
       the `.stream` of it, is still embedded once, as Example_28 draws it.
       The 56 example PDFs are the same as before in the four ports.
+- ✅ Goal 2: `TextFrame`, `BigTable`, `CompositeTextLine` and `Bidi` are
+      reviewed (Sep 21), which the Oct 9-14 week had. Two findings in
+      `BigTable`, fixed in the four ports with tests: every row of a table was
+      measured with the header font, so a body font wider than the header font
+      ran over the column on its right -- a cell of "wwww" in Helvetica 14 is
+      40 points wide and was given a column of 27 -- and `setTextAlignment`
+      wrote into the alignments of the columns whatever the column was, which
+      threw before `setTableData` made them. The table of Example_43 is
+      narrower for the first and holds the same 2,546 pages; nothing else in
+      the 56 examples changed. The other three classes hold: a `TextFrame`
+      drawn through frames of every height, width and alignment loses no word,
+      draws none twice and keeps every row inside the frame, except the one
+      character a row takes when the frame is narrower than it;
+      `CompositeTextLine.addFormula` reads the 20 formulas of the review as
+      its documentation says; and `Bidi` gives the same answer in the four
+      ports for all 4,024 strings of a corpus of Arabic, Hebrew, Latin,
+      digits, brackets and marks, and loses no letter and reorders no run of
+      Latin or digits over 20,000 random strings.
 - ✅ Goal 5, in part: the 252 fonts PDFjet ships read against fontTools
       (Sep 21), which the Oct 9-14 week has. Every one gives the same name,
       units per em, ascent, descent, line gap, cap height, underline position
@@ -453,6 +471,11 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
+- The table of Example_43 is wider than the page it is drawn on: its nine
+  columns are as wide as their widest field, which comes to 795 points of a
+  792 point landscape page, so the last column is cut off at the right edge.
+  A table as wide as the page needs the column widths that `Table` is to get
+  after 9.0.3, below, or fewer columns in the example.
 - A character above the BMP, from U+10000 up, is not drawn: the character map
   of a font is read into 65,536 entries. 144 of the fonts PDFjet ships have
   glyphs up there, the bold italic alphabet of IBM Plex Math and the CJK

@@ -318,4 +318,61 @@ class BigTableTest {
         }
     }
 
+
+    // The x coordinates of the text the page draws, in the order it draws it.
+    private static List<float[]> textPositions(Page page) {
+        List<float[]> list = new ArrayList<float[]>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "([-0-9.]+) ([-0-9.]+) Td\\n(?:/F\\d+ [0-9.]+ Tf\\n)?\\[<([0-9A-Fa-f]*)>\\] TJ")
+                .matcher(TestSupport.latin1(page.getContent()));
+        while (m.find()) {
+            list.add(new float[] {Float.parseFloat(m.group(1)), m.group(3).length() / 2f});
+        }
+        return list;
+    }
+
+    @Test
+    void theAlignmentOfAColumnTheTableDoesNotHaveIsRefused() throws Exception {
+        // The alignment of a column was written into the array of them
+        // whatever the column was, and there is no array before setTableData.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(2);
+        assertEquals("The table has no column 0: set the alignment of a column after setTableData.",
+                assertThrows(IllegalArgumentException.class,
+                        () -> table.setTextAlignment(0, Alignment.RIGHT)).getMessage());
+        table.setTableData(new String[] {"A", "B"}, rows());
+        table.setTextAlignment(1, Alignment.RIGHT);
+        assertEquals("The table has no column 2: set the alignment of a column after setTableData.",
+                assertThrows(IllegalArgumentException.class,
+                        () -> table.setTextAlignment(2, Alignment.RIGHT)).getMessage());
+    }
+
+    @Test
+    void aColumnIsAsWideAsTheFontOfEachRowDrawsIt() throws Exception {
+        // The columns were measured with the header font whatever font a row
+        // was drawn with, so a body font wider than the header font ran over
+        // the column on its right.
+        PDF pdf = TestSupport.newPDF();
+        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD).setSize(8f);
+        Font f2 = new Font(pdf, CoreFont.HELVETICA).setSize(14f);
+        BigTable table = new BigTable(pdf, f1, f2, Letter.PORTRAIT);
+        table.setNumberOfColumns(2);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"wwww", "xx"});
+        table.setTableData(new String[] {"A", "B"}, rows);
+        table.setLocation(50f, 50f);
+        table.setFooter(null, null);
+        table.complete();
+
+        List<float[]> positions = textPositions(table.getPages().get(0));
+        assertEquals(4, positions.size(), positions.toString());
+        // The header "A" ends before "B" starts, and so does the row under it.
+        assertTrue(positions.get(0)[0] + f1.stringWidth("A") <= positions.get(1)[0],
+                "the header runs into the next column");
+        assertTrue(positions.get(2)[0] + f2.stringWidth("wwww") <= positions.get(3)[0],
+                "the row runs into the next column: " + positions.get(2)[0] + " + "
+                        + f2.stringWidth("wwww") + " > " + positions.get(3)[0]);
+    }
+
 }

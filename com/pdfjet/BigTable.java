@@ -130,13 +130,19 @@ public class BigTable {
     }
 
     /**
-     * Sets the text alignment in the specified column.
+     * Sets the text alignment in the specified column, which is one of the
+     * columns of the table. Call it after setTableData, which makes the
+     * columns: a column that the table does not have is refused.
      *
      * @param column the column.
      * @param alignment the alignment.
      * @return this BigTable object.
      */
     public BigTable setTextAlignment(int column, Alignment alignment) {
+        if (this.alignment == null || column < 0 || column >= this.alignment.length) {
+            pdf.fail(new IllegalArgumentException("The table has no column " + column
+                    + ": set the alignment of a column after setTableData."));
+        }
         this.alignment[column] = alignment;
         return this;
     }
@@ -493,7 +499,7 @@ public class BigTable {
         this.widths = new float[this.numberOfColumns];
         this.alignment = new Alignment[this.numberOfColumns];
 
-        measure(header);
+        measure(header, f1);
         int rowNumber = 0;
         Iterator<String[]> iterator = rows.iterator();
         try {
@@ -507,7 +513,7 @@ public class BigTable {
                         alignment[i] = getAlignment(fields[columns[i]]);
                     }
                 }
-                measure(fields);
+                measure(fields, f2);
                 rowNumber++;
             }
         } finally {
@@ -519,12 +525,14 @@ public class BigTable {
         return this;
     }
 
-    // Widens the columns to fit the fields of a row. The widths are those of
-    // the text, and setVertLines adds the padding, so it can be set later.
-    private void measure(String[] fields) {
+    // Widens the columns to fit the fields of a row, measured in the font the
+    // row is drawn with: the header font for the header and the body font for
+    // a row under it. The widths are those of the text, and setVertLines adds
+    // the padding, so it can be set later.
+    private void measure(String[] fields, Font font) {
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-            float width = f1.stringWidth(text);
+            float width = font.stringWidth(text);
             if (width > widths[i]) {
                 this.widths[i] = width;
             }

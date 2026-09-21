@@ -249,4 +249,62 @@ import Testing
         }
     }
 
+    // The x coordinate and the length of the text the page draws, in order.
+    private func textPositions(_ page: Page) -> [(Float, Int)] {
+        var list = [(Float, Int)]()
+        let content = TestSupport.latin1(page.getContent())
+        let pattern = "([-0-9.]+) [-0-9.]+ Td\\n(?:/F\\d+ [0-9.]+ Tf\\n)?\\[<([0-9A-Fa-f]*)>\\] TJ"
+        let regex = try! NSRegularExpression(pattern: pattern)
+        let range = NSRange(content.startIndex..., in: content)
+        for match in regex.matches(in: content, range: range) {
+            let x = String(content[Range(match.range(at: 1), in: content)!])
+            let hex = String(content[Range(match.range(at: 2), in: content)!])
+            list.append((Float(x)!, hex.count / 2))
+        }
+        return list
+    }
+
+    @Test func theAlignmentOfAColumnTheTableDoesNotHaveIsRefused() throws {
+        // The alignment of a column was written into the array of them
+        // whatever the column was, and there is none before setTableData.
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let table = BigTable(memory.pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(2)
+        table.setTextAlignment(0, Alignment.RIGHT)
+        table.setTableData(["A", "B"], [["a", "b"]])
+        table.setTextAlignment(1, Alignment.RIGHT)
+        table.setTextAlignment(2, Alignment.RIGHT)
+        do {
+            try memory.pdf.complete()
+            Issue.record("a table with no column 0 or 2 was completed")
+        } catch {
+            #expect(TestSupport.message(error) == "The PDF was not completed because of an "
+                    + "earlier error: The table has no column 0: set the alignment of a "
+                    + "column after setTableData.")
+        }
+    }
+
+    @Test func aColumnIsAsWideAsTheFontOfEachRowDrawsIt() throws {
+        // The columns were measured with the header font whatever font a row
+        // was drawn with, so a body font wider than the header font ran over
+        // the column on its right.
+        let pdf = TestSupport.newPDF()
+        let f1 = try Font(pdf, CoreFont.HELVETICA_BOLD).setSize(8)
+        let f2 = try Font(pdf, CoreFont.HELVETICA).setSize(14)
+        let table = BigTable(pdf, f1, f2, Letter.PORTRAIT)
+        table.setNumberOfColumns(2)
+        table.setTableData(["A", "B"], [["wwww", "xx"]])
+        table.setLocation(50, 50)
+        table.setFooter(nil, nil)
+        try table.complete()
+
+        let positions = textPositions(table.getPages()[0])
+        #expect(positions.count == 4)
+        // The header "A" ends before "B" starts, and so does the row under it.
+        #expect(positions[0].0 + f1.stringWidth("A") <= positions[1].0,
+                "the header runs into the next column")
+        #expect(positions[2].0 + f2.stringWidth("wwww") <= positions[3].0,
+                "the row runs into the next column")
+    }
+
 }

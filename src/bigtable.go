@@ -132,8 +132,16 @@ func (bt *BigTable) SetColumns(columns ...int) *BigTable {
 	return bt
 }
 
-// SetTextAlignment sets text alignment for a column
+// SetTextAlignment sets the text alignment of the column, which is one of the
+// columns of the table. Call it after SetTableData, which makes the columns: a
+// column that the table does not have is recorded on the PDF as misuse, and
+// the alignment is left as it was.
 func (bt *BigTable) SetTextAlignment(column int, alignment alignment.Alignment) *BigTable {
+	if column < 0 || column >= len(bt.alignment) {
+		bt.pdf.fail("The table has no column " + strconv.Itoa(column) +
+			": set the alignment of a column after SetTableData.")
+		return bt
+	}
 	bt.alignment[column] = alignment
 	return bt
 }
@@ -505,7 +513,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 	bt.widths = make([]float32, bt.numberOfColumns)
 	bt.alignment = make([]alignment.Alignment, bt.numberOfColumns)
 
-	bt.measure(header)
+	bt.measure(header, bt.f1)
 	rowNumber := 0
 	for fields := range rows {
 		if len(fields) < bt.fieldsNeeded {
@@ -516,7 +524,7 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 				bt.alignment[i] = bt.getAlignment(fields[bt.columns[i]])
 			}
 		}
-		bt.measure(fields)
+		bt.measure(fields, bt.f2)
 		rowNumber++
 	}
 	bt.dataRows = rowNumber
@@ -525,15 +533,17 @@ func (bt *BigTable) setTableRows(header []string, rows iter.Seq[[]string], check
 	return bt
 }
 
-// measure widens the columns to fit the fields of a row. The widths are those
-// of the text, and setVertLines adds the padding, so it can be set later.
-func (bt *BigTable) measure(fields []string) {
+// measure widens the columns to fit the fields of a row, measured in the font
+// the row is drawn with: the header font for the header and the body font for
+// a row under it. The widths are those of the text, and setVertLines adds the
+// padding, so it can be set later.
+func (bt *BigTable) measure(fields []string, font *Font) {
 	for i := 0; i < bt.numberOfColumns; i++ {
 		text := fields[bt.columns[i]]
 		if bt.checkLineBreaks && hasLineBreak(text) {
 			text = lineBreaksToSpaces(text)
 		}
-		width := bt.f1.StringWidth(bt.f1.size, text)
+		width := font.StringWidth(font.size, text)
 		if width > bt.widths[i] {
 			bt.widths[i] = width
 		}

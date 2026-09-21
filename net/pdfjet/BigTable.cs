@@ -114,8 +114,16 @@ namespace PDFjet.NET {
             return this;
         }
 
-        /// <summary>Sets the text alignment of the specified column.</summary>
+        /// <summary>
+        /// Sets the text alignment of the specified column, which is one of
+        /// the columns of the table. Call it after SetTableData, which makes
+        /// the columns: a column that the table does not have is refused.
+        /// </summary>
         public BigTable SetTextAlignment(int column, Alignment alignment) {
+            if (this.alignment == null || column < 0 || column >= this.alignment.Length) {
+                pdf.Fail(new ArgumentException("The table has no column " + column
+                        + ": set the alignment of a column after SetTableData."));
+            }
             this.alignment[column] = alignment;
             return this;
         }
@@ -436,7 +444,7 @@ namespace PDFjet.NET {
             this.widths = new float[this.numberOfColumns];
             this.alignment = new Alignment[this.numberOfColumns];
 
-            Measure(header);
+            Measure(header, f1);
             int rowNumber = 0;
             foreach (string[] fields in rows) {
                 if (fields.Length < this.fieldsNeeded) {
@@ -447,7 +455,7 @@ namespace PDFjet.NET {
                         alignment[i] = GetAlignment(fields[columns[i]]);
                     }
                 }
-                Measure(fields);
+                Measure(fields, f2);
                 rowNumber++;
             }
             this.dataRows = rowNumber;
@@ -458,10 +466,13 @@ namespace PDFjet.NET {
 
         // Widens the columns to fit the fields of a row. The widths are those of
         // the text, and SetVertLines adds the padding, so it can be set later.
-        private void Measure(string[] fields) {
+        // Widens the columns to fit the fields of a row, measured in the font
+        // the row is drawn with: the header font for the header and the body
+        // font for a row under it.
+        private void Measure(string[] fields, Font font) {
             for (int i = 0; i < this.numberOfColumns; i++) {
                 String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
-                float width = f1.StringWidth(text);
+                float width = font.StringWidth(text);
                 if (width > widths[i]) {
                     this.widths[i] = width;
                 }

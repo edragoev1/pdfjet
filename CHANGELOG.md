@@ -136,6 +136,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A column of a `BigTable` is as wide as the font of each row draws it, in all
+  four ports. Every row was measured with the header font, so a body font
+  wider than the header font ran over the column on its right: with a header
+  in Helvetica-Bold 8 and a body in Helvetica 14, a cell of "wwww" was 40
+  points wide in a column 27 points wide, and was drawn over the cell beside
+  it. The header is measured with the header font and each row with the body
+  font now. The table of Example_43, whose header is IBM Plex Sans SemiBold
+  10 and whose rows are Regular 9, is narrower for it and holds the same
+  2,546 pages. Found in the review of `TextFrame`, `BigTable`,
+  `CompositeTextLine` and `Bidi` of Sep 21.
+- `BigTable.setTextAlignment` refuses a column the table does not have, in all
+  four ports, where it wrote into the alignments of the columns whatever the
+  column was: it threw before `setTableData`, which makes them, and for a
+  column past the last one. It is recorded on the PDF as misuse, as a negative
+  column index and a negative padding are, and `complete` then refuses to
+  write the document.
 - A PDF embeds each font program once, where it embedded the first of two
   fonts of one name for both, in all four ports. PDFjet ships subsets of the
   Noto Sans SC and TC fonts beside the whole fonts, twelve pairs whose name

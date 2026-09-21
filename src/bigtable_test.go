@@ -10,12 +10,16 @@ import (
 	"iter"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -325,5 +329,68 @@ func TestBigTableIsNotTaggedInADocumentThatIsNotPDFUA(t *testing.T) {
 		if strings.Contains(raw, text) {
 			t.Errorf("a document that is not PDF/UA has %q", text)
 		}
+	}
+}
+
+// testTextPositions returns the x coordinate and the length of the text the
+// page draws, in the order it draws it.
+func testTextPositions(page *Page) [][2]float64 {
+	var out [][2]float64
+	re := regexp.MustCompile(`([-0-9.]+) [-0-9.]+ Td\n(?:/F\d+ [0-9.]+ Tf\n)?\[<([0-9A-Fa-f]*)>\] TJ`)
+	for _, m := range re.FindAllStringSubmatch(testContent(page), -1) {
+		x, err := strconv.ParseFloat(m[1], 64)
+		if err != nil {
+			continue
+		}
+		out = append(out, [2]float64{x, float64(len(m[2]) / 2)})
+	}
+	return out
+}
+
+func TestBigTableTheAlignmentOfAColumnTheTableDoesNotHaveIsRefused(t *testing.T) {
+	// The alignment of a column was written into the slice of them whatever
+	// the column was, and there is no slice before SetTableRows.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(2)
+	table.SetTextAlignment(0, alignment.Right)
+	table.SetTableRows([]string{"A", "B"}, slices.Values([][]string{{"a", "b"}}))
+	table.SetTextAlignment(1, alignment.Right)
+	table.SetTextAlignment(2, alignment.Right)
+	err := doc.pdf.Complete()
+	if err == nil {
+		t.Fatal("a table with no column 0 or 2 was completed")
+	}
+	testWant(t, "The PDF was not completed because of an earlier error: "+
+		"The table has no column 0: set the alignment of a column after SetTableData.",
+		err.Error())
+}
+
+func TestBigTableAColumnIsAsWideAsTheFontOfEachRowDrawsIt(t *testing.T) {
+	// The columns were measured with the header font whatever font a row was
+	// drawn with, so a body font wider than the header font ran over the
+	// column on its right.
+	doc := testNewDoc()
+	f1 := NewCoreFont(doc.pdf, corefont.HelveticaBold()).SetSize(8)
+	f2 := NewCoreFont(doc.pdf, corefont.Helvetica()).SetSize(14)
+	table := NewBigTable(doc.pdf, f1, f2, letter.Portrait())
+	table.SetNumberOfColumns(2)
+	table.SetTableRows([]string{"A", "B"}, slices.Values([][]string{{"wwww", "xx"}}))
+	table.SetLocation(50, 50)
+	table.SetFooter("", nil)
+	if err := table.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	positions := testTextPositions(table.GetPages()[0])
+	if len(positions) != 4 {
+		t.Fatalf("%d strings drawn", len(positions))
+	}
+	// The header "A" ends before "B" starts, and so does the row under it.
+	if float64(f1.StringWidth(f1.size, "A"))+positions[0][0] > positions[1][0] {
+		t.Error("the header runs into the next column")
+	}
+	if width := float64(f2.StringWidth(f2.size, "wwww")); positions[2][0]+width > positions[3][0] {
+		t.Errorf("the row runs into the next column: %g + %g > %g",
+			positions[2][0], width, positions[3][0])
 	}
 }
