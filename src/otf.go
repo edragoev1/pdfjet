@@ -14,6 +14,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 )
 
 // fontTable is used to construct font table objects.
@@ -184,12 +185,12 @@ func getNameTable(otf *openTypeFont, table *fontTable) {
 		if platformID == 1 && encodingID == 0 && languageID == 0 {
 			// Macintosh
 			if nameID == 6 {
-				otf.fontName = string(buffer)
+				otf.fontName = utf8text.Decode(buffer)
 			} else {
 				// This record's own decoded text, not otf.fontName (which
 				// may not even be set yet - name records aren't guaranteed
 				// to arrive in nameID order).
-				macFontInfo.WriteString(string(buffer))
+				macFontInfo.WriteString(utf8text.Decode(buffer))
 				macFontInfo.WriteString("\n")
 			}
 		} else if platformID == 3 && encodingID == 1 && languageID == 0x409 {

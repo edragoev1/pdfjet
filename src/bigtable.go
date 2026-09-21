@@ -17,6 +17,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
 
@@ -366,12 +367,12 @@ func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
 	scanner := newDataScanner(file)
 	nextLine := func() (string, bool) {
 		if scanner.Scan() {
-			return scanner.Text(), true
+			return utf8text.Decode(scanner.Bytes()), true
 		}
 		return "", false
 	}
 	for scanner.Scan() {
-		if !yield(readDelimitedRecord(scanner.Text(), delimiter, nextLine)) {
+		if !yield(readDelimitedRecord(utf8text.Decode(scanner.Bytes()), delimiter, nextLine)) {
 			return nil
 		}
 	}

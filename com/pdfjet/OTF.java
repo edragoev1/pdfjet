@@ -154,8 +154,7 @@ class OTF {
 
             if (platformID == 1 && encodingID == 0 && languageID == 0) {
                 // Macintosh
-                String str = new String(
-                        buf, table.offset + stringOffset + offset, length, "UTF-8");
+                String str = UTF8.decode(buf, table.offset + stringOffset + offset, length);
                 if (nameID == 6) {
                     fontName = str;
                 } else {

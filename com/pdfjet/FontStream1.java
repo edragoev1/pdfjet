@@ -526,8 +526,8 @@ class FontStream1 {
         if (!isFontName(fontName)) {
             throw fontStreamError("the font name");
         }
-        font.name = new String(fontName, StandardCharsets.UTF_8);
-        font.info = new String(readBytes(inputStream, getInt24(inputStream)), StandardCharsets.UTF_8);
+        font.name = UTF8.decode(fontName);
+        font.info = UTF8.decode(readBytes(inputStream, getInt24(inputStream)));
 
         Metrics metrics = new Metrics(Decompressor.inflate(
                 readBytes(inputStream, getUInt32(inputStream)), MAX_FONT_METRICS_LENGTH), "the metrics");

@@ -14,6 +14,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -69,12 +70,12 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
 	nextLine := func() (string, bool) {
 		if scanner.Scan() {
-			return scanner.Text(), true
+			return utf8text.Decode(scanner.Bytes()), true
 		}
 		return "", false
 	}
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := utf8text.Decode(scanner.Bytes())
 		if lineNumber == 0 {
 			// A byte order mark at the start of the file is not part of the text.
 			line = strings.TrimPrefix(line, "\uFEFF")

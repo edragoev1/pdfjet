@@ -6,13 +6,11 @@
  */
 package com.pdfjet;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -502,11 +500,11 @@ public class BigTable {
     // throws an UncheckedIOException, and setTableData and complete() throw
     // its cause.
     private static final class DataFileRows implements Iterator<String[]>, Closeable {
-        private final BufferedReader reader;
+        private final UTF8.LineReader reader;
         private final String delimiter;
         private String[] next;
 
-        private DataFileRows(BufferedReader reader, String delimiter) {
+        private DataFileRows(UTF8.LineReader reader, String delimiter) {
             this.reader = reader;
             this.delimiter = delimiter;
         }
@@ -515,14 +513,11 @@ public class BigTable {
         // with at least fieldsNeeded fields.
         static DataFileRows open(String fileName, String delimiter, int fieldsNeeded, boolean skipHeader)
                 throws IOException {
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
+            UTF8.LineReader reader = new UTF8.LineReader(
+                    new BufferedInputStream(new FileInputStream(fileName)));
             DataFileRows rows = new DataFileRows(reader, delimiter);
             try {
-                reader.mark(1);
-                if (reader.read() != '\uFEFF') {
-                    reader.reset();
-                }
+                reader.skipByteOrderMark();
                 rows.advance();
                 if (skipHeader) {
                     while (rows.next != null && rows.next.length < fieldsNeeded) {

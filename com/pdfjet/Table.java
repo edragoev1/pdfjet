@@ -6,11 +6,9 @@
  */
 package com.pdfjet;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -54,8 +52,8 @@ public class Table implements Drawable {
      */
     public Table(Font f1, Font f2, String fileName) throws IOException {
         tableData = new ArrayList<List<Cell>>();
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream(fileName), StandardCharsets.UTF_8));
+        UTF8.LineReader reader = new UTF8.LineReader(
+                new BufferedInputStream(new FileInputStream(fileName)));
         try {
             String delimiter = null;
             int numberOfFields = 0;

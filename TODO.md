@@ -246,5 +246,3 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-- A UTF-8 encoded surrogate (ED A0 80) reads as one U+FFFD in Java and three in
-  Swift, as Unicode recommends.

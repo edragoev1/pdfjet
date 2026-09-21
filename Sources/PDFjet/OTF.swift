@@ -152,14 +152,14 @@ class OTF {
                 // Macintosh
                 let index2 = Int(table.offset!) + Int(stringOffset) + Int(offset)
                 let buffer = buf[index2..<(index2 + Int(length))]
-                let str = String(bytes: buffer, encoding: .utf8)
+                // The bytes that are not UTF-8 are replaced with U+FFFD, as
+                // the other ports replace them; see the Go internal/utf8text.
+                let str = String(decoding: buffer, as: UTF8.self)
                 if nameID == 6 {
                     fontName = str
                 } else {
-                    if str != nil {
-                        macFontInfo.append(str!)
-                        macFontInfo.append("\n")
-                    }
+                    macFontInfo.append(str)
+                    macFontInfo.append("\n")
                 }
             } else if platformID == 3 && encodingID == 1 && languageID == 0x409 {
                 // Windows

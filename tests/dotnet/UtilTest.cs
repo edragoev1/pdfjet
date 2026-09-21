@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -143,6 +144,56 @@ public sealed class UtilTest : IDisposable {
         Assert.Equal(2, Util.CjkLineEnd("あい「", "う"));  // 「 moves down
         Assert.Equal(1, Util.CjkLineEnd("中文", ","));
         Assert.Equal(1, Util.CjkLineEnd("」", "。"));      // no other place to break
+    }
+
+    [Fact]
+    public void OfTextFileReplacesWhatIsNotUtf8() {
+        // The bytes and the text they read as: the four ports replace the maximal
+        // subparts of an ill formed UTF-8 sequence with U+FFFD, the substitution
+        // the Unicode Standard recommends in section 3.9. The same table is in
+        // the tests of the other three ports.
+        string[][] cases = {
+            new string[] {"68656C6C6F", "hello"},                                  // Hello
+            new string[] {"77C3B6726C64", "w\u00F6rld"},                           // Wörld
+            new string[] {"E697A5E69CAC", "\u65E5\u672C"},                         // 日本, Japanese
+            new string[] {"F09F9880", "\uD83D\uDE00"},                             // A code point outside the plane
+            new string[] {"EFBFBD", "\uFFFD"},                                     // The replacement character itself
+            new string[] {"EFBFBE", "\uFFFE"},                                     // A noncharacter is well formed
+            new string[] {"E28282", "\u2082"},                                     // Well formed, subscript two
+            new string[] {"EDA080", "\uFFFD\uFFFD\uFFFD"},                         // An encoded surrogate, U+D800
+            new string[] {"EDBFBF", "\uFFFD\uFFFD\uFFFD"},                         // U+DFFF
+            new string[] {"EDA080EDB080", "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD"}, // An encoded surrogate pair
+            new string[] {"EDA0", "\uFFFD\uFFFD"},                                 // Two bytes of an encoded surrogate
+            new string[] {"ED", "\uFFFD"},
+            new string[] {"C080", "\uFFFD\uFFFD"},                                 // The overlong encodings
+            new string[] {"E08080", "\uFFFD\uFFFD\uFFFD"},
+            new string[] {"F0828282", "\uFFFD\uFFFD\uFFFD\uFFFD"},
+            new string[] {"F4908080", "\uFFFD\uFFFD\uFFFD\uFFFD"},                 // Past U+10FFFF
+            new string[] {"F5808080", "\uFFFD\uFFFD\uFFFD\uFFFD"},
+            new string[] {"FE", "\uFFFD"},
+            new string[] {"FF", "\uFFFD"},
+            new string[] {"80", "\uFFFD"},                                         // A byte of a sequence, alone
+            new string[] {"BF", "\uFFFD"},
+            new string[] {"C2", "\uFFFD"},                                         // A sequence cut short is one replacement,
+            new string[] {"C2C2", "\uFFFD\uFFFD"},                                 // However many of its bytes are there
+            new string[] {"E282", "\uFFFD"},
+            new string[] {"E0A0", "\uFFFD"},
+            new string[] {"F09080", "\uFFFD"},
+            new string[] {"41C2", "A\uFFFD"},
+            new string[] {"61EDA08062", "a\uFFFD\uFFFD\uFFFDb"},                   // Between well formed text
+        };
+        foreach (string[] item in cases) {
+            string file = tempDir.Write("utf8.txt", HexBytes(item[0]));
+            Assert.Equal(item[1], Content.OfTextFile(file));
+        }
+    }
+
+    private static byte[] HexBytes(string hex) {
+        byte[] bytes = new byte[hex.Length / 2];
+        for (int i = 0; i < bytes.Length; i++) {
+            bytes[i] = byte.Parse(hex.Substring(2 * i, 2), NumberStyles.HexNumber);
+        }
+        return bytes;
     }
 }
 }

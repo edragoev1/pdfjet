@@ -51,7 +51,9 @@ public class Table : Drawable {
         var lineNumber = 0
         // Swift treats "\r\n" as one character, which a "\n" separator does not
         // match, so Windows line endings are replaced first.
-        var lines = (try String(contentsOfFile: fileName, encoding: .utf8))
+        // The bytes that are not UTF-8 are replaced with U+FFFD, as the other
+        // ports replace them, rather than failing the whole file.
+        var lines = String(decoding: try Content.ofBinaryFile(fileName), as: UTF8.self)
                 .replacingOccurrences(of: "\r\n", with: "\n")
                 .components(separatedBy: "\n")
         if lines.last == "" {
@@ -59,9 +61,13 @@ public class Table : Drawable {
         }
         var index = 0
         while index < lines.count {
-            let line = lines[index]
+            var line = lines[index]
             index += 1
             if lineNumber == 0 {
+                // A byte order mark at the start of the file is not part of the text.
+                if line.hasPrefix("\u{FEFF}") {
+                    line.removeFirst()
+                }
                 delimiter = getDelimiter(line)
             }
             var row = [Cell]()

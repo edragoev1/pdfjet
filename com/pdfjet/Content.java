@@ -25,18 +25,22 @@ public class Content {
      * @throws IOException if there is an issue.
      */
     public static String ofTextFile(String fileName) throws IOException {
-        StringBuilder sb = new StringBuilder(4096);
-        try (Reader reader = new InputStreamReader(
-                new BufferedInputStream(new FileInputStream(fileName)), StandardCharsets.UTF_8)) {
-            int ch = 0;
-            while ((ch = reader.read()) != -1) {
-                if (ch == '\r') {
-                    // Skip it
-                } else if (ch == '"') {
-                    sb.append("\"");
-                } else {
-                    sb.append((char) ch);
-                }
+        // The bytes that are not UTF-8 are replaced with U+FFFD, as the C#, Go
+        // and Swift readers replace them; see UTF8.decode.
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(4096);
+        try (InputStream stream = new BufferedInputStream(new FileInputStream(fileName))) {
+            byte[] buffer = new byte[4096];
+            int read = 0;
+            while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
+                bytes.write(buffer, 0, read);
+            }
+        }
+        String contents = UTF8.decode(bytes.toByteArray());
+        StringBuilder sb = new StringBuilder(contents.length());
+        for (int i = 0; i < contents.length(); i++) {
+            char ch = contents.charAt(i);
+            if (ch != '\r') {
+                sb.append(ch);
             }
         }
         // A byte order mark at the start of the file is not part of the text.

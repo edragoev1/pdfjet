@@ -109,7 +109,8 @@ class UtilTest {
 
     // Reads the first record of the text, as the data file readers do.
     private static String[] firstRecord(String text) throws IOException {
-        BufferedReader reader = new BufferedReader(new StringReader(text));
+        UTF8.LineReader reader = new UTF8.LineReader(
+                new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
         return Util.readRecord(reader.readLine(), reader, ",");
     }
 
@@ -156,5 +157,55 @@ class UtilTest {
         assertEquals(2, Util.cjkLineEnd("あい「", "う".codePointAt(0)));    // 「 moves down
         assertEquals(1, Util.cjkLineEnd("中文", ','));
         assertEquals(1, Util.cjkLineEnd("」", "。".codePointAt(0)));        // no other place to break
+    }
+
+    @Test
+    void ofTextFileReplacesWhatIsNotUtf8() throws Exception {
+        // The bytes and the text they read as: the four ports replace the maximal
+        // subparts of an ill formed UTF-8 sequence with U+FFFD, the substitution
+        // the Unicode Standard recommends in section 3.9. The same table is in
+        // the tests of the other three ports.
+        String[][] cases = {
+            {"68656C6C6F", "hello"},                                  // Hello
+            {"77C3B6726C64", "w\u00F6rld"},                           // Wörld
+            {"E697A5E69CAC", "\u65E5\u672C"},                         // 日本, Japanese
+            {"F09F9880", "\uD83D\uDE00"},                             // A code point outside the plane
+            {"EFBFBD", "\uFFFD"},                                     // The replacement character itself
+            {"EFBFBE", "\uFFFE"},                                     // A noncharacter is well formed
+            {"E28282", "\u2082"},                                     // Well formed, subscript two
+            {"EDA080", "\uFFFD\uFFFD\uFFFD"},                         // An encoded surrogate, U+D800
+            {"EDBFBF", "\uFFFD\uFFFD\uFFFD"},                         // U+DFFF
+            {"EDA080EDB080", "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD"}, // An encoded surrogate pair
+            {"EDA0", "\uFFFD\uFFFD"},                                 // Two bytes of an encoded surrogate
+            {"ED", "\uFFFD"},
+            {"C080", "\uFFFD\uFFFD"},                                 // The overlong encodings
+            {"E08080", "\uFFFD\uFFFD\uFFFD"},
+            {"F0828282", "\uFFFD\uFFFD\uFFFD\uFFFD"},
+            {"F4908080", "\uFFFD\uFFFD\uFFFD\uFFFD"},                 // Past U+10FFFF
+            {"F5808080", "\uFFFD\uFFFD\uFFFD\uFFFD"},
+            {"FE", "\uFFFD"},
+            {"FF", "\uFFFD"},
+            {"80", "\uFFFD"},                                         // A byte of a sequence, alone
+            {"BF", "\uFFFD"},
+            {"C2", "\uFFFD"},                                         // A sequence cut short is one replacement,
+            {"C2C2", "\uFFFD\uFFFD"},                                 // However many of its bytes are there
+            {"E282", "\uFFFD"},
+            {"E0A0", "\uFFFD"},
+            {"F09080", "\uFFFD"},
+            {"41C2", "A\uFFFD"},
+            {"61EDA08062", "a\uFFFD\uFFFD\uFFFDb"},                   // Between well formed text
+        };
+        for (String[] item : cases) {
+            File file = write("utf8.txt", hexBytes(item[0]));
+            assertEquals(item[1], Content.ofTextFile(file.getPath()), item[0]);
+        }
+    }
+
+    private static byte[] hexBytes(String hex) {
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+        }
+        return bytes;
     }
 }

@@ -47,6 +47,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   missing gap gets more space than before.
 
 ### Fixed
+- The four ports read the same text from bytes that are not UTF-8. Java read
+  an encoded surrogate, the three bytes ED A0 80, as one U+FFFD, and Go read a
+  sequence cut short at the end of a file as one U+FFFD a byte, where C# and
+  Swift replace the maximal subparts of an ill formed sequence, which is what
+  the Unicode Standard recommends in section 3.9: ED A0 80 is three
+  replacements, and E2 82 at the end of a file is one. Java has a decoder of
+  its own now, `UTF8`, and Go the package `internal/utf8text`; both are used
+  wherever the bytes of a file or a font become text — `Content.ofTextFile`,
+  `Table`, `BigTable`, `OTF` and the `.stream` font reader. Swift `Table` no
+  longer fails the whole file when it is not UTF-8, and drops a byte order
+  mark as the other ports do, and Swift `OTF` no longer drops the name of a
+  font whose Macintosh name record is not UTF-8. Well formed UTF-8 reads as
+  before in all four ports, and the example documents are unchanged.
 - A BMP file could allocate a gigabyte for a skip (in Go) or an image size
   (in the four ports) its data did not have: a 76-byte file 1 GB. What is
   skipped is read as it comes, and the rows before the image is allocated. A palette index past

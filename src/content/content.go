@@ -10,6 +10,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 )
 
 // OfTextFile returns the contents of the specified text file.
@@ -29,7 +31,7 @@ func OfTextFile(fileName string) string {
 		panic(err)
 	}
 	runes := make([]rune, 0)
-	for _, ch := range string(contents) {
+	for _, ch := range utf8text.Decode(contents) {
 		if ch != '\r' {
 			runes = append(runes, ch)
 		}

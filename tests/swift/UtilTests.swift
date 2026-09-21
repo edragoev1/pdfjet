@@ -136,4 +136,56 @@ import Testing
         #expect(end("中文", ",") == 1)
         #expect(end("」", "。") == 1)      // no other place to break
     }
+
+    @Test func ofTextFileReplacesWhatIsNotUtf8() throws {
+        // The bytes and the text they read as: the four ports replace the maximal
+        // subparts of an ill formed UTF-8 sequence with U+FFFD, the substitution
+        // the Unicode Standard recommends in section 3.9. The same table is in
+        // the tests of the other three ports.
+        let cases = [
+            ("68656C6C6F", "hello"),                                  // Hello
+            ("77C3B6726C64", "w\u{00F6}rld"),                         // Wörld
+            ("E697A5E69CAC", "\u{65E5}\u{672C}"),                     // 日本, Japanese
+            ("F09F9880", "\u{1F600}"),                                // A code point outside the plane
+            ("EFBFBD", "\u{FFFD}"),                                   // The replacement character itself
+            ("EFBFBE", "\u{FFFE}"),                                   // A noncharacter is well formed
+            ("E28282", "\u{2082}"),                                   // Well formed, subscript two
+            ("EDA080", "\u{FFFD}\u{FFFD}\u{FFFD}"),                   // An encoded surrogate, U+D800
+            ("EDBFBF", "\u{FFFD}\u{FFFD}\u{FFFD}"),                   // U+DFFF
+            ("EDA080EDB080", "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}"),// An encoded surrogate pair
+            ("EDA0", "\u{FFFD}\u{FFFD}"),                             // Two bytes of an encoded surrogate
+            ("ED", "\u{FFFD}"),
+            ("C080", "\u{FFFD}\u{FFFD}"),                             // The overlong encodings
+            ("E08080", "\u{FFFD}\u{FFFD}\u{FFFD}"),
+            ("F0828282", "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}"),
+            ("F4908080", "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}"),         // Past U+10FFFF
+            ("F5808080", "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}"),
+            ("FE", "\u{FFFD}"),
+            ("FF", "\u{FFFD}"),
+            ("80", "\u{FFFD}"),                                       // A byte of a sequence, alone
+            ("BF", "\u{FFFD}"),
+            ("C2", "\u{FFFD}"),                                       // A sequence cut short is one replacement,
+            ("C2C2", "\u{FFFD}\u{FFFD}"),                             // However many of its bytes are there
+            ("E282", "\u{FFFD}"),
+            ("E0A0", "\u{FFFD}"),
+            ("F09080", "\u{FFFD}"),
+            ("41C2", "A\u{FFFD}"),
+            ("61EDA08062", "a\u{FFFD}\u{FFFD}\u{FFFD}b"),             // Between well formed text
+        ]
+        for (bytes, want) in cases {
+            let file = try write("utf8.txt", hexBytes(bytes))
+            #expect(try Content.ofTextFile(file) == want, "\(bytes)")
+        }
+    }
+
+    private func hexBytes(_ hex: String) -> [UInt8] {
+        var bytes = [UInt8]()
+        var i = hex.startIndex
+        while i < hex.endIndex {
+            let j = hex.index(i, offsetBy: 2)
+            bytes.append(UInt8(hex[i..<j], radix: 16)!)
+            i = j
+        }
+        return bytes
+    }
 }

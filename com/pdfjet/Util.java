@@ -137,7 +137,7 @@ class Util {
      * @return the fields of the record.
      * @throws IOException if the reader fails.
      */
-    static String[] readRecord(String line, BufferedReader reader, String delimiter) throws IOException {
+    static String[] readRecord(String line, UTF8.LineReader reader, String delimiter) throws IOException {
         String[] fields = split(line, delimiter, true);
         if (fields != null) {
             return fields;

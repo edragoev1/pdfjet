@@ -14,6 +14,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
+	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 )
 
 // fontStream1 is used to add stream fonts to the PDF.
@@ -372,8 +373,8 @@ func getFontData(font *Font, reader io.Reader) {
 	if !isFontName(fontName) {
 		fontStreamError("the font name")
 	}
-	font.name = string(fontName)
-	font.info = string(readBytes(reader, int(getUint24(reader))))
+	font.name = utf8text.Decode(fontName)
+	font.info = utf8text.Decode(readBytes(reader, int(getUint24(reader))))
 
 	inflated, err := decompressor.InflateWithMaxLength(
 		readBytes(reader, int(getUint32(reader))), maxFontMetricsLength)
