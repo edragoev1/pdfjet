@@ -12,21 +12,25 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
-// Example43 draws a very large table across thousands of pages.
+// Example43 draws a large table over many pages, tagged as a table.
 func Example43() {
 	pdf, err := pdfjet.NewPDFFile("Example_43.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
 
-	// Used for performance testing. Results in 2000+ pages PDF.
-	fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	// A tagged table has a structure element for every cell, and they are
+	// held until the document is written, so a PDF/UA document of this table
+	// is as large as the rows it draws. The whole file, which is 2000+ pages,
+	// is the one to time the library with, without the compliance above.
+	fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	// fileName := "data/Electric_Vehicle_Population_Data.csv"
 	// fileName := "data/Electric_Vehicle_Population_5_Lines.csv"
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)

@@ -218,5 +218,56 @@ public sealed class BigTableTest : IDisposable {
         ArgumentException e = Assert.Throws<ArgumentException>(() => table.SetTableData(Header, Rows()));
         Assert.Equal("The header does not have a field for every column.", e.Message);
     }
+    // The number of times the text is in the string.
+    private static int Count(string str, string text) {
+        return str.Split(new string[] {text}, StringSplitOptions.None).Length - 1;
+    }
+
+    [Fact]
+    public void IsTaggedAsATableInAPDFUADocument() {
+        // The table is one Table element over all its pages: a TR for each
+        // row, a TH for each header field the first time the header is drawn
+        // and a TD for each field of a row, each holding the text in a P.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = TestSupport.Helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(3);
+        table.SetTableData(Header, Rows());
+        List<Page> pages = Draw(table);
+        Assert.Equal(2, pages.Count);
+        // The header that repeats on the second page is an artifact, and the
+        // shading and the lines of every page are artifacts too.
+        string content = TestSupport.Latin1(pages[1].GetContent());
+        Assert.True(content.IndexOf(TestSupport.Hex("Name")) < content.IndexOf("BDC\n"), content);
+        Assert.True(content.IndexOf("/Artifact BMC\n") < content.IndexOf(TestSupport.Hex("Name")), content);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/S /Table\n"));
+        // The 100 rows of the data, and the header row of the first page.
+        Assert.Equal(101, Count(raw, "/S /TR\n"));
+        Assert.Equal(3, Count(raw, "/S /TH\n"));
+        Assert.Equal(300, Count(raw, "/S /TD\n"));
+        Assert.Equal(303, Count(raw, "/S /P\n"));
+        Assert.Equal(3, Count(raw, "/A <</O /Table /Scope /Column>>"));
+    }
+
+    [Fact]
+    public void IsNotTaggedInADocumentThatIsNotPDFUA() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(3);
+        table.SetTableData(Header, Rows());
+        Draw(table);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        foreach (string text in new string[] {"/S /Table\n", "/S /TR\n", "BDC\n", "/Artifact BMC\n"}) {
+            Assert.Equal(0, Count(raw, text));
+        }
+    }
+
 }
 }

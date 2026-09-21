@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -270,5 +271,58 @@ func TestBigTableAHeaderWithFewerFieldsThanColumnsIsRefused(t *testing.T) {
 	testRecorded(t, pdf, "The header does not have a field for every column.")
 	if err := table.Complete(); err != nil || len(table.GetPages()) != 0 {
 		t.Errorf("Complete: %v, %d pages", err, len(table.GetPages()))
+	}
+}
+
+func TestBigTableIsTaggedAsATableInAPDFUADocument(t *testing.T) {
+	// The table is one Table element over all its pages: a TR for each row,
+	// a TH for each header field the first time the header is drawn and a TD
+	// for each field of a row, each holding the text in a P.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testHelvetica(doc.pdf)
+	table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3).
+		SetTableRows(testBigTableHeader, slices.Values(testBigTableRows()))
+	pages := testDrawBigTable(t, table)
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	// The header that repeats on the second page is an artifact, and the
+	// shading and the lines of every page are artifacts too.
+	content := testContent(pages[1])
+	if strings.Index(content, testHex("Name")) > strings.Index(content, "BDC\n") {
+		t.Error("the header row on the second page is not an artifact")
+	}
+	if strings.Index(content, "/Artifact BMC\n") > strings.Index(content, testHex("Name")) {
+		t.Error("the header row on the second page is drawn before any artifact begins")
+	}
+	raw := string(doc.complete())
+	counts := map[string]int{
+		"/S /Table\n": 1,
+		// The 100 rows of the data, and the header row of the first page.
+		"/S /TR\n":                        101,
+		"/S /TH\n":                        3,
+		"/S /TD\n":                        300,
+		"/S /P\n":                         303,
+		"/A <</O /Table /Scope /Column>>": 3,
+	}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+}
+
+func TestBigTableIsNotTaggedInADocumentThatIsNotPDFUA(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	testDrawBigTable(t, NewBigTable(doc.pdf, font, font, letter.Portrait()).
+		SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(testBigTableRows())))
+	raw := string(doc.complete())
+	for _, text := range []string{"/S /Table\n", "/S /TR\n", "BDC\n", "/Artifact BMC\n"} {
+		if strings.Contains(raw, text) {
+			t.Errorf("a document that is not PDF/UA has %q", text)
+		}
 	}
 }

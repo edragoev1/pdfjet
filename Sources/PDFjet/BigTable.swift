@@ -8,7 +8,9 @@ import Foundation
 
 /// A table for large amounts of data, read row by row from a delimited text file or
 /// from a sequence. Each page is written as soon as it is full, so the memory stays
-/// flat however many rows there are.
+/// flat however many rows there are. In a PDF/UA document it does not: the table is
+/// tagged as a table, which gives every cell a structure element, and they are held
+/// until the document is written.
 public class BigTable {
     private let pdf: PDF
     private let f1: Font
@@ -26,6 +28,9 @@ public class BigTable {
     private var bottomMargin: Float = 20.0
     private var padding: Float = 2.0
     private var highlightRow: Bool = true
+    // In a PDF/UA document the table is a Table element that the rows of
+    // every page go on adding to; see drawFieldsAndLine.
+    private var structElement: StructElement?
     private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
     private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
     private var footerText: String? = "Page {page} of {pages}"
@@ -197,7 +202,14 @@ public class BigTable {
         page!.setPenWidth(0.0)
         self.yText = self.y + f1.ascent
         self.highlightRow = true
-        drawFieldsAndLine(fields: headerFields, font: f1)
+        // The header fields are the TH cells of the table the first time they
+        // are drawn, and an artifact where they repeat on the next pages.
+        var header: StructElem?
+        if structElement == nil {
+            structElement = page!.addStructElement(page!.structParent, StructElem.TABLE, nil)
+            header = StructElem.TH
+        }
+        drawFieldsAndLine(fields: headerFields, font: f1, cellStructure: header)
         self.yText += f1.descent + f2.ascent
         startNewPage = false
     }
@@ -209,7 +221,10 @@ public class BigTable {
             let text = footerText
                     .replacingOccurrences(of: "{page}", with: String(pageNumber))
                     .replacingOccurrences(of: "{pages}", with: String(pageCount))
+            // The page number repeats on every page, which makes it an artifact.
+            page!.addArtifactBMC()
             page!.addFooter(TextLine(footerFont ?? f1, text))
+            page!.addEMC()
         }
         footerDrawn = true
     }
@@ -243,7 +258,7 @@ public class BigTable {
             newPage()
         }
 
-        drawFieldsAndLine(fields: fields, font: f2)
+        drawFieldsAndLine(fields: fields, font: f2, cellStructure: StructElem.TD)
         self.yText += f2.descent + f2.ascent
         if self.yText > (page!.height - self.bottomMargin) {
             drawTheVerticalLines()
@@ -252,7 +267,15 @@ public class BigTable {
         }
     }
 
-    private func drawFieldsAndLine(fields: [String], font: Font) {
+    // Draws a row of the table. In a PDF/UA document the row is a TR element
+    // and each field a TH or TD element that holds the text, and the shading
+    // and the lines are artifacts. A row with no cell structure is drawn as an
+    // artifact, which is what the header rows that repeat on the next pages
+    // are.
+    private func drawFieldsAndLine(
+            fields: [String], font: Font, cellStructure: StructElem?) {
+        // The shading and the line above the text carry no meaning of their own.
+        page!.addArtifactBMC()
         if self.highlightRow {
             if let shadingColor = shadingColor {
                 highlightRow(page: page!, font: font, color: shadingColor)
@@ -271,16 +294,37 @@ public class BigTable {
             page!.strokePath()
             page!.setPenColor(original)
         }
+        page!.addEMC()
         page!.setBrushColor(Color.black)
 
+        let tagged = structElement != nil && cellStructure != nil
+        let parent = page!.structParent
+        var rowElement: StructElement?
+        if tagged {
+            rowElement = page!.addStructElement(structElement, StructElem.TR, nil)
+        }
         for i in 0..<numberOfColumns {
             let text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]]
             var xText = vertLines[i] + self.padding
             if alignment[i] == Alignment.RIGHT {
                 xText = (vertLines[i + 1] - self.padding) - font.stringWidth(text)
             }
+            if tagged {
+                page!.structParent = page!.addStructElement(
+                        rowElement, cellStructure!, BigTable.cellAttributes(cellStructure!))
+                page!.addBDC(StructElem.P, nil, nil, text)
+            } else {
+                page!.addArtifactBMC()
+            }
             page!.drawTextLine(font, text, xText, self.yText)
+            page!.addEMC()
         }
+        page!.structParent = parent
+    }
+
+    // The attributes of a cell element: a header cell heads the column it is in.
+    private static func cellAttributes(_ cellStructure: StructElem) -> String? {
+        return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : nil
     }
 
     private func highlightRow(page: Page, font: Font, color: [Float]) {
@@ -295,6 +339,8 @@ public class BigTable {
         guard let borderColor = borderColor else {
             return
         }
+        // The lines of the table carry no meaning of their own.
+        page!.addArtifactBMC()
         let original = page!.getPenColor()
         page!.setPenColor(borderColor)
         for i in 0...numberOfColumns {
@@ -308,6 +354,7 @@ public class BigTable {
         page!.lineTo(vertLines[numberOfColumns], self.yText - f2.ascent)
         page!.strokePath()
         page!.setPenColor(original)
+        page!.addEMC()
     }
 
     private static func rgb(_ color: Int32) -> [Float] {

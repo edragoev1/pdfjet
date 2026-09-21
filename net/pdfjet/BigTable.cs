@@ -14,7 +14,9 @@ namespace PDFjet.NET {
     /// <summary>
     /// A table for large amounts of data, read row by row from a delimited text file or
     /// from an IEnumerable. Each page is written as soon as it is full, so the memory
-    /// stays flat however many rows there are.
+    /// stays flat however many rows there are. In a PDF/UA document it does not: the
+    /// table is tagged as a table, which gives every cell a structure element, and they
+    /// are held until the document is written.
     /// </summary>
     public class BigTable {
         private readonly PDF pdf;
@@ -33,6 +35,9 @@ namespace PDFjet.NET {
         private float bottomMargin = 20.0f;
         private float padding = 2.0f;
         private bool highlightRow = true;
+        // In a PDF/UA document the table is a Table element that the rows of
+        // every page go on adding to; see DrawFieldsAndLine.
+        private StructElement structElement = null;
         private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
         private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
         private string footerText = "Page {page} of {pages}";
@@ -211,7 +216,14 @@ namespace PDFjet.NET {
             page.SetPenWidth(0f);
             this.yText = this.y + f1.ascent;
             this.highlightRow = true;
-            DrawFieldsAndLine(headerFields, f1);
+            // The header fields are the TH cells of the table the first time
+            // they are drawn, and an artifact where they repeat on the next pages.
+            StructElem? header = null;
+            if (structElement == null) {
+                structElement = page.AddStructElement(page.structParent, StructElem.TABLE, null);
+                header = StructElem.TH;
+            }
+            DrawFieldsAndLine(headerFields, f1, header);
             this.yText += f1.descent + f2.ascent;
             startNewPage = false;
         }
@@ -223,7 +235,10 @@ namespace PDFjet.NET {
                 string text = footerText
                         .Replace("{page}", pageNumber.ToString(CultureInfo.InvariantCulture))
                         .Replace("{pages}", pageCount.ToString(CultureInfo.InvariantCulture));
+                // The page number repeats on every page, which makes it an artifact.
+                page.AddArtifactBMC();
                 page.AddFooter(new TextLine(footerFont ?? f1, text));
+                page.AddEMC();
             }
             footerDrawn = true;
         }
@@ -233,7 +248,7 @@ namespace PDFjet.NET {
                 NewPage();
             }
 
-            DrawFieldsAndLine(fields, f2);
+            DrawFieldsAndLine(fields, f2, StructElem.TD);
             this.yText += f2.ascent + f2.descent;
             if (this.yText > (this.page.GetHeight() - this.bottomMargin)) {
                 DrawTheVerticalLines();
@@ -266,7 +281,14 @@ namespace PDFjet.NET {
             return count;
         }
 
-        private void DrawFieldsAndLine(string[] fields, Font font) {
+        // Draws a row of the table. In a PDF/UA document the row is a TR element
+        // and each field a TH or TD element that holds the text, and the shading
+        // and the lines are artifacts. A row with no cell structure is drawn as
+        // an artifact, which is what the header rows that repeat on the next
+        // pages are.
+        private void DrawFieldsAndLine(string[] fields, Font font, StructElem? cellStructure) {
+            // The shading and the line above the text carry no meaning of their own.
+            page.AddArtifactBMC();
             if (this.highlightRow) {
                 if (shadingColor != null) {
                     HighlightRow(page, font, shadingColor);
@@ -285,16 +307,37 @@ namespace PDFjet.NET {
                 page.StrokePath();
                 page.SetPenColor(original);
             }
+            page.AddEMC();
             page.SetBrushColor(Color.black);
 
+            bool tagged = structElement != null && cellStructure != null;
+            StructElement parent = page.structParent;
+            StructElement rowElement = null;
+            if (tagged) {
+                rowElement = page.AddStructElement(structElement, StructElem.TR, null);
+            }
             for (int i = 0; i < this.numberOfColumns; i++) {
                 String text = checkLineBreaks ? Util.LineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
                 float xText = vertLines[i] + this.padding;
                 if (alignment[i] == Alignment.RIGHT) {
                     xText = (vertLines[i + 1] - this.padding) - font.StringWidth(text);
                 }
+                if (tagged) {
+                    page.structParent = page.AddStructElement(
+                            rowElement, cellStructure.Value, CellAttributes(cellStructure.Value));
+                    page.AddBDC(StructElem.P, null, null, text);
+                } else {
+                    page.AddArtifactBMC();
+                }
                 page.DrawTextLine(font, text, xText, this.yText);
+                page.AddEMC();
             }
+            page.structParent = parent;
+        }
+
+        // The attributes of a cell element: a header cell heads the column it is in.
+        private static String CellAttributes(StructElem cellStructure) {
+            return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : null;
         }
 
         private void HighlightRow(Page page, Font font, float[] color) {
@@ -309,6 +352,8 @@ namespace PDFjet.NET {
             if (borderColor == null) {
                 return;
             }
+            // The lines of the table carry no meaning of their own.
+            page.AddArtifactBMC();
             float[] original = page.GetPenColor();
             page.SetPenColor(borderColor);
             for (int i = 0; i <= this.numberOfColumns; i++) {
@@ -322,6 +367,7 @@ namespace PDFjet.NET {
             page.LineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
             page.StrokePath();
             page.SetPenColor(original);
+            page.AddEMC();
         }
 
         private static float[] Rgb(int color) {

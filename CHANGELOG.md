@@ -36,6 +36,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   drawables are children of the Document element as before.
 
 ### Changed
+- `BigTable` is tagged as a table in a PDF/UA document, as `Table` is: one
+  Table element over all its pages, a TR for each row, a TH with the Column
+  scope for each field of the header the first time it is drawn and a TD for
+  each field of a row, each holding its text in a P. The header where it
+  repeats on the next pages, the row shading, the lines and the page number
+  are artifacts. Example_43 is a PDF/UA document now, and draws the 10-page
+  data file: a tagged table has a structure element for every cell, and they
+  are held until the document is written, so the whole 29 MB file -- which is
+  what the library is timed with, and is 2000+ pages -- makes a document of
+  378 MB rather than 11.6 MB. `BigTable` keeps its flat memory in a document
+  that is not PDF/UA, where it writes no structure elements at all.
 - The heading of a page is tagged as a heading in the examples that have one,
   where every one of them was a paragraph: 19 H1 and 2 H2 over the 39 PDF/UA
   examples. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF

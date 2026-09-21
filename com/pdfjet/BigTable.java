@@ -17,7 +17,9 @@ import java.util.*;
  * Use this class if you have a lot of data. The rows are read from a
  * delimited text file, or from an Iterable, one at a time, and each page is
  * written as soon as it is full, so the memory stays flat however many rows
- * there are.
+ * there are. In a PDF/UA document it does not: the table is tagged as a
+ * table, which gives every cell a structure element, and they are held until
+ * the document is written.
  */
 public class BigTable {
     private final PDF pdf;
@@ -36,6 +38,9 @@ public class BigTable {
     private float bottomMargin = 20.0f;
     private float padding = 2.0f;
     private boolean highlightRow = true;
+    // In a PDF/UA document the table is a Table element that the rows of
+    // every page go on adding to; see drawFieldsAndLine.
+    private StructElement structElement = null;
     private float[] shadingColor = rgb(0xF0F0F0);   // null for no shading
     private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
     private String footerText = "Page {page} of {pages}";
@@ -248,7 +253,14 @@ public class BigTable {
         page.setPenWidth(0f);
         this.yText = this.y + f1.ascent;
         this.highlightRow = true;
-        drawFieldsAndLine(headerFields, f1);
+        // The header fields are the TH cells of the table the first time they
+        // are drawn, and an artifact where they repeat on the next pages.
+        StructElem header = null;
+        if (structElement == null) {
+            structElement = page.addStructElement(page.structParent, StructElem.TABLE, null);
+            header = StructElem.TH;
+        }
+        drawFieldsAndLine(headerFields, f1, header);
         this.yText += f1.descent + f2.ascent;
         startNewPage = false;
     }
@@ -260,7 +272,10 @@ public class BigTable {
             String text = footerText
                     .replace("{page}", String.valueOf(pageNumber))
                     .replace("{pages}", String.valueOf(pageCount));
+            // The page number repeats on every page, which makes it an artifact.
+            page.addArtifactBMC();
             page.addFooter(new TextLine((footerFont != null) ? footerFont : f1, text));
+            page.addEMC();
         }
         footerDrawn = true;
     }
@@ -270,7 +285,7 @@ public class BigTable {
             newPage();
         }
 
-        drawFieldsAndLine(fields, f2);
+        drawFieldsAndLine(fields, f2, StructElem.TD);
         this.yText += f2.descent + f2.ascent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
             drawTheVerticalLines();
@@ -303,7 +318,14 @@ public class BigTable {
         return count;
     }
 
-    private void drawFieldsAndLine(String[] fields, Font font) {
+    // Draws a row of the table. In a PDF/UA document the row is a TR element
+    // and each field a TH or TD element that holds the text, and the shading
+    // and the lines are artifacts. A row with no cell structure is drawn as an
+    // artifact, which is what the header rows that repeat on the next pages
+    // are.
+    private void drawFieldsAndLine(String[] fields, Font font, StructElem cellStructure) {
+        // The shading and the line above the text carry no meaning of their own.
+        page.addArtifactBMC();
         if (this.highlightRow) {
             if (shadingColor != null) {
                 highlightRow(page, font, shadingColor);
@@ -322,16 +344,37 @@ public class BigTable {
             page.strokePath();
             page.setPenColor(original);
         }
+        page.addEMC();
         page.setBrushColor(Color.black);
 
+        boolean tagged = structElement != null && cellStructure != null;
+        StructElement parent = page.structParent;
+        StructElement rowElement = null;
+        if (tagged) {
+            rowElement = page.addStructElement(structElement, StructElem.TR, null);
+        }
         for (int i = 0; i < this.numberOfColumns; i++) {
             String text = checkLineBreaks ? Util.lineBreaksToSpaces(fields[columns[i]]) : fields[columns[i]];
             float xText = vertLines[i] + this.padding;
             if (alignment[i] == Alignment.RIGHT) {
                 xText = (vertLines[i + 1] - this.padding) - font.stringWidth(text);
             }
+            if (tagged) {
+                page.structParent = page.addStructElement(
+                        rowElement, cellStructure, cellAttributes(cellStructure));
+                page.addBDC(StructElem.P, null, null, text);
+            } else {
+                page.addArtifactBMC();
+            }
             page.drawTextLine(font, text, xText, this.yText);
+            page.addEMC();
         }
+        page.structParent = parent;
+    }
+
+    // The attributes of a cell element: a header cell heads the column it is in.
+    private static String cellAttributes(StructElem cellStructure) {
+        return (cellStructure == StructElem.TH) ? "<</O /Table /Scope /Column>>" : null;
     }
 
     private void highlightRow(Page page, Font font, float[] color) {
@@ -346,6 +389,8 @@ public class BigTable {
         if (borderColor == null) {
             return;
         }
+        // The lines of the table carry no meaning of their own.
+        page.addArtifactBMC();
         float[] original = page.getPenColor();
         page.setPenColor(borderColor);
         for (int i = 0; i <= this.numberOfColumns; i++) {
@@ -360,6 +405,7 @@ public class BigTable {
         page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
         page.strokePath();
         page.setPenColor(original);
+        page.addEMC();
     }
 
     private static float[] rgb(int color) {

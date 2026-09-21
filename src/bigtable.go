@@ -19,11 +19,14 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // BigTable is a table for large amounts of data, read row by row from a
 // delimited text file or from an iterator. Each page is written as soon as it
-// is full, so the memory stays flat however many rows there are.
+// is full, so the memory stays flat however many rows there are. In a PDF/UA
+// document it does not: the table is tagged as a table, which gives every
+// cell a structure element, and they are held until the document is written.
 type BigTable struct {
 	pdf             *PDF
 	f1              *Font
@@ -58,6 +61,9 @@ type BigTable struct {
 	pageCount       int // The pages they take, counted by Complete
 	pageNumber      int // The page being drawn
 	footerDrawn     bool
+	// In a PDF/UA document the table is a Table element that the rows of
+	// every page go on adding to; see drawFieldsAndLine.
+	structElement *structElement
 }
 
 // NewBigTable creates a new BigTable instance
@@ -209,7 +215,14 @@ func (bt *BigTable) newPage() {
 	bt.page.SetPenWidth(0.0)
 	bt.yText = bt.y + bt.f1.ascent
 	bt.highlight = true
-	bt.drawFieldsAndLine(bt.headerFields, bt.f1)
+	// The header fields are the TH cells of the table the first time they are
+	// drawn, and an artifact where they repeat on the next pages.
+	header := structelem.StructElem("")
+	if bt.structElement == nil {
+		bt.structElement = bt.page.addStructElement(bt.page.structParent, structelem.Table, "")
+		header = structelem.TH
+	}
+	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header)
 	bt.yText += bt.f1.descent + bt.f2.ascent
 	bt.startNewPage = false
 }
@@ -224,7 +237,10 @@ func (bt *BigTable) drawFooter() {
 		if font == nil {
 			font = bt.f1
 		}
+		// The page number repeats on every page, which makes it an artifact.
+		bt.page.AddArtifactBMC()
 		bt.page.AddFooter(NewTextLine(font, text))
+		bt.page.AddEMC()
 	}
 	bt.footerDrawn = true
 }
@@ -258,7 +274,7 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 		bt.newPage()
 	}
 
-	bt.drawFieldsAndLine(fields, bt.f2)
+	bt.drawFieldsAndLine(fields, bt.f2, structelem.TD)
 	bt.yText += bt.f2.descent + bt.f2.ascent
 	if bt.yText > (bt.page.height - bt.bottomMargin) {
 		bt.drawTheVerticalLines()
@@ -267,7 +283,15 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 	}
 }
 
-func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
+// drawFieldsAndLine draws a row of the table. In a PDF/UA document the row is
+// a TR element and each field a TH or TD element that holds the text, and the
+// shading and the lines are artifacts. A row with no cell structure is drawn
+// as an artifact, which is what the header rows that repeat on the next pages
+// are.
+func (bt *BigTable) drawFieldsAndLine(
+	fields []string, font *Font, cellStructure structelem.StructElem) {
+	// The shading and the line above the text carry no meaning of their own.
+	bt.page.AddArtifactBMC()
 	if bt.highlight {
 		if bt.hasShading {
 			bt.highlightRow(bt.page, font, bt.shadingColor)
@@ -286,8 +310,15 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 		bt.page.StrokePath()
 		bt.page.SetPenColorRGB(original)
 	}
+	bt.page.AddEMC()
 	bt.page.SetBrushColor(color.Black)
 
+	tagged := bt.structElement != nil && cellStructure != ""
+	parent := bt.page.structParent
+	var rowElement *structElement
+	if tagged {
+		rowElement = bt.page.addStructElement(bt.structElement, structelem.TR, "")
+	}
 	for i := 0; i < bt.numberOfColumns; i++ {
 		text := fields[bt.columns[i]]
 		if bt.checkLineBreaks && hasLineBreak(text) {
@@ -297,8 +328,26 @@ func (bt *BigTable) drawFieldsAndLine(fields []string, font *Font) {
 		if bt.alignment[i] == alignment.Right {
 			xText = (bt.vertLines[i+1] - bt.padding) - font.StringWidth(font.size, text)
 		}
+		if tagged {
+			bt.page.structParent = bt.page.addStructElement(
+				rowElement, cellStructure, bigTableCellAttributes(cellStructure))
+			bt.page.AddBDC(structelem.P, "", "", text)
+		} else {
+			bt.page.AddArtifactBMC()
+		}
 		bt.page.drawTextLine(font, text, xText, bt.yText)
+		bt.page.AddEMC()
 	}
+	bt.page.structParent = parent
+}
+
+// bigTableCellAttributes returns the attributes of a cell element: a header
+// cell heads the column it is in.
+func bigTableCellAttributes(cellStructure structelem.StructElem) string {
+	if cellStructure == structelem.TH {
+		return "<</O /Table /Scope /Column>>"
+	}
+	return ""
 }
 
 func (bt *BigTable) highlightRow(page *Page, font *Font, rgb [3]float32) {
@@ -313,6 +362,9 @@ func (bt *BigTable) drawTheVerticalLines() {
 	if !bt.hasBorder {
 		return
 	}
+	// The lines of the table carry no meaning of their own.
+	bt.page.AddArtifactBMC()
+	defer bt.page.AddEMC()
 	original := bt.page.GetPenColor()
 	bt.page.SetPenColorRGB(bt.borderColor)
 	for i := 0; i <= bt.numberOfColumns; i++ {

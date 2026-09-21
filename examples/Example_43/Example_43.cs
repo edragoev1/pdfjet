@@ -16,12 +16,16 @@ public class Example_43 {
     public Example_43() {
         PDF pdf = new PDF(
             new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
-        // pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetCompliance(Compliance.PDF_UA_1);
         pdf.SetTitle("Electric Vehicle Population Data");    // Required for PDF/UA !
 
-        // Used for performance testing. Results in 2000+ pages PDF.
-        String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        // A tagged table has a structure element for every cell, and they are
+        // held until the document is written, so a PDF/UA document of this
+        // table is as large as the rows it draws. The whole file, which is
+        // 2000+ pages, is the one to time the library with, without the
+        // compliance above.
+        String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        // String fileName = "data/Electric_Vehicle_Population_Data.csv";
         // String fileName = "data/Electric_Vehicle_Population_5_Lines.csv";
 
         Font f1 = new Font(pdf, IBMPlexSans.SemiBold);

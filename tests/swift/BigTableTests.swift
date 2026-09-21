@@ -199,4 +199,53 @@ import Testing
         try table.complete()
         #expect(table.getPages().isEmpty)
     }
+    private func count(_ str: String, _ text: String) -> Int {
+        return str.components(separatedBy: text).count - 1
+    }
+
+    @Test func isTaggedAsATableInAPDFUADocument() throws {
+        // The table is one Table element over all its pages: a TR for each
+        // row, a TH for each header field the first time the header is drawn
+        // and a TD for each field of a row, each holding the text in a P.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let font = TestSupport.helvetica(memory.pdf)
+        let table = BigTable(memory.pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setTableData(header, rows())
+        let pages = try draw(table)
+        #expect(pages.count == 2)
+        guard pages.count == 2 else { return }
+        // The header that repeats on the second page is an artifact, and the
+        // shading and the lines of every page are artifacts too.
+        let content = TestSupport.content(pages[1])
+        #expect(content.range(of: TestSupport.hex("Name"))!.lowerBound
+                < content.range(of: "BDC\n")!.lowerBound)
+        #expect(content.range(of: "/Artifact BMC\n")!.lowerBound
+                < content.range(of: TestSupport.hex("Name"))!.lowerBound)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/S /Table\n") == 1)
+        // The 100 rows of the data, and the header row of the first page.
+        #expect(count(raw, "/S /TR\n") == 101)
+        #expect(count(raw, "/S /TH\n") == 3)
+        #expect(count(raw, "/S /TD\n") == 300)
+        #expect(count(raw, "/S /P\n") == 303)
+        #expect(count(raw, "/A <</O /Table /Scope /Column>>") == 3)
+    }
+
+    @Test func isNotTaggedInADocumentThatIsNotPDFUA() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let table = BigTable(memory.pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setTableData(header, rows())
+        _ = try draw(table)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        for text in ["/S /Table\n", "/S /TR\n", "BDC\n", "/Artifact BMC\n"] {
+            #expect(count(raw, text) == 0)
+        }
+    }
+
 }

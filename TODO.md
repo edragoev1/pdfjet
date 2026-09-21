@@ -168,6 +168,11 @@ work to Oct 21 is the seven goals below, in this order.
      `setStructureType` is on `TextLine` alone.
    - ⬜ No example uses the L, LI, Lbl and LBody tags, so a list that is drawn
      reads as paragraphs.
+   - ⬜ A tagged `BigTable` is as large as the rows it draws, since every cell
+     is a structure element that is held until the document is written: the
+     29 MB data file of Example_43 makes 378 MB rather than 11.6 MB, and
+     900 MB of memory. Writing the structure tree as the pages are written
+     would keep the flat memory that `BigTable` is for.
    - ⬜ PAC itself, or the Matterhorn conditions that need eyes on a page:
      the reading order of each page, whether a colour alone carries meaning,
      and whether each Alt says what its figure shows.

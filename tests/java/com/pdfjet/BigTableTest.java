@@ -266,4 +266,55 @@ class BigTableTest {
                 () -> table.setTableData(HEADER, rows()));
         assertEquals("The header does not have a field for every column.", e.getMessage());
     }
+    // The number of times the text is in the string.
+    private static int count(String str, String text) {
+        return str.split(java.util.regex.Pattern.quote(text), -1).length - 1;
+    }
+
+    @Test
+    void isTaggedAsATableInAPDFUADocument() throws Exception {
+        // The table is one Table element over all its pages: a TR for each
+        // row, a TH for each header field the first time the header is drawn
+        // and a TD for each field of a row, each holding the text in a P.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = TestSupport.helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(3);
+        table.setTableData(HEADER, rows());
+        List<Page> pages = draw(table);
+        assertEquals(2, pages.size());
+        // The header that repeats on the second page is an artifact, and the
+        // shading and the lines of every page are artifacts too.
+        String content = TestSupport.latin1(pages.get(1).getContent());
+        assertTrue(content.indexOf(TestSupport.hex("Name")) < content.indexOf("BDC\n"), content);
+        assertTrue(content.indexOf("/Artifact BMC\n") < content.indexOf(TestSupport.hex("Name")), content);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/S /Table\n"), raw);
+        // The 100 rows of the data, and the header row of the first page.
+        assertEquals(101, count(raw, "/S /TR\n"), raw);
+        assertEquals(3, count(raw, "/S /TH\n"), raw);
+        assertEquals(300, count(raw, "/S /TD\n"), raw);
+        assertEquals(303, count(raw, "/S /P\n"), raw);
+        assertEquals(3, count(raw, "/A <</O /Table /Scope /Column>>"), raw);
+    }
+
+    @Test
+    void isNotTaggedInADocumentThatIsNotPDFUA() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(3);
+        table.setTableData(HEADER, rows());
+        draw(table);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        for (String text : new String[] {"/S /Table\n", "/S /TR\n", "BDC\n", "/Artifact BMC\n"}) {
+            assertEquals(0, count(raw, text), text);
+        }
+    }
+
 }
