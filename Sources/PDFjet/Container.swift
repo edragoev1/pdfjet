@@ -220,6 +220,14 @@ public class Container: Drawable {
 
         for element in elements {
             if let annot = element as? BaseAnnotation {
+                // The corners of the annotation are moved and turned for this
+                // drawing and put back after it, so that the container can be
+                // drawn again: the annotation of the second drawing was moved
+                // by the location of the container once more, and ended up
+                // that far from what the container drew.
+                let point1 = annot.point1
+                let point2 = annot.point2
+                let vertices = annot.vertices
                 annot.container = self
                 annot.point1[0] += x
                 annot.point1[1] += y
@@ -232,6 +240,11 @@ public class Container: Drawable {
                     annot.point2[1] += parent.y
                 }
                 annot.rotate(Double(-rotateDegrees))
+                _ = element.drawOn(page)
+                annot.point1 = point1
+                annot.point2 = point2
+                annot.vertices = vertices
+                continue
             }
             element.drawOn(page)
         }

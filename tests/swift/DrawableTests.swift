@@ -115,4 +115,55 @@ import Testing
             #expect(abs(xy[0] - want) < TestSupport.delta, "\(name)")
         }
     }
+    @Test func aContainerDrawsItsAnnotationsInTheSamePlaceEveryTime() throws {
+        // The container moved the corners of an annotation by its own
+        // location on every drawing, so the annotation of the second page
+        // ended up that far from what the container drew there.
+        let memory = MemoryPDF()
+        let container = Container(200, 100)
+        _ = container.setLocation(50, 60)
+        let square = SquareAnnotation()
+        _ = square.setLocation(10, 10)
+        _ = square.setSize(80, 40)
+        _ = container.add(square)
+        for _ in 0..<3 {
+            _ = container.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        }
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let regex = try NSRegularExpression(pattern: "/Rect \\[([-0-9. ]+)\\]")
+        var rects = [String]()
+        let range = NSRange(raw.startIndex..., in: raw)
+        for match in regex.matches(in: raw, range: range) {
+            rects.append(String(raw[Range(match.range(at: 1), in: raw)!])
+                    .trimmingCharacters(in: .whitespaces))
+        }
+        #expect(rects.count == 3)
+        #expect(rects[0] == rects[1], "the second drawing moved the annotation")
+        #expect(rects[0] == rects[2], "the third drawing moved the annotation")
+    }
+    @Test func everyDrawableDrawsTheSameThingEveryTime() throws {
+        // A drawable is drawn where it is put, however often it is drawn: a
+        // header, a watermark or a logo goes on every page of a document. The
+        // two that hold their place in a text are named below.
+        var failures = [String]()
+        for (name, make) in DrawableTests.drawables() {
+            let pdf = TestSupport.newPDF()
+            let drawable = try make(pdf, TestSupport.helvetica(pdf))
+            _ = drawable.setLocation(40, 60)
+            let page1 = Page(pdf, Letter.PORTRAIT)
+            _ = drawable.drawOn(page1)
+            let first = TestSupport.latin1(page1.getContent())
+            let page2 = Page(pdf, Letter.PORTRAIT)
+            _ = drawable.drawOn(page2)
+            let same = first == TestSupport.latin1(page2.getContent())
+            // A TextFrame and a Table draw what is left of their text and
+            // their rows, which is what makes them flow from page to page.
+            let flows = name == "TextFrame" || name == "Table"
+            if same == flows {
+                failures.append(name + (same ? " draws the same thing twice" : " draws something else"))
+            }
+        }
+        #expect(failures.isEmpty, "\(failures)")
+    }
 }

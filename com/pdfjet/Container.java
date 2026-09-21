@@ -248,6 +248,14 @@ public class Container implements Drawable {
         for (Drawable element : elements) {
             if (element instanceof BaseAnnotation) {
                 BaseAnnotation annot = (BaseAnnotation) element;
+                // The corners of the annotation are moved and turned for this
+                // drawing and put back after it, so that the container can be
+                // drawn again: the annotation of the second drawing was moved
+                // by the location of the container once more, and ended up
+                // that far from what the container drew.
+                float[] point1 = Util.copyOf(annot.point1);
+                float[] point2 = Util.copyOf(annot.point2);
+                float[] vertices = (annot.vertices == null) ? null : Util.copyOf(annot.vertices);
                 annot.container = this;
                 annot.point1[0] += x;
                 annot.point1[1] += y;
@@ -260,6 +268,11 @@ public class Container implements Drawable {
                     annot.point2[1] += parent.y;
                 }
                 annot.rotate(-rotateDegrees);
+                element.drawOn(page);
+                annot.point1 = point1;
+                annot.point2 = point2;
+                annot.vertices = vertices;
+                continue;
             }
             element.drawOn(page);
         }

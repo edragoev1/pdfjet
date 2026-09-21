@@ -185,6 +185,14 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	for _, element := range c.elements {
 		if a, ok := element.(annotation); ok {
 			annot := a.baseAnnotation()
+			// The corners of the annotation are moved and turned for this
+			// drawing and put back after it, so that the container can be
+			// drawn again: the annotation of the second drawing was moved by
+			// the location of the container once more, and ended up that far
+			// from what the container drew.
+			point1, point2 := annot.point1, annot.point2
+			// The vertices are a slice, which rotate turns in place.
+			vertices := append([]float32(nil), annot.vertices...)
 			annot.point1[0] += c.x
 			annot.point1[1] += c.y
 			annot.point2[0] += c.x
@@ -197,6 +205,12 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 				annot.point2[1] += c.parent.y
 			}
 			annot.rotate(float64(-c.rotateDegrees))
+			element.DrawOn(page)
+			annot.point1, annot.point2 = point1, point2
+			if annot.vertices != nil {
+				copy(annot.vertices, vertices)
+			}
+			continue
 		}
 		element.DrawOn(page)
 	}

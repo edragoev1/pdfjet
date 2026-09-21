@@ -357,6 +357,27 @@ thing to give if anything does.
       ports for all 4,024 strings of a corpus of Arabic, Hebrew, Latin,
       digits, brackets and marks, and loses no letter and reorders no run of
       Latin or digits over 20,000 random strings.
+- ✅ Goal 2, in part: the barcodes are reviewed (Sep 21), which the Oct 9-14
+      week has. The four ports draw the same modules for every symbol, and
+      what they draw was read back with a decoder written from the
+      specifications: the 30 UPC-A, EAN-13, Code 39 and Code 128 cases give
+      back the text and the check digits they were made from, and of 60 QR
+      codes, from version 4 to 40 at every level, 55 give back their string
+      -- the finder patterns, the timing patterns, the format information and
+      its BCH check, the free modules against the codeword counts, the
+      Reed-Solomon of every block and the payload -- and the other 5 are
+      refused as too long, which is the documented limit. Data Matrix and
+      PDF417 are the same in the four ports. No finding.
+- ✅ Goal 2, in part: `Container` is reviewed (Sep 21). One finding, fixed in
+      the four ports with tests: it moved the corners of the annotations it
+      holds by its own location on every drawing, so a container drawn on a
+      second page left its annotations that far from what it drew. Every one
+      of the 28 drawables is drawn twice in the tests of the four ports now,
+      and only a `TextFrame` and a `Table` draw something else the second
+      time, which is what makes them flow from page to page. The axis ranges
+      of `Chart` were checked over 200,000 random ranges: each one holds its
+      data, has grid lines and is finite. What is left of this block is
+      reading `BarChart`, `DonutChart`, `Form` and `Stamp` end to end.
 - ✅ Goal 5, in part: the 252 fonts PDFjet ships read against fontTools
       (Sep 21), which the Oct 9-14 week has. Every one gives the same name,
       units per em, ascent, descent, line gap, cap height, underline position

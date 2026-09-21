@@ -136,6 +136,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A `Container` draws its annotations where it draws them, however often it is
+  drawn, in all four ports. It moved the corners of every annotation it holds
+  by its own location on each drawing, so a container on a second page put its
+  annotations that far from what it drew there: a container at 50, 60 with a
+  square at 10, 10 drew the square in the same place on three pages and left
+  its annotation at 60,722, then 110,662, then 160,602. The corners are put
+  back after the drawing now. Found in the review of the barcodes, the charts,
+  `Form`, `Container` and `Stamp` of Sep 21; of the 28 drawables PDFjet has,
+  only a `TextFrame` and a `Table` draw something else the second time, which
+  is what makes their text and their rows flow from page to page.
 - A column of a `BigTable` is as wide as the font of each row draws it, in all
   four ports. Every row was measured with the header font, so a body font
   wider than the header font ran over the column on its right: with a header

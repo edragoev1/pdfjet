@@ -14,6 +14,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -231,5 +232,68 @@ func TestDrawableTablesAndTextColumnsReturnTheirRightEdge(t *testing.T) {
 		if math.Abs(float64(xy[0]-want)) > 0.01 {
 			t.Errorf("%s: x %v, want %v", maker.name, xy[0], want)
 		}
+	}
+}
+
+func TestDrawableAContainerDrawsItsAnnotationsInTheSamePlaceEveryTime(t *testing.T) {
+	// The container moved the corners of an annotation by its own location on
+	// every drawing, so the annotation of the second page ended up that far
+	// from what the container drew there.
+	var buf bytes.Buffer
+	writer := bufio.NewWriter(&buf)
+	pdf := pdfjet.NewPDF(writer)
+	container := pdfjet.NewContainer(200, 100)
+	container.SetLocation(50, 60)
+	square := pdfjet.NewSquareAnnotation()
+	square.SetLocation(10, 10)
+	square.SetSize(80, 40)
+	container.Add(square)
+	for i := 0; i < 3; i++ {
+		container.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+	}
+	if err := pdf.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	writer.Flush()
+	rects := regexp.MustCompile(`/Rect \[([-0-9. ]+)\]`).FindAllStringSubmatch(buf.String(), -1)
+	if len(rects) != 3 {
+		t.Fatalf("%d annotations", len(rects))
+	}
+	for i := 1; i < 3; i++ {
+		if strings.TrimSpace(rects[i][1]) != strings.TrimSpace(rects[0][1]) {
+			t.Errorf("drawing %d put the annotation at %q, not %q",
+				i+1, rects[i][1], rects[0][1])
+		}
+	}
+}
+
+func TestDrawableEveryDrawableDrawsTheSameThingEveryTime(t *testing.T) {
+	// A drawable is drawn where it is put, however often it is drawn: a
+	// header, a watermark or a logo goes on every page of a document. The two
+	// that hold their place in a text are named below.
+	failures := make([]string, 0)
+	for _, maker := range testDrawables() {
+		pdf, font := testNewDrawablePDF()
+		drawable := maker.make(t, pdf, font)
+		drawable.SetLocation(40, 60)
+		page1 := pdfjet.NewPage(pdf, letter.Portrait())
+		drawable.DrawOn(page1)
+		first := string(page1.GetContent())
+		page2 := pdfjet.NewPage(pdf, letter.Portrait())
+		drawable.DrawOn(page2)
+		same := first == string(page2.GetContent())
+		// A TextFrame and a Table draw what is left of their text and their
+		// rows, which is what makes them flow from page to page.
+		flows := maker.name == "TextFrame" || maker.name == "Table"
+		if same == flows {
+			what := " draws something else"
+			if same {
+				what = " draws the same thing twice"
+			}
+			failures = append(failures, maker.name+what)
+		}
+	}
+	if len(failures) > 0 {
+		t.Errorf("%v", failures)
 	}
 }

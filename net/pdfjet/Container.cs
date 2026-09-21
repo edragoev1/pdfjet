@@ -234,6 +234,14 @@ public class Container : IDrawable {
         foreach (IDrawable element in elements) {
             if (element is BaseAnnotation) {
                 BaseAnnotation annot = (BaseAnnotation) element;
+                // The corners of the annotation are moved and turned for
+                // this drawing and put back after it, so that the container
+                // can be drawn again: the annotation of the second drawing
+                // was moved by the location of the container once more, and
+                // ended up that far from what the container drew.
+                float[] point1 = Util.CopyOf(annot.point1);
+                float[] point2 = Util.CopyOf(annot.point2);
+                float[] vertices = (annot.vertices == null) ? null : Util.CopyOf(annot.vertices);
                 annot.container = this;
                 annot.point1[0] += x;
                 annot.point1[1] += y;
@@ -246,6 +254,11 @@ public class Container : IDrawable {
                     annot.point2[1] += parent.y;
                 }
                 annot.Rotate(-rotateDegrees);
+                element.DrawOn(page);
+                annot.point1 = point1;
+                annot.point2 = point2;
+                annot.vertices = vertices;
+                continue;
             }
             element.DrawOn(page);
         }

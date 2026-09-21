@@ -140,4 +140,56 @@ class DrawableTest {
         Drawable column = drawables().get("TextColumn").make(pdf, font).setLocation(40f, 60f);
         assertEquals(160f, column.drawOn(new Page(pdf, Letter.PORTRAIT))[0], TestSupport.DELTA);
     }
+    @Test
+    void aContainerDrawsItsAnnotationsInTheSamePlaceEveryTime() throws Exception {
+        // The container moved the corners of an annotation by its own
+        // location on every drawing, so the annotation of the second page
+        // ended up that far from what the container drew there.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Container container = new Container(200f, 100f).setLocation(50f, 60f);
+        SquareAnnotation square = new SquareAnnotation();
+        square.setLocation(10f, 10f);
+        square.setSize(80f, 40f);
+        container.add(square);
+        for (int i = 0; i < 3; i++) {
+            container.drawOn(new Page(pdf, Letter.PORTRAIT));
+        }
+        pdf.complete();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/Rect \\[([-0-9. ]+)\\]")
+                .matcher(TestSupport.latin1(bos.toByteArray()));
+        List<String> rects = new ArrayList<String>();
+        while (m.find()) {
+            rects.add(m.group(1).trim());
+        }
+        assertEquals(3, rects.size(), rects.toString());
+        assertEquals(rects.get(0), rects.get(1), "the second drawing moved the annotation");
+        assertEquals(rects.get(0), rects.get(2), "the third drawing moved the annotation");
+    }
+    @Test
+    void everyDrawableDrawsTheSameThingEveryTime() throws Exception {
+        // A drawable is drawn where it is put, however often it is drawn: a
+        // header, a watermark or a logo goes on every page of a document. The
+        // two that hold their place in a text are named below.
+        List<String> failures = new ArrayList<String>();
+        for (Map.Entry<String, Maker> entry : drawables().entrySet()) {
+            String name = entry.getKey();
+            PDF pdf = TestSupport.newPDF();
+            Drawable drawable = entry.getValue().make(pdf, TestSupport.helvetica(pdf));
+            drawable.setLocation(40f, 60f);
+            Page page1 = new Page(pdf, Letter.PORTRAIT);
+            drawable.drawOn(page1);
+            String first = TestSupport.content(page1);
+            Page page2 = new Page(pdf, Letter.PORTRAIT);
+            drawable.drawOn(page2);
+            boolean same = first.equals(TestSupport.content(page2));
+            // A TextFrame and a Table draw what is left of their text and
+            // their rows, which is what makes them flow from page to page.
+            boolean flows = name.equals("TextFrame") || name.equals("Table");
+            if (same == flows) {
+                failures.add(name + (same ? " draws the same thing twice" : " draws something else"));
+            }
+        }
+        assertEquals(new ArrayList<String>(), failures);
+    }
 }

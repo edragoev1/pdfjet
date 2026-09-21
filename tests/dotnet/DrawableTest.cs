@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -128,6 +129,57 @@ public class DrawableTest {
         Assert.Equal(40f + table.GetWidth(), table.DrawOn(new Page(pdf, Letter.PORTRAIT))[0], 2);
         IDrawable column = Drawables().Find(e => e.Key == "TextColumn").Value(pdf, font).SetLocation(40f, 60f);
         Assert.Equal(160f, column.DrawOn(new Page(pdf, Letter.PORTRAIT))[0], 2);
+    }
+    [Fact]
+    public void AContainerDrawsItsAnnotationsInTheSamePlaceEveryTime() {
+        // The container moved the corners of an annotation by its own
+        // location on every drawing, so the annotation of the second page
+        // ended up that far from what the container drew there.
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Container container = new Container(200f, 100f).SetLocation(50f, 60f);
+        SquareAnnotation square = new SquareAnnotation();
+        square.SetLocation(10f, 10f);
+        square.SetSize(80f, 40f);
+        container.Add(square);
+        for (int i = 0; i < 3; i++) {
+            container.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        }
+        pdf.Complete();
+        List<string> rects = new List<string>();
+        foreach (Match m in Regex.Matches(TestSupport.Latin1(stream.ToArray()),
+                @"/Rect \[([-0-9. ]+)\]")) {
+            rects.Add(m.Groups[1].Value.Trim());
+        }
+        Assert.Equal(3, rects.Count);
+        Assert.Equal(rects[0], rects[1]);
+        Assert.Equal(rects[0], rects[2]);
+    }
+    [Fact]
+    public void EveryDrawableDrawsTheSameThingEveryTime() {
+        // A drawable is drawn where it is put, however often it is drawn: a
+        // header, a watermark or a logo goes on every page of a document. The
+        // two that hold their place in a text are named below.
+        List<string> failures = new List<string>();
+        foreach (var entry in Drawables()) {
+            string name = entry.Key;
+            PDF pdf = TestSupport.NewPDF();
+            IDrawable drawable = entry.Value(pdf, TestSupport.Helvetica(pdf));
+            drawable.SetLocation(40f, 60f);
+            Page page1 = new Page(pdf, Letter.PORTRAIT);
+            drawable.DrawOn(page1);
+            string first = TestSupport.Content(page1);
+            Page page2 = new Page(pdf, Letter.PORTRAIT);
+            drawable.DrawOn(page2);
+            bool same = first == TestSupport.Content(page2);
+            // A Table and a TextFrame draw what is left of their rows and
+            // their text, which is what makes them flow from page to page.
+            bool flows = name == "TextFrame" || name == "Table";
+            if (same == flows) {
+                failures.Add(name + (same ? " draws the same thing twice" : " draws something else"));
+            }
+        }
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
     }
 }
 }
