@@ -3,9 +3,14 @@
 Target: **2026-10-21**, the date v9.0.0 was planned for. v9.0.0 was released
 early, on 2026-09-16 at e957f841, and v9.0.1 on 2026-09-18 at 72c41923, so
 what Oct 21 carries is **v9.0.3**: not new features but a foundation to build
-on after it. Today is Sep 20, so 31 days are left, with one fix release in
+on after it. Today is Sep 21, so 30 days are left, with one fix release in
 the middle. This file is the working list; tick items off as they land on
 master.
+
+The work runs ahead of the calendar below. Goal 1 is closed, and of goal 2
+the image classes, `Page`, `TextLine` and the whole reader are reviewed --
+the reader eleven days before the Oct 2-8 week the plan gave it. What is
+left before the Oct 1 release is the `Font` loaders and the release checks.
 
 What is done is in CHANGELOG.md and in the git history; this file lists only
 what is left.
@@ -18,7 +23,9 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
   it is under `## Unreleased` in CHANGELOG.md: the PDF/UA examples and the
   table tagging, kinsoku, the font line gap, the WinAnsi characters and
   kerning of the core fonts, the fallback font rule, the CMYK JPEG marker,
-  and the font stream, PNG, BMP and JPEG fixes that fuzzing found.
+  the font stream, PNG, BMP, JPEG, SVG, OpenType, decompressor and `PDF.read`
+  fixes that fuzzing found, and the reviews of the image classes, `Page`,
+  `TextLine` and the reader.
 - **Oct 15** — code freeze: fixes only, each with its check.
 - **Oct 21** — v9.0.3.
 
@@ -234,7 +241,14 @@ work to Oct 21 is the seven goals below, in this order.
 Four and a half weeks. The reviews and the fuzzing run first because they
 change code; the checks that must hold at the tag run after the freeze.
 
-### Sep 20–26: the decoders, `Page` and `TextLine`
+Where it stands on Sep 21: the Sep 20-26 week is done, and so are two of the
+three blockers of the Oct 2-8 week, the review and the fuzzing of the reader.
+That buys about a week. It goes to the work that has to be done by hand and
+cannot be hurried at the end -- goal 4, the viewer pass, and goal 3, the
+Matterhorn conditions that need eyes on a page -- and to goal 5, the
+references, which is the first thing to give if anything does.
+
+### Sep 20–26: the decoders, `Page`, `TextLine` and the reader
 
 - ✅ **B** Goal 1 is done: the eight targets of the `.stream` fonts, PNG,
       BMP, JPEG, SVG, OTF and TTF, the decompressor and `PDF.read` are in
@@ -297,7 +311,14 @@ change code; the checks that must hold at the tag run after the freeze.
       UTF-8 -- the rest have no Swift equivalent, as a Swift string holds no
       other bytes -- all four read the same objects, the same pages, the same
       page size and the same content, and merge and split the same ones.
-- ⬜ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands.
+- ✅ Record what is fixed under `## Unreleased` in CHANGELOG.md as it lands
+      (Sep 21). Everything on master since v9.0.1 is in it: the reviews of
+      the image classes, `Page`, `TextLine` and the reader, every fix the
+      eight fuzz targets found, the tagging work, the core font, fallback
+      font and line gap work, the booklet, the examples that changed, and a
+      `### Removed` section for the files that went.
+- ⬜ What is left of the week goes to the `Font` loaders, which the next week
+      has and which the Oct 1 release needs.
 
 ### Sep 27–Oct 1: release v9.0.2
 

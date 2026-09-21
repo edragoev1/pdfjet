@@ -22,6 +22,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   the 24 JP, SC and TC streams have it.
 - `CalendarMonth.setFirstDayOfWeek` starts the weeks on another day than
   Sunday, with the date library of each port.
+- `booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction
+  and all 51 examples, grouped by topic, each with what it shows and its
+  complete source code, as a PDF/UA document with a title page, a linked
+  table of contents, bookmarks and page numbers. It writes one booklet for
+  each port and one with the code of the four, from `booklet/content.txt` and
+  the example sources, so the booklet shows the code the examples build and
+  check. `booklet/Booklet.java` lays it out with PDFjet itself, which is what
+  a document of this size asks of the library.
 - In a PDF/UA document a `Chart`, a `DonutChart` and a `BarChart` are each one
   Figure, with the description `setAltDescription` gives or one made from the
   title or the slices.
@@ -442,6 +450,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   the space after it, and broke a word as wide as the frame; a negative
   paragraph gap is 0.
 
+### Removed
+- `images/mt-map.bmp` and `images/mt-map.png`, a map of Malta in two formats,
+  which no example draws and no test or fuzz target reads.
+- `data/testPDFs/pdfjet-5.81-logo.pdf`, the logo PDFjet 5.81 wrote in 2016,
+  which `data/testPDFs/PDFjetLogo.pdf` replaces everywhere it was read.
+- `data/Electric_Vehicle_Population_5_Lines.csv`, and the ten files in `data`
+  that nothing read, which the note on Example_24 below mentions.
+- `images/readme/pdfjet-logo.png`, which `images/readme/pdfjet-logo.svg`
+  replaces in the README, in the booklet and, with a dark variant, on the
+  .NET API reference that docfx builds.
+
 ### Examples
 - Example_15 draws chemical formulas rather than 300 cells of filler. It was
   a table of 60 rows by 5 columns over three pages where every body cell read
@@ -474,6 +493,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   or run-together texts with ASCII punctuation and a character the font lacked.
   Each page names its language, "This block is Japanese: 日本語", in IBM Plex
   Sans with the font of the page as its fallback font.
+- Example_38 says on its page what it draws, where the page held nothing but
+  the table: a title, and a paragraph on the cells that span columns with
+  `setColSpan` and on the rows made by leaving out the borders between a cell
+  and the cells under it. Its cells are a pastel mint rather than light blue.
+- Example_37 draws its text left aligned with the scanned text under it.
 - Example_40 draws the calendar of 2026, with the weeks starting on Monday.
 - Example_24 draws a CMYK JPEG saved as Photoshop saves one, `images/cmyk.jpg`,
   a print test chart that `util/make-cmyk-jpeg.py` draws. It replaces
