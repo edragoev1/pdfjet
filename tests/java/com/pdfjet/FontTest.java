@@ -249,6 +249,42 @@ class FontTest {
     }
 
     @Test
+    void aCompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef() throws Exception {
+        // PDF/UA and PDF/A forbid .notdef, so a PDF/UA document draws the
+        // replacement character of the font, as wide as it is, with the missing
+        // character as its actual text, and never glyph 0.
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = ibmPlexSans(pdf);
+        int replacement = font.unicodeToGID[0xFFFD];
+        assertTrue(replacement != 0, "IBM Plex Sans has no U+FFFD");
+        float width = (float) font.glyphAdvance(replacement) * 10f / (float) font.unitsPerEm;
+        assertEquals(width, font.stringWidth(10f, "ก"), 0.001f, "a character in the range");
+        assertEquals(width, font.stringWidth(10f, "😀"), 0.001f, "a character past the range");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "ก😀").setLocation(10f, 20f).drawOn(page);
+        String content = TestSupport.content(page);
+        String glyph = String.format("<%04X> Tj\nEMC\n", replacement);
+        for (String want : new String[] {
+                "/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph,
+                "/Span <</ActualText <FEFFD83DDE00>>> BDC\n" + glyph}) {
+            assertTrue(content.contains(want), content);
+        }
+        assertTrue(!content.contains("<0000>"), ".notdef is drawn: " + content);
+        // The stamp draws it so too.
+        Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
+        stamp.drawText(font, 10f, 5f, 20f, "ก");
+        stamp.complete();
+        pdf.complete();
+        String out = TestSupport.latin1(bos.toByteArray());
+        assertTrue(out.contains("/Span <</ActualText <FEFF0E01>>> BDC\n" + glyph), out);
+        // The character still has no glyph, so a fallback font draws it.
+        assertTrue(!font.hasGlyph(0x0E01), "a missing character has a glyph");
+    }
+
+    @Test
     void aControlCharacterStaysInTheFontOfItsText() throws Exception {
         // A control character is drawn as a space by the font, not by the
         // fallback font: the fallback font would draw it as a space too.

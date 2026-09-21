@@ -528,8 +528,8 @@ final public class Font {
     // Returns the advance width, in font units, of the glyph that Page draws
     // for the character, the one glyphOf gives: none for an RLM, LRM, ZWNJ,
     // ZWJ or byte order mark, which are not drawn, that of a space for a
-    // control character and that of .notdef for a character the font does not
-    // have.
+    // control character and that of the glyph missingGlyph gives for a
+    // character the font does not have.
     private int advanceWidthOf(int cp) {
         if (isJoinerOrRLM(cp) || cp == 0xFEFF) {
             return 0;
@@ -556,7 +556,36 @@ final public class Font {
         if (isCoreFont) {
             return cp == 32 || coreFontCode(cp) != 32;
         }
-        return !isCJK && Page.glyphOf(this, cp) != 0;
+        return !isCJK && !lacks(cp);
+    }
+
+    // Returns true if the font has no glyph for the character, which is not a
+    // control character. The character map of the font is read from its first
+    // to its last character, so a character outside that range has no glyph.
+    boolean lacks(int cp) {
+        if (isControl(cp)) {
+            return false;
+        }
+        return cp < firstChar || cp > lastChar || unicodeToGID[cp] == 0;
+    }
+
+    // Returns the glyph a character the font does not have is drawn with:
+    // .notdef, glyph 0, in a document of no compliance. PDF/UA and PDF/A
+    // forbid .notdef -- ISO 14289-1 7.21.8 and ISO 19005-2 6.2.11.8 -- so a
+    // compliant document draws the replacement character U+FFFD of the font,
+    // or a question mark, or a space, the first the font has, and the
+    // character is its actual text. A font of a PDF that was read is of no
+    // compliance.
+    int missingGlyph() {
+        if (pdf == null || pdf.compliance == Compliance.PDF_1_7) {
+            return 0;
+        }
+        for (int cp : new int[] {0xFFFD, '?', ' '}) {
+            if (cp >= firstChar && cp <= lastChar && unicodeToGID[cp] != 0) {
+                return unicodeToGID[cp];
+            }
+        }
+        return 0;
     }
 
     // Returns the font, of the font and its fallback font, that draws the

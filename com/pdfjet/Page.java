@@ -847,7 +847,7 @@ final public class Page {
                     codePoints[n] = cp;
                     gids[n] = glyphOf(font, cp);
                     hasMarks |= isMark(cp);
-                    hasNotdef |= isNotdef(codePoints, gids, n);
+                    hasNotdef |= isMissing(font, codePoints, n);
                     n++;
                 }
             }
@@ -937,10 +937,10 @@ final public class Page {
             Font font, int[] codePoints, int[] gids, boolean[] mirrored, int[] offsets, int i, int end) {
         int from = i;
         int to = end;
-        while (from < to && inOwnSpan(codePoints, gids, mirrored, from)) {
+        while (from < to && inOwnSpan(font, codePoints, mirrored, from)) {
             from++;
         }
-        while (to > from && inOwnSpan(codePoints, gids, mirrored, to - 1)) {
+        while (to > from && inOwnSpan(font, codePoints, mirrored, to - 1)) {
             to--;
         }
         if (offsets != null && isMoved(offsets, from, to)) {
@@ -957,7 +957,7 @@ final public class Page {
     private void appendGlyphs(
             Font font, int[] codePoints, int[] gids, boolean[] mirrored, int from, int to) {
         for (int k = from; k < to; k++) {
-            if (inOwnSpan(codePoints, gids, mirrored, k)) {
+            if (inOwnSpan(font, codePoints, mirrored, k)) {
                 appendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
                 appendCodePointAsHex(gids[k]);
@@ -1073,33 +1073,33 @@ final public class Page {
     }
 
     // Returns the glyph ID the character is drawn with: that of a space for a
-    // control character, which has no glyph to draw, and .notdef, glyph 0, for
-    // a character the font does not have, so that a reader sees a box where
-    // the character is missing and not a space, as other PDF writers draw it.
-    // The character map of the font is read from its first to its last
-    // character, so a character outside that range has no glyph.
+    // control character, which has no glyph to draw, and for a character the
+    // font does not have the glyph missingGlyph gives, .notdef in a document
+    // of no compliance, so that a reader sees a box where the character is
+    // missing and not a space, as other PDF writers draw it.
     static int glyphOf(Font font, int cp) {
         if (Font.isControl(cp)) {
             return font.unicodeToGID[0x0020];
         }
-        if (cp < font.firstChar || cp > font.lastChar) {
-            return 0;
+        if (font.lacks(cp)) {
+            return font.missingGlyph();
         }
         return font.unicodeToGID[cp];
     }
 
-    // Returns true if the glyph at k is .notdef, the glyph of a character the
-    // font does not have, which the ToUnicode map of the font maps to U+FFFD.
-    // A control character is drawn as a space even when the font has none.
-    private static boolean isNotdef(int[] codePoints, int[] gids, int k) {
-        return gids[k] == 0 && !Font.isControl(codePoints[k]);
+    // Returns true if the character at k is one the font does not have, which
+    // is drawn with the glyph missingGlyph gives. The ToUnicode map of the font
+    // maps that glyph to U+FFFD or to the character it is, so it is drawn in a
+    // span whose actual text is the character that is missing.
+    private static boolean isMissing(Font font, int[] codePoints, int k) {
+        return font.lacks(codePoints[k]);
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its
     // own, with the text it stands for as its actual text: a character Bidi
-    // mirrored, and a character the font does not have, drawn with .notdef.
-    private static boolean inOwnSpan(int[] codePoints, int[] gids, boolean[] mirrored, int k) {
-        return (mirrored != null && mirrored[k]) || isNotdef(codePoints, gids, k);
+    // mirrored, and a character the font does not have.
+    private static boolean inOwnSpan(Font font, int[] codePoints, boolean[] mirrored, int k) {
+        return (mirrored != null && mirrored[k]) || isMissing(font, codePoints, k);
     }
 
     // Returns the offsets that move the marks to where the GPOS table of the
@@ -1243,8 +1243,8 @@ final public class Page {
 
     // Returns true if the text has a character that is more than a glyph: an
     // RLM, LRM, ZWNJ or ZWJ, a mark that the GPOS table of the font puts in
-    // place, or a character the font does not have, whose .notdef glyph is
-    // drawn with the character as its actual text. Marks start at U+0300, so
+    // place, or a character the font does not have, whose glyph is drawn with
+    // the character as its actual text. Marks start at U+0300, so
     // most text is looked at once, with no more than two comparisons and the
     // lookup of its glyph for each character.
     private static boolean needsShaping(Font font, String str) {
@@ -1258,7 +1258,7 @@ final public class Page {
                     return true;
                 }
             }
-            if (c != 0xFEFF && glyphOf(font, str.codePointAt(i)) == 0 && !Font.isControl(c)) {
+            if (c != 0xFEFF && font.lacks(str.codePointAt(i))) {
                 return true;
             }
         }
