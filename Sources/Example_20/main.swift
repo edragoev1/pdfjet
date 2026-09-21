@@ -18,7 +18,9 @@ public class Example_20 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("PDFjet Software Letterhead")
 
-        // Read the logo from a PDF file, and add its fonts and images to this PDF.
+        // Read the logo from a PDF file, and add the resources of its pages, its
+        // fonts and images, to this PDF. The logo itself is drawn with paths and
+        // has none.
         let objects = try pdf.read(
                 from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
 
@@ -36,7 +38,7 @@ public class Example_20 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         // Draw the content of the first page of the logo PDF, at half its size.
-        let height: Float = 105.0   // The logo height in points.
+        let height: Float = 72.0    // The logo height in points.
         let x: Float = 60.0
         let y: Float = 40.0
         let xScale: Float = 0.5

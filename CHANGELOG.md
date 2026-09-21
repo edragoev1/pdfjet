@@ -377,6 +377,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   paragraph gap is 0.
 
 ### Examples
+- Example_20 draws the logo of pdfjet.com. `data/testPDFs/PDFjetLogo.pdf`,
+  which it reads and Example_41 merges, is written from
+  `images/readme/pdfjet-logo.svg` by `util/make-logo-pdf.sh`, so the logo is
+  vector paths on a Letter page and the file is 2,333 bytes instead of 76,062.
+  The file it replaces, the logo PDFjet 5.81 wrote in 2016 with the wordmark
+  as text in an embedded Dosis-Bold font, is kept as
+  `data/testPDFs/pdfjet-5.81-logo.pdf`, which the merge tests of the four
+  ports and the seeds of `FuzzPDFRead` read, since a document with an embedded
+  Type0 font is worth reading in a test.
 - 28 more examples are PDF/UA documents: 02, 03, 06, 08, 09, 10, 11, 13, 14,
   17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and 45,
   and 39 and 40 before them. The ones that are not use core fonts or fonts that

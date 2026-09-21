@@ -31,7 +31,9 @@ func Example20() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("PDFjet Software Letterhead")
 
-	// Read the logo from a PDF file, and add its fonts and images to this PDF.
+	// Read the logo from a PDF file, and add the resources of its pages, its
+	// fonts and images, to this PDF. The logo itself is drawn with paths and
+	// has none.
 	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
 		log.Fatal(err)
@@ -55,7 +57,7 @@ func Example20() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	// Draw the content of the first page of the logo PDF, at half its size.
-	height := float32(105.0) // The logo height in points.
+	height := float32(72.0) // The logo height in points.
 	x := float32(60.0)
 	y := float32(40.0)
 	xScale := float32(0.5)

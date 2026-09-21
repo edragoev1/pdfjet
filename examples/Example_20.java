@@ -24,7 +24,9 @@ class Example_20 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("PDFjet Software Letterhead");
 
-        // Read the logo from a PDF file, and add its fonts and images to this PDF.
+        // Read the logo from a PDF file, and add the resources of its pages, its
+        // fonts and images, to this PDF. The logo itself is drawn with paths and
+        // has none.
         BufferedInputStream bis = new BufferedInputStream(
                 new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
         List<PDFobj> objects = pdf.read(bis);
@@ -43,7 +45,7 @@ class Example_20 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // Draw the content of the first page of the logo PDF, at half its size.
-        float height = 105f;    // The logo height in points.
+        float height = 72f;     // The logo height in points.
         float x = 60f;
         float y = 40f;
         float xScale = 0.5f;

@@ -227,7 +227,7 @@ import Testing
 
     @Test func mergesTheTestDocuments() throws {
         let memory = MemoryPDF()
-        for name in ["scanned-linearized.pdf", "rc65-16e.pdf", "PDFjetLogo.pdf"] {
+        for name in ["scanned-linearized.pdf", "rc65-16e.pdf", "pdfjet-5.81-logo.pdf"] {
             try memory.pdf.merge(PDF().read(from: TestSupport.open("data/testPDFs/" + name)))
         }
         try memory.pdf.complete()
