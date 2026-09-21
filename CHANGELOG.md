@@ -162,6 +162,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The Swift port writes the hexadecimal digits of a string object in small
+  letters, as the Java, C# and Go ports do. It wrote them in capitals, so the
+  same document was not the same bytes in the four ports: Example_22 had
+  `/Title <feff0049` in three of them and `/Title <FEFF0049` in Swift, and
+  every Alt, ActualText of a structure element, bookmark title, information
+  entry, file identifier and CID system registry was the same. Both are valid
+  PDF and draw the same, which is why `check-examples.sh`, which compares the
+  rendering and the content streams of the four ports, passed either way. The
+  digits of the text drawn on a page stay capitals, as they are in all four.
+  One call site that lowercased what it was given no longer needs to.
 - A `BigTable` wider than the page it is drawn on is cut back to it, in all
   four ports. Its columns are as wide as their widest field, which can come
   to more than the page holds: the nine columns of Example_43 came to 795

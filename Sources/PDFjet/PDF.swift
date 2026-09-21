@@ -2549,8 +2549,7 @@ public final class PDF {
                 continue
             }
             if encryption != nil && (token.hasPrefix("(") || (token.hasPrefix("<") && token != "<<")) {
-                // Lowercase hexadecimal digits, as Java writes them.
-                result.append("<" + toHex(encrypted(Decryptor.toBytes(token))).lowercased() + ">")
+                result.append("<" + toHex(encrypted(Decryptor.toBytes(token))) + ">")
             } else {
                 result.append(token)
             }
@@ -2995,9 +2994,12 @@ public final class PDF {
         }
     }
 
-    private let HEX: [UInt8] = Array("0123456789ABCDEF".utf8)
+    // The hexadecimal digits of a string object, in small letters as the
+    // other three ports write them. The digits of the text drawn on a page
+    // are capitals in all four, and are in Page.swift.
+    private let HEX: [UInt8] = Array("0123456789abcdef".utf8)
 
-    /// Returns the UTF-8 bytes of the string as uppercase hexadecimal digits.
+    /// Returns the UTF-8 bytes of the string as lowercase hexadecimal digits.
     func toHex(_ str: String?) -> String {
         guard let str = str, !str.isEmpty else {
             return ""
@@ -3008,7 +3010,7 @@ public final class PDF {
         return toHex(Array(str.utf8))
     }
 
-    /// Returns the bytes as uppercase hexadecimal digits.
+    /// Returns the bytes as lowercase hexadecimal digits.
     func toHex(_ bytes: [UInt8]) -> String {
         var result: [UInt8] = []
         result.reserveCapacity(2 * bytes.count)

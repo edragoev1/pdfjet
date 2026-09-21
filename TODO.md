@@ -447,6 +447,17 @@ goal 5, the references, which is the first thing to give if anything does.
       is as wide as its widest field, so no field of it is measured as it is
       drawn: Example_43 takes the same time it did. Three tests in each of
       the four ports. Example_43 is the one example that changes.
+- ✅ The Swift port writes the hexadecimal digits of a string object in
+      small letters, as the other three do (found and fixed Sep 21, beside
+      the `BigTable` width, and there since before it). It wrote them in
+      capitals, so Example_22 had `/Title <feff0049` in Java, C# and Go and
+      `/Title <FEFF0049` in Swift, and every Alt, ActualText, bookmark title,
+      information entry, file identifier and CID system registry was the
+      same. Both are valid PDF and draw the same, so `check-examples.sh`,
+      which compares the rendering and the content streams, passed either
+      way, and one call site of `toHex` already lowercased what it was given,
+      which says the mismatch had been met before. The digits of the text
+      drawn on a page are capitals in all four ports and are left alone.
 
 ### Sep 27–Oct 1: release v9.0.2
 
@@ -471,18 +482,6 @@ goal 5, the references, which is the first thing to give if anything does.
       now, and a Go runtime error fails it.
 - ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway.
-- ⬜ The Swift port writes the hexadecimal of a text string in capitals
-      where the other three write it in small letters, so the same document
-      is not the same bytes in the four ports (found Sep 21 beside the
-      `BigTable` width, and there since before it). Example_22 has
-      `/Title <feff0049` in Java, C# and Go and `/Title <FEFF0049` in Swift,
-      and every Alt, ActualText, bookmark title and information entry is the
-      same. Both are valid PDF and draw the same, so `check-examples.sh`,
-      which compares the rendering and the content streams, passes either
-      way; `PDF.swift` holds the digits as `0123456789ABCDEF` and one call
-      site already lowercases what `toHex` returns, which says the mismatch
-      was met before. Changing the digits changes the bytes of every tagged
-      or bookmarked Swift document, so it wants its own look at the examples.
 
 ### Oct 9–14: the rest of the review, and the references
 

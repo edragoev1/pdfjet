@@ -390,9 +390,9 @@ import Testing
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
         // An Alt is written as the UTF-16 of the text, after a byte order mark.
-        var alt = "FEFF"
+        var alt = "feff"
         for unit in text.utf16 {
-            alt += String(format: "%04X", unit)
+            alt += String(format: "%04x", unit)
         }
         #expect(raw.contains("/Alt <" + alt + ">"), "the cell does not keep the whole of the text")
         #expect(drawn.count == 2 && drawn[1].hasSuffix(" ...") && drawn[1] != text)
