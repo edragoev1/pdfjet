@@ -213,3 +213,59 @@ func TestFontAFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor(t *testing.
 		t.Errorf("%d fonts: %q", n, testContent(page))
 	}
 }
+
+// testEmbeddedFonts returns the number of font programs the PDF embeds.
+func testEmbeddedFonts(pdf []byte) int {
+	return strings.Count(string(pdf), "/FontFile")
+}
+
+// testDocumentWithFonts draws a character with each font of a PDF made from
+// the font files, and returns its bytes.
+func testDocumentWithFonts(t *testing.T, paths ...string) []byte {
+	t.Helper()
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	y := float32(50)
+	for _, path := range paths {
+		file, err := os.Open(testRepoPath(t, path))
+		if err != nil {
+			t.Skip("the fonts directory is not here")
+		}
+		font := NewFont(doc.pdf, file)
+		file.Close()
+		font.SetSize(12)
+		NewTextLine(font, "中").SetLocation(50, y).DrawOn(page)
+		y += 20
+	}
+	return doc.complete()
+}
+
+func TestFontAFontAndASubsetOfItWithTheSameNameAreBothEmbedded(t *testing.T) {
+	// PDFjet ships subsets of the Noto CJK fonts whose name inside is the
+	// name of the whole font. A PDF embedded the font file of the first of
+	// two fonts of one name for both, so the text drawn with the second came
+	// out in the glyphs of the first: 中文字 read as Ι㈜♡.
+	for _, pair := range [][]string{
+		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf", "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"},
+		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
+			"fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream"},
+	} {
+		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 2 {
+			t.Errorf("%s: %d font programs embedded", pair[0], n)
+		}
+	}
+}
+
+func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
+	// The same font added twice, and the same font read from a .otf and from
+	// the .stream file made of it, are one font program: Example_28 draws
+	// with both and embeds one of each font.
+	for _, pair := range [][]string{
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"},
+	} {
+		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 1 {
+			t.Errorf("%s: %d font programs embedded", pair[1], n)
+		}
+	}
+}

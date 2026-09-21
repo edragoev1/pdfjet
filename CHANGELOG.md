@@ -136,6 +136,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A PDF embeds each font program once, where it embedded the first of two
+  fonts of one name for both, in all four ports. PDFjet ships subsets of the
+  Noto Sans SC and TC fonts beside the whole fonts, twelve pairs whose name
+  inside is the same, and 3,821 of the 3,917 characters both hold have a
+  different glyph in the subset: a document that drew with both drew the text
+  of the second in the glyphs of the first, so 中文字 came out as Ι㈜♡, which
+  is what pdftotext and MuPDF read from it. The font file, the font
+  descriptor, the CID font dictionary and the ToUnicode map are shared now
+  when the name and a checksum of the font program -- the units per em, the
+  advance widths and the character map -- are both the same, so a font read
+  twice, or read from a `.otf` and from the `.stream` file made of it, is
+  still embedded once, as Example_28 draws it. Found in the review of `Font`
+  and its loaders of Sep 21.
 - A page that `PDF.getPageObjects` returns holds the entries it inherits from
   the page tree -- `/Resources`, `/MediaBox`, `/CropBox` and `/Rotate` -- in
   all four ports. A PDF may write them once on a node above the pages rather

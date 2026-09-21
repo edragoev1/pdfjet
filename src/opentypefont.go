@@ -33,6 +33,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.fontUnderlinePosition = otf.underlinePosition
 	font.fontUnderlineThickness = otf.underlineThickness
 	font.advanceWidth = otf.advanceWidth
+	font.checksum = checksumOf(font)
 	font.SetSize(font.size)
 
 	embedOpenTypeFontFile(pdf, font, otf)
@@ -65,7 +66,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *openTypeFont) {
 	// Check if the font file is already embedded
 	for _, f := range pdf.fonts {
-		if f.fileObjNumber != 0 && f.name == otf.fontName {
+		if f.fileObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
 			font.fileObjNumber = f.fileObjNumber
 			return
 		}
@@ -112,7 +113,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *openTypeFont) {
 
 func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
-		if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName {
+		if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
 			font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
 			return
 		}
@@ -175,7 +176,7 @@ func toGlyphSpace(value int16, unitsPerEm int) int {
 
 func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
-		if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName {
+		if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
 			font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
 			return
 		}
@@ -253,7 +254,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *openTypeFont)
 
 func addOpenTypeFontCIDFontDictionaryObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	for _, f := range pdf.fonts {
-		if f.cidFontDictObjNumber != 0 && f.name == otf.fontName {
+		if f.cidFontDictObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber
 			return
 		}

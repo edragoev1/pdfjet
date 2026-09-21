@@ -17,6 +17,7 @@ class FontStream1 {
             Font font,
             InputStream inputStream) throws Exception {
         getFontData(font, inputStream);
+        font.checksum = Font.checksumOf(font);
         embedFontFile(pdf, font, inputStream);
         addFontDescriptorObject(pdf, font);
         addCIDFontDictionaryObject(pdf, font);
@@ -47,7 +48,7 @@ class FontStream1 {
             PDF pdf, Font font, InputStream inputStream) throws Exception {
         // Check if the font file is already embedded
         for (Font f : pdf.fonts) {
-            if (f.fileObjNumber != 0 && f.name.equals(font.name)) {
+            if (f.fileObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.fileObjNumber = f.fileObjNumber;
                 return;
             }
@@ -104,7 +105,7 @@ class FontStream1 {
 
     private static void addFontDescriptorObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
-            if (f.fontDescriptorObjNumber != 0 && f.name.equals(font.name)) {
+            if (f.fontDescriptorObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
                 return;
             }
@@ -152,7 +153,7 @@ class FontStream1 {
 
     private static void addToUnicodeCMapObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
-            if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(font.name)) {
+            if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
                 return;
             }
@@ -229,7 +230,7 @@ class FontStream1 {
 
     private static void addCIDFontDictionaryObject(PDF pdf, Font font) throws Exception {
         for (Font f : pdf.fonts) {
-            if (f.cidFontDictObjNumber != 0 && f.name.equals(font.name)) {
+            if (f.cidFontDictObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
                 return;
             }

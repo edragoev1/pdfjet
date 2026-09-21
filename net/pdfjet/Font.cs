@@ -65,6 +65,9 @@ public class Font {
     internal int compressedSize;
     internal int uncompressedSize;
     internal int[][] metrics;           // Only used for core fonts.
+    // Tells the font program this font was read from apart from every other,
+    // so that a PDF embeds each one once.
+    internal ulong checksum;
 
     // Don't change the following default values!
     internal float size = 12.0f;
@@ -305,6 +308,33 @@ public class Font {
     /// </summary>
     /// <param name="fontSize">specifies the size of this font.</param>
     /// <returns>the font.</returns>
+    // Returns a number that identifies the font program: the units it is drawn
+    // in, its advance widths and its character map, which say what its glyphs
+    // are and which glyph each character has. Two fonts of one name that give
+    // the same number are the same program, whether it was read from a .otf,
+    // a .ttf or a .stream file, and the PDF embeds it once and writes one
+    // descriptor, one CID font and one ToUnicode map for both. The name is
+    // not enough on its own: PDFjet ships subsets of the Noto CJK fonts under
+    // the name of the whole font, and the text of the one embedded second was
+    // drawn with the glyphs of the first.
+    internal static ulong ChecksumOf(Font font) {
+        ulong hash = 0xcbf29ce484222325UL;
+        hash = Fold(hash, font.unitsPerEm);
+        hash = Fold(hash, font.advanceWidth.Length);
+        foreach (int width in font.advanceWidth) {
+            hash = Fold(hash, width);
+        }
+        foreach (int gid in font.unicodeToGID) {
+            hash = Fold(hash, gid);
+        }
+        return hash;
+    }
+
+    // One step of the FNV-1a hash, which is the same in the four ports.
+    private static ulong Fold(ulong hash, int value) {
+        return (hash ^ (uint) value) * 0x100000001B3UL;
+    }
+
     public Font SetSize(float fontSize) {
         this.size = fontSize;
         if (isCJK) {

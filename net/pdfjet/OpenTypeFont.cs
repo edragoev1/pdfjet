@@ -33,6 +33,7 @@ class OpenTypeFont {
         font.fontLineGap = otf.lineGap;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
+        font.checksum = Font.ChecksumOf(font);
         font.SetSize(font.size);
 
         EmbedFontFile(pdf, font, otf);
@@ -65,7 +66,7 @@ class OpenTypeFont {
     private static void EmbedFontFile(PDF pdf, Font font, OTF otf) {
         // Check if the font file is already embedded
         foreach (Font f in pdf.fonts) {
-            if (f.fileObjNumber != 0 && f.name.Equals(otf.fontName)) {
+            if (f.fileObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
                 font.fileObjNumber = f.fileObjNumber;
                 return;
             }
@@ -112,7 +113,7 @@ class OpenTypeFont {
 
     private static void AddFontDescriptorObject(PDF pdf, Font font, OTF otf) {
         foreach (Font f in pdf.fonts) {
-            if (f.fontDescriptorObjNumber != 0 && f.name.Equals(otf.fontName)) {
+            if (f.fontDescriptorObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
                 return;
             }
@@ -173,7 +174,7 @@ class OpenTypeFont {
             Font font,
             OTF otf) {
         foreach (Font f in pdf.fonts) {
-            if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(otf.fontName)) {
+            if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
                 return;
             }
@@ -254,7 +255,7 @@ class OpenTypeFont {
             Font font,
             OTF otf) {
         foreach (Font f in pdf.fonts) {
-            if (f.cidFontDictObjNumber != 0 && f.name.Equals(otf.fontName)) {
+            if (f.cidFontDictObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
                 return;
             }

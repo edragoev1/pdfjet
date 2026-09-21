@@ -173,4 +173,51 @@ import Testing
         TextLine(latin, "\u{65E5}\u{0301}").setFallbackFont(jp).setLocation(10, 20).drawOn(page)
         #expect(TestSupport.content(page).components(separatedBy: " Tf\n").count - 1 == 1)
     }
+    // The number of font programs the PDF embeds.
+    private func embeddedFonts(_ pdf: [UInt8]) -> Int {
+        return String(decoding: pdf, as: UTF8.self).components(separatedBy: "/FontFile").count - 1
+    }
+
+    // Draws a character with each font of a PDF made from the font files.
+    private func documentWithFonts(_ paths: [String]) throws -> [UInt8] {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        var y: Float = 50
+        for path in paths {
+            let font = try Font(memory.pdf, TestSupport.open(path)).setSize(12)
+            TextLine(font, "\u{4E2D}").setLocation(50, y).drawOn(page)
+            y += 20
+        }
+        try memory.pdf.complete()
+        return memory.bytes
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/NotoSansSC/NotoSansSC-Regular.ttf"),
+            "the fonts directory is not here"))
+    func aFontAndASubsetOfItWithTheSameNameAreBothEmbedded() throws {
+        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
+        // name of the whole font. A PDF embedded the font file of the first
+        // of two fonts of one name for both, so the text drawn with the
+        // second came out in the glyphs of the first.
+        #expect(try embeddedFonts(documentWithFonts([
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"])) == 2)
+        #expect(try embeddedFonts(documentWithFonts([
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream"])) == 2)
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"),
+            "the fonts directory is not here"))
+    func oneFontProgramIsEmbeddedOnce() throws {
+        // The same font added twice, and the same font read from a .otf and
+        // from the .stream file made of it, are one font program: Example_28
+        // draws with both and embeds one of each font.
+        #expect(try embeddedFonts(documentWithFonts([
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"])) == 1)
+        #expect(try embeddedFonts(documentWithFonts([
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"])) == 1)
+    }
 }

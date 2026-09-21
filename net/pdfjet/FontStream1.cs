@@ -16,6 +16,7 @@ class FontStream1 {
             Font font,
             Stream inputStream) {
         GetFontData(font, inputStream);
+        font.checksum = Font.ChecksumOf(font);
         EmbedFontFile(pdf, font, inputStream);
         AddFontDescriptorObject(pdf, font);
         AddCIDFontDictionaryObject(pdf, font);
@@ -46,7 +47,7 @@ class FontStream1 {
     private static void EmbedFontFile(PDF pdf, Font font, Stream stream) {
         // Check if the font file is already embedded
         foreach (Font f in pdf.fonts) {
-            if (f.fileObjNumber != 0 && f.name.Equals(font.name)) {
+            if (f.fileObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.fileObjNumber = f.fileObjNumber;
                 return;
             }
@@ -98,7 +99,7 @@ class FontStream1 {
 
     private static void AddFontDescriptorObject(PDF pdf, Font font) {
         foreach (Font f in pdf.fonts) {
-            if (f.fontDescriptorObjNumber != 0 && f.name.Equals(font.name)) {
+            if (f.fontDescriptorObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
                 return;
             }
@@ -146,7 +147,7 @@ class FontStream1 {
 
     private static void AddToUnicodeCMapObject(PDF pdf, Font font) {
         foreach (Font f in pdf.fonts) {
-            if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(font.name)) {
+            if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
                 return;
             }
@@ -224,7 +225,7 @@ class FontStream1 {
 
     private static void AddCIDFontDictionaryObject(PDF pdf, Font font) {
         foreach (Font f in pdf.fonts) {
-            if (f.cidFontDictObjNumber != 0 && f.name.Equals(font.name)) {
+            if (f.cidFontDictObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
                 return;
             }

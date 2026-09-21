@@ -54,6 +54,9 @@ type Font struct {
 	compressedSize         int
 	uncompressedSize       int
 	metrics                [][]int // Only used for core fonts.
+	// checksum tells the font program this font was read from apart from
+	// every other, so that a PDF embeds each one once.
+	checksum uint64
 
 	// Don't change the following default values!
 	size       float32
@@ -322,6 +325,34 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 		font = NewFont(pdf, reader)
 	}
 	return font
+}
+
+// checksumOf returns a number that identifies the font program: the units it
+// is drawn in, its advance widths and its character map, which say what its
+// glyphs are and which glyph each character has. Two fonts of one name that
+// give the same number are the same program, whether it was read from a .otf,
+// a .ttf or a .stream file, and the PDF embeds it once and writes one
+// descriptor, one CID font and one ToUnicode map for both. The name is not
+// enough on its own: PDFjet ships subsets of the Noto CJK fonts under the
+// name of the whole font, and the text of the one embedded second was drawn
+// with the glyphs of the first.
+func checksumOf(font *Font) uint64 {
+	hash := uint64(0xcbf29ce484222325)
+	hash = foldChecksum(hash, font.unitsPerEm)
+	hash = foldChecksum(hash, len(font.advanceWidth))
+	for _, width := range font.advanceWidth {
+		hash = foldChecksum(hash, int(width))
+	}
+	for _, gid := range font.unicodeToGID {
+		hash = foldChecksum(hash, gid)
+	}
+	return hash
+}
+
+// foldChecksum is one step of the FNV-1a hash, which is the same in the four
+// ports.
+func foldChecksum(hash uint64, value int) uint64 {
+	return (hash ^ uint64(uint32(value))) * 0x100000001b3
 }
 
 // SetSize sets the size of this font.

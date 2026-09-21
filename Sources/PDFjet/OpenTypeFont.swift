@@ -29,6 +29,7 @@ class OpenTypeFont {
         font.fontLineGap = otf.lineGap
         font.fontUnderlinePosition = otf.underlinePosition!
         font.fontUnderlineThickness = otf.underlineThickness!
+        font.checksum = Font.checksumOf(font)
         font.setSize(font.size)
 
         embedFontFile(pdf, font, otf)
@@ -63,7 +64,7 @@ class OpenTypeFont {
     private static func embedFontFile(_ pdf: PDF, _ font: Font, _ otf: OTF) {
         // Check if the font file is already embedded
         for f in pdf.fonts {
-            if f.fileObjNumber != 0 && f.name == otf.fontName {
+            if f.fileObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
                 font.fileObjNumber = f.fileObjNumber
                 return
             }
@@ -108,7 +109,7 @@ class OpenTypeFont {
             _ font: Font,
             _ otf: OTF) {
         for f in pdf.fonts {
-            if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName {
+            if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
                 return
             }
@@ -168,7 +169,7 @@ class OpenTypeFont {
             _ font: Font,
             _ otf: OTF) {
         for f in pdf.fonts {
-            if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName {
+            if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
                 return
             }
@@ -243,7 +244,7 @@ class OpenTypeFont {
             _ font: Font,
             _ otf: OTF) {
         for f in pdf.fonts {
-            if f.cidFontDictObjNumber != 0 && f.name == otf.fontName {
+            if f.cidFontDictObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber
                 return
             }

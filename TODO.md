@@ -9,8 +9,9 @@ master.
 
 The work runs ahead of the calendar below. Goal 1 is closed, and of goal 2
 the image classes, `Page`, `TextLine` and the whole reader are reviewed --
-the reader eleven days before the Oct 2-8 week the plan gave it. What is
-left before the Oct 1 release is the `Font` loaders and the release checks.
+the reader eleven days before the Oct 2-8 week the plan gave it, and the
+`Font` loaders, which the Sep 27-Oct 1 week had. What is left before the
+Oct 1 release is the release checks.
 
 What is done is in CHANGELOG.md and in the git history; this file lists only
 what is left.
@@ -159,8 +160,9 @@ work to Oct 21 is the seven goals below, in this order.
    end in the four ports, each finding proved by running it, fixed in the four
    ports with a test, and the example pages it touches rendered before and
    after. By exposure, and in this order: ✅ `Page` and `TextLine`; ✅ `Image`,
-   `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; `Font` and its loaders `OTF`,
-   `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test names;
+   `PNGImage`, `JPGImage`, `SVG` and `SVGImage`; ✅ `Font` and its loaders
+   `OTF`, `OpenTypeFont`, `FontStream1` and `FontStream2`, which no test
+   names;
    ✅ the reader, `PDF.read`, the merge and split, `PDFobj` and `Decryptor`,
    which no test names; `TextFrame`, `BigTable`, `CompositeTextLine` and
    `Bidi`; the barcodes, the charts, `Form`, `Container` and `Stamp`.
@@ -224,7 +226,10 @@ work to Oct 21 is the seven goals below, in this order.
      from GIMP, Photoshop, Paint and phone cameras as well as made ones,
      decoded to the pixels Pillow decodes them to.
    - Fonts against fontTools: the widths, character map, ascent, descent, line
-     gap and kerning of every font PDFjet ships and a few popular others.
+     gap and kerning of every font PDFjet ships and a few popular others. The
+     252 fonts of the repository are done, but by hand, beside the review of
+     the loaders on Sep 21: what is left is the kerning, the other fonts and
+     making it a check that runs.
    - The reader against real PDFs: the pdf.js and veraPDF test corpora read,
      merged and split, with the page counts, page sizes and text MuPDF finds.
 
@@ -241,12 +246,14 @@ work to Oct 21 is the seven goals below, in this order.
 Four and a half weeks. The reviews and the fuzzing run first because they
 change code; the checks that must hold at the tag run after the freeze.
 
-Where it stands on Sep 21: the Sep 20-26 week is done, and so are two of the
-three blockers of the Oct 2-8 week, the review and the fuzzing of the reader.
-That buys about a week. It goes to the work that has to be done by hand and
-cannot be hurried at the end -- goal 4, the viewer pass, and goal 3, the
-Matterhorn conditions that need eyes on a page -- and to goal 5, the
-references, which is the first thing to give if anything does.
+Where it stands on Sep 21: the Sep 20-26 week is done, the review of the
+`Font` loaders that the Sep 27-Oct 1 week had, two of the three blockers of
+the Oct 2-8 week -- the review and the fuzzing of the reader -- and the fonts
+of goal 5, which the Oct 9-14 week had. That buys more than a week. It goes
+to the work that has to be done by hand and cannot be hurried at the end --
+goal 4, the viewer pass, and goal 3, the Matterhorn conditions that need eyes
+on a page -- and to the rest of goal 5, the references, which is the first
+thing to give if anything does.
 
 ### Sep 20–26: the decoders, `Page`, `TextLine` and the reader
 
@@ -317,13 +324,36 @@ references, which is the first thing to give if anything does.
       eight fuzz targets found, the tagging work, the core font, fallback
       font and line gap work, the booklet, the examples that changed, and a
       `### Removed` section for the files that went.
-- ⬜ What is left of the week goes to the `Font` loaders, which the next week
-      has and which the Oct 1 release needs.
+- ✅ Goal 2: `Font` and its loaders `OTF`, `OpenTypeFont`, `FontStream1` and
+      `FontStream2` are reviewed (Sep 21), which the Sep 27-Oct 1 week had.
+      The public API of `Font` is the same 26 members in the four ports. One
+      finding, fixed in the four ports with tests: a PDF embedded the font
+      file, the descriptor, the CID font dictionary and the ToUnicode map of
+      the first of two fonts of one name for both, and PDFjet ships twelve
+      pairs of fonts that carry one name -- the whole Noto Sans SC and TC
+      fonts and the subsets of them beside them -- of which 3,821 of the
+      3,917 characters both hold have a different glyph in the subset. A
+      document that drew with both drew the text of the second in the glyphs
+      of the first: 中文字 came out as Ι㈜♡ in pdftotext and in MuPDF. The
+      objects are shared now when a checksum of the font program matches as
+      well as the name, so a font read twice, or read from a `.otf` and from
+      the `.stream` of it, is still embedded once, as Example_28 draws it.
+      The 56 example PDFs are the same as before in the four ports.
+- ✅ Goal 5, in part: the 252 fonts PDFjet ships read against fontTools
+      (Sep 21), which the Oct 9-14 week has. Every one gives the same name,
+      units per em, ascent, descent, line gap, cap height, underline position
+      and thickness, bounding box, first and last character, number of
+      advance widths, digest of every advance width and digest of the whole
+      character map. The 252 `.stream` files carry what their `.otf` or
+      `.ttf` holds, the marks of the GPOS table among it. What is left of
+      that item is the kerning, a few fonts PDFjet does not ship, and making
+      it a check of the repository.
 
 ### Sep 27–Oct 1: release v9.0.2
 
-- ⬜ **B** Goal 2: review `Font` and its loaders `OTF`, `OpenTypeFont`,
-      `FontStream1` and `FontStream2`, which no test names.
+- ✅ **B** Goal 2: review `Font` and its loaders `OTF`, `OpenTypeFont`,
+      `FontStream1` and `FontStream2`, which no test names. Done on Sep 21,
+      above.
 - ⬜ **B** The release checks: `check-examples.sh` clean, the public API that
       of v9.0.1 in the four ports, the JDK 8 build, the benchmarks recorded
       against 9.0.1 with Example_43's time, the docs, the packages and the
@@ -423,3 +453,16 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
+- A character above the BMP, from U+10000 up, is not drawn: the character map
+  of a font is read into 65,536 entries. 144 of the fonts PDFjet ships have
+  glyphs up there, the bold italic alphabet of IBM Plex Math and the CJK
+  ideographs of extension B among them.
+- The characters a font draws are those of the range its OS/2 table gives,
+  `usFirstCharIndex` to `usLastCharIndex`; a font whose range is narrower
+  than its character map draws a space for the rest. None of the 252 fonts
+  PDFjet ships is narrower.
+- `/ItalicAngle 0` is written for every embedded font, though the loader
+  reads the angle of the `post` table. A `.stream` file has no field for it,
+  and a `.otf` and the `.stream` of it share one font descriptor, so writing
+  the angle needs the field first. Nothing draws differently for it: the
+  glyphs of an italic font are italic, and the font is always embedded.

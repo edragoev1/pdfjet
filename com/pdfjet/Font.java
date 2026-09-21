@@ -100,6 +100,11 @@ final public class Font {
     protected int uncompressedSize;
     /** The character metrics of a core font. */
     protected int[][] metrics; // Only used for core fonts.
+    /**
+     * A number that tells the font program this font was read from apart from
+     * every other, so that a PDF embeds each one once.
+     */
+    long checksum;
 
     // Don't change the following default values!
     /** The font size. */
@@ -367,6 +372,33 @@ final public class Font {
             OpenTypeFont.register(pdf, this, inputStream);
         }
         setSize(size);
+    }
+
+    // Returns a number that identifies the font program: the units it is
+    // drawn in, its advance widths and its character map, which say what its
+    // glyphs are and which glyph each character has. Two fonts of one name
+    // that give the same number are the same program, whether it was read
+    // from a .otf, a .ttf or a .stream file, and the PDF embeds it once and
+    // writes one descriptor, one CID font and one ToUnicode map for both.
+    // The name is not enough on its own: PDFjet ships subsets of the Noto CJK
+    // fonts under the name of the whole font, and the text of the one
+    // embedded second was drawn with the glyphs of the first.
+    static long checksumOf(Font font) {
+        long hash = 0xcbf29ce484222325L;
+        hash = fold(hash, font.unitsPerEm);
+        hash = fold(hash, font.advanceWidth.length);
+        for (int width : font.advanceWidth) {
+            hash = fold(hash, width);
+        }
+        for (int gid : font.unicodeToGID) {
+            hash = fold(hash, gid);
+        }
+        return hash;
+    }
+
+    // One step of the FNV-1a hash, which is the same in the four ports.
+    private static long fold(long hash, int value) {
+        return (hash ^ (value & 0xFFFFFFFFL)) * 0x100000001B3L;
     }
 
     /**

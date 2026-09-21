@@ -60,6 +60,9 @@ public class Font {
     var compressedSize: Int?
     var uncompressedSize: Int?
     var metrics: [[Int16]]?
+    // Tells the font program this font was read from apart from every other,
+    // so that a PDF embeds each one once.
+    var checksum: UInt64 = 0
 
     // Don't change the following default values!
     var size: Float = 12.0
@@ -304,6 +307,33 @@ public class Font {
             try OpenTypeFont.register(pdf, self, inputStream)
         }
         setSize(size)
+    }
+
+    // Returns a number that identifies the font program: the units it is drawn
+    // in, its advance widths and its character map, which say what its glyphs
+    // are and which glyph each character has. Two fonts of one name that give
+    // the same number are the same program, whether it was read from a .otf,
+    // a .ttf or a .stream file, and the PDF embeds it once and writes one
+    // descriptor, one CID font and one ToUnicode map for both. The name is
+    // not enough on its own: PDFjet ships subsets of the Noto CJK fonts under
+    // the name of the whole font, and the text of the one embedded second was
+    // drawn with the glyphs of the first.
+    static func checksumOf(_ font: Font) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        hash = fold(hash, font.unitsPerEm)
+        hash = fold(hash, font.advanceWidth.count)
+        for width in font.advanceWidth {
+            hash = fold(hash, Int(width))
+        }
+        for gid in font.unicodeToGID {
+            hash = fold(hash, gid)
+        }
+        return hash
+    }
+
+    // One step of the FNV-1a hash, which is the same in the four ports.
+    private static func fold(_ hash: UInt64, _ value: Int) -> UInt64 {
+        return (hash ^ UInt64(UInt32(truncatingIfNeeded: value))) &* 0x100000001b3
     }
 
     ///

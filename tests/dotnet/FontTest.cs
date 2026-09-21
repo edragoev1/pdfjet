@@ -6,6 +6,7 @@
  */
 using System;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -204,6 +205,58 @@ public class FontTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(latin, "\u65e5\u0301").SetFallbackFont(jp).SetLocation(10f, 20f).DrawOn(page);
         Assert.Equal(1, TestSupport.Content(page).Split(" Tf\n").Length - 1);
+    }
+    // The number of font programs the PDF embeds.
+    private static int EmbeddedFonts(byte[] pdf) {
+        return Encoding.Latin1.GetString(pdf).Split("/FontFile").Length - 1;
+    }
+
+    // Draws a character with each font of a PDF made from the font files.
+    private static byte[] DocumentWithFonts(params string[] paths) {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float y = 50f;
+        foreach (string path in paths) {
+            Font font = new Font(pdf, TestSupport.Open(path)).SetSize(12f);
+            new TextLine(font, "\u4e2d").SetLocation(50f, y).DrawOn(page);
+            y += 20f;
+        }
+        pdf.Complete();
+        return stream.ToArray();
+    }
+
+    [Fact]
+    public void AFontAndASubsetOfItWithTheSameNameAreBothEmbedded() {
+        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
+        // name of the whole font. A PDF embedded the font file of the first
+        // of two fonts of one name for both, so the text drawn with the
+        // second came out in the glyphs of the first.
+        if (!File.Exists(TestSupport.RepoPath("fonts/NotoSansSC/NotoSansSC-Regular.ttf"))) {
+            return;     // The fonts directory is not here.
+        }
+        Assert.Equal(2, EmbeddedFonts(DocumentWithFonts(
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
+        Assert.Equal(2, EmbeddedFonts(DocumentWithFonts(
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream")));
+    }
+
+    [Fact]
+    public void OneFontProgramIsEmbeddedOnce() {
+        // The same font added twice, and the same font read from a .otf and
+        // from the .stream file made of it, are one font program: Example_28
+        // draws with both and embeds one of each font.
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))) {
+            return;     // The fonts directory is not here.
+        }
+        Assert.Equal(1, EmbeddedFonts(DocumentWithFonts(
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
+        Assert.Equal(1, EmbeddedFonts(DocumentWithFonts(
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
     }
 }
 }

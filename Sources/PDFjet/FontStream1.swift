@@ -16,6 +16,7 @@ class FontStream1 {
             stream.close()
         }
         try getFontData(font, stream)
+        font.checksum = Font.checksumOf(font)
         try embedFontFile(pdf, font, stream)
         addFontDescriptorObject(pdf, font)
         addCIDFontDictionaryObject(pdf, font)
@@ -47,7 +48,7 @@ class FontStream1 {
             _ pdf: PDF, _ font: Font, _ stream: InputStream) throws {
         // Check if the font file is already embedded
         for f in pdf.fonts {
-            if f.fileObjNumber != 0 && f.name == font.name {
+            if f.fileObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
                 font.fileObjNumber = f.fileObjNumber
                 return
             }
@@ -87,7 +88,7 @@ class FontStream1 {
 
     private static func addFontDescriptorObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
-            if f.fontDescriptorObjNumber != 0 && f.name == font.name {
+            if f.fontDescriptorObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
                 return
             }
@@ -135,7 +136,7 @@ class FontStream1 {
 
     private static func addToUnicodeCMapObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
-            if f.toUnicodeCMapObjNumber != 0 && f.name == font.name {
+            if f.toUnicodeCMapObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
                 return
             }
@@ -207,7 +208,7 @@ class FontStream1 {
 
     private static func addCIDFontDictionaryObject(_ pdf: PDF, _ font: Font) {
         for f in pdf.fonts {
-            if f.cidFontDictObjNumber != 0 && f.name == font.name {
+            if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber
                 return
             }

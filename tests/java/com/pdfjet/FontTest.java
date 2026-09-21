@@ -209,4 +209,54 @@ class FontTest {
         new TextLine(latin, "\u65e5\u0301").setFallbackFont(jp).setLocation(10f, 20f).drawOn(page);
         assertEquals(1, TestSupport.content(page).split(" Tf\n").length - 1, TestSupport.content(page));
     }
+    // The number of font programs the PDF embeds, and its bytes.
+    private static int embeddedFonts(byte[] pdf) {
+        return TestSupport.latin1(pdf).split("/FontFile").length - 1;
+    }
+
+    // Draws a character with each font of a PDF made from the font files.
+    private static byte[] documentWithFonts(String... paths) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float y = 50f;
+        for (String path : paths) {
+            Font font = new Font(pdf, TestSupport.open(path)).setSize(12f);
+            new TextLine(font, "\u4e2d").setLocation(50f, y).drawOn(page);
+            y += 20f;
+        }
+        pdf.complete();
+        return bos.toByteArray();
+    }
+
+    @Test
+    void aFontAndASubsetOfItWithTheSameNameAreBothEmbedded() throws Exception {
+        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
+        // name of the whole font. A PDF embedded the font file of the first
+        // of two fonts of one name for both, so the text drawn with the
+        // second came out in the glyphs of the first: 中文字 read as Ι㈜♡.
+        assumeTrue(TestSupport.file("fonts/NotoSansSC/NotoSansSC-Regular.ttf").exists(),
+                "the fonts directory is not here");
+        assertEquals(2, embeddedFonts(documentWithFonts(
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
+        assertEquals(2, embeddedFonts(documentWithFonts(
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream")));
+    }
+
+    @Test
+    void oneFontProgramIsEmbeddedOnce() throws Exception {
+        // The same font added twice, and the same font read from a .ttf and
+        // from the .stream file made of it, are one font program: Example_28
+        // draws with both and embeds one of each font.
+        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").exists(),
+                "the fonts directory is not here");
+        assertEquals(1, embeddedFonts(documentWithFonts(
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
+        assertEquals(1, embeddedFonts(documentWithFonts(
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
+    }
 }

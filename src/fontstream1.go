@@ -20,6 +20,7 @@ import (
 // fontStream1 is used to add stream fonts to the PDF.
 func fontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	getFontData(font, reader)
+	font.checksum = checksumOf(font)
 	embedFontFile(pdf, font, reader)
 	addFontDescriptorObject(pdf, font)
 	addCIDFontDictionaryObject(pdf, font)
@@ -50,7 +51,7 @@ func fontStream1(pdf *PDF, font *Font, reader io.Reader) {
 func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 	// Check if the font file is already embedded
 	for _, f := range pdf.fonts {
-		if f.fileObjNumber != 0 && f.name == font.name {
+		if f.fileObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.fileObjNumber = f.fileObjNumber
 			return
 		}
@@ -102,7 +103,7 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 
 func addFontDescriptorObject(pdf *PDF, font *Font) {
 	for _, f := range pdf.fonts {
-		if f.fontDescriptorObjNumber != 0 && f.name == font.name {
+		if f.fontDescriptorObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
 			return
 		}
@@ -150,7 +151,7 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 
 func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	for _, f := range pdf.fonts {
-		if f.toUnicodeCMapObjNumber != 0 && f.name == font.name {
+		if f.toUnicodeCMapObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
 			return
 		}
@@ -228,7 +229,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 
 func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	for _, f := range pdf.fonts {
-		if f.cidFontDictObjNumber != 0 && f.name == font.name {
+		if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber
 			return
 		}
