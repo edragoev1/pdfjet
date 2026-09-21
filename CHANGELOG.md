@@ -176,9 +176,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   and `images/spain-admin.jpg` are 300 dpi and `images/palette.bmp` is 120
   dpi; Example_19 and Example_36 size their image from its width so they are
   unchanged, and the factor Example_24 scales by is adjusted so its page is
-  unchanged too. `images/rgb24pal.bmp` says 2835 pixels per metre, which is
-  72.009 dpi rather than 72, so it is drawn 126.98 by 63.99 points instead of
-  127 by 64.
+  unchanged too. The two resolution fields of `images/rgb24pal.bmp` held
+  2835 pixels per metre, which is 72.009 dots per inch and not the 72 it was
+  meant to be -- 72 dpi is 2834.6457 pixels per metre and cannot be written
+  as the whole number the field holds -- so they are 0 now, which is what a
+  BMP with no resolution in it says and what most writers leave them at. Its
+  samples are the same to the byte and it is drawn 127 by 64 points, one for
+  each of its pixels, as it was.
 - A PNG is drawn at the size its `pHYs` chunk asks for, in all four ports.
   The chunk holds the pixels per unit of each axis, and a PNG written at 300
   or 120 dots per inch was drawn at one point for each of its pixels, which

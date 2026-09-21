@@ -478,7 +478,11 @@ goal 5, the references, which is the first thing to give if anything does.
       inconsistencies. Three tests in each port for the JPEG and two for the
       BMP. `cmyk.jpg` and `spain-admin.jpg` are 300 dpi and `palette.bmp` is
       120; Example_19 and Example_36 size their image from its width and are
-      unchanged, and the factor of Example_24 is adjusted.
+      unchanged, and the factor of Example_24 is adjusted. The two resolution
+      fields of `rgb24pal.bmp` held 2835 pixels per metre, which is 72.009
+      dots per inch and not the 72 it was meant to be, so they are 0 now: a
+      whole number of pixels per metre cannot say 72 dpi, and 0 is what a BMP
+      with no resolution in it says. Its samples are the same to the byte.
       What is left of it: the resolution an Exif segment of a JPEG holds is
       not read, so a JPEG whose resolution is only in its Exif -- a scan or a
       photograph -- is still drawn at one point for each pixel. Exif is a
