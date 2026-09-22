@@ -41,17 +41,17 @@ line gaps, and what the first three fuzz targets turned up. Eight kinds of
 untrusted input are read from a file, and five of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
 
-The one exception is `Cell.setRowSpan` (Sep 21). Goals 1 and 2 closed three
-weeks early, the feature is what clients ask `Table` for and could not have,
-and it lands with tests in the four ports and an example that renders alike
-in all of them. Nothing else from "After v9.0.3 -- features" moves up with
-it.
-
-The page breaks of `Table` moved up after it (Sep 22), and are in v9.0.2
-with it: the wrapped lines of a row are kept together, which changes one
-page break of Example_34, and `keepRowWithNext`, `setNumberOfFooterRows`,
-`setPageSum`, `setRunningSum` and `setBroughtForwardSum` are new, each with
-tests in the four ports.
+Two features are the exceptions, and both are in v9.0.2. The first is
+`Cell.setRowSpan` (Sep 21): goals 1 and 2 closed three weeks early, the
+feature is what clients ask `Table` for and could not have, and it landed
+with tests in the four ports and an example that renders alike in all of
+them. The second is the page breaks of `Table` (Sep 22): the wrapped lines
+of a row are kept together, which changes one page break of Example_34, and
+`keepRowWithNext`, `setNumberOfFooterRows`, `setPageSum`, `setRunningSum`
+and `setBroughtForwardSum` are new, each with tests in the four ports.
+Nothing else from "After v9.0.3 -- features" moves up. The other members
+master adds to the API of v9.0.1 came with the PDF/UA work and the fixes;
+goal 6 lists all 17.
 
 ## The seven goals of v9.0.3
 
@@ -111,9 +111,23 @@ tests in the four ports.
    and every bug they found is fixed in the four ports with tests.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
-   public API of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan` in the
-   four ports, checked as for 9.0.1 before each tag. The row spans are the
-   one feature 9.0.3 adds, by the decision of Sep 21; nothing else is.
+   public API is that of v9.0.1 and the 17 members master adds to it, the
+   same in the four ports, checked as for 9.0.1 before each tag:
+   - `Cell.setRowSpan` and `Cell.getRowSpan`, the row spans (Sep 21);
+   - `Chart`, `BarChart` and `DonutChart` `setAltDescription`,
+     `Page.beginStructElement` and `endStructElement`, `Paragraph.setListLabel`
+     and `setStructureType`, and `StructElem.LBODY`, for PDF/UA (Sep 21);
+   - `Font.getLineGap` and `CalendarMonth.setFirstDayOfWeek`;
+   - `Table.keepRowWithNext`, `setNumberOfFooterRows`, `setPageSum`,
+     `setRunningSum` and `setBroughtForwardSum`, the page breaks of a table
+     (Sep 22).
+
+   Nothing is removed and no signature changes. Swift's `Alignment` has an
+   `init(rawValue:)` since its cases are the numbers a `Cell` packs, and Go's
+   `internal/utf8text.Decode` is not importable, so neither is API. Any other
+   difference fails the check. The API diff lists each port's public
+   declarations at the tag and at v9.0.1: `javap -public`, `go doc -all`,
+   reflection over the C# assembly, and the Swift symbol graph.
 
 7. ⬜ **B** Guard against regressions: benchmarks recorded at 9.0.2 and 9.0.3
    against 9.0.1, Example_43's printed time among them, and the JDK 8 build,
@@ -156,11 +170,10 @@ day.
 
 - ✅ **B** Goal 2: the review of `Font` and its loaders. Done on Sep 21.
 - ⬜ **B** The release checks: `check-examples.sh` clean, the public API that
-      of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan` in the four
-      ports, the JDK 8 build, the benchmarks recorded against 9.0.1 with
-      Example_43's time, the docs, the packages and the site rebuilt, the
-      CHANGELOG entry dated. 9.0.2 is cut from master, which has the row
-      spans, so it carries them as well; there is nothing else new in it.
+      of goal 6 in the four ports, the JDK 8 build, the benchmarks recorded
+      against 9.0.1 with Example_43's time, the docs, the packages and the
+      site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
+      carries the 17 members of goal 6 and the fixes under `## Unreleased`.
 - ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
 
 ### Oct 2–8: the reader
@@ -194,7 +207,7 @@ day.
       printed time among them; the JDK 8 build; the packages and the docs made
       from the tag.
 - ⬜ **B** `check-examples.sh` clean in the four ports, and the public API
-      still that of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan`.
+      still that of goal 6.
 - ⬜ Rebuild the site, and date the `## v9.0.3` entry of CHANGELOG.md.
 - Keep Oct 19 and 20 empty: they are the buffer for what the checks find.
 
