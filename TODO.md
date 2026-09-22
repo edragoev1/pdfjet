@@ -41,17 +41,19 @@ line gaps, and what the first three fuzz targets turned up. Eight kinds of
 untrusted input are read from a file, and five of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
 
-Two features are the exceptions, and both are in v9.0.2. The first is
+Four features are the exceptions, and all are in v9.0.2. The first is
 `Cell.setRowSpan` (Sep 21): goals 1 and 2 closed three weeks early, the
 feature is what clients ask `Table` for and could not have, and it landed
 with tests in the four ports and an example that renders alike in all of
 them. The second is the page breaks of `Table` (Sep 22): the wrapped lines
 of a row are kept together, which changes one page break of Example_34, and
 `keepRowWithNext`, `setNumberOfFooterRows`, `setPageSum`, `setRunningSum`
-and `setBroughtForwardSum` are new, each with tests in the four ports.
-Nothing else from "After v9.0.3 -- features" moves up. The other members
-master adds to the API of v9.0.1 came with the PDF/UA work and the fixes;
-goal 6 lists all 17.
+and `setBroughtForwardSum` are new, each with tests in the four ports. The
+third and the fourth, the same day, are the rest of what "After v9.0.3 --
+features" had, from the review of `Table` and `Cell` of Sep 18: striped
+rows with styles for the header and the footer rows, and column widths
+shared from the width of the table. The other members master adds to the
+API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists all 24.
 
 ## The seven goals of v9.0.3
 
@@ -111,7 +113,7 @@ goal 6 lists all 17.
    and every bug they found is fixed in the four ports with tests.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
-   public API is that of v9.0.1 and the 17 members master adds to it, the
+   public API is that of v9.0.1 and the 24 members master adds to it, the
    same in the four ports, checked as for 9.0.1 before each tag:
    - `Cell.setRowSpan` and `Cell.getRowSpan`, the row spans (Sep 21);
    - `Chart`, `BarChart` and `DonutChart` `setAltDescription`,
@@ -120,7 +122,11 @@ goal 6 lists all 17.
    - `Font.getLineGap` and `CalendarMonth.setFirstDayOfWeek`;
    - `Table.keepRowWithNext`, `setNumberOfFooterRows`, `setPageSum`,
      `setRunningSum` and `setBroughtForwardSum`, the page breaks of a table
-     (Sep 22).
+     (Sep 22);
+   - `Table.setAlternateRowColor`, of a 0xRRGGBB value and of red, green
+     and blue (in Go `SetAlternateRowColorRGB`), `setHeaderRowStyle`,
+     `setFooterRowStyle`, `setWidth`, `setColumnWidthsInPercent` and
+     `fitToWidth`, the row styles and the column widths (Sep 22).
 
    Nothing is removed and no signature changes. Swift's `Alignment` has an
    `init(rawValue:)` since its cases are the numbers a `Cell` packs, and Go's
@@ -173,7 +179,7 @@ day.
       of goal 6 in the four ports, the JDK 8 build, the benchmarks recorded
       against 9.0.1 with Example_43's time, the docs, the packages and the
       site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
-      carries the 17 members of goal 6 and the fixes under `## Unreleased`.
+      carries the 24 members of goal 6 and the fixes under `## Unreleased`.
       Done on Sep 22, to be run again at the tag: the API diff, the JDK 8
       build, and the benchmarks, in `benchmarks/results/2026-09-22-*.log` and
       `benchmarks/table/results/2026-09-22-010c7c21.log`. They found `Table`
@@ -223,18 +229,6 @@ day.
 ### Oct 21: release v9.0.3
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
-
-## After v9.0.3 — features
-
-New features, the first work on the foundation of 9.0.3, from the review of
-`Table` and `Cell` (Sep 18): what clients look for and do not find. None of
-this is started before Oct 21.
-
-- ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
-      (zebra striping, as `BigTable.setShadingColor`), and a style for the
-      header rows, the body and a total row, rather than coloring every cell.
-- ⬜ Column widths from the table width: percentages, or fit a width and
-      share it by the content, next to `autoAdjustColumnWidths`.
 
 ## Known and accepted (document, do not fix)
 

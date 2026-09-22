@@ -36,6 +36,14 @@ public class Table implements Drawable {
     // for each page: a table of 2,546 pages measured its 124,716 rows on
     // every one of them.
     private float[] heights;
+    // The color of every other row of the body, as a 0xRRGGBB value, or
+    // Cell.NO_COLOR; and the rows it colors, found where the heights are.
+    private int alternateRowColor = Cell.NO_COLOR;
+    private boolean[] striped;
+    // The width setWidth gives the table, or 0, and the percentages of it that
+    // setColumnWidthsInPercent gives the columns, or null.
+    private float tableWidth;
+    private float[] columnPercents;
 
     /**
      * Create a table object.
@@ -644,6 +652,186 @@ public class Table implements Drawable {
     }
 
     /**
+     * Colors every other row of the body of the table, the second, the fourth
+     * and so on, counting the rows of the data and not those of each page, as
+     * BigTable.setShadingColor shades its rows. The lines a row wraps into
+     * have its color, and a cell with a background of its own keeps it; the
+     * header and the footer rows are not striped. Color.transparent turns the
+     * stripes off.
+     *
+     * @param color the color as a 0xRRGGBB value, for example Color.whitesmoke.
+     * @return this Table object.
+     */
+    public Table setAlternateRowColor(int color) {
+        this.alternateRowColor = (color == Color.transparent) ? Cell.NO_COLOR : color & 0xFFFFFF;
+        return this;
+    }
+
+    /**
+     * Colors every other row of the body of the table, as setAlternateRowColor(int)
+     * does, with a color of red, green and blue values from 0 to 1. null
+     * turns the stripes off.
+     *
+     * @param color the red, green and blue values.
+     * @return this Table object.
+     */
+    public Table setAlternateRowColor(float[] color) {
+        this.alternateRowColor = Util.toPackedRGB(color);
+        return this;
+    }
+
+    // The rows of the body that setAlternateRowColor colors: the second row of
+    // the data, the fourth and so on, with the lines each wraps into.
+    private boolean[] getStripedRows() {
+        if (alternateRowColor == Cell.NO_COLOR) {
+            return null;
+        }
+        boolean[] rows = new boolean[tableData.size()];
+        int count = 0;
+        for (int r = numOfHeaderRows; r < footerStart(); r++) {
+            if (!isContinuation(r)) {
+                count++;
+            }
+            rows[r] = (count % 2 == 0);
+        }
+        return rows;
+    }
+
+    /**
+     * Sets the font, the text color and the background color of the header
+     * rows, the rows setTableData names, as setFontInRow and setTextColorInRow
+     * set them for one row. Call it after setTableData and before
+     * autoAdjustColumnWidths, which measures the text in the font.
+     *
+     * @param font the font, or null to keep the fonts of the cells.
+     * @param textColor the text color, or Color.transparent to keep it.
+     * @param backgroundColor the background color, or Color.transparent to keep it.
+     * @return this Table object.
+     */
+    public Table setHeaderRowStyle(Font font, int textColor, int backgroundColor) {
+        return setRowStyle(0, numOfHeaderRows, font, textColor, backgroundColor);
+    }
+
+    /**
+     * Sets the font, the text color and the background color of the footer
+     * rows, the rows setNumberOfFooterRows names, as setHeaderRowStyle sets
+     * those of the header rows. Call it after setNumberOfFooterRows.
+     *
+     * @param font the font, or null to keep the fonts of the cells.
+     * @param textColor the text color, or Color.transparent to keep it.
+     * @param backgroundColor the background color, or Color.transparent to keep it.
+     * @return this Table object.
+     */
+    public Table setFooterRowStyle(Font font, int textColor, int backgroundColor) {
+        int start = (numOfFooterRows > 0) ? footerStart() : tableData.size();
+        return setRowStyle(start, tableData.size(), font, textColor, backgroundColor);
+    }
+
+    private Table setRowStyle(int start, int end, Font font, int textColor, int backgroundColor) {
+        for (int r = start; r < end && r < tableData.size(); r++) {
+            if (font != null) {
+                setFontInRow(r, font);
+            }
+            setTextColorInRow(r, textColor);
+            if (backgroundColor != Color.transparent) {
+                for (Cell cell : tableData.get(r)) {
+                    cell.setBackgroundColor(backgroundColor);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Sets the width of the table. The columns share it by the percentages
+     * setColumnWidthsInPercent gives them, whichever of the two is called
+     * first; without them, by the widths they have, as fitToWidth shares it.
+     *
+     * @param width the width of the table.
+     * @return this Table object.
+     */
+    public Table setWidth(float width) {
+        this.tableWidth = width;
+        if (columnPercents != null) {
+            applyColumnPercents();
+            return this;
+        }
+        return fitToWidth(width);
+    }
+
+    /**
+     * Gives the columns, from the first, their percentages of the width of the
+     * table that setWidth sets, whichever of the two is called first. The
+     * columns that have none share what is left of 100 equally, and the widths
+     * are then made to add up to the width of the table, so percentages that
+     * do not add up to 100 are shares of it. Text wraps to the widths.
+     *
+     * @param percents the percentages of the columns.
+     * @return this Table object.
+     */
+    public Table setColumnWidthsInPercent(float... percents) {
+        this.columnPercents = percents.clone();
+        if (tableWidth > 0f) {
+            applyColumnPercents();
+        }
+        return this;
+    }
+
+    private void applyColumnPercents() {
+        if (tableData.isEmpty()) {
+            return;
+        }
+        int columns = tableData.get(0).size();
+        float[] shares = new float[columns];
+        float given = 0f;
+        int rest = columns;
+        for (int i = 0; i < columns && i < columnPercents.length; i++) {
+            shares[i] = Math.max(0f, columnPercents[i]);
+            given += shares[i];
+            rest--;
+        }
+        float each = (rest > 0) ? Math.max(0f, 100f - given) / rest : 0f;
+        float total = given + each * rest;
+        if (total <= 0f) {
+            return;
+        }
+        for (int i = 0; i < columns; i++) {
+            float share = (i < columnPercents.length) ? shares[i] : each;
+            setColumnWidth(i, tableWidth * share / total);
+        }
+    }
+
+    /**
+     * Makes the table the width given, sharing it among the columns by the
+     * widths they have: after autoAdjustColumnWidths, by the text each holds.
+     * Text wraps to the widths.
+     *
+     * @param width the width of the table.
+     * @return this Table object.
+     */
+    public Table fitToWidth(float width) {
+        if (tableData.isEmpty()) {
+            return this;
+        }
+        int columns = tableData.get(0).size();
+        float total = 0f;
+        for (int i = 0; i < columns; i++) {
+            total += getColumnWidth(i);
+        }
+        if (total <= 0f) {
+            return this;
+        }
+        float[] widths = new float[columns];
+        for (int i = 0; i < columns; i++) {
+            widths[i] = getColumnWidth(i) * width / total;
+        }
+        for (int i = 0; i < columns; i++) {
+            setColumnWidth(i, widths[i]);
+        }
+        return this;
+    }
+
+    /**
      * Sets the width of the column with the specified index.
      *
      * @param index the index of specified column.
@@ -729,6 +917,7 @@ public class Table implements Drawable {
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
         heights = getRowHeights();
+        striped = getStripedRows();
         float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
         return new float[] {x1 + getWidth(), xy[1]};
     }
@@ -752,6 +941,7 @@ public class Table implements Drawable {
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
         heights = getRowHeights();
+        striped = getStripedRows();
         float[] xy = null;
         int pageNumber = 1;
         while (hasMoreData()) {
@@ -854,7 +1044,17 @@ public class Table implements Drawable {
                     cellHeight += heights[r];
                 }
                 page.setBrushColor(cell.textColor);
+                // A row of the body that is striped colors the cells that
+                // have no background of their own, while they are drawn.
+                boolean stripe = striped != null && rowIndex < striped.length && striped[rowIndex]
+                        && cell.backgroundColor == Cell.NO_COLOR;
+                if (stripe) {
+                    cell.backgroundColor = alternateRowColor;
+                }
                 cell.drawOn(page, x, y, w, cellHeight);
+                if (stripe) {
+                    cell.backgroundColor = Cell.NO_COLOR;
+                }
             }
             x += w;
         }

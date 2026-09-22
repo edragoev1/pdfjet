@@ -883,5 +883,96 @@ public sealed class TableTest : IDisposable {
         // Rows 2 to 58: 1,710 and 57 quarters.
         Assert.Contains("<" + TestSupport.Hex(Table.FormatSum(171000 + 1425, 2)) + ">", next);
     }
+
+    // The operator that sets the fill color, as a page writes it.
+    private static string FillOperator(PDF pdf, int color) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.SetBrushColor(color);
+        return TestSupport.Content(page).Trim();
+    }
+
+    [Fact]
+    public void EveryOtherRowOfTheBodyIsStriped() {
+        // A header row, the rows r1 to r6 of the body, of which r4 wraps, and
+        // a cell of r2 with a background of its own.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = RowsWith(font, 4, LONG_TEXT, "x").GetRange(0, 7);
+        data[2][1].SetBackgroundColor(0xFF0000);
+        Table table = new Table().SetTableData(data, 1).SetAlternateRowColor(0x336699).SetLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.DrawOn(page);
+        int r4Lines = 0;
+        for (int r = 5; ; r++) {
+            List<Cell> row;
+            try {
+                row = table.GetRow(r);
+            } catch (ArgumentOutOfRangeException) {
+                break;
+            }
+            if ((row[0].properties & Cell.CONTINUED) != 0) {
+                r4Lines++;
+            }
+        }
+        Assert.True(r4Lines > 0, "the text did not wrap");
+        // r2, the lines of r4 and r6, two cells each, but the cell of r2 that
+        // has a background of its own.
+        string content = TestSupport.Content(page);
+        Assert.Equal(2 * (1 + 1 + r4Lines + 1) - 1, Count(content, FillOperator(pdf, 0x336699)));
+        Assert.Equal(1, Count(content, FillOperator(pdf, 0xFF0000)));
+        // The cells are as they were.
+        Assert.Null(table.GetCellAt(2, 0).GetBackgroundColor());
+    }
+
+    [Fact]
+    public void TheHeaderAndTheFooterRowsHaveTheirStyle() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD).SetSize(9f);
+        Table table = new Table().SetTableData(RowsWith(font, -1), 1).SetNumberOfFooterRows(1)
+                .SetHeaderRowStyle(bold, Color.white, Color.darkblue)
+                .SetFooterRowStyle(null, Color.transparent, Color.lightgray);
+        Cell header = table.GetCellAt(0, 1);
+        Assert.Same(bold, header.GetFont());
+        Assert.Equal(9f, header.fontSize);
+        TestSupport.AssertRGB(1f, 1f, 1f, header.GetTextColor());
+        Assert.Equal(Color.darkblue, header.backgroundColor);
+        // The footer keeps its font and its text color, and the body is as it was.
+        Cell footer = table.GetCellAt(59, 0);
+        Assert.Same(font, footer.GetFont());
+        TestSupport.AssertRGB(0f, 0f, 0f, footer.GetTextColor());
+        Assert.Equal(Color.lightgray, footer.backgroundColor);
+        Assert.Null(table.GetCellAt(1, 0).GetBackgroundColor());
+        Assert.Same(font, table.GetCellAt(1, 0).GetFont());
+    }
+
+    [Fact]
+    public void TheColumnsShareTheWidthOfTheTable() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // Two of four columns have percentages, and the other two share what
+        // is left of 100; in either order of the calls.
+        AssertWidths(new Table().SetTableData(Rows(font, 3, 4), 1)
+                .SetColumnWidthsInPercent(10f, 40f).SetWidth(500f), 50f, 200f, 125f, 125f);
+        AssertWidths(new Table().SetTableData(Rows(font, 3, 4), 1)
+                .SetWidth(500f).SetColumnWidthsInPercent(10f, 40f), 50f, 200f, 125f, 125f);
+        // Percentages that do not add up to 100 are shares.
+        AssertWidths(new Table().SetTableData(Rows(font, 3, 2), 1)
+                .SetColumnWidthsInPercent(30f, 90f).SetWidth(400f), 100f, 300f);
+        // FitToWidth, and SetWidth with no percentages, share it by the widths.
+        Table table = new Table().SetTableData(Rows(font, 3, 2), 1).SetColumnWidth(0, 60f).SetColumnWidth(1, 120f);
+        AssertWidths(table.FitToWidth(360f), 120f, 240f);
+        AssertWidths(table.SetWidth(90f), 30f, 60f);
+        TestSupport.AssertNear(90f, table.GetWidth(), 0.001f);
+    }
+
+    private static void AssertWidths(Table table, params float[] widths) {
+        for (int i = 0; i < widths.Length; i++) {
+            TestSupport.AssertNear(widths[i], table.GetColumnWidth(i), 0.001f);
+            for (int r = 0; r < 3; r++) {
+                TestSupport.AssertNear(widths[i], table.GetCellAt(r, i).GetWidth(), 0.001f);
+            }
+        }
+    }
 }
 }

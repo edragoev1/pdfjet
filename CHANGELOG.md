@@ -10,6 +10,22 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Table.setAlternateRowColor(color)` colors every other row of the body of a
+  table, the second, the fourth and so on, counting the rows of the data and
+  not those of each page, as `BigTable.setShadingColor` shades its rows, in
+  all four ports. The lines a row wraps into have its color, a cell with a
+  background of its own keeps it, and the header and footer rows are not
+  striped. `setHeaderRowStyle(font, textColor, backgroundColor)` and
+  `setFooterRowStyle` give the header and the footer rows a font, a text
+  color and a background at once, where each cell was colored before; a null
+  font or `Color.transparent` keeps what the cells have.
+- `Table.setColumnWidthsInPercent(percents...)` and `Table.setWidth(width)`
+  share the width of a table among its columns by percentages, in either
+  order of the calls: the columns without one share what is left of 100, and
+  the widths add up to the width of the table. `Table.fitToWidth(width)`
+  shares it by the widths the columns have, after `autoAdjustColumnWidths` by
+  the text each holds, and `setWidth` does the same when there are no
+  percentages. In all four ports.
 - `Table.setPageSum(row, column, decimals)` and
   `Table.setRunningSum(row, column, decimals)` make a cell of a footer row
   show the sum of its column, in all four ports: over the rows of each page,

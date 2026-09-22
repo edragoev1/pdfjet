@@ -35,6 +35,14 @@ public class Table : IDrawable {
     // for each page: a table of 2,546 pages measured its 124,716 rows on
     // every one of them.
     private float[] heights;
+    // The color of every other row of the body, as a 0xRRGGBB value, or
+    // Cell.NO_COLOR; and the rows it colors, found where the heights are.
+    private int alternateRowColor = Cell.NO_COLOR;
+    private bool[] striped;
+    // The width SetWidth gives the table, or 0, and the percentages of it that
+    // SetColumnWidthsInPercent gives the columns, or null.
+    private float tableWidth;
+    private float[] columnPercents;
 
     /// <summary>
     /// Create a table object.
@@ -606,6 +614,179 @@ public class Table : IDrawable {
     }
 
     /// <summary>
+    /// Colors every other row of the body of the table, the second, the fourth
+    /// and so on, counting the rows of the data and not those of each page, as
+    /// BigTable.SetShadingColor shades its rows. The lines a row wraps into
+    /// have its color, and a cell with a background of its own keeps it; the
+    /// header and the footer rows are not striped. Color.transparent turns the
+    /// stripes off.
+    /// </summary>
+    /// <param name="color">the color as a 0xRRGGBB value, for example Color.whitesmoke.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetAlternateRowColor(int color) {
+        this.alternateRowColor = (color == Color.transparent) ? Cell.NO_COLOR : color & 0xFFFFFF;
+        return this;
+    }
+
+    /// <summary>
+    /// Colors every other row of the body of the table, as SetAlternateRowColor(int)
+    /// does, with a color of red, green and blue values from 0 to 1. null
+    /// turns the stripes off.
+    /// </summary>
+    /// <param name="color">the red, green and blue values.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetAlternateRowColor(float[] color) {
+        this.alternateRowColor = Util.ToPackedRGB(color);
+        return this;
+    }
+
+    // The rows of the body that SetAlternateRowColor colors: the second row of
+    // the data, the fourth and so on, with the lines each wraps into.
+    private bool[] GetStripedRows() {
+        if (alternateRowColor == Cell.NO_COLOR) {
+            return null;
+        }
+        bool[] rows = new bool[tableData.Count];
+        int count = 0;
+        for (int r = numOfHeaderRows; r < FooterStart(); r++) {
+            if (!IsContinuation(r)) {
+                count++;
+            }
+            rows[r] = (count % 2 == 0);
+        }
+        return rows;
+    }
+
+    /// <summary>
+    /// Sets the font, the text color and the background color of the header
+    /// rows, the rows SetTableData names, as SetFontInRow and SetTextColorInRow
+    /// set them for one row. Call it after SetTableData and before
+    /// AutoAdjustColumnWidths, which measures the text in the font.
+    /// </summary>
+    /// <param name="font">the font, or null to keep the fonts of the cells.</param>
+    /// <param name="textColor">the text color, or Color.transparent to keep it.</param>
+    /// <param name="backgroundColor">the background color, or Color.transparent to keep it.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetHeaderRowStyle(Font font, int textColor, int backgroundColor) {
+        return SetRowStyle(0, numOfHeaderRows, font, textColor, backgroundColor);
+    }
+
+    /// <summary>
+    /// Sets the font, the text color and the background color of the footer
+    /// rows, the rows SetNumberOfFooterRows names, as SetHeaderRowStyle sets
+    /// those of the header rows. Call it after SetNumberOfFooterRows.
+    /// </summary>
+    /// <param name="font">the font, or null to keep the fonts of the cells.</param>
+    /// <param name="textColor">the text color, or Color.transparent to keep it.</param>
+    /// <param name="backgroundColor">the background color, or Color.transparent to keep it.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetFooterRowStyle(Font font, int textColor, int backgroundColor) {
+        int start = (numOfFooterRows > 0) ? FooterStart() : tableData.Count;
+        return SetRowStyle(start, tableData.Count, font, textColor, backgroundColor);
+    }
+
+    private Table SetRowStyle(int start, int end, Font font, int textColor, int backgroundColor) {
+        for (int r = start; r < end && r < tableData.Count; r++) {
+            if (font != null) {
+                SetFontInRow(r, font);
+            }
+            SetTextColorInRow(r, textColor);
+            if (backgroundColor != Color.transparent) {
+                foreach (Cell cell in tableData[r]) {
+                    cell.SetBackgroundColor(backgroundColor);
+                }
+            }
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the width of the table. The columns share it by the percentages
+    /// SetColumnWidthsInPercent gives them, whichever of the two is called
+    /// first; without them, by the widths they have, as FitToWidth shares it.
+    /// </summary>
+    /// <param name="width">the width of the table.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetWidth(float width) {
+        this.tableWidth = width;
+        if (columnPercents != null) {
+            ApplyColumnPercents();
+            return this;
+        }
+        return FitToWidth(width);
+    }
+
+    /// <summary>
+    /// Gives the columns, from the first, their percentages of the width of the
+    /// table that SetWidth sets, whichever of the two is called first. The
+    /// columns that have none share what is left of 100 equally, and the widths
+    /// are then made to add up to the width of the table, so percentages that
+    /// do not add up to 100 are shares of it. Text wraps to the widths.
+    /// </summary>
+    /// <param name="percents">the percentages of the columns.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetColumnWidthsInPercent(params float[] percents) {
+        this.columnPercents = (float[]) percents.Clone();
+        if (tableWidth > 0f) {
+            ApplyColumnPercents();
+        }
+        return this;
+    }
+
+    private void ApplyColumnPercents() {
+        if (tableData.Count == 0) {
+            return;
+        }
+        int columns = tableData[0].Count;
+        float[] shares = new float[columns];
+        float given = 0f;
+        int rest = columns;
+        for (int i = 0; i < columns && i < columnPercents.Length; i++) {
+            shares[i] = Math.Max(0f, columnPercents[i]);
+            given += shares[i];
+            rest--;
+        }
+        float each = (rest > 0) ? Math.Max(0f, 100f - given) / rest : 0f;
+        float total = given + each * rest;
+        if (total <= 0f) {
+            return;
+        }
+        for (int i = 0; i < columns; i++) {
+            float share = (i < columnPercents.Length) ? shares[i] : each;
+            SetColumnWidth(i, tableWidth * share / total);
+        }
+    }
+
+    /// <summary>
+    /// Makes the table the width given, sharing it among the columns by the
+    /// widths they have: after AutoAdjustColumnWidths, by the text each holds.
+    /// Text wraps to the widths.
+    /// </summary>
+    /// <param name="width">the width of the table.</param>
+    /// <returns>this Table object.</returns>
+    public Table FitToWidth(float width) {
+        if (tableData.Count == 0) {
+            return this;
+        }
+        int columns = tableData[0].Count;
+        float total = 0f;
+        for (int i = 0; i < columns; i++) {
+            total += GetColumnWidth(i);
+        }
+        if (total <= 0f) {
+            return this;
+        }
+        float[] widths = new float[columns];
+        for (int i = 0; i < columns; i++) {
+            widths[i] = GetColumnWidth(i) * width / total;
+        }
+        for (int i = 0; i < columns; i++) {
+            SetColumnWidth(i, widths[i]);
+        }
+        return this;
+    }
+
+    /// <summary>
     /// Sets the width of the column with the specified index.
     /// </summary>
     /// <param name="index">the index of specified column.</param>
@@ -680,6 +861,7 @@ public class Table : IDrawable {
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
         heights = GetRowHeights();
+        striped = GetStripedRows();
         float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
         return new float[] {x1 + GetWidth(), xy[1]};
     }
@@ -701,6 +883,7 @@ public class Table : IDrawable {
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
         heights = GetRowHeights();
+        striped = GetStripedRows();
         float[] xy = null;
         int pageNumber = 1;
         while (HasMoreData()) {
@@ -803,7 +986,17 @@ public class Table : IDrawable {
                     cellHeight += heights[r];
                 }
                 page.SetBrushColor(cell.textColor);
+                // A row of the body that is striped colors the cells that
+                // have no background of their own, while they are drawn.
+                bool stripe = striped != null && rowIndex < striped.Length && striped[rowIndex]
+                        && cell.backgroundColor == Cell.NO_COLOR;
+                if (stripe) {
+                    cell.backgroundColor = alternateRowColor;
+                }
                 cell.DrawOn(page, x, y, w, cellHeight);
+                if (stripe) {
+                    cell.backgroundColor = Cell.NO_COLOR;
+                }
             }
             x += w;
         }

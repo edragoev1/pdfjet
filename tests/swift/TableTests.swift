@@ -828,4 +828,84 @@ import Testing
         // Rows 2 to 58: 1,710 and 57 quarters.
         #expect(next.contains("<" + TestSupport.hex(Table.formatSum(171000 + 1425, 2)) + ">"), "no total")
     }
+
+    // The operator that sets the fill color, as a page writes it.
+    private func fillOperator(_ pdf: PDF, _ color: Int32) -> String {
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.setBrushColor(color)
+        return TestSupport.content(page).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    @Test func everyOtherRowOfTheBodyIsStriped() {
+        // A header row, the rows r1 to r6 of the body, of which r4 wraps, and
+        // a cell of r2 with a background of its own.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let data = Array(rowsWith(font, 4, [longText, "x"])[0..<7])
+        data[2][1].setBackgroundColor(0xFF0000)
+        let table = Table().setTableData(data, 1).setAlternateRowColor(0x336699).setLocation(50, 50)
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = table.drawOn(page)
+        var r4Lines = 0
+        for r in 5..<table.getColumn(0).count where (table.getRow(r)[0].properties & Cell.CONTINUED) != 0 {
+            r4Lines += 1
+        }
+        #expect(r4Lines > 0, "the text did not wrap")
+        // r2, the lines of r4 and r6, two cells each, but the cell of r2 that
+        // has a background of its own.
+        let content = TestSupport.content(page)
+        #expect(count(content, fillOperator(pdf, 0x336699)) == 2 * (1 + 1 + r4Lines + 1) - 1)
+        #expect(count(content, fillOperator(pdf, 0xFF0000)) == 1)
+        // The cells are as they were.
+        #expect(table.getCellAt(2, 0).getBackgroundColor() == nil)
+    }
+
+    @Test func theHeaderAndTheFooterRowsHaveTheirStyle() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let bold = try Font(pdf, CoreFont.HELVETICA_BOLD).setSize(9)
+        let table = Table().setTableData(rowsWith(font, -1), 1).setNumberOfFooterRows(1)
+                .setHeaderRowStyle(bold, Color.white, Color.darkblue)
+                .setFooterRowStyle(nil, Color.transparent, Color.lightgray)
+        let header = table.getCellAt(0, 1)
+        #expect(header.getFont() === bold)
+        #expect(header.fontSize == 9)
+        TestSupport.expectRGB(1, 1, 1, header.getTextColor())
+        #expect(header.backgroundColor == Color.darkblue)
+        // The footer keeps its font and its text color, and the body is as it was.
+        let footer = table.getCellAt(59, 0)
+        #expect(footer.getFont() === font)
+        TestSupport.expectRGB(0, 0, 0, footer.getTextColor())
+        #expect(footer.backgroundColor == Color.lightgray)
+        #expect(table.getCellAt(1, 0).getBackgroundColor() == nil)
+        #expect(table.getCellAt(1, 0).getFont() === font)
+    }
+
+    @Test func theColumnsShareTheWidthOfTheTable() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        // Two of four columns have percentages, and the other two share what
+        // is left of 100; in either order of the calls.
+        expectWidths(Table().setTableData(rows(font, 3, 4), 1)
+                .setColumnWidthsInPercent(10, 40).setWidth(500), [50, 200, 125, 125])
+        expectWidths(Table().setTableData(rows(font, 3, 4), 1)
+                .setWidth(500).setColumnWidthsInPercent(10, 40), [50, 200, 125, 125])
+        // Percentages that do not add up to 100 are shares.
+        expectWidths(Table().setTableData(rows(font, 3, 2), 1)
+                .setColumnWidthsInPercent(30, 90).setWidth(400), [100, 300])
+        // fitToWidth, and setWidth with no percentages, share it by the widths.
+        let table = Table().setTableData(rows(font, 3, 2), 1).setColumnWidth(0, 60).setColumnWidth(1, 120)
+        expectWidths(table.fitToWidth(360), [120, 240])
+        expectWidths(table.setWidth(90), [30, 60])
+        TestSupport.expectNear(90, table.getWidth(), 0.001)
+    }
+
+    private func expectWidths(_ table: Table, _ widths: [Float]) {
+        for (i, w) in widths.enumerated() {
+            TestSupport.expectNear(w, table.getColumnWidth(i), 0.001)
+            for r in 0..<3 {
+                TestSupport.expectNear(w, table.getCellAt(r, i).getWidth(), 0.001)
+            }
+        }
+    }
 }

@@ -31,6 +31,14 @@ public class Table : Drawable {
     // for each page: a table of 2,546 pages measured its 124,716 rows on
     // every one of them.
     private var heights = [Float]()
+    // The color of every other row of the body, as a 0xRRGGBB value, or
+    // Cell.NO_COLOR; and the rows it colors, found where the heights are.
+    private var alternateRowColor: Int32 = Cell.NO_COLOR
+    private var striped = [Bool]()
+    // The width setWidth gives the table, or 0, and the percentages of it that
+    // setColumnWidthsInPercent gives the columns, or nil.
+    private var tableWidth: Float = 0.0
+    private var columnPercents: [Float]?
 
     ///
     /// Create a table object.
@@ -637,6 +645,195 @@ public class Table : Drawable {
     }
 
     ///
+    /// Colors every other row of the body of the table, the second, the fourth
+    /// and so on, counting the rows of the data and not those of each page, as
+    /// BigTable.setShadingColor shades its rows. The lines a row wraps into
+    /// have its color, and a cell with a background of its own keeps it; the
+    /// header and the footer rows are not striped. Color.transparent turns the
+    /// stripes off.
+    ///
+    /// - Parameter color: the color as a 0xRRGGBB value, for example Color.whitesmoke.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setAlternateRowColor(_ color: Int32) -> Table {
+        self.alternateRowColor = (color == Color.transparent) ? Cell.NO_COLOR : color & 0xFFFFFF
+        return self
+    }
+
+    ///
+    /// Colors every other row of the body of the table, as setAlternateRowColor
+    /// does with a 0xRRGGBB value, with a color of red, green and blue values
+    /// from 0 to 1. nil turns the stripes off.
+    ///
+    /// - Parameter color: the red, green and blue values.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setAlternateRowColor(_ color: [Float]?) -> Table {
+        self.alternateRowColor = Util.toPackedRGB(color)
+        return self
+    }
+
+    // The rows of the body that setAlternateRowColor colors: the second row of
+    // the data, the fourth and so on, with the lines each wraps into.
+    private func getStripedRows() -> [Bool] {
+        if alternateRowColor == Cell.NO_COLOR {
+            return []
+        }
+        var rows = [Bool](repeating: false, count: tableData.count)
+        var count = 0
+        var r = numOfHeaderRows
+        while r < footerStart() {
+            if !isContinuation(r) {
+                count += 1
+            }
+            rows[r] = (count % 2 == 0)
+            r += 1
+        }
+        return rows
+    }
+
+    ///
+    /// Sets the font, the text color and the background color of the header
+    /// rows, the rows setTableData names, as setFontInRow and setTextColorInRow
+    /// set them for one row. Call it after setTableData and before
+    /// autoAdjustColumnWidths, which measures the text in the font.
+    ///
+    /// - Parameter font: the font, or nil to keep the fonts of the cells.
+    /// - Parameter textColor: the text color, or Color.transparent to keep it.
+    /// - Parameter backgroundColor: the background color, or Color.transparent to keep it.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setHeaderRowStyle(_ font: Font?, _ textColor: Int32, _ backgroundColor: Int32) -> Table {
+        return setRowStyle(0, numOfHeaderRows, font, textColor, backgroundColor)
+    }
+
+    ///
+    /// Sets the font, the text color and the background color of the footer
+    /// rows, the rows setNumberOfFooterRows names, as setHeaderRowStyle sets
+    /// those of the header rows. Call it after setNumberOfFooterRows.
+    ///
+    /// - Parameter font: the font, or nil to keep the fonts of the cells.
+    /// - Parameter textColor: the text color, or Color.transparent to keep it.
+    /// - Parameter backgroundColor: the background color, or Color.transparent to keep it.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setFooterRowStyle(_ font: Font?, _ textColor: Int32, _ backgroundColor: Int32) -> Table {
+        let start = (numOfFooterRows > 0) ? footerStart() : tableData.count
+        return setRowStyle(start, tableData.count, font, textColor, backgroundColor)
+    }
+
+    private func setRowStyle(_ start: Int, _ end: Int, _ font: Font?, _ textColor: Int32,
+            _ backgroundColor: Int32) -> Table {
+        var r = start
+        while r < end && r < tableData.count {
+            if let font = font {
+                setFontInRow(r, font)
+            }
+            setTextColorInRow(r, textColor)
+            if backgroundColor != Color.transparent {
+                for cell in tableData[r] {
+                    cell.setBackgroundColor(backgroundColor)
+                }
+            }
+            r += 1
+        }
+        return self
+    }
+
+    ///
+    /// Sets the width of the table. The columns share it by the percentages
+    /// setColumnWidthsInPercent gives them, whichever of the two is called
+    /// first; without them, by the widths they have, as fitToWidth shares it.
+    ///
+    /// - Parameter width: the width of the table.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setWidth(_ width: Float) -> Table {
+        self.tableWidth = width
+        if columnPercents != nil {
+            applyColumnPercents()
+            return self
+        }
+        return fitToWidth(width)
+    }
+
+    ///
+    /// Gives the columns, from the first, their percentages of the width of the
+    /// table that setWidth sets, whichever of the two is called first. The
+    /// columns that have none share what is left of 100 equally, and the widths
+    /// are then made to add up to the width of the table, so percentages that
+    /// do not add up to 100 are shares of it. Text wraps to the widths.
+    ///
+    /// - Parameter percents: the percentages of the columns.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setColumnWidthsInPercent(_ percents: Float...) -> Table {
+        self.columnPercents = percents
+        if tableWidth > 0.0 {
+            applyColumnPercents()
+        }
+        return self
+    }
+
+    private func applyColumnPercents() {
+        guard let percents = columnPercents, !tableData.isEmpty else {
+            return
+        }
+        let columns = tableData[0].count
+        var shares = [Float](repeating: 0.0, count: columns)
+        var given: Float = 0.0
+        var rest = columns
+        for i in 0..<min(columns, percents.count) {
+            shares[i] = max(0.0, percents[i])
+            given += shares[i]
+            rest -= 1
+        }
+        let each: Float = (rest > 0) ? max(0.0, 100.0 - given) / Float(rest) : 0.0
+        let total = given + each * Float(rest)
+        if total <= 0.0 {
+            return
+        }
+        for i in 0..<columns {
+            let share = (i < percents.count) ? shares[i] : each
+            setColumnWidth(i, tableWidth * share / total)
+        }
+    }
+
+    ///
+    /// Makes the table the width given, sharing it among the columns by the
+    /// widths they have: after autoAdjustColumnWidths, by the text each holds.
+    /// Text wraps to the widths.
+    ///
+    /// - Parameter width: the width of the table.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func fitToWidth(_ width: Float) -> Table {
+        if tableData.isEmpty {
+            return self
+        }
+        let columns = tableData[0].count
+        var total: Float = 0.0
+        for i in 0..<columns {
+            total += getColumnWidth(i)
+        }
+        if total <= 0.0 {
+            return self
+        }
+        let widths = (0..<columns).map { getColumnWidth($0) * width / total }
+        for (i, w) in widths.enumerated() {
+            setColumnWidth(i, w)
+        }
+        return self
+    }
+
+    ///
     /// Sets the width of the column with the specified index.
     ///
     /// - Parameter index: the index of specified column.
@@ -722,6 +919,7 @@ public class Table : Drawable {
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
         heights = getRowHeights()
+        striped = getStripedRows()
         let xy = drawTableRows(page, drawHeaderRows(page, 0))
         return [x1 + getWidth(), xy[1]]
     }
@@ -746,6 +944,7 @@ public class Table : Drawable {
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
         heights = getRowHeights()
+        striped = getStripedRows()
         var xy: [Float]?
         var pageNumber: Int = 1
         while (hasMoreData()) {
@@ -855,7 +1054,17 @@ public class Table : Drawable {
                     cellHeight += heights[r]
                 }
                 page.setBrushColor(cell.textColor)
+                // A row of the body that is striped colors the cells that
+                // have no background of their own, while they are drawn.
+                let stripe = rowIndex < striped.count && striped[rowIndex]
+                        && cell.backgroundColor == Cell.NO_COLOR
+                if stripe {
+                    cell.backgroundColor = alternateRowColor
+                }
                 cell.drawOn(page, x, y, w, cellHeight)
+                if stripe {
+                    cell.backgroundColor = Cell.NO_COLOR
+                }
             }
             x += w
         }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/utf8text"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -40,6 +41,14 @@ type Table struct {
 	// each page: a table of 2,546 pages measured its 124,716 rows on every one
 	// of them.
 	heights []float32
+	// The color of every other row of the body, as a 0xRRGGBB value, or
+	// color.Transparent; and the rows it colors, found where the heights are.
+	alternateRowColor int32
+	striped           []bool
+	// The width SetWidth gives the table, or 0, and the percentages of it that
+	// SetColumnWidthsInPercent gives the columns, or nil.
+	tableWidth     float32
+	columnPercents []float32
 }
 
 // NewTable creates table objects.
@@ -48,6 +57,7 @@ func NewTable() *Table {
 	table.tableData = make([][]*Cell, 0)
 	table.numOfHeaderRows = 1
 	table.rendered = 1
+	table.alternateRowColor = color.Transparent
 	return table
 }
 
@@ -586,6 +596,164 @@ func (table *Table) SetFontInRow(index int, font *Font) *Table {
 	return table
 }
 
+// SetAlternateRowColor colors every other row of the body of the table, the
+// second, the fourth and so on, counting the rows of the data and not those of
+// each page, as BigTable.SetShadingColor shades its rows. The lines a row
+// wraps into have its color, and a cell with a background of its own keeps
+// it; the header and the footer rows are not striped. color.Transparent turns
+// the stripes off.
+func (table *Table) SetAlternateRowColor(c int32) *Table {
+	if c == color.Transparent {
+		table.alternateRowColor = color.Transparent
+	} else {
+		table.alternateRowColor = c & 0xFFFFFF
+	}
+	return table
+}
+
+// SetAlternateRowColorRGB colors every other row of the body of the table,
+// as SetAlternateRowColor does, with a color of red, green and blue values
+// from 0 to 1.
+func (table *Table) SetAlternateRowColorRGB(rgbColor [3]float32) *Table {
+	table.alternateRowColor = rgbToColor(rgbColor)
+	return table
+}
+
+// getStripedRows returns the rows of the body that SetAlternateRowColor
+// colors: the second row of the data, the fourth and so on, with the lines
+// each wraps into.
+func (table *Table) getStripedRows() []bool {
+	if table.alternateRowColor == color.Transparent {
+		return nil
+	}
+	rows := make([]bool, len(table.tableData))
+	count := 0
+	for r := table.numOfHeaderRows; r < table.footerStart(); r++ {
+		if !table.isContinuation(r) {
+			count++
+		}
+		rows[r] = count%2 == 0
+	}
+	return rows
+}
+
+// SetHeaderRowStyle sets the font, the text color and the background color of
+// the header rows, the rows SetTableData names, as SetFontInRow and
+// SetTextColorInRow set them for one row. A nil font keeps the fonts of the
+// cells, and color.Transparent keeps a color. Call it after SetTableData and
+// before AutoAdjustColumnWidths, which measures the text in the font.
+func (table *Table) SetHeaderRowStyle(font *Font, textColor, backgroundColor int32) *Table {
+	return table.setRowStyle(0, table.numOfHeaderRows, font, textColor, backgroundColor)
+}
+
+// SetFooterRowStyle sets the font, the text color and the background color of
+// the footer rows, the rows SetNumberOfFooterRows names, as SetHeaderRowStyle
+// sets those of the header rows. Call it after SetNumberOfFooterRows.
+func (table *Table) SetFooterRowStyle(font *Font, textColor, backgroundColor int32) *Table {
+	start := len(table.tableData)
+	if table.numOfFooterRows > 0 {
+		start = table.footerStart()
+	}
+	return table.setRowStyle(start, len(table.tableData), font, textColor, backgroundColor)
+}
+
+func (table *Table) setRowStyle(start, end int, font *Font, textColor, backgroundColor int32) *Table {
+	for r := start; r < end && r < len(table.tableData); r++ {
+		if font != nil {
+			table.SetFontInRow(r, font)
+		}
+		table.SetTextColorInRow(r, textColor)
+		if backgroundColor != color.Transparent {
+			for _, cell := range table.tableData[r] {
+				cell.SetBackgroundColor(backgroundColor)
+			}
+		}
+	}
+	return table
+}
+
+// SetWidth sets the width of the table. The columns share it by the
+// percentages SetColumnWidthsInPercent gives them, whichever of the two is
+// called first; without them, by the widths they have, as FitToWidth shares
+// it.
+func (table *Table) SetWidth(width float32) *Table {
+	table.tableWidth = width
+	if table.columnPercents != nil {
+		table.applyColumnPercents()
+		return table
+	}
+	return table.FitToWidth(width)
+}
+
+// SetColumnWidthsInPercent gives the columns, from the first, their
+// percentages of the width of the table that SetWidth sets, whichever of the
+// two is called first. The columns that have none share what is left of 100
+// equally, and the widths are then made to add up to the width of the table,
+// so percentages that do not add up to 100 are shares of it. Text wraps to
+// the widths.
+func (table *Table) SetColumnWidthsInPercent(percents ...float32) *Table {
+	table.columnPercents = append([]float32(nil), percents...)
+	if table.tableWidth > 0 {
+		table.applyColumnPercents()
+	}
+	return table
+}
+
+func (table *Table) applyColumnPercents() {
+	if len(table.tableData) == 0 {
+		return
+	}
+	columns := len(table.tableData[0])
+	shares := make([]float32, columns)
+	given := float32(0)
+	rest := columns
+	for i := 0; i < columns && i < len(table.columnPercents); i++ {
+		shares[i] = max(0, table.columnPercents[i])
+		given += shares[i]
+		rest--
+	}
+	each := float32(0)
+	if rest > 0 {
+		each = max(0, 100-given) / float32(rest)
+	}
+	total := given + each*float32(rest)
+	if total <= 0 {
+		return
+	}
+	for i := 0; i < columns; i++ {
+		share := each
+		if i < len(table.columnPercents) {
+			share = shares[i]
+		}
+		table.SetColumnWidth(i, table.tableWidth*share/total)
+	}
+}
+
+// FitToWidth makes the table the width given, sharing it among the columns by
+// the widths they have: after AutoAdjustColumnWidths, by the text each holds.
+// Text wraps to the widths.
+func (table *Table) FitToWidth(width float32) *Table {
+	if len(table.tableData) == 0 {
+		return table
+	}
+	columns := len(table.tableData[0])
+	total := float32(0)
+	for i := 0; i < columns; i++ {
+		total += table.GetColumnWidth(i)
+	}
+	if total <= 0 {
+		return table
+	}
+	widths := make([]float32, columns)
+	for i := 0; i < columns; i++ {
+		widths[i] = table.GetColumnWidth(i) * width / total
+	}
+	for i, w := range widths {
+		table.SetColumnWidth(i, w)
+	}
+	return table
+}
+
 // SetColumnWidth sets the width of the column with the specified index.
 //   - index: the index of specified column.
 //   - width: the specified width.
@@ -653,6 +821,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	table.heights = table.getRowHeights()
+	table.striped = table.getStripedRows()
 	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
@@ -670,6 +839,7 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
 	table.heights = table.getRowHeights()
+	table.striped = table.getStripedRows()
 	var xy [2]float32
 	pageNumber := 1
 	for table.hasMoreData() {
@@ -786,7 +956,17 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 				cellHeight += heights[r]
 			}
 			page.SetBrushColor(cell.textColor)
+			// A row of the body that is striped colors the cells that have
+			// no background of their own, while they are drawn.
+			stripe := rowIndex < len(table.striped) && table.striped[rowIndex] &&
+				cell.backgroundColor == color.Transparent
+			if stripe {
+				cell.backgroundColor = table.alternateRowColor
+			}
 			cell.drawOn(page, x, y, w, cellHeight)
+			if stripe {
+				cell.backgroundColor = color.Transparent
+			}
 		}
 		x += w
 	}

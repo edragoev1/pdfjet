@@ -19,7 +19,9 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -1080,4 +1082,103 @@ func TestTableTheTotalBroughtForwardIsTheTotalCarriedFromThePageBefore(t *testin
 	if !strings.Contains(next, "<"+testHex(formatSum(171000+1425, 2))+">") {
 		t.Error("no total")
 	}
+}
+
+// testFillOperator returns the operator that sets the fill color, as a page
+// writes it.
+func testFillOperator(pdf *PDF, c int32) string {
+	page := NewPage(pdf, letter.Portrait())
+	page.SetBrushColor(c)
+	return strings.TrimSpace(testContent(page))
+}
+
+func TestTableEveryOtherRowOfTheBodyIsStriped(t *testing.T) {
+	// A header row, the rows r1 to r6 of the body, of which r4 wraps, and a
+	// cell of r2 with a background of its own.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	data := testRowsWith(font, 4, testLongText, "x")[:7]
+	data[2][1].SetBackgroundColor(0xFF0000)
+	table := NewTable().SetTableData(data, 1).SetAlternateRowColor(0x336699)
+	table.SetLocation(50, 50)
+	page := NewPage(pdf, letter.Portrait())
+	table.DrawOn(page)
+	r4Lines := 0
+	for r := 5; r < len(table.tableData); r++ {
+		if table.isContinuation(r) {
+			r4Lines++
+		}
+	}
+	if r4Lines == 0 {
+		t.Fatal("the text did not wrap")
+	}
+	// r2, the lines of r4 and r6, two cells each, but the cell of r2 that has
+	// a background of its own.
+	content := testContent(page)
+	if got, want := strings.Count(content, testFillOperator(pdf, 0x336699)), 2*(1+1+r4Lines+1)-1; got != want {
+		t.Errorf("%d striped cells, not %d", got, want)
+	}
+	if n := strings.Count(content, testFillOperator(pdf, 0xFF0000)); n != 1 {
+		t.Errorf("%d cells of their own color", n)
+	}
+	// The cells are as they were.
+	if table.GetCellAt(2, 0).GetBackgroundColor() != nil {
+		t.Error("the stripe stayed in the cell")
+	}
+}
+
+func TestTableTheHeaderAndTheFooterRowsHaveTheirStyle(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	bold := NewCoreFont(pdf, corefont.HelveticaBold()).SetSize(9)
+	table := NewTable().SetTableData(testRowsWith(font, -1), 1).SetNumberOfFooterRows(1).
+		SetHeaderRowStyle(bold, color.White, color.DarkBlue).
+		SetFooterRowStyle(nil, color.Transparent, color.LightGray)
+	header := table.GetCellAt(0, 1)
+	if header.GetFont() != bold || header.fontSize != 9 {
+		t.Error("the header is not in the font")
+	}
+	testAssertRGB(t, 1, 1, 1, header.GetTextColor())
+	testWant(t, fmt.Sprint(color.DarkBlue), fmt.Sprint(header.backgroundColor))
+	// The footer keeps its font and its text color, and the body is as it was.
+	footer := table.GetCellAt(59, 0)
+	if footer.GetFont() != font {
+		t.Error("the footer has another font")
+	}
+	testAssertRGB(t, 0, 0, 0, footer.GetTextColor())
+	testWant(t, fmt.Sprint(color.LightGray), fmt.Sprint(footer.backgroundColor))
+	if table.GetCellAt(1, 0).GetBackgroundColor() != nil || table.GetCellAt(1, 0).GetFont() != font {
+		t.Error("the body changed")
+	}
+}
+
+// testAssertWidths checks the widths of the columns, in each of the first
+// three rows.
+func testAssertWidths(t *testing.T, table *Table, widths ...float32) {
+	t.Helper()
+	for i, w := range widths {
+		testNear(t, fmt.Sprintf("column %d", i), w, table.GetColumnWidth(i), 0.001)
+		for r := 0; r < 3; r++ {
+			testNear(t, fmt.Sprintf("row %d, column %d", r, i), w, table.GetCellAt(r, i).GetWidth(), 0.001)
+		}
+	}
+}
+
+func TestTableTheColumnsShareTheWidthOfTheTable(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	// Two of four columns have percentages, and the other two share what is
+	// left of 100; in either order of the calls.
+	testAssertWidths(t, NewTable().SetTableData(testRows(font, 3, 4), 1).
+		SetColumnWidthsInPercent(10, 40).SetWidth(500), 50, 200, 125, 125)
+	testAssertWidths(t, NewTable().SetTableData(testRows(font, 3, 4), 1).
+		SetWidth(500).SetColumnWidthsInPercent(10, 40), 50, 200, 125, 125)
+	// Percentages that do not add up to 100 are shares.
+	testAssertWidths(t, NewTable().SetTableData(testRows(font, 3, 2), 1).
+		SetColumnWidthsInPercent(30, 90).SetWidth(400), 100, 300)
+	// FitToWidth, and SetWidth with no percentages, share it by the widths.
+	table := NewTable().SetTableData(testRows(font, 3, 2), 1).SetColumnWidth(0, 60).SetColumnWidth(1, 120)
+	testAssertWidths(t, table.FitToWidth(360), 120, 240)
+	testAssertWidths(t, table.SetWidth(90), 30, 60)
+	testNear(t, "the width", 90, table.GetWidth(), 0.001)
 }

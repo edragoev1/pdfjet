@@ -905,4 +905,98 @@ class TableTest {
         // Rows 2 to 58: 1,710 and 57 quarters.
         assertTrue(next.contains("<" + TestSupport.hex(Table.formatSum(171000 + 1425, 2)) + ">"), "no total");
     }
+
+    // The operator that sets the fill color, as a page writes it.
+    private static String fillOperator(PDF pdf, int color) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.setBrushColor(color);
+        return TestSupport.content(page).trim();
+    }
+
+    @Test
+    void everyOtherRowOfTheBodyIsStriped() throws Exception {
+        // A header row, the rows r1 to r6 of the body, of which r4 wraps, and
+        // a cell of r2 with a background of its own.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = rowsWith(font, 4, LONG_TEXT, "x");
+        data = new ArrayList<List<Cell>>(data.subList(0, 7));
+        data.get(2).get(1).setBackgroundColor(0xFF0000);
+        Table table = new Table().setTableData(data, 1).setAlternateRowColor(0x336699).setLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        table.drawOn(page);
+        // r2, the lines of r4 and r6, two cells each, but the cell of r2 that
+        // has a background of its own.
+        int r4Lines = 0;
+        for (int r = 0; ; r++) {
+            try {
+                List<Cell> row = table.getRow(r);
+                if (r > 4 && (row.get(0).properties & Cell.CONTINUED) != 0) {
+                    r4Lines++;
+                }
+            } catch (IndexOutOfBoundsException e) {
+                break;
+            }
+        }
+        assertTrue(r4Lines > 0, "the text did not wrap");
+        String content = TestSupport.content(page);
+        assertEquals(2 * (1 + 1 + r4Lines + 1) - 1, count(content, fillOperator(pdf, 0x336699)), content);
+        assertEquals(1, count(content, fillOperator(pdf, 0xFF0000)));
+        // The cells are as they were.
+        assertEquals(null, table.getCellAt(2, 0).getBackgroundColor());
+    }
+
+    @Test
+    void theHeaderAndTheFooterRowsHaveTheirStyle() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD).setSize(9f);
+        List<List<Cell>> data = rowsWith(font, -1);
+        Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1)
+                .setHeaderRowStyle(bold, Color.white, Color.darkblue)
+                .setFooterRowStyle(null, Color.transparent, Color.lightgray);
+        Cell header = table.getCellAt(0, 1);
+        assertSame(bold, header.getFont());
+        assertEquals(9f, header.fontSize, 0f);
+        TestSupport.assertRGB(1f, 1f, 1f, header.getTextColor());
+        assertEquals(Color.darkblue, Util.toPackedRGB(header.getBackgroundColor()));
+        // The footer keeps its font and its text color, and the body is as it was.
+        Cell footer = table.getCellAt(59, 0);
+        assertSame(font, footer.getFont());
+        TestSupport.assertRGB(0f, 0f, 0f, footer.getTextColor());
+        assertEquals(Color.lightgray, Util.toPackedRGB(footer.getBackgroundColor()));
+        assertEquals(null, table.getCellAt(1, 0).getBackgroundColor());
+        assertSame(font, table.getCellAt(1, 0).getFont());
+    }
+
+    @Test
+    void theColumnsShareTheWidthOfTheTable() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // Two of four columns have percentages, and the other two share what
+        // is left of 100; in either order of the calls.
+        Table table = new Table().setTableData(rows(font, 3, 4), 1)
+                .setColumnWidthsInPercent(10f, 40f).setWidth(500f);
+        assertWidths(table, 50f, 200f, 125f, 125f);
+        table = new Table().setTableData(rows(font, 3, 4), 1)
+                .setWidth(500f).setColumnWidthsInPercent(10f, 40f);
+        assertWidths(table, 50f, 200f, 125f, 125f);
+        // Percentages that do not add up to 100 are shares.
+        table = new Table().setTableData(rows(font, 3, 2), 1).setColumnWidthsInPercent(30f, 90f).setWidth(400f);
+        assertWidths(table, 100f, 300f);
+        // fitToWidth, and setWidth with no percentages, share it by the widths.
+        table = new Table().setTableData(rows(font, 3, 2), 1).setColumnWidth(0, 60f).setColumnWidth(1, 120f);
+        assertWidths(table.fitToWidth(360f), 120f, 240f);
+        assertWidths(table.setWidth(90f), 30f, 60f);
+        assertEquals(90f, table.getWidth(), 0.001f);
+    }
+
+    private static void assertWidths(Table table, float... widths) {
+        for (int i = 0; i < widths.length; i++) {
+            assertEquals(widths[i], table.getColumnWidth(i), 0.001f, "column " + i);
+            for (int r = 0; r < 3; r++) {
+                assertEquals(widths[i], table.getCellAt(r, i).getWidth(), 0.001f, "row " + r + ", column " + i);
+            }
+        }
+    }
 }
