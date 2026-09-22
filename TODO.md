@@ -222,7 +222,7 @@ it.
    the PDF/UA and PDF/A examples without warnings. The same files in Preview,
    Chrome (pdf.js), Firefox and Edge — not only veraPDF and MuPDF.
 
-5. ⬜ **B** Test the output against independent references and real files,
+5. ✅ **B** Test the output against independent references and real files,
    which finds the silently wrong output that fuzzing does not:
    - Round-trip text: the text of every example in every port, extracted with
      MuPDF and pdftotext, equals the strings the example drew. It would have
@@ -238,6 +238,9 @@ it.
      making it a check that runs.
    - The reader against real PDFs: the pdf.js and veraPDF test corpora read,
      merged and split, with the page counts, page sizes and text MuPDF finds.
+
+   Done on Sep 21, three weeks early: all four are checks the Build workflow
+   runs, and every bug they found is fixed in the four ports with tests.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
    public API of v9.0.1 plus `Cell.setRowSpan` and `Cell.getRowSpan` in the
@@ -259,8 +262,8 @@ blockers of the Oct 2-8 week -- the review and the fuzzing of the reader --
 and, of the Oct 9-14 week, the rest of goal 2 and the fonts of goal 5. Goal 2
 is closed. That buys about two weeks. They go to the work that has to be done
 by hand and cannot be hurried at the end -- goal 4, the viewer pass, and goal
-3, the Matterhorn conditions that need eyes on a page -- and to the rest of
-goal 5, the references, which is the first thing to give if anything does.
+3, the Matterhorn conditions that need eyes on a page. Goal 5 closed the same
+day.
 
 ### Sep 20–26: the decoders, `Page`, `TextLine` and the reader
 
@@ -534,7 +537,7 @@ goal 5, the references, which is the first thing to give if anything does.
       encryption — the last and largest target, next to its review. Done on
       Sep 21, above; the target reaches the merge, the split and the stamp
       now, and a Go runtime error fails it.
-- ⬜ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
+- ✅ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, which
       the same work needs a corpus for anyway. The check runs in the Go port
       (Sep 21): `tests/corpus/fetch-corpora.sh` fetches the 982 PDFs of
       pdf.js and the 2,906 of veraPDF at pinned commits -- fetched and not
@@ -559,8 +562,17 @@ goal 5, the references, which is the first thing to give if anything does.
       reads or repairs, and one differs: BrotliDecode, which is not
       supported, in `tests/corpus/known-differences.txt`.
 
-      What is left: the harness of the other three ports, the 459 pdf.js
-      files that are links, and the corpus as seeds of `FuzzPDFRead`.
+      Then, the same day: the check runs in each of the four ports, a job
+      for each; the 459 PDFs pdf.js links to are fetched too, against the
+      MD5s of its manifest; and the corpora are seeds of `FuzzPDFRead` when
+      `PDFJET_FUZZ_CORPUS` names them. The other ports found the page tree
+      of a node with thousands of pages read in quadratic time, and the links
+      found the pages taken from a stale tree rather than the one the
+      trailer's catalog names, an in-use entry for object 0 rejecting the
+      whole cross-reference table, the `/Length` of a stream read from
+      another entry's value, and references with leading zeros not merged;
+      all fixed in the four ports with tests. Every port reads the 4,300-odd
+      files with no failure, and five differ by design, each listed.
 
 ### Oct 9–14: the rest of the review, and the references
 
