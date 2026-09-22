@@ -223,10 +223,12 @@ sudo apt install libc6-dev gcc
 On Windows, use the `.cmd` scripts of the same names.
 
 `booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction to
-the library and all 52 examples with their source code, as a PDF/UA document
-with bookmarks and a linked table of contents. It writes one booklet for each
-port and one with the code of the four ports, `booklet/PDFjet-Booklet-*.pdf`,
-from `booklet/content.txt` and the example sources.
+the library and a guide to its API, each feature with the smallest code that
+shows it, as a PDF/UA document with bookmarks and a linked table of contents.
+It writes one booklet for each port and one with the code of the four ports,
+`booklet/PDFjet-Booklet-*.pdf`, from `booklet/content.txt` and the snippet
+programs in `booklet/snippets`. `booklet/check-snippets.sh` builds and runs the
+snippets in the four ports and checks that they write the same PDFs.
 
 ## Builds
 

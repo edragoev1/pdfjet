@@ -782,6 +782,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- The booklet is a guide to the API now, not a listing of the examples. Its
+  chapters go through documents and pages, fonts, text, tables, graphics,
+  images, charts, barcodes, links and annotations, forms, and existing PDFs,
+  57 features, each with what its classes and methods do and the smallest
+  code that shows it, 5 to 15 lines, in place of the whole source of the 52
+  examples. The code is read from the snippet programs in `booklet/snippets`,
+  one for each port, and `booklet/check-snippets.sh` builds and runs them and
+  checks that the four ports write the same PDFs, page by page and text run
+  by text run, with veraPDF for the PDF/UA and PDF/A snippets.
+  `Booklet.java` stops when a port lacks a snippet the text shows or has one
+  it does not show. The booklet of one port is 34 or 35 pages, and the one
+  of the four ports 71. The Swift snippets are the `BookletSnippets` target
+  of `Package.swift`.
 - Example_52 is new: it sets the whole of Dostoyevsky's "The Idiot" as a
   book, in all four ports, with `TextFrame.drawOn(pdf, pages, pageSize)`. It
   makes a title page, then puts each chapter on new A5 pages in Source Serif

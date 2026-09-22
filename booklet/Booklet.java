@@ -19,14 +19,17 @@ import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
- * Writes the PDFjet booklet with PDFjet: an introduction and the 52 examples
- * with their source code, as a PDF/UA document with bookmarks and a linked
- * table of contents. It writes one booklet for each port, with the code of
- * that port, and one with the code of the four ports.
+ * Writes the PDFjet booklet with PDFjet: an introduction and a guide to the
+ * API, class by class, each feature with the smallest code that shows it, as
+ * a PDF/UA document with bookmarks and a linked table of contents. It writes
+ * one booklet for each port, with the code of that port, and one with the
+ * code of the four ports.
  *
- * The text is in booklet/content.txt, and the listings are read from the
- * example sources, so the booklet shows the code that is built and checked.
- * Run it from the root of the repository, where the fonts are:
+ * The text is in booklet/content.txt, and the code is read from the snippet
+ * programs in booklet/snippets, one for each port, which
+ * booklet/check-snippets.sh builds, runs and checks, so the booklet shows
+ * code that works. Run it from the root of the repository, where the fonts
+ * are:
  *
  *     booklet/build.sh
  */
@@ -57,14 +60,14 @@ public class Booklet {
     static final float CODE_SIZE = 7.6f;
 
     // One item of the content: a heading, a paragraph, a bullet, code, text
-    // for one language, or an example.
+    // for one language, or a snippet.
     static class Item {
-        String kind;        // "h1", "h2", "p", "li", "code", "lang", "example"
+        String kind;        // "h1", "h2", "p", "li", "code", "lang", "snippet"
         String language;    // Of "code" and "lang" items
-        String text;        // The heading, paragraph or bullet, or the title of an example
-        String number;      // Of an example: "01" to "52"
+        String text;        // The heading, paragraph or bullet, or the title of a snippet
+        String name;        // Of a snippet: its name in the snippet programs
         List<String> lines = new ArrayList<String>();   // Of "code" and "lang" items
-        List<Item> items = new ArrayList<Item>();       // Of "lang" items and examples
+        List<Item> items = new ArrayList<Item>();       // Of "lang" items and snippets
     }
 
     // An entry of the table of contents.
@@ -77,6 +80,8 @@ public class Booklet {
 
     final String edition;       // "java", "csharp", "go", "swift" or "all"
     final List<Item> content;
+    final Map<String, Map<String, List<String>>> snippets =
+            new HashMap<String, Map<String, List<String>>>();   // By language and name
     PDF pdf;
     Font body;
     Font bold;
@@ -93,13 +98,17 @@ public class Booklet {
     List<Entry> entries = new ArrayList<Entry>();
     int entryIndex;
 
-    Booklet(String edition, List<Item> content) {
+    Booklet(String edition, List<Item> content) throws Exception {
         this.edition = edition;
         this.content = content;
+        for (String language : LANGUAGES) {
+            snippets.put(language, snippets(language));
+        }
     }
 
     public static void main(String[] args) throws Exception {
         List<Item> content = parse(Files.readAllLines(Paths.get("booklet/content.txt"), StandardCharsets.UTF_8));
+        checkSnippets(content);
         List<String> editions = (args.length > 0) ? Arrays.asList(args) :
                 Arrays.asList("java", "csharp", "go", "swift", "all");
         for (String edition : editions) {
@@ -120,7 +129,7 @@ public class Booklet {
         pdf = new PDF(new BufferedOutputStream(new FileOutputStream(fileName)));
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("PDFjet, " + editionName() + " edition");
-        pdf.setSubject("An introduction to PDFjet, with the source code of its 52 examples");
+        pdf.setSubject("An introduction to PDFjet and a guide to its API, with code in " + editionName());
         pdf.setAuthor("PDFjet Software");
         pdf.setLanguage("en-US");
 
@@ -154,7 +163,6 @@ public class Booklet {
 
     static List<Item> parse(List<String> lines) {
         List<Item> items = new ArrayList<Item>();
-        Item example = null;
         List<Item> target = items;
         StringBuilder paragraph = new StringBuilder();
         for (int i = 0; i < lines.size(); i++) {
@@ -170,15 +178,15 @@ public class Booklet {
                 item.kind = line.startsWith("# ") ? "h1" : "h2";
                 item.text = line.substring(line.indexOf(' ') + 1).trim();
                 items.add(item);
-                example = null;
                 target = items;
-            } else if (line.startsWith("@example ")) {
-                example = new Item();
-                example.kind = "example";
-                example.number = line.substring(9, 11);
-                example.text = line.substring(12).trim();
-                items.add(example);
-                target = example.items;
+            } else if (line.startsWith("@snippet ")) {
+                String[] parts = line.substring(9).trim().split(" ", 2);
+                Item snippet = new Item();
+                snippet.kind = "snippet";
+                snippet.name = parts[0];
+                snippet.text = parts[1].trim();
+                items.add(snippet);
+                target = snippet.items;
             } else if (line.startsWith("@code ") || line.startsWith("@lang ")) {
                 Item item = new Item();
                 item.kind = line.startsWith("@code ") ? "code" : "lang";
@@ -246,49 +254,89 @@ public class Booklet {
         }
     }
 
-    // The source of an example in a port, without the license at its top.
-    static List<String> source(String number, String language) throws Exception {
-        String path;
+    // The snippet programs, by language.
+    static String snippetPath(String language) {
         if (language.equals("java")) {
-            path = "examples/Example_" + number + ".java";
+            return "booklet/snippets/java/Snippets.java";
         } else if (language.equals("csharp")) {
-            path = "examples/Example_" + number + "/Example_" + number + ".cs";
+            return "booklet/snippets/csharp/Snippets.cs";
         } else if (language.equals("go")) {
-            path = "src/examples/example" + number + "/main.go";
-        } else {
-            path = "Sources/Example_" + number + "/main.swift";
+            return "booklet/snippets/go/main.go";
         }
-        List<String> lines = new ArrayList<String>(Files.readAllLines(Paths.get(path), StandardCharsets.UTF_8));
-        int start = 0;
-        if (lines.get(0).startsWith("//")) {
-            while (start < lines.size() && lines.get(start).startsWith("//")) {
-                start++;
-            }
-        } else if (lines.get(0).startsWith("/*")) {
-            while (start < lines.size() && !lines.get(start).trim().endsWith("*/")) {
-                start++;
-            }
-            start++;
-        }
-        while (start < lines.size() && lines.get(start).trim().isEmpty()) {
-            start++;
-        }
-        int end = lines.size();
-        while (end > start && lines.get(end - 1).trim().isEmpty()) {
-            end--;
-        }
-        return lines.subList(start, end);
+        return "booklet/snippets/swift/main.swift";
     }
 
-    static String sourcePath(String number, String language) {
-        if (language.equals("java")) {
-            return "examples/Example_" + number + ".java";
-        } else if (language.equals("csharp")) {
-            return "examples/Example_" + number + "/Example_" + number + ".cs";
-        } else if (language.equals("go")) {
-            return "src/examples/example" + number + "/main.go";
+    // The snippets of a snippet program: the body of the function after each
+    // "@snippet name" comment, up to the brace that closes it, one indent less.
+    static Map<String, List<String>> snippets(String language) throws Exception {
+        List<String> lines = Files.readAllLines(Paths.get(snippetPath(language)), StandardCharsets.UTF_8);
+        Map<String, List<String>> snippets = new HashMap<String, List<String>>();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            if (!line.startsWith("// @snippet ")) {
+                continue;
+            }
+            String name = line.substring(12).trim();
+            String signature = lines.get(i + 1);
+            String indent = signature.substring(0, signature.length() - signature.replaceAll("^\\s+", "").length());
+            if (!signature.trim().endsWith("{")) {
+                throw new Exception(snippetPath(language) + ": the snippet " + name + " has no body");
+            }
+            List<String> body = new ArrayList<String>();
+            int j = i + 2;
+            for (; j < lines.size() && !lines.get(j).equals(indent + "}"); j++) {
+                body.add(lines.get(j));
+            }
+            if (j == lines.size()) {
+                throw new Exception(snippetPath(language) + ": the snippet " + name + " does not end");
+            }
+            snippets.put(name, dedent(body));
+            i = j;
         }
-        return "Sources/Example_" + number + "/main.swift";
+        return snippets;
+    }
+
+    // The lines without the indent of the least indented of them.
+    static List<String> dedent(List<String> lines) {
+        int indent = Integer.MAX_VALUE;
+        for (String line : lines) {
+            if (!line.trim().isEmpty()) {
+                indent = Math.min(indent, line.length() - line.replaceAll("^[ \\t]+", "").length());
+            }
+        }
+        List<String> result = new ArrayList<String>();
+        for (String line : lines) {
+            result.add(line.trim().isEmpty() ? "" : line.substring(indent));
+        }
+        return result;
+    }
+
+    // Every port has every snippet the content shows, and the content shows
+    // every snippet of every port, once.
+    static void checkSnippets(List<Item> content) throws Exception {
+        List<String> shown = new ArrayList<String>();
+        for (Item item : content) {
+            if (item.kind.equals("snippet")) {
+                if (shown.contains(item.name)) {
+                    throw new Exception("booklet/content.txt shows the snippet " + item.name + " twice");
+                }
+                shown.add(item.name);
+            }
+        }
+        for (String language : LANGUAGES) {
+            Map<String, List<String>> snippets = snippets(language);
+            for (String name : shown) {
+                if (!snippets.containsKey(name)) {
+                    throw new Exception(snippetPath(language) + " has no snippet " + name);
+                }
+            }
+            for (String name : snippets.keySet()) {
+                if (!shown.contains(name)) {
+                    throw new Exception("booklet/content.txt does not show the snippet " + name
+                            + " of " + snippetPath(language));
+                }
+            }
+        }
     }
 
     // The languages whose code this edition shows.
@@ -300,10 +348,10 @@ public class Booklet {
 
     void collectEntries() {
         for (Item item : content) {
-            if (item.kind.equals("h1") || item.kind.equals("h2") || item.kind.equals("example")) {
+            if (item.kind.equals("h1") || item.kind.equals("h2") || item.kind.equals("snippet")) {
                 Entry entry = new Entry();
                 entry.level = item.kind.equals("h1") ? 0 : 1;
-                entry.text = item.kind.equals("example") ? "Example " + item.number + ": " + item.text : item.text;
+                entry.text = item.text;
                 entry.destination = "entry" + entries.size();
                 entries.add(entry);
             }
@@ -418,7 +466,7 @@ public class Booklet {
         float[] xy = logo.drawOn(page);
 
         centered(bold, 20f, editionName() + " edition", ACCENT, xy[1] + 80f, StructElem.P);
-        centered(body, 12f, "An introduction, with the 52 examples and their source code", GRAY,
+        centered(body, 12f, "An introduction and a guide to the API, with code for every feature", GRAY,
                 xy[1] + 106f, StructElem.P);
         centered(body, 10f, "Version 9 \u00B7 2026 \u00B7 pdfjet.com", GRAY, 730f, StructElem.P);
     }
@@ -448,8 +496,8 @@ public class Booklet {
                 y += 16f;
                 heading(entry, item.text, 15f, StructElem.H2);
                 y += 12f;
-            } else if (item.kind.equals("example")) {
-                drawExample(item, entries.get(entryIndex++));
+            } else if (item.kind.equals("snippet")) {
+                drawSnippet(item, entries.get(entryIndex++));
             } else {
                 drawItem(item);
             }
@@ -536,23 +584,20 @@ public class Booklet {
         y = block.drawOn(page)[1] + 4f;
     }
 
-    void drawExample(Item example, Entry entry) throws Exception {
-        // The heading, the description and the first lines of the listing
-        // start on the same page.
-        ensure(250f);
+    void drawSnippet(Item snippet, Entry entry) throws Exception {
+        // The heading, the description and the first lines of the code start
+        // on the same page.
+        ensure(160f);
         y += (y > TOP) ? 18f : 0f;
         y += 15f;
-        heading(entry, "Example " + example.number + ": " + example.text, 15f, StructElem.H2);
+        heading(entry, snippet.text, 14f, StructElem.H2);
         y += 12f;
-        for (Item item : example.items) {
+        for (Item item : snippet.items) {
             drawItem(item);
         }
         for (String language : languages()) {
-            String caption = sourcePath(example.number, language);
-            if (edition.equals("all")) {
-                caption = NAMES.get(language) + ": " + caption;
-            }
-            code(source(example.number, language), language, caption);
+            code(snippets.get(language).get(snippet.name), language,
+                    edition.equals("all") ? NAMES.get(language) : null);
         }
     }
 

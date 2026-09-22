@@ -6,7 +6,8 @@
 % @code java         code for one language, until @end: java, csharp, go, swift
 % @lang java         text for one language, until @end; lines indented 4 spaces
 %                    are code
-% @example 24 Title  an example: its description follows, then its source
+% @snippet name Title  a feature: its description follows, then the code of
+%                    the snippet of that name in booklet/snippets
 % Other lines are paragraphs, which end at an empty line. Lines that start
 % with % are comments.
 
@@ -33,11 +34,13 @@ PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and th
 
 ## How this booklet is organized
 
-The first chapters show how to install PDFjet, what a PDFjet program looks like, and how to use the library efficiently. The chapters after them go through all 52 examples that come with PDFjet, grouped by topic. Each example starts with what it shows and what to look for, followed by its complete source code, exactly as it is in the repository, where the examples are built and their PDFs checked on every change.
+The first chapters show how to install PDFjet, what a PDFjet program looks like, and how to use the library efficiently. The chapters after them go through the API a part at a time: documents and pages, fonts, text, tables, graphics, images, charts, barcodes, links and annotations, forms, and existing PDFs. Each feature comes with the smallest piece of code that shows it, and says which classes and methods to look at.
 
-To see what an example draws, run it: every example writes a PDF named after it, such as Example_24.pdf. The examples read their fonts, images and data from the fonts, images and data folders of the repository, so run them from its root folder.
+The code is not typed into this booklet. It is read from the snippet programs in the booklet/snippets folder of the repository, one for each language, which are built and run to check that every snippet works and draws the same in the four languages.
 
-This booklet was made with PDFjet, by booklet/Booklet.java in the repository, from the same example sources. It is a PDF/UA document, with bookmarks and a linked table of contents.
+A snippet draws with two things it is given: pdf, the PDF it draws in, and font, IBM Plex Sans at 12 points, created as in Hello, World below. The snippets that make a document of their own, such as an encrypted one, create their own PDF. The snippets read their fonts, images and data from the fonts, images and data folders of the repository, as the examples do. The examples folder has 52 longer programs, which show more of each feature together.
+
+This booklet was made with PDFjet, by booklet/Booklet.java in the repository. It is a PDF/UA document, with bookmarks and a linked table of contents.
 
 # Getting started
 
@@ -161,196 +164,212 @@ PDFjet is fast by design, and a few habits keep it that way.
 - Measure before you draw. drawOn returns where a component ends, and a text block drawn on no page, with drawOn(null), returns its size without drawing it, so a layout can decide where things go before it draws them.
 - Leave the compliance, PDF/UA or PDF/A, on from the start. Tagging costs little, and the document is accessible without a second pass.
 
-# Text and fonts
 
-These examples draw text: lines and blocks, in the fonts that come with PDFjet, in fonts read from files, and in the core fonts, with highlighting, kerning and metrics.
+# Documents and pages
 
-@example 01 Text in English, Greek and Bulgarian
-Draws text blocks in three languages in IBM Plex Sans, one of the fonts that come with PDFjet, in a PDF/UA document. The commented lines show the other compliance levels: set one of them instead, and the same document is PDF/A.
+A PDF object is the document: it writes to an output stream, holds the fonts and images, and is completed at the end. A Page is one page of it, of a PageSize, drawn on from the top left corner.
 
-@example 16 Highlighted keywords
-Draws a text block with keywords in their own colors, and a transparent shape over it with a graphics state that sets the alpha of the fills and strokes.
+@snippet document-info The document information
+The title, the author, the subject and the keywords are what a PDF viewer shows in the properties of the document. setLanguage sets the language of its text, which screen readers need, and setTitle is required for PDF/UA.
 
-@example 23 The ascent and descent of a font
-Draws a large text block and marks the ascent, the descent and the baseline of its font with lines, and the corners that setLocation and drawOn use. It shows what the numbers a font returns mean on the page.
+@snippet page-sizes Page sizes
+Letter, Legal, A3, A4, A5, B5 and the other page size classes each have a PORTRAIT and a LANDSCAPE size. A PageSize of any width and height, in points, makes a page of another size, and getWidth and getHeight tell a page's size.
 
-@example 28 Fonts from .otf, .ttf and .stream files
-Reads fonts from OpenType and TrueType files and from the .stream files of the same fonts. Any font file on the computer is a font for PDFjet; the .stream files load faster.
+@snippet page-numbers Detached pages and page numbers
+A page created with Page.DETACHED is not added to the PDF when it is created, so it can be drawn on first and added later, with addPages. Here the pages are kept in a list until all are drawn, when the list knows the number of pages for "Page X of N". addFooter draws a line of text centered at the foot of the page, its baseline the offset above the bottom, and addHeader at its head. Detached pages also let a program add pages in another order than it draws them, such as a table of contents first.
 
-@example 49 Paragraphs with mixed text styles
-Draws a menu whose paragraphs mix fonts, sizes and colors, with currency signs raised with a vertical offset, and a rotated, underlined label.
+@snippet watermark A watermark
+addWatermark draws a text across the page, from its bottom left corner to its top right corner, in light gray, as decoration. Draw it first, so that the text of the page is drawn over it.
 
-@example 05 Core fonts and kerning
-Draws text at every angle around a point, and the words WAVE AWAY with and without kerning, in the core font Helvetica-Bold, which is not embedded. The comment at the top weighs the core fonts against the embedded ones.
+@snippet accessible-document An accessible document
+A PDF with the compliance PDF_UA_1 is a PDF/UA document: PDFjet tags every text line, text block, table cell and image, so that screen readers read the document in order, and marks lines, shapes and backgrounds as decoration. The document needs a title, and every image a description, set with setAltDescription. setStructureType makes a text a heading, H1 to H6, which readers use to move through the document.
 
-@example 04 Chinese, Japanese and Korean fonts that are not embedded
-Draws Chinese, Japanese and Korean text with the CJK fonts that PDF viewers supply, so the PDF carries no font program at all. The comment at the top explains when that is the right choice.
+@snippet archival-document An archival document
+The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term archiving: every font is embedded, and the document carries what it needs to look the same in any viewer. The A levels are tagged as PDF/UA is; the B levels only keep the look. PDF/A-3 can have files attached.
 
-# Languages and scripts
+# Fonts
 
-Text in scripts other than Latin: Chinese, Japanese and Korean, right to left text, and a fallback font for the characters a font does not have.
+A Font is created once for a PDF and used by any number of text lines, blocks and tables. Its size is set with setSize, and a text line can draw in another size of the same font with setFontSize.
 
-@example 02 The Universal Declaration of Human Rights in four languages
-Draws the preamble and the first two articles of the Declaration in Japanese, Korean, Simplified and Traditional Chinese, each in its IBM Plex font, with the language of each text block set for screen readers. The heading of each page is in IBM Plex Sans with the page's font as its fallback font, which draws the name of the language in its own script. The lines of Chinese and Japanese text never start with a closing mark.
+@snippet fonts The fonts that come with PDFjet
+The classes of the com.pdfjet.fonts package, such as IBMPlexSans, SourceSerif4, JetBrainsMono and NotoSans, name the font files that come with PDFjet: IBM Plex in its Sans, Serif, Mono and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; Source Serif 4; JetBrains Mono; and Noto Sans. They are .stream files, the fonts compressed once ahead of time, so they load fast, and PDFjet embeds only the characters a document uses.
 
-@example 27 Thai, Hebrew, Arabic and Persian text
-Draws text in Thai, and right to left text in Hebrew, Arabic and Persian, with the Arabic letters shaped and the lines ordered for reading.
+@snippet font-files Fonts from files
+Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.
 
-@example 44 Simplified Chinese in a text column
-Draws a text column with paragraphs of English and Simplified Chinese, the Chinese in a CJK font that is not embedded.
+@snippet core-fonts The core fonts
+The 14 core fonts of CoreFont, Helvetica, Times, Courier with their bold and italic, Symbol and ZapfDingbats, are in every PDF viewer and are not embedded, so they make the smallest documents. They draw only the characters of Windows Latin 1, and PDF/UA and PDF/A do not allow them. setKernPairs(true) moves the letters of kerning pairs, such as A and V, closer together.
 
-# Text layout
+@snippet cjk-fonts Chinese, Japanese and Korean fonts that are not embedded
+The CJKFont fonts are the Chinese, Japanese and Korean fonts that PDF viewers supply, so the document carries no font program at all. They are the smallest way to write CJK text, when the document does not have to be PDF/UA or PDF/A; the IBM Plex fonts of each language are the ones to embed.
 
-Text that wraps and flows: frames, columns, text next to images, and source code with highlighted keywords.
+@snippet fallback-font A fallback font
+A fallback font draws the characters that the font does not have, such as Japanese in a Latin font, so that one line of text can mix scripts. Text lines, text blocks and table cells have setFallbackFont.
 
-@example 03 Paragraphs in a text frame
-Draws paragraphs of mixed styles in a text frame, numbers them, and marks words in colors.
+@snippet font-metrics Measuring text
+stringWidth returns the width of a text in the font at its size, which places text by its end, as here, or centers it. getBodyHeight is the height of a line of the font, from its ascent to its descent, and getAscent and getDescent are the parts above and below the baseline.
 
-@example 10 Text in a column
-Draws a text column of paragraphs about Switzerland, centered, justified and aligned, under a map, with the spacing between lines and paragraphs.
+# Text
 
-@example 47 Text flowing through columns
-Flows a long text through the columns of a page and on to the next pages with text frames: what does not fit in one frame goes on in the next.
+A TextLine is a line of text in one font and color. A TextBlock wraps a text at a width. A Paragraph is a text of several text lines, in different fonts and colors, which a TextFrame or a TextColumn wraps and flows.
 
-@example 19 Text next to images
-Draws rows of an image with text next to it. The drawOn methods of the image and the text block return where they end, so each row starts below the taller of the two.
+@snippet text-line A line of text
+The location of a text line is the start of its baseline. It has a size, a color, underline and strikeout, a rotation in degrees, and a vertical offset for raised or lowered text. drawOn returns the x and the y of where the line ends, so that the next text can follow it.
 
-@example 32 Source code with highlighted keywords
-Draws the source of Example 02 in JetBrains Mono on landscape pages, wide enough for its longest lines, with its keywords in colors, starting a new page when one is full.
+@snippet text-block A block of text
+A text block wraps its text at its width, and starts a new paragraph at an empty line. It has line spacing, padding, a border, a background, rounded corners, and left, right or centered text. drawOn returns its bottom right corner; drawOn(null) returns it without drawing, to measure the block before placing it.
 
-@example 52 A novel set as a book
-Sets the whole of Dostoyevsky's "The Idiot", 241,527 words, on 745 A5 pages: a title page, then each chapter on a new page that a text frame flows onto, with the words in italics and a number at the foot of every page. It prints the time it takes, about a second.
+@snippet highlighted-words Highlighted words
+setHighlightColors draws the words of a map in their colors, in a text line, a text block or a paragraph: keywords, names, or search results.
+
+@snippet paragraphs Paragraphs of mixed styles
+A paragraph is a list of text lines, each with its font, size and color, which are wrapped together as one text, with a space between them. A TextFrame draws a list of paragraphs at a location and width, each aligned left, right, centered or justified, with a gap between them.
+
+@snippet lists Numbered and bulleted lists
+setListLabel gives a paragraph a label, a number or a bullet, which is drawn to the left of it, the text indented by the width given. In a PDF/UA document the labeled paragraphs are tagged as a list.
+
+@snippet text-column A text column
+A TextColumn draws its paragraphs one under the other, aligned or justified, with space between them. It fits a short text at a known place, such as a column of a page or a table cell.
+
+@snippet text-frame-pages Text that flows onto new pages
+drawOn(pdf, pages, pageSize) draws the text on as many new pages as it needs, a whole book at once, as a table does. The pages are detached and added to the list, so that page numbers can be drawn on them before they are added to the PDF with addPages. The frame keeps the margins of its location at the bottom of the page too.
+
+@snippet text-frame-columns Text that flows through columns
+A text frame with a height draws what fits in it and keeps the rest for the next drawOn, until hasMoreText is false. Moving the frame between the calls flows the text through the columns of a page and on to the next page.
+
+@snippet right-to-left Right to left text
+A text block with setRightToLeft(true) draws Hebrew, Arabic and Persian text from right to left, with the Arabic letters shaped. For a single text line, Bidi.reorderVisually puts the characters in the order they are drawn in. setLanguage tells screen readers the language of the text.
+
+@snippet formulas Chemical formulas
+A CompositeTextLine draws one line out of parts on the baseline, above it and below it. addFormula reads a chemical formula: the digits after an element are subscripts, and what follows a circumflex is a superscript, such as the charge of an ion.
 
 # Tables
 
-Tables that break across pages and repeat their header rows, with cells that span columns, hold other components, and come from a CSV file.
+A Table is a list of rows, each a list of Cells. It measures its columns and rows, breaks across pages, and repeats its header rows on every page. In a PDF/UA document its cells are tagged as a table, the header rows as headers.
 
-@example 13 Winter reading scores
-Draws a table from a file of values separated by bars, with two header rows, cells that span columns, and columns aligned, colored and struck out.
+@snippet table A table
+setTableData takes the rows and the number of header rows. autoAdjustColumnWidths makes each column as wide as its text needs, and rightAlignNumbers aligns the columns of numbers to the right.
 
-@example 08 A table from a CSV file, over pages
-Draws the first ten pages of a CSV file as a table, with an image and a barcode in its cells, colors and fonts by row, and a "Page X of N" footer on every page.
+@snippet table-pages A table over pages
+drawOn(pdf, pages, pageSize) draws the table on as many new pages as it needs, with the header rows at the top of each, and returns them in the list, detached, to be added to the PDF. The bottom margin is where each page stops. The constructor Table(f1, f2, fileName) reads the rows from a CSV file instead.
 
-@example 15 A PDF/UA table
-Draws a table of cells with padding, colors and text lines of mixed styles in a PDF/UA document.
+@snippet cells Cells that span columns, colors and borders
+A cell has its font, text color, background color, borders, padding, and text aligned left, right or centered, top, center or bottom. setColSpan makes it span columns, and setRowSpan rows; the row keeps a cell for each column it covers, which is not drawn.
 
-@example 29 Text columns in table cells
-Draws a table whose cells hold text columns, so each paragraph of English and Greek text wraps inside its cell, and the cell grows to fit it.
+@snippet cell-content Images, barcodes and text blocks in cells
+A cell can hold an image, a barcode, a text block, a text column or any other drawable instead of its text. The row grows to the height of what it holds.
 
-@example 38 Table cells that span rows and columns
-Draws a table whose cells span columns, with setColSpan, and rows, by leaving out the borders between them. It also checks the geometry of the cells.
+@snippet table-style The width and the style of a table
+setColumnWidthsInPercent and setWidth share the width of the table among its columns. setHeaderRowStyle gives the header rows a font, a text color and a background at once, and setAlternateRowColor colors every other row of the body.
 
-@example 43 A table of 124,716 rows
-Writes all 124,716 rows of a CSV file with BigTable, which writes rows as it reads them, in a PDF/UA document. It is the example to time: it prints how long it takes, and it needs little memory however long the file is.
+@snippet table-sums Page totals and totals carried forward
+setNumberOfFooterRows makes the last rows footer rows, drawn at the end of the table on every page. setPageSum makes a cell of a footer row the sum of its column on the page, and setRunningSum the sum of all the rows up to the end of the page, the total carried forward. setBroughtForwardSum puts the total of the pages before in a header row.
 
-@example 34 A table of countries in a PDF/A-1B document
-Draws a table of the countries of a data file, whose last cell spans the columns left, in a PDF/A-1B document.
-
-# Images
-
-PNG, JPEG, BMP and SVG images, drawn and scaled, with the pages of a document added in reading order.
-
-@example 24 JPEG, PNG, BMP and CMYK JPEG images
-Draws a JPEG, a PNG, a BMP and a CMYK JPEG saved as Photoshop saves one, with its inks stored inverted; then a PNG of each color type and bit depth the format has, the two ways a PNG carries transparency, and a PNG that asks to be drawn at 300 dots per inch.
-
-@example 17 A line chart
-Draws a line chart of two series over the same years: a Chart with a Series for each line, drawn with setDrawPath so the points are joined. The data is the electric vehicles of data/Electric_Vehicle_Population_Data.csv by model year and by kind.
-
-@example 33 SVG images
-Draws an SVG map of Europe, scaled to fit the page, and a set of SVG icons, each with its name. SVG images are drawn as vector graphics, so they stay sharp at any zoom.
-
-@example 36 Pages added in reading order
-Draws two map pages first and their contents page last, and then adds the pages to the PDF in reading order, with the contents first.
+@snippet big-table A table of any number of rows
+A BigTable writes each row as it reads it, and each page as it is full, so it needs little memory however many rows there are. It reads a CSV file, or rows from an iterable, and pages itself. The order of the calls matters: the number of columns, the data, the location and the margin, then complete.
 
 # Graphics
 
-Shapes, paths, transparency, and components grouped, rotated and stamped.
+Components draw shapes with setLocation and drawOn, as text does. A page also draws with a pen and a brush, a path at a time, as PDF itself does.
 
-@example 31 Transparency
-Draws opaque and transparent shapes, with a graphics state that sets the alpha of the fills and the strokes, and strokes that are more or less transparent than their fills.
+@snippet shapes Lines, rectangles, points, ellipses and arcs
+A Line has its end points, a width and a dash pattern. A Rect has a fill, a border and rounded corners. A Point draws a marker of a Shape: a circle, a box, a star, an arrow and others. An Ellipse and an Arc have their radii, and an arc its start angle and sweep.
 
-@example 35 Containers and stamps
-Draws rectangles, text and paths in containers that nest and rotate, and a stamp, a reusable drawing, drawn twice at different angles.
+@snippet paths Paths and curves
+A Path joins its points with lines, and with Bezier curves where points are control points, marked with Point.CONTROL_POINT_C. setClosed closes the path and setFillShape fills it.
 
-@example 20 A letterhead
-Draws a letterhead: a logo read from a PDF file and drawn as vector graphics, a maple leaf drawn as a path with curves, and a QR code with the address of a web site.
+@snippet page-graphics Drawing on a page
+A page draws as PDF does: setPenColor, setPenWidth and setStrokeDashPattern for lines, setBrushColor for fills, then moveTo, lineTo and bezierCurveTo to make a path, and strokePath or fillPath to draw it. drawLine, drawRect, fillRect and drawString draw in one call.
 
-# Charts and calendars
+@snippet transparency Transparency
+A GraphicsState sets the alpha of the fills and the strokes that follow it, until the graphics state is restored. saveGraphicsState and restoreGraphicsState keep it to the shapes between them.
 
-@example 09 An XY chart and a table
-Draws an XY chart of the countries of a data file, each a marker that links to a page about the country, with the trend line of the points, and a table of the countries with a marker of their own.
+@snippet containers Containers
+A Container holds components at locations of its own, and draws them together at its location, turned by its rotation and scaled.
 
-@example 25 A donut chart
-Draws a donut chart of five slices, each with its label and share. An inner radius of 0 makes a pie chart.
+@snippet stamps Stamps
+A Stamp is a drawing written to the PDF once, with its fonts, and drawn at any location, rotation and scale, as many times as needed, such as a logo or a mark on every page.
 
-@example 39 A horizontal bar chart
-Draws the ten longest rivers as a bar chart, each bar in its own color with its length inside it, with a color key and a source note.
+# Images
 
-@example 40 Bar charts and a calendar
-Draws two bar charts of the same data, grouped and stacked, and on a second page the calendar of 2026 with its weeks starting on Monday.
+@snippet images JPEG, PNG and BMP images
+An Image reads a JPEG, a PNG or a BMP file, and is written to the PDF once, however many times it is drawn. scaleBy, resizeWidth and resizeHeight set the size it is drawn at, and setRotation turns it. Every PNG color type and bit depth is read, with transparency, and CMYK JPEGs too. setAltDescription describes the image for screen readers.
+
+@snippet svg-images SVG images
+An SVGImage reads the paths of an SVG file and draws them as vector graphics, which stay sharp at any size: icons, logos and maps.
+
+# Charts
+
+Each chart takes two fonts: one for its title, one for its labels. setAltDescription describes what it shows for screen readers.
+
+@snippet line-chart Line and XY charts
+A Chart draws its Series of points on two axes, as markers, lines, or both: setDrawPath joins the points. The axes are scaled to the points, or set with setXAxisMinMax and setYAxisMinMax.
+
+@snippet bar-chart Bar charts
+A BarChart draws a series of values for each category, side by side, or stacked with setStacked, vertical or horizontal with setHorizontal, with a legend and the values on the bars if asked.
+
+@snippet donut-chart Donut and pie charts
+A DonutChart draws its slices with their labels and shares. An inner radius of 0 makes a pie chart.
+
+@snippet calendar A calendar
+A CalendarMonth draws a month of a year, with its weeks starting on the day setFirstDayOfWeek sets.
 
 # Barcodes
 
-@example 11 Linear barcodes
-Draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode, each next to a label, and barcodes drawn from top to bottom and from bottom to top.
+A barcode is drawn at its location with a module length, the width of its narrowest bar or square, in points.
 
-@example 12 A PDF417 barcode
-Draws a PDF417 barcode that holds a whole source file.
+@snippet barcodes Linear barcodes
+A Barcode draws Code 128, Code 39, UPC-A and EAN-13, and adds the check digit of UPC-A and EAN-13. With a font it draws its text under the bars. setDirection draws it from top to bottom or from bottom to top.
 
-@example 14 Data Matrix barcodes
-Draws Data Matrix symbols of a web address, text in UTF-8, and digits, square and rectangular.
+@snippet qr-code QR codes
+A QRCode holds text in UTF-8, such as a web address, at one of four error correction levels, L, M, Q and H: a higher level lets a scanner read a damaged code and holds less data.
 
-@example 21 QR code error correction
-Draws the same web address as a QR code at each of the four error correction levels. A higher level lets a scanner read a damaged code, and holds less data.
+@snippet data-matrix Data Matrix
+A DataMatrix symbol holds text in UTF-8, in a square symbol or, with DataMatrix.RECTANGLE, a rectangular one.
+
+@snippet pdf417 PDF417
+A PDF417 barcode is stacked rows of bars that hold much more data than a linear barcode, as on boarding passes and identity cards.
 
 # Links, bookmarks, annotations and layers
 
-@example 22 Internal links and destinations
-Links a contents page to three chapters, and each chapter back to the contents, with destinations and "Go To" actions.
+@snippet web-links Links to web pages
+setURIAction makes a text line, a text block, a cell, a rectangle, an image or a point a link to a web address.
 
-@example 48 Bookmarks
-Draws the outline of a short guide to the structure of a PDF file, and adds a bookmark for each of its titles, numbered from their place in the tree of bookmarks.
+@snippet internal-links Links inside the document
+setDestination names the place of a text line, and setGoToAction makes another component a link to it. page.addDestination names any place of a page.
 
-@example 06 Attachments and annotations
-Attaches two files to a page, and adds a note, a link and polygon, square and circle annotations next to labels that describe them.
+@snippet bookmarks Bookmarks
+A Bookmark is the outline that PDF viewers show beside the pages. addBookmark adds a Title under a bookmark, which goes to the title's place on its page, and returns the new bookmark, to add bookmarks under it in turn. autoNumber numbers them from their place, 1, 1.1, 1.2 and so on.
 
-@example 46 Layers
-Draws a relief map of Europe with the lines of latitude and longitude and the capital cities over it, each a layer that a PDF viewer can show or hide.
+@snippet attachments Attached files
+An EmbeddedFile is a file written into the PDF, and a FileAttachment shows it on a page as an icon, a push pin or a paperclip, which opens or saves the file.
+
+@snippet notes Notes
+A TextAnnotation is a note on the page, shown as an icon that opens its text. The PolygonAnnotation, SquareAnnotation and CircleAnnotation mark areas of the page, with a note.
+
+@snippet layers Layers
+An OptionalContentGroup is a layer that PDF viewers list and can show or hide. Components added to it are drawn in it, and it can be visible or not, and printed or not.
 
 # Forms
 
-@example 26 Check boxes and radio buttons
-Draws a customer survey with check boxes and radio buttons.
+@snippet check-boxes Check boxes and radio buttons
+A CheckBox and a RadioButton draw a box or a circle with a label, checked or selected, for forms that are printed and filled in by hand or read as they are.
 
-@example 42 A form of fields
-Draws a company information form with the Form and Field classes, a row of labeled values at a time.
-
-@example 45 A shipment request
-Draws a shipment request with the Form and Field classes. A field at x 0 starts a new row, and a field with an empty label continues the value above it.
-
-# Pages, accessibility and archiving
-
-@example 18 Page numbers
-Draws a short document and writes "Page X of N" at the foot of every page, as decoration that screen readers skip.
-
-@example 07 A PDF/A-3B document with a watermark
-Adds a DRAFT watermark to every page of a two-page PDF/A-3B document. The watermark is drawn first, so the text of the page is drawn over it.
+@snippet form-fields Forms of labeled fields
+A Form draws a list of Fields, each a label over a value, in rows and columns: a field at x 0 starts a new row, and a field with an empty label goes on with the value above it.
 
 # Existing PDFs and security
 
-PDFjet reads existing PDFs too: it merges them, splits them, and adds to their pages. And it encrypts documents with AES-256.
+PDFjet reads existing PDFs too: read returns the objects of a document, which can be merged into a new PDF, split, or drawn on. And it encrypts documents with AES-256.
 
-@example 41 Merging PDFs
-Merges existing PDF documents into one, after a cover page drawn with PDFjet. The pages keep their content, resources, annotations and links.
+@snippet merge Merging PDFs
+merge adds the pages of a document that read returns to the PDF, with their content, fonts, images, annotations and links. Pages drawn with PDFjet can come before and after them.
 
-@example 51 Splitting a PDF
-Splits an existing PDF into one PDF for each of its pages, and writes all its pages in reverse order to another.
+@snippet split Splitting a PDF
+merge takes the numbers of the pages to add, from 1, in any order, so a document can be split into parts, a page each, or have its pages reordered.
 
-@example 37 Adding text to the pages of a scanned PDF
-Reads a scanned document and draws a transparent line of text on each of its pages.
+@snippet existing-pages Drawing on the pages of an existing PDF
+A Page made from a page object of an existing document draws over what the page has. addResource adds a font or an image to the document the page is in, and complete finishes the page; addObjects writes the objects into the new PDF.
 
-@example 50 Filling in an existing PDF form
-Reads an existing PDF form and writes the values of its fields, with an image, two fonts read from files, and the core font Helvetica.
-
-@example 30 Encryption
-Encrypts a document with AES-256, with a user password and an owner password and the permissions of the user, and attaches a file to it.
+@snippet encryption Encryption
+An Encryption with AES-256 protects the document with a user password, which opens it, and an owner password, which changes what the user may do: print, copy, change or fill in the document. The Permissions grant what the user may do.
