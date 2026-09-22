@@ -419,4 +419,21 @@ class TextFrameTest {
     void aLinkEndsBeforeTheSpaceAfterIt() throws Exception {
         checkALinkEndsBeforeTheSpaceAfterIt(false);
     }
+
+    @Test
+    void manyJoinedTextLinesAreMeasuredInLinearTime() throws Exception {
+        // Every text line is one word joined to the word before it, so the
+        // width of the words joined to a word was measured over and over.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
+        for (int i = 0; i < 20000; i++) {
+            paragraph.addJoined(new TextLine(font, "x"));
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        long time0 = System.nanoTime();
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
+        long milliseconds = (System.nanoTime() - time0) / 1000000;
+        assertTrue(milliseconds < 3000, milliseconds + " ms");
+    }
 }

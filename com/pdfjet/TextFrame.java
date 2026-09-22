@@ -452,7 +452,8 @@ public class TextFrame implements Drawable {
             // in the row already when that word made room for it.
             boolean reserved = joinReserved && tokenIndex == 0;
             joinReserved = false;
-            float joined = joinsNext ? joinedWidth(paragraph, lineIndex) : 0f;
+            float joined = joinsNext
+                    ? joinedWidth(paragraph, lineIndex, runLength + width(textLine, token), available) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
             if (reserved || (runLength + width(textLine, token) + joined) <= available) {
@@ -497,14 +498,18 @@ public class TextFrame implements Drawable {
 
     // Returns the width of the text joined to the end of the text line at the
     // index: the first word of each text line that goes on from it, up to the
-    // first of them that has more than one word.
-    private float joinedWidth(Paragraph paragraph, int index) {
+    // first of them that has more than one word. It stops as soon as the width
+    // after the width before it is more than the width available, since the
+    // words do not fit however many more there are: the sum is the same for
+    // the caller's test, and a paragraph of many text lines of one word each,
+    // all joined, is measured in linear time and not in quadratic time.
+    private float joinedWidth(Paragraph paragraph, int index, float before, float available) {
         float width = 0f;
         for (int i = index + 1; i < paragraph.lines.size() && paragraph.joinsPrevious(i); i++) {
             TextLine textLine = paragraph.lines.get(i);
             String[] words = Util.splitOnWhitespace(textLine.text);
             width += width(textLine, words[0]);
-            if (words.length > 1) {
+            if (words.length > 1 || before + width > available) {
                 break;
             }
         }

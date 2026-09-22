@@ -1489,7 +1489,7 @@ public class Table : IDrawable {
     /// Wraps around the text in all cells so it fits the column width.
     /// This method should be called after all calls to setColumnWidth and autoAdjustColumnWidths.
     /// </summary>
-    protected void WrapAroundCellText() {
+    protected internal void WrapAroundCellText() {
         List<List<Cell>> tableData2 = new List<List<Cell>>();
         List<List<String>> lines = new List<List<String>>();
         int numOfHeaderRows2 = 0;
@@ -1617,14 +1617,18 @@ public class Table : IDrawable {
                 if (buf.Length > 0) {
                     buf.Append(" ");
                 }
-                foreach (char ch in token) {
-                    // A line has at least one character, even one wider than the column.
+                for (int k = 0; k < token.Length; ) {
+                    // A character, which is two chars when it is not of the
+                    // basic plane, and a line has at least one of them, even
+                    // one wider than the column.
+                    String character = token.Substring(k, Util.CharCount(token, k));
                     if (buf.Length > 0 && cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
-                            buf.ToString() + ch) > cellWidth) {
+                            buf.ToString() + character) > cellWidth) {
                         lines.Add(buf.ToString());
                         buf.Length = 0;
                     }
-                    buf.Append(ch);
+                    buf.Append(character);
+                    k += character.Length;
                 }
             } else if (buf.Length == 0) {
                 // A token that fits the column fits a line of its own, and its

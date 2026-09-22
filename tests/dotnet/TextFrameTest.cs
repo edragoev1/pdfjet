@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -411,6 +412,23 @@ public class TextFrameTest {
     [Fact]
     public void ALinkEndsBeforeTheSpaceAfterIt() {
         CheckALinkEndsBeforeTheSpaceAfterIt(false);
+    }
+
+    [Fact]
+    public void ManyJoinedTextLinesAreMeasuredInLinearTime() {
+        // Every text line is one word joined to the word before it, so the
+        // width of the words joined to a word was measured over and over.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
+        for (int i = 0; i < 20000; i++) {
+            paragraph.AddJoined(new TextLine(font, "x"));
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stopwatch watch = Stopwatch.StartNew();
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
+        long milliseconds = watch.ElapsedMilliseconds;
+        Assert.True(milliseconds < 3000, milliseconds + " ms");
     }
 }
 }

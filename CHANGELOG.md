@@ -291,6 +291,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A paragraph of many text lines joined with `Paragraph.addJoined` is drawn
+  in time linear in its length, in all four ports. `TextFrame` measured the
+  words joined to a word over and over, which took 9 seconds for 64,000
+  characters of text lines of one word each, as the inline markup of a link
+  and the punctuation around it makes; it stops measuring now as soon as
+  they cannot fit, which cannot change where the row breaks.
+- A word too wide for the column of a table is broken between two
+  characters, not inside one that is outside the basic plane, such as an
+  emoji, in Java and C#; Go and Swift already broke it between characters.
+  The two halves of the character were drawn as two missing glyphs on two
+  lines of the cell.
 - A table whose columns `autoAdjustColumnWidths` makes as wide as their
   text no longer wraps the text that fits, and no longer fails to draw, in
   all four ports. The width of a column less its padding could come out a

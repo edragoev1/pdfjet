@@ -390,7 +390,8 @@ public class TextFrame : IDrawable {
             // in the row already when that word made room for it.
             bool reserved = joinReserved && tokenIndex == 0;
             joinReserved = false;
-            float joined = joinsNext ? JoinedWidth(paragraph, lineIndex) : 0f;
+            float joined = joinsNext
+                    ? JoinedWidth(paragraph, lineIndex, runLength + Width(textLine, token), available) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
             if (reserved || (runLength + Width(textLine, token) + joined) <= available) {
@@ -435,14 +436,18 @@ public class TextFrame : IDrawable {
 
     // Returns the width of the text joined to the end of the text line at the
     // index: the first word of each text line that goes on from it, up to the
-    // first of them that has more than one word.
-    private float JoinedWidth(Paragraph paragraph, int index) {
+    // first of them that has more than one word. It stops as soon as the width
+    // after the width before it is more than the width available, since the
+    // words do not fit however many more there are: the sum is the same for
+    // the caller's test, and a paragraph of many text lines of one word each,
+    // all joined, is measured in linear time and not in quadratic time.
+    private float JoinedWidth(Paragraph paragraph, int index, float before, float available) {
         float width = 0f;
         for (int i = index + 1; i < paragraph.lines.Count && paragraph.JoinsPrevious(i); i++) {
             TextLine textLine = paragraph.lines[i];
             String[] words = Util.SplitOnWhitespace(textLine.text);
             width += Width(textLine, words[0]);
-            if (words.Length > 1) {
+            if (words.Length > 1 || before + width > available) {
                 break;
             }
         }

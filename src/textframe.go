@@ -382,7 +382,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		tf.joinReserved = false
 		var joined float32
 		if joinsNext {
-			joined = tf.joinedWidth(paragraph, tf.lineIndex)
+			joined = tf.joinedWidth(paragraph, tf.lineIndex, runLength+textWidth(textLine, token), available)
 		}
 		// The token is measured without the space that follows it, as in
 		// TextColumn: a row is as wide as the text it shows.
@@ -428,14 +428,18 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 
 // joinedWidth returns the width of the text joined to the end of the text
 // line at the index: the first word of each text line that goes on from it, up
-// to the first of them that has more than one word.
-func (tf *TextFrame) joinedWidth(paragraph *Paragraph, index int) float32 {
+// to the first of them that has more than one word. It stops as soon as the
+// width after the width before is more than the available width, since the
+// words then do not fit however many more there are: the sum is then the same
+// for the caller's test, and a paragraph of many text lines of one word each,
+// all joined, is measured in linear time and not in quadratic time.
+func (tf *TextFrame) joinedWidth(paragraph *Paragraph, index int, before, available float32) float32 {
 	var width float32
 	for i := index + 1; i < len(paragraph.lines) && paragraph.joinsPrevious(i); i++ {
 		textLine := paragraph.lines[i]
 		words := splitOnWhitespace(textLine.text)
 		width += textWidth(textLine, words[0])
-		if len(words) > 1 {
+		if len(words) > 1 || before+width > available {
 			break
 		}
 	}

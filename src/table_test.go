@@ -1223,3 +1223,23 @@ func TestTableAWordWiderThanItsColumnHasNoEmptyLine(t *testing.T) {
 		t.Fatalf("the pages: %d, want 1", len(pages))
 	}
 }
+
+func TestTableAWordBrokenToFitAColumnKeepsItsCharactersWhole(t *testing.T) {
+	// A character outside the basic plane is more than one byte of the text,
+	// and the bytes are not drawn on more than one line.
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font.SetSize(11)
+	cell := NewCell(font, "a\U0001F600b")
+	// A column narrower than any of the characters.
+	cell.SetWidth(6)
+	table := NewTable().SetTableData([][]*Cell{{cell}}, 0)
+	table.wrapAroundCellText()
+	lines := make([]string, 0)
+	for i := 0; i < 3; i++ {
+		lines = append(lines, table.GetRow(i)[0].GetText())
+	}
+	if want := []string{"a", "\U0001F600", "b"}; !reflect.DeepEqual(lines, want) {
+		t.Errorf("the lines: %q, want %q", lines, want)
+	}
+}

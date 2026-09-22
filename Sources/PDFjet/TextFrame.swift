@@ -376,7 +376,9 @@ public class TextFrame : Drawable {
             // in the row already when that word made room for it.
             let reserved = joinReserved && tokenIndex == 0
             joinReserved = false
-            let joined = joinsNext ? joinedWidth(paragraph, lineIndex) : 0.0
+            let joined = joinsNext
+                    ? joinedWidth(paragraph, lineIndex,
+                            runLength + TextFrame.width(textLine, token), available) : 0.0
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
             if reserved || (runLength + TextFrame.width(textLine, token) + joined) <= available {
@@ -422,15 +424,20 @@ public class TextFrame : Drawable {
 
     // Returns the width of the text joined to the end of the text line at the
     // index: the first word of each text line that goes on from it, up to the
-    // first of them that has more than one word.
-    private func joinedWidth(_ paragraph: Paragraph, _ index: Int) -> Float {
+    // first of them that has more than one word. It stops as soon as the width
+    // after the width before it is more than the width available, since the
+    // words do not fit however many more there are: the sum is the same for
+    // the caller's test, and a paragraph of many text lines of one word each,
+    // all joined, is measured in linear time and not in quadratic time.
+    private func joinedWidth(
+            _ paragraph: Paragraph, _ index: Int, _ before: Float, _ available: Float) -> Float {
         var width: Float = 0.0
         var i = index + 1
         while i < paragraph.lines.count && paragraph.joinsPrevious(i) {
             let textLine = paragraph.lines[i]
             let words = textLine.text!.splitOnWhitespace()
             width += TextFrame.width(textLine, words[0])
-            if words.count > 1 {
+            if words.count > 1 || before + width > available {
                 break
             }
             i += 1

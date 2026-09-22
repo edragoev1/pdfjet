@@ -1033,4 +1033,24 @@ class TableTest {
         table.drawOn(pdf, pages, Letter.PORTRAIT);
         assertEquals(1, pages.size());
     }
+
+    @Test
+    void aWordBrokenToFitAColumnKeepsItsCharactersWhole() throws Exception {
+        // A character outside the basic plane is two chars of the text, and
+        // the two are not drawn on two lines.
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(11f);
+        Cell cell = new Cell(font, "a\uD83D\uDE00b");
+        // A column narrower than any of the characters.
+        cell.setWidth(6f);
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(Arrays.asList(cell)));
+        Table table = new Table().setTableData(rows, 0);
+        table.wrapAroundCellText();
+        List<String> lines = new ArrayList<String>();
+        for (int i = 0; i < 3; i++) {
+            lines.add(table.getRow(i).get(0).getText());
+        }
+        assertEquals(Arrays.asList("a", "\uD83D\uDE00", "b"), lines);
+    }
 }

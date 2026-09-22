@@ -384,4 +384,27 @@ import Testing
     @Test func aLinkEndsBeforeTheSpaceAfterIt() throws {
         try TextFrameTests.checkALinkEndsBeforeTheSpaceAfterIt(false)
     }
+
+    @Test func manyJoinedTextLinesAreMeasuredInLinearTime() {
+        // Every text line is one word joined to the word before it, so the
+        // width of the words joined to a word was measured over and over.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph(TextLine(font, "word"))
+        for _ in 0..<20000 {
+            paragraph.addJoined(TextLine(font, "x"))
+        }
+        let page = Page(pdf, Letter.PORTRAIT)
+        let frame = TextFrame([paragraph]).setLocation(10, 10).setWidth(300)
+        let clock = ContinuousClock()
+        let elapsed = clock.measure {
+            frame.drawOn(page)
+        }
+        let milliseconds = elapsed.components.seconds * 1000
+                + elapsed.components.attoseconds / 1_000_000_000_000_000
+        // A debug build takes about 4 seconds, and 7 under the tests that run
+        // beside it, where a release build takes under 1; without the measure
+        // in linear time it took 704 seconds.
+        #expect(milliseconds < 15000, "\(milliseconds) ms")
+    }
 }

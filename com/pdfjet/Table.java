@@ -1687,14 +1687,18 @@ public class Table implements Drawable {
                 if (buf.length() > 0) {
                     buf.append(" ");
                 }
-                for (int k = 0; k < token.length(); k++) {
-                    // A line has at least one character, even one wider than the column.
+                for (int k = 0; k < token.length(); ) {
+                    // A character, which is two chars when it is not of the
+                    // basic plane, and a line has at least one of them, even
+                    // one wider than the column.
+                    String character = token.substring(k, k + Character.charCount(token.codePointAt(k)));
                     if (buf.length() > 0 && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
-                            buf.toString() + token.charAt(k)) > cellWidth) {
+                            buf.toString() + character) > cellWidth) {
                         lines.add(buf.toString());
                         buf.setLength(0);
                     }
-                    buf.append(token.charAt(k));
+                    buf.append(character);
+                    k += character.length();
                 }
             } else if (buf.length() == 0) {
                 // A token that fits the column fits a line of its own, and its
