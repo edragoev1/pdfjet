@@ -1440,9 +1440,10 @@ func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
 			queue = append(queue, page)
 		}
 	}
+	nodes := make(pageTreeNodes)
 	for i := 0; i < len(queue); i++ {
 		obj := queue[i]
-		value := mergedValue(obj, mergedPages[obj.number], objects)
+		value := mergedValue(obj, mergedPages[obj.number], objects, nodes)
 		values[obj.number] = value
 		for j := 0; j < len(value); j++ {
 			if isObjectReference(value, j) {
@@ -1519,7 +1520,7 @@ func isMergedObject(number int, objects []*PDFobj, mergedPages map[int]bool) boo
 // mergedValue returns the value of an object that was read, without its
 // "n g obj" and its "stream" and "endobj" keywords, with a direct /Length for a
 // stream, and for a page with the entries it inherits and without its /Parent.
-func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj) []string {
+func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNodes) []string {
 	value := objectValue(obj)
 	if obj.stream != nil {
 		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(obj.stream))})
@@ -1527,7 +1528,7 @@ func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj) []string {
 	if isPage {
 		for _, key := range inheritedKeys {
 			if dictEntryIndex(value, key) == -1 {
-				inherited := inheritedPageValue(obj, key, objects)
+				inherited := inheritedPageValue(obj, key, objects, nodes)
 				if inherited == nil && key == "/MediaBox" {
 					inherited = []string{"[", "0", "0", "612", "792", "]"} // Letter
 				}
@@ -1557,28 +1558,60 @@ func objectValue(obj *PDFobj) []string {
 	return append([]string(nil), dict[start:end]...)
 }
 
+// pageTreeNodes holds the entries of the nodes of a page tree, each by its
+// key, the first of a key, as they are found.
+type pageTreeNodes map[*PDFobj]map[string][]string
+
 // inheritedPageValue returns the value of the entry from the nearest node of
-// the page tree above the page that has it, or nil.
-func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj) []string {
-	node := page
+// the page tree above the page that has it, or nil. The entries of each node
+// are found once and kept in nodes, as the node of a flat tree lists thousands
+// of pages, and each of them looks up each entry it does not have: veraPDF's
+// test of the implementation limits has 10,000 pages under one node, which
+// took half a minute.
+func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj, nodes pageTreeNodes) []string {
+	tokens := objectValue(page)
+	var parent []string
+	if i := dictEntryIndex(tokens, "/Parent"); i != -1 {
+		parent = tokens[i+1 : dictValueEnd(tokens, i+1)]
+	}
 	for depth := 0; depth < 64; depth++ { // A loop in a broken tree ends here.
-		tokens := objectValue(node)
-		i := dictEntryIndex(tokens, "/Parent")
-		if i == -1 || !isObjectReference(tokens, i+1) {
+		if !isObjectReference(parent, 0) {
 			return nil
 		}
-		number, _ := strconv.Atoi(tokens[i+1])
+		number, _ := strconv.Atoi(parent[0])
 		if number < 1 || number > len(objects) || objects[number-1] == nil || len(objects[number-1].dict) == 0 {
 			return nil
 		}
-		node = objects[number-1]
-		parent := objectValue(node)
-		k := dictEntryIndex(parent, key)
-		if k != -1 {
-			return append([]string(nil), parent[k+1:dictValueEnd(parent, k+1)]...)
+		node := objects[number-1]
+		entries, ok := nodes[node]
+		if !ok {
+			entries = dictEntries(objectValue(node))
+			nodes[node] = entries
 		}
+		if value, ok := entries[key]; ok {
+			return append([]string(nil), value...)
+		}
+		parent = entries["/Parent"]
 	}
 	return nil
+}
+
+// dictEntries returns the entries of the dictionary, the first of each key, by
+// key.
+func dictEntries(tokens []string) map[string][]string {
+	entries := make(map[string][]string)
+	if len(tokens) == 0 || tokens[0] != "<<" {
+		return entries
+	}
+	i := 1
+	for i < len(tokens) && tokens[i] != ">>" {
+		end := dictValueEnd(tokens, i+1)
+		if _, ok := entries[tokens[i]]; !ok {
+			entries[tokens[i]] = tokens[i+1 : end]
+		}
+		i = end
+	}
+	return entries
 }
 
 // dictValueEnd returns the index after the value that starts at index i.
@@ -2616,14 +2649,15 @@ func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
 func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 	pages := make([]*PDFobj, 0)
 	if pagesObject := pdf.getPagesObject(objects); pagesObject != nil {
-		pdf.getPageObjects(pagesObject, objects, &pages, make(map[int]bool))
+		pdf.getPageObjects(pagesObject, objects, &pages, make(map[int]bool), make(pageTreeNodes))
 	}
 	return pages
 }
 
 // The nodes of the page tree that were visited are skipped, as a node of a
 // broken tree can list itself or a node above it as a kid.
-func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool) {
+func (pdf *PDF) getPageObjects(
+	pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool, nodes pageTreeNodes) {
 	if visited[pdfObj.number] {
 		return
 	}
@@ -2635,11 +2669,12 @@ func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFo
 		}
 		obj := objects[number-1]
 		if isPageObject(obj) {
-			addInheritedEntries(obj, objects)
+			addInheritedEntries(obj, objects, nodes)
 			resolveMediaBox(obj, objects)
+			delete(nodes, obj) // A broken tree can have a page as a node.
 			*pages = append(*pages, obj)
 		} else {
-			pdf.getPageObjects(obj, objects, pages, visited)
+			pdf.getPageObjects(obj, objects, pages, visited, nodes)
 		}
 	}
 }
@@ -2648,7 +2683,7 @@ func (pdf *PDF) getPageObjects(pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFo
 // tree and does not have itself. A page of another program's PDF often
 // carries no /MediaBox or /Resources of its own, and Read gives the objects
 // as the file has them, so the page holds what it is only after this.
-func addInheritedEntries(page *PDFobj, objects []*PDFobj) {
+func addInheritedEntries(page *PDFobj, objects []*PDFobj, nodes pageTreeNodes) {
 	open := slices.Index(page.dict, "<<")
 	if open == -1 {
 		return
@@ -2657,7 +2692,7 @@ func addInheritedEntries(page *PDFobj, objects []*PDFobj) {
 		if dictEntryIndex(objectValue(page), key) != -1 {
 			continue // An entry of its own.
 		}
-		if value := inheritedPageValue(page, key, objects); value != nil {
+		if value := inheritedPageValue(page, key, objects, nodes); value != nil {
 			page.dict = insertArrayAt(page.dict, append([]string{key}, value...), open+1)
 		}
 	}

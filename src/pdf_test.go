@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -737,5 +738,39 @@ func TestPDFAStampOnAPageWhoseDictionaryIsBrokenDrawsNothing(t *testing.T) {
 		imported.pdf.AddResourceObjects(objects)
 		NewPage(imported.pdf, letter.Portrait())
 		imported.complete()
+	}
+}
+
+func TestPDFTheEntriesOfANodeWithThousandsOfPagesAreLookedUpOnce(t *testing.T) {
+	// Each page looked up each entry it inherits, and each one it does not
+	// have, in a copy of its node, and the node of a flat page tree lists
+	// every page: reading and merging the 10000 pages of the veraPDF test of
+	// the implementation limits took half a minute.
+	count := 10000
+	objects := make([]string, count+2)
+	objects[0] = "<< /Type /Catalog /Pages 2 0 R >>"
+	var kids strings.Builder
+	for i := 0; i < count; i++ {
+		fmt.Fprintf(&kids, "%d 0 R ", i+3)
+		objects[i+2] = "<< /Type /Page /Parent 2 0 R >>"
+	}
+	objects[1] = fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d /MediaBox [0 0 595 842] >>", kids.String(), count)
+	source := testRead(t, testPDFWithObjects(objects...))
+	start := time.Now()
+	pages := testNewPDF().GetPageObjects(source)
+	doc := testNewDoc()
+	if err := doc.pdf.Merge(source); err != nil {
+		t.Fatal(err)
+	}
+	doc.complete()
+	elapsed := time.Since(start)
+	if len(pages) != count {
+		t.Fatalf("%d pages", len(pages))
+	}
+	if width := pages[count-1].GetPageSize().GetWidth(); width != 595 {
+		t.Errorf("width %g", width)
+	}
+	if elapsed > 5*time.Second {
+		t.Errorf("%v", elapsed)
 	}
 }
