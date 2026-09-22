@@ -784,4 +784,48 @@ import Testing
         #expect(Table.formatSum(999, 0) == "999")
         #expect(Table.formatSum(1000, 0) == "1,000")
     }
+
+    @Test func theTotalBroughtForwardIsTheTotalCarriedFromThePageBefore() {
+        // A header row, a header row that brings the total forward, the rows
+        // r2 to r58 with r + 0.25 in their second cell, and a footer row that
+        // carries the total forward.
+        let pdf = TestSupport.newPDF()
+        let data = rowsWith(TestSupport.helvetica(pdf), -1)
+        for r in 2..<59 {
+            data[r][1].setText("\(r).25")
+        }
+        data[1][0].setText("brought")
+        data[59][0].setText("carried")
+        let table = Table().setTableData(data, 2).setNumberOfFooterRows(1)
+                .setBroughtForwardSum(1, 1, 2).setRunningSum(59, 1, 2).setLocation(50, 50)
+        table.setBottomMargin(20)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 2)
+        guard pages.count == 2 else { return }
+        #expect(yOf(pages[0], "brought").isNaN, "the first page brings a total forward")
+        var carried: Int64 = 0
+        for r in 2..<59 where !yOf(pages[0], "r\(r)").isNaN {
+            carried += Int64(100 * r + 25)
+        }
+        let next = TestSupport.content(pages[1])
+        let text = "<" + TestSupport.hex(Table.formatSum(carried, 2)) + ">"
+        #expect(TestSupport.content(pages[0]).contains(text), "the first page does not carry \(text)")
+        #expect(next.contains(text), "the second page does not bring \(text) forward")
+        // Under the header row, and over the rows of the page.
+        let rowHeight = yOf(pages[0], "r2") - yOf(pages[0], "r3")
+        TestSupport.expectNear(rowHeight, yOf(pages[1], "r0") - yOf(pages[1], "brought"), 0.02)
+        var firstRow = 2
+        while yOf(pages[1], "r\(firstRow)").isNaN {
+            firstRow += 1
+        }
+        TestSupport.expectNear(rowHeight, yOf(pages[1], "brought") - yOf(pages[1], "r\(firstRow)"), 0.02)
+        // The rows are each drawn once, and the total is that of all of them.
+        for r in 2..<59 {
+            let n = pages.reduce(0) { $0 + count(TestSupport.content($1), "<" + TestSupport.hex("r\(r)") + ">") }
+            #expect(n == 1, "row \(r)")
+        }
+        // Rows 2 to 58: 1,710 and 57 quarters.
+        #expect(next.contains("<" + TestSupport.hex(Table.formatSum(171000 + 1425, 2)) + ">"), "no total")
+    }
 }

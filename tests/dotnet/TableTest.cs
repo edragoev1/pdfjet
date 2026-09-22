@@ -834,5 +834,54 @@ public sealed class TableTest : IDisposable {
         Assert.Equal("999", Table.FormatSum(999, 0));
         Assert.Equal("1,000", Table.FormatSum(1000, 0));
     }
+
+    [Fact]
+    public void TheTotalBroughtForwardIsTheTotalCarriedFromThePageBefore() {
+        // A header row, a header row that brings the total forward, the rows
+        // r2 to r58 with r + 0.25 in their second cell, and a footer row that
+        // carries the total forward.
+        PDF pdf = TestSupport.NewPDF();
+        List<List<Cell>> data = RowsWith(TestSupport.Helvetica(pdf), -1);
+        for (int r = 2; r < 59; r++) {
+            data[r][1].SetText(r + ".25");
+        }
+        data[1][0].SetText("brought");
+        data[59][0].SetText("carried");
+        Table table = new Table().SetTableData(data, 2).SetNumberOfFooterRows(1)
+                .SetBroughtForwardSum(1, 1, 2).SetRunningSum(59, 1, 2).SetLocation(50f, 50f);
+        table.SetBottomMargin(20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Equal(2, pages.Count);
+        Assert.True(float.IsNaN(YOf(pages[0], "brought")), "the first page brings a total forward");
+        long carried = 0;
+        for (int r = 2; r < 59; r++) {
+            if (!float.IsNaN(YOf(pages[0], "r" + r))) {
+                carried += 100 * r + 25;
+            }
+        }
+        string next = TestSupport.Content(pages[1]);
+        string text = "<" + TestSupport.Hex(Table.FormatSum(carried, 2)) + ">";
+        Assert.Contains(text, TestSupport.Content(pages[0]));
+        Assert.Contains(text, next);
+        // Under the header row, and over the rows of the page.
+        float rowHeight = YOf(pages[0], "r2") - YOf(pages[0], "r3");
+        TestSupport.AssertNear(rowHeight, YOf(pages[1], "r0") - YOf(pages[1], "brought"), 0.02f);
+        int firstRow = 2;
+        while (float.IsNaN(YOf(pages[1], "r" + firstRow))) {
+            firstRow++;
+        }
+        TestSupport.AssertNear(rowHeight, YOf(pages[1], "brought") - YOf(pages[1], "r" + firstRow), 0.02f);
+        // The rows are each drawn once, and the total is that of all of them.
+        for (int r = 2; r < 59; r++) {
+            int n = 0;
+            foreach (Page page in pages) {
+                n += Count(TestSupport.Content(page), "<" + TestSupport.Hex("r" + r) + ">");
+            }
+            Assert.True(n == 1, "row " + r);
+        }
+        // Rows 2 to 58: 1,710 and 57 quarters.
+        Assert.Contains("<" + TestSupport.Hex(Table.FormatSum(171000 + 1425, 2)) + ">", next);
+    }
 }
 }

@@ -856,4 +856,53 @@ class TableTest {
         assertEquals("999", Table.formatSum(999, 0));
         assertEquals("1,000", Table.formatSum(1000, 0));
     }
+
+    @Test
+    void theTotalBroughtForwardIsTheTotalCarriedFromThePageBefore() throws Exception {
+        // A header row, a header row that brings the total forward, the rows
+        // r2 to r58 with r + 0.25 in their second cell, and a footer row that
+        // carries the total forward.
+        PDF pdf = TestSupport.newPDF();
+        List<List<Cell>> data = rowsWith(TestSupport.helvetica(pdf), -1);
+        for (int r = 2; r < 59; r++) {
+            data.get(r).get(1).setText(r + ".25");
+        }
+        data.get(1).get(0).setText("brought");
+        data.get(59).get(0).setText("carried");
+        Table table = new Table().setTableData(data, 2).setNumberOfFooterRows(1)
+                .setBroughtForwardSum(1, 1, 2).setRunningSum(59, 1, 2)
+                .setLocation(50f, 50f).setBottomMargin(20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(2, pages.size());
+        assertTrue(Float.isNaN(yOf(pages.get(0), "brought")), "the first page brings a total forward");
+        long carried = 0;
+        for (int r = 2; r < 59; r++) {
+            if (!Float.isNaN(yOf(pages.get(0), "r" + r))) {
+                carried += 100 * r + 25;
+            }
+        }
+        String next = TestSupport.content(pages.get(1));
+        String text = "<" + TestSupport.hex(Table.formatSum(carried, 2)) + ">";
+        assertTrue(TestSupport.content(pages.get(0)).contains(text), "the first page does not carry " + text);
+        assertTrue(next.contains(text), "the second page does not bring " + text + " forward");
+        // Under the header row, and over the rows of the page.
+        float rowHeight = yOf(pages.get(0), "r2") - yOf(pages.get(0), "r3");
+        assertEquals(rowHeight, yOf(pages.get(1), "r0") - yOf(pages.get(1), "brought"), 0.02f);
+        int firstRow = 2;
+        while (Float.isNaN(yOf(pages.get(1), "r" + firstRow))) {
+            firstRow++;
+        }
+        assertEquals(rowHeight, yOf(pages.get(1), "brought") - yOf(pages.get(1), "r" + firstRow), 0.02f);
+        // The rows are each drawn once, and the total is that of all of them.
+        for (int r = 2; r < 59; r++) {
+            int n = 0;
+            for (Page page : pages) {
+                n += count(TestSupport.content(page), "<" + TestSupport.hex("r" + r) + ">");
+            }
+            assertEquals(1, n, "row " + r);
+        }
+        // Rows 2 to 58: 1,710 and 57 quarters.
+        assertTrue(next.contains("<" + TestSupport.hex(Table.formatSum(171000 + 1425, 2)) + ">"), "no total");
+    }
 }

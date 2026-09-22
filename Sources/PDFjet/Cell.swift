@@ -53,13 +53,17 @@ public class Cell {
     // A cell of a row that a page break keeps with the next row, which the
     // cells a table adds below it for its wrapped text have too.
     internal static let KEPT_WITH_NEXT: UInt32 = 0x01000000
-    // A cell of a footer row that shows the sum of its column over the rows
-    // of the page, or over all the rows up to the end of the page, and the
-    // number of decimals it shows, in the four bits from SUM_DECIMALS.
+    // A cell that shows the sum of its column, of one of three kinds in the
+    // two bits of SUM_KIND: in a footer row over the rows of the page, or over
+    // all the rows up to the end of the page, and in a header row over all
+    // the rows before the page. The number of decimals it shows is in the
+    // four bits from SUM_DECIMALS.
     internal static let PAGE_SUM: UInt32 = 0x02000000
     internal static let RUNNING_SUM: UInt32 = 0x04000000
+    internal static let BROUGHT_FORWARD_SUM: UInt32 = 0x06000000
+    internal static let SUM_KIND: UInt32 = 0x06000000
     internal static let SUM_DECIMALS: UInt32 = 27
-    internal static let SUM_BITS: UInt32 = PAGE_SUM | RUNNING_SUM | (0xF << SUM_DECIMALS)
+    internal static let SUM_BITS: UInt32 = SUM_KIND | (0xF << SUM_DECIMALS)
     internal var properties: UInt32 = Border.TOP | Border.LEFT
 
     // Where the three alignments of a cell are in properties, three bits

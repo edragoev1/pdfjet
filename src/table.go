@@ -270,6 +270,19 @@ func (table *Table) SetRunningSum(row, column, decimals int) *Table {
 	return table.setSum(row, column, decimals, cellRunningSum)
 }
 
+// SetBroughtForwardSum makes the cell of a header row show the sum of its
+// column over all the rows of the pages before: the total brought forward,
+// which the cell that SetRunningSum marks shows at the end of the page
+// before. A header row with such a cell is drawn from the second page on,
+// under the header rows above it, and not on the first page, which has
+// nothing to bring forward; in a PDF/UA document it is an artifact, as the
+// header rows are on those pages. The numbers are read and the sum is written
+// as SetPageSum reads and writes them. The row is the index of a header row,
+// see SetTableData.
+func (table *Table) SetBroughtForwardSum(row, column, decimals int) *Table {
+	return table.setSum(row, column, decimals, cellBroughtForwardSum)
+}
+
 func (table *Table) setSum(row, column, decimals int, kind uint32) *Table {
 	if row < 0 || row >= len(table.tableData) || column < 0 || column >= len(table.tableData[row]) {
 		return table
@@ -277,26 +290,56 @@ func (table *Table) setSum(row, column, decimals int, kind uint32) *Table {
 	places := max(0, min(9, decimals))
 	cell := table.tableData[row][column]
 	cell.properties = (cell.properties &^ cellSumBits) | kind | (uint32(places) << cellSumDecimals)
-	cell.SetText(formatSum(table.sumOf(column, table.numOfHeaderRows, min(row, table.footerStart()), places), places))
+	end := min(row, table.footerStart())
+	if kind == cellBroughtForwardSum {
+		end = table.footerStart()
+	}
+	cell.SetText(formatSum(table.sumOf(column, table.numOfHeaderRows, end, places), places))
 	return table
 }
 
-// setFooterSums writes the sums in the footer cells that SetPageSum and
-// SetRunningSum mark: those of the rows of the page, from first to end, and
-// those of all the rows to end.
-func (table *Table) setFooterSums(first, end int) {
-	for r := table.footerStart(); r < len(table.tableData); r++ {
+// setSums writes the sums in the cells of the rows from start to stop that
+// SetPageSum, SetRunningSum and SetBroughtForwardSum mark: those of the rows
+// of the page, from first to end, those of all the rows to end, and those of
+// all the rows before first.
+func (table *Table) setSums(start, stop, first, end int) {
+	for r := start; r < stop && r < len(table.tableData); r++ {
 		for j, cell := range table.tableData[r] {
-			if cell.properties&(cellPageSum|cellRunningSum) != 0 {
-				places := int((cell.properties >> cellSumDecimals) & 0xF)
-				from := table.numOfHeaderRows
-				if cell.properties&cellPageSum != 0 {
-					from = first
-				}
-				cell.SetText(formatSum(table.sumOf(j, from, end, places), places))
+			kind := cell.properties & cellSumKind
+			if kind == 0 {
+				continue
 			}
+			places := int((cell.properties >> cellSumDecimals) & 0xF)
+			from := table.numOfHeaderRows
+			if kind == cellPageSum {
+				from = first
+			}
+			to := end
+			if kind == cellBroughtForwardSum {
+				to = first
+			}
+			cell.SetText(formatSum(table.sumOf(j, from, to, places), places))
 		}
 	}
+}
+
+func (table *Table) setFooterSums(first, end int) {
+	table.setSums(table.footerStart(), len(table.tableData), first, end)
+}
+
+// isBroughtForwardRow is true when the row, or the row whose wrapped text it
+// holds, has a cell that brings a total forward, which the first page does
+// not draw.
+func (table *Table) isBroughtForwardRow(r int) bool {
+	for r > 0 && table.isContinuation(r) {
+		r--
+	}
+	for _, cell := range table.tableData[r] {
+		if cell.properties&cellSumKind == cellBroughtForwardSum {
+			return true
+		}
+	}
+	return false
 }
 
 // maxSum is the largest sum, and number, in units of the decimals: 18 digits.
@@ -651,10 +694,24 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 		page.AddArtifactBMC()
 	}
 	heights := table.getRowHeights()
+	// The rows that bring a total forward are drawn from the second page on,
+	// with the total of the rows before the page.
+	last := -1
 	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
+		if !(first && table.isBroughtForwardRow(i)) {
+			last = i
+		}
+	}
+	if table.rendered != -1 {
+		table.setSums(0, table.numOfHeaderRows, table.rendered, table.rendered)
+	}
+	for i := 0; i < table.numOfHeaderRows && i < len(table.tableData); i++ {
+		if first && table.isBroughtForwardRow(i) {
+			continue
+		}
 		row := table.tableData[i]
 		if page != nil {
-			if i == (table.numOfHeaderRows - 1) {
+			if i == last {
 				for _, cell := range row {
 					cell.properties |= border.Bottom
 				}

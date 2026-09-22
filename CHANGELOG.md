@@ -19,7 +19,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   apostrophes between the thousands and a period before the decimals; a cell
   that has no number is left out. The sums are exact, with the number of
   decimals rounded half away from zero and commas between the thousands, and
-  the same text in every port.
+  the same text in every port. `Table.setBroughtForwardSum(row, column,
+  decimals)` makes a cell of a header row show the total of the pages
+  before, which the running sum shows at the end of the page before; a
+  header row with such a cell is drawn from the second page on.
 - `Table.setNumberOfFooterRows(n)` makes the last rows of the table data
   footer rows, in all four ports: they are drawn again at the end of the
   table on every page, under the last row the page holds, as the header rows

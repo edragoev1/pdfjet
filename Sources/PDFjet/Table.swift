@@ -297,6 +297,26 @@ public class Table : Drawable {
         return setSum(row, column, decimals, Cell.RUNNING_SUM)
     }
 
+    ///
+    /// Makes the cell of a header row show the sum of its column over all the
+    /// rows of the pages before: the total brought forward, which the cell that
+    /// setRunningSum marks shows at the end of the page before. A header row
+    /// with such a cell is drawn from the second page on, under the header
+    /// rows above it, and not on the first page, which has nothing to bring
+    /// forward; in a PDF/UA document it is an artifact, as the header rows are
+    /// on those pages. The numbers are read and the sum is written as
+    /// setPageSum reads and writes them.
+    ///
+    /// - Parameter row: the index of a header row, see setTableData.
+    /// - Parameter column: the index of the column.
+    /// - Parameter decimals: the number of decimals, from 0 to 9.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setBroughtForwardSum(_ row: Int, _ column: Int, _ decimals: Int) -> Table {
+        return setSum(row, column, decimals, Cell.BROUGHT_FORWARD_SUM)
+    }
+
     private func setSum(_ row: Int, _ column: Int, _ decimals: Int, _ kind: UInt32) -> Table {
         if row < 0 || row >= tableData.count || column < 0 || column >= tableData[row].count {
             return self
@@ -304,21 +324,41 @@ public class Table : Drawable {
         let places = max(0, min(9, decimals))
         let cell = tableData[row][column]
         cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | (UInt32(places) << Cell.SUM_DECIMALS)
-        cell.setText(Table.formatSum(sumOf(column, numOfHeaderRows, min(row, footerStart()), places), places))
+        let end = (kind == Cell.BROUGHT_FORWARD_SUM) ? footerStart() : min(row, footerStart())
+        cell.setText(Table.formatSum(sumOf(column, numOfHeaderRows, end, places), places))
         return self
     }
 
-    // Writes the sums in the footer cells that setPageSum and setRunningSum
-    // mark: those of the rows of the page, from first to end, and those of
-    // all the rows to end.
-    private func setFooterSums(_ first: Int, _ end: Int) {
-        for r in footerStart()..<tableData.count {
-            for (j, cell) in tableData[r].enumerated() where (cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0 {
+    // Writes the sums in the cells of the rows from start to stop that
+    // setPageSum, setRunningSum and setBroughtForwardSum mark: those of the
+    // rows of the page, from first to end, those of all the rows to end, and
+    // those of all the rows before first.
+    private func setSums(_ start: Int, _ stop: Int, _ first: Int, _ end: Int) {
+        var r = start
+        while r < stop && r < tableData.count {
+            for (j, cell) in tableData[r].enumerated() where (cell.properties & Cell.SUM_KIND) != 0 {
+                let kind = cell.properties & Cell.SUM_KIND
                 let places = Int((cell.properties >> Cell.SUM_DECIMALS) & 0xF)
-                let from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows
-                cell.setText(Table.formatSum(sumOf(j, from, end, places), places))
+                let from = (kind == Cell.PAGE_SUM) ? first : numOfHeaderRows
+                let to = (kind == Cell.BROUGHT_FORWARD_SUM) ? first : end
+                cell.setText(Table.formatSum(sumOf(j, from, to, places), places))
             }
+            r += 1
         }
+    }
+
+    private func setFooterSums(_ first: Int, _ end: Int) {
+        setSums(footerStart(), tableData.count, first, end)
+    }
+
+    // True when the row, or the row whose wrapped text it holds, has a cell
+    // that brings a total forward, which the first page does not draw.
+    private func isBroughtForwardRow(_ row: Int) -> Bool {
+        var r = row
+        while r > 0 && isContinuation(r) {
+            r -= 1
+        }
+        return tableData[r].contains { ($0.properties & Cell.SUM_KIND) == Cell.BROUGHT_FORWARD_SUM }
     }
 
     // The largest sum, and number, in units of the decimals: 18 digits.
@@ -731,10 +771,22 @@ public class Table : Drawable {
             page.addArtifactBMC()
         }
         let heights = getRowHeights()
+        // The rows that bring a total forward are drawn from the second page
+        // on, with the total of the rows before the page.
+        var last = -1
+        for i in 0..<min(numOfHeaderRows, tableData.count) where !(first && isBroughtForwardRow(i)) {
+            last = i
+        }
+        if rendered != -1 {
+            setSums(0, numOfHeaderRows, rendered, rendered)
+        }
         for i in 0..<min(numOfHeaderRows, tableData.count) {
+            if first && isBroughtForwardRow(i) {
+                continue
+            }
             let row = tableData[i]
             if let page = page {
-                if i == (numOfHeaderRows - 1) {
+                if i == last {
                     for cell in row {
                         cell.setBorder(Border.BOTTOM, true)
                     }

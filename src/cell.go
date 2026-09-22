@@ -68,13 +68,17 @@ const (
 	// A cell of a row that a page break keeps with the next row, which the
 	// cells a table adds below it for its wrapped text have too.
 	cellKeptWithNext uint32 = 0x01000000
-	// A cell of a footer row that shows the sum of its column over the rows
-	// of the page, or over all the rows up to the end of the page, and the
-	// number of decimals it shows, in the four bits from cellSumDecimals.
-	cellPageSum     uint32 = 0x02000000
-	cellRunningSum  uint32 = 0x04000000
-	cellSumDecimals        = 27
-	cellSumBits     uint32 = cellPageSum | cellRunningSum | (0xF << cellSumDecimals)
+	// A cell that shows the sum of its column, of one of three kinds in the
+	// two bits of cellSumKind: in a footer row over the rows of the page, or
+	// over all the rows up to the end of the page, and in a header row over
+	// all the rows before the page. The number of decimals it shows is in the
+	// four bits from cellSumDecimals.
+	cellPageSum           uint32 = 0x02000000
+	cellRunningSum        uint32 = 0x04000000
+	cellBroughtForwardSum uint32 = 0x06000000
+	cellSumKind           uint32 = 0x06000000
+	cellSumDecimals              = 27
+	cellSumBits           uint32 = cellSumKind | (0xF << cellSumDecimals)
 )
 
 // Where the three alignments of a cell are in Cell.properties, three bits

@@ -312,6 +312,25 @@ public class Table implements Drawable {
         return setSum(row, column, decimals, Cell.RUNNING_SUM);
     }
 
+    /**
+     * Makes the cell of a header row show the sum of its column over all the
+     * rows of the pages before: the total brought forward, which the cell that
+     * setRunningSum marks shows at the end of the page before. A header row
+     * with such a cell is drawn from the second page on, under the header
+     * rows above it, and not on the first page, which has nothing to bring
+     * forward; in a PDF/UA document it is an artifact, as the header rows are
+     * on those pages. The numbers are read and the sum is written as
+     * setPageSum reads and writes them.
+     *
+     * @param row the index of a header row, see setTableData.
+     * @param column the index of the column.
+     * @param decimals the number of decimals, from 0 to 9.
+     * @return this Table object.
+     */
+    public Table setBroughtForwardSum(int row, int column, int decimals) {
+        return setSum(row, column, decimals, Cell.BROUGHT_FORWARD_SUM);
+    }
+
     private Table setSum(int row, int column, int decimals, int kind) {
         if (row < 0 || row >= tableData.size() || column < 0 || column >= tableData.get(row).size()) {
             return this;
@@ -319,25 +338,47 @@ public class Table implements Drawable {
         int places = Math.max(0, Math.min(9, decimals));
         Cell cell = tableData.get(row).get(column);
         cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | (places << Cell.SUM_DECIMALS);
-        cell.setText(formatSum(sumOf(column, numOfHeaderRows, Math.min(row, footerStart()), places), places));
+        int end = (kind == Cell.BROUGHT_FORWARD_SUM) ? footerStart() : Math.min(row, footerStart());
+        cell.setText(formatSum(sumOf(column, numOfHeaderRows, end, places), places));
         return this;
     }
 
-    // Writes the sums in the footer cells that setPageSum and setRunningSum
-    // mark: those of the rows of the page, from first to end, and those of
-    // all the rows to end.
-    private void setFooterSums(int first, int end) {
-        for (int r = footerStart(); r < tableData.size(); r++) {
+    // Writes the sums in the cells of the rows from start to stop that
+    // setPageSum, setRunningSum and setBroughtForwardSum mark: those of the
+    // rows of the page, from first to end, those of all the rows to end, and
+    // those of all the rows before first.
+    private void setSums(int start, int stop, int first, int end) {
+        for (int r = start; r < stop && r < tableData.size(); r++) {
             List<Cell> row = tableData.get(r);
             for (int j = 0; j < row.size(); j++) {
                 Cell cell = row.get(j);
-                if ((cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0) {
+                int kind = cell.properties & Cell.SUM_KIND;
+                if (kind != 0) {
                     int places = (cell.properties >> Cell.SUM_DECIMALS) & 0xF;
-                    int from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows;
-                    cell.setText(formatSum(sumOf(j, from, end, places), places));
+                    int from = (kind == Cell.PAGE_SUM) ? first : numOfHeaderRows;
+                    int to = (kind == Cell.BROUGHT_FORWARD_SUM) ? first : end;
+                    cell.setText(formatSum(sumOf(j, from, to, places), places));
                 }
             }
         }
+    }
+
+    private void setFooterSums(int first, int end) {
+        setSums(footerStart(), tableData.size(), first, end);
+    }
+
+    // True when the row, or the row whose wrapped text it holds, has a cell
+    // that brings a total forward, which the first page does not draw.
+    private boolean isBroughtForwardRow(int r) {
+        while (r > 0 && isContinuation(r)) {
+            r--;
+        }
+        for (Cell cell : tableData.get(r)) {
+            if ((cell.properties & Cell.SUM_KIND) == Cell.BROUGHT_FORWARD_SUM) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The largest sum, and number, in units of the decimals: 18 digits.
@@ -733,10 +774,24 @@ public class Table implements Drawable {
             page.addArtifactBMC();
         }
         float[] heights = getRowHeights();
+        // The rows that bring a total forward are drawn from the second page
+        // on, with the total of the rows before the page.
+        int last = -1;
         for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
+            if (!(first && isBroughtForwardRow(i))) {
+                last = i;
+            }
+        }
+        if (rendered != -1) {
+            setSums(0, numOfHeaderRows, rendered, rendered);
+        }
+        for (int i = 0; i < numOfHeaderRows && i < tableData.size(); i++) {
+            if (first && isBroughtForwardRow(i)) {
+                continue;
+            }
             List<Cell> row = tableData.get(i);
             if (page != null) {
-                if (i == (numOfHeaderRows - 1)) {
+                if (i == last) {
                     for (Cell cell : row) {
                         cell.setBorder(Border.BOTTOM, true);
                     }

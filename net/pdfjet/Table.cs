@@ -291,6 +291,24 @@ public class Table : IDrawable {
         return SetSum(row, column, decimals, Cell.RUNNING_SUM);
     }
 
+    /// <summary>
+    /// Makes the cell of a header row show the sum of its column over all the
+    /// rows of the pages before: the total brought forward, which the cell that
+    /// SetRunningSum marks shows at the end of the page before. A header row
+    /// with such a cell is drawn from the second page on, under the header
+    /// rows above it, and not on the first page, which has nothing to bring
+    /// forward; in a PDF/UA document it is an artifact, as the header rows are
+    /// on those pages. The numbers are read and the sum is written as
+    /// SetPageSum reads and writes them.
+    /// </summary>
+    /// <param name="row">the index of a header row, see SetTableData.</param>
+    /// <param name="column">the index of the column.</param>
+    /// <param name="decimals">the number of decimals, from 0 to 9.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetBroughtForwardSum(int row, int column, int decimals) {
+        return SetSum(row, column, decimals, Cell.BROUGHT_FORWARD_SUM);
+    }
+
     private Table SetSum(int row, int column, int decimals, uint kind) {
         if (row < 0 || row >= tableData.Count || column < 0 || column >= tableData[row].Count) {
             return this;
@@ -298,25 +316,47 @@ public class Table : IDrawable {
         int places = Math.Max(0, Math.Min(9, decimals));
         Cell cell = tableData[row][column];
         cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | ((uint) places << Cell.SUM_DECIMALS);
-        cell.SetText(FormatSum(SumOf(column, numOfHeaderRows, Math.Min(row, FooterStart()), places), places));
+        int end = (kind == Cell.BROUGHT_FORWARD_SUM) ? FooterStart() : Math.Min(row, FooterStart());
+        cell.SetText(FormatSum(SumOf(column, numOfHeaderRows, end, places), places));
         return this;
     }
 
-    // Writes the sums in the footer cells that SetPageSum and SetRunningSum
-    // mark: those of the rows of the page, from first to end, and those of
-    // all the rows to end.
-    private void SetFooterSums(int first, int end) {
-        for (int r = FooterStart(); r < tableData.Count; r++) {
+    // Writes the sums in the cells of the rows from start to stop that
+    // SetPageSum, SetRunningSum and SetBroughtForwardSum mark: those of the
+    // rows of the page, from first to end, those of all the rows to end, and
+    // those of all the rows before first.
+    private void SetSums(int start, int stop, int first, int end) {
+        for (int r = start; r < stop && r < tableData.Count; r++) {
             List<Cell> row = tableData[r];
             for (int j = 0; j < row.Count; j++) {
                 Cell cell = row[j];
-                if ((cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0) {
+                uint kind = cell.properties & Cell.SUM_KIND;
+                if (kind != 0) {
                     int places = (int) ((cell.properties >> Cell.SUM_DECIMALS) & 0xF);
-                    int from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows;
-                    cell.SetText(FormatSum(SumOf(j, from, end, places), places));
+                    int from = (kind == Cell.PAGE_SUM) ? first : numOfHeaderRows;
+                    int to = (kind == Cell.BROUGHT_FORWARD_SUM) ? first : end;
+                    cell.SetText(FormatSum(SumOf(j, from, to, places), places));
                 }
             }
         }
+    }
+
+    private void SetFooterSums(int first, int end) {
+        SetSums(FooterStart(), tableData.Count, first, end);
+    }
+
+    // True when the row, or the row whose wrapped text it holds, has a cell
+    // that brings a total forward, which the first page does not draw.
+    private bool IsBroughtForwardRow(int r) {
+        while (r > 0 && IsContinuation(r)) {
+            r--;
+        }
+        foreach (Cell cell in tableData[r]) {
+            if ((cell.properties & Cell.SUM_KIND) == Cell.BROUGHT_FORWARD_SUM) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The largest sum, and number, in units of the decimals: 18 digits.
@@ -683,10 +723,24 @@ public class Table : IDrawable {
             page.AddArtifactBMC();
         }
         float[] heights = GetRowHeights();
+        // The rows that bring a total forward are drawn from the second page
+        // on, with the total of the rows before the page.
+        int last = -1;
         for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
+            if (!(first && IsBroughtForwardRow(i))) {
+                last = i;
+            }
+        }
+        if (rendered != -1) {
+            SetSums(0, numOfHeaderRows, rendered, rendered);
+        }
+        for (int i = 0; i < numOfHeaderRows && i < tableData.Count; i++) {
+            if (first && IsBroughtForwardRow(i)) {
+                continue;
+            }
             List<Cell> row = tableData[i];
             if (page != null) {
-                if (i == (numOfHeaderRows - 1)) {
+                if (i == last) {
                     foreach (Cell cell in row) {
                         cell.SetBorder(Border.BOTTOM, true);
                     }

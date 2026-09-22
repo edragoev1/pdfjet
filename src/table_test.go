@@ -1019,3 +1019,65 @@ func TestTableASumReadsTheNumbersAsRightAlignNumbersDoes(t *testing.T) {
 		testWant(t, c.want, formatSum(c.sum, c.decimals))
 	}
 }
+
+func TestTableTheTotalBroughtForwardIsTheTotalCarriedFromThePageBefore(t *testing.T) {
+	// A header row, a header row that brings the total forward, the rows r2
+	// to r58 with r + 0.25 in their second cell, and a footer row that
+	// carries the total forward.
+	doc := testNewDoc()
+	data := testRowsWith(testHelvetica(doc.pdf), -1)
+	for r := 2; r < 59; r++ {
+		data[r][1].SetText(fmt.Sprintf("%d.25", r))
+	}
+	data[1][0].SetText("brought")
+	data[59][0].SetText("carried")
+	table := NewTable().SetTableData(data, 2).SetNumberOfFooterRows(1).
+		SetBroughtForwardSum(1, 1, 2).SetRunningSum(59, 1, 2)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	isNaN := func(y float32) bool { return math.IsNaN(float64(y)) }
+	if !isNaN(testYOf(pages[0], "brought")) {
+		t.Error("the first page brings a total forward")
+	}
+	carried := int64(0)
+	for r := 2; r < 59; r++ {
+		if !isNaN(testYOf(pages[0], fmt.Sprintf("r%d", r))) {
+			carried += int64(100*r + 25)
+		}
+	}
+	next := testContent(pages[1])
+	text := "<" + testHex(formatSum(carried, 2)) + ">"
+	if !strings.Contains(testContent(pages[0]), text) {
+		t.Errorf("the first page does not carry %s", formatSum(carried, 2))
+	}
+	if !strings.Contains(next, text) {
+		t.Errorf("the second page does not bring %s forward", formatSum(carried, 2))
+	}
+	// Under the header row, and over the rows of the page.
+	rowHeight := testYOf(pages[0], "r2") - testYOf(pages[0], "r3")
+	testNear(t, "under the header row", rowHeight, testYOf(pages[1], "r0")-testYOf(pages[1], "brought"), 0.02)
+	firstRow := 2
+	for isNaN(testYOf(pages[1], fmt.Sprintf("r%d", firstRow))) {
+		firstRow++
+	}
+	testNear(t, "over the rows", rowHeight, testYOf(pages[1], "brought")-testYOf(pages[1], fmt.Sprintf("r%d", firstRow)), 0.02)
+	// The rows are each drawn once, and the total is that of all of them.
+	for r := 2; r < 59; r++ {
+		n := 0
+		for _, page := range pages {
+			n += strings.Count(testContent(page), "<"+testHex(fmt.Sprintf("r%d", r))+">")
+		}
+		if n != 1 {
+			t.Errorf("row %d is drawn %d times", r, n)
+		}
+	}
+	// Rows 2 to 58: 1,710 and 57 quarters.
+	if !strings.Contains(next, "<"+testHex(formatSum(171000+1425, 2))+">") {
+		t.Error("no total")
+	}
+}
