@@ -108,11 +108,71 @@ public class PNGImageTest {
     }
 
     [Fact]
-    public void TruecolorTransparencyIsIgnored() {
-        // tRNS applies to palette images only; TBRN2C08 has the samples of TP1N3P08.
+    public void TheTransparentColorOfAGrayscaleOrTruecolorPngIsItsColorKeyMask() {
+        // The samples are as they were, with no soft mask: TBRN2C08 has the
+        // samples of TP1N3P08.
         PNGImage png = Decode("TBRN2C08");
         Assert.Equal("8b0a6c2c", TestSupport.Crc32(Decompressor.Inflate(png.GetData())));
         Assert.Null(png.GetAlpha());
+        Assert.Equal(new int[] {127, 127, 127, 127, 127, 127}, png.GetColorKeyMask());
+        // In the bits of the samples: 4 and 16 bits of gray, 16 bits of RGB.
+        Assert.Equal(new int[] {7, 7}, Decode("TBBN1G04").GetColorKeyMask());
+        Assert.Equal(new int[] {32639, 32639}, Decode("TBWN1G16").GetColorKeyMask());
+        Assert.Equal(new int[] {32639, 32639, 32639, 32639, 32639, 32639}, Decode("TBBN2C16").GetColorKeyMask());
+        Assert.Null(Decode("BASN2C08").GetColorKeyMask());
+    }
+
+    // A PNG of one pixel, a sample of the bit depth, of the color type, with
+    // the tRNS chunk.
+    private static byte[] PngWithTrns(int bitDepth, int colorType, byte[] trns) {
+        int samples = (colorType == 2) ? 3 * bitDepth / 8 : 1;
+        MemoryStream ms = new MemoryStream();
+        ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
+        byte[] ihdr = new byte[13];
+        PutInt(ihdr, 0, 1);
+        PutInt(ihdr, 4, 1);
+        ihdr[8] = (byte) bitDepth;
+        ihdr[9] = (byte) colorType;
+        WriteChunk(ms, "IHDR", ihdr);
+        WriteChunk(ms, "tRNS", trns);
+        WriteChunk(ms, "IDAT", Compressor.Deflate(new byte[1 + samples]));
+        WriteChunk(ms, "IEND", new byte[0]);
+        return ms.ToArray();
+    }
+
+    [Fact]
+    public void TheBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIsIgnored() {
+        Assert.Equal(new int[] {200, 200},
+                new PNGImage(new MemoryStream(PngWithTrns(8, 0, new byte[] {0, 200}))).GetColorKeyMask());
+        // The bits of the image, as libpng reads them: 255 in 1 bit is white.
+        Assert.Equal(new int[] {1, 1},
+                new PNGImage(new MemoryStream(PngWithTrns(1, 0, new byte[] {0, 255}))).GetColorKeyMask());
+        Assert.Equal(new int[] {0, 0},
+                new PNGImage(new MemoryStream(PngWithTrns(4, 0, new byte[] {0, 16}))).GetColorKeyMask());
+        // Chunks of another length than the samples of a pixel.
+        foreach (byte[] png in new byte[][] {
+                PngWithTrns(8, 0, new byte[] {0, 1, 0, 2, 0, 3}),
+                PngWithTrns(8, 2, new byte[] {0, 1, 0, 2})}) {
+            Assert.Null(new PNGImage(new MemoryStream(png)).GetColorKeyMask());
+        }
+    }
+
+    [Fact]
+    public void TheImageOfAPngWithATransparentColorHasItsMask() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        new Image(pdf, TestSupport.Open("PngSuite/TBRN2C08.PNG"));
+        new Image(pdf, TestSupport.Open("PngSuite/TBWN1G16.PNG"));
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Contains("/Mask [127 127 127 127 127 127]\n", raw);
+        Assert.Contains("/Mask [32639 32639]\n", raw);
+        Assert.DoesNotContain("/SMask", raw);
+        // And an image added to the objects of a PDF that was read.
+        System.Collections.Generic.List<PDFobj> objects = new System.Collections.Generic.List<PDFobj>();
+        new Image(objects, TestSupport.Open("PngSuite/TBRN2C08.PNG"));
+        Assert.Contains("/Mask [ 127 127 127 127 127 127 ]", string.Join(" ", objects[objects.Count - 1].dict));
     }
 
     [Fact]

@@ -235,14 +235,6 @@ this is started before Oct 21.
       header rows, the body and a total row, rather than coloring every cell.
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
-- ⬜ The transparent color of a grayscale or truecolor PNG: a `tRNS` chunk on
-      color type 0 or 2 names one sample value that is transparent, which
-      PDFjet ignores, so those pixels are drawn opaque where a browser and
-      libpng leave them clear. A palette image already gets its alpha from
-      `tRNS`. PDF writes it as `/Mask` with the range of each component, in
-      the bit depth the image is embedded at. Found in the review of Sep 21;
-      `TestPNGImageTruecolorTransparencyIsIgnored` is the test that records
-      today's behavior in the four ports.
 
 ## Known and accepted (document, do not fix)
 

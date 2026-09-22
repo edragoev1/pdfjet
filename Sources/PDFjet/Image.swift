@@ -30,6 +30,9 @@ public class Image : Drawable {
     private var flipUpsideDown = false
     // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
     private var invertedInks = false
+    // The /Mask of the transparent color of a grayscale or truecolor PNG, or
+    // nil.
+    private var colorKeyMask: [Int]?
 
     private var language: String?
     private var altDescription: String?
@@ -90,6 +93,7 @@ public class Image : Drawable {
             let png = try PNGImage(stream)
             w = Float(png.getWidth())
             h = Float(png.getHeight())
+            colorKeyMask = png.getColorKeyMask()
             if png.getColorType() == 0 {
                 addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
             } else if png.getColorType() == 4 {
@@ -147,6 +151,7 @@ public class Image : Drawable {
             var noAlpha = [UInt8]()
             w = Float(png.getWidth())
             h = Float(png.getHeight())
+            colorKeyMask = png.getColorKeyMask()
             if png.getColorType() == 0 {
                 addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceGray", png.getBitDepth())
             } else if png.getColorType() == 4 {
@@ -543,6 +548,8 @@ public class Image : Drawable {
                 pdf.append("/SMask ")
                 pdf.append(objNumber!)
                 pdf.append(" 0 R\n")
+            } else if let mask = colorKeyMask {
+                pdf.append("/Mask [" + mask.map { String($0) }.joined(separator: " ") + "]\n")
             }
         }
         pdf.append("/Width ")
@@ -653,6 +660,11 @@ public class Image : Drawable {
                 obj.dict.append(String(objNumber!))
                 obj.dict.append("0")
                 obj.dict.append("R")
+            } else if let mask = colorKeyMask {
+                obj.dict.append("/Mask")
+                obj.dict.append("[")
+                obj.dict.append(contentsOf: mask.map { String($0) })
+                obj.dict.append("]")
             }
         }
         obj.dict.append("/Width")

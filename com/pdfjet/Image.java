@@ -41,6 +41,9 @@ final public class Image implements Drawable {
     private boolean flipUpsideDown = false;
     // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
     private boolean invertedInks = false;
+    // The /Mask of the transparent color of a grayscale or truecolor PNG, or
+    // null.
+    private int[] colorKeyMask;
 
     private String language = null;
     private String actualText = null;
@@ -92,6 +95,7 @@ final public class Image implements Drawable {
             data = png.getData();
             w = png.getWidth();
             h = png.getHeight();
+            colorKeyMask = png.getColorKeyMask();
             if (png.getColorType() == 0) {
                 addImage(pdf, data, null, imageType, "DeviceGray", png.getBitDepth());
             } else if (png.getColorType() == 4) {
@@ -150,6 +154,7 @@ final public class Image implements Drawable {
             data = png.getData();
             w = png.getWidth();
             h = png.getHeight();
+            colorKeyMask = png.getColorKeyMask();
             if (png.getColorType() == 0) {
                 addImageToObjects(objects, data, null, imageType, "DeviceGray", png.getBitDepth());
             } else if (png.getColorType() == 4) {
@@ -562,6 +567,13 @@ final public class Image implements Drawable {
                 pdf.append("/SMask ");
                 pdf.append(objNumber);
                 pdf.append(" 0 R\n");
+            } else if (colorKeyMask != null) {
+                pdf.append("/Mask [");
+                for (int i = 0; i < colorKeyMask.length; i++) {
+                    pdf.append((i == 0) ? "" : " ");
+                    pdf.append(colorKeyMask[i]);
+                }
+                pdf.append("]\n");
             }
         }
         pdf.append("/Width ");
@@ -654,6 +666,13 @@ final public class Image implements Drawable {
                 obj.dict.add(String.valueOf(objNumber));
                 obj.dict.add("0");
                 obj.dict.add("R");
+            } else if (colorKeyMask != null) {
+                obj.dict.add("/Mask");
+                obj.dict.add("[");
+                for (int value : colorKeyMask) {
+                    obj.dict.add(String.valueOf(value));
+                }
+                obj.dict.add("]");
             }
         }
         obj.dict.add("/Width");

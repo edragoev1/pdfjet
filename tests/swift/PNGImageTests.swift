@@ -101,11 +101,64 @@ import Testing
         }
     }
 
-    @Test func truecolorTransparencyIsIgnored() throws {
-        // tRNS applies to palette images only; TBRN2C08 has the samples of TP1N3P08.
+    @Test func theTransparentColorOfAGrayscaleOrTruecolorPngIsItsColorKeyMask() throws {
+        // The samples are as they were, with no soft mask: TBRN2C08 has the
+        // samples of TP1N3P08.
         let png = try decode("TBRN2C08")
         #expect(TestSupport.crc32(try TestSupport.inflate(png.getData())) == "8b0a6c2c")
         #expect(png.getAlpha() == nil)
+        #expect(png.getColorKeyMask() == [127, 127, 127, 127, 127, 127])
+        // In the bits of the samples: 4 and 16 bits of gray, 16 bits of RGB.
+        #expect(try decode("TBBN1G04").getColorKeyMask() == [7, 7])
+        #expect(try decode("TBWN1G16").getColorKeyMask() == [32639, 32639])
+        #expect(try decode("TBBN2C16").getColorKeyMask() == [32639, 32639, 32639, 32639, 32639, 32639])
+        #expect(try decode("BASN2C08").getColorKeyMask() == nil)
+    }
+
+    // A PNG of one pixel, a sample of the bit depth, of the color type, with
+    // the tRNS chunk.
+    private func pngWithTrns(_ bitDepth: UInt8, _ colorType: UInt8, _ trns: [UInt8]) -> [UInt8] {
+        let samples = (colorType == 2) ? 3 * Int(bitDepth) / 8 : 1
+        var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        var ihdr = [UInt8]()
+        PNGImageTests.bigEndian32(1, &ihdr)
+        PNGImageTests.bigEndian32(1, &ihdr)
+        ihdr.append(contentsOf: [bitDepth, colorType, 0, 0, 0])
+        chunk(&bytes, "IHDR", ihdr)
+        chunk(&bytes, "tRNS", trns)
+        chunk(&bytes, "IDAT", TestSupport.deflate([UInt8](repeating: 0, count: 1 + samples)))
+        chunk(&bytes, "IEND", [])
+        return bytes
+    }
+
+    @Test func theBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIsIgnored() throws {
+        #expect(try PNGImage(InputStream(data: Data(pngWithTrns(8, 0, [0, 200])))).getColorKeyMask() == [200, 200])
+        // The bits of the image, as libpng reads them: 255 in 1 bit is white.
+        #expect(try PNGImage(InputStream(data: Data(pngWithTrns(1, 0, [0, 255])))).getColorKeyMask() == [1, 1])
+        #expect(try PNGImage(InputStream(data: Data(pngWithTrns(4, 0, [0, 16])))).getColorKeyMask() == [0, 0])
+        // Chunks of another length than the samples of a pixel.
+        for png in [pngWithTrns(8, 0, [0, 1, 0, 2, 0, 3]),
+                pngWithTrns(8, 2, [0, 1, 0, 2])] {
+            #expect(try PNGImage(InputStream(data: Data(png))).getColorKeyMask() == nil)
+        }
+    }
+
+    @Test(.enabled(if: TestSupport.exists("PngSuite/TBRN2C08.PNG"), "the PngSuite is not here"))
+    func theImageOfAPngWithATransparentColorHasItsMask() throws {
+        let memory = MemoryPDF()
+        _ = try Image(memory.pdf, TestSupport.open("PngSuite/TBRN2C08.PNG"))
+        _ = try Image(memory.pdf, TestSupport.open("PngSuite/TBWN1G16.PNG"))
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(raw.contains("/Mask [127 127 127 127 127 127]\n"))
+        #expect(raw.contains("/Mask [32639 32639]\n"))
+        #expect(!raw.contains("/SMask"))
+        // And an image added to the objects of a PDF that was read.
+        var objects = [PDFobj]()
+        _ = try Image(&objects, TestSupport.open("PngSuite/TBRN2C08.PNG"))
+        let dict = objects[objects.count - 1].dict.joined(separator: " ")
+        #expect(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), "\(dict)")
     }
 
     @Test func rejects16BitRgbaWithAMessage() {

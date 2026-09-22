@@ -24,6 +24,10 @@ internal class PNGImage {
     byte[] iDAT;                // The compressed data in the IDAT chunk
     byte[] pLTE;                // The palette data
     byte[] tRNS;                // The alpha for the palette data
+    // The transparent color the tRNS chunk of a grayscale or truecolor image
+    // names, as the ranges of a /Mask: the minimum and the maximum of each
+    // component, both the value of the chunk, in the bits of the samples.
+    private int[] colorKeyMask;
 
     byte[] deflatedImageData;   // The deflated reconstructed image data
     byte[] deflatedAlphaData;   // The deflated alpha channel data
@@ -87,6 +91,8 @@ internal class PNGImage {
             } else if (chunkType.Equals("tRNS")) {
                 if (colorType == 3) {
                     tRNS = chunk.GetData();
+                } else if (colorType == 0 || colorType == 2) {
+                    colorKeyMask = ColorKeyMaskOf(chunk.GetData());
                 }
             } else if (chunkType.Equals("pHYs")) {
                 ReadPhysicalSize(chunk.GetData());
@@ -209,6 +215,33 @@ internal class PNGImage {
     /// <summary>Returns the compressed image data.</summary>
     public byte[] GetData() {
         return this.deflatedImageData;
+    }
+
+    // Returns the /Mask of the transparent color the tRNS chunk of a grayscale
+    // or truecolor image names: a sample of 2 bytes for each component, of
+    // which the bits of the image are read, as libpng reads it, so that 255
+    // in an image of 1 bit is white. A chunk of another length gives none.
+    private int[] ColorKeyMaskOf(byte[] data) {
+        int components = (colorType == 0) ? 1 : 3;
+        if (data.Length != 2 * components) {
+            return null;
+        }
+        int max = (1 << bitDepth) - 1;
+        int[] mask = new int[2 * components];
+        for (int i = 0; i < components; i++) {
+            int sample = ((data[2 * i] << 8) | data[2 * i + 1]) & max;
+            mask[2 * i] = sample;
+            mask[2 * i + 1] = sample;
+        }
+        return mask;
+    }
+
+    /// <summary>
+    /// Returns the /Mask of the transparent color of a grayscale or truecolor
+    /// image, the ranges of its components, or null when it has none.
+    /// </summary>
+    internal int[] GetColorKeyMask() {
+        return colorKeyMask;
     }
 
     /// <summary>Returns the compressed alpha channel data.</summary>

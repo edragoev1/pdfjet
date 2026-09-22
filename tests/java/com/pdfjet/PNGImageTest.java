@@ -137,11 +137,75 @@ class PNGImageTest {
     }
 
     @Test
-    void truecolorTransparencyIsIgnored() throws Exception {
-        // tRNS applies to palette images only; TBRN2C08 has the samples of TP1N3P08.
+    void theTransparentColorOfAGrayscaleOrTruecolorPngIsItsColorKeyMask() throws Exception {
+        // The samples are as they were, with no soft mask: TBRN2C08 has the
+        // samples of TP1N3P08.
         PNGImage png = decode("TBRN2C08");
         assertEquals("8b0a6c2c", crc(Decompressor.inflate(png.getData())));
         assertNull(png.getAlpha());
+        assertArrayEquals(new int[] {127, 127, 127, 127, 127, 127}, png.getColorKeyMask());
+        // In the bits of the samples: 4 and 16 bits of gray, 16 bits of RGB.
+        assertArrayEquals(new int[] {7, 7}, decode("TBBN1G04").getColorKeyMask());
+        assertArrayEquals(new int[] {32639, 32639}, decode("TBWN1G16").getColorKeyMask());
+        assertArrayEquals(new int[] {32639, 32639, 32639, 32639, 32639, 32639},
+                decode("TBBN2C16").getColorKeyMask());
+        assertNull(decode("BASN2C08").getColorKeyMask());
+    }
+
+    // A PNG of one pixel, a sample of the bit depth, of the color type, with
+    // the tRNS chunk.
+    private static byte[] pngWithTrns(int bitDepth, int colorType, byte[] trns) {
+        int bytes = (colorType == 2) ? 3 * bitDepth / 8 : 1;
+        java.util.zip.Deflater deflater = new java.util.zip.Deflater();
+        deflater.setInput(new byte[1 + bytes]);
+        deflater.finish();
+        byte[] idat = new byte[64];
+        idat = java.util.Arrays.copyOf(idat, deflater.deflate(idat));
+        deflater.end();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
+        chunk(bos, "IHDR", ByteBuffer.allocate(13).putInt(1).putInt(1)
+                .put((byte) bitDepth).put((byte) colorType).array());
+        chunk(bos, "tRNS", trns);
+        chunk(bos, "IDAT", idat);
+        chunk(bos, "IEND", new byte[0]);
+        return bos.toByteArray();
+    }
+
+    @Test
+    void theBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIsIgnored() throws Exception {
+        assertArrayEquals(new int[] {200, 200},
+                new PNGImage(new ByteArrayInputStream(pngWithTrns(8, 0, new byte[] {0, (byte) 200}))).getColorKeyMask());
+        // The bits of the image, as libpng reads them: 255 in 1 bit is white.
+        assertArrayEquals(new int[] {1, 1},
+                new PNGImage(new ByteArrayInputStream(pngWithTrns(1, 0, new byte[] {0, (byte) 255}))).getColorKeyMask());
+        assertArrayEquals(new int[] {0, 0},
+                new PNGImage(new ByteArrayInputStream(pngWithTrns(4, 0, new byte[] {0, 16}))).getColorKeyMask());
+        // Chunks of another length than the samples of a pixel.
+        for (byte[] png : new byte[][] {
+                pngWithTrns(8, 0, new byte[] {0, 1, 0, 2, 0, 3}),
+                pngWithTrns(8, 2, new byte[] {0, 1, 0, 2})}) {
+            assertNull(new PNGImage(new ByteArrayInputStream(png)).getColorKeyMask());
+        }
+    }
+
+    @Test
+    void theImageOfAPngWithATransparentColorHasItsMask() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Image(pdf, TestSupport.open("PngSuite/TBRN2C08.PNG"));
+        new Image(pdf, TestSupport.open("PngSuite/TBWN1G16.PNG"));
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains("/Mask [127 127 127 127 127 127]\n"), raw.substring(0, Math.min(raw.length(), 2000)));
+        assertTrue(raw.contains("/Mask [32639 32639]\n"));
+        assertFalse(raw.contains("/SMask"));
+        // And an image added to the objects of a PDF that was read.
+        java.util.List<PDFobj> objects = new java.util.ArrayList<PDFobj>();
+        new Image(objects, TestSupport.open("PngSuite/TBRN2C08.PNG"));
+        String dict = String.join(" ", objects.get(objects.size() - 1).dict);
+        assertTrue(dict.contains("/Mask [ 127 127 127 127 127 127 ]"), dict);
     }
 
     @Test

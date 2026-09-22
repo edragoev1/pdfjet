@@ -30,6 +30,10 @@ type pngImage struct {
 	iDAT []byte // The compressed data in the IDAT chunk
 	pLTE []byte // The palette data
 	tRNS []byte // The alpha for the palette data
+	// The transparent color the tRNS chunk of a grayscale or truecolor image
+	// names, as the ranges of a /Mask: the minimum and the maximum of each
+	// component, both the value of the chunk, in the bits of the samples.
+	colorKeyMask []int
 
 	deflatedImageData []byte // The deflated image data
 	deflatedAlphaData []byte // The deflated alpha channel data
@@ -120,6 +124,8 @@ func newPNGImage(reader io.Reader) *pngImage {
 		case "tRNS":
 			if image.colorType == 3 {
 				image.tRNS = chunk.chunkData
+			} else if image.colorType == 0 || image.colorType == 2 {
+				image.colorKeyMask = image.colorKeyMaskOf(chunk.chunkData)
 			}
 		case "pHYs":
 			image.readPhysicalSize(chunk.chunkData)
@@ -216,6 +222,35 @@ func (image *pngImage) GetData() []byte {
 }
 
 // GetAlpha returns the image alpha data.
+// colorKeyMaskOf returns the /Mask of the transparent color the tRNS chunk of
+// a grayscale or truecolor image names: a sample of 2 bytes for each
+// component, of which the bits of the image are read, as libpng reads it, so
+// that 255 in an image of 1 bit is white. A chunk of another length gives
+// none.
+func (image *pngImage) colorKeyMaskOf(data []byte) []int {
+	components := 3
+	if image.colorType == 0 {
+		components = 1
+	}
+	if len(data) != 2*components {
+		return nil
+	}
+	maxSample := (1 << image.bitDepth) - 1
+	mask := make([]int, 2*components)
+	for i := 0; i < components; i++ {
+		sample := (int(data[2*i])<<8 | int(data[2*i+1])) & maxSample
+		mask[2*i] = sample
+		mask[2*i+1] = sample
+	}
+	return mask
+}
+
+// GetColorKeyMask returns the /Mask of the transparent color of a grayscale
+// or truecolor image, the ranges of its components, or nil when it has none.
+func (image *pngImage) GetColorKeyMask() []int {
+	return image.colorKeyMask
+}
+
 func (image *pngImage) GetAlpha() []byte {
 	return image.deflatedAlphaData
 }

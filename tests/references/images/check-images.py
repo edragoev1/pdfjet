@@ -31,7 +31,9 @@ repeated in the three components. A CMYK JPEG that Adobe software wrote holds
 its inks inverted; Pillow inverts them back, and so does the /Decode array
 PDFjet writes for it, which MuPDF applies. The alpha is the one a viewer
 draws with: that of the alpha channel, or of the tRNS chunk of the file, or
-255 for an image without one; and on the PDF's side that of the /SMask. An
+255 for an image without one; and on the PDF's side that of the /SMask, or
+of the color key of a /Mask array, which marks a pixel transparent when each
+of its samples, as the stream holds them, is in the range of its component. An
 image of 16 bits a sample is compared at 8, the high byte, which is what
 MuPDF decodes it to, and its 16 bits are compared as well with those of the
 stream where Pillow keeps them, a gray image.
@@ -203,9 +205,20 @@ def density(pillow):
     return dpi if dpi and dpi[0] > 0 and dpi[1] > 0 else None
 
 
-def pillow_samples(image):
+def png_gray_bits(path):
+    """The bit depth of a grayscale PNG file, or None for any other file."""
+    with open(path, 'rb') as f:
+        head = f.read(26)
+    if head[:8] == b'\x89PNG\r\n\x1a\n' and head[12:16] == b'IHDR' and head[25] == 0:
+        return head[24]
+    return None
+
+
+def pillow_samples(image, gray_bits=None):
     """Returns the color samples Pillow decodes, as an 8-bit image of mode L, RGB or CMYK,
-    its alpha as an image of mode L or None, and its 16-bit gray samples, big-endian, or None."""
+    its alpha as an image of mode L or None, and its 16-bit gray samples, big-endian, or None.
+    gray_bits is the bit depth of a grayscale PNG, whose samples of 1, 2 or 4 bits Pillow
+    scales to 8 and whose transparent value it does not."""
     mode = image.mode
     has_alpha = mode in ('LA', 'La', 'PA', 'RGBA', 'RGBa') or 'transparency' in image.info
     sixteen = None
@@ -215,9 +228,15 @@ def pillow_samples(image):
         color = Image.frombytes('L', image.size, sixteen[0::2])
         alpha = None
         if 'transparency' in image.info:
+            # point() maps the 32-bit samples of mode I with a linear function
+            # only, so the pixels are compared one by one.
             t = image.info['transparency']
-            alpha = values.point(lambda v: 0 if v == t else 255).convert('L')
+            alpha = Image.frombytes('L', image.size, bytes(0 if v == t else 255 for v in values.getdata()))
         return color, alpha, sixteen
+    if mode == 'L' and gray_bits in (1, 2, 4) and isinstance(image.info.get('transparency'), int):
+        t = image.info['transparency'] * (255 // ((1 << gray_bits) - 1))
+        alpha = image.point(lambda v: 0 if v == t else 255)
+        return image, alpha, None
     if mode == 'CMYK':
         return image, None, None
     if mode in ('1', 'L', 'LA', 'La'):
@@ -274,6 +293,37 @@ def pdf_samples(doc, xref=None):
     if mode is None:
         raise ValueError(f'MuPDF decodes the image to {pix.n} components')
     return Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+
+
+def color_key_alpha(doc, xref, width, height, bpc):
+    """Returns the alpha of the color key masking a /Mask array of the image gives, as ISO
+    32000 defines it, as an image of mode L, or None when the image has no such array.
+    The samples are those of the stream, in its bits, and not those MuPDF decodes."""
+    kind, value = doc.xref_get_key(xref, 'Mask')
+    if kind != 'array':
+        return None
+    ranges = [int(v) for v in value.strip('[]').split()]
+    components = len(ranges) // 2
+    data = doc.xref_stream(xref)
+    stride = (width * components * bpc + 7) // 8
+    alpha = bytearray(width * height)
+    for y in range(height):
+        row = data[y * stride:(y + 1) * stride]
+        for x in range(width):
+            inside = True
+            for c in range(components):
+                bit = (x * components + c) * bpc
+                if bpc == 16:
+                    sample = row[bit // 8] << 8 | row[bit // 8 + 1]
+                elif bpc == 8:
+                    sample = row[bit // 8]
+                else:
+                    sample = (row[bit // 8] >> (8 - bpc - bit % 8)) & ((1 << bpc) - 1)
+                if not ranges[2 * c] <= sample <= ranges[2 * c + 1]:
+                    inside = False
+                    break
+            alpha[y * width + x] = 0 if inside else 255
+    return Image.frombytes('L', (width, height), bytes(alpha))
 
 
 def quiet():
@@ -341,7 +391,13 @@ def check_file(name, path, command, out):
             problems.append(f'drawn at {rects[0].width:g}x{rects[0].height:g} points, '
                             f'not {expected[0]:g}x{expected[1]:g}')
 
-        color, alpha, sixteen = pillow_samples(image)
+        color, alpha, sixteen = pillow_samples(image, png_gray_bits(path))
+        # MuPDF applies the color key of a /Mask as it decodes the image, and
+        # multiplies the samples by it; the samples are compared as the stream
+        # holds them, and the key as the alpha below.
+        key_alpha = None if smask else color_key_alpha(doc, xref, width, height, bpc)
+        if key_alpha is not None:
+            doc.xref_set_key(xref, 'Mask', 'null')
         samples = pdf_samples(doc, xref)
         if samples.mode == 'RGB' and color.mode == 'L':
             color = color.convert('RGB')
@@ -365,7 +421,7 @@ def check_file(name, path, command, out):
             if doc.xref_stream(xref) != sixteen:
                 problems.append('the 16-bit samples differ from those of the stream')
 
-        pdf_alpha = pdf_samples(doc, smask) if smask else None
+        pdf_alpha = pdf_samples(doc, smask) if smask else key_alpha
         if pdf_alpha is not None and pdf_alpha.size != image.size:
             problems.append(f'the soft mask is {pdf_alpha.size[0]}x{pdf_alpha.size[1]}')
         elif pdf_alpha is not None or alpha is not None:

@@ -31,6 +31,9 @@ public class Image : IDrawable {
     private bool flipUpsideDown = false;
     // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
     private bool invertedInks = false;
+    // The /Mask of the transparent color of a grayscale or truecolor PNG, or
+    // null.
+    private int[] colorKeyMask;
     private String language = null;
     private String actualText = null;
     private String altDescription = null;
@@ -75,6 +78,7 @@ public class Image : IDrawable {
             data = png.GetData();
             w = png.GetWidth();
             h = png.GetHeight();
+            colorKeyMask = png.GetColorKeyMask();
             if (png.GetColorType() == 0) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", png.GetBitDepth());
             } else if (png.GetColorType() == 4) {
@@ -135,6 +139,7 @@ public class Image : IDrawable {
             data = png.GetData();
             w = png.GetWidth();
             h = png.GetHeight();
+            colorKeyMask = png.GetColorKeyMask();
             if (png.GetColorType() == 0) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", png.GetBitDepth());
             } else if (png.GetColorType() == 4) {
@@ -547,6 +552,15 @@ public class Image : IDrawable {
                 pdf.Append("/SMask ");
                 pdf.Append(objNumber);
                 pdf.Append(" 0 R\n");
+            } else if (colorKeyMask != null) {
+                pdf.Append("/Mask [");
+                for (int i = 0; i < colorKeyMask.Length; i++) {
+                    if (i > 0) {
+                        pdf.Append(' ');
+                    }
+                    pdf.Append(colorKeyMask[i]);
+                }
+                pdf.Append("]\n");
             }
         }
         pdf.Append("/Width ");
@@ -639,6 +653,13 @@ public class Image : IDrawable {
                 obj.dict.Add(objNumber.ToString());
                 obj.dict.Add("0");
                 obj.dict.Add("R");
+            } else if (colorKeyMask != null) {
+                obj.dict.Add("/Mask");
+                obj.dict.Add("[");
+                foreach (int value in colorKeyMask) {
+                    obj.dict.Add(value.ToString());
+                }
+                obj.dict.Add("]");
             }
         }
         obj.dict.Add("/Width");

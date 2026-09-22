@@ -55,22 +55,6 @@ PngSuite/BGAN6A16.PNG: 16-bit RGBA is refused
 PngSuite/BGGN4A16.PNG: 16-bit gray and alpha is refused
 PngSuite/BGYN6A16.PNG: 16-bit RGBA is refused
 
-# The transparent color the tRNS chunk of a grayscale or truecolor PNG names
-# is ignored, and those pixels are drawn opaque: a feature for after 9.0.3 in
-# TODO.md, recorded by TestPNGImageTruecolorTransparencyIsIgnored. The
-# samples are the same.
-pillow/Tests/images/1_trns.png: the tRNS chunk of a grayscale PNG is ignored
-pillow/Tests/images/l_trns.png: the tRNS chunk of a grayscale PNG is ignored
-pillow/Tests/images/rgb_trns.png: the tRNS chunk of a truecolor PNG is ignored
-pillow/Tests/images/caption_6_33_22.png: the tRNS chunk of a truecolor PNG is ignored
-bmpsuite/html/rgb16faketrns.png: the tRNS chunk of a truecolor PNG is ignored
-bmpsuite/html/rgba16-5551.png: the tRNS chunk of a truecolor PNG is ignored
-PngSuite/TBBN2C16.PNG: the tRNS chunk of a truecolor PNG is ignored
-PngSuite/TBGN2C16.PNG: the tRNS chunk of a truecolor PNG is ignored
-PngSuite/TBRN2C08.PNG: the tRNS chunk of a truecolor PNG is ignored
-made/gray-trns.png: the tRNS chunk of a grayscale PNG is ignored
-made/rgb-trns.png: the tRNS chunk of a truecolor PNG is ignored
-
 # PDFjet ignores the chunks of an animated PNG and the text chunks, and draws
 # the image of its IDAT chunks, where Pillow refuses the file: for frame
 # sequence errors, and for a zTXt chunk that decompresses past its limit.

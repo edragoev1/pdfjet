@@ -36,7 +36,8 @@ type Image struct {
 	key            string
 	degrees        int
 	flipUpsideDown bool
-	invertedInks   bool // A CMYK JPEG that Adobe software wrote, with its inks inverted
+	invertedInks   bool  // A CMYK JPEG that Adobe software wrote, with its inks inverted
+	colorKeyMask   []int // The /Mask of the transparent color of a grayscale or truecolor PNG
 	language       string
 	altDescription string
 	actualText     string
@@ -91,6 +92,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 		data := png.GetData()
 		image.w = png.GetWidth()
 		image.h = png.GetHeight()
+		image.colorKeyMask = png.GetColorKeyMask()
 		if png.GetColorType() == 0 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
 		} else if png.GetColorType() == 4 {
@@ -147,6 +149,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		data := png.GetData()
 		image.w = png.GetWidth()
 		image.h = png.GetHeight()
+		image.colorKeyMask = png.GetColorKeyMask()
 		if png.GetColorType() == 0 {
 			image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
 		} else if png.GetColorType() == 4 {
@@ -519,6 +522,15 @@ func (image *Image) addImageToPDF(
 			pdf.appendString("/SMask ")
 			pdf.appendInteger(image.objNumber)
 			pdf.appendString(" 0 R\n")
+		} else if image.colorKeyMask != nil {
+			pdf.appendString("/Mask [")
+			for i, value := range image.colorKeyMask {
+				if i > 0 {
+					pdf.appendString(" ")
+				}
+				pdf.appendInteger(value)
+			}
+			pdf.appendString("]\n")
 		}
 	}
 	pdf.appendString("/Width ")
@@ -613,6 +625,12 @@ func (image *Image) addImageToObjects(
 			obj.dict = append(obj.dict, strconv.Itoa(image.objNumber))
 			obj.dict = append(obj.dict, "0")
 			obj.dict = append(obj.dict, "R")
+		} else if image.colorKeyMask != nil {
+			obj.dict = append(obj.dict, "/Mask", "[")
+			for _, value := range image.colorKeyMask {
+				obj.dict = append(obj.dict, strconv.Itoa(value))
+			}
+			obj.dict = append(obj.dict, "]")
 		}
 	}
 	obj.dict = append(obj.dict, "/Width")

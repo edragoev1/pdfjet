@@ -28,6 +28,10 @@ class PNGImage {
     byte[] iDAT;                // The compressed data in the IDAT chunks
     byte[] pLTE;                // The palette data
     byte[] tRNS;                // The alpha for the palette data
+    // The transparent color the tRNS chunk of a grayscale or truecolor image
+    // names, as the ranges of a /Mask: the minimum and the maximum of each
+    // component, both the value of the chunk, in the bits of the samples.
+    private int[] colorKeyMask;
 
     byte[] deflatedImageData;   // The deflated image data
     byte[] deflatedAlphaData;   // The deflated alpha channel data
@@ -92,6 +96,8 @@ class PNGImage {
             } else if (chunkType.equals("tRNS")) {
                 if (colorType == 3) {
                     tRNS = chunk.getData();
+                } else if (colorType == 0 || colorType == 2) {
+                    colorKeyMask = colorKeyMaskOf(chunk.getData());
                 }
             } else if (chunkType.equals("pHYs")) {
                 readPhysicalSize(chunk.getData());
@@ -151,6 +157,35 @@ class PNGImage {
         }
 
         deflatedImageData = Compressor.deflate(image);
+    }
+
+    // Returns the /Mask of the transparent color the tRNS chunk of a grayscale
+    // or truecolor image names: a sample of 2 bytes for each component, of
+    // which the bits of the image are read, as libpng reads it, so that 255
+    // in an image of 1 bit is white. A chunk of another length gives none.
+    private int[] colorKeyMaskOf(byte[] data) {
+        int components = (colorType == 0) ? 1 : 3;
+        if (data.length != 2 * components) {
+            return null;
+        }
+        int max = (1 << bitDepth) - 1;
+        int[] mask = new int[2 * components];
+        for (int i = 0; i < components; i++) {
+            int sample = (((data[2 * i] & 0xFF) << 8) | (data[2 * i + 1] & 0xFF)) & max;
+            mask[2 * i] = sample;
+            mask[2 * i + 1] = sample;
+        }
+        return mask;
+    }
+
+    /**
+     * Returns the /Mask of the transparent color of a grayscale or truecolor
+     * image, the ranges of its components, or null when it has none.
+     *
+     * @return the ranges.
+     */
+    int[] getColorKeyMask() {
+        return colorKeyMask;
     }
 
     // Reads the size the image asks to be drawn at from the pHYs chunk: the

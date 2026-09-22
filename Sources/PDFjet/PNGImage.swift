@@ -23,6 +23,10 @@ class PNGImage {
     var iDAT = [UInt8]()                // The compressed data in the IDAT chunks
     var pLTE: [UInt8]?                  // The palette data
     var tRNS: [UInt8]?                  // The palette transparency data
+    // The transparent color the tRNS chunk of a grayscale or truecolor image
+    // names, as the ranges of a /Mask: the minimum and the maximum of each
+    // component, both the value of the chunk, in the bits of the samples.
+    private var colorKeyMask: [Int]?
 
     var deflatedImageData = [UInt8]()   // The deflated image data
     var deflatedAlphaData = [UInt8]()   // The deflated alpha channel data
@@ -86,6 +90,8 @@ class PNGImage {
             } else if chunkType == "tRNS" {
                 if colorType == 3 {
                     tRNS = chunk.getData()
+                } else if colorType == 0 || colorType == 2 {
+                    colorKeyMask = colorKeyMaskOf(chunk.getData()!)
                 }
             } else if chunkType == "pHYs" {
                 readPhysicalSize(chunk.getData()!)
@@ -205,6 +211,31 @@ class PNGImage {
     /// Returns the compressed image data.
     func getData() -> [UInt8] {
         return self.deflatedImageData
+    }
+
+    // Returns the /Mask of the transparent color the tRNS chunk of a grayscale
+    // or truecolor image names: a sample of 2 bytes for each component, of
+    // which the bits of the image are read, as libpng reads it, so that 255
+    // in an image of 1 bit is white. A chunk of another length gives none.
+    private func colorKeyMaskOf(_ data: [UInt8]) -> [Int]? {
+        let components = (colorType == 0) ? 1 : 3
+        if data.count != 2 * components {
+            return nil
+        }
+        let maxSample = (1 << bitDepth) - 1
+        var mask = [Int]()
+        for i in 0..<components {
+            let sample = (Int(data[2 * i]) << 8 | Int(data[2 * i + 1])) & maxSample
+            mask.append(sample)
+            mask.append(sample)
+        }
+        return mask
+    }
+
+    /// Returns the /Mask of the transparent color of a grayscale or truecolor
+    /// image, the ranges of its components, or nil when it has none.
+    func getColorKeyMask() -> [Int]? {
+        return colorKeyMask
     }
 
     /// Returns the compressed alpha channel data.

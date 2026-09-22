@@ -18,6 +18,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // PNG decoding against the PngSuite images. The samples are compared as the
@@ -142,14 +143,99 @@ func TestPNGImageDecodesThePngSuiteImages(t *testing.T) {
 	}
 }
 
-func TestPNGImageTruecolorTransparencyIsIgnored(t *testing.T) {
-	// tRNS applies to palette images only; TBRN2C08 has the samples of TP1N3P08.
+func TestPNGImageTheTransparentColorOfAGrayscaleOrTruecolorPngIsItsColorKeyMask(t *testing.T) {
+	// The samples are as they were, with no soft mask: TBRN2C08 has the
+	// samples of TP1N3P08.
 	png := testDecodePNG(t, "TBRN2C08")
 	if got := testCRC(testInflate(t, png.GetData())); got != "8b0a6c2c" {
 		t.Errorf("samples %s", got)
 	}
 	if png.GetAlpha() != nil {
 		t.Error("has alpha")
+	}
+	// In the bits of the samples: 4 and 16 bits of gray, 16 bits of RGB.
+	for name, want := range map[string]string{
+		"TBRN2C08": "[127 127 127 127 127 127]",
+		"TBBN1G04": "[7 7]",
+		"TBWN1G16": "[32639 32639]",
+		"TBBN2C16": "[32639 32639 32639 32639 32639 32639]",
+		"BASN2C08": "[]",
+	} {
+		testWant(t, want, fmt.Sprint(testDecodePNG(t, name).GetColorKeyMask()))
+	}
+}
+
+// testPNGWithTRNS returns a PNG of one pixel, a sample of the bit depth, of the
+// color type, with the tRNS chunk.
+func testPNGWithTRNS(bitDepth, colorType byte, trns []byte) []byte {
+	samples := 1
+	if colorType == 2 {
+		samples = 3 * int(bitDepth) / 8
+	}
+	var buf bytes.Buffer
+	buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], 1)
+	binary.BigEndian.PutUint32(ihdr[4:], 1)
+	ihdr[8] = bitDepth
+	ihdr[9] = colorType
+	testPNGChunk(&buf, "IHDR", ihdr)
+	testPNGChunk(&buf, "tRNS", trns)
+	testPNGChunk(&buf, "IDAT", compressor.Deflate(make([]byte, 1+samples)))
+	testPNGChunk(&buf, "IEND", []byte{})
+	return buf.Bytes()
+}
+
+func TestPNGImageTheBitsOfTheImageAreReadOfATrnsSampleAndAChunkOfAnotherLengthIsIgnored(t *testing.T) {
+	for want, file := range map[string][]byte{
+		"[200 200]": testPNGWithTRNS(8, 0, []byte{0, 200}),
+		// The bits of the image, as libpng reads them: 255 in 1 bit is white.
+		"[1 1]": testPNGWithTRNS(1, 0, []byte{0, 255}),
+		"[0 0]": testPNGWithTRNS(4, 0, []byte{0, 16}),
+	} {
+		testWant(t, want, fmt.Sprint(newPNGImage(bytes.NewReader(file)).GetColorKeyMask()))
+	}
+	// Chunks of another length than the samples of a pixel.
+	for i, file := range [][]byte{
+		testPNGWithTRNS(8, 0, []byte{0, 1, 0, 2, 0, 3}),
+		testPNGWithTRNS(8, 2, []byte{0, 1, 0, 2}),
+	} {
+		if mask := newPNGImage(bytes.NewReader(file)).GetColorKeyMask(); mask != nil {
+			t.Errorf("file %d: %v", i, mask)
+		}
+	}
+}
+
+func TestPNGImageTheImageOfAPngWithATransparentColorHasItsMask(t *testing.T) {
+	doc := testNewDoc()
+	for _, name := range []string{"TBRN2C08", "TBWN1G16"} {
+		file, err := os.Open(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		NewImage(doc.pdf, file)
+		file.Close()
+	}
+	NewPage(doc.pdf, letter.Portrait())
+	raw := string(doc.complete())
+	for _, want := range []string{"/Mask [127 127 127 127 127 127]\n", "/Mask [32639 32639]\n"} {
+		if !strings.Contains(raw, want) {
+			t.Errorf("no %q", want)
+		}
+	}
+	if strings.Contains(raw, "/SMask") {
+		t.Error("a soft mask")
+	}
+	// And an image added to the objects of a PDF that was read.
+	file, err := os.Open(testRepoPath(t, "PngSuite/TBRN2C08.PNG"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	objects := make([]*PDFobj, 0)
+	NewImageForObjects(&objects, file)
+	if dict := strings.Join(objects[len(objects)-1].dict, " "); !strings.Contains(dict, "/Mask [ 127 127 127 127 127 127 ]") {
+		t.Errorf("the dictionary is %q", dict)
 	}
 }
 

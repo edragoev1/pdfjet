@@ -216,6 +216,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The transparent color that the `tRNS` chunk of a grayscale or truecolor
+  PNG names is transparent, in all four ports; PDFjet ignored the chunk and
+  drew those pixels opaque, where browsers and libpng leave them clear. The
+  image gets the color key as a `/Mask` array, the range of each component in
+  the bits the image is embedded in -- 1 to 16 of gray, 8 or 16 of RGB -- so
+  its samples are as they were and no soft mask is added. Only the bits of the
+  image are read of the chunk's value, as libpng reads it, so 255 in an image
+  of 1 bit is white; a chunk of another length than a pixel is ignored. The
+  image check against Pillow reads the color key of a `/Mask`, and the 11
+  files it listed as differing for this now match Pillow.
 - A page break of a `Table` no longer falls between the lines of a cell
   whose text wraps, in all four ports. The first lines ended one page, with
   the other cells of the row, and the rest started the next, beside empty
