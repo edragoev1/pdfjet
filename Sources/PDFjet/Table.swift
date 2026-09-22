@@ -262,6 +262,195 @@ public class Table : Drawable {
     }
 
     ///
+    /// Makes the cell of a footer row show the sum of its column over the rows
+    /// of each page: the page total. The numbers are read as rightAlignNumbers
+    /// reads them, with commas and apostrophes between the thousands and a
+    /// period before the decimals, and a cell that has no number is left out.
+    /// The sum has the number of decimals, rounded half away from zero, and
+    /// commas between the thousands. Until the table is drawn the cell has the
+    /// sum of all the rows, so that autoAdjustColumnWidths leaves room for it;
+    /// its text is not wrapped.
+    ///
+    /// - Parameter row: the index of a footer row, see setNumberOfFooterRows.
+    /// - Parameter column: the index of the column.
+    /// - Parameter decimals: the number of decimals, from 0 to 9.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setPageSum(_ row: Int, _ column: Int, _ decimals: Int) -> Table {
+        return setSum(row, column, decimals, Cell.PAGE_SUM)
+    }
+
+    ///
+    /// Makes the cell of a footer row show the sum of its column over all the
+    /// rows up to the end of each page: the total carried forward, which is
+    /// the total of the table on its last page. The numbers are read and the
+    /// sum is written as setPageSum reads and writes them.
+    ///
+    /// - Parameter row: the index of a footer row, see setNumberOfFooterRows.
+    /// - Parameter column: the index of the column.
+    /// - Parameter decimals: the number of decimals, from 0 to 9.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setRunningSum(_ row: Int, _ column: Int, _ decimals: Int) -> Table {
+        return setSum(row, column, decimals, Cell.RUNNING_SUM)
+    }
+
+    private func setSum(_ row: Int, _ column: Int, _ decimals: Int, _ kind: UInt32) -> Table {
+        if row < 0 || row >= tableData.count || column < 0 || column >= tableData[row].count {
+            return self
+        }
+        let places = max(0, min(9, decimals))
+        let cell = tableData[row][column]
+        cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | (UInt32(places) << Cell.SUM_DECIMALS)
+        cell.setText(Table.formatSum(sumOf(column, numOfHeaderRows, min(row, footerStart()), places), places))
+        return self
+    }
+
+    // Writes the sums in the footer cells that setPageSum and setRunningSum
+    // mark: those of the rows of the page, from first to end, and those of
+    // all the rows to end.
+    private func setFooterSums(_ first: Int, _ end: Int) {
+        for r in footerStart()..<tableData.count {
+            for (j, cell) in tableData[r].enumerated() where (cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0 {
+                let places = Int((cell.properties >> Cell.SUM_DECIMALS) & 0xF)
+                let from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows
+                cell.setText(Table.formatSum(sumOf(j, from, end, places), places))
+            }
+        }
+    }
+
+    // The largest sum, and number, in units of the decimals: 18 digits.
+    private static let MAX_SUM: Int64 = 999_999_999_999_999_999
+
+    // The sum of the numbers in the column of the rows from first to end, in
+    // units of the decimals. A number that would take the sum past 18 digits
+    // is left out.
+    private func sumOf(_ column: Int, _ first: Int, _ end: Int, _ decimals: Int) -> Int64 {
+        var sum: Int64 = 0
+        var r = max(0, first)
+        while r < end && r < tableData.count {
+            let row = tableData[r]
+            r += 1
+            if column >= row.count {
+                continue
+            }
+            let cell = row[column]
+            if (cell.properties & Cell.COVERED) != 0 {
+                continue
+            }
+            if let text = cell.text, let value = Table.numberOf(text, decimals), abs(sum + value) <= Table.MAX_SUM {
+                sum += value
+            }
+        }
+        return sum
+    }
+
+    ///
+    /// Returns the number the text is, in units of the decimals, rounded half
+    /// away from zero, or nil when the text is not a number, as isNumber
+    /// reads it, has more than one period, or is more than 18 digits in those
+    /// units. Commas and apostrophes are between the thousands, a period is
+    /// before the decimals, and parentheses make a number negative.
+    ///
+    static func numberOf(_ text: String, _ decimals: Int) -> Int64? {
+        if !isNumber(text) {
+            return nil
+        }
+        var str = Substring(text)
+        var negative = false
+        if str.count >= 2 && str.first == "(" && str.last == ")" {
+            str = str.dropFirst().dropLast()
+            negative = true
+        }
+        var chars = Array(String(str.filter { $0 != "," && $0 != "'" })
+                .trimmingCharacters(in: .whitespaces))
+        if chars[0] == "+" || chars[0] == "-" {
+            negative = negative != (chars[0] == "-")
+            chars.removeFirst()
+        }
+        var exponent = 0
+        if let e = chars.firstIndex(where: { $0 == "e" || $0 == "E" }) {
+            var exp = Array(chars[(e + 1)...])
+            var sign = 1
+            if exp[0] == "+" || exp[0] == "-" {
+                sign = (exp[0] == "-") ? -1 : 1
+                exp.removeFirst()
+            }
+            if exp.count > 4 || exp.contains(".") {
+                return nil
+            }
+            exponent = sign * Int(String(exp))!
+            chars = Array(chars[..<e])
+        }
+        let points = chars.indices.filter { chars[$0] == "." }
+        if points.count > 1 {
+            return nil
+        }
+        let fraction = points.isEmpty ? [] : Array(chars[(points[0] + 1)...])
+        var digits = points.isEmpty ? chars : Array(chars[..<points[0]]) + fraction
+        while let first = digits.first, first == "0" {
+            digits.removeFirst()
+        }
+        if digits.isEmpty {
+            return 0
+        }
+        // The number is the digits times 10 to the shift, in units of the
+        // decimals.
+        let shift = exponent - fraction.count + decimals
+        var value: Int64
+        if shift >= 0 {
+            if digits.count + shift > 18 {
+                return nil
+            }
+            value = Int64(String(digits))!
+            for _ in 0..<shift {
+                value *= 10
+            }
+        } else {
+            let keep = digits.count + shift
+            if keep < 0 {
+                return 0
+            }
+            if keep > 18 {
+                return nil
+            }
+            value = (keep == 0) ? 0 : Int64(String(digits[..<keep]))!
+            if digits[keep] >= "5" {
+                value += 1
+            }
+            if value > MAX_SUM {
+                return nil
+            }
+        }
+        return negative ? -value : value
+    }
+
+    ///
+    /// Returns the sum in units of the decimals as text: the decimals after a
+    /// period, and commas between the thousands.
+    ///
+    static func formatSum(_ sum: Int64, _ decimals: Int) -> String {
+        var digits = Array(String(abs(sum)))
+        while digits.count <= decimals {
+            digits.insert("0", at: 0)
+        }
+        let point = digits.count - decimals
+        var text = (sum < 0) ? "-" : ""
+        for i in 0..<point {
+            if i > 0 && (point - i) % 3 == 0 {
+                text += ","
+            }
+            text.append(digits[i])
+        }
+        if decimals > 0 {
+            text += "." + String(digits[point...])
+        }
+        return text
+    }
+
+    ///
     /// Keeps the row with the specified index on the same page as the next
     /// row, as a heading row is kept with the rows under it: a page break does
     /// not fall between them, and moves both to the next page. Rows kept with
@@ -696,6 +885,7 @@ public class Table : Drawable {
                 // pages forever.
                 if index > first {
                     rendered = index
+                    setFooterSums(first, index)
                     return [x, drawFooterRows(page, x, y, heights, false)]
                 }
             }
@@ -709,6 +899,7 @@ public class Table : Drawable {
         }
         if !done {
             // The rows of the table are all drawn, and the footer rows end it.
+            setFooterSums(first, footer)
             y = drawFooterRows(page, x, y, heights, true)
         }
         if page != nil {
@@ -1111,8 +1302,10 @@ public class Table : Drawable {
             var maxNumVerCells = 1
             for i in 0..<row.count {
                 // A cell that draws a line of text of its own draws no cell
-                // text, so there is nothing to wrap.
-                let cellLines = (row[i].text == nil || row[i].drawable is BaselineDrawable)
+                // text, so there is nothing to wrap. A cell that shows a sum
+                // is not wrapped either, as its text is the sum of each page.
+                let cellLines = (row[i].text == nil || row[i].drawable is BaselineDrawable
+                        || (row[i].properties & Cell.SUM_BITS) != 0)
                         ? nil : wrapCellText(row, i)
                 lines.append(cellLines)
                 if let cellLines = cellLines, cellLines.count > maxNumVerCells {
@@ -1154,6 +1347,7 @@ public class Table : Drawable {
                     cell2.setBorder(Border.TOP, false)
                     cell2.setBorder(Border.BOTTOM, bottomBorder[j] && k == maxNumVerCells - 1)
                     cell2.properties |= Cell.CONTINUED
+                    cell2.properties &= ~Cell.SUM_BITS
                     row2.append(cell2)
                 }
                 tableData2.append(row2)

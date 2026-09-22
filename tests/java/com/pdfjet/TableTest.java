@@ -789,4 +789,71 @@ class TableTest {
         TestSupport.assertXY(245f, 109.36f, measured);
         assertEquals(1, count(TestSupport.content(page), TestSupport.hex("total")));
     }
+
+    @Test
+    void theFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt() throws Exception {
+        // Rows r1 to r57 hold r + 0.25 in their second cell, but for row 10,
+        // which holds no number, and the two footer rows the page total and
+        // the total carried forward.
+        PDF pdf = TestSupport.newPDF();
+        List<List<Cell>> data = rowsWith(TestSupport.helvetica(pdf), -1);
+        for (int r = 1; r < 59; r++) {
+            data.get(r).get(1).setText(r == 10 ? "n/a" : r + ".25");
+        }
+        data.get(58).get(0).setText("page");
+        data.get(59).get(0).setText("carried");
+        Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(2)
+                .setPageSum(58, 1, 2).setRunningSum(59, 1, 2)
+                .setLocation(50f, 50f).setBottomMargin(20f);
+        // Until it is drawn, a cell has the sum of all the rows.
+        assertEquals("1,657.00", table.getCellAt(58, 1).getText());
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(2, pages.size());
+        long carried = 0;
+        for (Page page : pages) {
+            long total = 0;
+            for (int r = 1; r < 58; r++) {
+                if (r != 10 && !Float.isNaN(yOf(page, "r" + r))) {
+                    total += 100 * r + 25;
+                }
+            }
+            carried += total;
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("<" + TestSupport.hex(Table.formatSum(total, 2)) + ">"),
+                    "no page total " + Table.formatSum(total, 2));
+            assertTrue(content.contains("<" + TestSupport.hex(Table.formatSum(carried, 2)) + ">"),
+                    "no total carried " + Table.formatSum(carried, 2));
+        }
+        // Rows 1 to 57 but row 10: 1,643 and 56 quarters.
+        assertEquals(164300 + 1400, carried);
+    }
+
+    @Test
+    void aSumReadsTheNumbersAsRightAlignNumbersDoes() {
+        assertEquals(Long.valueOf(123450), Table.numberOf("1,234.50", 2));
+        assertEquals(Long.valueOf(-123450), Table.numberOf("(1,234.50)", 2));
+        assertEquals(Long.valueOf(-5), Table.numberOf(" -5 ", 0));
+        assertEquals(Long.valueOf(1500), Table.numberOf("1.5E+3", 0));
+        assertEquals(Long.valueOf(15), Table.numberOf("1.5e1", 0));
+        assertEquals(Long.valueOf(1234), Table.numberOf("1'234", 0));
+        assertEquals(Long.valueOf(50), Table.numberOf(".5", 2));
+        // Halves away from zero.
+        assertEquals(Long.valueOf(13), Table.numberOf("0.125", 2));
+        assertEquals(Long.valueOf(-13), Table.numberOf("-0.125", 2));
+        assertEquals(Long.valueOf(0), Table.numberOf("0.004", 2));
+        assertEquals(Long.valueOf(1), Table.numberOf("0.5", 0));
+        assertEquals(null, Table.numberOf("1.234.567", 0));
+        assertEquals(null, Table.numberOf("n/a", 0));
+        assertEquals(null, Table.numberOf("", 0));
+        assertEquals(null, Table.numberOf("1234567890123456789", 0));
+        assertEquals(null, Table.numberOf("1E99999", 0));
+        assertEquals("1,234.50", Table.formatSum(123450, 2));
+        assertEquals("-1,234,567", Table.formatSum(-1234567, 0));
+        assertEquals("0.05", Table.formatSum(5, 2));
+        assertEquals("-0.05", Table.formatSum(-5, 2));
+        assertEquals("0.00", Table.formatSum(0, 2));
+        assertEquals("999", Table.formatSum(999, 0));
+        assertEquals("1,000", Table.formatSum(1000, 0));
+    }
 }

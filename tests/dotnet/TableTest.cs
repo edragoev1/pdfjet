@@ -769,5 +769,70 @@ public sealed class TableTest : IDisposable {
         TestSupport.AssertXY(245f, 109.36f, measured);
         Assert.Equal(1, Count(TestSupport.Content(page), TestSupport.Hex("total")));
     }
+
+    [Fact]
+    public void TheFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt() {
+        // Rows r1 to r57 hold r + 0.25 in their second cell, but for row 10,
+        // which holds no number, and the two footer rows the page total and
+        // the total carried forward.
+        PDF pdf = TestSupport.NewPDF();
+        List<List<Cell>> data = RowsWith(TestSupport.Helvetica(pdf), -1);
+        for (int r = 1; r < 59; r++) {
+            data[r][1].SetText(r == 10 ? "n/a" : r + ".25");
+        }
+        data[58][0].SetText("page");
+        data[59][0].SetText("carried");
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(2)
+                .SetPageSum(58, 1, 2).SetRunningSum(59, 1, 2).SetLocation(50f, 50f);
+        table.SetBottomMargin(20f);
+        // Until it is drawn, a cell has the sum of all the rows.
+        Assert.Equal("1,657.00", table.GetCellAt(58, 1).GetText());
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Equal(2, pages.Count);
+        long carried = 0;
+        foreach (Page page in pages) {
+            long total = 0;
+            for (int r = 1; r < 58; r++) {
+                if (r != 10 && !float.IsNaN(YOf(page, "r" + r))) {
+                    total += 100 * r + 25;
+                }
+            }
+            carried += total;
+            string content = TestSupport.Content(page);
+            Assert.Contains("<" + TestSupport.Hex(Table.FormatSum(total, 2)) + ">", content);
+            Assert.Contains("<" + TestSupport.Hex(Table.FormatSum(carried, 2)) + ">", content);
+        }
+        // Rows 1 to 57 but row 10: 1,643 and 56 quarters.
+        Assert.Equal(164300 + 1400, carried);
+    }
+
+    [Fact]
+    public void ASumReadsTheNumbersAsRightAlignNumbersDoes() {
+        Assert.Equal(123450L, Table.NumberOf("1,234.50", 2));
+        Assert.Equal(-123450L, Table.NumberOf("(1,234.50)", 2));
+        Assert.Equal(-5L, Table.NumberOf(" -5 ", 0));
+        Assert.Equal(1500L, Table.NumberOf("1.5E+3", 0));
+        Assert.Equal(15L, Table.NumberOf("1.5e1", 0));
+        Assert.Equal(1234L, Table.NumberOf("1'234", 0));
+        Assert.Equal(50L, Table.NumberOf(".5", 2));
+        // Halves away from zero.
+        Assert.Equal(13L, Table.NumberOf("0.125", 2));
+        Assert.Equal(-13L, Table.NumberOf("-0.125", 2));
+        Assert.Equal(0L, Table.NumberOf("0.004", 2));
+        Assert.Equal(1L, Table.NumberOf("0.5", 0));
+        Assert.Null(Table.NumberOf("1.234.567", 0));
+        Assert.Null(Table.NumberOf("n/a", 0));
+        Assert.Null(Table.NumberOf("", 0));
+        Assert.Null(Table.NumberOf("1234567890123456789", 0));
+        Assert.Null(Table.NumberOf("1E99999", 0));
+        Assert.Equal("1,234.50", Table.FormatSum(123450, 2));
+        Assert.Equal("-1,234,567", Table.FormatSum(-1234567, 0));
+        Assert.Equal("0.05", Table.FormatSum(5, 2));
+        Assert.Equal("-0.05", Table.FormatSum(-5, 2));
+        Assert.Equal("0.00", Table.FormatSum(0, 2));
+        Assert.Equal("999", Table.FormatSum(999, 0));
+        Assert.Equal("1,000", Table.FormatSum(1000, 0));
+    }
 }
 }

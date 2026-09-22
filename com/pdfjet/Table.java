@@ -279,6 +279,205 @@ public class Table implements Drawable {
     }
 
     /**
+     * Makes the cell of a footer row show the sum of its column over the rows
+     * of each page: the page total. The numbers are read as rightAlignNumbers
+     * reads them, with commas and apostrophes between the thousands and a
+     * period before the decimals, and a cell that has no number is left out.
+     * The sum has the number of decimals, rounded half away from zero, and
+     * commas between the thousands. Until the table is drawn the cell has the
+     * sum of all the rows, so that autoAdjustColumnWidths leaves room for it;
+     * its text is not wrapped.
+     *
+     * @param row the index of a footer row, see setNumberOfFooterRows.
+     * @param column the index of the column.
+     * @param decimals the number of decimals, from 0 to 9.
+     * @return this Table object.
+     */
+    public Table setPageSum(int row, int column, int decimals) {
+        return setSum(row, column, decimals, Cell.PAGE_SUM);
+    }
+
+    /**
+     * Makes the cell of a footer row show the sum of its column over all the
+     * rows up to the end of each page: the total carried forward, which is
+     * the total of the table on its last page. The numbers are read and the
+     * sum is written as setPageSum reads and writes them.
+     *
+     * @param row the index of a footer row, see setNumberOfFooterRows.
+     * @param column the index of the column.
+     * @param decimals the number of decimals, from 0 to 9.
+     * @return this Table object.
+     */
+    public Table setRunningSum(int row, int column, int decimals) {
+        return setSum(row, column, decimals, Cell.RUNNING_SUM);
+    }
+
+    private Table setSum(int row, int column, int decimals, int kind) {
+        if (row < 0 || row >= tableData.size() || column < 0 || column >= tableData.get(row).size()) {
+            return this;
+        }
+        int places = Math.max(0, Math.min(9, decimals));
+        Cell cell = tableData.get(row).get(column);
+        cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | (places << Cell.SUM_DECIMALS);
+        cell.setText(formatSum(sumOf(column, numOfHeaderRows, Math.min(row, footerStart()), places), places));
+        return this;
+    }
+
+    // Writes the sums in the footer cells that setPageSum and setRunningSum
+    // mark: those of the rows of the page, from first to end, and those of
+    // all the rows to end.
+    private void setFooterSums(int first, int end) {
+        for (int r = footerStart(); r < tableData.size(); r++) {
+            List<Cell> row = tableData.get(r);
+            for (int j = 0; j < row.size(); j++) {
+                Cell cell = row.get(j);
+                if ((cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0) {
+                    int places = (cell.properties >> Cell.SUM_DECIMALS) & 0xF;
+                    int from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows;
+                    cell.setText(formatSum(sumOf(j, from, end, places), places));
+                }
+            }
+        }
+    }
+
+    // The largest sum, and number, in units of the decimals: 18 digits.
+    private static final long MAX_SUM = 999999999999999999L;
+
+    // The sum of the numbers in the column of the rows from first to end, in
+    // units of the decimals. A number that would take the sum past 18 digits
+    // is left out.
+    private long sumOf(int column, int first, int end, int decimals) {
+        long sum = 0L;
+        for (int r = Math.max(0, first); r < end && r < tableData.size(); r++) {
+            List<Cell> row = tableData.get(r);
+            if (column >= row.size()) {
+                continue;
+            }
+            Cell cell = row.get(column);
+            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+                continue;
+            }
+            Long value = numberOf(cell.text, decimals);
+            if (value != null && Math.abs(sum + value) <= MAX_SUM) {
+                sum += value;
+            }
+        }
+        return sum;
+    }
+
+    /**
+     * Returns the number the text is, in units of the decimals, rounded half
+     * away from zero, or null when the text is not a number, as isNumber
+     * reads it, has more than one period, or is more than 18 digits in those
+     * units. Commas and apostrophes are between the thousands, a period is
+     * before the decimals, and parentheses make a number negative.
+     */
+    static Long numberOf(String text, int decimals) {
+        if (!isNumber(text)) {
+            return null;
+        }
+        String str = text;
+        boolean negative = false;
+        if (str.length() >= 2 && str.charAt(0) == '(' && str.charAt(str.length() - 1) == ')') {
+            str = str.substring(1, str.length() - 1);
+            negative = true;
+        }
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char ch = str.charAt(i);
+            if (ch != ',' && ch != '\'') {
+                buf.append(ch);
+            }
+        }
+        str = buf.toString().trim();
+        if (str.charAt(0) == '+' || str.charAt(0) == '-') {
+            negative ^= (str.charAt(0) == '-');
+            str = str.substring(1);
+        }
+        int exponent = 0;
+        int e = Math.max(str.indexOf('e'), str.indexOf('E'));
+        if (e != -1) {
+            String digits = str.substring(e + 1);
+            int sign = 1;
+            if (digits.charAt(0) == '+' || digits.charAt(0) == '-') {
+                sign = (digits.charAt(0) == '-') ? -1 : 1;
+                digits = digits.substring(1);
+            }
+            if (digits.length() > 4 || digits.indexOf('.') != -1) {
+                return null;
+            }
+            exponent = sign * Integer.parseInt(digits);
+            str = str.substring(0, e);
+        }
+        int point = str.indexOf('.');
+        if (point != str.lastIndexOf('.')) {
+            return null;
+        }
+        String fraction = (point == -1) ? "" : str.substring(point + 1);
+        String digits = (point == -1) ? str : str.substring(0, point) + fraction;
+        int start = 0;
+        while (start < digits.length() && digits.charAt(start) == '0') {
+            start++;
+        }
+        digits = digits.substring(start);
+        if (digits.isEmpty()) {
+            return 0L;
+        }
+        // The number is the digits times 10 to the shift, in units of the
+        // decimals.
+        int shift = exponent - fraction.length() + decimals;
+        long value;
+        if (shift >= 0) {
+            if (digits.length() + shift > 18) {
+                return null;
+            }
+            value = Long.parseLong(digits);
+            for (int i = 0; i < shift; i++) {
+                value *= 10;
+            }
+        } else {
+            int keep = digits.length() + shift;
+            if (keep < 0) {
+                return 0L;
+            }
+            if (keep > 18) {
+                return null;
+            }
+            value = (keep == 0) ? 0L : Long.parseLong(digits.substring(0, keep));
+            if (digits.charAt(keep) >= '5') {
+                value++;
+            }
+            if (value > MAX_SUM) {
+                return null;
+            }
+        }
+        return negative ? -value : value;
+    }
+
+    /**
+     * Returns the sum in units of the decimals as text: the decimals after a
+     * period, and commas between the thousands.
+     */
+    static String formatSum(long sum, int decimals) {
+        StringBuilder digits = new StringBuilder(String.valueOf(Math.abs(sum)));
+        while (digits.length() <= decimals) {
+            digits.insert(0, '0');
+        }
+        int point = digits.length() - decimals;
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < point; i++) {
+            if (i > 0 && (point - i) % 3 == 0) {
+                text.append(',');
+            }
+            text.append(digits.charAt(i));
+        }
+        if (decimals > 0) {
+            text.append('.').append(digits, point, digits.length());
+        }
+        return (sum < 0) ? "-" + text : text.toString();
+    }
+
+    /**
      * Keeps the row with the specified index on the same page as the next
      * row, as a heading row is kept with the rows under it: a page break does
      * not fall between them, and moves both to the next page. Rows kept with
@@ -683,6 +882,7 @@ public class Table implements Drawable {
                 // pages forever.
                 if (index > first) {
                     rendered = index;
+                    setFooterSums(first, index);
                     return new float[] {x, drawFooterRows(page, x, y, heights, false)};
                 }
             }
@@ -696,6 +896,7 @@ public class Table implements Drawable {
         }
         if (!done) {
             // The rows of the table are all drawn, and the footer rows end it.
+            setFooterSums(first, footer);
             y = drawFooterRows(page, x, y, heights, true);
         }
         if (page != null) {
@@ -1108,9 +1309,11 @@ public class Table implements Drawable {
             int maxNumVerCells = 1;
             for (int i = 0; i < row.size(); i++) {
                 // A cell that draws a line of text of its own draws no cell
-                // text, so there is nothing to wrap.
+                // text, so there is nothing to wrap. A cell that shows a sum
+                // is not wrapped either, as its text is the sum of each page.
                 List<String> cellLines = (row.get(i).text == null
-                        || row.get(i).drawable instanceof BaselineDrawable)
+                        || row.get(i).drawable instanceof BaselineDrawable
+                        || (row.get(i).properties & Cell.SUM_BITS) != 0)
                         ? null : wrapCellText(row, i);
                 lines.add(cellLines);
                 if (cellLines != null && cellLines.size() > maxNumVerCells) {
@@ -1153,6 +1356,7 @@ public class Table implements Drawable {
                     cell2.setBorder(Border.TOP, false);
                     cell2.setBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;
+                    cell2.properties &= ~Cell.SUM_BITS;
                     row2.add(cell2);
                 }
                 tableData2.add(row2);

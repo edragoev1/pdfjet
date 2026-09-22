@@ -47,6 +47,11 @@ and it lands with tests in the four ports and an example that renders alike
 in all of them. Nothing else from "After v9.0.3 -- features" moves up with
 it.
 
+The page breaks of `Table` moved up after it (Sep 22), and are in v9.0.2
+with it: the wrapped lines of a row are kept together, which changes one
+page break of Example_34, and `keepRowWithNext`, `setNumberOfFooterRows`,
+`setPageSum` and `setRunningSum` are new, each with tests in the four ports.
+
 ## The seven goals of v9.0.3
 
 1. ✅ **B** Fuzz the parsers of untrusted input with Go's fuzzing, and fix each
@@ -634,12 +639,10 @@ this is started before Oct 21.
 - ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
       (zebra striping, as `BigTable.setShadingColor`), and a style for the
       header rows, the body and a total row, rather than coloring every cell.
-- ⬜ "Carried forward" subtotals: a footer row whose cells sum a column of
-      the rows the page holds, or all the rows up to it. The footer rows
-      repeat on every page (`setNumberOfFooterRows`, Sep 22), but with the
-      text they were given; and a page break keeps the rows of a span, the
-      wrapped lines of a row and the rows `keepRowWithNext` marks together, in
-      `rowGroupEnd`.
+- ⬜ "Brought forward": a row at the top of each page after the first with
+      the total carried from the page before, as `setRunningSum` writes it at
+      the bottom of that page. It is a header row whose text changes from
+      page to page, as the sums of the footer rows do (Sep 22).
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
 - ⬜ The transparent color of a grayscale or truecolor PNG: a `tRNS` chunk on

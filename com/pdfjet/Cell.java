@@ -64,6 +64,13 @@ public class Cell {
     // A cell of a row that a page break keeps with the next row, which the
     // cells a table adds below it for its wrapped text have too.
     static final int KEPT_WITH_NEXT = 0x01000000;
+    // A cell of a footer row that shows the sum of its column over the rows
+    // of the page, or over all the rows up to the end of the page, and the
+    // number of decimals it shows, in the four bits from SUM_DECIMALS.
+    static final int PAGE_SUM = 0x02000000;
+    static final int RUNNING_SUM = 0x04000000;
+    static final int SUM_DECIMALS = 27;
+    static final int SUM_BITS = PAGE_SUM | RUNNING_SUM | (0xF << SUM_DECIMALS);
 
     // Where the three alignments of a cell are in properties, three bits
     // each, and where the four paddings are in padding, a byte each.

@@ -929,3 +929,93 @@ func TestTableMeasuringATableWithFooterRowsReturnsTheCornerDrawingDoes(t *testin
 		t.Errorf("the footer is drawn %d times", n)
 	}
 }
+
+func TestTableTheFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt(t *testing.T) {
+	// Rows r1 to r57 hold r + 0.25 in their second cell, but for row 10,
+	// which holds no number, and the two footer rows the page total and the
+	// total carried forward.
+	doc := testNewDoc()
+	data := testRowsWith(testHelvetica(doc.pdf), -1)
+	for r := 1; r < 59; r++ {
+		if r == 10 {
+			data[r][1].SetText("n/a")
+		} else {
+			data[r][1].SetText(fmt.Sprintf("%d.25", r))
+		}
+	}
+	data[58][0].SetText("page")
+	data[59][0].SetText("carried")
+	table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(2).
+		SetPageSum(58, 1, 2).SetRunningSum(59, 1, 2)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	// Until it is drawn, a cell has the sum of all the rows.
+	testWant(t, "1,657.00", table.GetCellAt(58, 1).GetText())
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	carried := int64(0)
+	for i, page := range pages {
+		total := int64(0)
+		for r := 1; r < 58; r++ {
+			if r != 10 && !math.IsNaN(float64(testYOf(page, fmt.Sprintf("r%d", r)))) {
+				total += int64(100*r + 25)
+			}
+		}
+		carried += total
+		content := testContent(page)
+		if !strings.Contains(content, "<"+testHex(formatSum(total, 2))+">") {
+			t.Errorf("page %d: no page total %s", i, formatSum(total, 2))
+		}
+		if !strings.Contains(content, "<"+testHex(formatSum(carried, 2))+">") {
+			t.Errorf("page %d: no total carried %s", i, formatSum(carried, 2))
+		}
+	}
+	// Rows 1 to 57 but row 10: 1,643 and 56 quarters.
+	if carried != 164300+1400 {
+		t.Errorf("the total is %d", carried)
+	}
+}
+
+func TestTableASumReadsTheNumbersAsRightAlignNumbersDoes(t *testing.T) {
+	for _, c := range []struct {
+		text     string
+		decimals int
+		want     int64
+		ok       bool
+	}{
+		{"1,234.50", 2, 123450, true},
+		{"(1,234.50)", 2, -123450, true},
+		{" -5 ", 0, -5, true},
+		{"1.5E+3", 0, 1500, true},
+		{"1.5e1", 0, 15, true},
+		{"1'234", 0, 1234, true},
+		{".5", 2, 50, true},
+		// Halves away from zero.
+		{"0.125", 2, 13, true},
+		{"-0.125", 2, -13, true},
+		{"0.004", 2, 0, true},
+		{"0.5", 0, 1, true},
+		{"1.234.567", 0, 0, false},
+		{"n/a", 0, 0, false},
+		{"", 0, 0, false},
+		{"1234567890123456789", 0, 0, false},
+		{"1E99999", 0, 0, false},
+	} {
+		if got, ok := numberOf(c.text, c.decimals); got != c.want || ok != c.ok {
+			t.Errorf("numberOf(%q, %d) = %d, %v", c.text, c.decimals, got, ok)
+		}
+	}
+	for _, c := range []struct {
+		sum      int64
+		decimals int
+		want     string
+	}{
+		{123450, 2, "1,234.50"}, {-1234567, 0, "-1,234,567"}, {5, 2, "0.05"}, {-5, 2, "-0.05"},
+		{0, 2, "0.00"}, {999, 0, "999"}, {1000, 0, "1,000"},
+	} {
+		testWant(t, c.want, formatSum(c.sum, c.decimals))
+	}
+}

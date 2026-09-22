@@ -721,4 +721,67 @@ import Testing
         TestSupport.expectXY(245, 109.36, measured)
         #expect(count(TestSupport.content(page), TestSupport.hex("total")) == 1)
     }
+
+    @Test func theFooterSumsAreTheTotalsOfThePageAndOfThePagesUpToIt() {
+        // Rows r1 to r57 hold r + 0.25 in their second cell, but for row 10,
+        // which holds no number, and the two footer rows the page total and
+        // the total carried forward.
+        let pdf = TestSupport.newPDF()
+        let data = rowsWith(TestSupport.helvetica(pdf), -1)
+        for r in 1..<59 {
+            data[r][1].setText(r == 10 ? "n/a" : "\(r).25")
+        }
+        data[58][0].setText("page")
+        data[59][0].setText("carried")
+        let table = Table().setTableData(data, 1).setNumberOfFooterRows(2)
+                .setPageSum(58, 1, 2).setRunningSum(59, 1, 2).setLocation(50, 50)
+        table.setBottomMargin(20)
+        // Until it is drawn, a cell has the sum of all the rows.
+        #expect(table.getCellAt(58, 1).getText() == "1,657.00")
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 2)
+        var carried: Int64 = 0
+        for page in pages {
+            var total: Int64 = 0
+            for r in 1..<58 where r != 10 && !yOf(page, "r\(r)").isNaN {
+                total += Int64(100 * r + 25)
+            }
+            carried += total
+            let content = TestSupport.content(page)
+            #expect(content.contains("<" + TestSupport.hex(Table.formatSum(total, 2)) + ">"),
+                    "no page total \(Table.formatSum(total, 2))")
+            #expect(content.contains("<" + TestSupport.hex(Table.formatSum(carried, 2)) + ">"),
+                    "no total carried \(Table.formatSum(carried, 2))")
+        }
+        // Rows 1 to 57 but row 10: 1,643 and 56 quarters.
+        #expect(carried == 164300 + 1400)
+    }
+
+    @Test func aSumReadsTheNumbersAsRightAlignNumbersDoes() {
+        #expect(Table.numberOf("1,234.50", 2) == 123450)
+        #expect(Table.numberOf("(1,234.50)", 2) == -123450)
+        #expect(Table.numberOf(" -5 ", 0) == -5)
+        #expect(Table.numberOf("1.5E+3", 0) == 1500)
+        #expect(Table.numberOf("1.5e1", 0) == 15)
+        #expect(Table.numberOf("1'234", 0) == 1234)
+        #expect(Table.numberOf(".5", 2) == 50)
+        // Halves away from zero.
+        #expect(Table.numberOf("0.125", 2) == 13)
+        #expect(Table.numberOf("-0.125", 2) == -13)
+        #expect(Table.numberOf("0.004", 2) == 0)
+        #expect(Table.numberOf("0.5", 0) == 1)
+        #expect(Table.numberOf("1.234.567", 0) == nil)
+        #expect(Table.numberOf("n/a", 0) == nil)
+        #expect(Table.numberOf("", 0) == nil)
+        #expect(Table.numberOf("1234567890123456789", 0) == nil)
+        #expect(Table.numberOf("1E99999", 0) == nil)
+        #expect(Table.formatSum(123450, 2) == "1,234.50")
+        #expect(Table.formatSum(-1234567, 0) == "-1,234,567")
+        #expect(Table.formatSum(5, 2) == "0.05")
+        #expect(Table.formatSum(-5, 2) == "-0.05")
+        #expect(Table.formatSum(0, 2) == "0.00")
+        #expect(Table.formatSum(999, 0) == "999")
+        #expect(Table.formatSum(1000, 0) == "1,000")
+    }
 }

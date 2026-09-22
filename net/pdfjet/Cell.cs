@@ -52,6 +52,13 @@ public class Cell {
     // A cell of a row that a page break keeps with the next row, which the
     // cells a table adds below it for its wrapped text have too.
     internal const uint KEPT_WITH_NEXT = 0x01000000;
+    // A cell of a footer row that shows the sum of its column over the rows
+    // of the page, or over all the rows up to the end of the page, and the
+    // number of decimals it shows, in the four bits from SUM_DECIMALS.
+    internal const uint PAGE_SUM = 0x02000000;
+    internal const uint RUNNING_SUM = 0x04000000;
+    internal const int SUM_DECIMALS = 27;
+    internal const uint SUM_BITS = PAGE_SUM | RUNNING_SUM | (0xFu << SUM_DECIMALS);
     internal uint properties = Border.TOP | Border.LEFT;
     private String uri;
 

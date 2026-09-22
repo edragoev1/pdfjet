@@ -249,6 +249,198 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	return table
 }
 
+// SetPageSum makes the cell of a footer row show the sum of its column over
+// the rows of each page: the page total. The numbers are read as
+// RightAlignNumbers reads them, with commas and apostrophes between the
+// thousands and a period before the decimals, and a cell that has no number
+// is left out. The sum has the number of decimals, from 0 to 9, rounded half
+// away from zero, and commas between the thousands. Until the table is drawn
+// the cell has the sum of all the rows, so that AutoAdjustColumnWidths leaves
+// room for it; its text is not wrapped. The row is the index of a footer row,
+// see SetNumberOfFooterRows.
+func (table *Table) SetPageSum(row, column, decimals int) *Table {
+	return table.setSum(row, column, decimals, cellPageSum)
+}
+
+// SetRunningSum makes the cell of a footer row show the sum of its column
+// over all the rows up to the end of each page: the total carried forward,
+// which is the total of the table on its last page. The numbers are read and
+// the sum is written as SetPageSum reads and writes them.
+func (table *Table) SetRunningSum(row, column, decimals int) *Table {
+	return table.setSum(row, column, decimals, cellRunningSum)
+}
+
+func (table *Table) setSum(row, column, decimals int, kind uint32) *Table {
+	if row < 0 || row >= len(table.tableData) || column < 0 || column >= len(table.tableData[row]) {
+		return table
+	}
+	places := max(0, min(9, decimals))
+	cell := table.tableData[row][column]
+	cell.properties = (cell.properties &^ cellSumBits) | kind | (uint32(places) << cellSumDecimals)
+	cell.SetText(formatSum(table.sumOf(column, table.numOfHeaderRows, min(row, table.footerStart()), places), places))
+	return table
+}
+
+// setFooterSums writes the sums in the footer cells that SetPageSum and
+// SetRunningSum mark: those of the rows of the page, from first to end, and
+// those of all the rows to end.
+func (table *Table) setFooterSums(first, end int) {
+	for r := table.footerStart(); r < len(table.tableData); r++ {
+		for j, cell := range table.tableData[r] {
+			if cell.properties&(cellPageSum|cellRunningSum) != 0 {
+				places := int((cell.properties >> cellSumDecimals) & 0xF)
+				from := table.numOfHeaderRows
+				if cell.properties&cellPageSum != 0 {
+					from = first
+				}
+				cell.SetText(formatSum(table.sumOf(j, from, end, places), places))
+			}
+		}
+	}
+}
+
+// maxSum is the largest sum, and number, in units of the decimals: 18 digits.
+const maxSum int64 = 999999999999999999
+
+// sumOf returns the sum of the numbers in the column of the rows from first
+// to end, in units of the decimals. A number that would take the sum past 18
+// digits is left out.
+func (table *Table) sumOf(column, first, end, decimals int) int64 {
+	sum := int64(0)
+	for r := max(0, first); r < end && r < len(table.tableData); r++ {
+		row := table.tableData[r]
+		if column >= len(row) {
+			continue
+		}
+		cell := row[column]
+		if cell.properties&cellCovered != 0 || !cell.hasText {
+			continue
+		}
+		if value, ok := numberOf(cell.text, decimals); ok {
+			if total := sum + value; total <= maxSum && total >= -maxSum {
+				sum = total
+			}
+		}
+	}
+	return sum
+}
+
+// numberOf returns the number the text is, in units of the decimals, rounded
+// half away from zero, and false when the text is not a number, as isNumber
+// reads it, has more than one period, or is more than 18 digits in those
+// units. Commas and apostrophes are between the thousands, a period is before
+// the decimals, and parentheses make a number negative.
+func numberOf(text string, decimals int) (int64, bool) {
+	if !isNumber(text) {
+		return 0, false
+	}
+	str := text
+	negative := false
+	if len(str) >= 2 && str[0] == '(' && str[len(str)-1] == ')' {
+		str = str[1 : len(str)-1]
+		negative = true
+	}
+	str = strings.TrimSpace(strings.NewReplacer(",", "", "'", "").Replace(str))
+	if str[0] == '+' || str[0] == '-' {
+		negative = negative != (str[0] == '-')
+		str = str[1:]
+	}
+	exponent := 0
+	if e := strings.IndexAny(str, "eE"); e != -1 {
+		digits := str[e+1:]
+		sign := 1
+		if digits[0] == '+' || digits[0] == '-' {
+			if digits[0] == '-' {
+				sign = -1
+			}
+			digits = digits[1:]
+		}
+		if len(digits) > 4 || strings.Contains(digits, ".") {
+			return 0, false
+		}
+		n, _ := strconv.Atoi(digits)
+		exponent = sign * n
+		str = str[:e]
+	}
+	point := strings.Index(str, ".")
+	if point != strings.LastIndex(str, ".") {
+		return 0, false
+	}
+	fraction := ""
+	digits := str
+	if point != -1 {
+		fraction = str[point+1:]
+		digits = str[:point] + fraction
+	}
+	digits = strings.TrimLeft(digits, "0")
+	if digits == "" {
+		return 0, true
+	}
+	// The number is the digits times 10 to the shift, in units of the
+	// decimals.
+	shift := exponent - len(fraction) + decimals
+	var value int64
+	if shift >= 0 {
+		if len(digits)+shift > 18 {
+			return 0, false
+		}
+		value, _ = strconv.ParseInt(digits, 10, 64)
+		for i := 0; i < shift; i++ {
+			value *= 10
+		}
+	} else {
+		keep := len(digits) + shift
+		if keep < 0 {
+			return 0, true
+		}
+		if keep > 18 {
+			return 0, false
+		}
+		if keep > 0 {
+			value, _ = strconv.ParseInt(digits[:keep], 10, 64)
+		}
+		if digits[keep] >= '5' {
+			value++
+		}
+		if value > maxSum {
+			return 0, false
+		}
+	}
+	if negative {
+		value = -value
+	}
+	return value, true
+}
+
+// formatSum returns the sum in units of the decimals as text: the decimals
+// after a period, and commas between the thousands.
+func formatSum(sum int64, decimals int) string {
+	magnitude := sum
+	if magnitude < 0 {
+		magnitude = -magnitude
+	}
+	digits := strconv.FormatInt(magnitude, 10)
+	for len(digits) <= decimals {
+		digits = "0" + digits
+	}
+	point := len(digits) - decimals
+	var text strings.Builder
+	if sum < 0 {
+		text.WriteByte('-')
+	}
+	for i := 0; i < point; i++ {
+		if i > 0 && (point-i)%3 == 0 {
+			text.WriteByte(',')
+		}
+		text.WriteByte(digits[i])
+	}
+	if decimals > 0 {
+		text.WriteByte('.')
+		text.WriteString(digits[point:])
+	}
+	return text.String()
+}
+
 // KeepRowWithNext keeps the row with the specified index on the same page as
 // the next row, as a heading row is kept with the rows under it: a page break
 // does not fall between them, and moves both to the next page. Rows kept with
@@ -631,6 +823,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 			// forever.
 			if index > first {
 				table.rendered = index
+				table.setFooterSums(first, index)
 				return [2]float32{x, table.drawFooterRows(page, x, y, heights, false)}
 			}
 		}
@@ -644,6 +837,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	}
 	if !done {
 		// The rows of the table are all drawn, and the footer rows end it.
+		table.setFooterSums(first, footer)
 		y = table.drawFooterRows(page, x, y, heights, true)
 	}
 	if page != nil {
@@ -1044,9 +1238,10 @@ func (table *Table) wrapAroundCellText() {
 		for i := 0; i < len(row); i++ {
 			var cellLines []string
 			// A cell that draws a line of text of its own draws no cell text,
-			// so there is nothing to wrap.
+			// so there is nothing to wrap, and a cell that shows a sum is not
+			// wrapped either, as its text is the sum of each page.
 			_, hasLine := row[i].drawable.(BaselineDrawable)
-			if row[i].hasText && !hasLine {
+			if row[i].hasText && !hasLine && row[i].properties&cellSumBits == 0 {
 				cellLines = wrapCellText(row, i)
 				if len(cellLines) > maxNumVerCells {
 					maxNumVerCells = len(cellLines)
@@ -1089,6 +1284,7 @@ func (table *Table) wrapAroundCellText() {
 				cell2.properties &= ^border.Top
 				cell2.SetBorder(border.Bottom, bottomBorder[j] && i == maxNumVerCells-1)
 				cell2.properties |= cellContinued
+				cell2.properties &^= cellSumBits
 				row2 = append(row2, cell2)
 			}
 			tableData2 = append(tableData2, row2)

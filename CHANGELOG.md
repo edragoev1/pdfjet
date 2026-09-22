@@ -10,6 +10,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Table.setPageSum(row, column, decimals)` and
+  `Table.setRunningSum(row, column, decimals)` make a cell of a footer row
+  show the sum of its column, in all four ports: over the rows of each page,
+  the page total, or over all the rows up to the end of each page, the total
+  carried forward, which is the total of the table on its last page. The
+  numbers are read as `rightAlignNumbers` reads them, with commas and
+  apostrophes between the thousands and a period before the decimals; a cell
+  that has no number is left out. The sums are exact, with the number of
+  decimals rounded half away from zero and commas between the thousands, and
+  the same text in every port.
 - `Table.setNumberOfFooterRows(n)` makes the last rows of the table data
   footer rows, in all four ports: they are drawn again at the end of the
   table on every page, under the last row the page holds, as the header rows

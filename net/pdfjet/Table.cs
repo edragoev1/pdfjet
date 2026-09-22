@@ -260,6 +260,194 @@ public class Table : IDrawable {
     }
 
     /// <summary>
+    /// Makes the cell of a footer row show the sum of its column over the rows
+    /// of each page: the page total. The numbers are read as RightAlignNumbers
+    /// reads them, with commas and apostrophes between the thousands and a
+    /// period before the decimals, and a cell that has no number is left out.
+    /// The sum has the number of decimals, rounded half away from zero, and
+    /// commas between the thousands. Until the table is drawn the cell has the
+    /// sum of all the rows, so that AutoAdjustColumnWidths leaves room for it;
+    /// its text is not wrapped.
+    /// </summary>
+    /// <param name="row">the index of a footer row, see SetNumberOfFooterRows.</param>
+    /// <param name="column">the index of the column.</param>
+    /// <param name="decimals">the number of decimals, from 0 to 9.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetPageSum(int row, int column, int decimals) {
+        return SetSum(row, column, decimals, Cell.PAGE_SUM);
+    }
+
+    /// <summary>
+    /// Makes the cell of a footer row show the sum of its column over all the
+    /// rows up to the end of each page: the total carried forward, which is
+    /// the total of the table on its last page. The numbers are read and the
+    /// sum is written as SetPageSum reads and writes them.
+    /// </summary>
+    /// <param name="row">the index of a footer row, see SetNumberOfFooterRows.</param>
+    /// <param name="column">the index of the column.</param>
+    /// <param name="decimals">the number of decimals, from 0 to 9.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetRunningSum(int row, int column, int decimals) {
+        return SetSum(row, column, decimals, Cell.RUNNING_SUM);
+    }
+
+    private Table SetSum(int row, int column, int decimals, uint kind) {
+        if (row < 0 || row >= tableData.Count || column < 0 || column >= tableData[row].Count) {
+            return this;
+        }
+        int places = Math.Max(0, Math.Min(9, decimals));
+        Cell cell = tableData[row][column];
+        cell.properties = (cell.properties & ~Cell.SUM_BITS) | kind | ((uint) places << Cell.SUM_DECIMALS);
+        cell.SetText(FormatSum(SumOf(column, numOfHeaderRows, Math.Min(row, FooterStart()), places), places));
+        return this;
+    }
+
+    // Writes the sums in the footer cells that SetPageSum and SetRunningSum
+    // mark: those of the rows of the page, from first to end, and those of
+    // all the rows to end.
+    private void SetFooterSums(int first, int end) {
+        for (int r = FooterStart(); r < tableData.Count; r++) {
+            List<Cell> row = tableData[r];
+            for (int j = 0; j < row.Count; j++) {
+                Cell cell = row[j];
+                if ((cell.properties & (Cell.PAGE_SUM | Cell.RUNNING_SUM)) != 0) {
+                    int places = (int) ((cell.properties >> Cell.SUM_DECIMALS) & 0xF);
+                    int from = ((cell.properties & Cell.PAGE_SUM) != 0) ? first : numOfHeaderRows;
+                    cell.SetText(FormatSum(SumOf(j, from, end, places), places));
+                }
+            }
+        }
+    }
+
+    // The largest sum, and number, in units of the decimals: 18 digits.
+    private const long MAX_SUM = 999999999999999999L;
+
+    // The sum of the numbers in the column of the rows from first to end, in
+    // units of the decimals. A number that would take the sum past 18 digits
+    // is left out.
+    private long SumOf(int column, int first, int end, int decimals) {
+        long sum = 0L;
+        for (int r = Math.Max(0, first); r < end && r < tableData.Count; r++) {
+            List<Cell> row = tableData[r];
+            if (column >= row.Count) {
+                continue;
+            }
+            Cell cell = row[column];
+            if ((cell.properties & Cell.COVERED) != 0 || cell.text == null) {
+                continue;
+            }
+            long? value = NumberOf(cell.text, decimals);
+            if (value != null && Math.Abs(sum + value.Value) <= MAX_SUM) {
+                sum += value.Value;
+            }
+        }
+        return sum;
+    }
+
+    /// <summary>
+    /// Returns the number the text is, in units of the decimals, rounded half
+    /// away from zero, or null when the text is not a number, as IsNumber
+    /// reads it, has more than one period, or is more than 18 digits in those
+    /// units. Commas and apostrophes are between the thousands, a period is
+    /// before the decimals, and parentheses make a number negative.
+    /// </summary>
+    internal static long? NumberOf(String text, int decimals) {
+        if (!IsNumber(text)) {
+            return null;
+        }
+        String str = text;
+        bool negative = false;
+        if (str.Length >= 2 && str[0] == '(' && str[str.Length - 1] == ')') {
+            str = str.Substring(1, str.Length - 2);
+            negative = true;
+        }
+        str = str.Replace(",", "").Replace("'", "").Trim();
+        if (str[0] == '+' || str[0] == '-') {
+            negative ^= (str[0] == '-');
+            str = str.Substring(1);
+        }
+        int exponent = 0;
+        int e = str.IndexOfAny(new char[] {'e', 'E'});
+        if (e != -1) {
+            String exp = str.Substring(e + 1);
+            int sign = 1;
+            if (exp[0] == '+' || exp[0] == '-') {
+                sign = (exp[0] == '-') ? -1 : 1;
+                exp = exp.Substring(1);
+            }
+            if (exp.Length > 4 || exp.Contains('.')) {
+                return null;
+            }
+            exponent = sign * int.Parse(exp, System.Globalization.CultureInfo.InvariantCulture);
+            str = str.Substring(0, e);
+        }
+        int point = str.IndexOf('.');
+        if (point != str.LastIndexOf('.')) {
+            return null;
+        }
+        String fraction = (point == -1) ? "" : str.Substring(point + 1);
+        String digits = ((point == -1) ? str : str.Substring(0, point) + fraction).TrimStart('0');
+        if (digits.Length == 0) {
+            return 0L;
+        }
+        // The number is the digits times 10 to the shift, in units of the
+        // decimals.
+        int shift = exponent - fraction.Length + decimals;
+        long value;
+        if (shift >= 0) {
+            if (digits.Length + shift > 18) {
+                return null;
+            }
+            value = long.Parse(digits, System.Globalization.CultureInfo.InvariantCulture);
+            for (int i = 0; i < shift; i++) {
+                value *= 10;
+            }
+        } else {
+            int keep = digits.Length + shift;
+            if (keep < 0) {
+                return 0L;
+            }
+            if (keep > 18) {
+                return null;
+            }
+            value = (keep == 0) ? 0L : long.Parse(digits.Substring(0, keep), System.Globalization.CultureInfo.InvariantCulture);
+            if (digits[keep] >= '5') {
+                value++;
+            }
+            if (value > MAX_SUM) {
+                return null;
+            }
+        }
+        return negative ? -value : value;
+    }
+
+    /// <summary>
+    /// Returns the sum in units of the decimals as text: the decimals after a
+    /// period, and commas between the thousands.
+    /// </summary>
+    internal static String FormatSum(long sum, int decimals) {
+        String digits = Math.Abs(sum).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        while (digits.Length <= decimals) {
+            digits = "0" + digits;
+        }
+        int point = digits.Length - decimals;
+        StringBuilder text = new StringBuilder();
+        if (sum < 0) {
+            text.Append('-');
+        }
+        for (int i = 0; i < point; i++) {
+            if (i > 0 && (point - i) % 3 == 0) {
+                text.Append(',');
+            }
+            text.Append(digits[i]);
+        }
+        if (decimals > 0) {
+            text.Append('.').Append(digits, point, digits.Length - point);
+        }
+        return text.ToString();
+    }
+
+    /// <summary>
     /// Keeps the row with the specified index on the same page as the next
     /// row, as a heading row is kept with the rows under it: a page break does
     /// not fall between them, and moves both to the next page. Rows kept with
@@ -644,6 +832,7 @@ public class Table : IDrawable {
                 // pages forever.
                 if (index > first) {
                     rendered = index;
+                    SetFooterSums(first, index);
                     return new float[] {x, DrawFooterRows(page, x, y, heights, false)};
                 }
             }
@@ -657,6 +846,7 @@ public class Table : IDrawable {
         }
         if (!done) {
             // The rows of the table are all drawn, and the footer rows end it.
+            SetFooterSums(first, footer);
             y = DrawFooterRows(page, x, y, heights, true);
         }
         if (page != null) {
@@ -1057,9 +1247,11 @@ public class Table : IDrawable {
             int maxNumVerCells = 1;
             for (int i = 0; i < row.Count; i++) {
                 // A cell that draws a line of text of its own draws no cell
-                // text, so there is nothing to wrap.
+                // text, so there is nothing to wrap. A cell that shows a sum
+                // is not wrapped either, as its text is the sum of each page.
                 List<String> cellLines = (row[i].text == null
-                        || row[i].drawable is IBaselineDrawable)
+                        || row[i].drawable is IBaselineDrawable
+                        || (row[i].properties & Cell.SUM_BITS) != 0)
                         ? null : WrapCellText(row, i);
                 lines.Add(cellLines);
                 if (cellLines != null && cellLines.Count > maxNumVerCells) {
@@ -1102,6 +1294,7 @@ public class Table : IDrawable {
                     cell2.SetBorder(Border.TOP, false);
                     cell2.SetBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;
+                    cell2.properties &= ~Cell.SUM_BITS;
                     row2.Add(cell2);
                 }
                 tableData2.Add(row2);
