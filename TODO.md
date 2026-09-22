@@ -174,6 +174,15 @@ day.
       against 9.0.1 with Example_43's time, the docs, the packages and the
       site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
       carries the 17 members of goal 6 and the fixes under `## Unreleased`.
+      Done on Sep 22, to be run again at the tag: the API diff, the JDK 8
+      build, and the benchmarks, in `benchmarks/results/2026-09-22-*.log` and
+      `benchmarks/table/results/2026-09-22-010c7c21.log`. They found `Table`
+      measuring every row on every page and Java's `BigTable` reading its
+      file a byte at a time, both since v9.0.1 and both fixed. Example_43 is
+      as fast as at v9.0.1 with `BigTable` (1.66 s) and 8% slower with
+      `Table` (3.76 s); `Table` in the four ports is 5 to 22% slower than on
+      Sep 18, spread over the tagging, the fallback font of each character and
+      the row spans, with no one place that costs it.
 - ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
 
 ### Oct 2–8: the reader
