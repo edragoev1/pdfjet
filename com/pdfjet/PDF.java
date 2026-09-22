@@ -1459,6 +1459,7 @@ final public class PDF {
         Map<Integer, Integer> numbers = new HashMap<Integer, Integer>();
         Map<Integer, List<String>> values = new HashMap<Integer, List<String>>();
         List<PDFobj> queue = new ArrayList<PDFobj>();
+        Map<PDFobj, Map<String, List<String>>> nodes = new IdentityHashMap<PDFobj, Map<String, List<String>>>();
         for (PDFobj page : pageObjects) {
             if (!numbers.containsKey(page.number)) {
                 numbers.put(page.number, reserveObjNumber());
@@ -1467,7 +1468,7 @@ final public class PDF {
         }
         for (int i = 0; i < queue.size(); i++) {
             PDFobj obj = queue.get(i);
-            List<String> value = mergedValue(obj, mergedPages.contains(obj.number), objects);
+            List<String> value = mergedValue(obj, mergedPages.contains(obj.number), objects, nodes);
             values.put(obj.number, value);
             for (int j = 0; j < value.size(); j++) {
                 if (isReference(value, j)) {
@@ -1542,7 +1543,8 @@ final public class PDF {
     // Returns the value of an object that was read, without its "n g obj" and
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
-    private static List<String> mergedValue(PDFobj obj, boolean isPage, List<PDFobj> objects) {
+    private static List<String> mergedValue(
+            PDFobj obj, boolean isPage, List<PDFobj> objects, Map<PDFobj, Map<String, List<String>>> nodes) {
         List<String> value = valueOf(obj);
         if (obj.stream != null) {
             setEntry(value, "/Length", Collections.singletonList(String.valueOf(obj.stream.length)));
@@ -1550,7 +1552,7 @@ final public class PDF {
         if (isPage) {
             for (String key : INHERITED) {
                 if (entryIndex(value, key) == -1) {
-                    List<String> inherited = inheritedValue(obj, key, objects);
+                    List<String> inherited = inheritedValue(obj, key, objects, nodes);
                     if (inherited == null && key.equals("/MediaBox")) {
                         inherited = Arrays.asList("[", "0", "0", "612", "792", "]");    // Letter
                     }
@@ -1578,27 +1580,52 @@ final public class PDF {
     }
 
     // Returns the value of the entry from the nearest node of the page tree
-    // above the page that has it, or null.
-    private static List<String> inheritedValue(PDFobj page, String key, List<PDFobj> objects) {
-        PDFobj node = page;
+    // above the page that has it, or null. The entries of each node are found
+    // once and kept in nodes, as the node of a flat tree lists thousands of
+    // pages, and each of them looks up each entry it does not have.
+    private static List<String> inheritedValue(
+            PDFobj page, String key, List<PDFobj> objects, Map<PDFobj, Map<String, List<String>>> nodes) {
+        List<String> tokens = valueOf(page);
+        int i = entryIndex(tokens, "/Parent");
+        List<String> parent = (i == -1) ? null : tokens.subList(i + 1, valueEnd(tokens, i + 1));
         for (int depth = 0; depth < 64; depth++) {  // A loop in a broken tree ends here.
-            List<String> tokens = valueOf(node);
-            int i = entryIndex(tokens, "/Parent");
-            if (i == -1 || !isReference(tokens, i + 1)) {
+            if (parent == null || !isReference(parent, 0)) {
                 return null;
             }
-            int number = Integer.parseInt(tokens.get(i + 1));
+            int number = Integer.parseInt(parent.get(0));
             if (number < 1 || number > objects.size() || objects.get(number - 1).dict.isEmpty()) {
                 return null;
             }
-            node = objects.get(number - 1);
-            List<String> parent = valueOf(node);
-            int k = entryIndex(parent, key);
-            if (k != -1) {
-                return new ArrayList<String>(parent.subList(k + 1, valueEnd(parent, k + 1)));
+            PDFobj node = objects.get(number - 1);
+            Map<String, List<String>> entries = nodes.get(node);
+            if (entries == null) {
+                entries = entriesOf(valueOf(node));
+                nodes.put(node, entries);
             }
+            List<String> value = entries.get(key);
+            if (value != null) {
+                return new ArrayList<String>(value);
+            }
+            parent = entries.get("/Parent");
         }
         return null;
+    }
+
+    // Returns the entries of the dictionary, the first of each key, by key.
+    private static Map<String, List<String>> entriesOf(List<String> tokens) {
+        Map<String, List<String>> entries = new HashMap<String, List<String>>();
+        if (tokens.isEmpty() || !tokens.get(0).equals("<<")) {
+            return entries;
+        }
+        int i = 1;
+        while (i < tokens.size() && !tokens.get(i).equals(">>")) {
+            int end = valueEnd(tokens, i + 1);
+            if (!entries.containsKey(tokens.get(i))) {
+                entries.put(tokens.get(i), tokens.subList(i + 1, end));
+            }
+            i = end;
+        }
+        return entries;
     }
 
     // Returns the index after the value that starts at index i.
@@ -2725,7 +2752,8 @@ final public class PDF {
         List<PDFobj> pages = new ArrayList<PDFobj>();
         PDFobj pagesObject = getPagesObject(objects);
         if (pagesObject != null) {
-            getPageObjects(pagesObject, objects, pages, new HashSet<Integer>());
+            getPageObjects(pagesObject, objects, pages, new HashSet<Integer>(),
+                    new IdentityHashMap<PDFobj, Map<String, List<String>>>());
         }
         return pages;
     }
@@ -2736,7 +2764,8 @@ final public class PDF {
             PDFobj pdfObj,
             List<PDFobj> objects,
             List<PDFobj> pages,
-            Set<Integer> visited) {
+            Set<Integer> visited,
+            Map<PDFobj, Map<String, List<String>>> nodes) {
         if (!visited.add(pdfObj.number)) {
             return;
         }
@@ -2747,11 +2776,12 @@ final public class PDF {
             }
             PDFobj obj = objects.get(number - 1);
             if (isPageObject(obj)) {
-                addInheritedEntries(obj, objects);
+                addInheritedEntries(obj, objects, nodes);
                 resolveMediaBox(obj, objects);
+                nodes.remove(obj);  // A broken tree can have a page as a node.
                 pages.add(obj);
             } else {
-                getPageObjects(obj, objects, pages, visited);
+                getPageObjects(obj, objects, pages, visited, nodes);
             }
         }
     }
@@ -2760,7 +2790,8 @@ final public class PDF {
     // not have itself. A page of another program's PDF often carries no
     // /MediaBox or /Resources of its own, and read() gives the objects as the
     // file has them, so the page holds what it is only after this.
-    private static void addInheritedEntries(PDFobj page, List<PDFobj> objects) {
+    private static void addInheritedEntries(
+            PDFobj page, List<PDFobj> objects, Map<PDFobj, Map<String, List<String>>> nodes) {
         int open = page.dict.indexOf("<<");
         if (open == -1) {
             return;
@@ -2769,7 +2800,7 @@ final public class PDF {
             if (entryIndex(valueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            List<String> value = inheritedValue(page, key, objects);
+            List<String> value = inheritedValue(page, key, objects, nodes);
             if (value != null) {
                 page.dict.addAll(open + 1, value);
                 page.dict.add(open + 1, key);

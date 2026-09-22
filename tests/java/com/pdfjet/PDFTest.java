@@ -636,6 +636,34 @@ class PDFTest {
     }
 
     @Test
+    void theEntriesOfANodeWithThousandsOfPagesAreLookedUpOnce() throws Exception {
+        // Each page looked up each entry it inherits, and each one it does
+        // not have, in a copy of its node, and the node of a flat page tree
+        // lists every page: reading and merging the 10000 pages of the
+        // veraPDF test of the implementation limits took a minute.
+        int count = 10000;
+        String[] objects = new String[count + 2];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            kids.append(i + 3).append(" 0 R ");
+            objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
+        }
+        objects[1] = "<< /Type /Pages /Kids [" + kids + "] /Count " + count
+                + " /MediaBox [0 0 595 842] >>";
+        List<PDFobj> source = TestSupport.read(pdfWithObjects(objects));
+        long start = System.nanoTime();
+        List<PDFobj> pages = new PDF().getPageObjects(source);
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        pdf.merge(source);
+        pdf.complete();
+        long seconds = (System.nanoTime() - start) / 1000000000L;
+        assertEquals(count, pages.size());
+        assertEquals(595f, pages.get(count - 1).getPageSize().getWidth(), 0f);
+        assertTrue(seconds < 5, seconds + " s");
+    }
+
+    @Test
     void aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws Exception {
         // The font was added to the page for every "/Resources" left in its
         // dictionary, and adding it grew that dictionary, so a resources

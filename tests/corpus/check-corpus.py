@@ -2,7 +2,7 @@
 
     tests/corpus/fetch-corpora.sh .corpora
     python3 tests/corpus/fetch-links.py .corpora
-    python3 tests/corpus/check-corpus.py .corpora [--port go] [--jobs N] [--only SUBSTRING]
+    python3 tests/corpus/check-corpus.py .corpora [--port go|java|dotnet|swift] [--jobs N] [--only SUBSTRING]
 
 Each PDF is read by the port, which merges the whole of it into a document of
 its own and splits its first and its last page into two more. MuPDF, through
@@ -63,6 +63,22 @@ def build_port(port, out):
         exe = os.path.join(out, 'corpus-go')
         subprocess.run(['go', 'build', '-o', exe, './tests/corpus/go'], cwd=ROOT, check=True)
         return [exe]
+    if port == 'java':
+        # As test-java.sh builds the library: Java 8 class files, no warnings.
+        classes = os.path.join(out, 'corpus-java')
+        release = ['--release', '8']
+        if subprocess.run(['javac', '--release', '8', '-version'], capture_output=True).returncode:
+            release = []  # Java 8's javac has no such option.
+        sources = []
+        for folder in ['', 'barcodes', 'pdf417', 'qrcode', 'datamatrix', 'fonts', 'encryption']:
+            path = os.path.join('com', 'pdfjet', folder)
+            sources += sorted(os.path.join(path, name) for name in os.listdir(os.path.join(ROOT, path))
+                              if name.endswith('.java'))
+        sources.append(os.path.join('tests', 'corpus', 'java', 'Corpus.java'))
+        subprocess.run(['javac', '-O', '-encoding', 'utf-8'] + release +
+                       ['-Xlint', '-Xlint:-options', '-Werror', '-d', classes] + sources,
+                       cwd=ROOT, check=True)
+        return ['java', '-cp', classes, 'Corpus']
     sys.exit(f'The {port} port has no harness yet.')
 
 
