@@ -114,6 +114,34 @@ public class MergeTest {
     }
 
     [Fact]
+    public void AReferenceWhoseNumberHasLeadingZerosIsMerged() {
+        // "0000000003 0 R", as pdf.js tests it in issue10491: a number of ten
+        // digits was not a reference, so the /Parent of the page left "0 R"
+        // behind, which MuPDF cannot read, and the page lost its contents.
+        string content = "BT /F1 24 Tf 20 300 Td (Zeros) Tj ET";
+        string source = "%PDF-1.4\n"
+                + "0000000001 0 obj << /Type /Catalog /Pages 0000000002 0 R >> endobj\n"
+                + "0000000002 0 obj << /Type /Pages /Kids [0000000003 0 R] /Count 1 >> endobj\n"
+                + "0000000003 0 obj << /Type /Page /Parent 0000000002 0 R /MediaBox [0 0 300 400]"
+                + " /Resources << /Font << /F1 0000000004 0 R >> >> /Contents 0000000005 0 R >> endobj\n"
+                + "0000000004 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+                + "0000000005 0 obj << /Length " + content.Length + " >>\nstream\n" + content
+                + "\nendstream\nendobj\n"
+                + "trailer << /Root 0000000001 0 R >>\n%%EOF\n";
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.Merge(TestSupport.Read(Encoding.Latin1.GetBytes(source)));
+        pdf.Complete();
+
+        List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+        PDFobj page = new PDF().GetPageObjects(objects)[0];
+        Assert.Equal("/Type /Page /MediaBox", string.Join(" ", PDF.ValueOf(page).GetRange(1, 3)));
+        Assert.Equal(300f, page.GetPageSize().GetWidth());
+        Assert.Contains("(Zeros) Tj", PageContents(objects)[0]);
+        AssertReferencesResolve(objects);
+    }
+
+    [Fact]
     public void LinksPointAtTheMergedPages() {
         MemoryStream source = new MemoryStream();
         PDF pdf1 = new PDF(source);

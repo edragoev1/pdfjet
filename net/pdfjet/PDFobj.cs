@@ -23,6 +23,7 @@ public class PDFobj {
     internal byte[] stream;        // The compressed stream
     internal byte[] data;          // The decompressed data
     internal int gsNumber = -1;
+    internal bool root;            // The catalog that the trailer's /Root names
 
     /// <summary>
     /// Creates an object with an empty dictionary.
@@ -386,25 +387,31 @@ public class PDFobj {
     }
 
     internal int GetLength(List<PDFobj> objects) {
-        for (int i = 0; i < dict.Count; i++) {
-            String token = dict[i];
-            if (token.Equals("/Length")) {
-                int number = ToLength(TokenAt(dict, i + 1));
-                if (i + 2 >= dict.Count) {
-                    throw new Exception("The dictionary ends after the /Length.");
-                }
-                if (dict[i + 2].Equals("0")) {
-                    if (i + 3 >= dict.Count) {
-                        throw new Exception("The dictionary ends after the /Length.");
-                    }
-                    if (dict[i + 3].Equals("R")) {
-                        return GetLength(objects, number);
-                    }
-                }
-                return number;
+        // The entry of the dictionary, and not a /Length inside another value
+        // or that is the value of another entry, "/Height/Length", as pdf.js
+        // tests it in issue19611.
+        int open = dict.IndexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        int i = PDF.EntryIndex(dict.GetRange(open, dict.Count - open), "/Length");
+        if (i == -1) {
+            return 0;
+        }
+        i += open;
+        int number = ToLength(TokenAt(dict, i + 1));
+        if (i + 2 >= dict.Count) {
+            throw new Exception("The dictionary ends after the /Length.");
+        }
+        if (dict[i + 2].Equals("0")) {
+            if (i + 3 >= dict.Count) {
+                throw new Exception("The dictionary ends after the /Length.");
+            }
+            if (dict[i + 3].Equals("R")) {
+                return GetLength(objects, number);
             }
         }
-        return 0;
+        return number;
     }
 
     internal int GetLength(List<PDFobj> objects, int number) {
@@ -487,7 +494,7 @@ public class PDFobj {
     // Returns the object that the token names, or null when the token is not
     // the number of an object the PDF has: a page of a file that was changed
     // can name an object that is not in it.
-    private static PDFobj ObjectAt(List<PDFobj> objects, String token) {
+    internal static PDFobj ObjectAt(List<PDFobj> objects, String token) {
         int number;
         if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
             return null;

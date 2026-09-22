@@ -1441,8 +1441,11 @@ public sealed class PDF {
                 && IsObjectNumber(tokens[i + 1]);
     }
 
+    // Returns true for a number that can be an object number or a generation
+    // number: digits, which can have leading zeros, as pdf.js tests it in
+    // issue10491, "0000000003 0 R", and no more than nine others.
     private static bool IsObjectNumber(String token) {
-        if (token.Length == 0 || token.Length > 9) {
+        if (token.Length == 0 || token.TrimStart('0').Length > 9) {
             return false;
         }
         foreach (char ch in token) {
@@ -2035,7 +2038,31 @@ public sealed class PDF {
             }
         }
 
-        return GetSortedObjects(objects2, buf.Length);
+        List<PDFobj> sorted = GetSortedObjects(objects2, buf.Length);
+        PDFobj root = PDFobj.ObjectNumbered(sorted, TrailerRoot(trailer));
+        if (root != null) {
+            root.root = true;
+        }
+        return sorted;
+    }
+
+    // Returns the number of the catalog that the /Root of the trailer names,
+    // or 0. The trailer is the dictionary after the cross-reference table, or
+    // that of the cross-reference stream.
+    private static int TrailerRoot(PDFobj trailer) {
+        if (trailer == null) {
+            return 0;
+        }
+        int open = trailer.dict.IndexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        List<String> tokens = trailer.dict.GetRange(open, trailer.dict.Count - open);
+        int i = EntryIndex(tokens, "/Root");
+        if (i == -1 || !IsReference(tokens, i + 1)) {
+            return 0;
+        }
+        return ToInteger(tokens[i + 1]);
     }
 
     // Returns the number in the header of an object stream.
@@ -2268,8 +2295,11 @@ public sealed class PDF {
                 if (i + 2 >= dict.Count) {
                     return false;
                 }
-                // The entry is the offset, the generation number and n for an object in use.
-                if (dict[i + 2].Equals("n")) {
+                // The entry is the offset, the generation number and n for an
+                // object in use. Object 0 heads the list of free objects, and
+                // one that is marked in use, as pdf.js tests it in issue10004,
+                // is skipped, as MuPDF skips it.
+                if (dict[i + 2].Equals("n") && number != 0) {
                     PDFobj obj = GetObject(buf, ToInteger(dict[i]));
                     if (!IsObject(obj, number)) {
                         return false;
@@ -2570,8 +2600,30 @@ public sealed class PDF {
         }
     }
 
-    /// <summary>Returns the root pages object.</summary>
+    /// <summary>
+    /// Returns the root of the page tree: the node that the /Pages of the
+    /// catalog names, the catalog that the trailer's /Root names, as MuPDF
+    /// and pdf.js find it. A PDF can have another tree with no /Parent,
+    /// before that one: one left from an earlier version of the document, as
+    /// pdf.js tests it in issue19281, or the pages of an XFA form behind a
+    /// tree of one page, in xfa_issue13556. Objects with no such catalog,
+    /// like those of a PDF whose trailer is lost, have the first node with no
+    /// /Parent as the root.
+    /// </summary>
     internal PDFobj GetPagesObject(List<PDFobj> objects) {
+        foreach (PDFobj obj in objects) {
+            if (obj.root) {
+                List<String> tokens = ValueOf(obj);
+                int i = EntryIndex(tokens, "/Pages");
+                if (i != -1 && IsReference(tokens, i + 1)) {
+                    PDFobj pages = PDFobj.ObjectAt(objects, tokens[i + 1]);
+                    if (pages != null && EntryIndex(ValueOf(pages), "/Kids") != -1) {
+                        return pages;
+                    }
+                }
+                break;
+            }
+        }
         foreach (PDFobj obj in objects) {
             if (obj.GetValue("/Type").Equals("/Pages") &&
                     obj.GetValue("/Parent").Equals("")) {

@@ -1511,8 +1511,15 @@ final public class PDF {
                 && isObjectNumber(tokens.get(i + 1));
     }
 
+    // Returns true for a number that can be an object number or a generation
+    // number: digits, which can have leading zeros, as pdf.js tests it in
+    // issue10491, "0000000003 0 R", and no more than nine others.
     private static boolean isObjectNumber(String token) {
-        if (token.isEmpty() || token.length() > 9) {
+        int zeros = 0;
+        while (zeros < token.length() && token.charAt(zeros) == '0') {
+            zeros++;
+        }
+        if (token.isEmpty() || token.length() - zeros > 9) {
             return false;
         }
         for (int i = 0; i < token.length(); i++) {
@@ -2177,7 +2184,31 @@ final public class PDF {
             }
         }
 
-        return getSortedObjects(objects2, buf.length);
+        List<PDFobj> sorted = getSortedObjects(objects2, buf.length);
+        PDFobj root = PDFobj.objectNumbered(sorted, trailerRoot(trailer));
+        if (root != null) {
+            root.root = true;
+        }
+        return sorted;
+    }
+
+    // Returns the number of the catalog that the /Root of the trailer names,
+    // or 0. The trailer is the dictionary after the cross-reference table, or
+    // that of the cross-reference stream.
+    private static int trailerRoot(PDFobj trailer) {
+        if (trailer == null) {
+            return 0;
+        }
+        int open = trailer.dict.indexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        List<String> tokens = trailer.dict.subList(open, trailer.dict.size());
+        int i = entryIndex(tokens, "/Root");
+        if (i == -1 || !isReference(tokens, i + 1)) {
+            return 0;
+        }
+        return toInteger(tokens.get(i + 1));
     }
 
     // Returns the number in the header of an object stream.
@@ -2405,8 +2436,11 @@ final public class PDF {
                 if (i + 2 >= dict.size()) {
                     return false;
                 }
-                // The entry is the offset, the generation number and n for an object in use.
-                if (dict.get(i + 2).equals("n")) {
+                // The entry is the offset, the generation number and n for an
+                // object in use. Object 0 heads the list of free objects, and
+                // one that is marked in use, as pdf.js tests it in issue10004,
+                // is skipped, as MuPDF skips it.
+                if (dict.get(i + 2).equals("n") && number != 0) {
                     PDFobj obj = getObject(buf, toInteger(dict.get(i)));
                     if (!isObject(obj, number)) {
                         return false;
@@ -2723,12 +2757,31 @@ final public class PDF {
     }
 
     /**
-     * Returns the pages object.
+     * Returns the root of the page tree: the node that the /Pages of the
+     * catalog names, the catalog that the trailer's /Root names, as MuPDF and
+     * pdf.js find it. A PDF can have another tree with no /Parent, before that
+     * one: one left from an earlier version of the document, as pdf.js tests
+     * it in issue19281, or the pages of an XFA form behind a tree of one page,
+     * in xfa_issue13556. Objects with no such catalog, like those of a PDF
+     * whose trailer is lost, have the first node with no /Parent as the root.
      *
      * @param objects the page objects.
      * @return the pages object.
      */
     PDFobj getPagesObject(List<PDFobj> objects) {
+        for (PDFobj obj : objects) {
+            if (obj.root) {
+                List<String> tokens = valueOf(obj);
+                int i = entryIndex(tokens, "/Pages");
+                if (i != -1 && isReference(tokens, i + 1)) {
+                    PDFobj pages = PDFobj.objectAt(objects, tokens.get(i + 1));
+                    if (pages != null && entryIndex(valueOf(pages), "/Kids") != -1) {
+                        return pages;
+                    }
+                }
+                break;
+            }
+        }
         for (PDFobj obj : objects) {
             if (obj.getValue("/Type").equals("/Pages") && obj.getValue("/Parent").equals("")) {
                 return obj;

@@ -1487,8 +1487,11 @@ func isObjectReference(tokens []string, i int) bool {
 		isObjectNumberToken(tokens[i+1])
 }
 
+// isObjectNumberToken returns true for a number that can be an object number
+// or a generation number: digits, which can have leading zeros, as pdf.js
+// tests it in issue10491, "0000000003 0 R", and no more than nine others.
 func isObjectNumberToken(token string) bool {
-	if token == "" || len(token) > 9 {
+	if token == "" || len(strings.TrimLeft(token, "0")) > 9 {
 		return false
 	}
 	for i := 0; i < len(token); i++ {
@@ -2071,7 +2074,33 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 	}
 
-	return pdf.getSortedObjects(objects2, len(buf))
+	sorted, err := pdf.getSortedObjects(objects2, len(buf))
+	if err != nil {
+		return nil, err
+	}
+	if root := objectNumbered(sorted, trailerRoot(trailer)); root != nil {
+		root.root = true
+	}
+	return sorted, nil
+}
+
+// trailerRoot returns the number of the catalog that the /Root of the trailer
+// names, or 0. The trailer is the dictionary after the cross-reference table,
+// or that of the cross-reference stream.
+func trailerRoot(trailer *PDFobj) int {
+	if trailer == nil {
+		return 0
+	}
+	open := slices.Index(trailer.dict, "<<")
+	if open == -1 {
+		return 0
+	}
+	tokens := trailer.dict[open:]
+	i := dictEntryIndex(tokens, "/Root")
+	if i == -1 || !isObjectReference(tokens, i+1) {
+		return 0
+	}
+	return toInteger(tokens[i+1])
 }
 
 // objectStreamNumber returns the number in the header of an object stream.
@@ -2309,8 +2338,11 @@ func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 			if i+2 >= len(dict) {
 				return false
 			}
-			// The entry is the offset, the generation number and n for an object in use.
-			if dict[i+2] == "n" {
+			// The entry is the offset, the generation number and n for an
+			// object in use. Object 0 heads the list of free objects, and one
+			// that is marked in use, as pdf.js tests it in issue10004, is
+			// skipped, as MuPDF skips it.
+			if dict[i+2] == "n" && number != 0 {
 				obj := getObjectAt(buf, toInteger(dict[i]))
 				if !isObject(obj, number) {
 					return false
@@ -2631,7 +2663,26 @@ func (pdf *PDF) checkObjects(objects []*PDFobj) error {
 	return nil
 }
 
+// getPagesObject returns the root of the page tree: the node that the /Pages
+// of the catalog names, the catalog that the trailer's /Root names, as MuPDF
+// and pdf.js find it. A PDF can have another tree with no /Parent, before
+// that one: one left from an earlier version of the document, as pdf.js tests
+// it in issue19281, or the pages of an XFA form behind a tree of one page, in
+// xfa_issue13556. Objects with no such catalog, like those of a PDF whose
+// trailer is lost, have the first node with no /Parent as the root.
 func (pdf *PDF) getPagesObject(objects []*PDFobj) *PDFobj {
+	for _, obj := range objects {
+		if obj.root {
+			tokens := objectValue(obj)
+			if i := dictEntryIndex(tokens, "/Pages"); i != -1 && isObjectReference(tokens, i+1) {
+				pages := objectAt(objects, tokens[i+1])
+				if pages != nil && dictEntryIndex(objectValue(pages), "/Kids") != -1 {
+					return pages
+				}
+			}
+			break
+		}
+	}
 	for _, obj := range objects {
 		if obj.GetValue("/Type") == "/Pages" && obj.GetValue("/Parent") == "" {
 			return obj

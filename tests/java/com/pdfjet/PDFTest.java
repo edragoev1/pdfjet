@@ -720,4 +720,70 @@ class PDFTest {
         assertEquals("", objects.get(0).getValue("/Nothing"));
     }
 
+    @Test
+    void thePagesAreTheTreeThatTheCatalogOfTheTrailerNames() throws Exception {
+        // A second page tree with no /Parent, before the one that the catalog
+        // names, as pdf.js tests it in issue19281 (a tree of one page left
+        // from an earlier version) and in xfa_issue13556 (the pages of an XFA
+        // form behind a tree of one page): MuPDF and pdf.js find the pages
+        // through the trailer's /Root, and the first tree found was taken.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 4 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>",
+            "<< /Type /Pages /Kids [5 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 4 0 R /MediaBox [0 0 200 200] >>",
+            "<< /Type /Page /Parent 4 0 R /MediaBox [0 0 300 300] >>",
+        }));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertEquals(2, pages.size());
+        assertEquals(5, pages.get(0).getNumber());
+        assertEquals(6, pages.get(1).getNumber());
+        // A catalog that the trailer does not name, like that of an older
+        // version of the document, is not the one whose pages are read.
+        String raw = new String(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Pages /Kids [5 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 4 0 R >>",
+            "<< /Type /Catalog /Pages 4 0 R >>",
+        }), StandardCharsets.ISO_8859_1).replace("/Root 1 0 R", "/Root 6 0 R");
+        pages = new PDF().getPageObjects(TestSupport.read(raw.getBytes(StandardCharsets.ISO_8859_1)));
+        assertEquals(1, pages.size());
+        assertEquals(5, pages.get(0).getNumber());
+        // Objects with no trailer find the tree that has no /Parent, as before.
+        objects = TestSupport.read(("1 0 obj<</Type/Pages/Kids[2 0 R]/Count 1>>endobj\n"
+                + "2 0 obj<</Type/Page/Parent 1 0 R>>endobj\n").getBytes(StandardCharsets.ISO_8859_1));
+        assertEquals(1, new PDF().getPageObjects(objects).size());
+    }
+
+    @Test
+    void anEntryForObjectZeroThatIsInUseIsSkipped() throws Exception {
+        // Object 0 heads the list of free objects, and a table that marks it
+        // in use, as pdf.js tests it in issue10004, is read as MuPDF reads it:
+        // the whole table was refused, and the objects were looked for by
+        // scanning.
+        String raw = new String(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+        }), StandardCharsets.ISO_8859_1).replace("0000000000 65535 f ", "0000000009 00000 n ");
+        // The objects follow each other with no white space between them, as
+        // there, so that scanning for them does not find them either.
+        raw = raw.replace("\nendobj\n", "\n endobj");
+        List<PDFobj> objects = TestSupport.read(raw.getBytes(StandardCharsets.ISO_8859_1));
+        assertEquals(1, new PDF().getPageObjects(objects).size());
+    }
+
+    @Test
+    void theLengthOfAStreamIsTheEntryOfItsDictionary() throws Exception {
+        // A /Length that is the value of another entry, "/Height/Length", as
+        // pdf.js tests it in issue19611, is not the /Length of the stream.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /XObject /Height /Length /Length 5 >>\nstream\nabcde\nendstream",
+        }));
+        assertEquals("abcde", TestSupport.latin1(objects.get(0).getData()));
+    }
+
 }

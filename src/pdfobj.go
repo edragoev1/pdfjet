@@ -31,6 +31,7 @@ type PDFobj struct {
 	stream       []byte   // The compressed stream
 	data         []byte   // The decompressed data
 	gsNumber     int      // Graphics savedState Number
+	root         bool     // The catalog that the trailer's /Root names
 }
 
 // newPDFobj creates an object with an empty dictionary.
@@ -409,28 +410,34 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 
 // getLength return the length value.
 func (obj *PDFobj) getLength(objects []*PDFobj) int {
-	for i := 0; i < len(obj.dict); i++ {
-		token := obj.dict[i]
-		if token == "/Length" {
-			number, err := strconv.Atoi(tokenAt(obj.dict, i+1))
-			if err != nil {
-				panic(errors.New("The /Length of a stream is not a number."))
-			}
-			if i+2 >= len(obj.dict) {
-				panic(errors.New("The dictionary ends after the /Length."))
-			}
-			if obj.dict[i+2] == "0" {
-				if i+3 >= len(obj.dict) {
-					panic(errors.New("The dictionary ends after the /Length."))
-				}
-				if obj.dict[i+3] == "R" {
-					return obj.getLengthFromObject(objects, number)
-				}
-			}
-			return number
+	// The entry of the dictionary, and not a /Length inside another value or
+	// that is the value of another entry, "/Height/Length", as pdf.js tests
+	// it in issue19611.
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return 0
+	}
+	i := dictEntryIndex(obj.dict[open:], "/Length")
+	if i == -1 {
+		return 0
+	}
+	i += open
+	number, err := strconv.Atoi(tokenAt(obj.dict, i+1))
+	if err != nil {
+		panic(errors.New("The /Length of a stream is not a number."))
+	}
+	if i+2 >= len(obj.dict) {
+		panic(errors.New("The dictionary ends after the /Length."))
+	}
+	if obj.dict[i+2] == "0" {
+		if i+3 >= len(obj.dict) {
+			panic(errors.New("The dictionary ends after the /Length."))
+		}
+		if obj.dict[i+3] == "R" {
+			return obj.getLengthFromObject(objects, number)
 		}
 	}
-	return 0
+	return number
 }
 
 // getLengthFromObject returns the /Length stored in the object with the number.

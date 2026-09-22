@@ -32,6 +32,8 @@ public class PDFobj {
     byte[] data;          // The decompressed data
     /** The number of the graphics state resource, or -1. */
     int gsNumber = -1;
+    /** True for the catalog that the trailer's /Root names. */
+    boolean root;
 
     /**
      * Creates an object with an empty dictionary.
@@ -422,7 +424,7 @@ public class PDFobj {
     // Returns the object that the token names, or null when the token is not
     // the number of an object the PDF has: a page of a file that was changed
     // can name an object that is not in it.
-    private static PDFobj objectAt(List<PDFobj> objects, String token) {
+    static PDFobj objectAt(List<PDFobj> objects, String token) {
         Integer number = toObjectNumber(token);
         return (number == null) ? null : objectNumbered(objects, number);
     }
@@ -476,25 +478,31 @@ public class PDFobj {
      * @return the length of the stream.
      */
     int getLength(List<PDFobj> objects) throws Exception {
-        for (int i = 0; i < dict.size(); i++) {
-            String token = dict.get(i);
-            if (token.equals("/Length")) {
-                int number = toLength(tokenAt(dict, i + 1));
-                if (i + 2 >= dict.size()) {
-                    throw new Exception("The dictionary ends after the /Length.");
-                }
-                if (dict.get(i + 2).equals("0")) {
-                    if (i + 3 >= dict.size()) {
-                        throw new Exception("The dictionary ends after the /Length.");
-                    }
-                    if (dict.get(i + 3).equals("R")) {
-                        return getLength(objects, number);
-                    }
-                }
-                return number;
+        // The entry of the dictionary, and not a /Length inside another value
+        // or that is the value of another entry, "/Height/Length", as pdf.js
+        // tests it in issue19611.
+        int open = dict.indexOf("<<");
+        if (open == -1) {
+            return 0;
+        }
+        int i = PDF.entryIndex(dict.subList(open, dict.size()), "/Length");
+        if (i == -1) {
+            return 0;
+        }
+        i += open;
+        int number = toLength(tokenAt(dict, i + 1));
+        if (i + 2 >= dict.size()) {
+            throw new Exception("The dictionary ends after the /Length.");
+        }
+        if (dict.get(i + 2).equals("0")) {
+            if (i + 3 >= dict.size()) {
+                throw new Exception("The dictionary ends after the /Length.");
+            }
+            if (dict.get(i + 3).equals("R")) {
+                return getLength(objects, number);
             }
         }
-        return 0;
+        return number;
     }
 
     // Returns the length the token holds, which a PDF that was read can write

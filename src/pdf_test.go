@@ -774,3 +774,66 @@ func TestPDFTheEntriesOfANodeWithThousandsOfPagesAreLookedUpOnce(t *testing.T) {
 		t.Errorf("%v", elapsed)
 	}
 }
+
+func TestPDFThePagesAreTheTreeThatTheCatalogOfTheTrailerNames(t *testing.T) {
+	// A second page tree with no /Parent, before the one that the catalog
+	// names, as pdf.js tests it in issue19281 (a tree of one page left from
+	// an earlier version) and in xfa_issue13556 (the pages of an XFA form
+	// behind a tree of one page): MuPDF and pdf.js find the pages through
+	// the trailer's /Root, and the first tree found was taken.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 4 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>",
+		"<< /Type /Pages /Kids [5 0 R 6 0 R] /Count 2 >>",
+		"<< /Type /Page /Parent 4 0 R /MediaBox [0 0 200 200] >>",
+		"<< /Type /Page /Parent 4 0 R /MediaBox [0 0 300 300] >>"))
+	pages := testNewPDF().GetPageObjects(objects)
+	if len(pages) != 2 {
+		t.Fatalf("pages %d", len(pages))
+	}
+	testWant(t, "5 6", fmt.Sprint(pages[0].GetNumber(), pages[1].GetNumber()))
+	// A catalog that the trailer does not name, like that of an older
+	// version of the document, is not the one whose pages are read.
+	raw := strings.Replace(string(testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R >>",
+		"<< /Type /Pages /Kids [5 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 4 0 R >>",
+		"<< /Type /Catalog /Pages 4 0 R >>")), "/Root 1 0 R", "/Root 6 0 R", 1)
+	pages = testNewPDF().GetPageObjects(testRead(t, []byte(raw)))
+	if len(pages) != 1 || pages[0].GetNumber() != 5 {
+		t.Errorf("pages %d", len(pages))
+	}
+	// Objects with no trailer find the tree that has no /Parent, as before.
+	objects = testRead(t, []byte("1 0 obj<</Type/Pages/Kids[2 0 R]/Count 1>>endobj\n"+
+		"2 0 obj<</Type/Page/Parent 1 0 R>>endobj\n"))
+	if n := len(testNewPDF().GetPageObjects(objects)); n != 1 {
+		t.Errorf("pages %d", n)
+	}
+}
+
+func TestPDFAnEntryForObjectZeroThatIsInUseIsSkipped(t *testing.T) {
+	// Object 0 heads the list of free objects, and a table that marks it in
+	// use, as pdf.js tests it in issue10004, is read as MuPDF reads it: the
+	// whole table was refused, and the objects were looked for by scanning.
+	raw := strings.Replace(string(testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R >>")), "0000000000 65535 f ", "0000000009 00000 n ", 1)
+	// The objects follow each other with no white space between them, as
+	// there, so that scanning for them does not find them either.
+	raw = strings.ReplaceAll(raw, "\nendobj\n", "\n endobj")
+	if n := len(testNewPDF().GetPageObjects(testRead(t, []byte(raw)))); n != 1 {
+		t.Errorf("pages %d", n)
+	}
+}
+
+func TestPDFTheLengthOfAStreamIsTheEntryOfItsDictionary(t *testing.T) {
+	// A /Length that is the value of another entry, "/Height/Length", as
+	// pdf.js tests it in issue19611, is not the /Length of the stream.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /XObject /Height /Length /Length 5 >>\nstream\nabcde\nendstream"))
+	testWant(t, "abcde", string(objects[0].GetData()))
+}

@@ -121,6 +121,34 @@ class MergeTest {
     }
 
     @Test
+    void aReferenceWhoseNumberHasLeadingZerosIsMerged() throws Exception {
+        // "0000000003 0 R", as pdf.js tests it in issue10491: a number of ten
+        // digits was not a reference, so the /Parent of the page left "0 R"
+        // behind, which MuPDF cannot read, and the page lost its contents.
+        String content = "BT /F1 24 Tf 20 300 Td (Zeros) Tj ET";
+        String source = "%PDF-1.4\n"
+                + "0000000001 0 obj << /Type /Catalog /Pages 0000000002 0 R >> endobj\n"
+                + "0000000002 0 obj << /Type /Pages /Kids [0000000003 0 R] /Count 1 >> endobj\n"
+                + "0000000003 0 obj << /Type /Page /Parent 0000000002 0 R /MediaBox [0 0 300 400]"
+                + " /Resources << /Font << /F1 0000000004 0 R >> >> /Contents 0000000005 0 R >> endobj\n"
+                + "0000000004 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+                + "0000000005 0 obj << /Length " + content.length() + " >>\nstream\n" + content
+                + "\nendstream\nendobj\n"
+                + "trailer << /Root 0000000001 0 R >>\n%%EOF\n";
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.merge(TestSupport.read(source.getBytes(StandardCharsets.ISO_8859_1)));
+        pdf.complete();
+
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        PDFobj page = new PDF().getPageObjects(objects).get(0);
+        assertEquals("[/Type, /Page, /MediaBox]", PDF.valueOf(page).subList(1, 4).toString());
+        assertEquals(300f, page.getPageSize().getWidth(), 0f);
+        assertTrue(pageContents(objects).get(0).contains("(Zeros) Tj"));
+        assertReferencesResolve(objects);
+    }
+
+    @Test
     void linksPointAtTheMergedPages() throws Exception {
         ByteArrayOutputStream source = new ByteArrayOutputStream();
         PDF pdf1 = new PDF(source);

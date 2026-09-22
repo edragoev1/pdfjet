@@ -133,6 +133,33 @@ func TestMergeAMergedPageInheritsFromThePageTree(t *testing.T) {
 	testReferencesResolve(t, objects)
 }
 
+func TestMergeAReferenceWhoseNumberHasLeadingZerosIsMerged(t *testing.T) {
+	// "0000000003 0 R", as pdf.js tests it in issue10491: a number of ten
+	// digits was not a reference, so the /Parent of the page left "0 R"
+	// behind, which MuPDF cannot read, and the page lost its contents.
+	content := "BT /F1 24 Tf 20 300 Td (Zeros) Tj ET"
+	source := "%PDF-1.4\n" +
+		"0000000001 0 obj << /Type /Catalog /Pages 0000000002 0 R >> endobj\n" +
+		"0000000002 0 obj << /Type /Pages /Kids [0000000003 0 R] /Count 1 >> endobj\n" +
+		"0000000003 0 obj << /Type /Page /Parent 0000000002 0 R /MediaBox [0 0 300 400]" +
+		" /Resources << /Font << /F1 0000000004 0 R >> >> /Contents 0000000005 0 R >> endobj\n" +
+		"0000000004 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n" +
+		"0000000005 0 obj << /Length " + strconv.Itoa(len(content)) + " >>\nstream\n" + content + "\nendstream\nendobj\n" +
+		"trailer << /Root 0000000001 0 R >>\n%%EOF\n"
+	doc := testNewDoc()
+	if err := doc.pdf.Merge(testRead(t, []byte(source))); err != nil {
+		t.Fatal(err)
+	}
+	objects := testRead(t, doc.complete())
+	page := testNewPDF().GetPageObjects(objects)[0]
+	testWant(t, "/Type /Page /MediaBox", strings.Join(objectValue(page)[1:4], " "))
+	testNear(t, "width", 300, page.GetPageSize().GetWidth(), 0)
+	if !strings.Contains(testPageContents(objects)[0], "(Zeros) Tj") {
+		t.Error("the content was not merged")
+	}
+	testReferencesResolve(t, objects)
+}
+
 func TestMergeLinksPointAtTheMergedPages(t *testing.T) {
 	source := testNewDoc()
 	font1 := testHelvetica(source.pdf)
