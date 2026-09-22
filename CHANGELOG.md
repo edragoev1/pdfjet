@@ -184,7 +184,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   structure element of its own, so a screen reader read each word as its own
   paragraph: Example_10 had 240 elements for its 7 paragraphs and Example_03
   had 48 for its 26. The words of a paragraph are the marked contents of its
-  one element now, and the titles of Example_03 and Example_10 are headings.
+  one element now, and the titles of Example_03 and the section titles of
+  Example_10 are headings.
 - The heading of a page is tagged as a heading in the examples that have one,
   where every one of them was a paragraph: 19 H1 and 2 H2 over the 39 PDF/UA
   examples. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF
@@ -778,7 +779,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   Factbook map `images/sz-map.png`, which is removed. The map is 310 points
   tall and centered over the text, which moves down under it, and the example
   is one page, as before, in all four ports. `images/swiss-admin.txt` says
-  where the map is from: it is in the public domain.
+  where the map is from: it is in the public domain. The title "Switzerland"
+  above the text is left out, since the map has it: "Introduction" and
+  "Economy" are the headings of the page, H1 in the PDF/UA document, and look
+  as they did.
 - Example_32 and Example_34 draw within the page, in all four ports.
   Example_32 drew the source of Example_02 at 10 points on portrait pages,
   and its longest lines ran to x = 858 on a page 612 points wide; it draws it
