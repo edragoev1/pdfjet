@@ -6,11 +6,10 @@
  */
 package com.pdfjet;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PushbackInputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Reads UTF-8 text, replacing the bytes that are not UTF-8.
@@ -48,6 +47,11 @@ final class UTF8 {
      */
     static String decode(byte[] bytes, int offset, int length) {
         int end = offset + length;
+        // Java's decoder reads well formed UTF-8 as this one does, and
+        // faster, so it decodes all but the bytes that are not.
+        if (isWellFormed(bytes, offset, end)) {
+            return new String(bytes, offset, length, StandardCharsets.UTF_8);
+        }
         StringBuilder text = new StringBuilder(length);
         int i = offset;
         while (i < end) {
@@ -61,6 +65,23 @@ final class UTF8 {
             }
         }
         return text.toString();
+    }
+
+    // Returns true when the bytes from offset to end are well formed UTF-8.
+    private static boolean isWellFormed(byte[] bytes, int offset, int end) {
+        int i = offset;
+        while (i < end) {
+            if (bytes[i] >= 0) {
+                i++;        // ASCII
+            } else {
+                int size = sequenceAt(bytes, i, end);
+                if (size < 0) {
+                    return false;
+                }
+                i += size;
+            }
+        }
+        return true;
     }
 
     // Returns the length of the UTF-8 sequence that starts at the index, as
@@ -126,51 +147,92 @@ final class UTF8 {
      * BufferedReader reads them, and its bytes are read as decode reads them.
      */
     static final class LineReader implements Closeable {
-        private final PushbackInputStream stream;
+        private final InputStream stream;
+        // The bytes read from the stream, of which those from pos to end are
+        // not read as text yet. A line is found in them, and read a block at a
+        // time rather than a byte at a time.
+        private final byte[] buf = new byte[65536];
+        private int pos = 0;
+        private int end = 0;
+        // The bytes of a line that does not end in the block, which the next
+        // block adds to.
+        private byte[] line = new byte[256];
 
         LineReader(InputStream stream) {
-            this.stream = new PushbackInputStream(stream, 3);
+            this.stream = stream;
+        }
+
+        // Keeps at least the count bytes after pos in the block, when the
+        // stream has them, and returns false when it has fewer.
+        private boolean ensure(int count) throws IOException {
+            if (end - pos >= count) {
+                return true;
+            }
+            System.arraycopy(buf, pos, buf, 0, end - pos);
+            end -= pos;
+            pos = 0;
+            while (end < count) {
+                int read = stream.read(buf, end, buf.length - end);
+                if (read <= 0) {
+                    return false;
+                }
+                end += read;
+            }
+            return true;
         }
 
         // Skips the three bytes of a byte order mark at the start of the
         // stream, which are not part of the text.
         void skipByteOrderMark() throws IOException {
-            byte[] mark = new byte[3];
-            int read = 0;
-            while (read < mark.length) {
-                int count = stream.read(mark, read, mark.length - read);
-                if (count == -1) {
-                    break;
-                }
-                read += count;
+            if (ensure(3) && (buf[pos] & 0xFF) == 0xEF
+                    && (buf[pos + 1] & 0xFF) == 0xBB && (buf[pos + 2] & 0xFF) == 0xBF) {
+                pos += 3;
             }
-            if (read == mark.length && (mark[0] & 0xFF) == 0xEF
-                    && (mark[1] & 0xFF) == 0xBB && (mark[2] & 0xFF) == 0xBF) {
-                return;
-            }
-            stream.unread(mark, 0, read);
         }
 
         // Returns the next line, without its end of line marker, or null at
         // the end of the stream.
         String readLine() throws IOException {
-            int ch = stream.read();
-            if (ch == -1) {
+            if (!ensure(1)) {
                 return null;
             }
-            ByteArrayOutputStream line = new ByteArrayOutputStream(256);
-            while (ch != -1 && ch != '\n' && ch != '\r') {
-                line.write(ch);
-                ch = stream.read();
-            }
-            if (ch == '\r') {
-                int next = stream.read();
-                if (next != -1 && next != '\n') {
-                    stream.unread(next);
+            int length = 0;     // The bytes of the line in line
+            while (true) {
+                int i = pos;
+                while (i < end && buf[i] != '\n' && buf[i] != '\r') {
+                    i++;
+                }
+                if (i < end) {
+                    String text;
+                    if (length == 0) {
+                        text = decode(buf, pos, i - pos);
+                    } else {
+                        length = append(length, i);
+                        text = decode(line, 0, length);
+                    }
+                    pos = i + 1;
+                    if (buf[i] == '\r' && ensure(1) && buf[pos] == '\n') {
+                        pos++;
+                    }
+                    return text;
+                }
+                length = append(length, end);
+                pos = end;
+                if (!ensure(1)) {
+                    return decode(line, 0, length);
                 }
             }
-            byte[] bytes = line.toByteArray();
-            return decode(bytes, 0, bytes.length);
+        }
+
+        // Adds the bytes of the block from pos to the index to the line, and
+        // returns its length.
+        private int append(int length, int index) {
+            int count = index - pos;
+            if (length + count > line.length) {
+                line = java.util.Arrays.copyOf(line, Math.max(2 * line.length, length + count));
+            }
+            System.arraycopy(buf, pos, line, length, count);
+            return length + count;
         }
 
         @Override

@@ -208,4 +208,48 @@ class UtilTest {
         }
         return bytes;
     }
+
+    @Test
+    void aLineReaderEndsTheLinesAsBufferedReaderDoesInBlocksOfAnySize() throws Exception {
+        // A byte order mark, the three ends of line, empty lines, a line
+        // longer than the block the reader reads, bytes that are not UTF-8,
+        // and a last line with no end of line.
+        StringBuilder longLine = new StringBuilder();
+        for (int i = 0; i < 20000; i++) {
+            longLine.append("0123456789");
+        }
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        bytes.write(new byte[] {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
+        bytes.write("one\ntwo\rthree\r\n\n\r\nd\u00e9j\u00e0 \u65e5\u672c\n".getBytes(StandardCharsets.UTF_8));
+        bytes.write(longLine.toString().getBytes(StandardCharsets.UTF_8));
+        bytes.write('\r');
+        bytes.write(new byte[] {'a', (byte) 0xED, (byte) 0xA0, (byte) 0x80, 'b', (byte) 0xE6, (byte) 0x97, '\n'});
+        bytes.write("last".getBytes(StandardCharsets.UTF_8));
+        final byte[] data = bytes.toByteArray();
+        String[] want = {"one", "two", "three", "", "", "d\u00e9j\u00e0 \u65e5\u672c", longLine.toString(),
+                "a\ufffd\ufffd\ufffdb\ufffd", "last"};
+        // A byte at a time puts each end of line and each sequence across the
+        // end of a block.
+        InputStream slow = new ByteArrayInputStream(data) {
+            @Override
+            public synchronized int read(byte[] b, int off, int len) {
+                return super.read(b, off, Math.min(len, 1));
+            }
+        };
+        for (InputStream stream : new InputStream[] {new ByteArrayInputStream(data), slow}) {
+            UTF8.LineReader reader = new UTF8.LineReader(stream);
+            reader.skipByteOrderMark();
+            java.util.List<String> lines = new java.util.ArrayList<String>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+            assertEquals(Arrays.asList(want), lines);
+        }
+        // Without a byte order mark nothing is skipped.
+        UTF8.LineReader reader = new UTF8.LineReader(new ByteArrayInputStream("ab".getBytes(StandardCharsets.UTF_8)));
+        reader.skipByteOrderMark();
+        assertEquals("ab", reader.readLine());
+        assertEquals(null, reader.readLine());
+    }
 }
