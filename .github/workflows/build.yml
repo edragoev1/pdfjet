@@ -9,7 +9,7 @@
 # declare PDF/A or PDF/UA compliance must pass veraPDF, and the text MuPDF and
 # pdftotext extract must be the text the examples drew. The java8 job builds the
 # Java port with JDK 8 and runs its examples on Java 8. The corpus job reads,
-# merges and splits the pdf.js and veraPDF test corpora with the Go port and
+# merges and splits the pdf.js and veraPDF test corpora with each port and
 # checks what it gets against MuPDF. The references job checks the images the
 # Go port embeds against Pillow and the fonts it reads against fontTools.
 
@@ -248,14 +248,35 @@ jobs:
     # The corpora are fetched, not committed, and cached by the commits that
     # fetch-corpora.sh pins.
     corpus:
+        name: corpus (${{ matrix.port }})
         runs-on: ubuntu-24.04
+        strategy:
+            # A port that fails does not cancel the others.
+            fail-fast: false
+            matrix:
+                port: [ java, dotnet, go, swift ]
         steps:
             - uses: actions/checkout@v7
 
-            - uses: actions/setup-go@v7
+            - if: matrix.port == 'java'
+              uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - if: matrix.port == 'dotnet'
+              uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - if: matrix.port == 'go'
+              uses: actions/setup-go@v7
               with:
                   go-version-file: go.mod
                   cache: false
+
+            - if: matrix.port == 'swift'
+              uses: ./.github/actions/install-swift
 
             - name: Install PyMuPDF
               run: |
@@ -265,14 +286,18 @@ jobs:
             - uses: actions/cache@v6
               with:
                   path: .corpora
-                  key: corpora-${{ hashFiles('tests/corpus/fetch-corpora.sh') }}
+                  key: corpora-${{ hashFiles('tests/corpus/fetch-corpora.sh', 'tests/corpus/fetch-links.py') }}
 
+            # The PDFs pdf.js links to come from many sites, the Web Archive's
+            # slowly; a link that is dead is left out, not failed.
             - name: Fetch the corpora
-              run: tests/corpus/fetch-corpora.sh .corpora
+              run: |
+                  tests/corpus/fetch-corpora.sh .corpora
+                  python3 tests/corpus/fetch-links.py .corpora
 
             - name: Check the reader against the corpora
               run: |
-                  "$RUNNER_TEMP/venv/bin/python" tests/corpus/check-corpus.py .corpora --port go
+                  "$RUNNER_TEMP/venv/bin/python" tests/corpus/check-corpus.py .corpora --port ${{ matrix.port }}
 
     # Checks the images PDFjet embeds against Pillow and the fonts it reads
     # against fontTools, with tests/references. The images and the fonts are
