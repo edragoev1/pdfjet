@@ -831,6 +831,13 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 // It returns the x and y coordinates of the bottom right corner of the table on
 // the last page.
 func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
+	return table.drawOnPages(pdf, nil, pages, pageSize)
+}
+
+// drawOnPages draws the table as DrawOnPages does, from the first page when it
+// is not nil: a page that has other content above the table, which
+// SetFirstPageTopMargin puts the table under. The next pages are new.
+func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	if len(table.tableData) == 0 {
 		return [2]float32{table.x1, table.y1} // An empty table needs no page.
 	}
@@ -843,8 +850,11 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 	var xy [2]float32
 	pageNumber := 1
 	for table.hasMoreData() {
-		page := NewPageDetached(pdf, pageSize)
-		*pages = append(*pages, page)
+		page := first
+		if pageNumber > 1 || first == nil {
+			page = NewPageDetached(pdf, pageSize)
+			*pages = append(*pages, page)
+		}
 		xy = table.drawTableRows(page, table.drawHeaderRows(page, pageNumber))
 		pageNumber++
 	}

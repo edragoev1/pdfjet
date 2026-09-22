@@ -236,6 +236,23 @@ func markup(_ pdf: PDF, _ font: Font) throws {
             .drawOn(Page(pdf, Letter.PORTRAIT))
 }
 
+// @snippet markdown
+func markdown(_ pdf: PDF, _ font: Font) throws {
+    let bold = try Font(pdf, IBMPlexSans.Bold)
+    let italic = try Font(pdf, IBMPlexSans.Italic)
+    let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
+    let code = try Font(pdf, JetBrainsMono.Regular).setSize(10)
+    let markdown = Markdown(font, bold, italic, boldItalic, code)
+    var pages = [Page]()
+    try markdown.drawOn(pdf, "# A heading\n"
+            + "\n"
+            + "A paragraph with **bold** text and a [link](https://pdfjet.com).\n"
+            + "\n"
+            + "- an item\n"
+            + "- another item\n", &pages, Letter.PORTRAIT)
+    pdf.addPages(pages)
+}
+
 // @snippet text-column
 func textColumn(_ pdf: PDF, _ font: Font) throws {
     let column = TextColumn()
@@ -802,6 +819,7 @@ try run("highlighted-words", highlightedWords)
 try run("paragraphs", paragraphs)
 try run("lists", lists)
 try run("markup", markup)
+try run("markdown", markdown)
 try run("text-column", textColumn)
 try run("text-frame-pages", textFramePages)
 try run("text-frame-columns", textFrameColumns)

@@ -242,6 +242,23 @@ public class Snippets {
                 .DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet markdown
+    static void Markdown(PDF pdf, Font font) {
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        Font italic = new Font(pdf, IBMPlexSans.Italic);
+        Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
+        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(10f);
+        Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
+        List<Page> pages = new List<Page>();
+        markdown.DrawOn(pdf, "# A heading\n"
+                + "\n"
+                + "A paragraph with **bold** text and a [link](https://pdfjet.com).\n"
+                + "\n"
+                + "- an item\n"
+                + "- another item\n", pages, Letter.PORTRAIT);
+        pdf.AddPages(pages);
+    }
+
     // @snippet text-column
     static void TextColumn(PDF pdf, Font font) {
         TextColumn column = new TextColumn();
@@ -815,6 +832,7 @@ public class Snippets {
         Run("paragraphs", Paragraphs);
         Run("lists", Lists);
         Run("markup", Markup);
+        Run("markdown", Markdown);
         Run("text-column", TextColumn);
         Run("text-frame-pages", TextFramePages);
         Run("text-frame-columns", TextFrameColumns);

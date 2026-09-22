@@ -32,7 +32,7 @@ mkdir -p "$bin"
 (cd "$root/src" && go build -tags texttrace -o "$bin/" ./examples/...)
 
 cd "$out"
-for i in $(seq -w 1 53); do
+for i in $(seq -w 1 54); do
     PDFJET_TEXT_TRACE="$out/text-trace.jsonl" "$bin/example$i"
 done
 rm -rf "$bin"

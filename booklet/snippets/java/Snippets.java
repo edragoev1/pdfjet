@@ -251,6 +251,23 @@ public class Snippets {
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet markdown
+    static void markdown(PDF pdf, Font font) throws Exception {
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        Font italic = new Font(pdf, IBMPlexSans.Italic);
+        Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
+        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(10f);
+        Markdown markdown = new Markdown(font, bold, italic, boldItalic, code);
+        List<Page> pages = new ArrayList<Page>();
+        markdown.drawOn(pdf, "# A heading\n"
+                + "\n"
+                + "A paragraph with **bold** text and a [link](https://pdfjet.com).\n"
+                + "\n"
+                + "- an item\n"
+                + "- another item\n", pages, Letter.PORTRAIT);
+        pdf.addPages(pages);
+    }
+
     // @snippet text-column
     static void textColumn(PDF pdf, Font font) throws Exception {
         TextColumn column = new TextColumn();
@@ -817,6 +834,7 @@ public class Snippets {
         run("paragraphs", Snippets::paragraphs);
         run("lists", Snippets::lists);
         run("markup", Snippets::markup);
+        run("markdown", Snippets::markdown);
         run("text-column", Snippets::textColumn);
         run("text-frame-pages", Snippets::textFramePages);
         run("text-frame-columns", Snippets::textFrameColumns);
