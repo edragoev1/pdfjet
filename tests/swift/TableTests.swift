@@ -908,4 +908,32 @@ import Testing
             }
         }
     }
+
+    @Test func aColumnAsWideAsItsTextDoesNotWrapIt() throws {
+        // In IBM Plex Sans Bold at 11 points, the width that
+        // autoAdjustColumnWidths gives the column of "a", less the padding,
+        // comes out a little less than the width of "a" in floating point.
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream")).setSize(11)
+        let rows = [[Cell(font, "a"), Cell(font, "b")], [Cell(font, "1"), Cell(font, "2")]]
+        let table = Table().setTableData(rows, 1)
+        table.autoAdjustColumnWidths()
+        #expect(table.getNumVerCells(table.getRow(0), 0) == 1)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 1)
+    }
+
+    @Test func aWordWiderThanItsColumnHasNoEmptyLine() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let cell = Cell(font, "ab")
+        cell.setWidth(cell.getLeftPadding() + cell.getRightPadding() + 1)
+        let table = Table().setTableData([[cell]], 0)
+        // A line for each letter, and none before them.
+        #expect(table.getNumVerCells(table.getRow(0), 0) == 2)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 1)
+    }
 }

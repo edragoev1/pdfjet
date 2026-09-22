@@ -999,4 +999,38 @@ class TableTest {
             }
         }
     }
+
+    @Test
+    void aColumnAsWideAsItsTextDoesNotWrapIt() throws Exception {
+        // In IBM Plex Sans Bold at 11 points, the width that
+        // autoAdjustColumnWidths gives the column of "a", less the padding,
+        // comes out a little less than the width of "a" in floating point.
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream")).setSize(11f);
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
+        rows.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "1"), new Cell(font, "2"))));
+        Table table = new Table().setTableData(rows, 1);
+        table.autoAdjustColumnWidths();
+        assertEquals(1, table.getNumVerCells(table.getRow(0), 0));
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(1, pages.size());
+    }
+
+    @Test
+    void aWordWiderThanItsColumnHasNoEmptyLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Cell cell = new Cell(font, "ab");
+        cell.setWidth(cell.getLeftPadding() + cell.getRightPadding() + 1f);
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(Arrays.asList(cell)));
+        Table table = new Table().setTableData(rows, 0);
+        // A line for each letter, and none before them.
+        assertEquals(2, table.getNumVerCells(table.getRow(0), 0));
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(1, pages.size());
+    }
 }

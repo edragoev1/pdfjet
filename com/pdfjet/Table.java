@@ -1661,9 +1661,15 @@ public class Table implements Drawable {
 
     // The lines the text of the cell needs to fit the width of its column.
     // A token wider than the column is broken between two of its characters.
+    // Text fits the width of a column when it is no more than this much wider:
+    // autoAdjustColumnWidths makes a column as wide as its text and its
+    // padding, and that width less the padding can come out a little less
+    // than the width of the text in floating point.
+    private static final float FIT_TOLERANCE = 0.01f;
+
     private List<String> wrapCellText(List<Cell> row, int index) {
         Cell cell = row.get(index);
-        float cellWidth = getTotalWidth(row, index);
+        float cellWidth = getTotalWidth(row, index) + FIT_TOLERANCE;
         List<String> lines = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
         for (String token : Util.splitOnWhitespace(cell.text)) {
@@ -1672,7 +1678,8 @@ public class Table implements Drawable {
                     buf.append(" ");
                 }
                 for (int k = 0; k < token.length(); k++) {
-                    if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                    // A line has at least one character, even one wider than the column.
+                    if (buf.length() > 0 && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
                             buf.toString() + token.charAt(k)) > cellWidth) {
                         lines.add(buf.toString());
                         buf.setLength(0);

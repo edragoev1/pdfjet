@@ -1653,11 +1653,17 @@ public class Table : Drawable {
         tableData = tableData2
     }
 
+    // Text fits the width of a column when it is no more than this much wider:
+    // autoAdjustColumnWidths makes a column as wide as its text and its
+    // padding, and that width less the padding can come out a little less
+    // than the width of the text in floating point.
+    private static let FIT_TOLERANCE: Float = 0.01
+
     // The lines the text of the cell needs to fit the width of its column.
     // A token wider than the column is broken between two of its characters.
     private func wrapCellText(_ row: [Cell], _ index: Int) -> [String] {
         let cell = row[index]
-        let cellWidth = getTotalWidth(row, index)
+        let cellWidth = getTotalWidth(row, index) + Table.FIT_TOLERANCE
         var lines = [String]()
         var buf = String()
         for token in cell.text!.splitOnWhitespace() {
@@ -1666,7 +1672,8 @@ public class Table : Drawable {
                     buf.append(" ")
                 }
                 for scalar in token.unicodeScalars {
-                    if cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
+                    // A line has at least one character, even one wider than the column.
+                    if !buf.isEmpty && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
                             buf + String(scalar)) > cellWidth {
                         lines.append(buf)
                         buf = ""

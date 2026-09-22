@@ -1182,3 +1182,44 @@ func TestTableTheColumnsShareTheWidthOfTheTable(t *testing.T) {
 	testAssertWidths(t, table.SetWidth(90), 30, 60)
 	testNear(t, "the width", 90, table.GetWidth(), 0.001)
 }
+
+func TestTableAColumnAsWideAsItsTextDoesNotWrapIt(t *testing.T) {
+	// In IBM Plex Sans Bold at 11 points, the width that
+	// AutoAdjustColumnWidths gives the column of "a", less the padding, comes
+	// out a little less than the width of "a" in floating point.
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream"))
+	font.SetSize(11)
+	rows := [][]*Cell{
+		{NewCell(font, "a"), NewCell(font, "b")},
+		{NewCell(font, "1"), NewCell(font, "2")},
+	}
+	table := NewTable().SetTableData(rows, 1)
+	table.AutoAdjustColumnWidths()
+	if n := getNumVerCells(table.GetRow(0), 0); n != 1 {
+		t.Fatalf("the vertical cells: %d, want 1", n)
+	}
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) != 1 {
+		t.Fatalf("the pages: %d, want 1", len(pages))
+	}
+}
+
+func TestTableAWordWiderThanItsColumnHasNoEmptyLine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	cell := NewCell(font, "ab")
+	cell.SetWidth(cell.GetLeftPadding() + cell.GetRightPadding() + 1)
+	rows := [][]*Cell{{cell}}
+	table := NewTable().SetTableData(rows, 0)
+	// A line for each letter, and none before them.
+	if n := getNumVerCells(table.GetRow(0), 0); n != 2 {
+		t.Fatalf("the vertical cells: %d, want 2", n)
+	}
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) != 1 {
+		t.Fatalf("the pages: %d, want 1", len(pages))
+	}
+}

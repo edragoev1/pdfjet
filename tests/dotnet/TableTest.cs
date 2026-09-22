@@ -974,5 +974,39 @@ public sealed class TableTest : IDisposable {
             }
         }
     }
+
+    [Fact]
+    public void AColumnAsWideAsItsTextDoesNotWrapIt() {
+        // In IBM Plex Sans Bold at 11 points, the width that
+        // AutoAdjustColumnWidths gives the column of "a", less the padding,
+        // comes out a little less than the width of "a" in floating point.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream")).SetSize(11f);
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> { new Cell(font, "a"), new Cell(font, "b") });
+        rows.Add(new List<Cell> { new Cell(font, "1"), new Cell(font, "2") });
+        Table table = new Table().SetTableData(rows, 1);
+        table.AutoAdjustColumnWidths();
+        Assert.Equal(1, table.GetNumVerCells(table.GetRow(0), 0));
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Single(pages);
+    }
+
+    [Fact]
+    public void AWordWiderThanItsColumnHasNoEmptyLine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Cell cell = new Cell(font, "ab");
+        cell.SetWidth(cell.GetLeftPadding() + cell.GetRightPadding() + 1f);
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> { cell });
+        Table table = new Table().SetTableData(rows, 0);
+        // A line for each letter, and none before them.
+        Assert.Equal(2, table.GetNumVerCells(table.GetRow(0), 0));
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Single(pages);
+    }
 }
 }

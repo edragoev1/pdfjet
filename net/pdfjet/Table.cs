@@ -1591,9 +1591,15 @@ public class Table : IDrawable {
 
     // The lines the text of the cell needs to fit the width of its column.
     // A token wider than the column is broken between two of its characters.
+    // Text fits the width of a column when it is no more than this much wider:
+    // AutoAdjustColumnWidths makes a column as wide as its text and its
+    // padding, and that width less the padding can come out a little less
+    // than the width of the text in floating point.
+    private const float FIT_TOLERANCE = 0.01f;
+
     private List<String> WrapCellText(List<Cell> row, int index) {
         Cell cell = row[index];
-        float cellWidth = GetTotalWidth(row, index);
+        float cellWidth = GetTotalWidth(row, index) + FIT_TOLERANCE;
         List<String> lines = new List<String>();
         StringBuilder buf = new StringBuilder();
         foreach (String token in Util.SplitOnWhitespace(cell.text)) {
@@ -1602,7 +1608,8 @@ public class Table : IDrawable {
                     buf.Append(" ");
                 }
                 foreach (char ch in token) {
-                    if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
+                    // A line has at least one character, even one wider than the column.
+                    if (buf.Length > 0 && cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
                             buf.ToString() + ch) > cellWidth) {
                         lines.Add(buf.ToString());
                         buf.Length = 0;

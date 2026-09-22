@@ -274,6 +274,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A table whose columns `autoAdjustColumnWidths` makes as wide as their
+  text no longer wraps the text that fits, and no longer fails to draw, in
+  all four ports. The width of a column less its padding could come out a
+  little less than the width of its text in floating point, as in IBM Plex
+  Sans Bold at 11 points with a cell of "a", so the text was wrapped; a word
+  that no line fits was then broken with an empty line before its first
+  letter, and drawing the table went past its rows: an
+  IndexOutOfBoundsException in Java, a panic in Go and a crash in Swift. Text
+  fits a column now when it is at most a hundredth of a point wider, and a
+  word broken letter by letter has a letter on every line.
 - The transparent color that the `tRNS` chunk of a grayscale or truecolor
   PNG names is transparent, in all four ports; PDFjet ignored the chunk and
   drew those pixels opaque, where browsers and libpng leave them clear. The

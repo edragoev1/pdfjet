@@ -1565,12 +1565,18 @@ func (table *Table) wrapAroundCellText() {
 	table.tableData = tableData2
 }
 
+// Text fits the width of a column when it is no more than this much wider:
+// AutoAdjustColumnWidths makes a column as wide as its text and its padding,
+// and that width less the padding can come out a little less than the width
+// of the text in floating point.
+const fitTolerance = 0.01
+
 // wrapCellText returns the lines the text of the cell needs to fit the width
 // of its column. A token wider than the column is broken between two of its
 // characters.
 func wrapCellText(row []*Cell, index int) []string {
 	cell := row[index]
-	cellWidth := getTotalWidth(row, index)
+	cellWidth := getTotalWidth(row, index) + fitTolerance
 	lines := make([]string, 0, 1)
 	var buf strings.Builder
 	for _, token := range splitOnWhitespace(cell.text) {
@@ -1579,7 +1585,8 @@ func wrapCellText(row []*Cell, index int) []string {
 				buf.WriteString(" ")
 			}
 			for _, ch := range token {
-				if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
+				// A line has at least one character, even one wider than the column.
+				if buf.Len() > 0 && cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
 					cell.fontSize, buf.String()+string(ch)) > cellWidth {
 					lines = append(lines, buf.String())
 					buf.Reset()
