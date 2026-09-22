@@ -583,6 +583,30 @@ import Testing
         #expect(TestSupport.pageObjects(objects)[0].getDict().count == count)
     }
 
+    @Test func aPageTreeOfThousandsOfKidsIsReadAndMergedInLinearTime() throws {
+        // Every page looked for the /CropBox and /Rotate that none of the
+        // tree has in its parent, a /Pages node of 10,000 kids in veraPDF's
+        // isartor-6-1-12-t01-fail-a, whose /Kids it copied and walked each
+        // time: reading its pages and merging them took over a minute. What
+        // a node has or inherits is looked for once.
+        let count = 4000
+        var objects = ["<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [" + (3..<(count + 3)).map { "\($0) 0 R" }.joined(separator: " ")
+                        + "] /Count \(count) /Resources << >> >>"]
+        for _ in 0..<count {
+            objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
+        }
+        let source = try TestSupport.read(pdfWithObjects(objects))
+        let clock = ContinuousClock()
+        let elapsed = try clock.measure {
+            #expect(TestSupport.pageObjects(source).count == count)
+            let memory = MemoryPDF()
+            try memory.pdf.merge(source)
+            try memory.pdf.complete()
+        }
+        #expect(elapsed < .seconds(10), "\(elapsed)")
+    }
+
     @Test func aResourcesObjectThatNamesItsOwnPageIsAddedToOnce() throws {
         // The font was added to the page for every "/Resources" left in its
         // dictionary, and adding it grew that dictionary, so a resources

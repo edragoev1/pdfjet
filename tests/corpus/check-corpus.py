@@ -84,6 +84,14 @@ def build_port(port, out):
                         '-nologo', '-p:TreatWarningsAsErrors=true', '--artifacts-path', out],
                        cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
         return ['dotnet', os.path.join(out, 'bin', 'Corpus', 'release', 'Corpus.dll')]
+    if port == 'swift':
+        # Into .build, as build-swift.sh builds: the library is not built
+        # again on every run. The harness is tests/corpus/swift.
+        build = ['swift', 'build', '--configuration', 'release', '--product', 'CorpusSwift']
+        subprocess.run(build + ['-Xswiftc', '-warnings-as-errors'], cwd=ROOT, check=True)
+        bin_path = subprocess.run(build + ['--show-bin-path'], cwd=ROOT, check=True,
+                                  capture_output=True, text=True).stdout.strip()
+        return [os.path.join(bin_path, 'CorpusSwift')]
     sys.exit(f'The {port} port has no harness yet.')
 
 

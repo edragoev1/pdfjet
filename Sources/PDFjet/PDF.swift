@@ -2325,6 +2325,7 @@ public final class PDF {
         var numbers = [Int: Int]()
         var values = [Int: [String]]()
         var queue = [PDFobj]()
+        let inherited = InheritedEntries()
         for page in pageObjects {
             if numbers[page.number] == nil {
                 numbers[page.number] = reserveObjNumber()
@@ -2334,7 +2335,7 @@ public final class PDF {
         var i = 0
         while i < queue.count {
             let obj = queue[i]
-            let value = PDF.mergedValue(obj, mergedPages.contains(obj.number), objects)
+            let value = PDF.mergedValue(obj, mergedPages.contains(obj.number), objects, inherited)
             values[obj.number] = value
             var j = 0
             while j < value.count {
@@ -2414,7 +2415,8 @@ public final class PDF {
     // Returns the value of an object that was read, without its "n g obj" and
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
-    private static func mergedValue(_ obj: PDFobj, _ isPage: Bool, _ objects: [PDFobj]) -> [String] {
+    private static func mergedValue(
+            _ obj: PDFobj, _ isPage: Bool, _ objects: [PDFobj], _ cache: InheritedEntries) -> [String] {
         var value = valueOf(obj)
         if let stream = obj.stream {
             setEntry(&value, "/Length", [String(stream.count)])
@@ -2422,7 +2424,7 @@ public final class PDF {
         if isPage {
             for key in inheritedKeys {
                 if entryIndex(value, key) == -1 {
-                    var inherited = inheritedValue(obj, key, objects)
+                    var inherited = inheritedValue(obj, key, objects, cache)
                     if inherited == nil && key == "/MediaBox" {
                         inherited = ["[", "0", "0", "612", "792", "]"]  // Letter
                     }
@@ -2449,28 +2451,55 @@ public final class PDF {
         return Array(dict[start..<end])
     }
 
+    // What the nodes of a page tree have or inherit, by the number of the node
+    // and the key, as inheritedValue finds it. A node can have thousands of
+    // pages, which each looked through the whole of it for an entry that it
+    // does not have, like the /CropBox and /Rotate that most trees do not
+    // have: veraPDF's isartor-6-1-12-t01-fail-a took over a minute to read.
+    final class InheritedEntries {
+        struct Key: Hashable {
+            let number: Int
+            let key: String
+        }
+        var values = [Key: [String]?]()
+    }
+
     // Returns the value of the entry from the nearest node of the page tree
     // above the page that has it, or nil.
-    private static func inheritedValue(_ page: PDFobj, _ key: String, _ objects: [PDFobj]) -> [String]? {
-        var node = page
-        for _ in 0..<64 {   // A loop in a broken tree ends here.
-            let tokens = valueOf(node)
+    private static func inheritedValue(
+            _ page: PDFobj, _ key: String, _ objects: [PDFobj], _ cache: InheritedEntries) -> [String]? {
+        var tokens = valueOf(page)
+        var passed = [InheritedEntries.Key]()   // The nodes that do not have it.
+        for _ in 0..<64 {   // A loop in a broken tree ends here, and is not kept.
             let i = entryIndex(tokens, "/Parent")
             if i == -1 || !isReference(tokens, i + 1) {
-                return nil
+                return inherited(nil, passed, cache)
             }
             let number = Int(tokens[i + 1])!
             if number < 1 || number > objects.count || objects[number - 1].dict.isEmpty {
-                return nil
+                return inherited(nil, passed, cache)
             }
-            node = objects[number - 1]
-            let parent = valueOf(node)
-            let k = entryIndex(parent, key)
+            let node = InheritedEntries.Key(number: number, key: key)
+            if let value = cache.values[node] {
+                return inherited(value, passed, cache)
+            }
+            passed.append(node)
+            tokens = valueOf(objects[number - 1])
+            let k = entryIndex(tokens, key)
             if k != -1 {
-                return Array(parent[(k + 1)..<valueEnd(parent, k + 1)])
+                return inherited(Array(tokens[(k + 1)..<valueEnd(tokens, k + 1)]), passed, cache)
             }
         }
         return nil
+    }
+
+    // Keeps the value for each node that was passed, and returns it.
+    private static func inherited(
+            _ value: [String]?, _ passed: [InheritedEntries.Key], _ cache: InheritedEntries) -> [String]? {
+        for node in passed {
+            cache.values[node] = value
+        }
+        return value
     }
 
     // Returns the index after the value that starts at index i.
@@ -2659,7 +2688,7 @@ public final class PDF {
         var pageObjects = [PDFobj]()
         if let pagesObject = getPagesObject(objects) {
             var visited = Set<Int>()
-            getPageObjects(pagesObject, &pageObjects, objects, &visited)
+            getPageObjects(pagesObject, &pageObjects, objects, &visited, InheritedEntries())
         }
         return pageObjects
     }
@@ -2670,7 +2699,8 @@ public final class PDF {
             _ pdfObj: PDFobj,
             _ pages: inout [PDFobj],
             _ objects: [PDFobj],
-            _ visited: inout Set<Int>) {
+            _ visited: inout Set<Int>,
+            _ inherited: InheritedEntries) {
         if !visited.insert(pdfObj.number).inserted {
             return
         }
@@ -2681,11 +2711,11 @@ public final class PDF {
             }
             let object = objects[number - 1]
             if isPageObject(object) {
-                PDF.addInheritedEntries(object, objects)
+                PDF.addInheritedEntries(object, objects, inherited)
                 PDF.resolveMediaBox(object, objects)
                 pages.append(object)
             } else {
-                getPageObjects(object, &pages, objects, &visited)
+                getPageObjects(object, &pages, objects, &visited, inherited)
             }
         }
     }
@@ -2694,7 +2724,7 @@ public final class PDF {
     // not have itself. A page of another program's PDF often carries no
     // /MediaBox or /Resources of its own, and read gives the objects as the
     // file has them, so the page holds what it is only after this.
-    private static func addInheritedEntries(_ page: PDFobj, _ objects: [PDFobj]) {
+    private static func addInheritedEntries(_ page: PDFobj, _ objects: [PDFobj], _ cache: InheritedEntries) {
         guard let open = page.dict.firstIndex(of: "<<") else {
             return
         }
@@ -2702,7 +2732,7 @@ public final class PDF {
             if entryIndex(valueOf(page), key) != -1 {
                 continue        // An entry of its own.
             }
-            if let value = inheritedValue(page, key, objects) {
+            if let value = inheritedValue(page, key, objects, cache) {
                 page.dict.insert(contentsOf: [key] + value, at: open + 1)
             }
         }
