@@ -10,6 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -139,6 +140,28 @@ func (paragraph *Paragraph) joinsPrevious(index int) bool {
 	return !isASCIIWhitespace(rune(text[0])) &&
 		!isASCIIWhitespace(rune(before[len(before)-1])) &&
 		!isCJK(text) && !isCJK(before)
+}
+
+// spaceMovesToNext returns true when the space after the text line at the
+// index goes at the start of the next text line instead, in its font: the
+// space between two text lines is the narrower of their two spaces, so that
+// the space after a word in a monospaced font, which is wide, is the space of
+// the text after it. The next text line has a word, is not joined to this one,
+// and has no underline, strikeout or link, which would start at the space.
+func (paragraph *Paragraph) spaceMovesToNext(index int) bool {
+	if index+1 >= len(paragraph.lines) || paragraph.joinsPrevious(index+1) {
+		return false
+	}
+	line := paragraph.lines[index]
+	next := paragraph.lines[index+1]
+	if line.text == "" || trimSpace(next.text) == "" ||
+		isCJK(line.text) || isCJK(next.text) ||
+		next.underline || next.strikeout ||
+		next.GetURIAction() != "" || next.GetGoToAction() != "" {
+		return false
+	}
+	return next.font.StringWidthUsingFallbackFont(next.fallbackFont, next.fontSize, single.Space) <
+		line.font.StringWidthUsingFallbackFont(line.fallbackFont, line.fontSize, single.Space)
 }
 
 // SetTextAlignment sets the alignment of the text in this paragraph:

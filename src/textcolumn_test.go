@@ -272,3 +272,15 @@ func TestTextColumnAJustifiedLineDoesNotWidenAJoin(t *testing.T) {
 		t.Errorf("the line is not justified: %v, %v", comma, four)
 	}
 }
+
+func TestTextColumnTheSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces(t *testing.T) {
+	testCheckTheNarrowerSpaceIsUsed(t, true)
+}
+
+func TestTextColumnAMovedSpaceDoesNotStartALine(t *testing.T) {
+	testCheckAMovedSpaceDoesNotStartARow(t, true)
+}
+
+func TestTextColumnAJustifiedLineWidensAMovedSpace(t *testing.T) {
+	testCheckAJustifiedRowWidensAMovedSpace(t, true)
+}

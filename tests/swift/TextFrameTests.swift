@@ -276,4 +276,86 @@ import Testing
         // The spaces are widened: four is further than one space after the comma.
         #expect(four[0] > comma[0] + font.stringWidth(", ") + 1, "the row is justified")
     }
+
+    // Two text lines, the first in Courier, whose space is wide, and the second
+    // in Helvetica, or the other way round when courierFirst is false.
+    private static func drawMixed(_ width: Float, _ alignment: Alignment?, _ courierFirst: Bool,
+            _ first: String, _ second: String, _ column: Bool) throws -> String {
+        let pdf = TestSupport.newPDF()
+        let courier = try Font(pdf, CoreFont.COURIER)
+        let helvetica = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph()
+                .add(TextLine(courierFirst ? courier : helvetica, first))
+                .add(TextLine(courierFirst ? helvetica : courier, second))
+        if let alignment {
+            paragraph.setTextAlignment(alignment)
+        }
+        let page = Page(pdf, Letter.PORTRAIT)
+        if column {
+            let textColumn = TextColumn()
+            textColumn.setWidth(width)
+            textColumn.setTextAlignment(alignment ?? Alignment.LEFT)
+            textColumn.addParagraph(paragraph)
+            textColumn.setLocation(10.0, 10.0)
+            textColumn.drawOn(page)
+        } else {
+            TextFrame([paragraph]).setLocation(10, 10).setWidth(width).drawOn(page)
+        }
+        return TestSupport.content(page)
+    }
+
+    static func checkTheNarrowerSpaceIsUsed(_ column: Bool) throws {
+        let courier = try Font(TestSupport.newPDF(), CoreFont.COURIER)
+        let helvetica = TestSupport.helvetica(TestSupport.newPDF())
+        // Code, then text: the space is Helvetica's, at the start of the text.
+        var content = try drawMixed(300, nil, true, "x", "and more", column)
+        let x = TestSupport.positionOf(content, "x")
+        #expect(content.contains("<" + TestSupport.hex("x") + ">"), "x has no space after it")
+        TestSupport.expectNear(x[0] + courier.stringWidth("x"), TestSupport.positionOf(content, " and")[0])
+        // Text, then code: the space is still Helvetica's, after the text.
+        content = try drawMixed(300, nil, false, "use", "x", column)
+        TestSupport.expectNear(TestSupport.positionOf(content, "use")[0] + helvetica.stringWidth("use "),
+                TestSupport.positionOf(content, "x")[0])
+    }
+
+    static func checkAMovedSpaceDoesNotStartARow(_ column: Bool) throws {
+        let courier = try Font(TestSupport.newPDF(), CoreFont.COURIER)
+        let content = try drawMixed(courier.stringWidth("aaa") + 5, nil, true, "aaa", "bbb", column)
+        let aaa = TestSupport.positionOf(content, "aaa")
+        let bbb = TestSupport.positionOf(content, "bbb")
+        #expect(bbb[1] < aaa[1], "bbb is on the second row")
+        TestSupport.expectNear(10, bbb[0])
+        #expect(!content.contains("<" + TestSupport.hex(" bbb")), "bbb has no space before it")
+    }
+
+    static func checkAJustifiedRowWidensAMovedSpace(_ column: Bool) throws {
+        let courier = try Font(TestSupport.newPDF(), CoreFont.COURIER)
+        let helvetica = TestSupport.helvetica(TestSupport.newPDF())
+        let content = try drawMixed(150, Alignment.JUSTIFY, true, "x",
+                "one two three four five six seven eight nine ten eleven twelve", column)
+        let x = TestSupport.positionOf(content, "x")
+        let one = TestSupport.positionOf(content, column ? " one" : "one")
+        let two = TestSupport.positionOf(content, "two")
+        // Where one and two start; a text column draws the space before one with it.
+        let oneStart = column ? one[0] + helvetica.stringWidth(" ") : one[0]
+        TestSupport.expectNear(x[1], one[1])
+        // The space before one, which Courier's text line left to it, is as
+        // wide as the space after it: both are widened alike.
+        let before = oneStart - (x[0] + courier.stringWidth("x"))
+        let after = two[0] - (oneStart + helvetica.stringWidth("one"))
+        #expect(before > helvetica.stringWidth(" ") + 0.1, "the row is justified")
+        TestSupport.expectNear(after, before)
+    }
+
+    @Test func theSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() throws {
+        try TextFrameTests.checkTheNarrowerSpaceIsUsed(false)
+    }
+
+    @Test func aMovedSpaceDoesNotStartARow() throws {
+        try TextFrameTests.checkAMovedSpaceDoesNotStartARow(false)
+    }
+
+    @Test func aJustifiedRowWidensAMovedSpace() throws {
+        try TextFrameTests.checkAJustifiedRowWidensAMovedSpace(false)
+    }
 }

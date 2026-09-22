@@ -122,6 +122,31 @@ public class Paragraph {
                 && !text.isCJK() && !before.isCJK()
     }
 
+    // Returns true when the space after the text line at the index goes at the
+    // start of the next text line instead, in its font: the space between two
+    // text lines is the narrower of their two spaces, so that the space after
+    // a word in a monospaced font, which is wide, is the space of the text
+    // after it. The next text line has a word, is not joined to this one, and
+    // has no underline, strikeout or link, which would start at the space.
+    func spaceMovesToNext(_ index: Int) -> Bool {
+        if index + 1 >= lines.count || joinsPrevious(index + 1) {
+            return false
+        }
+        let line = lines[index]
+        let next = lines[index + 1]
+        guard let text = line.text, let nextText = next.text else {
+            return false
+        }
+        if nextText.trim().isEmpty
+                || text.isCJK() || nextText.isCJK()
+                || next.underline || next.strikeout
+                || next.getURIAction() != nil || next.getGoToAction() != nil {
+            return false
+        }
+        return next.font!.stringWidth(next.fallbackFont, next.fontSize, Single.space)
+                < line.font!.stringWidth(line.fallbackFont, line.fontSize, Single.space)
+    }
+
     ///
     /// Sets the alignment of the text in this paragraph. A paragraph with no
     /// alignment set takes the alignment of the text column it is drawn in.

@@ -68,6 +68,9 @@ type TextFrame struct {
 	// True when the row has room for the first word of the next text line,
 	// which goes on from the last word of this one: see Paragraph.AddJoined.
 	joinReserved bool
+	// True when the next text line starts with the space after the last word
+	// of this one: see Paragraph.spaceMovesToNext.
+	leadingSpace bool
 
 	// The text of the row being drawn, drawn when the row is complete, so that
 	// it can be aligned: each part is a text line with some of its text.
@@ -261,6 +264,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.rowPlaced = false
 	tf.startsParagraph = false
 	tf.joinReserved = false
+	tf.leadingSpace = false
 	tf.row = tf.row[:0]
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
@@ -353,11 +357,23 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		// The last word of a text line that the next text line goes on from
 		// has no space after it, and it is measured with the words joined to
 		// it, so that the row does not break between them.
-		joinsNext := (tf.tokenIndex == len(tf.tokens)-1) &&
-			paragraph.joinsPrevious(tf.lineIndex+1)
+		last := (tf.tokenIndex == len(tf.tokens)-1)
+		joinsNext := last && paragraph.joinsPrevious(tf.lineIndex+1)
+		// The space after the last word goes at the start of the next text
+		// line when that one's space is narrower.
+		spaceToNext := last && !joinsNext && paragraph.spaceMovesToNext(tf.lineIndex)
 		text := token + single.Space
-		if joinsNext {
+		if joinsNext || spaceToNext {
 			text = token
+		}
+		// The first word of a text line starts with the space the text line
+		// before left to it, unless the word starts a row: when it does not
+		// fit, the row is drawn and the word starts the next one, without it.
+		leading := tf.leadingSpace && tf.tokenIndex == 0 && tf.xText > tf.x
+		tf.leadingSpace = false
+		if leading {
+			token = single.Space + token
+			text = single.Space + text
 		}
 		available := (tf.x + tf.w) - tf.xText
 		// The first word of a text line joined to the word before it is in
@@ -375,6 +391,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			runLength += textWidth(textLine, text)
 			tf.tokenIndex++
 			tf.joinReserved = joinsNext
+			tf.leadingSpace = spaceToNext
 			continue
 		}
 		if joinsNext && buf.Len() == 0 && tf.xText == tf.x &&
@@ -453,6 +470,7 @@ func (tf *TextFrame) addToRow(paragraph *Paragraph, textLine *TextLine, str stri
 // widens the spaces of every row but its last.
 func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	tf.joinReserved = false
+	tf.leadingSpace = false
 	if len(tf.row) == 0 {
 		return
 	}

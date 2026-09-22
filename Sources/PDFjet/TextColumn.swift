@@ -227,10 +227,21 @@ public class TextColumn : Drawable {
 
         var runLength: Float = 0.0
         var wordStart = 0       // Where the word being set starts in the list
+        // True when the next text line starts with the space after the last
+        // word of this one: see Paragraph.spaceMovesToNext.
+        var leadingSpace = false
         for (i, line) in paragraph.lines.enumerated() {
             let tokens = (line.text ?? "").splitOnWhitespace()
             for (j, token) in tokens.enumerated() {
-                let textLine = line.copyWithText(token + Single.space)
+                // The space after the last word goes at the start of the next
+                // text line when that one's space is narrower, and the first
+                // word of a text line starts with the space the text line before
+                // left to it, unless the word starts a line.
+                let spaceToNext = (j == tokens.count - 1) && paragraph.spaceMovesToNext(i)
+                let after = spaceToNext ? "" : Single.space
+                let leading = leadingSpace && j == 0 && !list.isEmpty
+                leadingSpace = spaceToNext
+                var textLine = line.copyWithText((leading ? Single.space : "") + token + after)
                 if j == 0 && !list.isEmpty && paragraph.joinsPrevious(i) {
                     // The text line goes on from the word before it, with no
                     // space between them, and the line of text does not break
@@ -246,8 +257,13 @@ public class TextColumn : Drawable {
                         continue
                     }
                     if wordStart > 0 {
-                        let word = Array(list[wordStart...])
+                        var word = Array(list[wordStart...])
                         list.removeSubrange(wordStart...)
+                        // The word starts the next line, without a space before it.
+                        let first = word[0]
+                        if first.text!.hasPrefix(Single.space) {
+                            word[0] = first.copyWithText(String(first.text!.dropFirst()))
+                        }
                         drawLineOfText(page, list, alignment)
                         moveToNextLine(lineHeight)
                         list.removeAll()
@@ -265,7 +281,8 @@ public class TextColumn : Drawable {
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
-                if list.isEmpty || (runLength + TextColumn.width(textLine, token)) <= self.w {
+                let measured = (leading ? Single.space : "") + token
+                if list.isEmpty || (runLength + TextColumn.width(textLine, measured)) <= self.w {
                     wordStart = list.count
                     list.append(textLine)
                     runLength += textLine.getWidth()
@@ -274,6 +291,9 @@ public class TextColumn : Drawable {
                     moveToNextLine(lineHeight)
                     list.removeAll()
                     wordStart = 0
+                    if leading {
+                        textLine = line.copyWithText(token + after)
+                    }
                     list.append(textLine)
                     runLength = textLine.getWidth()
                 }
@@ -348,13 +368,23 @@ public class TextColumn : Drawable {
             // The spaces are widened so that the text of the line reaches both
             // edges. A line of one word has no space to widen, and the parts
             // of a word joined with Paragraph.addJoined have none between them.
+            // A space is after a word, or before one, when it goes with the
+            // text line after it.
             var spaces = 0
-            for i in 0..<max(list.count - 1, 0) where list[i].text!.hasSuffix(Single.space) {
-                spaces += 1
+            for i in 0..<list.count {
+                if i < list.count - 1 && list[i].text!.hasSuffix(Single.space) {
+                    spaces += 1
+                }
+                if i > 0 && list[i].text!.hasPrefix(Single.space) {
+                    spaces += 1
+                }
             }
             let dx: Float = (spaces > 0) ? (w - TextColumn.visibleWidth(list)) / Float(spaces) : 0.0
             // Each token draws its own link annotation when the line has a URI or GoTo action.
-            for textLine in list {
+            for (i, textLine) in list.enumerated() {
+                if i > 0 && textLine.text!.hasPrefix(Single.space) {
+                    x1 += dx
+                }
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
                 textLine.drawOn(page)
                 x1 += textLine.getWidth()

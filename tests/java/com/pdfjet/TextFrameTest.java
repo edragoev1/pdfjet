@@ -306,4 +306,90 @@ class TextFrameTest {
         // The spaces are widened: four is further than one space after the comma.
         assertTrue(four[0] > comma[0] + font.stringWidth(", ") + 1f, "the row is justified");
     }
+
+    // Two text lines, the first in Courier, whose space is wide, and the second
+    // in Helvetica, or the other way round when courierFirst is false.
+    private static String drawMixed(float width, Alignment alignment, boolean courierFirst,
+            String first, String second, boolean column) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        Font helvetica = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(courierFirst ? courier : helvetica, first))
+                .add(new TextLine(courierFirst ? helvetica : courier, second));
+        if (alignment != null) {
+            paragraph.setTextAlignment(alignment);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        if (column) {
+            TextColumn textColumn = new TextColumn();
+            textColumn.setWidth(width);
+            textColumn.setTextAlignment(alignment == null ? Alignment.LEFT : alignment);
+            textColumn.addParagraph(paragraph);
+            textColumn.setLocation(10f, 10f);
+            textColumn.drawOn(page);
+        } else {
+            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(width).drawOn(page);
+        }
+        return TestSupport.content(page);
+    }
+
+    static void checkTheNarrowerSpaceIsUsed(boolean column) throws Exception {
+        Font courier = new Font(TestSupport.newPDF(), CoreFont.COURIER);
+        Font helvetica = TestSupport.helvetica(TestSupport.newPDF());
+        // Code, then text: the space is Helvetica's, at the start of the text.
+        String content = drawMixed(300f, null, true, "x", "and more", column);
+        float[] x = TestSupport.positionOf(content, "x");
+        assertTrue(content.contains("<" + TestSupport.hex("x") + ">"), "x has no space after it");
+        assertEquals(x[0] + courier.stringWidth("x"), TestSupport.positionOf(content, " and")[0],
+                TestSupport.DELTA);
+        // Text, then code: the space is still Helvetica's, after the text.
+        content = drawMixed(300f, null, false, "use", "x", column);
+        assertEquals(TestSupport.positionOf(content, "use")[0] + helvetica.stringWidth("use "),
+                TestSupport.positionOf(content, "x")[0], TestSupport.DELTA);
+    }
+
+    static void checkAMovedSpaceDoesNotStartARow(boolean column) throws Exception {
+        Font courier = new Font(TestSupport.newPDF(), CoreFont.COURIER);
+        String content = drawMixed(courier.stringWidth("aaa") + 5f, null, true, "aaa", "bbb", column);
+        float[] aaa = TestSupport.positionOf(content, "aaa");
+        float[] bbb = TestSupport.positionOf(content, "bbb");
+        assertTrue(bbb[1] < aaa[1], "bbb is on the second row");
+        assertEquals(10f, bbb[0], TestSupport.DELTA);
+        assertTrue(!content.contains("<" + TestSupport.hex(" bbb")), "bbb has no space before it");
+    }
+
+    static void checkAJustifiedRowWidensAMovedSpace(boolean column) throws Exception {
+        Font courier = new Font(TestSupport.newPDF(), CoreFont.COURIER);
+        Font helvetica = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawMixed(150f, Alignment.JUSTIFY, true, "x",
+                "one two three four five six seven eight nine ten eleven twelve", column);
+        float[] x = TestSupport.positionOf(content, "x");
+        float[] one = TestSupport.positionOf(content, column ? " one" : "one");
+        float[] two = TestSupport.positionOf(content, "two");
+        // Where one and two start; a text column draws the space before one with it.
+        float oneStart = column ? one[0] + helvetica.stringWidth(" ") : one[0];
+        assertEquals(x[1], one[1], TestSupport.DELTA);
+        // The space before one, which Courier's text line left to it, is as
+        // wide as the space after it: both are widened alike.
+        float before = oneStart - (x[0] + courier.stringWidth("x"));
+        float after = two[0] - (oneStart + helvetica.stringWidth("one"));
+        assertTrue(before > helvetica.stringWidth(" ") + 0.1f, "the row is justified");
+        assertEquals(after, before, TestSupport.DELTA);
+    }
+
+    @Test
+    void theSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() throws Exception {
+        checkTheNarrowerSpaceIsUsed(false);
+    }
+
+    @Test
+    void aMovedSpaceDoesNotStartARow() throws Exception {
+        checkAMovedSpaceDoesNotStartARow(false);
+    }
+
+    @Test
+    void aJustifiedRowWidensAMovedSpace() throws Exception {
+        checkAJustifiedRowWidensAMovedSpace(false);
+    }
 }

@@ -216,12 +216,23 @@ public class TextColumn : IDrawable {
 
         float runLength = 0f;
         int wordStart = 0;      // Where the word being set starts in the list
+        // True when the next text line starts with the space after the last
+        // word of this one: see Paragraph.SpaceMovesToNext.
+        bool leadingSpace = false;
         for (int i = 0; i < paragraph.lines.Count; i++) {
             TextLine line = paragraph.lines[i];
             String[] tokens = Util.SplitOnWhitespace(line.text ?? "");
             for (int j = 0; j < tokens.Length; j++) {
                 String token = tokens[j];
-                TextLine text = line.CopyWithText(token + Single.space);
+                // The space after the last word goes at the start of the next
+                // text line when that one's space is narrower, and the first
+                // word of a text line starts with the space the text line before
+                // left to it, unless the word starts a line.
+                bool spaceToNext = (j == tokens.Length - 1) && paragraph.SpaceMovesToNext(i);
+                String after = spaceToNext ? "" : Single.space;
+                bool leading = leadingSpace && j == 0 && list.Count > 0;
+                leadingSpace = spaceToNext;
+                TextLine text = line.CopyWithText((leading ? Single.space : "") + token + after);
                 if (j == 0 && list.Count > 0 && paragraph.JoinsPrevious(i)) {
                     // The text line goes on from the word before it, with no
                     // space between them, and the line of text does not break
@@ -240,6 +251,11 @@ public class TextColumn : IDrawable {
                     if (wordStart > 0) {
                         List<TextLine> word = list.GetRange(wordStart, list.Count - wordStart);
                         list.RemoveRange(wordStart, list.Count - wordStart);
+                        // The word starts the next line, without a space before it.
+                        TextLine first = word[0];
+                        if (first.text.StartsWith(Single.space, StringComparison.Ordinal)) {
+                            word[0] = first.CopyWithText(first.text.Substring(1));
+                        }
                         DrawLineOfText(page, list, alignment);
                         MoveToNextLine(lineHeight);
                         list.Clear();
@@ -257,7 +273,8 @@ public class TextColumn : IDrawable {
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
-                if (list.Count == 0 || (runLength + Width(text, token)) <= this.w) {
+                String measured = (leading ? Single.space : "") + token;
+                if (list.Count == 0 || (runLength + Width(text, measured)) <= this.w) {
                     wordStart = list.Count;
                     list.Add(text);
                     runLength += text.GetWidth();
@@ -266,6 +283,9 @@ public class TextColumn : IDrawable {
                     MoveToNextLine(lineHeight);
                     list.Clear();
                     wordStart = 0;
+                    if (leading) {
+                        text = line.CopyWithText(token + after);
+                    }
                     list.Add(text);
                     runLength = text.GetWidth();
                 }
@@ -337,15 +357,24 @@ public class TextColumn : IDrawable {
             // The spaces are widened so that the text of the line reaches both
             // edges. A line of one word has no space to widen, and the parts
             // of a word joined with Paragraph.AddJoined have none between them.
+            // A space is after a word, or before one, when it goes with the
+            // text line after it.
             int spaces = 0;
-            for (int i = 0; i < list.Count - 1; i++) {
-                if (list[i].text.EndsWith(Single.space, StringComparison.Ordinal)) {
+            for (int i = 0; i < list.Count; i++) {
+                if (i < list.Count - 1 && list[i].text.EndsWith(Single.space, StringComparison.Ordinal)) {
+                    spaces++;
+                }
+                if (i > 0 && list[i].text.StartsWith(Single.space, StringComparison.Ordinal)) {
                     spaces++;
                 }
             }
             float dx = (spaces > 0) ? (w - VisibleWidth(list)) / spaces : 0f;
             // Each token draws its own link annotation when the line has a URI or GoTo action.
-            foreach (TextLine textLine in list) {
+            for (int i = 0; i < list.Count; i++) {
+                TextLine textLine = list[i];
+                if (i > 0 && textLine.text.StartsWith(Single.space, StringComparison.Ordinal)) {
+                    x1 += dx;
+                }
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
                 textLine.DrawOn(page);
                 x1 += textLine.GetWidth();

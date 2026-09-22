@@ -51,6 +51,9 @@ public class TextFrame : Drawable {
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.addJoined.
     private var joinReserved = false
+    // True when the next text line starts with the space after the last word
+    // of this one: see Paragraph.spaceMovesToNext.
+    private var leadingSpace = false
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -264,6 +267,7 @@ public class TextFrame : Drawable {
         rowPlaced = false
         startsParagraph = false
         joinReserved = false
+        leadingSpace = false
         row.removeAll()
         var bottom = y
         while paragraphIndex < paragraphs.count {
@@ -348,13 +352,25 @@ public class TextFrame : Drawable {
             if !rowOpen && !openRow(textLine) {
                 return false
             }
-            let token = tokens![tokenIndex]
+            var token = tokens![tokenIndex]
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
-            let joinsNext = (tokenIndex == tokens!.count - 1)
-                    && paragraph.joinsPrevious(lineIndex + 1)
-            let text = joinsNext ? token : token + Single.space
+            let last = (tokenIndex == tokens!.count - 1)
+            let joinsNext = last && paragraph.joinsPrevious(lineIndex + 1)
+            // The space after the last word goes at the start of the next text
+            // line when that one's space is narrower.
+            let spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex)
+            var text = (joinsNext || spaceToNext) ? token : token + Single.space
+            // The first word of a text line starts with the space the text line
+            // before left to it, unless the word starts a row: when it does not
+            // fit, the row is drawn and the word starts the next one, without it.
+            let leading = leadingSpace && tokenIndex == 0 && xText > x
+            leadingSpace = false
+            if leading {
+                token = Single.space + token
+                text = Single.space + text
+            }
             let available = (x + w) - xText
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
@@ -368,6 +384,7 @@ public class TextFrame : Drawable {
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
                 joinReserved = joinsNext
+                leadingSpace = spaceToNext
                 continue
             }
             if joinsNext && buf.isEmpty && xText == x
@@ -517,6 +534,7 @@ public class TextFrame : Drawable {
 
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
         joinReserved = false
+        leadingSpace = false
         if row.isEmpty {
             return
         }

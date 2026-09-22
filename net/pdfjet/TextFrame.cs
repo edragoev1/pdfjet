@@ -54,6 +54,9 @@ public class TextFrame : IDrawable {
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.AddJoined.
     private bool joinReserved;
+    // True when the next text line starts with the space after the last word
+    // of this one: see Paragraph.SpaceMovesToNext.
+    private bool leadingSpace;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -277,6 +280,7 @@ public class TextFrame : IDrawable {
         rowPlaced = false;
         startsParagraph = false;
         joinReserved = false;
+        leadingSpace = false;
         row.Clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
@@ -366,9 +370,21 @@ public class TextFrame : IDrawable {
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
-            bool joinsNext = (tokenIndex == tokens.Count - 1)
-                    && paragraph.JoinsPrevious(lineIndex + 1);
-            String text = joinsNext ? token : token + Single.space;
+            bool last = (tokenIndex == tokens.Count - 1);
+            bool joinsNext = last && paragraph.JoinsPrevious(lineIndex + 1);
+            // The space after the last word goes at the start of the next text
+            // line when that one's space is narrower.
+            bool spaceToNext = last && !joinsNext && paragraph.SpaceMovesToNext(lineIndex);
+            String text = (joinsNext || spaceToNext) ? token : token + Single.space;
+            // The first word of a text line starts with the space the text line
+            // before left to it, unless the word starts a row: when it does not
+            // fit, the row is drawn and the word starts the next one, without it.
+            bool leading = leadingSpace && tokenIndex == 0 && xText > x;
+            leadingSpace = false;
+            if (leading) {
+                token = Single.space + token;
+                text = Single.space + text;
+            }
             float available = (x + w) - xText;
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
@@ -382,6 +398,7 @@ public class TextFrame : IDrawable {
                 runLength += Width(textLine, text);
                 tokenIndex++;
                 joinReserved = joinsNext;
+                leadingSpace = spaceToNext;
                 continue;
             }
             if (joinsNext && buf.Length == 0 && xText == x
@@ -525,6 +542,7 @@ public class TextFrame : IDrawable {
 
     private void DrawRow(Page page, bool lastRowOfParagraph) {
         joinReserved = false;
+        leadingSpace = false;
         if (row.Count == 0) {
             return;
         }

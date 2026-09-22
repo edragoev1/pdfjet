@@ -251,13 +251,24 @@ public class TextColumn implements Drawable {
 
         float runLength = 0f;
         int wordStart = 0;      // Where the word being set starts in the list
+        // True when the next text line starts with the space after the last
+        // word of this one: see Paragraph.spaceMovesToNext.
+        boolean leadingSpace = false;
         for (int i = 0; i < paragraph.lines.size(); i++) {
             TextLine line = paragraph.lines.get(i);
             String text = line.text == null ? "" : line.text;
             String[] tokens = Util.splitOnWhitespace(text);
             for (int j = 0; j < tokens.length; j++) {
                 String token = tokens[j];
-                TextLine textLine = line.copyWithText(token + Single.space);
+                // The space after the last word goes at the start of the next
+                // text line when that one's space is narrower, and the first
+                // word of a text line starts with the space the text line before
+                // left to it, unless the word starts a line.
+                boolean spaceToNext = (j == tokens.length - 1) && paragraph.spaceMovesToNext(i);
+                String after = spaceToNext ? "" : Single.space;
+                boolean leading = leadingSpace && j == 0 && !list.isEmpty();
+                leadingSpace = spaceToNext;
+                TextLine textLine = line.copyWithText((leading ? Single.space : "") + token + after);
                 if (j == 0 && !list.isEmpty() && paragraph.joinsPrevious(i)) {
                     // The text line goes on from the word before it, with no
                     // space between them, and the line of text does not break
@@ -275,6 +286,11 @@ public class TextColumn implements Drawable {
                     if (wordStart > 0) {
                         List<TextLine> word = new ArrayList<TextLine>(list.subList(wordStart, list.size()));
                         list.subList(wordStart, list.size()).clear();
+                        // The word starts the next line, without a space before it.
+                        TextLine first = word.get(0);
+                        if (first.text.startsWith(Single.space)) {
+                            word.set(0, first.copyWithText(first.text.substring(1)));
+                        }
                         drawLineOfText(page, list, alignment);
                         moveToNextLine(lineHeight);
                         list.clear();
@@ -292,7 +308,8 @@ public class TextColumn implements Drawable {
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
-                if (list.isEmpty() || (runLength + width(textLine, token)) <= this.w) {
+                String measured = (leading ? Single.space : "") + token;
+                if (list.isEmpty() || (runLength + width(textLine, measured)) <= this.w) {
                     wordStart = list.size();
                     list.add(textLine);
                     runLength += textLine.getWidth();
@@ -301,6 +318,9 @@ public class TextColumn implements Drawable {
                     moveToNextLine(lineHeight);
                     list.clear();
                     wordStart = 0;
+                    if (leading) {
+                        textLine = line.copyWithText(token + after);
+                    }
                     list.add(textLine);
                     runLength = textLine.getWidth();
                 }
@@ -372,16 +392,25 @@ public class TextColumn implements Drawable {
             // The spaces are widened so that the text of the line reaches both
             // edges. A line of one word has no space to widen, and the parts
             // of a word joined with Paragraph.addJoined have none between them.
+            // A space is after a word, or before one, when it goes with the
+            // text line after it.
             int spaces = 0;
-            for (int i = 0; i < list.size() - 1; i++) {
-                if (list.get(i).text.endsWith(Single.space)) {
+            for (int i = 0; i < list.size(); i++) {
+                if (i < list.size() - 1 && list.get(i).text.endsWith(Single.space)) {
+                    spaces++;
+                }
+                if (i > 0 && list.get(i).text.startsWith(Single.space)) {
                     spaces++;
                 }
             }
             float dx = (spaces > 0) ? (w - visibleWidth(list)) / spaces : 0f;
 
             // Each token draws its own link annotation when the line has a URI or GoTo action.
-            for (TextLine textLine : list) {
+            for (int i = 0; i < list.size(); i++) {
+                TextLine textLine = list.get(i);
+                if (i > 0 && textLine.text.startsWith(Single.space)) {
+                    x1 += dx;
+                }
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
                 textLine.drawOn(page);
                 x1 += textLine.getWidth();

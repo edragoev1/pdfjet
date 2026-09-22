@@ -178,9 +178,28 @@ func (textColumn *TextColumn) drawParagraphOn(
 
 	var runLength float32
 	wordStart := 0 // Where the word being set starts in the list
+	// True when the next text line starts with the space after the last word
+	// of this one: see Paragraph.spaceMovesToNext.
+	leadingSpace := false
 	for i, line := range paragraph.lines {
-		for j, token := range splitOnWhitespace(line.text) {
-			text := line.copyWithText(token + single.Space)
+		tokens := splitOnWhitespace(line.text)
+		for j, token := range tokens {
+			// The space after the last word goes at the start of the next
+			// text line when that one's space is narrower, and the first word
+			// of a text line starts with the space the text line before left
+			// to it, unless the word starts a line.
+			spaceToNext := (j == len(tokens)-1) && paragraph.spaceMovesToNext(i)
+			after := single.Space
+			if spaceToNext {
+				after = ""
+			}
+			leading := leadingSpace && j == 0 && len(list) > 0
+			leadingSpace = spaceToNext
+			space := ""
+			if leading {
+				space = single.Space
+			}
+			text := line.copyWithText(space + token + after)
 			if j == 0 && len(list) > 0 && paragraph.joinsPrevious(i) {
 				// The text line goes on from the word before it, with no space
 				// between them, and the line of text does not break inside the
@@ -200,6 +219,11 @@ func (textColumn *TextColumn) drawParagraphOn(
 					word := make([]*TextLine, len(list)-wordStart)
 					copy(word, list[wordStart:])
 					list = list[:wordStart]
+					// The word starts the next line, without a space before it.
+					first := word[0]
+					if strings.HasPrefix(first.text, single.Space) {
+						word[0] = first.copyWithText(first.text[1:])
+					}
 					textColumn.drawLineOfText(page, list, textAlignment)
 					textColumn.moveToNextLine(lineHeight)
 					list = make([]*TextLine, 0)
@@ -217,7 +241,8 @@ func (textColumn *TextColumn) drawParagraphOn(
 			// is as wide as the text it shows. A token wider than the column
 			// goes on a line of its own rather than after an empty one, which
 			// would leave the line above it blank.
-			if len(list) == 0 || (runLength+textLineWidth(text, token)) <= textColumn.w {
+			measured := space + token
+			if len(list) == 0 || (runLength+textLineWidth(text, measured)) <= textColumn.w {
 				wordStart = len(list)
 				list = append(list, text)
 				runLength += text.GetWidth()
@@ -226,6 +251,9 @@ func (textColumn *TextColumn) drawParagraphOn(
 				textColumn.moveToNextLine(lineHeight)
 				list = make([]*TextLine, 0)
 				wordStart = 0
+				if leading {
+					text = line.copyWithText(token + after)
+				}
 				list = append(list, text)
 				runLength = text.GetWidth()
 			}
@@ -290,10 +318,15 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 		markLastToken(textLines)
 		// The spaces are widened so that the text of the line reaches both
 		// edges. A line of one word has no space to widen, and the parts of a
-		// word joined with Paragraph.AddJoined have none between them.
+		// word joined with Paragraph.AddJoined have none between them. A
+		// space is after a word, or before one, when it goes with the text
+		// line after it.
 		spaces := 0
-		for i := 0; i < len(textLines)-1; i++ {
-			if strings.HasSuffix(textLines[i].text, single.Space) {
+		for i := 0; i < len(textLines); i++ {
+			if i < len(textLines)-1 && strings.HasSuffix(textLines[i].text, single.Space) {
+				spaces++
+			}
+			if i > 0 && strings.HasPrefix(textLines[i].text, single.Space) {
 				spaces++
 			}
 		}
@@ -302,7 +335,10 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 			dx = (textColumn.w - visibleWidth(textLines)) / float32(spaces)
 		}
 		// Each token draws its own link annotation when the line has a URI or GoTo action.
-		for _, textLine := range textLines {
+		for i, textLine := range textLines {
+			if i > 0 && strings.HasPrefix(textLine.text, single.Space) {
+				textColumn.x1 += dx
+			}
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			textLine.DrawOn(page)
 			textColumn.x1 += textLine.GetWidth()

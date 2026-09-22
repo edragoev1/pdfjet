@@ -232,4 +232,16 @@ import Testing
         TestSupport.expectNear(three[0] + font.stringWidth("three"), comma[0])
         #expect(four[0] > comma[0] + font.stringWidth(", ") + 1, "the line is justified")
     }
+
+    @Test func theSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() throws {
+        try TextFrameTests.checkTheNarrowerSpaceIsUsed(true)
+    }
+
+    @Test func aMovedSpaceDoesNotStartALine() throws {
+        try TextFrameTests.checkAMovedSpaceDoesNotStartARow(true)
+    }
+
+    @Test func aJustifiedLineWidensAMovedSpace() throws {
+        try TextFrameTests.checkAJustifiedRowWidensAMovedSpace(true)
+    }
 }

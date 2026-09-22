@@ -147,6 +147,28 @@ public class Paragraph {
                 && !Util.isCJK(text) && !Util.isCJK(before);
     }
 
+    // Returns true when the space after the text line at the index goes at the
+    // start of the next text line instead, in its font: the space between two
+    // text lines is the narrower of their two spaces, so that the space after
+    // a word in a monospaced font, which is wide, is the space of the text
+    // after it. The next text line has a word, is not joined to this one, and
+    // has no underline, strikeout or link, which would start at the space.
+    boolean spaceMovesToNext(int index) {
+        if (index + 1 >= lines.size() || joinsPrevious(index + 1)) {
+            return false;
+        }
+        TextLine line = lines.get(index);
+        TextLine next = lines.get(index + 1);
+        if (line.text == null || next.text == null || next.text.trim().isEmpty()
+                || Util.isCJK(line.text) || Util.isCJK(next.text)
+                || next.underline || next.strikeout
+                || next.getURIAction() != null || next.getGoToAction() != null) {
+            return false;
+        }
+        return next.font.stringWidth(next.fallbackFont, next.fontSize, Single.space)
+                < line.font.stringWidth(line.fallbackFont, line.fontSize, Single.space);
+    }
+
     /**
      * Sets the alignment of the text in this paragraph. A paragraph with no
      * alignment set takes the alignment of the text column it is drawn in.

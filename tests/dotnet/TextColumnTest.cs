@@ -247,5 +247,20 @@ public class TextColumnTest {
         TestSupport.AssertNear(three[0] + font.StringWidth("three"), comma[0], TestSupport.DELTA, "comma x");
         Assert.True(four[0] > comma[0] + font.StringWidth(", ") + 1f, "the line is justified");
     }
+
+    [Fact]
+    public void TheSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() {
+        TextFrameTest.CheckTheNarrowerSpaceIsUsed(true);
+    }
+
+    [Fact]
+    public void AMovedSpaceDoesNotStartALine() {
+        TextFrameTest.CheckAMovedSpaceDoesNotStartARow(true);
+    }
+
+    [Fact]
+    public void AJustifiedLineWidensAMovedSpace() {
+        TextFrameTest.CheckAJustifiedRowWidensAMovedSpace(true);
+    }
 }
 }   // End of namespace PDFjet.NET

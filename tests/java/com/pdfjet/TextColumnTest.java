@@ -262,4 +262,19 @@ class TextColumnTest {
         assertEquals(three[0] + font.stringWidth("three"), comma[0], TestSupport.DELTA);
         assertTrue(four[0] > comma[0] + font.stringWidth(", ") + 1f, "the line is justified");
     }
+
+    @Test
+    void theSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() throws Exception {
+        TextFrameTest.checkTheNarrowerSpaceIsUsed(true);
+    }
+
+    @Test
+    void aMovedSpaceDoesNotStartALine() throws Exception {
+        TextFrameTest.checkAMovedSpaceDoesNotStartARow(true);
+    }
+
+    @Test
+    void aJustifiedLineWidensAMovedSpace() throws Exception {
+        TextFrameTest.checkAJustifiedRowWidensAMovedSpace(true);
+    }
 }

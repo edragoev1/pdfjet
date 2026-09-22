@@ -299,5 +299,91 @@ public class TextFrameTest {
         // The spaces are widened: four is further than one space after the comma.
         Assert.True(four[0] > comma[0] + font.StringWidth(", ") + 1f, "the row is justified");
     }
+
+    // Two text lines, the first in Courier, whose space is wide, and the second
+    // in Helvetica, or the other way round when courierFirst is false.
+    private static string DrawMixed(float width, Alignment? alignment, bool courierFirst,
+            string first, string second, bool column) {
+        PDF pdf = TestSupport.NewPDF();
+        Font courier = new Font(pdf, CoreFont.COURIER);
+        Font helvetica = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(courierFirst ? courier : helvetica, first))
+                .Add(new TextLine(courierFirst ? helvetica : courier, second));
+        if (alignment != null) {
+            paragraph.SetTextAlignment(alignment.Value);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        if (column) {
+            TextColumn textColumn = new TextColumn();
+            textColumn.SetWidth(width);
+            textColumn.SetTextAlignment(alignment ?? Alignment.LEFT);
+            textColumn.AddParagraph(paragraph);
+            textColumn.SetLocation(10f, 10f);
+            textColumn.DrawOn(page);
+        } else {
+            new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(width).DrawOn(page);
+        }
+        return TestSupport.Content(page);
+    }
+
+    internal static void CheckTheNarrowerSpaceIsUsed(bool column) {
+        Font courier = new Font(TestSupport.NewPDF(), CoreFont.COURIER);
+        Font helvetica = TestSupport.Helvetica(TestSupport.NewPDF());
+        // Code, then text: the space is Helvetica's, at the start of the text.
+        string content = DrawMixed(300f, null, true, "x", "and more", column);
+        float[] x = TestSupport.PositionOf(content, "x");
+        Assert.True(content.Contains("<" + TestSupport.Hex("x") + ">"), "x has no space after it");
+        TestSupport.AssertNear(x[0] + courier.StringWidth("x"), TestSupport.PositionOf(content, " and")[0],
+                TestSupport.DELTA, "and x");
+        // Text, then code: the space is still Helvetica's, after the text.
+        content = DrawMixed(300f, null, false, "use", "x", column);
+        TestSupport.AssertNear(TestSupport.PositionOf(content, "use")[0] + helvetica.StringWidth("use "),
+                TestSupport.PositionOf(content, "x")[0], TestSupport.DELTA, "x x");
+    }
+
+    internal static void CheckAMovedSpaceDoesNotStartARow(bool column) {
+        Font courier = new Font(TestSupport.NewPDF(), CoreFont.COURIER);
+        string content = DrawMixed(courier.StringWidth("aaa") + 5f, null, true, "aaa", "bbb", column);
+        float[] aaa = TestSupport.PositionOf(content, "aaa");
+        float[] bbb = TestSupport.PositionOf(content, "bbb");
+        Assert.True(bbb[1] < aaa[1], "bbb is on the second row");
+        TestSupport.AssertNear(10f, bbb[0], TestSupport.DELTA, "bbb x");
+        Assert.True(!content.Contains("<" + TestSupport.Hex(" bbb")), "bbb has no space before it");
+    }
+
+    internal static void CheckAJustifiedRowWidensAMovedSpace(bool column) {
+        Font courier = new Font(TestSupport.NewPDF(), CoreFont.COURIER);
+        Font helvetica = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawMixed(150f, Alignment.JUSTIFY, true, "x",
+                "one two three four five six seven eight nine ten eleven twelve", column);
+        float[] x = TestSupport.PositionOf(content, "x");
+        float[] one = TestSupport.PositionOf(content, column ? " one" : "one");
+        float[] two = TestSupport.PositionOf(content, "two");
+        // Where one and two start; a text column draws the space before one with it.
+        float oneStart = column ? one[0] + helvetica.StringWidth(" ") : one[0];
+        TestSupport.AssertNear(x[1], one[1], TestSupport.DELTA, "one y");
+        // The space before one, which Courier's text line left to it, is as
+        // wide as the space after it: both are widened alike.
+        float before = oneStart - (x[0] + courier.StringWidth("x"));
+        float after = two[0] - (oneStart + helvetica.StringWidth("one"));
+        Assert.True(before > helvetica.StringWidth(" ") + 0.1f, "the row is justified");
+        TestSupport.AssertNear(after, before, TestSupport.DELTA, "space before one");
+    }
+
+    [Fact]
+    public void TheSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces() {
+        CheckTheNarrowerSpaceIsUsed(false);
+    }
+
+    [Fact]
+    public void AMovedSpaceDoesNotStartARow() {
+        CheckAMovedSpaceDoesNotStartARow(false);
+    }
+
+    [Fact]
+    public void AJustifiedRowWidensAMovedSpace() {
+        CheckAJustifiedRowWidensAMovedSpace(false);
+    }
 }
 }

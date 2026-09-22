@@ -126,6 +126,28 @@ public class Paragraph {
                 && !Util.IsCJK(text) && !Util.IsCJK(before);
     }
 
+    // Returns true when the space after the text line at the index goes at the
+    // start of the next text line instead, in its font: the space between two
+    // text lines is the narrower of their two spaces, so that the space after
+    // a word in a monospaced font, which is wide, is the space of the text
+    // after it. The next text line has a word, is not joined to this one, and
+    // has no underline, strikeout or link, which would start at the space.
+    internal bool SpaceMovesToNext(int index) {
+        if (index + 1 >= lines.Count || JoinsPrevious(index + 1)) {
+            return false;
+        }
+        TextLine line = lines[index];
+        TextLine next = lines[index + 1];
+        if (line.text == null || next.text == null || Util.Trim(next.text).Length == 0
+                || Util.IsCJK(line.text) || Util.IsCJK(next.text)
+                || next.underline || next.strikeout
+                || next.GetURIAction() != null || next.GetGoToAction() != null) {
+            return false;
+        }
+        return next.font.StringWidth(next.fallbackFont, next.fontSize, Single.space)
+                < line.font.StringWidth(line.fallbackFont, line.fontSize, Single.space);
+    }
+
     /// <summary>
     /// Sets the alignment of the text in this paragraph. A paragraph with no
     /// alignment set takes the alignment of the text column it is drawn in.

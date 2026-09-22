@@ -53,6 +53,9 @@ public class TextFrame implements Drawable {
     // True when the row has room for the first word of the next text line,
     // which goes on from the last word of this one: see Paragraph.addJoined.
     private boolean joinReserved;
+    // True when the next text line starts with the space after the last word
+    // of this one: see Paragraph.spaceMovesToNext.
+    private boolean leadingSpace;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -339,6 +342,7 @@ public class TextFrame implements Drawable {
         rowPlaced = false;
         startsParagraph = false;
         joinReserved = false;
+        leadingSpace = false;
         row.clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
@@ -428,9 +432,21 @@ public class TextFrame implements Drawable {
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
-            boolean joinsNext = (tokenIndex == tokens.size() - 1)
-                    && paragraph.joinsPrevious(lineIndex + 1);
-            String text = joinsNext ? token : token + Single.space;
+            boolean last = (tokenIndex == tokens.size() - 1);
+            boolean joinsNext = last && paragraph.joinsPrevious(lineIndex + 1);
+            // The space after the last word goes at the start of the next text
+            // line when that one's space is narrower.
+            boolean spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex);
+            String text = (joinsNext || spaceToNext) ? token : token + Single.space;
+            // The first word of a text line starts with the space the text line
+            // before left to it, unless the word starts a row: when it does not
+            // fit, the row is drawn and the word starts the next one, without it.
+            boolean leading = leadingSpace && tokenIndex == 0 && xText > x;
+            leadingSpace = false;
+            if (leading) {
+                token = Single.space + token;
+                text = Single.space + text;
+            }
             float available = (x + w) - xText;
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
@@ -444,6 +460,7 @@ public class TextFrame implements Drawable {
                 runLength += width(textLine, text);
                 tokenIndex++;
                 joinReserved = joinsNext;
+                leadingSpace = spaceToNext;
                 continue;
             }
             if (joinsNext && buf.length() == 0 && xText == x
@@ -591,6 +608,7 @@ public class TextFrame implements Drawable {
 
     private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
         joinReserved = false;
+        leadingSpace = false;
         if (row.isEmpty()) {
             return;
         }

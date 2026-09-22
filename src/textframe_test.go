@@ -14,6 +14,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -350,4 +351,117 @@ func TestTextFrameAJustifiedRowDoesNotWidenAJoin(t *testing.T) {
 	if !(four[0] > comma[0]+font.StringWidth(font.GetSize(), ", ")+1) {
 		t.Errorf("the row is not justified: %v, %v", comma, four)
 	}
+}
+
+// testDrawMixed draws two text lines, the first in Courier, whose space is
+// wide, and the second in Helvetica, or the other way round when courierFirst
+// is false.
+func testDrawMixed(width float32, textAlignment *alignment.Alignment, courierFirst bool,
+	first, second string, column bool) string {
+	pdf := testNewPDF()
+	courier := NewCoreFont(pdf, corefont.Courier())
+	helvetica := testHelvetica(pdf)
+	firstFont, secondFont := courier, helvetica
+	if !courierFirst {
+		firstFont, secondFont = helvetica, courier
+	}
+	paragraph := NewParagraph().
+		Add(NewTextLine(firstFont, first)).
+		Add(NewTextLine(secondFont, second))
+	if textAlignment != nil {
+		paragraph.SetTextAlignment(*textAlignment)
+	}
+	page := NewPage(pdf, letter.Portrait())
+	if column {
+		textColumn := NewTextColumn()
+		textColumn.SetWidth(width)
+		if textAlignment == nil {
+			textColumn.SetTextAlignment(alignment.Left)
+		} else {
+			textColumn.SetTextAlignment(*textAlignment)
+		}
+		textColumn.AddParagraph(paragraph)
+		textColumn.SetLocation(10, 10)
+		textColumn.DrawOn(page)
+	} else {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
+		frame.SetLocation(10, 10)
+		frame.DrawOn(page)
+	}
+	return testContent(page)
+}
+
+func testCheckTheNarrowerSpaceIsUsed(t *testing.T, column bool) {
+	t.Helper()
+	courier := NewCoreFont(testNewPDF(), corefont.Courier())
+	helvetica := testHelvetica(testNewPDF())
+	// Code, then text: the space is Helvetica's, at the start of the text.
+	content := testDrawMixed(300, nil, true, "x", "and more", column)
+	x := testPositionOf(t, content, "x")
+	if !strings.Contains(content, "<"+testHex("x")+">") {
+		t.Errorf("x has a space after it:\n%s", content)
+	}
+	testNear(t, "the space before and", x[0]+courier.StringWidth(courier.GetSize(), "x"),
+		testPositionOf(t, content, " and")[0], testDelta)
+	// Text, then code: the space is still Helvetica's, after the text.
+	content = testDrawMixed(300, nil, false, "use", "x", column)
+	testNear(t, "x", testPositionOf(t, content, "use")[0]+helvetica.StringWidth(helvetica.GetSize(), "use "),
+		testPositionOf(t, content, "x")[0], testDelta)
+}
+
+func testCheckAMovedSpaceDoesNotStartARow(t *testing.T, column bool) {
+	t.Helper()
+	courier := NewCoreFont(testNewPDF(), corefont.Courier())
+	content := testDrawMixed(courier.StringWidth(courier.GetSize(), "aaa")+5, nil, true, "aaa", "bbb", column)
+	aaa := testPositionOf(t, content, "aaa")
+	bbb := testPositionOf(t, content, "bbb")
+	if !(bbb[1] < aaa[1]) {
+		t.Errorf("bbb is not on the second row: %v, %v", aaa, bbb)
+	}
+	testNear(t, "bbb", 10, bbb[0], testDelta)
+	if strings.Contains(content, "<"+testHex(" bbb")) {
+		t.Errorf("bbb has a space before it:\n%s", content)
+	}
+}
+
+func testCheckAJustifiedRowWidensAMovedSpace(t *testing.T, column bool) {
+	t.Helper()
+	courier := NewCoreFont(testNewPDF(), corefont.Courier())
+	helvetica := testHelvetica(testNewPDF())
+	justify := alignment.Justify
+	content := testDrawMixed(150, &justify, true, "x",
+		"one two three four five six seven eight nine ten eleven twelve", column)
+	x := testPositionOf(t, content, "x")
+	oneText := "one"
+	if column {
+		oneText = " one"
+	}
+	one := testPositionOf(t, content, oneText)
+	two := testPositionOf(t, content, "two")
+	// Where one and two start; a text column draws the space before one with it.
+	oneStart := one[0]
+	if column {
+		oneStart = one[0] + helvetica.StringWidth(helvetica.GetSize(), " ")
+	}
+	testNear(t, "the row of one", x[1], one[1], testDelta)
+	// The space before one, which Courier's text line left to it, is as wide
+	// as the space after it: both are widened alike.
+	before := oneStart - (x[0] + courier.StringWidth(courier.GetSize(), "x"))
+	after := two[0] - (oneStart + helvetica.StringWidth(helvetica.GetSize(), "one"))
+	if !(before > helvetica.StringWidth(helvetica.GetSize(), " ")+0.1) {
+		t.Errorf("the row is not justified: %v", before)
+	}
+	testNear(t, "the space before one", after, before, testDelta)
+}
+
+func TestTextFrameTheSpaceBetweenTwoTextLinesIsTheNarrowerOfTheirSpaces(t *testing.T) {
+	testCheckTheNarrowerSpaceIsUsed(t, false)
+}
+
+func TestTextFrameAMovedSpaceDoesNotStartARow(t *testing.T) {
+	testCheckAMovedSpaceDoesNotStartARow(t, false)
+}
+
+func TestTextFrameAJustifiedRowWidensAMovedSpace(t *testing.T) {
+	testCheckAJustifiedRowWidensAMovedSpace(t, false)
 }
