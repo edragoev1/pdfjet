@@ -234,6 +234,26 @@ day.
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 
+## v9.1 — features, after v9.0.3
+
+- ⬜ Markdown to PDF, in the four ports: a CommonMark parser written from
+  the spec, with the GitHub tables, strikethrough and task lists, and a
+  renderer that draws the document with PDFjet's components, headings,
+  paragraphs of mixed styles, lists, code blocks and tables, tagged for
+  PDF/UA, which few Markdown to PDF tools are.
+  - The parser is about 2,500 to 3,000 lines a port, 1,200 to 1,500 of them
+    for the blocks and as many for the inlines; the GitHub extensions add
+    800 to 1,200, the renderer 800 to 1,500, and the table of the 2,125
+    named entities is data, generated once for the four ports.
+  - The check is the 652 examples of the CommonMark spec, from its JSON
+    file, run in every port, as the examples are compared across the ports.
+  - The hard parts: the emphasis algorithm, with its flanking rules and
+    the rule of 3; lazy continuation lines in block quotes and lists; tight
+    and loose lists; the seven kinds of HTML block; and link labels matched
+    with Unicode case folding.
+  - About a week for the first port to pass the spec, a few days for each
+    of the others, and the renderer after.
+
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped.
