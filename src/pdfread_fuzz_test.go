@@ -10,7 +10,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -31,7 +33,13 @@ import (
 //	go test ./src -run '^$' -fuzz '^FuzzPDFRead$' -fuzztime 5m -fuzzminimizetime 5s
 //
 // fuzzes. An input that fails is kept in testdata/fuzz, and go test runs it
-// from then on.
+// from then on. The PDFs of the corpora that tests/corpus fetches are seeds too
+// when PDFJET_FUZZ_CORPUS names their folder:
+//
+//	PDFJET_FUZZ_CORPUS=../.corpora go test ./src -run '^$' -fuzz '^FuzzPDFRead$'
+//
+// They are fetched and not committed, as their copyright is many people's, so
+// only an input the fuzzing makes of them, cut down to what fails, is kept.
 
 // fuzzSafe runs the function and reports what it did. A panic of PDFjet's
 // own is the error of a port that panics where the others throw, and is what
@@ -235,6 +243,38 @@ func fuzzPDFStreamXref() []byte {
 	return pdf.Bytes()
 }
 
+// fuzzMaxCorpusSeed is the size of the largest PDF of the corpora that is a
+// seed: the fuzzing changes a few bytes of a seed at a time, and a large one
+// takes long to read on each run for what a small one finds as well.
+const fuzzMaxCorpusSeed = 256 * 1024
+
+// fuzzCorpusSeeds returns the PDFs of the folder PDFJET_FUZZ_CORPUS names, the
+// ones of at most fuzzMaxCorpusSeed bytes, or none when it names no folder.
+func fuzzCorpusSeeds(f *testing.F) [][]byte {
+	dir := os.Getenv("PDFJET_FUZZ_CORPUS")
+	if dir == "" {
+		return nil
+	}
+	seeds := [][]byte{}
+	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || !strings.EqualFold(filepath.Ext(path), ".pdf") {
+			return err
+		}
+		if info, err := entry.Info(); err != nil || info.Size() > fuzzMaxCorpusSeed {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err == nil {
+			seeds = append(seeds, data)
+		}
+		return err
+	})
+	if err != nil {
+		f.Fatal(err)
+	}
+	return seeds
+}
+
 // FuzzPDFRead fuzzes the bytes of a PDF and the password it is read with.
 func FuzzPDFRead(f *testing.F) {
 	for _, seed := range fuzzPDFSeeds(f) {
@@ -244,6 +284,9 @@ func FuzzPDFRead(f *testing.F) {
 	}
 	f.Add([]byte("%PDF-1.4\n"), "")
 	f.Add([]byte{}, "")
+	for _, seed := range fuzzCorpusSeeds(f) {
+		f.Add(seed, "")
+	}
 	f.Fuzz(func(t *testing.T, data []byte, password string) {
 		fuzzRun(t, len(data), func() {
 			fuzzReadPDF(t, data, password)
