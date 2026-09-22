@@ -631,4 +631,94 @@ import Testing
             #expect(pageOf(drawn[0], "r\(r)") == pageOf(drawn[1], "r\(r)"), "row \(r)")
         }
     }
+
+    // The y of the baseline of the text on the page, or NaN.
+    private func yOf(_ page: Page, _ text: String) -> Float {
+        let content = TestSupport.content(page)
+        let pattern = "[-0-9.]+ ([-0-9.]+) Td\\n(?:/F\\d+ [0-9.]+ Tf\\n)?\\[<" + TestSupport.hex(text) + ">\\] TJ"
+        let regex = try! NSRegularExpression(pattern: pattern)
+        guard let m = regex.firstMatch(in: content, range: NSRange(content.startIndex..., in: content)),
+                let range = Range(m.range(at: 1), in: content) else {
+            return Float.nan
+        }
+        return Float(content[range])!
+    }
+
+    // A table of 60 rows, a header row, the rows "r1" to "r58", and a footer
+    // row with the texts given, drawn on as many pages as it needs.
+    private func withFooter(_ pdf: PDF, _ footer: [String]) -> [Page] {
+        let data = rowsWith(TestSupport.helvetica(pdf), 59, footer)
+        let table = Table().setTableData(data, 1).setNumberOfFooterRows(1).setLocation(50, 50)
+        table.setBottomMargin(20)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(table.getRowsRendered() == -1)
+        return pages
+    }
+
+    @Test func theFooterRowsAreDrawnUnderTheLastRowOfEveryPage() {
+        let pages = withFooter(TestSupport.newPDF(), ["total", "sum"])
+        #expect(pages.count == 2)
+        guard pages.count == 2 else { return }
+        for r in 1..<59 {
+            let n = pages.reduce(0) { $0 + count(TestSupport.content($1), "<" + TestSupport.hex("r\(r)") + ">") }
+            #expect(n == 1, "row \(r) is drawn \(n) times")
+        }
+        let rowHeight = yOf(pages[0], "r1") - yOf(pages[0], "r2")
+        for (i, page) in pages.enumerated() {
+            var last = 0
+            for r in 1..<59 where !yOf(page, "r\(r)").isNaN {
+                last = r
+            }
+            TestSupport.expectNear(rowHeight, yOf(page, "r\(last)") - yOf(page, "total"), 0.02)
+            // The bottom of the footer, 4.7 under the baseline, is over the
+            // bottom margin.
+            #expect(yOf(page, "total") - 4.7 >= 20 - 0.01, "page \(i): the footer is in the margin")
+        }
+    }
+
+    @Test func aFooterRowThatWrapsIsDrawnWholeOnEveryPage() {
+        let pages = withFooter(TestSupport.newPDF(), [longText, "sum"])
+        #expect(pages.count == 2)
+        for page in pages {
+            let content = TestSupport.content(page)
+            #expect(content.contains(TestSupport.hex("one")) && content.contains(TestSupport.hex("twelve")))
+            #expect(count(content, TestSupport.hex("sum")) == 1)
+        }
+    }
+
+    @Test func theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        _ = memory.pdf.setTitle("Title")
+        let pages = withFooter(memory.pdf, ["total", "sum"])
+        #expect(pages.count == 2)
+        guard pages.count == 2 else { return }
+        for (i, page) in pages.enumerated() {
+            let content = TestSupport.content(page)
+            let before = String(content[..<content.range(of: TestSupport.hex("total"))!.lowerBound])
+            let artifact = before.range(of: "/Artifact BMC", options: .backwards).map { a in
+                before.range(of: "EMC", options: .backwards).map { a.lowerBound > $0.lowerBound } ?? true
+            } ?? false
+            #expect(artifact == (i < pages.count - 1), "page \(i)")
+        }
+        memory.pdf.addPages(pages)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(count(raw, "/S /Table\n") == 1)
+        #expect(count(raw, "/S /TR\n") == 60)
+        #expect(count(raw, "/S /TH\n") == 2)
+        #expect(count(raw, "/S /TD\n") == 118)
+    }
+
+    @Test func measuringATableWithFooterRowsReturnsTheCornerDrawingDoes() {
+        let pdf = TestSupport.newPDF()
+        let data = rows(TestSupport.helvetica(pdf), 5, 3)
+        data[4][0].setText("total")
+        let table = Table().setTableData(data, 1).setNumberOfFooterRows(1).setLocation(20, 20)
+        let measured = table.drawOn(nil)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TestSupport.expectXY(measured[0], measured[1], table.drawOn(page))
+        TestSupport.expectXY(245, 109.36, measured)
+        #expect(count(TestSupport.content(page), TestSupport.hex("total")) == 1)
+    }
 }

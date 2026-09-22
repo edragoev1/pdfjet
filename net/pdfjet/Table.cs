@@ -18,6 +18,7 @@ namespace PDFjet.NET {
 public class Table : IDrawable {
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
+    private int numOfFooterRows = 0;
     // The index of the next row to draw, or -1 when all rows are drawn.
     private int rendered = 1;
     private float x1;
@@ -146,6 +147,26 @@ public class Table : IDrawable {
         this.rendered = numOfHeaderRows;
         AddCellsToCompleteTheGrid();
         return this;
+    }
+
+    /// <summary>
+    /// Makes the last rows of the table data footer rows, which are drawn again
+    /// at the end of the table on every page, under the last row the page
+    /// holds, as the header rows are drawn again at the top. A page leaves room
+    /// for them. In a PDF/UA document they are rows of the table once, where
+    /// the table ends, and artifacts on the other pages.
+    /// </summary>
+    /// <param name="numOfFooterRows">the number of footer rows at the end of the data.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetNumberOfFooterRows(int numOfFooterRows) {
+        this.numOfFooterRows = Math.Max(0, numOfFooterRows);
+        return this;
+    }
+
+    // The index of the first footer row, after the header rows and the rows
+    // of the table.
+    private int FooterStart() {
+        return Math.Max(numOfHeaderRows, tableData.Count - numOfFooterRows);
     }
 
     // Adds empty cells to the rows that are shorter than the first row.
@@ -567,12 +588,15 @@ public class Table : IDrawable {
         return (spans.Length > 0) ? "<</O /Table" + spans + ">>" : null;
     }
 
-    // Draws the rows from the next row to draw, as many as fit on the page.
-    // With no page it measures them all and leaves the next row to draw as it is.
+    // Draws the rows from the next row to draw, as many as fit on the page,
+    // and the footer rows under them. With no page it measures them all and
+    // leaves the next row to draw as it is.
     private float[] DrawTableRows(Page page, float[] xy) {
         float x = xy[0];
         float y = xy[1];
-        int index = (rendered == -1) ? tableData.Count : rendered;
+        int footer = FooterStart();
+        bool done = (rendered == -1);
+        int index = done ? footer : rendered;
         int first = index;
         float[] heights = GetRowHeights();
         // Where the rows start on the next pages, under the header rows.
@@ -580,24 +604,29 @@ public class Table : IDrawable {
         for (int r = 0; r < numOfHeaderRows && r < heights.Length; r++) {
             top += heights[r];
         }
+        // Where the rows end on a page, over the footer rows.
+        float bottom = (page == null) ? 0f : page.height - bottomMargin;
+        for (int r = footer; r < tableData.Count; r++) {
+            bottom -= heights[r];
+        }
         // The rows before the first of these are not kept with the next row,
         // and the lines of the rows before the second are cut where the page
         // ends, as rows of their own.
         int cutRowsUntil = -1;
         int cutLinesUntil = -1;
-        while (index < tableData.Count) {
+        while (index < footer) {
             // The rows a cell spans, the lines a row wraps into and the rows
             // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two.
+            // never cuts one of them in two. The footer rows are not in them.
             bool keepLines = (index >= cutLinesUntil);
             bool keepRows = keepLines && (index >= cutRowsUntil);
-            int end = RowGroupEnd(index, keepLines, keepRows);
+            int end = Math.Min(RowGroupEnd(index, keepLines, keepRows), footer);
             float groupHeight = 0f;
             for (int r = index; r < end; r++) {
                 groupHeight += heights[r];
             }
-            if (page != null && (y + groupHeight) > (page.height - bottomMargin)) {
-                if (keepLines && groupHeight > (page.height - bottomMargin) - top) {
+            if (page != null && (y + groupHeight) > bottom) {
+                if (keepLines && groupHeight > bottom - top) {
                     // Rows that would not fit the next page either are drawn
                     // from here: first each on its own, and then, for a row
                     // that is taller than a page, each line on its own, cut
@@ -615,7 +644,7 @@ public class Table : IDrawable {
                 // pages forever.
                 if (index > first) {
                     rendered = index;
-                    return new float[] {x, y};
+                    return new float[] {x, DrawFooterRows(page, x, y, heights, false)};
                 }
             }
             for (int r = index; r < end; r++) {
@@ -626,10 +655,40 @@ public class Table : IDrawable {
             }
             index = end;
         }
+        if (!done) {
+            // The rows of the table are all drawn, and the footer rows end it.
+            y = DrawFooterRows(page, x, y, heights, true);
+        }
         if (page != null) {
             rendered = -1; // We are done!
         }
         return new float[] {x, y};
+    }
+
+    // Draws the footer rows at y and returns the y under them. In a PDF/UA
+    // document they are rows of the table where it ends, and artifacts on the
+    // pages before.
+    private float DrawFooterRows(Page page, float x, float y, float[] heights, bool last) {
+        int footer = FooterStart();
+        bool artifact = (page != null && !last && footer < tableData.Count);
+        if (artifact) {
+            page.AddArtifactBMC();
+        }
+        for (int r = footer; r < tableData.Count; r++) {
+            if (page != null) {
+                if (r == footer) {
+                    foreach (Cell cell in tableData[r]) {
+                        cell.SetBorder(Border.TOP, true);
+                    }
+                }
+                DrawRow(page, tableData[r], x, y, heights, r, last ? StructElem.TD : (StructElem?) null);
+            }
+            y += heights[r];
+        }
+        if (artifact) {
+            page.AddEMC();
+        }
+        return y;
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -980,9 +1039,15 @@ public class Table : IDrawable {
         List<List<Cell>> tableData2 = new List<List<Cell>>();
         List<List<String>> lines = new List<List<String>>();
         int numOfHeaderRows2 = 0;
+        // The footer rows are the rows of the wrap of the rows they were.
+        int footer = (numOfFooterRows > 0) ? FooterStart() : tableData.Count;
+        int footer2 = 0;
         for (int r = 0; r < tableData.Count; r++) {
             List<Cell> row = tableData[r];
             int first = tableData2.Count;
+            if (r == footer) {
+                footer2 = first;
+            }
             tableData2.Add(row);    // Add the original row
             // Every cell of the row is wrapped once, here. The lines it needs
             // are what the cells stacked below it get, and the most lines any
@@ -1071,6 +1136,9 @@ public class Table : IDrawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
+        if (footer < tableData.Count) {
+            numOfFooterRows = tableData2.Count - footer2;
+        }
         tableData = tableData2;
     }
 

@@ -24,6 +24,7 @@ import (
 type Table struct {
 	tableData       [][]*Cell
 	numOfHeaderRows int
+	numOfFooterRows int
 	// The index of the next row to draw, or -1 when all rows are drawn.
 	rendered           int
 	x1, y1             float32
@@ -143,6 +144,22 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.rendered = numOfHeaderRows
 	table.addCellsToCompleteTheGrid()
 	return table
+}
+
+// SetNumberOfFooterRows makes the last rows of the table data footer rows,
+// which are drawn again at the end of the table on every page, under the last
+// row the page holds, as the header rows are drawn again at the top. A page
+// leaves room for them. In a PDF/UA document they are rows of the table once,
+// where the table ends, and artifacts on the other pages.
+func (table *Table) SetNumberOfFooterRows(numOfFooterRows int) *Table {
+	table.numOfFooterRows = max(0, numOfFooterRows)
+	return table
+}
+
+// footerStart returns the index of the first footer row, after the header
+// rows and the rows of the table.
+func (table *Table) footerStart() int {
+	return max(table.numOfHeaderRows, len(table.tableData)-table.numOfFooterRows)
 }
 
 // addCellsToCompleteTheGrid adds empty cells to the rows that are shorter
@@ -553,14 +570,16 @@ func allCovered(row []*Cell) bool {
 }
 
 // drawTableRows draws the rows from the next row to draw, as many as fit on
-// the page. With no page it measures them all and leaves the next row to draw
-// as it is.
+// the page, and the footer rows under them. With no page it measures them all
+// and leaves the next row to draw as it is.
 func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	x := xy[0]
 	y := xy[1]
+	footer := table.footerStart()
+	done := table.rendered == -1
 	index := table.rendered
-	if index == -1 {
-		index = len(table.tableData)
+	if done {
+		index = footer
 	}
 	first := index
 	heights := table.getRowHeights()
@@ -569,24 +588,32 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	for r := 0; r < table.numOfHeaderRows && r < len(heights); r++ {
 		top += heights[r]
 	}
+	// Where the rows end on a page, over the footer rows.
+	bottom := float32(0.0)
+	if page != nil {
+		bottom = page.height - table.bottomMargin
+	}
+	for r := footer; r < len(table.tableData); r++ {
+		bottom -= heights[r]
+	}
 	// The rows before the first of these are not kept with the next row,
 	// and the lines of the rows before the second are cut where the page
 	// ends, as rows of their own.
 	cutRowsUntil := -1
 	cutLinesUntil := -1
-	for index < len(table.tableData) {
+	for index < footer {
 		// The rows a cell spans, the lines a row wraps into and the rows kept
 		// with the next one are drawn together, so that a page break never
-		// cuts one of them in two.
+		// cuts one of them in two. The footer rows are not in them.
 		keepLines := index >= cutLinesUntil
 		keepRows := keepLines && index >= cutRowsUntil
-		end := table.rowGroupEnd(index, keepLines, keepRows)
+		end := min(table.rowGroupEnd(index, keepLines, keepRows), footer)
 		groupHeight := float32(0.0)
 		for r := index; r < end; r++ {
 			groupHeight += heights[r]
 		}
-		if page != nil && (y+groupHeight) > (page.height-table.bottomMargin) {
-			if keepLines && groupHeight > (page.height-table.bottomMargin)-top {
+		if page != nil && (y+groupHeight) > bottom {
+			if keepLines && groupHeight > bottom-top {
 				// Rows that would not fit the next page either are drawn
 				// from here: first each on its own, and then, for a row that
 				// is taller than a page, each line on its own, cut where the
@@ -604,7 +631,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 			// forever.
 			if index > first {
 				table.rendered = index
-				return [2]float32{x, y}
+				return [2]float32{x, table.drawFooterRows(page, x, y, heights, false)}
 			}
 		}
 		for r := index; r < end; r++ {
@@ -615,10 +642,44 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		}
 		index = end
 	}
+	if !done {
+		// The rows of the table are all drawn, and the footer rows end it.
+		y = table.drawFooterRows(page, x, y, heights, true)
+	}
 	if page != nil {
 		table.rendered = -1 // We are done!
 	}
 	return [2]float32{x, y}
+}
+
+// drawFooterRows draws the footer rows at y and returns the y under them. In
+// a PDF/UA document they are rows of the table where it ends, and artifacts on
+// the pages before.
+func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, last bool) float32 {
+	footer := table.footerStart()
+	artifact := page != nil && !last && footer < len(table.tableData)
+	if artifact {
+		page.AddArtifactBMC()
+	}
+	cellStructure := structelem.StructElem("")
+	if last {
+		cellStructure = structelem.TD
+	}
+	for r := footer; r < len(table.tableData); r++ {
+		if page != nil {
+			if r == footer {
+				for _, cell := range table.tableData[r] {
+					cell.properties |= border.Top
+				}
+			}
+			table.drawRow(page, table.tableData[r], x, y, heights, r, cellStructure)
+		}
+		y += heights[r]
+	}
+	if artifact {
+		page.AddEMC()
+	}
+	return y
 }
 
 // applyRowSpans works out what each cell that spans rows covers, after the
@@ -962,8 +1023,17 @@ func (table *Table) wrapAroundCellText() {
 	tableData2 := make([][]*Cell, 0)
 	lines := make([][]string, 0)
 	numOfHeaderRows2 := 0
+	// The footer rows are the rows of the wrap of the rows they were.
+	footer := len(table.tableData)
+	if table.numOfFooterRows > 0 {
+		footer = table.footerStart()
+	}
+	footer2 := 0
 	for r, row := range table.tableData {
 		first := len(tableData2)
+		if r == footer {
+			footer2 = first
+		}
 		tableData2 = append(tableData2, row) // Add the original row
 		// Every cell of the row is wrapped once, here. The lines it needs are
 		// what the cells stacked below it get, and the most lines any cell of
@@ -1049,6 +1119,9 @@ func (table *Table) wrapAroundCellText() {
 		table.rendered += numOfHeaderRows2 - table.numOfHeaderRows
 	}
 	table.numOfHeaderRows = numOfHeaderRows2
+	if footer < len(table.tableData) {
+		table.numOfFooterRows = len(tableData2) - footer2
+	}
 	table.tableData = tableData2
 }
 

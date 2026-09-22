@@ -14,6 +14,7 @@ import Foundation
 public class Table : Drawable {
     private var tableData: [[Cell]]
     private var numOfHeaderRows = 1
+    private var numOfFooterRows = 0
     // The index of the next row to draw, or -1 when all rows are drawn.
     private var rendered = 1
     private var x1: Float = 0.0
@@ -162,6 +163,28 @@ public class Table : Drawable {
         self.rendered = numOfHeaderRows
         addCellsToCompleteTheGrid()
         return self
+    }
+
+    ///
+    /// Makes the last rows of the table data footer rows, which are drawn again
+    /// at the end of the table on every page, under the last row the page
+    /// holds, as the header rows are drawn again at the top. A page leaves room
+    /// for them. In a PDF/UA document they are rows of the table once, where
+    /// the table ends, and artifacts on the other pages.
+    ///
+    /// - Parameter numOfFooterRows: the number of footer rows at the end of the data.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func setNumberOfFooterRows(_ numOfFooterRows: Int) -> Table {
+        self.numOfFooterRows = max(0, numOfFooterRows)
+        return self
+    }
+
+    // The index of the first footer row, after the header rows and the rows
+    // of the table.
+    private func footerStart() -> Int {
+        return max(numOfHeaderRows, tableData.count - numOfFooterRows)
     }
 
     // Adds empty cells to the rows that are shorter than the first row.
@@ -617,12 +640,15 @@ public class Table : Drawable {
         return spans.isEmpty ? nil : "<</O /Table" + spans + ">>"
     }
 
-    // Draws the rows from the next row to draw, as many as fit on the page.
-    // With no page it measures them all and leaves the next row to draw as it is.
+    // Draws the rows from the next row to draw, as many as fit on the page,
+    // and the footer rows under them. With no page it measures them all and
+    // leaves the next row to draw as it is.
     private func drawTableRows(_ page: Page?, _ xy: [Float]) -> [Float] {
         let x = xy[0]
         var y = xy[1]
-        var index = (rendered == -1) ? tableData.count : rendered
+        let footer = footerStart()
+        let done = (rendered == -1)
+        var index = done ? footer : rendered
         let first = index
         let heights = getRowHeights()
         // Where the rows start on the next pages, under the header rows.
@@ -630,24 +656,29 @@ public class Table : Drawable {
         for r in 0..<min(numOfHeaderRows, heights.count) {
             top += heights[r]
         }
+        // Where the rows end on a page, over the footer rows.
+        var bottom: Float = (page == nil) ? 0.0 : page!.height - bottomMargin
+        for r in footer..<tableData.count {
+            bottom -= heights[r]
+        }
         // The rows before the first of these are not kept with the next row,
         // and the lines of the rows before the second are cut where the page
         // ends, as rows of their own.
         var cutRowsUntil = -1
         var cutLinesUntil = -1
-        while index < tableData.count {
+        while index < footer {
             // The rows a cell spans, the lines a row wraps into and the rows
             // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two.
+            // never cuts one of them in two. The footer rows are not in them.
             let keepLines = (index >= cutLinesUntil)
             let keepRows = keepLines && (index >= cutRowsUntil)
-            let end = rowGroupEnd(index, keepLines, keepRows)
+            let end = min(rowGroupEnd(index, keepLines, keepRows), footer)
             var groupHeight: Float = 0.0
             for r in index..<end {
                 groupHeight += heights[r]
             }
-            if let page = page, (y + groupHeight) > (page.height - bottomMargin) {
-                if keepLines && groupHeight > (page.height - bottomMargin) - top {
+            if page != nil && (y + groupHeight) > bottom {
+                if keepLines && groupHeight > bottom - top {
                     // Rows that would not fit the next page either are drawn
                     // from here: first each on its own, and then, for a row
                     // that is taller than a page, each line on its own, cut
@@ -665,7 +696,7 @@ public class Table : Drawable {
                 // pages forever.
                 if index > first {
                     rendered = index
-                    return [x, y]
+                    return [x, drawFooterRows(page, x, y, heights, false)]
                 }
             }
             for r in index..<end {
@@ -676,10 +707,41 @@ public class Table : Drawable {
             }
             index = end
         }
+        if !done {
+            // The rows of the table are all drawn, and the footer rows end it.
+            y = drawFooterRows(page, x, y, heights, true)
+        }
         if page != nil {
             rendered = -1   // We are done!
         }
         return [x, y]
+    }
+
+    // Draws the footer rows at y and returns the y under them. In a PDF/UA
+    // document they are rows of the table where it ends, and artifacts on the
+    // pages before.
+    private func drawFooterRows(_ page: Page?, _ x: Float, _ y: Float, _ heights: [Float], _ last: Bool) -> Float {
+        let footer = footerStart()
+        let artifact = (page != nil && !last && footer < tableData.count)
+        if artifact {
+            page!.addArtifactBMC()
+        }
+        var y = y
+        for r in footer..<tableData.count {
+            if let page = page {
+                if r == footer {
+                    for cell in tableData[r] {
+                        cell.setBorder(Border.TOP, true)
+                    }
+                }
+                drawRow(page, tableData[r], x, y, heights, r, last ? StructElem.TD : nil)
+            }
+            y += heights[r]
+        }
+        if artifact {
+            page!.addEMC()
+        }
+        return y
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -1032,8 +1094,14 @@ public class Table : Drawable {
         var tableData2 = [[Cell]]()
         var lines = [[String]?]()
         var numOfHeaderRows2 = 0
+        // The footer rows are the rows of the wrap of the rows they were.
+        let footer = (numOfFooterRows > 0) ? footerStart() : tableData.count
+        var footer2 = 0
         for (r, row) in tableData.enumerated() {
             let first = tableData2.count
+            if r == footer {
+                footer2 = first
+            }
             tableData2.append(row)  // Add the original row
             // Every cell of the row is wrapped once, here. The lines it needs
             // are what the cells stacked below it get, and the most lines any
@@ -1117,6 +1185,9 @@ public class Table : Drawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows
         }
         numOfHeaderRows = numOfHeaderRows2
+        if footer < tableData.count {
+            numOfFooterRows = tableData2.count - footer2
+        }
         tableData = tableData2
     }
 

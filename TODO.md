@@ -634,9 +634,11 @@ this is started before Oct 21.
 - ⬜ Alternating row colors and simple row styles: `Table.setAlternateRowColor`
       (zebra striping, as `BigTable.setShadingColor`), and a style for the
       header rows, the body and a total row, rather than coloring every cell.
-- ⬜ Repeating footer or total rows on every page ("carried forward"
-      subtotals). A page break keeps the rows of a span, the wrapped lines of
-      a row and the rows `keepRowWithNext` marks together (Sep 22), in
+- ⬜ "Carried forward" subtotals: a footer row whose cells sum a column of
+      the rows the page holds, or all the rows up to it. The footer rows
+      repeat on every page (`setNumberOfFooterRows`, Sep 22), but with the
+      text they were given; and a page break keeps the rows of a span, the
+      wrapped lines of a row and the rows `keepRowWithNext` marks together, in
       `rowGroupEnd`.
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.

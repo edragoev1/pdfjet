@@ -693,4 +693,100 @@ class TableTest {
             assertEquals(pageOf(drawn.get(0), "r" + r), pageOf(drawn.get(1), "r" + r), "row " + r);
         }
     }
+
+    // The y of the baseline of the text on the page, or NaN.
+    private static float yOf(Page page, String text) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "[-0-9.]+ ([-0-9.]+) Td\\n(?:/F\\d+ [0-9.]+ Tf\\n)?\\[<" + TestSupport.hex(text) + ">\\] TJ")
+                .matcher(TestSupport.content(page));
+        return m.find() ? Float.parseFloat(m.group(1)) : Float.NaN;
+    }
+
+    // A table of 60 rows, a header row, the rows "r1" to "r58", and a footer
+    // row with the texts given, drawn on as many pages as it needs.
+    private static List<Page> withFooter(PDF pdf, String... footer) throws Exception {
+        List<List<Cell>> data = rowsWith(TestSupport.helvetica(pdf), 59, footer);
+        Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1)
+                .setLocation(50f, 50f).setBottomMargin(20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(-1, table.getRowsRendered());
+        return pages;
+    }
+
+    @Test
+    void theFooterRowsAreDrawnUnderTheLastRowOfEveryPage() throws Exception {
+        List<Page> pages = withFooter(TestSupport.newPDF(), "total", "sum");
+        assertEquals(2, pages.size());
+        for (int r = 1; r < 59; r++) {
+            int n = 0;
+            for (Page page : pages) {
+                n += count(TestSupport.content(page), "<" + TestSupport.hex("r" + r) + ">");
+            }
+            assertEquals(1, n, "row " + r + " is drawn " + n + " times");
+        }
+        float rowHeight = yOf(pages.get(0), "r1") - yOf(pages.get(0), "r2");
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+            int last = 0;
+            for (int r = 1; r < 59; r++) {
+                if (!Float.isNaN(yOf(page, "r" + r))) {
+                    last = r;
+                }
+            }
+            assertEquals(rowHeight, yOf(page, "r" + last) - yOf(page, "total"), 0.02f,
+                    "page " + i + ": the footer is not under row " + last);
+            // The bottom of the footer, 4.7 under the baseline, is over the
+            // bottom margin.
+            assertTrue(yOf(page, "total") - 4.7f >= 20f - 0.01f, "page " + i + ": the footer is in the margin");
+        }
+    }
+
+    @Test
+    void aFooterRowThatWrapsIsDrawnWholeOnEveryPage() throws Exception {
+        List<Page> pages = withFooter(TestSupport.newPDF(), LONG_TEXT, "sum");
+        assertEquals(2, pages.size());
+        for (Page page : pages) {
+            String content = TestSupport.content(page);
+            assertTrue(content.contains(TestSupport.hex("one")) && content.contains(TestSupport.hex("twelve")), content);
+            assertEquals(1, count(content, TestSupport.hex("sum")), content);
+        }
+    }
+
+    @Test
+    void theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        List<Page> pages = withFooter(pdf, "total", "sum");
+        assertEquals(2, pages.size());
+        for (int i = 0; i < pages.size(); i++) {
+            String content = TestSupport.content(pages.get(i));
+            int at = content.indexOf(TestSupport.hex("total"));
+            boolean artifact = content.lastIndexOf("/Artifact BMC", at) > content.lastIndexOf("EMC", at);
+            assertEquals(i < pages.size() - 1, artifact, "page " + i);
+        }
+        for (Page page : pages) {
+            pdf.addPage(page);
+        }
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertEquals(1, count(raw, "/S /Table\n"), raw);
+        assertEquals(60, count(raw, "/S /TR\n"), raw);
+        assertEquals(2, count(raw, "/S /TH\n"), raw);
+        assertEquals(118, count(raw, "/S /TD\n"), raw);
+    }
+
+    @Test
+    void measuringATableWithFooterRowsReturnsTheCornerDrawingDoes() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        List<List<Cell>> data = rows(TestSupport.helvetica(pdf), 5, 3);
+        data.get(4).get(0).setText("total");
+        Table table = new Table().setTableData(data, 1).setNumberOfFooterRows(1).setLocation(20f, 20f);
+        float[] measured = table.drawOn((Page) null);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TestSupport.assertXY(measured[0], measured[1], table.drawOn(page));
+        TestSupport.assertXY(245f, 109.36f, measured);
+        assertEquals(1, count(TestSupport.content(page), TestSupport.hex("total")));
+    }
 }

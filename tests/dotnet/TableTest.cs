@@ -671,5 +671,103 @@ public sealed class TableTest : IDisposable {
             Assert.True(PageOf(drawn[0], "r" + r) == PageOf(drawn[1], "r" + r), "row " + r);
         }
     }
+
+    // The y of the baseline of the text on the page, or NaN.
+    private static float YOf(Page page, string text) {
+        System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(
+                TestSupport.Content(page),
+                "[-0-9.]+ ([-0-9.]+) Td\\n(?:/F\\d+ [0-9.]+ Tf\\n)?\\[<" + TestSupport.Hex(text) + ">\\] TJ");
+        return m.Success ? float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : float.NaN;
+    }
+
+    // A table of 60 rows, a header row, the rows "r1" to "r58", and a footer
+    // row with the texts given, drawn on as many pages as it needs.
+    private static List<Page> WithFooter(PDF pdf, params string[] footer) {
+        List<List<Cell>> data = RowsWith(TestSupport.Helvetica(pdf), 59, footer);
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1).SetLocation(50f, 50f);
+        table.SetBottomMargin(20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Equal(-1, table.GetRowsRendered());
+        return pages;
+    }
+
+    [Fact]
+    public void TheFooterRowsAreDrawnUnderTheLastRowOfEveryPage() {
+        List<Page> pages = WithFooter(TestSupport.NewPDF(), "total", "sum");
+        Assert.Equal(2, pages.Count);
+        for (int r = 1; r < 59; r++) {
+            int n = 0;
+            foreach (Page page in pages) {
+                n += Count(TestSupport.Content(page), "<" + TestSupport.Hex("r" + r) + ">");
+            }
+            Assert.True(n == 1, "row " + r + " is drawn " + n + " times");
+        }
+        float rowHeight = YOf(pages[0], "r1") - YOf(pages[0], "r2");
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+            int last = 0;
+            for (int r = 1; r < 59; r++) {
+                if (!float.IsNaN(YOf(page, "r" + r))) {
+                    last = r;
+                }
+            }
+            TestSupport.AssertNear(rowHeight, YOf(page, "r" + last) - YOf(page, "total"), 0.02f);
+            // The bottom of the footer, 4.7 under the baseline, is over the
+            // bottom margin.
+            Assert.True(YOf(page, "total") - 4.7f >= 20f - 0.01f, "page " + i + ": the footer is in the margin");
+        }
+    }
+
+    [Fact]
+    public void AFooterRowThatWrapsIsDrawnWholeOnEveryPage() {
+        List<Page> pages = WithFooter(TestSupport.NewPDF(), LONG_TEXT, "sum");
+        Assert.Equal(2, pages.Count);
+        foreach (Page page in pages) {
+            string content = TestSupport.Content(page);
+            Assert.Contains(TestSupport.Hex("one"), content);
+            Assert.Contains(TestSupport.Hex("twelve"), content);
+            Assert.Equal(1, Count(content, TestSupport.Hex("sum")));
+        }
+    }
+
+    [Fact]
+    public void TheFooterRowsBeforeTheEndOfTheTableAreArtifacts() {
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        List<Page> pages = WithFooter(pdf, "total", "sum");
+        Assert.Equal(2, pages.Count);
+        for (int i = 0; i < pages.Count; i++) {
+            string content = TestSupport.Content(pages[i]);
+            int at = content.IndexOf(TestSupport.Hex("total"), StringComparison.Ordinal);
+            string before = content.Substring(0, at);
+            bool artifact = before.LastIndexOf("/Artifact BMC", StringComparison.Ordinal)
+                    > before.LastIndexOf("EMC", StringComparison.Ordinal);
+            Assert.True(artifact == (i < pages.Count - 1), "page " + i);
+        }
+        foreach (Page page in pages) {
+            pdf.AddPage(page);
+        }
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.Equal(1, Count(raw, "/S /Table\n"));
+        Assert.Equal(60, Count(raw, "/S /TR\n"));
+        Assert.Equal(2, Count(raw, "/S /TH\n"));
+        Assert.Equal(118, Count(raw, "/S /TD\n"));
+    }
+
+    [Fact]
+    public void MeasuringATableWithFooterRowsReturnsTheCornerDrawingDoes() {
+        PDF pdf = TestSupport.NewPDF();
+        List<List<Cell>> data = Rows(TestSupport.Helvetica(pdf), 5, 3);
+        data[4][0].SetText("total");
+        Table table = new Table().SetTableData(data, 1).SetNumberOfFooterRows(1).SetLocation(20f, 20f);
+        float[] measured = table.DrawOn((Page) null);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TestSupport.AssertXY(measured[0], measured[1], table.DrawOn(page));
+        TestSupport.AssertXY(245f, 109.36f, measured);
+        Assert.Equal(1, Count(TestSupport.Content(page), TestSupport.Hex("total")));
+    }
 }
 }

@@ -19,6 +19,7 @@ import java.util.*;
 public class Table implements Drawable {
     private List<List<Cell>> tableData;
     private int numOfHeaderRows = 1;
+    private int numOfFooterRows = 0;
     // The index of the next row to draw, or -1 when all rows are drawn.
     private int rendered = 1;
     private float x1;
@@ -157,6 +158,27 @@ public class Table implements Drawable {
         this.rendered = numOfHeaderRows;
         addCellsToCompleteTheGrid();
         return this;
+    }
+
+    /**
+     * Makes the last rows of the table data footer rows, which are drawn again
+     * at the end of the table on every page, under the last row the page
+     * holds, as the header rows are drawn again at the top. A page leaves room
+     * for them. In a PDF/UA document they are rows of the table once, where
+     * the table ends, and artifacts on the other pages.
+     *
+     * @param numOfFooterRows the number of footer rows at the end of the data.
+     * @return this Table object.
+     */
+    public Table setNumberOfFooterRows(int numOfFooterRows) {
+        this.numOfFooterRows = Math.max(0, numOfFooterRows);
+        return this;
+    }
+
+    // The index of the first footer row, after the header rows and the rows
+    // of the table.
+    private int footerStart() {
+        return Math.max(numOfHeaderRows, tableData.size() - numOfFooterRows);
     }
 
     // Adds empty cells to the rows that are shorter than the first row.
@@ -605,37 +627,45 @@ public class Table implements Drawable {
         return (spans.length() > 0) ? "<</O /Table" + spans + ">>" : null;
     }
 
-    // Draws the rows from the next row to draw, as many as fit on the page.
-    // With no page it measures them all and leaves the next row to draw as it is.
+    // Draws the rows from the next row to draw, as many as fit on the page,
+    // and the footer rows under them. With no page it measures them all and
+    // leaves the next row to draw as it is.
     private float[] drawTableRows(Page page, float[] xy) throws Exception {
         float x = xy[0];
         float y = xy[1];
         float[] heights = getRowHeights();
-        int index = (rendered == -1) ? tableData.size() : rendered;
+        int footer = footerStart();
+        boolean done = (rendered == -1);
+        int index = done ? footer : rendered;
         int first = index;
         // Where the rows start on the next pages, under the header rows.
         float top = y1;
         for (int r = 0; r < numOfHeaderRows && r < heights.length; r++) {
             top += heights[r];
         }
+        // Where the rows end on a page, over the footer rows.
+        float bottom = (page == null) ? 0f : page.height - bottomMargin;
+        for (int r = footer; r < tableData.size(); r++) {
+            bottom -= heights[r];
+        }
         // The rows before the first of these are not kept with the next row,
         // and the lines of the rows before the second are cut where the page
         // ends, as rows of their own.
         int cutRowsUntil = -1;
         int cutLinesUntil = -1;
-        while (index < tableData.size()) {
+        while (index < footer) {
             // The rows a cell spans, the lines a row wraps into and the rows
             // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two.
+            // never cuts one of them in two. The footer rows are not in them.
             boolean keepLines = (index >= cutLinesUntil);
             boolean keepRows = keepLines && (index >= cutRowsUntil);
-            int end = rowGroupEnd(index, keepLines, keepRows);
+            int end = Math.min(rowGroupEnd(index, keepLines, keepRows), footer);
             float groupHeight = 0f;
             for (int r = index; r < end; r++) {
                 groupHeight += heights[r];
             }
-            if (page != null && (y + groupHeight) > (page.height - bottomMargin)) {
-                if (keepLines && groupHeight > (page.height - bottomMargin) - top) {
+            if (page != null && (y + groupHeight) > bottom) {
+                if (keepLines && groupHeight > bottom - top) {
                     // Rows that would not fit the next page either are drawn
                     // from here: first each on its own, and then, for a row
                     // that is taller than a page, each line on its own, cut
@@ -653,7 +683,7 @@ public class Table implements Drawable {
                 // pages forever.
                 if (index > first) {
                     rendered = index;
-                    return new float[] {x, y};
+                    return new float[] {x, drawFooterRows(page, x, y, heights, false)};
                 }
             }
             for (int r = index; r < end; r++) {
@@ -664,10 +694,40 @@ public class Table implements Drawable {
             }
             index = end;
         }
+        if (!done) {
+            // The rows of the table are all drawn, and the footer rows end it.
+            y = drawFooterRows(page, x, y, heights, true);
+        }
         if (page != null) {
             rendered = -1; // We are done!
         }
         return new float[] {x, y};
+    }
+
+    // Draws the footer rows at y and returns the y under them. In a PDF/UA
+    // document they are rows of the table where it ends, and artifacts on the
+    // pages before.
+    private float drawFooterRows(Page page, float x, float y, float[] heights, boolean last)
+            throws Exception {
+        int footer = footerStart();
+        if (page != null && !last && footer < tableData.size()) {
+            page.addArtifactBMC();
+        }
+        for (int r = footer; r < tableData.size(); r++) {
+            if (page != null) {
+                if (r == footer) {
+                    for (Cell cell : tableData.get(r)) {
+                        cell.setBorder(Border.TOP, true);
+                    }
+                }
+                drawRow(page, tableData.get(r), x, y, heights, r, last ? StructElem.TD : null);
+            }
+            y += heights[r];
+        }
+        if (page != null && !last && footer < tableData.size()) {
+            page.addEMC();
+        }
+        return y;
     }
 
     // Works out what each cell that spans rows covers, after the text is
@@ -1030,9 +1090,15 @@ public class Table implements Drawable {
         List<List<Cell>> tableData2 = new ArrayList<List<Cell>>();
         List<List<String>> lines = new ArrayList<List<String>>();
         int numOfHeaderRows2 = 0;
+        // The footer rows are the rows of the wrap of the rows they were.
+        int footer = (numOfFooterRows > 0) ? footerStart() : tableData.size();
+        int footer2 = 0;
         for (int r = 0; r < tableData.size(); r++) {
             List<Cell> row = tableData.get(r);
             int first = tableData2.size();
+            if (r == footer) {
+                footer2 = first;
+            }
             tableData2.add(row);    // Add the original row
             // Every cell of the row is wrapped once, here. The lines it needs
             // are what the cells stacked below it get, and the most lines any
@@ -1121,6 +1187,9 @@ public class Table implements Drawable {
             rendered += numOfHeaderRows2 - numOfHeaderRows;
         }
         numOfHeaderRows = numOfHeaderRows2;
+        if (footer < tableData.size()) {
+            numOfFooterRows = tableData2.size() - footer2;
+        }
         tableData = tableData2;
     }
 

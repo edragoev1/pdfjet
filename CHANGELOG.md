@@ -10,6 +10,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Table.setNumberOfFooterRows(n)` makes the last rows of the table data
+  footer rows, in all four ports: they are drawn again at the end of the
+  table on every page, under the last row the page holds, as the header rows
+  are drawn again at the top, and a page leaves room for them. A footer row
+  whose text wraps is drawn whole. In a PDF/UA document the footer rows are
+  rows of the table once, where it ends, and artifacts on the other pages.
 - `Table.keepRowWithNext(index)` keeps a row on the same page as the next
   row, as a heading row is kept with the rows under it, in all four ports: a
   page break does not fall between them, and moves both to the next page.

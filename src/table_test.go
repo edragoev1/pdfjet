@@ -811,3 +811,121 @@ func TestTableRowsKeptTogetherThatFitNoPageAreDrawnEachOnItsOwn(t *testing.T) {
 		}
 	}
 }
+
+// testYOf returns the y of the baseline of the text on the page, or NaN.
+func testYOf(page *Page, text string) float32 {
+	re := regexp.MustCompile(`[-0-9.]+ ([-0-9.]+) Td\n(?:/F\d+ [0-9.]+ Tf\n)?\[<` + testHex(text) + `>\] TJ`)
+	m := re.FindStringSubmatch(testContent(page))
+	if m == nil {
+		return float32(math.NaN())
+	}
+	y, _ := strconv.ParseFloat(m[1], 32)
+	return float32(y)
+}
+
+// testWithFooter draws a table of 60 rows, a header row, the rows "r1" to
+// "r58", and a footer row with the texts given, on as many pages as it needs.
+func testWithFooter(t *testing.T, doc *testDoc, footer ...string) []*Page {
+	t.Helper()
+	data := testRowsWith(testHelvetica(doc.pdf), 59, footer...)
+	table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if n := table.GetRowsRendered(); n != -1 {
+		t.Errorf("%d rows rendered", n)
+	}
+	return pages
+}
+
+func TestTableTheFooterRowsAreDrawnUnderTheLastRowOfEveryPage(t *testing.T) {
+	pages := testWithFooter(t, testNewDoc(), "total", "sum")
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	for r := 1; r < 59; r++ {
+		n := 0
+		for _, page := range pages {
+			n += strings.Count(testContent(page), "<"+testHex(fmt.Sprintf("r%d", r))+">")
+		}
+		if n != 1 {
+			t.Errorf("row %d is drawn %d times", r, n)
+		}
+	}
+	rowHeight := testYOf(pages[0], "r1") - testYOf(pages[0], "r2")
+	for i, page := range pages {
+		last := 0
+		for r := 1; r < 59; r++ {
+			if !math.IsNaN(float64(testYOf(page, fmt.Sprintf("r%d", r)))) {
+				last = r
+			}
+		}
+		gap := testYOf(page, fmt.Sprintf("r%d", last)) - testYOf(page, "total")
+		testNear(t, fmt.Sprintf("page %d: the footer under row %d", i, last), rowHeight, gap, 0.02)
+		// The bottom of the footer, 4.7 under the baseline, is over the
+		// bottom margin.
+		if testYOf(page, "total")-4.7 < 20-0.01 {
+			t.Errorf("page %d: the footer is in the margin", i)
+		}
+	}
+}
+
+func TestTableAFooterRowThatWrapsIsDrawnWholeOnEveryPage(t *testing.T) {
+	pages := testWithFooter(t, testNewDoc(), testLongText, "sum")
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	for i, page := range pages {
+		content := testContent(page)
+		if !strings.Contains(content, testHex("one")) || !strings.Contains(content, testHex("twelve")) {
+			t.Errorf("page %d: the footer is not whole", i)
+		}
+		if n := strings.Count(content, testHex("sum")); n != 1 {
+			t.Errorf("page %d: the footer is drawn %d times", i, n)
+		}
+	}
+}
+
+func TestTableTheFooterRowsBeforeTheEndOfTheTableAreArtifacts(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	pages := testWithFooter(t, doc, "total", "sum")
+	if len(pages) != 2 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	for i, page := range pages {
+		content := testContent(page)
+		at := strings.Index(content, testHex("total"))
+		artifact := strings.LastIndex(content[:at], "/Artifact BMC") > strings.LastIndex(content[:at], "EMC")
+		if artifact != (i < len(pages)-1) {
+			t.Errorf("page %d: the footer is an artifact: %v", i, artifact)
+		}
+	}
+	for _, page := range pages {
+		doc.pdf.AddPage(page)
+	}
+	raw := string(doc.complete())
+	counts := map[string]int{"/S /Table\n": 1, "/S /TR\n": 60, "/S /TH\n": 2, "/S /TD\n": 118}
+	for text, want := range counts {
+		if got := strings.Count(raw, text); got != want {
+			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
+		}
+	}
+}
+
+func TestTableMeasuringATableWithFooterRowsReturnsTheCornerDrawingDoes(t *testing.T) {
+	pdf := testNewPDF()
+	data := testRows(testHelvetica(pdf), 5, 3)
+	data[4][0].SetText("total")
+	table := NewTable().SetTableData(data, 1).SetNumberOfFooterRows(1)
+	table.SetLocation(20, 20)
+	measured := table.DrawOn(nil)
+	page := NewPage(pdf, letter.Portrait())
+	testAssertXY(t, measured[0], measured[1], table.DrawOn(page))
+	testAssertXY(t, 245, 109.36, measured)
+	if n := strings.Count(testContent(page), testHex("total")); n != 1 {
+		t.Errorf("the footer is drawn %d times", n)
+	}
+}
