@@ -23,6 +23,7 @@ public final class PDFobj {
     var stream: [UInt8]?            // The compressed stream
     final var data = [UInt8]()      // The decompressed data
     var gsNumber = -1
+    var root = false                // The catalog that the trailer's /Root names
 
     /// Creates an empty PDF object.
     init() {
@@ -405,26 +406,32 @@ public final class PDFobj {
     // length is read, or a length that is not a number, throws, as it fails
     // in the other three ports.
     final func getLength(_ objects: [PDFobj]) throws -> Int {
-        for i in 0..<dict.count {
-            if dict[i] == "/Length" {
-                guard i + 1 < dict.count, let number = Int(dict[i + 1]) else {
-                    throw PDFjetError(message: "The /Length of a stream is not a number.")
-                }
-                guard i + 2 < dict.count else {
-                    throw PDFjetError(message: "The dictionary ends after the /Length.")
-                }
-                if dict[i + 2] == "0" {
-                    guard i + 3 < dict.count else {
-                        throw PDFjetError(message: "The dictionary ends after the /Length.")
-                    }
-                    if dict[i + 3] == "R" {
-                        return try getLength(number, from: objects)
-                    }
-                }
-                return number
+        // The entry of the dictionary, and not a /Length inside another value or
+        // that is the value of another entry, "/Height/Length", as pdf.js tests
+        // it in issue19611.
+        guard let open = dict.firstIndex(of: "<<") else {
+            return 0
+        }
+        let key = PDF.entryIndex(Array(dict[open...]), "/Length")
+        if key == -1 {
+            return 0
+        }
+        let i = key + open
+        guard i + 1 < dict.count, let number = Int(dict[i + 1]) else {
+            throw PDFjetError(message: "The /Length of a stream is not a number.")
+        }
+        guard i + 2 < dict.count else {
+            throw PDFjetError(message: "The dictionary ends after the /Length.")
+        }
+        if dict[i + 2] == "0" {
+            guard i + 3 < dict.count else {
+                throw PDFjetError(message: "The dictionary ends after the /Length.")
+            }
+            if dict[i + 3] == "R" {
+                return try getLength(number, from: objects)
             }
         }
-        return 0
+        return number
     }
 
     // Returns the length stored in the object with the number. The objects

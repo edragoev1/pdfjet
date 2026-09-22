@@ -120,6 +120,35 @@ import Testing
         expectReferencesResolve(objects)
     }
 
+    @Test func aReferenceWhoseNumberHasLeadingZerosIsMerged() throws {
+        // "0000000003 0 R", as pdf.js tests it in issue10491: a number of ten
+        // digits was not a reference, so the /Parent of the page left "0 R"
+        // behind, which MuPDF cannot read, and the page lost its contents.
+        let content = "BT /F1 24 Tf 20 300 Td (Zeros) Tj ET"
+        let source = "%PDF-1.4\n"
+                + "0000000001 0 obj << /Type /Catalog /Pages 0000000002 0 R >> endobj\n"
+                + "0000000002 0 obj << /Type /Pages /Kids [0000000003 0 R] /Count 1 >> endobj\n"
+                + "0000000003 0 obj << /Type /Page /Parent 0000000002 0 R /MediaBox [0 0 300 400]"
+                + " /Resources << /Font << /F1 0000000004 0 R >> >> /Contents 0000000005 0 R >> endobj\n"
+                + "0000000004 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+                + "0000000005 0 obj << /Length \(content.utf8.count) >>\nstream\n" + content + "\nendstream\nendobj\n"
+                + "trailer << /Root 0000000001 0 R >>\n%%EOF\n"
+        let memory = MemoryPDF()
+        try memory.pdf.merge(TestSupport.read(Array(source.utf8)))
+        try memory.pdf.complete()
+
+        let objects = try TestSupport.read(memory.bytes)
+        let pages = PDF().getPageObjects(from: objects)
+        try #require(pages.count >= 1)
+        let page = pages[0]
+        let value = PDF.valueOf(page)
+        try #require(value.count >= 4)
+        #expect(value[1..<4].joined(separator: " ") == "/Type /Page /MediaBox")
+        #expect(page.getPageSize().getWidth() == 300)
+        #expect(pageContents(objects).first?.contains("(Zeros) Tj") == true, "the content was not merged")
+        expectReferencesResolve(objects)
+    }
+
     @Test func linksPointAtTheMergedPages() throws {
         let source = MemoryPDF()
         let font1 = TestSupport.helvetica(source.pdf)

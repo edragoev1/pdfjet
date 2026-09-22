@@ -1690,7 +1690,26 @@ public final class PDF {
                 objects2.append(obj)
             }
         }
-        return try getSortedObjects(objects2, buffer1.count)
+        let sorted = try getSortedObjects(objects2, buffer1.count)
+        if let root = PDF.objectNumbered(sorted, String(trailerRoot(trailer))) {
+            root.root = true
+        }
+        return sorted
+    }
+
+    // Returns the number of the catalog that the /Root of the trailer names, or
+    // 0. The trailer is the dictionary after the cross-reference table, or that
+    // of the cross-reference stream.
+    private func trailerRoot(_ trailer: PDFobj?) -> Int {
+        guard let trailer = trailer, let open = trailer.dict.firstIndex(of: "<<") else {
+            return 0
+        }
+        let tokens = Array(trailer.dict[open...])
+        let i = PDF.entryIndex(tokens, "/Root")
+        if i == -1 || !PDF.isReference(tokens, i + 1) {
+            return 0
+        }
+        return toInteger(tokens[i + 1])
     }
 
     // Returns the number in the header of an object stream.
@@ -1956,8 +1975,11 @@ public final class PDF {
                 if i + 2 >= dict.count {
                     return false
                 }
-                // The entry is the offset, the generation number and n for an object in use.
-                if dict[i + 2] == "n" {
+                // The entry is the offset, the generation number and n for an
+                // object in use. Object 0 heads the list of free objects, and one
+                // that is marked in use, as pdf.js tests it in issue10004, is
+                // skipped, as MuPDF skips it.
+                if dict[i + 2] == "n" && number != 0 {
                     let obj = getObject(buf, toInteger(dict[i]))
                     if !isObject(obj, number) {
                         return false
@@ -2383,8 +2405,11 @@ public final class PDF {
                 && isObjectNumber(tokens[i + 1])
     }
 
+    // Returns true for a number that can be an object number or a generation
+    // number: digits, which can have leading zeros, as pdf.js tests it in
+    // issue10491, "0000000003 0 R", and no more than nine others.
     private static func isObjectNumber(_ token: String) -> Bool {
-        if token.isEmpty || token.unicodeScalars.count > 9 {
+        if token.isEmpty || token.unicodeScalars.drop(while: { $0 == "0" }).count > 9 {
             return false
         }
         for scalar in token.unicodeScalars {
@@ -2666,9 +2691,26 @@ public final class PDF {
         return nil
     }
 
-    /// Returns the root pages object.
+    /// Returns the root of the page tree: the node that the /Pages of the
+    /// catalog names, the catalog that the trailer's /Root names, as MuPDF and
+    /// pdf.js find it. A PDF can have another tree with no /Parent, before
+    /// that one: one left from an earlier version of the document, as pdf.js
+    /// tests it in issue19281, or the pages of an XFA form behind a tree of one
+    /// page, in xfa_issue13556. Objects with no such catalog, like those of a
+    /// PDF whose trailer is lost, have the first node with no /Parent as the
+    /// root.
     func getPagesObject(
             _ objects: [PDFobj]) -> PDFobj? {
+        for object in objects where object.root {
+            let tokens = PDF.valueOf(object)
+            let i = PDF.entryIndex(tokens, "/Pages")
+            if i != -1 && PDF.isReference(tokens, i + 1),
+                    let pages = PDF.objectNumbered(objects, tokens[i + 1]),
+                    PDF.entryIndex(PDF.valueOf(pages), "/Kids") != -1 {
+                return pages
+            }
+            break
+        }
         for object in objects {
             if object.getValue("/Type") == "/Pages" &&
                     object.getValue("/Parent").isEmpty {

@@ -663,4 +663,63 @@ import Testing
         #expect(objects[0].getValue("/Nothing") == "")
     }
 
+    @Test func thePagesAreTheTreeThatTheCatalogOfTheTrailerNames() throws {
+        // A second page tree with no /Parent, before the one that the catalog
+        // names, as pdf.js tests it in issue19281 (a tree of one page left from
+        // an earlier version) and in xfa_issue13556 (the pages of an XFA form
+        // behind a tree of one page): MuPDF and pdf.js find the pages through
+        // the trailer's /Root, and the first tree found was taken.
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /Catalog /Pages 4 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>",
+            "<< /Type /Pages /Kids [5 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 4 0 R /MediaBox [0 0 200 200] >>",
+            "<< /Type /Page /Parent 4 0 R /MediaBox [0 0 300 300] >>",
+        ]))
+        var pages = PDF().getPageObjects(from: objects)
+        try #require(pages.count == 2)
+        #expect("\(pages[0].getNumber()) \(pages[1].getNumber())" == "5 6")
+        // A catalog that the trailer does not name, like that of an older
+        // version of the document, is not the one whose pages are read.
+        let raw = TestSupport.latin1(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+            "<< /Type /Pages /Kids [5 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 4 0 R >>",
+            "<< /Type /Catalog /Pages 4 0 R >>",
+        ])).replacingOccurrences(of: "/Root 1 0 R", with: "/Root 6 0 R")
+        pages = PDF().getPageObjects(from: try TestSupport.read(Array(raw.utf8)))
+        #expect(pages.count == 1 && pages[0].getNumber() == 5, "pages \(pages.count)")
+        // Objects with no trailer find the tree that has no /Parent, as before.
+        let noTrailer = try TestSupport.read(Array(("1 0 obj<</Type/Pages/Kids[2 0 R]/Count 1>>endobj\n"
+                + "2 0 obj<</Type/Page/Parent 1 0 R>>endobj\n").utf8))
+        #expect(PDF().getPageObjects(from: noTrailer).count == 1)
+    }
+
+    @Test func anEntryForObjectZeroThatIsInUseIsSkipped() throws {
+        // Object 0 heads the list of free objects, and a table that marks it in
+        // use, as pdf.js tests it in issue10004, is read as MuPDF reads it: the
+        // whole table was refused, and the objects were looked for by scanning.
+        var raw = TestSupport.latin1(pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R >>",
+        ])).replacingOccurrences(of: "0000000000 65535 f ", with: "0000000009 00000 n ")
+        // The objects follow each other with no white space between them, as
+        // there, so that scanning for them does not find them either.
+        raw = raw.replacingOccurrences(of: "\nendobj\n", with: "\n endobj")
+        #expect(PDF().getPageObjects(from: try TestSupport.read(Array(raw.utf8))).count == 1)
+    }
+
+    @Test func theLengthOfAStreamIsTheEntryOfItsDictionary() throws {
+        // A /Length that is the value of another entry, "/Height/Length", as
+        // pdf.js tests it in issue19611, is not the /Length of the stream.
+        let objects = try TestSupport.read(pdfWithObjects([
+            "<< /Type /XObject /Height /Length /Length 5 >>\nstream\nabcde\nendstream",
+        ]))
+        #expect(TestSupport.latin1(objects[0].getData()) == "abcde")
+    }
+
 }
