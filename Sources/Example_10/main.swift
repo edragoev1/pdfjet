@@ -45,13 +45,8 @@ public class Example_10 {
         column.setLineSpacing(1.3)      // 1.3 x font height
         column.setParagraphSpacing(1.0) // 1.0 x line spacing
 
-        let p1 = Paragraph()
-        p1.setTextAlignment(Alignment.CENTER)
-        p1.setStructureType(StructElem.H1)
-        p1.add(TextLine(f2, "Switzerland"))
-
         let p2 = Paragraph()
-        p2.setStructureType(StructElem.H2)
+        p2.setStructureType(StructElem.H1)
         p2.add(TextLine(f2, "Introduction"))
 
         var buf = String()
@@ -85,7 +80,7 @@ public class Example_10 {
         p3.add(text)
 
         let p4 = Paragraph()
-        p4.setStructureType(StructElem.H2)
+        p4.setStructureType(StructElem.H1)
         p4.add(TextLine(f3, "Economy"))
 
         buf = String()
@@ -112,7 +107,6 @@ public class Example_10 {
         text.setTextColor(Color.blue)
         p5.add(text)
 
-        column.addParagraph(p1)
         column.addParagraph(p2)
         column.addParagraph(p3)
         column.addParagraph(p4)

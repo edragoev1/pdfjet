@@ -58,13 +58,8 @@ func Example10() {
 	column.SetLineSpacing(1.3)      // 1.3 x font height
 	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
 
-	p1 := pdfjet.NewParagraph()
-	p1.SetTextAlignment(alignment.Center)
-	p1.SetStructureType(structelem.H1)
-	p1.Add(pdfjet.NewTextLine(f2, "Switzerland"))
-
 	p2 := pdfjet.NewParagraph()
-	p2.SetStructureType(structelem.H2)
+	p2.SetStructureType(structelem.H1)
 	p2.Add(pdfjet.NewTextLine(f2, "Introduction"))
 
 	var buf strings.Builder
@@ -98,7 +93,7 @@ func Example10() {
 	p3.Add(text)
 
 	p4 := pdfjet.NewParagraph()
-	p4.SetStructureType(structelem.H2)
+	p4.SetStructureType(structelem.H1)
 	p4.Add(pdfjet.NewTextLine(f3, "Economy"))
 
 	buf.Reset()
@@ -125,7 +120,6 @@ func Example10() {
 	text.SetTextColor(color.Blue)
 	p5.Add(text)
 
-	column.AddParagraph(p1)
 	column.AddParagraph(p2)
 	column.AddParagraph(p3)
 	column.AddParagraph(p4)

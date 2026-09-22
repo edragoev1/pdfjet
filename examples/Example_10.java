@@ -49,13 +49,8 @@ public class Example_10 {
         column.setLineSpacing(1.3f);        // 1.3 x font height
         column.setParagraphSpacing(1.0f);   // 1.0 x line spacing
 
-        Paragraph p1 = new Paragraph();
-        p1.setTextAlignment(Alignment.CENTER);
-        p1.setStructureType(StructElem.H1);
-        p1.add(new TextLine(f2, "Switzerland"));
-
         Paragraph p2 = new Paragraph();
-        p2.setStructureType(StructElem.H2);
+        p2.setStructureType(StructElem.H1);
         p2.add(new TextLine(f2, "Introduction"));
 
         StringBuilder buf = new StringBuilder();
@@ -89,7 +84,7 @@ public class Example_10 {
         p3.add(text);
 
         Paragraph p4 = new Paragraph();
-        p4.setStructureType(StructElem.H2);
+        p4.setStructureType(StructElem.H1);
         p4.add(new TextLine(f3, "Economy"));
 
         buf = new StringBuilder();
@@ -116,7 +111,6 @@ public class Example_10 {
         text.setTextColor(Color.blue);
         p5.add(text);
 
-        column.addParagraph(p1);
         column.addParagraph(p2);
         column.addParagraph(p3);
         column.addParagraph(p4);

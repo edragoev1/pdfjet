@@ -49,13 +49,8 @@ public class Example_10 {
         column.SetLineSpacing(1.3f);        // 1.3 x font height
         column.SetParagraphSpacing(1.0f);   // 1.0 x line spacing
 
-        Paragraph p1 = new Paragraph();
-        p1.SetTextAlignment(Alignment.CENTER);
-        p1.SetStructureType(StructElem.H1);
-        p1.Add(new TextLine(f2, "Switzerland"));
-
         Paragraph p2 = new Paragraph();
-        p2.SetStructureType(StructElem.H2);
+        p2.SetStructureType(StructElem.H1);
         p2.Add(new TextLine(f2, "Introduction"));
 
         StringBuilder buf = new StringBuilder();
@@ -89,7 +84,7 @@ public class Example_10 {
         p3.Add(text);
 
         Paragraph p4 = new Paragraph();
-        p4.SetStructureType(StructElem.H2);
+        p4.SetStructureType(StructElem.H1);
         p4.Add(new TextLine(f3, "Economy"));
 
         buf = new StringBuilder();
@@ -116,7 +111,6 @@ public class Example_10 {
         text.SetTextColor(Color.blue);
         p5.Add(text);
 
-        column.AddParagraph(p1);
         column.AddParagraph(p2);
         column.AddParagraph(p3);
         column.AddParagraph(p4);
