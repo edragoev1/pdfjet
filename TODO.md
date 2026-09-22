@@ -266,6 +266,37 @@ day.
   - About a week for the first port to pass the spec, a few days for each
     of the others, and the renderer after.
 
+## Electronic invoices (in the commercial repository, `.commercial`)
+
+Written and checked in the four ports: the model of EN 16931, the writer and
+the reader of the Cross Industry Invoice, the metadata, and `Facturx`, which
+makes a document of PDF/A-3 an invoice of Factur-X and ZUGFeRD and reads one
+back out of a document someone else wrote. The MIT library carries the files
+(`PDF.addAssociatedFile`) and the metadata (`PDF.addMetadata`).
+
+Checked against the 38 sample invoices the standard publishes, and against
+veraPDF and the validator of Mustangproject, which reads the XML against the
+schema and the rules of EN 16931 and of XRechnung.
+
+What is left, in the order it is worth doing:
+
+- ⬜ The examples in C#, Go and Swift, beside the Java one in
+  `examples/invoice`.
+- ⬜ A page on the site, as `digital-signatures.html` is, saying what an
+  electronic invoice is, what the law asks for in Germany, France and Italy,
+  and what the library does about it.
+- ⬜ Discounts and charges on a line (BG-27 and BG-28). A line carries the
+  amount the seller wrote, so an invoice that has them is read, written again
+  and valid, with the discount inside the amount of the line rather than
+  beside it. A seller that gives a discount for each line cannot state it as
+  one yet.
+- ⬜ The fields of EXTENDED that the model has no room for: the party that
+  pays, the party that is paid, several orders in one invoice, and the
+  documents an invoice refers to.
+- ⬜ Order-X and Deliver-X, which are the same XML and the same embedding for
+  an order and for a delivery note. The writer and the reader would be
+  another profile each.
+
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped.
