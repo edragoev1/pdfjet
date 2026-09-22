@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The C# port's side of the corpus check, tests/corpus/check-corpus.py, which
+    builds it. The library sources are compiled into it, as in tests/dotnet.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>PDFjet.NET</RootNamespace>
+    <!-- The library has a PNGImage.Main, so the entry point is named. -->
+    <StartupObject>PDFjet.NET.Corpus</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../net/pdfjet/**/*.cs" />
+    <Compile Include="Corpus.cs" />
+  </ItemGroup>
+</Project>

@@ -79,6 +79,11 @@ def build_port(port, out):
                        ['-Xlint', '-Xlint:-options', '-Werror', '-d', classes] + sources,
                        cwd=ROOT, check=True)
         return ['java', '-cp', classes, 'Corpus']
+    if port == 'dotnet':
+        subprocess.run(['dotnet', 'build', 'tests/corpus/dotnet/Corpus.csproj', '-c', 'release', '-v', 'q',
+                        '-nologo', '-p:TreatWarningsAsErrors=true', '--artifacts-path', out],
+                       cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+        return ['dotnet', os.path.join(out, 'bin', 'Corpus', 'release', 'Corpus.dll')]
     sys.exit(f'The {port} port has no harness yet.')
 
 

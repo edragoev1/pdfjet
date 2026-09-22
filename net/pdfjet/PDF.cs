@@ -1389,6 +1389,7 @@ public sealed class PDF {
         Dictionary<int, int> numbers = new Dictionary<int, int>();
         Dictionary<int, List<String>> values = new Dictionary<int, List<String>>();
         List<PDFobj> queue = new List<PDFobj>();
+        PageTreeNodes nodes = new PageTreeNodes();
         foreach (PDFobj page in pageObjects) {
             if (!numbers.ContainsKey(page.number)) {
                 numbers[page.number] = ReserveObjNumber();
@@ -1397,7 +1398,7 @@ public sealed class PDF {
         }
         for (int i = 0; i < queue.Count; i++) {
             PDFobj obj = queue[i];
-            List<String> value = MergedValue(obj, mergedPages.Contains(obj.number), objects);
+            List<String> value = MergedValue(obj, mergedPages.Contains(obj.number), objects, nodes);
             values[obj.number] = value;
             for (int j = 0; j < value.Count; j++) {
                 if (IsReference(value, j)) {
@@ -1472,7 +1473,8 @@ public sealed class PDF {
     // Returns the value of an object that was read, without its "n g obj" and
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
-    private static List<String> MergedValue(PDFobj obj, bool isPage, List<PDFobj> objects) {
+    private static List<String> MergedValue(
+            PDFobj obj, bool isPage, List<PDFobj> objects, PageTreeNodes nodes) {
         List<String> value = ValueOf(obj);
         if (obj.stream != null) {
             SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString() });
@@ -1480,7 +1482,7 @@ public sealed class PDF {
         if (isPage) {
             foreach (String key in INHERITED) {
                 if (EntryIndex(value, key) == -1) {
-                    List<String> inherited = InheritedValue(obj, key, objects);
+                    List<String> inherited = InheritedValue(obj, key, objects, nodes);
                     if (inherited == null && key.Equals("/MediaBox")) {
                         inherited = new List<String> { "[", "0", "0", "612", "792", "]" };    // Letter
                     }
@@ -1507,25 +1509,64 @@ public sealed class PDF {
         return dict.GetRange(start, end - start);
     }
 
+    // The entries of the nodes of a page tree, each read once. A node can have
+    // thousands of kids, and reading it again for each entry of each page that
+    // inherits one took time that grew as the square of the number of pages.
+    private sealed class PageTreeNodes {
+        private readonly Dictionary<int, Dictionary<String, List<String>>> entries =
+                new Dictionary<int, Dictionary<String, List<String>>>();
+
+        internal Dictionary<String, List<String>> EntriesOf(PDFobj node) {
+            Dictionary<String, List<String>> nodeEntries;
+            if (!entries.TryGetValue(node.number, out nodeEntries)) {
+                nodeEntries = Entries(ValueOf(node));
+                entries[node.number] = nodeEntries;
+            }
+            return nodeEntries;
+        }
+
+        // Forgets the entries of an object that was changed.
+        internal void Forget(PDFobj obj) {
+            entries.Remove(obj.number);
+        }
+    }
+
+    // Returns the entries of the dictionary by their keys, the first entry of
+    // a key that it has twice, as EntryIndex finds it.
+    private static Dictionary<String, List<String>> Entries(List<String> tokens) {
+        Dictionary<String, List<String>> entries = new Dictionary<String, List<String>>();
+        if (tokens.Count == 0 || !tokens[0].Equals("<<")) {
+            return entries;
+        }
+        int i = 1;
+        while (i < tokens.Count && !tokens[i].Equals(">>")) {
+            int end = ValueEnd(tokens, i + 1);
+            if (!entries.ContainsKey(tokens[i])) {
+                entries[tokens[i]] = tokens.GetRange(i + 1, end - (i + 1));
+            }
+            i = end;
+        }
+        return entries;
+    }
+
     // Returns the value of the entry from the nearest node of the page tree
     // above the page that has it, or null.
-    private static List<String> InheritedValue(PDFobj page, String key, List<PDFobj> objects) {
-        PDFobj node = page;
+    private static List<String> InheritedValue(
+            PDFobj page, String key, List<PDFobj> objects, PageTreeNodes nodes) {
+        Dictionary<String, List<String>> entries = Entries(ValueOf(page));
         for (int depth = 0; depth < 64; depth++) {  // A loop in a broken tree ends here.
-            List<String> tokens = ValueOf(node);
-            int i = EntryIndex(tokens, "/Parent");
-            if (i == -1 || !IsReference(tokens, i + 1)) {
+            List<String> parent;
+            if (!entries.TryGetValue("/Parent", out parent) || !IsReference(parent, 0)) {
                 return null;
             }
-            int number = Int32.Parse(tokens[i + 1]);
+            int number = Int32.Parse(parent[0]);
             if (number < 1 || number > objects.Count || objects[number - 1].dict.Count == 0) {
                 return null;
             }
-            node = objects[number - 1];
-            List<String> parent = ValueOf(node);
-            int k = EntryIndex(parent, key);
-            if (k != -1) {
-                return parent.GetRange(k + 1, ValueEnd(parent, k + 1) - (k + 1));
+            entries = nodes.EntriesOf(objects[number - 1]);
+            List<String> value;
+            if (entries.TryGetValue(key, out value)) {
+                return new List<String>(value);
             }
         }
         return null;
@@ -2552,7 +2593,7 @@ public sealed class PDF {
         List<PDFobj> pages = new List<PDFobj>();
         PDFobj pagesObject = GetPagesObject(objects);
         if (pagesObject != null) {
-            GetPageObjects(pagesObject, objects, pages, new HashSet<int>());
+            GetPageObjects(pagesObject, objects, pages, new HashSet<int>(), new PageTreeNodes());
         }
         return pages;
     }
@@ -2563,7 +2604,8 @@ public sealed class PDF {
             PDFobj pdfObj,
             List<PDFobj> objects,
             List<PDFobj> pages,
-            HashSet<int> visited) {
+            HashSet<int> visited,
+            PageTreeNodes nodes) {
         if (!visited.Add(pdfObj.number)) {
             return;
         }
@@ -2574,11 +2616,12 @@ public sealed class PDF {
             }
             PDFobj obj = objects[number - 1];
             if (IsPageObject(obj)) {
-                AddInheritedEntries(obj, objects);
+                AddInheritedEntries(obj, objects, nodes);
                 ResolveMediaBox(obj, objects);
+                nodes.Forget(obj);  // A page of a broken tree can be a node.
                 pages.Add(obj);
             } else {
-                GetPageObjects(obj, objects, pages, visited);
+                GetPageObjects(obj, objects, pages, visited, nodes);
             }
         }
     }
@@ -2587,7 +2630,7 @@ public sealed class PDF {
     // not have itself. A page of another program's PDF often carries no
     // /MediaBox or /Resources of its own, and Read gives the objects as the
     // file has them, so the page holds what it is only after this.
-    private static void AddInheritedEntries(PDFobj page, List<PDFobj> objects) {
+    private static void AddInheritedEntries(PDFobj page, List<PDFobj> objects, PageTreeNodes nodes) {
         int open = page.dict.IndexOf("<<");
         if (open == -1) {
             return;
@@ -2596,7 +2639,7 @@ public sealed class PDF {
             if (EntryIndex(ValueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            List<String> value = InheritedValue(page, key, objects);
+            List<String> value = InheritedValue(page, key, objects, nodes);
             if (value != null) {
                 page.dict.InsertRange(open + 1, value);
                 page.dict.Insert(open + 1, key);

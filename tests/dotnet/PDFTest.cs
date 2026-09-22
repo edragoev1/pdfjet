@@ -376,6 +376,33 @@ public class PDFTest {
     }
 
     [Fact]
+    public void APageTreeNodeWithManyKidsIsReadOnce() {
+        // A node of the page tree with thousands of kids, from which every
+        // page inherits its /MediaBox, as veraPDF tests it with 10,000 pages
+        // in isartor-6-1-12-t01-fail-a: the node was read again for each
+        // entry of each page, which took time that grew as the square of the
+        // number of pages, and more than a minute for that file.
+        const int count = 10000;
+        StringBuilder kids = new StringBuilder();
+        string[] objects = new string[count + 2];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        for (int i = 0; i < count; i++) {
+            kids.Append(i + 3).Append(" 0 R ");
+            objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
+        }
+        objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + count + " >>";
+        List<PDFobj> read = TestSupport.Read(PdfWithObjects(objects));
+        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+        List<PDFobj> pages = new PDF().GetPageObjects(read);
+        PDF pdf = new PDF(new MemoryStream());
+        pdf.Merge(read);
+        pdf.Complete();
+        Assert.Equal(count, pages.Count);
+        Assert.Equal(842f, pages[count - 1].GetPageSize().GetHeight());
+        Assert.True(watch.ElapsedMilliseconds < 5000, "It took " + watch.ElapsedMilliseconds + " ms.");
+    }
+
+    [Fact]
     public void ObjectsWithoutAPageTreeHaveNoPages() {
         List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {"<< /Type /Catalog >>"}));
         Assert.Empty(new PDF().GetPageObjects(objects));
