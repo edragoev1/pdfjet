@@ -262,5 +262,10 @@ public class TextColumnTest {
     public void AJustifiedLineWidensAMovedSpace() {
         TextFrameTest.CheckAJustifiedRowWidensAMovedSpace(true);
     }
+
+    [Fact]
+    public void ALinkEndsBeforeTheSpaceAfterIt() {
+        TextFrameTest.CheckALinkEndsBeforeTheSpaceAfterIt(true);
+    }
 }
 }   // End of namespace PDFjet.NET

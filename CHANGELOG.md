@@ -153,7 +153,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   Paragraphs that mix fonts move by a fraction of a point where the fonts
   meet; a text line with an underline, a strikeout or a link keeps the space
   before it in the text line before, so that its decoration does not start
-  at a space.
+  at a space, and gives the space after it to the text line after it when
+  the two spaces are as wide, so that its decoration does not go on under
+  the space.
 - A character an embedded font does not have is drawn with its `.notdef`
   glyph, glyph 0, in all four ports, as other PDF writers draw it, so that a
   reader sees a box where it is missing rather than a space. It was drawn as a

@@ -146,8 +146,10 @@ func (paragraph *Paragraph) joinsPrevious(index int) bool {
 // index goes at the start of the next text line instead, in its font: the
 // space between two text lines is the narrower of their two spaces, so that
 // the space after a word in a monospaced font, which is wide, is the space of
-// the text after it. The next text line has a word, is not joined to this one,
-// and has no underline, strikeout or link, which would start at the space.
+// the text after it; and when the two are as wide, it is the next one's when
+// this one has an underline, a strikeout or a link, which would go on under
+// the space. The next text line has a word, is not joined to this one, and has
+// no underline, strikeout or link, which would start at the space.
 func (paragraph *Paragraph) spaceMovesToNext(index int) bool {
 	if index+1 >= len(paragraph.lines) || paragraph.joinsPrevious(index+1) {
 		return false
@@ -160,8 +162,11 @@ func (paragraph *Paragraph) spaceMovesToNext(index int) bool {
 		next.GetURIAction() != "" || next.GetGoToAction() != "" {
 		return false
 	}
-	return next.font.StringWidthUsingFallbackFont(next.fallbackFont, next.fontSize, single.Space) <
-		line.font.StringWidthUsingFallbackFont(line.fallbackFont, line.fontSize, single.Space)
+	nextSpace := next.font.StringWidthUsingFallbackFont(next.fallbackFont, next.fontSize, single.Space)
+	space := line.font.StringWidthUsingFallbackFont(line.fallbackFont, line.fontSize, single.Space)
+	decorated := line.underline || line.strikeout ||
+		line.GetURIAction() != "" || line.GetGoToAction() != ""
+	return nextSpace < space || (decorated && nextSpace <= space)
 }
 
 // SetTextAlignment sets the alignment of the text in this paragraph:

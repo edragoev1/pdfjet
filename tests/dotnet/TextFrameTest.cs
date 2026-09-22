@@ -385,5 +385,32 @@ public class TextFrameTest {
     public void AJustifiedRowWidensAMovedSpace() {
         CheckAJustifiedRowWidensAMovedSpace(false);
     }
+
+    internal static void CheckALinkEndsBeforeTheSpaceAfterIt(bool column) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(font, "see the link").SetURIAction("https://pdfjet.com").SetUnderline(true))
+                .Add(new TextLine(font, "after it"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        if (column) {
+            TextColumn textColumn = new TextColumn();
+            textColumn.SetWidth(300f);
+            textColumn.AddParagraph(paragraph);
+            textColumn.SetLocation(10f, 10f);
+            textColumn.DrawOn(page);
+        } else {
+            new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
+        }
+        string content = TestSupport.Content(page);
+        // The underlined text ends at the word, and the space is the text's after it.
+        Assert.True(content.Contains(TestSupport.Hex("link") + ">"), content);
+        Assert.True(content.Contains("<" + TestSupport.Hex(" after")), content);
+    }
+
+    [Fact]
+    public void ALinkEndsBeforeTheSpaceAfterIt() {
+        CheckALinkEndsBeforeTheSpaceAfterIt(false);
+    }
 }
 }

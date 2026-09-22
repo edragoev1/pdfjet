@@ -277,4 +277,9 @@ class TextColumnTest {
     void aJustifiedLineWidensAMovedSpace() throws Exception {
         TextFrameTest.checkAJustifiedRowWidensAMovedSpace(true);
     }
+
+    @Test
+    void aLinkEndsBeforeTheSpaceAfterIt() throws Exception {
+        TextFrameTest.checkALinkEndsBeforeTheSpaceAfterIt(true);
+    }
 }

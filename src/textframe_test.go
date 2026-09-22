@@ -465,3 +465,36 @@ func TestTextFrameAMovedSpaceDoesNotStartARow(t *testing.T) {
 func TestTextFrameAJustifiedRowWidensAMovedSpace(t *testing.T) {
 	testCheckAJustifiedRowWidensAMovedSpace(t, false)
 }
+
+func testCheckALinkEndsBeforeTheSpaceAfterIt(t *testing.T, column bool) {
+	t.Helper()
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph().
+		Add(NewTextLine(font, "see the link").SetURIAction("https://pdfjet.com").SetUnderline(true)).
+		Add(NewTextLine(font, "after it"))
+	page := NewPage(pdf, letter.Portrait())
+	if column {
+		textColumn := NewTextColumn()
+		textColumn.SetWidth(300)
+		textColumn.AddParagraph(paragraph)
+		textColumn.SetLocation(10, 10)
+		textColumn.DrawOn(page)
+	} else {
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+		frame.SetLocation(10, 10)
+		frame.DrawOn(page)
+	}
+	content := testContent(page)
+	// The underlined text ends at the word, and the space is the text's after it.
+	if !strings.Contains(content, testHex("link")+">") {
+		t.Errorf("the link ends with a space:\n%s", content)
+	}
+	if !strings.Contains(content, "<"+testHex(" after")) {
+		t.Errorf("after has no space before it:\n%s", content)
+	}
+}
+
+func TestTextFrameALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
+	testCheckALinkEndsBeforeTheSpaceAfterIt(t, false)
+}

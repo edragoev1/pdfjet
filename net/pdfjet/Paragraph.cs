@@ -130,8 +130,10 @@ public class Paragraph {
     // start of the next text line instead, in its font: the space between two
     // text lines is the narrower of their two spaces, so that the space after
     // a word in a monospaced font, which is wide, is the space of the text
-    // after it. The next text line has a word, is not joined to this one, and
-    // has no underline, strikeout or link, which would start at the space.
+    // after it; and when the two are as wide, it is the next one's when this
+    // one has an underline, a strikeout or a link, which would go on under the
+    // space. The next text line has a word, is not joined to this one, and has
+    // no underline, strikeout or link, which would start at the space.
     internal bool SpaceMovesToNext(int index) {
         if (index + 1 >= lines.Count || JoinsPrevious(index + 1)) {
             return false;
@@ -144,8 +146,11 @@ public class Paragraph {
                 || next.GetURIAction() != null || next.GetGoToAction() != null) {
             return false;
         }
-        return next.font.StringWidth(next.fallbackFont, next.fontSize, Single.space)
-                < line.font.StringWidth(line.fallbackFont, line.fontSize, Single.space);
+        float nextSpace = next.font.StringWidth(next.fallbackFont, next.fontSize, Single.space);
+        float space = line.font.StringWidth(line.fallbackFont, line.fontSize, Single.space);
+        bool decorated = line.underline || line.strikeout
+                || line.GetURIAction() != null || line.GetGoToAction() != null;
+        return nextSpace < space || (decorated && nextSpace <= space);
     }
 
     /// <summary>

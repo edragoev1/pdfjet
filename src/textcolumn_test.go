@@ -284,3 +284,7 @@ func TestTextColumnAMovedSpaceDoesNotStartALine(t *testing.T) {
 func TestTextColumnAJustifiedLineWidensAMovedSpace(t *testing.T) {
 	testCheckAJustifiedRowWidensAMovedSpace(t, true)
 }
+
+func TestTextColumnALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
+	testCheckALinkEndsBeforeTheSpaceAfterIt(t, true)
+}

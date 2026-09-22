@@ -244,4 +244,8 @@ import Testing
     @Test func aJustifiedLineWidensAMovedSpace() throws {
         try TextFrameTests.checkAJustifiedRowWidensAMovedSpace(true)
     }
+
+    @Test func aLinkEndsBeforeTheSpaceAfterIt() throws {
+        try TextFrameTests.checkALinkEndsBeforeTheSpaceAfterIt(true)
+    }
 }

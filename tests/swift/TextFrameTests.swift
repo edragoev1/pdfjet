@@ -358,4 +358,30 @@ import Testing
     @Test func aJustifiedRowWidensAMovedSpace() throws {
         try TextFrameTests.checkAJustifiedRowWidensAMovedSpace(false)
     }
+
+    static func checkALinkEndsBeforeTheSpaceAfterIt(_ column: Bool) throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph()
+                .add(TextLine(font, "see the link").setURIAction("https://pdfjet.com").setUnderline(true))
+                .add(TextLine(font, "after it"))
+        let page = Page(pdf, Letter.PORTRAIT)
+        if column {
+            let textColumn = TextColumn()
+            textColumn.setWidth(300)
+            textColumn.addParagraph(paragraph)
+            textColumn.setLocation(10.0, 10.0)
+            textColumn.drawOn(page)
+        } else {
+            TextFrame([paragraph]).setLocation(10, 10).setWidth(300).drawOn(page)
+        }
+        let content = TestSupport.content(page)
+        // The underlined text ends at the word, and the space is the text's after it.
+        #expect(content.contains(TestSupport.hex("link") + ">"), "\(content)")
+        #expect(content.contains("<" + TestSupport.hex(" after")), "\(content)")
+    }
+
+    @Test func aLinkEndsBeforeTheSpaceAfterIt() throws {
+        try TextFrameTests.checkALinkEndsBeforeTheSpaceAfterIt(false)
+    }
 }

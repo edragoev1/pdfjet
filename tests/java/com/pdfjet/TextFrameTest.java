@@ -392,4 +392,31 @@ class TextFrameTest {
     void aJustifiedRowWidensAMovedSpace() throws Exception {
         checkAJustifiedRowWidensAMovedSpace(false);
     }
+
+    static void checkALinkEndsBeforeTheSpaceAfterIt(boolean column) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(font, "see the link").setURIAction("https://pdfjet.com").setUnderline(true))
+                .add(new TextLine(font, "after it"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        if (column) {
+            TextColumn textColumn = new TextColumn();
+            textColumn.setWidth(300f);
+            textColumn.addParagraph(paragraph);
+            textColumn.setLocation(10f, 10f);
+            textColumn.drawOn(page);
+        } else {
+            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
+        }
+        String content = TestSupport.content(page);
+        // The underlined text ends at the word, and the space is the text's after it.
+        assertTrue(content.contains(TestSupport.hex("link") + ">"), content);
+        assertTrue(content.contains("<" + TestSupport.hex(" after")), content);
+    }
+
+    @Test
+    void aLinkEndsBeforeTheSpaceAfterIt() throws Exception {
+        checkALinkEndsBeforeTheSpaceAfterIt(false);
+    }
 }

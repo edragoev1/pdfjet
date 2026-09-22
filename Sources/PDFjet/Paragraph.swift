@@ -126,8 +126,10 @@ public class Paragraph {
     // start of the next text line instead, in its font: the space between two
     // text lines is the narrower of their two spaces, so that the space after
     // a word in a monospaced font, which is wide, is the space of the text
-    // after it. The next text line has a word, is not joined to this one, and
-    // has no underline, strikeout or link, which would start at the space.
+    // after it; and when the two are as wide, it is the next one's when this
+    // one has an underline, a strikeout or a link, which would go on under the
+    // space. The next text line has a word, is not joined to this one, and has
+    // no underline, strikeout or link, which would start at the space.
     func spaceMovesToNext(_ index: Int) -> Bool {
         if index + 1 >= lines.count || joinsPrevious(index + 1) {
             return false
@@ -143,8 +145,11 @@ public class Paragraph {
                 || next.getURIAction() != nil || next.getGoToAction() != nil {
             return false
         }
-        return next.font!.stringWidth(next.fallbackFont, next.fontSize, Single.space)
-                < line.font!.stringWidth(line.fallbackFont, line.fontSize, Single.space)
+        let nextSpace = next.font!.stringWidth(next.fallbackFont, next.fontSize, Single.space)
+        let space = line.font!.stringWidth(line.fallbackFont, line.fontSize, Single.space)
+        let decorated = line.underline || line.strikeout
+                || line.getURIAction() != nil || line.getGoToAction() != nil
+        return nextSpace < space || (decorated && nextSpace <= space)
     }
 
     ///
