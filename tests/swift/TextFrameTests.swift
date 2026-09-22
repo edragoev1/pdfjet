@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+import Foundation
 import Testing
 @testable import PDFjet
 
@@ -121,6 +122,80 @@ import Testing
         #expect(raw.components(separatedBy: "/S /LI\n").count - 1 == 2)
         #expect(raw.components(separatedBy: "/S /Lbl\n").count - 1 == 2)
         #expect(raw.components(separatedBy: "/S /LBody\n").count - 1 == 2)
+    }
+
+    // 200 paragraphs of a few lines each, the first word of each its number,
+    // p000 to p199, which no other word begins with.
+    private func novel(_ font: Font) -> TextFrame {
+        var paragraphs = [String]()
+        for i in 0..<200 {
+            var text = String(format: "p%03d", i)
+            for j in 0..<(30 + i % 17) {
+                text += " word\(j)"
+            }
+            paragraphs.append(text)
+        }
+        return TextFrame(font, paragraphs).setLocation(72, 72).setWidth(468)
+    }
+
+    // The page each paragraph starts on, by its number.
+    private func pagesOf(_ pages: [Page]) -> [Int] {
+        var pageOf = [Int](repeating: -1, count: 200)
+        for (p, page) in pages.enumerated() {
+            let content = TestSupport.content(page)
+            for i in 0..<200 where content.contains(TestSupport.hex(String(format: "p%03d", i))) {
+                #expect(pageOf[i] == -1, "paragraph \(i) starts on two pages")
+                pageOf[i] = p
+            }
+        }
+        return pageOf
+    }
+
+    @Test func aFrameFlowsOntoAsManyPagesAsTheTextNeeds() throws {
+        let pdf = TestSupport.newPDF()
+        let frame = novel(TestSupport.helvetica(pdf))
+        var pages = [Page]()
+        frame.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count > 5, "\(pages.count) pages")
+        #expect(!frame.hasMoreText())
+        // Every paragraph is drawn once, in order, and every page has text.
+        let pageOf = pagesOf(pages)
+        for i in 0..<200 {
+            #expect(pageOf[i] >= 0, "paragraph \(i) is not drawn")
+            #expect(i == 0 || pageOf[i] >= pageOf[i - 1], "paragraph \(i) is out of order")
+        }
+        #expect(pageOf[199] == pages.count - 1)
+        // The text keeps the margin of its location at the bottom too: no
+        // baseline under 72 points from the bottom of the page.
+        let td = try NSRegularExpression(pattern: "[-0-9.]+ ([-0-9.]+) Td\\n")
+        var baselines = 0
+        for page in pages {
+            let content = TestSupport.content(page)
+            for m in td.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+                let y = Float(content[Range(m.range(at: 1), in: content)!])!
+                #expect(y >= 72, "a baseline at y = \(y)")
+                baselines += 1
+            }
+        }
+        #expect(baselines > 100, "\(baselines) baselines")
+        // The frame has no height of its own, as before.
+        #expect(frame.getHeight() == 0)
+    }
+
+    @Test func aFrameWithAHeightHasItOnEveryPage() {
+        let pdf = TestSupport.newPDF()
+        var tall = [Page]()
+        novel(TestSupport.helvetica(pdf)).drawOn(pdf, &tall, Letter.PORTRAIT)
+        let frame = novel(TestSupport.helvetica(pdf)).setHeight(300)
+        var pages = [Page]()
+        let xy = frame.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count > tall.count, "\(pages.count) pages, not more than \(tall.count)")
+        #expect(frame.getHeight() == 300)
+        TestSupport.expectXY(540, 372, xy)
+        // An empty frame needs no page.
+        var none = [Page]()
+        TestSupport.expectXY(10, 20, TextFrame([Paragraph]()).setLocation(10, 20).drawOn(pdf, &none, Letter.PORTRAIT))
+        #expect(none.isEmpty)
     }
 
 }

@@ -10,6 +10,15 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `TextFrame.drawOn(pdf, pages, pageSize)` draws the text on as many new
+  pages as it needs, a whole book at once, as `Table.drawOn` draws a table,
+  in all four ports (`DrawOnPages` in Go). The frame has its location and its
+  width on each page, and its height, or with none it reaches down to the
+  margin its location leaves at the top, so text at 72, 72 keeps 72 points
+  free at the bottom too. The pages are created detached and added to the
+  list, so that a footer or a page number can be drawn on each before they
+  are added to the PDF. A frame drew one page and kept the rest before, and
+  the caller had to make the next page and draw it again.
 - `Table.setAlternateRowColor(color)` colors every other row of the body of a
   table, the second, the fourth and so on, counting the rows of the data and
   not those of each page, as `BigTable.setShadingColor` shades its rows, in

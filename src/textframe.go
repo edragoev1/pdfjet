@@ -12,6 +12,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
+	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -181,6 +182,31 @@ func (tf *TextFrame) SetBorderDashPattern(borderPattern string) *TextFrame {
 // HasMoreText returns true if some of the text has not been drawn yet.
 func (tf *TextFrame) HasMoreText() bool {
 	return tf.paragraphIndex < len(tf.paragraphs)
+}
+
+// DrawOnPages draws the text on as many new pages as it needs, at the location
+// and the width of this frame on each: a whole book, page after page. The
+// height of the frame is the height of the text on each page; a frame without
+// one reaches down to the margin its location leaves at the top, so text at
+// 72, 72 keeps 72 points free at the bottom too. The pages are created
+// detached and added to the list, so that a footer or a page number can be
+// drawn on each before they are added to the PDF. A frame with no text left
+// needs no page. It returns the x and y coordinates of the bottom right corner
+// of this frame on the last page.
+func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
+	xy := [2]float32{tf.x + tf.w, tf.y}
+	height := tf.h
+	defer func() { tf.h = height }()
+	for tf.HasMoreText() {
+		page := NewPageDetached(pdf, pageSize)
+		*pages = append(*pages, page)
+		if height <= 0 {
+			tf.h = page.height - 2*tf.y
+		}
+		// Each frame draws at least a line, so the text always flows.
+		xy = tf.DrawOn(page)
+	}
+	return xy
 }
 
 // DrawOn draws the text on the page: all of it when this frame has no height,

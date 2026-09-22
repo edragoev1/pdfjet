@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -149,5 +151,108 @@ func TestTextFrameParagraphsWithALabelAreAList(t *testing.T) {
 		if got := strings.Count(raw, text); got != want {
 			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
 		}
+	}
+}
+
+// testNovel returns a frame of 200 paragraphs of a few lines each, the first
+// word of each its number, p000 to p199, which no other word begins with.
+func testNovel(font *Font) *TextFrame {
+	paragraphs := make([]string, 0, 200)
+	for i := 0; i < 200; i++ {
+		var text strings.Builder
+		fmt.Fprintf(&text, "p%03d", i)
+		for j := 0; j < 30+i%17; j++ {
+			fmt.Fprintf(&text, " word%d", j)
+		}
+		paragraphs = append(paragraphs, text.String())
+	}
+	tf := NewTextFrame(font, paragraphs)
+	tf.SetLocation(72, 72)
+	tf.SetWidth(468)
+	return tf
+}
+
+// testPagesOf returns the page each paragraph starts on, by its number.
+func testPagesOf(t *testing.T, pages []*Page) []int {
+	pageOf := make([]int, 200)
+	for i := range pageOf {
+		pageOf[i] = -1
+	}
+	for p, page := range pages {
+		content := testContent(page)
+		for i := 0; i < 200; i++ {
+			if strings.Contains(content, testHex(fmt.Sprintf("p%03d", i))) {
+				if pageOf[i] != -1 {
+					t.Errorf("paragraph %d starts on two pages", i)
+				}
+				pageOf[i] = p
+			}
+		}
+	}
+	return pageOf
+}
+
+func TestTextFrameAFrameFlowsOntoAsManyPagesAsTheTextNeeds(t *testing.T) {
+	pdf := testNewPDF()
+	tf := testNovel(testHelvetica(pdf))
+	pages := make([]*Page, 0)
+	tf.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) <= 5 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	if tf.HasMoreText() {
+		t.Error("text is left")
+	}
+	// Every paragraph is drawn once, in order, and every page has text.
+	pageOf := testPagesOf(t, pages)
+	for i := 0; i < 200; i++ {
+		if pageOf[i] < 0 {
+			t.Errorf("paragraph %d is not drawn", i)
+		} else if i > 0 && pageOf[i] < pageOf[i-1] {
+			t.Errorf("paragraph %d is out of order", i)
+		}
+	}
+	if pageOf[199] != len(pages)-1 {
+		t.Errorf("the last paragraph is on page %d of %d", pageOf[199], len(pages))
+	}
+	// The text keeps the margin of its location at the bottom too: no
+	// baseline under 72 points from the bottom of the page.
+	td := regexp.MustCompile(`[-0-9.]+ ([-0-9.]+) Td\n`)
+	baselines := 0
+	for _, page := range pages {
+		for _, m := range td.FindAllStringSubmatch(testContent(page), -1) {
+			if y, _ := strconv.ParseFloat(m[1], 32); y < 72 {
+				t.Errorf("a baseline at y = %s", m[1])
+			}
+			baselines++
+		}
+	}
+	if baselines <= 100 {
+		t.Errorf("%d baselines", baselines)
+	}
+	// The frame has no height of its own, as before.
+	testNear(t, "the height", 0, tf.GetHeight(), 0)
+}
+
+func TestTextFrameAFrameWithAHeightHasItOnEveryPage(t *testing.T) {
+	pdf := testNewPDF()
+	tall := make([]*Page, 0)
+	testNovel(testHelvetica(pdf)).DrawOnPages(pdf, &tall, letter.Portrait())
+	tf := testNovel(testHelvetica(pdf))
+	tf.SetHeight(300)
+	pages := make([]*Page, 0)
+	xy := tf.DrawOnPages(pdf, &pages, letter.Portrait())
+	if len(pages) <= len(tall) {
+		t.Errorf("%d pages, not more than %d", len(pages), len(tall))
+	}
+	testNear(t, "the height", 300, tf.GetHeight(), 0)
+	testAssertXY(t, 540, 372, xy)
+	// An empty frame needs no page.
+	none := make([]*Page, 0)
+	empty := NewTextFrameFromParagraphs(make([]*Paragraph, 0))
+	empty.SetLocation(10, 20)
+	testAssertXY(t, 10, 20, empty.DrawOnPages(pdf, &none, letter.Portrait()))
+	if len(none) != 0 {
+		t.Errorf("%d pages", len(none))
 	}
 }

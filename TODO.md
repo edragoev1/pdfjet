@@ -41,7 +41,7 @@ line gaps, and what the first three fuzz targets turned up. Eight kinds of
 untrusted input are read from a file, and five of them are fuzzed. So the
 work to Oct 21 is the seven goals below, in this order.
 
-Four features are the exceptions, and all are in v9.0.2. The first is
+Five features are the exceptions, and all are in v9.0.2. The first is
 `Cell.setRowSpan` (Sep 21): goals 1 and 2 closed three weeks early, the
 feature is what clients ask `Table` for and could not have, and it landed
 with tests in the four ports and an example that renders alike in all of
@@ -52,8 +52,10 @@ and `setBroughtForwardSum` are new, each with tests in the four ports. The
 third and the fourth, the same day, are the rest of what "After v9.0.3 --
 features" had, from the review of `Table` and `Cell` of Sep 18: striped
 rows with styles for the header and the footer rows, and column widths
-shared from the width of the table. The other members master adds to the
-API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists all 24.
+shared from the width of the table. The fifth, the same day and the last,
+is a `TextFrame` that flows onto as many pages as its text needs. The other
+members master adds to the API of v9.0.1 came with the PDF/UA work and the
+fixes; goal 6 lists all 25.
 
 ## The seven goals of v9.0.3
 
@@ -113,7 +115,7 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists all 24.
    and every bug they found is fixed in the four ports with tests.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
-   public API is that of v9.0.1 and the 24 members master adds to it, the
+   public API is that of v9.0.1 and the 25 members master adds to it, the
    same in the four ports, checked as for 9.0.1 before each tag:
    - `Cell.setRowSpan` and `Cell.getRowSpan`, the row spans (Sep 21);
    - `Chart`, `BarChart` and `DonutChart` `setAltDescription`,
@@ -126,7 +128,9 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists all 24.
    - `Table.setAlternateRowColor`, of a 0xRRGGBB value and of red, green
      and blue (in Go `SetAlternateRowColorRGB`), `setHeaderRowStyle`,
      `setFooterRowStyle`, `setWidth`, `setColumnWidthsInPercent` and
-     `fitToWidth`, the row styles and the column widths (Sep 22).
+     `fitToWidth`, the row styles and the column widths (Sep 22);
+   - `TextFrame.drawOn(pdf, pages, pageSize)`, in Go `DrawOnPages`, a frame
+     that flows onto as many pages as its text needs (Sep 22).
 
    Nothing is removed and no signature changes. Swift's `Alignment` has an
    `init(rawValue:)` since its cases are the numbers a `Cell` packs, and Go's
@@ -179,7 +183,7 @@ day.
       of goal 6 in the four ports, the JDK 8 build, the benchmarks recorded
       against 9.0.1 with Example_43's time, the docs, the packages and the
       site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
-      carries the 24 members of goal 6 and the fixes under `## Unreleased`.
+      carries the 25 members of goal 6 and the fixes under `## Unreleased`.
       Done on Sep 22, to be run again at the tag: the API diff, the JDK 8
       build, and the benchmarks, in `benchmarks/results/2026-09-22-*.log` and
       `benchmarks/table/results/2026-09-22-010c7c21.log`. They found `Table`

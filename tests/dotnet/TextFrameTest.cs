@@ -137,5 +137,84 @@ public class TextFrameTest {
         Assert.Equal(2, raw.Split(new string[] {"/S /LBody\n"}, StringSplitOptions.None).Length - 1);
     }
 
+    // 200 paragraphs of a few lines each, the first word of each its number,
+    // p000 to p199, which no other word begins with.
+    private static TextFrame Novel(Font font) {
+        List<String> paragraphs = new List<String>();
+        for (int i = 0; i < 200; i++) {
+            System.Text.StringBuilder text = new System.Text.StringBuilder("p" + i.ToString("000"));
+            for (int j = 0; j < 30 + i % 17; j++) {
+                text.Append(" word").Append(j);
+            }
+            paragraphs.Add(text.ToString());
+        }
+        return new TextFrame(font, paragraphs).SetLocation(72f, 72f).SetWidth(468f);
+    }
+
+    // The page each paragraph starts on, by its number.
+    private static int[] PagesOf(List<Page> pages) {
+        int[] pageOf = new int[200];
+        Array.Fill(pageOf, -1);
+        for (int p = 0; p < pages.Count; p++) {
+            string content = TestSupport.Content(pages[p]);
+            for (int i = 0; i < 200; i++) {
+                if (content.Contains(TestSupport.Hex("p" + i.ToString("000")))) {
+                    Assert.True(pageOf[i] == -1, "paragraph " + i + " starts on two pages");
+                    pageOf[i] = p;
+                }
+            }
+        }
+        return pageOf;
+    }
+
+    [Fact]
+    public void AFrameFlowsOntoAsManyPagesAsTheTextNeeds() {
+        PDF pdf = TestSupport.NewPDF();
+        TextFrame frame = Novel(TestSupport.Helvetica(pdf));
+        List<Page> pages = new List<Page>();
+        frame.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count > 5, pages.Count + " pages");
+        Assert.False(frame.HasMoreText());
+        // Every paragraph is drawn once, in order, and every page has text.
+        int[] pageOf = PagesOf(pages);
+        for (int i = 0; i < 200; i++) {
+            Assert.True(pageOf[i] >= 0, "paragraph " + i + " is not drawn");
+            Assert.True(i == 0 || pageOf[i] >= pageOf[i - 1], "paragraph " + i + " is out of order");
+        }
+        Assert.Equal(pages.Count - 1, pageOf[199]);
+        // The text keeps the margin of its location at the bottom too: no
+        // baseline under 72 points from the bottom of the page.
+        System.Text.RegularExpressions.Regex td = new System.Text.RegularExpressions.Regex("[-0-9.]+ ([-0-9.]+) Td\n");
+        int baselines = 0;
+        foreach (Page page in pages) {
+            foreach (System.Text.RegularExpressions.Match m in td.Matches(TestSupport.Content(page))) {
+                float y = float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+                Assert.True(y >= 72f, "a baseline at y = " + m.Groups[1].Value);
+                baselines++;
+            }
+        }
+        Assert.True(baselines > 100, baselines + " baselines");
+        // The frame has no height of its own, as before.
+        Assert.Equal(0f, frame.GetHeight());
+    }
+
+    [Fact]
+    public void AFrameWithAHeightHasItOnEveryPage() {
+        PDF pdf = TestSupport.NewPDF();
+        List<Page> tall = new List<Page>();
+        Novel(TestSupport.Helvetica(pdf)).DrawOn(pdf, tall, Letter.PORTRAIT);
+        TextFrame frame = Novel(TestSupport.Helvetica(pdf)).SetHeight(300f);
+        List<Page> pages = new List<Page>();
+        float[] xy = frame.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count > tall.Count, pages.Count + " pages, not more than " + tall.Count);
+        Assert.Equal(300f, frame.GetHeight());
+        TestSupport.AssertXY(540f, 372f, xy);
+        // An empty frame needs no page.
+        List<Page> none = new List<Page>();
+        TestSupport.AssertXY(10f, 20f, new TextFrame(new List<Paragraph>()).SetLocation(10f, 20f)
+                .DrawOn(pdf, none, Letter.PORTRAIT));
+        Assert.Empty(none);
+    }
+
 }
 }

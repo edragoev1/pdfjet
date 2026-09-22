@@ -195,6 +195,39 @@ public class TextFrame : IDrawable {
     }
 
     /// <summary>
+    /// Draws the text on as many new pages as it needs, at the location and
+    /// the width of this frame on each: a whole book, page after page. The
+    /// height of the frame is the height of the text on each page; a frame
+    /// without one reaches down to the margin its location leaves at the top,
+    /// so text at 72, 72 keeps 72 points free at the bottom too. The pages are
+    /// created detached and added to the list, so that a footer or a page
+    /// number can be drawn on each before they are added to the PDF. A frame
+    /// with no text left needs no page.
+    /// </summary>
+    /// <param name="pdf">the PDF document.</param>
+    /// <param name="pages">the list that receives the new pages.</param>
+    /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
+    /// <returns>the x and y coordinates of the bottom right corner of this frame on the last page.</returns>
+    public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
+        float[] xy = new float[] {x + w, y};
+        float height = h;
+        try {
+            while (HasMoreText()) {
+                Page page = new Page(pdf, pageSize, false);
+                pages.Add(page);
+                if (height <= 0f) {
+                    h = page.height - 2f * y;
+                }
+                // Each frame draws at least a line, so the text always flows.
+                xy = DrawOn(page);
+            }
+        } finally {
+            h = height;
+        }
+        return xy;
+    }
+
+    /// <summary>
     /// Draws the text on the page: all of it when this frame has no height, or as
     /// much as fits in the height, keeping the rest for the next frame. The first
     /// line of a frame is drawn even when it does not fit, so the text always

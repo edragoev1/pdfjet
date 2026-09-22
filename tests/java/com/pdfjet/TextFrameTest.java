@@ -143,4 +143,82 @@ class TextFrameTest {
         assertEquals(2, raw.split("/S /LBody\n", -1).length - 1, raw);
     }
 
+    // 200 paragraphs of a few lines each, the first word of each its number,
+    // p000 to p199, which no other word begins with.
+    private static TextFrame novel(Font font) {
+        List<String> paragraphs = new ArrayList<String>();
+        for (int i = 0; i < 200; i++) {
+            StringBuilder text = new StringBuilder(String.format("p%03d", i));
+            for (int j = 0; j < 30 + i % 17; j++) {
+                text.append(" word").append(j);
+            }
+            paragraphs.add(text.toString());
+        }
+        return new TextFrame(font, paragraphs).setLocation(72f, 72f).setWidth(468f);
+    }
+
+    // The page each paragraph starts on, by its number.
+    private static int[] pagesOf(List<Page> pages) {
+        int[] pageOf = new int[200];
+        java.util.Arrays.fill(pageOf, -1);
+        for (int p = 0; p < pages.size(); p++) {
+            String content = TestSupport.content(pages.get(p));
+            for (int i = 0; i < 200; i++) {
+                if (content.contains(TestSupport.hex(String.format("p%03d", i)))) {
+                    assertEquals(-1, pageOf[i], "paragraph " + i + " starts on two pages");
+                    pageOf[i] = p;
+                }
+            }
+        }
+        return pageOf;
+    }
+
+    @Test
+    void aFrameFlowsOntoAsManyPagesAsTheTextNeeds() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        TextFrame frame = novel(TestSupport.helvetica(pdf));
+        List<Page> pages = new ArrayList<Page>();
+        frame.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() > 5, pages.size() + " pages");
+        assertTrue(!frame.hasMoreText());
+        // Every paragraph is drawn once, in order, and every page has text.
+        int[] pageOf = pagesOf(pages);
+        for (int i = 0; i < 200; i++) {
+            assertTrue(pageOf[i] >= 0, "paragraph " + i + " is not drawn");
+            assertTrue(i == 0 || pageOf[i] >= pageOf[i - 1], "paragraph " + i + " is out of order");
+        }
+        assertEquals(pages.size() - 1, pageOf[199]);
+        // The text keeps the margin of its location at the bottom too: no
+        // baseline under 72 points from the bottom of the page.
+        java.util.regex.Pattern td = java.util.regex.Pattern.compile("[-0-9.]+ ([-0-9.]+) Td\n");
+        int baselines = 0;
+        for (Page page : pages) {
+            java.util.regex.Matcher m = td.matcher(TestSupport.content(page));
+            while (m.find()) {
+                assertTrue(Float.parseFloat(m.group(1)) >= 72f, "a baseline at y = " + m.group(1));
+                baselines++;
+            }
+        }
+        assertTrue(baselines > 100, baselines + " baselines");
+        // The frame has no height of its own, as before.
+        assertEquals(0f, frame.getHeight(), 0f);
+    }
+
+    @Test
+    void aFrameWithAHeightHasItOnEveryPage() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        List<Page> tall = new ArrayList<Page>();
+        novel(TestSupport.helvetica(pdf)).drawOn(pdf, tall, Letter.PORTRAIT);
+        TextFrame frame = novel(TestSupport.helvetica(pdf)).setHeight(300f);
+        List<Page> pages = new ArrayList<Page>();
+        float[] xy = frame.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() > tall.size(), pages.size() + " pages, not more than " + tall.size());
+        assertEquals(300f, frame.getHeight(), 0f);
+        TestSupport.assertXY(540f, 372f, xy);
+        // An empty frame needs no page.
+        List<Page> none = new ArrayList<Page>();
+        TestSupport.assertXY(10f, 20f, new TextFrame(new ArrayList<Paragraph>()).setLocation(10f, 20f)
+                .drawOn(pdf, none, Letter.PORTRAIT));
+        assertEquals(0, none.size());
+    }
 }

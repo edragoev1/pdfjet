@@ -179,6 +179,39 @@ public class TextFrame : Drawable {
     }
 
     ///
+    /// Draws the text on as many new pages as it needs, at the location and
+    /// the width of this frame on each: a whole book, page after page. The
+    /// height of the frame is the height of the text on each page; a frame
+    /// without one reaches down to the margin its location leaves at the top,
+    /// so text at 72, 72 keeps 72 points free at the bottom too. The pages are
+    /// created detached and added to the list, so that a footer or a page
+    /// number can be drawn on each before they are added to the PDF. A frame
+    /// with no text left needs no page.
+    ///
+    /// - Parameter pdf: the PDF document.
+    /// - Parameter pages: the list that receives the new pages.
+    /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
+    /// - Returns: the x and y coordinates of the bottom right corner of this frame
+    ///   on the last page.
+    ///
+    @discardableResult
+    public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float] {
+        var xy: [Float] = [x + w, y]
+        let height = h
+        defer { h = height }
+        while hasMoreText() {
+            let page = Page(pdf, pageSize, false)
+            pages.append(page)
+            if height <= 0 {
+                h = page.height - 2 * y
+            }
+            // Each frame draws at least a line, so the text always flows.
+            xy = drawOn(page)
+        }
+        return xy
+    }
+
+    ///
     /// Draws the text on the page: all of it when this frame has no height, or as
     /// much as fits in the height, keeping the rest for the next frame. The first
     /// line of a frame is drawn even when it does not fit, so the text always
