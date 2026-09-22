@@ -657,14 +657,11 @@ this is started before Oct 21.
   fonts; Poppler extracts them whole.
 - Readers disagree on `EncryptMetadata false`, so PDFjet always encrypts the
   metadata and says so.
-- A character above the BMP, from U+10000 up, is not drawn: the character map
-  of a font is read into 65,536 entries. 144 of the fonts PDFjet ships have
-  glyphs up there, the bold italic alphabet of IBM Plex Math and the CJK
-  ideographs of extension B among them.
-- The characters a font draws are those of the range its OS/2 table gives,
-  `usFirstCharIndex` to `usLastCharIndex`; a font whose range is narrower
-  than its character map draws a space for the rest. None of the 252 fonts
-  PDFjet ships is narrower.
+- A font draws only the characters up to U+FFFF that are inside the range
+  its OS/2 table gives. Any other character counts as missing, like one the
+  font lacks. This costs the glyphs above U+FFFF that 144 of the shipped fonts
+  have, such as IBM Plex Math's bold italic letters and the CJK Extension B
+  ideographs; no shipped font has an OS/2 range narrower than its glyphs.
 - `/ItalicAngle 0` is written for every embedded font, though the loader
   reads the angle of the `post` table. A `.stream` file has no field for it,
   and a `.otf` and the `.stream` of it share one font descriptor, so writing
