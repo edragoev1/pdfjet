@@ -532,15 +532,12 @@ class TableTest {
     }
 
     @Test
-    void aPageBreakCutsTheWrappedTextOfARow() throws Exception {
-        // Today's behavior, which "keeping a row with the next one" in TODO.md
-        // is to change: the lines a cell's text wraps into are rows of their
-        // own, and a page break keeps together only the rows of a span, so it
-        // can fall between the lines of one cell. The first lines are drawn at
-        // the bottom of a page, with the other cells of the row, and the rest
-        // at the top of the next page, beside empty cells.
-        boolean cut = false;
-        for (int at = 30; at < 50 && !cut; at++) {
+    void aPageBreakKeepsTheWrappedLinesOfARowTogether() throws Exception {
+        // The lines a cell's text wraps into are rows of their own, which a
+        // page break moves to the next page together, with the other cells of
+        // the row. The row is put at each place near the end of the first page.
+        boolean moved = false;
+        for (int at = 30; at < 50; at++) {
             PDF pdf = TestSupport.newPDF();
             Font font = TestSupport.helvetica(pdf);
             List<List<Cell>> data = new ArrayList<List<Cell>>();
@@ -570,13 +567,41 @@ class TableTest {
                     beside = i;
                 }
             }
-            assertTrue(first >= 0 && last >= 0, "the wrapped text was not drawn");
-            if (first != last) {
-                cut = true;
-                assertEquals(first + 1, last, "the text goes on past the next page");
-                assertEquals(first, beside, "the other cell of the row is not with its first line");
-            }
+            assertTrue(first >= 0, "the wrapped text was not drawn");
+            assertEquals(first, last, "row " + at + ": the page break cut the wrapped text");
+            assertEquals(first, beside, "row " + at + ": the other cell of the row is not with its lines");
+            moved |= (first == 1 && TestSupport.content(pages.get(0)).contains(TestSupport.hex("r" + (at - 1))));
         }
-        assertTrue(cut, "no page break fell inside the wrapped text of the row");
+        assertTrue(moved, "no row was moved to the next page whole");
+    }
+
+    @Test
+    void theWrappedLinesOfARowThatFitNoPageAreCutWhereThePageEnds() throws Exception {
+        // Moved to the next page, lines taller than a page would go past its
+        // end there too, so they are drawn from where the row starts and go
+        // on over the next pages.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            text.append("word").append(i).append(' ');
+        }
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        for (String[] texts : new String[][] {{"header", "h"}, {"r1", "x"}, {text.toString().trim(), "beside"}}) {
+            List<Cell> row = new ArrayList<Cell>();
+            for (String t : texts) {
+                row.add(new Cell(font, t).setWidth(60f));
+            }
+            data.add(row);
+        }
+        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertTrue(pages.size() >= 3, pages.size() + " pages");
+        assertEquals(-1, table.getRowsRendered());
+        String firstPage = TestSupport.content(pages.get(0));
+        assertTrue(firstPage.contains(TestSupport.hex("r1")) && firstPage.contains(TestSupport.hex("word0")),
+                "the row does not start on the first page, after the row above it");
+        assertTrue(TestSupport.content(pages.get(pages.size() - 1)).contains(TestSupport.hex("word199")));
     }
 }

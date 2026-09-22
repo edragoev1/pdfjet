@@ -557,20 +557,38 @@ public class Table : IDrawable {
         int index = (rendered == -1) ? tableData.Count : rendered;
         int first = index;
         float[] heights = GetRowHeights();
+        // Where the rows start on the next pages, under the header rows.
+        float top = y1;
+        for (int r = 0; r < numOfHeaderRows && r < heights.Length; r++) {
+            top += heights[r];
+        }
+        // The rows before this one are cut where the page ends, as rows of
+        // their own.
+        int cutUntil = -1;
         while (index < tableData.Count) {
-            // The rows a cell spans are drawn together, so that a page break
-            // never cuts one in two.
-            int end = RowGroupEnd(index);
+            // The rows a cell spans and the lines a row wraps into are drawn
+            // together, so that a page break never cuts one in two.
+            bool keepLines = (index >= cutUntil);
+            int end = RowGroupEnd(index, keepLines);
             float groupHeight = 0f;
             for (int r = index; r < end; r++) {
                 groupHeight += heights[r];
             }
-            // A row that does not fit goes on the next page, unless it is the
-            // first row of this one: a row taller than the page fits no page,
-            // and leaving it for the next page would ask for pages forever.
-            if (page != null && (y + groupHeight) > (page.height - bottomMargin) && index > first) {
-                rendered = index;
-                return new float[] {x, y};
+            if (page != null && (y + groupHeight) > (page.height - bottomMargin)) {
+                if (keepLines && groupHeight > (page.height - bottomMargin) - top) {
+                    // Lines that would not fit the next page either are drawn
+                    // from here, and cut where the page ends.
+                    cutUntil = end;
+                    continue;
+                }
+                // A row that does not fit goes on the next page, unless it is
+                // the first row of this one: a row taller than the page fits
+                // no page, and leaving it for the next page would ask for
+                // pages forever.
+                if (index > first) {
+                    rendered = index;
+                    return new float[] {x, y};
+                }
             }
             for (int r = index; r < end; r++) {
                 if (page != null) {
@@ -692,15 +710,19 @@ public class Table : IDrawable {
         return heights;
     }
 
-    // The row after the rows that a span holds together, which a page break
-    // keeps on one page.
-    private int RowGroupEnd(int index) {
+    // The row after the rows that a span holds together, and with keepLines
+    // the lines the last of them wraps into, which a page break keeps on one
+    // page.
+    private int RowGroupEnd(int index, bool keepLines) {
         int end = index + 1;
         for (int r = index; r < end && r < tableData.Count; r++) {
             foreach (Cell cell in tableData[r]) {
                 if (r + cell.rowsSpanned > end) {
                     end = r + cell.rowsSpanned;
                 }
+            }
+            if (keepLines && r + 1 == end && end < tableData.Count && IsContinuation(end)) {
+                end++;
             }
         }
         return Math.Min(end, tableData.Count);

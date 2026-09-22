@@ -471,15 +471,12 @@ import Testing
         #expect(abs(ys[3] - (page.height - xy[1])) < 0.01, "the rule under the table")
     }
 
-    @Test func aPageBreakCutsTheWrappedTextOfARow() {
-        // Today's behavior, which "keeping a row with the next one" in TODO.md
-        // is to change: the lines a cell's text wraps into are rows of their
-        // own, and a page break keeps together only the rows of a span, so it
-        // can fall between the lines of one cell. The first lines are drawn at
-        // the bottom of a page, with the other cells of the row, and the rest
-        // at the top of the next page, beside empty cells.
-        var cut = false
-        for at in 30..<50 where !cut {
+    @Test func aPageBreakKeepsTheWrappedLinesOfARowTogether() {
+        // The lines a cell's text wraps into are rows of their own, which a
+        // page break moves to the next page together, with the other cells of
+        // the row. The row is put at each place near the end of the first page.
+        var moved = false
+        for at in 30..<50 {
             let pdf = TestSupport.newPDF()
             let font = TestSupport.helvetica(pdf)
             var data = [[Cell]]()
@@ -511,13 +508,40 @@ import Testing
                     beside = i
                 }
             }
-            #expect(first >= 0 && last >= 0, "the wrapped text was not drawn")
-            if first != last {
-                cut = true
-                #expect(last == first + 1, "the text goes on past the next page")
-                #expect(beside == first, "the other cell of the row is not with its first line")
+            #expect(first >= 0, "the wrapped text was not drawn")
+            #expect(first == last, "row \(at): the page break cut the wrapped text")
+            #expect(first == beside, "row \(at): the other cell of the row is not with its lines")
+            if first == 1 && TestSupport.content(pages[0]).contains(TestSupport.hex("r\(at - 1)")) {
+                moved = true
             }
         }
-        #expect(cut, "no page break fell inside the wrapped text of the row")
+        #expect(moved, "no row was moved to the next page whole")
+    }
+
+    @Test func theWrappedLinesOfARowThatFitNoPageAreCutWhereThePageEnds() {
+        // Moved to the next page, lines taller than a page would go past its
+        // end there too, so they are drawn from where the row starts and go
+        // on over the next pages.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let text = (0..<200).map { "word\($0)" }.joined(separator: " ")
+        let data = [["header", "h"], ["r1", "x"], [text, "beside"]].map { texts in
+            texts.map { t in
+                let cell = Cell(font, t)
+                cell.setWidth(60)
+                return cell
+            }
+        }
+        let table = Table().setTableData(data, 1).setLocation(50, 50)
+        table.setBottomMargin(20)
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(pages.count >= 3, "\(pages.count) pages")
+        guard pages.count >= 3 else { return }
+        #expect(table.getRowsRendered() == -1)
+        let firstPage = TestSupport.content(pages[0])
+        #expect(firstPage.contains(TestSupport.hex("r1")) && firstPage.contains(TestSupport.hex("word0")),
+                "the row does not start on the first page, after the row above it")
+        #expect(TestSupport.content(pages[pages.count - 1]).contains(TestSupport.hex("word199")))
     }
 }

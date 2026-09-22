@@ -179,6 +179,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A page break of a `Table` no longer falls between the lines of a cell
+  whose text wraps, in all four ports. The first lines ended one page, with
+  the other cells of the row, and the rest started the next, beside empty
+  cells. The lines of a row now go to the next page together, as the rows of
+  a span do. Lines that are taller than a page would not fit the next page
+  either, so they are still cut where the page ends, from where the row
+  starts.
 - The font descriptor of an embedded font has the italic angle of its `post`
   table, in all four ports: -11.31 for IBM Plex Sans Italic, -14.04 for IBM
   Plex Serif Italic. It was 0 for every font. A font with an italic angle

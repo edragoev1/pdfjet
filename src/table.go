@@ -550,20 +550,38 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	}
 	first := index
 	heights := table.getRowHeights()
+	// Where the rows start on the next pages, under the header rows.
+	top := table.y1
+	for r := 0; r < table.numOfHeaderRows && r < len(heights); r++ {
+		top += heights[r]
+	}
+	// The rows before this one are cut where the page ends, as rows of their
+	// own.
+	cutUntil := -1
 	for index < len(table.tableData) {
-		// The rows a cell spans are drawn together, so that a page break
-		// never cuts one in two.
-		end := table.rowGroupEnd(index)
+		// The rows a cell spans and the lines a row wraps into are drawn
+		// together, so that a page break never cuts one in two.
+		keepLines := index >= cutUntil
+		end := table.rowGroupEnd(index, keepLines)
 		groupHeight := float32(0.0)
 		for r := index; r < end; r++ {
 			groupHeight += heights[r]
 		}
-		// A row that does not fit goes on the next page, unless it is the
-		// first row of this one: a row taller than the page fits no page,
-		// and leaving it for the next page would ask for pages forever.
-		if page != nil && (y+groupHeight) > (page.height-table.bottomMargin) && index > first {
-			table.rendered = index
-			return [2]float32{x, y}
+		if page != nil && (y+groupHeight) > (page.height-table.bottomMargin) {
+			if keepLines && groupHeight > (page.height-table.bottomMargin)-top {
+				// Lines that would not fit the next page either are drawn
+				// from here, and cut where the page ends.
+				cutUntil = end
+				continue
+			}
+			// A row that does not fit goes on the next page, unless it is
+			// the first row of this one: a row taller than the page fits no
+			// page, and leaving it for the next page would ask for pages
+			// forever.
+			if index > first {
+				table.rendered = index
+				return [2]float32{x, y}
+			}
 		}
 		for r := index; r < end; r++ {
 			if page != nil {
@@ -691,15 +709,19 @@ func (table *Table) getRowHeights() []float32 {
 	return heights
 }
 
-// rowGroupEnd returns the row after the rows that a span holds together, which
-// a page break keeps on one page.
-func (table *Table) rowGroupEnd(index int) int {
+// rowGroupEnd returns the row after the rows that a span holds together, and
+// with keepLines the lines the last of them wraps into, which a page break
+// keeps on one page.
+func (table *Table) rowGroupEnd(index int, keepLines bool) int {
 	end := index + 1
 	for r := index; r < end && r < len(table.tableData); r++ {
 		for _, cell := range table.tableData[r] {
 			if r+cell.rowsSpanned > end {
 				end = r + cell.rowsSpanned
 			}
+		}
+		if keepLines && r+1 == end && end < len(table.tableData) && table.isContinuation(end) {
+			end++
 		}
 	}
 	if end > len(table.tableData) {

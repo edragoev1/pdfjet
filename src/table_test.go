@@ -603,15 +603,12 @@ func TestTableACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan(t *testi
 	}
 }
 
-func TestTableAPageBreakCutsTheWrappedTextOfARow(t *testing.T) {
-	// Today's behavior, which "keeping a row with the next one" in TODO.md is
-	// to change: the lines a cell's text wraps into are rows of their own, and
-	// a page break keeps together only the rows of a span, so it can fall
-	// between the lines of one cell. The first lines are drawn at the bottom
-	// of a page, with the other cells of the row, and the rest at the top of
-	// the next page, beside empty cells.
-	cut := false
-	for at := 30; at < 50 && !cut; at++ {
+func TestTableAPageBreakKeepsTheWrappedLinesOfARowTogether(t *testing.T) {
+	// The lines a cell's text wraps into are rows of their own, which a page
+	// break moves to the next page together, with the other cells of the row.
+	// The row is put at each place near the end of the first page.
+	moved := false
+	for at := 30; at < 50; at++ {
 		doc := testNewDoc()
 		font := testHelvetica(doc.pdf)
 		data := make([][]*Cell, 0, 60)
@@ -647,20 +644,58 @@ func TestTableAPageBreakCutsTheWrappedTextOfARow(t *testing.T) {
 				beside = i
 			}
 		}
-		if first < 0 || last < 0 {
+		if first < 0 {
 			t.Fatalf("row %d: the wrapped text was not drawn", at)
 		}
-		if first != last {
-			cut = true
-			if last != first+1 {
-				t.Errorf("row %d: the text goes on past the next page", at)
-			}
-			if beside != first {
-				t.Errorf("row %d: the other cell of the row is not with its first line", at)
-			}
+		if last != first {
+			t.Errorf("row %d: the page break cut the wrapped text", at)
+		}
+		if beside != first {
+			t.Errorf("row %d: the other cell of the row is not with its lines", at)
+		}
+		if first == 1 && strings.Contains(testContent(pages[0]), testHex(fmt.Sprintf("r%d", at-1))) {
+			moved = true
 		}
 	}
-	if !cut {
-		t.Error("no page break fell inside the wrapped text of the row")
+	if !moved {
+		t.Error("no row was moved to the next page whole")
+	}
+}
+
+func TestTableTheWrappedLinesOfARowThatFitNoPageAreCutWhereThePageEnds(t *testing.T) {
+	// Moved to the next page, lines taller than a page would go past its end
+	// there too, so they are drawn from where the row starts and go on over
+	// the next pages.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	words := make([]string, 200)
+	for i := range words {
+		words[i] = fmt.Sprintf("word%d", i)
+	}
+	data := make([][]*Cell, 0, 3)
+	for _, texts := range [][]string{{"header", "h"}, {"r1", "x"}, {strings.Join(words, " "), "beside"}} {
+		row := make([]*Cell, 0, 2)
+		for _, text := range texts {
+			row = append(row, NewCell(font, text).SetWidth(60))
+		}
+		data = append(data, row)
+	}
+	table := NewTable().SetTableData(data, 1)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	pages := make([]*Page, 0)
+	table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+	if len(pages) < 3 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	if n := table.GetRowsRendered(); n != -1 {
+		t.Errorf("%d rows rendered", n)
+	}
+	firstPage := testContent(pages[0])
+	if !strings.Contains(firstPage, testHex("r1")) || !strings.Contains(firstPage, testHex("word0")) {
+		t.Error("the row does not start on the first page, after the row above it")
+	}
+	if !strings.Contains(testContent(pages[len(pages)-1]), testHex("word199")) {
+		t.Error("the last line is not on the last page")
 	}
 }

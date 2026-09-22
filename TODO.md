@@ -636,11 +636,9 @@ this is started before Oct 21.
       header rows, the body and a total row, rather than coloring every cell.
 - ⬜ Repeating footer or total rows on every page ("carried forward"
       subtotals), and keeping a row with the next one across a page break.
-      A page break keeps only the rows of a span together, so it also falls
-      between the lines of a cell whose text wraps, leaving the rest of them
-      at the top of the next page beside empty cells;
-      `TestTableAPageBreakCutsTheWrappedTextOfARow` is the test that records
-      today's behavior in the four ports.
+      A page break keeps the rows of a span and the wrapped lines of a row
+      together (Sep 22), in `rowGroupEnd`, which a mark on a row that keeps it
+      with the next one would add to.
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
 - ⬜ The transparent color of a grayscale or truecolor PNG: a `tRNS` chunk on

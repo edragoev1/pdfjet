@@ -500,15 +500,12 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
-    public void APageBreakCutsTheWrappedTextOfARow() {
-        // Today's behavior, which "keeping a row with the next one" in TODO.md
-        // is to change: the lines a cell's text wraps into are rows of their
-        // own, and a page break keeps together only the rows of a span, so it
-        // can fall between the lines of one cell. The first lines are drawn at
-        // the bottom of a page, with the other cells of the row, and the rest
-        // at the top of the next page, beside empty cells.
-        bool cut = false;
-        for (int at = 30; at < 50 && !cut; at++) {
+    public void APageBreakKeepsTheWrappedLinesOfARowTogether() {
+        // The lines a cell's text wraps into are rows of their own, which a
+        // page break moves to the next page together, with the other cells of
+        // the row. The row is put at each place near the end of the first page.
+        bool moved = false;
+        for (int at = 30; at < 50; at++) {
             PDF pdf = TestSupport.NewPDF();
             Font font = TestSupport.Helvetica(pdf);
             List<List<Cell>> data = new List<List<Cell>>();
@@ -541,14 +538,46 @@ public sealed class TableTest : IDisposable {
                     beside = i;
                 }
             }
-            Assert.True(first >= 0 && last >= 0, "the wrapped text was not drawn");
-            if (first != last) {
-                cut = true;
-                Assert.True(last == first + 1, "the text goes on past the next page");
-                Assert.True(beside == first, "the other cell of the row is not with its first line");
-            }
+            Assert.True(first >= 0, "the wrapped text was not drawn");
+            Assert.True(first == last, "row " + at + ": the page break cut the wrapped text");
+            Assert.True(first == beside, "row " + at + ": the other cell of the row is not with its lines");
+            moved |= (first == 1 && TestSupport.Content(pages[0]).Contains(TestSupport.Hex("r" + (at - 1))));
         }
-        Assert.True(cut, "no page break fell inside the wrapped text of the row");
+        Assert.True(moved, "no row was moved to the next page whole");
+    }
+
+    [Fact]
+    public void TheWrappedLinesOfARowThatFitNoPageAreCutWhereThePageEnds() {
+        // Moved to the next page, lines taller than a page would go past its
+        // end there too, so they are drawn from where the row starts and go
+        // on over the next pages.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            text.Append("word").Append(i).Append(' ');
+        }
+        List<List<Cell>> data = new List<List<Cell>>();
+        foreach (string[] texts in new string[][] {
+                new[] {"header", "h"}, new[] {"r1", "x"}, new[] {text.ToString().Trim(), "beside"}}) {
+            List<Cell> row = new List<Cell>();
+            foreach (string t in texts) {
+                Cell cell = new Cell(font, t);
+                cell.SetWidth(60f);
+                row.Add(cell);
+            }
+            data.Add(row);
+        }
+        Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f);
+        table.SetBottomMargin(20f);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.True(pages.Count >= 3, pages.Count + " pages");
+        Assert.Equal(-1, table.GetRowsRendered());
+        string firstPage = TestSupport.Content(pages[0]);
+        Assert.True(firstPage.Contains(TestSupport.Hex("r1")) && firstPage.Contains(TestSupport.Hex("word0")),
+                "the row does not start on the first page, after the row above it");
+        Assert.Contains(TestSupport.Hex("word199"), TestSupport.Content(pages[pages.Count - 1]));
     }
 }
 }

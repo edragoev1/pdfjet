@@ -605,20 +605,38 @@ public class Table : Drawable {
         var index = (rendered == -1) ? tableData.count : rendered
         let first = index
         let heights = getRowHeights()
+        // Where the rows start on the next pages, under the header rows.
+        var top = y1
+        for r in 0..<min(numOfHeaderRows, heights.count) {
+            top += heights[r]
+        }
+        // The rows before this one are cut where the page ends, as rows of
+        // their own.
+        var cutUntil = -1
         while index < tableData.count {
-            // The rows a cell spans are drawn together, so that a page break
-            // never cuts one in two.
-            let end = rowGroupEnd(index)
+            // The rows a cell spans and the lines a row wraps into are drawn
+            // together, so that a page break never cuts one in two.
+            let keepLines = (index >= cutUntil)
+            let end = rowGroupEnd(index, keepLines)
             var groupHeight: Float = 0.0
             for r in index..<end {
                 groupHeight += heights[r]
             }
-            // A row that does not fit goes on the next page, unless it is the
-            // first row of this one: a row taller than the page fits no page,
-            // and leaving it for the next page would ask for pages forever.
-            if page != nil && (y + groupHeight) > (page!.height - bottomMargin) && index > first {
-                rendered = index
-                return [x, y]
+            if let page = page, (y + groupHeight) > (page.height - bottomMargin) {
+                if keepLines && groupHeight > (page.height - bottomMargin) - top {
+                    // Lines that would not fit the next page either are drawn
+                    // from here, and cut where the page ends.
+                    cutUntil = end
+                    continue
+                }
+                // A row that does not fit goes on the next page, unless it is
+                // the first row of this one: a row taller than the page fits
+                // no page, and leaving it for the next page would ask for
+                // pages forever.
+                if index > first {
+                    rendered = index
+                    return [x, y]
+                }
             }
             for r in index..<end {
                 if let page = page {
@@ -742,14 +760,18 @@ public class Table : Drawable {
         return heights
     }
 
-    // The row after the rows that a span holds together, which a page break
-    // keeps on one page.
-    private func rowGroupEnd(_ index: Int) -> Int {
+    // The row after the rows that a span holds together, and with keepLines
+    // the lines the last of them wraps into, which a page break keeps on one
+    // page.
+    private func rowGroupEnd(_ index: Int, _ keepLines: Bool) -> Int {
         var end = index + 1
         var r = index
         while r < end && r < tableData.count {
             for cell in tableData[r] where r + cell.rowsSpanned > end {
                 end = r + cell.rowsSpanned
+            }
+            if keepLines && r + 1 == end && end < tableData.count && isContinuation(end) {
+                end += 1
             }
             r += 1
         }
