@@ -48,6 +48,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   the 24 JP, SC and TC streams have it.
 - `CalendarMonth.setFirstDayOfWeek` starts the weeks on another day than
   Sunday, with the date library of each port.
+- Three checks of the output against independent references, which the Build
+  workflow runs. `.github/scripts/check-example-text.py` compares the text
+  every example draws, recorded from the Go port built with the `texttrace`
+  tag, with what MuPDF and pdftotext extract from the PDFs of each port: no
+  .notdef glyph, no character in another font than it was drawn in, and none
+  off the page. `tests/references/images` embeds 884 PNG, JPEG and BMP files
+  -- Pillow's test images, the BMP Suite, PngSuite, the repository's own and
+  made ones -- and compares MuPDF's decoding of them with the pixels Pillow
+  decodes. `tests/references/fonts/check-fonts.py` checks the 252 fonts PDFjet
+  ships, their `.stream` files, six other fonts and the 14 core fonts against
+  fontTools and Adobe's AFM files, with their kerning pairs.
 - `booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction
   and all 51 examples, grouped by topic, each with what it shows and its
   complete source code, as a PDF/UA document with a title page, a linked
@@ -234,7 +245,8 @@ This is the first entry in this file; earlier releases were not tracked here.
     of PDFjet gave it a space's. It is a space now, as U+0080 to U+009F are.
 - The reader, `PDF.read`, against the test PDFs of pdf.js and veraPDF, in all
   four ports. `tests/corpus/check-corpus.py` reads, merges and splits each of
-  their 3,888 files and compares the pages with MuPDF's; it found:
+  their 3,888 files, and the 431 that pdf.js links to, and compares the pages
+  with MuPDF's; it found:
   - A stream whose `/Length` is missing, too short or too long was cut to it,
     and a merge wrote the page's content cut: the text of a page was gone.
     The stream now ends at the end of line before its `endstream` when the
@@ -257,6 +269,24 @@ This is the first entry in this file; earlier releases were not tracked here.
     memory; a PDF cut from a larger document keeps the numbers of its objects,
     like the 41 objects numbered up to 156,341 in 107 KB of one pdf.js tests.
     Numbers up to 262,144 are read in a file of any size now.
+  - The pages were read from the first `/Pages` node with no `/Parent`, which
+    can be a tree left from an earlier version of the file, as the one page
+    in front of the 350 of pdf.js's issue19281, or one in front of the pages
+    of an XFA form. The pages are the tree that the catalog the trailer's
+    `/Root` names has, as MuPDF and pdf.js read them.
+  - A cross-reference table with an entry that marks object 0 in use was
+    refused. The entry is skipped, as MuPDF skips it.
+  - The `/Length` of a stream was the first `/Length` of its object, which
+    can be a value, as in `/Height/Length`. It is the entry of the stream's
+    dictionary now.
+  - A reference whose number has leading zeros, as `0000000003 0 R`, was not
+    read as a reference, so a merged page lost its `/Parent` and its
+    contents.
+  - Each page looked up what it inherits, like its `/CropBox` and `/Rotate`,
+    through its parent, and copied the parent's `/Kids` to do so: a page tree
+    node of 10,000 pages, as one of veraPDF's tests has, took from 35 seconds
+    to three minutes to read and merge. What a node has or inherits is found
+    once for each read or merge now, and the same file takes 0.09 seconds.
 - A JPEG is drawn at the size the density of its JFIF segment asks for and a
   BMP at the size the pixels per metre of its header ask for, in all four
   ports, as a PNG is drawn at the size of its `pHYs` chunk below. The three
@@ -549,6 +579,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the palette is black, as browsers draw it, where it failed, and the last
   row can end without its padding. Found by fuzzing the Go BMP decoder and
   comparing it with Pillow.
+- The alpha of a 16 or 32-bit BMP with `BI_BITFIELDS` and a V3, V4 or V5
+  header, which has an alpha mask after the red, green and blue ones, was not
+  read, and the image was drawn opaque, in all four ports. Its alpha is the
+  `/SMask` of the image now, as that of a PNG is. An image whose alpha is 0 in
+  every pixel is drawn opaque, as Chrome and Firefox draw it, since writers
+  that do not know of the alpha leave it at 0; a 32-bit `BI_RGB` BMP stays
+  opaque, and `BI_ALPHABITFIELDS` stays refused, as Pillow refuses it. The
+  12-byte header of OS/2 1.x is refused with "Unsupported BMP header of 12
+  bytes." rather than with the message of a bit depth, which was read from
+  where a larger header has it. Found by the image check against Pillow.
 - A PNG palette image with an index past its palette colors failed with an
   index error; the pixel is black, as libpng and browsers draw it. A palette
   of no colors or of more than 256 fails with "Incorrect palette length."
@@ -562,8 +602,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   read its metrics and marks past their end, or trap in Swift. The units per
   em, the character range, the tables, the mark classes and the font name,
   which is written as a PDF name, are checked, and the font file is embedded
-  at the length the stream gives. Found by fuzzing the Go reader; the fuzz
-  targets are in `src/fontstream_fuzz_test.go`.
+  at the length the stream gives, and in Go embedding the font file no longer
+  loops on a read error. Found by fuzzing the Go reader; the fuzz targets are
+  in `src/fontstream_fuzz_test.go`.
 - A glyph past the advance widths of a font, which OpenType allows when the
   last glyphs share a width, had the width of the first glyph, in measured
   text and as the `/DW` of the PDF font; it has the width of the last one
@@ -705,6 +746,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_32 and Example_34 draw within the page, in all four ports.
+  Example_32 drew the source of Example_02 at 10 points on portrait pages,
+  and its longest lines ran to x = 858 on a page 612 points wide; it draws it
+  at 8 points on landscape pages now. Example_34's table ended at x = 625.45,
+  which cut off the Internet Users column; it starts at x = 30 now, with the
+  column widths as they were.
 - Example_17 draws a line chart, which no example did: a `Chart` with a
   `Series` for each line, the points added in the order they are joined and
   `setDrawPath` drawing the line through them. The two lines are the electric
