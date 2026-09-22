@@ -24,9 +24,9 @@ namespace PDFjet.NET {
 /// the size of each page.
 ///
 /// The reader refuses a PDF it cannot read with an Exception, an
-/// ArgumentException or an InvalidOperationException, of those very types, or
-/// with an IOException, like the InvalidDataException of a stream that cannot
-/// be decoded. Any other exception -- an index out of range, a null reference,
+/// ArgumentException or an InvalidOperationException, of those very types,
+/// with an IOException, or with the InvalidDataException of a stream that
+/// cannot be decoded, which is not an IOException but a SystemException. Any other exception -- an index out of range, a null reference,
 /// an invalid cast, an overflow, a FormatException of a number it parsed
 /// without checking -- is a programming error of the port, and is reported as
 /// a crash, as a Go runtime error is.
@@ -46,7 +46,8 @@ public static class Corpus {
         return type == typeof(Exception)
                 || type == typeof(ArgumentException)
                 || type == typeof(InvalidOperationException)
-                || e is IOException;
+                || e is IOException
+                || e is InvalidDataException;
     }
 
     // Describes the exception of a crash, with the place it was thrown.

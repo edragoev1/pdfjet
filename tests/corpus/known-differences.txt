@@ -5,3 +5,28 @@
 # The BrotliDecode filter, proposed for PDF and not in ISO 32000, which the
 # reader does not decode: its object stream is refused as malformed.
 pdfjs/test/pdfs/Brotli-Prototype-FileA.pdf: BrotliDecode is not supported
+
+# A page that is a dictionary in the /Kids of its node rather than an object
+# of its own, which ISO 32000 does not allow (the kids are indirect
+# references): MuPDF and pdf.js read it, and the reader finds no pages, as a
+# merged page needs an object number.
+pdfjs-links/issue9540.pdf: a page that is a direct dictionary in /Kids
+
+# The file is damaged, and MuPDF repairs it: its startxref is 16 kB short of
+# the last cross-reference section, and the newest version of page 4, object
+# 8, lost bytes in the middle of its /MediaBox ("[ 0 Resources 26 0 R ...").
+# MuPDF's repair drops it and draws the version before it; the reader reads
+# the newest one, and page 4 of the merge has no text.
+pdfjs-links/issue13783.pdf: a damaged page that MuPDF repairs
+
+# MuPDF extracts a different text from page 2 of the original than from the
+# same page anywhere else: its own copy of the page, made with insert_pdf,
+# has the text of the merged page. Its image /Image21 is damaged, and MuPDF
+# repairs the original when it draws the page.
+pdfjs-links/issue11678.pdf: MuPDF reads page 2 differently in the original
+
+# MuPDF extracts "C1", the value of the combo box on page 2, only after it
+# has drawn page 1 of the same document: it does in the original and in the
+# merge, which pass, and does not in the split last page, whose text is that
+# of the original's page 2 when it is drawn first.
+pdfjs-links/issue11871.pdf: MuPDF's text of page 2 depends on drawing page 1 first
