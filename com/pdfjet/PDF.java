@@ -48,6 +48,10 @@ final public class PDF {
     private PageMode pageMode = null;
     private String language = "en-US";
     private String uuid = newDocumentID();
+    // The files the document carries, in the order they were added.
+    private final List<EmbeddedFile> associatedFiles = new ArrayList<EmbeddedFile>();
+    // The descriptions that a standard of its own asks the metadata to carry.
+    private final List<String> metadata = new ArrayList<String>();
     private final List<String> importedFonts = new ArrayList<String>();
     private final List<String> importedXObjects = new ArrayList<String>();
     private final List<String> importedExtGStates = new ArrayList<String>();
@@ -365,6 +369,11 @@ final public class PDF {
             sb.append("</xapMM:InstanceID>\n");
 
             sb.append("</rdf:Description>\n");
+
+            for (String description : metadata) {
+                sb.append(description);
+                sb.append("\n");
+            }
         }
 
         if (!fontMetadataObject) {
@@ -816,9 +825,7 @@ final public class PDF {
         appendInfoText("/Keywords", keywords);
         appendInfoText("/Creator", creator);
         appendInfoText("/Producer", producer);
-        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
-        String date = "D:" + createDate.replace("-", "").replace("T", "").replace(":", "");
-        appendInfoString("/CreationDate", date.getBytes(StandardCharsets.US_ASCII));
+        appendInfoString("/CreationDate", getDate().getBytes(StandardCharsets.US_ASCII));
         append(Token.END_DICTIONARY);
         endObj();
         return getObjNumber();
@@ -826,6 +833,12 @@ final public class PDF {
 
     // Appends an entry of the information dictionary with the text, unless
     // the text is null.
+    // The moment the document was made, as a date string of PDF: the XMP
+    // creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+    String getDate() {
+        return "D:" + createDate.replace("-", "").replace("T", "").replace(":", "");
+    }
+
     private void appendInfoText(String key, String text) throws Exception {
         if (text != null) {
             append(key);
@@ -908,6 +921,8 @@ final public class PDF {
         append(pagesObjNumber);
         append(Token.OBJ_REF);
 
+        addAssociatedFiles();
+
         if (compliance != Compliance.PDF_1_7) {
             append("/Metadata ");
             append(metadataObjNumber);
@@ -927,6 +942,43 @@ final public class PDF {
         append(Token.END_DICTIONARY);
         endObj();
         return getObjNumber();
+    }
+
+    // The files the document carries: /AF says which they are and how each of
+    // them relates to the document, and the name tree of /EmbeddedFiles is
+    // where a reader of the document looks for a file by its name.
+    private void addAssociatedFiles() throws Exception {
+        if (associatedFiles.isEmpty()) {
+            return;
+        }
+        append("/AF [");
+        for (int i = 0; i < associatedFiles.size(); i++) {
+            if (i > 0) {
+                append(Token.SPACE);
+            }
+            append(associatedFiles.get(i).objNumber);
+            append(" 0 R");
+        }
+        append("]\n");
+
+        // The names of a name tree are in order, which here means the order of
+        // the characters of the names. The tree is one node, as a document
+        // carries few files.
+        List<EmbeddedFile> sorted = new ArrayList<EmbeddedFile>(associatedFiles);
+        Collections.sort(sorted, new Comparator<EmbeddedFile>() {
+            @Override
+            public int compare(EmbeddedFile file1, EmbeddedFile file2) {
+                return file1.fileName.compareTo(file2.fileName);
+            }
+        });
+        append("/Names <</EmbeddedFiles <</Names [");
+        for (EmbeddedFile file : sorted) {
+            appendTextString(file.fileName);
+            append(Token.SPACE);
+            append(file.objNumber);
+            append(" 0 R");
+        }
+        append("]>>>>\n");
     }
 
     private void addPageBox(String boxName, Page page, float[] rect) throws Exception {
@@ -1871,6 +1923,57 @@ final public class PDF {
         append("%%EOF\n");
 
         os.close();
+    }
+
+    /**
+     * Adds a file that the document carries with it: a reader shows it beside
+     * the document, and a program that reads the document finds it by its
+     * name. This is how a document of PDF/A-3 carries the data behind what it
+     * shows, such as the XML of an invoice.
+     *
+     * <p>The file names what it holds, how it relates to the document and what
+     * it is, so it has to be made with the constructor of EmbeddedFile that
+     * takes them.
+     *
+     * @param file the embedded file.
+     * @return this PDF object.
+     */
+    public PDF addAssociatedFile(EmbeddedFile file) {
+        // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
+        // PDF/A, so a document of either that carries a file is not the
+        // document it says it is.
+        if (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B) {
+            fail(new IllegalStateException("A document of " + compliance
+                    + " cannot carry the file " + file.getFileName()
+                    + ": PDF/A-3 is the one that carries files."));
+            return this;
+        }
+        if (file.relationship == null) {
+            fail(new IllegalArgumentException("The file " + file.getFileName()
+                    + " was embedded without a media type, a relationship and a description, "
+                    + "which a file the document carries needs: use the constructor of "
+                    + "EmbeddedFile that takes them."));
+            return this;
+        }
+        associatedFiles.add(file);
+        return this;
+    }
+
+    /**
+     * Adds a description to the metadata of the document: the rdf:Description
+     * element of a standard that asks for properties of its own, such as the
+     * invoice standards that say which of the files the document carries is
+     * the invoice. The text is written into the metadata as it is given, so it
+     * has to be XML, and the document has to be of PDF/A or PDF/UA, which are
+     * the documents that carry metadata.
+     *
+     * @param rdfDescription the rdf:Description element.
+     * @return this PDF object.
+     */
+    public PDF addMetadata(String rdfDescription) {
+        metadata.add(rdfDescription);
+        return this;
     }
 
     /**
