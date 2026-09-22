@@ -187,4 +187,30 @@ class MarkdownTest {
         Drawn drawn = draw("<b>not bold</b>", null);
         assertTrue(drawn.text.contains(TestSupport.hex("<b>not")));
     }
+
+    @Test
+    void longCodeLinesAreCutInLinearTime() throws Exception {
+        StringBuilder line = new StringBuilder();
+        for (int i = 0; i < 200000; i++) {
+            line.append((char) ('a' + i % 26));
+        }
+        long time0 = System.nanoTime();
+        Drawn drawn = draw("```\n" + line + "\n```", null);
+        long milliseconds = (System.nanoTime() - time0) / 1000000;
+        assertTrue(drawn.pages.size() > 1);
+        assertTrue(milliseconds < 5000, milliseconds + " ms");
+    }
+
+    @Test
+    void aCodeLineOfOneColumnKeepsItsSurrogatePairs() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Font code = new Font(pdf, CoreFont.COURIER);
+        // A width that one character of the code fills.
+        Markdown markdown = new Markdown(font, font, font, font, code).setMargins(300f, 72f, 300f, 72f);
+        List<Page> pages = new ArrayList<Page>();
+        markdown.drawOn(pdf, "```\n\uD83D\uDE00x\uD83D\uDE00\n```", pages, Letter.PORTRAIT);
+        assertEquals(1, pages.size());
+    }
 }

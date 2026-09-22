@@ -35,12 +35,16 @@ public enum StructElem: String {
     case TITLE = "Title"
     /// The Lbl structure element.
     case LBL = "Lbl"
+    /// The BlockQuote structure element, a quotation of one or more paragraphs.
+    case BLOCKQUOTE = "BlockQuote"
     /// The Span structure element.
     case SPAN = "Span"
     /// The Em structure element.
     case EM = "Em"
     /// The Strong structure element.
     case STRONG = "Strong"
+    /// The Code structure element, computer code.
+    case CODE = "Code"
     /// The Link structure element.
     case LINK = "Link"
     /// The Annot structure element.

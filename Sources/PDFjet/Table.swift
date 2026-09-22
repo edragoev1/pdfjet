@@ -936,6 +936,14 @@ public class Table : Drawable {
     ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
+        return drawOn(pdf, nil, &pages, pageSize)
+    }
+
+    // Draws the table as drawOn(pdf, &pages, pageSize) does, from the first page
+    // when it is not nil: a page that has other content above the table,
+    // which setFirstPageTopMargin puts the table under. The next pages are new.
+    @discardableResult
+    func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table needs no page.
         }
@@ -948,8 +956,11 @@ public class Table : Drawable {
         var xy: [Float]?
         var pageNumber: Int = 1
         while (hasMoreData()) {
-            let page = Page(pdf, pageSize, false)
-            pages.append(page)
+            var page = first
+            if pageNumber > 1 || first == nil {
+                page = Page(pdf, pageSize, false)
+                pages.append(page!)
+            }
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
             pageNumber += 1
         }

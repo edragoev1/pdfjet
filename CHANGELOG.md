@@ -10,6 +10,21 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Markdown` draws a Markdown text on as many pages as it needs, in all
+  four ports: headings of `#` and of underlines, paragraphs with the inline
+  markup of `Markup`, bullet and numbered lists that nest, block quotes,
+  fenced and indented code, thematic breaks, the tables of GitHub's
+  Markdown, and images alone in their paragraph. A heading keeps a line of
+  the text after it on its page, and a table, a list, a quote or code goes
+  on onto the next page. In a PDF/UA document the headings are H1 to H6
+  with no level skipped, and the lists, quotes, code, tables and images are
+  tagged as such; one that goes on over pages is one structure element.
+  Images are read only from the directory `setImageDirectory` names, never
+  from an absolute path, a URL or one with `..`, so that a text from anyone
+  reads no other file. HTML is drawn as the text it is, and a line break is
+  a space. The blocks nest at most 32 levels, so that the text is read in
+  time linear in its length. `StructElem.BLOCKQUOTE` and `StructElem.CODE`
+  are new.
 - `Markup` makes paragraphs of text with the inline markup of Markdown,
   `**bold**`, `*italic*`, `***bold italic***`, `` `code` `` and
   `[links](url)`, in the fonts given for each, in all four ports:
@@ -826,6 +841,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_54 is new: `data/markdown/pdfjet.md` drawn by `Markdown` as a
+  PDF/UA document with a number on every page, in all four ports, and the
+  scripts, the workflows and the packaging build and check 54 examples.
 - Example_53 is new: paragraphs written with the inline markup of Markdown,
   drawn with `Markup` in a text frame, with a numbered list, as a PDF/UA
   document, in all four ports. The booklet has a snippet of `Markup`, and the

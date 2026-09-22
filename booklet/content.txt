@@ -38,7 +38,7 @@ The first chapters show how to install PDFjet, what a PDFjet program looks like,
 
 The code is not typed into this booklet. It is read from the snippet programs in the booklet/snippets folder of the repository, one for each language, which are built and run to check that every snippet works and draws the same in the four languages.
 
-A snippet draws with two things it is given: pdf, the PDF it draws in, and font, IBM Plex Sans at 12 points, created as in Hello, World below. The snippets that make a document of their own, such as an encrypted one, create their own PDF. The snippets read their fonts, images and data from the fonts, images and data folders of the repository, as the examples do. The examples folder has 53 longer programs, which show more of each feature together.
+A snippet draws with two things it is given: pdf, the PDF it draws in, and font, IBM Plex Sans at 12 points, created as in Hello, World below. The snippets that make a document of their own, such as an encrypted one, create their own PDF. The snippets read their fonts, images and data from the fonts, images and data folders of the repository, as the examples do. The examples folder has 54 longer programs, which show more of each feature together.
 
 This booklet was made with PDFjet, by booklet/Booklet.java in the repository. It is a PDF/UA document, with bookmarks and a linked table of contents.
 

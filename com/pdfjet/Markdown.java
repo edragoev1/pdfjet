@@ -316,15 +316,18 @@ public class Markdown {
         int columns = Math.max(1, (int) ((width - 2f * padding) / code.stringWidth(code.getSize(), "0")));
         List<String> lines = new ArrayList<String>();
         for (String line : text.split("\n", -1)) {
-            while (line.length() > columns) {
-                int cut = columns;
+            int start = 0;
+            while (line.length() - start > columns) {
+                // A surrogate pair is not cut in two: it goes on the next
+                // line, or on this one when it would be the whole line.
+                int cut = start + columns;
                 if (Character.isHighSurrogate(line.charAt(cut - 1))) {
-                    cut--;
+                    cut = (cut - 1 > start) ? cut - 1 : cut + 1;
                 }
-                lines.add(line.substring(0, cut));
-                line = line.substring(cut);
+                lines.add(line.substring(start, cut));
+                start = cut;
             }
-            lines.add(line);
+            lines.add(line.substring(start));
         }
         ensure(Math.min(3, lines.size()) * leading + 2f * padding);
         openContainer(StructElem.CODE);

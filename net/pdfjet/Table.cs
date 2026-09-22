@@ -875,6 +875,13 @@ public class Table : IDrawable {
     /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
     /// <returns>the x and y coordinates of the bottom right corner of the table on the last page.</returns>
     public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
+        return DrawOn(pdf, null, pages, pageSize);
+    }
+
+    // Draws the table as DrawOn(pdf, pages, pageSize) does, from the first page
+    // when it is not null: a page that has other content above the table,
+    // which SetFirstPageTopMargin puts the table under. The next pages are new.
+    internal float[] DrawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
@@ -887,8 +894,11 @@ public class Table : IDrawable {
         float[] xy = null;
         int pageNumber = 1;
         while (HasMoreData()) {
-            Page page = new Page(pdf, pageSize, false);
-            pages.Add(page);
+            Page page = first;
+            if (pageNumber > 1 || first == null) {
+                page = new Page(pdf, pageSize, false);
+                pages.Add(page);
+            }
             xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
             pageNumber++;
         }

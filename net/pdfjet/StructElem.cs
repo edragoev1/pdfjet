@@ -36,12 +36,16 @@ public enum StructElem {
     TITLE,
     /// <summary>The Lbl structure element.</summary>
     LBL,
+    /// <summary>The BlockQuote structure element, a quotation of one or more paragraphs.</summary>
+    BLOCKQUOTE,
     /// <summary>The Span structure element.</summary>
     SPAN,
     /// <summary>The Em structure element.</summary>
     EM,
     /// <summary>The Strong structure element.</summary>
     STRONG,
+    /// <summary>The Code structure element, computer code.</summary>
+    CODE,
     /// <summary>The Link structure element.</summary>
     LINK,
     /// <summary>The Annot structure element.</summary>
@@ -89,9 +93,11 @@ internal static class StructElemExtensions {
         "P",
         "Title",
         "Lbl",
+        "BlockQuote",
         "Span",
         "Em",
         "Strong",
+        "Code",
         "Link",
         "Annot",
         "L",

@@ -31,7 +31,7 @@ javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options -Werror ^
 jar cf PDFjet.jar -C out\production .
 
 :: Compile the Example files (loop from 1 to 50)
-for /L %%i in (1,1,53) do (
+for /L %%i in (1,1,54) do (
     if %%i lss 10 (
         javac -O -encoding utf-8 %RELEASE% -Xlint -Xlint:-options -Werror -cp PDFjet.jar examples\Example_0%%i.java -d out\production
     ) else (
@@ -40,7 +40,7 @@ for /L %%i in (1,1,53) do (
 )
 
 :: Run the Example files (loop from 1 to 50)
-for /L %%i in (1,1,53) do (
+for /L %%i in (1,1,54) do (
     if %%i lss 10 (
         java -cp .;PDFjet.jar;out\production examples.Example_0%%i
     ) else (
