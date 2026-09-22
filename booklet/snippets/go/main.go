@@ -283,6 +283,23 @@ func markup(pdf *pdfjet.PDF, font *pdfjet.Font) {
 		DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 
+// @snippet markdown
+func markdown(pdf *pdfjet.PDF, font *pdfjet.Font) {
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
+	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
+	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(10)
+	markdown := pdfjet.NewMarkdown(font, bold, italic, boldItalic, code)
+	pages := make([]*pdfjet.Page, 0)
+	markdown.DrawOnPages(pdf, "# A heading\n"+
+		"\n"+
+		"A paragraph with **bold** text and a [link](https://pdfjet.com).\n"+
+		"\n"+
+		"- an item\n"+
+		"- another item\n", &pages, letter.Portrait())
+	pdf.AddPages(pages)
+}
+
 // @snippet text-column
 func textColumn(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	column := pdfjet.NewTextColumn()
@@ -915,6 +932,7 @@ func main() {
 	run("paragraphs", paragraphs)
 	run("lists", lists)
 	run("markup", markup)
+	run("markdown", markdown)
 	run("text-column", textColumn)
 	run("text-frame-pages", textFramePages)
 	run("text-frame-columns", textFrameColumns)

@@ -240,6 +240,9 @@ A text frame with a height draws what fits in it and keeps the rest for the next
 @snippet markup Inline markup
 A Markup reads the inline markup of Markdown, **bold**, *italic*, ***bold italic***, `code` and [links](url), and makes paragraphs of text lines in the fonts given for each. A word keeps the punctuation after it in another style, with no space between them, and a mark with no match is text. paragraphs splits a text into paragraphs at its empty lines. Headings, lists and the other blocks of Markdown are not read.
 
+@snippet markdown Markdown
+A Markdown draws a Markdown text on as many pages as it needs: its headings, paragraphs with the inline markup of Markup, bullet and numbered lists that nest, block quotes, fenced code, thematic breaks, tables and images, each tagged for PDF/UA. A heading keeps a line of the text after it on its page, and a table, a list or code goes on onto the next page. Images are read only from the directory setImageDirectory names; HTML is drawn as the text it is. Please see Example_54.
+
 @snippet right-to-left Right to left text
 A text block with setRightToLeft(true) draws Hebrew, Arabic and Persian text from right to left, with the Arabic letters shaped. For a single text line, Bidi.reorderVisually puts the characters in the order they are drawn in. setLanguage tells screen readers the language of the text.
 
