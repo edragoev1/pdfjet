@@ -47,9 +47,10 @@ jobs:
         steps:
             # Only the ports, the DocFX configuration, the examples, the fonts,
             # images and data the examples read, .github (for the Install
-            # Swift action) and tests/swift, the path of the test target that
-            # SwiftPM checks in Package.swift, are checked out. Files in the
-            # repository root are always checked out.
+            # Swift action), and tests/swift and tests/corpus/swift, the paths
+            # of the test target and of the corpus harness, which SwiftPM
+            # checks for every target of Package.swift, are checked out. Files
+            # in the repository root are always checked out.
             - uses: actions/checkout@v7
               with:
                   sparse-checkout: |
@@ -65,6 +66,7 @@ jobs:
                       data
                       PngSuite
                       tests/swift
+                      tests/corpus/swift
 
             - uses: actions/setup-java@v6
               with:
