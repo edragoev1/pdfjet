@@ -61,6 +61,9 @@ public class Cell {
     // A cell that the cell above it spans over, which draws nothing: the cell
     // that spans the rows draws its text, background and borders over it.
     static final int COVERED = 0x00800000;
+    // A cell of a row that a page break keeps with the next row, which the
+    // cells a table adds below it for its wrapped text have too.
+    static final int KEPT_WITH_NEXT = 0x01000000;
 
     // Where the three alignments of a cell are in properties, three bits
     // each, and where the four paddings are in padding, a byte each.

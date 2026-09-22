@@ -699,3 +699,115 @@ func TestTableTheWrappedLinesOfARowThatFitNoPageAreCutWhereThePageEnds(t *testin
 		t.Error("the last line is not on the last page")
 	}
 }
+
+// testRowsWith returns a table of 60 rows of two cells, "r0" to "r59" and
+// "x", whose row at index has the texts given instead.
+func testRowsWith(font *Font, index int, texts ...string) [][]*Cell {
+	data := make([][]*Cell, 0, 60)
+	for r := 0; r < 60; r++ {
+		cells := []string{fmt.Sprintf("r%d", r), "x"}
+		if r == index {
+			cells = texts
+		}
+		row := make([]*Cell, 0, len(cells))
+		for _, text := range cells {
+			row = append(row, NewCell(font, text).SetWidth(60))
+		}
+		data = append(data, row)
+	}
+	return data
+}
+
+// testPageOf returns the index of the last page that draws the text, or -1.
+func testPageOf(pages []*Page, text string) int {
+	index := -1
+	for i, page := range pages {
+		if strings.Contains(testContent(page), testHex(text)) {
+			index = i
+		}
+	}
+	return index
+}
+
+func TestTableARowKeptWithTheNextOneGoesToThePageOfTheNextOne(t *testing.T) {
+	// A heading row, whose text wraps, is kept with the row under it: a page
+	// break does not fall between them, and moves both to the next page. The
+	// rows are put at each place near the end of the first page.
+	moved := false
+	for at := 30; at < 50; at++ {
+		doc := testNewDoc()
+		data := testRowsWith(testHelvetica(doc.pdf), at, testLongText, "heading")
+		data[at+1][0].SetText("follows")
+		table := NewTable().SetTableData(data, 1)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		table.KeepRowWithNext(at)
+		pages := make([]*Page, 0)
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		heading := testPageOf(pages, "one")
+		if heading < 0 {
+			t.Fatal("the heading was not drawn")
+		}
+		if testPageOf(pages, "twelve") != heading {
+			t.Errorf("row %d: the page break cut the heading", at)
+		}
+		if testPageOf(pages, "follows") != heading {
+			t.Errorf("row %d: the heading is not with the next row", at)
+		}
+		if heading == 1 && testPageOf(pages, fmt.Sprintf("r%d", at-1)) == 0 {
+			moved = true
+		}
+	}
+	if !moved {
+		t.Error("no heading was moved to the next page with the next row")
+	}
+}
+
+func TestTableRowsKeptWithTheNextOneOneAfterAnotherAreKeptTogether(t *testing.T) {
+	for at := 30; at < 50; at++ {
+		doc := testNewDoc()
+		table := NewTable().SetTableData(testRowsWith(testHelvetica(doc.pdf), -1), 1)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		table.KeepRowWithNext(at).KeepRowWithNext(at + 1).KeepRowWithNext(at + 2)
+		pages := make([]*Page, 0)
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		page := testPageOf(pages, fmt.Sprintf("r%d", at))
+		for r := at + 1; r <= at+3; r++ {
+			if testPageOf(pages, fmt.Sprintf("r%d", r)) != page {
+				t.Errorf("row %d is not with row %d", r, at)
+			}
+		}
+	}
+}
+
+func TestTableRowsKeptTogetherThatFitNoPageAreDrawnEachOnItsOwn(t *testing.T) {
+	// Moved to the next page, rows taller than a page would go past its end
+	// there too, so they are drawn from where they start as if they were not
+	// kept together: the pages hold the rows they hold without the marks.
+	drawn := make([][]*Page, 0, 2)
+	for _, kept := range []bool{false, true} {
+		doc := testNewDoc()
+		table := NewTable().SetTableData(testRowsWith(testHelvetica(doc.pdf), -1), 1)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		for r := 1; kept && r < 59; r++ {
+			table.KeepRowWithNext(r)
+		}
+		pages := make([]*Page, 0)
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		if n := table.GetRowsRendered(); n != -1 {
+			t.Errorf("%d rows rendered", n)
+		}
+		drawn = append(drawn, pages)
+	}
+	if len(drawn[1]) != 2 {
+		t.Fatalf("%d pages", len(drawn[1]))
+	}
+	for r := 1; r < 60; r++ {
+		text := fmt.Sprintf("r%d", r)
+		if testPageOf(drawn[0], text) != testPageOf(drawn[1], text) {
+			t.Errorf("row %d", r)
+		}
+	}
+}

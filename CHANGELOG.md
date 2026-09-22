@@ -10,6 +10,13 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Table.keepRowWithNext(index)` keeps a row on the same page as the next
+  row, as a heading row is kept with the rows under it, in all four ports: a
+  page break does not fall between them, and moves both to the next page.
+  Rows kept with the next one one after another are kept together, and a
+  row whose text wraps is kept whole. Rows kept together that are taller than
+  a page are drawn from where they start, each on its own, as if they were
+  not kept together.
 - `Font.getLineGap(fontSize)`, the space a font puts between its lines, read
   from the `hhea` table of an `.otf` or `.ttf` file and from a `.stream` file,
   in all four ports. `TextBlock`, `TextColumn` and `TextFrame` put it between

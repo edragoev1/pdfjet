@@ -635,10 +635,9 @@ this is started before Oct 21.
       (zebra striping, as `BigTable.setShadingColor`), and a style for the
       header rows, the body and a total row, rather than coloring every cell.
 - ⬜ Repeating footer or total rows on every page ("carried forward"
-      subtotals), and keeping a row with the next one across a page break.
-      A page break keeps the rows of a span and the wrapped lines of a row
-      together (Sep 22), in `rowGroupEnd`, which a mark on a row that keeps it
-      with the next one would add to.
+      subtotals). A page break keeps the rows of a span, the wrapped lines of
+      a row and the rows `keepRowWithNext` marks together (Sep 22), in
+      `rowGroupEnd`.
 - ⬜ Column widths from the table width: percentages, or fit a width and
       share it by the content, next to `autoAdjustColumnWidths`.
 - ⬜ The transparent color of a grayscale or truecolor PNG: a `tRNS` chunk on

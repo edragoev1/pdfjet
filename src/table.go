@@ -232,6 +232,20 @@ func (table *Table) RemoveLineBetweenRows(index1, index2 int) *Table {
 	return table
 }
 
+// KeepRowWithNext keeps the row with the specified index on the same page as
+// the next row, as a heading row is kept with the rows under it: a page break
+// does not fall between them, and moves both to the next page. Rows kept with
+// the next one one after another are kept together, unless together they are
+// taller than a page. Call it before the table is drawn.
+func (table *Table) KeepRowWithNext(index int) *Table {
+	if index >= 0 && index < len(table.tableData) {
+		for _, cell := range table.tableData[index] {
+			cell.properties |= cellKeptWithNext
+		}
+	}
+	return table
+}
+
 // SetTextAlignmentInColumn sets the text alignment in the specified column.
 //
 //   - index: the index of the specified column.
@@ -555,23 +569,33 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	for r := 0; r < table.numOfHeaderRows && r < len(heights); r++ {
 		top += heights[r]
 	}
-	// The rows before this one are cut where the page ends, as rows of their
-	// own.
-	cutUntil := -1
+	// The rows before the first of these are not kept with the next row,
+	// and the lines of the rows before the second are cut where the page
+	// ends, as rows of their own.
+	cutRowsUntil := -1
+	cutLinesUntil := -1
 	for index < len(table.tableData) {
-		// The rows a cell spans and the lines a row wraps into are drawn
-		// together, so that a page break never cuts one in two.
-		keepLines := index >= cutUntil
-		end := table.rowGroupEnd(index, keepLines)
+		// The rows a cell spans, the lines a row wraps into and the rows kept
+		// with the next one are drawn together, so that a page break never
+		// cuts one of them in two.
+		keepLines := index >= cutLinesUntil
+		keepRows := keepLines && index >= cutRowsUntil
+		end := table.rowGroupEnd(index, keepLines, keepRows)
 		groupHeight := float32(0.0)
 		for r := index; r < end; r++ {
 			groupHeight += heights[r]
 		}
 		if page != nil && (y+groupHeight) > (page.height-table.bottomMargin) {
 			if keepLines && groupHeight > (page.height-table.bottomMargin)-top {
-				// Lines that would not fit the next page either are drawn
-				// from here, and cut where the page ends.
-				cutUntil = end
+				// Rows that would not fit the next page either are drawn
+				// from here: first each on its own, and then, for a row that
+				// is taller than a page, each line on its own, cut where the
+				// page ends.
+				if keepRows {
+					cutRowsUntil = end
+				} else {
+					cutLinesUntil = end
+				}
 				continue
 			}
 			// A row that does not fit goes on the next page, unless it is
@@ -679,6 +703,13 @@ func (table *Table) isContinuation(r int) bool {
 	return len(row) > 0 && (row[0].properties&cellContinued) != 0
 }
 
+// isKeptWithNext is true when the row, or the row whose wrapped text it holds,
+// is kept with the next row.
+func (table *Table) isKeptWithNext(r int) bool {
+	row := table.tableData[r]
+	return len(row) > 0 && (row[0].properties&cellKeptWithNext) != 0
+}
+
 // getRowHeights returns the height of each row of the table as it is drawn. A
 // cell that spans rows is not what makes its first row tall; the rows it
 // covers hold it together, and the last of them grows when they do not.
@@ -709,10 +740,10 @@ func (table *Table) getRowHeights() []float32 {
 	return heights
 }
 
-// rowGroupEnd returns the row after the rows that a span holds together, and
-// with keepLines the lines the last of them wraps into, which a page break
-// keeps on one page.
-func (table *Table) rowGroupEnd(index int, keepLines bool) int {
+// rowGroupEnd returns the row after the rows that a span holds together, with
+// keepLines the lines the last of them wraps into, and with keepRows the rows
+// that the last of them is kept with, which a page break keeps on one page.
+func (table *Table) rowGroupEnd(index int, keepLines, keepRows bool) int {
 	end := index + 1
 	for r := index; r < end && r < len(table.tableData); r++ {
 		for _, cell := range table.tableData[r] {
@@ -720,8 +751,12 @@ func (table *Table) rowGroupEnd(index int, keepLines bool) int {
 				end = r + cell.rowsSpanned
 			}
 		}
-		if keepLines && r+1 == end && end < len(table.tableData) && table.isContinuation(end) {
-			end++
+		if r+1 == end && end < len(table.tableData) {
+			if keepLines && table.isContinuation(end) {
+				end++
+			} else if keepRows && table.isKeptWithNext(r) {
+				end++
+			}
 		}
 	}
 	if end > len(table.tableData) {

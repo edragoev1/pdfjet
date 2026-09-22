@@ -257,6 +257,25 @@ public class Table implements Drawable {
     }
 
     /**
+     * Keeps the row with the specified index on the same page as the next
+     * row, as a heading row is kept with the rows under it: a page break does
+     * not fall between them, and moves both to the next page. Rows kept with
+     * the next one one after another are kept together, unless together they
+     * are taller than a page. Call it before the table is drawn.
+     *
+     * @param index the index of the row.
+     * @return this Table object.
+     */
+    public Table keepRowWithNext(int index) {
+        if (index >= 0 && index < tableData.size()) {
+            for (Cell cell : tableData.get(index)) {
+                cell.properties |= Cell.KEPT_WITH_NEXT;
+            }
+        }
+        return this;
+    }
+
+    /**
      * Sets the text alignment in the specified column.
      *
      * @param index     the index of the specified column.
@@ -599,23 +618,33 @@ public class Table implements Drawable {
         for (int r = 0; r < numOfHeaderRows && r < heights.length; r++) {
             top += heights[r];
         }
-        // The rows before this one are cut where the page ends, as rows of
-        // their own.
-        int cutUntil = -1;
+        // The rows before the first of these are not kept with the next row,
+        // and the lines of the rows before the second are cut where the page
+        // ends, as rows of their own.
+        int cutRowsUntil = -1;
+        int cutLinesUntil = -1;
         while (index < tableData.size()) {
-            // The rows a cell spans and the lines a row wraps into are drawn
-            // together, so that a page break never cuts one in two.
-            boolean keepLines = (index >= cutUntil);
-            int end = rowGroupEnd(index, keepLines);
+            // The rows a cell spans, the lines a row wraps into and the rows
+            // kept with the next one are drawn together, so that a page break
+            // never cuts one of them in two.
+            boolean keepLines = (index >= cutLinesUntil);
+            boolean keepRows = keepLines && (index >= cutRowsUntil);
+            int end = rowGroupEnd(index, keepLines, keepRows);
             float groupHeight = 0f;
             for (int r = index; r < end; r++) {
                 groupHeight += heights[r];
             }
             if (page != null && (y + groupHeight) > (page.height - bottomMargin)) {
                 if (keepLines && groupHeight > (page.height - bottomMargin) - top) {
-                    // Lines that would not fit the next page either are drawn
-                    // from here, and cut where the page ends.
-                    cutUntil = end;
+                    // Rows that would not fit the next page either are drawn
+                    // from here: first each on its own, and then, for a row
+                    // that is taller than a page, each line on its own, cut
+                    // where the page ends.
+                    if (keepRows) {
+                        cutRowsUntil = end;
+                    } else {
+                        cutLinesUntil = end;
+                    }
                     continue;
                 }
                 // A row that does not fit goes on the next page, unless it is
@@ -747,10 +776,10 @@ public class Table implements Drawable {
         return heights;
     }
 
-    // The row after the rows that a span holds together, and with keepLines
-    // the lines the last of them wraps into, which a page break keeps on one
-    // page.
-    private int rowGroupEnd(int index, boolean keepLines) {
+    // The row after the rows that a span holds together, with keepLines the
+    // lines the last of them wraps into, and with keepRows the rows that the
+    // last of them is kept with, which a page break keeps on one page.
+    private int rowGroupEnd(int index, boolean keepLines, boolean keepRows) {
         int end = index + 1;
         for (int r = index; r < end && r < tableData.size(); r++) {
             for (Cell cell : tableData.get(r)) {
@@ -758,11 +787,22 @@ public class Table implements Drawable {
                     end = r + cell.rowsSpanned;
                 }
             }
-            if (keepLines && r + 1 == end && end < tableData.size() && isContinuation(end)) {
-                end++;
+            if (r + 1 == end && end < tableData.size()) {
+                if (keepLines && isContinuation(end)) {
+                    end++;
+                } else if (keepRows && isKeptWithNext(r)) {
+                    end++;
+                }
             }
         }
         return Math.min(end, tableData.size());
+    }
+
+    // True when the row, or the row whose wrapped text it holds, is kept with
+    // the next row.
+    private boolean isKeptWithNext(int r) {
+        List<Cell> row = tableData.get(r);
+        return !row.isEmpty() && (row.get(0).properties & Cell.KEPT_WITH_NEXT) != 0;
     }
 
     private float getMaxCellHeight(List<Cell> row) throws Exception {

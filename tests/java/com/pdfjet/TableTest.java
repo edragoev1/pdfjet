@@ -604,4 +604,93 @@ class TableTest {
                 "the row does not start on the first page, after the row above it");
         assertTrue(TestSupport.content(pages.get(pages.size() - 1)).contains(TestSupport.hex("word199")));
     }
+
+    // A table of 60 rows of two cells, "r0" to "r59" and "x", whose row at
+    // index has the texts given instead.
+    private static List<List<Cell>> rowsWith(Font font, int index, String... texts) {
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        for (int r = 0; r < 60; r++) {
+            List<Cell> row = new ArrayList<Cell>();
+            for (String text : (r == index) ? texts : new String[] {"r" + r, "x"}) {
+                row.add(new Cell(font, text).setWidth(60f));
+            }
+            data.add(row);
+        }
+        return data;
+    }
+
+    // The index of the last page that draws the text, or -1.
+    private static int pageOf(List<Page> pages, String text) {
+        int page = -1;
+        for (int i = 0; i < pages.size(); i++) {
+            if (TestSupport.content(pages.get(i)).contains(TestSupport.hex(text))) {
+                page = i;
+            }
+        }
+        return page;
+    }
+
+    @Test
+    void aRowKeptWithTheNextOneGoesToThePageOfTheNextOne() throws Exception {
+        // A heading row, whose text wraps, is kept with the row under it: a
+        // page break does not fall between them, and moves both to the next
+        // page. The rows are put at each place near the end of the first page.
+        boolean moved = false;
+        for (int at = 30; at < 50; at++) {
+            PDF pdf = TestSupport.newPDF();
+            List<List<Cell>> data = rowsWith(TestSupport.helvetica(pdf), at, LONG_TEXT, "heading");
+            data.get(at + 1).get(0).setText("follows");
+            Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+            table.keepRowWithNext(at);
+            List<Page> pages = new ArrayList<Page>();
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            int heading = pageOf(pages, "one");
+            assertTrue(heading >= 0, "the heading was not drawn");
+            assertEquals(heading, pageOf(pages, "twelve"), "row " + at + ": the page break cut the heading");
+            assertEquals(heading, pageOf(pages, "follows"), "row " + at + ": the heading is not with the next row");
+            moved |= (heading == 1 && pageOf(pages, "r" + (at - 1)) == 0);
+        }
+        assertTrue(moved, "no heading was moved to the next page with the next row");
+    }
+
+    @Test
+    void rowsKeptWithTheNextOneOneAfterAnotherAreKeptTogether() throws Exception {
+        for (int at = 30; at < 50; at++) {
+            PDF pdf = TestSupport.newPDF();
+            Table table = new Table().setTableData(rowsWith(TestSupport.helvetica(pdf), -1), 1)
+                    .setLocation(50f, 50f).setBottomMargin(20f);
+            table.keepRowWithNext(at).keepRowWithNext(at + 1).keepRowWithNext(at + 2);
+            List<Page> pages = new ArrayList<Page>();
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            int page = pageOf(pages, "r" + at);
+            for (int r = at + 1; r <= at + 3; r++) {
+                assertEquals(page, pageOf(pages, "r" + r), "row " + r + " is not with row " + at);
+            }
+        }
+    }
+
+    @Test
+    void rowsKeptTogetherThatFitNoPageAreDrawnEachOnItsOwn() throws Exception {
+        // Moved to the next page, rows taller than a page would go past its
+        // end there too, so they are drawn from where they start as if they
+        // were not kept together: the pages hold the rows they hold without
+        // the marks.
+        List<List<Page>> drawn = new ArrayList<List<Page>>();
+        for (boolean kept : new boolean[] {false, true}) {
+            PDF pdf = TestSupport.newPDF();
+            Table table = new Table().setTableData(rowsWith(TestSupport.helvetica(pdf), -1), 1)
+                    .setLocation(50f, 50f).setBottomMargin(20f);
+            for (int r = 1; kept && r < 59; r++) {
+                table.keepRowWithNext(r);
+            }
+            List<Page> pages = new ArrayList<Page>();
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            assertEquals(-1, table.getRowsRendered());
+            drawn.add(pages);
+        }
+        assertEquals(2, drawn.get(1).size());
+        for (int r = 1; r < 60; r++) {
+            assertEquals(pageOf(drawn.get(0), "r" + r), pageOf(drawn.get(1), "r" + r), "row " + r);
+        }
+    }
 }

@@ -579,5 +579,97 @@ public sealed class TableTest : IDisposable {
                 "the row does not start on the first page, after the row above it");
         Assert.Contains(TestSupport.Hex("word199"), TestSupport.Content(pages[pages.Count - 1]));
     }
+
+    // A table of 60 rows of two cells, "r0" to "r59" and "x", whose row at
+    // index has the texts given instead.
+    private static List<List<Cell>> RowsWith(Font font, int index, params string[] texts) {
+        List<List<Cell>> data = new List<List<Cell>>();
+        for (int r = 0; r < 60; r++) {
+            List<Cell> row = new List<Cell>();
+            foreach (string text in (r == index) ? texts : new string[] {"r" + r, "x"}) {
+                Cell cell = new Cell(font, text);
+                cell.SetWidth(60f);
+                row.Add(cell);
+            }
+            data.Add(row);
+        }
+        return data;
+    }
+
+    // The index of the last page that draws the text, or -1.
+    private static int PageOf(List<Page> pages, string text) {
+        int page = -1;
+        for (int i = 0; i < pages.Count; i++) {
+            if (TestSupport.Content(pages[i]).Contains(TestSupport.Hex(text))) {
+                page = i;
+            }
+        }
+        return page;
+    }
+
+    [Fact]
+    public void ARowKeptWithTheNextOneGoesToThePageOfTheNextOne() {
+        // A heading row, whose text wraps, is kept with the row under it: a
+        // page break does not fall between them, and moves both to the next
+        // page. The rows are put at each place near the end of the first page.
+        bool moved = false;
+        for (int at = 30; at < 50; at++) {
+            PDF pdf = TestSupport.NewPDF();
+            List<List<Cell>> data = RowsWith(TestSupport.Helvetica(pdf), at, LONG_TEXT, "heading");
+            data[at + 1][0].SetText("follows");
+            Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f);
+            table.SetBottomMargin(20f);
+            table.KeepRowWithNext(at);
+            List<Page> pages = new List<Page>();
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            int heading = PageOf(pages, "one");
+            Assert.True(heading >= 0, "the heading was not drawn");
+            Assert.True(heading == PageOf(pages, "twelve"), "row " + at + ": the page break cut the heading");
+            Assert.True(heading == PageOf(pages, "follows"), "row " + at + ": the heading is not with the next row");
+            moved |= (heading == 1 && PageOf(pages, "r" + (at - 1)) == 0);
+        }
+        Assert.True(moved, "no heading was moved to the next page with the next row");
+    }
+
+    [Fact]
+    public void RowsKeptWithTheNextOneOneAfterAnotherAreKeptTogether() {
+        for (int at = 30; at < 50; at++) {
+            PDF pdf = TestSupport.NewPDF();
+            Table table = new Table().SetTableData(RowsWith(TestSupport.Helvetica(pdf), -1), 1).SetLocation(50f, 50f);
+            table.SetBottomMargin(20f);
+            table.KeepRowWithNext(at).KeepRowWithNext(at + 1).KeepRowWithNext(at + 2);
+            List<Page> pages = new List<Page>();
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            int page = PageOf(pages, "r" + at);
+            for (int r = at + 1; r <= at + 3; r++) {
+                Assert.True(page == PageOf(pages, "r" + r), "row " + r + " is not with row " + at);
+            }
+        }
+    }
+
+    [Fact]
+    public void RowsKeptTogetherThatFitNoPageAreDrawnEachOnItsOwn() {
+        // Moved to the next page, rows taller than a page would go past its
+        // end there too, so they are drawn from where they start as if they
+        // were not kept together: the pages hold the rows they hold without
+        // the marks.
+        List<List<Page>> drawn = new List<List<Page>>();
+        foreach (bool kept in new bool[] {false, true}) {
+            PDF pdf = TestSupport.NewPDF();
+            Table table = new Table().SetTableData(RowsWith(TestSupport.Helvetica(pdf), -1), 1).SetLocation(50f, 50f);
+            table.SetBottomMargin(20f);
+            for (int r = 1; kept && r < 59; r++) {
+                table.KeepRowWithNext(r);
+            }
+            List<Page> pages = new List<Page>();
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            Assert.Equal(-1, table.GetRowsRendered());
+            drawn.Add(pages);
+        }
+        Assert.Equal(2, drawn[1].Count);
+        for (int r = 1; r < 60; r++) {
+            Assert.True(PageOf(drawn[0], "r" + r) == PageOf(drawn[1], "r" + r), "row " + r);
+        }
+    }
 }
 }

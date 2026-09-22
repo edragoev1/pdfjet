@@ -239,6 +239,26 @@ public class Table : Drawable {
     }
 
     ///
+    /// Keeps the row with the specified index on the same page as the next
+    /// row, as a heading row is kept with the rows under it: a page break does
+    /// not fall between them, and moves both to the next page. Rows kept with
+    /// the next one one after another are kept together, unless together they
+    /// are taller than a page. Call it before the table is drawn.
+    ///
+    /// - Parameter index: the index of the row.
+    /// - Returns: this Table object.
+    ///
+    @discardableResult
+    public func keepRowWithNext(_ index: Int) -> Table {
+        if index >= 0 && index < tableData.count {
+            for cell in tableData[index] {
+                cell.properties |= Cell.KEPT_WITH_NEXT
+            }
+        }
+        return self
+    }
+
+    ///
     /// Removes the horizontal lines between the rows from index1 to index2.
     ///
     @discardableResult
@@ -610,23 +630,33 @@ public class Table : Drawable {
         for r in 0..<min(numOfHeaderRows, heights.count) {
             top += heights[r]
         }
-        // The rows before this one are cut where the page ends, as rows of
-        // their own.
-        var cutUntil = -1
+        // The rows before the first of these are not kept with the next row,
+        // and the lines of the rows before the second are cut where the page
+        // ends, as rows of their own.
+        var cutRowsUntil = -1
+        var cutLinesUntil = -1
         while index < tableData.count {
-            // The rows a cell spans and the lines a row wraps into are drawn
-            // together, so that a page break never cuts one in two.
-            let keepLines = (index >= cutUntil)
-            let end = rowGroupEnd(index, keepLines)
+            // The rows a cell spans, the lines a row wraps into and the rows
+            // kept with the next one are drawn together, so that a page break
+            // never cuts one of them in two.
+            let keepLines = (index >= cutLinesUntil)
+            let keepRows = keepLines && (index >= cutRowsUntil)
+            let end = rowGroupEnd(index, keepLines, keepRows)
             var groupHeight: Float = 0.0
             for r in index..<end {
                 groupHeight += heights[r]
             }
             if let page = page, (y + groupHeight) > (page.height - bottomMargin) {
                 if keepLines && groupHeight > (page.height - bottomMargin) - top {
-                    // Lines that would not fit the next page either are drawn
-                    // from here, and cut where the page ends.
-                    cutUntil = end
+                    // Rows that would not fit the next page either are drawn
+                    // from here: first each on its own, and then, for a row
+                    // that is taller than a page, each line on its own, cut
+                    // where the page ends.
+                    if keepRows {
+                        cutRowsUntil = end
+                    } else {
+                        cutLinesUntil = end
+                    }
                     continue
                 }
                 // A row that does not fit goes on the next page, unless it is
@@ -731,6 +761,13 @@ public class Table : Drawable {
         return !row.isEmpty && (row[0].properties & Cell.CONTINUED) != 0
     }
 
+    // True when the row, or the row whose wrapped text it holds, is kept with
+    // the next row.
+    private func isKeptWithNext(_ r: Int) -> Bool {
+        let row = tableData[r]
+        return !row.isEmpty && (row[0].properties & Cell.KEPT_WITH_NEXT) != 0
+    }
+
     // The height of each row of the table as it is drawn. A cell that spans
     // rows is not what makes its first row tall; the rows it covers hold it
     // together, and the last of them grows when they do not.
@@ -760,18 +797,22 @@ public class Table : Drawable {
         return heights
     }
 
-    // The row after the rows that a span holds together, and with keepLines
-    // the lines the last of them wraps into, which a page break keeps on one
-    // page.
-    private func rowGroupEnd(_ index: Int, _ keepLines: Bool) -> Int {
+    // The row after the rows that a span holds together, with keepLines the
+    // lines the last of them wraps into, and with keepRows the rows that the
+    // last of them is kept with, which a page break keeps on one page.
+    private func rowGroupEnd(_ index: Int, _ keepLines: Bool, _ keepRows: Bool) -> Int {
         var end = index + 1
         var r = index
         while r < end && r < tableData.count {
             for cell in tableData[r] where r + cell.rowsSpanned > end {
                 end = r + cell.rowsSpanned
             }
-            if keepLines && r + 1 == end && end < tableData.count && isContinuation(end) {
-                end += 1
+            if r + 1 == end && end < tableData.count {
+                if keepLines && isContinuation(end) {
+                    end += 1
+                } else if keepRows && isKeptWithNext(r) {
+                    end += 1
+                }
             }
             r += 1
         }

@@ -544,4 +544,91 @@ import Testing
                 "the row does not start on the first page, after the row above it")
         #expect(TestSupport.content(pages[pages.count - 1]).contains(TestSupport.hex("word199")))
     }
+
+    // A table of 60 rows of two cells, "r0" to "r59" and "x", whose row at
+    // index has the texts given instead.
+    private func rowsWith(_ font: Font, _ index: Int, _ texts: [String] = []) -> [[Cell]] {
+        return (0..<60).map { r in
+            ((r == index) ? texts : ["r\(r)", "x"]).map { text in
+                let cell = Cell(font, text)
+                cell.setWidth(60)
+                return cell
+            }
+        }
+    }
+
+    // The index of the last page that draws the text, or -1.
+    private func pageOf(_ pages: [Page], _ text: String) -> Int {
+        var page = -1
+        for (i, p) in pages.enumerated() where TestSupport.content(p).contains(TestSupport.hex(text)) {
+            page = i
+        }
+        return page
+    }
+
+    @Test func aRowKeptWithTheNextOneGoesToThePageOfTheNextOne() {
+        // A heading row, whose text wraps, is kept with the row under it: a
+        // page break does not fall between them, and moves both to the next
+        // page. The rows are put at each place near the end of the first page.
+        var moved = false
+        for at in 30..<50 {
+            let pdf = TestSupport.newPDF()
+            let data = rowsWith(TestSupport.helvetica(pdf), at, [longText, "heading"])
+            data[at + 1][0].setText("follows")
+            let table = Table().setTableData(data, 1).setLocation(50, 50)
+            table.setBottomMargin(20)
+            table.keepRowWithNext(at)
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+            let heading = pageOf(pages, "one")
+            #expect(heading >= 0, "the heading was not drawn")
+            #expect(heading == pageOf(pages, "twelve"), "row \(at): the page break cut the heading")
+            #expect(heading == pageOf(pages, "follows"), "row \(at): the heading is not with the next row")
+            if heading == 1 && pageOf(pages, "r\(at - 1)") == 0 {
+                moved = true
+            }
+        }
+        #expect(moved, "no heading was moved to the next page with the next row")
+    }
+
+    @Test func rowsKeptWithTheNextOneOneAfterAnotherAreKeptTogether() {
+        for at in 30..<50 {
+            let pdf = TestSupport.newPDF()
+            let table = Table().setTableData(rowsWith(TestSupport.helvetica(pdf), -1), 1).setLocation(50, 50)
+            table.setBottomMargin(20)
+            table.keepRowWithNext(at).keepRowWithNext(at + 1).keepRowWithNext(at + 2)
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+            let page = pageOf(pages, "r\(at)")
+            for r in (at + 1)...(at + 3) {
+                #expect(page == pageOf(pages, "r\(r)"), "row \(r) is not with row \(at)")
+            }
+        }
+    }
+
+    @Test func rowsKeptTogetherThatFitNoPageAreDrawnEachOnItsOwn() {
+        // Moved to the next page, rows taller than a page would go past its
+        // end there too, so they are drawn from where they start as if they
+        // were not kept together: the pages hold the rows they hold without
+        // the marks.
+        var drawn = [[Page]]()
+        for kept in [false, true] {
+            let pdf = TestSupport.newPDF()
+            let table = Table().setTableData(rowsWith(TestSupport.helvetica(pdf), -1), 1).setLocation(50, 50)
+            table.setBottomMargin(20)
+            if kept {
+                for r in 1..<59 {
+                    table.keepRowWithNext(r)
+                }
+            }
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+            #expect(table.getRowsRendered() == -1)
+            drawn.append(pages)
+        }
+        #expect(drawn[1].count == 2)
+        for r in 1..<60 {
+            #expect(pageOf(drawn[0], "r\(r)") == pageOf(drawn[1], "r\(r)"), "row \(r)")
+        }
+    }
 }

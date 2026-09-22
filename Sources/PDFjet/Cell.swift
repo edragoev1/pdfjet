@@ -50,6 +50,9 @@ public class Cell {
     // A cell that the cell above it spans over, which draws nothing: the cell
     // that spans the rows draws its text, background and borders over it.
     internal static let COVERED: UInt32 = 0x00800000
+    // A cell of a row that a page break keeps with the next row, which the
+    // cells a table adds below it for its wrapped text have too.
+    internal static let KEPT_WITH_NEXT: UInt32 = 0x01000000
     internal var properties: UInt32 = Border.TOP | Border.LEFT
 
     // Where the three alignments of a cell are in properties, three bits
