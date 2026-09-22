@@ -222,6 +222,20 @@ func lists(_ pdf: PDF, _ font: Font) throws {
             .drawOn(Page(pdf, Letter.PORTRAIT))
 }
 
+// @snippet markup
+func markup(_ pdf: PDF, _ font: Font) throws {
+    let bold = try Font(pdf, IBMPlexSans.Bold)
+    let italic = try Font(pdf, IBMPlexSans.Italic)
+    let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic)
+    let code = try Font(pdf, JetBrainsMono.Regular).setSize(11)
+    let markup = Markup(font, bold, italic, boldItalic, code)
+    let paragraphs = markup.paragraphs(
+            "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
+            + "An empty line starts a new paragraph.")
+    TextFrame(paragraphs).setLocation(50, 50).setWidth(300)
+            .drawOn(Page(pdf, Letter.PORTRAIT))
+}
+
 // @snippet text-column
 func textColumn(_ pdf: PDF, _ font: Font) throws {
     let column = TextColumn()
@@ -787,6 +801,7 @@ try run("text-block", textBlock)
 try run("highlighted-words", highlightedWords)
 try run("paragraphs", paragraphs)
 try run("lists", lists)
+try run("markup", markup)
 try run("text-column", textColumn)
 try run("text-frame-pages", textFramePages)
 try run("text-frame-columns", textFrameColumns)

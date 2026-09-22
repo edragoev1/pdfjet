@@ -237,6 +237,20 @@ public class Snippets {
                 .drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet markup
+    static void markup(PDF pdf, Font font) throws Exception {
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        Font italic = new Font(pdf, IBMPlexSans.Italic);
+        Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
+        Font code = new Font(pdf, JetBrainsMono.Regular).setSize(11f);
+        Markup markup = new Markup(font, bold, italic, boldItalic, code);
+        List<Paragraph> paragraphs = markup.paragraphs(
+                "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
+                + "An empty line starts a new paragraph.");
+        new TextFrame(paragraphs).setLocation(50f, 50f).setWidth(300f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+    }
+
     // @snippet text-column
     static void textColumn(PDF pdf, Font font) throws Exception {
         TextColumn column = new TextColumn();
@@ -802,6 +816,7 @@ public class Snippets {
         run("highlighted-words", Snippets::highlightedWords);
         run("paragraphs", Snippets::paragraphs);
         run("lists", Snippets::lists);
+        run("markup", Snippets::markup);
         run("text-column", Snippets::textColumn);
         run("text-frame-pages", Snippets::textFramePages);
         run("text-frame-columns", Snippets::textFrameColumns);

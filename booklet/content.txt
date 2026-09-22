@@ -38,7 +38,7 @@ The first chapters show how to install PDFjet, what a PDFjet program looks like,
 
 The code is not typed into this booklet. It is read from the snippet programs in the booklet/snippets folder of the repository, one for each language, which are built and run to check that every snippet works and draws the same in the four languages.
 
-A snippet draws with two things it is given: pdf, the PDF it draws in, and font, IBM Plex Sans at 12 points, created as in Hello, World below. The snippets that make a document of their own, such as an encrypted one, create their own PDF. The snippets read their fonts, images and data from the fonts, images and data folders of the repository, as the examples do. The examples folder has 52 longer programs, which show more of each feature together.
+A snippet draws with two things it is given: pdf, the PDF it draws in, and font, IBM Plex Sans at 12 points, created as in Hello, World below. The snippets that make a document of their own, such as an encrypted one, create their own PDF. The snippets read their fonts, images and data from the fonts, images and data folders of the repository, as the examples do. The examples folder has 53 longer programs, which show more of each feature together.
 
 This booklet was made with PDFjet, by booklet/Booklet.java in the repository. It is a PDF/UA document, with bookmarks and a linked table of contents.
 
@@ -236,6 +236,9 @@ drawOn(pdf, pages, pageSize) draws the text on as many new pages as it needs, a 
 
 @snippet text-frame-columns Text that flows through columns
 A text frame with a height draws what fits in it and keeps the rest for the next drawOn, until hasMoreText is false. Moving the frame between the calls flows the text through the columns of a page and on to the next page.
+
+@snippet markup Inline markup
+A Markup reads the inline markup of Markdown, **bold**, *italic*, ***bold italic***, `code` and [links](url), and makes paragraphs of text lines in the fonts given for each. A word keeps the punctuation after it in another style, with no space between them, and a mark with no match is text. paragraphs splits a text into paragraphs at its empty lines. Headings, lists and the other blocks of Markdown are not read.
 
 @snippet right-to-left Right to left text
 A text block with setRightToLeft(true) draws Hebrew, Arabic and Persian text from right to left, with the Arabic letters shaped. For a single text line, Bidi.reorderVisually puts the characters in the order they are drawn in. setLanguage tells screen readers the language of the text.

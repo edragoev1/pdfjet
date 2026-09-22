@@ -10,6 +10,18 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Markup` makes paragraphs of text with the inline markup of Markdown,
+  `**bold**`, `*italic*`, `***bold italic***`, `` `code` `` and
+  `[links](url)`, in the fonts given for each, in all four ports:
+  `paragraph(text)` makes one paragraph and `paragraphs(text)` one of each
+  part between empty lines. A backslash makes a mark text, and so is a mark
+  with no match, such as the `*` of `2 * 3`. Emphasis can be inside a link,
+  and neither inside code. The runs of each style are joined with
+  `Paragraph.addJoined`, so the punctuation after a word in another style is
+  next to it. Headings, lists and the other blocks of Markdown are not read.
+  The markup is read in time linear in the length of the text, and the Go
+  port fuzzes it; the Go and the Java parsers give the same paragraphs for
+  200,000 random texts.
 - `Paragraph.addJoined(textLine)` adds a text line with no space before
   it, so that a word can change its font or its color partway through: a
   word in bold followed by a comma in the regular font, or a link that ends
@@ -802,6 +814,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_53 is new: paragraphs written with the inline markup of Markdown,
+  drawn with `Markup` in a text frame, with a numbered list, as a PDF/UA
+  document, in all four ports. The booklet has a snippet of `Markup`, and the
+  scripts, the workflows and the packaging build and check 53 examples.
 - The booklet is a guide to the API now, not a listing of the examples. Its
   chapters go through documents and pages, fonts, text, tables, graphics,
   images, charts, barcodes, links and annotations, forms, and existing PDFs,

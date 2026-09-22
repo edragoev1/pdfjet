@@ -269,6 +269,20 @@ func lists(pdf *pdfjet.PDF, font *pdfjet.Font) {
 		DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 
+// @snippet markup
+func markup(pdf *pdfjet.PDF, font *pdfjet.Font) {
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
+	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
+	code := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular).SetSize(11)
+	markup := pdfjet.NewMarkup(font, bold, italic, boldItalic, code)
+	paragraphs := markup.Paragraphs(
+		"Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n" +
+			"An empty line starts a new paragraph.")
+	pdfjet.NewTextFrameFromParagraphs(paragraphs).SetWidth(300).SetLocation(50, 50).
+		DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+}
+
 // @snippet text-column
 func textColumn(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	column := pdfjet.NewTextColumn()
@@ -900,6 +914,7 @@ func main() {
 	run("highlighted-words", highlightedWords)
 	run("paragraphs", paragraphs)
 	run("lists", lists)
+	run("markup", markup)
 	run("text-column", textColumn)
 	run("text-frame-pages", textFramePages)
 	run("text-frame-columns", textFrameColumns)

@@ -228,6 +228,20 @@ public class Snippets {
                 .DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet markup
+    static void Markup(PDF pdf, Font font) {
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        Font italic = new Font(pdf, IBMPlexSans.Italic);
+        Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic);
+        Font code = new Font(pdf, JetBrainsMono.Regular).SetSize(11f);
+        Markup markup = new Markup(font, bold, italic, boldItalic, code);
+        List<Paragraph> paragraphs = markup.Paragraphs(
+                "Write **bold**, *italic* and `code`, and link to [PDFjet](https://pdfjet.com).\n\n"
+                + "An empty line starts a new paragraph.");
+        new TextFrame(paragraphs).SetLocation(50f, 50f).SetWidth(300f)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+    }
+
     // @snippet text-column
     static void TextColumn(PDF pdf, Font font) {
         TextColumn column = new TextColumn();
@@ -800,6 +814,7 @@ public class Snippets {
         Run("highlighted-words", HighlightedWords);
         Run("paragraphs", Paragraphs);
         Run("lists", Lists);
+        Run("markup", Markup);
         Run("text-column", TextColumn);
         Run("text-frame-pages", TextFramePages);
         Run("text-frame-columns", TextFrameColumns);

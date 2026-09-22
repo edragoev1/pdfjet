@@ -10,7 +10,7 @@ This package has the library ready to use, built for .NET 8 and later.
 |---|---|
 | `PDFjet.dll` | The library. Reference it from your project. |
 | `docs/dotnet/index.html` | The API reference. |
-| `examples/` | 52 example projects. |
+| `examples/` | 53 example projects. |
 | `examples-dotnet.html` | What each example shows, with links to its source and its PDF. |
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |

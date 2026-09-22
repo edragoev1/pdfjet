@@ -11,8 +11,8 @@ rm -rf obj
 # Build the PDFjet library project
 dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true
 
-# Build Example_01 to Example_52
-for i in {1..52}
+# Build Example_01 to Example_53
+for i in {1..53}
 do
     if [ $i -lt 10 ]; then
         dotnet build examples/Example_0$i/Example_0$i.csproj -c release -p:TreatWarningsAsErrors=true &
@@ -22,8 +22,8 @@ do
 done
 wait
 
-# Run Example_01 to Example_52
-for i in {1..52}
+# Run Example_01 to Example_53
+for i in {1..53}
 do
     if [ $i -lt 10 ]; then
         dotnet examples/Example_0$i/bin/release/net8.0/Example_0$i.dll
