@@ -831,14 +831,14 @@ final public class PDF {
         return getObjNumber();
     }
 
-    // Appends an entry of the information dictionary with the text, unless
-    // the text is null.
     // The moment the document was made, as a date string of PDF: the XMP
     // creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
     String getDate() {
         return "D:" + createDate.replace("-", "").replace("T", "").replace(":", "");
     }
 
+    // Appends an entry of the information dictionary with the text, unless
+    // the text is null.
     private void appendInfoText(String key, String text) throws Exception {
         if (text != null) {
             append(key);

@@ -44,6 +44,10 @@ public final class PDF {
     private var uuid: String = Cryptography.randomBytes(16).map {
         ($0 < 16 ? "0" : "") + String($0, radix: 16)
     }.joined()
+    // The files the document carries, in the order they were added.
+    private var associatedFiles = [EmbeddedFile]()
+    // The descriptions that a standard of its own asks the metadata to carry.
+    private var metadata = [String]()
     private var prevPage: Page?
     // The structure elements of the pages of the document, in page order.
     // complete() collects them, so a detached page that was never added has
@@ -368,6 +372,11 @@ public final class PDF {
             sb.append("</xapMM:InstanceID>\n")
 
             sb.append("</rdf:Description>\n")
+
+            for description in metadata {
+                sb.append(description)
+                sb.append("\n")
+            }
         }
 
         if !fontMetadataObject {
@@ -809,15 +818,19 @@ public final class PDF {
         appendInfoText("/Keywords", keywords)
         appendInfoText("/Creator", creator)
         appendInfoText("/Producer", producer)
-        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
-        let date = "D:" + createDate!
-                .replacingOccurrences(of: "-", with: "")
-                .replacingOccurrences(of: "T", with: "")
-                .replacingOccurrences(of: ":", with: "")
-        appendInfoString("/CreationDate", Array(date.utf8))
+        appendInfoString("/CreationDate", Array(getDate().utf8))
         append(Token.endDictionary)
         endObj()
         return getObjNumber()
+    }
+
+    /// The moment the document was made, as a date string of PDF: the XMP
+    /// creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+    func getDate() -> String {
+        return "D:" + createDate!
+                .replacingOccurrences(of: "-", with: "")
+                .replacingOccurrences(of: "T", with: "")
+                .replacingOccurrences(of: ":", with: "")
     }
 
     /// Appends an entry of the information dictionary with the text, unless
@@ -881,6 +894,8 @@ public final class PDF {
         append(pagesObjNumber)
         append(Token.objRef)
 
+        addAssociatedFiles()
+
         if compliance != Compliance.PDF_1_7 {
             append("/Metadata ")
             append(metadataObjNumber)
@@ -900,6 +915,48 @@ public final class PDF {
         append(Token.endDictionary)
         endObj()
         return getObjNumber()
+    }
+
+    /// The files the document carries: /AF says which they are and how each of
+    /// them relates to the document, and the name tree of /EmbeddedFiles is
+    /// where a reader of the document looks for a file by its name.
+    private func addAssociatedFiles() {
+        if associatedFiles.isEmpty {
+            return
+        }
+        append("/AF [")
+        for i in 0..<associatedFiles.count {
+            if i > 0 {
+                append(Token.space)
+            }
+            append(associatedFiles[i].objNumber)
+            append(" 0 R")
+        }
+        append("]\n")
+
+        // The names of a name tree are in order, which here means the order of
+        // the characters of the names. The tree is one node, as a document
+        // carries few files. The names are compared by their UTF-16 code
+        // units, as Java's String.compareTo does, and not as Swift compares
+        // two strings, which orders them by their Unicode scalars.
+        // Two files of the same name keep the order they were added in, as
+        // the sort of Java keeps it and the sort of Swift does not.
+        let sorted = associatedFiles.enumerated().sorted {
+            let units1 = Array($0.element.fileName!.utf16)
+            let units2 = Array($1.element.fileName!.utf16)
+            return (units1 == units2) ? $0.offset < $1.offset
+                    : units1.lexicographicallyPrecedes(units2)
+        }.map { $0.element }
+        append("/Names <</EmbeddedFiles <</Names [")
+        for file in sorted {
+            append("<")
+            append(textString(file.fileName))
+            append(">")
+            append(Token.space)
+            append(file.objNumber)
+            append(" 0 R")
+        }
+        append("]>>>>\n")
     }
 
     private func addPageBox(_ boxName: String, _ page: Page, _ rect: [Float]) {
@@ -1453,6 +1510,58 @@ public final class PDF {
             throw PDFjetError(message: error)
         }
         try os!.close()
+    }
+
+    ///
+    /// Adds a file that the document carries with it: a reader shows it beside
+    /// the document, and a program that reads the document finds it by its
+    /// name. This is how a document of PDF/A-3 carries the data behind what it
+    /// shows, such as the XML of an invoice.
+    ///
+    /// The file names what it holds, how it relates to the document and what
+    /// it is, so it has to be made with the constructor of EmbeddedFile that
+    /// takes them.
+    ///
+    /// - Parameter file: the embedded file.
+    /// - Returns: this PDF object.
+    ///
+    @discardableResult
+    public func addAssociatedFile(_ file: EmbeddedFile) -> PDF {
+        // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
+        // PDF/A, so a document of either that carries a file is not the
+        // document it says it is.
+        if compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B {
+            fail("A document of \(compliance) cannot carry the file "
+                    + file.getFileName() + ": PDF/A-3 is the one that carries files.")
+            return self
+        }
+        if file.relationship == nil {
+            fail("The file " + file.getFileName()
+                    + " was embedded without a media type, a relationship and a description, "
+                    + "which a file the document carries needs: use the constructor of "
+                    + "EmbeddedFile that takes them.")
+            return self
+        }
+        associatedFiles.append(file)
+        return self
+    }
+
+    ///
+    /// Adds a description to the metadata of the document: the rdf:Description
+    /// element of a standard that asks for properties of its own, such as the
+    /// invoice standards that say which of the files the document carries is
+    /// the invoice. The text is written into the metadata as it is given, so it
+    /// has to be XML, and the document has to be of PDF/A or PDF/UA, which are
+    /// the documents that carry metadata.
+    ///
+    /// - Parameter rdfDescription: the rdf:Description element.
+    /// - Returns: this PDF object.
+    ///
+    @discardableResult
+    public func addMetadata(_ rdfDescription: String) -> PDF {
+        metadata.append(rdfDescription)
+        return self
     }
 
     ///

@@ -57,6 +57,8 @@ type PDF struct {
 	pageMode                  pagemode.PageMode
 	language                  string
 	toc                       *Bookmark
+	associatedFiles           []*EmbeddedFile // The files the document carries, in the order they were added.
+	metadata                  []string        // The descriptions that a standard of its own asks the metadata to carry.
 	importedFonts             []string
 	importedXObjects          []string
 	importedExtGStates        []string
@@ -347,6 +349,11 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("</xapMM:InstanceID>\n")
 
 		sb.WriteString("</rdf:Description>\n")
+
+		for _, description := range pdf.metadata {
+			sb.WriteString(description)
+			sb.WriteString("\n")
+		}
 	}
 
 	if !fontMetadataObject {
@@ -753,12 +760,16 @@ func (pdf *PDF) addInfoObject() int {
 	pdf.appendInfoText("/Keywords", pdf.keywords)
 	pdf.appendInfoText("/Creator", pdf.creator)
 	pdf.appendInfoText("/Producer", pdf.producer)
-	// The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
-	date := "D:" + strings.NewReplacer("-", "", "T", "", ":", "").Replace(pdf.createDate)
-	pdf.appendInfoString("/CreationDate", []byte(date))
+	pdf.appendInfoString("/CreationDate", []byte(pdf.getDate()))
 	pdf.appendString(">>\n")
 	pdf.endObj()
 	return pdf.getObjNumber()
+}
+
+// getDate returns the moment the document was made, as a date string of PDF:
+// the XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+func (pdf *PDF) getDate() string {
+	return "D:" + strings.NewReplacer("-", "", "T", "", ":", "").Replace(pdf.createDate)
 }
 
 // appendInfoText appends an entry of the information dictionary with the text,
@@ -844,6 +855,8 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendInteger(pdf.pagesObjNumber)
 	pdf.appendString(" 0 R\n")
 
+	pdf.addAssociatedFiles()
+
 	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.appendString("/Metadata ")
 		pdf.appendInteger(pdf.metadataObjNumber)
@@ -863,6 +876,56 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString(">>\n")
 	pdf.endObj()
 	return pdf.getObjNumber()
+}
+
+// addAssociatedFiles writes the files the document carries: /AF says which
+// they are and how each of them relates to the document, and the name tree of
+// /EmbeddedFiles is where a reader of the document looks for a file by its name.
+func (pdf *PDF) addAssociatedFiles() {
+	if len(pdf.associatedFiles) == 0 {
+		return
+	}
+	pdf.appendString("/AF [")
+	for i, file := range pdf.associatedFiles {
+		if i > 0 {
+			pdf.appendByte(token.Space)
+		}
+		pdf.appendInteger(file.objNumber)
+		pdf.appendString(" 0 R")
+	}
+	pdf.appendString("]\n")
+
+	// The names of a name tree are in order, which here means the order of
+	// the characters of the names. The tree is one node, as a document
+	// carries few files.
+	sorted := slices.Clone(pdf.associatedFiles)
+	slices.SortStableFunc(sorted, func(file1, file2 *EmbeddedFile) int {
+		return compareUTF16(file1.fileName, file2.fileName)
+	})
+	pdf.appendString("/Names <</EmbeddedFiles <</Names [")
+	for _, file := range sorted {
+		pdf.appendTextString(file.fileName)
+		pdf.appendByte(token.Space)
+		pdf.appendInteger(file.objNumber)
+		pdf.appendString(" 0 R")
+	}
+	pdf.appendString("]>>>>\n")
+}
+
+// compareUTF16 compares the two strings by their UTF-16 code units, as the
+// other ports compare them, so that the names of the name tree are in the
+// same order in every port. Go compares strings by their UTF-8 bytes, which
+// puts a name whose character is outside the basic plane after one whose
+// character is U+E000 or above, where UTF-16 puts it before.
+func compareUTF16(text1, text2 string) int {
+	units1 := utf16.Encode([]rune(text1))
+	units2 := utf16.Encode([]rune(text2))
+	for i := 0; i < len(units1) && i < len(units2); i++ {
+		if units1[i] != units2[i] {
+			return int(units1[i]) - int(units2[i])
+		}
+	}
+	return len(units1) - len(units2)
 }
 
 func (pdf *PDF) addPageBox(boxName string, page *Page, rect []float32) {
@@ -1873,6 +1936,44 @@ func (pdf *PDF) Complete() error {
 		return pdf.file.Close()
 	}
 	return nil
+}
+
+// AddAssociatedFile adds a file that the document carries with it: a reader
+// shows it beside the document, and a program that reads the document finds
+// it by its name. This is how a document of PDF/A-3 carries the data behind
+// what it shows, such as the XML of an invoice.
+//
+// The file names what it holds, how it relates to the document and what it
+// is, so it has to be made with NewEmbeddedFileWithRelationship.
+func (pdf *PDF) AddAssociatedFile(file *EmbeddedFile) *PDF {
+	// PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
+	// PDF/A, so a document of either that carries a file is not the document
+	// it says it is.
+	if pdf.compliance == compliance.PDF_A_1A || pdf.compliance == compliance.PDF_A_1B ||
+		pdf.compliance == compliance.PDF_A_2A || pdf.compliance == compliance.PDF_A_2B {
+		pdf.fail("A document of " + pdf.compliance.String() + " cannot carry the file " +
+			file.GetFileName() + ": PDF/A-3 is the one that carries files.")
+		return pdf
+	}
+	if file.relationship == "" {
+		pdf.fail("The file " + file.GetFileName() +
+			" was embedded without a media type, a relationship and a description, " +
+			"which a file the document carries needs: use NewEmbeddedFileWithRelationship.")
+		return pdf
+	}
+	pdf.associatedFiles = append(pdf.associatedFiles, file)
+	return pdf
+}
+
+// AddMetadata adds a description to the metadata of the document: the
+// rdf:Description element of a standard that asks for properties of its own,
+// such as the invoice standards that say which of the files the document
+// carries is the invoice. The text is written into the metadata as it is
+// given, so it has to be XML, and the document has to be of PDF/A or PDF/UA,
+// which are the documents that carry metadata.
+func (pdf *PDF) AddMetadata(rdfDescription string) *PDF {
+	pdf.metadata = append(pdf.metadata, rdfDescription)
+	return pdf
 }
 
 // SetLanguage sets the "Language" document property of the PDF file.

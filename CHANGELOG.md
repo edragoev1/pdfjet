@@ -10,6 +10,22 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A document can carry files with it, as PDF/A-3 does: an invoice carrying
+  the same invoice as data, a chart carrying its numbers.
+  `PDF.addAssociatedFile(embeddedFile)` adds one, which writes `/AF` and the
+  name tree of `/EmbeddedFiles` in the catalog, in all four ports
+  (`AddAssociatedFile` in C# and Go). The file is embedded with the
+  constructor of `EmbeddedFile` that takes what it holds, how it relates to
+  the document — `Relationship.SOURCE`, `DATA`, `ALTERNATIVE`, `SUPPLEMENT`
+  or `UNSPECIFIED` — and what it is, which PDF/A-3 asks for of each of them;
+  the file specification writes `/Subtype`, `/Params` with the size and the
+  date, `/AFRelationship` and `/Desc`. A document of PDF/A-1 or PDF/A-2
+  refuses the file rather than write one it may not carry. veraPDF reads a
+  document of PDF/A-3b that carries a file as valid.
+- `PDF.addMetadata(rdfDescription)` adds a description to the XMP metadata of
+  the document, for a standard that asks for properties of its own, such as
+  the invoice standards that say which of the files the document carries is
+  the invoice, in all four ports (`AddMetadata` in C# and Go).
 - `Markup` makes paragraphs of text with the inline markup of Markdown,
   `**bold**`, `*italic*`, `***bold italic***`, `` `code` `` and
   `[links](url)`, in the fonts given for each, in all four ports:

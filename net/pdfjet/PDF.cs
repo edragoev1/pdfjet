@@ -46,6 +46,10 @@ public sealed class PDF {
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
     private String language = "en-US";
+    // The files the document carries, in the order they were added.
+    private readonly List<EmbeddedFile> associatedFiles = new List<EmbeddedFile>();
+    // The descriptions that a standard of its own asks the metadata to carry.
+    private readonly List<String> metadata = new List<String>();
     private List<String> importedFonts = new List<String>();
     private List<String> importedXObjects = new List<String>();
     private List<String> importedExtGStates = new List<String>();
@@ -314,6 +318,11 @@ public sealed class PDF {
             sb.Append("</xapMM:InstanceID>\n");
 
             sb.Append("</rdf:Description>\n");
+
+            foreach (String description in metadata) {
+                sb.Append(description);
+                sb.Append("\n");
+            }
         }
 
         if (!fontMetadataObject) {
@@ -770,12 +779,16 @@ public sealed class PDF {
         AppendInfoText("/Keywords", keywords);
         AppendInfoText("/Creator", creator);
         AppendInfoText("/Producer", producer);
-        // The XMP creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
-        String date = "D:" + createDate.Replace("-", "").Replace("T", "").Replace(":", "");
-        AppendInfoString("/CreationDate", Encoding.ASCII.GetBytes(date));
+        AppendInfoString("/CreationDate", Encoding.ASCII.GetBytes(GetDate()));
         Append(Token.EndDictionary);
         EndObj();
         return GetObjNumber();
+    }
+
+    // The moment the document was made, as a date string of PDF: the XMP
+    // creation date 2026-01-31T12:00:00Z is D:20260131120000Z.
+    internal String GetDate() {
+        return "D:" + createDate.Replace("-", "").Replace("T", "").Replace(":", "");
     }
 
     // Appends an entry of the information dictionary with the text, unless
@@ -858,6 +871,8 @@ public sealed class PDF {
         Append(pagesObjNumber);
         Append(" 0 R\n");
 
+        AddAssociatedFiles();
+
         if (compliance != Compliance.PDF_1_7) {
             Append("/Metadata ");
             Append(metadataObjNumber);
@@ -877,6 +892,44 @@ public sealed class PDF {
         Append(Token.EndDictionary);
         EndObj();
         return GetObjNumber();
+    }
+
+    // The files the document carries: /AF says which they are and how each of
+    // them relates to the document, and the name tree of /EmbeddedFiles is
+    // where a reader of the document looks for a file by its name.
+    private void AddAssociatedFiles() {
+        if (associatedFiles.Count == 0) {
+            return;
+        }
+        Append("/AF [");
+        for (int i = 0; i < associatedFiles.Count; i++) {
+            if (i > 0) {
+                Append(Token.Space);
+            }
+            Append(associatedFiles[i].objNumber);
+            Append(" 0 R");
+        }
+        Append("]\n");
+
+        // The names of a name tree are in order, which here means the order of
+        // the characters of the names. The tree is one node, as a document
+        // carries few files.
+        // Two files of the same name keep the order they were added in, as
+        // the sort of Java keeps it and the sort of C# does not.
+        List<EmbeddedFile> sorted = new List<EmbeddedFile>(associatedFiles);
+        sorted.Sort((file1, file2) => {
+            int order = String.CompareOrdinal(file1.fileName, file2.fileName);
+            return (order != 0) ? order
+                    : associatedFiles.IndexOf(file1) - associatedFiles.IndexOf(file2);
+        });
+        Append("/Names <</EmbeddedFiles <</Names [");
+        foreach (EmbeddedFile file in sorted) {
+            AppendTextString(file.fileName);
+            Append(Token.Space);
+            Append(file.objNumber);
+            Append(" 0 R");
+        }
+        Append("]>>>>\n");
     }
 
     private void AddPageBox(String boxName, Page page, float[] rect) {
@@ -1805,6 +1858,54 @@ public sealed class PDF {
         Append("%%EOF\n");
 
         os.Close();
+    }
+
+    /// <summary>
+    /// Adds a file that the document carries with it: a reader shows it beside
+    /// the document, and a program that reads the document finds it by its
+    /// name. This is how a document of PDF/A-3 carries the data behind what it
+    /// shows, such as the XML of an invoice.
+    /// <para>The file names what it holds, how it relates to the document and
+    /// what it is, so it has to be made with the constructor of EmbeddedFile
+    /// that takes them.</para>
+    /// </summary>
+    /// <param name="file">The embedded file.</param>
+    /// <returns>this PDF object.</returns>
+    public PDF AddAssociatedFile(EmbeddedFile file) {
+        // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
+        // PDF/A, so a document of either that carries a file is not the
+        // document it says it is.
+        if (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_2B) {
+            Fail(new InvalidOperationException("A document of " + compliance
+                    + " cannot carry the file " + file.GetFileName()
+                    + ": PDF/A-3 is the one that carries files."));
+            return this;
+        }
+        if (file.relationship == null) {
+            Fail(new ArgumentException("The file " + file.GetFileName()
+                    + " was embedded without a media type, a relationship and a description, "
+                    + "which a file the document carries needs: use the constructor of "
+                    + "EmbeddedFile that takes them."));
+            return this;
+        }
+        associatedFiles.Add(file);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a description to the metadata of the document: the rdf:Description
+    /// element of a standard that asks for properties of its own, such as the
+    /// invoice standards that say which of the files the document carries is
+    /// the invoice. The text is written into the metadata as it is given, so it
+    /// has to be XML, and the document has to be of PDF/A or PDF/UA, which are
+    /// the documents that carry metadata.
+    /// </summary>
+    /// <param name="rdfDescription">The rdf:Description element.</param>
+    /// <returns>this PDF object.</returns>
+    public PDF AddMetadata(String rdfDescription) {
+        metadata.Add(rdfDescription);
+        return this;
     }
 
     // An empty document property is the same as one that was never set: it is
