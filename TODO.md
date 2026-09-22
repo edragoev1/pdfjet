@@ -3,10 +3,10 @@
 Target: **2026-10-21**, the date v9.0.0 was planned for. v9.0.0 was released
 early, on 2026-09-16 at e957f841, and v9.0.1 on 2026-09-18 at 72c41923, so
 what Oct 21 carries is **v9.0.3**: a foundation to build on after it, and
-one feature, `Cell.setRowSpan`, which the work was far enough ahead to fit in
-(Sep 21). Today is Sep 21, so 30 days are left, with one fix release in
-the middle. This file is the working list; tick items off as they land on
-master.
+two features the work was far enough ahead to fit in: `Cell.setRowSpan`
+(Sep 21) and Markdown to PDF, merged from its branch on Sep 22. Today is
+Sep 22, so 29 days are left, with one fix release in the middle. This file
+is the working list; tick items off as they land on master.
 
 The work runs ahead of the calendar below. Goals 1 and 2 are closed: every
 class of the library is read end to end, three weeks before the Oct 9-14 week
@@ -37,11 +37,12 @@ to end, and almost all were silently wrong output that every test and example
 check passed: 23 in the reviews of `Cell`, `Table`, `TextBlock`, `TextColumn`
 and `PDF`; then 32-bit BMPs in the wrong colors, ’ and € drawn as spaces in
 the core fonts, every CMYK JPEG inverted, a fallback font that stuck, the CJK
-line gaps, and what the first three fuzz targets turned up. Eight kinds of
-untrusted input are read from a file, and five of them are fuzzed. So the
-work to Oct 21 is the seven goals below, in this order.
+line gaps, and what the first three fuzz targets turned up. Ten kinds of
+untrusted input are read, from a file or from the text a document is
+written from, and all ten are fuzzed. So the work to Oct 21 is the seven
+goals below, in this order.
 
-Five features are the exceptions, and all are in v9.0.2. The first is
+Six features are the exceptions. Five are in v9.0.2. The first is
 `Cell.setRowSpan` (Sep 21): goals 1 and 2 closed three weeks early, the
 feature is what clients ask `Table` for and could not have, and it landed
 with tests in the four ports and an example that renders alike in all of
@@ -52,10 +53,15 @@ and `setBroughtForwardSum` are new, each with tests in the four ports. The
 third and the fourth, the same day, are the rest of what "After v9.0.3 --
 features" had, from the review of `Table` and `Cell` of Sep 18: striped
 rows with styles for the header and the footer rows, and column widths
-shared from the width of the table. The fifth, the same day and the last,
-is a `TextFrame` that flows onto as many pages as its text needs. The other
-members master adds to the API of v9.0.1 came with the PDF/UA work and the
-fixes; goal 6 lists all 25.
+shared from the width of the table. The fifth, the same day,
+is a `TextFrame` that flows onto as many pages as its text needs.
+
+The sixth is Markdown to PDF, which is in v9.0.3 rather than v9.0.2: it was
+written on a branch of its own with the checks master has, and merged on
+Sep 22 once it had them all. It is the one feature of the release that is
+not a small addition to something that was already there, which is why it
+was kept off master until it was done. The other members master adds to the
+API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
 
 ## The seven goals of v9.0.3
 
@@ -68,6 +74,10 @@ fixes; goal 6 lists all 25.
      JPEG, SVG, OTF and TTF, the decompressor and `PDF.read` -- each replayed
      in the four ports, and every failure they found fixed in the four ports
      with a test. What was fixed is in CHANGELOG.md.
+   - ✅ Two more since (Sep 22): `Markup` and `Markdown`, the readers of the
+     text a document is written from. They found the quadratic joining of
+     `TextFrame`, and a `Markdown` that looped forever on a surrogate pair in
+     a code block 31 quotes deep. Ten targets in all.
 
 2. ✅ **B** Finish the class-by-class review, as on Sep 17: one class end to
    end in the four ports, each finding proved by running it, fixed in the four
@@ -132,6 +142,20 @@ fixes; goal 6 lists all 25.
    - `TextFrame.drawOn(pdf, pages, pageSize)`, in Go `DrawOnPages`, a frame
      that flows onto as many pages as its text needs (Sep 22).
 
+   Three types and twenty-one members came after those, all on Sep 22:
+   - `Markup`, with its constructor of five fonts, `paragraph`, `paragraphs`,
+     `setLinkColor` and `setLinkUnderline`, and `Paragraph.addJoined`;
+   - `Markdown`, with its constructor of five fonts, `setHeadingFont`,
+     `setMargins`, `setImageDirectory` and `drawOn`, and the structure types
+     `StructElem.BLOCKQUOTE` and `StructElem.CODE`;
+   - `Relationship` and its five values, `PDF.addAssociatedFile`,
+     `PDF.addMetadata`, and the constructor of `EmbeddedFile` that takes the
+     media type, the relationship and the description, which are the files a
+     document of PDF/A-3 carries.
+
+   `MarkdownParser` is not public in any port, so the Markdown a document is
+   written from is read one way only, through `Markdown`.
+
    Nothing is removed and no signature changes. Swift's `Alignment` has an
    `init(rawValue:)` since its cases are the numbers a `Cell` packs, and Go's
    `internal/utf8text.Decode` is not importable, so neither is API. Any other
@@ -175,6 +199,12 @@ day.
       drawn at the size they ask for.
 - ✅ Example_17 is an example rather than a test case, and a line chart
       (Sep 21).
+- ✅ `Markup`, the inline markup of Markdown in a `Paragraph`, with
+      `Paragraph.addJoined` beside it and Example_53 (Sep 22).
+- ✅ Markdown to PDF merged from its branch, with Example_54 (Sep 22).
+- ✅ The files a document carries, `PDF.addAssociatedFile` and
+      `PDF.addMetadata`, which PDF/A-3 asks for and an electronic invoice is
+      made of (Sep 22). See the invoices section below.
 
 ### Sep 27–Oct 1: release v9.0.2
 
@@ -197,6 +227,8 @@ day.
 
 ### Oct 2–8: the reader
 
+- ✅ The Oct 8 decision on the `markdown` branch, made early: merged on
+      Sep 22. See the Markdown section below.
 - ✅ **B** Goal 2: the review of the reader. Done on Sep 21.
 - ✅ **B** Goal 1: fuzz `PDF.read`. Done on Sep 21.
 - ✅ **B** Goal 5: the reader against the pdf.js and veraPDF corpora, and the
@@ -234,25 +266,28 @@ day.
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 
-## Markdown to PDF, on the branch markdown
+## Markdown to PDF — merged
 
-- ⬜ A practical subset of Markdown to PDF, in the four ports, built on the
-  branch `markdown` with the checks master has: headings, paragraphs with
-  the inline markup of `Markup`, bullet and numbered lists that nest, block
-  quotes, fenced code blocks, thematic breaks, GitHub tables and images,
-  flowed down the pages and tagged for PDF/UA. It is merged into v9.0.3 on
-  **Oct 8** if it is solid by then, with its tests, fuzz targets and
-  examples; otherwise master stays as it is and it ships in v9.1. It is
-  called Markdown, not CommonMark: CommonMark's 652 examples are the goal
-  of v9.1 below.
+- ✅ A practical subset of Markdown to PDF, in the four ports: headings,
+  paragraphs with the inline markup of `Markup`, bullet and numbered lists
+  that nest, block quotes, fenced and indented code, thematic breaks, GitHub
+  tables and images, flowed down the pages and tagged for PDF/UA. Written on
+  the branch `markdown` and merged into master on **Sep 22**, sixteen days
+  before the Oct 8 date it was given, with its tests, its fuzz target,
+  Example_54 and a booklet snippet in each port. The branch is deleted.
+  - It is called Markdown, not CommonMark: CommonMark's 652 examples are the
+    goal of v9.1 below.
+  - The merge holds the checks that hold at the tag: the unit tests of the
+    four ports, and `check-examples.sh` over the 54 examples and the 59
+    snippet PDFs.
 
 ## v9.1 — features, after v9.0.3
 
-- ⬜ Markdown to PDF, in the four ports: a CommonMark parser written from
-  the spec, with the GitHub tables, strikethrough and task lists, and a
-  renderer that draws the document with PDFjet's components, headings,
-  paragraphs of mixed styles, lists, code blocks and tables, tagged for
-  PDF/UA, which few Markdown to PDF tools are.
+- ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
+  subset above: a parser written from the spec, with the GitHub tables,
+  strikethrough and task lists. The renderer is written and tagged for
+  PDF/UA already, so what is left is the parser and the 652 examples of the
+  spec.
   - The parser is about 2,500 to 3,000 lines a port, 1,200 to 1,500 of them
     for the blocks and as many for the inlines; the GitHub extensions add
     800 to 1,200, the renderer 800 to 1,500, and the table of the 2,125
@@ -263,8 +298,8 @@ day.
     the rule of 3; lazy continuation lines in block quotes and lists; tight
     and loose lists; the seven kinds of HTML block; and link labels matched
     with Unicode case folding.
-  - About a week for the first port to pass the spec, a few days for each
-    of the others, and the renderer after.
+  - About a week for the first port to pass the spec, and a few days for
+    each of the others; the renderer is done.
 
 ## Electronic invoices (in the commercial repository, `.commercial`)
 
