@@ -29,9 +29,9 @@ func Example10() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Switzerland")
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/sz-map.png")
+	image1 := pdfjet.NewImageFromFile(pdf, "images/swiss-admin.jpg")
 	image1.SetAltDescription(
-		"A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.")
+		"A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
@@ -47,8 +47,10 @@ func Example10() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	image1.SetLocation(90.0, 35.0)
-	image1.ScaleBy(1.25) // The image is 120 DPI, so 0.6 of its pixels
+	// The map is 310 points tall, so that it and the text fit the page, and
+	// centered over the text.
+	image1.ScaleBy(310.0 / image1.GetHeight())
+	image1.SetLocation(90.0+(470.0-image1.GetWidth())/2.0, 35.0)
 	image1.DrawOn(page)
 
 	// To rotate the column, add it to a Container and rotate that; see Example_35.
@@ -129,7 +131,7 @@ func Example10() {
 	column.AddParagraph(p4)
 	column.AddParagraph(p5)
 
-	column.SetLocation(90.0, 300.0)
+	column.SetLocation(90.0, 365.0)
 
 	columnWidth := float32(470.0)
 	column.SetWidth(columnWidth)

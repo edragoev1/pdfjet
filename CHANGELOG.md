@@ -772,6 +772,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_10 draws the CIA's map of the administrative divisions of
+  Switzerland, `images/swiss-admin.jpg`, of the series of the maps of Italy,
+  Spain and Greece the other examples draw, in place of the small World
+  Factbook map `images/sz-map.png`, which is removed. The map is 310 points
+  tall and centered over the text, which moves down under it, and the example
+  is one page, as before, in all four ports. `images/swiss-admin.txt` says
+  where the map is from: it is in the public domain.
 - Example_32 and Example_34 draw within the page, in all four ports.
   Example_32 drew the source of Example_02 at 10 points on portrait pages,
   and its longest lines ran to x = 858 on a page 612 points wide; it draws it

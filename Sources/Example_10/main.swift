@@ -16,9 +16,9 @@ public class Example_10 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Switzerland")
 
-        let image1 = try Image(pdf, "images/sz-map.png")
+        let image1 = try Image(pdf, "images/swiss-admin.jpg")
         image1.setAltDescription(
-                "A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.")
+                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(10.0)
@@ -34,8 +34,10 @@ public class Example_10 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        image1.setLocation(90.0, 35.0)
-        image1.scaleBy(1.25)        // The image is 120 DPI, so 0.6 of its pixels
+        // The map is 310 points tall, so that it and the text fit the page,
+        // and centered over the text.
+        image1.scaleBy(310.0 / image1.getHeight())
+        image1.setLocation(90.0 + (470.0 - image1.getWidth()) / 2.0, 35.0)
         image1.drawOn(page)
 
         // To rotate the column, add it to a Container and rotate that; see Example_35.
@@ -116,7 +118,7 @@ public class Example_10 {
         column.addParagraph(p4)
         column.addParagraph(p5)
 
-        column.setLocation(90.0, 300.0)
+        column.setLocation(90.0, 365.0)
 
         let columnWidth: Float = 470.0
         column.setWidth(columnWidth)

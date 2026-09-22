@@ -20,9 +20,9 @@ public class Example_10 {
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("Switzerland");
 
-        Image image1 = new Image(pdf, "images/sz-map.png");
+        Image image1 = new Image(pdf, "images/swiss-admin.jpg");
         image1.setAltDescription(
-                "A map of Switzerland with its canton borders, its lakes and rivers, and its cities from Geneva to Sankt Gallen, Bern marked as the capital.");
+                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(10f);
@@ -38,8 +38,10 @@ public class Example_10 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        image1.setLocation(90f, 35f);
-        image1.scaleBy(1.25f);     // The image is 120 DPI, so 0.6 of its pixels
+        // The map is 310 points tall, so that it and the text fit the page,
+        // and centered over the text.
+        image1.scaleBy(310f / image1.getHeight());
+        image1.setLocation(90f + (470f - image1.getWidth()) / 2f, 35f);
         image1.drawOn(page);
 
         // To rotate the column, add it to a Container and rotate that; see Example_35.
@@ -120,7 +122,7 @@ public class Example_10 {
         column.addParagraph(p4);
         column.addParagraph(p5);
 
-        column.setLocation(90f, 300f);
+        column.setLocation(90f, 365f);
 
         float columnWidth = 470f;
         column.setWidth(columnWidth);
