@@ -234,6 +234,18 @@ day.
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 
+## Markdown to PDF, on the branch markdown
+
+- ⬜ A practical subset of Markdown to PDF, in the four ports, built on the
+  branch `markdown` with the checks master has: headings, paragraphs with
+  the inline markup of `Markup`, bullet and numbered lists that nest, block
+  quotes, fenced code blocks, thematic breaks, GitHub tables and images,
+  flowed down the pages and tagged for PDF/UA. It is merged into v9.0.3 on
+  **Oct 8** if it is solid by then, with its tests, fuzz targets and
+  examples; otherwise master stays as it is and it ships in v9.1. It is
+  called Markdown, not CommonMark: CommonMark's 652 examples are the goal
+  of v9.1 below.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ Markdown to PDF, in the four ports: a CommonMark parser written from
