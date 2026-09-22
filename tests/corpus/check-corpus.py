@@ -1,6 +1,7 @@
 """Checks the reader against real PDFs: the pdf.js and veraPDF test corpora.
 
     tests/corpus/fetch-corpora.sh .corpora
+    python3 tests/corpus/fetch-links.py .corpora
     python3 tests/corpus/check-corpus.py .corpora [--port go] [--jobs N] [--only SUBSTRING]
 
 Each PDF is read by the port, which merges the whole of it into a document of
@@ -78,6 +79,13 @@ def corpus_files(corpora):
     for name in sorted(os.listdir(os.path.join(corpora, pdfs))):
         if name.lower().endswith('.pdf'):
             files.append((os.path.join(pdfs, name), passwords.get(name, '')))
+    # The PDFs that pdf.js links to, which fetch-links.py fetches: the ones
+    # that are there.
+    links = 'pdfjs-links'
+    if os.path.isdir(os.path.join(corpora, links)):
+        for name in sorted(os.listdir(os.path.join(corpora, links))):
+            if name.lower().endswith('.pdf'):
+                files.append((os.path.join(links, name), passwords.get(name, '')))
     for dirpath, dirnames, filenames in os.walk(os.path.join(corpora, 'verapdf')):
         dirnames[:] = sorted(d for d in dirnames if d != '.git')
         for name in sorted(filenames):
