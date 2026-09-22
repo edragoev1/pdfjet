@@ -30,6 +30,11 @@ public class Table : IDrawable {
     // the next lines of its wrapped text add to.
     private StructElement structElement;
     private StructElement[] cellElements;
+    // The height of each row as it is drawn, measured once for each DrawOn,
+    // after the text is wrapped and the spans are worked out, rather than
+    // for each page: a table of 2,546 pages measured its 124,716 rows on
+    // every one of them.
+    private float[] heights;
 
     /// <summary>
     /// Create a table object.
@@ -674,6 +679,7 @@ public class Table : IDrawable {
         ApplyRowSpans();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
+        heights = GetRowHeights();
         float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
         return new float[] {x1 + GetWidth(), xy[1]};
     }
@@ -694,6 +700,7 @@ public class Table : IDrawable {
         ApplyRowSpans();
         SetRightBorderOnLastColumn();
         SetBottomBorderOnLastRow();
+        heights = GetRowHeights();
         float[] xy = null;
         int pageNumber = 1;
         while (HasMoreData()) {
@@ -722,7 +729,7 @@ public class Table : IDrawable {
         if (page != null && !first && numOfHeaderRows > 0) {
             page.AddArtifactBMC();
         }
-        float[] heights = GetRowHeights();
+        float[] heights = this.heights;
         // The rows that bring a total forward are drawn from the second page
         // on, with the total of the rows before the page.
         int last = -1;
@@ -840,7 +847,7 @@ public class Table : IDrawable {
         bool done = (rendered == -1);
         int index = done ? footer : rendered;
         int first = index;
-        float[] heights = GetRowHeights();
+        float[] heights = this.heights;
         // Where the rows start on the next pages, under the header rows.
         float top = y1;
         for (int r = 0; r < numOfHeaderRows && r < heights.Length; r++) {

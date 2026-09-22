@@ -26,6 +26,11 @@ public class Table : Drawable {
     // the next lines of its wrapped text add to.
     private var structElement: StructElement?
     private var cellElements = [StructElement?]()
+    // The height of each row as it is drawn, measured once for each drawOn,
+    // after the text is wrapped and the spans are worked out, rather than
+    // for each page: a table of 2,546 pages measured its 124,716 rows on
+    // every one of them.
+    private var heights = [Float]()
 
     ///
     /// Create a table object.
@@ -716,6 +721,7 @@ public class Table : Drawable {
         applyRowSpans()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
+        heights = getRowHeights()
         let xy = drawTableRows(page, drawHeaderRows(page, 0))
         return [x1 + getWidth(), xy[1]]
     }
@@ -739,6 +745,7 @@ public class Table : Drawable {
         applyRowSpans()
         setRightBorderOnLastColumn()
         setBottomBorderOnLastRow()
+        heights = getRowHeights()
         var xy: [Float]?
         var pageNumber: Int = 1
         while (hasMoreData()) {
@@ -770,7 +777,7 @@ public class Table : Drawable {
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addArtifactBMC()
         }
-        let heights = getRowHeights()
+        let heights = self.heights
         // The rows that bring a total forward are drawn from the second page
         // on, with the total of the rows before the page.
         var last = -1
@@ -891,7 +898,7 @@ public class Table : Drawable {
         let done = (rendered == -1)
         var index = done ? footer : rendered
         let first = index
-        let heights = getRowHeights()
+        let heights = self.heights
         // Where the rows start on the next pages, under the header rows.
         var top = y1
         for r in 0..<min(numOfHeaderRows, heights.count) {

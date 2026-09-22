@@ -35,6 +35,11 @@ type Table struct {
 	// the next lines of its wrapped text add to.
 	structElement *structElement
 	cellElements  []*structElement
+	// The height of each row as it is drawn, measured once for each DrawOn,
+	// after the text is wrapped and the spans are worked out, rather than for
+	// each page: a table of 2,546 pages measured its 124,716 rows on every one
+	// of them.
+	heights []float32
 }
 
 // NewTable creates table objects.
@@ -647,6 +652,7 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.applyRowSpans()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
+	table.heights = table.getRowHeights()
 	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
@@ -663,6 +669,7 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 	table.applyRowSpans()
 	table.setRightBorderOnLastColumn()
 	table.setBottomBorderOnLastRow()
+	table.heights = table.getRowHeights()
 	var xy [2]float32
 	pageNumber := 1
 	for table.hasMoreData() {
@@ -693,7 +700,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddArtifactBMC()
 	}
-	heights := table.getRowHeights()
+	heights := table.heights
 	// The rows that bring a total forward are drawn from the second page on,
 	// with the total of the rows before the page.
 	last := -1
@@ -831,7 +838,7 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		index = footer
 	}
 	first := index
-	heights := table.getRowHeights()
+	heights := table.heights
 	// Where the rows start on the next pages, under the header rows.
 	top := table.y1
 	for r := 0; r < table.numOfHeaderRows && r < len(heights); r++ {

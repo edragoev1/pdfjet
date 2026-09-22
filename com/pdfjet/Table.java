@@ -31,6 +31,11 @@ public class Table implements Drawable {
     // the next lines of its wrapped text add to.
     private StructElement structElement;
     private StructElement[] cellElements;
+    // The height of each row as it is drawn, measured once for each drawOn,
+    // after the text is wrapped and the spans are worked out, rather than
+    // for each page: a table of 2,546 pages measured its 124,716 rows on
+    // every one of them.
+    private float[] heights;
 
     /**
      * Create a table object.
@@ -723,6 +728,7 @@ public class Table implements Drawable {
         applyRowSpans();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
+        heights = getRowHeights();
         float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
         return new float[] {x1 + getWidth(), xy[1]};
     }
@@ -745,6 +751,7 @@ public class Table implements Drawable {
         applyRowSpans();
         setRightBorderOnLastColumn();
         setBottomBorderOnLastRow();
+        heights = getRowHeights();
         float[] xy = null;
         int pageNumber = 1;
         while (hasMoreData()) {
@@ -773,7 +780,7 @@ public class Table implements Drawable {
         if (page != null && !first && numOfHeaderRows > 0) {
             page.addArtifactBMC();
         }
-        float[] heights = getRowHeights();
+        float[] heights = this.heights;
         // The rows that bring a total forward are drawn from the second page
         // on, with the total of the rows before the page.
         int last = -1;
@@ -887,7 +894,7 @@ public class Table implements Drawable {
     private float[] drawTableRows(Page page, float[] xy) throws Exception {
         float x = xy[0];
         float y = xy[1];
-        float[] heights = getRowHeights();
+        float[] heights = this.heights;
         int footer = footerStart();
         boolean done = (rendered == -1);
         int index = done ? footer : rendered;
