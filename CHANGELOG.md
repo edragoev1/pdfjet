@@ -782,6 +782,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_52 is new: it sets the whole of Dostoyevsky's "The Idiot" as a
+  book, in all four ports, with `TextFrame.drawOn(pdf, pages, pageSize)`. It
+  makes a title page, then puts each chapter on new A5 pages in Source Serif
+  4, with the parts as H1 and the chapters as H2 headings, justified
+  paragraphs, the words marked with underscores in italics, and a number at
+  the foot of every page. It makes 745 pages, the same in every port, as a
+  PDF/UA document, and prints how long it takes: about 1.0 s in Java and C#,
+  0.5 s in Go and 1.9 s in Swift. The text, `data/the-idiot.txt`, is Project
+  Gutenberg's eBook #2638, the translation by Eva Martin of 1915, without the
+  Gutenberg header and license. It is in the public domain;
+  `data/the-idiot-source.txt` says where it is from. The scripts, the
+  workflows and the packaging build and check 52 examples.
 - Example_10 draws the CIA's map of the administrative divisions of
   Switzerland, `images/swiss-admin.jpg`, of the series of the maps of Italy,
   Spain and Greece the other examples draw, in place of the small World

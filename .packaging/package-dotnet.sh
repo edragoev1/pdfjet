@@ -87,7 +87,7 @@ rm -rf .packaging
 rm -rf examples/Example_*/bin examples/Example_*/obj
 
 # An example that fails can leave a PDF it had begun, so each must be complete.
-for i in $(seq -w 1 51); do
+for i in $(seq -w 1 52); do
     if ! tail -c 32 "Example_$i.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "Example_$i.pdf was not created or is incomplete"
         exit 1

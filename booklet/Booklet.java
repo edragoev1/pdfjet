@@ -19,7 +19,7 @@ import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
- * Writes the PDFjet booklet with PDFjet: an introduction and the 51 examples
+ * Writes the PDFjet booklet with PDFjet: an introduction and the 52 examples
  * with their source code, as a PDF/UA document with bookmarks and a linked
  * table of contents. It writes one booklet for each port, with the code of
  * that port, and one with the code of the four ports.
@@ -62,7 +62,7 @@ public class Booklet {
         String kind;        // "h1", "h2", "p", "li", "code", "lang", "example"
         String language;    // Of "code" and "lang" items
         String text;        // The heading, paragraph or bullet, or the title of an example
-        String number;      // Of an example: "01" to "51"
+        String number;      // Of an example: "01" to "52"
         List<String> lines = new ArrayList<String>();   // Of "code" and "lang" items
         List<Item> items = new ArrayList<Item>();       // Of "lang" items and examples
     }
@@ -120,7 +120,7 @@ public class Booklet {
         pdf = new PDF(new BufferedOutputStream(new FileOutputStream(fileName)));
         pdf.setCompliance(Compliance.PDF_UA_1);
         pdf.setTitle("PDFjet, " + editionName() + " edition");
-        pdf.setSubject("An introduction to PDFjet, with the source code of its 51 examples");
+        pdf.setSubject("An introduction to PDFjet, with the source code of its 52 examples");
         pdf.setAuthor("PDFjet Software");
         pdf.setLanguage("en-US");
 
@@ -418,7 +418,7 @@ public class Booklet {
         float[] xy = logo.drawOn(page);
 
         centered(bold, 20f, editionName() + " edition", ACCENT, xy[1] + 80f, StructElem.P);
-        centered(body, 12f, "An introduction, with the 51 examples and their source code", GRAY,
+        centered(body, 12f, "An introduction, with the 52 examples and their source code", GRAY,
                 xy[1] + 106f, StructElem.P);
         centered(body, 10f, "Version 9 \u00B7 2026 \u00B7 pdfjet.com", GRAY, 730f, StructElem.P);
     }

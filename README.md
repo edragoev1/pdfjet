@@ -204,7 +204,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 51 examples, the same in every port. Build
+The [examples](examples) folder has 52 examples, the same in every port. Build
 a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |
@@ -223,7 +223,7 @@ sudo apt install libc6-dev gcc
 On Windows, use the `.cmd` scripts of the same names.
 
 `booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction to
-the library and all 51 examples with their source code, as a PDF/UA document
+the library and all 52 examples with their source code, as a PDF/UA document
 with bookmarks and a linked table of contents. It writes one booklet for each
 port and one with the code of the four ports, `booklet/PDFjet-Booklet-*.pdf`,
 from `booklet/content.txt` and the example sources.

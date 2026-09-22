@@ -33,7 +33,7 @@ PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and th
 
 ## How this booklet is organized
 
-The first chapters show how to install PDFjet, what a PDFjet program looks like, and how to use the library efficiently. The chapters after them go through all 51 examples that come with PDFjet, grouped by topic. Each example starts with what it shows and what to look for, followed by its complete source code, exactly as it is in the repository, where the examples are built and their PDFs checked on every change.
+The first chapters show how to install PDFjet, what a PDFjet program looks like, and how to use the library efficiently. The chapters after them go through all 52 examples that come with PDFjet, grouped by topic. Each example starts with what it shows and what to look for, followed by its complete source code, exactly as it is in the repository, where the examples are built and their PDFs checked on every change.
 
 To see what an example draws, run it: every example writes a PDF named after it, such as Example_24.pdf. The examples read their fonts, images and data from the fonts, images and data folders of the repository, so run them from its root folder.
 
@@ -217,6 +217,9 @@ Draws rows of an image with text next to it. The drawOn methods of the image and
 
 @example 32 Source code with highlighted keywords
 Draws the source of Example 02 in JetBrains Mono on landscape pages, wide enough for its longest lines, with its keywords in colors, starting a new page when one is full.
+
+@example 52 A novel set as a book
+Sets the whole of Dostoyevsky's "The Idiot", 241,527 words, on 745 A5 pages: a title page, then each chapter on a new page that a text frame flows onto, with the words in italics and a number at the foot of every page. It prints the time it takes, about a second.
 
 # Tables
 
