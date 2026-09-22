@@ -49,7 +49,7 @@ if [ -z "$JAVA8_HOME" ] || ! "$JAVA8_HOME/bin/javac" -version 2>&1 | grep -q ' 1
 fi
 
 # The check uses the PyMuPDF version that the Build workflow installs.
-pymupdf=$(grep -o 'pymupdf==[0-9.]*' .github/workflows/build.yml)
+pymupdf=$(grep -o 'pymupdf==[0-9.]*' .github/workflows/build.yml | head -n 1)
 if [ ! -x "$WORK/venv/bin/python" ]; then
     python3 -m venv "$WORK/venv" || exit 1
 fi
