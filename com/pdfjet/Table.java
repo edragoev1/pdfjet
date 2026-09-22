@@ -933,6 +933,13 @@ public class Table implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
+        return drawOn(pdf, null, pages, pageSize);
+    }
+
+    // Draws the table as drawOn(pdf, pages, pageSize) does, from the first page
+    // when it is not null: a page that has other content above the table,
+    // which setFirstPageTopMargin puts the table under. The next pages are new.
+    float[] drawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) throws Exception {
         if (tableData.isEmpty()) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }
@@ -945,8 +952,11 @@ public class Table implements Drawable {
         float[] xy = null;
         int pageNumber = 1;
         while (hasMoreData()) {
-            Page page = new Page(pdf, pageSize, Page.DETACHED);
-            pages.add(page);
+            Page page = first;
+            if (pageNumber > 1 || first == null) {
+                page = new Page(pdf, pageSize, Page.DETACHED);
+                pages.add(page);
+            }
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
             pageNumber++;
         }

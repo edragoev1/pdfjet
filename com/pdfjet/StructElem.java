@@ -40,6 +40,8 @@ public enum StructElem {
     TITLE("Title"),
     /** The Lbl structure element. */
     LBL("Lbl"),
+    /** The BlockQuote structure element, a quotation of one or more paragraphs. */
+    BLOCKQUOTE("BlockQuote"),
     // Inline
     /** The Span structure element. */
     SPAN("Span"),
@@ -47,6 +49,8 @@ public enum StructElem {
     EM("Em"),
     /** The Strong structure element. */
     STRONG("Strong"),
+    /** The Code structure element, computer code. */
+    CODE("Code"),
     /** The Link structure element. */
     LINK("Link"),
     /** The Annot structure element. */
