@@ -94,6 +94,7 @@ type fontReference struct {
 	Ascent             int    `json:"ascent"`
 	Descent            int    `json:"descent"`
 	LineGap            int    `json:"lineGap"`
+	ItalicAngle        int    `json:"italicAngle"`
 	CapHeight          int    `json:"capHeight"`
 	UnderlinePosition  int    `json:"underlinePosition"`
 	UnderlineThickness int    `json:"underlineThickness"`
@@ -182,6 +183,7 @@ func fontReferenceOf(path string) (ref *fontReference) {
 	ref.Ascent = int(font.fontAscent)
 	ref.Descent = int(font.fontDescent)
 	ref.LineGap = int(font.fontLineGap)
+	ref.ItalicAngle = int(font.italicAngle)
 	ref.UnderlinePosition = int(font.fontUnderlinePosition)
 	ref.UnderlineThickness = int(font.fontUnderlineThickness)
 	ref.FirstChar = int(font.firstChar)

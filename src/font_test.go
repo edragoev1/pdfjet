@@ -403,3 +403,32 @@ func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
 		}
 	}
 }
+
+func TestFontTheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable(t *testing.T) {
+	// A .stream file holds the angle after the line gap, so the .otf and the
+	// .stream of it write one descriptor.
+	for _, font := range [][2]string{
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
+		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
+		{"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
+		{"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+	} {
+		pdf := string(testDocumentWithFonts(t, font[0]))
+		if !strings.Contains(pdf, "/ItalicAngle "+font[1]+"\n") {
+			t.Errorf("%s: no /ItalicAngle %s", font[0], font[1])
+		}
+		// Nonsymbolic, and Italic for an italic font.
+		flags := "/Flags 96\n"
+		if font[1] == "0" {
+			flags = "/Flags 32\n"
+		}
+		if !strings.Contains(pdf, flags) {
+			t.Errorf("%s: no %q", font[0], flags)
+		}
+	}
+	testWant(t, "0.05", italicAngleOf(3277))
+	testWant(t, "0", italicAngleOf(-1))
+	testWant(t, "-90", italicAngleOf(-90*65536))
+}

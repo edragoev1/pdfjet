@@ -34,6 +34,7 @@ public class Font {
     internal int fontAscent;
     internal int fontDescent;
     internal int fontLineGap;          // The space the font puts between its lines.
+    internal int italicAngle;          // The italic angle of the post table, as a 16.16 fixed number.
     internal int bBoxLLx;
     internal int bBoxLLy;
     internal int bBoxURx;

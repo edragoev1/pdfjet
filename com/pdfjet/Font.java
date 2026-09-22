@@ -46,6 +46,8 @@ final public class Font {
     protected int fontDescent;
     /** The line gap in font units: the space the font puts between its lines. */
     protected int fontLineGap;
+    /** The italic angle of the post table, as a 16.16 fixed number. */
+    protected int italicAngle;
     /** The x coordinate of the lower left corner of the font bounding box. */
     protected int bBoxLLx;
     /** The y coordinate of the lower left corner of the font bounding box. */

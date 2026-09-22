@@ -27,6 +27,7 @@ class OpenTypeFont {
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
         font.fontLineGap = otf.lineGap
+        font.italicAngle = Int32(bitPattern: otf.italicAngle!)
         font.fontUnderlinePosition = otf.underlinePosition!
         font.fontUnderlineThickness = otf.underlineThickness!
         font.checksum = Font.checksumOf(font)
@@ -129,7 +130,9 @@ class OpenTypeFont {
         }
         pdf.append(font.fileObjNumber)
         pdf.append(" 0 R\n")
-        pdf.append("/Flags 32\n")
+        pdf.append("/Flags ")
+        pdf.append(flagsOf(font.italicAngle))
+        pdf.append(Token.newline)
         pdf.append("/FontBBox [")
         pdf.append(toGlyphSpace(otf.bBoxLLx!, unitsPerEm))
         pdf.append(Token.space)
@@ -145,7 +148,9 @@ class OpenTypeFont {
         pdf.append("/Descent ")
         pdf.append(toGlyphSpace(otf.descent!, unitsPerEm))
         pdf.append(Token.newline)
-        pdf.append("/ItalicAngle 0\n")
+        pdf.append("/ItalicAngle ")
+        pdf.append(italicAngleOf(font.italicAngle))
+        pdf.append(Token.newline)
         pdf.append("/CapHeight ")
         pdf.append(toGlyphSpace(otf.capHeight!, unitsPerEm))
         pdf.append(Token.newline)
@@ -162,6 +167,30 @@ class OpenTypeFont {
     static func toGlyphSpace(_ value: Int16, _ unitsPerEm: Int) -> Int32 {
         let rounded = (2000 * abs(Int(value)) + unitsPerEm) / (2 * unitsPerEm)
         return Int32((value < 0) ? -rounded : rounded)
+    }
+
+    /// Returns the flags of the font descriptor: Nonsymbolic, 32, and Italic,
+    /// 64, for a font whose post table gives it an italic angle.
+    static func flagsOf(_ italicAngle: Int32) -> Int {
+        return (italicAngle != 0) ? 32 | 64 : 32
+    }
+
+    /// Returns the italic angle of the font descriptor: the 16.16 fixed number
+    /// of the post table in degrees, to two decimals with halves away from
+    /// zero and no trailing zeros. The integer arithmetic gives the same text
+    /// in every port.
+    static func italicAngleOf(_ angle: Int32) -> String {
+        let rounded = (200 * abs(Int64(angle)) + 65536) / (2 * 65536)
+        var text = String(rounded / 100)
+        if rounded % 100 != 0 {
+            // The two decimals, as 100 to 199 without the 1, and no trailing zero.
+            var decimals = String(String(100 + rounded % 100).dropFirst())
+            if decimals.hasSuffix("0") {
+                decimals.removeLast()
+            }
+            text += "." + decimals
+        }
+        return (angle < 0 && rounded != 0) ? "-" + text : text
     }
 
     private static func addToUnicodeCMapObject(

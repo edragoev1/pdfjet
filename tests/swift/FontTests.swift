@@ -335,4 +335,28 @@ import Testing
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"])) == 1)
     }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Italic.otf"),
+            "the fonts directory is not here"))
+    func theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws {
+        // A .stream file holds the angle after the line gap, so the .otf and
+        // the .stream of it write one descriptor.
+        let fonts = [
+            ("fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"),
+            ("fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"),
+            ("fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"),
+            ("fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"),
+            ("fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"),
+            ("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"),
+        ]
+        for (path, angle) in fonts {
+            let pdf = String(decoding: try documentWithFonts([path]), as: UTF8.self)
+            #expect(pdf.contains("/ItalicAngle \(angle)\n"), "\(path)")
+            // Nonsymbolic, and Italic for an italic font.
+            #expect(pdf.contains(angle == "0" ? "/Flags 32\n" : "/Flags 96\n"), "\(path)")
+        }
+        #expect(OpenTypeFont.italicAngleOf(3277) == "0.05")
+        #expect(OpenTypeFont.italicAngleOf(-1) == "0")
+        #expect(OpenTypeFont.italicAngleOf(-90 * 65536) == "-90")
+    }
 }

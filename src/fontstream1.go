@@ -122,7 +122,9 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	}
 	pdf.appendInteger(font.fileObjNumber)
 	pdf.appendString(" 0 R\n")
-	pdf.appendString("/Flags 32\n")
+	pdf.appendString("/Flags ")
+	pdf.appendInteger(flagsOf(font.italicAngle))
+	pdf.appendString("\n")
 	pdf.appendString("/FontBBox [")
 	pdf.appendInteger(toGlyphSpace(font.bBoxLLx, font.unitsPerEm))
 	pdf.appendString(" ")
@@ -138,7 +140,9 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendString("/Descent ")
 	pdf.appendInteger(toGlyphSpace(font.fontDescent, font.unitsPerEm))
 	pdf.appendString("\n")
-	pdf.appendString("/ItalicAngle 0\n")
+	pdf.appendString("/ItalicAngle ")
+	pdf.appendString(italicAngleOf(font.italicAngle))
+	pdf.appendString("\n")
 	pdf.appendString("/CapHeight ")
 	pdf.appendInteger(toGlyphSpace(font.capHeight, font.unitsPerEm))
 	pdf.appendString("\n")
@@ -466,6 +470,10 @@ func getFontData(font *Font, reader io.Reader) {
 	// that does not read it stops.
 	if pos < len(inflated) {
 		font.fontLineGap = int16(readInt32())
+	}
+	// The italic angle of an italic font follows the line gap.
+	if pos < len(inflated) {
+		font.italicAngle = readInt32()
 	}
 
 	flag := getUint8(reader)

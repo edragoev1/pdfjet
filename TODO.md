@@ -662,8 +662,3 @@ this is started before Oct 21.
   font lacks. This costs the glyphs above U+FFFF that 144 of the shipped fonts
   have, such as IBM Plex Math's bold italic letters and the CJK Extension B
   ideographs; no shipped font has an OS/2 range narrower than its glyphs.
-- `/ItalicAngle 0` is written for every embedded font, though the loader
-  reads the angle of the `post` table. A `.stream` file has no field for it,
-  and a `.otf` and the `.stream` of it share one font descriptor, so writing
-  the angle needs the field first. Nothing draws differently for it: the
-  glyphs of an italic font are italic, and the font is always embedded.

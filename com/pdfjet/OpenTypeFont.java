@@ -26,6 +26,7 @@ class OpenTypeFont {
         font.fontAscent = otf.ascent;
         font.fontDescent = otf.descent;
         font.fontLineGap = otf.lineGap;
+        font.italicAngle = (int) otf.italicAngle;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
         font.advanceWidth = otf.advanceWidth;
@@ -134,7 +135,9 @@ class OpenTypeFont {
         }
         pdf.append(font.fileObjNumber);
         pdf.append(" 0 R\n");
-        pdf.append("/Flags 32\n");
+        pdf.append("/Flags ");
+        pdf.append(flagsOf(font.italicAngle));
+        pdf.append('\n');
         pdf.append("/FontBBox [");
         pdf.append(toGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
         pdf.append(' ');
@@ -150,7 +153,9 @@ class OpenTypeFont {
         pdf.append("/Descent ");
         pdf.append(toGlyphSpace(otf.descent, otf.unitsPerEm));
         pdf.append('\n');
-        pdf.append("/ItalicAngle 0\n");
+        pdf.append("/ItalicAngle ");
+        pdf.append(italicAngleOf(font.italicAngle));
+        pdf.append('\n');
         pdf.append("/CapHeight ");
         pdf.append(toGlyphSpace(otf.capHeight, otf.unitsPerEm));
         pdf.append('\n');
@@ -169,6 +174,30 @@ class OpenTypeFont {
     static int toGlyphSpace(int value, int unitsPerEm) {
         int rounded = (2000 * Math.abs(value) + unitsPerEm) / (2 * unitsPerEm);
         return (value < 0) ? -rounded : rounded;
+    }
+
+    /**
+     * Returns the flags of the font descriptor: Nonsymbolic, 32, and Italic,
+     * 64, for a font whose post table gives it an italic angle.
+     */
+    static int flagsOf(int italicAngle) {
+        return (italicAngle != 0) ? 32 | 64 : 32;
+    }
+
+    /**
+     * Returns the italic angle of the font descriptor: the 16.16 fixed number
+     * of the post table in degrees, to two decimals with halves away from
+     * zero and no trailing zeros. The integer arithmetic gives the same text
+     * in every port.
+     */
+    static String italicAngleOf(int angle) {
+        long rounded = (200L * Math.abs((long) angle) + 65536L) / (2L * 65536L);
+        String text = String.valueOf(rounded / 100);
+        if (rounded % 100 != 0) {
+            // The two decimals, as 100 to 199 without the 1, and no trailing zero.
+            text += "." + String.valueOf(100 + rounded % 100).substring(1).replaceAll("0$", "");
+        }
+        return (angle < 0 && rounded != 0) ? "-" + text : text;
     }
 
     private static void addToUnicodeCMapObject(

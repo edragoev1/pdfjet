@@ -17,12 +17,12 @@ from. The check fails on a font when the port:
 - reads a different PostScript name (name ID 6, Windows before Macintosh),
   units per em or bounding box (head), ascent, descent or line gap (hhea,
   which PDFjet uses rather than the typographic or Windows metrics of OS/2),
-  cap height, underline position or thickness (post), first or last character
-  (OS/2), or kind of outlines (a CFF table or not). The cap height is
-  sCapHeight of OS/2 when the table is version 2 or later; a version 0 or 1
-  table does not have it, and then it is the top, yMax, of the glyph of H in
-  the glyf table when the font has TrueType outlines and an H, and else the
-  ascent of hhea;
+  cap height, italic angle, underline position or thickness (post), first
+  or last character (OS/2), or kind of outlines (a CFF table or not). The
+  cap height is sCapHeight of OS/2 when the table is version 2 or later; a
+  version 0 or 1 table does not have it, and then it is the top, yMax, of
+  the glyph of H in the glyf table when the font has TrueType outlines and
+  an H, and else the ascent of hhea;
 - reads a different number of advance widths (numberOfHMetrics), or a
   different width for any of them (hmtx);
 - maps any character to a different glyph than the Windows Unicode BMP
@@ -241,6 +241,8 @@ def reference_of(path):
         'capHeight': cap_height(font),
         'underlinePosition': post.underlinePosition,
         'underlineThickness': post.underlineThickness,
+        # The 16.16 fixed number of the post table, as PDFjet keeps it.
+        'italicAngle': round(post.italicAngle * 65536),
         'firstChar': first,
         'lastChar': last,
         'cff': 'CFF ' in font,
@@ -293,8 +295,8 @@ def compare_font(port, ref):
     if port.get('error'):
         return [f'load: {port["error"]}']
     problems = []
-    for key in ['name', 'unitsPerEm', 'bbox', 'ascent', 'descent', 'lineGap', 'underlinePosition',
-                'underlineThickness', 'firstChar', 'lastChar', 'cff']:
+    for key in ['name', 'unitsPerEm', 'bbox', 'ascent', 'descent', 'lineGap', 'italicAngle',
+                'underlinePosition', 'underlineThickness', 'firstChar', 'lastChar', 'cff']:
         if port[key] != ref[key]:
             problems.append(f'{key}: {port[key]}, fontTools {ref[key]}')
     if port['capHeight'] != ref['capHeight']:

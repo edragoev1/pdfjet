@@ -131,7 +131,7 @@ class FontStream2 {
         obj.dict.add("0");
         obj.dict.add("R");
         obj.dict.add("/Flags");
-        obj.dict.add("32");
+        obj.dict.add(String.valueOf(OpenTypeFont.flagsOf(font.italicAngle)));
         obj.dict.add("/FontBBox");
         obj.dict.add("[");
         obj.dict.add(String.valueOf(OpenTypeFont.toGlyphSpace(font.bBoxLLx, font.unitsPerEm)));
@@ -144,7 +144,7 @@ class FontStream2 {
         obj.dict.add("/Descent");
         obj.dict.add(String.valueOf(OpenTypeFont.toGlyphSpace(font.fontDescent, font.unitsPerEm)));
         obj.dict.add("/ItalicAngle");
-        obj.dict.add("0");
+        obj.dict.add(OpenTypeFont.italicAngleOf(font.italicAngle));
         obj.dict.add("/CapHeight");
         obj.dict.add(String.valueOf(OpenTypeFont.toGlyphSpace(font.capHeight, font.unitsPerEm)));
         obj.dict.add("/StemV");

@@ -31,6 +31,7 @@ class OpenTypeFont {
         font.fontAscent = otf.ascent;
         font.fontDescent = otf.descent;
         font.fontLineGap = otf.lineGap;
+        font.italicAngle = (int) otf.italicAngle;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
         font.checksum = Font.ChecksumOf(font);
@@ -132,7 +133,9 @@ class OpenTypeFont {
         }
         pdf.Append(font.fileObjNumber);
         pdf.Append(" 0 R\n");
-        pdf.Append("/Flags 32\n");
+        pdf.Append("/Flags ");
+        pdf.Append(FlagsOf(font.italicAngle));
+        pdf.Append('\n');
         pdf.Append("/FontBBox [");
         pdf.Append(ToGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
         pdf.Append(' ');
@@ -148,7 +151,9 @@ class OpenTypeFont {
         pdf.Append("/Descent ");
         pdf.Append(ToGlyphSpace(otf.descent, otf.unitsPerEm));
         pdf.Append('\n');
-        pdf.Append("/ItalicAngle 0\n");
+        pdf.Append("/ItalicAngle ");
+        pdf.Append(ItalicAngleOf(font.italicAngle));
+        pdf.Append('\n');
         pdf.Append("/CapHeight ");
         pdf.Append(ToGlyphSpace(otf.capHeight, otf.unitsPerEm));
         pdf.Append('\n');
@@ -167,6 +172,31 @@ class OpenTypeFont {
     internal static int ToGlyphSpace(int value, int unitsPerEm) {
         int rounded = (2000 * Math.Abs(value) + unitsPerEm) / (2 * unitsPerEm);
         return (value < 0) ? -rounded : rounded;
+    }
+
+    /// <summary>
+    /// Returns the flags of the font descriptor: Nonsymbolic, 32, and Italic,
+    /// 64, for a font whose post table gives it an italic angle.
+    /// </summary>
+    internal static int FlagsOf(int italicAngle) {
+        return (italicAngle != 0) ? 32 | 64 : 32;
+    }
+
+    /// <summary>
+    /// Returns the italic angle of the font descriptor: the 16.16 fixed number
+    /// of the post table in degrees, to two decimals with halves away from
+    /// zero and no trailing zeros. The integer arithmetic gives the same text
+    /// in every port.
+    /// </summary>
+    internal static String ItalicAngleOf(int angle) {
+        long rounded = (200L * Math.Abs((long) angle) + 65536L) / (2L * 65536L);
+        String text = (rounded / 100).ToString();
+        if (rounded % 100 != 0) {
+            // The two decimals, as 100 to 199 without the 1, and no trailing zero.
+            String decimals = (100 + rounded % 100).ToString().Substring(1);
+            text += "." + (decimals.EndsWith("0") ? decimals.Substring(0, 1) : decimals);
+        }
+        return (angle < 0 && rounded != 0) ? "-" + text : text;
     }
 
     private static void AddToUnicodeCMapObject(

@@ -118,7 +118,9 @@ class FontStream1 {
         }
         pdf.Append(font.fileObjNumber);
         pdf.Append(" 0 R\n");
-        pdf.Append("/Flags 32\n");
+        pdf.Append("/Flags ");
+        pdf.Append(OpenTypeFont.FlagsOf(font.italicAngle));
+        pdf.Append('\n');
         pdf.Append("/FontBBox [");
         pdf.Append(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm));
         pdf.Append(' ');
@@ -134,7 +136,9 @@ class FontStream1 {
         pdf.Append("/Descent ");
         pdf.Append(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm));
         pdf.Append('\n');
-        pdf.Append("/ItalicAngle 0\n");
+        pdf.Append("/ItalicAngle ");
+        pdf.Append(OpenTypeFont.ItalicAngleOf(font.italicAngle));
+        pdf.Append('\n');
         pdf.Append("/CapHeight ");
         pdf.Append(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm));
         pdf.Append('\n');
@@ -521,6 +525,10 @@ class FontStream1 {
         // that does not read it stops.
         if (metrics.Remaining() > 0) {
             font.fontLineGap = metrics.GetInt32();
+        }
+        // The italic angle of an italic font follows the line gap.
+        if (metrics.Remaining() > 0) {
+            font.italicAngle = metrics.GetInt32();
         }
 
         int flag = GetByte(inputStream);

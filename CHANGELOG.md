@@ -179,6 +179,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The font descriptor of an embedded font has the italic angle of its `post`
+  table, in all four ports: -11.31 for IBM Plex Sans Italic, -14.04 for IBM
+  Plex Serif Italic. It was 0 for every font. A font with an italic angle
+  has the Italic flag too, `/Flags 96` in place of 32. A `.stream` file holds the angle
+  after the line gap at the end of its metrics, where older libraries stop
+  reading, so they still read the new streams; the generator writes it for an
+  italic font, and the 64 italic streams PDFjet ships have it. Nothing draws
+  differently: the glyphs of an italic font were italic already.
+  `tests/references/fonts/check-fonts.py` compares the angle with fontTools.
 - Two differences from fontTools and Adobe's AFM files that
   `tests/references/fonts/check-fonts.py` found, in all four ports:
   - The cap height of a font whose OS/2 table is version 0 or 1, which has no

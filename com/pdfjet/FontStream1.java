@@ -124,7 +124,9 @@ class FontStream1 {
         }
         pdf.append(font.fileObjNumber);
         pdf.append(" 0 R\n");
-        pdf.append("/Flags 32\n");
+        pdf.append("/Flags ");
+        pdf.append(OpenTypeFont.flagsOf(font.italicAngle));
+        pdf.append('\n');
         pdf.append("/FontBBox [");
         pdf.append(OpenTypeFont.toGlyphSpace(font.bBoxLLx, font.unitsPerEm));
         pdf.append(' ');
@@ -140,7 +142,9 @@ class FontStream1 {
         pdf.append("/Descent ");
         pdf.append(OpenTypeFont.toGlyphSpace(font.fontDescent, font.unitsPerEm));
         pdf.append('\n');
-        pdf.append("/ItalicAngle 0\n");
+        pdf.append("/ItalicAngle ");
+        pdf.append(OpenTypeFont.italicAngleOf(font.italicAngle));
+        pdf.append('\n');
         pdf.append("/CapHeight ");
         pdf.append(OpenTypeFont.toGlyphSpace(font.capHeight, font.unitsPerEm));
         pdf.append('\n');
@@ -585,6 +589,10 @@ class FontStream1 {
         // that does not read it stops.
         if (metrics.remaining() > 0) {
             font.fontLineGap = metrics.getInt32();
+        }
+        // The italic angle of an italic font follows the line gap.
+        if (metrics.remaining() > 0) {
+            font.italicAngle = metrics.getInt32();
         }
 
         int flag = getByte(inputStream);

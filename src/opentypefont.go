@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"io"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -30,6 +31,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.fontAscent = otf.ascent
 	font.fontDescent = otf.descent
 	font.fontLineGap = otf.lineGap
+	font.italicAngle = int32(otf.italicAngle)
 	font.fontUnderlinePosition = otf.underlinePosition
 	font.fontUnderlineThickness = otf.underlineThickness
 	font.advanceWidth = otf.advanceWidth
@@ -132,7 +134,9 @@ func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	}
 	pdf.appendInteger(font.fileObjNumber)
 	pdf.appendString(" 0 R\n")
-	pdf.appendString("/Flags 32\n")
+	pdf.appendString("/Flags ")
+	pdf.appendInteger(flagsOf(font.italicAngle))
+	pdf.appendString("\n")
 	pdf.appendString("/FontBBox [")
 	pdf.appendInteger(toGlyphSpace(otf.bBoxLLx, otf.unitsPerEm))
 	pdf.appendString(" ")
@@ -148,7 +152,9 @@ func addOpenTypeFontDescriptorObject(pdf *PDF, font *Font, otf *openTypeFont) {
 	pdf.appendString("/Descent ")
 	pdf.appendInteger(toGlyphSpace(otf.descent, otf.unitsPerEm))
 	pdf.appendString("\n")
-	pdf.appendString("/ItalicAngle 0\n")
+	pdf.appendString("/ItalicAngle ")
+	pdf.appendString(italicAngleOf(font.italicAngle))
+	pdf.appendString("\n")
 	pdf.appendString("/CapHeight ")
 	pdf.appendInteger(toGlyphSpace(otf.capHeight, otf.unitsPerEm))
 	pdf.appendString("\n")
@@ -172,6 +178,36 @@ func toGlyphSpace(value int16, unitsPerEm int) int {
 		return -rounded
 	}
 	return rounded
+}
+
+// flagsOf returns the flags of the font descriptor: Nonsymbolic, 32, and
+// Italic, 64, for a font whose post table gives it an italic angle.
+func flagsOf(italicAngle int32) int {
+	if italicAngle != 0 {
+		return 32 | 64
+	}
+	return 32
+}
+
+// italicAngleOf returns the italic angle of the font descriptor: the 16.16
+// fixed number of the post table in degrees, to two decimals with halves away
+// from zero and no trailing zeros. The integer arithmetic gives the same text
+// in every port.
+func italicAngleOf(angle int32) string {
+	magnitude := int64(angle)
+	if magnitude < 0 {
+		magnitude = -magnitude
+	}
+	rounded := (200*magnitude + 65536) / (2 * 65536)
+	text := strconv.FormatInt(rounded/100, 10)
+	if rounded%100 != 0 {
+		// The two decimals, as 100 to 199 without the 1, and no trailing zero.
+		text += "." + strings.TrimSuffix(strconv.FormatInt(100+rounded%100, 10)[1:], "0")
+	}
+	if angle < 0 && rounded != 0 {
+		return "-" + text
+	}
+	return text
 }
 
 func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *openTypeFont) {

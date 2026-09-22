@@ -40,6 +40,7 @@ type Font struct {
 	fontAscent             int16
 	fontDescent            int16
 	fontLineGap            int16 // The space the font puts between its lines.
+	italicAngle            int32 // The italic angle of the post table, as a 16.16 fixed number.
 	firstChar              rune
 	lastChar               rune
 	capHeight              int16

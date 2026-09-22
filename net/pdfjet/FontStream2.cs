@@ -128,7 +128,7 @@ class FontStream2 {
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add("/Flags");
-        obj.dict.Add("32");
+        obj.dict.Add(OpenTypeFont.FlagsOf(font.italicAngle).ToString());
         obj.dict.Add("/FontBBox");
         obj.dict.Add("[");
         obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm).ToString());
@@ -141,7 +141,7 @@ class FontStream2 {
         obj.dict.Add("/Descent");
         obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm).ToString());
         obj.dict.Add("/ItalicAngle");
-        obj.dict.Add("0");
+        obj.dict.Add(OpenTypeFont.ItalicAngleOf(font.italicAngle));
         obj.dict.Add("/CapHeight");
         obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm).ToString());
         obj.dict.Add("/StemV");

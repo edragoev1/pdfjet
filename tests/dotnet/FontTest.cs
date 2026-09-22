@@ -385,5 +385,31 @@ public class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
     }
+
+    [Fact]
+    public void TheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() {
+        // A .stream file holds the angle after the line gap, so the .otf and
+        // the .stream of it write one descriptor.
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Italic.otf"))) {
+            return;     // The fonts directory is not here.
+        }
+        string[][] fonts = {
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
+            new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
+            new[] {"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
+            new[] {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+        };
+        foreach (string[] font in fonts) {
+            string pdf = Encoding.Latin1.GetString(DocumentWithFonts(font[0]));
+            Assert.Contains("/ItalicAngle " + font[1] + "\n", pdf);
+            // Nonsymbolic, and Italic for an italic font.
+            Assert.Contains(font[1] == "0" ? "/Flags 32\n" : "/Flags 96\n", pdf);
+        }
+        Assert.Equal("0.05", OpenTypeFont.ItalicAngleOf(3277));
+        Assert.Equal("0", OpenTypeFont.ItalicAngleOf(-1));
+        Assert.Equal("-90", OpenTypeFont.ItalicAngleOf(-90 * 65536));
+    }
 }
 }

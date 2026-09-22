@@ -115,13 +115,18 @@ public class GenerateStreamFontsFiles {
         }
 
         // The line gap of a font that has one, after the marks, where a library
-        // that does not read it stops. A font without marks gets empty ones
-        // first: no subtables and no pairs.
-        if (otf.lineGap != 0 && !oldFormat) {
+        // that does not read it stops, and then the italic angle of an italic
+        // font, as the 16.16 fixed number of its post table. A font without
+        // marks gets empty ones first: no subtables and no pairs, and an
+        // italic font without a line gap a line gap of 0.
+        if ((otf.lineGap != 0 || otf.italicAngle != 0) && !oldFormat) {
             if (otf.markAnchors == null) {
                 writeMarks(fileName, baos, new byte[8]);
             }
             writeInt32(otf.lineGap, baos);
+            if (otf.italicAngle != 0) {
+                writeInt32((int) otf.italicAngle, baos);
+            }
         }
 
         byte[] buf1 = baos.toByteArray();

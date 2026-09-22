@@ -32,6 +32,7 @@ public class Font {
     var fontAscent: Int16 = 0
     var fontDescent: Int16 = 0
     var fontLineGap: Int16 = 0     // The space the font puts between its lines.
+    var italicAngle: Int32 = 0     // The italic angle of the post table, as a 16.16 fixed number.
     var bBoxLLx: Int16 = 0
     var bBoxLLy: Int16 = 0
     var bBoxURx: Int16 = 0

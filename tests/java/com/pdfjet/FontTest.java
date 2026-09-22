@@ -379,4 +379,29 @@ class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
     }
+
+    @Test
+    void theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws Exception {
+        // A .stream file holds the angle after the line gap, so the .otf and
+        // the .stream of it write one descriptor.
+        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Italic.otf").exists(),
+                "the fonts directory is not here");
+        String[][] fonts = {
+            {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
+            {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
+            {"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
+            {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+        };
+        for (String[] font : fonts) {
+            String pdf = TestSupport.latin1(documentWithFonts(font[0]));
+            assertTrue(pdf.contains("/ItalicAngle " + font[1] + "\n"), font[0]);
+            // Nonsymbolic, and Italic for an italic font.
+            assertTrue(pdf.contains(font[1].equals("0") ? "/Flags 32\n" : "/Flags 96\n"), font[0]);
+        }
+        assertEquals("0.05", OpenTypeFont.italicAngleOf(3277));
+        assertEquals("0", OpenTypeFont.italicAngleOf(-1));
+        assertEquals("-90", OpenTypeFont.italicAngleOf(-90 * 65536));
+    }
 }
