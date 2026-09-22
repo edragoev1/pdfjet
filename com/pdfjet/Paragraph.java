@@ -38,6 +38,9 @@ public class Paragraph {
     // left of the text it is drawn; see setListLabel.
     TextLine listLabel = null;
     float listLabelIndent = 0f;
+    // Whether each text line was added with addJoined, by its index. A text
+    // line added to the lines another way is not joined.
+    private final List<Boolean> joined = new ArrayList<Boolean>();
 
     /**
      * Makes this paragraph an item of a list, labelled by the text line, which
@@ -87,6 +90,7 @@ public class Paragraph {
     public Paragraph(TextLine text) {
         lines = new ArrayList<TextLine>();
         lines.add(text);
+        joined.add(false);
     }
 
     /**
@@ -97,7 +101,50 @@ public class Paragraph {
      */
     public Paragraph add(TextLine text) {
         lines.add(text);
+        setJoined(lines.size() - 1, false);
         return this;
+    }
+
+    /**
+     * Adds a text line that goes on from the text before it with no space
+     * between them, so that a word can change its font or its color partway
+     * through: a word in bold followed by a comma in the regular font, or a
+     * link that ends before the period after it. A row of text does not
+     * break between the two. When the text line starts with a space, or the
+     * text before it ends with one, the two are apart as they are with add.
+     * Text in Chinese, Japanese or Korean is not joined.
+     *
+     * @param text the text line to add to this paragraph.
+     * @return this paragraph.
+     */
+    public Paragraph addJoined(TextLine text) {
+        lines.add(text);
+        setJoined(lines.size() - 1, true);
+        return this;
+    }
+
+    private void setJoined(int index, boolean value) {
+        while (joined.size() <= index) {
+            joined.add(false);
+        }
+        joined.set(index, value);
+    }
+
+    // Returns true when the text line at the index goes on from the one before
+    // it with no space between them: it was added with addJoined, and there is
+    // no space where the two meet.
+    boolean joinsPrevious(int index) {
+        if (index <= 0 || index >= lines.size() || index >= joined.size() || !joined.get(index)) {
+            return false;
+        }
+        String text = lines.get(index).text;
+        String before = lines.get(index - 1).text;
+        if (text == null || text.isEmpty() || before == null || before.isEmpty()) {
+            return false;
+        }
+        return !Util.isASCIIWhitespace(text.charAt(0))
+                && !Util.isASCIIWhitespace(before.charAt(before.length() - 1))
+                && !Util.isCJK(text) && !Util.isCJK(before);
     }
 
     /**

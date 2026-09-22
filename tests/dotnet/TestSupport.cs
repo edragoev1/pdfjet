@@ -69,6 +69,23 @@ public static class TestSupport {
     }
 
     /// <summary>
+    /// Returns the x and the y of the Td before the first text, drawn in a core
+    /// font, that starts with the text.
+    /// </summary>
+    public static float[] PositionOf(string content, string text) {
+        int i = content.IndexOf("<" + Hex(text), StringComparison.Ordinal);
+        if (i == -1) {
+            throw new Xunit.Sdk.XunitException("\"" + text + "\" is not drawn:\n" + content);
+        }
+        int td = content.LastIndexOf(" Td\n", i, StringComparison.Ordinal);
+        int start = content.LastIndexOf('\n', td) + 1;
+        string[] parts = content.Substring(start, td - start).Split(' ');
+        return new float[] {
+            float.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+            float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture)};
+    }
+
+    /// <summary>
     /// Returns the fill color set last before the text, drawn in a core font, as
     /// its operator, for example "1 1 1 rg".
     /// </summary>

@@ -10,6 +10,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- `Paragraph.addJoined(textLine)` adds a text line with no space before
+  it, so that a word can change its font or its color partway through: a
+  word in bold followed by a comma in the regular font, or a link that ends
+  before the period after it, in all four ports (`AddJoined` in C# and Go).
+  `TextFrame` and `TextColumn` do not break a row between the two, unless
+  the word they make is wider than the frame or the column, and a justified
+  row does not widen the join. A text line that starts with a space, or
+  follows one that ends with a space, is apart from the text before it, as
+  with `add`, and text in Chinese, Japanese or Korean is not joined. `add`
+  is as it was: it puts a space between the text lines.
 - `TextFrame.drawOn(pdf, pages, pageSize)` draws the text on as many new
   pages as it needs, a whole book at once, as `Table.drawOn` draws a table,
   in all four ports (`DrawOnPages` in Go). The frame has its location and its

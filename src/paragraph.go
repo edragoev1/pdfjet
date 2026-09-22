@@ -28,6 +28,9 @@ type Paragraph struct {
 	// left of the text it is drawn; see SetListLabel.
 	listLabel       *TextLine
 	listLabelIndent float32
+	// Whether each text line was added with AddJoined, by its index. A text
+	// line added to the lines another way is not joined.
+	joined []bool
 }
 
 // NewParagraph creates a paragraph.
@@ -94,7 +97,48 @@ func (paragraph *Paragraph) GetY2() float32 {
 // Add adds a text line to this paragraph.
 func (paragraph *Paragraph) Add(text *TextLine) *Paragraph {
 	paragraph.lines = append(paragraph.lines, text)
+	paragraph.setJoined(len(paragraph.lines)-1, false)
 	return paragraph
+}
+
+// AddJoined adds a text line that goes on from the text before it with no
+// space between them, so that a word can change its font or its color partway
+// through: a word in bold followed by a comma in the regular font, or a link
+// that ends before the period after it. A row of text does not break between
+// the two. When the text line starts with a space, or the text before it ends
+// with one, the two are apart as they are with Add. Text in Chinese, Japanese
+// or Korean is not joined.
+func (paragraph *Paragraph) AddJoined(text *TextLine) *Paragraph {
+	paragraph.lines = append(paragraph.lines, text)
+	paragraph.setJoined(len(paragraph.lines)-1, true)
+	return paragraph
+}
+
+func (paragraph *Paragraph) setJoined(index int, value bool) {
+	for len(paragraph.joined) <= index {
+		paragraph.joined = append(paragraph.joined, false)
+	}
+	paragraph.joined[index] = value
+}
+
+// joinsPrevious returns true when the text line at the index goes on from the
+// one before it with no space between them: it was added with AddJoined, and
+// there is no space where the two meet.
+func (paragraph *Paragraph) joinsPrevious(index int) bool {
+	if index <= 0 || index >= len(paragraph.lines) || index >= len(paragraph.joined) ||
+		!paragraph.joined[index] {
+		return false
+	}
+	text := paragraph.lines[index].text
+	before := paragraph.lines[index-1].text
+	if text == "" || before == "" {
+		return false
+	}
+	// The whitespace is ASCII, so the first and the last byte are enough: a
+	// byte of a character of more than one byte is not ASCII.
+	return !isASCIIWhitespace(rune(text[0])) &&
+		!isASCIIWhitespace(rune(before[len(before)-1])) &&
+		!isCJK(text) && !isCJK(before)
 }
 
 // SetTextAlignment sets the alignment of the text in this paragraph:

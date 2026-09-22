@@ -292,7 +292,7 @@ class Util {
 
     // The six characters that Java's \s matches: space, tab, line feed,
     // vertical tab, form feed and carriage return.
-    private static boolean isASCIIWhitespace(char ch) {
+    static boolean isASCIIWhitespace(char ch) {
         return ch == ' ' || (ch >= '\t' && ch <= '\r');
     }
 

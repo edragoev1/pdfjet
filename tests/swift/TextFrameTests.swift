@@ -198,4 +198,82 @@ import Testing
         #expect(none.isEmpty)
     }
 
+    // A paragraph of text lines in the font, each added with add, or with
+    // addJoined when it starts with "+", which is not part of its text.
+    static func joinedParagraph(_ font: Font, _ texts: [String]) -> Paragraph {
+        let paragraph = Paragraph()
+        for text in texts {
+            if text.hasPrefix("+") {
+                paragraph.addJoined(TextLine(font, String(text.dropFirst())))
+            } else {
+                paragraph.add(TextLine(font, text))
+            }
+        }
+        return paragraph
+    }
+
+    private func drawJoined(_ width: Float, _ alignment: Alignment?, _ texts: String...) -> String {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = TextFrameTests.joinedParagraph(font, texts)
+        if let alignment {
+            paragraph.setTextAlignment(alignment)
+        }
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(width).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test func aJoinedTextLineHasNoSpaceBeforeIt() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoined(300, nil, "one", "+,", "two")
+        let one = TestSupport.positionOf(content, "one")
+        let comma = TestSupport.positionOf(content, ",")
+        let two = TestSupport.positionOf(content, "two")
+        TestSupport.expectNear(one[0] + font.stringWidth("one"), comma[0])
+        TestSupport.expectNear(comma[0] + font.stringWidth(", "), two[0])
+        TestSupport.expectNear(one[1], two[1])
+    }
+
+    @Test func aRowDoesNotBreakInsideAJoinedWord() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        // "aaa bbb" fits in the row, and "aaa bbbccc" does not, so bbb goes on
+        // the next row with the ccc joined to it.
+        let width = font.stringWidth("aaa bbb") + 1
+        let content = drawJoined(width, nil, "aaa bbb", "+ccc")
+        let aaa = TestSupport.positionOf(content, "aaa")
+        let bbb = TestSupport.positionOf(content, "bbb")
+        let ccc = TestSupport.positionOf(content, "ccc")
+        #expect(bbb[1] < aaa[1], "bbb is on the second row")
+        TestSupport.expectNear(10, bbb[0])
+        TestSupport.expectNear(bbb[1], ccc[1])
+        TestSupport.expectNear(bbb[0] + font.stringWidth("bbb"), ccc[0])
+    }
+
+    @Test func aJoinedWordWiderThanTheFrameBreaksWhereItIsJoined() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoined(font.stringWidth("abc") + 1, nil, "abc", "+def")
+        let abc = TestSupport.positionOf(content, "abc")
+        let def = TestSupport.positionOf(content, "def")
+        #expect(def[1] < abc[1], "def is on the second row")
+        TestSupport.expectNear(10, def[0])
+    }
+
+    @Test func aSpaceWhereTheyMeetKeepsJoinedTextLinesApart() {
+        #expect(drawJoined(300, nil, "one", "two") == drawJoined(300, nil, "one", "+ two"))
+        #expect(drawJoined(300, nil, "one ", "two") == drawJoined(300, nil, "one ", "+two"))
+    }
+
+    @Test func aJustifiedRowDoesNotWidenAJoin() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoined(200, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve")
+        let three = TestSupport.positionOf(content, "three")
+        let comma = TestSupport.positionOf(content, ",")
+        let four = TestSupport.positionOf(content, "four")
+        TestSupport.expectNear(three[1], four[1])
+        TestSupport.expectNear(three[0] + font.stringWidth("three"), comma[0])
+        // The spaces are widened: four is further than one space after the comma.
+        #expect(four[0] > comma[0] + font.stringWidth(", ") + 1, "the row is justified")
+    }
 }

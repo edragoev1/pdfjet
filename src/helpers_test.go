@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode/utf16"
@@ -107,6 +108,21 @@ func testFillColorBefore(content, text string) string {
 		return ""
 	}
 	return content[strings.LastIndex(content[:rg], "\n")+1 : rg+3]
+}
+
+// testPositionOf returns the x and the y of the Td before the first text,
+// drawn in a core font, that starts with the text.
+func testPositionOf(t *testing.T, content, text string) [2]float32 {
+	t.Helper()
+	i := strings.Index(content, "<"+testHex(text))
+	if i == -1 {
+		t.Fatalf("%q is not drawn:\n%s", text, content)
+	}
+	td := strings.LastIndex(content[:i], " Td\n")
+	parts := strings.Split(content[strings.LastIndex(content[:td], "\n")+1:td], " ")
+	x, _ := strconv.ParseFloat(parts[0], 32)
+	y, _ := strconv.ParseFloat(parts[1], 32)
+	return [2]float32{float32(x), float32(y)}
 }
 
 // testUTF16Hex decodes a PDF text string written as a hexadecimal string with

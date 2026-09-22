@@ -195,4 +195,71 @@ class TextColumnTest {
         assertTrue(raw.contains("/K [0 1 2 3 4 5 6 7]"), raw);
     }
 
+    private static String drawJoinedColumn(float width, Alignment alignment, String... texts)
+            throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.setWidth(width);
+        column.setTextAlignment(alignment);
+        column.addParagraph(TextFrameTest.joinedParagraph(font, texts));
+        column.setLocation(10f, 10f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void aJoinedTextLineHasNoSpaceBeforeIt() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoinedColumn(300f, Alignment.LEFT, "one", "+,", "two");
+        float[] one = TestSupport.positionOf(content, "one");
+        float[] comma = TestSupport.positionOf(content, ",");
+        float[] two = TestSupport.positionOf(content, "two");
+        assertEquals(one[0] + font.stringWidth("one"), comma[0], TestSupport.DELTA);
+        assertEquals(comma[0] + font.stringWidth(", "), two[0], TestSupport.DELTA);
+    }
+
+    @Test
+    void aLineDoesNotBreakInsideAJoinedWord() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        float width = font.stringWidth("aaa bbb") + 1f;
+        String content = drawJoinedColumn(width, Alignment.LEFT, "aaa bbb", "+ccc");
+        float[] aaa = TestSupport.positionOf(content, "aaa");
+        float[] bbb = TestSupport.positionOf(content, "bbb");
+        float[] ccc = TestSupport.positionOf(content, "ccc");
+        assertTrue(bbb[1] < aaa[1], "bbb is on the second line");
+        assertEquals(10f, bbb[0], TestSupport.DELTA);
+        assertEquals(bbb[1], ccc[1], TestSupport.DELTA);
+        assertEquals(bbb[0] + font.stringWidth("bbb"), ccc[0], TestSupport.DELTA);
+    }
+
+    @Test
+    void aJoinedWordWiderThanTheColumnBreaksWhereItIsJoined() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoinedColumn(font.stringWidth("abc") + 1f, Alignment.LEFT, "abc", "+def");
+        float[] abc = TestSupport.positionOf(content, "abc");
+        float[] def = TestSupport.positionOf(content, "def");
+        assertTrue(def[1] < abc[1], "def is on the second line");
+        assertEquals(10f, def[0], TestSupport.DELTA);
+    }
+
+    @Test
+    void aSpaceWhereTheyMeetKeepsJoinedTextLinesApart() throws Exception {
+        assertEquals(drawJoinedColumn(300f, Alignment.LEFT, "one", "two"),
+                drawJoinedColumn(300f, Alignment.LEFT, "one", "+ two"));
+    }
+
+    @Test
+    void aJustifiedLineDoesNotWidenAJoin() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoinedColumn(200f, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve");
+        float[] three = TestSupport.positionOf(content, "three");
+        float[] comma = TestSupport.positionOf(content, ",");
+        float[] four = TestSupport.positionOf(content, "four");
+        assertEquals(three[1], four[1], TestSupport.DELTA);
+        assertEquals(three[0] + font.stringWidth("three"), comma[0], TestSupport.DELTA);
+        assertTrue(four[0] > comma[0] + font.stringWidth(", ") + 1f, "the line is justified");
+    }
 }

@@ -65,6 +65,9 @@ type TextFrame struct {
 	rowPlaced       bool
 	nextBaseline    float32
 	startsParagraph bool // The next row starts a paragraph
+	// True when the row has room for the first word of the next text line,
+	// which goes on from the last word of this one: see Paragraph.AddJoined.
+	joinReserved bool
 
 	// The text of the row being drawn, drawn when the row is complete, so that
 	// it can be aligned: each part is a text line with some of its text.
@@ -257,6 +260,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.rowOpen = false
 	tf.rowPlaced = false
 	tf.startsParagraph = false
+	tf.joinReserved = false
 	tf.row = tf.row[:0]
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
@@ -346,12 +350,39 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			return false
 		}
 		token := tf.tokens[tf.tokenIndex]
+		// The last word of a text line that the next text line goes on from
+		// has no space after it, and it is measured with the words joined to
+		// it, so that the row does not break between them.
+		joinsNext := (tf.tokenIndex == len(tf.tokens)-1) &&
+			paragraph.joinsPrevious(tf.lineIndex+1)
+		text := token + single.Space
+		if joinsNext {
+			text = token
+		}
+		available := (tf.x + tf.w) - tf.xText
+		// The first word of a text line joined to the word before it is in
+		// the row already when that word made room for it.
+		reserved := tf.joinReserved && tf.tokenIndex == 0
+		tf.joinReserved = false
+		var joined float32
+		if joinsNext {
+			joined = tf.joinedWidth(paragraph, tf.lineIndex)
+		}
 		// The token is measured without the space that follows it, as in
 		// TextColumn: a row is as wide as the text it shows.
-		if (runLength + textWidth(textLine, token)) <= ((tf.x + tf.w) - tf.xText) {
-			buf.WriteString(token)
-			buf.WriteString(single.Space)
-			runLength += textWidth(textLine, token+single.Space)
+		if reserved || (runLength+textWidth(textLine, token)+joined) <= available {
+			buf.WriteString(text)
+			runLength += textWidth(textLine, text)
+			tf.tokenIndex++
+			tf.joinReserved = joinsNext
+			continue
+		}
+		if joinsNext && buf.Len() == 0 && tf.xText == tf.x &&
+			(runLength+textWidth(textLine, token)) <= available {
+			// With the words joined to it the word is wider than the frame,
+			// so they go on the next row.
+			buf.WriteString(text)
+			runLength += textWidth(textLine, text)
 			tf.tokenIndex++
 			continue
 		}
@@ -376,6 +407,22 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 	tf.addToRow(paragraph, textLine, buf.String(), true)
 	tf.xText += font.StringWidthUsingFallbackFont(fallbackFont, fontSize, buf.String())
 	return true
+}
+
+// joinedWidth returns the width of the text joined to the end of the text
+// line at the index: the first word of each text line that goes on from it, up
+// to the first of them that has more than one word.
+func (tf *TextFrame) joinedWidth(paragraph *Paragraph, index int) float32 {
+	var width float32
+	for i := index + 1; i < len(paragraph.lines) && paragraph.joinsPrevious(i); i++ {
+		textLine := paragraph.lines[i]
+		words := splitOnWhitespace(textLine.text)
+		width += textWidth(textLine, words[0])
+		if len(words) > 1 {
+			break
+		}
+	}
+	return width
 }
 
 // headThatFits returns the longest start of the token that fits in the width
@@ -405,6 +452,7 @@ func (tf *TextFrame) addToRow(paragraph *Paragraph, textLine *TextLine, str stri
 // aligned to the right or to the center moves the row, and a justified one
 // widens the spaces of every row but its last.
 func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
+	tf.joinReserved = false
 	if len(tf.row) == 0 {
 		return
 	}

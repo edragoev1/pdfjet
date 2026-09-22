@@ -74,6 +74,25 @@ enum TestSupport {
         return result
     }
 
+    /// Returns the x and the y of the Td before the first text, drawn in a core
+    /// font, that starts with the text.
+    static func positionOf(_ content: String, _ text: String,
+            sourceLocation: SourceLocation = #_sourceLocation) -> [Float] {
+        guard let textRange = content.range(of: "<" + hex(text)) else {
+            Issue.record("\"\(text)\" is not drawn:\n\(content)", sourceLocation: sourceLocation)
+            return [Float.nan, Float.nan]
+        }
+        guard let td = content.range(of: " Td\n", options: .backwards,
+                range: content.startIndex..<textRange.lowerBound) else {
+            Issue.record("no Td before \"\(text)\"", sourceLocation: sourceLocation)
+            return [Float.nan, Float.nan]
+        }
+        let start = content[..<td.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }
+                ?? content.startIndex
+        let parts = content[start..<td.lowerBound].components(separatedBy: " ")
+        return [Float(parts[0])!, Float(parts[1])!]
+    }
+
     /// Returns the fill color set last before the text, drawn in a core font, as
     /// its operator, for example "1 1 1 rg".
     static func fillColorBefore(_ content: String, _ text: String) -> String {

@@ -51,6 +51,9 @@ public class TextFrame : IDrawable {
     private bool rowPlaced;
     private float nextBaseline;
     private bool startsParagraph;   // The next row starts a paragraph
+    // True when the row has room for the first word of the next text line,
+    // which goes on from the last word of this one: see Paragraph.AddJoined.
+    private bool joinReserved;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -273,6 +276,7 @@ public class TextFrame : IDrawable {
         rowOpen = false;
         rowPlaced = false;
         startsParagraph = false;
+        joinReserved = false;
         row.Clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
@@ -359,11 +363,33 @@ public class TextFrame : IDrawable {
                 return false;
             }
             String token = tokens[tokenIndex];
+            // The last word of a text line that the next text line goes on
+            // from has no space after it, and it is measured with the words
+            // joined to it, so that the row does not break between them.
+            bool joinsNext = (tokenIndex == tokens.Count - 1)
+                    && paragraph.JoinsPrevious(lineIndex + 1);
+            String text = joinsNext ? token : token + Single.space;
+            float available = (x + w) - xText;
+            // The first word of a text line joined to the word before it is
+            // in the row already when that word made room for it.
+            bool reserved = joinReserved && tokenIndex == 0;
+            joinReserved = false;
+            float joined = joinsNext ? JoinedWidth(paragraph, lineIndex) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if ((runLength + Width(textLine, token)) <= ((x + w) - xText)) {
-                buf.Append(token).Append(Single.space);
-                runLength += Width(textLine, token + Single.space);
+            if (reserved || (runLength + Width(textLine, token) + joined) <= available) {
+                buf.Append(text);
+                runLength += Width(textLine, text);
+                tokenIndex++;
+                joinReserved = joinsNext;
+                continue;
+            }
+            if (joinsNext && buf.Length == 0 && xText == x
+                    && (runLength + Width(textLine, token)) <= available) {
+                // With the words joined to it the word is wider than the frame,
+                // so they go on the next row.
+                buf.Append(text);
+                runLength += Width(textLine, text);
                 tokenIndex++;
                 continue;
             }
@@ -388,6 +414,22 @@ public class TextFrame : IDrawable {
         AddToRow(paragraph, textLine, buf.ToString(), true);
         xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());
         return true;
+    }
+
+    // Returns the width of the text joined to the end of the text line at the
+    // index: the first word of each text line that goes on from it, up to the
+    // first of them that has more than one word.
+    private float JoinedWidth(Paragraph paragraph, int index) {
+        float width = 0f;
+        for (int i = index + 1; i < paragraph.lines.Count && paragraph.JoinsPrevious(i); i++) {
+            TextLine textLine = paragraph.lines[i];
+            String[] words = Util.SplitOnWhitespace(textLine.text);
+            width += Width(textLine, words[0]);
+            if (words.Length > 1) {
+                break;
+            }
+        }
+        return width;
     }
 
     // Returns the longest start of the token that fits in the width of the frame,
@@ -482,6 +524,7 @@ public class TextFrame : IDrawable {
     }
 
     private void DrawRow(Page page, bool lastRowOfParagraph) {
+        joinReserved = false;
         if (row.Count == 0) {
             return;
         }

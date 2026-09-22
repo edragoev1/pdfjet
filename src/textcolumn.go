@@ -177,20 +177,55 @@ func (textColumn *TextColumn) drawParagraphOn(
 	textColumn.y1 += maxAscent
 
 	var runLength float32
-	for _, line := range paragraph.lines {
-		for _, token := range splitOnWhitespace(line.text) {
+	wordStart := 0 // Where the word being set starts in the list
+	for i, line := range paragraph.lines {
+		for j, token := range splitOnWhitespace(line.text) {
 			text := line.copyWithText(token + single.Space)
+			if j == 0 && len(list) > 0 && paragraph.joinsPrevious(i) {
+				// The text line goes on from the word before it, with no space
+				// between them, and the line of text does not break inside the
+				// word unless the word is wider than the column.
+				before := list[len(list)-1]
+				list = list[:len(list)-1]
+				runLength -= before.GetWidth()
+				before = before.copyWithText(trimTrailingSpaces(before.text))
+				list = append(list, before)
+				runLength += before.GetWidth()
+				if (runLength + textLineWidth(text, token)) <= textColumn.w {
+					list = append(list, text)
+					runLength += text.GetWidth()
+					continue
+				}
+				if wordStart > 0 {
+					word := make([]*TextLine, len(list)-wordStart)
+					copy(word, list[wordStart:])
+					list = list[:wordStart]
+					textColumn.drawLineOfText(page, list, textAlignment)
+					textColumn.moveToNextLine(lineHeight)
+					list = make([]*TextLine, 0)
+					list = append(list, word...)
+					list = append(list, text)
+					wordStart = 0
+					runLength = 0
+					for _, piece := range list {
+						runLength += piece.GetWidth()
+					}
+					continue
+				}
+			}
 			// The token is measured without the space that follows it: a line
 			// is as wide as the text it shows. A token wider than the column
 			// goes on a line of its own rather than after an empty one, which
 			// would leave the line above it blank.
 			if len(list) == 0 || (runLength+textLineWidth(text, token)) <= textColumn.w {
+				wordStart = len(list)
 				list = append(list, text)
 				runLength += text.GetWidth()
 			} else {
 				textColumn.drawLineOfText(page, list, textAlignment)
 				textColumn.moveToNextLine(lineHeight)
 				list = make([]*TextLine, 0)
+				wordStart = 0
 				list = append(list, text)
 				runLength = text.GetWidth()
 			}
@@ -254,16 +289,26 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 	if textAlignment == alignment.Justify {
 		markLastToken(textLines)
 		// The spaces are widened so that the text of the line reaches both
-		// edges. A line of one token has no space to widen.
+		// edges. A line of one word has no space to widen, and the parts of a
+		// word joined with Paragraph.AddJoined have none between them.
+		spaces := 0
+		for i := 0; i < len(textLines)-1; i++ {
+			if strings.HasSuffix(textLines[i].text, single.Space) {
+				spaces++
+			}
+		}
 		var dx float32
-		if len(textLines) > 1 {
-			dx = (textColumn.w - visibleWidth(textLines)) / float32(len(textLines)-1)
+		if spaces > 0 {
+			dx = (textColumn.w - visibleWidth(textLines)) / float32(spaces)
 		}
 		// Each token draws its own link annotation when the line has a URI or GoTo action.
 		for _, textLine := range textLines {
 			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
 			textLine.DrawOn(page)
-			textColumn.x1 += textLine.GetWidth() + dx
+			textColumn.x1 += textLine.GetWidth()
+			if strings.HasSuffix(textLine.text, single.Space) {
+				textColumn.x1 += dx
+			}
 		}
 	} else {
 		textColumn.drawNonJustifiedLine(page, textLines, textAlignment)

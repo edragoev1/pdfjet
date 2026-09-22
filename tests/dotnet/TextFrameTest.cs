@@ -216,5 +216,88 @@ public class TextFrameTest {
         Assert.Empty(none);
     }
 
+    // A paragraph of text lines in the font, each added with Add, or with
+    // AddJoined when it starts with "+", which is not part of its text.
+    internal static Paragraph JoinedParagraph(Font font, params string[] texts) {
+        Paragraph paragraph = new Paragraph();
+        foreach (string text in texts) {
+            if (text.StartsWith("+", StringComparison.Ordinal)) {
+                paragraph.AddJoined(new TextLine(font, text.Substring(1)));
+            } else {
+                paragraph.Add(new TextLine(font, text));
+            }
+        }
+        return paragraph;
+    }
+
+    private static string DrawJoined(float width, Alignment? alignment, params string[] texts) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = JoinedParagraph(font, texts);
+        if (alignment != null) {
+            paragraph.SetTextAlignment(alignment.Value);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(width).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void AJoinedTextLineHasNoSpaceBeforeIt() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoined(300f, null, "one", "+,", "two");
+        float[] one = TestSupport.PositionOf(content, "one");
+        float[] comma = TestSupport.PositionOf(content, ",");
+        float[] two = TestSupport.PositionOf(content, "two");
+        TestSupport.AssertNear(one[0] + font.StringWidth("one"), comma[0], TestSupport.DELTA, "comma x");
+        TestSupport.AssertNear(comma[0] + font.StringWidth(", "), two[0], TestSupport.DELTA, "two x");
+        TestSupport.AssertNear(one[1], two[1], TestSupport.DELTA, "two y");
+    }
+
+    [Fact]
+    public void ARowDoesNotBreakInsideAJoinedWord() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        // "aaa bbb" fits in the row, and "aaa bbbccc" does not, so bbb goes on
+        // the next row with the ccc joined to it.
+        float width = font.StringWidth("aaa bbb") + 1f;
+        string content = DrawJoined(width, null, "aaa bbb", "+ccc");
+        float[] aaa = TestSupport.PositionOf(content, "aaa");
+        float[] bbb = TestSupport.PositionOf(content, "bbb");
+        float[] ccc = TestSupport.PositionOf(content, "ccc");
+        Assert.True(bbb[1] < aaa[1], "bbb is on the second row");
+        TestSupport.AssertNear(10f, bbb[0], TestSupport.DELTA, "bbb x");
+        TestSupport.AssertNear(bbb[1], ccc[1], TestSupport.DELTA, "ccc y");
+        TestSupport.AssertNear(bbb[0] + font.StringWidth("bbb"), ccc[0], TestSupport.DELTA, "ccc x");
+    }
+
+    [Fact]
+    public void AJoinedWordWiderThanTheFrameBreaksWhereItIsJoined() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoined(font.StringWidth("abc") + 1f, null, "abc", "+def");
+        float[] abc = TestSupport.PositionOf(content, "abc");
+        float[] def = TestSupport.PositionOf(content, "def");
+        Assert.True(def[1] < abc[1], "def is on the second row");
+        TestSupport.AssertNear(10f, def[0], TestSupport.DELTA, "def x");
+    }
+
+    [Fact]
+    public void ASpaceWhereTheyMeetKeepsJoinedTextLinesApart() {
+        Assert.Equal(DrawJoined(300f, null, "one", "two"), DrawJoined(300f, null, "one", "+ two"));
+        Assert.Equal(DrawJoined(300f, null, "one ", "two"), DrawJoined(300f, null, "one ", "+two"));
+    }
+
+    [Fact]
+    public void AJustifiedRowDoesNotWidenAJoin() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoined(200f, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve");
+        float[] three = TestSupport.PositionOf(content, "three");
+        float[] comma = TestSupport.PositionOf(content, ",");
+        float[] four = TestSupport.PositionOf(content, "four");
+        TestSupport.AssertNear(three[1], four[1], TestSupport.DELTA, "four y");
+        TestSupport.AssertNear(three[0] + font.StringWidth("three"), comma[0], TestSupport.DELTA, "comma x");
+        // The spaces are widened: four is further than one space after the comma.
+        Assert.True(four[0] > comma[0] + font.StringWidth(", ") + 1f, "the row is justified");
+    }
 }
 }

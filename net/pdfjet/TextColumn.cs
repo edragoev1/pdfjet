@@ -215,21 +215,57 @@ public class TextColumn : IDrawable {
         y1 += maxAscent;
 
         float runLength = 0f;
-        foreach (TextLine line in paragraph.lines) {
+        int wordStart = 0;      // Where the word being set starts in the list
+        for (int i = 0; i < paragraph.lines.Count; i++) {
+            TextLine line = paragraph.lines[i];
             String[] tokens = Util.SplitOnWhitespace(line.text ?? "");
-            foreach (String token in tokens) {
+            for (int j = 0; j < tokens.Length; j++) {
+                String token = tokens[j];
                 TextLine text = line.CopyWithText(token + Single.space);
+                if (j == 0 && list.Count > 0 && paragraph.JoinsPrevious(i)) {
+                    // The text line goes on from the word before it, with no
+                    // space between them, and the line of text does not break
+                    // inside the word unless the word is wider than the column.
+                    TextLine before = list[list.Count - 1];
+                    list.RemoveAt(list.Count - 1);
+                    runLength -= before.GetWidth();
+                    before = before.CopyWithText(TrimTrailingSpaces(before.text));
+                    list.Add(before);
+                    runLength += before.GetWidth();
+                    if ((runLength + Width(text, token)) <= this.w) {
+                        list.Add(text);
+                        runLength += text.GetWidth();
+                        continue;
+                    }
+                    if (wordStart > 0) {
+                        List<TextLine> word = list.GetRange(wordStart, list.Count - wordStart);
+                        list.RemoveRange(wordStart, list.Count - wordStart);
+                        DrawLineOfText(page, list, alignment);
+                        MoveToNextLine(lineHeight);
+                        list.Clear();
+                        list.AddRange(word);
+                        list.Add(text);
+                        wordStart = 0;
+                        runLength = 0f;
+                        foreach (TextLine piece in list) {
+                            runLength += piece.GetWidth();
+                        }
+                        continue;
+                    }
+                }
                 // The token is measured without the space that follows it: a
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 if (list.Count == 0 || (runLength + Width(text, token)) <= this.w) {
+                    wordStart = list.Count;
                     list.Add(text);
                     runLength += text.GetWidth();
                 } else {
                     DrawLineOfText(page, list, alignment);
                     MoveToNextLine(lineHeight);
                     list.Clear();
+                    wordStart = 0;
                     list.Add(text);
                     runLength = text.GetWidth();
                 }
@@ -299,13 +335,23 @@ public class TextColumn : IDrawable {
         if (alignment == Alignment.JUSTIFY) {
             MarkLastToken(list);
             // The spaces are widened so that the text of the line reaches both
-            // edges. A line of one token has no space to widen.
-            float dx = (list.Count > 1) ? (w - VisibleWidth(list)) / (list.Count - 1) : 0f;
+            // edges. A line of one word has no space to widen, and the parts
+            // of a word joined with Paragraph.AddJoined have none between them.
+            int spaces = 0;
+            for (int i = 0; i < list.Count - 1; i++) {
+                if (list[i].text.EndsWith(Single.space, StringComparison.Ordinal)) {
+                    spaces++;
+                }
+            }
+            float dx = (spaces > 0) ? (w - VisibleWidth(list)) / spaces : 0f;
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             foreach (TextLine textLine in list) {
                 textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
                 textLine.DrawOn(page);
-                x1 += textLine.GetWidth() + dx;
+                x1 += textLine.GetWidth();
+                if (textLine.text.EndsWith(Single.space, StringComparison.Ordinal)) {
+                    x1 += dx;
+                }
             }
         } else {
             DrawNonJustifiedLine(page, list, alignment);

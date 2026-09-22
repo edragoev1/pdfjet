@@ -31,6 +31,9 @@ public class Paragraph {
     // left of the text it is drawn; see SetListLabel.
     internal TextLine listLabel = null;
     internal float listLabelIndent = 0f;
+    // Whether each text line was added with AddJoined, by its index. A text
+    // line added to the lines another way is not joined.
+    private readonly List<bool> joined = new List<bool>();
 
     /// <summary>
     /// Makes this paragraph an item of a list, labelled by the text line, which is
@@ -68,6 +71,7 @@ public class Paragraph {
     public Paragraph(TextLine text) {
         this.lines = new List<TextLine>();
         this.lines.Add(text);
+        joined.Add(false);
     }
 
     /// <summary>
@@ -77,7 +81,49 @@ public class Paragraph {
     /// <returns>this paragraph.</returns>
     public Paragraph Add(TextLine text) {
         lines.Add(text);
+        SetJoined(lines.Count - 1, false);
         return this;
+    }
+
+    /// <summary>
+    /// Adds a text line that goes on from the text before it with no space
+    /// between them, so that a word can change its font or its color partway
+    /// through: a word in bold followed by a comma in the regular font, or a
+    /// link that ends before the period after it. A row of text does not
+    /// break between the two. When the text line starts with a space, or the
+    /// text before it ends with one, the two are apart as they are with Add.
+    /// Text in Chinese, Japanese or Korean is not joined.
+    /// </summary>
+    /// <param name="text">the text line to add to this paragraph.</param>
+    /// <returns>this paragraph.</returns>
+    public Paragraph AddJoined(TextLine text) {
+        lines.Add(text);
+        SetJoined(lines.Count - 1, true);
+        return this;
+    }
+
+    private void SetJoined(int index, bool value) {
+        while (joined.Count <= index) {
+            joined.Add(false);
+        }
+        joined[index] = value;
+    }
+
+    // Returns true when the text line at the index goes on from the one before
+    // it with no space between them: it was added with AddJoined, and there is
+    // no space where the two meet.
+    internal bool JoinsPrevious(int index) {
+        if (index <= 0 || index >= lines.Count || index >= joined.Count || !joined[index]) {
+            return false;
+        }
+        String text = lines[index].text;
+        String before = lines[index - 1].text;
+        if (String.IsNullOrEmpty(text) || String.IsNullOrEmpty(before)) {
+            return false;
+        }
+        return !Util.IsASCIIWhitespace(text[0])
+                && !Util.IsASCIIWhitespace(before[before.Length - 1])
+                && !Util.IsCJK(text) && !Util.IsCJK(before);
     }
 
     /// <summary>

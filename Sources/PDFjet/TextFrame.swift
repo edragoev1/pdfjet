@@ -48,6 +48,9 @@ public class TextFrame : Drawable {
     private var rowPlaced = false
     private var nextBaseline: Float = 0.0
     private var startsParagraph = false     // The next row starts a paragraph
+    // True when the row has room for the first word of the next text line,
+    // which goes on from the last word of this one: see Paragraph.addJoined.
+    private var joinReserved = false
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -260,6 +263,7 @@ public class TextFrame : Drawable {
         rowOpen = false
         rowPlaced = false
         startsParagraph = false
+        joinReserved = false
         row.removeAll()
         var bottom = y
         while paragraphIndex < paragraphs.count {
@@ -345,12 +349,33 @@ public class TextFrame : Drawable {
                 return false
             }
             let token = tokens![tokenIndex]
+            // The last word of a text line that the next text line goes on
+            // from has no space after it, and it is measured with the words
+            // joined to it, so that the row does not break between them.
+            let joinsNext = (tokenIndex == tokens!.count - 1)
+                    && paragraph.joinsPrevious(lineIndex + 1)
+            let text = joinsNext ? token : token + Single.space
+            let available = (x + w) - xText
+            // The first word of a text line joined to the word before it is
+            // in the row already when that word made room for it.
+            let reserved = joinReserved && tokenIndex == 0
+            joinReserved = false
+            let joined = joinsNext ? joinedWidth(paragraph, lineIndex) : 0.0
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if (runLength + TextFrame.width(textLine, token)) <= ((x + w) - xText) {
-                buf.append(token)
-                buf.append(Single.space)
-                runLength += TextFrame.width(textLine, token + Single.space)
+            if reserved || (runLength + TextFrame.width(textLine, token) + joined) <= available {
+                buf.append(text)
+                runLength += TextFrame.width(textLine, text)
+                tokenIndex += 1
+                joinReserved = joinsNext
+                continue
+            }
+            if joinsNext && buf.isEmpty && xText == x
+                    && (runLength + TextFrame.width(textLine, token)) <= available {
+                // With the words joined to it the word is wider than the frame,
+                // so they go on the next row.
+                buf.append(text)
+                runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
                 continue
             }
@@ -376,6 +401,24 @@ public class TextFrame : Drawable {
         addToRow(paragraph, textLine, buf, true)
         xText += font.stringWidth(fallbackFont, fontSize, buf)
         return true
+    }
+
+    // Returns the width of the text joined to the end of the text line at the
+    // index: the first word of each text line that goes on from it, up to the
+    // first of them that has more than one word.
+    private func joinedWidth(_ paragraph: Paragraph, _ index: Int) -> Float {
+        var width: Float = 0.0
+        var i = index + 1
+        while i < paragraph.lines.count && paragraph.joinsPrevious(i) {
+            let textLine = paragraph.lines[i]
+            let words = textLine.text!.splitOnWhitespace()
+            width += TextFrame.width(textLine, words[0])
+            if words.count > 1 {
+                break
+            }
+            i += 1
+        }
+        return width
     }
 
     // Returns the longest start of the token that fits in the width of the frame,
@@ -473,6 +516,7 @@ public class TextFrame : Drawable {
     }
 
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
+        joinReserved = false
         if row.isEmpty {
             return
         }

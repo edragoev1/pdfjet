@@ -28,6 +28,9 @@ public class Paragraph {
     // left of the text it is drawn; see setListLabel.
     var listLabel: TextLine?
     var listLabelIndent: Float = 0.0
+    // Whether each text line was added with addJoined, by its index. A text
+    // line added to the lines another way is not joined.
+    private var joined = [Bool]()
 
     /// Makes this paragraph an item of a list, labelled by the text line, which
     /// is drawn indent points to the left of the text of the paragraph and on the
@@ -61,6 +64,7 @@ public class Paragraph {
     /// Creates a paragraph with the specified text line.
     public init(_ text: TextLine) {
         lines.append(text)
+        joined.append(false)
     }
 
     ///
@@ -72,7 +76,50 @@ public class Paragraph {
     @discardableResult
     public func add(_ text: TextLine) -> Paragraph {
         lines.append(text)
+        setJoined(lines.count - 1, false)
         return self
+    }
+
+    ///
+    /// Adds a text line that goes on from the text before it with no space
+    /// between them, so that a word can change its font or its color partway
+    /// through: a word in bold followed by a comma in the regular font, or a
+    /// link that ends before the period after it. A row of text does not
+    /// break between the two. When the text line starts with a space, or the
+    /// text before it ends with one, the two are apart as they are with add.
+    /// Text in Chinese, Japanese or Korean is not joined.
+    ///
+    /// - Parameter text: the text line to add to this paragraph.
+    /// - Returns: this paragraph.
+    ///
+    @discardableResult
+    public func addJoined(_ text: TextLine) -> Paragraph {
+        lines.append(text)
+        setJoined(lines.count - 1, true)
+        return self
+    }
+
+    private func setJoined(_ index: Int, _ value: Bool) {
+        while joined.count <= index {
+            joined.append(false)
+        }
+        joined[index] = value
+    }
+
+    // Returns true when the text line at the index goes on from the one before
+    // it with no space between them: it was added with addJoined, and there is
+    // no space where the two meet.
+    func joinsPrevious(_ index: Int) -> Bool {
+        if index <= 0 || index >= lines.count || index >= joined.count || !joined[index] {
+            return false
+        }
+        guard let text = lines[index].text, let before = lines[index - 1].text,
+                let first = text.unicodeScalars.first, let last = before.unicodeScalars.last else {
+            return false
+        }
+        return !String.isASCIIWhitespace(first)
+                && !String.isASCIIWhitespace(last)
+                && !text.isCJK() && !before.isCJK()
     }
 
     ///

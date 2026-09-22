@@ -200,3 +200,75 @@ func TestTextColumnAParagraphIsOneStructureElementOfTheTypeItIsGiven(t *testing.
 		t.Error("the heading does not hold the marked contents of its words")
 	}
 }
+
+// testDrawJoinedColumn draws a column of the joined paragraph and returns the
+// content of the page.
+func testDrawJoinedColumn(width float32, textAlignment alignment.Alignment, texts ...string) string {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	column := NewTextColumn()
+	column.SetWidth(width)
+	column.SetTextAlignment(textAlignment)
+	column.AddParagraph(testJoinedParagraph(font, texts...))
+	column.SetLocation(10, 10)
+	page := NewPage(pdf, letter.Portrait())
+	column.DrawOn(page)
+	return testContent(page)
+}
+
+func TestTextColumnAJoinedTextLineHasNoSpaceBeforeIt(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoinedColumn(300, alignment.Left, "one", "+,", "two")
+	one := testPositionOf(t, content, "one")
+	comma := testPositionOf(t, content, ",")
+	two := testPositionOf(t, content, "two")
+	testNear(t, "the comma", one[0]+font.StringWidth(font.GetSize(), "one"), comma[0], testDelta)
+	testNear(t, "two", comma[0]+font.StringWidth(font.GetSize(), ", "), two[0], testDelta)
+}
+
+func TestTextColumnALineDoesNotBreakInsideAJoinedWord(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	width := font.StringWidth(font.GetSize(), "aaa bbb") + 1
+	content := testDrawJoinedColumn(width, alignment.Left, "aaa bbb", "+ccc")
+	aaa := testPositionOf(t, content, "aaa")
+	bbb := testPositionOf(t, content, "bbb")
+	ccc := testPositionOf(t, content, "ccc")
+	if !(bbb[1] < aaa[1]) {
+		t.Errorf("bbb is not on the second line: %v, %v", aaa, bbb)
+	}
+	testNear(t, "bbb", 10, bbb[0], testDelta)
+	testNear(t, "the line of ccc", bbb[1], ccc[1], testDelta)
+	testNear(t, "ccc", bbb[0]+font.StringWidth(font.GetSize(), "bbb"), ccc[0], testDelta)
+}
+
+func TestTextColumnAJoinedWordWiderThanTheColumnBreaksWhereItIsJoined(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoinedColumn(font.StringWidth(font.GetSize(), "abc")+1, alignment.Left, "abc", "+def")
+	abc := testPositionOf(t, content, "abc")
+	def := testPositionOf(t, content, "def")
+	if !(def[1] < abc[1]) {
+		t.Errorf("def is not on the second line: %v, %v", abc, def)
+	}
+	testNear(t, "def", 10, def[0], testDelta)
+}
+
+func TestTextColumnASpaceWhereTheyMeetKeepsJoinedTextLinesApart(t *testing.T) {
+	if testDrawJoinedColumn(300, alignment.Left, "one", "two") !=
+		testDrawJoinedColumn(300, alignment.Left, "one", "+ two") {
+		t.Error("a space at the start of the joined text line")
+	}
+}
+
+func TestTextColumnAJustifiedLineDoesNotWidenAJoin(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoinedColumn(200, alignment.Justify,
+		"one two three", "+,", "four five six seven eight nine ten eleven twelve")
+	three := testPositionOf(t, content, "three")
+	comma := testPositionOf(t, content, ",")
+	four := testPositionOf(t, content, "four")
+	testNear(t, "the line of four", three[1], four[1], testDelta)
+	testNear(t, "the comma", three[0]+font.StringWidth(font.GetSize(), "three"), comma[0], testDelta)
+	if !(four[0] > comma[0]+font.StringWidth(font.GetSize(), ", ")+1) {
+		t.Errorf("the line is not justified: %v, %v", comma, four)
+	}
+}

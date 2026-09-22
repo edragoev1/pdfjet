@@ -67,6 +67,20 @@ public final class TestSupport {
     }
 
     /**
+     * Returns the x and the y of the Td before the first text, drawn in a core
+     * font, that starts with the text.
+     */
+    public static float[] positionOf(String content, String text) {
+        int i = content.indexOf("<" + hex(text));
+        if (i == -1) {
+            throw new AssertionError("\"" + text + "\" is not drawn:\n" + content);
+        }
+        int td = content.lastIndexOf(" Td\n", i);
+        String[] parts = content.substring(content.lastIndexOf('\n', td) + 1, td).split(" ");
+        return new float[] {Float.parseFloat(parts[0]), Float.parseFloat(parts[1])};
+    }
+
+    /**
      * Returns the fill color set last before the text, drawn in a core font, as
      * its operator, for example "1 1 1 rg".
      */

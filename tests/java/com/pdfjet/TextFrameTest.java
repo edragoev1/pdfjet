@@ -221,4 +221,89 @@ class TextFrameTest {
                 .drawOn(pdf, none, Letter.PORTRAIT));
         assertEquals(0, none.size());
     }
+
+    // A paragraph of text lines in the font, each added with add, or with
+    // addJoined when it starts with "+", which is not part of its text.
+    static Paragraph joinedParagraph(Font font, String... texts) {
+        Paragraph paragraph = new Paragraph();
+        for (String text : texts) {
+            if (text.startsWith("+")) {
+                paragraph.addJoined(new TextLine(font, text.substring(1)));
+            } else {
+                paragraph.add(new TextLine(font, text));
+            }
+        }
+        return paragraph;
+    }
+
+    private static String drawJoined(float width, Alignment alignment, String... texts)
+            throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = joinedParagraph(font, texts);
+        if (alignment != null) {
+            paragraph.setTextAlignment(alignment);
+        }
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(width).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void aJoinedTextLineHasNoSpaceBeforeIt() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoined(300f, null, "one", "+,", "two");
+        float[] one = TestSupport.positionOf(content, "one");
+        float[] comma = TestSupport.positionOf(content, ",");
+        float[] two = TestSupport.positionOf(content, "two");
+        assertEquals(one[0] + font.stringWidth("one"), comma[0], TestSupport.DELTA);
+        assertEquals(comma[0] + font.stringWidth(", "), two[0], TestSupport.DELTA);
+        assertEquals(one[1], two[1], TestSupport.DELTA);
+    }
+
+    @Test
+    void aRowDoesNotBreakInsideAJoinedWord() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        // "aaa bbb" fits in the row, and "aaa bbbccc" does not, so bbb goes on
+        // the next row with the ccc joined to it.
+        float width = font.stringWidth("aaa bbb") + 1f;
+        String content = drawJoined(width, null, "aaa bbb", "+ccc");
+        float[] aaa = TestSupport.positionOf(content, "aaa");
+        float[] bbb = TestSupport.positionOf(content, "bbb");
+        float[] ccc = TestSupport.positionOf(content, "ccc");
+        assertTrue(bbb[1] < aaa[1], "bbb is on the second row");
+        assertEquals(10f, bbb[0], TestSupport.DELTA);
+        assertEquals(bbb[1], ccc[1], TestSupport.DELTA);
+        assertEquals(bbb[0] + font.stringWidth("bbb"), ccc[0], TestSupport.DELTA);
+    }
+
+    @Test
+    void aJoinedWordWiderThanTheFrameBreaksWhereItIsJoined() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoined(font.stringWidth("abc") + 1f, null, "abc", "+def");
+        float[] abc = TestSupport.positionOf(content, "abc");
+        float[] def = TestSupport.positionOf(content, "def");
+        assertTrue(def[1] < abc[1], "def is on the second row");
+        assertEquals(10f, def[0], TestSupport.DELTA);
+    }
+
+    @Test
+    void aSpaceWhereTheyMeetKeepsJoinedTextLinesApart() throws Exception {
+        assertEquals(drawJoined(300f, null, "one", "two"), drawJoined(300f, null, "one", "+ two"));
+        assertEquals(drawJoined(300f, null, "one ", "two"), drawJoined(300f, null, "one ", "+two"));
+    }
+
+    @Test
+    void aJustifiedRowDoesNotWidenAJoin() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoined(200f, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve");
+        float[] three = TestSupport.positionOf(content, "three");
+        float[] comma = TestSupport.positionOf(content, ",");
+        float[] four = TestSupport.positionOf(content, "four");
+        assertEquals(three[1], four[1], TestSupport.DELTA);
+        assertEquals(three[0] + font.stringWidth("three"), comma[0], TestSupport.DELTA);
+        // The spaces are widened: four is further than one space after the comma.
+        assertTrue(four[0] > comma[0] + font.stringWidth(", ") + 1f, "the row is justified");
+    }
 }

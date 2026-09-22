@@ -256,3 +256,98 @@ func TestTextFrameAFrameWithAHeightHasItOnEveryPage(t *testing.T) {
 		t.Errorf("%d pages", len(none))
 	}
 }
+
+// testJoinedParagraph returns a paragraph of text lines in the font, each
+// added with Add, or with AddJoined when it starts with "+", which is not part
+// of its text.
+func testJoinedParagraph(font *Font, texts ...string) *Paragraph {
+	paragraph := NewParagraph()
+	for _, text := range texts {
+		if strings.HasPrefix(text, "+") {
+			paragraph.AddJoined(NewTextLine(font, text[1:]))
+		} else {
+			paragraph.Add(NewTextLine(font, text))
+		}
+	}
+	return paragraph
+}
+
+// testDrawJoined draws a frame of the joined paragraph and returns the content
+// of the page. With no alignment the paragraph has none of its own.
+func testDrawJoined(width float32, textAlignment *alignment.Alignment, texts ...string) string {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := testJoinedParagraph(font, texts...)
+	if textAlignment != nil {
+		paragraph.SetTextAlignment(*textAlignment)
+	}
+	page := NewPage(pdf, letter.Portrait())
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(page)
+	return testContent(page)
+}
+
+func TestTextFrameAJoinedTextLineHasNoSpaceBeforeIt(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoined(300, nil, "one", "+,", "two")
+	one := testPositionOf(t, content, "one")
+	comma := testPositionOf(t, content, ",")
+	two := testPositionOf(t, content, "two")
+	testNear(t, "the comma", one[0]+font.StringWidth(font.GetSize(), "one"), comma[0], testDelta)
+	testNear(t, "two", comma[0]+font.StringWidth(font.GetSize(), ", "), two[0], testDelta)
+	testNear(t, "the row", one[1], two[1], testDelta)
+}
+
+func TestTextFrameARowDoesNotBreakInsideAJoinedWord(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	// "aaa bbb" fits in the row, and "aaa bbbccc" does not, so bbb goes on the
+	// next row with the ccc joined to it.
+	width := font.StringWidth(font.GetSize(), "aaa bbb") + 1
+	content := testDrawJoined(width, nil, "aaa bbb", "+ccc")
+	aaa := testPositionOf(t, content, "aaa")
+	bbb := testPositionOf(t, content, "bbb")
+	ccc := testPositionOf(t, content, "ccc")
+	if !(bbb[1] < aaa[1]) {
+		t.Errorf("bbb is not on the second row: %v, %v", aaa, bbb)
+	}
+	testNear(t, "bbb", 10, bbb[0], testDelta)
+	testNear(t, "the row of ccc", bbb[1], ccc[1], testDelta)
+	testNear(t, "ccc", bbb[0]+font.StringWidth(font.GetSize(), "bbb"), ccc[0], testDelta)
+}
+
+func TestTextFrameAJoinedWordWiderThanTheFrameBreaksWhereItIsJoined(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoined(font.StringWidth(font.GetSize(), "abc")+1, nil, "abc", "+def")
+	abc := testPositionOf(t, content, "abc")
+	def := testPositionOf(t, content, "def")
+	if !(def[1] < abc[1]) {
+		t.Errorf("def is not on the second row: %v, %v", abc, def)
+	}
+	testNear(t, "def", 10, def[0], testDelta)
+}
+
+func TestTextFrameASpaceWhereTheyMeetKeepsJoinedTextLinesApart(t *testing.T) {
+	if testDrawJoined(300, nil, "one", "two") != testDrawJoined(300, nil, "one", "+ two") {
+		t.Error("a space at the start of the joined text line")
+	}
+	if testDrawJoined(300, nil, "one ", "two") != testDrawJoined(300, nil, "one ", "+two") {
+		t.Error("a space at the end of the text line before")
+	}
+}
+
+func TestTextFrameAJustifiedRowDoesNotWidenAJoin(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	justify := alignment.Justify
+	content := testDrawJoined(200, &justify,
+		"one two three", "+,", "four five six seven eight nine ten eleven twelve")
+	three := testPositionOf(t, content, "three")
+	comma := testPositionOf(t, content, ",")
+	four := testPositionOf(t, content, "four")
+	testNear(t, "the row of four", three[1], four[1], testDelta)
+	testNear(t, "the comma", three[0]+font.StringWidth(font.GetSize(), "three"), comma[0], testDelta)
+	// The spaces are widened: four is further than one space after the comma.
+	if !(four[0] > comma[0]+font.StringWidth(font.GetSize(), ", ")+1) {
+		t.Errorf("the row is not justified: %v, %v", comma, four)
+	}
+}

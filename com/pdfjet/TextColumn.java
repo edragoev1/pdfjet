@@ -250,22 +250,57 @@ public class TextColumn implements Drawable {
         y1 += maxAscent;
 
         float runLength = 0f;
-        for (TextLine line : paragraph.lines) {
+        int wordStart = 0;      // Where the word being set starts in the list
+        for (int i = 0; i < paragraph.lines.size(); i++) {
+            TextLine line = paragraph.lines.get(i);
             String text = line.text == null ? "" : line.text;
             String[] tokens = Util.splitOnWhitespace(text);
-            for (String token : tokens) {
+            for (int j = 0; j < tokens.length; j++) {
+                String token = tokens[j];
                 TextLine textLine = line.copyWithText(token + Single.space);
+                if (j == 0 && !list.isEmpty() && paragraph.joinsPrevious(i)) {
+                    // The text line goes on from the word before it, with no
+                    // space between them, and the line of text does not break
+                    // inside the word unless the word is wider than the column.
+                    TextLine before = list.remove(list.size() - 1);
+                    runLength -= before.getWidth();
+                    before = before.copyWithText(trimTrailingSpaces(before.text));
+                    list.add(before);
+                    runLength += before.getWidth();
+                    if ((runLength + width(textLine, token)) <= this.w) {
+                        list.add(textLine);
+                        runLength += textLine.getWidth();
+                        continue;
+                    }
+                    if (wordStart > 0) {
+                        List<TextLine> word = new ArrayList<TextLine>(list.subList(wordStart, list.size()));
+                        list.subList(wordStart, list.size()).clear();
+                        drawLineOfText(page, list, alignment);
+                        moveToNextLine(lineHeight);
+                        list.clear();
+                        list.addAll(word);
+                        list.add(textLine);
+                        wordStart = 0;
+                        runLength = 0f;
+                        for (TextLine piece : list) {
+                            runLength += piece.getWidth();
+                        }
+                        continue;
+                    }
+                }
                 // The token is measured without the space that follows it: a
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 if (list.isEmpty() || (runLength + width(textLine, token)) <= this.w) {
+                    wordStart = list.size();
                     list.add(textLine);
                     runLength += textLine.getWidth();
                 } else {
                     drawLineOfText(page, list, alignment);
                     moveToNextLine(lineHeight);
                     list.clear();
+                    wordStart = 0;
                     list.add(textLine);
                     runLength = textLine.getWidth();
                 }
@@ -335,14 +370,24 @@ public class TextColumn implements Drawable {
         if (alignment == Alignment.JUSTIFY) {
             markLastToken(list);
             // The spaces are widened so that the text of the line reaches both
-            // edges. A line of one token has no space to widen.
-            float dx = (list.size() > 1) ? (w - visibleWidth(list)) / (list.size() - 1) : 0f;
+            // edges. A line of one word has no space to widen, and the parts
+            // of a word joined with Paragraph.addJoined have none between them.
+            int spaces = 0;
+            for (int i = 0; i < list.size() - 1; i++) {
+                if (list.get(i).text.endsWith(Single.space)) {
+                    spaces++;
+                }
+            }
+            float dx = (spaces > 0) ? (w - visibleWidth(list)) / spaces : 0f;
 
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for (TextLine textLine : list) {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
                 textLine.drawOn(page);
-                x1 += textLine.getWidth() + dx;
+                x1 += textLine.getWidth();
+                if (textLine.text.endsWith(Single.space)) {
+                    x1 += dx;
+                }
             }
         } else {
             drawNonJustifiedLine(page, list, alignment);

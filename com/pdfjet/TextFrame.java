@@ -50,6 +50,9 @@ public class TextFrame implements Drawable {
     private boolean rowPlaced;
     private float nextBaseline;
     private boolean startsParagraph;    // The next row starts a paragraph
+    // True when the row has room for the first word of the next text line,
+    // which goes on from the last word of this one: see Paragraph.addJoined.
+    private boolean joinReserved;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -335,6 +338,7 @@ public class TextFrame implements Drawable {
         rowOpen = false;
         rowPlaced = false;
         startsParagraph = false;
+        joinReserved = false;
         row.clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
@@ -421,11 +425,33 @@ public class TextFrame implements Drawable {
                 return false;
             }
             String token = tokens.get(tokenIndex);
+            // The last word of a text line that the next text line goes on
+            // from has no space after it, and it is measured with the words
+            // joined to it, so that the row does not break between them.
+            boolean joinsNext = (tokenIndex == tokens.size() - 1)
+                    && paragraph.joinsPrevious(lineIndex + 1);
+            String text = joinsNext ? token : token + Single.space;
+            float available = (x + w) - xText;
+            // The first word of a text line joined to the word before it is
+            // in the row already when that word made room for it.
+            boolean reserved = joinReserved && tokenIndex == 0;
+            joinReserved = false;
+            float joined = joinsNext ? joinedWidth(paragraph, lineIndex) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if ((runLength + width(textLine, token)) <= ((x + w) - xText)) {
-                buf.append(token).append(Single.space);
-                runLength += width(textLine, token + Single.space);
+            if (reserved || (runLength + width(textLine, token) + joined) <= available) {
+                buf.append(text);
+                runLength += width(textLine, text);
+                tokenIndex++;
+                joinReserved = joinsNext;
+                continue;
+            }
+            if (joinsNext && buf.length() == 0 && xText == x
+                    && (runLength + width(textLine, token)) <= available) {
+                // With the words joined to it the word is wider than the frame,
+                // so they go on the next row.
+                buf.append(text);
+                runLength += width(textLine, text);
                 tokenIndex++;
                 continue;
             }
@@ -450,6 +476,22 @@ public class TextFrame implements Drawable {
         addToRow(paragraph, textLine, buf.toString(), true);
         xText += font.stringWidth(fallbackFont, fontSize, buf.toString());
         return true;
+    }
+
+    // Returns the width of the text joined to the end of the text line at the
+    // index: the first word of each text line that goes on from it, up to the
+    // first of them that has more than one word.
+    private float joinedWidth(Paragraph paragraph, int index) {
+        float width = 0f;
+        for (int i = index + 1; i < paragraph.lines.size() && paragraph.joinsPrevious(i); i++) {
+            TextLine textLine = paragraph.lines.get(i);
+            String[] words = Util.splitOnWhitespace(textLine.text);
+            width += width(textLine, words[0]);
+            if (words.length > 1) {
+                break;
+            }
+        }
+        return width;
     }
 
     // Returns the longest start of the token that fits in the width of the frame,
@@ -548,6 +590,7 @@ public class TextFrame implements Drawable {
     }
 
     private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
+        joinReserved = false;
         if (row.isEmpty()) {
             return;
         }

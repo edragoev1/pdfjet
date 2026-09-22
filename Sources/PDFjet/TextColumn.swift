@@ -226,20 +226,54 @@ public class TextColumn : Drawable {
         self.y1 += maxAscent
 
         var runLength: Float = 0.0
-        for line in paragraph.lines {
-            for token in (line.text ?? "").splitOnWhitespace() {
+        var wordStart = 0       // Where the word being set starts in the list
+        for (i, line) in paragraph.lines.enumerated() {
+            let tokens = (line.text ?? "").splitOnWhitespace()
+            for (j, token) in tokens.enumerated() {
                 let textLine = line.copyWithText(token + Single.space)
+                if j == 0 && !list.isEmpty && paragraph.joinsPrevious(i) {
+                    // The text line goes on from the word before it, with no
+                    // space between them, and the line of text does not break
+                    // inside the word unless the word is wider than the column.
+                    var before = list.removeLast()
+                    runLength -= before.getWidth()
+                    before = before.copyWithText(TextColumn.trimTrailingSpaces(before.text))
+                    list.append(before)
+                    runLength += before.getWidth()
+                    if (runLength + TextColumn.width(textLine, token)) <= self.w {
+                        list.append(textLine)
+                        runLength += textLine.getWidth()
+                        continue
+                    }
+                    if wordStart > 0 {
+                        let word = Array(list[wordStart...])
+                        list.removeSubrange(wordStart...)
+                        drawLineOfText(page, list, alignment)
+                        moveToNextLine(lineHeight)
+                        list.removeAll()
+                        list.append(contentsOf: word)
+                        list.append(textLine)
+                        wordStart = 0
+                        runLength = 0.0
+                        for piece in list {
+                            runLength += piece.getWidth()
+                        }
+                        continue
+                    }
+                }
                 // The token is measured without the space that follows it: a
                 // line is as wide as the text it shows. A token wider than the
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 if list.isEmpty || (runLength + TextColumn.width(textLine, token)) <= self.w {
+                    wordStart = list.count
                     list.append(textLine)
                     runLength += textLine.getWidth()
                 } else {
                     drawLineOfText(page, list, alignment)
                     moveToNextLine(lineHeight)
                     list.removeAll()
+                    wordStart = 0
                     list.append(textLine)
                     runLength = textLine.getWidth()
                 }
@@ -312,14 +346,21 @@ public class TextColumn : Drawable {
         if alignment == Alignment.JUSTIFY {
             TextColumn.markLastToken(list)
             // The spaces are widened so that the text of the line reaches both
-            // edges. A line of one token has no space to widen.
-            let dx = (list.count > 1) ?
-                    (w - TextColumn.visibleWidth(list)) / Float(list.count - 1) : 0.0
+            // edges. A line of one word has no space to widen, and the parts
+            // of a word joined with Paragraph.addJoined have none between them.
+            var spaces = 0
+            for i in 0..<max(list.count - 1, 0) where list[i].text!.hasSuffix(Single.space) {
+                spaces += 1
+            }
+            let dx: Float = (spaces > 0) ? (w - TextColumn.visibleWidth(list)) / Float(spaces) : 0.0
             // Each token draws its own link annotation when the line has a URI or GoTo action.
             for textLine in list {
                 textLine.setLocation(x1, y1 + textLine.getVerticalOffset())
                 textLine.drawOn(page)
-                x1 += textLine.getWidth() + dx
+                x1 += textLine.getWidth()
+                if textLine.text!.hasSuffix(Single.space) {
+                    x1 += dx
+                }
             }
         } else {
             drawNonJustifiedLine(page, list, alignment)

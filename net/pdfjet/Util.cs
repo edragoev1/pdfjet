@@ -248,6 +248,12 @@ internal class Util {
         return text.Split(WHITESPACE, StringSplitOptions.RemoveEmptyEntries);
     }
 
+    // The six characters that Java's \s matches: space, tab, line feed,
+    // vertical tab, form feed and carriage return.
+    internal static bool IsASCIIWhitespace(char ch) {
+        return ch == ' ' || (ch >= '\t' && ch <= '\r');
+    }
+
     /// <summary>
     /// Removes the leading and trailing characters with a code of 0x20 or less,
     /// like Java's String.trim. .NET's Trim also removes U+00A0 and the other

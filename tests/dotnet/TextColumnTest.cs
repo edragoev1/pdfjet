@@ -181,5 +181,71 @@ public class TextColumnTest {
         Assert.Contains("/K [0 1 2 3 4 5 6 7]", raw);
     }
 
+    private static string DrawJoinedColumn(float width, Alignment alignment, params string[] texts) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.SetWidth(width);
+        column.SetTextAlignment(alignment);
+        column.AddParagraph(TextFrameTest.JoinedParagraph(font, texts));
+        column.SetLocation(10f, 10f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void AJoinedTextLineHasNoSpaceBeforeIt() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoinedColumn(300f, Alignment.LEFT, "one", "+,", "two");
+        float[] one = TestSupport.PositionOf(content, "one");
+        float[] comma = TestSupport.PositionOf(content, ",");
+        float[] two = TestSupport.PositionOf(content, "two");
+        TestSupport.AssertNear(one[0] + font.StringWidth("one"), comma[0], TestSupport.DELTA, "comma x");
+        TestSupport.AssertNear(comma[0] + font.StringWidth(", "), two[0], TestSupport.DELTA, "two x");
+    }
+
+    [Fact]
+    public void ALineDoesNotBreakInsideAJoinedWord() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        float width = font.StringWidth("aaa bbb") + 1f;
+        string content = DrawJoinedColumn(width, Alignment.LEFT, "aaa bbb", "+ccc");
+        float[] aaa = TestSupport.PositionOf(content, "aaa");
+        float[] bbb = TestSupport.PositionOf(content, "bbb");
+        float[] ccc = TestSupport.PositionOf(content, "ccc");
+        Assert.True(bbb[1] < aaa[1], "bbb is on the second line");
+        TestSupport.AssertNear(10f, bbb[0], TestSupport.DELTA, "bbb x");
+        TestSupport.AssertNear(bbb[1], ccc[1], TestSupport.DELTA, "ccc y");
+        TestSupport.AssertNear(bbb[0] + font.StringWidth("bbb"), ccc[0], TestSupport.DELTA, "ccc x");
+    }
+
+    [Fact]
+    public void AJoinedWordWiderThanTheColumnBreaksWhereItIsJoined() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoinedColumn(font.StringWidth("abc") + 1f, Alignment.LEFT, "abc", "+def");
+        float[] abc = TestSupport.PositionOf(content, "abc");
+        float[] def = TestSupport.PositionOf(content, "def");
+        Assert.True(def[1] < abc[1], "def is on the second line");
+        TestSupport.AssertNear(10f, def[0], TestSupport.DELTA, "def x");
+    }
+
+    [Fact]
+    public void ASpaceWhereTheyMeetKeepsJoinedTextLinesApart() {
+        Assert.Equal(DrawJoinedColumn(300f, Alignment.LEFT, "one", "two"),
+                DrawJoinedColumn(300f, Alignment.LEFT, "one", "+ two"));
+    }
+
+    [Fact]
+    public void AJustifiedLineDoesNotWidenAJoin() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoinedColumn(200f, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve");
+        float[] three = TestSupport.PositionOf(content, "three");
+        float[] comma = TestSupport.PositionOf(content, ",");
+        float[] four = TestSupport.PositionOf(content, "four");
+        TestSupport.AssertNear(three[1], four[1], TestSupport.DELTA, "four y");
+        TestSupport.AssertNear(three[0] + font.StringWidth("three"), comma[0], TestSupport.DELTA, "comma x");
+        Assert.True(four[0] > comma[0] + font.StringWidth(", ") + 1f, "the line is justified");
+    }
 }
 }   // End of namespace PDFjet.NET

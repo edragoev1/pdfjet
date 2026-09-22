@@ -171,4 +171,65 @@ import Testing
         #expect(raw.contains("/K [0 1 2 3 4 5 6 7]"))
     }
 
+    private func drawJoinedColumn(_ width: Float, _ alignment: Alignment, _ texts: String...) -> String {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let column = TextColumn()
+        column.setWidth(width)
+        column.setTextAlignment(alignment)
+        column.addParagraph(TextFrameTests.joinedParagraph(font, texts))
+        column.setLocation(10.0, 10.0)
+        let page = Page(pdf, Letter.PORTRAIT)
+        column.drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test func aJoinedTextLineHasNoSpaceBeforeIt() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoinedColumn(300, Alignment.LEFT, "one", "+,", "two")
+        let one = TestSupport.positionOf(content, "one")
+        let comma = TestSupport.positionOf(content, ",")
+        let two = TestSupport.positionOf(content, "two")
+        TestSupport.expectNear(one[0] + font.stringWidth("one"), comma[0])
+        TestSupport.expectNear(comma[0] + font.stringWidth(", "), two[0])
+    }
+
+    @Test func aLineDoesNotBreakInsideAJoinedWord() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let width = font.stringWidth("aaa bbb") + 1
+        let content = drawJoinedColumn(width, Alignment.LEFT, "aaa bbb", "+ccc")
+        let aaa = TestSupport.positionOf(content, "aaa")
+        let bbb = TestSupport.positionOf(content, "bbb")
+        let ccc = TestSupport.positionOf(content, "ccc")
+        #expect(bbb[1] < aaa[1], "bbb is on the second line")
+        TestSupport.expectNear(10, bbb[0])
+        TestSupport.expectNear(bbb[1], ccc[1])
+        TestSupport.expectNear(bbb[0] + font.stringWidth("bbb"), ccc[0])
+    }
+
+    @Test func aJoinedWordWiderThanTheColumnBreaksWhereItIsJoined() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoinedColumn(font.stringWidth("abc") + 1, Alignment.LEFT, "abc", "+def")
+        let abc = TestSupport.positionOf(content, "abc")
+        let def = TestSupport.positionOf(content, "def")
+        #expect(def[1] < abc[1], "def is on the second line")
+        TestSupport.expectNear(10, def[0])
+    }
+
+    @Test func aSpaceWhereTheyMeetKeepsJoinedTextLinesApart() {
+        #expect(drawJoinedColumn(300, Alignment.LEFT, "one", "two")
+                == drawJoinedColumn(300, Alignment.LEFT, "one", "+ two"))
+    }
+
+    @Test func aJustifiedLineDoesNotWidenAJoin() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoinedColumn(200, Alignment.JUSTIFY,
+                "one two three", "+,", "four five six seven eight nine ten eleven twelve")
+        let three = TestSupport.positionOf(content, "three")
+        let comma = TestSupport.positionOf(content, ",")
+        let four = TestSupport.positionOf(content, "four")
+        TestSupport.expectNear(three[1], four[1])
+        TestSupport.expectNear(three[0] + font.stringWidth("three"), comma[0])
+        #expect(four[0] > comma[0] + font.stringWidth(", ") + 1, "the line is justified")
+    }
 }
