@@ -936,4 +936,21 @@ import Testing
         _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
         #expect(pages.count == 1)
     }
+
+    @Test func aWordBrokenToFitAColumnKeepsItsCharactersWhole() throws {
+        // A character outside the basic plane is more than one byte of the
+        // text, and the bytes are not drawn on more than one line.
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(11)
+        let cell = Cell(font, "a\u{1F600}b")
+        // A column narrower than any of the characters.
+        cell.setWidth(6)
+        let table = Table().setTableData([[cell]], 0)
+        table.wrapAroundCellText()
+        var lines = [String]()
+        for i in 0..<3 {
+            lines.append(table.getRow(i)[0].getText()!)
+        }
+        #expect(lines == ["a", "\u{1F600}", "b"])
+    }
 }

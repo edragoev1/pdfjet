@@ -1008,5 +1008,25 @@ public sealed class TableTest : IDisposable {
         table.DrawOn(pdf, pages, Letter.PORTRAIT);
         Assert.Single(pages);
     }
+
+    [Fact]
+    public void AWordBrokenToFitAColumnKeepsItsCharactersWhole() {
+        // A character outside the basic plane is two chars of the text, and
+        // the two are not drawn on two lines.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).SetSize(11f);
+        Cell cell = new Cell(font, "a😀b");
+        // A column narrower than any of the characters.
+        cell.SetWidth(6f);
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> { cell });
+        Table table = new Table().SetTableData(rows, 0);
+        table.WrapAroundCellText();
+        List<String> lines = new List<String>();
+        for (int i = 0; i < 3; i++) {
+            lines.Add(table.GetRow(i)[0].GetText());
+        }
+        Assert.Equal(new List<String> { "a", "😀", "b" }, lines);
+    }
 }
 }

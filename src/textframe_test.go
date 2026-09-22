@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -497,4 +498,24 @@ func testCheckALinkEndsBeforeTheSpaceAfterIt(t *testing.T, column bool) {
 
 func TestTextFrameALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 	testCheckALinkEndsBeforeTheSpaceAfterIt(t, false)
+}
+
+func TestTextFrameManyJoinedTextLinesAreMeasuredInLinearTime(t *testing.T) {
+	// Every text line is one word joined to the word before it, so the width
+	// of the words joined to a word was measured over and over.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph().Add(NewTextLine(font, "word"))
+	for i := 0; i < 20000; i++ {
+		paragraph.AddJoined(NewTextLine(font, "x"))
+	}
+	page := NewPage(pdf, letter.Portrait())
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	start := time.Now()
+	frame.DrawOn(page)
+	elapsed := time.Since(start)
+	if elapsed > 3*time.Second {
+		t.Errorf("%v", elapsed)
+	}
 }
