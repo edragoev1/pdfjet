@@ -613,18 +613,6 @@ goal 5, the references, which is the first thing to give if anything does.
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 
-## If the time runs short
-
-In this order, and none of it moves the date:
-
-- Goal 5 is the first to give: the reader against real PDFs is worth most and
-  is already in the Oct 2–8 week; the images, fonts and round-trip text can
-  land in 9.0.4.
-- The last block of goal 2 — the barcodes, the charts, `Form`, `Container`
-  and `Stamp` — is the least exposed and the easiest to carry over.
-- The features below do not start before Oct 21 in any case.
-- Goals 3, 4, 6 and 7 do not give: they are what "rock solid" is claimed on.
-
 ## After v9.0.3 — features
 
 New features, the first work on the foundation of 9.0.3, from the review of
