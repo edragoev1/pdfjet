@@ -530,4 +530,53 @@ class TableTest {
                 "the rule under the span is not between the top and the bottom of the table");
         assertEquals(page.height - xy[1], ys.get(3), 0.01f, "the rule under the table");
     }
+
+    @Test
+    void aPageBreakCutsTheWrappedTextOfARow() throws Exception {
+        // Today's behavior, which "keeping a row with the next one" in TODO.md
+        // is to change: the lines a cell's text wraps into are rows of their
+        // own, and a page break keeps together only the rows of a span, so it
+        // can fall between the lines of one cell. The first lines are drawn at
+        // the bottom of a page, with the other cells of the row, and the rest
+        // at the top of the next page, beside empty cells.
+        boolean cut = false;
+        for (int at = 30; at < 50 && !cut; at++) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<List<Cell>> data = new ArrayList<List<Cell>>();
+            for (int r = 0; r < 60; r++) {
+                List<Cell> row = new ArrayList<Cell>();
+                for (String text : (r == at) ? new String[] {LONG_TEXT, "beside"} : new String[] {"r" + r, "x"}) {
+                    row.add(new Cell(font, text).setWidth(60f));
+                }
+                data.add(row);
+            }
+            Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+            List<Page> pages = new ArrayList<Page>();
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            assertNotEquals(LONG_TEXT, table.getRow(at).get(0).getText(), "the text did not wrap");
+            int first = -1;
+            int last = -1;
+            int beside = -1;
+            for (int i = 0; i < pages.size(); i++) {
+                String content = TestSupport.content(pages.get(i));
+                if (content.contains(TestSupport.hex("one"))) {
+                    first = i;
+                }
+                if (content.contains(TestSupport.hex("twelve"))) {
+                    last = i;
+                }
+                if (content.contains(TestSupport.hex("beside"))) {
+                    beside = i;
+                }
+            }
+            assertTrue(first >= 0 && last >= 0, "the wrapped text was not drawn");
+            if (first != last) {
+                cut = true;
+                assertEquals(first + 1, last, "the text goes on past the next page");
+                assertEquals(first, beside, "the other cell of the row is not with its first line");
+            }
+        }
+        assertTrue(cut, "no page break fell inside the wrapped text of the row");
+    }
 }

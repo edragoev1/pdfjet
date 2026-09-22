@@ -470,4 +470,54 @@ import Testing
                 "the rule under the span is not between the top and the bottom of the table")
         #expect(abs(ys[3] - (page.height - xy[1])) < 0.01, "the rule under the table")
     }
+
+    @Test func aPageBreakCutsTheWrappedTextOfARow() {
+        // Today's behavior, which "keeping a row with the next one" in TODO.md
+        // is to change: the lines a cell's text wraps into are rows of their
+        // own, and a page break keeps together only the rows of a span, so it
+        // can fall between the lines of one cell. The first lines are drawn at
+        // the bottom of a page, with the other cells of the row, and the rest
+        // at the top of the next page, beside empty cells.
+        var cut = false
+        for at in 30..<50 where !cut {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            var data = [[Cell]]()
+            for r in 0..<60 {
+                let texts = (r == at) ? [longText, "beside"] : ["r\(r)", "x"]
+                data.append(texts.map { text in
+                    let cell = Cell(font, text)
+                    cell.setWidth(60)
+                    return cell
+                })
+            }
+            let table = Table().setTableData(data, 1).setLocation(50, 50)
+            table.setBottomMargin(20)
+            var pages = [Page]()
+            _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+            #expect(table.getRow(at)[0].getText() != longText, "the text did not wrap")
+            var first = -1
+            var last = -1
+            var beside = -1
+            for (i, page) in pages.enumerated() {
+                let content = TestSupport.content(page)
+                if content.contains(TestSupport.hex("one")) {
+                    first = i
+                }
+                if content.contains(TestSupport.hex("twelve")) {
+                    last = i
+                }
+                if content.contains(TestSupport.hex("beside")) {
+                    beside = i
+                }
+            }
+            #expect(first >= 0 && last >= 0, "the wrapped text was not drawn")
+            if first != last {
+                cut = true
+                #expect(last == first + 1, "the text goes on past the next page")
+                #expect(beside == first, "the other cell of the row is not with its first line")
+            }
+        }
+        #expect(cut, "no page break fell inside the wrapped text of the row")
+    }
 }

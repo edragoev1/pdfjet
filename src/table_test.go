@@ -602,3 +602,65 @@ func TestTableACellThatWrapsAndSpansRowsDrawsItsBorderUnderTheWholeSpan(t *testi
 		t.Errorf("the rule under the table is at %v, not %v", ys[3], page.height-xy[1])
 	}
 }
+
+func TestTableAPageBreakCutsTheWrappedTextOfARow(t *testing.T) {
+	// Today's behavior, which "keeping a row with the next one" in TODO.md is
+	// to change: the lines a cell's text wraps into are rows of their own, and
+	// a page break keeps together only the rows of a span, so it can fall
+	// between the lines of one cell. The first lines are drawn at the bottom
+	// of a page, with the other cells of the row, and the rest at the top of
+	// the next page, beside empty cells.
+	cut := false
+	for at := 30; at < 50 && !cut; at++ {
+		doc := testNewDoc()
+		font := testHelvetica(doc.pdf)
+		data := make([][]*Cell, 0, 60)
+		for r := 0; r < 60; r++ {
+			texts := []string{fmt.Sprintf("r%d", r), "x"}
+			if r == at {
+				texts = []string{testLongText, "beside"}
+			}
+			row := make([]*Cell, 0, 2)
+			for _, text := range texts {
+				row = append(row, NewCell(font, text).SetWidth(60))
+			}
+			data = append(data, row)
+		}
+		table := NewTable().SetTableData(data, 1)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		pages := make([]*Page, 0)
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		if table.GetRow(at)[0].GetText() == testLongText {
+			t.Fatal("the text did not wrap")
+		}
+		first, last, beside := -1, -1, -1
+		for i, page := range pages {
+			content := testContent(page)
+			if strings.Contains(content, testHex("one")) {
+				first = i
+			}
+			if strings.Contains(content, testHex("twelve")) {
+				last = i
+			}
+			if strings.Contains(content, testHex("beside")) {
+				beside = i
+			}
+		}
+		if first < 0 || last < 0 {
+			t.Fatalf("row %d: the wrapped text was not drawn", at)
+		}
+		if first != last {
+			cut = true
+			if last != first+1 {
+				t.Errorf("row %d: the text goes on past the next page", at)
+			}
+			if beside != first {
+				t.Errorf("row %d: the other cell of the row is not with its first line", at)
+			}
+		}
+	}
+	if !cut {
+		t.Error("no page break fell inside the wrapped text of the row")
+	}
+}

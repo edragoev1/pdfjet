@@ -498,5 +498,57 @@ public sealed class TableTest : IDisposable {
                 "the rule under the span is not between the top and the bottom of the table");
         Assert.True(Math.Abs(page.height - xy[1] - ys[3]) < 0.01f, "the rule under the table");
     }
+
+    [Fact]
+    public void APageBreakCutsTheWrappedTextOfARow() {
+        // Today's behavior, which "keeping a row with the next one" in TODO.md
+        // is to change: the lines a cell's text wraps into are rows of their
+        // own, and a page break keeps together only the rows of a span, so it
+        // can fall between the lines of one cell. The first lines are drawn at
+        // the bottom of a page, with the other cells of the row, and the rest
+        // at the top of the next page, beside empty cells.
+        bool cut = false;
+        for (int at = 30; at < 50 && !cut; at++) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            List<List<Cell>> data = new List<List<Cell>>();
+            for (int r = 0; r < 60; r++) {
+                List<Cell> row = new List<Cell>();
+                foreach (string text in (r == at) ? new string[] {LONG_TEXT, "beside"} : new string[] {"r" + r, "x"}) {
+                    Cell cell = new Cell(font, text);
+                    cell.SetWidth(60f);
+                    row.Add(cell);
+                }
+                data.Add(row);
+            }
+            Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f);
+            table.SetBottomMargin(20f);
+            List<Page> pages = new List<Page>();
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            Assert.NotEqual(LONG_TEXT, table.GetRow(at)[0].GetText());
+            int first = -1;
+            int last = -1;
+            int beside = -1;
+            for (int i = 0; i < pages.Count; i++) {
+                string content = TestSupport.Content(pages[i]);
+                if (content.Contains(TestSupport.Hex("one"))) {
+                    first = i;
+                }
+                if (content.Contains(TestSupport.Hex("twelve"))) {
+                    last = i;
+                }
+                if (content.Contains(TestSupport.Hex("beside"))) {
+                    beside = i;
+                }
+            }
+            Assert.True(first >= 0 && last >= 0, "the wrapped text was not drawn");
+            if (first != last) {
+                cut = true;
+                Assert.True(last == first + 1, "the text goes on past the next page");
+                Assert.True(beside == first, "the other cell of the row is not with its first line");
+            }
+        }
+        Assert.True(cut, "no page break fell inside the wrapped text of the row");
+    }
 }
 }
