@@ -8,7 +8,9 @@
 # workflow's port jobs do, builds and tests the Java port again with JDK 8, as
 # its java (JDK 8) job does, then checks the example PDFs with
 # .github/scripts/check-example-pdfs.py and their tags with
-# .github/scripts/check-pdfua-tags.py, as its compare job does.
+# .github/scripts/check-pdfua-tags.py, as its compare job does. Last, it
+# builds and runs the snippets of the booklet in the four ports and compares
+# their PDFs, with booklet/check-snippets.sh.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -122,4 +124,9 @@ fi
 # What the tags of the tagged documents stand for, which veraPDF cannot check.
 # The Java PDFs stand for all four ports: check-example-pdfs.py has just
 # checked that the content streams of the other three are the same.
-"$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java"
+"$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java" || exit 1
+
+# The snippets of the booklet, which it works on in build/check-snippets with
+# the Python environment above.
+echo "Building and running the booklet snippets"
+PYTHON="$WORK/venv/bin/python" bash booklet/check-snippets.sh

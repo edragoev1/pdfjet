@@ -57,8 +57,12 @@ swift build --configuration release --product BookletSnippets -Xswiftc -warnings
 bin=$(swift build --configuration release --show-bin-path)
 (cd "$WORK/swift/out" && "$bin/BookletSnippets") || exit 1
 
-PYTHON=${PYTHON:-python3}
-if [ -x "$ROOT/build/check-examples/venv/bin/python" ]; then
-    PYTHON=$ROOT/build/check-examples/venv/bin/python
+# The Python of the PYTHON environment variable, or that of the environment
+# check-examples.sh makes, or python3.
+if [ -z "$PYTHON" ]; then
+    PYTHON=python3
+    if [ -x "$ROOT/build/check-examples/venv/bin/python" ]; then
+        PYTHON=$ROOT/build/check-examples/venv/bin/python
+    fi
 fi
 "$PYTHON" booklet/check-snippets.py "$WORK"
