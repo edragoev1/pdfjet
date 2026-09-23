@@ -289,6 +289,17 @@ the core is listed here, and pdfjet-server works around it until it is fixed.
 Each was proved in the Go port; the other three have the same code, so each is
 to check and fix in the four, with a test.
 
+- [ ] **A glyph two characters share is copied as one of them.** Source Serif 4
+  draws the Greek small letter mu (U+03BC) and the micro sign (U+00B5) with the
+  same glyph, and the ToUnicode map of the embedded font gives that glyph one of
+  them, the micro sign: Greek text drawn in it, "δικαιώματα", is right on the
+  page, but is copied, searched and read aloud with µ in place of μ. The map
+  of a glyph should be the character it was drawn for, as an ActualText span
+  or a glyph of its own in the map would give it. Found by comparing the PDFs
+  of Latin, Greek and Cyrillic text in the four families of the editor, on 23
+  September 2026; IBM Plex Sans, JetBrains Mono and Noto Sans read back as
+  drawn. pdfjet-server does not work around it: it recommends IBM Plex Sans.
+
 - ✅ **Code 128 cuts a long text short without a word.** `drawCode128` stops
   at 48 codewords and draws the rest of the barcode, so the barcode holds
   another value than its text: 60 sevens draw exactly as wide as 48. It
