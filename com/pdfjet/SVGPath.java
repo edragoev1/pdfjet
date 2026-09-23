@@ -9,18 +9,21 @@ package com.pdfjet;
 import java.util.List;
 
 /**
- * The SVGPath class.
+ * A path or a shape of an SVG file, as PDF path operations in the space of
+ * the svg element, and what it is drawn with.
  */
 class SVGPath {
     /** The default constructor */
     SVGPath() {
     }
 
-    String data = "";               // The SVG path data; a path without it draws nothing
     List<PathOp> operations;        // The PDF path operations
-    int fill = Color.transparent;   // The fill color or transparent don't fill
-    int stroke = Color.transparent; // The stroke color or transparent don't stroke
-    boolean fillNone = false;       // fill="none": not filled, whatever the svg element says
-    boolean strokeNone = false;     // stroke="none": not stroked, whatever the svg element says
-    float strokeWidth = 0f;         // The stroke width
+    int fill = Color.transparent;   // The fill color, or transparent for none
+    int stroke = Color.transparent; // The stroke color, or transparent for none
+    float strokeWidth = 0f;         // The stroke width, in the space of the svg element
+    boolean evenOdd = false;        // Filled with the even-odd rule
+    CapStyle lineCap = CapStyle.BUTT;
+    JoinStyle lineJoin = JoinStyle.MITER;
+    float fillAlpha = 1f;
+    float strokeAlpha = 1f;
 }

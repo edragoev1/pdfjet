@@ -6,13 +6,16 @@
  */
 import Foundation
 
-/// One SVG path with its PDF path operations, colors and stroke width.
+/// A path or a shape of an SVG file, as PDF path operations in the space of
+/// the svg element, and what it is drawn with.
 class SVGPath {
-    var data: String?                       // The SVG path data
-    var operations: [PathOp]?               // The PDF path operations
-    var fill: Int32 = Color.transparent     // The fill color or nil (don't fill)
-    var stroke: Int32 = Color.transparent   // The stroke color or nil (don't stroke)
-    var fillNone = false                    // fill="none": not filled, whatever the svg element says
-    var strokeNone = false                  // stroke="none": not stroked, whatever the svg element says
-    var strokeWidth: Float = 0.0            // The stroke width
+    var operations = [PathOp]()             // The PDF path operations
+    var fill: Int32 = Color.transparent     // The fill color, or Color.transparent for none
+    var stroke: Int32 = Color.transparent   // The stroke color, or Color.transparent for none
+    var strokeWidth: Float = 0.0            // The stroke width, in the space of the svg element
+    var evenOdd = false                     // Filled with the even-odd rule
+    var lineCap = CapStyle.BUTT
+    var lineJoin = JoinStyle.MITER
+    var fillAlpha: Float = 1.0
+    var strokeAlpha: Float = 1.0
 }

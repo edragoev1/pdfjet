@@ -280,6 +280,282 @@ public class SVGImageTest {
         }
     }
 
+    // What SVGImage draws of the SVG files of drawing programs: groups and
+    // what they give their paths, transforms, the basic shapes, style
+    // attributes and classes, fill rules, opacity, line caps and joins.
+
+    [Fact]
+    public void AGroupGivesItsPathsItsColorsAndWidthUnlessTheyHaveTheirOwn() {
+        string content = Draw("<svg width=\"100\" height=\"100\"><g fill=\"red\" stroke=\"blue\" stroke-width=\"2\">"
+                + "<path d=\"M10 10 H90 V90 Z\"/><path d=\"M10 10 H50 V50 Z\" fill=\"green\" stroke-width=\"4\"/></g></svg>");
+        Assert.Equal("1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\ns\n"
+                + "0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\ns\n", content);
+    }
+
+    [Fact]
+    public void APathIsFilledBlackUnlessItsFillIsNoneAndStrokedOneUnitWide() {
+        // As SVG draws them: a stroke does not take the fill away, and a
+        // stroke width of 0 draws no stroke, where a PDF would draw the
+        // thinnest line.
+        string content = Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" stroke=\"red\"/></svg>");
+        Assert.StartsWith("0 0 0 rg\n", content);
+        Assert.Contains("1 0 0 RG\n1 w\n", content);
+        content = Draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" stroke=\"red\" stroke-width=\"0\"/></svg>");
+        Assert.DoesNotContain("RG", content);
+        Assert.EndsWith("\nf\n", content);
+    }
+
+    [Fact]
+    public void TransformsOfGroupsAndPathsAreAppliedInTurn() {
+        // The path is scaled, then moved by the group; its stroke is scaled too.
+        string content = Draw("<svg width=\"100\" height=\"100\"><g transform=\"translate(10 20)\">"
+                + "<path d=\"M0 0 L10 0\" transform=\"scale(2)\" stroke=\"red\" fill=\"none\"/></g></svg>");
+        Assert.Equal("1 0 0 RG\n2 w\n10 772 m\n30 772 l\nS\n", content);
+        string[][] transforms = {
+            new string[] {"rotate(90)", "0 792 m\n0 782 l\n"},
+            new string[] {"rotate(90 10 10)", "20 792 m\n20 782 l\n"},
+            new string[] {"matrix(1 0 0 1 5 6)", "5 786 m\n15 786 l\n"},
+            new string[] {"translate(5,6)", "5 786 m\n15 786 l\n"},
+            new string[] {"translate(5)", "5 792 m\n15 792 l\n"},
+            new string[] {"scale(2 3)", "0 792 m\n20 792 l\n"},
+            new string[] {"skewY(45)", "0 792 m\n10 782 l\n"},
+            new string[] {"translate(10) scale(2)", "10 792 m\n30 792 l\n"},
+            new string[] {"scale(2) translate(10)", "20 792 m\n40 792 l\n"},
+            new string[] {"translate(10)\n,rotate(90)", "10 792 m\n10 782 l\n"},
+            new string[] {"translate(10) rotate", "0 792 m\n10 792 l\n"},    // Cannot be read: none
+            new string[] {"translate(10) unknown(1 2)", "0 792 m\n10 792 l\n"},
+            new string[] {"translate(10) scale(1 2 3)", "0 792 m\n10 792 l\n"},
+            new string[] {"translate(1e1) scale(.5.5)", "10 792 m\n15 792 l\n"},
+            new string[] {"translate(-5-5) scale(+1+1)", "-5 797 m\n5 797 l\n"},
+        };
+        foreach (string[] transform in transforms) {
+            content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0\" transform=\"" + transform[0] + "\"/></svg>");
+            Assert.True(content.Contains(transform[1]), transform[0] + " draws " + content);
+        }
+        // skewX leaves the line along the x axis as it is, and moves the point below.
+        content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L0 10\" transform=\"skewX(45)\"/></svg>");
+        Assert.Contains("0 792 m\n10 782 l\n", content);
+    }
+
+    [Fact]
+    public void AShapeWithATransformThatFlattensItIsNotDrawn() {
+        Assert.Empty(Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" transform=\"scale(0)\"/></svg>"));
+    }
+
+    [Fact]
+    public void DrawsTheBasicShapes() {
+        string[][] shapes = {
+            new string[] {"<rect x=\"10\" y=\"20\" width=\"30\" height=\"40\"/>",
+                "0 0 0 rg\n10 772 m\n40 772 l\n40 732 l\n10 732 l\nf\n"},
+            new string[] {"<rect x=\"10\" y=\"20\" width=\"30\" height=\"40\" rx=\"5\"/>",
+                "0 0 0 rg\n15 772 m\n35 772 l\n"
+                + "37.76 772 40 769.76 40 767 c\n40 737 l\n40 734.24 37.76 732 35 732 c\n15 732 l\n"
+                + "12.24 732 10 734.24 10 737 c\n10 767 l\n10 769.76 12.24 772 15 772 c\nf\n"},
+            // A radius larger than half the side is half the side, and one
+            // that is not given is the other one.
+            new string[] {"<rect width=\"10\" height=\"10\" ry=\"20\"/>",
+                "0 0 0 rg\n5 792 m\n5 792 l\n"
+                + "7.76 792 10 789.76 10 787 c\n10 787 l\n10 784.24 7.76 782 5 782 c\n5 782 l\n"
+                + "2.24 782 0 784.24 0 787 c\n0 787 l\n0 789.76 2.24 792 5 792 c\nf\n"},
+            new string[] {"<circle cx=\"50\" cy=\"50\" r=\"10\"/>",
+                "0 0 0 rg\n60 742 m\n60 736.48 55.52 732 50 732 c\n"
+                + "44.48 732 40 736.48 40 742 c\n40 747.52 44.48 752 50 752 c\n55.52 752 60 747.52 60 742 c\nf\n"},
+            new string[] {"<ellipse cx=\"50\" cy=\"50\" rx=\"20\" ry=\"10\"/>",
+                "0 0 0 rg\n70 742 m\n70 736.48 61.05 732 50 732 c\n"
+                + "38.95 732 30 736.48 30 742 c\n30 747.52 38.95 752 50 752 c\n61.05 752 70 747.52 70 742 c\nf\n"},
+            new string[] {"<line x1=\"10\" y1=\"20\" x2=\"30\" y2=\"40\" stroke=\"red\"/>",
+                "1 0 0 RG\n1 w\n10 772 m\n30 752 l\nS\n"},
+            new string[] {"<polyline points=\"10,10 20,20 10,20\" fill=\"none\" stroke=\"red\"/>",
+                "1 0 0 RG\n1 w\n10 782 m\n20 772 l\n10 772 l\nS\n"},
+            new string[] {"<polygon points=\"10 10 20 20 10 20 5\" fill=\"none\" stroke=\"red\"/>",
+                "1 0 0 RG\n1 w\n10 782 m\n20 772 l\n10 772 l\ns\n"},
+            // Shapes of no size draw nothing.
+            new string[] {"<rect width=\"0\" height=\"10\"/><circle r=\"0\"/><ellipse rx=\"5\"/><polygon points=\"1 2\"/><line/>", ""},
+        };
+        foreach (string[] shape in shapes) {
+            string content = Draw("<svg width=\"100\" height=\"100\">" + shape[0] + "</svg>");
+            Assert.True(shape[1] == content, shape[0] + " draws " + content);
+        }
+    }
+
+    [Fact]
+    public void StyleAttributesWinOverClassesWhichWinOverAttributes() {
+        string svg = "<svg width=\"100\" height=\"100\"><defs><style>"
+                + "/* the {colors} */ .red{fill:#ff0000} .blue, .other { fill: blue !important; stroke: red }"
+                + "g .green{fill:green} .green:hover{fill:green}</style></defs>"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" fill=\"yellow\" class=\"red\"/>"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" class=\"blue red\" style=\"stroke: none\"/>"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" class=\"red blue\" style=\"fill:yellow;stroke-width:3\"/>"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" class=\"green\"/></svg>";
+        string content = Draw(svg);
+        System.Collections.Generic.List<string> fills = new System.Collections.Generic.List<string>();
+        foreach (string line in content.Split('\n')) {
+            if (line.EndsWith(" rg") || line.EndsWith(" RG") || line.EndsWith(" w")) {
+                fills.Add(line);
+            }
+        }
+        // The rules are applied in the order of the style sheet, whatever the
+        // order of the classes; the selectors that are not a class alone are
+        // left out.
+        Assert.Equal("1 0 0 rg|0 0 1 rg|1 1 0 rg|1 0 0 RG|3 w|0 0 0 rg", string.Join("|", fills));
+    }
+
+    [Fact]
+    public void ColorsAreHexadecimalRGBNamesOrTheCurrentColor() {
+        string[][] fills = {
+            new string[] {"fill=\"#F00\"", "1 0 0 rg"},
+            new string[] {"fill=\"rgb(255, 0, 0)\"", "1 0 0 rg"},
+            new string[] {"fill=\"rgb(100%,0%,0%)\"", "1 0 0 rg"},
+            new string[] {"fill=\"RGBA(255 0 0 / 0.5)\"", "1 0 0 rg"},
+            new string[] {"fill=\"Red\"", "1 0 0 rg"},
+            new string[] {"fill=\"currentColor\" color=\"red\"", "1 0 0 rg"},
+            new string[] {"fill=\"currentColor\"", "0 0 0 rg"},
+            new string[] {"fill=\"url(#gradient) red\"", "1 0 0 rg"},
+            new string[] {"fill=\"url(#gradient)\"", "0 0 0 rg"},   // Not drawn: as if not given
+            new string[] {"fill=\"unknown\"", "0 0 0 rg"},
+            new string[] {"fill=\"rgb(nan, 0, 0)\"", "0 0 0 rg"}, // Not a number: as if not given
+            new string[] {"fill=\"rgb(inf, 0, 0)\"", "0 0 0 rg"},
+            new string[] {"style=\"fill: currentColor; color: #0000ff\"", "0 0 1 rg"},
+        };
+        foreach (string[] fill in fills) {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" " + fill[0] + "/></svg>");
+            Assert.True(content.StartsWith(fill[1] + "\n"), fill[0] + " draws " + content);
+        }
+        // The current color is the color where the fill is used, not where it is set.
+        Assert.StartsWith("1 0 0 rg\n", Draw("<svg width=\"100\" height=\"100\" fill=\"currentColor\"><g color=\"red\">"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\"/></g></svg>"));
+        Assert.ThrowsAny<Exception>(() => Parse("<svg><path d=\"M0 0 L1 1\" fill=\"#zzzzzz\"/></svg>"));
+    }
+
+    [Fact]
+    public void TheEvenOddRuleFillsWithFStar() {
+        string content = Draw("<svg width=\"100\" height=\"100\" style=\"fill-rule:evenodd\">"
+                + "<path d=\"M0 0 H30 V30 H0 Z M10 10 H20 V20 H10 Z\"/><path d=\"M0 0 H30 V30 Z\" fill-rule=\"nonzero\"/></svg>");
+        Assert.Equal(1, Count(content, "\nf*\n"));
+        Assert.EndsWith("\nf\n", content);
+    }
+
+    [Fact]
+    public void OpacityIsSetInAGraphicsStateOfThePathsOwn() {
+        string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" opacity=\"0.5\"/>"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+        Assert.Equal("q\n/GS1 gs\n0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\nQ\n0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\n", content);
+        // The opacity of a group multiplies those of its paths, and a fill or
+        // a stroke of no opacity is not drawn.
+        SVGImage image = Parse("<svg width=\"100\" height=\"100\"><g opacity=\"0.5\"><g style=\"opacity:50%\">"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" fill-opacity=\"0.5\" stroke=\"red\" stroke-opacity=\"0\"/></g></g></svg>");
+        SVGPath path = image.paths[0];
+        Assert.Equal(0.125f, path.fillAlpha);
+        Assert.Equal(0f, path.strokeAlpha);
+        Assert.Equal(-1, path.stroke);
+    }
+
+    [Fact]
+    public void LineCapsAndJoinsAreSetInAGraphicsStateOfThePathsOwn() {
+        string content = Draw("<svg width=\"100\" height=\"100\" stroke-linecap=\"round\" stroke-linejoin=\"bevel\">"
+                + "<path d=\"M0 0 L10 0\" stroke=\"red\" fill=\"none\"/><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+        Assert.Equal("q\n1 J\n2 j\n1 0 0 RG\n1 w\n0 792 m\n10 792 l\nS\nQ\n0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\n", content);
+    }
+
+    [Fact]
+    public void TheContentOfDefsAndOfWhatIsNotDisplayedIsNotDrawn() {
+        string content = Draw("<svg width=\"100\" height=\"100\">"
+                + "<defs><path d=\"M0 0 L10 0 L10 10 Z\"/></defs>"
+                + "<clipPath><rect width=\"10\" height=\"10\"/></clipPath>"
+                + "<symbol><circle r=\"5\"/></symbol>"
+                + "<g display=\"none\"><path d=\"M0 0 L10 0 L10 10 Z\"/></g>"
+                + "<g style=\"display:none\"><path d=\"M0 0 L10 0 L10 10 Z\" display=\"inline\"/></g>"
+                + "<path d=\"M20 20 L30 20 L30 30 Z\"/></svg>");
+        Assert.Equal("0 0 0 rg\n20 772 m\n30 772 l\n30 762 l\nf\n", content);
+    }
+
+    [Fact]
+    public void AttributesOfOtherNamespacesAreLeftOut() {
+        string content = Draw("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:x=\"urn:x\" width=\"100\" height=\"100\">"
+                + "<path d=\"M0 0 L10 0 L10 10 Z\" x:fill=\"red\" x:transform=\"scale(2)\"/></svg>");
+        Assert.Equal("0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\n", content);
+    }
+
+    [Fact]
+    public void TheViewBoxScalesTheStrokesAndKeepsItsProportions() {
+        // The viewBox is scaled by 10 to fit the height, and centered across.
+        string content = Draw("<svg width=\"200\" height=\"100\" viewBox=\"0 0 10 10\">"
+                + "<path d=\"M0 0 L10 10\" stroke=\"red\" fill=\"none\"/></svg>");
+        Assert.Equal("1 0 0 RG\n10 w\n50 792 m\n150 692 l\nS\n", content);
+        string[][] aspects = {
+            new string[] {"xMinYMin", "0 792 m\n100 692 l\n"},
+            new string[] {"xMaxYMax meet", "100 792 m\n200 692 l\n"},
+            new string[] {"defer xMidYMid", "50 792 m\n150 692 l\n"},
+            new string[] {"xMidYMin slice", "20 w\n0 792 m\n200 592 l\n"},    // Covers it, from the top
+            new string[] {"none", "0 792 m\n200 692 l\n"},
+        };
+        foreach (string[] aspect in aspects) {
+            content = Draw("<svg width=\"200\" height=\"100\" viewBox=\"0 0 10 10\" preserveAspectRatio=\""
+                    + aspect[0] + "\"><path d=\"M0 0 L10 10\" stroke=\"red\" fill=\"none\"/></svg>");
+            Assert.True(content.Contains(aspect[1]), aspect[0] + " draws " + content);
+        }
+    }
+
+    [Fact]
+    public void ASizeThatIsNotGivenIsInTheProportionsOfTheViewBox() {
+        string[] svgs = {
+            "<svg width=\"48\" viewBox=\"0 0 960 480\"/>",
+            "<svg height=\"24\" viewBox=\"0 0 960 480\"/>",
+            "<svg width=\"10%\" viewBox=\"0 0 960 480\"/>",
+            "<svg width=\"100\" height=\"50\" viewBox=\"0 0 960 480\"/>",
+        };
+        float[][] sizes = {
+            new float[] {48f, 24f},
+            new float[] {48f, 24f},
+            new float[] {960f, 480f},
+            new float[] {100f, 50f},
+        };
+        for (int i = 0; i < svgs.Length; i++) {
+            SVGImage image = Parse(svgs[i]);
+            Assert.Equal(sizes[i][0], image.GetWidth());
+            Assert.Equal(sizes[i][1], image.GetHeight());
+        }
+    }
+
+    [Fact]
+    public void ScalingScalesTheStrokes() {
+        SVGImage image = Parse("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\" stroke=\"red\" stroke-width=\"4\"/></svg>");
+        image.ScaleBy(0.5f);
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        image.SetLocation(0f, 0f);
+        image.DrawOn(page);
+        Assert.Contains("1 0 0 RG\n2 w\n", TestSupport.Content(page));
+    }
+
+    [Fact]
+    public void ValuesThatCannotBeReadAreLeftOut() {
+        string content = Draw("<svg width=\"100\" height=\"100\" viewBox=\"0,0,100,100\" stroke-width=\"3\">"
+                + "<path d=\"M0 0 L10 0\" fill=\"none\" stroke=\"red\" stroke-width=\"calc(1px + 1px)\" opacity=\"half\"/>"
+                + "<rect width=\"Inf\" height=\"10\" stroke-width=\"NaN\"/><polygon points=\"0 0 1e999 1 2 2\"/></svg>");
+        Assert.Equal("1 0 0 RG\n3 w\n0 792 m\n10 792 l\nS\n", content);
+    }
+
+    [Fact]
+    public void ASizeOrATransformTooLargeForAFloatDrawsNothing() {
+        // A PDF holds numbers below 2^31 and no infinity: a size of inf is no
+        // size, and a path a transform takes out of that range is not drawn.
+        SVGImage image = Parse("<svg width=\"inf\" height=\"nan\" viewBox=\"0 0 100 50\"/>");
+        Assert.Equal(100f, image.GetWidth());
+        Assert.Equal(50f, image.GetHeight());
+        string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" transform=\"scale(1e30)\"/>"
+                + "<path d=\"M0 0 L10 0\" stroke=\"red\" transform=\"scale(1e20 1)\"/><path d=\"M0 0 L10 0 L10 10 Z\"/></svg>");
+        Assert.Equal("0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\n", content);
+    }
+
+    [Fact]
+    public void ASkewOfNinetyDegreesIsNotRead() {
+        foreach (string transform in new string[] {"skewX(90)", "skewY(-270)"}) {
+            string content = Draw("<svg width=\"100\" height=\"100\"><path d=\"M0 0 L10 0 L10 10 Z\" transform=\""
+                    + transform + "\"/></svg>");
+            Assert.Equal("0 0 0 rg\n0 792 m\n10 792 l\n10 782 l\nf\n", content);
+        }
+    }
+
     private static int Curves(string content) {
         int count = 0;
         for (int i = content.IndexOf(" c\n"); i != -1; i = content.IndexOf(" c\n", i + 1)) {

@@ -5,24 +5,21 @@
 
 package pdfjet
 
-import "github.com/edragoev1/pdfjet/v9/src/color"
+import (
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
+)
 
-// svgPath holds one svgParser path with its PDF operations, colors and stroke width.
+// svgPath holds a path or a shape of an SVG file, as PDF path operations in
+// the space of the svg element, and what it is drawn with.
 type svgPath struct {
-	data        string       // The svgParser path data
 	operations  []*svgPathOp // The PDF path operations
-	fill        int32        // The fill color
-	stroke      int32        // The stroke color
-	fillNone    bool         // fill="none": not filled, whatever the svg element says
-	strokeNone  bool         // stroke="none": not stroked, whatever the svg element says
-	strokeWidth float32      // The stroke width
-}
-
-// newSVGPath creates a path with transparent fill and stroke.
-func newSVGPath() *svgPath {
-	path := new(svgPath)
-	path.fill = color.Transparent
-	path.stroke = color.Transparent
-	path.strokeWidth = 0.0
-	return path
+	fill        int32        // The fill color, or color.Transparent for none
+	stroke      int32        // The stroke color, or color.Transparent for none
+	strokeWidth float32      // The stroke width, in the space of the svg element
+	evenOdd     bool         // Filled with the even-odd rule
+	lineCap     capstyle.CapStyle
+	lineJoin    joinstyle.JoinStyle
+	fillAlpha   float32
+	strokeAlpha float32
 }

@@ -228,7 +228,58 @@ This is the first entry in this file; earlier releases were not tracked here.
   it and none of them twice; it counted the columns of each row before, which
   a row span makes uneven on purpose.
 
+- `SVGImage` draws the SVG files of drawing programs, Illustrator, Inkscape
+  and Figma among them, and icon sets such as Lucide, in all four ports,
+  where it drew only the `<path>` elements and the colors of each path and
+  of the `<svg>` element:
+  - groups, whose fill, stroke, stroke-width and the other properties below
+    their paths and shapes inherit, as in SVG, and whose opacity multiplies
+    that of what is in them;
+  - transforms, `matrix`, `translate`, `scale`, `rotate` about the origin or
+    a point, `skewX` and `skewY`, of groups, paths and shapes, applied in
+    turn; a stroke is scaled with them;
+  - the basic shapes: `<rect>`, with rounded corners of `rx` and `ry`,
+    `<circle>`, `<ellipse>`, `<line>`, `<polyline>` and `<polygon>`;
+  - the properties as attributes, in a `style` attribute, and in the rules of
+    a `<style>` element for a class, `.name { ... }`, the style attribute
+    over the rules, and the rules, in the order of the style sheet, over the
+    attributes; rules of other selectors are left out;
+  - `fill-rule="evenodd"`, filled with `f*`; `opacity`, `fill-opacity` and
+    `stroke-opacity`, in a graphics state of the path's own; and
+    `stroke-linecap` and `stroke-linejoin`;
+  - the colors `rgb()` and `rgba()`, of numbers or percentages,
+    `currentColor` and the `color` property, color names in any case, and
+    the color after a `url()` of a gradient, which is drawn when a gradient
+    cannot be;
+  - `preserveAspectRatio`, whose default fits a viewBox of other proportions
+    into the size, as large as it fits and in the middle, where it was
+    stretched, and a width or a height that is not given, which is the other
+    in the proportions of the viewBox, where it was that of the viewBox.
+
+  What is in `<defs>`, `<clipPath>`, `<mask>`, `<pattern>`, `<symbol>`,
+  `<marker>` and the gradients, and what has `display="none"`, is not drawn;
+  it was drawn as ordinary paths. Gradients and patterns, text, `<use>`,
+  embedded images, clipping, masks, filters and dashed strokes are still
+  left out. Values that cannot be read, such as a `stroke-width` of
+  `calc()`, a transform of a function PDFjet does not know, a skew of 90
+  degrees, which flattens the shape, or a number too large for a float, are left out as SVG leaves them, the property taking
+  what it inherits; a color that starts with `#` and is not hexadecimal
+  fails as before. A width or a height of `inf` or `nan` is no size, and a
+  path that a transform or `ScaleBy` takes beyond the numbers a PDF holds,
+  2^31, is not drawn, where Java and C# threw and Go wrote 0. The viewBox
+  may separate its numbers with commas. Four
+  files of those programs, drawn by PDFjet and by Chrome, differ in no pixel
+  but along the edges.
+
 ### Changed
+- An SVG path is filled black unless its fill is `none`, whether it has a
+  stroke or not, a stroke is one unit wide unless the file says otherwise,
+  and a `stroke-width` of 0 draws no stroke, as SVG draws them, in all four
+  ports: a path with a stroke and no fill was not filled, a stroke had the
+  width 0, the thinnest line a device draws, and a width of 0 drew that line.
+  A stroke width is scaled with the viewBox and with `ScaleBy`, as the
+  path is, where it kept its width in points. The map of Example_33, whose
+  file gives its countries a blue stroke of width 0, no longer outlines them.
 - A Code 128 barcode puts runs of four digits or more in code set C, two
   digits to a codeword, in all four ports, where it put every character in
   code set B, as GS1-128 does: it starts in code set C when the text starts

@@ -8,21 +8,28 @@ using System;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-/// <summary>One SVG path with its PDF path operations, colors and stroke width.</summary>
+/// <summary>
+/// A path or a shape of an SVG file, as PDF path operations in the space of
+/// the svg element, and what it is drawn with.
+/// </summary>
 internal class SVGPath {
-    /// <summary>The SVG path data.</summary>
-    internal String data = "";                // The SVG path data; a path without it draws nothing
     /// <summary>The PDF path operations.</summary>
     internal List<PathOp> operations;         // The PDF path operations
-    /// <summary>The fill color, or Color.transparent to not fill the path.</summary>
-    internal int fill = Color.transparent;    // The fill color or -1 (don't fill)
-    /// <summary>The stroke color, or Color.transparent to not stroke the path.</summary>
-    internal int stroke = Color.transparent;  // The stroke color or -1 (don't stroke)
-    /// <summary>True for fill="none": not filled, whatever the svg element says.</summary>
-    internal bool fillNone = false;
-    /// <summary>True for stroke="none": not stroked, whatever the svg element says.</summary>
-    internal bool strokeNone = false;
-    /// <summary>The stroke width.</summary>
-    internal float strokeWidth = 0f;          // The stroke width
+    /// <summary>The fill color, or Color.transparent for none.</summary>
+    internal int fill = Color.transparent;
+    /// <summary>The stroke color, or Color.transparent for none.</summary>
+    internal int stroke = Color.transparent;
+    /// <summary>The stroke width, in the space of the svg element.</summary>
+    internal float strokeWidth = 0f;
+    /// <summary>True to fill the path with the even-odd rule.</summary>
+    internal bool evenOdd = false;
+    /// <summary>The line cap style.</summary>
+    internal CapStyle lineCap = CapStyle.BUTT;
+    /// <summary>The line join style.</summary>
+    internal JoinStyle lineJoin = JoinStyle.MITER;
+    /// <summary>The alpha of the fill.</summary>
+    internal float fillAlpha = 1f;
+    /// <summary>The alpha of the stroke.</summary>
+    internal float strokeAlpha = 1f;
 }
 }

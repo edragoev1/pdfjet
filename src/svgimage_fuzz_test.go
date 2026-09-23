@@ -47,6 +47,15 @@ func FuzzSVGImage(f *testing.F) {
 		`<path d="M10 10 H40 V40 L20 30 Z" fill="red"/>` +
 		`<path d="m10 10 c5 5 10 10 15 15 s5 5 10 10 q5 5 10 10 t5 5" stroke="none"/>` +
 		`<path d="M10 10 A5 5 0 0 1 20 20 a5 5 0 1 0 10 10" fill="#0f0" stroke-width="1.5"/></svg>`)
+	// Groups, transforms, the basic shapes, style sheets and style attributes.
+	f.Add(`<svg width="100" height="50" viewBox="0 0 200 100" preserveAspectRatio="xMinYMax slice">` +
+		`<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>` +
+		`<g transform="translate(10,5) rotate(30 5 5) skewX(10)" color="blue" class="a" fill-rule="evenodd">` +
+		`<rect x="1" y="2" width="30" height="20" rx="4" class="b"/><circle cx="50" cy="20" r="8"/>` +
+		`<ellipse cx="80" cy="20" rx="10" ry="5" style="fill-opacity:0.3;stroke-linecap:round"/>` +
+		`<line x1="0" y1="40" x2="90" y2="45" stroke-linejoin="bevel"/>` +
+		`<polyline points="0,50 10,60 20,50"/><polygon points="30 50 40 60 50 50"/></g>` +
+		`<defs><path d="M0 0 L5 5"/></defs><g display="none"><rect width="5" height="5"/></g></svg>`)
 	f.Fuzz(func(t *testing.T, svg string) {
 		fuzzRun(t, len(svg), func() {
 			fuzzDrawSVGDocument(t, svg, false)
