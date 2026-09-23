@@ -685,15 +685,17 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	}
 }
 
-// DrawOn draws this text block on the specified page and returns the x and y
-// coordinates of its bottom right corner.
-func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
+// layout returns the lines of this text block as DrawOn draws them, aligned
+// and decorated, the top of the first line, the leading and the height of the
+// block. The layout of the TypeScript preview in pdfjet-client follows it, and
+// is checked against it: textblock_layout_test.go writes it for that check.
+func (textBlock *TextBlock) layout() (textLines []*TextLine, yText, leading, blockHeight float32) {
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
 	descent := textBlock.font.GetDescent(textBlock.fontSize)
-	leading := (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
-	textLines := textBlock.getTextLines()
-	blockHeight := float32(len(textLines))*leading + 2*textBlock.textPadding
-	yText := textBlock.y + textBlock.textPadding
+	leading = (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
+	textLines = textBlock.getTextLines()
+	blockHeight = float32(len(textLines))*leading + 2*textBlock.textPadding
+	yText = textBlock.y + textBlock.textPadding
 	if textBlock.height > 0.0 {
 		// The block is as tall as set; the lines that do not fit are cut
 		textLines = textBlock.linesThatFit(textLines, leading)
@@ -705,11 +707,6 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 			yText = textBlock.y + textBlock.height - textBlock.textPadding - textHeight
 		}
 	}
-	if page == nil {
-		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
-	}
-
-	page.SaveGraphicsState()
 
 	switch {
 	case textBlock.textAlignment == alignment.Center:
@@ -723,6 +720,18 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	if textBlock.strikeout {
 		textBlock.strikeoutText(textLines)
 	}
+	return textLines, yText, leading, blockHeight
+}
+
+// DrawOn draws this text block on the specified page and returns the x and y
+// coordinates of its bottom right corner.
+func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
+	textLines, yText, leading, blockHeight := textBlock.layout()
+	if page == nil {
+		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
+	}
+
+	page.SaveGraphicsState()
 
 	if textBlock.hasBorderColor || textBlock.hasFillColor {
 		rect := NewRect(textBlock.x, textBlock.y, textBlock.width, blockHeight)
