@@ -323,6 +323,15 @@ to check and fix in the four, with a test.
   the bars; `drawCodeUPC` draws every digit at `h`. Found Sep 23, with the
   item above.
 
+- ⬜ **The lines of a table's cells are drawn in whatever pen color the page
+  has.** A cell's border color is transparent until `SetBorderColor` or the
+  table's `SetCellBorderColor` sets one, and `drawBorders` then sets no pen
+  color at all, so after `Page.SetPenColor` the lines of the table come out
+  in that color, as the bars of a barcode did (fixed Sep 23). A cell should
+  draw its lines black unless a color is set, in a graphics state of its
+  own. pdfjet-server sets them black with `SetCellBorderColor`. Found Sep 23,
+  while adding tables to the editor.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
