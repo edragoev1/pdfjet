@@ -66,7 +66,7 @@ jobs:
               run: |
                   cat build.log
                   missing=""
-                  for i in $(seq -w 1 54); do
+                  for i in $(seq -w 1 55); do
                       if [ ! -s "Example_$i.pdf" ]; then
                           missing="$missing $i"
                       fi

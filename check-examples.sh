@@ -71,7 +71,7 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    for i in $(seq -w 1 54); do
+    for i in $(seq -w 1 55); do
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else
@@ -101,7 +101,7 @@ if ! JAVA_HOME="$JAVA8_HOME" PATH="$JAVA8_HOME/bin:$PATH" \
     exit 1
 fi
 missing=0
-for i in $(seq -w 1 54); do
+for i in $(seq -w 1 55); do
     if [ ! -s Example_$i.pdf ]; then
         echo "java (JDK 8): Example_$i.pdf was not created"
         missing=1

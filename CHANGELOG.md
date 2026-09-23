@@ -1000,6 +1000,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_55 is new: an invoice that is also data, in all four ports. It is a
+  PDF/A-3A document that carries `data/invoice/factur-x.xml`, the invoice in
+  the profile BASIC of Factur-X and ZUGFeRD, with `addAssociatedFile` and the
+  relationship Alternative, and says so in its metadata with `addMetadata`,
+  with the extension schema of the properties, as those standards ask; no
+  example carried a file for the document before. The page has a logo from
+  an SVG file written as a drawing program exports one, a table of the items
+  with a header row, striped rows and the totals in footer rows, and an EPC
+  QR code that banking apps read as a SEPA credit transfer. veraPDF finds it
+  PDF/A-3A, the `factur-x` library of Python finds the XML and reads its
+  profile from the metadata, the XML is valid against the XSD of the profile
+  BASIC, and ZXing reads the QR code. The scripts, the workflows, the
+  packaging and the lists of examples build, check and show 55 examples.
 - Example_54 is new: `data/markdown/pdfjet.md` drawn by `Markdown` as a
   PDF/UA document with a number on every page, in all four ports, and the
   scripts, the workflows and the packaging build and check 54 examples.

@@ -6,4 +6,4 @@ mkdir out
 javac -encoding utf-8 -cp PDFjet.jar examples\*.java -d out || exit /b 1
 
 for /L %%i in (1,1,9) do java -cp PDFjet.jar;out examples.Example_0%%i
-for /L %%i in (10,1,54) do java -cp PDFjet.jar;out examples.Example_%%i
+for /L %%i in (10,1,55) do java -cp PDFjet.jar;out examples.Example_%%i
