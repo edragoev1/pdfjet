@@ -6,10 +6,17 @@
  */
 import Foundation
 
-/// Reads GS1 data as people write it, for DataMatrix(gs1:).
+/// Reads GS1 data as people write it, each Application Identifier in
+/// parentheses and its data after it, for the barcodes that carry it: GS1
+/// DataMatrix and GS1-128.
 enum GS1 {
-    // GS, which ends a field of no set length when another follows.
-    private static let separator = "\u{1d}"
+    /// An Application Identifier and its data, and whether a separator follows
+    /// it in a barcode: after a field of no set length that another follows.
+    struct Field {
+        let ai: String
+        let data: String
+        let separator: Bool
+    }
 
     private static let format =
             "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!"
@@ -29,15 +36,14 @@ enum GS1 {
     private static let characters = Set(
             "!\"%&'*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".unicodeScalars)
 
-    /// Returns the element string of the GS1 data written as people read it:
-    /// the Application Identifiers without their parentheses, each followed by
-    /// its data, and GS after a field of no set length that another follows.
-    static func elementString(_ str: String) throws -> String {
+    /// Returns the fields of the GS1 data written as people read it. Throws if
+    /// the data is not GS1; see DataMatrix(gs1:).
+    static func parse(_ str: String) throws -> [Field] {
         var rest = Array(str.unicodeScalars)
         if rest.first != "(" {
             throw PDFjetError(message: format)
         }
-        var result = ""
+        var fields = [Field]()
         while !rest.isEmpty {
             guard let end = rest.firstIndex(of: ")") else {
                 throw PDFjetError(message: format)
@@ -48,13 +54,12 @@ enum GS1 {
             let data = Array(rest[..<next])
             rest = Array(rest[next...])
             try checkField(ai, data)
-
-            result += ai + String(String.UnicodeScalarView(data))
-            if predefinedLengths[String(ai.prefix(2))] == nil && !rest.isEmpty {
-                result += separator
-            }
+            fields.append(Field(
+                    ai: ai,
+                    data: String(String.UnicodeScalarView(data)),
+                    separator: predefinedLengths[String(ai.prefix(2))] == nil && !rest.isEmpty))
         }
-        return result
+        return fields
     }
 
     // Throws if the field is not one GS1 allows.

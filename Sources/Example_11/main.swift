@@ -38,21 +38,24 @@ public class Example_11 {
             "Code 39",
             "UPC-A",
             "EAN-13",
+            "GS1-128",
         ]
         let notes = [
             "Letters, digits and symbols",
             "Upper case letters and digits",
             "11 digits, the check digit is added",
             "12 digits, the check digit is added",
+            "GS1 data: a GTIN and a batch number",
         ]
         let barcodes = [
             try Barcode(Barcode.CODE_128, "Hellö, World!"),
             try Barcode(Barcode.CODE_39, "WIKIPEDIA"),
             try Barcode(Barcode.UPC_A, "51234567890"),
             try Barcode(Barcode.EAN_13, "051234567890"),
+            try Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
         ]
         // UPC-A and EAN-13 need wider bars for the digits under them.
-        let moduleLengths: [Float] = [0.75, 0.75, 1.0, 1.0]
+        let moduleLengths: [Float] = [0.75, 0.75, 1.0, 1.0, 0.75]
 
         var y: Float = 130.0
         for i in 0..<barcodes.count {

@@ -96,5 +96,30 @@ public class BarcodeTest {
         string content = TestSupport.Content(page);
         Assert.True(content.Contains("q\n0 0 0 RG\n") && content.EndsWith("Q\n"), content);
     }
+
+    // The GS1-128 barcodes below were read back with ZXing, which gave the
+    // symbology identifier ]C1 of GS1-128.
+    [Fact]
+    public void GS1128TakesCodeSetCForRunsOfDigits() {
+        // Start C, FNC1, 10 codewords for the 20 digits, the check digit and the stop
+        Assert.Equal((11 * 13 + 13) * 0.75f, new Barcode(Barcode.GS1_128, "(00)106141412345678908").DrawOn(null)[0]);
+        // Start B, FNC1, 1 0 A 1 in code set B, Code C, 23 45, Code B, B,
+        // FNC1 after the batch, 2 1 7: 14 codewords, with the start and the check digit 16
+        Assert.Equal((11 * 16 + 13) * 0.75f, new Barcode(Barcode.GS1_128, "(10)A12345B(21)7").DrawOn(null)[0]);
+    }
+
+    [Fact]
+    public void GS1128RefusesDataThatIsNotGS1OrTooLong() {
+        new Barcode(Barcode.GS1_128, "(91)" + new string('X', 46));     // 48 characters
+        string[,] cases = {
+            {"(91)" + new string('X', 47), "GS1-128 barcodes hold at most 48 characters, not counting the separators!"},
+            {"(01)09506000134353", "The check digit of (01) is wrong!"},
+            {"01095060001343", "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!"},
+        };
+        for (int i = 0; i < cases.GetLength(0); i++) {
+            string data = cases[i, 0];
+            Assert.Equal(cases[i, 1], Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.GS1_128, data)).Message);
+        }
+    }
 }
 }

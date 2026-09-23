@@ -6,13 +6,25 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace PDFjet.NET {
-// Reads GS1 data as people write it, for DataMatrix.FromGS1.
+// Reads GS1 data as people write it, each Application Identifier in
+// parentheses and its data after it, for the barcodes that carry it: GS1
+// DataMatrix and GS1-128.
 internal static class GS1 {
-    // GS, which ends a field of no set length when another follows.
-    private const char SEPARATOR = '\u001d';
+    // An Application Identifier and its data, and whether a separator follows
+    // it in a barcode: after a field of no set length that another follows.
+    internal sealed class Field {
+        internal readonly String ai;
+        internal readonly String data;
+        internal readonly bool separator;
+
+        internal Field(String ai, String data, bool separator) {
+            this.ai = ai;
+            this.data = data;
+            this.separator = separator;
+        }
+    }
 
     private const String FORMAT =
             "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!";
@@ -32,14 +44,13 @@ internal static class GS1 {
     private const String CHARACTERS =
             "!\"%&'*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
-    // Returns the element string of the GS1 data written as people read it:
-    // the Application Identifiers without their parentheses, each followed by
-    // its data, and GS after a field of no set length that another follows.
-    internal static String ElementString(String str) {
+    // Returns the fields of the GS1 data written as people read it. Throws an
+    // ArgumentException if the data is not GS1; see DataMatrix.FromGS1.
+    internal static List<Field> Parse(String str) {
         if (!str.StartsWith("(", StringComparison.Ordinal)) {
             throw new ArgumentException(FORMAT);
         }
-        StringBuilder sb = new StringBuilder();
+        List<Field> fields = new List<Field>();
         String rest = str;
         while (rest.Length > 0) {
             int end = rest.IndexOf(')');
@@ -55,13 +66,9 @@ internal static class GS1 {
             String data = rest.Substring(0, next);
             rest = rest.Substring(next);
             CheckField(ai, data);
-
-            sb.Append(ai).Append(data);
-            if (!PREDEFINED_LENGTHS.ContainsKey(ai.Substring(0, 2)) && rest.Length > 0) {
-                sb.Append(SEPARATOR);
-            }
+            fields.Add(new Field(ai, data, !PREDEFINED_LENGTHS.ContainsKey(ai.Substring(0, 2)) && rest.Length > 0));
         }
-        return sb.ToString();
+        return fields;
     }
 
     // Throws if the field is not one GS1 allows.

@@ -90,4 +90,28 @@ import Testing
         let content = TestSupport.content(page)
         #expect(content.contains("q\n0 0 0 RG\n") && content.hasSuffix("Q\n"))
     }
+
+    /// The GS1-128 barcodes below were read back with ZXing, which gave the
+    /// symbology identifier ]C1 of GS1-128.
+    @Test func gs1128TakesCodeSetCForRunsOfDigits() throws {
+        // Start C, FNC1, 10 codewords for the 20 digits, the check digit and the stop
+        #expect(try Barcode(Barcode.GS1_128, "(00)106141412345678908").drawOn(nil)[0] == Float(11 * 13 + 13) * 0.75)
+        // Start B, FNC1, 1 0 A 1 in code set B, Code C, 23 45, Code B, B,
+        // FNC1 after the batch, 2 1 7: 14 codewords, with the start and the check digit 16
+        #expect(try Barcode(Barcode.GS1_128, "(10)A12345B(21)7").drawOn(nil)[0] == Float(11 * 16 + 13) * 0.75)
+        #expect(Barcode.gs1128Codewords("(10)A12345B(21)7").codewords ==
+                [104, 102, 17, 16, 33, 17, 99, 23, 45, 100, 34, 102, 18, 17, 23])
+    }
+
+    @Test func gs1128RefusesDataThatIsNotGS1OrTooLong() throws {
+        _ = try Barcode(Barcode.GS1_128, "(91)" + String(repeating: "X", count: 46))     // 48 characters
+        for (data, message) in [
+            ("(91)" + String(repeating: "X", count: 47), "GS1-128 barcodes hold at most 48 characters, not counting the separators!"),
+            ("(01)09506000134353", "The check digit of (01) is wrong!"),
+            ("01095060001343", "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!"),
+        ] {
+            let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.GS1_128, data) }
+            #expect(error?.message == message)
+        }
+    }
 }

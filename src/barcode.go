@@ -12,9 +12,13 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/internal/code128"
+	"github.com/edragoev1/pdfjet/v9/src/internal/gs1"
 )
 
-// Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
+// Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39, Code 128
+// and GS1-128. The text of a GS1-128 barcode is GS1 data written as people read
+// it, each Application Identifier in parentheses and its data after it, such as
+// "(01)09506000134352(10)ABC123", and is drawn so under its bars.
 // Please see Example_11.
 type Barcode struct {
 	barcodeType     int
@@ -37,6 +41,7 @@ const (
 	UPC_A
 	CODE_128
 	CODE_39
+	GS1_128
 )
 
 // NewBarcode constructs barcode objects.
@@ -58,6 +63,8 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 		panic("EAN-13 barcodes must have exactly 12 digits!")
 	} else if barcodeType == CODE_128 {
 		code128Codewords(text) // Panics on a text that a barcode cannot hold
+	} else if barcodeType == GS1_128 {
+		gs1128Codewords(text) // Panics on data that is not GS1, or too long
 	}
 
 	barcode.lCode = []string{
@@ -190,7 +197,7 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 		xy = barcode.drawCodeEAN13(page, barcode.x1, barcode.y1)
 	case UPC_A:
 		xy = barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
-	case CODE_128:
+	case CODE_128, GS1_128:
 		xy = barcode.drawCode128(page, barcode.x1, barcode.y1)
 	case CODE_39:
 		xy = barcode.drawCode39(page, barcode.x1, barcode.y1)
@@ -384,13 +391,80 @@ func code128Codewords(text string) []rune {
 	return list
 }
 
+// gs1128Codewords returns the start and the codewords of the GS1 data written
+// as people read it: FNC1, then the fields, each followed by FNC1 when it is of
+// no set length and another follows. Runs of four digits or more are in code
+// set C, two digits to a codeword, and the rest in code set B. It panics if the
+// data is not GS1, see gs1.Parse, or is longer than the 48 characters a
+// GS1-128 barcode holds, not counting the separators.
+func gs1128Codewords(text string) (rune, []rune) {
+	const separator = -1
+	items := make([]int, 0)
+	characters := 0
+	for _, field := range gs1.Parse(text) {
+		for _, s := range []string{field.AI, field.Data} {
+			for i := 0; i < len(s); i++ {
+				items = append(items, int(s[i]))
+			}
+		}
+		characters += len(field.AI) + len(field.Data)
+		if field.Separator {
+			items = append(items, separator)
+		}
+	}
+	if characters > 48 {
+		panic("GS1-128 barcodes hold at most 48 characters, not counting the separators!")
+	}
+	// digits returns how many digits there are in a row from i
+	digits := func(i int) int {
+		n := 0
+		for i+n < len(items) && items[i+n] >= '0' && items[i+n] <= '9' {
+			n++
+		}
+		return n
+	}
+
+	start := rune(code128.StartB)
+	inC := digits(0) >= 4
+	if inC {
+		start = rune(code128.StartC)
+	}
+	list := []rune{rune(code128.FNC1)}
+	for i := 0; i < len(items); {
+		switch c := items[i]; {
+		case c == separator:
+			list = append(list, rune(code128.FNC1))
+			i++
+		case inC && digits(i) >= 2:
+			list = append(list, rune(10*(c-'0')+(items[i+1]-'0')))
+			i += 2
+		case inC:
+			list = append(list, rune(code128.CodeB))
+			inC = false
+		case digits(i) >= 4 && digits(i)%2 == 0:
+			list = append(list, rune(code128.CodeC))
+			inC = true
+		default:
+			list = append(list, rune(c-32))
+			i++
+		}
+	}
+	return start, list
+}
+
 func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 
-	list := code128Codewords(barcode.text)
+	start := rune(code128.StartB)
+	var list []rune
+	if barcode.barcodeType == GS1_128 {
+		start, list = gs1128Codewords(barcode.text)
+	} else {
+		list = code128Codewords(barcode.text)
+	}
 
 	var buf strings.Builder
-	checkDigit := rune(code128.StartB)
+	checkDigit := start
 	buf.WriteRune(checkDigit)
 	for i := 0; i < len(list); i++ {
 		codeword := list[i]

@@ -43,21 +43,24 @@ public class Example_11 {
             "Code 39",
             "UPC-A",
             "EAN-13",
+            "GS1-128",
         };
         String[] notes = {
             "Letters, digits and symbols",
             "Upper case letters and digits",
             "11 digits, the check digit is added",
             "12 digits, the check digit is added",
+            "GS1 data: a GTIN and a batch number",
         };
         Barcode[] barcodes = {
             new Barcode(Barcode.CODE_128, "Hellö, World!"),
             new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
             new Barcode(Barcode.UPC_A, "51234567890"),
             new Barcode(Barcode.EAN_13, "051234567890"),
+            new Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
         };
         // UPC-A and EAN-13 need wider bars for the digits under them.
-        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f};
+        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f, 0.75f};
 
         float y = 130f;
         for (int i = 0; i < barcodes.length; i++) {

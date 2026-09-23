@@ -4,15 +4,38 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet.datamatrix;
+package com.pdfjet;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-// Reads GS1 data as people write it, for DataMatrix.fromGS1.
-final class GS1 {
-    // GS, which ends a field of no set length when another follows.
-    private static final char SEPARATOR = '\u001d';
+/**
+ * Reads GS1 data as people write it, each Application Identifier in
+ * parentheses and its data after it, such as
+ * "(01)09506000134352(17)261231(10)ABC123", for the barcodes that carry it:
+ * GS1 DataMatrix and GS1-128.
+ */
+public final class GS1 {
+    /**
+     * An Application Identifier and its data, and whether a separator follows
+     * it in a barcode: after a field of no set length that another follows.
+     */
+    public static final class Field {
+        /** The Application Identifier, two to four digits. */
+        public final String ai;
+        /** The data of the field. */
+        public final String data;
+        /** True if a separator follows the field in a barcode. */
+        public final boolean separator;
+
+        Field(String ai, String data, boolean separator) {
+            this.ai = ai;
+            this.data = data;
+            this.separator = separator;
+        }
+    }
 
     private static final String FORMAT =
             "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!";
@@ -40,14 +63,24 @@ final class GS1 {
     private GS1() {
     }
 
-    // Returns the element string of the GS1 data written as people read it:
-    // the Application Identifiers without their parentheses, each followed by
-    // its data, and GS after a field of no set length that another follows.
-    static String elementString(String str) {
+    /**
+     * Returns the fields of the GS1 data written as people read it.
+     *
+     * @param str the GS1 data.
+     * @return the fields.
+     * @throws IllegalArgumentException if the data is not GS1: an Application
+     *     Identifier that is not two to four digits, or with no data; a
+     *     character GS1 does not allow, a parenthesis among them; data longer
+     *     than 90 characters; data of a field of set length, such as the GTIN
+     *     of (01) or the date of (17), that is not that many digits; or a wrong
+     *     check digit of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to
+     *     (417).
+     */
+    public static List<Field> parse(String str) {
         if (!str.startsWith("(")) {
             throw new IllegalArgumentException(FORMAT);
         }
-        StringBuilder sb = new StringBuilder();
+        List<Field> fields = new ArrayList<Field>();
         String rest = str;
         while (!rest.isEmpty()) {
             int end = rest.indexOf(')');
@@ -63,13 +96,9 @@ final class GS1 {
             String data = rest.substring(0, next);
             rest = rest.substring(next);
             checkField(ai, data);
-
-            sb.append(ai).append(data);
-            if (!PREDEFINED_LENGTHS.containsKey(ai.substring(0, 2)) && !rest.isEmpty()) {
-                sb.append(SEPARATOR);
-            }
+            fields.add(new Field(ai, data, !PREDEFINED_LENGTHS.containsKey(ai.substring(0, 2)) && !rest.isEmpty()));
         }
-        return sb.toString();
+        return fields;
     }
 
     // Throws if the field is not one GS1 allows.

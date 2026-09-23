@@ -120,8 +120,22 @@ public final class DataMatrix : Drawable {
     /// of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to (417). Stops the
     /// program if the data does not fit in the largest symbol, as init does.
     public convenience init(gs1 str: String, _ shape: Int = DataMatrix.SQUARE) throws {
-        let elementString = try GS1.elementString(str)
+        let elementString = try DataMatrix.gs1ElementString(str)
         self.init(codewords: [DataMatrix.FNC1] + DataMatrix.encodeASCII(Array(elementString.utf8)), shape: shape)
+    }
+
+    /// Returns the element string of the GS1 data written as people read it:
+    /// the Application Identifiers without their parentheses, each followed by
+    /// its data, and GS after a field of no set length that another follows.
+    static func gs1ElementString(_ str: String) throws -> String {
+        var result = ""
+        for field in try GS1.parse(str) {
+            result += field.ai + field.data
+            if field.separator {
+                result += "\u{1d}"     // GS
+            }
+        }
+        return result
     }
 
     // Makes the symbol of the data codewords.

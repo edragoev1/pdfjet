@@ -1,13 +1,16 @@
-/*
- * GS1_128.java
+/**
+ * Code128Table.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-package com.pdfjet.barcodes;
 
-class GS1_128 {
-public static final int[] TABLE = {
+/// The bar patterns of the Code 128 symbols, from 0 to 106, and the codewords
+/// of the Code 128 functions.
+class Code128Table {
+
+/// The bar patterns of the Code 128 symbols, from 0 to 106.
+public static let TABLE = [
 212222, // 0
 222122, // 1
 222221, // 2
@@ -114,18 +117,31 @@ public static final int[] TABLE = {
 211412, // 103 - Start A
 211214, // 104 - Start B
 211232, // 105 - Start C
-2331112,// 106 - Stop
-};
+2331112 // 106 - Stop
+]
 
 // Shifts from SET_A -> SET_B or SET_B -> SET_A for a single char
-public static final int SHIFT = 98;
+/// Switches between code sets A and B for a single character.
+public static let SHIFT = 98
 
-public static final int CODE_C = 99;    // Latch to SET_C
-public static final int FNC_4 = 100;    // FNC 4
-public static final int CODE_A = 101;   // Latch to SET_A
+/// Switches to code set C.
+public static let CODE_C = 99       // Latch to SET_C
+/// Switches to code set B, in code set C.
+public static let CODE_B = 100      // Latch to SET_B
+/// The FNC 4 function code.
+public static let FNC_4 = 100       // FNC 4
+/// Switches to code set A.
+public static let CODE_A = 101      // Latch to SET_A
+/// The FNC 1 function code, which starts GS1-128 and separates its fields.
+public static let FNC_1 = 102       // FNC 1
 
-public static final int START_A = 103;
-public static final int START_B = 104;
-public static final int START_C = 105;
-public static final int STOP = 106;
-}   // End of GS1_128.java
+/// Starts the barcode in code set A.
+public static let START_A = 103
+/// Starts the barcode in code set B.
+public static let START_B = 104
+/// Starts the barcode in code set C.
+public static let START_C = 105
+/// The stop code.
+public static let STOP = 106
+
+}   // End of Code128Table.swift

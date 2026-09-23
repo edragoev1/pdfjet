@@ -20,6 +20,10 @@ public class Barcode : Drawable {
     public static let CODE_128 = 2
     /// Code 39 barcode.
     public static let CODE_39 = 3
+    /// Specifies GS1-128 barcode. Its text is GS1 data written as people read
+    /// it, each Application Identifier in parentheses and its data after it,
+    /// such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
+    public static let GS1_128 = 4
 
     private var barcodeType = 0
     private var text: String
@@ -62,8 +66,11 @@ public class Barcode : Drawable {
             throw PDFjetError(message: "EAN-13 barcodes must have exactly 12 digits!")
         } else if barcodeType == Barcode.CODE_128, let error = Barcode.code128Codewords(text).error {
             throw PDFjetError(message: error)
+        } else if barcodeType == Barcode.GS1_128, let error = Barcode.gs1128Codewords(text).error {
+            throw PDFjetError(message: error)
         } else if barcodeType != Barcode.UPC_A && barcodeType != Barcode.EAN_13 &&
-                barcodeType != Barcode.CODE_128 && barcodeType != Barcode.CODE_39 {
+                barcodeType != Barcode.CODE_128 && barcodeType != Barcode.CODE_39 &&
+                barcodeType != Barcode.GS1_128 {
             throw PDFjetError(message: "Unsupported Barcode Type.")
         }
 
@@ -245,7 +252,7 @@ public class Barcode : Drawable {
             return drawCodeEAN13(page, x1, y1)
         } else if barcodeType == Barcode.UPC_A {
             return drawCodeUPC(page, x1, y1)
-        } else if barcodeType == Barcode.CODE_128 {
+        } else if barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128 {
             return drawCode128(page, x1, y1)
         } else {
             return drawCode39(page, x1, y1)
@@ -465,12 +472,12 @@ public class Barcode : Drawable {
         var list = [UInt16]()
         for symchar in text.unicodeScalars {
             if symchar.value < 32 {
-                list.append(UInt16(GS1_128.SHIFT))
+                list.append(UInt16(Code128Table.SHIFT))
                 list.append(UInt16(symchar.value + 64))
             } else if symchar.value < 128 {
                 list.append(UInt16(symchar.value - 32))
             } else if symchar.value < 256 {
-                list.append(UInt16(GS1_128.FNC_4))
+                list.append(UInt16(Code128Table.FNC_4))
                 list.append(UInt16(symchar.value - 160))    // 128 + 32
             } else {
                 return ([], "Code 128 barcodes can only hold characters up to U+00FF!")
@@ -482,27 +489,97 @@ public class Barcode : Drawable {
         return (list, nil)
     }
 
+    /// Returns the start and the codewords of the GS1 data written as people
+    /// read it: FNC1, then the fields, each followed by FNC1 when it is of no
+    /// set length and another follows. Runs of four digits or more are in code
+    /// set C, two digits to a codeword, and the rest in code set B. It returns
+    /// an error for data that is not GS1, see GS1.parse, or longer than the 48
+    /// characters a GS1-128 barcode holds, not counting the separators.
+    static func gs1128Codewords(_ text: String) -> (codewords: [UInt16], error: String?) {
+        let separator = -1
+        var items = [Int]()
+        var characters = 0
+        let fields: [GS1.Field]
+        do {
+            fields = try GS1.parse(text)
+        } catch let error as PDFjetError {
+            return ([], error.message)
+        } catch {
+            return ([], "\(error)")
+        }
+        for field in fields {
+            let s = Array((field.ai + field.data).unicodeScalars)
+            items += s.map { Int($0.value) }
+            characters += s.count
+            if field.separator {
+                items.append(separator)
+            }
+        }
+        if characters > 48 {
+            return ([], "GS1-128 barcodes hold at most 48 characters, not counting the separators!")
+        }
+        // How many digits there are in a row from i
+        func digits(_ i: Int) -> Int {
+            var n = 0
+            while i + n < items.count && items[i + n] >= 48 && items[i + n] <= 57 {
+                n += 1
+            }
+            return n
+        }
+
+        var inC = digits(0) >= 4
+        var list = [UInt16(inC ? Code128Table.START_C : Code128Table.START_B), UInt16(Code128Table.FNC_1)]
+        var i = 0
+        while i < items.count {
+            let c = items[i]
+            if c == separator {
+                list.append(UInt16(Code128Table.FNC_1))
+                i += 1
+            } else if inC && digits(i) >= 2 {
+                list.append(UInt16(10*(c - 48) + (items[i + 1] - 48)))
+                i += 2
+            } else if inC {
+                list.append(UInt16(Code128Table.CODE_B))
+                inC = false
+            } else if digits(i) >= 4 && digits(i) % 2 == 0 {
+                list.append(UInt16(Code128Table.CODE_C))
+                inC = true
+            } else {
+                list.append(UInt16(c - 32))
+                i += 1
+            }
+        }
+        return (list, nil)
+    }
+
     private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
-        let list = Barcode.code128Codewords(text).codewords     // init refused a text with an error
+        // init refused a text with an error
+        var list = Barcode.code128Codewords(text).codewords
+        var start = Code128Table.START_B
+        if barcodeType == Barcode.GS1_128 {
+            let gs1 = Barcode.gs1128Codewords(text).codewords
+            start = Int(gs1[0])
+            list = Array(gs1[1...])
+        }
 
         var buf = String()
-        var checkDigit = GS1_128.START_B
+        var checkDigit = start
         buf.append(String(UnicodeScalar(checkDigit)!))
         for i in 0..<list.count {
             let codeword = list[i]
             buf.append(String(UnicodeScalar(codeword)!))
             checkDigit += Int(codeword) * Int(i + 1)
         }
-        checkDigit %= GS1_128.START_A
+        checkDigit %= Code128Table.START_A
         buf.append(String(UnicodeScalar(checkDigit)!))
-        buf.append(String(UnicodeScalar(GS1_128.STOP)!))
+        buf.append(String(UnicodeScalar(Code128Table.STOP)!))
 
         let scalars = [UnicodeScalar](buf.unicodeScalars)
         var length: Float = 0.0
         for scalar in scalars {
-            for symbolScalar in String(GS1_128.TABLE[Int(scalar.value)]).unicodeScalars {
+            for symbolScalar in String(Code128Table.TABLE[Int(scalar.value)]).unicodeScalars {
                 length += Float(Int(symbolScalar.value) - 0x30) * m1
             }
         }
@@ -510,7 +587,7 @@ public class Barcode : Drawable {
         let bars = Bars(x1: x1, y1: y1, length: length, height: h, direction: direction)
         var x: Float = x1
         for scalar in scalars {
-            let symbol = String(GS1_128.TABLE[Int(scalar.value)])
+            let symbol = String(Code128Table.TABLE[Int(scalar.value)])
             var j = 0
             for scalar in symbol.unicodeScalars {
                 let n = Int(scalar.value) - 0x30

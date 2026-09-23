@@ -152,11 +152,25 @@ public final class DataMatrix implements Drawable {
      *     in the largest symbol.
      */
     public static DataMatrix fromGS1(String str, int shape) {
-        int[] ascii = encodeASCII(GS1.elementString(str).getBytes(StandardCharsets.US_ASCII));
+        int[] ascii = encodeASCII(gs1ElementString(str).getBytes(StandardCharsets.US_ASCII));
         int[] data = new int[1 + ascii.length];
         data[0] = FNC1;
         System.arraycopy(ascii, 0, data, 1, ascii.length);
         return new DataMatrix(data, shape);
+    }
+
+    // Returns the element string of the GS1 data written as people read it:
+    // the Application Identifiers without their parentheses, each followed by
+    // its data, and GS after a field of no set length that another follows.
+    static String gs1ElementString(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (GS1.Field field : GS1.parse(str)) {
+            sb.append(field.ai).append(field.data);
+            if (field.separator) {
+                sb.append('\u001d');   // GS
+            }
+        }
+        return sb.toString();
     }
 
     // Makes the symbol of the data codewords.

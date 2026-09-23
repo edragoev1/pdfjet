@@ -32,6 +32,13 @@ public class Barcode : IDrawable {
     /// </summary>
     public static readonly int CODE_39 = 3;
 
+    /// <summary>
+    /// Specifies GS1-128 barcode. Its text is GS1 data written as people read
+    /// it, each Application Identifier in parentheses and its data after it,
+    /// such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
+    /// </summary>
+    public static readonly int GS1_128 = 4;
+
     private int barcodeType = 0;
     private String text = null;
     private float x1 = 0.0f;
@@ -66,6 +73,8 @@ public class Barcode : IDrawable {
             throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
         } else if (barcodeType == Barcode.CODE_128) {
             Code128Codewords(text);     // Throws for a text that a barcode cannot hold
+        } else if (barcodeType == Barcode.GS1_128) {
+            GS1128Codewords(text);      // Throws for data that is not GS1, or too long
         }
 
         for (int i = 0; i < 10; i++) {
@@ -203,7 +212,7 @@ public class Barcode : IDrawable {
                 return DrawCodeEAN13(page, x1, y1);
             } else if (barcodeType == Barcode.UPC_A) {
                 return DrawCodeUPC(page, x1, y1);
-            } else if (barcodeType == Barcode.CODE_128) {
+            } else if (barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128) {
                 return DrawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
                 return DrawCode39(page, x1, y1);
@@ -379,12 +388,12 @@ public class Barcode : IDrawable {
         List<Int32> list = new List<Int32>();
         foreach (char symchar in text) {
             if (symchar < 32) {
-                list.Add(GS1_128.SHIFT);
+                list.Add(Code128Table.SHIFT);
                 list.Add(symchar + 64);
             } else if (symchar < 128) {
                 list.Add(symchar - 32);
             } else if (symchar < 256) {
-                list.Add(GS1_128.FNC_4);
+                list.Add(Code128Table.FNC_4);
                 list.Add(symchar - 160);    // 128 + 32
             } else {
                 throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
@@ -397,26 +406,95 @@ public class Barcode : IDrawable {
         return list;
     }
 
+    // Returns the start and the codewords of the GS1 data written as people
+    // read it: FNC1, then the fields, each followed by FNC1 when it is of no
+    // set length and another follows. Runs of four digits or more are in code
+    // set C, two digits to a codeword, and the rest in code set B. It throws
+    // for data that is not GS1, see GS1.Parse, or longer than the 48
+    // characters a GS1-128 barcode holds, not counting the separators.
+    private static List<Int32> GS1128Codewords(String text) {
+        const int separator = -1;
+        List<Int32> items = new List<Int32>();
+        int characters = 0;
+        foreach (GS1.Field field in GS1.Parse(text)) {
+            String s = field.ai + field.data;
+            foreach (char c in s) {
+                items.Add(c);
+            }
+            characters += s.Length;
+            if (field.separator) {
+                items.Add(separator);
+            }
+        }
+        if (characters > 48) {
+            throw new ArgumentException(
+                    "GS1-128 barcodes hold at most 48 characters, not counting the separators!");
+        }
+
+        bool inC = Digits(items, 0) >= 4;
+        List<Int32> list = new List<Int32>();
+        list.Add(inC ? Code128Table.START_C : Code128Table.START_B);
+        list.Add(Code128Table.FNC_1);
+        int i = 0;
+        while (i < items.Count) {
+            int c = items[i];
+            if (c == separator) {
+                list.Add(Code128Table.FNC_1);
+                i++;
+            } else if (inC && Digits(items, i) >= 2) {
+                list.Add(10*(c - '0') + (items[i + 1] - '0'));
+                i += 2;
+            } else if (inC) {
+                list.Add(Code128Table.CODE_B);
+                inC = false;
+            } else if (Digits(items, i) >= 4 && Digits(items, i) % 2 == 0) {
+                list.Add(Code128Table.CODE_C);
+                inC = true;
+            } else {
+                list.Add(c - 32);
+                i++;
+            }
+        }
+        return list;
+    }
+
+    // Returns how many digits there are in a row from i.
+    private static int Digits(List<Int32> items, int i) {
+        int n = 0;
+        while (i + n < items.Count && items[i + n] >= '0' && items[i + n] <= '9') {
+            n++;
+        }
+        return n;
+    }
+
     private float[] DrawCode128(Page page, float x1, float y1) {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        List<Int32> list = Code128Codewords(text);
+        int start = Code128Table.START_B;
+        List<Int32> list;
+        if (barcodeType == Barcode.GS1_128) {
+            list = GS1128Codewords(text);
+            start = list[0];
+            list.RemoveAt(0);
+        } else {
+            list = Code128Codewords(text);
+        }
 
         StringBuilder buf = new StringBuilder();
-        int checkDigit = GS1_128.START_B;
+        int checkDigit = start;
         buf.Append((char) checkDigit);
         for (int i = 0; i < list.Count; i++) {
             int codeword = list[i];
             buf.Append((char) codeword);
             checkDigit += codeword * (i + 1);
         }
-        checkDigit %= GS1_128.START_A;
+        checkDigit %= Code128Table.START_A;
         buf.Append((char) checkDigit);
-        buf.Append((char) GS1_128.STOP);
+        buf.Append((char) Code128Table.STOP);
 
         float length = 0f;
         for (int i = 0; i < buf.Length; i++) {
-            String symbol = GS1_128.TABLE[buf[i]].ToString();
+            String symbol = Code128Table.TABLE[buf[i]].ToString();
             for (int j = 0; j < symbol.Length; j++) {
                 length += (symbol[j] - 0x30) * m1;
             }
@@ -426,7 +504,7 @@ public class Barcode : IDrawable {
         float x = x1;
         for (int i = 0; i < buf.Length; i++) {
             int si = buf[i];
-            String symbol = GS1_128.TABLE[si].ToString();
+            String symbol = Code128Table.TABLE[si].ToString();
             for (int j = 0; j < symbol.Length; j++) {
                 int n = symbol[j] - 0x30;
                 if (j%2 == 0) {

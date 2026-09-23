@@ -114,3 +114,44 @@ func TestBarcodeIsBlackWhateverPenColorThePageHas(t *testing.T) {
 		t.Errorf("the barcode is not drawn in black in a state of its own:\n%s", content)
 	}
 }
+
+// The GS1-128 barcodes below were read back with ZXing, which gave the
+// symbology identifier ]C1 of GS1-128, and the fields with GS between them
+// where these have FNC1 (102).
+func TestBarcodeGS1128TakesCodeSetCForRunsOfDigits(t *testing.T) {
+	for _, c := range []struct {
+		data  string
+		start rune
+		list  []rune
+	}{
+		// An SSCC: FNC1 and the 20 digits two to a codeword
+		{"(00)106141412345678908", 105, []rune{102, 0, 10, 61, 41, 41, 23, 45, 67, 89, 8}},
+		// A GTIN, then a batch after a switch to code set B
+		{"(01)09506000134352(10)ABC", 105, []rune{102, 1, 9, 50, 60, 0, 13, 43, 52, 10, 100, 33, 34, 35}},
+		// Code set B first; one digit of an odd run in it before code set C;
+		// FNC1 after the batch, a field of no set length
+		{"(10)A12345B(21)7", 104, []rune{102, 17, 16, 33, 17, 99, 23, 45, 100, 34, 102, 18, 17, 23}},
+	} {
+		start, list := gs1128Codewords(c.data)
+		if start != c.start || fmt.Sprint(list) != fmt.Sprint(c.list) {
+			t.Errorf("%s: start %d, %v", c.data, start, list)
+		}
+	}
+	// Start C, FNC1, 10 codewords, the check digit and the stop
+	if width := NewBarcode(GS1_128, "(00)106141412345678908").DrawOn(nil)[0]; width != (11*13+13)*0.75 {
+		t.Errorf("the SSCC is %v wide", width)
+	}
+}
+
+func TestBarcodeGS1128RefusesDataThatIsNotGS1OrTooLong(t *testing.T) {
+	NewBarcode(GS1_128, "(91)"+strings.Repeat("X", 46)) // 48 characters
+	for data, want := range map[string]string{
+		"(91)" + strings.Repeat("X", 47): "GS1-128 barcodes hold at most 48 characters, not counting the separators!",
+		"(01)09506000134353":             "The check digit of (01) is wrong!",
+		"01095060001343":                 "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!",
+	} {
+		if message, _ := testPanic(func() { NewBarcode(GS1_128, data) }); message != want {
+			t.Errorf("%q: %q", data, message)
+		}
+	}
+}

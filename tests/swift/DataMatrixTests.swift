@@ -45,7 +45,7 @@ import Testing
             ("(01)09506000134352(3103)000750(15)270101", "0109506000134352310300075015270101"),
         ]
         for (data, want) in cases {
-            #expect(try GS1.elementString(data) == want)
+            #expect(try DataMatrix.gs1ElementString(data) == want)
         }
     }
 

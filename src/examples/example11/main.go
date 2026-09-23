@@ -49,21 +49,24 @@ func Example11() {
 		"Code 39",
 		"UPC-A",
 		"EAN-13",
+		"GS1-128",
 	}
 	notes := []string{
 		"Letters, digits and symbols",
 		"Upper case letters and digits",
 		"11 digits, the check digit is added",
 		"12 digits, the check digit is added",
+		"GS1 data: a GTIN and a batch number",
 	}
 	barcodes := []*pdfjet.Barcode{
 		pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!"),
 		pdfjet.NewBarcode(pdfjet.CODE_39, "WIKIPEDIA"),
 		pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890"),
 		pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890"),
+		pdfjet.NewBarcode(pdfjet.GS1_128, "(01)09506000134352(10)ABC123"),
 	}
 	// UPC-A and EAN-13 need wider bars for the digits under them.
-	moduleLengths := []float32{0.75, 0.75, 1.0, 1.0}
+	moduleLengths := []float32{0.75, 0.75, 1.0, 1.0, 0.75}
 
 	y := float32(130.0)
 	for i := 0; i < len(barcodes); i++ {

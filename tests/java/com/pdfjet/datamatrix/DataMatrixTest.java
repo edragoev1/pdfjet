@@ -58,7 +58,7 @@ class DataMatrixTest {
             {"(01)09506000134352(3103)000750(15)270101", "0109506000134352310300075015270101"},
         };
         for (String[] c : cases) {
-            assertEquals(c[1], GS1.elementString(c[0]), c[0]);
+            assertEquals(c[1], DataMatrix.gs1ElementString(c[0]), c[0]);
         }
     }
 

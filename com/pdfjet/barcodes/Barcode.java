@@ -23,6 +23,12 @@ public class Barcode implements Drawable {
     public static final int CODE_128 = 2;
     /** Specifies CODE39 barcode */
     public static final int CODE_39 = 3;
+    /**
+     * Specifies GS1-128 barcode. Its text is GS1 data written as people read
+     * it, each Application Identifier in parentheses and its data after it,
+     * such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
+     */
+    public static final int GS1_128 = 4;
 
     private int barcodeType = 0;
     private String text = null;
@@ -60,6 +66,8 @@ public class Barcode implements Drawable {
             throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
         } else if (barcodeType == Barcode.CODE_128) {
             code128Codewords(text);     // Throws for a text that a barcode cannot hold
+        } else if (barcodeType == Barcode.GS1_128) {
+            gs1128Codewords(text);      // Throws for data that is not GS1, or too long
         }
 
         StringBuilder sb = new StringBuilder();
@@ -202,7 +210,7 @@ public class Barcode implements Drawable {
                 return drawCodeEAN13(page, x1, y1);
             } else if (barcodeType == Barcode.UPC_A) {
                 return drawCodeUPC(page, x1, y1);
-            } else if (barcodeType == Barcode.CODE_128) {
+            } else if (barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128) {
                 return drawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
                 return drawCode39(page, x1, y1);
@@ -379,12 +387,12 @@ public class Barcode implements Drawable {
         for (int i = 0; i < text.length(); i++) {
             char symchar = text.charAt(i);
             if (symchar < 32) {
-                list.add(GS1_128.SHIFT);
+                list.add(Code128Table.SHIFT);
                 list.add(symchar + 64);
             } else if (symchar < 128) {
                 list.add(symchar - 32);
             } else if (symchar < 256) {
-                list.add(GS1_128.FNC_4);
+                list.add(Code128Table.FNC_4);
                 list.add(symchar - 160);    // 128 + 32
             } else {
                 throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
@@ -397,26 +405,94 @@ public class Barcode implements Drawable {
         return list;
     }
 
+    // Returns the start and the codewords of the GS1 data written as people
+    // read it: FNC1, then the fields, each followed by FNC1 when it is of no
+    // set length and another follows. Runs of four digits or more are in code
+    // set C, two digits to a codeword, and the rest in code set B. It throws
+    // for data that is not GS1, see GS1.parse, or longer than the 48
+    // characters a GS1-128 barcode holds, not counting the separators.
+    private static List<Integer> gs1128Codewords(String text) {
+        final int separator = -1;
+        List<Integer> items = new ArrayList<Integer>();
+        int characters = 0;
+        for (GS1.Field field : GS1.parse(text)) {
+            String s = field.ai + field.data;
+            for (int i = 0; i < s.length(); i++) {
+                items.add((int) s.charAt(i));
+            }
+            characters += s.length();
+            if (field.separator) {
+                items.add(separator);
+            }
+        }
+        if (characters > 48) {
+            throw new IllegalArgumentException(
+                    "GS1-128 barcodes hold at most 48 characters, not counting the separators!");
+        }
+
+        boolean inC = digits(items, 0) >= 4;
+        List<Integer> list = new ArrayList<Integer>();
+        list.add(inC ? Code128Table.START_C : Code128Table.START_B);
+        list.add(Code128Table.FNC_1);
+        int i = 0;
+        while (i < items.size()) {
+            int c = items.get(i);
+            if (c == separator) {
+                list.add(Code128Table.FNC_1);
+                i++;
+            } else if (inC && digits(items, i) >= 2) {
+                list.add(10*(c - '0') + (items.get(i + 1) - '0'));
+                i += 2;
+            } else if (inC) {
+                list.add(Code128Table.CODE_B);
+                inC = false;
+            } else if (digits(items, i) >= 4 && digits(items, i) % 2 == 0) {
+                list.add(Code128Table.CODE_C);
+                inC = true;
+            } else {
+                list.add(c - 32);
+                i++;
+            }
+        }
+        return list;
+    }
+
+    // Returns how many digits there are in a row from i.
+    private static int digits(List<Integer> items, int i) {
+        int n = 0;
+        while (i + n < items.size() && items.get(i + n) >= '0' && items.get(i + n) <= '9') {
+            n++;
+        }
+        return n;
+    }
+
     private float[] drawCode128(Page page, float x1, float y1) throws Exception {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        List<Integer> list = code128Codewords(text);
+        int start = Code128Table.START_B;
+        List<Integer> list;
+        if (barcodeType == Barcode.GS1_128) {
+            list = gs1128Codewords(text);
+            start = list.remove(0);
+        } else {
+            list = code128Codewords(text);
+        }
 
         StringBuilder buf = new StringBuilder();
-        int checkDigit = GS1_128.START_B;
+        int checkDigit = start;
         buf.append((char) checkDigit);
         for (int i = 0; i < list.size(); i++) {
             int codeword = list.get(i);
             buf.append((char) codeword);
             checkDigit += codeword * (i + 1);
         }
-        checkDigit %= GS1_128.START_A;
+        checkDigit %= Code128Table.START_A;
         buf.append((char) checkDigit);
-        buf.append((char) GS1_128.STOP);
+        buf.append((char) Code128Table.STOP);
 
         float length = 0f;
         for (int i = 0; i < buf.length(); i++) {
-            String symbol = Integer.toString(GS1_128.TABLE[buf.charAt(i)]);
+            String symbol = Integer.toString(Code128Table.TABLE[buf.charAt(i)]);
             for (int j = 0; j < symbol.length(); j++) {
                 length += (symbol.charAt(j) - 0x30) * m1;
             }
@@ -426,7 +502,7 @@ public class Barcode implements Drawable {
         float x = x1;
         for (int i = 0; i < buf.length(); i++) {
             int si = buf.charAt(i);
-            String symbol = Integer.toString(GS1_128.TABLE[si]);
+            String symbol = Integer.toString(Code128Table.TABLE[si]);
             for (int j = 0; j < symbol.length(); j++) {
                 int n = symbol.charAt(j) - 0x30;
                 if (j%2 == 0) {

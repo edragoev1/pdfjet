@@ -1,14 +1,15 @@
 /*
- * GS1_128.cs
+ * Code128Table.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-using System;
+package com.pdfjet.barcodes;
 
-namespace PDFjet.NET {
-class GS1_128 {
-public static readonly int[] TABLE = {
+// The bar patterns of the Code 128 symbols, from 0 to 106, and the codewords
+// of the Code 128 functions.
+class Code128Table {
+public static final int[] TABLE = {
 212222, // 0
 222122, // 1
 222221, // 2
@@ -119,15 +120,16 @@ public static readonly int[] TABLE = {
 };
 
 // Shifts from SET_A -> SET_B or SET_B -> SET_A for a single char
-public static readonly int SHIFT = 98;
+public static final int SHIFT = 98;
 
-public static readonly int CODE_C = 99;     // Latch to SET_C
-public static readonly int FNC_4 = 100;     // FNC 4
-public static readonly int CODE_A = 101;    // Latch to SET_A
+public static final int CODE_C = 99;    // Latch to SET_C
+public static final int CODE_B = 100;   // Latch to SET_B, in SET_C
+public static final int FNC_4 = 100;    // FNC 4
+public static final int CODE_A = 101;   // Latch to SET_A
+public static final int FNC_1 = 102;    // FNC 1, which starts GS1-128 and separates its fields
 
-public static readonly int START_A = 103;
-public static readonly int START_B = 104;
-public static readonly int START_C = 105;
-public static readonly int STOP = 106;
-}   // End of GS1_128.cs
-}   // End of namespace PDFjet.NET
+public static final int START_A = 103;
+public static final int START_B = 104;
+public static final int START_C = 105;
+public static final int STOP = 106;
+}   // End of Code128Table.java

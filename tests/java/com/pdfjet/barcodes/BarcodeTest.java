@@ -108,6 +108,32 @@ class BarcodeTest {
         assertTrue(content.contains("q\n0 0 0 RG\n") && content.endsWith("Q\n"), content);
     }
 
+    // The GS1-128 barcodes below were read back with ZXing, which gave the
+    // symbology identifier ]C1 of GS1-128.
+    @Test
+    void gs1128TakesCodeSetCForRunsOfDigits() throws Exception {
+        // Start C, FNC1, 10 codewords for the 20 digits, the check digit and the stop
+        assertEquals((11 * 13 + 13) * 0.75f,
+                new Barcode(Barcode.GS1_128, "(00)106141412345678908").drawOn(null)[0], 0f);
+        // Start B, FNC1, 1 0 A 1 in code set B, Code C, 23 45, Code B, B,
+        // FNC1 after the batch, 2 1 7: 14 codewords, with the start and the check digit 16
+        assertEquals((11 * 16 + 13) * 0.75f,
+                new Barcode(Barcode.GS1_128, "(10)A12345B(21)7").drawOn(null)[0], 0f);
+    }
+
+    @Test
+    void gs1128RefusesDataThatIsNotGS1OrTooLong() throws Exception {
+        new Barcode(Barcode.GS1_128, "(91)" + repeat("X", 46));    // 48 characters
+        String[][] cases = {
+            {"(91)" + repeat("X", 47), "GS1-128 barcodes hold at most 48 characters, not counting the separators!"},
+            {"(01)09506000134353", "The check digit of (01) is wrong!"},
+            {"01095060001343", "GS1 data is Application Identifiers in parentheses, each followed by its data, such as (01)09506000134352(17)261231!"},
+        };
+        for (final String[] c : cases) {
+            assertEquals(c[1], assertThrows(Exception.class, () -> new Barcode(Barcode.GS1_128, c[0])).getMessage(), c[0]);
+        }
+    }
+
     private static String repeat(String s, int n) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {

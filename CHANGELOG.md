@@ -10,6 +10,20 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- GS1-128 barcodes, as the labels of pallets, cartons and shipments carry,
+  in all four ports: `Barcode.GS1_128`, with the text written as GS1 data is
+  read, such as `(00)106141412345678908` or
+  `(01)09506000134352(10)ABC123`, and drawn so under the bars. The barcode
+  starts with FNC1, which makes it GS1-128, ends a field of no set length
+  with FNC1 when another follows, and puts runs of four digits or more in
+  code set C, two digits to a codeword, so that an SSCC is 156 modules wide
+  where code set B would make it 266. It takes the data GS1 DataMatrix takes
+  and refuses it in the same words, and refuses data of more than the 48
+  characters a GS1-128 barcode holds. The GS1 parser is shared by the two:
+  `com.pdfjet.GS1` in Java, which is public, and internal in the other
+  ports. ZXing reads the barcodes with the symbology identifier `]C1` of
+  GS1-128. Example_11 draws one. The internal class `GS1_128` of Java, C#
+  and Swift, which held the table of Code 128, is `Code128Table`.
 - GS1 DataMatrix, as medicines, medical devices and, more and more, retail
   goods carry, in all four ports: `DataMatrix.fromGS1(data)` and
   `fromGS1(data, shape)` in Java, `DataMatrix.FromGS1` in C#,

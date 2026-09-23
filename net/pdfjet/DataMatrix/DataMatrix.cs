@@ -133,11 +133,25 @@ public class DataMatrix : IDrawable {
     /// DataMatrix.RECTANGLE. See FromGS1(String).
     /// </summary>
     public static DataMatrix FromGS1(String str, int shape) {
-        int[] ascii = EncodeASCII(Encoding.ASCII.GetBytes(GS1.ElementString(str)));
+        int[] ascii = EncodeASCII(Encoding.ASCII.GetBytes(GS1ElementString(str)));
         int[] data = new int[1 + ascii.Length];
         data[0] = FNC1;
         Array.Copy(ascii, 0, data, 1, ascii.Length);
         return new DataMatrix(data, shape);
+    }
+
+    // Returns the element string of the GS1 data written as people read it:
+    // the Application Identifiers without their parentheses, each followed by
+    // its data, and GS after a field of no set length that another follows.
+    private static String GS1ElementString(String str) {
+        StringBuilder sb = new StringBuilder();
+        foreach (GS1.Field field in GS1.Parse(str)) {
+            sb.Append(field.ai).Append(field.data);
+            if (field.separator) {
+                sb.Append('\u001d');   // GS
+            }
+        }
+        return sb.ToString();
     }
 
     // Makes the symbol of the data codewords.
