@@ -109,6 +109,27 @@ func Example11() {
 	barcode.SetFont(f1)
 	barcode.DrawOn(page)
 
+	// ITF-14, the GTIN of a carton, framed by bearer bars.
+	page2 := pdfjet.NewPage(pdf, letter.Portrait())
+	heading2 := pdfjet.NewTextLine(f2, "Barcodes for Cartons")
+	heading2.SetStructureType(structelem.H2)
+	heading2.SetFontSize(18.0)
+	heading2.SetLocation(70.0, 80.0)
+	heading2.DrawOn(page2)
+
+	pdfjet.NewTextLine(f2, "ITF-14").SetLocation(70.0, 135.0).DrawOn(page2)
+	cartonNote := pdfjet.NewTextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
+	cartonNote.SetFontSize(10.0)
+	cartonNote.SetTextColor(color.Gray)
+	cartonNote.SetLocation(70.0, 152.0)
+	cartonNote.DrawOn(page2)
+
+	itf := pdfjet.NewBarcode(pdfjet.ITF_14, "1540014128876")
+	itf.SetLocation(70.0, 175.0)
+	itf.SetModuleLength(1.0)
+	itf.SetFont(f1)
+	itf.DrawOn(page2)
+
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

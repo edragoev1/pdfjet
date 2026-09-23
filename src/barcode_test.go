@@ -45,6 +45,13 @@ var testBarcodeCorners = []struct {
 	{CODE_39, "HELLO-39", direction.BottomToTop, true, 154.072, 219.25},
 	{CODE_39, "HELLO-39", direction.TopToBottom, false, 137.5, 219.25},
 	{CODE_39, "HELLO-39", direction.TopToBottom, true, 137.5, 219.25},
+	// The bearer bars of ITF-14 are around the bars and their quiet zones
+	{ITF_14, "1540014128876", direction.LeftToRight, false, 211.375, 143.5},
+	{ITF_14, "1540014128876", direction.LeftToRight, true, 211.375, 160.072},
+	{ITF_14, "1540014128876", direction.BottomToTop, false, 143.5, 211.375},
+	{ITF_14, "1540014128876", direction.BottomToTop, true, 160.072, 211.375},
+	{ITF_14, "1540014128876", direction.TopToBottom, false, 143.5, 211.375},
+	{ITF_14, "1540014128876", direction.TopToBottom, true, 143.5, 211.375},
 }
 
 func TestBarcodeDrawOnReturnsTheCornerOfTheBarsAndTheTextInEveryDirection(t *testing.T) {
@@ -73,6 +80,27 @@ func TestBarcodeCode39RejectsCharactersItCannotEncode(t *testing.T) {
 	message, panicked := testPanic(func() { NewBarcode(CODE_39, "hello").DrawOn(page) })
 	if !panicked || message != "The input string '*hello*' contains characters that are invalid in a Code39 barcode." {
 		t.Errorf("panicked %v with %q", panicked, message)
+	}
+}
+
+func TestBarcodeITF14NeedsThirteenDigits(t *testing.T) {
+	for _, text := range []string{"154001412887", "15400141288763", "154001412887A"} {
+		if message, _ := testPanic(func() { NewBarcode(ITF_14, text) }); message != "ITF-14 barcodes must have exactly 13 digits!" {
+			t.Errorf("%q: %q", text, message)
+		}
+	}
+}
+
+// ZXing reads the ITF-14 barcodes of these GTINs back, their check digits
+// added, in each direction.
+func TestBarcodeITF14DrawsTheBarsAndTheBearerBars(t *testing.T) {
+	page := testNewPage()
+	NewBarcode(ITF_14, "1540014128876").SetLocation(100, 100).(*Barcode).DrawOn(page)
+	content := string(page.buf)
+	// The 39 bars: 2 of the start, 5 of each of the 7 pairs of digits and 2 of
+	// the stop, then the 4 bearer bars, 3 thick
+	if lines := strings.Count(content, " l\nS\n"); lines != 39+4 || !strings.Contains(content, "3 w\n") {
+		t.Errorf("%d lines, bearer bars %v", lines, strings.Contains(content, "3 w\n"))
 	}
 }
 

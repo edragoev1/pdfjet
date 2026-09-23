@@ -12,6 +12,9 @@ import java.util.*;
 /**
  * Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
  *
+ * The text of an ITF-14 barcode is the 13 digits of a GTIN without its check
+ * digit, which is added, as for UPC-A and EAN-13.
+ *
  * Please see Example_11.
  */
 public class Barcode implements Drawable {
@@ -29,6 +32,11 @@ public class Barcode implements Drawable {
      * such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
      */
     public static final int GS1_128 = 4;
+    /**
+     * Specifies ITF-14 barcode. Its text is the 13 digits of a GTIN without its
+     * check digit, which is added, as for UPC-A and EAN-13.
+     */
+    public static final int ITF_14 = 5;
 
     private int barcodeType = 0;
     private String text = null;
@@ -68,6 +76,8 @@ public class Barcode implements Drawable {
             code128Codewords(text);     // Throws for a text that a barcode cannot hold
         } else if (barcodeType == Barcode.GS1_128) {
             gs1128Codewords(text);      // Throws for data that is not GS1, or too long
+        } else if (barcodeType == Barcode.ITF_14 && (text.length() != 13 || !hasOnlyDigits(text))) {
+            throw new Exception("ITF-14 barcodes must have exactly 13 digits!");
         }
 
         StringBuilder sb = new StringBuilder();
@@ -214,6 +224,8 @@ public class Barcode implements Drawable {
                 return drawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
                 return drawCode39(page, x1, y1);
+            } else if (barcodeType == Barcode.ITF_14) {
+                return drawITF14(page, x1, y1);
             } else {
                 throw new Exception("Unsupported Barcode Type.");
             }
@@ -533,6 +545,95 @@ public class Barcode implements Drawable {
         }
 
         return bars.getBottomRight(x1, right, bottom);
+    }
+
+    // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
+    // each digit in Interleaved 2 of 5.
+    private static final String[] ITF_PATTERNS = {
+        "nnwwn", "wnnnw", "nwnnw", "wwnnn", "nnwnw", "wnwnn", "nwwnn", "nnnww", "wnnwn", "nwnwn"};
+
+    // Draws an ITF-14 barcode: the 14 digits of the GTIN in Interleaved 2 of 5,
+    // the first digit of each pair in the bars and the second in the spaces
+    // between them, wide bars and spaces 2.5 times the narrow ones, after the
+    // start of four narrow bars and spaces and before the stop of a wide bar, a
+    // narrow space and a narrow bar. A frame of bearer bars four modules thick
+    // is around the bars and the quiet zones of ten modules on each side of
+    // them, as GS1 asks of a barcode printed on corrugated board, so that a
+    // scanner does not read a barcode cut short. The text, the 14 digits, is
+    // under the frame.
+    private float[] drawITF14(Page page, float x1, float y1) throws Exception {
+        float m = m1;
+        float wide = 2.5f * m;
+        float bearer = 4f * m;
+        float quiet = 10f * m;
+        float h = m * barHeightFactor;  // The height of the bars when drawn horizontally
+
+        int sum = 0;
+        for (int i = 0; i < 13; i++) {
+            int digit = text.charAt(i) - '0';
+            sum += (i % 2 == 0) ? 3 * digit : digit;
+        }
+        String fullText = text + ((10 - sum % 10) % 10);
+
+        // The widths of the bars and the spaces in turn, a bar first
+        StringBuilder widths = new StringBuilder("nnnn");
+        for (int i = 0; i < 14; i += 2) {
+            String barWidths = ITF_PATTERNS[fullText.charAt(i) - '0'];
+            String spaceWidths = ITF_PATTERNS[fullText.charAt(i + 1) - '0'];
+            for (int j = 0; j < 5; j++) {
+                widths.append(barWidths.charAt(j)).append(spaceWidths.charAt(j));
+            }
+        }
+        widths.append("wnn");
+        float length = 0f;
+        for (int i = 0; i < widths.length(); i++) {
+            length += (widths.charAt(i) == 'w') ? wide : m;
+        }
+        float outerWidth = 2f*bearer + 2f*quiet + length;
+        float outerHeight = 2f*bearer + h;
+        Bars bars = new Bars(x1, y1, outerWidth, outerHeight, direction);
+
+        if (page != null) {
+            // The bars carry no text, so they are decorative content.
+            page.addArtifactBMC();
+            float x = x1 + bearer + quiet;
+            for (int i = 0; i < widths.length(); i++) {
+                float w = (widths.charAt(i) == 'w') ? wide : m;
+                if (i % 2 == 0) {
+                    strokeLine(page, bars, x + w/2f, y1 + bearer, x + w/2f, y1 + bearer + h, w);
+                }
+                x += w;
+            }
+            float right = x1 + outerWidth;
+            float bottom = y1 + outerHeight;
+            strokeLine(page, bars, x1, y1 + bearer/2f, right, y1 + bearer/2f, bearer);
+            strokeLine(page, bars, x1, bottom - bearer/2f, right, bottom - bearer/2f, bearer);
+            strokeLine(page, bars, x1 + bearer/2f, y1, x1 + bearer/2f, bottom, bearer);
+            strokeLine(page, bars, right - bearer/2f, y1, right - bearer/2f, bottom, bearer);
+            page.addEMC();
+        }
+
+        float right = x1 + outerWidth;
+        float bottom = y1 + outerHeight;
+        if (font != null) {
+            float[] xy = drawText(page, bars, fullText,
+                    x1 + (outerWidth - font.stringWidth(fullText))/2,
+                    y1 + outerHeight + font.getBodyHeight());
+            right = Math.max(right, xy[0]);
+            bottom = xy[1];
+        }
+        return bars.getBottomRight(x1, right, bottom);
+    }
+
+    // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
+    // direction of the barcode.
+    private void strokeLine(Page page, Bars bars, float xa, float ya, float xb, float yb, float w) {
+        float[] a = bars.turn(xa, ya);
+        float[] b = bars.turn(xb, yb);
+        page.setPenWidth(w);
+        page.moveTo(a[0], a[1]);
+        page.lineTo(b[0], b[1]);
+        page.strokePath();
     }
 
     private float[] drawCode39(Page page, float x1, float y1) throws Exception {

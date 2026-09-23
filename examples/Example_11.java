@@ -103,6 +103,29 @@ public class Example_11 {
         barcode.setFont(f1);
         barcode.drawOn(page);
 
+        // ITF-14, the GTIN of a carton, framed by bearer bars.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        TextLine heading2 = new TextLine(f2, "Barcodes for Cartons");
+        heading2.setStructureType(StructElem.H2);
+        heading2.setFontSize(18f);
+        heading2.setLocation(70f, 80f);
+        heading2.drawOn(page2);
+
+        TextLine label = new TextLine(f2, "ITF-14");
+        label.setLocation(70f, 135f);
+        label.drawOn(page2);
+        TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
+        cartonNote.setFontSize(10f);
+        cartonNote.setTextColor(Color.gray);
+        cartonNote.setLocation(70f, 152f);
+        cartonNote.drawOn(page2);
+
+        Barcode itf = new Barcode(Barcode.ITF_14, "1540014128876");
+        itf.setLocation(70f, 175f);
+        itf.setModuleLength(1f);
+        itf.setFont(f1);
+        itf.drawOn(page2);
+
         pdf.complete();
     }
 

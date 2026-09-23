@@ -10,6 +10,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- ITF-14 barcodes, the GTIN of a carton or a case, in all four ports:
+  `Barcode.ITF_14`, with the 13 digits of the GTIN, to which the check digit
+  is added, as for UPC-A and EAN-13. The 14 digits are in Interleaved 2 of 5,
+  wide bars and spaces 2.5 times the narrow ones, and a frame of bearer bars
+  four modules thick is around the bars and their quiet zones of ten
+  modules, as GS1 asks of a barcode on corrugated board; the text is under
+  the frame, and the barcode turns as the others do. A text of another
+  length, or not of digits, is refused. ZXing reads the barcodes, in each
+  direction, with the symbology identifier `]I0` of ITF. Example_11 draws one
+  on a page of its own.
 - A GS1 Digital Link of GS1 data, the web address an ordinary QR code
   carries, in all four ports: `GS1.digitalLink(domain, data)` in Java,
   `GS1.DigitalLink` in C#, `pdfjet.GS1DigitalLink` in Go and

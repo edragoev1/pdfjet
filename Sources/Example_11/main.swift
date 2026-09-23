@@ -98,6 +98,27 @@ public class Example_11 {
         barcode.setFont(f1)
         barcode.drawOn(page)
 
+        // ITF-14, the GTIN of a carton, framed by bearer bars.
+        let page2 = Page(pdf, Letter.PORTRAIT)
+        let heading2 = TextLine(f2, "Barcodes for Cartons")
+        heading2.setStructureType(StructElem.H2)
+        heading2.setFontSize(18.0)
+        heading2.setLocation(70.0, 80.0)
+        heading2.drawOn(page2)
+
+        TextLine(f2, "ITF-14").setLocation(70.0, 135.0).drawOn(page2)
+        let cartonNote = TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
+        cartonNote.setFontSize(10.0)
+        cartonNote.setTextColor(Color.gray)
+        cartonNote.setLocation(70.0, 152.0)
+        cartonNote.drawOn(page2)
+
+        let itf = try Barcode(Barcode.ITF_14, "1540014128876")
+        itf.setLocation(70.0, 175.0)
+        itf.setModuleLength(1.0)
+        itf.setFont(f1)
+        itf.drawOn(page2)
+
         try pdf.complete()
     }
 }   // End of Example_11.swift

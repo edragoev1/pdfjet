@@ -15,8 +15,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/gs1"
 )
 
-// Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39, Code 128
-// and GS1-128. The text of a GS1-128 barcode is GS1 data written as people read
+// Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39, Code 128,
+// GS1-128 and ITF-14. The text of an ITF-14 barcode is the 13 digits of a GTIN
+// without its check digit, which is added, as for UPC-A and EAN-13. The text of a GS1-128 barcode is GS1 data written as people read
 // it, each Application Identifier in parentheses and its data after it, such as
 // "(01)09506000134352(10)ABC123", and is drawn so under its bars.
 // Please see Example_11.
@@ -42,6 +43,7 @@ const (
 	CODE_128
 	CODE_39
 	GS1_128
+	ITF_14
 )
 
 // NewBarcode constructs barcode objects.
@@ -65,6 +67,8 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 		code128Codewords(text) // Panics on a text that a barcode cannot hold
 	} else if barcodeType == GS1_128 {
 		gs1128Codewords(text) // Panics on data that is not GS1, or too long
+	} else if barcodeType == ITF_14 && (len(text) != 13 || !hasOnlyDigits(text)) {
+		panic("ITF-14 barcodes must have exactly 13 digits!")
 	}
 
 	barcode.lCode = []string{
@@ -201,6 +205,8 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 		xy = barcode.drawCode128(page, barcode.x1, barcode.y1)
 	case CODE_39:
 		xy = barcode.drawCode39(page, barcode.x1, barcode.y1)
+	case ITF_14:
+		xy = barcode.drawITF14(page, barcode.x1, barcode.y1)
 	default:
 		panic("Unsupported Barcode Type.")
 	}
@@ -524,6 +530,96 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 	}
 
 	return bars.getBottomRight(x1, right, bottom)
+}
+
+// itfPatterns are the widths, narrow (n) or wide (w), of the five bars or the
+// five spaces of each digit in Interleaved 2 of 5.
+var itfPatterns = [10]string{
+	"nnwwn", "wnnnw", "nwnnw", "wwnnn", "nnwnw", "wnwnn", "nwwnn", "nnnww", "wnnwn", "nwnwn"}
+
+// drawITF14 draws an ITF-14 barcode: the 14 digits of the GTIN in
+// Interleaved 2 of 5, the first digit of each pair in the bars and the second
+// in the spaces between them, wide bars and spaces 2.5 times the narrow ones,
+// after the start of four narrow bars and spaces and before the stop of a wide
+// bar, a narrow space and a narrow bar. A frame of bearer bars four modules
+// thick is around the bars and the quiet zones of ten modules on each side of
+// them, as GS1 asks of a barcode printed on corrugated board, so that a scanner
+// does not read a barcode cut short. The text, the 14 digits, is under the
+// frame.
+func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) [2]float32 {
+	m := barcode.m1
+	wide := 2.5 * m
+	bearer := 4 * m
+	quiet := 10 * m
+	h := m * barcode.barHeightFactor // The height of the bars when drawn horizontally
+
+	sum := 0
+	for i := 0; i < 13; i++ {
+		digit := int(barcode.text[i] - '0')
+		if i%2 == 0 {
+			digit *= 3
+		}
+		sum += digit
+	}
+	fullText := barcode.text + strconv.Itoa((10-sum%10)%10)
+
+	// The widths of the bars and the spaces in turn, a bar first
+	widths := "nnnn"
+	for i := 0; i < 14; i += 2 {
+		bars, spaces := itfPatterns[fullText[i]-'0'], itfPatterns[fullText[i+1]-'0']
+		for j := 0; j < 5; j++ {
+			widths += string(bars[j]) + string(spaces[j])
+		}
+	}
+	widths += "wnn"
+	var length float32
+	for i := 0; i < len(widths); i++ {
+		length += map[byte]float32{'n': m, 'w': wide}[widths[i]]
+	}
+	outerWidth := 2*bearer + 2*quiet + length
+	outerHeight := 2*bearer + h
+	bars := &barcodeBars{x1: x1, y1: y1, length: outerWidth, height: outerHeight, direction: barcode.direction}
+
+	if page != nil {
+		// The bars carry no text, so they are decorative content.
+		page.AddArtifactBMC()
+		x := x1 + bearer + quiet
+		for i := 0; i < len(widths); i++ {
+			w := map[byte]float32{'n': m, 'w': wide}[widths[i]]
+			if i%2 == 0 {
+				barcode.strokeLine(page, bars, x+w/2, y1+bearer, x+w/2, y1+bearer+h, w)
+			}
+			x += w
+		}
+		right, bottom := x1+outerWidth, y1+outerHeight
+		barcode.strokeLine(page, bars, x1, y1+bearer/2, right, y1+bearer/2, bearer)
+		barcode.strokeLine(page, bars, x1, bottom-bearer/2, right, bottom-bearer/2, bearer)
+		barcode.strokeLine(page, bars, x1+bearer/2, y1, x1+bearer/2, bottom, bearer)
+		barcode.strokeLine(page, bars, right-bearer/2, y1, right-bearer/2, bottom, bearer)
+		page.AddEMC()
+	}
+
+	right := x1 + outerWidth
+	bottom := y1 + outerHeight
+	if barcode.font != nil {
+		xy := barcode.drawText(page, bars, fullText,
+			x1+(outerWidth-barcode.font.StringWidth(barcode.font.size, fullText))/2,
+			y1+outerHeight+barcode.font.bodyHeight)
+		right = max(right, xy[0])
+		bottom = xy[1]
+	}
+	return bars.getBottomRight(x1, right, bottom)
+}
+
+// strokeLine strokes a line of width w from (xa, ya) to (xb, yb), turned to
+// the direction of the barcode.
+func (barcode *Barcode) strokeLine(page *Page, bars *barcodeBars, xa, ya, xb, yb, w float32) {
+	a := bars.turn(xa, ya)
+	b := bars.turn(xb, yb)
+	page.SetPenWidth(w)
+	page.MoveTo(a[0], a[1])
+	page.LineTo(b[0], b[1])
+	page.StrokePath()
 }
 
 func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {

@@ -38,6 +38,13 @@ import Testing
             (Barcode.CODE_39, "HELLO-39", .BOTTOM_TO_TOP, true, 154.072, 219.25),
             (Barcode.CODE_39, "HELLO-39", .TOP_TO_BOTTOM, false, 137.5, 219.25),
             (Barcode.CODE_39, "HELLO-39", .TOP_TO_BOTTOM, true, 137.5, 219.25),
+            // The bearer bars of ITF-14 are around the bars and their quiet zones
+            (Barcode.ITF_14, "1540014128876", .LEFT_TO_RIGHT, false, 211.375, 143.5),
+            (Barcode.ITF_14, "1540014128876", .LEFT_TO_RIGHT, true, 211.375, 160.072),
+            (Barcode.ITF_14, "1540014128876", .BOTTOM_TO_TOP, false, 143.5, 211.375),
+            (Barcode.ITF_14, "1540014128876", .BOTTOM_TO_TOP, true, 160.072, 211.375),
+            (Barcode.ITF_14, "1540014128876", .TOP_TO_BOTTOM, false, 143.5, 211.375),
+            (Barcode.ITF_14, "1540014128876", .TOP_TO_BOTTOM, true, 143.5, 211.375),
         ]
         for row in corners {
             let barcode = try Barcode(row.0, row.1).setLocation(100, 100).setDirection(row.2)
@@ -132,5 +139,26 @@ import Testing
         for (text, codewords) in cases {
             #expect(Barcode.code128Codewords(text).codewords == codewords, "\(text)")
         }
+    }
+
+    @Test func itf14NeedsThirteenDigits() {
+        for text in ["154001412887", "15400141288763", "154001412887A"] {
+            let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.ITF_14, text) }
+            #expect(error?.message == "ITF-14 barcodes must have exactly 13 digits!")
+        }
+    }
+
+    /// ZXing reads the ITF-14 barcodes of these GTINs back, their check digits
+    /// added, in each direction.
+    @Test func itf14DrawsTheBarsAndTheBearerBars() throws {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let barcode = try Barcode(Barcode.ITF_14, "1540014128876")
+        barcode.setLocation(100.0, 100.0)
+        barcode.drawOn(page)
+        let content = TestSupport.content(page)
+        // The 39 bars: 2 of the start, 5 of each of the 7 pairs of digits and 2
+        // of the stop, then the 4 bearer bars, 3 thick
+        #expect(content.components(separatedBy: " l\nS\n").count - 1 == 39 + 4)
+        #expect(content.contains("3 w\n"))
     }
 }

@@ -101,6 +101,29 @@ public class Example_11 {
         barcode.SetFont(f1);
         barcode.DrawOn(page);
 
+        // ITF-14, the GTIN of a carton, framed by bearer bars.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        TextLine heading2 = new TextLine(f2, "Barcodes for Cartons");
+        heading2.SetStructureType(StructElem.H2);
+        heading2.SetFontSize(18f);
+        heading2.SetLocation(70f, 80f);
+        heading2.DrawOn(page2);
+
+        TextLine label = new TextLine(f2, "ITF-14");
+        label.SetLocation(70f, 135f);
+        label.DrawOn(page2);
+        TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
+        cartonNote.SetFontSize(10f);
+        cartonNote.SetTextColor(Color.gray);
+        cartonNote.SetLocation(70f, 152f);
+        cartonNote.DrawOn(page2);
+
+        Barcode itf = new Barcode(Barcode.ITF_14, "1540014128876");
+        itf.SetLocation(70f, 175f);
+        itf.SetModuleLength(1f);
+        itf.SetFont(f1);
+        itf.DrawOn(page2);
+
         pdf.Complete();
     }
 

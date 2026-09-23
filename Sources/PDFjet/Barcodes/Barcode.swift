@@ -9,6 +9,9 @@ import Foundation
 ///
 /// Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
 ///
+/// The text of an ITF-14 barcode is the 13 digits of a GTIN without its check
+/// digit, which is added, as for UPC-A and EAN-13.
+///
 /// Please see Example_11.
 ///
 public class Barcode : Drawable {
@@ -24,6 +27,9 @@ public class Barcode : Drawable {
     /// it, each Application Identifier in parentheses and its data after it,
     /// such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
     public static let GS1_128 = 4
+    /// Specifies ITF-14 barcode. Its text is the 13 digits of a GTIN without
+    /// its check digit, which is added, as for UPC-A and EAN-13.
+    public static let ITF_14 = 5
 
     private var barcodeType = 0
     private var text: String
@@ -68,9 +74,11 @@ public class Barcode : Drawable {
             throw PDFjetError(message: error)
         } else if barcodeType == Barcode.GS1_128, let error = Barcode.gs1128Codewords(text).error {
             throw PDFjetError(message: error)
+        } else if barcodeType == Barcode.ITF_14 && (text.count != 13 || !Barcode.hasOnlyDigits(text)) {
+            throw PDFjetError(message: "ITF-14 barcodes must have exactly 13 digits!")
         } else if barcodeType != Barcode.UPC_A && barcodeType != Barcode.EAN_13 &&
                 barcodeType != Barcode.CODE_128 && barcodeType != Barcode.CODE_39 &&
-                barcodeType != Barcode.GS1_128 {
+                barcodeType != Barcode.GS1_128 && barcodeType != Barcode.ITF_14 {
             throw PDFjetError(message: "Unsupported Barcode Type.")
         }
 
@@ -247,13 +255,15 @@ public class Barcode : Drawable {
         defer {
             page?.restoreGraphicsState()
         }
-        // init accepted one of these four types.
+        // init accepted one of these types.
         if barcodeType == Barcode.EAN_13 {
             return drawCodeEAN13(page, x1, y1)
         } else if barcodeType == Barcode.UPC_A {
             return drawCodeUPC(page, x1, y1)
         } else if barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128 {
             return drawCode128(page, x1, y1)
+        } else if barcodeType == Barcode.ITF_14 {
+            return drawITF14(page, x1, y1)
         } else {
             return drawCode39(page, x1, y1)
         }
@@ -626,6 +636,98 @@ public class Barcode : Drawable {
         }
 
         return bars.getBottomRight(x1, right, bottom)
+    }
+
+    // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
+    // each digit in Interleaved 2 of 5.
+    private static let itfPatterns = [
+        "nnwwn", "wnnnw", "nwnnw", "wwnnn", "nnwnw", "wnwnn", "nwwnn", "nnnww", "wnnwn", "nwnwn"]
+
+    // Draws an ITF-14 barcode: the 14 digits of the GTIN in Interleaved 2 of 5,
+    // the first digit of each pair in the bars and the second in the spaces
+    // between them, wide bars and spaces 2.5 times the narrow ones, after the
+    // start of four narrow bars and spaces and before the stop of a wide bar, a
+    // narrow space and a narrow bar. A frame of bearer bars four modules thick
+    // is around the bars and the quiet zones of ten modules on each side of
+    // them, as GS1 asks of a barcode printed on corrugated board, so that a
+    // scanner does not read a barcode cut short. The text, the 14 digits, is
+    // under the frame.
+    private func drawITF14(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+        let m = m1
+        let wide: Float = 2.5 * m
+        let bearer: Float = 4.0 * m
+        let quiet: Float = 10.0 * m
+        let h: Float = m * barHeightFactor  // The height of the bars when drawn horizontally
+
+        let digits = Array(text.utf8).map { Int($0) - 48 }
+        var sum = 0
+        for i in 0..<13 {
+            sum += (i % 2 == 0) ? 3 * digits[i] : digits[i]
+        }
+        let fullText = text + String((10 - sum % 10) % 10)
+        let all = Array(fullText.utf8).map { Int($0) - 48 }
+
+        // The widths of the bars and the spaces in turn, a bar first
+        var widths = Array("nnnn")
+        for i in stride(from: 0, to: 14, by: 2) {
+            let barWidths = Array(Barcode.itfPatterns[all[i]])
+            let spaceWidths = Array(Barcode.itfPatterns[all[i + 1]])
+            for j in 0..<5 {
+                widths.append(barWidths[j])
+                widths.append(spaceWidths[j])
+            }
+        }
+        widths += Array("wnn")
+        var length: Float = 0.0
+        for c in widths {
+            length += (c == "w") ? wide : m
+        }
+        let outerWidth = 2.0*bearer + 2.0*quiet + length
+        let outerHeight = 2.0*bearer + h
+        let bars = Bars(x1: x1, y1: y1, length: outerWidth, height: outerHeight, direction: direction)
+
+        if let page = page {
+            // The bars carry no text, so they are decorative content.
+            page.addArtifactBMC()
+            var x = x1 + bearer + quiet
+            for (i, c) in widths.enumerated() {
+                let w = (c == "w") ? wide : m
+                if i % 2 == 0 {
+                    strokeLine(page, bars, x + w/2.0, y1 + bearer, x + w/2.0, y1 + bearer + h, w)
+                }
+                x += w
+            }
+            let frameRight = x1 + outerWidth
+            let frameBottom = y1 + outerHeight
+            strokeLine(page, bars, x1, y1 + bearer/2.0, frameRight, y1 + bearer/2.0, bearer)
+            strokeLine(page, bars, x1, frameBottom - bearer/2.0, frameRight, frameBottom - bearer/2.0, bearer)
+            strokeLine(page, bars, x1 + bearer/2.0, y1, x1 + bearer/2.0, frameBottom, bearer)
+            strokeLine(page, bars, frameRight - bearer/2.0, y1, frameRight - bearer/2.0, frameBottom, bearer)
+            page.addEMC()
+        }
+
+        var right = x1 + outerWidth
+        var bottom = y1 + outerHeight
+        if font != nil {
+            let xy = drawText(page, bars, fullText,
+                    x1 + (outerWidth - font!.stringWidth(fullText))/2,
+                    y1 + outerHeight + font!.bodyHeight)
+            right = max(right, xy[0])
+            bottom = xy[1]
+        }
+        return bars.getBottomRight(x1, right, bottom)
+    }
+
+    // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
+    // direction of the barcode.
+    private func strokeLine(_ page: Page, _ bars: Bars,
+            _ xa: Float, _ ya: Float, _ xb: Float, _ yb: Float, _ w: Float) {
+        let a = bars.turn(xa, ya)
+        let b = bars.turn(xb, yb)
+        page.setPenWidth(w)
+        page.moveTo(a[0], a[1])
+        page.lineTo(b[0], b[1])
+        page.strokePath()
     }
 
     private func drawCode39(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {

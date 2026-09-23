@@ -12,6 +12,9 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
 ///
+/// The text of an ITF-14 barcode is the 13 digits of a GTIN without its check
+/// digit, which is added, as for UPC-A and EAN-13.
+///
 /// Please see Example_11.
 /// </summary>
 public class Barcode : IDrawable {
@@ -38,6 +41,12 @@ public class Barcode : IDrawable {
     /// such as "(01)09506000134352(10)ABC123", and is drawn so under its bars.
     /// </summary>
     public static readonly int GS1_128 = 4;
+
+    /// <summary>
+    /// Specifies ITF-14 barcode. Its text is the 13 digits of a GTIN without
+    /// its check digit, which is added, as for UPC-A and EAN-13.
+    /// </summary>
+    public static readonly int ITF_14 = 5;
 
     private int barcodeType = 0;
     private String text = null;
@@ -75,6 +84,8 @@ public class Barcode : IDrawable {
             Code128Codewords(text);     // Throws for a text that a barcode cannot hold
         } else if (barcodeType == Barcode.GS1_128) {
             GS1128Codewords(text);      // Throws for data that is not GS1, or too long
+        } else if (barcodeType == Barcode.ITF_14 && (text.Length != 13 || !HasOnlyDigits(text))) {
+            throw new Exception("ITF-14 barcodes must have exactly 13 digits!");
         }
 
         for (int i = 0; i < 10; i++) {
@@ -216,6 +227,8 @@ public class Barcode : IDrawable {
                 return DrawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
                 return DrawCode39(page, x1, y1);
+            } else if (barcodeType == Barcode.ITF_14) {
+                return DrawITF14(page, x1, y1);
             } else {
                 throw new Exception("Unsupported Barcode Type.");
             }
@@ -535,6 +548,95 @@ public class Barcode : IDrawable {
         }
 
         return bars.GetBottomRight(x1, right, bottom);
+    }
+
+    // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
+    // each digit in Interleaved 2 of 5.
+    private static readonly String[] ITF_PATTERNS = {
+        "nnwwn", "wnnnw", "nwnnw", "wwnnn", "nnwnw", "wnwnn", "nwwnn", "nnnww", "wnnwn", "nwnwn"};
+
+    // Draws an ITF-14 barcode: the 14 digits of the GTIN in Interleaved 2 of 5,
+    // the first digit of each pair in the bars and the second in the spaces
+    // between them, wide bars and spaces 2.5 times the narrow ones, after the
+    // start of four narrow bars and spaces and before the stop of a wide bar, a
+    // narrow space and a narrow bar. A frame of bearer bars four modules thick
+    // is around the bars and the quiet zones of ten modules on each side of
+    // them, as GS1 asks of a barcode printed on corrugated board, so that a
+    // scanner does not read a barcode cut short. The text, the 14 digits, is
+    // under the frame.
+    private float[] DrawITF14(Page page, float x1, float y1) {
+        float m = m1;
+        float wide = 2.5f * m;
+        float bearer = 4f * m;
+        float quiet = 10f * m;
+        float h = m * barHeightFactor;  // The height of the bars when drawn horizontally
+
+        int sum = 0;
+        for (int i = 0; i < 13; i++) {
+            int digit = text[i] - '0';
+            sum += (i % 2 == 0) ? 3 * digit : digit;
+        }
+        String fullText = text + ((10 - sum % 10) % 10);
+
+        // The widths of the bars and the spaces in turn, a bar first
+        StringBuilder widths = new StringBuilder("nnnn");
+        for (int i = 0; i < 14; i += 2) {
+            String barWidths = ITF_PATTERNS[fullText[i] - '0'];
+            String spaceWidths = ITF_PATTERNS[fullText[i + 1] - '0'];
+            for (int j = 0; j < 5; j++) {
+                widths.Append(barWidths[j]).Append(spaceWidths[j]);
+            }
+        }
+        widths.Append("wnn");
+        float length = 0f;
+        for (int i = 0; i < widths.Length; i++) {
+            length += (widths[i] == 'w') ? wide : m;
+        }
+        float outerWidth = 2f*bearer + 2f*quiet + length;
+        float outerHeight = 2f*bearer + h;
+        Bars bars = new Bars(x1, y1, outerWidth, outerHeight, direction);
+
+        if (page != null) {
+            // The bars carry no text, so they are decorative content.
+            page.AddArtifactBMC();
+            float x = x1 + bearer + quiet;
+            for (int i = 0; i < widths.Length; i++) {
+                float w = (widths[i] == 'w') ? wide : m;
+                if (i % 2 == 0) {
+                    StrokeLine(page, bars, x + w/2f, y1 + bearer, x + w/2f, y1 + bearer + h, w);
+                }
+                x += w;
+            }
+            float frameRight = x1 + outerWidth;
+            float frameBottom = y1 + outerHeight;
+            StrokeLine(page, bars, x1, y1 + bearer/2f, frameRight, y1 + bearer/2f, bearer);
+            StrokeLine(page, bars, x1, frameBottom - bearer/2f, frameRight, frameBottom - bearer/2f, bearer);
+            StrokeLine(page, bars, x1 + bearer/2f, y1, x1 + bearer/2f, frameBottom, bearer);
+            StrokeLine(page, bars, frameRight - bearer/2f, y1, frameRight - bearer/2f, frameBottom, bearer);
+            page.AddEMC();
+        }
+
+        float right = x1 + outerWidth;
+        float bottom = y1 + outerHeight;
+        if (font != null) {
+            float[] xy = DrawText(page, bars, fullText,
+                    x1 + (outerWidth - font.StringWidth(fullText))/2,
+                    y1 + outerHeight + font.GetBodyHeight(font.GetSize()));
+            right = Math.Max(right, xy[0]);
+            bottom = xy[1];
+        }
+        return bars.GetBottomRight(x1, right, bottom);
+    }
+
+    // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
+    // direction of the barcode.
+    private void StrokeLine(Page page, Bars bars, float xa, float ya, float xb, float yb, float w) {
+        float[] a = bars.Turn(xa, ya);
+        float[] b = bars.Turn(xb, yb);
+        page.SetPenWidth(w);
+        page.MoveTo(a[0], a[1]);
+        page.LineTo(b[0], b[1]);
+        page.StrokePath();
     }
 
     private float[] DrawCode39(Page page, float x1, float y1) {

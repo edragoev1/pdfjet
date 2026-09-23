@@ -35,6 +35,13 @@ public class BarcodeTest {
         new object[] {Barcode.CODE_39, "HELLO-39", Direction.BOTTOM_TO_TOP, true, 154.072f, 219.25f},
         new object[] {Barcode.CODE_39, "HELLO-39", Direction.TOP_TO_BOTTOM, false, 137.5f, 219.25f},
         new object[] {Barcode.CODE_39, "HELLO-39", Direction.TOP_TO_BOTTOM, true, 137.5f, 219.25f},
+        // The bearer bars of ITF-14 are around the bars and their quiet zones
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.LEFT_TO_RIGHT, false, 211.375f, 143.5f},
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.LEFT_TO_RIGHT, true, 211.375f, 160.072f},
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.BOTTOM_TO_TOP, false, 143.5f, 211.375f},
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.BOTTOM_TO_TOP, true, 160.072f, 211.375f},
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.TOP_TO_BOTTOM, false, 143.5f, 211.375f},
+        new object[] {Barcode.ITF_14, "1540014128876", Direction.TOP_TO_BOTTOM, true, 143.5f, 211.375f},
     };
 
     [Fact]
@@ -132,6 +139,29 @@ public class BarcodeTest {
             string data = cases[i, 0];
             Assert.Equal(cases[i, 1], Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.GS1_128, data)).Message);
         }
+    }
+
+    [Fact]
+    public void ITF14NeedsThirteenDigits() {
+        foreach (string text in new string[] {"154001412887", "15400141288763", "154001412887A"}) {
+            Assert.Equal("ITF-14 barcodes must have exactly 13 digits!",
+                    Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.ITF_14, text)).Message);
+        }
+    }
+
+    // ZXing reads the ITF-14 barcodes of these GTINs back, their check digits
+    // added, in each direction.
+    [Fact]
+    public void ITF14DrawsTheBarsAndTheBearerBars() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Barcode barcode = new Barcode(Barcode.ITF_14, "1540014128876");
+        barcode.SetLocation(100f, 100f);
+        barcode.DrawOn(page);
+        string content = TestSupport.Content(page);
+        // The 39 bars: 2 of the start, 5 of each of the 7 pairs of digits and 2
+        // of the stop, then the 4 bearer bars, 3 thick
+        Assert.Equal(39 + 4, content.Split(" l\nS\n").Length - 1);
+        Assert.Contains("3 w\n", content);
     }
 }
 }
