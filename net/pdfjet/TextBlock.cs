@@ -630,8 +630,10 @@ public class TextBlock : IDrawable {
         }
     }
 
-    /// <summary>Draws this text block on the specified page.</summary>
-    public float[] DrawOn(Page page) {
+    // Lays out the lines as DrawOn draws them, aligned and decorated, and
+    // returns them with the top of the first line, the leading and the height
+    // of the block, as the layout method of the Go port does.
+    private (TextLine[] textLines, float yText, float leading, float blockHeight) Layout() {
         float ascent = this.font.GetAscent(fontSize);
         float descent = this.font.GetDescent(fontSize);
         float leading = (ascent + descent + this.font.GetLineGap(fontSize)) * this.lineSpacing;
@@ -649,11 +651,7 @@ public class TextBlock : IDrawable {
                 yText = this.y + this.height - this.textPadding - textHeight;
             }
         }
-        if (page == null) {
-            return new float[] {this.x + this.width, this.y + blockHeight};
-        }
 
-        page.SaveGraphicsState();
         if (textAlignment == Alignment.CENTER) {
             CenterText(textLines);
         } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
@@ -665,6 +663,17 @@ public class TextBlock : IDrawable {
         if (strikeout) {
             StrikeoutText(textLines);
         }
+        return (textLines, yText, leading, blockHeight);
+    }
+
+    /// <summary>Draws this text block on the specified page.</summary>
+    public float[] DrawOn(Page page) {
+        var (textLines, yText, leading, blockHeight) = Layout();
+        if (page == null) {
+            return new float[] {this.x + this.width, this.y + blockHeight};
+        }
+
+        page.SaveGraphicsState();
 
         if (borderColor != null || fillColor != null) {
             Rect rect = new Rect(this.x, this.y, this.width, blockHeight);

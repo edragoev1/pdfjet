@@ -643,9 +643,10 @@ public class TextBlock : Drawable {
         }
     }
 
-    /// Draws this text block on the specified page.
-    @discardableResult
-    public func drawOn(_ page: Page?) -> [Float] {
+    /// Lays out the lines as drawOn draws them, aligned and decorated, and
+    /// returns them with the top of the first line, the leading and the height
+    /// of the block, as the layout method of the Go port does.
+    private func layout() -> (textLines: [TextLine], yText: Float, leading: Float, blockHeight: Float) {
         let ascent = font.getAscent(fontSize)
         let descent = font.getDescent(fontSize)
         let leading = (ascent + descent + font.getLineGap(fontSize)) * lineSpacing
@@ -663,11 +664,6 @@ public class TextBlock : Drawable {
                 yText = y + height - textPadding - textHeight
             }
         }
-        if page == nil {
-            return [x + width, y + blockHeight]
-        }
-
-        page!.saveGraphicsState()
 
         if textAlignment == Alignment.CENTER {
             centerText(textLines)
@@ -680,6 +676,18 @@ public class TextBlock : Drawable {
         if strikeout {
             strikeoutText(textLines)
         }
+        return (textLines, yText, leading, blockHeight)
+    }
+
+    /// Draws this text block on the specified page.
+    @discardableResult
+    public func drawOn(_ page: Page?) -> [Float] {
+        let (textLines, yText, leading, blockHeight) = layout()
+        if page == nil {
+            return [x + width, y + blockHeight]
+        }
+
+        page!.saveGraphicsState()
 
         if self.borderColor != nil || self.fillColor != nil {
             let rect = Rect(x, y, width, blockHeight)

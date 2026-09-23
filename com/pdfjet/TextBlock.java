@@ -814,6 +814,51 @@ public class TextBlock implements Drawable {
         }
     }
 
+    // The lines of a text block as drawOn draws them, aligned and decorated,
+    // the top of the first line, the leading and the height of the block.
+    private static final class Layout {
+        TextLine[] textLines;
+        float yText;
+        float leading;
+        float blockHeight;
+    }
+
+    // Lays out the lines as drawOn draws them, as the layout method of the Go
+    // port does.
+    private Layout layout() {
+        Layout layout = new Layout();
+        float ascent = this.font.getAscent(fontSize);
+        float descent = this.font.getDescent(fontSize);
+        layout.leading = (ascent + descent + font.getLineGap(fontSize)) * this.lineSpacing;
+        layout.textLines = getTextLines();
+        layout.blockHeight = layout.textLines.length * layout.leading + 2 * this.textPadding;
+        layout.yText = this.y + this.textPadding;
+        if (this.height > 0f) {
+            // The block is as tall as set; the lines that do not fit are cut
+            layout.textLines = linesThatFit(layout.textLines, layout.leading);
+            layout.blockHeight = this.height;
+            float textHeight = layout.textLines.length * layout.leading;
+            if (verticalAlignment == Alignment.CENTER) {
+                layout.yText = this.y + (this.height - textHeight) / 2f;
+            } else if (verticalAlignment == Alignment.BOTTOM) {
+                layout.yText = this.y + this.height - this.textPadding - textHeight;
+            }
+        }
+
+        if (textAlignment == Alignment.CENTER) {
+            centerText(layout.textLines);
+        } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
+            rightAlignText(layout.textLines);
+        }
+        if (underline) {
+            underlineText(layout.textLines);
+        }
+        if (strikeout) {
+            strikeoutText(layout.textLines);
+        }
+        return layout;
+    }
+
     /**
      * Draws this text block on the specified page.
      *
@@ -822,39 +867,16 @@ public class TextBlock implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
-        float ascent = this.font.getAscent(fontSize);
-        float descent = this.font.getDescent(fontSize);
-        float leading = (ascent + descent + font.getLineGap(fontSize)) * this.lineSpacing;
-        TextLine[] textLines = getTextLines();
-        float blockHeight = textLines.length * leading + 2 * this.textPadding;
-        float yText = this.y + this.textPadding;
-        if (this.height > 0f) {
-            // The block is as tall as set; the lines that do not fit are cut
-            textLines = linesThatFit(textLines, leading);
-            blockHeight = this.height;
-            float textHeight = textLines.length * leading;
-            if (verticalAlignment == Alignment.CENTER) {
-                yText = this.y + (this.height - textHeight) / 2f;
-            } else if (verticalAlignment == Alignment.BOTTOM) {
-                yText = this.y + this.height - this.textPadding - textHeight;
-            }
-        }
+        Layout layout = layout();
+        TextLine[] textLines = layout.textLines;
+        float yText = layout.yText;
+        float leading = layout.leading;
+        float blockHeight = layout.blockHeight;
         if (page == null) {
             return new float[] {this.x + this.width, this.y + blockHeight};
         }
 
         page.saveGraphicsState();
-        if (textAlignment == Alignment.CENTER) {
-            centerText(textLines);
-        } else if (textAlignment == Alignment.RIGHT || rightToLeft) {
-            rightAlignText(textLines);
-        }
-        if (underline) {
-            underlineText(textLines);
-        }
-        if (strikeout) {
-            strikeoutText(textLines);
-        }
 
         if (borderColor != null || fillColor != null) {
             Rect rect = new Rect(this.x, this.y, this.width, blockHeight);
