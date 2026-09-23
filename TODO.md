@@ -281,6 +281,33 @@ day.
     four ports, and `check-examples.sh` over the 54 examples and the 59
     snippet PDFs.
 
+## Found by pdfjet-server, to fix later
+
+The SaaS (pdfjet-server, pdfjet-client) builds on the MIT core without
+changing it, to keep the four ports in sync; what its testing finds wrong in
+the core is listed here, and pdfjet-server works around it until it is fixed.
+Each was proved in the Go port; the other three have the same code, so each is
+to check and fix in the four, with a test.
+
+- ⬜ **Code 128 cuts a long text short without a word.** `drawCode128` stops
+  at 48 codewords and draws the rest of the barcode, so the barcode holds
+  another value than its text: 60 sevens draw exactly as wide as 48. It
+  should refuse the text, or say so, as `NewQRCode` does for a text too long.
+  pdfjet-server refuses such a text before it is drawn (`code128Codewords`
+  in document.go). Found Sep 23.
+- ⬜ **Code 128 panics on a character above U+00FF.** `drawCode128` appends
+  codeword 256, "This will generate an exception", and indexes the table
+  with it: "A€" is `index out of range [256] with length 107`. It should
+  refuse the text with a clear error. pdfjet-server refuses it first. Found
+  Sep 23.
+- ⬜ **A barcode is drawn in whatever pen color the page has.** `Barcode`
+  sets the pen width of each bar but never its color, and does not save and
+  restore the graphics state, so after `Page.SetPenColor`, which an ellipse or
+  a path drawn with the methods of `Page` leaves set, the bars come out in
+  that color. It should draw in a color of its own, black unless set, inside
+  q and Q. pdfjet-server sets the pen to black before each barcode. Found
+  Sep 23.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
