@@ -309,6 +309,20 @@ to check and fix in the four, with a test.
   q and Q. pdfjet-server sets the pen to black before each barcode. Found
   Sep 23; fixed Sep 23 in the four ports: the bars are black, in q and Q.
 
+- ⬜ **The guard bars of EAN-13 and UPC-A are 8 points longer, not 5
+  modules.** The GS1 General Specifications have the guard bars extend 5X
+  below the other bars, so the extension follows the module length;
+  `drawEGuard` and `drawMGuard` are drawn `h+8`, 8 points whatever the
+  module, which is about 10.7 modules at the default of 0.75, 8 at 1 and 4
+  at 2. Barcodes scan either way; they look unlike the standard's. Found Sep
+  23, while porting the drawing to pdfjet-client, whose preview draws them
+  as PDFjet does until it changes.
+- ⬜ **UPC-A does not extend the bars of its first and last digits.** In a
+  UPC-A the bars of the number system digit and of the check digit are as
+  long as the guard bars, which is why the two digits are printed outside
+  the bars; `drawCodeUPC` draws every digit at `h`. Found Sep 23, with the
+  item above.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
