@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"time"
 
@@ -15,104 +16,105 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
-// Example05 draws text at every angle around a point, and the words "WAVE AWAY" with and
-// without kerning, in the core font Helvetica-Bold, which is not embedded.
+// Words with the pairs of letters kerning closes up: WA, AV, AW, AY, Yo,
+// To, Vo, VA and the like.
+const sample = "WAVE AWAY: Your Tokyo voyage, VAT paid."
+
+const background = 0xf1f4f8
+
+// Example05 draws kerning with a core font: what it is, and the same words
+// in two text blocks, one above the other, drawn in Helvetica-Bold without
+// kerning and with it.
 //
-// A core font is one of the fourteen fonts every PDF viewer has, so the
-// document carries no font program: it is small, it is written fast, and the
-// kerning pairs and the widths of the font are built into the library, which
-// is what SetKernPairs shows. The disadvantages: the viewer draws the text with
+// The fonts are core fonts, of the fourteen fonts every PDF viewer has, so the
+// document carries no font program. It is small, it is written fast, and the
+// widths and the kerning pairs of the fonts are built into PDFjet, which is
+// what SetKernPairs applies. The disadvantages: the viewer draws the text with
 // its own version of the font, so the look differs a little between viewers;
 // only the WinAnsi characters can be drawn, so no Cyrillic, Greek or CJK text;
 // and a document with a font that is not embedded cannot claim PDF/A or PDF/UA
-// compliance. For those, use an embedded font like IBMPlexSans, as the
-// other examples do.
+// compliance. For those, use an embedded font like IBM Plex Sans, as the other
+// examples do.
 func Example05() {
 	pdf, err := pdfjet.NewPDFFile("Example_05.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetTitle("Kerning")
 
-	f1 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f1.SetItalic(true)
+	regular := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	regular.SetSize(11.0)
+	bold := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	bold.SetSize(24.0)
+
+	// The same font twice: the one without kerning, which is the default,
+	// and the one with it.
+	plain := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	plain.SetSize(30.0)
+	kerned := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
+	kerned.SetSize(30.0)
+	kerned.SetKernPairs(true)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f1, "")
-	text.SetLocation(300.0, 300.0)
-	for i := 0; i < 360; i += 15 {
-		text.SetTextRotation(-i)
-		text.SetUnderline(true)
-		// text.SetStrikeout(true)
-		text.SetText("             Hello, World -- " + strconv.Itoa(i) + " degrees.")
-		text.DrawOn(page)
-	}
+	title := pdfjet.NewTextLine(bold, "Kerning")
+	title.SetLocation(50.0, 70.0)
+	title.DrawOn(page)
 
-	text = pdfjet.NewTextLine(f1, "WAVE AWAY")
-	text.SetLocation(70.0, 50.0)
-	text.DrawOn(page)
+	about := pdfjet.NewTextBlock(regular,
+		"Kerning moves particular pairs of letters closer together, so that the space "+
+			"between the letters of a word looks even. Every letter of a font has a width, "+
+			"the box it is drawn in, and some pairs of letters leave a gap between their "+
+			"boxes that the eye reads as a space: a capital A beside a V or a W, a capital T, "+
+			"V or Y over a small o, an L before a T. A font lists these pairs and how far to "+
+			"move each of them.\n\n"+
+			"The fourteen core fonts every PDF viewer has come with their lists, which are "+
+			"built into PDFjet. font.setKernPairs(true) turns kerning on for a font: PDFjet "+
+			"moves the letters of each pair as it draws them, with the TJ operator, and "+
+			"measures the text the same way, so that a TextBlock breaks its lines where the "+
+			"kerned words end. The two blocks below are the same words in the same font, "+
+			"without kerning and with it.")
+	about.SetLineSpacing(1.4)
+	about.SetLocation(50.0, 90.0)
+	about.SetWidth(512.0)
+	xy := about.DrawOn(page)
 
-	f1.SetKernPairs(true)
-	text = pdfjet.NewTextLine(f1, "WAVE AWAY")
-	text.SetLocation(70.0, 70.0)
-	text.DrawOn(page)
+	y := xy[1] + 30.0
+	y = drawSample(page, regular, plain, "Without kerning: font.setKernPairs(false), the default", y)
+	y = drawSample(page, regular, kerned, "With kerning: font.setKernPairs(true)", y+25.0)
 
-	f1.SetKernPairs(false)
-	text = pdfjet.NewTextLine(f1, "WAVE AWAY")
-	text.SetLocation(70.0, 90.0)
-	text.DrawOn(page)
-
-	f1.SetSize(8.0)
-	text = pdfjet.NewTextLine(f1, "-- font.setKernPairs(false);")
-	text.SetLocation(150.0, 50.0)
-	text.DrawOn(page)
-	text.SetLocation(150.0, 90.0)
-	text.DrawOn(page)
-	text = pdfjet.NewTextLine(f1, "-- font.setKernPairs(true);")
-	text.SetLocation(150.0, 70.0)
-	text.DrawOn(page)
-
-	point := pdfjet.NewPoint(300.0, 300.0)
-	point.SetShape(shape.Circle)
-	point.SetFillColor(color.Blue)
-	point.SetRadius(37.0)
-	point.DrawOn(page)
-	point.SetRadius(25.0)
-	point.SetFillColor(color.White)
-	point.DrawOn(page)
-
-	arc := pdfjet.NewArc()
-	arc.SetLocation(300.0, 600.0)
-	arc.SetRadiusX(75.0)
-	arc.SetRadiusY(75.0)
-	arc.SetStartAngle(0.0)
-	arc.SetSweep(270.0)
-	// arc.SetSweep(-270.0)
-	// arc.ScaleBy(2.0)
-	// arc.SetRotationClockwise(90.0)
-	// arc.SetRotation(-90.0)
-	arc.SetStrokeWidth(5.0)
-	arc.SetStrokeColor(color.Blue)
-	arc.DrawOn(page)
-
-	ellipse := pdfjet.NewEllipse()
-	ellipse.SetLocation(300.0, 720.0)
-	ellipse.SetRadiusX(100.0)
-	ellipse.SetRadiusY(50.0)
-	ellipse.SetFillColor(color.Azure)
-	ellipse.SetStrokeWidth(1.5)
-	ellipse.SetStrokeColor(color.Blue)
-	ellipse.ScaleBy(0.5)
-	ellipse.SetRotation(45.0)
-	// ellipse.SetRotation(-45.0)
-	ellipse.DrawOn(page)
+	// How much kerning takes off the width of the words, as PDFjet
+	// measures them, to the nearest point.
+	difference := plain.StringWidth(plain.GetSize(), sample) - kerned.StringWidth(kerned.GetSize(), sample)
+	narrower := int(math.Floor(float64(difference) + 0.5))
+	note := pdfjet.NewTextLine(regular,
+		"Kerning makes these words "+strconv.Itoa(narrower)+" points narrower at 30 points.")
+	note.SetTextColor(color.Gray)
+	note.SetLocation(50.0, y+30.0)
+	note.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// drawSample draws the label, and under it the sample words in the font, in
+// a text block with a light background, and returns the bottom of the block.
+func drawSample(page *pdfjet.Page, labelFont, font *pdfjet.Font, label string, y float32) float32 {
+	caption := pdfjet.NewTextLine(labelFont, label)
+	caption.SetTextColor(color.Gray)
+	caption.SetLocation(50.0, y)
+	caption.DrawOn(page)
+
+	block := pdfjet.NewTextBlock(font, sample)
+	block.SetBackgroundColor(background)
+	block.SetPadding(10.0)
+	block.SetLineSpacing(1.2)
+	block.SetLocation(50.0, y+8.0)
+	block.SetWidth(512.0)
+	return block.DrawOn(page)[1]
 }
 
 func main() {

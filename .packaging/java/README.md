@@ -10,7 +10,7 @@ This package has the library ready to use, built for Java 8 and later.
 |---|---|
 | `PDFjet.jar` | The library. Put it on the class path. |
 | `docs/java/index.html` | The API reference. |
-| `examples/` | 55 example programs. |
+| `examples/` | 56 example programs. |
 | `examples-java.html` | What each example shows, with links to its source and its PDF. |
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-java.sh`, `build-java.cmd` | Compile and run all the examples. |

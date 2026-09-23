@@ -12,96 +12,100 @@ using PDFjet.NET;
 /**
  * Example_05.cs
  *
- * Draws text at every angle around a point, and the words "WAVE AWAY" with and
- * without kerning, in the core font Helvetica-Bold, which is not embedded.
+ * Kerning with a core font: what it is, and the same words in two text blocks,
+ * one above the other, drawn in Helvetica-Bold without kerning and with it.
  *
- * A core font is one of the fourteen fonts every PDF viewer has, so the
- * document carries no font program: it is small, it is written fast, and the
- * kerning pairs and the widths of the font are built into the library, which
- * is what SetKernPairs shows. The disadvantages: the viewer draws the text with
+ * The fonts are core fonts, of the fourteen fonts every PDF viewer has, so the
+ * document carries no font program. It is small, it is written fast, and the
+ * widths and the kerning pairs of the fonts are built into PDFjet, which is
+ * what SetKernPairs applies. The disadvantages: the viewer draws the text with
  * its own version of the font, so the look differs a little between viewers;
  * only the WinAnsi characters can be drawn, so no Cyrillic, Greek or CJK text;
  * and a document with a font that is not embedded cannot claim PDF/A or PDF/UA
- * compliance. For those, use an embedded font like IBM Plex Sans, as the
- * other examples do.
+ * compliance. For those, use an embedded font like IBM Plex Sans, as the other
+ * examples do.
  */
 public class Example_05 {
+    // Words with the pairs of letters kerning closes up: WA, AV, AW, AY, Yo,
+    // To, Vo, VA and the like.
+    private const String SAMPLE = "WAVE AWAY: Your Tokyo voyage, VAT paid.";
+
+    private const int BACKGROUND = 0xf1f4f8;
+
     public Example_05() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_05.pdf", FileMode.Create)));
+        pdf.SetTitle("Kerning");
 
-        Font f1 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        f1.SetItalic(true);
+        Font regular = new Font(pdf, CoreFont.HELVETICA);
+        regular.SetSize(11f);
+        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        bold.SetSize(24f);
+
+        // The same font twice: the one without kerning, which is the default,
+        // and the one with it.
+        Font plain = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        plain.SetSize(30f);
+        Font kerned = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        kerned.SetSize(30f);
+        kerned.SetKernPairs(true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f1);
-        text.SetLocation(300f, 300f);
-        for (int i = 0; i < 360; i += 15) {
-            text.SetTextRotation(-i);
-            text.SetUnderline(true);
-            // text.SetStrikeout(true);
-            text.SetText("             Hello, World -- " + i + " degrees.");
-            text.DrawOn(page);
-        }
+        TextLine title = new TextLine(bold, "Kerning");
+        title.SetLocation(50f, 70f);
+        title.DrawOn(page);
 
-        text = new TextLine(f1, "WAVE AWAY");
-        text.SetLocation(70f, 50f);
-        text.DrawOn(page);
+        TextBlock about = new TextBlock(regular,
+                "Kerning moves particular pairs of letters closer together, so that the space "
+                + "between the letters of a word looks even. Every letter of a font has a width, "
+                + "the box it is drawn in, and some pairs of letters leave a gap between their "
+                + "boxes that the eye reads as a space: a capital A beside a V or a W, a capital T, "
+                + "V or Y over a small o, an L before a T. A font lists these pairs and how far to "
+                + "move each of them.\n\n"
+                + "The fourteen core fonts every PDF viewer has come with their lists, which are "
+                + "built into PDFjet. font.setKernPairs(true) turns kerning on for a font: PDFjet "
+                + "moves the letters of each pair as it draws them, with the TJ operator, and "
+                + "measures the text the same way, so that a TextBlock breaks its lines where the "
+                + "kerned words end. The two blocks below are the same words in the same font, "
+                + "without kerning and with it.");
+        about.SetLineSpacing(1.4f);
+        about.SetLocation(50f, 90f);
+        about.SetWidth(512f);
+        float[] xy = about.DrawOn(page);
 
-        f1.SetKernPairs(true);
-        text = new TextLine(f1, "WAVE AWAY");
-        text.SetLocation(70f, 70f);
-        text.DrawOn(page);
+        float y = xy[1] + 30f;
+        y = DrawSample(page, regular, plain, "Without kerning: font.setKernPairs(false), the default", y);
+        y = DrawSample(page, regular, kerned, "With kerning: font.setKernPairs(true)", y + 25f);
 
-        f1.SetKernPairs(false);
-        text = new TextLine(f1, "WAVE AWAY");
-        text.SetLocation(70f, 90f);
-        text.DrawOn(page);
-
-        f1.SetSize(8f);
-        text = new TextLine(f1, "-- font.setKernPairs(false);");
-        text.SetLocation(150f, 50f);
-        text.DrawOn(page);
-        text.SetLocation(150f, 90f);
-        text.DrawOn(page);
-        text = new TextLine(f1, "-- font.setKernPairs(true);");
-        text.SetLocation(150f, 70f);
-        text.DrawOn(page);
-
-        Point point = new Point(300f, 300f);
-        point.SetShape(Shape.CIRCLE);
-        point.SetFillColor(Color.blue);
-        point.SetRadius(37f);
-        point.DrawOn(page);
-        point.SetRadius(25f);
-        point.SetFillColor(Color.white);
-        point.DrawOn(page);
-
-        float[] arcPoints = (new Arc())
-            .SetLocation(300f, 600f)
-            .SetRadiusX(75f)
-            .SetRadiusY(75f)
-            .SetStartAngle(0f)
-            .SetSweep(270f)
-            // .SetSweep(-270f)
-            // .ScaleBy(2f)
-            .SetStrokeWidth(5f)
-            .SetStrokeColor(Color.blue)
-            .DrawOn(page);
-
-        (new Ellipse())
-            .SetLocation(300f, 720f)
-            .SetRadiusX(100f)
-            .SetRadiusY(50f)
-            .SetFillColor(Color.azure)
-            .SetStrokeWidth(1.5f)
-            .SetStrokeColor(Color.blue)
-            .ScaleBy(0.5f)
-            .SetRotation(45f)
-            .DrawOn(page);
+        // How much kerning takes off the width of the words, as PDFjet
+        // measures them, to the nearest point. Rounds half up, as Java's
+        // Math.round does.
+        int narrower = (int) Math.Floor(plain.StringWidth(SAMPLE) - kerned.StringWidth(SAMPLE) + 0.5f);
+        TextLine note = new TextLine(regular,
+                "Kerning makes these words " + narrower + " points narrower at 30 points.");
+        note.SetTextColor(Color.gray);
+        note.SetLocation(50f, y + 30f);
+        note.DrawOn(page);
 
         pdf.Complete();
+    }
+
+    // Draws the label, and under it the sample words in the font, in a text
+    // block with a light background, and returns the bottom of the block.
+    private static float DrawSample(Page page, Font labelFont, Font font, String label, float y) {
+        TextLine caption = new TextLine(labelFont, label);
+        caption.SetTextColor(Color.gray);
+        caption.SetLocation(50f, y);
+        caption.DrawOn(page);
+
+        TextBlock block = new TextBlock(font, SAMPLE);
+        block.SetBackgroundColor(BACKGROUND);
+        block.SetPadding(10f);
+        block.SetLineSpacing(1.2f);
+        block.SetLocation(50f, y + 8f);
+        block.SetWidth(512f);
+        return block.DrawOn(page)[1];
     }
 
     public static void Main(String[] args) {

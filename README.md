@@ -204,7 +204,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 55 examples, the same in every port. Build
+The [examples](examples) folder has 56 examples, the same in every port. Build
 a port and run all of its examples, or run one example by its number:
 
 | Port | All examples | One example |

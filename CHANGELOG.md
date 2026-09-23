@@ -1000,6 +1000,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_05 shows kerning, and only kerning: it says what kerning is, and
+  draws the same words in two text blocks, one above the other, in
+  Helvetica-Bold without kerning and with it, and by how many points kerning
+  makes them narrower, in all four ports. It drew them as three lines of
+  small text beside a wheel of rotated text, an arc and an ellipse, which are
+  in Example_56 now.
+- Example_56 is new: the shapes PDFjet draws, each in a cell under its name,
+  `Line` with dashes and round caps, `Rect` with square and rounded corners,
+  the `Point` markers of charts, `Ellipse`, `Arc`, a `Path` of Bézier curves
+  and a closed `Path`, filled, and on a second page text at every angle
+  around a point, as a PDF/UA document, in all four ports. The scripts, the
+  workflows, the packaging and the lists of examples build, check and show 56
+  examples.
 - Example_55 is new: an invoice that is also data, in all four ports. It is a
   PDF/A-3A document that carries `data/invoice/factur-x.xml`, the invoice in
   the profile BASIC of Factur-X and ZUGFeRD, with `addAssociatedFile` and the

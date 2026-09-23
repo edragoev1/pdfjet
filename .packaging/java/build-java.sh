@@ -5,6 +5,6 @@ rm -rf out
 mkdir out
 javac -encoding utf-8 -cp PDFjet.jar examples/*.java -d out || exit 1
 
-for i in $(seq -w 1 55); do
+for i in $(seq -w 1 56); do
     java -cp PDFjet.jar:out examples.Example_$i
 done
