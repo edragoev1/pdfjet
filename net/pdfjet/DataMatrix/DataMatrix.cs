@@ -64,6 +64,7 @@ public class DataMatrix : IDrawable {
 
     private const int PAD = 129;
     private const int BASE256_LATCH = 231;
+    private const int FNC1 = 232;
     private const int UPPER_SHIFT = 235;
     private const int ECI = 241;
     private const int ECI_UTF8 = 26;
@@ -106,8 +107,41 @@ public class DataMatrix : IDrawable {
     /// DataMatrix.RECTANGLE. Throws an ArgumentException if the text does not
     /// fit in the largest symbol.
     /// </summary>
-    public DataMatrix(String str, int shape) {
-        int[] data = Encode(Encoding.UTF8.GetBytes(str));
+    public DataMatrix(String str, int shape) : this(Encode(Encoding.UTF8.GetBytes(str)), shape) {
+    }
+
+    /// <summary>
+    /// Creates a square GS1 DataMatrix barcode, as medicines, medical devices
+    /// and, more and more, retail goods carry. The data is written as people
+    /// read it: each Application Identifier in parentheses and its data after
+    /// it, such as "(01)09506000134352(17)261231(10)ABC123". The symbol starts
+    /// with FNC1, which says it is GS1, and a field of no set length is ended
+    /// with GS when another follows. Throws an ArgumentException if the data is
+    /// not GS1: an Application Identifier that is not two to four digits, or
+    /// with no data; a character GS1 does not allow, a parenthesis among them;
+    /// data longer than 90 characters; data of a field of set length, such as
+    /// the GTIN of (01) or the date of (17), that is not that many digits; or a
+    /// wrong check digit of an SSCC (00), a GTIN (01) or (02), or a GLN (410)
+    /// to (417). Also if the data does not fit in the largest symbol.
+    /// </summary>
+    public static DataMatrix FromGS1(String str) {
+        return FromGS1(str, SQUARE);
+    }
+
+    /// <summary>
+    /// Creates a GS1 DataMatrix barcode with the shape DataMatrix.SQUARE or
+    /// DataMatrix.RECTANGLE. See FromGS1(String).
+    /// </summary>
+    public static DataMatrix FromGS1(String str, int shape) {
+        int[] ascii = EncodeASCII(Encoding.ASCII.GetBytes(GS1.ElementString(str)));
+        int[] data = new int[1 + ascii.Length];
+        data[0] = FNC1;
+        Array.Copy(ascii, 0, data, 1, ascii.Length);
+        return new DataMatrix(data, shape);
+    }
+
+    // Makes the symbol of the data codewords.
+    private DataMatrix(int[] data, int shape) {
         int[] symbol = SelectSymbol(data.Length, shape);
         int[] allCodewords = AddErrorCorrection(Pad(data, symbol[4]), symbol);
         int rows = symbol[0];
@@ -217,21 +251,9 @@ public class DataMatrix : IDrawable {
         }
         int base256Length = 1 + ((bytes.Length <= 249) ? 1 : 2) + bytes.Length;
         if (AsciiLength(bytes) <= base256Length) {
-            int i = 0;
-            while (i < bytes.Length) {
-                int c = bytes[i];
-                if (IsDigit(c) && i + 1 < bytes.Length && IsDigit(bytes[i + 1])) {
-                    data[n++] = 130 + 10*(c - '0') + (bytes[i + 1] - '0');
-                    i += 2;
-                } else if (c < 128) {
-                    data[n++] = c + 1;
-                    i++;
-                } else {
-                    data[n++] = UPPER_SHIFT;
-                    data[n++] = c - 127;
-                    i++;
-                }
-            }
+            int[] codewords = EncodeASCII(bytes);
+            Array.Copy(codewords, 0, data, n, codewords.Length);
+            n += codewords.Length;
         } else {
             data[n++] = BASE256_LATCH;
             if (bytes.Length <= 249) {
@@ -246,6 +268,29 @@ public class DataMatrix : IDrawable {
             foreach (byte b in bytes) {
                 data[n] = Randomize255(b, n + 1);
                 n++;
+            }
+        }
+        return CopyOf(data, n);
+    }
+
+    // Encodes the bytes in ASCII encodation: two digits in a codeword, a byte
+    // below 128 in one, and one from 128 in two, after Upper Shift.
+    private static int[] EncodeASCII(byte[] bytes) {
+        int[] data = new int[2*bytes.Length];
+        int n = 0;
+        int i = 0;
+        while (i < bytes.Length) {
+            int c = bytes[i];
+            if (IsDigit(c) && i + 1 < bytes.Length && IsDigit(bytes[i + 1])) {
+                data[n++] = 130 + 10*(c - '0') + (bytes[i + 1] - '0');
+                i += 2;
+            } else if (c < 128) {
+                data[n++] = c + 1;
+                i++;
+            } else {
+                data[n++] = UPPER_SHIFT;
+                data[n++] = c - 127;
+                i++;
             }
         }
         return CopyOf(data, n);

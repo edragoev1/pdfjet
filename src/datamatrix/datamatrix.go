@@ -63,6 +63,7 @@ var rectangles = [][7]int{
 const (
 	padCodeword  = 129
 	base256Latch = 231
+	fnc1         = 232
 	upperShift   = 235
 	eci          = 241
 	eciUTF8      = 26
@@ -108,8 +109,34 @@ func NewDataMatrix(str string) *DataMatrix {
 // NewDataMatrixWithShape creates a Data Matrix barcode with the shape Square or
 // Rectangle. It panics if the text does not fit in the largest symbol.
 func NewDataMatrixWithShape(str string, shape int) *DataMatrix {
+	return newDataMatrix(encode([]byte(str)), shape)
+}
+
+// NewGS1DataMatrix creates a square GS1 DataMatrix barcode, as medicines,
+// medical devices and, more and more, retail goods carry. The data is written
+// as people read it: each Application Identifier in parentheses and its data
+// after it, such as "(01)09506000134352(17)261231(10)ABC123". The symbol
+// starts with FNC1, which says it is GS1, and a field of no set length is
+// ended with GS when another follows. It panics if the data is not GS1: an
+// Application Identifier that is not two to four digits, or with no data;
+// a character GS1 does not allow, a parenthesis among them; data longer than
+// 90 characters; data of a field of set length, such as the GTIN of (01) or
+// the date of (17), that is not that many digits; or a wrong check digit of
+// an SSCC (00), a GTIN (01) or (02), or a GLN (410) to (417). It panics too if
+// the data does not fit in the largest symbol.
+func NewGS1DataMatrix(str string) *DataMatrix {
+	return NewGS1DataMatrixWithShape(str, Square)
+}
+
+// NewGS1DataMatrixWithShape creates a GS1 DataMatrix barcode with the shape
+// Square or Rectangle. See NewGS1DataMatrix.
+func NewGS1DataMatrixWithShape(str string, shape int) *DataMatrix {
+	return newDataMatrix(append([]int{fnc1}, encodeASCII([]byte(gs1ElementString(str)))...), shape)
+}
+
+// newDataMatrix makes the symbol of the data codewords.
+func newDataMatrix(data []int, shape int) *DataMatrix {
 	dm := &DataMatrix{m1: 2.0, color: color.Black}
-	data := encode([]byte(str))
 	symbol := selectSymbol(len(data), shape)
 	allCodewords := addErrorCorrection(pad(data, symbol[4]), symbol)
 	rows := symbol[0]
@@ -218,30 +245,38 @@ func encode(bytes []byte) []int {
 		base256Length++
 	}
 	if asciiLength(bytes) <= base256Length {
-		i := 0
-		for i < len(bytes) {
-			c := int(bytes[i])
-			if isDigit(c) && i+1 < len(bytes) && isDigit(int(bytes[i+1])) {
-				data = append(data, 130+10*(c-'0')+(int(bytes[i+1])-'0'))
-				i += 2
-			} else if c < 128 {
-				data = append(data, c+1)
-				i++
-			} else {
-				data = append(data, upperShift, c-127)
-				i++
-			}
-		}
+		return append(data, encodeASCII(bytes)...)
+	}
+	data = append(data, base256Latch)
+	if len(bytes) <= 249 {
+		data = append(data, randomize255(len(bytes), len(data)+1))
 	} else {
-		data = append(data, base256Latch)
-		if len(bytes) <= 249 {
-			data = append(data, randomize255(len(bytes), len(data)+1))
+		data = append(data, randomize255(len(bytes)/250+249, len(data)+1))
+		data = append(data, randomize255(len(bytes)%250, len(data)+1))
+	}
+	for _, b := range bytes {
+		data = append(data, randomize255(int(b), len(data)+1))
+	}
+	return data
+}
+
+// encodeASCII encodes the bytes in ASCII encodation: two digits in a
+// codeword, a byte below 128 in one, and one from 128 in two, after Upper
+// Shift.
+func encodeASCII(bytes []byte) []int {
+	data := make([]int, 0, 2*len(bytes))
+	i := 0
+	for i < len(bytes) {
+		c := int(bytes[i])
+		if isDigit(c) && i+1 < len(bytes) && isDigit(int(bytes[i+1])) {
+			data = append(data, 130+10*(c-'0')+(int(bytes[i+1])-'0'))
+			i += 2
+		} else if c < 128 {
+			data = append(data, c+1)
+			i++
 		} else {
-			data = append(data, randomize255(len(bytes)/250+249, len(data)+1))
-			data = append(data, randomize255(len(bytes)%250, len(data)+1))
-		}
-		for _, b := range bytes {
-			data = append(data, randomize255(int(b), len(data)+1))
+			data = append(data, upperShift, c-127)
+			i++
 		}
 	}
 	return data

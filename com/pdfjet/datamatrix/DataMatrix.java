@@ -67,6 +67,7 @@ public final class DataMatrix implements Drawable {
 
     private static final int PAD = 129;
     private static final int BASE256_LATCH = 231;
+    private static final int FNC1 = 232;
     private static final int UPPER_SHIFT = 235;
     private static final int ECI = 241;
     private static final int ECI_UTF8 = 26;
@@ -116,7 +117,50 @@ public final class DataMatrix implements Drawable {
      * @throws IllegalArgumentException if the text does not fit in the largest symbol.
      */
     public DataMatrix(String str, int shape) {
-        int[] data = encode(str.getBytes(StandardCharsets.UTF_8));
+        this(encode(str.getBytes(StandardCharsets.UTF_8)), shape);
+    }
+
+    /**
+     * Creates a square GS1 DataMatrix barcode, as medicines, medical devices
+     * and, more and more, retail goods carry. The data is written as people
+     * read it: each Application Identifier in parentheses and its data after
+     * it, such as "(01)09506000134352(17)261231(10)ABC123". The symbol starts
+     * with FNC1, which says it is GS1, and a field of no set length is ended
+     * with GS when another follows.
+     *
+     * @param str the GS1 data.
+     * @return the barcode.
+     * @throws IllegalArgumentException if the data is not GS1: an Application
+     *     Identifier that is not two to four digits, or with no data; a
+     *     character GS1 does not allow, a parenthesis among them; data longer
+     *     than 90 characters; data of a field of set length, such as the GTIN
+     *     of (01) or the date of (17), that is not that many digits; or a wrong
+     *     check digit of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to
+     *     (417). Also if the data does not fit in the largest symbol.
+     */
+    public static DataMatrix fromGS1(String str) {
+        return fromGS1(str, SQUARE);
+    }
+
+    /**
+     * Creates a GS1 DataMatrix barcode. See {@link #fromGS1(String)}.
+     *
+     * @param str the GS1 data.
+     * @param shape DataMatrix.SQUARE or DataMatrix.RECTANGLE.
+     * @return the barcode.
+     * @throws IllegalArgumentException if the data is not GS1, or does not fit
+     *     in the largest symbol.
+     */
+    public static DataMatrix fromGS1(String str, int shape) {
+        int[] ascii = encodeASCII(GS1.elementString(str).getBytes(StandardCharsets.US_ASCII));
+        int[] data = new int[1 + ascii.length];
+        data[0] = FNC1;
+        System.arraycopy(ascii, 0, data, 1, ascii.length);
+        return new DataMatrix(data, shape);
+    }
+
+    // Makes the symbol of the data codewords.
+    private DataMatrix(int[] data, int shape) {
         int[] symbol = selectSymbol(data.length, shape);
         int[] allCodewords = addErrorCorrection(pad(data, symbol[4]), symbol);
         int rows = symbol[0];
@@ -243,21 +287,9 @@ public final class DataMatrix implements Drawable {
         }
         int base256Length = 1 + ((bytes.length <= 249) ? 1 : 2) + bytes.length;
         if (asciiLength(bytes) <= base256Length) {
-            int i = 0;
-            while (i < bytes.length) {
-                int c = bytes[i] & 0xff;
-                if (isDigit(c) && i + 1 < bytes.length && isDigit(bytes[i + 1] & 0xff)) {
-                    data[n++] = 130 + 10*(c - '0') + ((bytes[i + 1] & 0xff) - '0');
-                    i += 2;
-                } else if (c < 128) {
-                    data[n++] = c + 1;
-                    i++;
-                } else {
-                    data[n++] = UPPER_SHIFT;
-                    data[n++] = c - 127;
-                    i++;
-                }
-            }
+            int[] codewords = encodeASCII(bytes);
+            System.arraycopy(codewords, 0, data, n, codewords.length);
+            n += codewords.length;
         } else {
             data[n++] = BASE256_LATCH;
             if (bytes.length <= 249) {
@@ -272,6 +304,29 @@ public final class DataMatrix implements Drawable {
             for (byte b : bytes) {
                 data[n] = randomize255(b & 0xff, n + 1);
                 n++;
+            }
+        }
+        return Arrays.copyOf(data, n);
+    }
+
+    // Encodes the bytes in ASCII encodation: two digits in a codeword, a byte
+    // below 128 in one, and one from 128 in two, after Upper Shift.
+    private static int[] encodeASCII(byte[] bytes) {
+        int[] data = new int[2*bytes.length];
+        int n = 0;
+        int i = 0;
+        while (i < bytes.length) {
+            int c = bytes[i] & 0xff;
+            if (isDigit(c) && i + 1 < bytes.length && isDigit(bytes[i + 1] & 0xff)) {
+                data[n++] = 130 + 10*(c - '0') + ((bytes[i + 1] & 0xff) - '0');
+                i += 2;
+            } else if (c < 128) {
+                data[n++] = c + 1;
+                i++;
+            } else {
+                data[n++] = UPPER_SHIFT;
+                data[n++] = c - 127;
+                i++;
             }
         }
         return Arrays.copyOf(data, n);

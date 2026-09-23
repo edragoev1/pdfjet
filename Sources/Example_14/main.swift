@@ -59,6 +59,14 @@ public class Example_14 {
         caption.setLocation(300.0, xy[1] + 20.0)
         caption.drawOn(page)
 
+        barcode = try DataMatrix(gs1: "(01)09506000134352(17)261231(10)ABC123(21)XYZ-42")
+        barcode.setLocation(50.0, 400.0)
+        barcode.setModuleLength(3.0)
+        xy = barcode.drawOn(page)
+        caption = TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number")
+        caption.setLocation(50.0, xy[1] + 20.0)
+        caption.drawOn(page)
+
         try pdf.complete()
     }
 }   // End of Example_14.swift

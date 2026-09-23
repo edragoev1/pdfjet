@@ -71,6 +71,14 @@ func Example14() {
 	caption.SetLocation(300.0, xy[1]+20.0)
 	caption.DrawOn(page)
 
+	barcode = datamatrix.NewGS1DataMatrix("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42")
+	barcode.SetLocation(50.0, 400.0)
+	barcode.SetModuleLength(3.0)
+	xy = barcode.DrawOn(page)
+	caption = pdfjet.NewTextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number")
+	caption.SetLocation(50.0, xy[1]+20.0)
+	caption.DrawOn(page)
+
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

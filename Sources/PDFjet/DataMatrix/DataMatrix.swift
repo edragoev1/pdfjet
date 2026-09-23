@@ -60,6 +60,7 @@ public final class DataMatrix : Drawable {
 
     private static let PAD = 129
     private static let BASE256_LATCH = 231
+    private static let FNC1 = 232
     private static let UPPER_SHIFT = 235
     private static let ECI = 241
     private static let ECI_UTF8 = 26
@@ -101,8 +102,30 @@ public final class DataMatrix : Drawable {
     /// Creates a Data Matrix barcode with the shape DataMatrix.SQUARE or
     /// DataMatrix.RECTANGLE. Stops the program if the text does not fit in the
     /// largest symbol.
-    public init(_ str: String, _ shape: Int) {
-        let data = DataMatrix.encode(Array(str.utf8))
+    public convenience init(_ str: String, _ shape: Int) {
+        self.init(codewords: DataMatrix.encode(Array(str.utf8)), shape: shape)
+    }
+
+    /// Creates a GS1 DataMatrix barcode, as medicines, medical devices and,
+    /// more and more, retail goods carry, with the shape DataMatrix.SQUARE or
+    /// DataMatrix.RECTANGLE. The data is written as people read it: each
+    /// Application Identifier in parentheses and its data after it, such as
+    /// "(01)09506000134352(17)261231(10)ABC123". The symbol starts with FNC1,
+    /// which says it is GS1, and a field of no set length is ended with GS when
+    /// another follows. Throws if the data is not GS1: an Application
+    /// Identifier that is not two to four digits, or with no data; a character
+    /// GS1 does not allow, a parenthesis among them; data longer than 90
+    /// characters; data of a field of set length, such as the GTIN of (01) or
+    /// the date of (17), that is not that many digits; or a wrong check digit
+    /// of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to (417). Stops the
+    /// program if the data does not fit in the largest symbol, as init does.
+    public convenience init(gs1 str: String, _ shape: Int = DataMatrix.SQUARE) throws {
+        let elementString = try GS1.elementString(str)
+        self.init(codewords: [DataMatrix.FNC1] + DataMatrix.encodeASCII(Array(elementString.utf8)), shape: shape)
+    }
+
+    // Makes the symbol of the data codewords.
+    private init(codewords data: [Int], shape: Int) {
         let symbol = DataMatrix.selectSymbol(data.count, shape)
         let allCodewords = DataMatrix.addErrorCorrection(DataMatrix.pad(data, symbol[4]), symbol)
         let rows = symbol[0]
@@ -206,21 +229,7 @@ public final class DataMatrix : Drawable {
         }
         let base256Length = 1 + ((bytes.count <= 249) ? 1 : 2) + bytes.count
         if asciiLength(bytes) <= base256Length {
-            var i = 0
-            while i < bytes.count {
-                let c = Int(bytes[i])
-                if isDigit(c) && i + 1 < bytes.count && isDigit(Int(bytes[i + 1])) {
-                    data.append(130 + 10*(c - 48) + (Int(bytes[i + 1]) - 48))
-                    i += 2
-                } else if c < 128 {
-                    data.append(c + 1)
-                    i += 1
-                } else {
-                    data.append(UPPER_SHIFT)
-                    data.append(c - 127)
-                    i += 1
-                }
-            }
+            data += encodeASCII(bytes)
         } else {
             data.append(BASE256_LATCH)
             if bytes.count <= 249 {
@@ -231,6 +240,28 @@ public final class DataMatrix : Drawable {
             }
             for b in bytes {
                 data.append(randomize255(Int(b), data.count + 1))
+            }
+        }
+        return data
+    }
+
+    // Encodes the bytes in ASCII encodation: two digits in a codeword, a byte
+    // below 128 in one, and one from 128 in two, after Upper Shift.
+    private static func encodeASCII(_ bytes: [UInt8]) -> [Int] {
+        var data = [Int]()
+        var i = 0
+        while i < bytes.count {
+            let c = Int(bytes[i])
+            if isDigit(c) && i + 1 < bytes.count && isDigit(Int(bytes[i + 1])) {
+                data.append(130 + 10*(c - 48) + (Int(bytes[i + 1]) - 48))
+                i += 2
+            } else if c < 128 {
+                data.append(c + 1)
+                i += 1
+            } else {
+                data.append(UPPER_SHIFT)
+                data.append(c - 127)
+                i += 1
             }
         }
         return data

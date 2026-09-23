@@ -63,6 +63,14 @@ public class Example_14 {
         caption.SetLocation(300f, xy[1] + 20f);
         caption.DrawOn(page);
 
+        barcode = DataMatrix.FromGS1("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42");
+        barcode.SetLocation(50f, 400f);
+        barcode.SetModuleLength(3f);
+        xy = barcode.DrawOn(page);
+        caption = new TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number");
+        caption.SetLocation(50f, xy[1] + 20f);
+        caption.DrawOn(page);
+
         pdf.Complete();
     }
 

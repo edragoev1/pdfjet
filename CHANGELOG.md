@@ -10,6 +10,22 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- GS1 DataMatrix, as medicines, medical devices and, more and more, retail
+  goods carry, in all four ports: `DataMatrix.fromGS1(data)` and
+  `fromGS1(data, shape)` in Java, `DataMatrix.FromGS1` in C#,
+  `datamatrix.NewGS1DataMatrix` and `NewGS1DataMatrixWithShape` in Go, and
+  `DataMatrix(gs1:)` in Swift. The data is written as people read it, each
+  Application Identifier in parentheses and its data after it, such as
+  `(01)09506000134352(17)261231(10)ABC123`. The symbol starts with FNC1,
+  which makes it GS1, is in ASCII encodation, two digits to a codeword, and
+  ends a field of no set length with GS when another follows. Data that is
+  not GS1 is refused, with the same words in every port: an Application
+  Identifier that is not two to four digits or has no data, a character
+  GS1 does not allow, data longer than 90 characters, a field of set length
+  whose data is not that many digits, and a wrong check digit of an SSCC
+  (00), a GTIN (01) or (02), or a GLN (410) to (417). ZXing reads the
+  symbols with the symbology identifier `]d2` of GS1 DataMatrix. Example_14
+  draws one.
 - A document can carry files with it, as PDF/A-3 does: an invoice carrying
   the same invoice as data, a chart carrying its numbers.
   `PDF.addAssociatedFile(embeddedFile)` adds one, which writes `/AF` and the

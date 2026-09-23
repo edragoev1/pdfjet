@@ -64,6 +64,14 @@ public class Example_14 {
         caption.setLocation(300f, xy[1] + 20f);
         caption.drawOn(page);
 
+        barcode = DataMatrix.fromGS1("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42");
+        barcode.setLocation(50f, 400f);
+        barcode.setModuleLength(3f);
+        xy = barcode.drawOn(page);
+        caption = new TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number");
+        caption.setLocation(50f, xy[1] + 20f);
+        caption.drawOn(page);
+
         pdf.complete();
     }
 
