@@ -82,6 +82,28 @@ public class Example_21 {
             text.drawOn(page)
         }
 
+        // GS1 data as a GS1 Digital Link, a web address an ordinary QR code carries.
+        let page2 = Page(pdf, Letter.PORTRAIT)
+        text = TextLine(f2, "GS1 Digital Link")
+        text.setStructureType(StructElem.H2)
+        text.setFontSize(18.0)
+        text.setLocation(70.0, 80.0)
+        text.drawOn(page2)
+
+        let link = try GS1.digitalLink(domain: "https://id.gs1.org", data: "(01)09506000134352(10)ABC123(17)261231")
+        let note = TextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "
+                + "is this web address as a GS1 Digital Link, " + link + ", which an ordinary QR code carries and any phone opens.")
+        note.setFontSize(12.0)
+        note.setLineSpacing(1.5)
+        note.setLocation(70.0, 95.0)
+        note.setWidth(470.0)
+        let corner = note.drawOn(page2)
+
+        let code = try QRCode(link, ErrorCorrectionLevel.M)
+        code.setModuleLength(4.0)
+        code.setLocation(70.0, corner[1] + 30.0)
+        code.drawOn(page2)
+
         try pdf.complete()
     }
 }   // End of Example_21.swift

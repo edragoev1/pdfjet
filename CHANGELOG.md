@@ -10,6 +10,20 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A GS1 Digital Link of GS1 data, the web address an ordinary QR code
+  carries, in all four ports: `GS1.digitalLink(domain, data)` in Java,
+  `GS1.DigitalLink` in C#, `pdfjet.GS1DigitalLink` in Go and
+  `GS1.digitalLink(domain:data:)` in Swift, whose `GS1` is public now.
+  `(01)09506000134352(10)ABC123(17)261231` at `https://id.gs1.org` is
+  `https://id.gs1.org/01/09506000134352/10/ABC123?17=261231`: the primary
+  key of the data first in the path, then its qualifiers in the order of the
+  GS1 Digital Link standard, such as (22), the batch (10) and the serial
+  (21) of a GTIN, and the other fields in the query, in their order, each
+  value percent-encoded where a web address needs it. The data is checked
+  as for the barcodes, and refused in the same words in every port when it
+  has no primary key or two, both (254) and (7040) of a GLN, or a domain
+  that does not start with https:// or http://. Example_21 draws one in a
+  QR code.
 - GS1-128 barcodes, as the labels of pallets, cartons and shipments carry,
   in all four ports: `Barcode.GS1_128`, with the text written as GS1 data is
   read, such as `(00)106141412345678908` or

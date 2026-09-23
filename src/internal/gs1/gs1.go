@@ -117,3 +117,91 @@ func checkDigitIsRight(number string) bool {
 	}
 	return int(number[len(number)-1]-'0') == (10-sum%10)%10
 }
+
+// digitalLinkKeys are the primary keys of GS1 Digital Link and their
+// qualifiers, in the order the path has them: each list is a place in the
+// path, and the qualifiers in it are alternatives.
+var digitalLinkKeys = map[string][][]string{
+	"00": {}, "01": {{"22"}, {"10"}, {"21"}}, "253": {}, "255": {}, "401": {}, "402": {},
+	"414": {{"254", "7040"}}, "417": {{"7040"}}, "8003": {}, "8004": {},
+	"8006": {{"22"}, {"10"}, {"21"}}, "8010": {{"8011"}}, "8013": {},
+	"8017": {{"8019"}}, "8018": {{"8019"}},
+}
+
+// DigitalLink returns the GS1 Digital Link of the GS1 data at the domain, the
+// web address an ordinary QR code carries: the domain, the primary key of the
+// data and its qualifiers in the path, in the order of the standard, and the
+// other fields in the query, in their order. A value is percent-encoded where
+// a web address needs it. It panics if the domain does not start with https://
+// or http://, if the data is not GS1, see Parse, or if it has no primary key or
+// two, or two qualifiers that are alternatives.
+func DigitalLink(domain, str string) string {
+	rest := strings.TrimPrefix(strings.TrimPrefix(domain, "https://"), "http://")
+	if rest == domain || rest == "" || rest == "/" {
+		panic("The domain of a GS1 Digital Link starts with https:// or http://, such as https://id.gs1.org!")
+	}
+	fields := Parse(str)
+	key := -1
+	for i, field := range fields {
+		if _, ok := digitalLinkKeys[field.AI]; ok {
+			if key >= 0 {
+				panic("A GS1 Digital Link has one primary key, not (" + fields[key].AI + ") and (" + field.AI + ")!")
+			}
+			key = i
+		}
+	}
+	if key < 0 {
+		panic("A GS1 Digital Link needs a primary key, such as a GTIN (01), an SSCC (00) or a GLN (414)!")
+	}
+
+	var sb strings.Builder
+	sb.WriteString(strings.TrimSuffix(domain, "/"))
+	sb.WriteString("/" + fields[key].AI + "/" + percentEncode(fields[key].Data))
+	used := map[int]bool{key: true}
+	for _, place := range digitalLinkKeys[fields[key].AI] {
+		found := -1
+		for i, field := range fields {
+			for _, qualifier := range place {
+				if field.AI != qualifier {
+					continue
+				}
+				if found >= 0 {
+					panic("The qualifiers (" + fields[found].AI + ") and (" + field.AI + ") of (" +
+						fields[key].AI + ") cannot be together!")
+				}
+				found = i
+			}
+		}
+		if found >= 0 {
+			sb.WriteString("/" + fields[found].AI + "/" + percentEncode(fields[found].Data))
+			used[found] = true
+		}
+	}
+	separator := "?"
+	for i, field := range fields {
+		if !used[i] {
+			sb.WriteString(separator + field.AI + "=" + percentEncode(field.Data))
+			separator = "&"
+		}
+	}
+	return sb.String()
+}
+
+// percentEncode returns the value with each character but the unreserved ones
+// of a web address, the letters, the digits and "-._~", as % and its two
+// hexadecimal digits.
+func percentEncode(value string) string {
+	const hex = "0123456789ABCDEF"
+	var sb strings.Builder
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || strings.IndexByte("-._~", c) >= 0 {
+			sb.WriteByte(c)
+		} else {
+			sb.WriteByte('%')
+			sb.WriteByte(hex[c>>4])
+			sb.WriteByte(hex[c&15])
+		}
+	}
+	return sb.String()
+}

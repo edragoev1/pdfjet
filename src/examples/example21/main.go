@@ -94,6 +94,28 @@ func Example21() {
 		text.DrawOn(page)
 	}
 
+	// GS1 data as a GS1 Digital Link, a web address an ordinary QR code carries.
+	page2 := pdfjet.NewPage(pdf, letter.Portrait())
+	text = pdfjet.NewTextLine(f2, "GS1 Digital Link")
+	text.SetStructureType(structelem.H2)
+	text.SetFontSize(18.0)
+	text.SetLocation(70.0, 80.0)
+	text.DrawOn(page2)
+
+	link := pdfjet.GS1DigitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231")
+	note := pdfjet.NewTextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "+
+		"is this web address as a GS1 Digital Link, "+link+", which an ordinary QR code carries and any phone opens.")
+	note.SetFontSize(12.0)
+	note.SetLineSpacing(1.5)
+	note.SetLocation(70.0, 95.0)
+	note.SetWidth(470.0)
+	corner := note.DrawOn(page2)
+
+	code := qrcode.NewQRCode(link, errorcorrectionlevel.M)
+	code.SetModuleLength(4.0)
+	code.SetLocation(70.0, corner[1]+30.0)
+	code.DrawOn(page2)
+
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

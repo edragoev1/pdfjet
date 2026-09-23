@@ -85,6 +85,28 @@ public class Example_21 {
             text.DrawOn(page);
         }
 
+        // GS1 data as a GS1 Digital Link, a web address an ordinary QR code carries.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        text = new TextLine(f2, "GS1 Digital Link");
+        text.SetStructureType(StructElem.H2);
+        text.SetFontSize(18f);
+        text.SetLocation(70f, 80f);
+        text.DrawOn(page2);
+
+        String link = GS1.DigitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231");
+        TextBlock note = new TextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "
+                + "is this web address as a GS1 Digital Link, " + link + ", which an ordinary QR code carries and any phone opens.");
+        note.SetFontSize(12f);
+        note.SetLineSpacing(1.5f);
+        note.SetLocation(70f, 95f);
+        note.SetWidth(470f);
+        float[] corner = note.DrawOn(page2);
+
+        QRCode code = new QRCode(link, ErrorCorrectionLevel.M);
+        code.SetModuleLength(4f);
+        code.SetLocation(70f, corner[1] + 30f);
+        code.DrawOn(page2);
+
         pdf.Complete();
     }
 

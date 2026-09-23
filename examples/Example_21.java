@@ -87,6 +87,28 @@ public class Example_21 {
             text.drawOn(page);
         }
 
+        // GS1 data as a GS1 Digital Link, a web address an ordinary QR code carries.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        text = new TextLine(f2, "GS1 Digital Link");
+        text.setStructureType(StructElem.H2);
+        text.setFontSize(18f);
+        text.setLocation(70f, 80f);
+        text.drawOn(page2);
+
+        String link = GS1.digitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231");
+        TextBlock note = new TextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "
+                + "is this web address as a GS1 Digital Link, " + link + ", which an ordinary QR code carries and any phone opens.");
+        note.setFontSize(12f);
+        note.setLineSpacing(1.5f);
+        note.setLocation(70f, 95f);
+        note.setWidth(470f);
+        float[] corner = note.drawOn(page2);
+
+        QRCode code = new QRCode(link, ErrorCorrectionLevel.M);
+        code.setModuleLength(4f);
+        code.setLocation(70f, corner[1] + 30f);
+        code.drawOn(page2);
+
         pdf.complete();
     }
 

@@ -6,12 +6,15 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace PDFjet.NET {
-// Reads GS1 data as people write it, each Application Identifier in
-// parentheses and its data after it, for the barcodes that carry it: GS1
-// DataMatrix and GS1-128.
-internal static class GS1 {
+/// <summary>
+/// Reads GS1 data as people write it, each Application Identifier in
+/// parentheses and its data after it, for the barcodes that carry it: GS1
+/// DataMatrix and GS1-128, and makes its GS1 Digital Link.
+/// </summary>
+public static class GS1 {
     // An Application Identifier and its data, and whether a separator follows
     // it in a barcode: after a field of no set length that another follows.
     internal sealed class Field {
@@ -119,6 +122,114 @@ internal static class GS1 {
             sum += digit;
         }
         return number[number.Length - 1] - '0' == (10 - sum % 10) % 10;
+    }
+
+    // The primary keys of GS1 Digital Link and their qualifiers, in the order
+    // the path has them: each array is a place in the path, and the
+    // qualifiers in it are alternatives.
+    private static readonly Dictionary<String, String[][]> DIGITAL_LINK_KEYS = new Dictionary<String, String[][]> {
+        {"00", new String[][] {}}, {"253", new String[][] {}}, {"255", new String[][] {}},
+        {"401", new String[][] {}}, {"402", new String[][] {}}, {"8003", new String[][] {}},
+        {"8004", new String[][] {}}, {"8013", new String[][] {}},
+        {"01", new String[][] {new String[] {"22"}, new String[] {"10"}, new String[] {"21"}}},
+        {"8006", new String[][] {new String[] {"22"}, new String[] {"10"}, new String[] {"21"}}},
+        {"414", new String[][] {new String[] {"254", "7040"}}},
+        {"417", new String[][] {new String[] {"7040"}}},
+        {"8010", new String[][] {new String[] {"8011"}}},
+        {"8017", new String[][] {new String[] {"8019"}}},
+        {"8018", new String[][] {new String[] {"8019"}}},
+    };
+
+    /// <summary>
+    /// Returns the GS1 Digital Link of the GS1 data, the web address an
+    /// ordinary QR code carries, at the domain: a brand's own, or GS1's
+    /// resolver, https://id.gs1.org. DigitalLink("https://id.gs1.org",
+    /// "(01)09506000134352(10)ABC123(17)261231") is
+    /// "https://id.gs1.org/01/09506000134352/10/ABC123?17=261231". The primary
+    /// key, such as a GTIN (01), an SSCC (00) or a GLN (414), is first in the
+    /// path, then its qualifiers in the order of the standard, such as (22),
+    /// the batch (10) and the serial (21) of a GTIN, and the other fields are in
+    /// the query, in their order. A value is percent-encoded where a web
+    /// address needs it. Throws an ArgumentException if the domain does not
+    /// start with https:// or http://; if the data is not GS1, as for
+    /// DataMatrix.FromGS1; or if it has no primary key or two, or both (254)
+    /// and (7040) of a GLN.
+    /// </summary>
+    public static String DigitalLink(String domain, String data) {
+        String rest = domain;
+        if (rest.StartsWith("https://", StringComparison.Ordinal)) {
+            rest = rest.Substring(8);
+        } else if (rest.StartsWith("http://", StringComparison.Ordinal)) {
+            rest = rest.Substring(7);
+        }
+        if (rest == domain || rest.Length == 0 || rest == "/") {
+            throw new ArgumentException(
+                    "The domain of a GS1 Digital Link starts with https:// or http://, such as https://id.gs1.org!");
+        }
+        List<Field> fields = Parse(data);
+        int key = -1;
+        for (int i = 0; i < fields.Count; i++) {
+            if (DIGITAL_LINK_KEYS.ContainsKey(fields[i].ai)) {
+                if (key >= 0) {
+                    throw new ArgumentException("A GS1 Digital Link has one primary key, not (" +
+                            fields[key].ai + ") and (" + fields[i].ai + ")!");
+                }
+                key = i;
+            }
+        }
+        if (key < 0) {
+            throw new ArgumentException(
+                    "A GS1 Digital Link needs a primary key, such as a GTIN (01), an SSCC (00) or a GLN (414)!");
+        }
+
+        StringBuilder sb = new StringBuilder(domain.EndsWith("/", StringComparison.Ordinal) ?
+                domain.Substring(0, domain.Length - 1) : domain);
+        sb.Append('/').Append(fields[key].ai).Append('/').Append(PercentEncode(fields[key].data));
+        bool[] used = new bool[fields.Count];
+        used[key] = true;
+        foreach (String[] place in DIGITAL_LINK_KEYS[fields[key].ai]) {
+            int found = -1;
+            for (int i = 0; i < fields.Count; i++) {
+                foreach (String qualifier in place) {
+                    if (fields[i].ai != qualifier) {
+                        continue;
+                    }
+                    if (found >= 0) {
+                        throw new ArgumentException("The qualifiers (" + fields[found].ai + ") and (" +
+                                fields[i].ai + ") of (" + fields[key].ai + ") cannot be together!");
+                    }
+                    found = i;
+                }
+            }
+            if (found >= 0) {
+                sb.Append('/').Append(fields[found].ai).Append('/').Append(PercentEncode(fields[found].data));
+                used[found] = true;
+            }
+        }
+        char separator = '?';
+        for (int i = 0; i < fields.Count; i++) {
+            if (!used[i]) {
+                sb.Append(separator).Append(fields[i].ai).Append('=').Append(PercentEncode(fields[i].data));
+                separator = '&';
+            }
+        }
+        return sb.ToString();
+    }
+
+    // Returns the value with each character but the unreserved ones of a web
+    // address, the letters, the digits and "-._~", as % and its two
+    // hexadecimal digits.
+    private static String PercentEncode(String value) {
+        const String hex = "0123456789ABCDEF";
+        StringBuilder sb = new StringBuilder();
+        foreach (char c in value) {
+            if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || "-._~".IndexOf(c) >= 0) {
+                sb.Append(c);
+            } else {
+                sb.Append('%').Append(hex[c >> 4]).Append(hex[c & 15]);
+            }
+        }
+        return sb.ToString();
     }
 }
 }
