@@ -7,8 +7,10 @@ package pdfjet
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 )
 
@@ -80,5 +82,35 @@ func TestBarcodeUpcAndEanNeedTheirNumberOfDigits(t *testing.T) {
 	}
 	if message, _ := testPanic(func() { NewBarcode(EAN_13, "0123456789012") }); message != "EAN-13 barcodes must have exactly 12 digits!" {
 		t.Errorf("EAN-13: %q", message)
+	}
+}
+
+func TestBarcodeCode128RefusesATextItCannotHold(t *testing.T) {
+	const tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
+	for text, want := range map[string]string{
+		strings.Repeat("7", 49): tooLong,
+		strings.Repeat("é", 25): tooLong, // Two codewords each
+		"A€":                    "Code 128 barcodes can only hold characters up to U+00FF!",
+	} {
+		if message, _ := testPanic(func() { NewBarcode(CODE_128, text) }); message != want {
+			t.Errorf("%q: %q", text, message)
+		}
+	}
+	// The most a barcode holds is drawn whole: 48 codewords, and the start,
+	// the check digit and the stop, of 11 modules each but the stop of 13
+	for _, text := range []string{strings.Repeat("7", 48), strings.Repeat("é", 24)} {
+		if width := NewBarcode(CODE_128, text).DrawOn(nil)[0]; width != (11*50+13)*0.75 {
+			t.Errorf("%q is %v wide", text, width)
+		}
+	}
+}
+
+func TestBarcodeIsBlackWhateverPenColorThePageHas(t *testing.T) {
+	page := testNewPage()
+	page.SetPenColor(color.Blue)
+	NewBarcode(CODE_128, "AB").DrawOn(page)
+	content := string(page.buf)
+	if !strings.Contains(content, "q\n0 0 0 RG\n") || !strings.HasSuffix(content, "Q\n") {
+		t.Errorf("the barcode is not drawn in black in a state of its own:\n%s", content)
 	}
 }

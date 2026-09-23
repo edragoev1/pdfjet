@@ -307,6 +307,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A Code 128 barcode whose text takes more than 48 codewords is refused, in
+  all four ports, rather than drawn with the codewords after the 48th left
+  out, so that it held another value than its text: 60 sevens were drawn
+  exactly as 48. The constructor throws, or panics in Go, as it does for the
+  digits of UPC-A and EAN-13; a character below 32, or from 128 to 255, takes
+  two codewords.
+- A Code 128 barcode with a character above U+00FF, which its code set B
+  cannot hold, is refused by the constructor, in all four ports. Drawing one
+  indexed the table of Code 128 with codeword 256: an
+  `ArrayIndexOutOfBoundsException` in Java, an `IndexOutOfRangeException`
+  in C#, an index out of range panic in Go and a crash in Swift.
+- The bars of a barcode are black, in all four ports, whatever pen color the
+  page was left with. `Barcode` set the width of each bar but not its color,
+  so after `Page.setPenColor`, which a shape drawn with the methods of `Page`
+  leaves set, the bars came out in that color; it now draws in a graphics
+  state of its own.
 - A paragraph of many text lines joined with `Paragraph.addJoined` is drawn
   in time linear in its length, in all four ports. `TextFrame` measured the
   words joined to a word over and over, which took 9 seconds for 64,000

@@ -64,6 +64,8 @@ public class Barcode : IDrawable {
             throw new Exception("UPC-A barcodes must have exactly 11 digits!");
         } else if (barcodeType == Barcode.EAN_13 && (text.Length != 12 || !HasOnlyDigits(text))) {
             throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
+        } else if (barcodeType == Barcode.CODE_128) {
+            Code128Codewords(text);     // Throws for a text that a barcode cannot hold
         }
 
         for (int i = 0; i < 10; i++) {
@@ -191,16 +193,27 @@ public class Barcode : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        if (barcodeType == Barcode.EAN_13) {
-            return DrawCodeEAN13(page, x1, y1);
-        } else if (barcodeType == Barcode.UPC_A) {
-            return DrawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_128) {
-            return DrawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_39) {
-            return DrawCode39(page, x1, y1);
-        } else {
-            throw new Exception("Unsupported Barcode Type.");
+        if (page != null) {
+            // The bars are black whatever pen color the page was left with
+            page.SaveGraphicsState();
+            page.SetPenColor(Color.black);
+        }
+        try {
+            if (barcodeType == Barcode.EAN_13) {
+                return DrawCodeEAN13(page, x1, y1);
+            } else if (barcodeType == Barcode.UPC_A) {
+                return DrawCodeUPC(page, x1, y1);
+            } else if (barcodeType == Barcode.CODE_128) {
+                return DrawCode128(page, x1, y1);
+            } else if (barcodeType == Barcode.CODE_39) {
+                return DrawCode39(page, x1, y1);
+            } else {
+                throw new Exception("Unsupported Barcode Type.");
+            }
+        } finally {
+            if (page != null) {
+                page.RestoreGraphicsState();
+            }
         }
     }
 
@@ -357,21 +370,14 @@ public class Barcode : IDrawable {
         return new float[] {x + font.StringWidth(str), y + font.GetDescent(font.GetSize())};
     }
 
-    private float[] DrawCode128(Page page, float x1, float y1) {
-        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
-
+    // Returns the codewords of the text in code set B: one for a character from
+    // 32 to 127, and two, SHIFT or FNC 4 and the character, for one below 32 or
+    // from 128 to 255. It throws for a character above 255, which code set B
+    // cannot hold, and for a text of more than 48 codewords, the most a barcode
+    // holds, rather than draw a barcode of another text.
+    private static List<Int32> Code128Codewords(String text) {
         List<Int32> list = new List<Int32>();
         foreach (char symchar in text) {
-            // Some characters need two codewords (SHIFT/FNC_4 + value), so
-            // checking list.Count == 48 only *after* adding them could skip
-            // right over 48 (e.g. 47 -> 49) and never trip again, silently
-            // encoding an unbounded number of characters past the documented
-            // limit. Check before adding instead, so the cap always holds.
-            int codewordsNeeded = (symchar < 32 || (symchar >= 128 && symchar < 256)) ? 2 : 1;
-            if (list.Count + codewordsNeeded > 48) {
-                // Maximum number of data characters is 48
-                break;
-            }
             if (symchar < 32) {
                 list.Add(GS1_128.SHIFT);
                 list.Add(symchar + 64);
@@ -381,9 +387,20 @@ public class Barcode : IDrawable {
                 list.Add(GS1_128.FNC_4);
                 list.Add(symchar - 160);    // 128 + 32
             } else {
-                list.Add(256);              // This will generate an exception.
+                throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
             }
         }
+        if (list.Count > 48) {
+            throw new Exception(
+                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
+        }
+        return list;
+    }
+
+    private float[] DrawCode128(Page page, float x1, float y1) {
+        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+
+        List<Int32> list = Code128Codewords(text);
 
         StringBuilder buf = new StringBuilder();
         int checkDigit = GS1_128.START_B;

@@ -8,7 +8,9 @@ package com.pdfjet.barcodes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.pdfjet.Color;
 import com.pdfjet.Direction;
 import com.pdfjet.Font;
 import com.pdfjet.Letter;
@@ -81,5 +83,36 @@ class BarcodeTest {
         assertEquals("UPC-A barcodes must have exactly 11 digits!", upc.getMessage());
         Exception ean = assertThrows(Exception.class, () -> new Barcode(Barcode.EAN_13, "0123456789012"));
         assertEquals("EAN-13 barcodes must have exactly 12 digits!", ean.getMessage());
+    }
+
+    @Test
+    void code128RefusesATextItCannotHold() throws Exception {
+        String tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
+        assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("7", 49))).getMessage());
+        assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("\u00e9", 25))).getMessage());
+        assertEquals("Code 128 barcodes can only hold characters up to U+00FF!",
+                assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, "A\u20ac")).getMessage());
+        // The most a barcode holds is drawn whole: 48 codewords, and the start,
+        // the check digit and the stop, of 11 modules each but the stop of 13
+        for (String text : new String[] {repeat("7", 48), repeat("\u00e9", 24)}) {
+            assertEquals((11 * 50 + 13) * 0.75f, new Barcode(Barcode.CODE_128, text).drawOn(null)[0], 0f, text);
+        }
+    }
+
+    @Test
+    void isBlackWhateverPenColorThePageHas() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.setPenColor(Color.blue);
+        new Barcode(Barcode.CODE_128, "AB").drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("q\n0 0 0 RG\n") && content.endsWith("Q\n"), content);
+    }
+
+    private static String repeat(String s, int n) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            sb.append(s);
+        }
+        return sb.toString();
     }
 }

@@ -60,6 +60,8 @@ public class Barcode : Drawable {
             throw PDFjetError(message: "UPC-A barcodes must have exactly 11 digits!")
         } else if barcodeType == Barcode.EAN_13 && (text.count != 12 || !Barcode.hasOnlyDigits(text)) {
             throw PDFjetError(message: "EAN-13 barcodes must have exactly 12 digits!")
+        } else if barcodeType == Barcode.CODE_128, let error = Barcode.code128Codewords(text).error {
+            throw PDFjetError(message: error)
         } else if barcodeType != Barcode.UPC_A && barcodeType != Barcode.EAN_13 &&
                 barcodeType != Barcode.CODE_128 && barcodeType != Barcode.CODE_39 {
             throw PDFjetError(message: "Unsupported Barcode Type.")
@@ -230,6 +232,14 @@ public class Barcode : Drawable {
 
     @discardableResult
     func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+        if let page = page {
+            // The bars are black whatever pen color the page was left with
+            page.saveGraphicsState()
+            page.setPenColor(Color.black)
+        }
+        defer {
+            page?.restoreGraphicsState()
+        }
         // init accepted one of these four types.
         if barcodeType == Barcode.EAN_13 {
             return drawCodeEAN13(page, x1, y1)
@@ -446,21 +456,14 @@ public class Barcode : Drawable {
         return [x + font!.stringWidth(font!.getSize(), str), y + font!.getDescent(font!.getSize())]
     }
 
-    private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
-        let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
-
+    /// Returns the codewords of the text in code set B: one for a character
+    /// from 32 to 127, and two, SHIFT or FNC 4 and the character, for one below
+    /// 32 or from 128 to 255. It returns an error for a character above 255,
+    /// which code set B cannot hold, and for a text of more than 48 codewords,
+    /// the most a barcode holds, rather than draw a barcode of another text.
+    static func code128Codewords(_ text: String) -> (codewords: [UInt16], error: String?) {
         var list = [UInt16]()
         for symchar in text.unicodeScalars {
-            // Some characters need two codewords (SHIFT/FNC_4 + value), so
-            // checking list.count == 48 only *after* adding them could skip
-            // right over 48 (e.g. 47 -> 49) and never trip again, silently
-            // encoding an unbounded number of characters past the documented
-            // limit. Check before adding instead, so the cap always holds.
-            let codewordsNeeded = (symchar.value < 32 || (symchar.value >= 128 && symchar.value < 256)) ? 2 : 1
-            if list.count + codewordsNeeded > 48 {
-                // Maximum number of data characters is 48
-                break
-            }
             if symchar.value < 32 {
                 list.append(UInt16(GS1_128.SHIFT))
                 list.append(UInt16(symchar.value + 64))
@@ -470,9 +473,19 @@ public class Barcode : Drawable {
                 list.append(UInt16(GS1_128.FNC_4))
                 list.append(UInt16(symchar.value - 160))    // 128 + 32
             } else {
-                list.append(UInt16(256))                    // This will generate an exception.
+                return ([], "Code 128 barcodes can only hold characters up to U+00FF!")
             }
         }
+        if list.count > 48 {
+            return ([], "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
+        }
+        return (list, nil)
+    }
+
+    private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+        let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
+
+        let list = Barcode.code128Codewords(text).codewords     // init refused a text with an error
 
         var buf = String()
         var checkDigit = GS1_128.START_B

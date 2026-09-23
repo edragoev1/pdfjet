@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/internal/code128"
 )
@@ -55,6 +56,8 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 		panic("UPC-A barcodes must have exactly 11 digits!")
 	} else if barcodeType == EAN_13 && (len(text) != 12 || !hasOnlyDigits(text)) {
 		panic("EAN-13 barcodes must have exactly 12 digits!")
+	} else if barcodeType == CODE_128 {
+		code128Codewords(text) // Panics on a text that a barcode cannot hold
 	}
 
 	barcode.lCode = []string{
@@ -175,6 +178,12 @@ func hasOnlyDigits(text string) bool {
 
 // DrawOn draws this barcode on the specified page.
 func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
+	if page != nil {
+		// The bars are black whatever pen color the page was left with
+		page.SaveGraphicsState()
+		page.SetPenColor(color.Black)
+		defer page.RestoreGraphicsState()
+	}
 	var xy [2]float32
 	switch barcode.barcodeType {
 	case EAN_13:
@@ -351,36 +360,34 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 	return [2]float32{x + barcode.font.StringWidth(barcode.font.size, text), y + barcode.font.GetDescent(barcode.font.size)}
 }
 
-func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
-	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
-
+// code128Codewords returns the codewords of the text in code set B: one for a
+// character from 32 to 127, and two, SHIFT or FNC 4 and the character, for one
+// below 32 or from 128 to 255. It panics on a character above 255, which code
+// set B cannot hold, and on a text of more than 48 codewords, the most a
+// barcode holds, rather than draw a barcode of another text.
+func code128Codewords(text string) []rune {
 	list := make([]rune, 0)
-	for _, symchar := range barcode.text {
-		// Some characters need two codewords (SHIFT/FNC_4 + value), so
-		// checking len(list) == 48 only *after* adding them could skip
-		// right over 48 (e.g. 47 -> 49) and never trip again, silently
-		// encoding an unbounded number of characters past the documented
-		// limit. Check before adding instead, so the cap always holds.
-		codewordsNeeded := 1
-		if symchar < 32 || (symchar >= 128 && symchar < 256) {
-			codewordsNeeded = 2
-		}
-		if len(list)+codewordsNeeded > 48 {
-			// Maximum number of data characters is 48
-			break
-		}
+	for _, symchar := range text {
 		if symchar < 32 {
-			list = append(list, rune(code128.Shift))
-			list = append(list, symchar+64)
+			list = append(list, rune(code128.Shift), symchar+64)
 		} else if symchar < 128 {
 			list = append(list, symchar-32)
 		} else if symchar < 256 {
-			list = append(list, rune(code128.FNC4))
-			list = append(list, symchar-160) // 128 + 32
+			list = append(list, rune(code128.FNC4), symchar-160) // 128 + 32
 		} else {
-			list = append(list, rune(256)) // This will generate an exception.
+			panic("Code 128 barcodes can only hold characters up to U+00FF!")
 		}
 	}
+	if len(list) > 48 {
+		panic("Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
+	}
+	return list
+}
+
+func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
+	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+
+	list := code128Codewords(barcode.text)
 
 	var buf strings.Builder
 	checkDigit := rune(code128.StartB)

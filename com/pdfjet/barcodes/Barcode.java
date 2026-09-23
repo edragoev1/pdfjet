@@ -58,6 +58,8 @@ public class Barcode implements Drawable {
             throw new Exception("UPC-A barcodes must have exactly 11 digits!");
         } else if (barcodeType == Barcode.EAN_13 && (text.length() != 12 || !hasOnlyDigits(text))) {
             throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
+        } else if (barcodeType == Barcode.CODE_128) {
+            code128Codewords(text);     // Throws for a text that a barcode cannot hold
         }
 
         StringBuilder sb = new StringBuilder();
@@ -190,16 +192,27 @@ public class Barcode implements Drawable {
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
-        if (barcodeType == Barcode.EAN_13) {
-            return drawCodeEAN13(page, x1, y1);
-        } else if (barcodeType == Barcode.UPC_A) {
-            return drawCodeUPC(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_128) {
-            return drawCode128(page, x1, y1);
-        } else if (barcodeType == Barcode.CODE_39) {
-            return drawCode39(page, x1, y1);
-        } else {
-            throw new Exception("Unsupported Barcode Type.");
+        if (page != null) {
+            // The bars are black whatever pen color the page was left with
+            page.saveGraphicsState();
+            page.setPenColor(Color.black);
+        }
+        try {
+            if (barcodeType == Barcode.EAN_13) {
+                return drawCodeEAN13(page, x1, y1);
+            } else if (barcodeType == Barcode.UPC_A) {
+                return drawCodeUPC(page, x1, y1);
+            } else if (barcodeType == Barcode.CODE_128) {
+                return drawCode128(page, x1, y1);
+            } else if (barcodeType == Barcode.CODE_39) {
+                return drawCode39(page, x1, y1);
+            } else {
+                throw new Exception("Unsupported Barcode Type.");
+            }
+        } finally {
+            if (page != null) {
+                page.restoreGraphicsState();
+            }
         }
     }
 
@@ -356,22 +369,15 @@ public class Barcode implements Drawable {
         return new float[] {x + font.stringWidth(str), y + font.getDescent()};
     }
 
-    private float[] drawCode128(Page page, float x1, float y1) throws Exception {
-        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
-
+    // Returns the codewords of the text in code set B: one for a character from
+    // 32 to 127, and two, SHIFT or FNC 4 and the character, for one below 32 or
+    // from 128 to 255. It throws for a character above 255, which code set B
+    // cannot hold, and for a text of more than 48 codewords, the most a barcode
+    // holds, rather than draw a barcode of another text.
+    private static List<Integer> code128Codewords(String text) throws Exception {
         List<Integer> list = new ArrayList<Integer>();
         for (int i = 0; i < text.length(); i++) {
             char symchar = text.charAt(i);
-            // Some characters need two codewords (SHIFT/FNC_4 + value), so
-            // checking list.size() == 48 only *after* adding them could skip
-            // right over 48 (e.g. 47 -> 49) and never trip again, silently
-            // encoding an unbounded number of characters past the documented
-            // limit. Check before adding instead, so the cap always holds.
-            int codewordsNeeded = (symchar < 32 || (symchar >= 128 && symchar < 256)) ? 2 : 1;
-            if (list.size() + codewordsNeeded > 48) {
-                // Maximum number of data characters is 48
-                break;
-            }
             if (symchar < 32) {
                 list.add(GS1_128.SHIFT);
                 list.add(symchar + 64);
@@ -381,9 +387,20 @@ public class Barcode implements Drawable {
                 list.add(GS1_128.FNC_4);
                 list.add(symchar - 160);    // 128 + 32
             } else {
-                list.add(256);              // This will generate an exception.
+                throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
             }
         }
+        if (list.size() > 48) {
+            throw new Exception(
+                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
+        }
+        return list;
+    }
+
+    private float[] drawCode128(Page page, float x1, float y1) throws Exception {
+        float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+
+        List<Integer> list = code128Codewords(text);
 
         StringBuilder buf = new StringBuilder();
         int checkDigit = GS1_128.START_B;

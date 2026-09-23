@@ -73,5 +73,28 @@ public class BarcodeTest {
         Exception ean = Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.EAN_13, "0123456789012"));
         Assert.Equal("EAN-13 barcodes must have exactly 12 digits!", ean.Message);
     }
+
+    [Fact]
+    public void Code128RefusesATextItCannotHold() {
+        string tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
+        Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('7', 49))).Message);
+        Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('\u00e9', 25))).Message);
+        Assert.Equal("Code 128 barcodes can only hold characters up to U+00FF!",
+                Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, "A\u20ac")).Message);
+        // The most a barcode holds is drawn whole: 48 codewords, and the start,
+        // the check digit and the stop, of 11 modules each but the stop of 13
+        foreach (string text in new string[] {new string('7', 48), new string('\u00e9', 24)}) {
+            Assert.Equal((11 * 50 + 13) * 0.75f, new Barcode(Barcode.CODE_128, text).DrawOn(null)[0]);
+        }
+    }
+
+    [Fact]
+    public void IsBlackWhateverPenColorThePageHas() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.SetPenColor(Color.blue);
+        new Barcode(Barcode.CODE_128, "AB").DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.True(content.Contains("q\n0 0 0 RG\n") && content.EndsWith("Q\n"), content);
+    }
 }
 }

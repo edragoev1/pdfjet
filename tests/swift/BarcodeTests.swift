@@ -67,4 +67,27 @@ import Testing
         let ean = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.EAN_13, "0123456789012") }
         #expect(ean?.message == "EAN-13 barcodes must have exactly 12 digits!")
     }
+
+    @Test func code128RefusesATextItCannotHold() throws {
+        let tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
+        for (text, message) in [(String(repeating: "7", count: 49), tooLong),
+                                (String(repeating: "\u{e9}", count: 25), tooLong),
+                                ("A\u{20ac}", "Code 128 barcodes can only hold characters up to U+00FF!")] {
+            let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.CODE_128, text) }
+            #expect(error?.message == message)
+        }
+        // The most a barcode holds is drawn whole: 48 codewords, and the start,
+        // the check digit and the stop, of 11 modules each but the stop of 13
+        for text in [String(repeating: "7", count: 48), String(repeating: "\u{e9}", count: 24)] {
+            #expect(try Barcode(Barcode.CODE_128, text).drawOn(nil)[0] == Float(11 * 50 + 13) * 0.75)
+        }
+    }
+
+    @Test func isBlackWhateverPenColorThePageHas() throws {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.setPenColor(Color.blue)
+        try Barcode(Barcode.CODE_128, "AB").drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("q\n0 0 0 RG\n") && content.hasSuffix("Q\n"))
+    }
 }
