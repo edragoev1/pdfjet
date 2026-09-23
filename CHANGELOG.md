@@ -423,6 +423,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- Greek text in a font that draws the micro sign with the glyph of mu, such
+  as Source Serif 4, was copied, searched and read aloud with the micro sign
+  µ in place of each μ, in all four ports: the ToUnicode map of a glyph two
+  characters share gives the one of them text seldom has only when there is
+  no other, and the micro sign is one such now, and so are the ohm, kelvin
+  and angstrom signs, which fonts draw with omega, K and A with a ring. A
+  shared glyph is copied as the letter, which Unicode makes the signs. Found
+  by pdfjet-server, comparing PDFs of Latin, Greek and Cyrillic text.
 - A Code 128 barcode whose text takes more than 48 codewords is refused, in
   all four ports, rather than drawn with the codewords after the 48th left
   out, so that it held another value than its text: 60 sevens were drawn

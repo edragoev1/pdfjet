@@ -432,3 +432,27 @@ func TestFontTheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable(t *testing.
 	testWant(t, "0", italicAngleOf(-1))
 	testWant(t, "-90", italicAngleOf(-90*65536))
 }
+
+func TestFontAGlyphOfALetterAndASignOfItIsCopiedAsTheLetter(t *testing.T) {
+	// A font may draw the micro sign with the glyph of mu, as Source Serif 4
+	// does, and the ohm, kelvin and angstrom signs with those of omega, K and
+	// A with a ring: the glyph is copied as the letter, which Greek text needs,
+	// and which Unicode makes the signs. The space still wins over the
+	// no-break space, and the right single quotation mark over the modifier
+	// letter apostrophe.
+	unicodeToGID := make([]int, 0x10000)
+	for gid, chars := range map[int][]int{
+		1: {0x00B5, 0x03BC}, 2: {0x03A9, 0x2126}, 3: {0x004B, 0x212A}, 4: {0x00C5, 0x212B},
+		5: {0x0020, 0x00A0}, 6: {0x02BC, 0x2019},
+	} {
+		for _, c := range chars {
+			unicodeToGID[c] = gid
+		}
+	}
+	unicodeOf := unicodeOfGlyphs(unicodeToGID)
+	for gid, want := range map[int]int{1: 0x03BC, 2: 0x03A9, 3: 0x004B, 4: 0x00C5, 5: 0x0020, 6: 0x2019} {
+		if unicodeOf[gid] != want {
+			t.Errorf("glyph %d is copied as %U, not %U", gid, unicodeOf[gid], want)
+		}
+	}
+}

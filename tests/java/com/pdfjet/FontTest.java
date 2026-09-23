@@ -404,4 +404,29 @@ class FontTest {
         assertEquals("0", OpenTypeFont.italicAngleOf(-1));
         assertEquals("-90", OpenTypeFont.italicAngleOf(-90 * 65536));
     }
+
+    @Test
+    void aGlyphOfALetterAndASignOfItIsCopiedAsTheLetter() {
+        // A font may draw the micro sign with the glyph of mu, as Source Serif 4
+        // does, and the ohm, kelvin and angstrom signs with those of omega, K and
+        // A with a ring: the glyph is copied as the letter, which Greek text
+        // needs, and which Unicode makes the signs. The space still wins over
+        // the no-break space, and the right single quotation mark over the
+        // modifier letter apostrophe.
+        int[] unicodeToGID = new int[0x10000];
+        int[][] glyphs = {
+            {0x00B5, 0x03BC}, {0x03A9, 0x2126}, {0x004B, 0x212A}, {0x00C5, 0x212B},
+            {0x0020, 0x00A0}, {0x02BC, 0x2019},
+        };
+        for (int gid = 1; gid <= glyphs.length; gid++) {
+            for (int c : glyphs[gid - 1]) {
+                unicodeToGID[c] = gid;
+            }
+        }
+        int[] unicodeOf = FontStream1.unicodeOfGlyphs(unicodeToGID);
+        int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
+        for (int gid = 1; gid <= want.length; gid++) {
+            assertEquals(want[gid - 1], unicodeOf[gid], "glyph " + gid);
+        }
+    }
 }

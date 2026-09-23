@@ -359,4 +359,28 @@ import Testing
         #expect(OpenTypeFont.italicAngleOf(-1) == "0")
         #expect(OpenTypeFont.italicAngleOf(-90 * 65536) == "-90")
     }
+
+    @Test func aGlyphOfALetterAndASignOfItIsCopiedAsTheLetter() {
+        // A font may draw the micro sign with the glyph of mu, as Source Serif 4
+        // does, and the ohm, kelvin and angstrom signs with those of omega, K and
+        // A with a ring: the glyph is copied as the letter, which Greek text
+        // needs, and which Unicode makes the signs. The space still wins over
+        // the no-break space, and the right single quotation mark over the
+        // modifier letter apostrophe.
+        var unicodeToGID = [Int](repeating: 0, count: 0x10000)
+        let glyphs: [[Int]] = [
+            [0x00B5, 0x03BC], [0x03A9, 0x2126], [0x004B, 0x212A], [0x00C5, 0x212B],
+            [0x0020, 0x00A0], [0x02BC, 0x2019],
+        ]
+        for (i, chars) in glyphs.enumerated() {
+            for c in chars {
+                unicodeToGID[c] = i + 1
+            }
+        }
+        let unicodeOf = FontStream1.unicodeOfGlyphs(unicodeToGID)
+        let want = [0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019]
+        for (i, c) in want.enumerated() {
+            #expect(unicodeOf[i + 1] == c, "glyph \(i + 1)")
+        }
+    }
 }

@@ -411,5 +411,30 @@ public class FontTest {
         Assert.Equal("0", OpenTypeFont.ItalicAngleOf(-1));
         Assert.Equal("-90", OpenTypeFont.ItalicAngleOf(-90 * 65536));
     }
+
+    [Fact]
+    public void AGlyphOfALetterAndASignOfItIsCopiedAsTheLetter() {
+        // A font may draw the micro sign with the glyph of mu, as Source Serif 4
+        // does, and the ohm, kelvin and angstrom signs with those of omega, K and
+        // A with a ring: the glyph is copied as the letter, which Greek text
+        // needs, and which Unicode makes the signs. The space still wins over
+        // the no-break space, and the right single quotation mark over the
+        // modifier letter apostrophe.
+        int[] unicodeToGID = new int[0x10000];
+        int[][] glyphs = {
+            new[] {0x00B5, 0x03BC}, new[] {0x03A9, 0x2126}, new[] {0x004B, 0x212A}, new[] {0x00C5, 0x212B},
+            new[] {0x0020, 0x00A0}, new[] {0x02BC, 0x2019},
+        };
+        for (int gid = 1; gid <= glyphs.Length; gid++) {
+            foreach (int c in glyphs[gid - 1]) {
+                unicodeToGID[c] = gid;
+            }
+        }
+        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(unicodeToGID);
+        int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
+        for (int gid = 1; gid <= want.Length; gid++) {
+            Assert.Equal(want[gid - 1], unicodeOf[gid]);
+        }
+    }
 }
 }

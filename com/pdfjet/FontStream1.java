@@ -310,17 +310,22 @@ class FontStream1 {
         return unicode;
     }
 
-    // The soft hyphen, the spacing modifier letters, the combining marks, the
-    // figure dash, the deprecated angle brackets, the CJK and Kangxi radicals,
-    // which CJK fonts draw with the glyphs of the ideographs, and the private
-    // use characters.
+    // The soft hyphen, the micro sign, the spacing modifier letters, the
+    // combining marks, the figure dash, the ohm, kelvin and angstrom signs, the
+    // deprecated angle brackets, the CJK and Kangxi radicals, which CJK fonts
+    // draw with the glyphs of the ideographs, and the private use characters.
+    // The micro sign and the three signs are the letters Unicode makes them,
+    // mu, omega, K and A with a ring, which a font often draws them with: such
+    // a glyph is copied as the letter, as Greek text needs it.
     private static boolean isSeldomText(int ch) {
         return ch == 0x00AD ||
+                ch == 0x00B5 ||
                 (ch >= 0x02B0 && ch <= 0x036F) ||
                 (ch >= 0x1AB0 && ch <= 0x1AFF) ||
                 (ch >= 0x1DC0 && ch <= 0x1DFF) ||
                 ch == 0x2012 ||
                 (ch >= 0x20D0 && ch <= 0x20FF) ||
+                ch == 0x2126 || ch == 0x212A || ch == 0x212B ||
                 (ch >= 0x2329 && ch <= 0x232A) ||
                 (ch >= 0x2E80 && ch <= 0x2FDF) ||
                 (ch >= 0xE000 && ch <= 0xF8FF) ||
