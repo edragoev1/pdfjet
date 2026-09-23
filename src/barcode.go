@@ -367,38 +367,34 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 	return [2]float32{x + barcode.font.StringWidth(barcode.font.size, text), y + barcode.font.GetDescent(barcode.font.size)}
 }
 
-// code128Codewords returns the codewords of the text in code set B: one for a
-// character from 32 to 127, and two, SHIFT or FNC 4 and the character, for one
-// below 32 or from 128 to 255. It panics on a character above 255, which code
-// set B cannot hold, and on a text of more than 48 codewords, the most a
-// barcode holds, rather than draw a barcode of another text.
-func code128Codewords(text string) []rune {
-	list := make([]rune, 0)
+// code128Codewords returns the start and the codewords of the text: runs of
+// four digits or more in code set C, two digits to a codeword, and the rest in
+// code set B, where a character from 32 to 127 takes one codeword, and one
+// below 32 or from 128 to 255 two, SHIFT or FNC 4 and the character. It panics
+// on a character above 255, which the code sets cannot hold, and on a text of
+// more than 48 codewords, the most a barcode holds, rather than draw a barcode
+// of another text.
+func code128Codewords(text string) (rune, []rune) {
+	items := make([]int, 0)
 	for _, symchar := range text {
-		if symchar < 32 {
-			list = append(list, rune(code128.Shift), symchar+64)
-		} else if symchar < 128 {
-			list = append(list, symchar-32)
-		} else if symchar < 256 {
-			list = append(list, rune(code128.FNC4), symchar-160) // 128 + 32
-		} else {
+		if symchar > 255 {
 			panic("Code 128 barcodes can only hold characters up to U+00FF!")
 		}
+		items = append(items, int(symchar))
 	}
+	start, list := code128Encode(items)
 	if len(list) > 48 {
 		panic("Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
 	}
-	return list
+	return start, list
 }
 
 // gs1128Codewords returns the start and the codewords of the GS1 data written
 // as people read it: FNC1, then the fields, each followed by FNC1 when it is of
-// no set length and another follows. Runs of four digits or more are in code
-// set C, two digits to a codeword, and the rest in code set B. It panics if the
-// data is not GS1, see gs1.Parse, or is longer than the 48 characters a
-// GS1-128 barcode holds, not counting the separators.
+// no set length and another follows, encoded as code128Encode encodes them. It
+// panics if the data is not GS1, see gs1.Parse, or is longer than the 48
+// characters a GS1-128 barcode holds, not counting the separators.
 func gs1128Codewords(text string) (rune, []rune) {
-	const separator = -1
 	items := make([]int, 0)
 	characters := 0
 	for _, field := range gs1.Parse(text) {
@@ -409,12 +405,27 @@ func gs1128Codewords(text string) (rune, []rune) {
 		}
 		characters += len(field.AI) + len(field.Data)
 		if field.Separator {
-			items = append(items, separator)
+			items = append(items, code128Separator)
 		}
 	}
 	if characters > 48 {
 		panic("GS1-128 barcodes hold at most 48 characters, not counting the separators!")
 	}
+	start, list := code128Encode(items)
+	return start, append([]rune{rune(code128.FNC1)}, list...)
+}
+
+// code128Separator is the item of code128Encode that is FNC1.
+const code128Separator = -1
+
+// code128Encode returns the start and the codewords of the characters, up to
+// 255, and code128Separator for FNC1. It starts in code set C if the
+// characters start with four digits or more, or are two digits, and in code set
+// B if not. In code set C it takes the digits two to a codeword, and changes to
+// code set B at anything else; in code set B it changes to code set C at an
+// even run of four digits or more, and so takes the first digit of an odd run
+// in code set B.
+func code128Encode(items []int) (rune, []rune) {
 	// digits returns how many digits there are in a row from i
 	digits := func(i int) int {
 		n := 0
@@ -425,14 +436,14 @@ func gs1128Codewords(text string) (rune, []rune) {
 	}
 
 	start := rune(code128.StartB)
-	inC := digits(0) >= 4
+	inC := digits(0) >= 4 || (digits(0) == 2 && len(items) == 2)
 	if inC {
 		start = rune(code128.StartC)
 	}
-	list := []rune{rune(code128.FNC1)}
+	list := make([]rune, 0)
 	for i := 0; i < len(items); {
 		switch c := items[i]; {
-		case c == separator:
+		case c == code128Separator:
 			list = append(list, rune(code128.FNC1))
 			i++
 		case inC && digits(i) >= 2:
@@ -444,8 +455,14 @@ func gs1128Codewords(text string) (rune, []rune) {
 		case digits(i) >= 4 && digits(i)%2 == 0:
 			list = append(list, rune(code128.CodeC))
 			inC = true
-		default:
+		case c < 32:
+			list = append(list, rune(code128.Shift), rune(c+64))
+			i++
+		case c < 128:
 			list = append(list, rune(c-32))
+			i++
+		default:
+			list = append(list, rune(code128.FNC4), rune(c-160)) // 128 + 32
 			i++
 		}
 	}
@@ -455,12 +472,12 @@ func gs1128Codewords(text string) (rune, []rune) {
 func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 
-	start := rune(code128.StartB)
+	var start rune
 	var list []rune
 	if barcode.barcodeType == GS1_128 {
 		start, list = gs1128Codewords(barcode.text)
 	} else {
-		list = code128Codewords(barcode.text)
+		start, list = code128Codewords(barcode.text)
 	}
 
 	var buf strings.Builder

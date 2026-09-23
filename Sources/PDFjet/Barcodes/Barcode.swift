@@ -463,27 +463,23 @@ public class Barcode : Drawable {
         return [x + font!.stringWidth(font!.getSize(), str), y + font!.getDescent(font!.getSize())]
     }
 
-    /// Returns the codewords of the text in code set B: one for a character
-    /// from 32 to 127, and two, SHIFT or FNC 4 and the character, for one below
-    /// 32 or from 128 to 255. It returns an error for a character above 255,
-    /// which code set B cannot hold, and for a text of more than 48 codewords,
-    /// the most a barcode holds, rather than draw a barcode of another text.
+    /// Returns the start and the codewords of the text: runs of four digits
+    /// or more in code set C, two digits to a codeword, and the rest in code
+    /// set B, where a character from 32 to 127 takes one codeword, and one
+    /// below 32 or from 128 to 255 two, SHIFT or FNC 4 and the character. It
+    /// returns an error for a character above 255, which the code sets cannot
+    /// hold, and for a text of more than 48 codewords, the most a barcode
+    /// holds, rather than draw a barcode of another text.
     static func code128Codewords(_ text: String) -> (codewords: [UInt16], error: String?) {
-        var list = [UInt16]()
+        var items = [Int]()
         for symchar in text.unicodeScalars {
-            if symchar.value < 32 {
-                list.append(UInt16(Code128Table.SHIFT))
-                list.append(UInt16(symchar.value + 64))
-            } else if symchar.value < 128 {
-                list.append(UInt16(symchar.value - 32))
-            } else if symchar.value < 256 {
-                list.append(UInt16(Code128Table.FNC_4))
-                list.append(UInt16(symchar.value - 160))    // 128 + 32
-            } else {
+            if symchar.value > 255 {
                 return ([], "Code 128 barcodes can only hold characters up to U+00FF!")
             }
+            items.append(Int(symchar.value))
         }
-        if list.count > 48 {
+        let list = code128Encode(items)
+        if list.count - 1 > 48 {
             return ([], "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
         }
         return (list, nil)
@@ -491,12 +487,11 @@ public class Barcode : Drawable {
 
     /// Returns the start and the codewords of the GS1 data written as people
     /// read it: FNC1, then the fields, each followed by FNC1 when it is of no
-    /// set length and another follows. Runs of four digits or more are in code
-    /// set C, two digits to a codeword, and the rest in code set B. It returns
-    /// an error for data that is not GS1, see GS1.parse, or longer than the 48
-    /// characters a GS1-128 barcode holds, not counting the separators.
+    /// set length and another follows, encoded as code128Encode encodes them.
+    /// It returns an error for data that is not GS1, see GS1.parse, or longer
+    /// than the 48 characters a GS1-128 barcode holds, not counting the
+    /// separators.
     static func gs1128Codewords(_ text: String) -> (codewords: [UInt16], error: String?) {
-        let separator = -1
         var items = [Int]()
         var characters = 0
         let fields: [GS1.Field]
@@ -518,6 +513,22 @@ public class Barcode : Drawable {
         if characters > 48 {
             return ([], "GS1-128 barcodes hold at most 48 characters, not counting the separators!")
         }
+        var list = code128Encode(items)
+        list.insert(UInt16(Code128Table.FNC_1), at: 1)
+        return (list, nil)
+    }
+
+    // The item of code128Encode that is FNC1.
+    private static let separator = -1
+
+    /// Returns the start and the codewords of the characters, up to 255, and
+    /// separator for FNC1. It starts in code set C if the characters start
+    /// with four digits or more, or are two digits, and in code set B if not.
+    /// In code set C it takes the digits two to a codeword, and changes to code
+    /// set B at anything else; in code set B it changes to code set C at an
+    /// even run of four digits or more, and so takes the first digit of an odd
+    /// run in code set B.
+    private static func code128Encode(_ items: [Int]) -> [UInt16] {
         // How many digits there are in a row from i
         func digits(_ i: Int) -> Int {
             var n = 0
@@ -527,8 +538,8 @@ public class Barcode : Drawable {
             return n
         }
 
-        var inC = digits(0) >= 4
-        var list = [UInt16(inC ? Code128Table.START_C : Code128Table.START_B), UInt16(Code128Table.FNC_1)]
+        var inC = digits(0) >= 4 || (digits(0) == 2 && items.count == 2)
+        var list = [UInt16(inC ? Code128Table.START_C : Code128Table.START_B)]
         var i = 0
         while i < items.count {
             let c = items[i]
@@ -544,25 +555,30 @@ public class Barcode : Drawable {
             } else if digits(i) >= 4 && digits(i) % 2 == 0 {
                 list.append(UInt16(Code128Table.CODE_C))
                 inC = true
-            } else {
+            } else if c < 32 {
+                list.append(UInt16(Code128Table.SHIFT))
+                list.append(UInt16(c + 64))
+                i += 1
+            } else if c < 128 {
                 list.append(UInt16(c - 32))
+                i += 1
+            } else {
+                list.append(UInt16(Code128Table.FNC_4))
+                list.append(UInt16(c - 160))    // 128 + 32
                 i += 1
             }
         }
-        return (list, nil)
+        return list
     }
 
     private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
         // init refused a text with an error
-        var list = Barcode.code128Codewords(text).codewords
-        var start = Code128Table.START_B
-        if barcodeType == Barcode.GS1_128 {
-            let gs1 = Barcode.gs1128Codewords(text).codewords
-            start = Int(gs1[0])
-            list = Array(gs1[1...])
-        }
+        let codewords = (barcodeType == Barcode.GS1_128) ?
+                Barcode.gs1128Codewords(text).codewords : Barcode.code128Codewords(text).codewords
+        let start = Int(codewords[0])
+        let list = Array(codewords[1...])
 
         var buf = String()
         var checkDigit = start

@@ -88,14 +88,26 @@ class BarcodeTest {
     @Test
     void code128RefusesATextItCannotHold() throws Exception {
         String tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
-        assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("7", 49))).getMessage());
+        assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("A", 49))).getMessage());
         assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("\u00e9", 25))).getMessage());
+        assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("7", 98))).getMessage());
         assertEquals("Code 128 barcodes can only hold characters up to U+00FF!",
                 assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, "A\u20ac")).getMessage());
         // The most a barcode holds is drawn whole: 48 codewords, and the start,
         // the check digit and the stop, of 11 modules each but the stop of 13
-        for (String text : new String[] {repeat("7", 48), repeat("\u00e9", 24)}) {
+        for (String text : new String[] {repeat("A", 48), repeat("\u00e9", 24), repeat("7", 96)}) {
             assertEquals((11 * 50 + 13) * 0.75f, new Barcode(Barcode.CODE_128, text).drawOn(null)[0], 0f, text);
+        }
+    }
+
+    // ZXing reads the barcodes of these texts back as they are.
+    @Test
+    void code128TakesCodeSetCForRunsOfDigits() throws Exception {
+        String[] texts = {"0123456789", "42", "123", "12345", "A1234B", "A12345", "A12B", "12\t34\u00fc5678"};
+        int[] codewords = {5, 1, 3, 4, 6, 5, 4, 11};     // Of the data, from the Go port's test
+        for (int i = 0; i < texts.length; i++) {
+            float width = new Barcode(Barcode.CODE_128, texts[i]).drawOn(null)[0];
+            assertEquals((11 * (codewords[i] + 2) + 13) * 0.75f, width, 0f, texts[i]);
         }
     }
 

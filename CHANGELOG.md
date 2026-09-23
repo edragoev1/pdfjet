@@ -205,6 +205,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   a row span makes uneven on purpose.
 
 ### Changed
+- A Code 128 barcode puts runs of four digits or more in code set C, two
+  digits to a codeword, in all four ports, where it put every character in
+  code set B, as GS1-128 does: it starts in code set C when the text starts
+  with four digits or more, or is two digits, changes to code set C at an
+  even run of four digits or more and back to code set B after it. A barcode
+  of digits is narrower than before, `0123456789` 67.5 points rather
+  than 108.75 at the module length of 0.75, and the 48 codewords a barcode
+  holds are up to 96 digits; a barcode of text without such runs is drawn
+  as before. Characters below 32 and from 128 to 255 are in code set B as
+  before, after SHIFT and FNC 4. ZXing reads the barcodes back as their
+  texts.
 - The space between two text lines of a paragraph is the narrower of their
   two spaces, in `TextFrame` and `TextColumn`, in all four ports. It was
   always the space of the text line before it, in its font, so after a word

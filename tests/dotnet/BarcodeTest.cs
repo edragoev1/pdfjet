@@ -77,14 +77,26 @@ public class BarcodeTest {
     [Fact]
     public void Code128RefusesATextItCannotHold() {
         string tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
-        Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('7', 49))).Message);
+        Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('A', 49))).Message);
         Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('\u00e9', 25))).Message);
+        Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('7', 98))).Message);
         Assert.Equal("Code 128 barcodes can only hold characters up to U+00FF!",
                 Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, "A\u20ac")).Message);
         // The most a barcode holds is drawn whole: 48 codewords, and the start,
         // the check digit and the stop, of 11 modules each but the stop of 13
-        foreach (string text in new string[] {new string('7', 48), new string('\u00e9', 24)}) {
+        foreach (string text in new string[] {new string('A', 48), new string('\u00e9', 24), new string('7', 96)}) {
             Assert.Equal((11 * 50 + 13) * 0.75f, new Barcode(Barcode.CODE_128, text).DrawOn(null)[0]);
+        }
+    }
+
+    // ZXing reads the barcodes of these texts back as they are.
+    [Fact]
+    public void Code128TakesCodeSetCForRunsOfDigits() {
+        string[] texts = {"0123456789", "42", "123", "12345", "A1234B", "A12345", "A12B", "12\t34\u00fc5678"};
+        int[] codewords = {5, 1, 3, 4, 6, 5, 4, 11};     // Of the data, from the Go port's test
+        for (int i = 0; i < texts.Length; i++) {
+            float width = new Barcode(Barcode.CODE_128, texts[i]).DrawOn(null)[0];
+            Assert.Equal((11 * (codewords[i] + 2) + 13) * 0.75f, width);
         }
     }
 

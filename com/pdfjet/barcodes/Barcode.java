@@ -377,28 +377,24 @@ public class Barcode implements Drawable {
         return new float[] {x + font.stringWidth(str), y + font.getDescent()};
     }
 
-    // Returns the codewords of the text in code set B: one for a character from
-    // 32 to 127, and two, SHIFT or FNC 4 and the character, for one below 32 or
-    // from 128 to 255. It throws for a character above 255, which code set B
-    // cannot hold, and for a text of more than 48 codewords, the most a barcode
-    // holds, rather than draw a barcode of another text.
+    // Returns the start and the codewords of the text: runs of four digits or
+    // more in code set C, two digits to a codeword, and the rest in code set B,
+    // where a character from 32 to 127 takes one codeword, and one below 32 or
+    // from 128 to 255 two, SHIFT or FNC 4 and the character. It throws for a
+    // character above 255, which the code sets cannot hold, and for a text of
+    // more than 48 codewords, the most a barcode holds, rather than draw a
+    // barcode of another text.
     private static List<Integer> code128Codewords(String text) throws Exception {
-        List<Integer> list = new ArrayList<Integer>();
+        List<Integer> items = new ArrayList<Integer>();
         for (int i = 0; i < text.length(); i++) {
             char symchar = text.charAt(i);
-            if (symchar < 32) {
-                list.add(Code128Table.SHIFT);
-                list.add(symchar + 64);
-            } else if (symchar < 128) {
-                list.add(symchar - 32);
-            } else if (symchar < 256) {
-                list.add(Code128Table.FNC_4);
-                list.add(symchar - 160);    // 128 + 32
-            } else {
+            if (symchar > 255) {
                 throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
             }
+            items.add((int) symchar);
         }
-        if (list.size() > 48) {
+        List<Integer> list = code128Encode(items);
+        if (list.size() - 1 > 48) {
             throw new Exception(
                     "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
         }
@@ -407,12 +403,10 @@ public class Barcode implements Drawable {
 
     // Returns the start and the codewords of the GS1 data written as people
     // read it: FNC1, then the fields, each followed by FNC1 when it is of no
-    // set length and another follows. Runs of four digits or more are in code
-    // set C, two digits to a codeword, and the rest in code set B. It throws
-    // for data that is not GS1, see GS1.parse, or longer than the 48
+    // set length and another follows, encoded as code128Encode encodes them.
+    // It throws for data that is not GS1, see GS1.parse, or longer than the 48
     // characters a GS1-128 barcode holds, not counting the separators.
     private static List<Integer> gs1128Codewords(String text) {
-        final int separator = -1;
         List<Integer> items = new ArrayList<Integer>();
         int characters = 0;
         for (GS1.Field field : GS1.parse(text)) {
@@ -422,22 +416,36 @@ public class Barcode implements Drawable {
             }
             characters += s.length();
             if (field.separator) {
-                items.add(separator);
+                items.add(SEPARATOR);
             }
         }
         if (characters > 48) {
             throw new IllegalArgumentException(
                     "GS1-128 barcodes hold at most 48 characters, not counting the separators!");
         }
+        List<Integer> list = code128Encode(items);
+        list.add(1, Code128Table.FNC_1);
+        return list;
+    }
 
-        boolean inC = digits(items, 0) >= 4;
+    // The item of code128Encode that is FNC1.
+    private static final int SEPARATOR = -1;
+
+    // Returns the start and the codewords of the characters, up to 255, and
+    // SEPARATOR for FNC1. It starts in code set C if the characters start with
+    // four digits or more, or are two digits, and in code set B if not. In code
+    // set C it takes the digits two to a codeword, and changes to code set B at
+    // anything else; in code set B it changes to code set C at an even run of
+    // four digits or more, and so takes the first digit of an odd run in code
+    // set B.
+    private static List<Integer> code128Encode(List<Integer> items) {
+        boolean inC = digits(items, 0) >= 4 || (digits(items, 0) == 2 && items.size() == 2);
         List<Integer> list = new ArrayList<Integer>();
         list.add(inC ? Code128Table.START_C : Code128Table.START_B);
-        list.add(Code128Table.FNC_1);
         int i = 0;
         while (i < items.size()) {
             int c = items.get(i);
-            if (c == separator) {
+            if (c == SEPARATOR) {
                 list.add(Code128Table.FNC_1);
                 i++;
             } else if (inC && digits(items, i) >= 2) {
@@ -449,8 +457,16 @@ public class Barcode implements Drawable {
             } else if (digits(items, i) >= 4 && digits(items, i) % 2 == 0) {
                 list.add(Code128Table.CODE_C);
                 inC = true;
-            } else {
+            } else if (c < 32) {
+                list.add(Code128Table.SHIFT);
+                list.add(c + 64);
+                i++;
+            } else if (c < 128) {
                 list.add(c - 32);
+                i++;
+            } else {
+                list.add(Code128Table.FNC_4);
+                list.add(c - 160);      // 128 + 32
                 i++;
             }
         }
@@ -469,14 +485,8 @@ public class Barcode implements Drawable {
     private float[] drawCode128(Page page, float x1, float y1) throws Exception {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        int start = Code128Table.START_B;
-        List<Integer> list;
-        if (barcodeType == Barcode.GS1_128) {
-            list = gs1128Codewords(text);
-            start = list.remove(0);
-        } else {
-            list = code128Codewords(text);
-        }
+        List<Integer> list = (barcodeType == Barcode.GS1_128) ? gs1128Codewords(text) : code128Codewords(text);
+        int start = list.remove(0);
 
         StringBuilder buf = new StringBuilder();
         int checkDigit = start;

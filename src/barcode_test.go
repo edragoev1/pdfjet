@@ -88,8 +88,9 @@ func TestBarcodeUpcAndEanNeedTheirNumberOfDigits(t *testing.T) {
 func TestBarcodeCode128RefusesATextItCannotHold(t *testing.T) {
 	const tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
 	for text, want := range map[string]string{
-		strings.Repeat("7", 49): tooLong,
+		strings.Repeat("A", 49): tooLong,
 		strings.Repeat("é", 25): tooLong, // Two codewords each
+		strings.Repeat("7", 98): tooLong, // Two digits to a codeword
 		"A€":                    "Code 128 barcodes can only hold characters up to U+00FF!",
 	} {
 		if message, _ := testPanic(func() { NewBarcode(CODE_128, text) }); message != want {
@@ -98,9 +99,32 @@ func TestBarcodeCode128RefusesATextItCannotHold(t *testing.T) {
 	}
 	// The most a barcode holds is drawn whole: 48 codewords, and the start,
 	// the check digit and the stop, of 11 modules each but the stop of 13
-	for _, text := range []string{strings.Repeat("7", 48), strings.Repeat("é", 24)} {
+	for _, text := range []string{strings.Repeat("A", 48), strings.Repeat("é", 24), strings.Repeat("7", 96)} {
 		if width := NewBarcode(CODE_128, text).DrawOn(nil)[0]; width != (11*50+13)*0.75 {
 			t.Errorf("%q is %v wide", text, width)
+		}
+	}
+}
+
+// ZXing reads the barcodes of these codewords back as their texts.
+func TestBarcodeCode128TakesCodeSetCForRunsOfDigits(t *testing.T) {
+	for _, c := range []struct {
+		text  string
+		start rune
+		list  []rune
+	}{
+		{"0123456789", 105, []rune{1, 23, 45, 67, 89}},
+		{"42", 105, []rune{42}},                          // Two digits alone
+		{"123", 104, []rune{17, 18, 19}},                 // Too few for code set C
+		{"12345", 105, []rune{12, 34, 100, 21}},          // An odd run at the start
+		{"A1234B", 104, []rune{33, 99, 12, 34, 100, 34}}, // Code C and back to B
+		{"A12345", 104, []rune{33, 17, 99, 23, 45}},      // The first digit of an odd run in B
+		{"A12B", 104, []rune{33, 17, 18, 34}},            // Two digits stay in B
+		{"12\t34ü5678", 104, []rune{17, 18, 98, 73, 19, 20, 100, 92, 99, 56, 78}},
+	} {
+		start, list := code128Codewords(c.text)
+		if start != c.start || fmt.Sprint(list) != fmt.Sprint(c.list) {
+			t.Errorf("%q: start %d, %v", c.text, start, list)
 		}
 	}
 }

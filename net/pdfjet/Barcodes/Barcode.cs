@@ -379,27 +379,23 @@ public class Barcode : IDrawable {
         return new float[] {x + font.StringWidth(str), y + font.GetDescent(font.GetSize())};
     }
 
-    // Returns the codewords of the text in code set B: one for a character from
-    // 32 to 127, and two, SHIFT or FNC 4 and the character, for one below 32 or
-    // from 128 to 255. It throws for a character above 255, which code set B
-    // cannot hold, and for a text of more than 48 codewords, the most a barcode
-    // holds, rather than draw a barcode of another text.
+    // Returns the start and the codewords of the text: runs of four digits or
+    // more in code set C, two digits to a codeword, and the rest in code set B,
+    // where a character from 32 to 127 takes one codeword, and one below 32 or
+    // from 128 to 255 two, SHIFT or FNC 4 and the character. It throws for a
+    // character above 255, which the code sets cannot hold, and for a text of
+    // more than 48 codewords, the most a barcode holds, rather than draw a
+    // barcode of another text.
     private static List<Int32> Code128Codewords(String text) {
-        List<Int32> list = new List<Int32>();
+        List<Int32> items = new List<Int32>();
         foreach (char symchar in text) {
-            if (symchar < 32) {
-                list.Add(Code128Table.SHIFT);
-                list.Add(symchar + 64);
-            } else if (symchar < 128) {
-                list.Add(symchar - 32);
-            } else if (symchar < 256) {
-                list.Add(Code128Table.FNC_4);
-                list.Add(symchar - 160);    // 128 + 32
-            } else {
+            if (symchar > 255) {
                 throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
             }
+            items.Add(symchar);
         }
-        if (list.Count > 48) {
+        List<Int32> list = Code128Encode(items);
+        if (list.Count - 1 > 48) {
             throw new Exception(
                     "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
         }
@@ -408,12 +404,10 @@ public class Barcode : IDrawable {
 
     // Returns the start and the codewords of the GS1 data written as people
     // read it: FNC1, then the fields, each followed by FNC1 when it is of no
-    // set length and another follows. Runs of four digits or more are in code
-    // set C, two digits to a codeword, and the rest in code set B. It throws
-    // for data that is not GS1, see GS1.Parse, or longer than the 48
+    // set length and another follows, encoded as Code128Encode encodes them.
+    // It throws for data that is not GS1, see GS1.Parse, or longer than the 48
     // characters a GS1-128 barcode holds, not counting the separators.
     private static List<Int32> GS1128Codewords(String text) {
-        const int separator = -1;
         List<Int32> items = new List<Int32>();
         int characters = 0;
         foreach (GS1.Field field in GS1.Parse(text)) {
@@ -423,22 +417,36 @@ public class Barcode : IDrawable {
             }
             characters += s.Length;
             if (field.separator) {
-                items.Add(separator);
+                items.Add(SEPARATOR);
             }
         }
         if (characters > 48) {
             throw new ArgumentException(
                     "GS1-128 barcodes hold at most 48 characters, not counting the separators!");
         }
+        List<Int32> list = Code128Encode(items);
+        list.Insert(1, Code128Table.FNC_1);
+        return list;
+    }
 
-        bool inC = Digits(items, 0) >= 4;
+    // The item of Code128Encode that is FNC1.
+    private const int SEPARATOR = -1;
+
+    // Returns the start and the codewords of the characters, up to 255, and
+    // SEPARATOR for FNC1. It starts in code set C if the characters start with
+    // four digits or more, or are two digits, and in code set B if not. In code
+    // set C it takes the digits two to a codeword, and changes to code set B at
+    // anything else; in code set B it changes to code set C at an even run of
+    // four digits or more, and so takes the first digit of an odd run in code
+    // set B.
+    private static List<Int32> Code128Encode(List<Int32> items) {
+        bool inC = Digits(items, 0) >= 4 || (Digits(items, 0) == 2 && items.Count == 2);
         List<Int32> list = new List<Int32>();
         list.Add(inC ? Code128Table.START_C : Code128Table.START_B);
-        list.Add(Code128Table.FNC_1);
         int i = 0;
         while (i < items.Count) {
             int c = items[i];
-            if (c == separator) {
+            if (c == SEPARATOR) {
                 list.Add(Code128Table.FNC_1);
                 i++;
             } else if (inC && Digits(items, i) >= 2) {
@@ -450,8 +458,16 @@ public class Barcode : IDrawable {
             } else if (Digits(items, i) >= 4 && Digits(items, i) % 2 == 0) {
                 list.Add(Code128Table.CODE_C);
                 inC = true;
-            } else {
+            } else if (c < 32) {
+                list.Add(Code128Table.SHIFT);
+                list.Add(c + 64);
+                i++;
+            } else if (c < 128) {
                 list.Add(c - 32);
+                i++;
+            } else {
+                list.Add(Code128Table.FNC_4);
+                list.Add(c - 160);      // 128 + 32
                 i++;
             }
         }
@@ -470,15 +486,9 @@ public class Barcode : IDrawable {
     private float[] DrawCode128(Page page, float x1, float y1) {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
-        int start = Code128Table.START_B;
-        List<Int32> list;
-        if (barcodeType == Barcode.GS1_128) {
-            list = GS1128Codewords(text);
-            start = list[0];
-            list.RemoveAt(0);
-        } else {
-            list = Code128Codewords(text);
-        }
+        List<Int32> list = (barcodeType == Barcode.GS1_128) ? GS1128Codewords(text) : Code128Codewords(text);
+        int start = list[0];
+        list.RemoveAt(0);
 
         StringBuilder buf = new StringBuilder();
         int checkDigit = start;

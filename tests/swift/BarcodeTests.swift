@@ -70,15 +70,17 @@ import Testing
 
     @Test func code128RefusesATextItCannotHold() throws {
         let tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
-        for (text, message) in [(String(repeating: "7", count: 49), tooLong),
+        for (text, message) in [(String(repeating: "A", count: 49), tooLong),
                                 (String(repeating: "\u{e9}", count: 25), tooLong),
+                                (String(repeating: "7", count: 98), tooLong),
                                 ("A\u{20ac}", "Code 128 barcodes can only hold characters up to U+00FF!")] {
             let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.CODE_128, text) }
             #expect(error?.message == message)
         }
         // The most a barcode holds is drawn whole: 48 codewords, and the start,
         // the check digit and the stop, of 11 modules each but the stop of 13
-        for text in [String(repeating: "7", count: 48), String(repeating: "\u{e9}", count: 24)] {
+        for text in [String(repeating: "A", count: 48), String(repeating: "\u{e9}", count: 24),
+                     String(repeating: "7", count: 96)] {
             #expect(try Barcode(Barcode.CODE_128, text).drawOn(nil)[0] == Float(11 * 50 + 13) * 0.75)
         }
     }
@@ -112,6 +114,23 @@ import Testing
         ] {
             let error = #expect(throws: PDFjetError.self) { _ = try Barcode(Barcode.GS1_128, data) }
             #expect(error?.message == message)
+        }
+    }
+
+    /// ZXing reads the barcodes of these texts back as they are.
+    @Test func code128TakesCodeSetCForRunsOfDigits() throws {
+        let cases: [(String, [UInt16])] = [
+            ("0123456789", [105, 1, 23, 45, 67, 89]),
+            ("42", [105, 42]),
+            ("123", [104, 17, 18, 19]),
+            ("12345", [105, 12, 34, 100, 21]),
+            ("A1234B", [104, 33, 99, 12, 34, 100, 34]),
+            ("A12345", [104, 33, 17, 99, 23, 45]),
+            ("A12B", [104, 33, 17, 18, 34]),
+            ("12\t34\u{fc}5678", [104, 17, 18, 98, 73, 19, 20, 100, 92, 99, 56, 78]),
+        ]
+        for (text, codewords) in cases {
+            #expect(Barcode.code128Codewords(text).codewords == codewords, "\(text)")
         }
     }
 }
