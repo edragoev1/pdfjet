@@ -332,6 +332,33 @@ to check and fix in the four, with a test.
   own. pdfjet-server sets them black with `SetCellBorderColor`. Found Sep 23,
   while adding tables to the editor.
 
+- ⬜ **A wrapped cell line can keep a trailing space, which moves right and
+  centered text.** When a word wider than the column follows other text and
+  its first character does not fit, `wrapCellText` pushes the line with the
+  space after it; the rows below are wrapped again and lose theirs, but the
+  first line keeps it, and the space counts in the width of the text. A
+  table of columns 30% right, 30% center and 40% at a width of 100, each
+  cell "abcd Wxyzwxyzw" in IBM Plex Sans at 10: the first line is "abcd ",
+  drawn 2.36 points too far left in the right column and 1.19 in the center
+  one. Found Sep 23, porting Table to pdfjet-client, whose check has it as a
+  case.
+- ⬜ **The lines of a wrapped cell are unevenly spaced.** The first row of a
+  wrapped cell keeps its top and bottom padding, and each row added below it
+  drops only its top padding, so the first line is body height + 4 from the
+  next and the others body height + 2: 17 and 15 points in IBM Plex Sans at
+  10. Found Sep 23, with the item above.
+- ⬜ **Column percentages that are all 0 leave the columns 75 points wide.**
+  `applyColumnPercents` returns when their total is not above 0, so
+  `SetWidth` is ignored and each column keeps the width of a new cell: two
+  columns at 0% and a width of 300 make a table 150 wide. It should share
+  the width equally, as for columns with no percentage. Found Sep 23, with
+  the items above.
+- ⬜ **To decide: the header row has a line under it without borders.**
+  `drawHeaderRows` sets the bottom border of the last header row whatever
+  `SetCellBorders` says, so a table without lines still has one under its
+  header. It may be meant; if it is, the documentation of `SetCellBorders`
+  should say so. Found Sep 23.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
