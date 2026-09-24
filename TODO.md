@@ -135,7 +135,7 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    and every bug they found is fixed in the four ports with tests.
 
 6. ⬜ **B** Freeze the API and the behavior. After 9.0.2, fixes only; the
-   public API is that of v9.0.1 and the 25 members master adds to it, the
+   public API is that of v9.0.1 and the members master adds to it, the
    same in the four ports, checked as for 9.0.1 before each tag:
    - `Cell.setRowSpan` and `Cell.getRowSpan`, the row spans (Sep 21);
    - `Chart`, `BarChart` and `DonutChart` `setAltDescription`,
@@ -163,15 +163,47 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      media type, the relationship and the description, which are the files a
      document of PDF/A-3 carries.
 
+   One type and four members came on Sep 23, the GS1 barcodes:
+   - `GS1` and `GS1.digitalLink(domain, data)`, in Go `GS1DigitalLink`, the
+     GS1 Digital Link of GS1 data, for an ordinary QR code;
+   - `Barcode.GS1_128` and `Barcode.ITF_14`;
+   - `DataMatrix.fromGS1(str)` and `fromGS1(str, shape)`, in Go
+     `NewGS1DataMatrix` and `NewGS1DataMatrixWithShape`, in Swift
+     `init(gs1:_:)`, GS1 DataMatrix from GS1 data written as people read it.
+
    `MarkdownParser` is not public in any port, so the Markdown a document is
    written from is read one way only, through `Markdown`.
 
-   Nothing is removed and no signature changes. Swift's `Alignment` has an
-   `init(rawValue:)` since its cases are the numbers a `Cell` packs, and Go's
-   `internal/utf8text.Decode` is not importable, so neither is API. Any other
-   difference fails the check. The API diff lists each port's public
-   declarations at the tag and at v9.0.1: `javap -public`, `go doc -all`,
-   reflection over the C# assembly, and the Swift symbol graph.
+   One more value and three members came on Sep 24, decided that day to go
+   into 9.0.2, which is cut from master, rather than to wait for 9.0.3:
+   - `Compliance.PDF_A_3A_UA_1`, PDF/A-3a and PDF/UA-1 in one document, after
+     `PDF_A_3B`, so that no other value changes; and `PDF_A_3A` deprecated
+     for it (`@Deprecated`, `[Obsolete]`, `@available(*, deprecated)` and a
+     `Deprecated:` comment in Go), still written as before;
+   - `Barcode.setAltDescription` and `QRCode.setAltDescription`, a barcode
+     read aloud as one figure;
+   - `TextBlock.setStructureType`, as `TextLine` has it, for a heading.
+
+   With them, two changes of behavior, which the CHANGELOG has under
+   Changed: the A levels of PDF/A tag their content, as level A asks, and
+   refuse a figure with no description as PDF/UA does; and what is drawn
+   inside a figure is the figure, marked no further.
+
+   Nothing is removed and no signature changes. Some differences are not
+   members to list: Swift's `Alignment` has an `init(rawValue:)`, and with it
+   `Hashable`, since its cases are the numbers a `Cell` packs; the
+   constructors of Swift's `DataMatrix` and `EmbeddedFile` that became
+   convenience ones keep their signatures; Go's `Compliance` has a `String`
+   method (Sep 22), as a Go enumeration does; Java's `GS1.parse` and
+   `GS1.Field` are public only because `Barcode` and `DataMatrix` are in
+   packages of their own and Java has no internal access, and the other ports
+   keep them internal; and Go's `internal/utf8text.Decode` is not importable.
+   Any other difference fails the check. `./check-api.sh` lists each port's
+   public declarations at the tag and at v9.0.1, of `javap -public`,
+   `util/goapi` with Go's own parser, reflection over the C# assembly and the
+   Swift symbol graph, and prints what is gone, changed and added; it fails
+   if anything is gone. On Sep 24 nothing was, and everything added is
+   listed here.
 
 7. ⬜ **B** Guard against regressions: benchmarks recorded at 9.0.2 and 9.0.3
    against 9.0.1, Example_43's printed time among them, and the JDK 8 build,
@@ -223,7 +255,8 @@ day.
       of goal 6 in the four ports, the JDK 8 build, the benchmarks recorded
       against 9.0.1 with Example_43's time, the docs, the packages and the
       site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
-      carries the 25 members of goal 6 and the fixes under `## Unreleased`.
+      carries the members of goal 6, those of Sep 24 among them, and the
+      fixes under `## Unreleased`.
       Done on Sep 22, to be run again at the tag: the API diff, the JDK 8
       build, and the benchmarks, in `benchmarks/results/2026-09-22-*.log` and
       `benchmarks/table/results/2026-09-22-010c7c21.log`. They found `Table`
