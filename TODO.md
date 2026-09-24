@@ -453,11 +453,14 @@ schema and the rules of EN 16931 and of XRechnung.
 
 What is left, in the order it is worth doing:
 
-- ⬜ The examples in C#, Go and Swift, beside the Java one in
-  `examples/invoice`.
-- ⬜ A page on the site, as `digital-signatures.html` is, saying what an
+- ✅ The examples in C#, Go and Swift, beside the Java one in
+  `examples/invoice` (Sep 22). Of `PDF_A_3A_UA_1` since Sep 24: veraPDF
+  passes them as PDF/A-3a and PDF/UA-1, and `Facturx` takes that level.
+- ✅ A page on the site, as `digital-signatures.html` is, saying what an
   electronic invoice is, what the law asks for in Germany, France and Italy,
-  and what the library does about it.
+  and what the library does about it: `.commercial/e-invoicing.html`, written
+  Sep 24 with the dates checked against the ministries' own pages, which it
+  cites. It names PDFjet Pro, so it goes on pdfjet.com when Pro launches.
 - ⬜ Discounts and charges on a line (BG-27 and BG-28). A line carries the
   amount the seller wrote, so an invoice that has them is read, written again
   and valid, with the discount inside the amount of the line rather than
