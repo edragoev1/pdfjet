@@ -26,5 +26,7 @@ public enum Compliance {
     /** PDF/A-3a, for archiving, with the accessibility requirements of level A. */
     PDF_A_3A,
     /** PDF/A-3b, for archiving, level B (basic). */
-    PDF_A_3B;
+    PDF_A_3B,
+    /** PDF/A-3a and PDF/UA-1 in one document: tagged as PDF/UA asks, and able to carry files, as PDF/A-3 is. */
+    PDF_A_3A_UA_1;
 }

@@ -56,6 +56,13 @@ rows with styles for the header and the footer rows, and column widths
 shared from the width of the table. The fifth, the same day,
 is a `TextFrame` that flows onto as many pages as its text needs.
 
+The seventh, on Sep 24, is `Compliance.PDF_A_3A_UA_1`, PDF/A-3a and
+PDF/UA-1 in one document, which PDFjet Forms writes every PDF as: archival,
+accessible, and able to carry the layout it was made from. It is a new
+member of an enum and a few lines in the four ports, since the tagging of
+PDF/UA and the metadata of PDF/A were both there, and it is checked by
+veraPDF with both profiles, in check-examples.sh by Example_55.
+
 The sixth is Markdown to PDF, which is in v9.0.3 rather than v9.0.2: it was
 written on a branch of its own with the checks master has, and merged on
 Sep 22 once it had them all. It is the one feature of the release that is
@@ -390,6 +397,21 @@ to check and fix in the four, with a test.
   header. Decided Sep 24 that it is a fault: the line is drawn only under the
   header cells that have borders. Fixed in the four ports, and in
   pdfjet-client's preview. Found Sep 23.
+
+- ✅ **No level is PDF/A and PDF/UA at once.** A document is one or the
+  other, `PDF_UA_1` or a PDF/A level, where the two are made to go together,
+  and PDFjet Forms writes documents that are to be archived and read aloud.
+  Added Sep 24: `Compliance.PDF_A_3A_UA_1` in the four ports.
+- **The A levels of PDF/A tag no content.** `PDF_A_1A`, `PDF_A_2A` and
+  `PDF_A_3A` write a structure tree, but the marked content of the text and
+  the images is written only for PDF/UA (`isUA` in the four ports), so a
+  document of an A level has no tagged content, which the A of PDF/A asks
+  for, and the booklet says the A levels are tagged as PDF/UA is. veraPDF's
+  PDF/A profiles pass them all the same. `PDF_A_3A_UA_1` is tagged. To
+  decide for v9.0.3: tag the A levels as PDF/UA is, which asks each figure
+  of them for a description, as PDF/UA does, and so refuses documents that
+  are written today; or tag them without that rule; or say in the booklet
+  that they are not tagged. Found Sep 24, adding `PDF_A_3A_UA_1`.
 
 ## v9.1 — features, after v9.0.3
 

@@ -22,6 +22,9 @@ const (
 	PDF_A_2B
 	PDF_A_3A
 	PDF_A_3B
+	// PDF_A_3A_UA_1 is PDF/A-3a and PDF/UA-1 in one document: tagged as
+	// PDF/UA asks, and able to carry files, as PDF/A-3 is.
+	PDF_A_3A_UA_1
 )
 
 // The names of the compliance levels, in the order of the constants.
@@ -30,6 +33,7 @@ var names = [...]string{
 	"PDF_A_1A", "PDF_A_1B",
 	"PDF_A_2A", "PDF_A_2B",
 	"PDF_A_3A", "PDF_A_3B",
+	"PDF_A_3A_UA_1",
 }
 
 // String returns the name of the compliance level, as the messages of the

@@ -173,6 +173,41 @@ class AssociatedFileTest {
     }
 
     @Test
+    void theLevelOfPdfA3aAndPdfUA1IsBoth() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(TestSupport.helvetica(pdf), "Invoice").setLocation(50f, 50f).drawOn(page);
+        // Tagged, as PDF/UA asks, where PDF/A-3a alone is not
+        assertTrue(TestSupport.content(page).contains("BDC"), "the text is not tagged");
+        String raw = document(pdf, bos, "factur-x.xml");
+        for (String want : new String[] {"<pdfuaid:part>1</pdfuaid:part>", "<pdfaid:part>3</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>", "/StructTreeRoot", "/OutputIntents", "/AF ["}) {
+            assertTrue(raw.contains(want), want);
+        }
+    }
+
+    @Test
+    void theMetadataHasOneListOfExtensionSchemas() throws Exception {
+        // A document of PDF/A-3a and PDF/UA-1 that adds a list of its own, as
+        // Factur-X does, has the PDF/UA identification schema in that list.
+        for (boolean own : new boolean[] {false, true}) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1);
+            if (own) {
+                pdf.addMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
+                        "  <pdfaExtension:schemas>\n" +
+                        "    <rdf:Bag>\n" +
+                        "    </rdf:Bag>\n" +
+                        "  </pdfaExtension:schemas>\n" +
+                        "</rdf:Description>\n");
+            }
+            String raw = document(pdf, bos, "factur-x.xml");
+            assertEquals(1, raw.split("<pdfaExtension:schemas>", -1).length - 1, "own list " + own);
+            assertTrue(raw.contains("<pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>"), "own list " + own);
+        }
+    }
+
+    @Test
     void theDocumentsThatCannotCarryAFileSayTheyCannot() throws Exception {
         for (Compliance compliance : new Compliance[] {
                 Compliance.PDF_A_1A, Compliance.PDF_A_1B,

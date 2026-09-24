@@ -405,6 +405,13 @@ class MisuseTest {
         }));
         assertRefused(pdf, message);
 
+        // Nor one that is PDF/UA too.
+        final PDF both = new PDF(new ByteArrayOutputStream(), Compliance.PDF_A_3A_UA_1);
+        final Encryption encryptionOfBoth = new Encryption(both, new Passwords(), new Permissions());
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { both.setEncryption(encryptionOfBoth); }
+        }));
+
         // A PDF/UA document can be.
         PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
         ua.setEncryption(new Encryption(ua, new Passwords(), new Permissions()));

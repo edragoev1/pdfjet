@@ -2477,7 +2477,7 @@ public class Page {
             String altDescription,
             String attributes) {
         markedContentDepth++;
-        if (pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0) {
+        if (pdf.IsUA() && artifactDepth == 0) {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
             if (structure == StructElem.FIGURE &&
@@ -2520,7 +2520,7 @@ public class Page {
         markedContentDepth++;
         if (artifactDepth == 0) {
             artifactDepth = markedContentDepth;
-            if (pdf.compliance == Compliance.PDF_UA_1) {
+            if (pdf.IsUA()) {
                 Append("/Artifact BMC\n");
             }
         }
@@ -2533,7 +2533,7 @@ public class Page {
         }
         if (artifactDepth == 0 || artifactDepth == markedContentDepth) {
             artifactDepth = 0;
-            if (pdf.compliance == Compliance.PDF_UA_1) {
+            if (pdf.IsUA()) {
                 Append("EMC\n");
             }
         }
@@ -2578,7 +2578,7 @@ public class Page {
     // like the Table of a table that runs over pages.
     internal StructElement AddStructElement(
             StructElement parent, StructElem structure, String attributes, bool open) {
-        if (pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0) {
+        if (!pdf.IsUA() || artifactDepth != 0) {
             return null;
         }
         StructElement element = new StructElement();
@@ -2757,7 +2757,7 @@ public class Page {
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);
-        if (pdf.compliance == Compliance.PDF_UA_1) {
+        if (pdf.IsUA()) {
             StructElement element = new StructElement();
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = annotation.annotationType.Equals(Annotation.Link) ?

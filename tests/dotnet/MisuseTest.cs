@@ -343,6 +343,12 @@ public class MisuseTest {
                 Assert.Throws<InvalidOperationException>(() => pdf.SetEncryption(encryption)).Message);
         AssertRefused(pdf, message);
 
+        // Nor one that is PDF/UA too.
+        PDF both = new PDF(new MemoryStream(), Compliance.PDF_A_3A_UA_1);
+        Encryption encryptionOfBoth = new Encryption(both, new Passwords(), new Permissions());
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => both.SetEncryption(encryptionOfBoth)).Message);
+
         // A PDF/UA document can be.
         PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
         ua.SetEncryption(new Encryption(ua, new Passwords(), new Permissions()));

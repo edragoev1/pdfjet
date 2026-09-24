@@ -23,8 +23,9 @@ import com.pdfjet.qrcode.*;
  * program exports one, with a style sheet, groups and shapes; the addresses
  * and the dates; a table of the items with a header row, striped rows and the
  * totals in its footer rows; and a QR code a banking app scans to pay, in the
- * format of the European Payments Council. The document is PDF/A-3A, and so
- * it is tagged for screen readers too: a heading, paragraphs, a table and a
+ * format of the European Payments Council. The document is PDF/A-3a and
+ * PDF/UA-1 at once, PDF_A_3A_UA_1, so it is kept as PDF/A and tagged for
+ * screen readers: a heading, paragraphs, a table and a
  * figure.
  * </p>
  * <p>
@@ -104,7 +105,7 @@ public class Example_55 {
 
     public Example_55() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_55.pdf")));
-        pdf.setCompliance(Compliance.PDF_A_3A);
+        pdf.setCompliance(Compliance.PDF_A_3A_UA_1);
         pdf.setTitle("Invoice 2026-0147");
         pdf.setAuthor("Lindenberg Paper & Print GmbH");
         pdf.setLanguage("en-US");

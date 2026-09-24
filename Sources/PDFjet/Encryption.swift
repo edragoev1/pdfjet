@@ -52,7 +52,7 @@ public class Encryption {
         // A PDF/UA file grants the permission to extract content for
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
-        if pdf.getCompliance() == Compliance.PDF_UA_1 {
+        if pdf.isUA() {
             permissions.grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY)
         }
 

@@ -165,6 +165,13 @@ func (pdf *PDF) GetCompliance() compliance.Compliance {
 	return pdf.compliance
 }
 
+// isUA reports whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1,
+// which is PDF/A-3a too. Its content is tagged, and follows the rules of
+// PDF/UA.
+func (pdf *PDF) isUA() bool {
+	return pdf.compliance == compliance.PDF_UA_1 || pdf.compliance == compliance.PDF_A_3A_UA_1
+}
+
 // SetEncryption sets the encryption applied to this document.
 func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
 	// Every object after the encryption dictionary is encrypted.
@@ -253,6 +260,61 @@ func xrefOffset(offset int64) (string, error) {
 	return "0000000000"[len(digits):] + digits, nil
 }
 
+// The description of the PDF/UA identification schema, which PDF/A accepts
+// only when the metadata describes it, as ISO 19005-3 6.6.2.3 asks: the
+// metadata of PDF_A_3A_UA_1 names the part of PDF/UA as well as of PDF/A. It
+// goes into the list of extension schemas of a description the document
+// adds, such as that of Factur-X, as the metadata has one list, or into a
+// list of its own, pdfUAExtensionSchemas, when the document adds none.
+const (
+	pdfUASchema = "      <rdf:li rdf:parseType=\"Resource\">\n" +
+		"        <pdfaSchema:namespaceURI>http://www.aiim.org/pdfua/ns/id/</pdfaSchema:namespaceURI>\n" +
+		"        <pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>\n" +
+		"        <pdfaSchema:schema>PDF/UA identification schema</pdfaSchema:schema>\n" +
+		"        <pdfaSchema:property>\n" +
+		"          <rdf:Seq>\n" +
+		"            <rdf:li rdf:parseType=\"Resource\">\n" +
+		"              <pdfaProperty:category>internal</pdfaProperty:category>\n" +
+		"              <pdfaProperty:description>PDF/UA version identifier</pdfaProperty:description>\n" +
+		"              <pdfaProperty:name>part</pdfaProperty:name>\n" +
+		"              <pdfaProperty:valueType>Integer</pdfaProperty:valueType>\n" +
+		"            </rdf:li>\n" +
+		"          </rdf:Seq>\n" +
+		"        </pdfaSchema:property>\n" +
+		"      </rdf:li>\n"
+	pdfUAExtensionSchemas = "<rdf:Description rdf:about=\"\"\n" +
+		"    xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\"\n" +
+		"    xmlns:pdfaSchema=\"http://www.aiim.org/pdfa/ns/schema#\"\n" +
+		"    xmlns:pdfaProperty=\"http://www.aiim.org/pdfa/ns/property#\">\n" +
+		"  <pdfaExtension:schemas>\n" +
+		"    <rdf:Bag>\n" +
+		pdfUASchema +
+		"    </rdf:Bag>\n" +
+		"  </pdfaExtension:schemas>\n" +
+		"</rdf:Description>\n"
+)
+
+// withPDFUASchema returns the descriptions the document adds, the first list
+// of extension schemas among them with the PDF/UA identification schema, and
+// whether one had such a list.
+func withPDFUASchema(descriptions []string) ([]string, bool) {
+	result := append([]string(nil), descriptions...)
+	for i, description := range result {
+		schemas := strings.Index(description, "<pdfaExtension:schemas>")
+		if schemas == -1 {
+			continue
+		}
+		bag := strings.Index(description[schemas:], "<rdf:Bag>")
+		if bag == -1 {
+			continue
+		}
+		at := schemas + bag + len("<rdf:Bag>")
+		result[i] = description[:at] + "\n" + strings.TrimSuffix(pdfUASchema, "\n") + description[at:]
+		return result, true
+	}
+	return result, false
+}
+
 func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 	var sb strings.Builder
 	sb.WriteString("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
@@ -300,6 +362,10 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		} else if pdf.compliance == compliance.PDF_A_3B {
 			sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
 			sb.WriteString("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+		} else if pdf.compliance == compliance.PDF_A_3A_UA_1 {
+			sb.WriteString("  <pdfuaid:part>1</pdfuaid:part>\n")
+			sb.WriteString("  <pdfaid:part>3</pdfaid:part>\n")
+			sb.WriteString("  <pdfaid:conformance>A</pdfaid:conformance>\n")
 		}
 
 		sb.WriteString("  <pdf:Producer>")
@@ -350,7 +416,15 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 
 		sb.WriteString("</rdf:Description>\n")
 
-		for _, description := range pdf.metadata {
+		descriptions := pdf.metadata
+		if pdf.compliance == compliance.PDF_A_3A_UA_1 {
+			var described bool
+			if descriptions, described = withPDFUASchema(descriptions); !described {
+				sb.WriteString(pdfUAExtensionSchemas)
+			}
+		}
+
+		for _, description := range descriptions {
 			sb.WriteString(description)
 			sb.WriteString("\n")
 		}

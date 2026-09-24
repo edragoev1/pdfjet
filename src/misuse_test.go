@@ -407,6 +407,16 @@ func TestMisuseAPdfACannotBeEncrypted(t *testing.T) {
 	pdf.SetEncryption(enc)
 	testRefused(t, pdf, "A PDF/A document cannot be encrypted.")
 
+	// Nor one that is PDF/UA too
+	pdf2 := testNewPDF()
+	pdf2.SetCompliance(compliance.PDF_A_3A_UA_1)
+	enc2, err := NewEncryption(pdf2, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf2.SetEncryption(enc2)
+	testRefused(t, pdf2, "A PDF/A document cannot be encrypted.")
+
 	// A PDF/UA document can be.
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1)

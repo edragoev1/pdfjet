@@ -21,6 +21,66 @@ public sealed class PDF {
     internal Dictionary<String, Int32> states = new Dictionary<String, Int32>();
     internal List<Stamp> stamps = new List<Stamp>();
     internal Compliance compliance = Compliance.PDF_1_7;
+
+    // The description of the PDF/UA identification schema, which PDF/A accepts
+    // only when the metadata describes it, as ISO 19005-3 6.6.2.3 asks: the
+    // metadata of PDF_A_3A_UA_1 names the part of PDF/UA as well as of PDF/A. It
+    // goes into the list of extension schemas of a description the document
+    // adds, such as that of Factur-X, as the metadata has one list, or into a
+    // list of its own when the document adds none.
+    private const String PDF_UA_SCHEMA =
+            "      <rdf:li rdf:parseType=\"Resource\">\n" +
+            "        <pdfaSchema:namespaceURI>http://www.aiim.org/pdfua/ns/id/</pdfaSchema:namespaceURI>\n" +
+            "        <pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>\n" +
+            "        <pdfaSchema:schema>PDF/UA identification schema</pdfaSchema:schema>\n" +
+            "        <pdfaSchema:property>\n" +
+            "          <rdf:Seq>\n" +
+            "            <rdf:li rdf:parseType=\"Resource\">\n" +
+            "              <pdfaProperty:category>internal</pdfaProperty:category>\n" +
+            "              <pdfaProperty:description>PDF/UA version identifier</pdfaProperty:description>\n" +
+            "              <pdfaProperty:name>part</pdfaProperty:name>\n" +
+            "              <pdfaProperty:valueType>Integer</pdfaProperty:valueType>\n" +
+            "            </rdf:li>\n" +
+            "          </rdf:Seq>\n" +
+            "        </pdfaSchema:property>\n" +
+            "      </rdf:li>\n";
+    private const String PDF_UA_EXTENSION_SCHEMAS =
+            "<rdf:Description rdf:about=\"\"\n" +
+            "    xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\"\n" +
+            "    xmlns:pdfaSchema=\"http://www.aiim.org/pdfa/ns/schema#\"\n" +
+            "    xmlns:pdfaProperty=\"http://www.aiim.org/pdfa/ns/property#\">\n" +
+            "  <pdfaExtension:schemas>\n" +
+            "    <rdf:Bag>\n" +
+            PDF_UA_SCHEMA +
+            "    </rdf:Bag>\n" +
+            "  </pdfaExtension:schemas>\n" +
+            "</rdf:Description>\n";
+
+    // The descriptions the document adds, the first list of extension schemas
+    // among them with the PDF/UA identification schema, or null when none has
+    // such a list.
+    private static List<String> WithPDFUASchema(List<String> descriptions) {
+        List<String> result = new List<String>(descriptions);
+        for (int i = 0; i < result.Count; i++) {
+            String description = result[i];
+            int schemas = description.IndexOf("<pdfaExtension:schemas>", StringComparison.Ordinal);
+            int bag = schemas == -1 ? -1 : description.IndexOf("<rdf:Bag>", schemas, StringComparison.Ordinal);
+            if (bag == -1) {
+                continue;
+            }
+            int at = bag + "<rdf:Bag>".Length;
+            result[i] = description.Substring(0, at) + "\n"
+                    + PDF_UA_SCHEMA.Substring(0, PDF_UA_SCHEMA.Length - 1) + description.Substring(at);
+            return result;
+        }
+        return null;
+    }
+
+    // Whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1, which is
+    // PDF/A-3a too. Its content is tagged, and follows the rules of PDF/UA.
+    internal bool IsUA() {
+        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1;
+    }
     internal Bookmark toc = null;
     internal Encryption encryption = null;
 
@@ -119,7 +179,7 @@ public sealed class PDF {
     /// Creates a PDF document with the specified compliance level.
     /// </summary>
     /// <param name="os">the associated output stream.</param>
-    /// <param name="compliance">must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B</param>
+    /// <param name="compliance">must be: Compliance.PDF_UA_1, Compliance.PDF_A_1A to Compliance.PDF_A_3B, or Compliance.PDF_A_3A_UA_1, which is both PDF/A-3a and PDF/UA-1</param>
     public PDF(Stream os, Compliance compliance) {
         this.os = os;
         this.compliance = compliance;
@@ -269,6 +329,10 @@ public sealed class PDF {
             } else if (compliance == Compliance.PDF_A_3B) {
                 sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+            } else if (compliance == Compliance.PDF_A_3A_UA_1) {
+                sb.Append("  <pdfuaid:part>1</pdfuaid:part>\n");
+                sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
+                sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
             }
 
             sb.Append("  <pdf:Producer>");
@@ -319,7 +383,16 @@ public sealed class PDF {
 
             sb.Append("</rdf:Description>\n");
 
-            foreach (String description in metadata) {
+            List<String> descriptions = metadata;
+            if (compliance == Compliance.PDF_A_3A_UA_1) {
+                descriptions = WithPDFUASchema(metadata);
+                if (descriptions == null) {
+                    descriptions = metadata;
+                    sb.Append(PDF_UA_EXTENSION_SCHEMAS);
+                }
+            }
+
+            foreach (String description in descriptions) {
                 sb.Append(description);
                 sb.Append("\n");
             }

@@ -10,6 +10,17 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A compliance level that is PDF/A-3a and PDF/UA-1 at once, in all four
+  ports: `Compliance.PDF_A_3A_UA_1`, after `PDF_A_3B`, so that the values of
+  the others do not change. The content is tagged, and follows the rules of
+  PDF/UA, as with `PDF_UA_1`, and the document is kept as PDF/A-3, which may
+  carry files, as an e-invoice carries its XML, and may not be encrypted. The
+  metadata names both parts, and describes the PDF/UA identification schema
+  in the extension schemas PDF/A asks for, in the list of a description
+  added with `addMetadata`, such as that of Factur-X, when it has one, as the
+  metadata may have only one. Example_55, the Factur-X invoice, is of this
+  level now, and check-examples.sh checks it with veraPDF's PDF/A-3a and
+  PDF/UA-1 profiles, which pass it in the four ports.
 - ITF-14 barcodes, the GTIN of a carton or a case, in all four ports:
   `Barcode.ITF_14`, with the 13 digits of the GTIN, to which the check digit
   is added, as for UPC-A and EAN-13. The 14 digits are in Interleaved 2 of 5,

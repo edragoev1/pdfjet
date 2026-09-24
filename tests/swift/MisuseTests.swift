@@ -356,6 +356,11 @@ import Testing
         #expect(pdf.error == "A PDF/A document cannot be encrypted.")
         #expect(completeMessage(pdf) == earlier + "A PDF/A document cannot be encrypted.")
 
+        // Nor one that is PDF/UA too
+        let both = MemoryPDF(Compliance.PDF_A_3A_UA_1).pdf
+        _ = both.setEncryption(Encryption(both, Passwords(), Permissions()))
+        #expect(both.error == "A PDF/A document cannot be encrypted.")
+
         // A PDF/UA document can be.
         let ua = MemoryPDF(Compliance.PDF_UA_1).pdf
         _ = ua.setEncryption(Encryption(ua, Passwords(), Permissions()))

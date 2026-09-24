@@ -21,7 +21,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
@@ -2090,7 +2089,7 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
 	page.markedContentDepth++
-	if page.pdf.compliance == compliance.PDF_UA_1 && page.artifactDepth == 0 {
+	if page.pdf.isUA() && page.artifactDepth == 0 {
 		// A figure stands for what it draws, which only the one who draws it
 		// can say, so PDF/UA asks for a description of every one.
 		if structure == structelem.Figure && strings.TrimSpace(altDescription) == "" {
@@ -2133,7 +2132,7 @@ func (page *Page) AddArtifactBMC() {
 	page.markedContentDepth++
 	if page.artifactDepth == 0 {
 		page.artifactDepth = page.markedContentDepth
-		if page.pdf.compliance == compliance.PDF_UA_1 {
+		if page.pdf.isUA() {
 			page.appendString("/Artifact BMC\n")
 		}
 	}
@@ -2147,7 +2146,7 @@ func (page *Page) AddEMC() {
 	}
 	if page.artifactDepth == 0 || page.artifactDepth == page.markedContentDepth {
 		page.artifactDepth = 0
-		if page.pdf.compliance == compliance.PDF_UA_1 {
+		if page.pdf.isUA() {
 			page.appendString("EMC\n")
 		}
 	}
@@ -2204,7 +2203,7 @@ func (page *Page) EndStructElement() {
 // written, like the Table of a table that runs over pages.
 func (page *Page) addStructElementOpen(
 	parent *structElement, structure structelem.StructElem, attributes string, open bool) *structElement {
-	if page.pdf.compliance != compliance.PDF_UA_1 || page.artifactDepth != 0 {
+	if !page.pdf.isUA() || page.artifactDepth != 0 {
 		return nil
 	}
 	element := newStructElement()
@@ -2237,7 +2236,7 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
 	page.annots = append(page.annots, annotation)
-	if page.pdf.compliance == compliance.PDF_UA_1 {
+	if page.pdf.isUA() {
 		element := newStructElement()
 		// PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
 		element.structure = string(structelem.Annot)

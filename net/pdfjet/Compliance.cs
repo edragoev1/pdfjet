@@ -26,6 +26,8 @@ namespace PDFjet.NET {
         /// <summary>PDF/A-3a.</summary>
         PDF_A_3A,
         /// <summary>PDF/A-3b.</summary>
-        PDF_A_3B
+        PDF_A_3B,
+        /// <summary>PDF/A-3a and PDF/UA-1 in one document: tagged as PDF/UA asks, and able to carry files, as PDF/A-3 is.</summary>
+        PDF_A_3A_UA_1
     }
 }   // End of namespace PDFjet.NET

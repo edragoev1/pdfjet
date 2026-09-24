@@ -19,6 +19,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Writing a document and reading it back.
@@ -836,4 +837,35 @@ func TestPDFTheLengthOfAStreamIsTheEntryOfItsDictionary(t *testing.T) {
 	objects := testRead(t, testPDFWithObjects(
 		"<< /Type /XObject /Height /Length /Length 5 >>\nstream\nabcde\nendstream"))
 	testWant(t, "abcde", string(objects[0].GetData()))
+}
+
+func TestPDFTheLevelOfPDFA3aAndPDFUA1IsBoth(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	page := NewPage(doc.pdf, letter.Portrait())
+	line := NewTextLine(testHelvetica(doc.pdf), "Invoice")
+	line.SetLocation(50, 50)
+	line.DrawOn(page)
+	// Tagged, as PDF/UA asks, where PDF/A-3a alone is not
+	if content := testContent(page); !strings.Contains(content, "BDC") {
+		t.Error("the text is not tagged")
+	}
+	raw := testCarry(doc, "factur-x.xml")
+	for _, want := range []string{
+		"<pdfuaid:part>1</pdfuaid:part>", "<pdfaid:part>3</pdfaid:part>",
+		"<pdfaid:conformance>A</pdfaid:conformance>", "/StructTreeRoot", "/OutputIntents", "/AF [",
+	} {
+		if !strings.Contains(raw, want) {
+			t.Errorf("the document has no %s", want)
+		}
+	}
+	if compliance.PDF_A_3A_UA_1.String() != "PDF_A_3A_UA_1" {
+		t.Errorf("the level is named %s", compliance.PDF_A_3A_UA_1)
+	}
+
+	// The rules of PDF/UA: a figure has a description
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	NewPage(pdf, letter.Portrait()).AddBDC(structelem.Figure, "", "", "")
+	testRecorded(t, pdf, "A figure of a PDF/UA document needs an alternative description.")
 }

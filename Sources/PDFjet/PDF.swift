@@ -18,6 +18,66 @@ public final class PDF {
     var states = [String : Int]()
     var stamps = [Stamp]()
     var compliance = Compliance.PDF_1_7
+
+    // The description of the PDF/UA identification schema, which PDF/A accepts
+    // only when the metadata describes it, as ISO 19005-3 6.6.2.3 asks: the
+    // metadata of PDF_A_3A_UA_1 names the part of PDF/UA as well as of PDF/A. It
+    // goes into the list of extension schemas of a description the document
+    // adds, such as that of Factur-X, as the metadata has one list, or into a
+    // list of its own when the document adds none.
+    static let pdfUASchema = """
+              <rdf:li rdf:parseType="Resource">
+                <pdfaSchema:namespaceURI>http://www.aiim.org/pdfua/ns/id/</pdfaSchema:namespaceURI>
+                <pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>
+                <pdfaSchema:schema>PDF/UA identification schema</pdfaSchema:schema>
+                <pdfaSchema:property>
+                  <rdf:Seq>
+                    <rdf:li rdf:parseType="Resource">
+                      <pdfaProperty:category>internal</pdfaProperty:category>
+                      <pdfaProperty:description>PDF/UA version identifier</pdfaProperty:description>
+                      <pdfaProperty:name>part</pdfaProperty:name>
+                      <pdfaProperty:valueType>Integer</pdfaProperty:valueType>
+                    </rdf:li>
+                  </rdf:Seq>
+                </pdfaSchema:property>
+              </rdf:li>
+
+        """
+    static let pdfUAExtensionSchemas = """
+        <rdf:Description rdf:about=""
+            xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"
+            xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"
+            xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">
+          <pdfaExtension:schemas>
+            <rdf:Bag>
+        \(pdfUASchema)    </rdf:Bag>
+          </pdfaExtension:schemas>
+        </rdf:Description>
+
+        """
+
+    // The descriptions the document adds, the first list of extension schemas
+    // among them with the PDF/UA identification schema, or nil when none has
+    // such a list.
+    static func withPDFUASchema(_ descriptions: [String]) -> [String]? {
+        var result = descriptions
+        for (i, description) in result.enumerated() {
+            guard let schemas = description.range(of: "<pdfaExtension:schemas>"),
+                    let bag = description.range(of: "<rdf:Bag>", range: schemas.upperBound..<description.endIndex) else {
+                continue
+            }
+            result[i] = String(description[..<bag.upperBound]) + "\n" + String(pdfUASchema.dropLast())
+                    + String(description[bag.upperBound...])
+            return result
+        }
+        return nil
+    }
+
+    // Whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1, which is
+    // PDF/A-3a too. Its content is tagged, and follows the rules of PDF/UA.
+    func isUA() -> Bool {
+        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1
+    }
     var toc: Bookmark?
     var importedFonts = [String]()
     var importedXObjects = [String]()
@@ -130,7 +190,7 @@ public final class PDF {
     /// Please note: PDF/A compliance requires all fonts to be embedded in the PDF.
     ///
     /// - Parameter os: the associated output stream.
-    /// - Parameter compliance: must be: Compliance.PDF_UA_1 or Compliance.PDF_A_1A to Compliance.PDF_A_3B
+    /// - Parameter compliance: must be: Compliance.PDF_UA_1, Compliance.PDF_A_1A to Compliance.PDF_A_3B, or Compliance.PDF_A_3A_UA_1, which is both PDF/A-3a and PDF/UA-1
     ///
     public init(_ os: OutputStream, _ compliance: Compliance) {
         os.open()
@@ -323,6 +383,10 @@ public final class PDF {
             } else if compliance == Compliance.PDF_A_3B {
                 sb.append("  <pdfaid:part>3</pdfaid:part>\n")
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
+            } else if compliance == Compliance.PDF_A_3A_UA_1 {
+                sb.append("  <pdfuaid:part>1</pdfuaid:part>\n")
+                sb.append("  <pdfaid:part>3</pdfaid:part>\n")
+                sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n")
             }
 
             sb.append("  <pdf:Producer>")
@@ -373,7 +437,16 @@ public final class PDF {
 
             sb.append("</rdf:Description>\n")
 
-            for description in metadata {
+            var descriptions = metadata
+            if compliance == Compliance.PDF_A_3A_UA_1 {
+                if let described = PDF.withPDFUASchema(metadata) {
+                    descriptions = described
+                } else {
+                    sb.append(PDF.pdfUAExtensionSchemas)
+                }
+            }
+
+            for description in descriptions {
                 sb.append(description)
                 sb.append("\n")
             }

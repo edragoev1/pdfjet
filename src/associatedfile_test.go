@@ -241,6 +241,30 @@ func TestAssociatedFileTheDocumentsThatCannotCarryAFileSayTheyCannot(t *testing.
 	}
 }
 
+func TestAssociatedFileTheMetadataHasOneListOfExtensionSchemas(t *testing.T) {
+	// A document of PDF/A-3a and PDF/UA-1 that adds a list of its own, as
+	// Factur-X does, has the PDF/UA identification schema in that list
+	for _, own := range []bool{false, true} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+		if own {
+			doc.pdf.AddMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
+				"  <pdfaExtension:schemas>\n" +
+				"    <rdf:Bag>\n" +
+				"    </rdf:Bag>\n" +
+				"  </pdfaExtension:schemas>\n" +
+				"</rdf:Description>\n")
+		}
+		raw := testCarry(doc, "factur-x.xml")
+		if n := strings.Count(raw, "<pdfaExtension:schemas>"); n != 1 {
+			t.Errorf("own list %v: %d lists", own, n)
+		}
+		if !strings.Contains(raw, "<pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>") {
+			t.Errorf("own list %v: the PDF/UA schema is not described", own)
+		}
+	}
+}
+
 func TestAssociatedFileTheMetadataCarriesTheDescriptionsOfTheStandardsOfTheDocument(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_A_3B)

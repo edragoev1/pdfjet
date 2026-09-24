@@ -166,6 +166,41 @@ public class AssociatedFileTest {
     }
 
     [Fact]
+    public void TheLevelOfPdfA3aAndPdfUA1IsBoth() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(TestSupport.Helvetica(pdf), "Invoice").SetLocation(50f, 50f).DrawOn(page);
+        // Tagged, as PDF/UA asks, where PDF/A-3a alone is not
+        Assert.True(TestSupport.Content(page).Contains("BDC"), "the text is not tagged");
+        string raw = Document(pdf, stream, "factur-x.xml");
+        foreach (string want in new string[] {"<pdfuaid:part>1</pdfuaid:part>", "<pdfaid:part>3</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>", "/StructTreeRoot", "/OutputIntents", "/AF ["}) {
+            Assert.True(raw.Contains(want), want);
+        }
+    }
+
+    [Fact]
+    public void TheMetadataHasOneListOfExtensionSchemas() {
+        // A document of PDF/A-3a and PDF/UA-1 that adds a list of its own, as
+        // Factur-X does, has the PDF/UA identification schema in that list.
+        foreach (bool own in new bool[] {false, true}) {
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1);
+            if (own) {
+                pdf.AddMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
+                        "  <pdfaExtension:schemas>\n" +
+                        "    <rdf:Bag>\n" +
+                        "    </rdf:Bag>\n" +
+                        "  </pdfaExtension:schemas>\n" +
+                        "</rdf:Description>\n");
+            }
+            string raw = Document(pdf, stream, "factur-x.xml");
+            Assert.Equal(1, raw.Split("<pdfaExtension:schemas>").Length - 1);
+            Assert.True(raw.Contains("<pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>"), "own list " + own);
+        }
+    }
+
+    [Fact]
     public void TheDocumentsThatCannotCarryAFileSayTheyCannot() {
         foreach (Compliance compliance in new Compliance[] {
                 Compliance.PDF_A_1A, Compliance.PDF_A_1B,

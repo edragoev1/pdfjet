@@ -2356,7 +2356,7 @@ public class Page {
             _ altDescription: String?,
             _ attributes: String?) {
         markedContentDepth += 1
-        if pdf.compliance == Compliance.PDF_UA_1 && artifactDepth == 0 {
+        if pdf.isUA() && artifactDepth == 0 {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
             if structure == StructElem.FIGURE &&
@@ -2400,7 +2400,7 @@ public class Page {
         markedContentDepth += 1
         if artifactDepth == 0 {
             artifactDepth = markedContentDepth
-            if pdf.compliance == Compliance.PDF_UA_1 {
+            if pdf.isUA() {
                 append("/Artifact BMC\n")
             }
         }
@@ -2414,7 +2414,7 @@ public class Page {
         }
         if artifactDepth == 0 || artifactDepth == markedContentDepth {
             artifactDepth = 0
-            if pdf.compliance == Compliance.PDF_UA_1 {
+            if pdf.isUA() {
                 append("EMC\n")
             }
         }
@@ -2461,7 +2461,7 @@ public class Page {
             _ structure: StructElem,
             _ attributes: String?,
             _ open: Bool) -> StructElement? {
-        if pdf.compliance != Compliance.PDF_UA_1 || artifactDepth != 0 {
+        if !pdf.isUA() || artifactDepth != 0 {
             return nil
         }
         let element = StructElement()
@@ -2488,7 +2488,7 @@ public class Page {
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
-        if pdf.compliance == Compliance.PDF_UA_1 {
+        if pdf.isUA() {
             let element = StructElement()
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = (annotation.annotationType == Annotation.Link) ?

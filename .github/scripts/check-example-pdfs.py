@@ -53,20 +53,24 @@ def java_source(n):
         return f.read()
 
 
-def compliance_profile(source):
-    """Returns the veraPDF profile of the compliance level the example sets, or None.
+def compliance_profiles(source):
+    """Returns the veraPDF profiles of the compliance level the example sets.
 
     The level is passed to setCompliance or to the PDF constructor. Commented
-    out lines are ignored.
+    out lines are ignored. PDF_A_3A_UA_1 is both PDF/A-3a and PDF/UA-1, so it
+    is checked with both profiles.
     """
     for line in source.splitlines():
         if line.lstrip().startswith('//'):
             continue
-        m = re.search(r'\bCompliance\.PDF_(A|UA)_(\d)([A-Z]?)\b', line)
+        m = re.search(r'\bCompliance\.PDF_(A|UA)_(\d)([A-Z]?)(?:_UA_(\d))?\b', line)
         if m:
-            kind, part, level = m.groups()
-            return f'ua{part}' if kind == 'UA' else f'{part}{level.lower()}'
-    return None
+            kind, part, level, ua = m.groups()
+            profiles = [f'ua{part}' if kind == 'UA' else f'{part}{level.lower()}']
+            if ua:
+                profiles.append(f'ua{ua}')
+            return profiles
+    return []
 
 
 def user_password(source):
@@ -202,8 +206,7 @@ def main():
 
     by_profile = {}
     for n in EXAMPLES:
-        profile = compliance_profile(java_source(n))
-        if profile:
+        for profile in compliance_profiles(java_source(n)):
             by_profile.setdefault(profile, []).append(n)
     for profile, examples in sorted(by_profile.items()):
         port_of = {
