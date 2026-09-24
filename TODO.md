@@ -337,14 +337,18 @@ to check and fix in the four, with a test.
   the bars; `drawCodeUPC` draws every digit at `h`. Found Sep 23, with the
   item above. Fixed Sep 24 in the four ports, and in pdfjet-client's preview.
 
-- ⬜ **The lines of a table's cells are drawn in whatever pen color the page
+- ✅ **The lines of a table's cells are drawn in whatever pen color the page
   has.** A cell's border color is transparent until `SetBorderColor` or the
   table's `SetCellBorderColor` sets one, and `drawBorders` then sets no pen
   color at all, so after `Page.SetPenColor` the lines of the table come out
   in that color, as the bars of a barcode did (fixed Sep 23). A cell should
   draw its lines black unless a color is set, in a graphics state of its
   own. pdfjet-server sets them black with `SetCellBorderColor`. Found Sep 23,
-  while adding tables to the editor.
+  while adding tables to the editor. Fixed Sep 24 in the four ports: a cell
+  with no color set draws its lines black. Not in a graphics state of its
+  own: the pen color is written only when it changes, so black costs one
+  operator a page, where q and Q would cost two for every cell. pdfjet-server
+  no longer sets it.
 
 - ✅ **A wrapped cell line can keep a trailing space, which moves right and
   centered text.** When a word wider than the column follows other text and
@@ -363,13 +367,14 @@ to check and fix in the four, with a test.
   apart all the way down, which is what matters: the text of a row starts
   under its top padding, and the extra 2 points of the first row are the top
   padding above the first line alone. Measured in the Go port on Sep 24.
-- ⬜ **Column percentages that are all 0 leave the columns 75 points wide.**
+- ✅ **Column percentages that are all 0 leave the columns 75 points wide.**
   `applyColumnPercents` returns when their total is not above 0, so
   `SetWidth` is ignored and each column keeps the width of a new cell: two
   columns at 0% and a width of 300 make a table 150 wide. It should share
   the width equally, as for columns with no percentage. Found Sep 23, with
-  the items above.
-- ⬜ **A corner radius over half the rect is drawn as crossed loops.**
+  the items above. Fixed Sep 24 in the four ports, and in pdfjet-client's
+  preview.
+- ✅ **A corner radius over half the rect is drawn as crossed loops.**
   `Rect` draws each side from the radius in from one corner to the radius in
   from the next, and does not cap the radius, so a radius over half the
   width or the height turns those sides back on themselves, and the curves
@@ -377,12 +382,14 @@ to check and fix in the four, with a test.
   ends. It should cap the radius at half the shorter side, as SVG caps rx
   and ry, which is what a pill shape is drawn with. pdfjet-server caps it
   before it draws (`cornerRadius` in document.go). Found Sep 24, writing the
-  help of the corner radius of a box in the editor.
-- ⬜ **To decide: the header row has a line under it without borders.**
+  help of the corner radius of a box in the editor. Fixed Sep 24 in the four
+  ports; pdfjet-server no longer caps it.
+- ✅ **The header row has a line under it without borders.**
   `drawHeaderRows` sets the bottom border of the last header row whatever
   `SetCellBorders` says, so a table without lines still has one under its
-  header. It may be meant; if it is, the documentation of `SetCellBorders`
-  should say so. Found Sep 23.
+  header. Decided Sep 24 that it is a fault: the line is drawn only under the
+  header cells that have borders. Fixed in the four ports, and in
+  pdfjet-client's preview. Found Sep 23.
 
 ## v9.1 — features, after v9.0.3
 

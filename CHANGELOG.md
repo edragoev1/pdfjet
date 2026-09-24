@@ -442,6 +442,24 @@ This is the first entry in this file; earlier releases were not tracked here.
   indexed the table of Code 128 with codeword 256: an
   `ArrayIndexOutOfBoundsException` in Java, an `IndexOutOfRangeException`
   in C#, an index out of range panic in Go and a crash in Swift.
+- The lines of a table's cells are black, in all four ports, whatever pen
+  color the page was left with. A cell with no border color set drew its
+  lines in the pen's color, so after `Page.setPenColor` a table came out in
+  that color; `Cell.setBorderColor(Color.transparent)` now draws them black
+  too. Found by pdfjet-server.
+- A table without lines, after `Table.setCellBorders(false)`, has no line
+  under its header row, in all four ports. The last header row was given a
+  bottom border on every page whatever its borders; it is now given one only
+  under the cells that have borders. Found by pdfjet-server.
+- Column percentages that are all 0 share the width of the table equally, in
+  all four ports, as columns with no percentage do, rather than leaving each
+  column 75 points wide: two columns at 0% in a table 300 wide are 150 each.
+  Found by pdfjet-server.
+- The corner radius of a `Rect` is at most half its shorter side, in all
+  four ports, as SVG has it. A larger radius turned the sides back on
+  themselves and drew the corners as crossed loops; a rect 20 high with a
+  radius of 30 is now the pill that a radius of 10 draws. Found by
+  pdfjet-server.
 - The guard bars of EAN-13 and UPC-A barcodes reach 5 modules below the
   other bars, in all four ports, as the GS1 General Specifications have
   them, rather than 8 points whatever the module: about 10.7 modules at the
