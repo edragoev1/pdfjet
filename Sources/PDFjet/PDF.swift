@@ -73,11 +73,18 @@ public final class PDF {
         return nil
     }
 
-    // Whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1, which is
-    // PDF/A-3a too. Its content is tagged, and follows the rules of PDF/UA.
-    func isUA() -> Bool {
-        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1
+    // Whether the content of the document is tagged, and follows the rules of
+    // PDF/UA: that of PDF_UA_1, of the A levels of PDF/A, which ask for tagged
+    // content, and of PDF_A_3A_UA_1, which is both.
+    func isTagged() -> Bool {
+        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_1A
+                || compliance == Compliance.PDF_A_2A || compliance == PDF.complianceA3A
+                || compliance == Compliance.PDF_A_3A_UA_1
     }
+
+    // PDF_A_3A, named by its raw value, since the case is deprecated and the
+    // build fails on the warning its name gives. It is still supported.
+    static var complianceA3A: Compliance { Compliance(rawValue: 6)! }
     var toc: Bookmark?
     var importedFonts = [String]()
     var importedXObjects = [String]()
@@ -377,7 +384,7 @@ public final class PDF {
             } else if compliance == Compliance.PDF_A_2B {
                 sb.append("  <pdfaid:part>2</pdfaid:part>\n")
                 sb.append("  <pdfaid:conformance>B</pdfaid:conformance>\n")
-            } else if compliance == Compliance.PDF_A_3A {
+            } else if compliance == PDF.complianceA3A {
                 sb.append("  <pdfaid:part>3</pdfaid:part>\n")
                 sb.append("  <pdfaid:conformance>A</pdfaid:conformance>\n")
             } else if compliance == Compliance.PDF_A_3B {

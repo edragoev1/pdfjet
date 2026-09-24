@@ -76,10 +76,14 @@ final public class PDF {
         return null;
     }
 
-    // Whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1, which is
-    // PDF/A-3a too. Its content is tagged, and follows the rules of PDF/UA.
-    boolean isUA() {
-        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1;
+    // Whether the content of the document is tagged, and follows the rules of
+    // PDF/UA: that of PDF_UA_1, of the A levels of PDF/A, which ask for tagged
+    // content, and of PDF_A_3A_UA_1, which is both.
+    @SuppressWarnings("deprecation")
+    boolean isTagged() {
+        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_1A
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_3A
+                || compliance == Compliance.PDF_A_3A_UA_1;
     }
     Bookmark toc = null;
     List<Font> fonts = new ArrayList<Font>();
@@ -333,6 +337,7 @@ final public class PDF {
         return "0000000000".substring(digits.length()) + digits;
     }
 
+    @SuppressWarnings("deprecation") // PDF_A_3A, which is still written
     int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");

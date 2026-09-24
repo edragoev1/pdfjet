@@ -402,7 +402,7 @@ to check and fix in the four, with a test.
   other, `PDF_UA_1` or a PDF/A level, where the two are made to go together,
   and PDFjet Forms writes documents that are to be archived and read aloud.
   Added Sep 24: `Compliance.PDF_A_3A_UA_1` in the four ports.
-- **The A levels of PDF/A tag no content.** `PDF_A_1A`, `PDF_A_2A` and
+- ✅ **The A levels of PDF/A tag no content.** `PDF_A_1A`, `PDF_A_2A` and
   `PDF_A_3A` write a structure tree, but the marked content of the text and
   the images is written only for PDF/UA (`isUA` in the four ports), so a
   document of an A level has no tagged content, which the A of PDF/A asks
@@ -411,7 +411,13 @@ to check and fix in the four, with a test.
   decide for v9.0.3: tag the A levels as PDF/UA is, which asks each figure
   of them for a description, as PDF/UA does, and so refuses documents that
   are written today; or tag them without that rule; or say in the booklet
-  that they are not tagged. Found Sep 24, adding `PDF_A_3A_UA_1`.
+  that they are not tagged. Found Sep 24, adding `PDF_A_3A_UA_1`. Decided and
+  fixed the same day: the A levels are tagged as PDF/UA is, rules and all,
+  in the four ports, which may refuse a document that is written today, as
+  CHANGELOG.md says; and `PDF_A_3A` is deprecated, since `PDF_A_3A_UA_1` is
+  the same document that says it is PDF/UA-1 too. The PDF/UA examples, of
+  PDF/A-1a, 2a and 3a, pass veraPDF's profiles of those levels but for what
+  each of PDF/A forbids, such as transparency in PDF/A-1.
 
 ## v9.1 — features, after v9.0.3
 

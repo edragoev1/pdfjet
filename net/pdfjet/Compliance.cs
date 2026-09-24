@@ -24,6 +24,7 @@ namespace PDFjet.NET {
         /// <summary>PDF/A-2b.</summary>
         PDF_A_2B,
         /// <summary>PDF/A-3a.</summary>
+        [System.Obsolete("Use PDF_A_3A_UA_1, which is the same document, tagged as PDF/UA asks, and says it is PDF/UA-1 too. PDF_A_3A is still written.")]
         PDF_A_3A,
         /// <summary>PDF/A-3b.</summary>
         PDF_A_3B,

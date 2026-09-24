@@ -2329,7 +2329,7 @@ public class Page {
         }
     }
 
-    /// Begins marked content for a structure element when the document is PDF/UA compliant.
+    /// Begins marked content for a structure element when the document is tagged: PDF/UA, or a PDF/A of level A.
     public func addBDC(
             _ structure: StructElem,
             _ actualText: String?,
@@ -2337,7 +2337,7 @@ public class Page {
         addBDC(structure, nil, actualText, altDescription)
     }
 
-    /// Begins marked content in the specified language for a structure element when the document is PDF/UA compliant.
+    /// Begins marked content in the specified language for a structure element when the document is tagged: PDF/UA, or a PDF/A of level A.
     public func addBDC(
             _ structure: StructElem,
             _ language: String?,
@@ -2356,13 +2356,13 @@ public class Page {
             _ altDescription: String?,
             _ attributes: String?) {
         markedContentDepth += 1
-        if pdf.isUA() && artifactDepth == 0 {
+        if pdf.isTagged() && artifactDepth == 0 {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
             if structure == StructElem.FIGURE &&
                     (altDescription == nil || altDescription!.trimmingCharacters(
                         in: .whitespacesAndNewlines).isEmpty) {
-                pdf.fail("A figure of a PDF/UA document needs an alternative description.")
+                pdf.fail("A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
             }
             // The marked content of a paragraph that is drawn word by word
             // belongs to the one element of the paragraph.
@@ -2395,18 +2395,18 @@ public class Page {
         }
     }
 
-    /// Begins marked content for an artifact when the document is PDF/UA compliant.
+    /// Begins marked content for an artifact when the document is tagged: PDF/UA, or a PDF/A of level A.
     public func addArtifactBMC() {
         markedContentDepth += 1
         if artifactDepth == 0 {
             artifactDepth = markedContentDepth
-            if pdf.isUA() {
+            if pdf.isTagged() {
                 append("/Artifact BMC\n")
             }
         }
     }
 
-    /// Ends the current marked content when the document is PDF/UA compliant.
+    /// Ends the current marked content when the document is tagged: PDF/UA, or a PDF/A of level A.
     public func addEMC() {
         if markedContentDepth == 0 {
             pdf.fail("addEMC was called without a matching addBDC or addArtifactBMC.")
@@ -2414,7 +2414,7 @@ public class Page {
         }
         if artifactDepth == 0 || artifactDepth == markedContentDepth {
             artifactDepth = 0
-            if pdf.isUA() {
+            if pdf.isTagged() {
                 append("EMC\n")
             }
         }
@@ -2432,10 +2432,10 @@ public class Page {
         return addStructElement(parent, structure, attributes, false)
     }
 
-    /// Begins a structure element of a PDF/UA document that what is drawn until
+    /// Begins a structure element of a tagged document, PDF/UA or a PDF/A of level A, that what is drawn until
     /// endStructElement becomes the kids of, like the L of a list whose items are
     /// drawn one at a time. The calls nest, and every one needs its
-    /// endStructElement. In a document that is not PDF/UA both do nothing.
+    /// endStructElement. In a document that is not tagged both do nothing.
     public func beginStructElement(_ structure: StructElem) {
         let element = addStructElement(structParent, structure, nil)
         structElementStack.append(structParent)
@@ -2461,7 +2461,7 @@ public class Page {
             _ structure: StructElem,
             _ attributes: String?,
             _ open: Bool) -> StructElement? {
-        if !pdf.isUA() || artifactDepth != 0 {
+        if !pdf.isTagged() || artifactDepth != 0 {
             return nil
         }
         let element = StructElement()
@@ -2488,7 +2488,7 @@ public class Page {
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
-        if pdf.isUA() {
+        if pdf.isTagged() {
             let element = StructElement()
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = (annotation.annotationType == Annotation.Link) ?

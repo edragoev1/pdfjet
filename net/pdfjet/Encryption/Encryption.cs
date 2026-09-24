@@ -115,7 +115,7 @@ public class Encryption {
         // A PDF/UA file grants the permission to extract content for
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
-        if (pdf.IsUA()) {
+        if (pdf.IsTagged()) {
             permissions.Grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
         }
 

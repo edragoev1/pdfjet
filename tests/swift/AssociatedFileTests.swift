@@ -156,6 +156,20 @@ import Testing
         #expect(!problem.contains("/AFRelationship"), "\(problem)")
     }
 
+    @Test func theALevelsOfPdfAAreTaggedAndTheBLevelsAreNot() {
+        // Level A asks for tagged content, as PDF/UA does
+        let tagged = [Compliance.PDF_UA_1, Compliance.PDF_A_1A, Compliance.PDF_A_2A, PDF.complianceA3A,
+                Compliance.PDF_A_3A_UA_1]
+        for raw in 0...Compliance.PDF_A_3A_UA_1.rawValue {
+            let compliance = Compliance(rawValue: raw)!
+            let memory = MemoryPDF(compliance)
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            TextLine(TestSupport.helvetica(memory.pdf), "Invoice").setLocation(50, 50).drawOn(page)
+            #expect(tagged.contains(compliance) == TestSupport.content(page).contains("/P <</MCID 0>>"),
+                    "\(compliance)")
+        }
+    }
+
     @Test func theLevelOfPdfA3aAndPdfUA1IsBoth() throws {
         let memory = MemoryPDF(Compliance.PDF_A_3A_UA_1)
         let page = Page(memory.pdf, Letter.PORTRAIT)
@@ -196,7 +210,7 @@ import Testing
             #expect(problem.contains("\(compliance)"), "\(problem)")
         }
         // The documents that can: PDF/A-3, and the ones of no profile at all.
-        for compliance in [Compliance.PDF_A_3A, Compliance.PDF_A_3B,
+        for compliance in [PDF.complianceA3A, Compliance.PDF_A_3B,
                 Compliance.PDF_1_7, Compliance.PDF_UA_1] {
             let memory = MemoryPDF(compliance)
             #expect(try document(memory, ["factur-x.xml"]).contains("/AF ["), "\(compliance)")

@@ -115,7 +115,7 @@ func NewEncryption(pdf *PDF,
 	// A PDF/UA file grants the permission to extract content for
 	// accessibility, as ISO 14289-1 7.16 requires. The compliance has to
 	// be set before the encryption for this to apply.
-	if pdf.isUA() {
+	if pdf.isTagged() {
 		permissions.Grant(encryption.ExtractContentsForAccessibility)
 	}
 

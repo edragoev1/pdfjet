@@ -2568,7 +2568,7 @@ final public class Page {
 
     /**
      * Begins marked content for a structure element with BDC, when the document
-     * is PDF/UA compliant.
+     * is tagged: PDF/UA, or a PDF/A of level A.
      *
      * @param structure the structure.
      * @param actualText the actual text.
@@ -2583,7 +2583,7 @@ final public class Page {
 
     /**
      * Begins marked content for a structure element with BDC, when the document
-     * is PDF/UA compliant.
+     * is tagged: PDF/UA, or a PDF/A of level A.
      *
      * @param structure the structure.
      * @param language the language.
@@ -2608,13 +2608,13 @@ final public class Page {
             String altDescription,
             String attributes) {
         markedContentDepth++;
-        if (pdf.isUA() && artifactDepth == 0) {
+        if (pdf.isTagged() && artifactDepth == 0) {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
             if (structure == StructElem.FIGURE &&
                     (altDescription == null || altDescription.trim().isEmpty())) {
                 pdf.fail(new IllegalStateException(
-                        "A figure of a PDF/UA document needs an alternative description."));
+                        "A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description."));
             }
             // The marked content of a paragraph that is drawn word by word
             // belongs to the one element of the paragraph.
@@ -2647,20 +2647,20 @@ final public class Page {
     }
 
     /**
-     * Begins marked content for an artifact, when the document is PDF/UA compliant.
+     * Begins marked content for an artifact, when the document is tagged: PDF/UA, or a PDF/A of level A.
      */
     public void addArtifactBMC() {
         markedContentDepth++;
         if (artifactDepth == 0) {
             artifactDepth = markedContentDepth;
-            if (pdf.isUA()) {
+            if (pdf.isTagged()) {
                 append("/Artifact BMC\n");
             }
         }
     }
 
     /**
-     * Ends the current marked content, when the document is PDF/UA compliant.
+     * Ends the current marked content, when the document is tagged: PDF/UA, or a PDF/A of level A.
      */
     public void addEMC() {
         if (markedContentDepth == 0) {
@@ -2668,7 +2668,7 @@ final public class Page {
         }
         if (artifactDepth == 0 || artifactDepth == markedContentDepth) {
             artifactDepth = 0;
-            if (pdf.isUA()) {
+            if (pdf.isTagged()) {
                 append("EMC\n");
             }
         }
@@ -2685,10 +2685,10 @@ final public class Page {
     }
 
     /**
-     * Begins a structure element of a PDF/UA document that what is drawn until
+     * Begins a structure element of a tagged document, PDF/UA or a PDF/A of level A, that what is drawn until
      * endStructElement becomes the kids of, like the L of a list whose items
      * are drawn one at a time. The calls nest, and every one needs its
-     * endStructElement. In a document that is not PDF/UA both do nothing.
+     * endStructElement. In a document that is not tagged both do nothing.
      *
      * @param structure the structure element type.
      */
@@ -2715,7 +2715,7 @@ final public class Page {
     // like the Table of a table that runs over pages.
     StructElement addStructElement(
             StructElement parent, StructElem structure, String attributes, boolean open) {
-        if (!pdf.isUA() || artifactDepth != 0) {
+        if (!pdf.isTagged() || artifactDepth != 0) {
             return null;
         }
         StructElement element = new StructElement();
@@ -2744,7 +2744,7 @@ final public class Page {
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
-        if (pdf.isUA()) {
+        if (pdf.isTagged()) {
             StructElement element = new StructElement();
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = annotation.annotationType.equals(Annotation.Link) ?

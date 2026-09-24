@@ -166,6 +166,22 @@ public class AssociatedFileTest {
     }
 
     [Fact]
+    public void TheALevelsOfPdfAAreTaggedAndTheBLevelsAreNot() {
+        // Level A asks for tagged content, as PDF/UA does
+        foreach (Compliance compliance in Enum.GetValues(typeof(Compliance))) {
+            PDF pdf = new PDF(new MemoryStream(), compliance);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(TestSupport.Helvetica(pdf), "Invoice").SetLocation(50f, 50f).DrawOn(page);
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
+            bool tagged = compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_1A
+                    || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_3A
+                    || compliance == Compliance.PDF_A_3A_UA_1;
+#pragma warning restore CS0618
+            Assert.True(tagged == TestSupport.Content(page).Contains("/P <</MCID 0>>"), compliance.ToString());
+        }
+    }
+
+    [Fact]
     public void TheLevelOfPdfA3aAndPdfUA1IsBoth() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1);
@@ -213,7 +229,9 @@ public class AssociatedFileTest {
         }
         // The documents that can: PDF/A-3, and the ones of no profile at all.
         foreach (Compliance compliance in new Compliance[] {
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
                 Compliance.PDF_A_3A, Compliance.PDF_A_3B,
+#pragma warning restore CS0618
                 Compliance.PDF_1_7, Compliance.PDF_UA_1}) {
             MemoryStream stream = new MemoryStream();
             PDF pdf = new PDF(stream, compliance);

@@ -2078,7 +2078,7 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 }
 
 // AddBDC begins marked content for a structure element with BDC, when the
-// document is PDF/UA compliant.
+// document is tagged: PDF/UA, or a PDF/A of level A.
 func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, altDescription string) {
 	page.addBDC(structure, language, actualText, altDescription, "")
 }
@@ -2089,11 +2089,11 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
 	page.markedContentDepth++
-	if page.pdf.isUA() && page.artifactDepth == 0 {
+	if page.pdf.isTagged() && page.artifactDepth == 0 {
 		// A figure stands for what it draws, which only the one who draws it
 		// can say, so PDF/UA asks for a description of every one.
 		if structure == structelem.Figure && strings.TrimSpace(altDescription) == "" {
-			page.pdf.fail("A figure of a PDF/UA document needs an alternative description.")
+			page.pdf.fail("A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
 		}
 		// The marked content of a paragraph that is drawn word by word
 		// belongs to the one element of the paragraph.
@@ -2127,12 +2127,12 @@ func (page *Page) addBDC(
 	}
 }
 
-// AddArtifactBMC begins marked content for an artifact when the document is PDF/UA compliant.
+// AddArtifactBMC begins marked content for an artifact when the document is tagged: PDF/UA, or a PDF/A of level A.
 func (page *Page) AddArtifactBMC() {
 	page.markedContentDepth++
 	if page.artifactDepth == 0 {
 		page.artifactDepth = page.markedContentDepth
-		if page.pdf.isUA() {
+		if page.pdf.isTagged() {
 			page.appendString("/Artifact BMC\n")
 		}
 	}
@@ -2146,7 +2146,7 @@ func (page *Page) AddEMC() {
 	}
 	if page.artifactDepth == 0 || page.artifactDepth == page.markedContentDepth {
 		page.artifactDepth = 0
-		if page.pdf.isUA() {
+		if page.pdf.isTagged() {
 			page.appendString("EMC\n")
 		}
 	}
@@ -2161,10 +2161,10 @@ func (page *Page) addStructElement(parent *structElement, structure structelem.S
 	return page.addStructElementOpen(parent, structure, attributes, false)
 }
 
-// BeginStructElement begins a structure element of a PDF/UA document that
+// BeginStructElement begins a structure element of a tagged document, PDF/UA or a PDF/A of level A, that
 // what is drawn until EndStructElement becomes the kids of, like the L of a
 // list whose items are drawn one at a time. The calls nest, and every one
-// needs its EndStructElement. In a document that is not PDF/UA both do
+// needs its EndStructElement. In a document that is not tagged both do
 // nothing.
 //
 // A list of two items is:
@@ -2203,7 +2203,7 @@ func (page *Page) EndStructElement() {
 // written, like the Table of a table that runs over pages.
 func (page *Page) addStructElementOpen(
 	parent *structElement, structure structelem.StructElem, attributes string, open bool) *structElement {
-	if !page.pdf.isUA() || page.artifactDepth != 0 {
+	if !page.pdf.isTagged() || page.artifactDepth != 0 {
 		return nil
 	}
 	element := newStructElement()
@@ -2236,7 +2236,7 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
 	page.annots = append(page.annots, annotation)
-	if page.pdf.isUA() {
+	if page.pdf.isTagged() {
 		element := newStructElement()
 		// PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
 		element.structure = string(structelem.Annot)

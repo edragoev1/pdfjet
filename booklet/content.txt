@@ -185,7 +185,7 @@ addWatermark draws a text across the page, from its bottom left corner to its to
 A PDF with the compliance PDF_UA_1 is a PDF/UA document: PDFjet tags every text line, text block, table cell and image, so that screen readers read the document in order, and marks lines, shapes and backgrounds as decoration. The document needs a title, and every image a description, set with setAltDescription. setStructureType makes a text a heading, H1 to H6, which readers use to move through the document.
 
 @snippet archival-document An archival document
-The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term archiving: every font is embedded, and the document carries what it needs to look the same in any viewer. The A levels are tagged as PDF/UA is; the B levels only keep the look. PDF/A-3 can have files attached. PDF_A_3A_UA_1 is PDF/A-3a and PDF/UA-1 at once: tagged as PDF/UA asks, with its title and descriptions, and kept as PDF/A-3, with files attached if need be, such as the XML of an e-invoice.
+The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term archiving: every font is embedded, and the document carries what it needs to look the same in any viewer. The A levels are tagged as PDF/UA is; the B levels only keep the look. PDF/A-3 can have files attached. PDF_A_3A_UA_1 is PDF/A-3a and PDF/UA-1 at once: tagged as PDF/UA asks, with its title and descriptions, and kept as PDF/A-3, with files attached if need be, such as the XML of an e-invoice. It takes the place of PDF_A_3A, which is deprecated.
 
 # Fonts
 

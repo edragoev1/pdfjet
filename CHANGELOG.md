@@ -283,6 +283,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   but along the edges.
 
 ### Changed
+- The A levels of PDF/A, `PDF_A_1A`, `PDF_A_2A` and `PDF_A_3A`, tag their
+  content, as level A asks, in all four ports: the text, the tables and the
+  images are marked content of the structure tree, and the lines, the shapes
+  and the backgrounds are artifacts, as for `PDF_UA_1`. They wrote a
+  structure tree with no marked content in it, which veraPDF passed, but a
+  screen reader has nothing to read in. They follow the rules of PDF/UA too,
+  so a document of an A level with a figure that has no alternative
+  description is refused, as one of PDF/UA is; a document that was written
+  before may need `setAltDescription`, or a B level. The words of the refusal
+  name both: "A figure of a tagged document, PDF/UA or PDF/A of level A,
+  needs an alternative description."
 - An SVG path is filled black unless its fill is `none`, whether it has a
   stroke or not, a stroke is one unit wide unless the file says otherwise,
   and a `stroke-width` of 0 draws no stroke, as SVG draws them, in all four
@@ -1038,6 +1049,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A `TextFrame` wrapped a word early when there was room for it but not for
   the space after it, and broke a word as wide as the frame; a negative
   paragraph gap is 0.
+
+### Deprecated
+- `Compliance.PDF_A_3A`, in all four ports, for `PDF_A_3A_UA_1`, which is the
+  same document, tagged as PDF/UA asks, that says it is PDF/UA-1 too.
+  `PDF_A_3A` is still written as before.
 
 ### Removed
 - `images/mt-map.bmp` and `images/mt-map.png`, a map of Malta in two formats,

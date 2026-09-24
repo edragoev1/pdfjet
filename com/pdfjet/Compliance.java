@@ -23,7 +23,13 @@ public enum Compliance {
     PDF_A_2A,
     /** PDF/A-2b, for archiving, level B (basic). */
     PDF_A_2B,
-    /** PDF/A-3a, for archiving, with the accessibility requirements of level A. */
+    /**
+     * PDF/A-3a, for archiving, with the accessibility requirements of level A.
+     *
+     * @deprecated Use PDF_A_3A_UA_1, which is the same document, tagged as
+     * PDF/UA asks, and says it is PDF/UA-1 too. PDF_A_3A is still written.
+     */
+    @Deprecated
     PDF_A_3A,
     /** PDF/A-3b, for archiving, level B (basic). */
     PDF_A_3B,

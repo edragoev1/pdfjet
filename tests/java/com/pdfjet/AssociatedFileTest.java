@@ -173,6 +173,21 @@ class AssociatedFileTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation") // PDF_A_3A, which is still written
+    void theALevelsOfPdfAAreTaggedAndTheBLevelsAreNot() throws Exception {
+        // Level A asks for tagged content, as PDF/UA does
+        for (Compliance compliance : Compliance.values()) {
+            PDF pdf = new PDF(new ByteArrayOutputStream(), compliance);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(TestSupport.helvetica(pdf), "Invoice").setLocation(50f, 50f).drawOn(page);
+            boolean tagged = compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_1A
+                    || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_3A
+                    || compliance == Compliance.PDF_A_3A_UA_1;
+            assertEquals(tagged, TestSupport.content(page).contains("/P <</MCID 0>>"), compliance.toString());
+        }
+    }
+
+    @Test
     void theLevelOfPdfA3aAndPdfUA1IsBoth() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1);
@@ -208,6 +223,7 @@ class AssociatedFileTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation") // PDF_A_3A, which is still written
     void theDocumentsThatCannotCarryAFileSayTheyCannot() throws Exception {
         for (Compliance compliance : new Compliance[] {
                 Compliance.PDF_A_1A, Compliance.PDF_A_1B,

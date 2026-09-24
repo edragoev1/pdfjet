@@ -165,11 +165,16 @@ func (pdf *PDF) GetCompliance() compliance.Compliance {
 	return pdf.compliance
 }
 
-// isUA reports whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1,
-// which is PDF/A-3a too. Its content is tagged, and follows the rules of
-// PDF/UA.
-func (pdf *PDF) isUA() bool {
-	return pdf.compliance == compliance.PDF_UA_1 || pdf.compliance == compliance.PDF_A_3A_UA_1
+// isTagged reports whether the content of the document is tagged, and follows
+// the rules of PDF/UA: that of PDF_UA_1, of the A levels of PDF/A, which ask
+// for tagged content, and of PDF_A_3A_UA_1, which is both.
+func (pdf *PDF) isTagged() bool {
+	switch pdf.compliance {
+	case compliance.PDF_UA_1, compliance.PDF_A_1A, compliance.PDF_A_2A, compliance.PDF_A_3A,
+		compliance.PDF_A_3A_UA_1:
+		return true
+	}
+	return false
 }
 
 // SetEncryption sets the encryption applied to this document.

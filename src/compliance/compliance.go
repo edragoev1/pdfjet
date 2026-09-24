@@ -20,6 +20,8 @@ const (
 	PDF_A_1B
 	PDF_A_2A
 	PDF_A_2B
+	// Deprecated: use PDF_A_3A_UA_1, which is the same document, tagged as
+	// PDF/UA asks, and says it is PDF/UA-1 too. PDF_A_3A is still written.
 	PDF_A_3A
 	PDF_A_3B
 	// PDF_A_3A_UA_1 is PDF/A-3a and PDF/UA-1 in one document: tagged as

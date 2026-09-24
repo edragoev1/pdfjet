@@ -867,5 +867,39 @@ func TestPDFTheLevelOfPDFA3aAndPDFUA1IsBoth(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
 	NewPage(pdf, letter.Portrait()).AddBDC(structelem.Figure, "", "", "")
-	testRecorded(t, pdf, "A figure of a PDF/UA document needs an alternative description.")
+	testRecorded(t, pdf, "A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
+}
+
+func TestPDFTheALevelsOfPDFAAreTagged(t *testing.T) {
+	// Level A asks for tagged content, as PDF/UA does
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1A, compliance.PDF_A_2A, compliance.PDF_A_3A,
+		compliance.PDF_A_3A_UA_1, compliance.PDF_UA_1} {
+		pdf := testNewPDF()
+		pdf.SetCompliance(level)
+		page := NewPage(pdf, letter.Portrait())
+		line := NewTextLine(testHelvetica(pdf), "Invoice")
+		line.SetLocation(50, 50)
+		line.DrawOn(page)
+		if !strings.Contains(testContent(page), "/P <</MCID 0>>") {
+			t.Errorf("%v: the text is not tagged", level)
+		}
+		figure := testNewPDF()
+		figure.SetCompliance(level)
+		NewPage(figure, letter.Portrait()).AddBDC(structelem.Figure, "", "", "")
+		testRecorded(t, figure,
+			"A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
+	}
+	// Level B does not
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1B, compliance.PDF_A_2B, compliance.PDF_A_3B,
+		compliance.PDF_1_7} {
+		pdf := testNewPDF()
+		pdf.SetCompliance(level)
+		page := NewPage(pdf, letter.Portrait())
+		line := NewTextLine(testHelvetica(pdf), "Invoice")
+		line.SetLocation(50, 50)
+		line.DrawOn(page)
+		if strings.Contains(testContent(page), "BDC") {
+			t.Errorf("%v: the text is tagged", level)
+		}
+	}
 }

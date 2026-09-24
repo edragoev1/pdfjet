@@ -76,10 +76,15 @@ public sealed class PDF {
         return null;
     }
 
-    // Whether the document is PDF/UA: PDF_UA_1, or PDF_A_3A_UA_1, which is
-    // PDF/A-3a too. Its content is tagged, and follows the rules of PDF/UA.
-    internal bool IsUA() {
-        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1;
+    // Whether the content of the document is tagged, and follows the rules of
+    // PDF/UA: that of PDF_UA_1, of the A levels of PDF/A, which ask for tagged
+    // content, and of PDF_A_3A_UA_1, which is both.
+    internal bool IsTagged() {
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still supported
+        return compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_1A
+                || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_3A
+                || compliance == Compliance.PDF_A_3A_UA_1;
+#pragma warning restore CS0618
     }
     internal Bookmark toc = null;
     internal Encryption encryption = null;
@@ -323,7 +328,9 @@ public sealed class PDF {
             } else if (compliance == Compliance.PDF_A_2B) {
                 sb.Append("  <pdfaid:part>2</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>B</pdfaid:conformance>\n");
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
             } else if (compliance == Compliance.PDF_A_3A) {
+#pragma warning restore CS0618
                 sb.Append("  <pdfaid:part>3</pdfaid:part>\n");
                 sb.Append("  <pdfaid:conformance>A</pdfaid:conformance>\n");
             } else if (compliance == Compliance.PDF_A_3B) {
