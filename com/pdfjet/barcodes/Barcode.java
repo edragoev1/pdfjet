@@ -56,6 +56,7 @@ public class Barcode implements Drawable {
         "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"};
 
     private Map<Character, String> tableB = new HashMap<Character, String>();
+    private String altDescription;
 
     /**
      * The constructor.
@@ -192,6 +193,20 @@ public class Barcode implements Drawable {
         return this;
     }
 
+    /**
+     * Sets what the barcode says, such as its digits, for a screen reader: a
+     * tagged document, PDF/UA or a PDF/A of level A, then has the barcode as one
+     * figure of that description. Without one, its bars are decoration, which a
+     * screen reader skips, and the text under them, if any, is read as text.
+     *
+     * @param altDescription the description.
+     * @return this Barcode object.
+     */
+    public Barcode setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
     private static boolean hasOnlyDigits(String text) {
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
@@ -210,6 +225,13 @@ public class Barcode implements Drawable {
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        // Described, the barcode is one figure of a tagged document, its bars
+        // and its text with it; not described, its bars are decoration and
+        // its text is text.
+        boolean figure = page != null && altDescription != null && !altDescription.isEmpty();
+        if (figure) {
+            page.addBDC(StructElem.FIGURE, null, null, altDescription);
+        }
         if (page != null) {
             // The bars are black whatever pen color the page was left with
             page.saveGraphicsState();
@@ -232,6 +254,9 @@ public class Barcode implements Drawable {
         } finally {
             if (page != null) {
                 page.restoreGraphicsState();
+            }
+            if (figure) {
+                page.addEMC();
             }
         }
     }

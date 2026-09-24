@@ -12,8 +12,10 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 const testTenWords = "one two three four five six seven eight nine ten"
@@ -166,5 +168,23 @@ func TestTextBlockSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T)
 	block.SetFallbackFont(helvetica).SetFont(NewCoreFont(pdf, corefont.TimesRoman()))
 	if block.fallbackFont != helvetica {
 		t.Error("setting the font replaced the fallback font that was set")
+	}
+}
+
+func TestTextBlockIsTaggedAsItsStructureType(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	page := NewPage(pdf, letter.Portrait())
+	heading := NewTextBlock(font, "Invoice")
+	heading.SetStructureType(structelem.H1)
+	heading.SetLocation(50, 50)
+	heading.DrawOn(page)
+	paragraph := NewTextBlock(font, "Thank you for your order.")
+	paragraph.SetLocation(50, 100)
+	paragraph.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, "/H1 <</MCID 0>>") || !strings.Contains(content, "/P <</MCID 1>>") {
+		t.Errorf("the heading and the paragraph are not tagged as H1 and P: %.200q", content)
 	}
 }

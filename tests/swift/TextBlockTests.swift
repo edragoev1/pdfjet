@@ -125,4 +125,18 @@ import Testing
         block.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
         #expect(block.fallbackFont === helvetica)
     }
+    @Test func isTaggedAsItsStructureType() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let heading = TextBlock(font, "Invoice").setStructureType(StructElem.H1)
+        _ = heading.setLocation(50, 50)
+        _ = heading.drawOn(page)
+        let paragraph = TextBlock(font, "Thank you for your order.")
+        _ = paragraph.setLocation(50, 100)
+        _ = paragraph.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("/H1 <</MCID 0>>") && content.contains("/P <</MCID 1>>"), "\(content)")
+    }
+
 }

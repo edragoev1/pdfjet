@@ -61,4 +61,19 @@ import Testing
         TestSupport.expectXY(76, 76, qr.drawOn(page))
         TestSupport.expectXY(76, 76, qr.drawOn(page))
     }
+    @Test func aDescribedQRCodeIsAFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let qr = try QRCode("https://pdfjet.com", ErrorCorrectionLevel.M)
+        qr.setAltDescription("https://pdfjet.com")
+        _ = qr.setLocation(50, 50)
+        _ = qr.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n") && !content.contains("/Artifact"))
+        // Not described, it is decoration, as before
+        let plain = Page(memory.pdf, Letter.PORTRAIT)
+        _ = try QRCode("https://pdfjet.com", ErrorCorrectionLevel.M).drawOn(plain)
+        #expect(TestSupport.content(plain).hasPrefix("/Artifact BMC\n"))
+    }
+
 }

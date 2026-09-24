@@ -37,6 +37,7 @@ public class QRCode : IDrawable {
     private float m1 = 2.0f;        // Module length
 
     private int color = Color.black;
+    private String altDescription;
 
     /// <summary>
     /// Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
@@ -119,14 +120,32 @@ public class QRCode : IDrawable {
     }
 
     /// <summary>
+    /// Sets what the QR code says, such as the web address it carries, for a
+    /// screen reader: a tagged document, PDF/UA or a PDF/A of level A, then has
+    /// the QR code as a figure of that description. Without one, it is
+    /// decoration, which a screen reader skips.
+    /// </summary>
+    /// <param name="altDescription">the description.</param>
+    /// <returns>this QRCode object.</returns>
+    public QRCode SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>
     /// Draws this barcode on the specified page.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
         if (page != null) {
-            // The modules carry no text, so they are decorative content.
-            page.AddArtifactBMC();
+            // Described, the QR code is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            if (!String.IsNullOrEmpty(altDescription)) {
+                page.AddBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.AddArtifactBMC();
+            }
             page.SetBrushColor(this.color);
             for (int row = 0; row < modules.Length; row++) {
                 for (int col = 0; col < modules.Length; col++) {

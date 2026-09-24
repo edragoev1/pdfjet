@@ -21,6 +21,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // QRCode used to create 2D QR Code barcodes. Please see Example_20.
@@ -36,6 +37,7 @@ type QRCode struct {
 	qrData               []byte
 	m1                   float32 // Module length
 	color                int32
+	altDescription       string
 }
 
 // NewQRCode is used to create 2D QR Code barcodes. The string is encoded in
@@ -128,8 +130,13 @@ func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 // @return x and y coordinates of the bottom right corner of this component.
 func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 	if page != nil {
-		// The modules carry no text, so they are decorative content.
-		page.AddArtifactBMC()
+		// Described, the QR code is a figure of a tagged document; not
+		// described, its modules, which carry no text, are decoration.
+		if qrcode.altDescription != "" {
+			page.AddBDC(structelem.Figure, "", "", qrcode.altDescription)
+		} else {
+			page.AddArtifactBMC()
+		}
 		page.SetBrushColor(qrcode.color)
 		for row := 0; row < len(qrcode.modules); row++ {
 			for col := 0; col < len(qrcode.modules); col++ {
@@ -147,6 +154,15 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 	w := qrcode.m1 * float32(len(qrcode.modules))
 	h := qrcode.m1 * float32(len(qrcode.modules))
 	return [2]float32{qrcode.x + w, qrcode.y + h}
+}
+
+// SetAltDescription sets what the QR code says, such as the web address it
+// carries, for a screen reader: a tagged document, PDF/UA or a PDF/A of level
+// A, then has the QR code as a figure of that description. Without one, it is
+// decoration, which a screen reader skips.
+func (qrcode *QRCode) SetAltDescription(altDescription string) *QRCode {
+	qrcode.altDescription = altDescription
+	return qrcode
 }
 
 // GetModules returns the modules of the QR code: true for dark and false for light modules.

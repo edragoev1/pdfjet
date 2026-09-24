@@ -218,4 +218,30 @@ import Testing
         #expect(content.components(separatedBy: " l\nS\n").count - 1 == 39 + 4)
         #expect(content.contains("3 w\n"))
     }
+    @Test func aDescribedBarcodeIsOneFigure() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let barcode = try Barcode(Barcode.EAN_13, "400638133393")
+        barcode.setFont(font)
+        barcode.setAltDescription("EAN-13 4006381333931")
+        _ = barcode.setLocation(50, 50)
+        _ = barcode.drawOn(page)
+        let content = TestSupport.content(page)
+        // The bars and the digits are the figure, and nothing else is marked
+        #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n"))
+        #expect(!content.contains("/Artifact") && !content.contains("/P <<"))
+        #expect(content.components(separatedBy: "BDC").count - 1 == 1)
+        #expect(content.components(separatedBy: "EMC").count - 1 == 1)
+
+        // Not described, its bars are decoration and its digits text, as before
+        let plain = Page(memory.pdf, Letter.PORTRAIT)
+        let undescribed = try Barcode(Barcode.EAN_13, "400638133393")
+        undescribed.setFont(font)
+        _ = undescribed.setLocation(50, 50)
+        _ = undescribed.drawOn(plain)
+        let before = TestSupport.content(plain)
+        #expect(before.contains("/Artifact") && before.contains("/P <<"))
+    }
+
 }

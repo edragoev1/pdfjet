@@ -35,6 +35,7 @@ public class QRCode : Drawable {
     private var m1: Float = 2.0             // Module length
 
     private var color: Int32 = Color.black
+    private var altDescription: String?
     private let qrutil = QRUtil()
 
     ///
@@ -127,6 +128,20 @@ public class QRCode : Drawable {
     }
 
     ///
+    /// Sets what the QR code says, such as the web address it carries, for a
+    /// screen reader: a tagged document, PDF/UA or a PDF/A of level A, then has
+    /// the QR code as a figure of that description. Without one, it is
+    /// decoration, which a screen reader skips.
+    ///
+    /// - Parameter altDescription: the description.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String?) -> QRCode {
+        self.altDescription = altDescription
+        return self
+    }
+
+    ///
     /// Draws this barcode on the specified page.
     ///
     /// - Parameter page: the specified page.
@@ -135,8 +150,13 @@ public class QRCode : Drawable {
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
         if let page = page {
-            // The modules carry no text, so they are decorative content.
-            page.addArtifactBMC()
+            // Described, the QR code is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            if let altDescription = altDescription, !altDescription.isEmpty {
+                page.addBDC(StructElem.FIGURE, nil, nil, altDescription)
+            } else {
+                page.addArtifactBMC()
+            }
             page.setBrushColor(self.color)
             for row in 0..<modules!.count {
                 for col in 0..<modules!.count {

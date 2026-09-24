@@ -38,6 +38,7 @@ final public class QRCode implements Drawable {
     private final byte[] qrData;
     private float m1 = 2.0f;        // Module length
     private int color = Color.black;
+    private String altDescription;
 
     /**
      * Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
@@ -125,6 +126,20 @@ final public class QRCode implements Drawable {
     }
 
     /**
+     * Sets what the QR code says, such as the web address it carries, for a
+     * screen reader: a tagged document, PDF/UA or a PDF/A of level A, then has
+     * the QR code as a figure of that description. Without one, it is
+     * decoration, which a screen reader skips.
+     *
+     * @param altDescription the description.
+     * @return this QRCode object.
+     */
+    public QRCode setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
      *  Draws this barcode on the specified page.
      *
      *  @param page the specified page.
@@ -133,8 +148,13 @@ final public class QRCode implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         if (page != null) {
-            // The modules carry no text, so they are decorative content.
-            page.addArtifactBMC();
+            // Described, the QR code is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            if (altDescription != null && !altDescription.isEmpty()) {
+                page.addBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.addArtifactBMC();
+            }
             page.setBrushColor(this.color);
             for (int row = 0; row < modules.length; row++) {
                 for (int col = 0; col < modules.length; col++) {

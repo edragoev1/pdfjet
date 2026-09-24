@@ -224,5 +224,34 @@ public class BarcodeTest {
         Assert.Equal(39 + 4, content.Split(" l\nS\n").Length - 1);
         Assert.Contains("3 w\n", content);
     }
+    [Fact]
+    public void ADescribedBarcodeIsOneFigure() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Barcode barcode = new Barcode(Barcode.EAN_13, "400638133393");
+        barcode.SetFont(font);
+        barcode.SetAltDescription("EAN-13 4006381333931");
+        barcode.SetLocation(50f, 50f);
+        barcode.DrawOn(page);
+        string content = TestSupport.Content(page);
+        // The bars and the digits are the figure, and nothing else is marked.
+        Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
+        Assert.DoesNotContain("/Artifact", content);
+        Assert.DoesNotContain("/P <<", content);
+        Assert.Equal(1, content.Split("BDC").Length - 1);
+        Assert.Equal(1, content.Split("EMC").Length - 1);
+
+        // Not described, its bars are decoration and its digits text, as before.
+        Page plain = new Page(pdf, Letter.PORTRAIT);
+        Barcode undescribed = new Barcode(Barcode.EAN_13, "400638133393");
+        undescribed.SetFont(font);
+        undescribed.SetLocation(50f, 50f);
+        undescribed.DrawOn(plain);
+        string before = TestSupport.Content(plain);
+        Assert.Contains("/Artifact", before);
+        Assert.Contains("/P <<", before);
+    }
+
 }
 }

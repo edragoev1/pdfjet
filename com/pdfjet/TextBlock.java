@@ -44,6 +44,7 @@ public class TextBlock implements Drawable {
     private float borderCornerRadius = 0.0f;
 
     private String language;
+    private StructElem structureType = StructElem.P;
     private String uri;
     private Alignment textAlignment;
     private Alignment verticalAlignment = Alignment.TOP;
@@ -477,6 +478,19 @@ public class TextBlock implements Drawable {
     }
 
     /**
+     * Sets the structure element type of this text block, for example
+     * StructElem.P, the default, or StructElem.H1 for a heading, as a tagged
+     * document, PDF/UA or a PDF/A of level A, tags it.
+     *
+     * @param structureType the structure element type.
+     * @return this TextBlock object.
+     */
+    public TextBlock setStructureType(StructElem structureType) {
+        this.structureType = structureType;
+        return this;
+    }
+
+    /**
      * Sets the language of the text, for example "he", "ar" or "fa". The text is
      * marked with it, for screen readers and text extraction.
      *
@@ -891,7 +905,7 @@ public class TextBlock implements Drawable {
             rect.drawOn(page);
         }
 
-        page.addBDC(StructElem.P, this.language, this.textContent, null);
+        page.addBDC(structureType, this.language, this.textContent, null);
         page.drawTextBlock(
             this.font,
             this.fallbackFont,

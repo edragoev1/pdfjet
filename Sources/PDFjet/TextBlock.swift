@@ -36,6 +36,7 @@ public class TextBlock : Drawable {
     private var borderCornerRadius: Float = 0.0
 
     private var language: String?
+    private var structureType = StructElem.P
     private var uri: String?
     private var textAlignment: Alignment = Alignment.LEFT
     private var verticalAlignment: Alignment = Alignment.TOP
@@ -316,6 +317,15 @@ public class TextBlock : Drawable {
     /// Returns the vertical alignment of the text.
     public func getVerticalAlignment() -> Alignment {
         return self.verticalAlignment
+    }
+
+    /// Sets the structure element type of this text block, for example
+    /// StructElem.P, the default, or StructElem.H1 for a heading, as a tagged
+    /// document, PDF/UA or a PDF/A of level A, tags it.
+    @discardableResult
+    public func setStructureType(_ structureType: StructElem) -> TextBlock {
+        self.structureType = structureType
+        return self
     }
 
     /// Sets the language of the text, for example "he", "ar" or "fa", as a BCP 47
@@ -702,7 +712,7 @@ public class TextBlock : Drawable {
             rect.drawOn(page)
         }
 
-        page!.addBDC(StructElem.P, language, textContent, "")
+        page!.addBDC(structureType, language, textContent, "")
         page!.drawTextBlock(
             font,
             fallbackFont,

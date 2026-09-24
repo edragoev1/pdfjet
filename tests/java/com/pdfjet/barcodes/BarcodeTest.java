@@ -246,4 +246,31 @@ class BarcodeTest {
         }
         return sb.toString();
     }
+    @Test
+    void aDescribedBarcodeIsOneFigure() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), com.pdfjet.Compliance.PDF_UA_1);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Barcode barcode = new Barcode(Barcode.EAN_13, "400638133393");
+        barcode.setFont(font);
+        barcode.setAltDescription("EAN-13 4006381333931");
+        barcode.setLocation(50f, 50f);
+        barcode.drawOn(page);
+        String content = TestSupport.content(page);
+        // The bars and the digits are the figure, and nothing else is marked.
+        assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content.substring(0, 40));
+        assertTrue(!content.contains("/Artifact") && !content.contains("/P <<"), "something inside is marked");
+        assertEquals(1, content.split("BDC", -1).length - 1);
+        assertEquals(1, content.split("EMC", -1).length - 1);
+
+        // Not described, its bars are decoration and its digits text, as before.
+        Page plain = new Page(pdf, Letter.PORTRAIT);
+        Barcode undescribed = new Barcode(Barcode.EAN_13, "400638133393");
+        undescribed.setFont(font);
+        undescribed.setLocation(50f, 50f);
+        undescribed.drawOn(plain);
+        String before = TestSupport.content(plain);
+        assertTrue(before.contains("/Artifact") && before.contains("/P <<"));
+    }
+
 }

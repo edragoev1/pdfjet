@@ -68,5 +68,22 @@ public class QRCodeTest {
         TestSupport.AssertXY(76f, 76f, qr.DrawOn(page));
         TestSupport.AssertXY(76f, 76f, qr.DrawOn(page));
     }
+    [Fact]
+    public void ADescribedQRCodeIsAFigure() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        QRCode qr = new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M);
+        qr.SetAltDescription("https://pdfjet.com");
+        qr.SetLocation(50f, 50f);
+        qr.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
+        Assert.DoesNotContain("/Artifact", content);
+        // Not described, it is decoration, as before.
+        Page plain = new Page(pdf, Letter.PORTRAIT);
+        new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M).DrawOn(plain);
+        Assert.StartsWith("/Artifact BMC\n", TestSupport.Content(plain));
+    }
+
 }
 }

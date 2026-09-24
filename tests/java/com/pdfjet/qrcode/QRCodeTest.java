@@ -8,6 +8,7 @@ package com.pdfjet.qrcode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.pdfjet.Letter;
 import com.pdfjet.Page;
@@ -78,4 +79,20 @@ class QRCodeTest {
         TestSupport.assertXY(76f, 76f, qr.drawOn(page));
         TestSupport.assertXY(76f, 76f, qr.drawOn(page));
     }
+    @Test
+    void aDescribedQRCodeIsAFigure() throws Exception {
+        com.pdfjet.PDF pdf = new com.pdfjet.PDF(new java.io.ByteArrayOutputStream(), com.pdfjet.Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        QRCode qr = new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M);
+        qr.setAltDescription("https://pdfjet.com");
+        qr.setLocation(50f, 50f);
+        qr.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n") && !content.contains("/Artifact"));
+        // Not described, it is decoration, as before.
+        Page plain = new Page(pdf, Letter.PORTRAIT);
+        new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M).drawOn(plain);
+        assertTrue(TestSupport.content(plain).startsWith("/Artifact BMC\n"));
+    }
+
 }

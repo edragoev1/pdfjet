@@ -61,7 +61,10 @@ PDF/UA-1 in one document, which PDFjet Forms writes every PDF as: archival,
 accessible, and able to carry the layout it was made from. It is a new
 member of an enum and a few lines in the four ports, since the tagging of
 PDF/UA and the metadata of PDF/A were both there, and it is checked by
-veraPDF with both profiles, in check-examples.sh by Example_55.
+veraPDF with both profiles, in check-examples.sh by Example_55. With it, the
+same day, `setAltDescription` of `Barcode` and `QRCode`, so that a barcode
+of such a document is read aloud rather than skipped, and the content of a
+figure is the figure, marked no further.
 
 The sixth is Markdown to PDF, which is in v9.0.3 rather than v9.0.2: it was
 written on a branch of its own with the checks master has, and merged on

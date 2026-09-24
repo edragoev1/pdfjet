@@ -13,6 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/internal/code128"
 	"github.com/edragoev1/pdfjet/v9/src/internal/gs1"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39, Code 128,
@@ -34,6 +35,7 @@ type Barcode struct {
 	gCode           []string
 	lgMap           []string
 	tableB          map[byte]string
+	altDescription  string
 }
 
 // Constants for the barcode type.
@@ -187,8 +189,25 @@ func hasOnlyDigits(text string) bool {
 	return true
 }
 
+// SetAltDescription sets what the barcode says, such as its digits or the web
+// address of a QR code, for a screen reader: a tagged document, PDF/UA or a
+// PDF/A of level A, then has the barcode as one figure of that description.
+// Without one, its bars are decoration, which a screen reader skips, and the
+// text under them, if any, is read as text.
+func (barcode *Barcode) SetAltDescription(altDescription string) *Barcode {
+	barcode.altDescription = altDescription
+	return barcode
+}
+
 // DrawOn draws this barcode on the specified page.
 func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
+	// Described, the barcode is one figure of a tagged document, its bars
+	// and its text with it; not described, its bars are decoration and its
+	// text is text.
+	if page != nil && barcode.altDescription != "" {
+		page.AddBDC(structelem.Figure, "", "", barcode.altDescription)
+		defer page.AddEMC()
+	}
 	if page != nil {
 		// The bars are black whatever pen color the page was left with
 		page.SaveGraphicsState()

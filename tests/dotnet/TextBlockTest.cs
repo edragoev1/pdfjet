@@ -140,5 +140,21 @@ public class TextBlockTest {
         block.SetTextColor(Color.blue).SetTextColor(Color.transparent);
         TestSupport.AssertRGB(0f, 0f, 1f, block.GetTextColor());
     }
+    [Fact]
+    public void IsTaggedAsItsStructureType() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextBlock heading = new TextBlock(font, "Invoice").SetStructureType(StructElem.H1);
+        heading.SetLocation(50f, 50f);
+        heading.DrawOn(page);
+        TextBlock paragraph = new TextBlock(font, "Thank you for your order.");
+        paragraph.SetLocation(50f, 100f);
+        paragraph.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains("/H1 <</MCID 0>>", content);
+        Assert.Contains("/P <</MCID 1>>", content);
+    }
+
 }
 }

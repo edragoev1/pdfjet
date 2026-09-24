@@ -56,6 +56,7 @@ type TextBlock struct {
 	strikeout              bool
 	keywordHighlightColors map[string]int32
 	rightToLeft            bool
+	structureType          structelem.StructElem
 }
 
 // colorToRGB returns the red, green and blue components, from 0.0 to 1.0, of
@@ -93,6 +94,7 @@ func NewTextBlock(font *Font, textContent string) *TextBlock {
 	textBlock.fontSize = font.size
 
 	textBlock.textContent = textContent
+	textBlock.structureType = structelem.P
 	textBlock.lineSpacing = 1.0
 	textBlock.textColor = [3]float32{0.0, 0.0, 0.0}
 	textBlock.textPadding = 0.0
@@ -333,6 +335,14 @@ func (textBlock *TextBlock) SetVerticalAlignment(verticalAlignment alignment.Ali
 // GetVerticalAlignment returns the vertical alignment of the text.
 func (textBlock *TextBlock) GetVerticalAlignment() alignment.Alignment {
 	return textBlock.verticalAlignment
+}
+
+// SetStructureType sets the structure element type of this text block, for
+// example structelem.P, the default, or structelem.H1 for a heading, as a
+// tagged document, PDF/UA or a PDF/A of level A, tags it.
+func (textBlock *TextBlock) SetStructureType(structureType structelem.StructElem) *TextBlock {
+	textBlock.structureType = structureType
+	return textBlock
 }
 
 // SetLanguage sets the language of the text, for example "he", "ar" or "fa",
@@ -746,7 +756,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.AddBDC(structelem.P, textBlock.language, textBlock.textContent, "")
+	page.AddBDC(textBlock.structureType, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,
 		textBlock.fallbackFont,

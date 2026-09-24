@@ -88,7 +88,8 @@ public class Page {
     private readonly List<State> savedStates = new List<State>();
     // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet.
     private int markedContentDepth = 0;
-    // The markedContentDepth of the outermost artifact, or 0 outside of one.
+    // The markedContentDepth of the outermost artifact or figure, whose
+    // content is marked no further, or 0 outside of both.
     // Content inside an artifact is not tagged, so an AddBDC there writes
     // nothing, and neither does its AddEMC.
     private int artifactDepth = 0;
@@ -2512,6 +2513,13 @@ public class Page {
             Append(mcid++);
             Append(">>\n");
             Append("BDC\n");
+            // The content of a figure is the figure: what it draws inside, such as the
+            // bars and the digits of a barcode, is neither tagged again nor marked as
+            // an artifact, as it would be inside an artifact, since its description
+            // stands for it.
+            if (structure == StructElem.FIGURE) {
+                artifactDepth = markedContentDepth;
+            }
         }
     }
 

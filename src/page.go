@@ -90,7 +90,8 @@ type Page struct {
 
 	mcid int
 
-	// The markedContentDepth of the outermost artifact, or 0 outside of one.
+	// The markedContentDepth of the outermost artifact or figure, whose
+	// content is marked no further, or 0 outside of both.
 	// Content inside an artifact is not tagged, so an AddBDC there writes
 	// nothing, and neither does its AddEMC.
 	artifactDepth int
@@ -2124,6 +2125,13 @@ func (page *Page) addBDC(
 		page.mcid++
 		page.appendString(">>\n")
 		page.appendString("BDC\n")
+		// The content of a figure is the figure: what it draws inside, such as the
+		// bars and the digits of a barcode, is neither tagged again nor marked as
+		// an artifact, as it would be inside an artifact, since its description
+		// stands for it.
+		if structure == structelem.Figure {
+			page.artifactDepth = page.markedContentDepth
+		}
 	}
 }
 

@@ -128,3 +128,23 @@ func TestQRCodeInAPDFUADocumentTheModulesAreAnArtifact(t *testing.T) {
 		t.Errorf("the modules are not an artifact: %q", content)
 	}
 }
+
+func TestQRCodeADescribedQRCodeIsAFigure(t *testing.T) {
+	pdf := pdfjet.NewPDF(bufio.NewWriter(new(bytes.Buffer)))
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	qr := NewQRCode("https://pdfjet.com", errorcorrectionlevel.M)
+	qr.SetAltDescription("https://pdfjet.com")
+	qr.SetLocation(50, 50)
+	qr.DrawOn(page)
+	content := string(page.GetContent())
+	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || strings.Contains(content, "/Artifact") {
+		t.Errorf("the QR code is not a figure: %.80q", content)
+	}
+	// Not described, it is decoration, as before
+	plain := pdfjet.NewPage(pdf, letter.Portrait())
+	NewQRCode("https://pdfjet.com", errorcorrectionlevel.M).DrawOn(plain)
+	if content := string(plain.GetContent()); !strings.HasPrefix(content, "/Artifact BMC\n") {
+		t.Errorf("a QR code with no description is not decoration: %.80q", content)
+	}
+}

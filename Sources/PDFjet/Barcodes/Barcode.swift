@@ -49,6 +49,7 @@ public class Barcode : Drawable {
         "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"]
 
     private var tableB = [String : String]()
+    private var altDescription: String?
 
     ///
     /// The constructor.
@@ -225,6 +226,20 @@ public class Barcode : Drawable {
         return self
     }
 
+    ///
+    /// Sets what the barcode says, such as its digits, for a screen reader: a
+    /// tagged document, PDF/UA or a PDF/A of level A, then has the barcode as one
+    /// figure of that description. Without one, its bars are decoration, which a
+    /// screen reader skips, and the text under them, if any, is read as text.
+    ///
+    /// - Parameter altDescription: the description.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String?) -> Barcode {
+        self.altDescription = altDescription
+        return self
+    }
+
     private static func hasOnlyDigits(_ text: String) -> Bool {
         for ch in text.unicodeScalars {
             if ch < "0" || ch > "9" {
@@ -247,6 +262,17 @@ public class Barcode : Drawable {
 
     @discardableResult
     func drawOnPageAtLocation(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+        // Described, the barcode is one figure of a tagged document, its bars
+        // and its text with it; not described, its bars are decoration and
+        // its text is text.
+        if let page = page, let altDescription = altDescription, !altDescription.isEmpty {
+            page.addBDC(StructElem.FIGURE, nil, nil, altDescription)
+        }
+        defer {
+            if let page = page, let altDescription = altDescription, !altDescription.isEmpty {
+                page.addEMC()
+            }
+        }
         if let page = page {
             // The bars are black whatever pen color the page was left with
             page.saveGraphicsState()

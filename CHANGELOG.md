@@ -10,6 +10,17 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- The structure type of a text block, in all four ports:
+  `TextBlock.setStructureType`, as `TextLine` has it, so that a text block
+  of a tagged document is a heading, `StructElem.H1` to `H6`, rather than a
+  paragraph, which is what it is unless it is set.
+- A description of a barcode and of a QR code, for a screen reader, in all
+  four ports: `setAltDescription` of `Barcode` and of `QRCode`, as `Image` and
+  `SVGImage` have it. In a tagged document, PDF/UA or a PDF/A of level A, a
+  described barcode is one figure of that description, its bars and its
+  digits with it, and a described QR code is a figure too. Without one, a
+  barcode is drawn as before: its bars are decoration and its digits text,
+  and a QR code is decoration, which a screen reader skips.
 - A compliance level that is PDF/A-3a and PDF/UA-1 at once, in all four
   ports: `Compliance.PDF_A_3A_UA_1`, after `PDF_A_3B`, so that the values of
   the others do not change. The content is tagged, and follows the rules of
@@ -283,6 +294,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   but along the edges.
 
 ### Changed
+- What is drawn inside a figure of a tagged document, between
+  `addBDC(StructElem.FIGURE, ...)` and its `addEMC`, is the figure, in all
+  four ports: a drawable that tags itself, or marks itself as an artifact,
+  is neither tagged again nor marked inside it, as inside an artifact. It
+  was tagged again, a marked content inside another, which PDF/UA does not
+  allow. What PDFjet draws inside a figure of its own, an image, an SVG or a
+  chart, is drawn as before.
 - The A levels of PDF/A, `PDF_A_1A`, `PDF_A_2A` and `PDF_A_3A`, tag their
   content, as level A asks, in all four ports: the text, the tables and the
   images are marked content of the structure tree, and the lines, the shapes

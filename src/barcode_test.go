@@ -12,7 +12,9 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/direction"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 var testBarcodeCorners = []struct {
@@ -264,5 +266,45 @@ func TestBarcodeGS1128RefusesDataThatIsNotGS1OrTooLong(t *testing.T) {
 		if message, _ := testPanic(func() { NewBarcode(GS1_128, data) }); message != want {
 			t.Errorf("%q: %q", data, message)
 		}
+	}
+}
+
+func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	page := NewPage(pdf, letter.Portrait())
+	barcode := NewBarcode(EAN_13, "400638133393")
+	barcode.SetFont(font)
+	barcode.SetAltDescription("EAN-13 4006381333931")
+	barcode.SetLocation(50, 50)
+	barcode.DrawOn(page)
+	content := testContent(page)
+	// The bars and the digits are the figure, and nothing else is marked
+	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") {
+		t.Errorf("the barcode does not start a figure: %.80q", content)
+	}
+	for _, other := range []string{"/Artifact", "/P <<", "/Span"} {
+		if strings.Contains(content, other) {
+			t.Errorf("the figure has %s inside it", other)
+		}
+	}
+	if strings.Count(content, "BDC") != 1 || strings.Count(content, "EMC") != 1 {
+		t.Errorf("%d BDC and %d EMC", strings.Count(content, "BDC"), strings.Count(content, "EMC"))
+	}
+	if pdf.err != nil {
+		t.Error(pdf.err)
+	}
+
+	// Not described, its bars are decoration and its digits text, as before
+	pdf2 := testNewPDF()
+	pdf2.SetCompliance(compliance.PDF_UA_1)
+	page2 := NewPage(pdf2, letter.Portrait())
+	plain := NewBarcode(EAN_13, "400638133393")
+	plain.SetFont(NewFontFromFile(pdf2, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")))
+	plain.SetLocation(50, 50)
+	plain.DrawOn(page2)
+	if content := testContent(page2); !strings.Contains(content, "/Artifact") || !strings.Contains(content, "/P <<") {
+		t.Error("a barcode with no description is not drawn as before")
 	}
 }

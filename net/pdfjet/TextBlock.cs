@@ -47,6 +47,7 @@ public class TextBlock : IDrawable {
     private Alignment verticalAlignment = Alignment.TOP;
 
     private string language = null;
+    private StructElem structureType = StructElem.P;
     private string uri = null;
     private bool underline = false;
     private bool strikeout = false;
@@ -313,6 +314,16 @@ public class TextBlock : IDrawable {
         foreach (var key in map.Keys) {
             this.keywordHighlightColors[key.ToLower()] = map[key];
         }
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the structure element type of this text block, for example
+    /// StructElem.P, the default, or StructElem.H1 for a heading, as a tagged
+    /// document, PDF/UA or a PDF/A of level A, tags it.
+    /// </summary>
+    public TextBlock SetStructureType(StructElem structureType) {
+        this.structureType = structureType;
         return this;
     }
 
@@ -688,7 +699,7 @@ public class TextBlock : IDrawable {
             rect.DrawOn(page);
         }
 
-        page.AddBDC(StructElem.P, this.language, this.textContent, null);
+        page.AddBDC(structureType, this.language, this.textContent, null);
         page.DrawTextBlock(
             this.font,
             this.fallbackFont,

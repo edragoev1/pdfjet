@@ -156,4 +156,19 @@ class TextBlockTest {
         block.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
         assertSame(helvetica, block.fallbackFont);
     }
+    @Test
+    void isTaggedAsItsStructureType() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextBlock heading = new TextBlock(font, "Invoice").setStructureType(StructElem.H1);
+        heading.setLocation(50f, 50f);
+        heading.drawOn(page);
+        TextBlock paragraph = new TextBlock(font, "Thank you for your order.");
+        paragraph.setLocation(50f, 100f);
+        paragraph.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("/H1 <</MCID 0>>") && content.contains("/P <</MCID 1>>"), content);
+    }
+
 }

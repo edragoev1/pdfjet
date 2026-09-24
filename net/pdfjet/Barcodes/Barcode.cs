@@ -66,6 +66,7 @@ public class Barcode : IDrawable {
         "LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"};
 
     private Dictionary<Char, String> tableB = new Dictionary<Char, String>();
+    private String altDescription;
 
     /// <summary>
     /// The constructor.
@@ -198,6 +199,19 @@ public class Barcode : IDrawable {
         return this;
     }
 
+    /// <summary>
+    /// Sets what the barcode says, such as its digits, for a screen reader: a
+    /// tagged document, PDF/UA or a PDF/A of level A, then has the barcode as one
+    /// figure of that description. Without one, its bars are decoration, which a
+    /// screen reader skips, and the text under them, if any, is read as text.
+    /// </summary>
+    /// <param name="altDescription">the description.</param>
+    /// <returns>this Barcode object.</returns>
+    public Barcode SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
     private static bool HasOnlyDigits(String text) {
         foreach (char ch in text) {
             if (ch < '0' || ch > '9') {
@@ -213,6 +227,13 @@ public class Barcode : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        // Described, the barcode is one figure of a tagged document, its bars
+        // and its text with it; not described, its bars are decoration and
+        // its text is text.
+        bool figure = page != null && !String.IsNullOrEmpty(altDescription);
+        if (figure) {
+            page.AddBDC(StructElem.FIGURE, null, null, altDescription);
+        }
         if (page != null) {
             // The bars are black whatever pen color the page was left with
             page.SaveGraphicsState();
@@ -235,6 +256,9 @@ public class Barcode : IDrawable {
         } finally {
             if (page != null) {
                 page.RestoreGraphicsState();
+            }
+            if (figure) {
+                page.AddEMC();
             }
         }
     }
