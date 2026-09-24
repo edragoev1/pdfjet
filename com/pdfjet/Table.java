@@ -1692,9 +1692,12 @@ public class Table implements Drawable {
                     // basic plane, and a line has at least one of them, even
                     // one wider than the column.
                     String character = token.substring(k, k + Character.charCount(token.codePointAt(k)));
+                    // The line ends without the space before the token, which
+                    // would count in the width of the text and move it when it
+                    // is aligned right or centered.
                     if (buf.length() > 0 && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
                             buf.toString() + character) > cellWidth) {
-                        lines.add(buf.toString());
+                        lines.add(buf.toString().trim());
                         buf.setLength(0);
                     }
                     buf.append(character);

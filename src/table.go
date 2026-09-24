@@ -1596,9 +1596,12 @@ func wrapCellText(row []*Cell, index int) []string {
 			}
 			for _, ch := range token {
 				// A line has at least one character, even one wider than the column.
+				// The line ends without the space before the token, which
+				// would count in the width of the text and move it when it
+				// is aligned right or centered.
 				if buf.Len() > 0 && cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
 					cell.fontSize, buf.String()+string(ch)) > cellWidth {
-					lines = append(lines, buf.String())
+					lines = append(lines, trimSpace(buf.String()))
 					buf.Reset()
 				}
 				buf.WriteRune(ch)

@@ -1684,9 +1684,12 @@ public class Table : Drawable {
                 }
                 for scalar in token.unicodeScalars {
                     // A line has at least one character, even one wider than the column.
+                    // The line ends without the space before the token, which
+                    // would count in the width of the text and move it when it
+                    // is aligned right or centered.
                     if !buf.isEmpty && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
                             buf + String(scalar)) > cellWidth {
-                        lines.append(buf)
+                        lines.append(buf.trim())
                         buf = ""
                     }
                     buf.append(String(scalar))

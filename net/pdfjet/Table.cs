@@ -1622,9 +1622,12 @@ public class Table : IDrawable {
                     // basic plane, and a line has at least one of them, even
                     // one wider than the column.
                     String character = token.Substring(k, Util.CharCount(token, k));
+                    // The line ends without the space before the token, which
+                    // would count in the width of the text and move it when it
+                    // is aligned right or centered.
                     if (buf.Length > 0 && cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
                             buf.ToString() + character) > cellWidth) {
-                        lines.Add(buf.ToString());
+                        lines.Add(Util.Trim(buf.ToString()));
                         buf.Length = 0;
                     }
                     buf.Append(character);

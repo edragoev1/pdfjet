@@ -1243,3 +1243,18 @@ func TestTableAWordBrokenToFitAColumnKeepsItsCharactersWhole(t *testing.T) {
 		t.Errorf("the lines: %q, want %q", lines, want)
 	}
 }
+
+func TestTableALineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace(t *testing.T) {
+	// The second word does not fit the column, and its first character does
+	// not fit after the first word, so the first line is the first word.
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font.SetSize(10)
+	cell := NewCell(font, "abcd Wxyzwxyzw")
+	cell.SetWidth(30)
+	table := NewTable().SetTableData([][]*Cell{{cell}}, 0)
+	table.wrapAroundCellText()
+	if text := table.GetRow(0)[0].GetText(); text != "abcd" {
+		t.Errorf("the first line: %q, want %q", text, "abcd")
+	}
+}

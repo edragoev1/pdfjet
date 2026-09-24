@@ -953,4 +953,16 @@ import Testing
         }
         #expect(lines == ["a", "\u{1F600}", "b"])
     }
+
+    @Test func aLineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() throws {
+        // The second word does not fit the column, and its first character does
+        // not fit after the first word, so the first line is the first word.
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(10)
+        let cell = Cell(font, "abcd Wxyzwxyzw")
+        cell.setWidth(30)
+        let table = Table().setTableData([[cell]], 0)
+        table.wrapAroundCellText()
+        #expect(table.getRow(0)[0].getText() == "abcd")
+    }
 }

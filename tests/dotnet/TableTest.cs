@@ -1028,5 +1028,20 @@ public sealed class TableTest : IDisposable {
         }
         Assert.Equal(new List<String> { "a", "😀", "b" }, lines);
     }
+
+    [Fact]
+    public void ALineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() {
+        // The second word does not fit the column, and its first character does
+        // not fit after the first word, so the first line is the first word.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).SetSize(10f);
+        Cell cell = new Cell(font, "abcd Wxyzwxyzw");
+        cell.SetWidth(30f);
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> { cell });
+        Table table = new Table().SetTableData(rows, 0);
+        table.WrapAroundCellText();
+        Assert.Equal("abcd", table.GetRow(0)[0].GetText());
+    }
 }
 }

@@ -1053,4 +1053,19 @@ class TableTest {
         }
         assertEquals(Arrays.asList("a", "\uD83D\uDE00", "b"), lines);
     }
+
+    @Test
+    void aLineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() throws Exception {
+        // The second word does not fit the column, and its first character does
+        // not fit after the first word, so the first line is the first word.
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(10f);
+        Cell cell = new Cell(font, "abcd Wxyzwxyzw");
+        cell.setWidth(30f);
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(Arrays.asList(cell)));
+        Table table = new Table().setTableData(rows, 0);
+        table.wrapAroundCellText();
+        assertEquals("abcd", table.getRow(0).get(0).getText());
+    }
 }
