@@ -470,9 +470,17 @@ What is left, in the order it is worth doing:
   the invoice examples of the four ports have one. A discount or a charge
   with no reason and no reason code is refused, on the line (BR-42, BR-44)
   and on the invoice (BR-33, BR-38).
-- ⬜ The fields of EXTENDED that the model has no room for: the party that
-  pays, the party that is paid, several orders in one invoice, and the
-  documents an invoice refers to.
+- ✅ The fields that the model had no room for, Sep 24, in the four ports:
+  the party that is paid (`SetPayee`, BG-10, BASIC WL and above), the party
+  that pays (`SetPayer`, EXTENDED), the invoices an invoice refers to
+  (`AddPrecedingInvoice`, BG-3, such as the one a credit note corrects), the
+  documents that back it up, linked or attached (`AddSupportingDocument`,
+  BG-24, EN 16931 and above), and the line of the order of a line
+  (`SetOrderReference`, BT-132), with the order too in EXTENDED, so that one
+  invoice covers several orders. Written where the schema has them, read
+  back, and checked (BT-59, BT-25, BT-122, BT-125); Mustangproject passes
+  BASIC WL, BASIC, EN 16931 and EXTENDED, and the four ports write the same
+  XML.
 - ⬜ Order-X and Deliver-X, which are the same XML and the same embedding for
   an order and for a delivery note. The writer and the reader would be
   another profile each.
