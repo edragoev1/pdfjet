@@ -238,10 +238,13 @@ public class Rect implements Drawable {
         }
 
         final float k = 0.55228f;
+        // The radius is at most half the shorter side, as SVG has it: a larger one
+        // would turn the sides back on themselves and cross the curves.
+        final float r = Math.max(0f, Math.min(this.r, Math.min(Math.abs(w), Math.abs(h)) / 2f));
         // A rectangle carries no text, so it is decorative content.
         page.addArtifactBMC();
         page.saveGraphicsState();
-        if (this.r == 0.0f) {
+        if (r == 0.0f) {
             if (this.fillColor != null) {
                 page.moveTo(this.x, this.y);
                 page.lineTo(this.x + this.w, this.y);
@@ -277,23 +280,23 @@ public class Rect implements Drawable {
             }
 
             List<Point> points = new ArrayList<Point>();
-            points.add(new Point((this.x + this.r), this.y));
-            points.add(new Point((this.x + this.w) - this.r, this.y));
-            points.add(new Point((this.x + this.w - this.r) + this.r * k, this.y, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.w), (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.w), (this.y + this.r)));
-            points.add(new Point((this.x + this.w), (this.y + this.h) - this.r));
-            points.add(new Point((this.x + this.w), ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C));
-            points.add(new Point(((this.x + this.w) - this.r) + this.r * k, (this.y + this.h), Point.CONTROL_POINT_C));
-            points.add(new Point(((this.x + this.w) - this.r), (this.y + this.h)));
-            points.add(new Point((this.x + this.r), (this.y + this.h)));
-            points.add(new Point(((this.x + this.r) - this.r * k), (this.y + this.h), Point.CONTROL_POINT_C));
-            points.add(new Point(this.x, ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C));
-            points.add(new Point(this.x, (this.y + this.h) - this.r));
-            points.add(new Point(this.x, (this.y + this.r)));
-            points.add(new Point(this.x, (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.r) - this.r * k, this.y, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.r), this.y));
+            points.add(new Point((this.x + r), this.y));
+            points.add(new Point((this.x + this.w) - r, this.y));
+            points.add(new Point((this.x + this.w - r) + r * k, this.y, Point.CONTROL_POINT_C));
+            points.add(new Point((this.x + this.w), (this.y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((this.x + this.w), (this.y + r)));
+            points.add(new Point((this.x + this.w), (this.y + this.h) - r));
+            points.add(new Point((this.x + this.w), ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(((this.x + this.w) - r) + r * k, (this.y + this.h), Point.CONTROL_POINT_C));
+            points.add(new Point(((this.x + this.w) - r), (this.y + this.h)));
+            points.add(new Point((this.x + r), (this.y + this.h)));
+            points.add(new Point(((this.x + r) - r * k), (this.y + this.h), Point.CONTROL_POINT_C));
+            points.add(new Point(this.x, ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(this.x, (this.y + this.h) - r));
+            points.add(new Point(this.x, (this.y + r)));
+            points.add(new Point(this.x, (this.y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((this.x + r) - r * k, this.y, Point.CONTROL_POINT_C));
+            points.add(new Point((this.x + r), this.y));
 
             if (fillColor != null && borderColor == null) {
                 page.drawPath(points, PathOperator.FILL);

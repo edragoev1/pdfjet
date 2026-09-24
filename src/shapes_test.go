@@ -29,6 +29,19 @@ func TestShapesRectScaleByKeepsTheLocation(t *testing.T) {
 	testAssertXY(t, 70, 100, NewRect(10, 20, 30, 40).ScaleBy(2).DrawOn(testNewPage()))
 }
 
+func TestShapesRectACornerRadiusOverHalfTheShorterSideIsDrawnAsHalfOfIt(t *testing.T) {
+	// A rect 20 high with a radius of 30 is drawn as one with a radius of 10,
+	// a pill, rather than with its sides turned back as crossed loops.
+	draw := func(radius float32) string {
+		page := testNewPage()
+		NewRect(10, 20, 100, 20).SetCornerRadius(radius).SetBorderColor(color.Black).DrawOn(page)
+		return string(page.buf)
+	}
+	if over, half := draw(30), draw(10); over != half {
+		t.Errorf("a radius of 30 is drawn as:\n%s\nnot as one of 10:\n%s", over, half)
+	}
+}
+
 func TestShapesArcDrawOnReturnsTheBottomRightCornerOfItsCircle(t *testing.T) {
 	arc := NewArc().SetRadius(20).SetStartAngle(0).SetSweep(90)
 	arc.SetLocation(100, 100)

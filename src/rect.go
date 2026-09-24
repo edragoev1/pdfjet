@@ -179,11 +179,14 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	}
 
 	const k float32 = 0.55228
+	// The radius is at most half the shorter side, as SVG has it: a larger one
+	// would turn the sides back on themselves and cross the curves.
+	r := max(0, min(rect.cornerRadius, abs32(rect.width)/2, abs32(rect.height)/2))
 
 	// A rectangle carries no text, so it is decorative content.
 	page.AddArtifactBMC()
 	page.SaveGraphicsState()
-	if rect.cornerRadius == 0.0 {
+	if r == 0.0 {
 		if rect.hasFillColor {
 			page.MoveTo(rect.x, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y)
@@ -219,23 +222,23 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 		}
 
 		points := make([]*Point, 0)
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
-		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y))
-		points = append(points, NewControlPointC((rect.x+rect.width-rect.cornerRadius)+rect.cornerRadius*k, rect.y))
-		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
-		points = append(points, NewPoint(rect.x+rect.width, rect.y+rect.cornerRadius))
-		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-rect.cornerRadius))
-		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
-		points = append(points, NewControlPointC(((rect.x+rect.width)-rect.cornerRadius)+rect.cornerRadius*k, rect.y+rect.height))
-		points = append(points, NewPoint((rect.x+rect.width)-rect.cornerRadius, rect.y+rect.height))
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y+rect.height))
-		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y+rect.height))
-		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-rect.cornerRadius)+rect.cornerRadius*k))
-		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-rect.cornerRadius))
-		points = append(points, NewPoint(rect.x, rect.y+rect.cornerRadius))
-		points = append(points, NewControlPointC(rect.x, (rect.y+rect.cornerRadius)-rect.cornerRadius*k))
-		points = append(points, NewControlPointC((rect.x+rect.cornerRadius)-rect.cornerRadius*k, rect.y))
-		points = append(points, NewPoint(rect.x+rect.cornerRadius, rect.y))
+		points = append(points, NewPoint(rect.x+r, rect.y))
+		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y))
+		points = append(points, NewControlPointC((rect.x+rect.width-r)+r*k, rect.y))
+		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+r)-r*k))
+		points = append(points, NewPoint(rect.x+rect.width, rect.y+r))
+		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-r))
+		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-r)+r*k))
+		points = append(points, NewControlPointC(((rect.x+rect.width)-r)+r*k, rect.y+rect.height))
+		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y+rect.height))
+		points = append(points, NewPoint(rect.x+r, rect.y+rect.height))
+		points = append(points, NewControlPointC((rect.x+r)-r*k, rect.y+rect.height))
+		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-r)+r*k))
+		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-r))
+		points = append(points, NewPoint(rect.x, rect.y+r))
+		points = append(points, NewControlPointC(rect.x, (rect.y+r)-r*k))
+		points = append(points, NewControlPointC((rect.x+r)-r*k, rect.y))
+		points = append(points, NewPoint(rect.x+r, rect.y))
 
 		if rect.hasFillColor && !rect.hasBorderColor {
 			page.DrawPath(points, pathoperator.Fill)

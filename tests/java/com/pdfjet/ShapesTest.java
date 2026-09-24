@@ -32,6 +32,23 @@ class ShapesTest {
         TestSupport.assertXY(70f, 100f, new Rect(10f, 20f, 30f, 40f).scaleBy(2f).drawOn(page()));
     }
 
+    // The content of a rect 20 high with the corner radius, drawn on a page of its own.
+    private String roundRect(float radius) throws Exception {
+        Page page = page();
+        Rect rect = new Rect(10f, 20f, 100f, 20f);
+        rect.setCornerRadius(radius);
+        rect.setBorderColor(Color.black);
+        rect.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void rectACornerRadiusOverHalfTheShorterSideIsDrawnAsHalfOfIt() throws Exception {
+        // A radius of 30 is drawn as one of 10, a pill, rather than with the
+        // sides turned back as crossed loops.
+        assertEquals(roundRect(10f), roundRect(30f));
+    }
+
     @Test
     void arcDrawOnReturnsTheBottomRightCornerOfItsCircle() throws Exception {
         Arc arc = new Arc().setLocation(100f, 100f).setRadius(20f).setStartAngle(0f).setSweep(90f);

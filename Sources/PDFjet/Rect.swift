@@ -226,12 +226,15 @@ public class Rect : Drawable {
         }
 
         let k: Float = 0.55228
+        // The radius is at most half the shorter side, as SVG has it: a larger one
+        // would turn the sides back on themselves and cross the curves.
+        let r = max(0, min(self.r, min(abs(self.width), abs(self.height)) / 2))
 
         // A rectangle carries no text, so it is decorative content.
         page.addArtifactBMC()
         page.saveGraphicsState()
 
-        if self.r == 0.0 {
+        if r == 0.0 {
             if fillColor != nil {
                 page.moveTo(self.x, self.y)
                 page.lineTo(self.x + self.width, self.y)
@@ -267,23 +270,23 @@ public class Rect : Drawable {
             }
 
             var points: [Point] = []
-            points.append(Point(self.x + self.r, self.y))
-            points.append(Point((self.x + self.width) - self.r, self.y))
-            points.append(Point((self.x + self.width - self.r) + self.r * k, self.y, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + self.width, (self.y + self.r) - self.r * k, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + self.width, self.y + self.r))
-            points.append(Point(self.x + self.width, (self.y + self.height) - self.r))
-            points.append(Point(self.x + self.width, ((self.y + self.height) - self.r) + self.r * k, Point.CONTROL_POINT_C))
-            points.append(Point(((self.x + self.width) - self.r) + self.r * k, self.y + self.height, Point.CONTROL_POINT_C))
-            points.append(Point(((self.x + self.width) - self.r), self.y + self.height))
-            points.append(Point(self.x + self.r, self.y + self.height))
-            points.append(Point(((self.x + self.r) - self.r * k), self.y + self.height, Point.CONTROL_POINT_C))
-            points.append(Point(self.x, ((self.y + self.height) - self.r) + self.r * k, Point.CONTROL_POINT_C))
-            points.append(Point(self.x, (self.y + self.height) - self.r))
-            points.append(Point(self.x, self.y + self.r))
-            points.append(Point(self.x, (self.y + self.r) - self.r * k, Point.CONTROL_POINT_C))
-            points.append(Point((self.x + self.r) - self.r * k, self.y, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + self.r, self.y))
+            points.append(Point(self.x + r, self.y))
+            points.append(Point((self.x + self.width) - r, self.y))
+            points.append(Point((self.x + self.width - r) + r * k, self.y, Point.CONTROL_POINT_C))
+            points.append(Point(self.x + self.width, (self.y + r) - r * k, Point.CONTROL_POINT_C))
+            points.append(Point(self.x + self.width, self.y + r))
+            points.append(Point(self.x + self.width, (self.y + self.height) - r))
+            points.append(Point(self.x + self.width, ((self.y + self.height) - r) + r * k, Point.CONTROL_POINT_C))
+            points.append(Point(((self.x + self.width) - r) + r * k, self.y + self.height, Point.CONTROL_POINT_C))
+            points.append(Point(((self.x + self.width) - r), self.y + self.height))
+            points.append(Point(self.x + r, self.y + self.height))
+            points.append(Point(((self.x + r) - r * k), self.y + self.height, Point.CONTROL_POINT_C))
+            points.append(Point(self.x, ((self.y + self.height) - r) + r * k, Point.CONTROL_POINT_C))
+            points.append(Point(self.x, (self.y + self.height) - r))
+            points.append(Point(self.x, self.y + r))
+            points.append(Point(self.x, (self.y + r) - r * k, Point.CONTROL_POINT_C))
+            points.append(Point((self.x + r) - r * k, self.y, Point.CONTROL_POINT_C))
+            points.append(Point(self.x + r, self.y))
 
             if fillColor != nil && borderColor == nil {
                 page.drawPath(points, PathOperator.FILL)

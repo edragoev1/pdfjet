@@ -26,6 +26,22 @@ import Testing
         TestSupport.expectXY(70, 100, Rect(10, 20, 30, 40).scaleBy(2).drawOn(page()))
     }
 
+    /// The content of a rect 20 high with the corner radius, drawn on a page of its own.
+    private func roundRect(_ radius: Float) -> String {
+        let page = page()
+        let rect = Rect(10, 20, 100, 20)
+        rect.setCornerRadius(radius)
+        rect.setBorderColor(Color.black)
+        rect.drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test func rectACornerRadiusOverHalfTheShorterSideIsDrawnAsHalfOfIt() {
+        // A radius of 30 is drawn as one of 10, a pill, rather than with the
+        // sides turned back as crossed loops.
+        #expect(roundRect(30) == roundRect(10))
+    }
+
     @Test func arcDrawOnReturnsTheBottomRightCornerOfItsCircle() {
         let arc = Arc().setLocation(100, 100).setRadius(20).setStartAngle(0).setSweep(90)
         TestSupport.expectXY(120, 120, arc.drawOn(page()))

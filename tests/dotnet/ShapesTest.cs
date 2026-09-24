@@ -28,6 +28,23 @@ public class ShapesTest {
         TestSupport.AssertXY(70f, 100f, new Rect(10f, 20f, 30f, 40f).ScaleBy(2f).DrawOn(NewPage()));
     }
 
+    // The content of a rect 20 high with the corner radius, drawn on a page of its own.
+    private static string RoundRect(float radius) {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Rect rect = new Rect(10f, 20f, 100f, 20f);
+        rect.SetCornerRadius(radius);
+        rect.SetBorderColor(Color.black);
+        rect.DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void RectACornerRadiusOverHalfTheShorterSideIsDrawnAsHalfOfIt() {
+        // A radius of 30 is drawn as one of 10, a pill, rather than with the
+        // sides turned back as crossed loops.
+        Assert.Equal(RoundRect(10f), RoundRect(30f));
+    }
+
     [Fact]
     public void ArcDrawOnReturnsTheBottomRightCornerOfItsCircle() {
         Arc arc = new Arc().SetLocation(100f, 100f).SetRadius(20f).SetStartAngle(0f).SetSweep(90f);

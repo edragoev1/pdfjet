@@ -160,7 +160,10 @@ public class Rect  : IDrawable {
         page.SaveGraphicsState();
 
         const float k = 0.55228f;
-        if (this.r == 0.0f) {
+        // The radius is at most half the shorter side, as SVG has it: a larger one
+        // would turn the sides back on themselves and cross the curves.
+        float r = Math.Max(0f, Math.Min(this.r, Math.Min(Math.Abs(w), Math.Abs(h)) / 2f));
+        if (r == 0.0f) {
             if (fillColor != null) {
                 page.MoveTo(this.x, this.y);
                 page.LineTo(this.x + this.w, this.y);
@@ -196,23 +199,23 @@ public class Rect  : IDrawable {
             }
 
             List<Point> points = new List<Point> {
-                new Point((this.x + this.r), this.y),
-                new Point((this.x + this.w) - this.r, this.y),
-                new Point((this.x + this.w - this.r) + this.r * k, this.y, Point.CONTROL_POINT_C),
-                new Point((this.x + this.w), (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C),
-                new Point((this.x + this.w), (this.y + this.r)),
-                new Point((this.x + this.w), (this.y + this.h) - this.r),
-                new Point((this.x + this.w), ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C),
-                new Point(((this.x + this.w) - this.r) + this.r * k, (this.y + this.h), Point.CONTROL_POINT_C),
-                new Point(((this.x + this.w) - this.r), (this.y + this.h)),
-                new Point((this.x + this.r), (this.y + this.h)),
-                new Point(((this.x + this.r) - this.r * k), (this.y + this.h), Point.CONTROL_POINT_C),
-                new Point(this.x, ((this.y + this.h) - this.r) + this.r * k, Point.CONTROL_POINT_C),
-                new Point(this.x, (this.y + this.h) - this.r),
-                new Point(this.x, (this.y + this.r)),
-                new Point(this.x, (this.y + this.r) - this.r * k, Point.CONTROL_POINT_C),
-                new Point((this.x + this.r) - this.r * k, this.y, Point.CONTROL_POINT_C),
-                new Point((this.x + this.r), this.y)
+                new Point((this.x + r), this.y),
+                new Point((this.x + this.w) - r, this.y),
+                new Point((this.x + this.w - r) + r * k, this.y, Point.CONTROL_POINT_C),
+                new Point((this.x + this.w), (this.y + r) - r * k, Point.CONTROL_POINT_C),
+                new Point((this.x + this.w), (this.y + r)),
+                new Point((this.x + this.w), (this.y + this.h) - r),
+                new Point((this.x + this.w), ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C),
+                new Point(((this.x + this.w) - r) + r * k, (this.y + this.h), Point.CONTROL_POINT_C),
+                new Point(((this.x + this.w) - r), (this.y + this.h)),
+                new Point((this.x + r), (this.y + this.h)),
+                new Point(((this.x + r) - r * k), (this.y + this.h), Point.CONTROL_POINT_C),
+                new Point(this.x, ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C),
+                new Point(this.x, (this.y + this.h) - r),
+                new Point(this.x, (this.y + r)),
+                new Point(this.x, (this.y + r) - r * k, Point.CONTROL_POINT_C),
+                new Point((this.x + r) - r * k, this.y, Point.CONTROL_POINT_C),
+                new Point((this.x + r), this.y)
             };
             if (fillColor != null && borderColor == null) {
                 page.DrawPath(points, PathOperator.FILL);
