@@ -1068,4 +1068,39 @@ class TableTest {
         table.wrapAroundCellText();
         assertEquals("abcd", table.getRow(0).get(0).getText());
     }
+
+    @Test
+    void theLinesOfTheCellsAreBlackWhateverPenColorThePageHas() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        page.setPenColor(Color.blue);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(page.pdf), 2, 2), 0);
+        table.setLocation(50f, 50f);
+        table.drawOn(page);
+        String content = TestSupport.content(page);
+        int lines = content.indexOf(" l\n");
+        assertTrue(lines >= 0, content);
+        String before = content.substring(0, lines);
+        assertEquals(before.lastIndexOf("0 0 0 RG\n") + "0 0 0".length(), before.lastIndexOf(" RG\n"), content);
+    }
+
+    @Test
+    void columnPercentagesThatAreAll0ShareTheWidthEqually() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 1, 2), 0);
+        table.setColumnWidthsInPercent(0f, 0f);
+        table.setWidth(300f);
+        assertEquals(150f, table.getColumnWidth(0), TestSupport.DELTA);
+        assertEquals(150f, table.getColumnWidth(1), TestSupport.DELTA);
+    }
+
+    @Test
+    void aTableWithoutLinesHasNoneUnderItsHeader() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        Table table = new Table().setTableData(rows(TestSupport.helvetica(page.pdf), 3, 2), 1);
+        table.setCellBorders(false);
+        table.setLocation(50f, 50f);
+        table.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(" l\n"), content);
+    }
 }

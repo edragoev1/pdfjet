@@ -749,6 +749,11 @@ public class Table : IDrawable {
         float each = (rest > 0) ? Math.Max(0f, 100f - given) / rest : 0f;
         float total = given + each * rest;
         if (total <= 0f) {
+            // Percentages that are all 0 share the width equally, as columns
+            // with none do.
+            for (int i = 0; i < columns; i++) {
+                SetColumnWidth(i, tableWidth / columns);
+            }
             return;
         }
         for (int i = 0; i < columns; i++) {
@@ -941,8 +946,12 @@ public class Table : IDrawable {
             List<Cell> row = tableData[i];
             if (page != null) {
                 if (i == last) {
+                    // A line under the header, below the cells that have lines:
+                    // a table without lines has none.
                     foreach (Cell cell in row) {
-                        cell.SetBorder(Border.BOTTOM, true);
+                        if ((cell.properties & Border.ALL) != 0) {
+                            cell.SetBorder(Border.BOTTOM, true);
+                        }
                     }
                 }
                 DrawRow(page, row, x, y, heights, i, first ? StructElem.TH : (StructElem?) null);

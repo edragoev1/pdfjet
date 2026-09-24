@@ -797,6 +797,11 @@ public class Table : Drawable {
         let each: Float = (rest > 0) ? max(0.0, 100.0 - given) / Float(rest) : 0.0
         let total = given + each * Float(rest)
         if total <= 0.0 {
+            // Percentages that are all 0 share the width equally, as columns
+            // with none do.
+            for i in 0..<columns {
+                setColumnWidth(i, tableWidth / Float(columns))
+            }
             return
         }
         for i in 0..<columns {
@@ -1004,7 +1009,9 @@ public class Table : Drawable {
             let row = tableData[i]
             if let page = page {
                 if i == last {
-                    for cell in row {
+                    // A line under the header, below the cells that have lines:
+                    // a table without lines has none.
+                    for cell in row where (cell.properties & Border.ALL) != 0 {
                         cell.setBorder(Border.BOTTOM, true)
                     }
                 }

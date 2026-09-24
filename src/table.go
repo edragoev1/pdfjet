@@ -718,6 +718,11 @@ func (table *Table) applyColumnPercents() {
 	}
 	total := given + each*float32(rest)
 	if total <= 0 {
+		// Percentages that are all 0 share the width equally, as columns
+		// with none do.
+		for i := 0; i < columns; i++ {
+			table.SetColumnWidth(i, table.tableWidth/float32(columns))
+		}
 		return
 	}
 	for i := 0; i < columns; i++ {
@@ -899,8 +904,12 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 		row := table.tableData[i]
 		if page != nil {
 			if i == last {
+				// A line under the header, below the cells that have lines:
+				// a table without lines has none.
 				for _, cell := range row {
-					cell.properties |= border.Bottom
+					if cell.properties&border.All != 0 {
+						cell.properties |= border.Bottom
+					}
 				}
 			}
 			cellStructure := structelem.StructElem("")

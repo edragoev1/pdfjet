@@ -1043,5 +1043,41 @@ public sealed class TableTest : IDisposable {
         table.WrapAroundCellText();
         Assert.Equal("abcd", table.GetRow(0)[0].GetText());
     }
+
+    [Fact]
+    public void TheLinesOfTheCellsAreBlackWhateverPenColorThePageHas() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        page.SetPenColor(Color.blue);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(page.pdf), 2, 2), 0);
+        table.SetLocation(50f, 50f);
+        table.DrawOn(page);
+        string content = TestSupport.Content(page);
+        int lines = content.IndexOf(" l\n", StringComparison.Ordinal);
+        Assert.True(lines >= 0, content);
+        string before = content.Substring(0, lines);
+        Assert.Equal(before.LastIndexOf("0 0 0 RG\n", StringComparison.Ordinal) + "0 0 0".Length,
+                before.LastIndexOf(" RG\n", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ColumnPercentagesThatAreAll0ShareTheWidthEqually() {
+        PDF pdf = TestSupport.NewPDF();
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 1, 2), 0);
+        table.SetColumnWidthsInPercent(0f, 0f);
+        table.SetWidth(300f);
+        Assert.Equal(150f, table.GetColumnWidth(0), 2);
+        Assert.Equal(150f, table.GetColumnWidth(1), 2);
+    }
+
+    [Fact]
+    public void ATableWithoutLinesHasNoneUnderItsHeader() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(page.pdf), 3, 2), 1);
+        table.SetCellBorders(false);
+        table.SetLocation(50f, 50f);
+        table.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(" l\n", content);
+    }
 }
 }

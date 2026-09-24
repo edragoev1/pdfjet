@@ -965,4 +965,36 @@ import Testing
         table.wrapAroundCellText()
         #expect(table.getRow(0)[0].getText() == "abcd")
     }
+
+    @Test func theLinesOfTheCellsAreBlackWhateverPenColorThePageHas() throws {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page.setPenColor(Color.blue)
+        let table = Table().setTableData(rows(TestSupport.helvetica(page.pdf), 2, 2), 0)
+        table.setLocation(50, 50)
+        table.drawOn(page)
+        let content = TestSupport.content(page)
+        let lines = try #require(content.range(of: " l\n"))
+        let before = String(content[..<lines.lowerBound])
+        let black = try #require(before.range(of: "0 0 0 RG\n", options: .backwards))
+        let color = try #require(before.range(of: " RG\n", options: .backwards))
+        #expect(before.index(black.lowerBound, offsetBy: 5) == color.lowerBound)
+    }
+
+    @Test func columnPercentagesThatAreAll0ShareTheWidthEqually() {
+        let pdf = TestSupport.newPDF()
+        let table = Table().setTableData(rows(TestSupport.helvetica(pdf), 1, 2), 0)
+        table.setColumnWidthsInPercent(0, 0)
+        table.setWidth(300)
+        #expect(abs(table.getColumnWidth(0) - 150) < 0.01)
+        #expect(abs(table.getColumnWidth(1) - 150) < 0.01)
+    }
+
+    @Test func aTableWithoutLinesHasNoneUnderItsHeader() {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let table = Table().setTableData(rows(TestSupport.helvetica(page.pdf), 3, 2), 1)
+        table.setCellBorders(false)
+        table.setLocation(50, 50)
+        table.drawOn(page)
+        #expect(!TestSupport.content(page).contains(" l\n"))
+    }
 }

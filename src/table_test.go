@@ -1258,3 +1258,37 @@ func TestTableALineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace(t *tes
 		t.Errorf("the first line: %q, want %q", text, "abcd")
 	}
 }
+
+func TestTableTheLinesOfTheCellsAreBlackWhateverPenColorThePageHas(t *testing.T) {
+	page := testNewPage()
+	page.SetPenColor(color.Blue)
+	table := NewTable().SetTableData(testRows(testHelvetica(page.pdf), 2, 2), 0)
+	table.SetLocation(50, 50)
+	table.DrawOn(page)
+	content := string(page.buf)
+	lines := strings.Index(content, " l\n")
+	black := strings.LastIndex(content[:max(lines, 0)], "0 0 0 RG\n")
+	if lines < 0 || black < 0 || strings.LastIndex(content[:lines], " RG\n") != black+len("0 0 0") {
+		t.Errorf("the lines of the cells are not drawn in black:\n%s", content)
+	}
+}
+
+func TestTableColumnPercentagesThatAreAll0ShareTheWidthEqually(t *testing.T) {
+	pdf := testNewPDF()
+	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 1, 2), 0)
+	table.SetColumnWidthsInPercent(0, 0)
+	table.SetWidth(300)
+	testNear(t, "the first column", 150, table.GetColumnWidth(0), testDelta)
+	testNear(t, "the second column", 150, table.GetColumnWidth(1), testDelta)
+}
+
+func TestTableATableWithoutLinesHasNoneUnderItsHeader(t *testing.T) {
+	page := testNewPage()
+	table := NewTable().SetTableData(testRows(testHelvetica(page.pdf), 3, 2), 1)
+	table.SetCellBorders(false)
+	table.SetLocation(50, 50)
+	table.DrawOn(page)
+	if content := string(page.buf); strings.Contains(content, " l\n") {
+		t.Errorf("a table without lines draws a line:\n%s", content)
+	}
+}

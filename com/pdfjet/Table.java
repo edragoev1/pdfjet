@@ -793,6 +793,11 @@ public class Table implements Drawable {
         float each = (rest > 0) ? Math.max(0f, 100f - given) / rest : 0f;
         float total = given + each * rest;
         if (total <= 0f) {
+            // Percentages that are all 0 share the width equally, as columns
+            // with none do.
+            for (int i = 0; i < columns; i++) {
+                setColumnWidth(i, tableWidth / columns);
+            }
             return;
         }
         for (int i = 0; i < columns; i++) {
@@ -999,8 +1004,12 @@ public class Table implements Drawable {
             List<Cell> row = tableData.get(i);
             if (page != null) {
                 if (i == last) {
+                    // A line under the header, below the cells that have lines:
+                    // a table without lines has none.
                     for (Cell cell : row) {
-                        cell.setBorder(Border.BOTTOM, true);
+                        if ((cell.properties & Border.ALL) != 0) {
+                            cell.setBorder(Border.BOTTOM, true);
+                        }
                     }
                 }
                 drawRow(page, row, x, y, heights, i, first ? StructElem.TH : null);
