@@ -366,6 +366,15 @@ to check and fix in the four, with a test.
   columns at 0% and a width of 300 make a table 150 wide. It should share
   the width equally, as for columns with no percentage. Found Sep 23, with
   the items above.
+- ⬜ **A corner radius over half the rect is drawn as crossed loops.**
+  `Rect` draws each side from the radius in from one corner to the radius in
+  from the next, and does not cap the radius, so a radius over half the
+  width or the height turns those sides back on themselves, and the curves
+  of the corners cross: a rect 20 high with a radius of 30 has loops at its
+  ends. It should cap the radius at half the shorter side, as SVG caps rx
+  and ry, which is what a pill shape is drawn with. pdfjet-server caps it
+  before it draws (`cornerRadius` in document.go). Found Sep 24, writing the
+  help of the corner radius of a box in the editor.
 - ⬜ **To decide: the header row has a line under it without borders.**
   `drawHeaderRows` sets the bottom border of the last header row whatever
   `SetCellBorders` says, so a table without lines still has one under its
