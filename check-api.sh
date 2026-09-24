@@ -92,7 +92,10 @@ for TREE in base head; do
         cat "$OUT/javac.log"
         exit 1
     }
-    (cd "$DIR/classes" && find com -name '*.class' | sed 's/\.class$//; s#/#.#g' | sort) > "$DIR/java-classes.txt"
+    # com.pdfjet.internal is public only because Java has no internal access
+    # across packages; it is not API
+    (cd "$DIR/classes" && find com -name '*.class' -not -path 'com/pdfjet/internal/*' |
+        sed 's/\.class$//; s#/#.#g' | sort) > "$DIR/java-classes.txt"
     # javap prints every class, and the public members of each: the public
     # classes and their members are kept, each member after its class
     javap -public -cp "$DIR/classes" $(cat "$DIR/java-classes.txt") 2> /dev/null | python3 -c '

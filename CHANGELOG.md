@@ -65,9 +65,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   code set C, two digits to a codeword, so that an SSCC is 156 modules wide
   where code set B would make it 266. It takes the data GS1 DataMatrix takes
   and refuses it in the same words, and refuses data of more than the 48
-  characters a GS1-128 barcode holds. The GS1 parser is shared by the two:
-  `com.pdfjet.GS1` in Java, which is public, and internal in the other
-  ports. ZXing reads the barcodes with the symbology identifier `]C1` of
+  characters a GS1-128 barcode holds. The GS1 parser is shared by the two,
+  and is internal in every port: in Java `com.pdfjet.internal.GS1Parser`,
+  which is public only because the barcodes are in packages of their own,
+  and is not API. ZXing reads the barcodes with the symbology identifier `]C1` of
   GS1-128. Example_11 draws one. The internal class `GS1_128` of Java, C#
   and Swift, which held the table of Code 128, is `Code128Table`.
 - GS1 DataMatrix, as medicines, medical devices and, more and more, retail

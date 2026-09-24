@@ -28,7 +28,7 @@ if has java; then
     rm -rf "$B/jet" "$B/classes"
     javac -O -encoding utf-8 --release 8 -nowarn -d "$B/jet" \
         com/pdfjet/*.java com/pdfjet/barcodes/*.java com/pdfjet/pdf417/*.java com/pdfjet/qrcode/*.java \
-        com/pdfjet/datamatrix/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
+        com/pdfjet/datamatrix/*.java com/pdfjet/internal/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
     javac -nowarn -encoding utf-8 -d "$B/classes" -cp "$B/jet" benchmarks/table/TableBench.java
 fi
 if has dotnet; then

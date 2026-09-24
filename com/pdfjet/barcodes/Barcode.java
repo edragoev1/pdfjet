@@ -7,6 +7,7 @@
 package com.pdfjet.barcodes;
 
 import com.pdfjet.*;
+import com.pdfjet.internal.GS1Parser;
 import java.util.*;
 
 /**
@@ -450,12 +451,12 @@ public class Barcode implements Drawable {
     // Returns the start and the codewords of the GS1 data written as people
     // read it: FNC1, then the fields, each followed by FNC1 when it is of no
     // set length and another follows, encoded as code128Encode encodes them.
-    // It throws for data that is not GS1, see GS1.parse, or longer than the 48
+    // It throws for data that is not GS1, see GS1Parser.parse, or longer than the 48
     // characters a GS1-128 barcode holds, not counting the separators.
     private static List<Integer> gs1128Codewords(String text) {
         List<Integer> items = new ArrayList<Integer>();
         int characters = 0;
-        for (GS1.Field field : GS1.parse(text)) {
+        for (GS1Parser.Field field : GS1Parser.parse(text)) {
             String s = field.ai + field.data;
             for (int i = 0; i < s.length(); i++) {
                 items.add((int) s.charAt(i));

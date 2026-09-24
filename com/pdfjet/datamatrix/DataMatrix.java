@@ -7,6 +7,7 @@
 package com.pdfjet.datamatrix;
 
 import com.pdfjet.*;
+import com.pdfjet.internal.GS1Parser;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -164,7 +165,7 @@ public final class DataMatrix implements Drawable {
     // its data, and GS after a field of no set length that another follows.
     static String gs1ElementString(String str) {
         StringBuilder sb = new StringBuilder();
-        for (GS1.Field field : GS1.parse(str)) {
+        for (GS1Parser.Field field : GS1Parser.parse(str)) {
             sb.append(field.ai).append(field.data);
             if (field.separator) {
                 sb.append('\u001d');   // GS

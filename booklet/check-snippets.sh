@@ -33,6 +33,7 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -d "$WORK/java/cla
     com/pdfjet/pdf417/*.java \
     com/pdfjet/qrcode/*.java \
     com/pdfjet/datamatrix/*.java \
+    com/pdfjet/internal/*.java \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/snippets/java/Snippets.java || exit 1

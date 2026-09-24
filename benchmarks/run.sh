@@ -23,7 +23,7 @@ LOG="$B/results-$(date +%Y-%m-%d-%H%M).log"
 rm -rf "$B/jet-classes" "$B/classes"
 javac -O -encoding utf-8 --release 8 -nowarn -d "$B/jet-classes" \
     com/pdfjet/*.java com/pdfjet/barcodes/*.java com/pdfjet/pdf417/*.java com/pdfjet/qrcode/*.java \
-    com/pdfjet/datamatrix/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
+    com/pdfjet/datamatrix/*.java com/pdfjet/internal/*.java com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java 2>&1 | grep -v '^Note:' || true
 jar cf "$B/PDFjet.jar" -C "$B/jet-classes" .
 
 CP="$B/PDFjet.jar"

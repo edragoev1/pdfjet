@@ -25,6 +25,7 @@ javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -d build/booklet \
     com/pdfjet/pdf417/*.java \
     com/pdfjet/qrcode/*.java \
     com/pdfjet/datamatrix/*.java \
+    com/pdfjet/internal/*.java \
     com/pdfjet/fonts/*.java \
     com/pdfjet/encryption/*.java \
     booklet/Booklet.java || exit 1
