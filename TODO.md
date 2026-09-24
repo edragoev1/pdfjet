@@ -20,15 +20,20 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
 
 ## The three dates
 
-- **Oct 1** — v9.0.2, a fix release from master on the v9.0.1 API. What is in
-  it is under `## Unreleased` in CHANGELOG.md: the PDF/UA examples and the
+- **Oct 1** — v9.0.2 of the MIT library only, the `pdfjet` repository, cut
+  from master: the API of v9.0.1 and the members goal 6 lists, Markdown to
+  PDF and `PDF_A_3A_UA_1` among them. The commercial product is not released
+  with it. What is in it is under `## Unreleased` in CHANGELOG.md: the PDF/UA examples and the
   table tagging, kinsoku, the font line gap, the WinAnsi characters and
   kerning of the core fonts, the fallback font rule, the CMYK JPEG marker,
   the font stream, PNG, BMP, JPEG, SVG, OpenType, decompressor and `PDF.read`
   fixes that fuzzing found, and the reviews of the image classes, `Page`,
   `TextLine` and the reader.
 - **Oct 15** — code freeze: fixes only, each with its check.
-- **Oct 21** — v9.0.3.
+- **Oct 21** — v9.0.3 of the MIT library and, the same day, v9.0.3 of the
+  commercial product (`.commercial`: electronic invoices and digital
+  signatures), built on the 9.0.3 library. The same number says which
+  library each release of the commercial product is built on.
 
 ## Why 9.0.3 is hardening and not features
 
@@ -66,9 +71,9 @@ same day, `setAltDescription` of `Barcode` and `QRCode`, so that a barcode
 of such a document is read aloud rather than skipped, and the content of a
 figure is the figure, marked no further.
 
-The sixth is Markdown to PDF, which is in v9.0.3 rather than v9.0.2: it was
-written on a branch of its own with the checks master has, and merged on
-Sep 22 once it had them all. It is the one feature of the release that is
+The sixth is Markdown to PDF, which is in v9.0.2 with the others, since
+9.0.2 is cut from master: it was written on a branch of its own with the
+checks master has, and merged on Sep 22 once it had them all. It is the one feature of the release that is
 not a small addition to something that was already there, which is why it
 was kept off master until it was done. The other members master adds to the
 API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
@@ -320,6 +325,12 @@ day.
 ### Oct 21: release v9.0.3
 
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
+- ⬜ **B** Release v9.0.3 of the commercial product, built on the tag of the
+      library: `.commercial/go.mod` requires `github.com/edragoev1/pdfjet/v9
+      v9.0.3` rather than v9.0.0, with no `replace` of the local checkout in
+      what is shipped, and the Java, C# and Swift packages are built against
+      the 9.0.3 library. The commercial code needs 9.0.2 at least, for
+      `Compliance.PDF_A_3A_UA_1`, and uses nothing master does not have.
 
 ## Markdown to PDF — merged
 
