@@ -497,6 +497,26 @@ to check and fix in the four, with a test.
     with Unicode case folding.
   - About a week for the first port to pass the spec, and a few days for
     each of the others; the renderer is done.
+- ⬜ Order-X, in the commercial product (`.commercial`), in the four ports:
+  the order of FNFE-MPE and FeRD, a PDF/A-3 that carries its XML as
+  Factur-X does, in the profiles BASIC, COMFORT and EXTENDED. No law asks
+  for electronic orders, as the laws of Germany and France ask for
+  invoices, so it is for the buyers who want the whole of their purchasing
+  electronic; worth doing first for a customer who asks.
+  - The XML is not that of an invoice: it is the Cross Industry Order of
+    UN/CEFACT's Supply Chain Reference Data Model, with a model of its own
+    (requested quantities and delivery dates, and the order, the change of
+    an order and the response to one) and no rules of EN 16931. What is
+    shared is the embedding, the XMP metadata, the XML writer and parser,
+    and the parties, addresses, amounts and tax categories.
+  - New: the model, the writer and the reader of the order, checked against
+    the XSD schemas and the rules of each profile and the sample orders
+    Order-X publishes, with tests and an example in every port.
+  - A third to a half of the 6,300 lines of the invoice code of the Java
+    port, in each port; 3 to 5 days, most of it the checking.
+- ⬜ Deliver-X, the delivery note of FeRD, in the commercial product: still
+  in development on Sep 24, so written once it is published, after Order-X,
+  whose model it shares most of.
 
 ## Electronic invoices (in the commercial repository, `.commercial`)
 
@@ -540,9 +560,8 @@ What is left, in the order it is worth doing:
   back, and checked (BT-59, BT-25, BT-122, BT-125); Mustangproject passes
   BASIC WL, BASIC, EN 16931 and EXTENDED, and the four ports write the same
   XML.
-- ⬜ Order-X and Deliver-X, which are the same XML and the same embedding for
-  an order and for a delivery note. The writer and the reader would be
-  another profile each.
+- Order-X and Deliver-X: in v9.1.0 of the commercial product, decided on
+  Sep 24; see "v9.1 — features".
 
 ## Known and accepted (document, do not fix)
 
