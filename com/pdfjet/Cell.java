@@ -497,8 +497,8 @@ public class Cell {
     }
 
     /**
-     * Sets the border color of this cell. Color.transparent leaves the borders
-     * the color of the pen the page draws with.
+     * Sets the border color of this cell. Color.transparent draws them black, as
+     * a cell does when no color is set.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Cell object.
@@ -950,9 +950,9 @@ public class Cell {
             return;     // Nothing to draw, so nothing to write.
         }
         page.addArtifactBMC();
-        if (borderColor != NO_COLOR) {
-            page.setPenColor(borderColor);
-        }
+        // The borders are black unless a color is set, whatever pen color the
+        // page was left with.
+        page.setPenColor(borderColor != NO_COLOR ? borderColor : Color.black);
         page.setPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;

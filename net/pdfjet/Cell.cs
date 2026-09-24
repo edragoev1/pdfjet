@@ -463,7 +463,7 @@ public class Cell {
         return this.borderWidth;
     }
 
-    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent leaves the borders the color of the pen the page draws with.</summary>
+    /// <summary>Sets the border color as a 0xRRGGBB value. Color.transparent draws them black, as a cell does when no color is set.</summary>
     public Cell SetBorderColor(int color) {
         if (color == Color.transparent) {
             this.borderColor = NO_COLOR;
@@ -742,9 +742,9 @@ public class Cell {
             return;     // Nothing to draw, so nothing to write.
         }
         page.AddArtifactBMC();
-        if (borderColor != NO_COLOR) {
-            page.SetPenColor(borderColor);
-        }
+        // The borders are black unless a color is set, whatever pen color the
+        // page was left with.
+        page.SetPenColor(borderColor != NO_COLOR ? borderColor : Color.black);
         page.SetPenWidth(borderWidth);
         // Half the pen width, so that the corners of the borders close.
         float hWidth = borderWidth / 2;

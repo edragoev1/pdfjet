@@ -450,7 +450,7 @@ func (cell *Cell) SetBorderColorRGB(rgbColor [3]float32) *Cell {
 }
 
 // SetBorderColor sets the color of the cell borders.
-// color.Transparent leaves the borders the color of the pen the page draws with.
+// color.Transparent draws them black, as a cell does when no color is set.
 //   - c: the color specified as 0xRRGGBB integer.
 func (cell *Cell) SetBorderColor(c int32) *Cell {
 	if c == color.Transparent {
@@ -710,8 +710,12 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 		return // Nothing to draw, so nothing to write.
 	}
 	page.AddArtifactBMC()
+	// The borders are black unless a color is set, whatever pen color the
+	// page was left with.
 	if cell.borderColor != color.Transparent {
 		page.SetPenColor(cell.borderColor)
+	} else {
+		page.SetPenColor(color.Black)
 	}
 	page.SetPenWidth(cell.borderWidth)
 	// Half the pen width, so that the corners of the borders close.

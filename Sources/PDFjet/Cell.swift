@@ -508,8 +508,8 @@ public class Cell {
         return (backgroundColor == Cell.NO_COLOR) ? nil : Util.toRGB(backgroundColor)
     }
 
-    /// Sets the border color as a 0xRRGGBB value. Color.transparent leaves the
-    /// borders the color of the pen the page draws with.
+    /// Sets the border color as a 0xRRGGBB value. Color.transparent draws them
+    /// black, as a cell does when no color is set.
     @discardableResult
     public func setBorderColor(_ color: Int32) -> Cell {
         if color == Color.transparent {
@@ -806,9 +806,9 @@ public class Cell {
             return      // Nothing to draw, so nothing to write.
         }
         page.addArtifactBMC()
-        if borderColor != Cell.NO_COLOR {
-            page.setPenColor(borderColor)
-        }
+        // The borders are black unless a color is set, whatever pen color the
+        // page was left with.
+        page.setPenColor(borderColor != Cell.NO_COLOR ? borderColor : Color.black)
         page.setPenWidth(borderWidth)
         // Half the pen width, so that the corners of the borders close.
         let hWidth: Float = borderWidth / 2.0
