@@ -194,10 +194,12 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    `Hashable`, since its cases are the numbers a `Cell` packs; the
    constructors of Swift's `DataMatrix` and `EmbeddedFile` that became
    convenience ones keep their signatures; Go's `Compliance` has a `String`
-   method (Sep 22), as a Go enumeration does; Java's `GS1.parse` and
-   `GS1.Field` are public only because `Barcode` and `DataMatrix` are in
-   packages of their own and Java has no internal access, and the other ports
-   keep them internal; and Go's `internal/utf8text.Decode` is not importable.
+   method (Sep 22), as a Go enumeration does; and Go's
+   `internal/utf8text.Decode` is not importable. Java has no internal access
+   across packages, so what the packages of the library share and is not API
+   is in `com.pdfjet.internal`, which is left out of the Javadoc and of the
+   API diff: the GS1 parser that `Barcode` and `DataMatrix` share, as Go's
+   `internal/gs1` (Sep 24, before any release had it public).
    Any other difference fails the check. `./check-api.sh` lists each port's
    public declarations at the tag and at v9.0.1, of `javap -public`,
    `util/goapi` with Go's own parser, reflection over the C# assembly and the
@@ -266,6 +268,16 @@ day.
       `Table` (3.76 s); `Table` in the four ports is 5 to 22% slower than on
       Sep 18, spread over the tagging, the fallback font of each character and
       the row spans, with no one place that costs it.
+      Run again on Sep 24, after the PDF/UA and PDF/A work of that day:
+      `check-examples.sh` clean in the four ports and with JDK 8,
+      `./check-api.sh` with nothing of v9.0.1 gone and every addition in goal
+      6, and the benchmarks in `benchmarks/results/2026-09-24-f583352f.log`
+      and `benchmarks/table/results/2026-09-24-f583352f.log`: Example_43
+      takes 1.65 s with `BigTable` (1.67 s at v9.0.1) and 3.61 s with `Table`
+      (3.49 s, 3.5% slower, from 8% on Sep 22), and the text is as fast as at
+      v9.0.1. Left for the tag: these again on the tagged tree, the docs, the
+      packages, the booklet and the site rebuilt, and the CHANGELOG entry
+      dated.
 - ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
 
 ### Oct 2–8: the reader
