@@ -461,11 +461,15 @@ What is left, in the order it is worth doing:
   and what the library does about it: `.commercial/e-invoicing.html`, written
   Sep 24 with the dates checked against the ministries' own pages, which it
   cites. It names PDFjet Pro, so it goes on pdfjet.com when Pro launches.
-- ⬜ Discounts and charges on a line (BG-27 and BG-28). A line carries the
-  amount the seller wrote, so an invoice that has them is read, written again
-  and valid, with the discount inside the amount of the line rather than
-  beside it. A seller that gives a discount for each line cannot state it as
-  one yet.
+- ✅ Discounts and charges on a line (BG-27 and BG-28), Sep 24, in the four
+  ports: `NewLineAllowance` and `NewLineCharge`, with `SetBasis` for the
+  percentage and the base, added to a line, whose amount is its price times
+  its quantity less its discounts and with its charges. Written in the
+  settlement of the line, at its tax, and read back; the schemas of BASIC,
+  EN 16931 and EXTENDED and the validator of Mustangproject pass them, and
+  the invoice examples of the four ports have one. A discount or a charge
+  with no reason and no reason code is refused, on the line (BR-42, BR-44)
+  and on the invoice (BR-33, BR-38).
 - ⬜ The fields of EXTENDED that the model has no room for: the party that
   pays, the party that is paid, several orders in one invoice, and the
   documents an invoice refers to.
