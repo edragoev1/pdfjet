@@ -322,19 +322,20 @@ to check and fix in the four, with a test.
   q and Q. pdfjet-server sets the pen to black before each barcode. Found
   Sep 23; fixed Sep 23 in the four ports: the bars are black, in q and Q.
 
-- ⬜ **The guard bars of EAN-13 and UPC-A are 8 points longer, not 5
+- ✅ **The guard bars of EAN-13 and UPC-A are 8 points longer, not 5
   modules.** The GS1 General Specifications have the guard bars extend 5X
   below the other bars, so the extension follows the module length;
   `drawEGuard` and `drawMGuard` are drawn `h+8`, 8 points whatever the
   module, which is about 10.7 modules at the default of 0.75, 8 at 1 and 4
   at 2. Barcodes scan either way; they look unlike the standard's. Found Sep
   23, while porting the drawing to pdfjet-client, whose preview draws them
-  as PDFjet does until it changes.
-- ⬜ **UPC-A does not extend the bars of its first and last digits.** In a
+  as PDFjet does until it changes. Fixed Sep 24 in the four ports, and in
+  pdfjet-client's preview.
+- ✅ **UPC-A does not extend the bars of its first and last digits.** In a
   UPC-A the bars of the number system digit and of the check digit are as
   long as the guard bars, which is why the two digits are printed outside
   the bars; `drawCodeUPC` draws every digit at `h`. Found Sep 23, with the
-  item above.
+  item above. Fixed Sep 24 in the four ports, and in pdfjet-client's preview.
 
 - ⬜ **The lines of a table's cells are drawn in whatever pen color the page
   has.** A cell's border color is transparent until `SetBorderColor` or the
@@ -345,7 +346,7 @@ to check and fix in the four, with a test.
   own. pdfjet-server sets them black with `SetCellBorderColor`. Found Sep 23,
   while adding tables to the editor.
 
-- ⬜ **A wrapped cell line can keep a trailing space, which moves right and
+- ✅ **A wrapped cell line can keep a trailing space, which moves right and
   centered text.** When a word wider than the column follows other text and
   its first character does not fit, `wrapCellText` pushes the line with the
   space after it; the rows below are wrapped again and lose theirs, but the
@@ -354,12 +355,14 @@ to check and fix in the four, with a test.
   cell "abcd Wxyzwxyzw" in IBM Plex Sans at 10: the first line is "abcd ",
   drawn 2.36 points too far left in the right column and 1.19 in the center
   one. Found Sep 23, porting Table to pdfjet-client, whose check has it as a
-  case.
-- ⬜ **The lines of a wrapped cell are unevenly spaced.** The first row of a
-  wrapped cell keeps its top and bottom padding, and each row added below it
-  drops only its top padding, so the first line is body height + 4 from the
-  next and the others body height + 2: 17 and 15 points in IBM Plex Sans at
-  10. Found Sep 23, with the item above.
+  case. Fixed Sep 24 in the four ports, and in pdfjet-client's preview.
+- ✅ **Not a fault: the lines of a wrapped cell are evenly spaced.** It was
+  noted that the first row of a wrapped cell keeps its top and bottom padding
+  and each row added below it drops only its top padding, so the rows are 17
+  and 15 points tall in IBM Plex Sans at 10. The lines of text are 15 points
+  apart all the way down, which is what matters: the text of a row starts
+  under its top padding, and the extra 2 points of the first row are the top
+  padding above the first line alone. Measured in the Go port on Sep 24.
 - ⬜ **Column percentages that are all 0 leave the columns 75 points wide.**
   `applyColumnPercents` returns when their total is not above 0, so
   `SetWidth` is ignored and each column keeps the width of a new cell: two

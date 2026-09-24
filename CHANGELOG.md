@@ -442,6 +442,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   indexed the table of Code 128 with codeword 256: an
   `ArrayIndexOutOfBoundsException` in Java, an `IndexOutOfRangeException`
   in C#, an index out of range panic in Go and a crash in Swift.
+- The guard bars of EAN-13 and UPC-A barcodes reach 5 modules below the
+  other bars, in all four ports, as the GS1 General Specifications have
+  them, rather than 8 points whatever the module: about 10.7 modules at the
+  default of 0.75, 8 at 1 and 4 at 2. At the default module the guards, and
+  the barcode, are 4.25 points shorter. Found by pdfjet-server.
+- The bars of the first and the last digit of a UPC-A barcode are as long as
+  the guard bars, in all four ports, as the standard draws them, which is why
+  the two digits are printed outside the bars. Found by pdfjet-server.
+- A line of a table cell that breaks before a word wider than the column ends
+  without the space before the word, in all four ports. The space counted in
+  the width of the text, so a cell aligned right drew the line that far left
+  of its padding, and a centered one half as far: 2.36 and 1.19 points for
+  "abcd Wxyzwxyzw" in IBM Plex Sans at 10 in a column 30 wide. Found by
+  pdfjet-server.
 - The bars of a barcode are black, in all four ports, whatever pen color the
   page was left with. `Barcode` set the width of each bar but not its color,
   so after `Page.setPenColor`, which a shape drawn with the methods of `Page`
