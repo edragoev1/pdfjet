@@ -114,8 +114,8 @@ public class Markdown {
 
     /**
      * Sets the directory that the images are read from: an image of
-     * ![text](source) is the file of that name in the directory, a JPEG, PNG,
-     * BMP or SVG file. A source that is an absolute path, a URL or has .. in
+     * {@code ![text](source)} is the file of that name in the directory, a
+     * JPEG, PNG, BMP or SVG file. A source that is an absolute path, a URL or has .. in
      * it is not read, and neither is any image unless the directory is set:
      * the image's text is drawn instead.
      *
