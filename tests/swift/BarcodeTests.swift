@@ -14,18 +14,18 @@ import Testing
         let font = TestSupport.helvetica(pdf)
         // type, text, direction, with font, corner x, corner y
         let corners: [(Int, String, Direction, Bool, Float, Float)] = [
-            (Barcode.EAN_13, "012345678901", .LEFT_TO_RIGHT, false, 171.25, 145.5),
+            (Barcode.EAN_13, "012345678901", .LEFT_TO_RIGHT, false, 171.25, 141.25),
             (Barcode.EAN_13, "012345678901", .LEFT_TO_RIGHT, true, 171.25, 151.31),
-            (Barcode.EAN_13, "012345678901", .BOTTOM_TO_TOP, false, 145.5, 171.25),
+            (Barcode.EAN_13, "012345678901", .BOTTOM_TO_TOP, false, 141.25, 171.25),
             (Barcode.EAN_13, "012345678901", .BOTTOM_TO_TOP, true, 151.31, 179.59),
-            (Barcode.EAN_13, "012345678901", .TOP_TO_BOTTOM, false, 145.5, 171.25),
-            (Barcode.EAN_13, "012345678901", .TOP_TO_BOTTOM, true, 145.5, 171.25),
-            (Barcode.UPC_A, "01234567890", .LEFT_TO_RIGHT, false, 171.25, 145.5),
+            (Barcode.EAN_13, "012345678901", .TOP_TO_BOTTOM, false, 141.25, 171.25),
+            (Barcode.EAN_13, "012345678901", .TOP_TO_BOTTOM, true, 141.25, 171.25),
+            (Barcode.UPC_A, "01234567890", .LEFT_TO_RIGHT, false, 171.25, 141.25),
             (Barcode.UPC_A, "01234567890", .LEFT_TO_RIGHT, true, 179.59, 151.31),
-            (Barcode.UPC_A, "01234567890", .BOTTOM_TO_TOP, false, 145.5, 171.25),
+            (Barcode.UPC_A, "01234567890", .BOTTOM_TO_TOP, false, 141.25, 171.25),
             (Barcode.UPC_A, "01234567890", .BOTTOM_TO_TOP, true, 151.31, 179.59),
-            (Barcode.UPC_A, "01234567890", .TOP_TO_BOTTOM, false, 145.5, 171.25),
-            (Barcode.UPC_A, "01234567890", .TOP_TO_BOTTOM, true, 145.5, 179.59),
+            (Barcode.UPC_A, "01234567890", .TOP_TO_BOTTOM, false, 141.25, 171.25),
+            (Barcode.UPC_A, "01234567890", .TOP_TO_BOTTOM, true, 141.25, 179.59),
             (Barcode.CODE_128, "Hello", .LEFT_TO_RIGHT, false, 167.5, 137.5),
             (Barcode.CODE_128, "Hello", .LEFT_TO_RIGHT, true, 167.5, 154.072),
             (Barcode.CODE_128, "Hello", .BOTTOM_TO_TOP, false, 137.5, 167.5),
@@ -90,6 +90,63 @@ import Testing
                      String(repeating: "7", count: 96)] {
             #expect(try Barcode(Barcode.CODE_128, text).drawOn(nil)[0] == Float(11 * 50 + 13) * 0.75)
         }
+    }
+
+    /// Where the bars the content draws end, in points from the top of a letter
+    /// page, each once, in the order of their first bar: a bar is a line moved
+    /// to and drawn from the top of the bars.
+    private func barEnds(_ content: String) -> [Float] {
+        var ends = [Float]()
+        let lines = content.components(separatedBy: "\n")
+        for i in 0..<max(lines.count - 1, 0) {
+            let move = lines[i].split(separator: " ")
+            let line = lines[i + 1].split(separator: " ")
+            if move.count == 3 && move[2] == "m" && line.count == 3 && line[2] == "l" && move[0] == line[0] {
+                let end = Letter.PORTRAIT.getHeight() - Float(String(line[1]))!
+                if !ends.contains(end) {
+                    ends.append(end)
+                }
+            }
+        }
+        return ends
+    }
+
+    /// How many of the bars the content draws end where the given one does.
+    private func barsEndingAt(_ content: String, _ end: Float) -> Int {
+        var count = 0
+        let lines = content.components(separatedBy: "\n")
+        for i in 0..<max(lines.count - 1, 0) {
+            let move = lines[i].split(separator: " ")
+            let line = lines[i + 1].split(separator: " ")
+            if move.count == 3 && move[2] == "m" && line.count == 3 && line[2] == "l" && move[0] == line[0]
+                    && Letter.PORTRAIT.getHeight() - Float(String(line[1]))! == end {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    @Test func theGuardBarsReachFiveModulesBelowTheOthers() throws {
+        // At a module of 2 the bars are 100 long, so the guard bars are 110.
+        for type in [Barcode.EAN_13, Barcode.UPC_A] {
+            let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+            let barcode = try Barcode(type, type == Barcode.UPC_A ? "01234567890" : "012345678901")
+            _ = barcode.setModuleLength(Float(2))
+            _ = barcode.setLocation(0, 0)
+            barcode.drawOn(page)
+            #expect(barEnds(TestSupport.content(page)) == [110, 100])
+        }
+    }
+
+    @Test func upcATheBarsOfTheFirstAndTheLastDigitAreAsLongAsTheGuardBars() throws {
+        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let barcode = try Barcode(Barcode.UPC_A, "01234567890")
+        _ = barcode.setModuleLength(Float(2))
+        _ = barcode.setLocation(0, 0)
+        barcode.drawOn(page)
+        // The guard bars and the two bars of each of the digits outside them are
+        // long: 3 guards of 2 bars and 2 digits of 2 bars.
+        #expect(barsEndingAt(TestSupport.content(page), 110) == 10)
     }
 
     @Test func isBlackWhateverPenColorThePageHas() throws {

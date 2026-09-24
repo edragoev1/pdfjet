@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -21,18 +22,18 @@ var testBarcodeCorners = []struct {
 	withFont    bool
 	x, y        float32
 }{
-	{EAN_13, "012345678901", direction.LeftToRight, false, 171.25, 145.5},
+	{EAN_13, "012345678901", direction.LeftToRight, false, 171.25, 141.25},
 	{EAN_13, "012345678901", direction.LeftToRight, true, 171.25, 151.31},
-	{EAN_13, "012345678901", direction.BottomToTop, false, 145.5, 171.25},
+	{EAN_13, "012345678901", direction.BottomToTop, false, 141.25, 171.25},
 	{EAN_13, "012345678901", direction.BottomToTop, true, 151.31, 179.59},
-	{EAN_13, "012345678901", direction.TopToBottom, false, 145.5, 171.25},
-	{EAN_13, "012345678901", direction.TopToBottom, true, 145.5, 171.25},
-	{UPC_A, "01234567890", direction.LeftToRight, false, 171.25, 145.5},
+	{EAN_13, "012345678901", direction.TopToBottom, false, 141.25, 171.25},
+	{EAN_13, "012345678901", direction.TopToBottom, true, 141.25, 171.25},
+	{UPC_A, "01234567890", direction.LeftToRight, false, 171.25, 141.25},
 	{UPC_A, "01234567890", direction.LeftToRight, true, 179.59, 151.31},
-	{UPC_A, "01234567890", direction.BottomToTop, false, 145.5, 171.25},
+	{UPC_A, "01234567890", direction.BottomToTop, false, 141.25, 171.25},
 	{UPC_A, "01234567890", direction.BottomToTop, true, 151.31, 179.59},
-	{UPC_A, "01234567890", direction.TopToBottom, false, 145.5, 171.25},
-	{UPC_A, "01234567890", direction.TopToBottom, true, 145.5, 179.59},
+	{UPC_A, "01234567890", direction.TopToBottom, false, 141.25, 171.25},
+	{UPC_A, "01234567890", direction.TopToBottom, true, 141.25, 179.59},
 	{CODE_128, "Hello", direction.LeftToRight, false, 167.5, 137.5},
 	{CODE_128, "Hello", direction.LeftToRight, true, 167.5, 154.072},
 	{CODE_128, "Hello", direction.BottomToTop, false, 137.5, 167.5},
@@ -154,6 +155,64 @@ func TestBarcodeCode128TakesCodeSetCForRunsOfDigits(t *testing.T) {
 		if start != c.start || fmt.Sprint(list) != fmt.Sprint(c.list) {
 			t.Errorf("%q: start %d, %v", c.text, start, list)
 		}
+	}
+}
+
+// testBarLengths returns where the bars the content draws end, each once, in
+// the order of their first bar, in points from the top of a page of the height:
+// a bar is a line moved to and drawn from the top of the bars.
+func testBarLengths(content string, height float32) []string {
+	lengths := make([]string, 0)
+	seen := make(map[string]bool)
+	lines := strings.Split(content, "\n")
+	for i := 0; i+1 < len(lines); i++ {
+		move := strings.Fields(lines[i])
+		line := strings.Fields(lines[i+1])
+		if len(move) == 3 && move[2] == "m" && len(line) == 3 && line[2] == "l" && move[0] == line[0] {
+			y, _ := strconv.ParseFloat(line[1], 32)
+			length := strconv.FormatFloat(float64(height)-y, 'f', -1, 32)
+			if !seen[length] {
+				seen[length] = true
+				lengths = append(lengths, length)
+			}
+		}
+	}
+	return lengths
+}
+
+func TestBarcodeTheGuardBarsReachFiveModulesBelowTheOthers(t *testing.T) {
+	// At a module of 2 the bars are 100 long, so the guard bars are 110.
+	for _, barcodeType := range []int{EAN_13, UPC_A} {
+		page := testNewPage()
+		text := "012345678901"
+		if barcodeType == UPC_A {
+			text = "01234567890"
+		}
+		barcode := NewBarcode(barcodeType, text)
+		barcode.SetModuleLength(2)
+		barcode.SetLocation(0, 0)
+		barcode.DrawOn(page)
+		lengths := testBarLengths(string(page.buf), page.height)
+		if len(lengths) != 2 {
+			t.Fatalf("%d: the bars are of %d lengths, %v, want 2", barcodeType, len(lengths), lengths)
+		}
+		if lengths[0] != "110" || lengths[1] != "100" {
+			t.Errorf("%d: the bars reach to %v, want the guard bars to 110 and the others to 100", barcodeType, lengths)
+		}
+	}
+}
+
+func TestBarcodeUPCATheBarsOfTheFirstAndTheLastDigitAreAsLongAsTheGuardBars(t *testing.T) {
+	page := testNewPage()
+	barcode := NewBarcode(UPC_A, "01234567890")
+	barcode.SetModuleLength(2)
+	barcode.SetLocation(0, 0)
+	barcode.DrawOn(page)
+	// The guard bars and the two bars of each of the digits outside them are
+	// long: 3 guards of 2 bars and 2 digits of 2 bars.
+	long := strings.Count(string(page.buf), fmt.Sprintf(" %g l\n", page.height-110))
+	if long != 10 {
+		t.Errorf("the long bars: %d, want 10", long)
 	}
 }
 

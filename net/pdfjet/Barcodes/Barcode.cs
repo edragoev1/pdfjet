@@ -242,6 +242,9 @@ public class Barcode : IDrawable {
     private float[] DrawCodeUPC(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+        // The guard bars, and the bars of the first and the last digit, which are
+        // printed outside the bars, reach 5 modules below the others.
+        float longBar = h + GUARD_BAR_EXTENSION * m1;
 
         int sum = 0;
         for (int i = 0; i < 11; i += 2) {   // even digits
@@ -259,17 +262,18 @@ public class Barcode : IDrawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + checkDigit.ToString();
-        Bars bars = new Bars(x1, y1, 95f * m1, h + 8f, direction);  // 95 modules
+        Bars bars = new Bars(x1, y1, 95f * m1, longBar, direction);  // 95 modules
 
-        x = DrawEGuard(page, bars, x, h + 8);
+        x = DrawEGuard(page, bars, x, longBar);
         float xGroup1Start = x;
         for (int i = 0; i < 6; i++) {
             int digit = fullText[i] - '0';
             String str = lCode[digit];
+            float barHeight = (i == 0) ? longBar : h;
             for (int j = 0; j < 4; j++) {
                 int n = str[j] - '0';
                 if (j%2 != 0) {
-                    DrawBar(page, bars, x, n*m1, h);
+                    DrawBar(page, bars, x, n*m1, barHeight);
                 }
                 x += n*m1;
             }
@@ -278,7 +282,7 @@ public class Barcode : IDrawable {
             }
         }
         float xLeftGroupEnd = x;
-        x = DrawMGuard(page, bars, x, h + 8);
+        x = DrawMGuard(page, bars, x, longBar);
         float xRightGroupStart = x;
         float xGroup2End = 0f;
         for (int i = 6; i < 12; i++) {
@@ -287,19 +291,20 @@ public class Barcode : IDrawable {
             }
             int digit = fullText[i] - '0';
             String str = lCode[digit];
+            float barHeight = (i == 11) ? longBar : h;
             for (int j = 0; j < 4; j++) {
                 int n = str[j] - '0';
                 if (j%2 == 0) {
-                    DrawBar(page, bars, x, n*m1, h);
+                    DrawBar(page, bars, x, n*m1, barHeight);
                 }
                 x += n*m1;
             }
         }
-        x = DrawEGuard(page, bars, x, h + 8);
+        x = DrawEGuard(page, bars, x, longBar);
 
         float left = x1;
         float right = x;
-        float bottom = y1 + h + 8;
+        float bottom = y1 + longBar;
         if (font != null) {
             // Standard UPC-A layout: the leading (number system) digit and
             // the trailing check digit are printed in the quiet zones
@@ -333,6 +338,10 @@ public class Barcode : IDrawable {
 
         return bars.GetBottomRight(left, right, bottom);
     }
+
+    // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
+    // modules, as the GS1 General Specifications have it.
+    private const float GUARD_BAR_EXTENSION = 5f;
 
     private float DrawEGuard(Page page, Bars bars, float x, float h) {
         if (page != null) {
@@ -696,6 +705,8 @@ public class Barcode : IDrawable {
     private float[] DrawCodeEAN13(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
+        // The guard bars reach 5 modules below the others.
+        float longBar = h + GUARD_BAR_EXTENSION * m1;
 
         int sum = 0;
         for (int i = 0; i < 12; i += 2) {
@@ -713,9 +724,9 @@ public class Barcode : IDrawable {
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
         String fullText = text + checkDigit.ToString();
-        Bars bars = new Bars(x1, y1, 95f * m1, h + 8f, direction);  // 95 modules
+        Bars bars = new Bars(x1, y1, 95f * m1, longBar, direction);  // 95 modules
 
-        x = DrawEGuard(page, bars, x, h + 8);
+        x = DrawEGuard(page, bars, x, longBar);
         float xLeftGroupStart = x;
         String group1 = lgMap[fullText[0] - '0'];
         for (int i = 1; i < 7; i++) {
@@ -736,7 +747,7 @@ public class Barcode : IDrawable {
             x += n*m1;
         }
         float xLeftGroupEnd = x;
-        x = DrawMGuard(page, bars, x, h + 8);
+        x = DrawMGuard(page, bars, x, longBar);
         float xRightGroupStart = x;
         for (int i = 7; i < 13; i++) {
             int digit = fullText[i] - '0';
@@ -753,11 +764,11 @@ public class Barcode : IDrawable {
             x += n*m1;
         }
         float xRightGroupEnd = x;
-        x = DrawEGuard(page, bars, x, h + 8);
+        x = DrawEGuard(page, bars, x, longBar);
 
         float left = x1;
         float right = x;
-        float bottom = y1 + h + 8;
+        float bottom = y1 + longBar;
 
         if (font != null) {
             // Standard EAN-13 layout: the leading (number system) digit sits

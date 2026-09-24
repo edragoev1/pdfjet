@@ -272,6 +272,9 @@ public class Barcode : Drawable {
     private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
+        // The guard bars, and the bars of the first and the last digit, which are
+        // printed outside the bars, reach 5 modules below the others.
+        let longBar: Float = h + Barcode.guardBarExtension * m1
 
         // Calculate the check digit:
         // 1. Add the digits in the odd-numbered positions (first, third, fifth, etc.)
@@ -304,19 +307,20 @@ public class Barcode : Drawable {
         // characters and would corrupt any indexing done against them).
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(checkDigit + 0x30)!)
-        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: h + 8.0, direction: direction)  // 95 modules
+        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: longBar, direction: direction)  // 95 modules
 
-        x = drawEGuard(page, bars, x, h + 8)
+        x = drawEGuard(page, bars, x, longBar)
         var xGroup1Start = x
 
         i = 0
         while i < 6 {
             let digit = Int(fullScalars[i].value) - 0x30
             let symbols = Array(lCode[digit].unicodeScalars)
+            let barHeight: Float = (i == 0) ? longBar : h
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 != 0 {
-                    drawBar(page, bars, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, barHeight)
                 }
                 x += Float(n)*m1
             }
@@ -326,7 +330,7 @@ public class Barcode : Drawable {
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, bars, x, h + 8)
+        x = drawMGuard(page, bars, x, longBar)
         let xRightGroupStart = x
         var xGroup2End: Float = 0.0
 
@@ -337,20 +341,21 @@ public class Barcode : Drawable {
             }
             let digit = Int(fullScalars[i].value) - 0x30
             let symbols = Array(lCode[digit].unicodeScalars)
+            let barHeight: Float = (i == 11) ? longBar : h
             for j in 0..<symbols.count {
                 let n = symbols[j].value - 0x30
                 if j%2 == 0 {
-                    drawBar(page, bars, x, Float(n)*m1, h)
+                    drawBar(page, bars, x, Float(n)*m1, barHeight)
                 }
                 x += Float(n)*m1
             }
             i += 1
         }
-        x = drawEGuard(page, bars, x, h + 8)
+        x = drawEGuard(page, bars, x, longBar)
 
         var left = x1
         var right = x
-        var bottom = y1 + h + 8
+        var bottom = y1 + longBar
         if font != nil {
             // Standard UPC-A layout: the leading (number system) digit and
             // the trailing check digit are printed in the quiet zones
@@ -390,6 +395,10 @@ public class Barcode : Drawable {
 
         return bars.getBottomRight(left, right, bottom)
     }
+
+    // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
+    // modules, as the GS1 General Specifications have it.
+    private static let guardBarExtension: Float = 5.0
 
     private func drawEGuard(
             _ page: Page?,
@@ -784,6 +793,8 @@ public class Barcode : Drawable {
     private func drawCodeEAN13(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
         var x: Float = x1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
+        // The guard bars reach 5 modules below the others.
+        let longBar: Float = h + Barcode.guardBarExtension * m1
 
         let scalars = Array(text.unicodeScalars)
         var sum = 0
@@ -811,9 +822,9 @@ public class Barcode : Drawable {
         // characters and would corrupt any indexing done against them).
         var fullScalars = scalars
         fullScalars.append(UnicodeScalar(UInt16(checkDigit) + 0x30)!)
-        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: h + 8.0, direction: direction)  // 95 modules
+        let bars = Bars(x1: x1, y1: y1, length: 95.0 * m1, height: longBar, direction: direction)  // 95 modules
 
-        x = drawEGuard(page, bars, x, h + 8)
+        x = drawEGuard(page, bars, x, longBar)
         let xLeftGroupStart = x
         let group1 = Array(lgMap[Int(fullScalars[0].value) - 0x30].unicodeScalars)
 
@@ -835,7 +846,7 @@ public class Barcode : Drawable {
             i += 1
         }
         let xLeftGroupEnd = x
-        x = drawMGuard(page, bars, x, h + 8)
+        x = drawMGuard(page, bars, x, longBar)
         let xRightGroupStart = x
 
         i = 7
@@ -852,11 +863,11 @@ public class Barcode : Drawable {
             i += 1
         }
         let xRightGroupEnd = x
-        x = drawEGuard(page, bars, x, h + 8)
+        x = drawEGuard(page, bars, x, longBar)
 
         var left = x1
         var right = x
-        var bottom = y1 + h + 8
+        var bottom = y1 + longBar
         if font != nil {
             // Standard EAN-13 layout: the leading (number system) digit sits
             // in the quiet zone to the left of the start guard bars, not

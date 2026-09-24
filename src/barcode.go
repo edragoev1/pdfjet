@@ -216,6 +216,9 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	x := x1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	// The guard bars, and the bars of the first and the last digit, which are
+	// printed outside the bars, reach 5 modules below the others.
+	long := h + guardBarExtension*barcode.m1
 
 	// Calculate the check digit:
 	// 1. Add the digits in the odd-numbered positions (first, third, fifth, etc.)
@@ -238,17 +241,21 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
 	fullText := barcode.text + strconv.Itoa(checkDigit)
-	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: h + 8, direction: barcode.direction} // 95 modules
+	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: long, direction: barcode.direction} // 95 modules
 
-	x = barcode.drawEGuard(page, bars, x, h+8)
+	x = barcode.drawEGuard(page, bars, x, long)
 	xGroup1Start := x
 	for i := 0; i < 6; i++ {
 		digit := fullText[i] - 0x30
 		str := barcode.lCode[digit]
+		barHeight := h
+		if i == 0 {
+			barHeight = long
+		}
 		for j := 0; j < len(str); j++ {
 			n := str[j] - 0x30
 			if j%2 != 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, h)
+				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, barHeight)
 			}
 			x += float32(n) * barcode.m1
 		}
@@ -257,7 +264,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 	xLeftGroupEnd := x
-	x = barcode.drawMGuard(page, bars, x, h+8)
+	x = barcode.drawMGuard(page, bars, x, long)
 	xRightGroupStart := x
 	var xGroup2End float32
 	for i := 6; i < 12; i++ {
@@ -266,19 +273,23 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 		}
 		digit := fullText[i] - 0x30
 		str := barcode.lCode[digit]
+		barHeight := h
+		if i == 11 {
+			barHeight = long
+		}
 		for j := 0; j < len(str); j++ {
 			n := str[j] - 0x30
 			if j%2 == 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, h)
+				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, barHeight)
 			}
 			x += float32(n) * barcode.m1
 		}
 	}
-	x = barcode.drawEGuard(page, bars, x, h+8)
+	x = barcode.drawEGuard(page, bars, x, long)
 
 	left := x1
 	right := x
-	bottom := y1 + h + 8
+	bottom := y1 + long
 	if barcode.font != nil {
 		// Standard UPC-A layout: the leading (number system) digit and the
 		// trailing check digit are printed in the quiet zones outside the
@@ -312,6 +323,10 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 
 	return bars.getBottomRight(left, right, bottom)
 }
+
+// guardBarExtension is how far the guard bars of EAN-13 and UPC-A reach below
+// the other bars, in modules, as the GS1 General Specifications have it.
+const guardBarExtension = 5
 
 func (barcode *Barcode) drawEGuard(page *Page, bars *barcodeBars, x, h float32) float32 {
 	m1 := barcode.m1
@@ -682,6 +697,8 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 	x := x1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	// The guard bars reach 5 modules below the others.
+	long := h + guardBarExtension*barcode.m1
 
 	sum := 0
 	for i := 0; i < 12; i += 2 {
@@ -699,9 +716,9 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
 	fullText := barcode.text + strconv.Itoa(checkDigit)
-	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: h + 8, direction: barcode.direction} // 95 modules
+	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: long, direction: barcode.direction} // 95 modules
 
-	x = barcode.drawEGuard(page, bars, x, h+8)
+	x = barcode.drawEGuard(page, bars, x, long)
 	xLeftGroupStart := x
 	group1 := barcode.lgMap[fullText[0]-'0']
 	for i := 1; i < 7; i++ {
@@ -719,7 +736,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 	xLeftGroupEnd := x
-	x = barcode.drawMGuard(page, bars, x, h+8)
+	x = barcode.drawMGuard(page, bars, x, long)
 	xRightGroupStart := x
 	for i := 7; i < 13; i++ {
 		digit := fullText[i] - '0'
@@ -733,11 +750,11 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 	xRightGroupEnd := x
-	x = barcode.drawEGuard(page, bars, x, h+8)
+	x = barcode.drawEGuard(page, bars, x, long)
 
 	left := x1
 	right := x
-	bottom := y1 + h + 8
+	bottom := y1 + long
 	if barcode.font != nil {
 		// Standard EAN-13 layout: the leading (number system) digit sits
 		// in the quiet zone to the left of the start guard bars, not

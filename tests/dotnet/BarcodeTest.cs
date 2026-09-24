@@ -5,24 +5,26 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 namespace PDFjet.NET {
 public class BarcodeTest {
     // type, text, direction, with font, corner x, corner y
     private static readonly object[][] CORNERS = {
-        new object[] {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, false, 171.25f, 145.5f},
+        new object[] {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, false, 171.25f, 141.25f},
         new object[] {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, true, 171.25f, 151.31f},
-        new object[] {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, false, 145.5f, 171.25f},
+        new object[] {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, false, 141.25f, 171.25f},
         new object[] {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, true, 151.31f, 179.59f},
-        new object[] {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, false, 145.5f, 171.25f},
-        new object[] {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, true, 145.5f, 171.25f},
-        new object[] {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, false, 171.25f, 145.5f},
+        new object[] {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, false, 141.25f, 171.25f},
+        new object[] {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, true, 141.25f, 171.25f},
+        new object[] {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, false, 171.25f, 141.25f},
         new object[] {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, true, 179.59f, 151.31f},
-        new object[] {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, false, 145.5f, 171.25f},
+        new object[] {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, false, 141.25f, 171.25f},
         new object[] {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, true, 151.31f, 179.59f},
-        new object[] {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, false, 145.5f, 171.25f},
-        new object[] {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, true, 145.5f, 179.59f},
+        new object[] {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, false, 141.25f, 171.25f},
+        new object[] {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, true, 141.25f, 179.59f},
         new object[] {Barcode.CODE_128, "Hello", Direction.LEFT_TO_RIGHT, false, 167.5f, 137.5f},
         new object[] {Barcode.CODE_128, "Hello", Direction.LEFT_TO_RIGHT, true, 167.5f, 154.072f},
         new object[] {Barcode.CODE_128, "Hello", Direction.BOTTOM_TO_TOP, false, 137.5f, 167.5f},
@@ -105,6 +107,65 @@ public class BarcodeTest {
             float width = new Barcode(Barcode.CODE_128, texts[i]).DrawOn(null)[0];
             Assert.Equal((11 * (codewords[i] + 2) + 13) * 0.75f, width);
         }
+    }
+
+    // Where the bars the content draws end, in points from the top of a letter
+    // page, each once, in the order of their first bar: a bar is a line moved
+    // to and drawn from the top of the bars.
+    private static List<float> BarEnds(string content) {
+        List<float> ends = new List<float>();
+        string[] lines = content.Split('\n');
+        for (int i = 0; i + 1 < lines.Length; i++) {
+            string[] move = lines[i].Trim().Split(' ');
+            string[] line = lines[i + 1].Trim().Split(' ');
+            if (move.Length == 3 && move[2] == "m" && line.Length == 3 && line[2] == "l" && move[0] == line[0]) {
+                float end = Letter.PORTRAIT.GetHeight() - float.Parse(line[1], CultureInfo.InvariantCulture);
+                if (!ends.Contains(end)) {
+                    ends.Add(end);
+                }
+            }
+        }
+        return ends;
+    }
+
+    // How many of the bars the content draws end where the given one does.
+    private static int BarsEndingAt(string content, float end) {
+        int count = 0;
+        string[] lines = content.Split('\n');
+        for (int i = 0; i + 1 < lines.Length; i++) {
+            string[] move = lines[i].Trim().Split(' ');
+            string[] line = lines[i + 1].Trim().Split(' ');
+            if (move.Length == 3 && move[2] == "m" && line.Length == 3 && line[2] == "l" && move[0] == line[0]
+                    && Letter.PORTRAIT.GetHeight() - float.Parse(line[1], CultureInfo.InvariantCulture) == end) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    [Fact]
+    public void TheGuardBarsReachFiveModulesBelowTheOthers() {
+        // At a module of 2 the bars are 100 long, so the guard bars are 110.
+        foreach (int type in new int[] {Barcode.EAN_13, Barcode.UPC_A}) {
+            Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+            Barcode barcode = new Barcode(type, type == Barcode.UPC_A ? "01234567890" : "012345678901");
+            barcode.SetModuleLength(2f);
+            barcode.SetLocation(0f, 0f);
+            barcode.DrawOn(page);
+            Assert.Equal(new List<float> {110f, 100f}, BarEnds(TestSupport.Content(page)));
+        }
+    }
+
+    [Fact]
+    public void UpcATheBarsOfTheFirstAndTheLastDigitAreAsLongAsTheGuardBars() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Barcode barcode = new Barcode(Barcode.UPC_A, "01234567890");
+        barcode.SetModuleLength(2f);
+        barcode.SetLocation(0f, 0f);
+        barcode.DrawOn(page);
+        // The guard bars and the two bars of each of the digits outside them are
+        // long: 3 guards of 2 bars and 2 digits of 2 bars.
+        Assert.Equal(10, BarsEndingAt(TestSupport.Content(page), 110f));
     }
 
     [Fact]

@@ -17,23 +17,26 @@ import com.pdfjet.Letter;
 import com.pdfjet.PDF;
 import com.pdfjet.Page;
 import com.pdfjet.TestSupport;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BarcodeTest {
     // type, text, direction, with font, corner x, corner y
     private static final Object[][] CORNERS = {
-        {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, false, 171.25f, 145.5f},
+        {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, false, 171.25f, 141.25f},
         {Barcode.EAN_13, "012345678901", Direction.LEFT_TO_RIGHT, true, 171.25f, 151.31f},
-        {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, false, 145.5f, 171.25f},
+        {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, false, 141.25f, 171.25f},
         {Barcode.EAN_13, "012345678901", Direction.BOTTOM_TO_TOP, true, 151.31f, 179.59f},
-        {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, false, 145.5f, 171.25f},
-        {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, true, 145.5f, 171.25f},
-        {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, false, 171.25f, 145.5f},
+        {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, false, 141.25f, 171.25f},
+        {Barcode.EAN_13, "012345678901", Direction.TOP_TO_BOTTOM, true, 141.25f, 171.25f},
+        {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, false, 171.25f, 141.25f},
         {Barcode.UPC_A, "01234567890", Direction.LEFT_TO_RIGHT, true, 179.59f, 151.31f},
-        {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, false, 145.5f, 171.25f},
+        {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, false, 141.25f, 171.25f},
         {Barcode.UPC_A, "01234567890", Direction.BOTTOM_TO_TOP, true, 151.31f, 179.59f},
-        {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, false, 145.5f, 171.25f},
-        {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, true, 145.5f, 179.59f},
+        {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, false, 141.25f, 171.25f},
+        {Barcode.UPC_A, "01234567890", Direction.TOP_TO_BOTTOM, true, 141.25f, 179.59f},
         {Barcode.CODE_128, "Hello", Direction.LEFT_TO_RIGHT, false, 167.5f, 137.5f},
         {Barcode.CODE_128, "Hello", Direction.LEFT_TO_RIGHT, true, 167.5f, 154.072f},
         {Barcode.CODE_128, "Hello", Direction.BOTTOM_TO_TOP, false, 137.5f, 167.5f},
@@ -116,6 +119,66 @@ class BarcodeTest {
             float width = new Barcode(Barcode.CODE_128, texts[i]).drawOn(null)[0];
             assertEquals((11 * (codewords[i] + 2) + 13) * 0.75f, width, 0f, texts[i]);
         }
+    }
+
+    // Where the bars the content draws end, in points from the top of a letter
+    // page, each once, in the order of their first bar: a bar is a line moved
+    // to and drawn from the top of the bars.
+    private static List<Float> barEnds(String content) {
+        List<Float> ends = new ArrayList<Float>();
+        String[] lines = content.split("\n");
+        for (int i = 0; i + 1 < lines.length; i++) {
+            String[] move = lines[i].trim().split(" ");
+            String[] line = lines[i + 1].trim().split(" ");
+            if (move.length == 3 && move[2].equals("m") && line.length == 3 && line[2].equals("l")
+                    && move[0].equals(line[0])) {
+                float end = Letter.PORTRAIT.getHeight() - Float.parseFloat(line[1]);
+                if (!ends.contains(end)) {
+                    ends.add(end);
+                }
+            }
+        }
+        return ends;
+    }
+
+    // How many of the bars the content draws end where the given one does.
+    private static int barsEndingAt(String content, float end) {
+        int count = 0;
+        String[] lines = content.split("\n");
+        for (int i = 0; i + 1 < lines.length; i++) {
+            String[] move = lines[i].trim().split(" ");
+            String[] line = lines[i + 1].trim().split(" ");
+            if (move.length == 3 && move[2].equals("m") && line.length == 3 && line[2].equals("l")
+                    && move[0].equals(line[0]) && Letter.PORTRAIT.getHeight() - Float.parseFloat(line[1]) == end) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Test
+    void theGuardBarsReachFiveModulesBelowTheOthers() throws Exception {
+        // At a module of 2 the bars are 100 long, so the guard bars are 110.
+        for (int type : new int[] {Barcode.EAN_13, Barcode.UPC_A}) {
+            Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+            Barcode barcode = new Barcode(type, type == Barcode.UPC_A ? "01234567890" : "012345678901");
+            barcode.setModuleLength(2f);
+            barcode.setLocation(0f, 0f);
+            barcode.drawOn(page);
+            assertEquals(Arrays.asList(110f, 100f), barEnds(TestSupport.content(page)), "type " + type);
+        }
+    }
+
+    @Test
+    void upcATheBarsOfTheFirstAndTheLastDigitAreAsLongAsTheGuardBars() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        Barcode barcode = new Barcode(Barcode.UPC_A, "01234567890");
+        barcode.setModuleLength(2f);
+        barcode.setLocation(0f, 0f);
+        barcode.drawOn(page);
+        // The guard bars and the two bars of each of the digits outside them are
+        // long: 3 guards of 2 bars and 2 digits of 2 bars.
+        assertEquals(10, barsEndingAt(TestSupport.content(page), 110f));
     }
 
     @Test
