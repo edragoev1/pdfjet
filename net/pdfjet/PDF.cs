@@ -2160,9 +2160,12 @@ public sealed class PDF {
         byte[] buf = Content.GetFromStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
+        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
-            trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0);
+            trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0, budget);
+        } catch (PDFobj.DecodedTotalException) {
+            throw;              // Not a reason to scan the PDF for its objects
         } catch (Exception) {
             trailer = null;     // A cross-reference stream that cannot be decoded.
         }
@@ -2187,7 +2190,7 @@ public sealed class PDF {
                 decryptor.DecryptStrings(obj);
             }
             if (obj.dict.Contains("stream")) {
-                obj.SetStreamAndData(buf, obj.GetLength(objects1), decryptor);
+                obj.SetStreamAndData(buf, obj.GetLength(objects1), decryptor, budget);
             }
 
             if (type.Equals("/ObjStm")) {
@@ -2436,27 +2439,27 @@ public sealed class PDF {
     // trailer of the section, which is the cross-reference stream object when
     // there is no table, or null when an offset in the section is not that
     // of its object.
-    private PDFobj GetObjects(byte[] buf, int offset, List<PDFobj> objects, int depth) {
+    private PDFobj GetObjects(byte[] buf, int offset, List<PDFobj> objects, int depth, PDFobj.DecodeBudget budget) {
         PDFobj xref = GetObject(buf, offset);
         bool table = xref.dict.Count > 0 && xref.dict[0].Equals("xref");
         if (depth > 1000 || (!table && !IsObject(xref, -1))) {
             return null;
         }
         String prev = xref.GetValue("/Prev");
-        if (!prev.Equals("") && GetObjects(buf, ToInteger(prev), objects, depth + 1) == null) {
+        if (!prev.Equals("") && GetObjects(buf, ToInteger(prev), objects, depth + 1, budget) == null) {
             return null;
         }
         if (table) {
             // The objects in the table replace those in the /XRefStm stream.
             String xrefStm = xref.GetValue("/XRefStm");
             if (!xrefStm.Equals("") &&
-                    !GetStreamObjects(buf, GetObject(buf, ToInteger(xrefStm)), objects)) {
+                    !GetStreamObjects(buf, GetObject(buf, ToInteger(xrefStm)), objects, budget)) {
                 return null;
             }
             if (!GetTableObjects(buf, xref, objects)) {
                 return null;
             }
-        } else if (!GetStreamObjects(buf, xref, objects)) {
+        } else if (!GetStreamObjects(buf, xref, objects, budget)) {
             return null;
         }
         return xref;
@@ -2495,7 +2498,7 @@ public sealed class PDF {
 
     // Adds the objects of a cross-reference stream that are not in object
     // streams, and returns false when an offset is not that of its object.
-    private bool GetStreamObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+    private bool GetStreamObjects(byte[] buf, PDFobj xref, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         if (!IsObject(xref, -1) || !xref.GetValue("/Type").Equals("/XRef") ||
                 !xref.dict.Contains("stream")) {
             return false;
@@ -2529,7 +2532,7 @@ public sealed class PDF {
         }
 
         // SetStreamAndData undoes the predictor, so each entry is a row of the data.
-        xref.SetStreamAndData(buf, length);
+        xref.SetStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
         int offset = 0;
         for (int s = 0; s + 1 < index.Count; s += 2) {

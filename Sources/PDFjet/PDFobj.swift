@@ -22,6 +22,8 @@ public final class PDFobj {
     var streamOffset = 0
     var stream: [UInt8]?            // The compressed stream
     final var data = [UInt8]()      // The decompressed data
+    final var undecoded = false     // The stream is decoded when the data is first asked for
+    final var budget: DecodeBudget? // What the streams of the PDF this was read from may still decode to
     var gsNumber = -1
     var root = false                // The catalog that the trailer's /Root names
 
@@ -52,7 +54,31 @@ public final class PDFobj {
     /// - Returns: the uncompressed stream data.
     ///
     public final func getData() -> [UInt8] {
+        if undecoded {
+            // A stream that is not a cross-reference or an object stream is
+            // decoded when its data is first asked for, not when the PDF is
+            // read, so that reading a PDF of large images takes the memory
+            // of none of them.
+            undecoded = false
+            data = (try? decodeStream(stream!)) ?? []
+        }
         return self.data
+    }
+
+    /// What all the streams of one PDF may decode to together, 256 MiB: a PDF
+    /// of a few megabytes can hold hundreds of streams that each decode to
+    /// hundreds of megabytes, and each one alone is within the limit of a
+    /// stream. A variable, for the tests.
+    nonisolated(unsafe) static var maxDecodedTotal = MAX_DECODED_LENGTH
+
+    /// What the streams of one PDF may still decode to, shared by its objects.
+    final class DecodeBudget {
+        var left = PDFobj.maxDecodedTotal
+    }
+
+    /// The error of a PDF whose streams decode to more than the budget together.
+    struct DecodedTotalError: Error, CustomStringConvertible {
+        let description = "the streams of the PDF decode to more than \(PDFobj.maxDecodedTotal) bytes together"
     }
 
     ///
@@ -61,8 +87,10 @@ public final class PDFobj {
     /// stream replaces the encrypted one, so that it can be copied.
     ///
     final func setStreamAndData(
-            _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil) throws {
+            _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil,
+            _ budget: DecodeBudget? = nil) throws {
         if stream == nil {
+            self.budget = budget
             var length = length
             let actual = PDFobj.streamLength(buffer, streamOffset, length)
             if actual != length {
@@ -81,7 +109,12 @@ public final class PDFobj {
                 setLength(copied.count)
             }
             stream = copied
-            data = try decodeStream(copied)
+            let type = getValue("/Type")
+            if type == "/XRef" || type == "/ObjStm" {
+                data = try decodeStream(copied)     // The objects in it are read now
+            } else {
+                undecoded = true
+            }
         }
     }
 
@@ -93,7 +126,15 @@ public final class PDFobj {
     private final func decodeStream(_ stream: [UInt8]) throws -> [UInt8] {
         let type = getValue("/Type")
         if type == "/XRef" || type == "/ObjStm" {
-            return try decode(stream)
+            do {
+                return try decode(stream)
+            } catch {
+                if let budget = budget, budget.left < MAX_DECODED_LENGTH,
+                        String(describing: error).contains("decodes to more than") {
+                    throw DecodedTotalError()
+                }
+                throw error
+            }
         }
         do {
             return try decode(stream)
@@ -177,20 +218,38 @@ public final class PDFobj {
         for (i, filter) in getValues("/Filter").enumerated() {
             switch filter {
             case "/FlateDecode", "/Fl":
-                decoded = applyDecodeParms(try inflate(decoded), i)
+                decoded = applyDecodeParms(self.decoded(try inflate(decoded, maxDecodedLength())), i)
             case "/LZWDecode", "/LZW":
-                decoded = applyDecodeParms(try lzwDecode(decoded), i)
+                decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength())), i)
             case "/ASCIIHexDecode", "/AHx":
                 decoded = asciiHexDecode(decoded)
             case "/ASCII85Decode", "/A85":
                 decoded = ascii85Decode(decoded)
             case "/RunLengthDecode", "/RL":
-                decoded = try runLengthDecode(decoded)
+                decoded = self.decoded(try runLengthDecode(decoded, maxDecodedLength()))
             default:
                 return decoded
             }
         }
         return decoded
+    }
+
+    // Returns what a stream of the object may decode to: the limit of a
+    // stream, or what is left of the PDF's budget when that is less. A budget
+    // with nothing left decodes nothing, which the decoders report as too long.
+    private final func maxDecodedLength() -> Int {
+        if let budget = budget, budget.left < MAX_DECODED_LENGTH {
+            return budget.left
+        }
+        return MAX_DECODED_LENGTH
+    }
+
+    // Takes the decoded data from the PDF's budget and returns it.
+    private final func decoded(_ data: [UInt8]) -> [UInt8] {
+        if let budget = budget {
+            budget.left = max(0, budget.left - data.count)
+        }
+        return data
     }
 
     // Returns the elements of the array that is the value of the key, or the

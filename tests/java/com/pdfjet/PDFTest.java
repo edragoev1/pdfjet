@@ -786,4 +786,87 @@ class PDFTest {
         assertEquals("abcde", TestSupport.latin1(objects.get(0).getData()));
     }
 
+
+    // A PDF, without a cross-reference table, so that it is read by scanning,
+    // of a catalog, an object stream that holds one object, and a content
+    // stream: each Flate, decoding to the given number of bytes.
+    private static byte[] pdfOfStreams(int objectStreamBytes, int contentBytes) throws Exception {
+        java.io.ByteArrayOutputStream pdf = new java.io.ByteArrayOutputStream();
+        java.nio.charset.Charset latin1 = java.nio.charset.StandardCharsets.ISO_8859_1;
+        pdf.write("%PDF-1.5\n".getBytes(latin1));
+        pdf.write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".getBytes(latin1));
+        pdf.write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n".getBytes(latin1));
+        StringBuilder body = new StringBuilder("5 0 << /Padding /");
+        while (body.length() < objectStreamBytes - 3) {
+            body.append('x');
+        }
+        body.append(" >>");
+        byte[] stream = deflate(body.toString().getBytes(latin1));
+        pdf.write(("3 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Length " + stream.length +
+                " /Filter /FlateDecode >>\nstream\n").getBytes(latin1));
+        pdf.write(stream);
+        pdf.write("\nendstream\nendobj\n".getBytes(latin1));
+        StringBuilder ops = new StringBuilder();
+        for (int i = 0; i < contentBytes / 4; i++) {
+            ops.append("q Q\n");
+        }
+        byte[] content = deflate(ops.toString().getBytes(latin1));
+        pdf.write(("4 0 obj\n<< /Length " + content.length + " /Filter /FlateDecode >>\nstream\n").getBytes(latin1));
+        pdf.write(content);
+        pdf.write("\nendstream\nendobj\n".getBytes(latin1));
+        pdf.write("trailer\n<< /Root 1 0 R /Size 6 >>\n%%EOF\n".getBytes(latin1));
+        return pdf.toByteArray();
+    }
+
+    private static byte[] deflate(byte[] data) throws Exception {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        java.util.zip.DeflaterOutputStream deflater = new java.util.zip.DeflaterOutputStream(out);
+        deflater.write(data);
+        deflater.close();
+        return out.toByteArray();
+    }
+
+    private static PDFobj objectOfNumber(List<PDFobj> objects, int number) {
+        for (PDFobj obj : objects) {
+            if (obj.number == number) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    @Test
+    void aStreamIsDecodedWhenItsDataIsFirstAskedFor() throws Exception {
+        List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 4000)));
+        PDFobj content = objectOfNumber(objects, 4);
+        assertTrue(content.undecoded, "the content stream is decoded before it is asked for");
+        assertNull(content.data);
+        assertEquals(4000, content.getData().length);
+        assertFalse(content.undecoded);
+        // The object stream was read when the PDF was: its object is there.
+        assertFalse(objectOfNumber(objects, 5).getValue("/Padding").isEmpty());
+    }
+
+    @Test
+    void theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws Exception {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // The object stream, read with the PDF, is within the budget, and
+            // the content stream is decoded up to what is left of it: 4000
+            // of 5000 is left after the object stream of 1000, so a content
+            // of 4000 is decoded and one of 4004 is not.
+            List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(1000, 4000)));
+            assertEquals(4000, objectOfNumber(objects, 4).getData().length);
+            objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(1000, 4004)));
+            assertNull(objectOfNumber(objects, 4).getData());
+            // An object stream past the budget is an error, as the PDF cannot
+            // be read without its objects.
+            Exception e = assertThrows(Exception.class, () ->
+                    TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(6000, 0))));
+            assertEquals("the streams of the PDF decode to more than 5000 bytes together", e.getMessage());
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
 }

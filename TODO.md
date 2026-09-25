@@ -478,25 +478,39 @@ to check and fix in the four, with a test.
   PDF/A-1a, 2a and 3a, pass veraPDF's profiles of those levels but for what
   each of PDF/A forbids, such as transparency in PDF/A-1.
 
-- **A long word takes minutes to break across lines.** `appendBrokenWordLines`
-  in textblock.go measures the whole rest of the word for every line it
-  breaks it over, so the time grows with the square of the word: a word of
-  20,000 characters in a full-width block takes 1.6 s, 100,000 take 39 s, and
-  2 million in a narrow column had not finished after 5 minutes. Normal text
-  is fast, 2 MB of words in 0.4 s. Found by a review of pdfjet-server on 25
-  September 2026. To fix: accumulate the advance of each glyph and break where
-  the sum passes the width, measuring each character once. pdfjet-server
-  refuses a word of more than 1000 characters until then (`checkText`,
-  layout.go).
+- ✅ **A long word takes minutes to break across lines.** `appendBrokenWordLines`
+  in textblock.go measured the whole rest of the word for every line it
+  broke it over, and copied the word up to each break to measure it, so the
+  time grew with the square of the word: a word of 20,000 characters in a
+  full-width block took 1.6 s, 100,000 took 39 s, and 2 million in a narrow
+  column had not finished after 5 minutes. Normal text was fast, 2 MB of
+  words in 0.4 s. Found by a review of pdfjet-server on 25 September 2026,
+  and fixed the same day in the four ports: each line is found by measuring
+  the word from the line's start to each character break until one does not
+  fit, and the rest of the word is measured only when the breaks run out, so
+  a word is measured about once a line's worth of characters a line; the word
+  of 100,000 characters breaks in 0.02 s. Right-to-left text is still shaped
+  in the context of the word up to the break, as it was, which costs the
+  length of that prefix a measure. The lines are the same as before, checked
+  in Go against the old code on Latin, combining marks, Thai and Arabic, and
+  in the four ports by the height of the block. pdfjet-server keeps its limit
+  of 1000 characters a word (`checkText`, layout.go).
 
-- **Reading a PDF decodes every stream in full, with no total.** `Read` in
-  pdf.go inflates every Flate stream as it reads, capped at 256 MB each by
+- ✅ **Reading a PDF decodes every stream in full, with no total.** `Read` in
+  pdf.go inflated every Flate stream as it read, capped at 256 MB each by
   `decompressor.MaxDecodedLength` and not at all in total: a PDF of 8 MB, 40
   streams of 203 KB that each inflate to 200 MB, took 32 GB to read. Found by
-  the same review. To fix: a budget of decoded bytes for the whole `Read`,
-  such as 16 times the size of the file, or streams decoded only when they
-  are asked for. pdfjet-server refuses a PDF that does not name
-  pdfjet-layout.json before reading it, and takes at most 20 MB, until then.
+  the same review, and fixed the same day in the four ports, in two parts.
+  A stream that is not a cross-reference or an object stream is decoded when
+  its data is first asked for, `GetData`, not when the PDF is read, so that
+  reading a PDF of large images takes the memory of none of them; a stream
+  that cannot be decoded has no data, as before. And all the streams of one
+  PDF may decode to 256 MiB together (`maxDecodedTotal`, a budget the objects
+  of one `Read` share): an object stream or a cross-reference stream past it
+  is the error "the streams of the PDF decode to more than N bytes together",
+  as the PDF cannot be read without its objects, and any other stream past
+  it has no data. pdfjet-server keeps its checks before reading, the name of
+  the layout in the PDF and 20 MB at most.
 
 - **An image is decoded whole to give its size.** `NewImage` decodes the
   pixels of a PNG or a JPEG to know its width and height, 256 MB for a PNG of

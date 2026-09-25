@@ -773,5 +773,87 @@ public class PDFTest {
         Assert.Equal("abcde", TestSupport.Latin1(objects[0].GetData()));
     }
 
+    // A PDF, without a cross-reference table, so that it is read by scanning,
+    // of a catalog, an object stream that holds one object, and a content
+    // stream: each Flate, decoding to the given number of bytes.
+    private static byte[] PdfOfStreams(int objectStreamBytes, int contentBytes) {
+        var pdf = new System.IO.MemoryStream();
+        var latin1 = System.Text.Encoding.Latin1;
+        void Write(string text) { byte[] b = latin1.GetBytes(text); pdf.Write(b, 0, b.Length); }
+        Write("%PDF-1.5\n");
+        Write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+        Write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n");
+        var body = new System.Text.StringBuilder("5 0 << /Padding /");
+        while (body.Length < objectStreamBytes - 3) {
+            body.Append('x');
+        }
+        body.Append(" >>");
+        byte[] stream = Deflate(latin1.GetBytes(body.ToString()));
+        Write("3 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Length " + stream.Length + " /Filter /FlateDecode >>\nstream\n");
+        pdf.Write(stream, 0, stream.Length);
+        Write("\nendstream\nendobj\n");
+        var ops = new System.Text.StringBuilder();
+        for (int i = 0; i < contentBytes / 4; i++) {
+            ops.Append("q Q\n");
+        }
+        byte[] content = Deflate(latin1.GetBytes(ops.ToString()));
+        Write("4 0 obj\n<< /Length " + content.Length + " /Filter /FlateDecode >>\nstream\n");
+        pdf.Write(content, 0, content.Length);
+        Write("\nendstream\nendobj\n");
+        Write("trailer\n<< /Root 1 0 R /Size 6 >>\n%%EOF\n");
+        return pdf.ToArray();
+    }
+
+    private static byte[] Deflate(byte[] data) {
+        var output = new System.IO.MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal, true)) {
+            zlib.Write(data, 0, data.Length);
+        }
+        return output.ToArray();
+    }
+
+    private static PDFobj ObjectOfNumber(System.Collections.Generic.List<PDFobj> objects, int number) {
+        foreach (PDFobj obj in objects) {
+            if (obj.number == number) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    [Fact]
+    public void AStreamIsDecodedWhenItsDataIsFirstAskedFor() {
+        var objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(100, 4000)));
+        PDFobj content = ObjectOfNumber(objects, 4);
+        Assert.True(content.undecoded, "the content stream is decoded before it is asked for");
+        Assert.Null(content.data);
+        Assert.Equal(4000, content.GetData().Length);
+        Assert.False(content.undecoded);
+        // The object stream was read when the PDF was: its object is there.
+        Assert.NotEqual("", ObjectOfNumber(objects, 5).GetValue("/Padding"));
+    }
+
+    [Fact]
+    public void TheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // The object stream, read with the PDF, is within the budget, and
+            // the content stream is decoded up to what is left of it: 4000
+            // of 5000 is left after the object stream of 1000, so a content
+            // of 4000 is decoded and one of 4004 is not.
+            var objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(1000, 4000)));
+            Assert.Equal(4000, ObjectOfNumber(objects, 4).GetData().Length);
+            objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(1000, 4004)));
+            Assert.Null(ObjectOfNumber(objects, 4).GetData());
+            // An object stream past the budget is an error, as the PDF cannot
+            // be read without its objects.
+            var e = Assert.ThrowsAny<System.Exception>(() =>
+                    TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(6000, 0))));
+            Assert.Equal("the streams of the PDF decode to more than 5000 bytes together", e.Message);
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
 }
 }

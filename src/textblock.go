@@ -464,35 +464,43 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 }
 
 // appendBrokenWordLines appends the lines of a word too wide for a line by
-// itself, broken between its characters, and returns the rest of the word,
-// which fits on a line. No line starts with a combining mark, or with a Thai or
-// Lao vowel or sign written after its consonant, and none ends with a Thai or
-// Lao vowel written before its consonant.
+// itself, broken between its characters, and returns the byte index of the
+// rest of the word, which fits on a line. No line starts with a combining
+// mark, or with a Thai or Lao vowel or sign written after its consonant, and
+// none ends with a Thai or Lao vowel written before its consonant.
+//
+// Each line is found by measuring the word from the line's start to each
+// character break until one does not fit, so a word of n characters is
+// measured about n times a line's worth of characters, not n times itself:
+// a word of 100,000 characters took 39 seconds when the rest of the word was
+// measured before each line, and the prefix of the word copied to measure it.
 func (textBlock *TextBlock) appendBrokenWordLines(
 	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, int) {
 	runes := []rune(word)
+	// The byte index of each rune, and of the end of the word, so that the
+	// word up to a rune is a slice of it, not a copy.
+	offsets := make([]int, 0, len(runes)+1)
+	for i := range word {
+		offsets = append(offsets, i)
+	}
+	offsets = append(offsets, len(word))
 	start := 0 // The rune index where the rest of the word starts
-	for textBlock.lineWidth(string(runes), byteIndex(runes, start)) > textAreaWidth {
+	for start < len(runes) {
 		// Each line gets at least one character, however narrow the block.
 		end := nextCharacterBreak(runes, start)
 		next := end
-		if end < len(runes) {
-			next = nextCharacterBreak(runes, end)
-		}
 		for next < len(runes) &&
-			textBlock.lineWidth(string(runes[:next]), byteIndex(runes, start)) <= textAreaWidth {
+			textBlock.lineWidth(word[:offsets[next]], offsets[start]) <= textAreaWidth {
 			end = next
 			next = nextCharacterBreak(runes, end)
 		}
-		textLines = append(textLines, textBlock.newTextLine(string(runes[:end]), byteIndex(runes, start)))
+		if next == len(runes) && textBlock.lineWidth(word, offsets[start]) <= textAreaWidth {
+			break // The rest of the word fits on a line.
+		}
+		textLines = append(textLines, textBlock.newTextLine(word[:offsets[end]], offsets[start]))
 		start = end
 	}
-	return textLines, byteIndex(runes, start)
-}
-
-// byteIndex returns the byte index of the rune at the rune index.
-func byteIndex(runes []rune, runeIndex int) int {
-	return len(string(runes[:runeIndex]))
+	return textLines, offsets[start]
 }
 
 // part returns the part of the text from the byte index on, reordered and

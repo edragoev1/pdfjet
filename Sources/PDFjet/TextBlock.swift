@@ -429,23 +429,57 @@ public class TextBlock : Drawable {
     /// line starts with a combining mark, or with a Thai or Lao vowel or sign
     /// written after its consonant, and none ends with a Thai or Lao vowel
     /// written before its consonant.
+    // Each line is found by measuring the word from the line's start to each
+    // character break until one does not fit, so a word of n characters is
+    // measured about n times a line's worth of characters, not n times
+    // itself: a word of 100,000 characters took 39 seconds when the rest of
+    // the word was measured before each line, and the word up to each break
+    // was copied to measure it.
     private func addBrokenWordLines(
             _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> Int {
         let scalars = Array(word.unicodeScalars)
         var start = 0
-        while lineWidth(word, start) > textAreaWidth {
+        while start < scalars.count {
             // Each line gets at least one character, however narrow the block.
             var end = TextBlock.nextCharacterBreak(scalars, start)
-            // A single cluster wider than the line is the whole word.
-            var next = end < scalars.count ? TextBlock.nextCharacterBreak(scalars, end) : end
-            while next < scalars.count && lineWidth(TextBlock.string(scalars[..<next]), start) <= textAreaWidth {
+            var next = end
+            while next < scalars.count && lineWidth(scalars, start, next) <= textAreaWidth {
                 end = next
                 next = TextBlock.nextCharacterBreak(scalars, end)
             }
-            textLines.append(newTextLine(TextBlock.string(scalars[..<end]), start))
+            if next == scalars.count && lineWidth(scalars, start, scalars.count) <= textAreaWidth {
+                break       // The rest of the word fits on a line.
+            }
+            textLines.append(newTextLine(scalars, start, end))
             start = end
         }
         return start
+    }
+
+    // Returns a line of the text from one scalar offset to another, without
+    // its trailing spaces: reordered and shaped in the context of the text up
+    // to the second offset when it is right to left, and not copied when it
+    // is not.
+    private func newTextLine(_ scalars: [Unicode.Scalar], _ from: Int, _ end: Int) -> TextLine {
+        var to = end
+        while to > from && String.isJavaWhitespace(scalars[to - 1]) {
+            to -= 1
+        }
+        if rightToLeft {
+            return TextLine(font, Bidi.reorderVisually(TextBlock.string(scalars[..<end]), from, to))
+        }
+        return TextLine(font, TextBlock.string(scalars[from..<to]))
+    }
+
+    // Returns the width of the text from one scalar offset to another,
+    // measured as a line of the text up to the second: the text up to there is
+    // reordered and shaped when it is right to left, and not copied when it is
+    // not.
+    private func lineWidth(_ scalars: [Unicode.Scalar], _ from: Int, _ to: Int) -> Float {
+        if rightToLeft {
+            return stringWidth(Bidi.reorderVisually(TextBlock.string(scalars[..<to]), from, to))
+        }
+        return stringWidth(TextBlock.string(scalars[from..<to]))
     }
 
     // Returns the part of the text from the scalar offset on, reordered and

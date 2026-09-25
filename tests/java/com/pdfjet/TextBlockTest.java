@@ -171,4 +171,27 @@ class TextBlockTest {
         assertTrue(content.contains("/H1 <</MCID 0>>") && content.contains("/P <</MCID 1>>"), content);
     }
 
+
+    @Test
+    void aWordIsBrokenBetweenItsCharactersAsTheGoPortBreaksIt() throws Exception {
+        // Five lines: pneumono, ultramicros, copicsilico, volcanoco, niosis
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        TextBlock block = new TextBlock(font, "pneumonoultramicroscopicsilicovolcanoconiosis").setWidth(60f);
+        TestSupport.assertXY(60f, 69.36f, block.setLocation(0f, 0f).drawOn(null));
+    }
+
+    @Test
+    void aLongWordIsBrokenInTimeThatGrowsWithTheWord() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        StringBuilder word = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            word.append("abcdefghij");     // 100,000 characters
+        }
+        TextBlock block = new TextBlock(font, word.toString()).setWidth(100f);
+        long start = System.nanoTime();
+        float[] xy = block.setLocation(0f, 0f).drawOn(null);
+        long took = (System.nanoTime() - start) / 1000000L;
+        assertTrue(took < 3000L, "breaking a word of 100,000 characters took " + took + " ms");
+        TestSupport.assertXY(100f, 78030f, xy);    // 5625 lines of 13.872 points
+    }
 }

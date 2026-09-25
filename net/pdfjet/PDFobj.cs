@@ -22,6 +22,8 @@ public class PDFobj {
     internal int streamOffset;
     internal byte[] stream;        // The compressed stream
     internal byte[] data;          // The decompressed data
+    internal bool undecoded;       // The stream is decoded when the data is first asked for
+    internal DecodeBudget budget;  // What the streams of the PDF this was read from may still decode to
     internal int gsNumber = -1;
     internal bool root;            // The catalog that the trailer's /Root names
 
@@ -44,20 +46,51 @@ public class PDFobj {
 
     /// <summary>Returns the decompressed stream data.</summary>
     public byte[] GetData() {
+        if (undecoded) {
+            // A stream that is not a cross-reference or an object stream is
+            // decoded when its data is first asked for, not when the PDF is
+            // read, so that reading a PDF of large images takes the memory
+            // of none of them.
+            undecoded = false;
+            try {
+                data = DecodeStream();
+            } catch (Exception) {
+                data = null;    // A stream that cannot be decoded has no data.
+            }
+        }
         return this.data;
+    }
+
+    // What all the streams of one PDF may decode to together, 256 MiB: a PDF
+    // of a few megabytes can hold hundreds of streams that each decode to
+    // hundreds of megabytes, and each one alone is within the limit of a
+    // stream. Not a constant, for the tests.
+    internal static int MAX_DECODED_TOTAL = Decompressor.MAX_DECODED_LENGTH;
+
+    // What the streams of one PDF may still decode to, shared by its objects.
+    internal sealed class DecodeBudget {
+        internal int left = MAX_DECODED_TOTAL;
+    }
+
+    // The error of a PDF whose streams decode to more than the budget together.
+    internal sealed class DecodedTotalException : Exception {
+        internal DecodedTotalException() :
+                base("the streams of the PDF decode to more than " + MAX_DECODED_TOTAL + " bytes together") {
+        }
     }
 
     // Copies the stream from the buffer, and decodes it with the filters of
     // its /Filter entry.
-    internal void SetStreamAndData(byte[] buf, int length) {
-        SetStreamAndData(buf, length, null);
+    internal void SetStreamAndData(byte[] buf, int length, DecodeBudget budget) {
+        SetStreamAndData(buf, length, null, budget);
     }
 
     // Copies the stream from the buffer, decrypts it when the PDF is encrypted,
     // and decodes it with the filters of its /Filter entry. The decrypted
     // stream replaces the encrypted one, so that it can be copied.
-    internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor) {
+    internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor, DecodeBudget budget) {
         if (this.stream == null) {
+            this.budget = budget;
             int actual = StreamLength(buf, streamOffset, length);
             if (actual != length) {
                 length = actual;
@@ -75,7 +108,12 @@ public class PDFobj {
                 this.stream = decryptor.DecryptStream(this, stream);
                 SetLength(stream.Length);
             }
-            this.data = DecodeStream();
+            String type = GetValue("/Type");
+            if (type.Equals("/XRef") || type.Equals("/ObjStm")) {
+                this.data = DecodeStream();     // The objects in it are read now
+            } else {
+                this.undecoded = true;
+            }
         }
     }
 
@@ -87,7 +125,15 @@ public class PDFobj {
     private byte[] DecodeStream() {
         String type = GetValue("/Type");
         if (type.Equals("/XRef") || type.Equals("/ObjStm")) {
-            return Decode(stream);
+            try {
+                return Decode(stream);
+            } catch (Exception e) {
+                if (budget != null && budget.left < Decompressor.MAX_DECODED_LENGTH &&
+                        e.Message != null && e.Message.Contains("decodes to more than")) {
+                    throw new DecodedTotalException();
+                }
+                throw;
+            }
         }
         try {
             return Decode(stream);
@@ -157,20 +203,38 @@ public class PDFobj {
         for (int i = 0; i < filters.Count; i++) {
             String filter = filters[i];
             if (filter.Equals("/FlateDecode") || filter.Equals("/Fl")) {
-                decoded = ApplyDecodeParms(Decompressor.Inflate(decoded), i);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.Inflate(decoded, MaxDecodedLength())), i);
             } else if (filter.Equals("/LZWDecode") || filter.Equals("/LZW")) {
-                decoded = ApplyDecodeParms(Decompressor.LZWDecode(decoded), i);
+                decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength())), i);
             } else if (filter.Equals("/ASCIIHexDecode") || filter.Equals("/AHx")) {
                 decoded = Decompressor.ASCIIHexDecode(decoded);
             } else if (filter.Equals("/ASCII85Decode") || filter.Equals("/A85")) {
                 decoded = Decompressor.ASCII85Decode(decoded);
             } else if (filter.Equals("/RunLengthDecode") || filter.Equals("/RL")) {
-                decoded = Decompressor.RunLengthDecode(decoded);
+                decoded = Decoded(Decompressor.RunLengthDecode(decoded, MaxDecodedLength()));
             } else {
                 break;
             }
         }
         return decoded;
+    }
+
+    // Returns what a stream of the object may decode to: the limit of a
+    // stream, or what is left of the PDF's budget when that is less. A budget
+    // with nothing left decodes nothing, which the decoders report as too long.
+    private int MaxDecodedLength() {
+        if (budget != null && budget.left < Decompressor.MAX_DECODED_LENGTH) {
+            return budget.left;
+        }
+        return Decompressor.MAX_DECODED_LENGTH;
+    }
+
+    // Takes the decoded data from the PDF's budget and returns it.
+    private byte[] Decoded(byte[] data) {
+        if (budget != null) {
+            budget.left = Math.Max(0, budget.left - data.Length);
+        }
+        return data;
     }
 
     // Returns the elements of the array that is the value of the key, or the

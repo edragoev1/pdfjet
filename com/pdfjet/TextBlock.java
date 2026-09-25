@@ -608,15 +608,24 @@ public class TextBlock implements Drawable {
      * shaped as a whole word, so its letters keep their joined forms at the
      * breaks.
      */
+    // Each line is found by measuring the word from the line's start to each
+    // character break until one does not fit, so a word of n characters is
+    // measured about n times a line's worth of characters, not n times
+    // itself: a word of 100,000 characters took 39 seconds when the rest of
+    // the word was measured before each line, and the word up to each break
+    // was copied to measure it.
     private int addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
         int start = 0;
-        while (lineWidth(word, start) > textAreaWidth) {
+        while (start < word.length()) {
             // Each line gets at least one character, however narrow the block.
             int end = nextCharacterBreak(word, start);
-            int next = end < word.length() ? nextCharacterBreak(word, end) : end;
-            while (next < word.length() && lineWidth(word.substring(0, next), start) <= textAreaWidth) {
+            int next = end;
+            while (next < word.length() && lineWidth(word, start, next) <= textAreaWidth) {
                 end = next;
                 next = nextCharacterBreak(word, end);
+            }
+            if (next == word.length() && lineWidth(word, start) <= textAreaWidth) {
+                break;      // The rest of the word fits on a line.
             }
             textLines.add(newTextLine(word.substring(0, end), start));
             start = end;
@@ -633,6 +642,15 @@ public class TextBlock implements Drawable {
     // Returns the width of a line of text from the index on.
     private float lineWidth(String text, int from) {
         return stringWidth(part(text, from, text.length()));
+    }
+
+    // Returns the width of the text from one index to another, measured as a
+    // line of the text up to the second index: the text up to there is
+    // reordered and shaped when it is right to left, and not copied when it is
+    // not.
+    private float lineWidth(String text, int from, int to) {
+        return stringWidth(rightToLeft ?
+                Bidi.reorderVisually(text.substring(0, to), from, to) : text.substring(from, to));
     }
 
     // Returns a line of the text from the index on, without its trailing spaces.

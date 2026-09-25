@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -186,5 +187,82 @@ func TestTextBlockIsTaggedAsItsStructureType(t *testing.T) {
 	content := testContent(page)
 	if !strings.Contains(content, "/H1 <</MCID 0>>") || !strings.Contains(content, "/P <</MCID 1>>") {
 		t.Errorf("the heading and the paragraph are not tagged as H1 and P: %.200q", content)
+	}
+}
+
+// testAppendBrokenWordLinesSlow breaks a word as appendBrokenWordLines did
+// before 25 September 2026, measuring the rest of the word before each line:
+// the same lines, in time that grows with the square of the word.
+func testAppendBrokenWordLinesSlow(textBlock *TextBlock, word string, textAreaWidth float32) ([]string, int) {
+	byteIndex := func(runes []rune, runeIndex int) int { return len(string(runes[:runeIndex])) }
+	var lines []string
+	runes := []rune(word)
+	start := 0
+	for textBlock.lineWidth(string(runes), byteIndex(runes, start)) > textAreaWidth {
+		end := nextCharacterBreak(runes, start)
+		next := end
+		if end < len(runes) {
+			next = nextCharacterBreak(runes, end)
+		}
+		for next < len(runes) &&
+			textBlock.lineWidth(string(runes[:next]), byteIndex(runes, start)) <= textAreaWidth {
+			end = next
+			next = nextCharacterBreak(runes, end)
+		}
+		lines = append(lines, textBlock.newTextLine(string(runes[:end]), byteIndex(runes, start)).text)
+		start = end
+	}
+	return lines, byteIndex(runes, start)
+}
+
+func TestTextBlockAWordIsBrokenAsItWasBeforeTheLinesWereMeasuredAlone(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	for _, c := range []struct {
+		word        string
+		width       float32
+		rightToLeft bool
+	}{
+		{"pneumonoultramicroscopicsilicovolcanoconiosis", 60, false},
+		{"pneumonoultramicroscopicsilicovolcanoconiosis", 6, false}, // One character a line
+		{"x", 1, false}, // A single character wider than the line
+		{"xy", 1, false},
+		{"áéíóú", 7, false},               // No line starts with a combining mark
+		{"เกิดเหตุ", 12, false},                // Thai leading vowels
+		{strings.Repeat("محمد", 12), 40, true}, // Arabic, right to left
+		{"short", 500, false},                  // Fits: no lines
+	} {
+		block := NewTextBlock(font, c.word).SetRightToLeft(c.rightToLeft)
+		wantLines, wantRest := testAppendBrokenWordLinesSlow(block, c.word, c.width)
+		gotTextLines, gotRest := block.appendBrokenWordLines(nil, c.word, c.width)
+		var got []string
+		for _, line := range gotTextLines {
+			got = append(got, line.text)
+		}
+		if fmt.Sprint(got) != fmt.Sprint(wantLines) || gotRest != wantRest {
+			t.Errorf("%q at %v: got %q rest %d, want %q rest %d", c.word, c.width, got, gotRest, wantLines, wantRest)
+		}
+	}
+}
+
+func TestTextBlockALongWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	word := strings.Repeat("abcdefghij", 10000) // 100,000 characters
+	block := NewTextBlock(font, word).SetWidth(100)
+	block.SetLocation(0, 0)
+	start := time.Now()
+	lines := block.getTextLines()
+	if took := time.Since(start); took > 3*time.Second {
+		t.Errorf("breaking a word of 100,000 characters took %v", took)
+	}
+	var joined strings.Builder
+	for _, line := range lines {
+		if w := font.StringWidth(block.fontSize, line.text); w > 100 {
+			t.Fatalf("a line is %v wide: %q", w, line.text)
+		}
+		joined.WriteString(line.text)
+	}
+	if joined.String() != word {
+		t.Errorf("the lines do not join back to the word: %d characters of %d", joined.Len(), len(word))
 	}
 }

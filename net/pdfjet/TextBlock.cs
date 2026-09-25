@@ -434,15 +434,24 @@ public class TextBlock : IDrawable {
     /// written after its consonant, and none ends with a Thai or Lao vowel
     /// written before its consonant.
     /// </summary>
+    // Each line is found by measuring the word from the line's start to each
+    // character break until one does not fit, so a word of n characters is
+    // measured about n times a line's worth of characters, not n times
+    // itself: a word of 100,000 characters took 39 seconds when the rest of
+    // the word was measured before each line, and the word up to each break
+    // was copied to measure it.
     private int AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
         int start = 0;
-        while (LineWidth(word, start) > textAreaWidth) {
+        while (start < word.Length) {
             // Each line gets at least one character, however narrow the block.
             int end = NextCharacterBreak(word, start);
-            int next = end < word.Length ? NextCharacterBreak(word, end) : end;
-            while (next < word.Length && LineWidth(word.Substring(0, next), start) <= textAreaWidth) {
+            int next = end;
+            while (next < word.Length && LineWidth(word, start, next) <= textAreaWidth) {
                 end = next;
                 next = NextCharacterBreak(word, end);
+            }
+            if (next == word.Length && LineWidth(word, start) <= textAreaWidth) {
+                break;      // The rest of the word fits on a line.
             }
             textLines.Add(NewTextLine(word.Substring(0, end), start));
             start = end;
@@ -460,6 +469,15 @@ public class TextBlock : IDrawable {
     // reordered if the text is right to left.
     private float LineWidth(String text, int from) {
         return StringWidth(Part(text, from, text.Length));
+    }
+
+    // Returns the width of the text from one index to another, measured as a
+    // line of the text up to the second index: the text up to there is
+    // reordered and shaped when it is right to left, and not copied when it is
+    // not.
+    private float LineWidth(String text, int from, int to) {
+        return StringWidth(rightToLeft ?
+                Bidi.ReorderVisually(text.Substring(0, to), from, to) : text.Substring(from, to - from));
     }
 
     // Returns a line of text, reordered if the text is right to left.

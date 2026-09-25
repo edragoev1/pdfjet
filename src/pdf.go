@@ -2179,13 +2179,17 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 	}()
 	objects1 := make([]*PDFobj, 0)
+	budget := newDecodeBudget() // For all the streams of this PDF together
 	trailer := func() (trailer *PDFobj) {
 		defer func() {
-			if recover() != nil {
+			if r := recover(); r != nil {
+				if _, ok := r.(errDecodedTotal); ok {
+					panic(r) // Not a reason to scan the PDF for its objects
+				}
 				trailer = nil // A cross-reference stream that cannot be decoded.
 			}
 		}()
-		return getObjects(buf, pdf.getStartXRef(buf), &objects1, 0)
+		return getObjects(buf, pdf.getStartXRef(buf), &objects1, 0, budget)
 	}()
 	if trailer == nil || len(objects1) == 0 {
 		// The cross-reference table is missing or wrong, like in a PDF
@@ -2212,7 +2216,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 		if contains(obj.dict, "stream") {
 			length := obj.getLength(objects1)
-			obj.setStreamAndData(buf, length, dec)
+			obj.setStreamAndData(buf, length, dec, budget)
 		}
 
 		if objType == "/ObjStm" {
@@ -2479,26 +2483,26 @@ func isObject(obj *PDFobj, number int) bool {
 // object streams, or a cross-reference stream. It returns the trailer of the
 // section, which is the cross-reference stream object when there is no table,
 // or nil when an offset in the section is not that of its object.
-func getObjects(buf []byte, offset int, objects *[]*PDFobj, depth int) *PDFobj {
+func getObjects(buf []byte, offset int, objects *[]*PDFobj, depth int, budget *decodeBudget) *PDFobj {
 	xref := getObjectAt(buf, offset)
 	table := len(xref.dict) > 0 && xref.dict[0] == "xref"
 	if depth > 1000 || (!table && !isObject(xref, -1)) {
 		return nil
 	}
 	prev := xref.GetValue("/Prev")
-	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1) == nil {
+	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1, budget) == nil {
 		return nil
 	}
 	if table {
 		// The objects in the table replace those in the /XRefStm stream.
 		xrefStm := xref.GetValue("/XRefStm")
-		if xrefStm != "" && !getStreamObjects(buf, getObjectAt(buf, toInteger(xrefStm)), objects) {
+		if xrefStm != "" && !getStreamObjects(buf, getObjectAt(buf, toInteger(xrefStm)), objects, budget) {
 			return nil
 		}
 		if !getTableObjects(buf, xref, objects) {
 			return nil
 		}
-	} else if !getStreamObjects(buf, xref, objects) {
+	} else if !getStreamObjects(buf, xref, objects, budget) {
 		return nil
 	}
 	return xref
@@ -2537,7 +2541,7 @@ func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 
 // getStreamObjects adds the objects of a cross-reference stream that are not
 // in object streams, and returns false when an offset is not that of its object.
-func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
+func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *decodeBudget) bool {
 	if !isObject(xref, -1) || xref.GetValue("/Type") != "/XRef" || !contains(xref.dict, "stream") {
 		return false
 	}
@@ -2568,7 +2572,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 	}
 
 	// setStreamAndData undoes the predictor, so each entry is a row of the data.
-	xref.setStreamAndData(buf, length, nil)
+	xref.setStreamAndData(buf, length, nil, budget)
 	n := n1 + n2 + n3 // Number of bytes per entry
 	offset := 0
 	for s := 0; s+1 < len(index); s += 2 {

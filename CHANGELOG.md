@@ -464,6 +464,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A word too wide for a line, broken between its characters, took time that
+  grew with the square of the word, in all four ports: the rest of the word
+  was measured before each line, and the word up to each break was copied
+  to measure it, so a word of 100,000 characters took 39 seconds. Each line
+  is found by measuring from its start to each character break until one
+  does not fit, and the rest of the word only when the breaks run out; the
+  same word breaks in a fraction of a second, into the same lines as before.
+  Found by pdfjet-server.
+- Reading a PDF decoded every stream in full, with a limit for each stream
+  and none for all of them, so a PDF of a few megabytes could take gigabytes
+  to read, in all four ports. A stream that is not a cross-reference or an
+  object stream is decoded when its data is first asked for, `getData`, and
+  all the streams of one PDF may decode to 256 MiB together: an object
+  stream or a cross-reference stream past that is an error, as the PDF
+  cannot be read without its objects, and any other stream past it has no
+  data, as a stream that cannot be decoded has none. Found by pdfjet-server.
 - Greek text in a font that draws the micro sign with the glyph of mu, such
   as Source Serif 4, was copied, searched and read aloud with the micro sign
   µ in place of each μ, in all four ports: the ToUnicode map of a glyph two

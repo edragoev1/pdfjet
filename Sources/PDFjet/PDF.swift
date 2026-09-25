@@ -1826,10 +1826,13 @@ public final class PDF {
     public func read(from stream: InputStream, password: String) throws -> [PDFobj] {
         var buffer1 = try Content.getFromStream(stream)
         var objects1 = [PDFobj]()
+        let budget = PDFobj.DecodeBudget()  // For all the streams of this PDF together
         let startXRef = getStartXRef(buffer1)
         var trailer: PDFobj?
         do {
-            trailer = try getObjects(&buffer1, startXRef, &objects1, 0)
+            trailer = try getObjects(&buffer1, startXRef, &objects1, 0, budget)
+        } catch let error as PDFobj.DecodedTotalError {
+            throw error         // Not a reason to scan the PDF for its objects
         } catch {
             trailer = nil       // A cross-reference stream that cannot be decoded.
         }
@@ -1854,7 +1857,7 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, try obj.getLength(objects1), decryptor)
+                try obj.setStreamAndData(&buffer1, try obj.getLength(objects1), decryptor, budget)
             }
             if type == "/ObjStm" {
                 // A malformed object stream is an error, as in the other
@@ -2119,7 +2122,8 @@ public final class PDF {
             _ buf: inout [UInt8],
             _ offset: Int,
             _ objects: inout [PDFobj],
-            _ depth: Int) throws -> PDFobj? {
+            _ depth: Int,
+            _ budget: PDFobj.DecodeBudget) throws -> PDFobj? {
         let xref = getObject(buf, offset)
         let table = !xref.dict.isEmpty && xref.dict[0] == "xref"
         if depth > 1000 || (!table && !isObject(xref, -1)) {
@@ -2127,7 +2131,7 @@ public final class PDF {
         }
         let prev = xref.getValue("/Prev")
         if !prev.isEmpty {
-            if try getObjects(&buf, toInteger(prev), &objects, depth + 1) == nil {
+            if try getObjects(&buf, toInteger(prev), &objects, depth + 1, budget) == nil {
                 return nil
             }
         }
@@ -2136,14 +2140,14 @@ public final class PDF {
             let xrefStm = xref.getValue("/XRefStm")
             if !xrefStm.isEmpty {
                 let stream = getObject(buf, toInteger(xrefStm))
-                if try !getStreamObjects(&buf, stream, &objects) {
+                if try !getStreamObjects(&buf, stream, &objects, budget) {
                     return nil
                 }
             }
             if !getTableObjects(buf, xref, &objects) {
                 return nil
             }
-        } else if try !getStreamObjects(&buf, xref, &objects) {
+        } else if try !getStreamObjects(&buf, xref, &objects, budget) {
             return nil
         }
         return xref
@@ -2189,7 +2193,8 @@ public final class PDF {
     private func getStreamObjects(
             _ buf: inout [UInt8],
             _ xref: PDFobj,
-            _ objects: inout [PDFobj]) throws -> Bool {
+            _ objects: inout [PDFobj],
+            _ budget: PDFobj.DecodeBudget) throws -> Bool {
         if !isObject(xref, -1) || xref.getValue("/Type") != "/XRef" || !xref.dict.contains("stream") {
             return false
         }
@@ -2222,7 +2227,7 @@ public final class PDF {
         }
 
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
-        try xref.setStreamAndData(&buf, length)
+        try xref.setStreamAndData(&buf, length, nil, budget)
         let n = n1 + n2 + n3    // Number of bytes per entry
         var offset = 0
         var s = 0

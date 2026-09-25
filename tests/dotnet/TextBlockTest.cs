@@ -156,5 +156,26 @@ public class TextBlockTest {
         Assert.Contains("/P <</MCID 1>>", content);
     }
 
+    [Fact]
+    public void AWordIsBrokenBetweenItsCharactersAsTheGoPortBreaksIt() {
+        // Five lines: pneumono, ultramicros, copicsilico, volcanoco, niosis
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        TextBlock block = new TextBlock(font, "pneumonoultramicroscopicsilicovolcanoconiosis").SetWidth(60f);
+        TestSupport.AssertXY(60f, 69.36f, block.SetLocation(0f, 0f).DrawOn(null));
+    }
+
+    [Fact]
+    public void ALongWordIsBrokenInTimeThatGrowsWithTheWord() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        var word = new System.Text.StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            word.Append("abcdefghij");      // 100,000 characters
+        }
+        TextBlock block = new TextBlock(font, word.ToString()).SetWidth(100f);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        float[] xy = block.SetLocation(0f, 0f).DrawOn(null);
+        Assert.True(watch.ElapsedMilliseconds < 3000, "breaking a word of 100,000 characters took " + watch.ElapsedMilliseconds + " ms");
+        TestSupport.AssertXY(100f, 78030f, xy);     // 5625 lines of 13.872 points
+    }
 }
 }

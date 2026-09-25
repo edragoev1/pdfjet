@@ -2306,9 +2306,12 @@ final public class PDF {
         byte[] buf = Content.getFromStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
+        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
-            trailer = getObjects(buf, getStartXRef(buf), objects1, 0);
+            trailer = getObjects(buf, getStartXRef(buf), objects1, 0, budget);
+        } catch (PDFobj.DecodedTotalException e) {
+            throw e;            // Not a reason to scan the PDF for its objects
         } catch (Exception e) {
             trailer = null;     // A cross-reference stream that cannot be decoded.
         }
@@ -2333,7 +2336,7 @@ final public class PDF {
                 decryptor.decryptStrings(obj);
             }
             if (obj.dict.contains("stream")) {
-                obj.setStreamAndData(buf, obj.getLength(objects1), decryptor);
+                obj.setStreamAndData(buf, obj.getLength(objects1), decryptor, budget);
             }
 
             if (type.equals("/ObjStm")) {
@@ -2577,27 +2580,28 @@ final public class PDF {
      *     the section is not that of its object.
      */
     private PDFobj getObjects(
-            byte[] buf, int offset, List<PDFobj> objects, int depth) throws Exception {
+            byte[] buf, int offset, List<PDFobj> objects, int depth,
+            PDFobj.DecodeBudget budget) throws Exception {
         PDFobj xref = getObject(buf, offset);
         boolean table = !xref.dict.isEmpty() && xref.dict.get(0).equals("xref");
         if (depth > 1000 || (!table && !isObject(xref, -1))) {
             return null;
         }
         String prev = xref.getValue("/Prev");
-        if (!prev.isEmpty() && getObjects(buf, toInteger(prev), objects, depth + 1) == null) {
+        if (!prev.isEmpty() && getObjects(buf, toInteger(prev), objects, depth + 1, budget) == null) {
             return null;
         }
         if (table) {
             // The objects in the table replace those in the /XRefStm stream.
             String xrefStm = xref.getValue("/XRefStm");
             if (!xrefStm.isEmpty() &&
-                    !getStreamObjects(buf, getObject(buf, toInteger(xrefStm)), objects)) {
+                    !getStreamObjects(buf, getObject(buf, toInteger(xrefStm)), objects, budget)) {
                 return null;
             }
             if (!getTableObjects(buf, xref, objects)) {
                 return null;
             }
-        } else if (!getStreamObjects(buf, xref, objects)) {
+        } else if (!getStreamObjects(buf, xref, objects, budget)) {
             return null;
         }
         return xref;
@@ -2637,7 +2641,8 @@ final public class PDF {
     // Adds the objects of a cross-reference stream that are not in object
     // streams, and returns false when an offset is not that of its object.
     private boolean getStreamObjects(
-            byte[] buf, PDFobj xref, List<PDFobj> objects) throws Exception {
+            byte[] buf, PDFobj xref, List<PDFobj> objects,
+            PDFobj.DecodeBudget budget) throws Exception {
         if (!isObject(xref, -1) || !xref.getValue("/Type").equals("/XRef") ||
                 !xref.dict.contains("stream")) {
             return false;
@@ -2671,7 +2676,7 @@ final public class PDF {
         }
 
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
-        xref.setStreamAndData(buf, length);
+        xref.setStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
         int offset = 0;
         for (int s = 0; s + 1 < index.size(); s += 2) {

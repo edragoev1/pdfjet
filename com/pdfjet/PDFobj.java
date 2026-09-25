@@ -30,6 +30,10 @@ public class PDFobj {
     byte[] stream;        // The compressed stream
     /** The decompressed data. */
     byte[] data;          // The decompressed data
+    /** True while the stream is to be decoded when the data is first asked for. */
+    boolean undecoded;
+    /** What the streams of the PDF this object was read from may still decode to. */
+    DecodeBudget budget;
     /** The number of the graphics state resource, or -1. */
     int gsNumber = -1;
     /** True for the catalog that the trailer's /Root names. */
@@ -66,7 +70,40 @@ public class PDFobj {
      * @return the uncompressed stream data.
      */
     public byte[] getData() {
+        if (undecoded) {
+            // A stream that is not a cross-reference or an object stream is
+            // decoded when its data is first asked for, not when the PDF is
+            // read, so that reading a PDF of large images takes the memory
+            // of none of them.
+            undecoded = false;
+            try {
+                data = decodeStream();
+            } catch (Exception e) {
+                data = null;    // A stream that cannot be decoded has no data.
+            }
+        }
         return this.data;
+    }
+
+    /**
+     * What all the streams of one PDF may decode to together, 256 MiB: a PDF
+     * of a few megabytes can hold hundreds of streams that each decode to
+     * hundreds of megabytes, and each one alone is within the limit of a
+     * stream. Not final, for the tests.
+     */
+    static int MAX_DECODED_TOTAL = Decompressor.MAX_DECODED_LENGTH;
+
+    /** What the streams of one PDF may still decode to, shared by its objects. */
+    static final class DecodeBudget {
+        int left = MAX_DECODED_TOTAL;
+    }
+
+    /** The error of a PDF whose streams decode to more than the budget together. */
+    static final class DecodedTotalException extends Exception {
+        private static final long serialVersionUID = 1L;
+        DecodedTotalException() {
+            super("the streams of the PDF decode to more than " + MAX_DECODED_TOTAL + " bytes together");
+        }
     }
 
     /**
@@ -77,15 +114,16 @@ public class PDFobj {
      * @param length the length of the stream.
      * @throws Exception if the stream cannot be decoded.
      */
-    void setStreamAndData(byte[] buf, int length) throws Exception {
-        setStreamAndData(buf, length, null);
+    void setStreamAndData(byte[] buf, int length, DecodeBudget budget) throws Exception {
+        setStreamAndData(buf, length, null, budget);
     }
 
     // Copies the stream from the buffer, decrypts it when the PDF is encrypted,
     // and decodes it with the filters of its /Filter entry. The decrypted
     // stream replaces the encrypted one, so that it can be copied.
-    void setStreamAndData(byte[] buf, int length, Decryptor decryptor) throws Exception {
+    void setStreamAndData(byte[] buf, int length, Decryptor decryptor, DecodeBudget budget) throws Exception {
         if (this.stream == null) {
+            this.budget = budget;
             int actual = streamLength(buf, streamOffset, length);
             if (actual != length) {
                 length = actual;
@@ -103,7 +141,12 @@ public class PDFobj {
                 this.stream = decryptor.decryptStream(this, stream);
                 setLength(stream.length);
             }
-            this.data = decodeStream();
+            String type = getValue("/Type");
+            if (type.equals("/XRef") || type.equals("/ObjStm")) {
+                this.data = decodeStream();     // The objects in it are read now
+            } else {
+                this.undecoded = true;
+            }
         }
     }
 
@@ -115,7 +158,15 @@ public class PDFobj {
     private byte[] decodeStream() throws Exception {
         String type = getValue("/Type");
         if (type.equals("/XRef") || type.equals("/ObjStm")) {
-            return decode(stream);
+            try {
+                return decode(stream);
+            } catch (Exception e) {
+                if (budget != null && budget.left < Decompressor.MAX_DECODED_LENGTH &&
+                        e.getMessage() != null && e.getMessage().contains("decodes to more than")) {
+                    throw new DecodedTotalException();
+                }
+                throw e;
+            }
         }
         try {
             return decode(stream);
@@ -186,20 +237,38 @@ public class PDFobj {
         for (int i = 0; i < filters.size(); i++) {
             String filter = filters.get(i);
             if (filter.equals("/FlateDecode") || filter.equals("/Fl")) {
-                decoded = applyDecodeParms(Decompressor.inflate(decoded), i);
+                decoded = applyDecodeParms(decoded(Decompressor.inflate(decoded, maxDecodedLength())), i);
             } else if (filter.equals("/LZWDecode") || filter.equals("/LZW")) {
-                decoded = applyDecodeParms(Decompressor.lzwDecode(decoded), i);
+                decoded = applyDecodeParms(decoded(Decompressor.lzwDecode(decoded, maxDecodedLength())), i);
             } else if (filter.equals("/ASCIIHexDecode") || filter.equals("/AHx")) {
                 decoded = Decompressor.asciiHexDecode(decoded);
             } else if (filter.equals("/ASCII85Decode") || filter.equals("/A85")) {
                 decoded = Decompressor.ascii85Decode(decoded);
             } else if (filter.equals("/RunLengthDecode") || filter.equals("/RL")) {
-                decoded = Decompressor.runLengthDecode(decoded);
+                decoded = decoded(Decompressor.runLengthDecode(decoded, maxDecodedLength()));
             } else {
                 break;
             }
         }
         return decoded;
+    }
+
+    // Returns what a stream of the object may decode to: the limit of a
+    // stream, or what is left of the PDF's budget when that is less. A budget
+    // with nothing left decodes nothing, which the decoders report as too long.
+    private int maxDecodedLength() {
+        if (budget != null && budget.left < Decompressor.MAX_DECODED_LENGTH) {
+            return budget.left;
+        }
+        return Decompressor.MAX_DECODED_LENGTH;
+    }
+
+    // Takes the decoded data from the PDF's budget and returns it.
+    private byte[] decoded(byte[] data) {
+        if (budget != null) {
+            budget.left = Math.max(0, budget.left - data.length);
+        }
+        return data;
     }
 
     // Returns the elements of the array that is the value of the key, or the

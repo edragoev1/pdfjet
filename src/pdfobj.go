@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"runtime"
 	"slices"
@@ -30,8 +31,34 @@ type PDFobj struct {
 	streamOffset int      // The stream offset
 	stream       []byte   // The compressed stream
 	data         []byte   // The decompressed data
-	gsNumber     int      // Graphics savedState Number
-	root         bool     // The catalog that the trailer's /Root names
+	undecoded    bool     // The stream is decoded when the data is first asked for
+	budget       *decodeBudget
+	gsNumber     int  // Graphics savedState Number
+	root         bool // The catalog that the trailer's /Root names
+}
+
+// maxDecodedTotal is what all the streams of one PDF may decode to together,
+// 256 MiB: a PDF of a few megabytes can hold hundreds of streams that each
+// decode to hundreds of megabytes, and each one alone is within the limit of
+// a stream. A variable, for the tests.
+var maxDecodedTotal = decompressor.MaxDecodedLength
+
+// decodeBudget is what the streams of one PDF may still decode to, shared by
+// its objects: each stream decoded takes its length from it.
+type decodeBudget struct {
+	left int
+}
+
+func newDecodeBudget() *decodeBudget {
+	return &decodeBudget{left: maxDecodedTotal}
+}
+
+// errDecodedTotal is the error of a PDF whose streams decode to more than
+// maxDecodedTotal together.
+type errDecodedTotal struct{ limit int }
+
+func (e errDecodedTotal) Error() string {
+	return fmt.Sprintf("the streams of the PDF decode to more than %d bytes together", e.limit)
 }
 
 // newPDFobj creates an object with an empty dictionary.
@@ -58,14 +85,23 @@ func (obj *PDFobj) GetDict() []string {
 
 // GetData returns the uncompressed stream data.
 func (obj *PDFobj) GetData() []byte {
+	if obj.undecoded {
+		// A stream that is not a cross-reference or an object stream is
+		// decoded when its data is first asked for, not when the PDF is
+		// read, so that reading a PDF of large images takes the memory of
+		// none of them.
+		obj.undecoded = false
+		obj.data = obj.decodeStream()
+	}
 	return obj.data
 }
 
 // setStreamAndData copies the stream from the buffer, decrypts it when the
 // PDF is encrypted, and decodes it with the filters of its /Filter entry. The
 // decrypted stream replaces the encrypted one, so that it can be copied.
-func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDFobj {
+func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor, budget *decodeBudget) *PDFobj {
 	if obj.stream == nil {
+		obj.budget = budget
 		if actual := streamLength(buf, obj.streamOffset, length); actual != length {
 			length = actual
 			obj.setLength(length)
@@ -82,7 +118,11 @@ func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor) *PDF
 			obj.stream = dec.decryptStream(obj, obj.stream)
 			obj.setLength(len(obj.stream))
 		}
-		obj.data = obj.decodeStream()
+		if objType := obj.GetValue("/Type"); objType == "/XRef" || objType == "/ObjStm" {
+			obj.data = obj.decodeStream() // The objects in it are read now
+		} else {
+			obj.undecoded = true
+		}
 	}
 	return obj
 }
@@ -167,32 +207,50 @@ func (obj *PDFobj) decode(stream []byte) []byte {
 	for i, filter := range obj.getValues("/Filter") {
 		switch filter {
 		case "/FlateDecode", "/Fl":
-			data, err := decompressor.Inflate(decoded)
-			if err != nil {
-				panic(err)
-			}
+			data, err := decompressor.InflateWithMaxLength(decoded, obj.maxDecodedLength())
+			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/LZWDecode", "/LZW":
-			data, err := decompressor.LZWDecode(decoded)
-			if err != nil {
-				panic(err)
-			}
+			data, err := decompressor.LZWDecodeWithMaxLength(decoded, obj.maxDecodedLength())
+			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":
 			decoded = decompressor.ASCIIHexDecode(decoded)
 		case "/ASCII85Decode", "/A85":
 			decoded = decompressor.ASCII85Decode(decoded)
 		case "/RunLengthDecode", "/RL":
-			data, err := decompressor.RunLengthDecode(decoded)
-			if err != nil {
-				panic(err)
-			}
+			data, err := decompressor.RunLengthDecodeWithMaxLength(decoded, obj.maxDecodedLength())
+			obj.decoded(data, err)
 			decoded = data
 		default:
 			return decoded
 		}
 	}
 	return decoded
+}
+
+// maxDecodedLength is what a stream of the object may decode to: the limit
+// of a stream, or what is left of the PDF's budget when that is less.
+func (obj *PDFobj) maxDecodedLength() int {
+	if obj.budget != nil && obj.budget.left < decompressor.MaxDecodedLength {
+		return obj.budget.left
+	}
+	return decompressor.MaxDecodedLength
+}
+
+// decoded takes the decoded data from the PDF's budget, or panics with the
+// error of the decoding: the budget's when the budget is what was passed.
+func (obj *PDFobj) decoded(data []byte, err error) {
+	if err != nil {
+		if obj.budget != nil && obj.budget.left < decompressor.MaxDecodedLength &&
+			strings.Contains(err.Error(), "decodes to more than") {
+			panic(errDecodedTotal{maxDecodedTotal})
+		}
+		panic(err)
+	}
+	if obj.budget != nil {
+		obj.budget.left = max(0, obj.budget.left-len(data))
+	}
 }
 
 // getValues returns the elements of the array that is the value of the key,
@@ -494,7 +552,7 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 		if page == nil {
 			continue
 		}
-		if data := page.data; data != nil {
+		if data := page.GetData(); data != nil {
 			content.data = append(content.data, data...)
 			content.data = append(content.data, '\n') // A stream can end in the middle of a line.
 		}
