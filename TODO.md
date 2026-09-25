@@ -478,6 +478,35 @@ to check and fix in the four, with a test.
   PDF/A-1a, 2a and 3a, pass veraPDF's profiles of those levels but for what
   each of PDF/A forbids, such as transparency in PDF/A-1.
 
+- **A long word takes minutes to break across lines.** `appendBrokenWordLines`
+  in textblock.go measures the whole rest of the word for every line it
+  breaks it over, so the time grows with the square of the word: a word of
+  20,000 characters in a full-width block takes 1.6 s, 100,000 take 39 s, and
+  2 million in a narrow column had not finished after 5 minutes. Normal text
+  is fast, 2 MB of words in 0.4 s. Found by a review of pdfjet-server on 25
+  September 2026. To fix: accumulate the advance of each glyph and break where
+  the sum passes the width, measuring each character once. pdfjet-server
+  refuses a word of more than 1000 characters until then (`checkText`,
+  layout.go).
+
+- **Reading a PDF decodes every stream in full, with no total.** `Read` in
+  pdf.go inflates every Flate stream as it reads, capped at 256 MB each by
+  `decompressor.MaxDecodedLength` and not at all in total: a PDF of 8 MB, 40
+  streams of 203 KB that each inflate to 200 MB, took 32 GB to read. Found by
+  the same review. To fix: a budget of decoded bytes for the whole `Read`,
+  such as 16 times the size of the file, or streams decoded only when they
+  are asked for. pdfjet-server refuses a PDF that does not name
+  pdfjet-layout.json before reading it, and takes at most 20 MB, until then.
+
+- **An image is decoded whole to give its size.** `NewImage` decodes the
+  pixels of a PNG or a JPEG to know its width and height, 256 MB for a PNG of
+  16,000 by 16,000, which pdfjet-server did three or four times a request.
+  Found by the same review. To fix: read the size from the IHDR of a PNG or
+  the SOF of a JPEG first, as `image.DecodeConfig` does, and let a caller ask
+  for the size alone. pdfjet-server refuses an image of more than 40 megapixels
+  from its header, before anything decodes it, until then (`checkPixels`,
+  layout.go).
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
