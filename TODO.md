@@ -126,6 +126,9 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    - ⬜ PAC itself, or the Matterhorn conditions that need eyes on a page:
      the reading order of each page, whether a colour alone carries meaning,
      and whether each Alt says what its figure shows.
+     Only files that embed all their fonts go to PAC: one that does not fails
+     Matterhorn 31-001 for that alone (see `pdf-ua-files-to-test/README.md`).
+     On Sep 28 that left out Example_04, 05, 44 and 50.
 
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
    Windows opens Example_30 with `hello` and `world`, shows print allowed and
