@@ -10,6 +10,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A description of a Data Matrix and of a PDF417 barcode, for a screen
+  reader, in all four ports: `setAltDescription`, as a `QRCode` and a
+  `Barcode` have it. In a tagged document a described barcode is a figure of
+  that description, with the box it is drawn in; one not described is
+  decoration, as before.
 - A table that starts under a heading, in all four ports:
   `Table.drawOn(pdf, first, pages, pageSize)` (`DrawOnPagesFrom` in Go)
   starts the table on a page of your own, under the top margin
@@ -332,6 +337,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   but along the edges.
 
 ### Changed
+- The producer is `PDFjet v9.0.2`, in all four ports.
+- The writer appends numbers, strings and hexadecimal without making a
+  string for each, in all four ports; a tagged document of 200 pages is
+  written 22% faster in Go, with a third of the allocations.
 - What is drawn inside a figure of a tagged document, between
   `addBDC(StructElem.FIGURE, ...)` and its `addEMC`, is the figure, in all
   four ports: a drawable that tags itself, or marks itself as an artifact,
@@ -503,6 +512,232 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A chart of flat data above 2^24, in all four ports: the range of 1 that
+  flat data got was lost in a float32, and the NaN it gave failed the PDF.
+  The range is 1, or a hundred thousandth of the value when that is more,
+  and the rounded range always has a grid line. A value of a `BarChart` that
+  is NaN or infinite has no bar, and no longer makes the value axis NaN.
+- A Code 128 barcode with a character from U+0080 to U+009F, in all four
+  ports: drawing it panicked or threw. It is FNC 4, SHIFT and the control
+  character in code set A, three of the 48 codewords, and ZXing reads it
+  back.
+- A PDF417 barcode with a control character other than HT, LF and CR, in all
+  four ports: it was drawn as a space. It is in byte compaction, after the
+  shift 913, so a GS or an RS reaches the reader; ZXing reads them back.
+- The bars of a PDF417 barcode are black, in all four ports: they took the
+  pen colour the page had. They are one artifact, not one each, and the
+  modules of a QR code and of a Data Matrix are drawn inside q and Q, so the
+  page keeps its colours.
+- The box of a barcode figure takes in its text, in all four ports: the
+  first digit of EAN-13 and UPC-A, the digits of a barcode drawn top to
+  bottom, and a text wider than the bars were outside it. The box of a donut
+  chart figure takes in its leader lines and labels.
+- A QR code of text that is not ASCII starts with the ECI of UTF-8, in all
+  four ports, so a reader does not guess its character set. The ECI is
+  counted in the capacity: one byte less at version 40.
+- The mask of a QR code is chosen with the penalty rules of ISO/IEC 18004,
+  in all four ports, with the format information in place, so some QR codes
+  have another mask. The codewords are made once rather than nine times,
+  which makes a version 40 code about 7 times faster. Each run of dark
+  modules in a row is one rectangle, not one per module.
+- A PDF encrypted with AES and a key shorter than AES takes, in all four
+  ports: reading it panicked or threw. It is refused with a message. The
+  `/Contents` of a signature dictionary, which is not encrypted, is no
+  longer decrypted into garbage.
+- `NewEncryption` of a PDF/UA document no longer changes the caller's
+  `Permissions`, in all four ports, when it grants the extraction for
+  accessibility.
+- A font whose GPOS table claims more than it holds loads at once, in all
+  four ports: the room its coverage indexes make and each mark and letter
+  its lookups keep count toward the work it is read with, bounded by the
+  glyphs of the font, where 40 KB of subtables that are one another kept a
+  font from loading for a minute. The character map is read in one pass over
+  its segments, which makes a CJK font load in half the time, and a font
+  without an OS/2 table has every character of its map, where it drew each
+  as .notdef.
+- A PDF/A document refuses an image it cannot hold, in all four ports: a
+  CMYK image, as its output intent is sRGB, and in PDF/A-1 an image with
+  transparency or of 16 bits per component. The document fails with a
+  message, as it does for a file PDF/A-1 or 2 cannot carry, where it was
+  written non-compliant.
+- A JPEG that is lossless, hierarchical or arithmetic coded is refused, in
+  all four ports, as the DCTDecode filter of a reader cannot decode it; a
+  PNG row of a filter type PNG does not define is refused, as libpng refuses
+  it; and a pHYs chunk of more pixels per metre than a PNG number holds is
+  passed over in Go and Swift, as Java and C# did.
+- PNG images decode faster, in all four ports: the filters are undone a row
+  at a time with integers, and Java and C# join the IDAT chunks of a large
+  image in one buffer, where a 19 MB image took 6 to 7 seconds.
+- An image of more than 2^24 pixels across or down is written with every
+  pixel, and the link of an image turned a quarter of the way covers it as
+  it is drawn, in all four ports.
+- SVG paths follow SVG, in all four ports: a smooth curve reflects the
+  control point of a curve of its kind only, a command after Z starts at the
+  start of the subpath it closed, a path is stroked once with all its
+  subpaths, and path data that does not start with a moveto draws nothing.
+  The comments and the class rules of a style sheet are read without going
+  through the whole of it for each, so a large one no longer takes minutes.
+- A font file that does not end in .stream is told by its first bytes in
+  Java, C# and Swift, as in Go; a font added twice is compressed once; and
+  `getFitChars` at a font size of 0 counts every character as fitting, where
+  Swift trapped.
+- Reading a malformed PDF takes time in proportion to its size, in all four
+  ports: a run of white space, objects with no endobj, a /Prev that leads
+  back to its own cross-reference section and many streams whose /Length is
+  an object of their own each took from seconds to minutes. A stream whose
+  /Length object was updated reads the newest version of it.
+- A page tree or a chain of objects a hundred thousand deep, in all four
+  ports: they were followed by recursion, which ran out of stack in Java,
+  ended the process in C# and trapped in Swift.
+- `AddObjects` refuses what it would lose, in all four ports: a PDF/UA or
+  PDF/A document, whose pages the objects were not made for, and a document
+  with pages of its own, made before or added after the objects, which the
+  page tree of the objects does not list. A number the PDF that was read has
+  no object for is a free entry, where it was an empty object marked in use.
+- `AddResourceObjects` refuses two pages that give one name to different
+  fonts, images or graphics states, in all four ports: the pages of a
+  document share one resources dictionary, and the second page drew the
+  resource of the first.
+- `PDFobj.GetValue` finds an entry of the object's own dictionary, in all
+  four ports, and not one of a dictionary inside it: the /Type of a /Group
+  before the /Type of a page made the page not a page.
+- A reference or an object stream number that is not digits, or too large
+  for an int of 32 bits, is skipped or refused alike in all four ports,
+  where Java and C# threw, and the offsets of an object stream no longer
+  overflow in Java and C#.
+- Text, tables and Markdown found by a review, in all four ports. A
+  `TextFrame` breaks a word wider than the frame in linear time: 100,000
+  characters of Markdown `>` took 75 seconds. A list item or a heading that
+  goes on into the next frame does not draw its label again or make a second
+  bookmark. `DrawOnPages` refuses a frame with no height in the bottom half
+  of the page, which drew all of its text on one page. `TextColumn` draws
+  the label that `Paragraph.setListLabel` sets, tagged L, LI, Lbl and LBody
+  as in `TextFrame`. Markdown keeps quotes and lists nested deeply at least
+  ten sizes of the text wide, and draws code in a font of no size.
+- The sums of a `Table`, in all four ports: the numbers of a column are read
+  once for each draw, so a running sum over 40,000 rows takes a tenth of a
+  second instead of 33. A number with a line break or a control character
+  after it is read as `rightAlignNumbers` reads it: Swift stopped, C# threw
+  and Go counted 0.
+- The pages of a `Table`, in all four ports. A row that does not fit under a
+  heading on the first page goes on the next page, where it was drawn past
+  the bottom of the page. A cell that spans rows taller than a page is cut
+  between its rows, and drawn on each page over the rows it covers there.
+  The `/RowSpan` of a cell counts the rows of the table and not the lines
+  its rows wrap into. A column span of less than 1 is 1, and one past the
+  end of its row stops there: either hung the drawing. With no rows left to
+  draw, a table returns where it starts, where Java and C# threw.
+- `BigTable`, in all four ports. A table whose first page, set by
+  `setFirstPage`, has no room for its header and a row starts on a new page.
+  The first page is counted at its own size in "Page i of N". A field too
+  wide for its column is cut between code points in every port. `complete()`
+  without data draws nothing in Java and C# too.
+- Delimited data files, in all four ports: a record whose lines each close a
+  quoted field and open another is read in linear time. A line ends at a
+  carriage return, a line feed or both, in Go and Swift as in Java and C#. A
+  quoted field that is never closed is an error that Go's `BigTable` returns
+  and Swift throws, where both stopped the program. Swift streams the file
+  of a `Table` and of a `BigTable` without copying what it has read.
+- The source of a Markdown image is read the same way in all four ports. A
+  source ending in `/` or `/.` names a directory, and an empty image
+  directory is the working directory, which Java took as `/`. Swift no
+  longer lets `../` followed by a combining mark out of the image directory.
+  Java's `TextBlock` is aligned left by default, as in the other ports.
+- A PDF/A document of level B, `PDF_A_1B`, `PDF_A_2B` or `PDF_A_3B`, is not
+  tagged, in all four ports: its catalog has no `/StructTreeRoot` and no
+  `/MarkInfo`, and its pages no `/Tabs` and no `/StructParents`, which said
+  its content was tagged when it had an empty structure tree. It keeps its
+  `/Lang` and `DisplayDocTitle`.
+- The notice of a font is escaped in the metadata of the font, in all four
+  ports: the notices of Noto Sans JP, KR, SC and TC hold an ampersand, which
+  made the metadata of a document of PDF/A that embedded them unreadable. In
+  Swift, the font file of an OpenType font refers to its metadata from its
+  own dictionary; the reference was written outside any object.
+- Every annotation is printed, `/F 4`, and in a document of PDF/A every
+  annotation that is not a link has an appearance of its own, in all four
+  ports, as PDF/A asks: the square, the circle or the polygon in its fill
+  color, and a note or a file as a white box with a black frame.
+- A link to a destination the document does not have is refused when the PDF
+  is completed, in all four ports; it was written as a link that did
+  nothing.
+- The structure tree of a tagged document has a role map for the types of
+  PDF 2.0 it uses, in all four ports: Title is a P, and Em and Strong are a
+  Span, as PDF/UA-1 asks. A text of the structure type Artifact is marked as
+  an artifact, and a structure element of the type Artifact is refused.
+- An annotation of a tagged document is refused on a page that was already
+  written, where its element was left without a `/StructParent`, and one
+  that has no contents, no title and no alternative description is refused,
+  as a figure without a description is, in all four ports.
+- A document of PDF/UA without a title is refused when it is completed, in
+  all four ports, as PDF/UA asks for one.
+- The title, the author, the subject, the keywords and the creator are
+  cleaned of what XML does not allow when they are set, in all four ports,
+  so that the information dictionary says what the metadata says, as PDF/A
+  asks.
+- The date of a file embedded in an encrypted document is encrypted, in all
+  four ports; it was written as it was.
+- `complete` closes the file or the stream it writes to when it fails too,
+  in all four ports.
+- A file that a document of PDF/A-3 carries needs a media type, in all four
+  ports; one without is refused.
+- C#: a negative number is written with an ASCII minus sign in every
+  culture, as in the bookmarks of a document written in Swedish, and the
+  tokens of a document that is merged or added are compared by their
+  characters, whatever the culture.
+- C#: `EndStructElement` without a `BeginStructElement` is recorded like the
+  other misuses, and `Complete` then refuses the document.
+- The layers are listed in the order of their names by their UTF-16 code
+  units, and those of the same name in the order they were added, in all
+  four ports; Go, C# and Swift each sorted them their own way.
+- Swift: an empty text string is the byte order mark alone, as in the other
+  ports.
+- The links, annotations and figure bounding boxes of what a `Container`
+  holds, in all four ports: they are moved, turned and scaled with the
+  container, at any nesting, as its drawing is. A link of a text line in a
+  container was where the text would be outside it, a polygon annotation in
+  a turned container was written unturned, and a third level of nesting was
+  not offset.
+- A point that is in a `Path` twice is offset once, in all four ports, and
+  the path's own points are left as they were.
+- A path that ends on a control point is refused, in all four ports, by
+  `Page.drawPath` and `Stamp.drawPath`, and nothing of it is drawn. The page
+  wrote coordinates with no operator, and the stamp threw after writing
+  them.
+- The link of a turned `TextLine` covers the turned text, in all four ports;
+  its rectangle was that of the unturned text.
+- A superscript or subscript of a `CompositeTextLine` is raised or lowered
+  once, in all four ports: the 2 of "x^2" at 12 points is 4.2 points up, not
+  8.24. The measures of the line are where it is drawn.
+- A highlighted word keeps its combining marks, in all four ports, so that
+  its accents are placed on their letters and the word is matched with them.
+- Decoration is an artifact in a tagged document, in all four ports: a
+  `Line`, an `Arc`, a `Stamp`, and a check box or radio button with no
+  label, unless given a description or actual text. The header, footer and
+  watermark of a page are Pagination artifacts. They were paragraphs of no
+  text.
+- A rotation is written with five decimals, in all four ports: rounded to
+  hundredths, a text turned 1 degree was turned 1.15.
+- A path, the underline and strikeout of a text line, a check box and a
+  radio button leave the pen of the page as they found it, in all four
+  ports.
+- An arc of no sweep draws nothing, one of more than a turn is a turn, and
+  one that is not a number is refused, in all four ports. Swift trapped and
+  Go on arm64 looped.
+- The size of an annotation is measured from its location whether
+  `setLocation` is called before or after `setSize`, in all four ports.
+- A `CheckBox` is the size of its font size, in all four ports, and a `Form`
+  without its fonts is refused rather than crashing.
+- A `TextLine` with no text adds its destination, in all four ports.
+- The four ports agree: an empty URI or destination name is none; C# draws a
+  lone surrogate as .notdef, as Java does; keywords are lower-cased whatever
+  the locale, and Swift matches them by their code points; Java trims and
+  splits on the white space of Unicode; a dash pattern has no vertical tab;
+  Swift refuses an RGB color of fewer than three values and a transform of
+  fewer than six, and no longer traps on `setTextRotation(Int.min)`; Java
+  and C# draw the diamond and box points in float.
+- An object with no endobj that the cross-reference table or stream of a PDF
+  lists, in all four ports: it was read to the end of the PDF, for each of
+  them; it ends where the next object of its section starts.
 - The rectangle of a `PolygonAnnotation`, in all four ports: it was written
   as the location and 0 and the height of the page, as its second corner is
   not set; it is the box of its vertices.
