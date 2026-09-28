@@ -2634,6 +2634,22 @@ public class Page {
             element.language = annotation.language
             element.actualText = annotation.actualText
             element.altDescription = annotation.altDescription
+            // An annotation that is not a link, a note, a shape or a file, is
+            // described by what it says, or by its title, as a viewer shows them:
+            // its element has no text of its own, which PAC would read as text of
+            // only whitespace
+            var contents = annotation.contents
+            var title = annotation.title
+            if let file = annotation.fileAttachment {
+                contents = file.contents
+                title = file.title
+            }
+            if element.altDescription == nil || element.altDescription!.isEmpty {
+                element.altDescription = contents
+            }
+            if element.altDescription == nil || element.altDescription!.isEmpty {
+                element.altDescription = title
+            }
             element.annotation = annotation
             addStructure(element, structParent)
         }

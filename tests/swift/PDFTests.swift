@@ -419,6 +419,52 @@ import Testing
         #expect(!raw.contains("/Alt "))
     }
 
+    // The rectangle of a polygon annotation is the box of its vertices, which
+    // are relative to its location: its second corner is not set, and was
+    // written as 0 and the height of the page.
+    @Test func thePolygonAnnotationIsInTheBoxOfItsVertices() throws {
+        let memory = MemoryPDF()
+        let pdf = memory.pdf
+        let page = Page(pdf, Letter.PORTRAIT)
+        let polygon = PolygonAnnotation().setVertices([0, 60, 30, 0, 60, 60, 0, 60])
+        polygon.setLocation(70, 440)
+        _ = polygon.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        // 792 - 440 = 352 at the top; the vertices from 0 to 60 across and down
+        #expect(raw.contains("/Rect [70 292 130 352]"),
+                "the rectangle of the polygon is \(raw.range(of: "/Rect \\[[^\\]]*\\]", options: .regularExpression).map { String(raw[$0]) } ?? "")")
+    }
+
+    // An annotation that is not a link has an element described by what it
+    // says, or by its title, so that it has text, which PAC reads as only
+    // whitespace without it; a file attached is described by its own.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func anAnnotationIsDescribedByWhatItSays() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let note = TextAnnotation()
+        note.setLocation(70, 100)
+        note.setContents("Check the figures")
+        _ = note.drawOn(page)
+        let square = SquareAnnotation()
+        square.setLocation(70, 200)
+        square.setTitle("A square")
+        _ = square.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        for want in ["Check the figures", "A square"] {
+            var hex = "<feff"
+            for unit in want.utf16 {
+                hex += String(format: "%04x", unit)
+            }
+            #expect(raw.contains("/Alt " + hex + ">"), "no Annot element is described as \(want)")
+        }
+    }
+
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)

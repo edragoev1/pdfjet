@@ -2369,6 +2369,20 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		element.language = annotation.language
 		element.actualText = annotation.actualText
 		element.altDescription = annotation.altDescription
+		// An annotation that is not a link, a note, a shape or a file, is
+		// described by what it says, or by its title, as a viewer shows them:
+		// its element has no text of its own, which PAC would read as text of
+		// only whitespace
+		contents, title := annotation.contents, annotation.title
+		if file := annotation.fileAttachment; file != nil {
+			contents, title = file.contents, file.title
+		}
+		if element.altDescription == "" {
+			element.altDescription = contents
+		}
+		if element.altDescription == "" {
+			element.altDescription = title
+		}
 		element.annotation = annotation
 		page.addStructure(element, page.structParent)
 	}

@@ -96,8 +96,11 @@ public class Example_09 {
                 cell.SetText(country.name);
                 tableRow.Add(cell);
 
+                // The address is a link to it: text that reads as an address and is
+                // not one, PAC reports
                 cell = new Cell(f2);
                 cell.SetText(country.point.GetURIAction());
+                cell.SetURIAction(country.point.GetURIAction());
                 tableRow.Add(cell);
 
                 tableData.Add(tableRow);

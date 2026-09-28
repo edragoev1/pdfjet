@@ -71,7 +71,8 @@ class Example_20 {
 
         new TextLine(f2, "PDFjet Software").setLocation(390f, 60f).drawOn(page);
         new TextLine(f1, "Unionville, Ontario, Canada").setLocation(390f, 76f).drawOn(page);
-        new TextLine(f1, "https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
+        // An address on the page is a link to it, as PAC asks of text that reads as one
+        new TextLine(f1, "https://pdfjet.com").setURIAction("https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
 
         // A thin rule under the letterhead, an artifact.
         page.addArtifactBMC();
@@ -157,7 +158,7 @@ class Example_20 {
         caption.setLocation(60f, xy[1] + 35f);
         caption.drawOn(page);
 
-        caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com").setURIAction("https://pdfjet.com");
         caption.setTextColor(Color.dimgray);
         caption.setLocation(290f, xy[1] + 35f);
         caption.drawOn(page);

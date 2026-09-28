@@ -1237,14 +1237,37 @@ public final class PDF {
         append(annot.annotationType!)
         append("\n")
 
+        // The rectangle of an annotation of vertices, a polygon, is the box of its
+        // vertices, which are relative to its location; its second corner is not
+        // set
+        var x1 = annot.x1
+        var y1 = annot.y1
+        var x2 = annot.x2
+        var y2 = annot.y2
+        if let vertices = annot.vertices, vertices.count >= 2 {
+            var minX = vertices[0], maxX = vertices[0]
+            var minY = vertices[1], maxY = vertices[1]
+            var i = 2
+            while i + 1 < vertices.count {
+                minX = min(minX, vertices[i])
+                maxX = max(maxX, vertices[i])
+                minY = min(minY, vertices[i + 1])
+                maxY = max(maxY, vertices[i + 1])
+                i += 2
+            }
+            x1 = annot.x1 + minX
+            y1 = annot.y1 - maxY
+            x2 = annot.x1 + maxX
+            y2 = annot.y1 - minY
+        }
         append("/Rect [")
-        append(annot.x1)
+        append(x1)
         append(" ")
-        append(annot.y1)
+        append(y1)
         append(" ")
-        append(annot.x2)
+        append(x2)
         append(" ")
-        append(annot.y2)
+        append(y2)
         append("]\n")
 
         append("/Border [0 0 0]\n")

@@ -104,7 +104,10 @@ func addTableToChart(page *pdfjet.Page, countries []*country, f1, f2 *pdfjet.Fon
 			cell = pdfjet.NewCell(f1, c.name)
 			tableRow = append(tableRow, cell)
 
+			// The address is a link to it: text that reads as an address and is
+			// not one, PAC reports
 			cell = pdfjet.NewCell(f2, c.point.GetURIAction())
+			cell.SetURIAction(c.point.GetURIAction())
 			tableRow = append(tableRow, cell)
 
 			tableData = append(tableData, tableRow)

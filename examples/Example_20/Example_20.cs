@@ -69,7 +69,8 @@ class Example_20 {
 
         new TextLine(f2, "PDFjet Software").SetLocation(390f, 60f).DrawOn(page);
         new TextLine(f1, "Unionville, Ontario, Canada").SetLocation(390f, 76f).DrawOn(page);
-        new TextLine(f1, "https://pdfjet.com").SetLocation(390f, 92f).DrawOn(page);
+        // An address on the page is a link to it, as PAC asks of text that reads as one
+        new TextLine(f1, "https://pdfjet.com").SetURIAction("https://pdfjet.com").SetLocation(390f, 92f).DrawOn(page);
 
         // A thin rule under the letterhead, an artifact.
         page.AddArtifactBMC();
@@ -155,7 +156,7 @@ class Example_20 {
         caption.SetLocation(60f, xy[1] + 35f);
         caption.DrawOn(page);
 
-        caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com").SetURIAction("https://pdfjet.com");
         caption.SetTextColor(Color.dimgray);
         caption.SetLocation(290f, xy[1] + 35f);
         caption.DrawOn(page);

@@ -1254,14 +1254,27 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	pdf.appendString(annot.annotationType)
 	pdf.appendString("\n")
 
+	// The rectangle of an annotation of vertices, a polygon, is the box of its
+	// vertices, which are relative to its location; its second corner is not
+	// set
+	x1, y1, x2, y2 := annot.x1, annot.y1, annot.x2, annot.y2
+	if len(annot.vertices) >= 2 {
+		minX, maxX := annot.vertices[0], annot.vertices[0]
+		minY, maxY := annot.vertices[1], annot.vertices[1]
+		for i := 2; i+1 < len(annot.vertices); i += 2 {
+			minX, maxX = min(minX, annot.vertices[i]), max(maxX, annot.vertices[i])
+			minY, maxY = min(minY, annot.vertices[i+1]), max(maxY, annot.vertices[i+1])
+		}
+		x1, y1, x2, y2 = annot.x1+minX, annot.y1-maxY, annot.x1+maxX, annot.y1-minY
+	}
 	pdf.appendString("/Rect [")
-	pdf.appendFloat32(annot.x1)
+	pdf.appendFloat32(x1)
 	pdf.appendString(" ")
-	pdf.appendFloat32(annot.y1)
+	pdf.appendFloat32(y1)
 	pdf.appendString(" ")
-	pdf.appendFloat32(annot.x2)
+	pdf.appendFloat32(x2)
 	pdf.appendString(" ")
-	pdf.appendFloat32(annot.y2)
+	pdf.appendFloat32(y2)
 	pdf.appendString("]\n")
 	pdf.appendString("/Border [0 0 0]\n")
 

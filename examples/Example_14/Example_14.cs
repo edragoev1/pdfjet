@@ -67,8 +67,12 @@ public class Example_14 {
         barcode.SetLocation(50f, 400f);
         barcode.SetModuleLength(3f);
         xy = barcode.DrawOn(page);
-        caption = new TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number");
+        // On two lines, clear of the larger symbol at its right
+        caption = new TextLine(f1, "GS1: a GTIN, an expiry date,");
         caption.SetLocation(50f, xy[1] + 20f);
+        caption.DrawOn(page);
+        caption = new TextLine(f1, "a batch and a serial number");
+        caption.SetLocation(50f, xy[1] + 20f + 14f); // A line of 10 points, and its spacing
         caption.DrawOn(page);
 
         pdf.Complete();

@@ -1106,3 +1106,44 @@ func TestPDFTheTextOfACellHasNoAlt(t *testing.T) {
 		t.Error("the text of a cell has an Alt")
 	}
 }
+
+// The rectangle of a polygon annotation is the box of its vertices, which are
+// relative to its location: its second corner is not set, and was written
+// as 0 and the height of the page.
+func TestPDFThePolygonAnnotationIsInTheBoxOfItsVertices(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	polygon := NewPolygonAnnotation().SetVertices([]float32{0, 60, 30, 0, 60, 60, 0, 60})
+	polygon.SetLocation(70, 440)
+	polygon.DrawOn(page)
+	raw := string(doc.complete())
+	// 792 - 440 = 352 at the top; the vertices from 0 to 60 across and down
+	if !strings.Contains(raw, "/Rect [70 292 130 352]") {
+		t.Errorf("the rectangle of the polygon is %q", regexp.MustCompile(`/Rect \[[^\]]*\]`).FindString(raw))
+	}
+}
+
+// An annotation that is not a link has an element described by what it says,
+// or by its title, so that it has text, which PAC reads as only whitespace
+// without it; a file attached is described by its own.
+func TestPDFAnAnnotationIsDescribedByWhatItSays(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	note := NewTextAnnotation()
+	note.SetLocation(70, 100)
+	note.SetContents("Check the figures")
+	note.DrawOn(page)
+	square := NewSquareAnnotation()
+	square.SetLocation(70, 200)
+	square.SetTitle("A square")
+	square.DrawOn(page)
+	raw := string(doc.complete())
+	for _, want := range []string{"Check the figures", "A square"} {
+		if !strings.Contains(raw, "/Alt "+testTextString(want)) {
+			t.Errorf("no Annot element is described as %q", want)
+		}
+	}
+}

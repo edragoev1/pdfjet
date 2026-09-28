@@ -83,7 +83,8 @@ func Example20() {
 
 	pdfjet.NewTextLine(f2, "PDFjet Software").SetLocation(390.0, 60.0).DrawOn(page)
 	pdfjet.NewTextLine(f1, "Unionville, Ontario, Canada").SetLocation(390.0, 76.0).DrawOn(page)
-	pdfjet.NewTextLine(f1, "https://pdfjet.com").SetLocation(390.0, 92.0).DrawOn(page)
+	// An address on the page is a link to it, as PAC asks of text that reads as one
+	pdfjet.NewTextLine(f1, "https://pdfjet.com").SetURIAction("https://pdfjet.com").SetLocation(390.0, 92.0).DrawOn(page)
 
 	// A thin rule under the letterhead, an artifact.
 	page.AddArtifactBMC()
@@ -164,7 +165,7 @@ func Example20() {
 	caption.SetLocation(60.0, xy[1]+35.0)
 	caption.DrawOn(page)
 
-	caption = pdfjet.NewTextLine(f1, "Scan to visit https://pdfjet.com")
+	caption = pdfjet.NewTextLine(f1, "Scan to visit https://pdfjet.com").SetURIAction("https://pdfjet.com")
 	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(290.0, xy[1]+35.0)
 	caption.DrawOn(page)

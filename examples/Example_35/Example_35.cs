@@ -61,12 +61,12 @@ public class Example_35 {
         var parameters = new TextParameters()
             .SetFont(f1)
             .SetFontSize(14f)
-            .SetLocation(25f, 25f)
+            .SetLocation(40f, 25f) // Clear of the square, which the text would run over
             .SetText("Hello, World!");
         stamp.DrawText(parameters);
 
         // Change some parameters and draw the text again
-        parameters.SetFont(f2).SetLocation(25f, 50f);
+        parameters.SetFont(f2).SetLocation(40f, 50f);
         stamp.SetFillColor(Color.darkgreen).DrawText(parameters);
 
         stamp.Complete();   // The stamp is complete!

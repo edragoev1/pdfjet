@@ -491,6 +491,21 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The rectangle of a `PolygonAnnotation`, in all four ports: it was written
+  as the location and 0 and the height of the page, as its second corner is
+  not set; it is the box of its vertices.
+- The element of an annotation that is not a link, a note, a shape or a file
+  attached, in a tagged document, in all four ports: it is described by what
+  the annotation says, or by its title, as a viewer shows them. It had no
+  text of its own, which PAC reported as tagged text of only whitespace, 6
+  times in Example_06.
+- The examples PAC reported, in all four ports: the addresses Example_09's
+  table and Example_20's page show are links to them, as PAC asks of text
+  that reads as an address; Example_14's caption of the GS1 symbol is on two
+  lines, where it ran over the larger symbol beside it, black on black; and
+  Example_35's text is clear of the square of its stamp. check-pdfua-tags.py
+  checks the contrast of each letter against the page drawn without its
+  text, which found the last two.
 - The tags PAC warned of in a tagged document, in all four ports. A figure,
   a link or an annotation that is a kid of the Document, or of another
   element that groups, has the attribute Placement Block, as PDF asks of an

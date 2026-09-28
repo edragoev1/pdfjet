@@ -438,6 +438,60 @@ class PDFTest {
         assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Alt "), "the text of a cell has an Alt");
     }
 
+    // The rectangle of a polygon annotation is the box of its vertices, which
+    // are relative to its location: its second corner is not set, and was
+    // written as 0 and the height of the page.
+    @Test
+    void thePolygonAnnotationIsInTheBoxOfItsVertices() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        PolygonAnnotation polygon = new PolygonAnnotation().setVertices(new float[] {0f, 60f, 30f, 0f, 60f, 60f, 0f, 60f});
+        polygon.setLocation(70f, 440f);
+        polygon.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        // 792 - 440 = 352 at the top; the vertices from 0 to 60 across and down
+        Matcher m = Pattern.compile("/Rect \\[[^\\]]*\\]").matcher(raw);
+        assertTrue(raw.contains("/Rect [70 292 130 352]"),
+                "the rectangle of the polygon is " + (m.find() ? m.group() : "missing"));
+    }
+
+    // An annotation that is not a link has an element described by what it
+    // says, or by its title, so that it has text, which PAC reads as only
+    // whitespace without it; a file attached is described by its own.
+    @Test
+    void anAnnotationIsDescribedByWhatItSays() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextAnnotation note = new TextAnnotation();
+        note.setLocation(70f, 100f);
+        note.setContents("Check the figures");
+        note.drawOn(page);
+        SquareAnnotation square = new SquareAnnotation();
+        square.setLocation(70f, 200f);
+        square.setTitle("A square");
+        square.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        for (String want : new String[] {"Check the figures", "A square"}) {
+            assertTrue(raw.contains("/Alt " + textString(want)), "no Annot element is described as " + want);
+        }
+    }
+
+    // The text as PDF writes a text string: UTF-16 with its byte order mark,
+    // in lower case hexadecimal, as appendTextString writes it.
+    private static String textString(String text) {
+        StringBuilder sb = new StringBuilder("<feff");
+        for (char c : text.toCharArray()) {
+            sb.append(String.format("%04x", (int) c));
+        }
+        return sb.append(">").toString();
+    }
+
     // The numbers of the page objects, in page order.
     private static String[] pageNumbers(byte[] pdf) throws Exception {
         List<PDFobj> pages = new PDF().getPageObjects(TestSupport.read(pdf));

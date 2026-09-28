@@ -68,8 +68,12 @@ public class Example_14 {
         barcode.setLocation(50f, 400f);
         barcode.setModuleLength(3f);
         xy = barcode.drawOn(page);
-        caption = new TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number");
+        // On two lines, clear of the larger symbol at its right
+        caption = new TextLine(f1, "GS1: a GTIN, an expiry date,");
         caption.setLocation(50f, xy[1] + 20f);
+        caption.drawOn(page);
+        caption = new TextLine(f1, "a batch and a serial number");
+        caption.setLocation(50f, xy[1] + 20f + 14f);  // A line of 10 points, and its spacing
         caption.drawOn(page);
 
         pdf.complete();

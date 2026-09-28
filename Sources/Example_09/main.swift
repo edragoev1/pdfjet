@@ -91,7 +91,10 @@ public class Example_09 {
                 cell = Cell(f1, country.name)
                 tableRow.append(cell)
 
+                // The address is a link to it: text that reads as an address and is
+                // not one, PAC reports
                 cell = Cell(f2, country.point.getURIAction())
+                cell.setURIAction(country.point.getURIAction()!)
                 tableRow.append(cell)
 
                 tableData.append(tableRow)

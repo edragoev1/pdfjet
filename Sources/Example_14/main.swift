@@ -63,8 +63,12 @@ public class Example_14 {
         barcode.setLocation(50.0, 400.0)
         barcode.setModuleLength(3.0)
         xy = barcode.drawOn(page)
-        caption = TextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number")
+        // On two lines, clear of the larger symbol at its right
+        caption = TextLine(f1, "GS1: a GTIN, an expiry date,")
         caption.setLocation(50.0, xy[1] + 20.0)
+        caption.drawOn(page)
+        caption = TextLine(f1, "a batch and a serial number")
+        caption.setLocation(50.0, xy[1] + 20.0 + 14.0)  // A line of 10 points, and its spacing
         caption.drawOn(page)
 
         try pdf.complete()

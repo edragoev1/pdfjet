@@ -75,8 +75,12 @@ func Example14() {
 	barcode.SetLocation(50.0, 400.0)
 	barcode.SetModuleLength(3.0)
 	xy = barcode.DrawOn(page)
-	caption = pdfjet.NewTextLine(f1, "GS1: a GTIN, an expiry date, a batch and a serial number")
+	// On two lines, clear of the larger symbol at its right
+	caption = pdfjet.NewTextLine(f1, "GS1: a GTIN, an expiry date,")
 	caption.SetLocation(50.0, xy[1]+20.0)
+	caption.DrawOn(page)
+	caption = pdfjet.NewTextLine(f1, "a batch and a serial number")
+	caption.SetLocation(50.0, xy[1]+20.0+14.0) // A line of 10 points, and its spacing
 	caption.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

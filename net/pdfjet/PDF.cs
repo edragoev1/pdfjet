@@ -1216,14 +1216,32 @@ public sealed class PDF {
         Append(annot.annotationType);
         Append("\n");
 
+        // The rectangle of an annotation of vertices, a polygon, is the box of its
+        // vertices, which are relative to its location; its second corner is not
+        // set
+        float x1 = annot.x1, y1 = annot.y1, x2 = annot.x2, y2 = annot.y2;
+        if (annot.vertices != null && annot.vertices.Length >= 2) {
+            float minX = annot.vertices[0], maxX = annot.vertices[0];
+            float minY = annot.vertices[1], maxY = annot.vertices[1];
+            for (int i = 2; i + 1 < annot.vertices.Length; i += 2) {
+                minX = Math.Min(minX, annot.vertices[i]);
+                maxX = Math.Max(maxX, annot.vertices[i]);
+                minY = Math.Min(minY, annot.vertices[i + 1]);
+                maxY = Math.Max(maxY, annot.vertices[i + 1]);
+            }
+            x1 = annot.x1 + minX;
+            y1 = annot.y1 - maxY;
+            x2 = annot.x1 + maxX;
+            y2 = annot.y1 - minY;
+        }
         Append("/Rect [");
-        Append(annot.x1);
+        Append(x1);
         Append(' ');
-        Append(annot.y1);
+        Append(y1);
         Append(' ');
-        Append(annot.x2);
+        Append(x2);
         Append(' ');
-        Append(annot.y2);
+        Append(y2);
         Append("]\n");
         Append("/Border [0 0 0]\n");
 

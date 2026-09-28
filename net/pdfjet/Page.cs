@@ -2893,6 +2893,23 @@ public class Page {
             element.language = annotation.language;
             element.actualText = annotation.actualText;
             element.altDescription = annotation.altDescription;
+            // An annotation that is not a link, a note, a shape or a file, is
+            // described by what it says, or by its title, as a viewer shows them:
+            // its element has no text of its own, which PAC would read as text of
+            // only whitespace
+            String contents = annotation.contents;
+            String title = annotation.title;
+            FileAttachment file = annotation.fileAttachment;
+            if (file != null) {
+                contents = file.contents;
+                title = file.title;
+            }
+            if (String.IsNullOrEmpty(element.altDescription)) {
+                element.altDescription = contents;
+            }
+            if (String.IsNullOrEmpty(element.altDescription)) {
+                element.altDescription = title;
+            }
             element.annotation = annotation;
             AddStructure(element, structParent);
         }

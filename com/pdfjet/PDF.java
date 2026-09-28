@@ -1275,14 +1275,37 @@ final public class PDF {
         append(annot.annotationType);
         append("\n");
 
+        // The rectangle of an annotation of vertices, a polygon, is the box of its
+        // vertices, which are relative to its location; its second corner is not
+        // set
+        float x1 = annot.x1;
+        float y1 = annot.y1;
+        float x2 = annot.x2;
+        float y2 = annot.y2;
+        if (annot.vertices != null && annot.vertices.length >= 2) {
+            float minX = annot.vertices[0];
+            float maxX = annot.vertices[0];
+            float minY = annot.vertices[1];
+            float maxY = annot.vertices[1];
+            for (int i = 2; i + 1 < annot.vertices.length; i += 2) {
+                minX = Math.min(minX, annot.vertices[i]);
+                maxX = Math.max(maxX, annot.vertices[i]);
+                minY = Math.min(minY, annot.vertices[i + 1]);
+                maxY = Math.max(maxY, annot.vertices[i + 1]);
+            }
+            x1 = annot.x1 + minX;
+            y1 = annot.y1 - maxY;
+            x2 = annot.x1 + maxX;
+            y2 = annot.y1 - minY;
+        }
         append("/Rect [");
-        append(annot.x1);
+        append(x1);
         append(' ');
-        append(annot.y1);
+        append(y1);
         append(' ');
-        append(annot.x2);
+        append(x2);
         append(' ');
-        append(annot.y2);
+        append(y2);
         append("]\n");
         append("/Border [0 0 0]\n");
 

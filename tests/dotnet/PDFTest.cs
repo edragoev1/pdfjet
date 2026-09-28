@@ -421,6 +421,48 @@ public class PDFTest {
         Assert.DoesNotContain("/Alt ", raw);
     }
 
+    // The rectangle of a polygon annotation is the box of its vertices, which are
+    // relative to its location: its second corner is not set, and was written
+    // as 0 and the height of the page.
+    [Fact]
+    public void ThePolygonAnnotationIsInTheBoxOfItsVertices() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        PolygonAnnotation polygon = new PolygonAnnotation().SetVertices(new float[] {0f, 60f, 30f, 0f, 60f, 60f, 0f, 60f});
+        polygon.SetLocation(70f, 440f);
+        polygon.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        // 792 - 440 = 352 at the top; the vertices from 0 to 60 across and down
+        Assert.Contains("/Rect [70 292 130 352]", raw);
+    }
+
+    // An annotation that is not a link has an element described by what it says,
+    // or by its title, so that it has text, which PAC reads as only whitespace
+    // without it; a file attached is described by its own.
+    [Fact]
+    public void AnAnnotationIsDescribedByWhatItSays() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextAnnotation note = new TextAnnotation();
+        note.SetLocation(70f, 100f);
+        note.SetContents("Check the figures");
+        note.DrawOn(page);
+        SquareAnnotation square = new SquareAnnotation();
+        square.SetLocation(70f, 200f);
+        square.SetTitle("A square");
+        square.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        foreach (string want in new string[] {"Check the figures", "A square"}) {
+            Assert.Contains("/Alt " + ChartTest.TextString(want), raw);
+        }
+    }
+
     // The numbers of the page objects, in page order.
     private static string[] PageNumbers(byte[] pdf) {
         List<PDFobj> pages = new PDF().GetPageObjects(TestSupport.Read(pdf));

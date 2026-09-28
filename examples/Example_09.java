@@ -97,8 +97,11 @@ final public class Example_09 {
                 cell.setText(country.name);
                 tableRow.add(cell);
 
+                // The address is a link to it: text that reads as an address and is
+                // not one, PAC reports
                 cell = new Cell(f2);
                 cell.setText(country.point.getURIAction());
+                cell.setURIAction(country.point.getURIAction());
                 tableRow.add(cell);
 
                 tableData.add(tableRow);

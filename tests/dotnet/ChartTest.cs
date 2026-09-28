@@ -247,7 +247,7 @@ public class ChartTest {
 
     // The text as PDF writes a text string: UTF-16 with its byte order mark,
     // in lower case hexadecimal, as AppendTextString writes it.
-    private static string TextString(string text) {
+    internal static string TextString(string text) {
         StringBuilder sb = new StringBuilder("<feff");
         foreach (char unit in text) {
             sb.Append(((int) unit).ToString("x4"));

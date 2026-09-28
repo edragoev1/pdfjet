@@ -23,8 +23,9 @@ The checks are:
     area: PDF/UA asks for one, and veraPDF does not check it (PAC does).
   * Text contrasts with the background under it, 4.5:1, or 3:1 for text of
     18 points or 14 points bold, as WCAG 1.4.3 asks and PAC checks. The
-    background is the color most of the box of each run of text is
-    rendered in, on the first MAX_CONTRAST_PAGES pages.
+    background is the color most of the box of each letter is rendered in,
+    letter by letter, so that a run of text that ends over something dark is
+    found, on the first MAX_CONTRAST_PAGES pages.
   * The parent tree agrees with the structure tree: the element it gives for
     each marked content of a page has that marked content among its kids, and
     the element it gives for an annotation has the annotation. PAC reports
@@ -250,31 +251,58 @@ def contrast(a, b):
     return (light + 0.05) / (dark + 0.05)
 
 
+def background_pixmap(doc, page):
+    """The page rendered without its text, at 72 dpi: what is under each
+    letter, whatever its color, as text of the color of what it runs over,
+    black on a black barcode, would otherwise be taken for its letters."""
+    copy = pymupdf.open()
+    copy.insert_pdf(doc, from_page=page.number, to_page=page.number)
+    blank = copy[0]
+    blank.clean_contents()
+    # The text of the page, and of the forms it draws, like a Stamp drawn
+    # more than once
+    streams = set(blank.get_contents())
+    for xref in range(1, copy.xref_length()):
+        if copy.xref_is_stream(xref) and copy.xref_get_key(xref, 'Subtype') == ('name', '/Form'):
+            streams.add(xref)
+    for xref in streams:
+        stream = copy.xref_stream(xref)
+        copy.update_stream(xref, re.sub(rb'\bBT\b.*?\bET\b', b'', stream, flags=re.S))
+    return blank.get_pixmap(dpi=72, colorspace=pymupdf.csRGB)
+
+
 def contrast_problems(doc, name):
     """Returns each color of text that does not contrast enough with the
     background under it, once, with the first text drawn in it."""
     found = {}
     for page in list(doc)[:MAX_CONTRAST_PAGES]:
-        pix = page.get_pixmap(dpi=72, colorspace=pymupdf.csRGB)
-        for block in page.get_text('dict')['blocks']:
+        pix = background_pixmap(doc, page)
+        for block in page.get_text('rawdict')['blocks']:
             for line in block.get('lines', []):
                 for span in line['spans']:
-                    if not span['text'].strip():
+                    text = ''.join(ch['c'] for ch in span['chars'])
+                    if not text.strip():
                         continue
                     c = span['color']
                     fg = ((c >> 16) & 255, (c >> 8) & 255, c & 255)
-                    x0, y0, x1, y1 = (int(v) for v in span['bbox'])
-                    counts = Counter(pix.pixel(x, y)
-                                     for y in range(max(0, y0), min(pix.height, y1 + 1))
-                                     for x in range(max(0, x0), min(pix.width, x1 + 1), 2))
-                    common = [color for color, _ in counts.most_common(2)]
-                    background = next((color for color in common if color != fg), (255, 255, 255))
                     bold = 'Bold' in span['font'] or span['flags'] & 16
                     large = span['size'] >= 18 or (bold and span['size'] >= 14)
-                    ratio = contrast(fg, background)
-                    if ratio < (3.0 if large else 4.5) and (name, '#%02x%02x%02x' % fg) not in CONTRAST_EXCEPTIONS:
-                        key = ('#%02x%02x%02x' % fg, '#%02x%02x%02x' % background)
-                        found.setdefault(key, (ratio, span['text'].strip()[:30], page.number + 1))
+                    # Letter by letter, the background under each, so that
+                    # text that runs over something dark at its end, as a
+                    # caption over a barcode beside it, is found; the worst
+                    for ch in span['chars']:
+                        if not ch['c'].strip():
+                            continue
+                        x0, y0, x1, y1 = (int(v) for v in ch['bbox'])
+                        counts = Counter(pix.pixel(x, y)
+                                         for y in range(max(0, y0), min(pix.height, y1 + 1))
+                                         for x in range(max(0, x0), min(pix.width, x1 + 1)))
+                        background = counts.most_common(1)[0][0] if counts else (255, 255, 255)
+                        ratio = contrast(fg, background)
+                        if ratio < (3.0 if large else 4.5) and (name, '#%02x%02x%02x' % fg) not in CONTRAST_EXCEPTIONS:
+                            key = ('#%02x%02x%02x' % fg, '#%02x%02x%02x' % background)
+                            found.setdefault(key, (ratio, text.strip()[:30], page.number + 1))
+                            break
     return [f'page {page}: text {fg} on {bg} contrasts {ratio:.2f}:1, less than WCAG asks, as in {text!r}'
             for (fg, bg), (ratio, text, page) in found.items()]
 
