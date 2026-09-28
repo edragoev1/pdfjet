@@ -212,6 +212,7 @@ public class TextColumn implements Drawable {
         if (page != null) {
             element = page.addStructElement(page.structParent, paragraph.structureType, null);
             if (element != null) {
+                page.noteHeading(paragraph.structureType, paragraph.text(), y1);
                 parent = page.structParent;
                 mcidParent = page.mcidParent;
                 page.structParent = element;

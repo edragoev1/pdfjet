@@ -15,9 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -245,6 +249,131 @@ class PDFTest {
         String raw = TestSupport.latin1(bos.toByteArray());
         assertEquals(1, raw.split("/S /Link\n").length - 1, raw);
         assertEquals(1, raw.split("/S /Annot\n").length - 1, raw);
+    }
+
+    // The structure elements of the raw PDF, by their object numbers: the S,
+    // the P and the K of each.
+    private static Map<String, String[]> elements(String raw) {
+        Map<String, String[]> elements = new HashMap<String, String[]>();
+        Matcher m = Pattern.compile(
+                "(\\d+) 0 obj\n<<\n/Type /StructElem /S /(\\w+)\n/P (\\d+) 0 R /Pg \\d+ 0 R\n(?:/K (\\[[^\n]*\\]|<<[^\n]*>>|\\d+)\n)?")
+                .matcher(raw);
+        while (m.find()) {
+            elements.put(m.group(1), new String[] {m.group(2), m.group(3), m.group(4)});
+        }
+        return elements;
+    }
+
+    // The Link elements of the raw PDF.
+    private static Map<String, String[]> links(String raw) {
+        Map<String, String[]> links = new HashMap<String, String[]>();
+        for (Map.Entry<String, String[]> entry : elements(raw).entrySet()) {
+            if (entry.getValue()[0].equals("Link")) {
+                links.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return links;
+    }
+
+    // A text line that is a link is the Link of its paragraph, holding its
+    // text and its annotation both, as PDF/UA asks and PAC checks: a Link that
+    // holds only the annotation is read as a link of no text.
+    @Test
+    void aLinkedTextLineIsTheLinkOfItsParagraph() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 80f).drawOn(page);
+        String content = new String(page.getContent(), StandardCharsets.ISO_8859_1);
+        assertTrue(content.contains("/Link <</MCID 0>>\nBDC\n"), content);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        Map<String, String[]> elements = elements(raw);
+        Map<String, String[]> links = links(raw);
+        assertEquals(1, links.size());
+        for (String[] link : links.values()) {
+            assertTrue(link[2].matches("\\[0 <</Type /OBJR /Obj \\d+ 0 R>>\\]"), link[2]);
+            assertEquals("P", elements.get(link[1])[0]);
+        }
+        // The parent tree gives marked content 0 to the Link
+        assertTrue(Pattern.compile("/Nums \\[\n0 \\[ (\\d+) 0 R\\]").matcher(raw).find(), raw);
+    }
+
+    // A word of a paragraph that is a link is a Link among the words, in its
+    // place, holding its text and its annotation.
+    @Test
+    void aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(font, "Read").setStructureType(StructElem.SPAN))
+                .add(new TextLine(font, "the site").setURIAction("https://pdfjet.com"))
+                .add(new TextLine(font, "today"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setWidth(400f).setLocation(70f, 80f).drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        Map<String, String[]> elements = elements(raw);
+        Map<String, String[]> links = links(raw);
+        assertEquals(1, links.size());
+        for (Map.Entry<String, String[]> entry : links.entrySet()) {
+            String[] link = entry.getValue();
+            assertTrue(link[2].matches("\\[\\d+ <</Type /OBJR /Obj \\d+ 0 R>>\\]"), link[2]);
+            String[] parent = elements.get(link[1]);
+            // The words before it, the Link, and the words after it
+            assertEquals("P", parent[0]);
+            assertTrue(parent[2].matches("\\[\\d+( \\d+)* " + entry.getKey() + " 0 R( \\d+)+\\]"), parent[2]);
+        }
+    }
+
+    // A linked image is the Figure of its Link, which holds its annotation too.
+    @Test
+    void aLinkedImageIsTheFigureOfItsLink() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Image image = new Image(pdf, TestSupport.open("images/up-arrow.png"));
+        image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70f, 80f);
+        image.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        Map<String, String[]> elements = elements(raw);
+        Map<String, String[]> links = links(raw);
+        assertEquals(1, links.size());
+        for (Map.Entry<String, String[]> entry : links.entrySet()) {
+            String[] link = entry.getValue();
+            assertTrue(link[2].matches("\\[\\d+ 0 R <</Type /OBJR /Obj \\d+ 0 R>>\\]"), link[2]);
+            String figure = link[2].substring(1).split(" ")[0];
+            assertEquals("Figure", elements.get(figure)[0]);
+            assertEquals(entry.getKey(), elements.get(figure)[1]);
+        }
+    }
+
+    // In a document that is not tagged, a link is drawn as before, and a linked
+    // image leaves the structure elements begun around it as they were.
+    @Test
+    void aLinkOfADocumentNotTaggedIsNoElement() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.beginStructElement(StructElem.L);
+        new Image(pdf, TestSupport.open("images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page);
+        new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 80f).drawOn(page);
+        page.endStructElement();
+        Field stack = Page.class.getDeclaredField("structElementStack");
+        stack.setAccessible(true);
+        assertEquals(0, ((List<?>) stack.get(page)).size());
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertFalse(raw.contains("/StructElem"));
+        assertEquals(2, raw.split("/Subtype /Link").length - 1);
     }
 
     // The numbers of the page objects, in page order.

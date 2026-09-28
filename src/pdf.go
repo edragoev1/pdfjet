@@ -31,32 +31,35 @@ import (
 
 // PDF is used to create PDF objects.
 type PDF struct {
-	writer                    *bufio.Writer
-	byteCount                 int64
-	objOffsets                []int64
-	fonts                     []*Font
-	images                    []*Image
-	pages                     []*Page
-	destinations              map[string]*Destination
-	groups                    []*OptionalContentGroup
-	states                    map[string]int
-	stamps                    []*Stamp
-	metadataObjNumber         int
-	outputIntentObjNumber     int
-	compliance                compliance.Compliance
-	encryption                *Encryption
-	title                     string
-	author                    string
-	subject                   string
-	keywords                  string
-	producer                  string
-	creator                   string
-	createDate                string
-	pagesObjNumber            int
-	pageLayout                pagelayout.PageLayout
-	pageMode                  pagemode.PageMode
-	language                  string
-	toc                       *Bookmark
+	writer                *bufio.Writer
+	byteCount             int64
+	objOffsets            []int64
+	fonts                 []*Font
+	images                []*Image
+	pages                 []*Page
+	destinations          map[string]*Destination
+	groups                []*OptionalContentGroup
+	states                map[string]int
+	stamps                []*Stamp
+	metadataObjNumber     int
+	outputIntentObjNumber int
+	compliance            compliance.Compliance
+	encryption            *Encryption
+	title                 string
+	author                string
+	subject               string
+	keywords              string
+	producer              string
+	creator               string
+	createDate            string
+	pagesObjNumber        int
+	pageLayout            pagelayout.PageLayout
+	pageMode              pagemode.PageMode
+	language              string
+	toc                   *Bookmark
+	// The headings of a tagged document, in the order they are drawn, which
+	// its bookmarks are made of when it has none of its own
+	headings                  []heading
 	associatedFiles           []*EmbeddedFile // The files the document carries, in the order they were added.
 	metadata                  []string        // The descriptions that a standard of its own asks the metadata to carry.
 	importedFonts             []string
@@ -732,21 +735,38 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 		pdf.appendString(" 0 R\n")
 
 		if element.annotation != nil {
-			pdf.appendString("/K <</Type /OBJR /Obj ")
+			// A link: the marked content of its text, or the elements it
+			// holds, like the Figure of an image, then its annotation
+			pdf.appendString("/K [")
+			if element.mcid >= 0 {
+				pdf.appendInteger(element.mcid)
+				pdf.appendString(" ")
+			}
+			for _, kid := range element.kids {
+				pdf.appendInteger(kid)
+				pdf.appendString(" 0 R ")
+			}
+			pdf.appendString("<</Type /OBJR /Obj ")
 			pdf.appendInteger(element.annotation.objNumber)
-			pdf.appendString(" 0 R>>\n")
+			pdf.appendString(" 0 R>>]\n")
 		} else if element.mcid >= 0 {
 			pdf.appendString("/K ")
 			pdf.appendInteger(element.mcid)
 			pdf.appendString("\n")
 		} else if len(element.mcids) > 0 {
-			// The marked contents of a paragraph drawn word by word.
+			// The marked contents of a paragraph drawn word by word, and the
+			// Link elements of its words that are links
 			pdf.appendString("/K [")
 			for i, mcid := range element.mcids {
 				if i > 0 {
 					pdf.appendString(" ")
 				}
-				pdf.appendInteger(mcid)
+				if mcid < 0 {
+					pdf.appendInteger(-mcid)
+					pdf.appendString(" 0 R")
+				} else {
+					pdf.appendInteger(mcid)
+				}
 			}
 			pdf.appendString("]\n")
 		} else if len(element.kids) > 0 {
@@ -1195,15 +1215,11 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 			}
 			page.mcidNumbers[mcid] = element.objNumber
 		}
-		// The element of an annotation stands for the annotation, not for
-		// marked content: its mcid is left at 0, and taken as one it would
-		// put the annotation where marked content 0 of the page is, which
-		// PAC reports as an inconsistent entry of the parent tree.
-		if element.annotation == nil {
-			setMcidNumber(element.mcid)
-			for _, mcid := range element.mcids {
-				setMcidNumber(mcid)
-			}
+		// The element of an annotation alone has no marked content, its mcid
+		// -1; the Link of a text has the marked content of the text too
+		setMcidNumber(element.mcid)
+		for _, mcid := range element.mcids {
+			setMcidNumber(mcid)
 		}
 		if element.parent == nil {
 			pdf.documentKids = append(pdf.documentKids, element.objNumber)
@@ -1957,6 +1973,12 @@ func (pdf *PDF) Complete() error {
 		pdf.addStructDocumentObject(structTreeRootObjNumber)
 	}
 
+	// A tagged document with headings and no bookmarks of its own has the
+	// bookmarks of its headings, which a reader shows as its outline, as PAC
+	// asks of a document with headings
+	if pdf.toc == nil && len(pdf.headings) > 0 {
+		pdf.toc = pdf.bookmarksOfHeadings()
+	}
 	var outlineDictNum = 0
 	if pdf.toc != nil && pdf.toc.getChildren() != nil {
 		list := pdf.toc.toArrayList()

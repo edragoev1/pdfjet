@@ -862,8 +862,13 @@ public class Cell {
             xText = x + paddingAt(Cell.leftPaddingShift)
         }
         let line = drawable as? BaselineDrawable
+        var link: StructElement?
         if line == nil {
-            page.addBDC(StructElem.P, text!, text!)
+            if uri != nil {
+                link = page.addLinkBDC(StructElem.P, nil, text!, text!)
+            } else {
+                page.addBDC(StructElem.P, text!, text!)
+            }
             page.drawString(font, fallbackFont, fontSize, text!, xText, yText, Util.toRGB(textColor), nil)
             page.addEMC()
             if getUnderline() {
@@ -873,10 +878,15 @@ public class Cell {
                 strikeoutText(page, xText, yText)
             }
         } else {
-            // A text line and a composite text line mark their own text.
+            // A text line and a composite text line mark their own text,
+            // which the Link of the cell holds
+            if uri != nil {
+                link = page.beginLink()
+            }
             _ = line!.setLocation(xText, yText)
             // The text lines of the composite mark their own text.
             line!.drawOn(page)
+            page.endLink(link)
         }
 
         if uri != nil {
@@ -895,7 +905,7 @@ public class Cell {
                     nil,
                     nil,
                     nil,
-                    nil))
+                    nil).joining(link))
         }
     }
 

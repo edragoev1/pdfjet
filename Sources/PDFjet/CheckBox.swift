@@ -188,7 +188,12 @@ public class CheckBox : Drawable {
             return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
         }
 
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
+        var link: StructElement?
+        if uri != nil {
+            link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
+        } else {
+            page!.addBDC(StructElem.P, language, actualText, altDescription)
+        }
 
         let yBox: Float = y
         page!.setPenWidth(self.penWidth!)
@@ -224,7 +229,7 @@ public class CheckBox : Drawable {
         page!.addEMC()
 
         if uri != nil {
-            // The link is a structure element of its own, see Page.addAnnotation.
+            // The link is the P of the box and its label, see Page.addLinkBDC.
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x + 3.0*w/2.0,
@@ -240,7 +245,7 @@ public class CheckBox : Drawable {
                     nil,
                     language,
                     actualText,
-                    altDescription))
+                    altDescription).joining(link))
         }
 
         return [x + 3.0*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]

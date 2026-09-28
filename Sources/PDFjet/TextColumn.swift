@@ -194,6 +194,7 @@ public class TextColumn : Drawable {
         if let page = page {
             element = page.addStructElement(page.structParent, paragraph.structureType, nil)
             if element != nil {
+                page.noteHeading(paragraph.structureType, paragraph.text(), y1)
                 parent = page.structParent
                 mcidParent = page.mcidParent
                 page.structParent = element

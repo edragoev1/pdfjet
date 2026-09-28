@@ -86,6 +86,9 @@ public final class PDF {
     // build fails on the warning its name gives. It is still supported.
     static var complianceA3A: Compliance { Compliance(rawValue: 6)! }
     var toc: Bookmark?
+    // The headings of a tagged document, in the order they are drawn, which
+    // its bookmarks are made of when it has none of its own
+    var headings = [Heading]()
     var importedFonts = [String]()
     var importedXObjects = [String]()
     var importedExtGStates = [String]()
@@ -743,16 +746,12 @@ public final class PDF {
         }
         var kept = [StructElement]()
         for element in page.structures {
-            // The element of an annotation stands for the annotation, not for
-            // marked content: its mcid is left at 0, and taken as one it would
-            // put the annotation where marked content 0 of the page is, which
-            // PAC reports as an inconsistent entry of the parent tree.
-            var mcids = [Int]()
-            if element.annotation == nil {
-                mcids = element.mcids
-                if element.mcid >= 0 {
-                    mcids.append(element.mcid)
-                }
+            // The element of an annotation alone has no marked content, its
+            // mcid -1; the Link of a text has the marked content of the text
+            // too. The negative mcids of a paragraph are its Link elements.
+            var mcids = element.mcids.filter { $0 >= 0 }
+            if element.mcid >= 0 {
+                mcids.append(element.mcid)
             }
             for mcid in mcids {
                 while page.mcidNumbers.count <= mcid {
@@ -760,7 +759,7 @@ public final class PDF {
                 }
                 page.mcidNumbers[mcid] = element.objNumber ?? 0
             }
-            if element.parent == nil {
+            if element.parent == nil && element.parentObjNumber == nil {
                 documentKids.append(element.objNumber ?? 0)
             }
             if element.annotation != nil {
@@ -785,7 +784,7 @@ public final class PDF {
             append("<<\n/Type /StructElem /S /")
             append(element.structure!)
             append("\n/P ")
-            if let parentObjNumber = element.parent?.objNumber {
+            if let parentObjNumber = element.parent?.objNumber ?? element.parentObjNumber {
                 append(parentObjNumber)
             } else {
                 append(documentElementNumber)
@@ -798,21 +797,38 @@ public final class PDF {
             append(Token.objRef)
 
             if element.annotation != nil {
-                append("/K <</Type /OBJR /Obj ")
+                // A link: the marked content of its text, or the elements it
+                // holds, like the Figure of an image, then its annotation
+                append("/K [")
+                if element.mcid >= 0 {
+                    append(element.mcid)
+                    append(Token.space)
+                }
+                for kid in element.kids {
+                    append(kid)
+                    append(" 0 R ")
+                }
+                append("<</Type /OBJR /Obj ")
                 append(element.annotation!.objNumber)
-                append(" 0 R>>\n")
+                append(" 0 R>>]\n")
             } else if element.mcid >= 0 {
                 append("/K ")
                 append(element.mcid)
                 append("\n")
             } else if !element.mcids.isEmpty {
-                // The marked contents of a paragraph drawn word by word.
+                // The marked contents of a paragraph drawn word by word, and
+                // the Link elements of its words that are links
                 append("/K [")
                 for (i, mcid) in element.mcids.enumerated() {
                     if i > 0 {
                         append(Token.space)
                     }
-                    append(mcid)
+                    if mcid < 0 {
+                        append(-mcid)
+                        append(" 0 R")
+                    } else {
+                        append(mcid)
+                    }
                 }
                 append("]\n")
             } else if !element.kids.isEmpty {
@@ -1541,6 +1557,12 @@ public final class PDF {
             addStructDocumentObject(structTreeRootObjNumber)
         }
 
+        // A tagged document with headings and no bookmarks of its own has the
+        // bookmarks of its headings, which a reader shows as its outline, as
+        // PAC asks of a document with headings
+        if toc == nil && !headings.isEmpty {
+            toc = Bookmark.ofHeadings(self, headings)
+        }
         var outlineDictNum = 0
         if toc != nil && toc!.getChildren() != nil {
             let list: [Bookmark] = toc!.toArrayList()

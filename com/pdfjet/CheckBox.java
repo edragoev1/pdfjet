@@ -205,7 +205,12 @@ public class CheckBox implements Drawable {
             return new float[] { x + 3f*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
         }
 
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        StructElement link = null;
+        if (uri != null) {
+            link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else {
+            page.addBDC(StructElem.P, language, actualText, altDescription);
+        }
 
         float yBox = y;
         page.setPenWidth(penWidth);
@@ -242,8 +247,8 @@ public class CheckBox implements Drawable {
         page.addEMC();
 
         if (uri != null) {
-            // The link is a structure element of its own, see Page.addAnnotation.
-            page.addAnnotation(new Annotation(
+            // The link joins its Link element, see Page.addAnnotation.
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3f*w/2f,
                     y,
@@ -258,7 +263,9 @@ public class CheckBox implements Drawable {
                     null,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
 
         return new float[] { x + 3f*w + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };

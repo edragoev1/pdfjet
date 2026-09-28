@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Bookmark please see Example_48
@@ -180,4 +182,64 @@ func (bookmark *Bookmark) getDestination() *Destination {
 func (bookmark *Bookmark) nextKey() string {
 	bookmark.destNumber++
 	return "dest#" + strconv.Itoa(bookmark.destNumber)
+}
+
+// heading is a heading of a tagged document, H1 to H6, as it was drawn.
+type heading struct {
+	level int
+	title string
+	page  *Page
+	top   float32 // The top of its text on the page
+}
+
+// headingLevel returns the level of a heading, 1 for H1 to 6 for H6, or 0 for
+// a structure type that is not a heading.
+func headingLevel(structure structelem.StructElem) int {
+	switch structure {
+	case structelem.H1:
+		return 1
+	case structelem.H2:
+		return 2
+	case structelem.H3:
+		return 3
+	case structelem.H4:
+		return 4
+	case structelem.H5:
+		return 5
+	case structelem.H6:
+		return 6
+	}
+	return 0
+}
+
+// bookmarksOfHeadings returns the bookmarks of the headings of the document,
+// each under the heading before it of a higher level: an H2 under the H1
+// before it, and an H1 at the top. It is called once the pages are written,
+// when the number of the page of each heading is known.
+func (pdf *PDF) bookmarksOfHeadings() *Bookmark {
+	root := NewBookmark(pdf)
+	type open struct {
+		level    int
+		bookmark *Bookmark
+	}
+	var stack []open
+	for _, h := range pdf.headings {
+		for len(stack) > 0 && stack[len(stack)-1].level >= h.level {
+			stack = stack[:len(stack)-1]
+		}
+		parent := root
+		if len(stack) > 0 {
+			parent = stack[len(stack)-1].bookmark
+		}
+		dest := newDestination("", 0, h.page.height-h.top)
+		dest.pageObjNumber = h.page.objNumber
+		bookmark := &Bookmark{page: h.page, y: h.top, title: h.title, parent: parent, dest: dest}
+		if n := len(parent.children); n > 0 {
+			bookmark.prev = parent.children[n-1]
+			parent.children[n-1].next = bookmark
+		}
+		parent.children = append(parent.children, bookmark)
+		stack = append(stack, open{h.level, bookmark})
+	}
+	return root
 }

@@ -156,7 +156,12 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 		return checkBox.corner() // Measured, not drawn
 	}
 
-	page.AddBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
+	var link *structElement
+	if checkBox.uri != "" || checkBox.key != "" {
+		link = page.addLinkBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
+	} else {
+		page.AddBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
+	}
 
 	yBox := checkBox.y
 	page.SetPenWidth(checkBox.penWidth)
@@ -220,6 +225,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 			language:       checkBox.language,
 			actualText:     checkBox.actualText,
 			altDescription: checkBox.altDescription,
+			linkElement:    link,
 		})
 	}
 

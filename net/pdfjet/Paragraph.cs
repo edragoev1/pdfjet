@@ -261,5 +261,15 @@ public class Paragraph {
     public float GetY2() {
         return y2;
     }
+
+    // Returns the text of the paragraph, its lines one after another, as the
+    // title of its bookmark when it is a heading.
+    internal String Text() {
+        List<String> texts = new List<String>();
+        foreach (TextLine line in lines) {
+            texts.Add(line.text);
+        }
+        return String.Join(" ", texts);
+    }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET

@@ -589,7 +589,15 @@ public class TextLine : BaselineDrawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         let alt = altDescription == text ? "" : altDescription ?? ""
-        page!.addBDC(structureType, language, "", alt)
+        if page!.mcidParent == nil {
+            page!.noteHeading(structureType, text, destinationY())
+        }
+        var link: StructElement?
+        if uri != nil || key != nil {
+            link = page!.addLinkBDC(structureType, language, "", alt)
+        } else {
+            page!.addBDC(structureType, language, "", alt)
+        }
         page!.drawString(font!, fallbackFont, fontSize, text, self.x, self.y + verticalOffset, textColor, colorMap)
         page!.addEMC()
 
@@ -650,7 +658,7 @@ public class TextLine : BaselineDrawable {
                     key,    // The destination name
                     uriLanguage,
                     uriActualText,
-                    uriAltDescription))
+                    uriAltDescription).joining(link))
         }
         page!.setTextRotation(0)
 

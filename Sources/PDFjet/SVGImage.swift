@@ -873,12 +873,18 @@ public class SVGImage : Drawable {
         guard let page = page else {
             return [self.x + self.w, self.y + self.h]   // Measured, not drawn
         }
+        // A linked image is a Figure in the Link its annotation joins
+        var link: StructElement?
+        if uri != nil || key != nil {
+            link = page.beginLink()
+        }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
         for path in paths {
             drawPath(path, page)
         }
         page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()
+        page.endLink(link)
         if (uri != nil || key != nil) {
             page.addAnnotation(Annotation(
                     Annotation.Link,
@@ -895,7 +901,7 @@ public class SVGImage : Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription))
+                    altDescription).joining(link))
         }
         return [self.x + self.w, self.y + self.h]
     }

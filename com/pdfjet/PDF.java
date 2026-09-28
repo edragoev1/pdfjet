@@ -86,6 +86,9 @@ final public class PDF {
                 || compliance == Compliance.PDF_A_3A_UA_1;
     }
     Bookmark toc = null;
+    // The headings of a tagged document, in the order they are drawn, which
+    // its bookmarks are made of when it has none of its own
+    List<Heading> headings = new ArrayList<Heading>();
     List<Font> fonts = new ArrayList<Font>();
     List<Image> images = new ArrayList<Image>();
     List<OptionalContentGroup> groups = new ArrayList<OptionalContentGroup>();
@@ -748,16 +751,18 @@ final public class PDF {
         }
         List<StructElement> kept = new ArrayList<StructElement>();
         for (StructElement element : page.structures) {
-            // The element of an annotation stands for the annotation, not for
-            // marked content: its mcid is left at 0, and taken as one it would
-            // put the annotation where marked content 0 of the page is, which
-            // PAC reports as an inconsistent entry of the parent tree.
+            // The element of an annotation alone has no marked content, its
+            // mcid -1; the Link of a text has the marked content of the text
+            // too. The negative entries of mcids are the Link elements of the
+            // words of a paragraph, not marked content.
             List<Integer> mcids = new ArrayList<Integer>();
-            if (element.annotation == null) {
-                mcids.addAll(element.mcids);
-                if (element.mcid >= 0) {
-                    mcids.add(element.mcid);
+            for (Integer mcid : element.mcids) {
+                if (mcid.intValue() >= 0) {
+                    mcids.add(mcid);
                 }
+            }
+            if (element.mcid >= 0) {
+                mcids.add(element.mcid);
             }
             for (Integer mcid : mcids) {
                 while (page.mcidNumbers.size() <= mcid.intValue()) {
@@ -800,21 +805,39 @@ final public class PDF {
             append(Token.OBJ_REF);
 
             if (element.annotation != null) {
-                append("/K <</Type /OBJR /Obj ");
+                // A link: the marked content of its text, or the elements it
+                // holds, like the Figure of an image, then its annotation
+                append("/K [");
+                if (element.mcid >= 0) {
+                    append(element.mcid);
+                    append(Token.SPACE);
+                }
+                for (Integer kid : element.kids) {
+                    append(kid.intValue());
+                    append(" 0 R ");
+                }
+                append("<</Type /OBJR /Obj ");
                 append(element.annotation.objNumber);
-                append(" 0 R>>\n");
+                append(" 0 R>>]\n");
             } else if (element.mcid >= 0) {
                 append("/K ");
                 append(element.mcid);
                 append("\n");
             } else if (!element.mcids.isEmpty()) {
-                // The marked contents of a paragraph drawn word by word.
+                // The marked contents of a paragraph drawn word by word, and
+                // the Link elements of its words that are links
                 append("/K [");
                 for (int i = 0; i < element.mcids.size(); i++) {
                     if (i > 0) {
                         append(Token.SPACE);
                     }
-                    append(element.mcids.get(i).intValue());
+                    int mcid = element.mcids.get(i).intValue();
+                    if (mcid < 0) {
+                        append(-mcid);
+                        append(" 0 R");
+                    } else {
+                        append(mcid);
+                    }
                 }
                 append("]\n");
             } else if (!element.kids.isEmpty()) {
@@ -1957,6 +1980,12 @@ final public class PDF {
             addStructDocumentObject(structTreeRootObjNumber);
         }
 
+        // A tagged document with headings and no bookmarks of its own has the
+        // bookmarks of its headings, which a reader shows as its outline, as
+        // PAC asks of a document with headings
+        if (toc == null && !headings.isEmpty()) {
+            toc = Bookmark.ofHeadings(this, headings);
+        }
         int outlineDictNum = 0;
         if (toc != null && toc.getChildren() != null) {
             List<Bookmark> list = toc.toArrayList();

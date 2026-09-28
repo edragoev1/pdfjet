@@ -120,7 +120,12 @@ public class RadioButton implements Drawable {
             return new float[] { x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };
         }
 
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        StructElement link = null;
+        if (uri != null) {
+            link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else {
+            page.addBDC(StructElem.P, language, actualText, altDescription);
+        }
 
         float yBox = y;
         page.setPenWidth(1f);
@@ -142,7 +147,7 @@ public class RadioButton implements Drawable {
         page.addEMC();
 
         if (uri != null) {
-            page.addAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3*r1,
                     y,
@@ -157,7 +162,9 @@ public class RadioButton implements Drawable {
                     null,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
 
         return new float[] { x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize) };

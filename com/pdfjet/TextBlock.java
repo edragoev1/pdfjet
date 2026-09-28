@@ -988,6 +988,7 @@ public class TextBlock implements Drawable {
             rect.drawOn(page);
         }
 
+        page.noteHeading(structureType, this.textContent, this.y);
         page.addBDC(structureType, this.language, this.textContent, null);
         page.drawTextBlock(
             this.font,

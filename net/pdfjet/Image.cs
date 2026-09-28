@@ -357,6 +357,11 @@ public class Image : IDrawable {
         if (w == 0f || h == 0f) {
             return new float[] {x + w, y + h};  // A zero size image paints nothing.
         }
+        // A linked image is a Figure in the Link its annotation joins
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.BeginLink();
+        }
         page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
         page.SaveGraphicsState();
 
@@ -435,8 +440,9 @@ public class Image : IDrawable {
         }
         page.AddEMC();
 
+        page.EndLink(link);
         if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -451,7 +457,9 @@ public class Image : IDrawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
 
         return new float[] {x + w, y + h};

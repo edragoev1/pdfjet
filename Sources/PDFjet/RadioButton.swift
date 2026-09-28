@@ -123,7 +123,12 @@ public class RadioButton : Drawable {
             return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]
         }
 
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
+        var link: StructElement?
+        if uri != nil {
+            link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
+        } else {
+            page!.addBDC(StructElem.P, language, actualText, altDescription)
+        }
 
         let yBox = y
         page!.setPenWidth(1.0)
@@ -160,7 +165,7 @@ public class RadioButton : Drawable {
                     nil,
                     language,
                     actualText,
-                    altDescription))
+                    altDescription).joining(link))
         }
 
         return [x + 6*r1 + font.stringWidth(fontSize, label), y + font.getBodyHeight(fontSize)]

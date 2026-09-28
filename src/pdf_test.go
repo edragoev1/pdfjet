@@ -453,6 +453,150 @@ func TestPDFALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement(t *testin
 	}
 }
 
+// testElements returns the structure elements of the raw PDF, by their
+// object numbers: the S, the P and the K of each.
+func testElements(raw string) map[string][3]string {
+	elements := map[string][3]string{}
+	re := regexp.MustCompile(`(?s)(\d+) 0 obj\n<<\n/Type /StructElem /S /(\w+)\n/P (\d+) 0 R /Pg \d+ 0 R\n(?:/K (\[[^\n]*\]|<<[^\n]*>>|\d+)\n)?`)
+	for _, m := range re.FindAllStringSubmatch(raw, -1) {
+		elements[m[1]] = [3]string{m[2], m[3], m[4]}
+	}
+	return elements
+}
+
+// testLinks returns the Link elements of the raw PDF.
+func testLinks(raw string) map[string][3]string {
+	links := map[string][3]string{}
+	for number, element := range testElements(raw) {
+		if element[0] == "Link" {
+			links[number] = element
+		}
+	}
+	return links
+}
+
+// A text line that is a link is the Link of its paragraph, holding its text
+// and its annotation both, as PDF/UA asks and PAC checks: a Link that holds
+// only the annotation is read as a link of no text.
+func TestPDFALinkedTextLineIsTheLinkOfItsParagraph(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "/Link <</MCID 0>>\nBDC\n") {
+		t.Errorf("the text is not marked as a link:\n%s", content)
+	}
+	raw := string(doc.complete())
+	elements := testElements(raw)
+	links := testLinks(raw)
+	if len(links) != 1 {
+		t.Fatalf("%d Link elements: %v", len(links), links)
+	}
+	for _, link := range links {
+		if !regexp.MustCompile(`^\[0 <</Type /OBJR /Obj \d+ 0 R>>\]$`).MatchString(link[2]) {
+			t.Errorf("the Link holds %s, not its text and its annotation", link[2])
+		}
+		if parent := elements[link[1]]; parent[0] != "P" {
+			t.Errorf("the Link is in %v, not in the P of the text", parent)
+		}
+	}
+	// The parent tree gives marked content 0 to the Link
+	if !regexp.MustCompile(`/Nums \[\n0 \[ (\d+) 0 R\]`).MatchString(raw) {
+		t.Errorf("the parent tree does not give marked content 0 to an element")
+	}
+}
+
+// A word of a paragraph that is a link is a Link among the words, in its
+// place, holding its text and its annotation.
+func TestPDFALinkedWordIsALinkAmongTheWordsOfItsParagraph(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	paragraph := NewParagraph().
+		Add(NewTextLine(font, "Read").SetStructureType(structelem.Span)).
+		Add(NewTextLine(font, "the site").SetURIAction("https://pdfjet.com")).
+		Add(NewTextLine(font, "today"))
+	page := NewPage(doc.pdf, letter.Portrait())
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(400)
+	frame.SetLocation(70, 80)
+	frame.DrawOn(page)
+	raw := string(doc.complete())
+	elements := testElements(raw)
+	links := testLinks(raw)
+	if len(links) != 1 {
+		t.Fatalf("%d Link elements: %v", len(links), links)
+	}
+	for number, link := range links {
+		if !regexp.MustCompile(`^\[\d+ <</Type /OBJR /Obj \d+ 0 R>>\]$`).MatchString(link[2]) {
+			t.Errorf("the Link holds %s, not its text and its annotation", link[2])
+		}
+		paragraph := elements[link[1]]
+		// The words before it, the Link, and the words after it
+		if paragraph[0] != "P" || !regexp.MustCompile(`^\[\d+( \d+)* `+number+` 0 R( \d+)+\]$`).MatchString(paragraph[2]) {
+			t.Errorf("the paragraph holds %v, not the Link %s among its words", paragraph, number)
+		}
+	}
+}
+
+// A linked image is the Figure of its Link, which holds its annotation too.
+func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	image := NewImage(doc.pdf, file)
+	image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70, 80)
+	image.DrawOn(page)
+	raw := string(doc.complete())
+	elements := testElements(raw)
+	links := testLinks(raw)
+	if len(links) != 1 {
+		t.Fatalf("%d Link elements: %v", len(links), links)
+	}
+	for number, link := range links {
+		if !regexp.MustCompile(`^\[\d+ 0 R <</Type /OBJR /Obj \d+ 0 R>>\]$`).MatchString(link[2]) {
+			t.Errorf("the Link holds %s, not the figure and its annotation", link[2])
+		}
+		figure := strings.Fields(strings.Trim(link[2], "["))[0]
+		if elements[figure][0] != "Figure" || elements[figure][1] != number {
+			t.Errorf("the Link holds %v, not a Figure of its own", elements[figure])
+		}
+	}
+}
+
+// In a document that is not tagged, a link is drawn as before, and a linked
+// image leaves the structure elements begun around it as they were.
+func TestPDFALinkOfADocumentNotTaggedIsNoElement(t *testing.T) {
+	doc := testNewDoc()
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	page.BeginStructElement(structelem.L)
+	NewImage(doc.pdf, file).SetURIAction("https://pdfjet.com").DrawOn(page)
+	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(page)
+	page.EndStructElement()
+	if len(page.structElementStack) != 0 {
+		t.Errorf("%d structure elements are left begun", len(page.structElementStack))
+	}
+	raw := string(doc.complete())
+	if strings.Contains(raw, "/StructElem") || strings.Count(raw, "/Subtype /Link") != 2 {
+		t.Errorf("the links are not drawn as before")
+	}
+}
+
 // The PDFs that are not valid, as the Go fuzz target of the reader found
 // them: each fails with a message or reads what it can, and none reads past
 // the file, allocates what the file does not have or traps in Swift.

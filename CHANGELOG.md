@@ -10,6 +10,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- Bookmarks of the headings, in all four ports: a tagged document, PDF/UA or
+  a PDF/A of level A, that has headings, H1 to H6, and no bookmarks of its
+  own has a bookmark for each heading, under the heading before it of a
+  higher level, which goes to the top of the heading on its page. A reader
+  shows them as the outline of the document, and PAC asks a document with
+  headings for them. The headings are those of a `TextLine`, a `TextBlock`
+  and a paragraph of a `TextFrame` or a `TextColumn`, which Markdown draws
+  its headings as; one inside an artifact, like a running header, is not
+  one. A document with bookmarks of its own keeps them, and one that is not
+  tagged has none made.
 - Example_57, in all four ports: the table of Example_43 cut to 550 rows, 12
   pages, as a PDF/UA document, to check how a `BigTable` is tagged, a TR for
   each row and a TH or a TD for each cell, at a size a PDF/UA checker opens.
@@ -476,6 +486,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The Link element of a link holds the text of the link, in all four ports:
+  in a tagged document, PDF/UA or a PDF/A of level A, a text line, a word of
+  a paragraph, the text of a cell, a check box or a radio button that is a
+  link is a Link element of its text and its annotation both, in the element
+  of the text, as PDF/UA asks; and a linked image or SVG image is a Figure in
+  a Link that holds its annotation. It was a Link of the annotation alone,
+  beside the text, which a screen reader reads as a link of no text, and PAC
+  warns of as a possibly inappropriate use of a Link. A link over content
+  that is not tagged, like a point of a chart, whose figure stands for it,
+  is still a Link of its annotation and its description.
 - A compliance set after the encryption was refused with "Set the compliance
   before adding fonts, images or pages to the PDF.", in all four ports,
   which named what had not been added. A PDF/A compliance is refused with

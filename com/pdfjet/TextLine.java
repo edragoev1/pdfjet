@@ -673,7 +673,15 @@ public class TextLine implements BaselineDrawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         String alt = text.equals(altDescription) ? null : altDescription;
-        page.addBDC(structureType, language, null, alt);
+        if (page.mcidParent == null) {
+            page.noteHeading(structureType, text, destinationY());
+        }
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.addLinkBDC(structureType, language, null, alt);
+        } else {
+            page.addBDC(structureType, language, null, alt);
+        }
         page.drawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.addEMC();
 
@@ -718,7 +726,7 @@ public class TextLine implements BaselineDrawable {
         }
 
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     (y + verticalOffset) - font.getAscent(fontSize),
@@ -733,7 +741,9 @@ public class TextLine implements BaselineDrawable {
                     key,    // The destination name
                     uriLanguage,
                     uriActualText,
-                    uriAltDescription));
+                    uriAltDescription);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
         page.setTextRotation(0);
 

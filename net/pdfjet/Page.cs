@@ -2582,6 +2582,87 @@ public class Page {
         markedContentDepth--;
     }
 
+    // Notes a heading of a tagged document, H1 to H6, with its text and the top
+    // of its text, for the bookmarks that the document has when it has none of
+    // its own. A heading inside an artifact, like a running header, is not
+    // noted, nor anything that is not a heading.
+    internal void NoteHeading(StructElem structure, String text, float top) {
+        int level = Heading.Level(structure);
+        if (level == 0 || !pdf.IsTagged() || artifactDepth != 0 || text == null) {
+            return;
+        }
+        String title = System.Text.RegularExpressions.Regex.Replace(text.Trim(), @"\s+", " ");
+        if (title.Length == 0) {
+            return;
+        }
+        pdf.headings.Add(new Heading(level, title, this, top));
+    }
+
+    // Begins the marked content of a text that is a link, and returns the Link
+    // element its annotation joins, as PDF/UA asks: the Link holds the text and
+    // the annotation both, so that a screen reader reads the text as the link.
+    // The Link is a kid of the element of the text, structure, which it makes,
+    // like the P of a text line, or it is among the words of a paragraph drawn
+    // word by word. It returns null, and begins the marked content as AddBDC
+    // does, in a document that is not tagged or inside an artifact or a figure,
+    // where the link stays an element of its own.
+    internal StructElement AddLinkBDC(
+            StructElem structure,
+            String language,
+            String actualText,
+            String altDescription) {
+        if (!pdf.IsTagged() || artifactDepth != 0) {
+            AddBDC(structure, language, actualText, altDescription, null);
+            return null;
+        }
+        markedContentDepth++;
+        StructElement link = new StructElement();
+        link.structure = StructElem.LINK.Type();
+        link.mcid = mcid;
+        link.language = language;
+        if (mcidParent != null) {
+            // A word of a paragraph: the Link takes its place among the words
+            AddStructure(link, mcidParent);
+            mcidParent.mcids.Add(-link.objNumber);
+        } else if (structure == StructElem.LINK) {
+            link.actualText = actualText;
+            link.altDescription = altDescription;
+            AddStructure(link, structParent);
+        } else {
+            StructElement element = AddStructElement(structParent, structure, null);
+            element.language = language;
+            element.actualText = actualText;
+            element.altDescription = altDescription;
+            AddStructure(link, element);
+        }
+        Append("/Link <</MCID ");
+        Append(mcid++);
+        Append(">>\n");
+        Append("BDC\n");
+        return link;
+    }
+
+    // Begins the Link element of content that is a link and is drawn as
+    // elements of its own, like the Figure of an image, which become its kids;
+    // EndLink ends it. Returns the Link, which the annotation of the link
+    // joins, or null in a document that is not tagged or inside an artifact or
+    // a figure.
+    internal StructElement BeginLink() {
+        StructElement link = AddStructElement(structParent, StructElem.LINK, null);
+        if (link != null) {
+            structElementStack.Add(structParent);
+            structParent = link;
+        }
+        return link;
+    }
+
+    // Ends the Link that BeginLink began, if it began one.
+    internal void EndLink(StructElement link) {
+        if (link != null) {
+            EndStructElement();
+        }
+    }
+
     // Adds a structure element that groups the elements added after it, like
     // a table row, as a kid of the parent, or of the Document element when the
     // parent is null. Returns null when the document is not tagged or the
@@ -2791,7 +2872,15 @@ public class Page {
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);
         if (pdf.IsTagged()) {
+            // A link joins the Link element of the content it is drawn on,
+            // which its text stands for; its own description stays in its
+            // Contents
+            if (annotation.linkElement != null) {
+                annotation.linkElement.annotation = annotation;
+                return;
+            }
             StructElement element = new StructElement();
+            element.mcid = -1;  // It stands for the annotation, not for marked content
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = annotation.annotationType.Equals(Annotation.Link) ?
                     StructElem.LINK.Type() : StructElem.ANNOT.Type();

@@ -1007,8 +1007,13 @@ public class Cell {
         }
         BaselineDrawable line = (drawable instanceof BaselineDrawable)
                 ? (BaselineDrawable) drawable : null;
+        StructElement link = null;
         if (line == null) {
-            page.addBDC(StructElem.P, text, text);
+            if (uri != null) {
+                link = page.addLinkBDC(StructElem.P, null, text, text);
+            } else {
+                page.addBDC(StructElem.P, text, text);
+            }
             page.drawString(font, fallbackFont, fontSize, text, xText, yText,
                     page.packedToRGB(textColor), null);
             page.addEMC();
@@ -1019,13 +1024,18 @@ public class Cell {
                 strikeoutText(page, xText, yText);
             }
         } else {
-            // A text line and a composite text line mark their own text.
+            // A text line and a composite text line mark their own text,
+            // which the Link of the cell holds.
+            if (uri != null) {
+                link = page.beginLink();
+            }
             line.setLocation(xText, yText);
             line.drawOn(page);
+            page.endLink(link);
         }
 
         if (uri != null) {
-            page.addAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     xText,
                     yText - ascent,
@@ -1040,7 +1050,9 @@ public class Cell {
                     null,
                     null,
                     null,
-                    null));
+                    null);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
     }
 

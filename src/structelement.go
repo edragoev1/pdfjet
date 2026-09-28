@@ -20,7 +20,9 @@ type structElement struct {
 	annotation     *annotationObject
 	kids           []int // The object numbers of the kids
 	// The marked contents of an element that holds several of them, like a
-	// paragraph whose words are drawn one at a time.
+	// paragraph whose words are drawn one at a time; and, in their order among
+	// them, the elements of the words that are links, as the negative of their
+	// object numbers.
 	mcids []int
 	// open is true for an element that a drawable goes on adding to after the
 	// page it was made on is written, like the Table of a table that runs over

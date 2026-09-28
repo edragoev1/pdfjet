@@ -50,6 +50,47 @@ public class Bookmark {
         self.title = title
     }
 
+    // The bookmark of a heading, which goes to its destination, not to a
+    // destination named on its page.
+    private init(
+            _ page: Page,
+            _ top: Float,
+            _ title: String,
+            _ dest: Destination) {
+        self.page = page
+        self.y = top
+        self.title = title
+        self.dest = dest
+    }
+
+    // Returns the bookmarks of the headings of the document, each under the
+    // heading before it of a higher level: an H2 under the H1 before it, and
+    // an H1 at the top. It is called once the pages are written, when the
+    // number of the page of each heading is known.
+    static func ofHeadings(_ pdf: PDF, _ headings: [Heading]) -> Bookmark {
+        let root = Bookmark(pdf)
+        var stack = [(level: Int, bookmark: Bookmark)]()
+        for heading in headings {
+            while let last = stack.last, last.level >= heading.level {
+                stack.removeLast()
+            }
+            let parent = stack.last?.bookmark ?? root
+            let dest = Destination("", 0.0, heading.page.height - heading.top)
+            dest.pageObjNumber = heading.page.objNumber
+            let bookmark = Bookmark(heading.page, heading.top, heading.title, dest)
+            bookmark.parent = parent
+            if parent.children == nil {
+                parent.children = [Bookmark]()
+            } else if let before = parent.children!.last {
+                bookmark.prev = before
+                before.next = bookmark
+            }
+            parent.children!.append(bookmark)
+            stack.append((heading.level, bookmark))
+        }
+        return root
+    }
+
     /// Adds a bookmark with the specified title that points to the page, and returns the new bookmark.
     @discardableResult
     public func addBookmark(
@@ -175,3 +216,25 @@ public class Bookmark {
         return "dest#" + String(destNumber)
     }
 }   // End of Bookmark.swift
+
+// A heading of a tagged document, H1 to H6, as it was drawn.
+struct Heading {
+    let level: Int
+    let title: String
+    let page: Page
+    let top: Float  // The top of its text on the page
+}
+
+// Returns the level of a heading, 1 for H1 to 6 for H6, or 0 for a structure
+// type that is not a heading.
+func headingLevel(_ structure: StructElem) -> Int {
+    switch structure {
+    case .H1: return 1
+    case .H2: return 2
+    case .H3: return 3
+    case .H4: return 4
+    case .H5: return 5
+    case .H6: return 6
+    default: return 0
+    }
+}

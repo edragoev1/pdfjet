@@ -12,9 +12,13 @@ what a reviewer would otherwise have to look for by hand.
 
 The checks are:
 
-  * The heading levels a reader follows start at H1 and skip none.
-  * Every figure and every link has a description that is not blank and is not
-    a file name.
+  * The heading levels a reader follows start at H1 and skip none, and a
+    document with headings has bookmarks, as PAC asks.
+  * Every figure has a description that is not blank and is not a file name,
+    and so does every link that holds no text of its own, like a point of a
+    chart; a link that holds its text is described by it.
+  * Every Link holds its annotation, and, as PAC asks, the text it is on: a
+    Link that holds only its annotation is noted.
   * Every figure has a bounding box, a BBox of the Layout attributes, with an
     area: PDF/UA asks for one, and veraPDF does not check it (PAC does).
   * Text contrasts with the background under it, 4.5:1, or 3:1 for text of
@@ -107,6 +111,23 @@ class Element:
         except ValueError:
             return 1
 
+    @property
+    def content(self):
+        """Whether it holds marked content of its own, or elements: a Link
+        that holds its text is described by the text."""
+        kind, text = self.doc.xref_get_key(self.xref, 'K')
+        bare = re.sub(r'<<.*?>>|\d+ 0 R', ' ', text or '')
+        return bool(re.search(r'\d', bare)) or '/MCR' in (text or '') or any(True for _ in self.kids())
+
+    @property
+    def annotation(self):
+        """Whether it holds an annotation, an OBJR."""
+        kind, text = self.doc.xref_get_key(self.xref, 'K')
+        if '/OBJR' in (text or ''):
+            return True
+        return any('/OBJR' in self.doc.xref_object(number)
+                   for number in references((kind, text)))
+
     def kids(self):
         for number in references(self.doc.xref_get_key(self.xref, 'K')):
             if self.doc.xref_get_key(number, 'S')[0] == 'name':
@@ -124,16 +145,22 @@ class Report:
         self.lists = []
         self.described = []
         self.boxes = []
+        self.links = []
 
 
 def walk(element, report, rows=None):
     report.counts[element.tag] += 1
     if element.tag in HEADINGS:
         report.headings.append(int(element.tag[1]))
-    elif element.tag in ('Figure', 'Link'):
+    elif element.tag == 'Figure':
         report.described.append((element.tag, element.description))
-        if element.tag == 'Figure':
-            report.boxes.append((element.description, element.bbox))
+        report.boxes.append((element.description, element.bbox))
+    elif element.tag == 'Link':
+        report.links.append((element.content, element.annotation))
+        # A Link that holds its text is described by it; one over content
+        # that is not tagged, like a point of a chart, by its Alt
+        if not element.content:
+            report.described.append((element.tag, element.description))
     elif element.tag == 'Table':
         rows = []
         report.tables.append(rows)
@@ -293,6 +320,10 @@ def check(path):
     report.problems += contrast_problems(doc, report.name)
 
     if report.headings:
+        # PAC asks a document with headings for bookmarks, which PDFjet makes
+        # of its headings when it has none of its own
+        if not doc.get_toc():
+            report.problems.append('has headings and no bookmarks')
         if report.headings[0] != 1:
             report.problems.append(f'the first heading is H{report.headings[0]}, not H1')
         for before, after in zip(report.headings, report.headings[1:]):
@@ -312,6 +343,15 @@ def check(path):
         elif FILE_NAME.match(description.strip()):
             report.problems.append(f'{what} is described by the file name '
                                    f'{description.strip()!r}')
+
+    # PDF/UA puts the annotation of a link in a Link element, and PAC warns
+    # of a Link that holds only the annotation, and not the text it is on
+    if any(not annotation for _, annotation in report.links):
+        report.problems.append('a Link holds no annotation')
+    alone = sum(1 for content, _ in report.links if not content)
+    if alone:
+        report.notes.append(f'{alone} of {len(report.links)} links hold no content, '
+                            'like the points of a chart, whose figure stands for them')
 
     for description, box in report.boxes:
         name = (description or '').strip()[:40]

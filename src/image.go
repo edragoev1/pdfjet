@@ -356,6 +356,11 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	if image.w == 0 || image.h == 0 {
 		return [2]float32{image.x + image.w, image.y + image.h} // A zero size image paints nothing.
 	}
+	// A linked image is a Figure in the Link its annotation joins
+	var link *structElement
+	if image.uri != "" || image.key != "" {
+		link = page.beginLink()
+	}
 	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
 	page.SaveGraphicsState()
 
@@ -435,6 +440,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 	}
 	page.AddEMC()
 
+	page.endLink(link)
 	if image.uri != "" || image.key != "" {
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
@@ -451,6 +457,7 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 			language:       image.language,
 			actualText:     image.actualText,
 			altDescription: image.altDescription,
+			linkElement:    link,
 		})
 	}
 

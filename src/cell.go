@@ -767,8 +767,13 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		xText = x + cell.paddingAt(cellLeftPadding)
 	}
 	line, hasLine := cell.drawable.(BaselineDrawable)
+	var link *structElement
 	if !hasLine {
-		page.AddBDC("P", "", cell.text, cell.text)
+		if cell.uri != "" {
+			link = page.addLinkBDC("P", "", cell.text, cell.text)
+		} else {
+			page.AddBDC("P", "", cell.text, cell.text)
+		}
 		page.drawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, colorToRGB(cell.textColor), nil)
 		page.AddEMC()
@@ -779,9 +784,14 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 			cell.strikeoutText(page, xText, yText)
 		}
 	} else {
-		// A text line and a composite text line mark their own text.
+		// A text line and a composite text line mark their own text, which
+		// the Link of the cell holds
+		if cell.uri != "" {
+			link = page.beginLink()
+		}
 		line.SetLocation(xText, yText)
 		line.DrawOn(page)
+		page.endLink(link)
 	}
 
 	if cell.uri != "" {
@@ -793,6 +803,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 			y2:             yText + cell.descent(),
 			vertices:       nil,
 			uri:            cell.uri,
+			linkElement:    link,
 		})
 	}
 }

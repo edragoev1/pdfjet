@@ -87,6 +87,9 @@ public sealed class PDF {
 #pragma warning restore CS0618
     }
     internal Bookmark toc = null;
+    // The headings of a tagged document, in the order they are drawn, which
+    // its bookmarks are made of when it has none of its own
+    internal List<Heading> headings = new List<Heading>();
     internal Encryption encryption = null;
 
     private int metadataObjNumber = 0;
@@ -706,16 +709,18 @@ public sealed class PDF {
         }
         List<StructElement> kept = new List<StructElement>();
         foreach (StructElement element in page.structures) {
-            // The element of an annotation stands for the annotation, not for
-            // marked content: its mcid is left at 0, and taken as one it would
-            // put the annotation where marked content 0 of the page is, which
-            // PAC reports as an inconsistent entry of the parent tree.
+            // The element of an annotation alone has no marked content, its
+            // mcid -1; the Link of a text has the marked content of the text
+            // too. The Link elements among the words of a paragraph are the
+            // negative entries of its mcids, which are not marked content.
             List<int> mcids = new List<int>();
-            if (element.annotation == null) {
-                mcids.AddRange(element.mcids);
-                if (element.mcid >= 0) {
-                    mcids.Add(element.mcid);
+            foreach (int mcid in element.mcids) {
+                if (mcid >= 0) {
+                    mcids.Add(mcid);
                 }
+            }
+            if (element.mcid >= 0) {
+                mcids.Add(element.mcid);
             }
             foreach (int mcid in mcids) {
                 while (page.mcidNumbers.Count <= mcid) {
@@ -758,21 +763,39 @@ public sealed class PDF {
             Append(Token.ObjRef);
 
             if (element.annotation != null) {
-                Append("/K <</Type /OBJR /Obj ");
+                // A link: the marked content of its text, or the elements it
+                // holds, like the Figure of an image, then its annotation
+                Append("/K [");
+                if (element.mcid >= 0) {
+                    Append(element.mcid);
+                    Append(" ");
+                }
+                foreach (int kid in element.kids) {
+                    Append(kid);
+                    Append(" 0 R ");
+                }
+                Append("<</Type /OBJR /Obj ");
                 Append(element.annotation.objNumber);
-                Append(" 0 R>>\n");
+                Append(" 0 R>>]\n");
             } else if (element.mcid >= 0) {
                 Append("/K ");
                 Append(element.mcid);
                 Append("\n");
             } else if (element.mcids.Count > 0) {
-                // The marked contents of a paragraph drawn word by word.
+                // The marked contents of a paragraph drawn word by word, and
+                // the Link elements of its words that are links
                 Append("/K [");
                 for (int i = 0; i < element.mcids.Count; i++) {
                     if (i > 0) {
                         Append(Token.Space);
                     }
-                    Append(element.mcids[i]);
+                    int mcid = element.mcids[i];
+                    if (mcid < 0) {
+                        Append(-mcid);
+                        Append(" 0 R");
+                    } else {
+                        Append(mcid);
+                    }
                 }
                 Append("]\n");
             } else if (element.kids.Count > 0) {
@@ -1893,6 +1916,12 @@ public sealed class PDF {
             AddStructDocumentObject(structTreeRootObjNumber);
         }
 
+        // A tagged document with headings and no bookmarks of its own has the
+        // bookmarks of its headings, which a reader shows as its outline, as
+        // PAC asks of a document with headings
+        if (toc == null && headings.Count > 0) {
+            toc = Bookmark.OfHeadings(this);
+        }
         int outlineDictNum = 0;
         if (toc != null && toc.GetChildren() != null) {
             List<Bookmark> list = toc.ToArrayList();

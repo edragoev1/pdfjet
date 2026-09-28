@@ -180,7 +180,12 @@ public class CheckBox : IDrawable {
             return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
         }
 
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        StructElement link = null;
+        if (uri != null) {
+            link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else {
+            page.AddBDC(StructElem.P, language, actualText, altDescription);
+        }
 
         float yBox = y;
         page.SetPenWidth(penWidth);
@@ -218,7 +223,7 @@ public class CheckBox : IDrawable {
 
         if (uri != null) {
             // The link is a structure element of its own, see Page.AddAnnotation.
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3f*w/2f,
                     y,
@@ -233,7 +238,9 @@ public class CheckBox : IDrawable {
                     null,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
 
         return new float[] { x + 3f*w + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };

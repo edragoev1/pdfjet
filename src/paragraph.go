@@ -245,3 +245,13 @@ func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 	}
 	return paragraphs
 }
+
+// text returns the text of the paragraph, its lines one after another, as the
+// title of its bookmark when it is a heading.
+func (paragraph *Paragraph) text() string {
+	texts := make([]string, 0, len(paragraph.lines))
+	for _, line := range paragraph.lines {
+		texts = append(texts, line.text)
+	}
+	return strings.Join(texts, " ")
+}

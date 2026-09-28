@@ -266,4 +266,10 @@ public class Paragraph {
     public func getY2() -> Float {
         return y2
     }
+
+    // Returns the text of the paragraph, its lines one after another, as the
+    // title of its bookmark when it is a heading.
+    func text() -> String {
+        return lines.map { $0.text ?? "" }.joined(separator: " ")
+    }
 }   // End of Paragraph.swift

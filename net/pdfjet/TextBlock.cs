@@ -780,6 +780,7 @@ public class TextBlock : IDrawable {
             rect.DrawOn(page);
         }
 
+        page.NoteHeading(structureType, this.textContent, this.y);
         page.AddBDC(structureType, this.language, this.textContent, null);
         page.DrawTextBlock(
             this.font,

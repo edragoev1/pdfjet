@@ -742,14 +742,20 @@ public class SVGImage implements Drawable {
         if (page == null) {
             return new float[] {x + w, y + h};  // Measured, not drawn
         }
+        // A linked image is a Figure in the Link its annotation joins.
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.beginLink();
+        }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
         for (SVGPath path : paths) {
             drawPath(path, page);
         }
         page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
+        page.endLink(link);
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -764,7 +770,9 @@ public class SVGImage implements Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
         return new float[] {x + w, y + h};
     }

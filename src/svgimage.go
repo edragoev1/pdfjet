@@ -690,12 +690,18 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{image.x + image.w, image.y + image.h} // Measured, not drawn
 	}
+	// A linked image is a Figure in the Link its annotation joins
+	var link *structElement
+	if image.uri != "" || image.key != "" {
+		link = page.beginLink()
+	}
 	page.AddBDC(structelem.Figure, image.language, image.actualText, image.altDescription)
 	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}
 	page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)
 	page.AddEMC()
+	page.endLink(link)
 	if image.uri != "" || image.key != "" {
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
@@ -712,6 +718,7 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 			language:       image.language,
 			actualText:     image.actualText,
 			altDescription: image.altDescription,
+			linkElement:    link,
 		})
 	}
 	return [2]float32{image.x + image.w, image.y + image.h}

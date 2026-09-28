@@ -377,6 +377,11 @@ public class Image : Drawable {
         if w! == 0.0 || h! == 0.0 {
             return [x + w!, y + h!]     // A zero size image paints nothing.
         }
+        // A linked image is a Figure in the Link its annotation joins
+        var link: StructElement?
+        if uri != nil || key != nil {
+            link = page.beginLink()
+        }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription)
         page.saveGraphicsState()
 
@@ -455,6 +460,7 @@ public class Image : Drawable {
         }
         page.addEMC()
 
+        page.endLink(link)
         if uri != nil || key != nil {
             page.addAnnotation(Annotation(
                     Annotation.Link,
@@ -471,7 +477,7 @@ public class Image : Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription))
+                    altDescription).joining(link))
         }
 
         return [x + w!, y + h!]

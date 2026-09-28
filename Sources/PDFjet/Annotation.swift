@@ -35,6 +35,10 @@ class Annotation {
     var actualText: String?
     var altDescription: String?
     var fileAttachment: FileAttachment?
+    // The Link element of the content the link is drawn on, which the
+    // annotation joins, so that the text of a link and its annotation are one
+    // element, as PDF/UA asks; nil for a link over content that is not tagged
+    var linkElement: StructElement?
     // Set once the annotation has been written with a /StructParent key.
     var structParentWritten = false
 
@@ -55,6 +59,13 @@ class Annotation {
     ///   - language: The language code.
     ///   - actualText: The actual text content. Defaults to uri if nil.
     ///   - altDescription: Alternative description. Defaults to uri if nil.
+    // Returns the annotation, joining the Link element of the content it is
+    // drawn on, or none for nil.
+    func joining(_ link: StructElement?) -> Annotation {
+        linkElement = link
+        return self
+    }
+
     init(
         _ annotationType: String?,
         _ x1: Float,

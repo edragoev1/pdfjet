@@ -537,7 +537,15 @@ public class TextLine : IBaselineDrawable {
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
         String alt = text.Equals(altDescription) ? null : altDescription;
-        page.AddBDC(structureType, language, null, alt);
+        if (page.mcidParent == null) {
+            page.NoteHeading(structureType, text, DestinationY());
+        }
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.AddLinkBDC(structureType, language, null, alt);
+        } else {
+            page.AddBDC(structureType, language, null, alt);
+        }
         page.DrawString(font, fallbackFont, fontSize, text, x, y + verticalOffset, textColor, colorMap);
         page.AddEMC();
 
@@ -582,7 +590,7 @@ public class TextLine : IBaselineDrawable {
         }
 
         if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     (y + verticalOffset) - font.GetAscent(fontSize),
@@ -597,7 +605,9 @@ public class TextLine : IBaselineDrawable {
                     key,    // The destination name
                     uriLanguage,
                     uriActualText,
-                    uriAltDescription));
+                    uriAltDescription);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
         page.SetTextRotation(0);
 

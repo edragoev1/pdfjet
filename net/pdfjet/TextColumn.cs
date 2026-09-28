@@ -178,6 +178,7 @@ public class TextColumn : IDrawable {
         if (page != null) {
             element = page.AddStructElement(page.structParent, paragraph.structureType, null);
             if (element != null) {
+                page.NoteHeading(paragraph.structureType, paragraph.Text(), y1);
                 parent = page.structParent;
                 mcidParent = page.mcidParent;
                 page.structParent = element;

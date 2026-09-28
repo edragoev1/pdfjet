@@ -7,9 +7,12 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -102,5 +105,86 @@ class BookmarkTest {
         pdf.complete();
         PDFobj obj = item(TestSupport.read(bos.toByteArray()), "\u00dcbersicht \u2013 r\u00e9sum\u00e9");
         assertEquals("<feff00dc", obj.getValue("/Title").substring(0, 9).toLowerCase());
+    }
+
+    // A document with the headings, as text lines of their structure types,
+    // H1 on the first page and the others on the second.
+    private static PDF headingsDoc(ByteArrayOutputStream bos, boolean tagged, String... headings)
+            throws Exception {
+        PDF pdf = tagged ? new PDF(bos, Compliance.PDF_UA_1) : new PDF(bos);
+        if (tagged) {
+            pdf.setTitle("Title");
+        }
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = null;
+        for (int i = 0; i < headings.length; i += 2) {
+            if (page == null || headings[i].equals("H1") && i > 0) {
+                page = new Page(pdf, Letter.PORTRAIT);
+            }
+            new TextLine(font, headings[i + 1]).setStructureType(StructElem.valueOf(headings[i]))
+                    .setLocation(70f, 100f + 40f * (i / 2)).drawOn(page);
+        }
+        return pdf;
+    }
+
+    // A tagged document with headings and no bookmarks of its own has the
+    // bookmarks of its headings, each under the heading of a higher level
+    // before it, and each at the top of its heading on its page, as PAC asks.
+    @Test
+    void aTaggedDocumentHasTheBookmarksOfItsHeadings() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = headingsDoc(bos, true,
+                "H1", "Intro", "H2", "What  it is", "H3", "In short", "H2", "Why", "H1", "Use");
+        pdf.complete();
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        PDFobj outlines = null;
+        for (PDFobj obj : objects) {
+            if (obj.getValue("/Type").equals("/Outlines")) {
+                outlines = obj;
+            }
+        }
+        assertNotNull(outlines);
+        assertEquals(String.valueOf(item(objects, "Intro").getNumber()), outlines.getValue("/First"));
+        assertEquals(String.valueOf(item(objects, "Use").getNumber()), outlines.getValue("/Last"));
+        // The whitespace of a title is collapsed, as addBookmark does
+        String intro = String.valueOf(item(objects, "Intro").getNumber());
+        assertEquals(intro, item(objects, "What it is").getValue("/Parent"));
+        assertEquals(String.valueOf(item(objects, "What it is").getNumber()), item(objects, "In short").getValue("/Parent"));
+        assertEquals(intro, item(objects, "Why").getValue("/Parent"));
+        assertEquals(String.valueOf(item(objects, "Why").getNumber()), item(objects, "What it is").getValue("/Next"));
+        // The destination: the page of the heading, and the top of its text
+        String introDest = item(objects, "Intro").getValue("/Dest");
+        String useDest = item(objects, "Use").getValue("/Dest");
+        assertTrue(introDest.contains("/XYZ"), introDest);
+        assertNotEquals(introDest.trim().split("\\s+")[1], useDest.trim().split("\\s+")[1],
+                "Intro and Use, on two pages, go to one: " + introDest + ", " + useDest);
+        // 792 - (100 - 12): the top of a line of 12 points at 100
+        assertTrue(introDest.contains("/XYZ 0 704 0"), introDest);
+    }
+
+    // A document that is not tagged has no headings, and one with bookmarks
+    // of its own keeps them.
+    @Test
+    void theBookmarksOfHeadingsOnlyInATaggedDocumentWithoutBookmarks() throws Exception {
+        ByteArrayOutputStream untagged = new ByteArrayOutputStream();
+        headingsDoc(untagged, false, "H1", "Intro").complete();
+        assertFalse(TestSupport.latin1(untagged.toByteArray()).contains("/Outlines"),
+                "a document that is not tagged has bookmarks of its headings");
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF own = headingsDoc(bos, true, "H1", "Intro");
+        Page page = new Page(own, Letter.PORTRAIT);
+        Font font = new Font(own, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        new Bookmark(own).addBookmark(page, new Title(font, "Mine", 10f, 10f));
+        own.complete();
+        List<PDFobj> objects = TestSupport.read(bos.toByteArray());
+        item(objects, "Mine");
+        for (PDFobj obj : objects) {
+            String value = obj.getValue("/Title");
+            if (!value.isEmpty() && obj.getValue("/Producer").isEmpty()) {
+                assertNotEquals("Intro", TestSupport.utf16Hex(value),
+                        "the bookmarks of the document were replaced by those of its headings");
+            }
+        }
     }
 }

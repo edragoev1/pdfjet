@@ -2461,6 +2461,88 @@ public class Page {
         markedContentDepth -= 1
     }
 
+    // Notes a heading of a tagged document, H1 to H6, with its text and the
+    // top of its text, for the bookmarks that the document has when it has
+    // none of its own. A heading inside an artifact, like a running header,
+    // is not noted, nor anything that is not a heading.
+    func noteHeading(_ structure: StructElem, _ text: String?, _ top: Float) {
+        let level = headingLevel(structure)
+        if level == 0 || !pdf.isTagged() || artifactDepth != 0 {
+            return
+        }
+        let title = (text ?? "").split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        if title.isEmpty {
+            return
+        }
+        pdf.headings.append(Heading(level: level, title: title, page: self, top: top))
+    }
+
+    // Begins the marked content of a text that is a link, and returns the
+    // Link element its annotation joins, as PDF/UA asks: the Link holds the
+    // text and the annotation both, so that a screen reader reads the text as
+    // the link. The Link is a kid of the element of the text, structure,
+    // which it makes, like the P of a text line, or it is among the words of a
+    // paragraph drawn word by word. It returns nil, and begins the marked
+    // content as addBDC does, in a document that is not tagged or inside an
+    // artifact or a figure, where the link stays an element of its own.
+    func addLinkBDC(
+            _ structure: StructElem,
+            _ language: String?,
+            _ actualText: String?,
+            _ altDescription: String?) -> StructElement? {
+        if !pdf.isTagged() || artifactDepth != 0 {
+            addBDC(structure, language, actualText, altDescription, nil)
+            return nil
+        }
+        markedContentDepth += 1
+        let link = StructElement()
+        link.structure = StructElem.LINK.rawValue
+        link.mcid = mcid
+        link.language = language
+        if let parent = mcidParent {
+            // A word of a paragraph: the Link takes its place among the words
+            addStructure(link, parent)
+            parent.mcids.append(-(link.objNumber ?? 0))
+        } else if structure == StructElem.LINK {
+            link.actualText = actualText
+            link.altDescription = altDescription
+            addStructure(link, structParent)
+        } else {
+            let element = addStructElement(structParent, structure, nil)
+            element?.language = language
+            element?.actualText = actualText
+            element?.altDescription = altDescription
+            addStructure(link, element)
+        }
+        append("/Link <</MCID ")
+        append(mcid)
+        append(Token.endDictionary)
+        append("BDC\n")
+        mcid += 1
+        return link
+    }
+
+    // Begins the Link element of content that is a link and is drawn as
+    // elements of its own, like the Figure of an image, which become its
+    // kids; endLink ends it. It returns the Link, which the annotation of the
+    // link joins, or nil in a document that is not tagged or inside an
+    // artifact or a figure.
+    func beginLink() -> StructElement? {
+        let link = addStructElement(structParent, StructElem.LINK, nil)
+        if link != nil {
+            structElementStack.append(structParent)
+            structParent = link
+        }
+        return link
+    }
+
+    // Ends the Link that beginLink began, if it began one.
+    func endLink(_ link: StructElement?) {
+        if link != nil {
+            endStructElement()
+        }
+    }
+
     // Adds a structure element that groups the elements added after it, like
     // a table row, as a kid of the parent, or of the Document element when the
     // parent is nil. Returns nil when the document is not tagged or the
@@ -2520,6 +2602,7 @@ public class Page {
         element.objNumber = pdf.reserveObjNumber()
         element.pageObjNumber = self.objNumber
         element.parent = parent
+        element.parentObjNumber = parent?.objNumber
         parent?.kids.append(element.objNumber ?? 0)
         self.structures.append(element)
     }
@@ -2529,7 +2612,15 @@ public class Page {
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
         if pdf.isTagged() {
+            // A link joins the Link element of the content it is drawn on,
+            // which its text stands for; its own description stays in its
+            // Contents
+            if let link = annotation.linkElement {
+                link.annotation = annotation
+                return
+            }
             let element = StructElement()
+            element.mcid = -1   // It stands for the annotation, not for marked content
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = (annotation.annotationType == Annotation.Link) ?
                     StructElem.LINK.rawValue : StructElem.ANNOT.rawValue

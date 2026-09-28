@@ -798,8 +798,13 @@ public class Cell {
             xText = x + PaddingAt(LEFT_PADDING);
         }
         IBaselineDrawable line = drawable as IBaselineDrawable;
+        StructElement link = null;
         if (line == null) {
-            page.AddBDC(StructElem.P, text, text);
+            if (uri != null) {
+                link = page.AddLinkBDC(StructElem.P, null, text, text);
+            } else {
+                page.AddBDC(StructElem.P, text, text);
+            }
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText,
                     page.PackedToRGB(textColor), null);
             page.AddEMC();
@@ -810,14 +815,19 @@ public class Cell {
                 StrikeoutText(page, xText, yText);
             }
         } else {
-            // A text line and a composite text line mark their own text.
+            // A text line and a composite text line mark their own text,
+            // which the Link of the cell holds.
+            if (uri != null) {
+                link = page.BeginLink();
+            }
             line.SetLocation(xText, yText);
             // The text lines of the composite mark their own text.
             line.DrawOn(page);
+            page.EndLink(link);
         }
 
         if (uri != null) {
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     xText,
                     yText - ascent,
@@ -832,7 +842,9 @@ public class Cell {
                     null,
                     null,
                     null,
-                    null));
+                    null);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
     }
 

@@ -32,7 +32,9 @@ class StructElement {
     // kids, so that a page can write its elements and let go of them.
     List<Integer> kids = new ArrayList<Integer>();
     // The marked contents of an element that holds several of them, like a
-    // paragraph whose words are drawn one at a time.
+    // paragraph whose words are drawn one at a time; and, in their order
+    // among them, the elements of the words that are links, as the negative
+    // of their object numbers.
     List<Integer> mcids = new ArrayList<Integer>();
     // True for an element a drawable goes on adding to after the page it was
     // made on is written, like the Table of a table that runs over pages. It

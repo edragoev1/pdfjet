@@ -34,6 +34,10 @@ type annotationObject struct {
 	actualText     string
 	altDescription string
 	fileAttachment *FileAttachment // Assuming FileAttachment type exists elsewhere
+	// The Link element of the content the link is drawn on, which the
+	// annotation joins, so that the text of a link and its annotation are one
+	// element, as PDF/UA asks; nil for a link over content that is not tagged
+	linkElement *structElement
 	// Set once the annotation has been written with a /StructParent key.
 	structParentWritten bool
 }

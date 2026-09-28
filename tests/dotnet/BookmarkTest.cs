@@ -86,6 +86,88 @@ public class BookmarkTest {
         Assert.Equal("", Item(objects, "B2a").GetValue("/Count"));
     }
 
+    // A document with the headings, as text lines of their structure types, H1
+    // on the first page and the others on the second.
+    private static MemoryStream HeadingsDoc(bool tagged, List<string[]> headings, out PDF pdf) {
+        MemoryStream stream = new MemoryStream();
+        pdf = new PDF(stream);
+        if (tagged) {
+            pdf.SetCompliance(Compliance.PDF_UA_1);
+            pdf.SetTitle("Title");
+        }
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = null;
+        for (int i = 0; i < headings.Count; i++) {
+            if (page == null || (headings[i][0] == "H1" && i > 0)) {
+                page = new Page(pdf, Letter.PORTRAIT);
+            }
+            StructElem structure = (StructElem) System.Enum.Parse(typeof(StructElem), headings[i][0]);
+            new TextLine(font, headings[i][1]).SetStructureType(structure)
+                    .SetLocation(70f, 100f + 40f * i).DrawOn(page);
+        }
+        return stream;
+    }
+
+    // A tagged document with headings and no bookmarks of its own has the
+    // bookmarks of its headings, each under the heading of a higher level
+    // before it, and each at the top of its heading on its page, as PAC asks.
+    [Fact]
+    public void ATaggedDocumentHasTheBookmarksOfItsHeadings() {
+        MemoryStream stream = HeadingsDoc(true, new List<string[]> {
+                new[] {"H1", "Intro"}, new[] {"H2", "What  it is"}, new[] {"H3", "In short"},
+                new[] {"H2", "Why"}, new[] {"H1", "Use"}}, out PDF pdf);
+        pdf.Complete();
+        List<PDFobj> objects = TestSupport.Read(stream.ToArray());
+        PDFobj outlines = null;
+        foreach (PDFobj obj in objects) {
+            if (obj.GetValue("/Type") == "/Outlines") {
+                outlines = obj;
+            }
+        }
+        Assert.NotNull(outlines);
+        string Number(string title) => Item(objects, title).GetNumber().ToString();
+        Assert.Equal(Number("Intro"), outlines.GetValue("/First"));
+        Assert.Equal(Number("Use"), outlines.GetValue("/Last"));
+        // The whitespace of a title is collapsed, as AddBookmark does
+        Assert.Equal(Number("Intro"), Item(objects, "What it is").GetValue("/Parent"));
+        Assert.Equal(Number("What it is"), Item(objects, "In short").GetValue("/Parent"));
+        Assert.Equal(Number("Intro"), Item(objects, "Why").GetValue("/Parent"));
+        Assert.Equal(Number("Why"), Item(objects, "What it is").GetValue("/Next"));
+        // The destination: the page of the heading, and the top of its text
+        string intro = Item(objects, "Intro").GetValue("/Dest");
+        string use = Item(objects, "Use").GetValue("/Dest");
+        Assert.Contains("/XYZ", intro);
+        Assert.Contains("/XYZ", use);
+        string[] introFields = intro.Split(new[] {' '}, System.StringSplitOptions.RemoveEmptyEntries);
+        string[] useFields = use.Split(new[] {' '}, System.StringSplitOptions.RemoveEmptyEntries);
+        Assert.NotEqual(introFields[1], useFields[1]);
+        // 792 - (100 - 12): the top of a line of 12 points at 100
+        Assert.Contains("/XYZ 0 704 0", intro);
+    }
+
+    // A document that is not tagged has no headings, and one with bookmarks
+    // of its own keeps them.
+    [Fact]
+    public void OfHeadingsOnlyInATaggedDocumentWithoutBookmarks() {
+        MemoryStream untagged = HeadingsDoc(false, new List<string[]> {new[] {"H1", "Intro"}}, out PDF pdf1);
+        pdf1.Complete();
+        Assert.DoesNotContain("/Outlines", System.Text.Encoding.Latin1.GetString(untagged.ToArray()));
+
+        MemoryStream own = HeadingsDoc(true, new List<string[]> {new[] {"H1", "Intro"}}, out PDF pdf2);
+        Page page = new Page(pdf2, Letter.PORTRAIT);
+        Font font = new Font(pdf2, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        new Bookmark(pdf2).AddBookmark(page, new Title(font, "Mine", 10f, 10f));
+        pdf2.Complete();
+        List<PDFobj> objects = TestSupport.Read(own.ToArray());
+        Item(objects, "Mine");
+        foreach (PDFobj obj in objects) {
+            string value = obj.GetValue("/Title");
+            Assert.False(value.Length > 0 && obj.GetValue("/Producer").Length == 0
+                    && TestSupport.Utf16Hex(value) == "Intro",
+                    "the bookmarks of the document were replaced by those of its headings");
+        }
+    }
+
     [Fact]
     public void ATitleIsATextStringThatEveryReaderDecodes() {
         MemoryStream stream = new MemoryStream();

@@ -240,6 +240,128 @@ public class PDFTest {
         Assert.Equal(1, raw.Split("/S /Annot\n").Length - 1);
     }
 
+    // The structure elements of the raw PDF, by their object numbers: the S,
+    // the P and the K of each.
+    private static Dictionary<string, string[]> Elements(string raw) {
+        Dictionary<string, string[]> elements = new Dictionary<string, string[]>();
+        Regex re = new Regex(@"(\d+) 0 obj\n<<\n/Type /StructElem /S /(\w+)\n/P (\d+) 0 R /Pg \d+ 0 R\n(?:/K (\[[^\n]*\]|<<[^\n]*>>|\d+)\n)?");
+        foreach (Match m in re.Matches(raw)) {
+            elements[m.Groups[1].Value] = new string[] {m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value};
+        }
+        return elements;
+    }
+
+    // The Link elements of the raw PDF.
+    private static Dictionary<string, string[]> Links(string raw) {
+        Dictionary<string, string[]> links = new Dictionary<string, string[]>();
+        foreach (KeyValuePair<string, string[]> element in Elements(raw)) {
+            if (element.Value[0] == "Link") {
+                links[element.Key] = element.Value;
+            }
+        }
+        return links;
+    }
+
+    // A text line that is a link is the Link of its paragraph, holding its text
+    // and its annotation both, as PDF/UA asks and PAC checks: a Link that holds
+    // only the annotation is read as a link of no text.
+    [Fact]
+    public void ALinkedTextLineIsTheLinkOfItsParagraph() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
+        string content = TestSupport.Latin1(page.GetContent());
+        Assert.Contains("/Link <</MCID 0>>\nBDC\n", content);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Dictionary<string, string[]> elements = Elements(raw);
+        Dictionary<string, string[]> links = Links(raw);
+        Assert.Single(links);
+        foreach (string[] link in links.Values) {
+            Assert.Matches(@"^\[0 <</Type /OBJR /Obj \d+ 0 R>>\]$", link[2]);
+            Assert.Equal("P", elements[link[1]][0]);
+        }
+        // The parent tree gives marked content 0 to the Link
+        Assert.Matches(@"/Nums \[\n0 \[ (\d+) 0 R\]", raw);
+    }
+
+    // A word of a paragraph that is a link is a Link among the words, in its
+    // place, holding its text and its annotation.
+    [Fact]
+    public void ALinkedWordIsALinkAmongTheWordsOfItsParagraph() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(font, "Read").SetStructureType(StructElem.SPAN))
+                .Add(new TextLine(font, "the site").SetURIAction("https://pdfjet.com"))
+                .Add(new TextLine(font, "today"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextFrame frame = new TextFrame(new List<Paragraph> {paragraph}).SetWidth(400f);
+        frame.SetLocation(70f, 80f);
+        frame.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Dictionary<string, string[]> elements = Elements(raw);
+        Dictionary<string, string[]> links = Links(raw);
+        Assert.Single(links);
+        foreach (KeyValuePair<string, string[]> link in links) {
+            Assert.Matches(@"^\[\d+ <</Type /OBJR /Obj \d+ 0 R>>\]$", link.Value[2]);
+            string[] parent = elements[link.Value[1]];
+            // The words before it, the Link, and the words after it
+            Assert.Equal("P", parent[0]);
+            Assert.Matches(@"^\[\d+( \d+)* " + link.Key + @" 0 R( \d+)+\]$", parent[2]);
+        }
+    }
+
+    // A linked image is the Figure of its Link, which holds its annotation too.
+    [Fact]
+    public void ALinkedImageIsTheFigureOfItsLink() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
+        image.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Dictionary<string, string[]> elements = Elements(raw);
+        Dictionary<string, string[]> links = Links(raw);
+        Assert.Single(links);
+        foreach (KeyValuePair<string, string[]> link in links) {
+            Assert.Matches(@"^\[\d+ 0 R <</Type /OBJR /Obj \d+ 0 R>>\]$", link.Value[2]);
+            string figure = link.Value[2].TrimStart('[').Split(' ')[0];
+            Assert.Equal("Figure", elements[figure][0]);
+            Assert.Equal(link.Key, elements[figure][1]);
+        }
+    }
+
+    // In a document that is not tagged, a link is drawn as before, and a
+    // linked image leaves the structure elements begun around it as they were.
+    [Fact]
+    public void ALinkOfADocumentNotTaggedIsNoElement() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.BeginStructElement(StructElem.L);
+        new Image(pdf, TestSupport.Open("images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
+        new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
+        page.EndStructElement();
+        // No structure element is left begun
+        Assert.ThrowsAny<Exception>(() => page.EndStructElement());
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/StructElem", raw);
+        Assert.Equal(2, raw.Split("/Subtype /Link").Length - 1);
+    }
+
     // The numbers of the page objects, in page order.
     private static string[] PageNumbers(byte[] pdf) {
         List<PDFobj> pages = new PDF().GetPageObjects(TestSupport.Read(pdf));

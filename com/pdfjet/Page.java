@@ -2722,6 +2722,88 @@ final public class Page {
         markedContentDepth--;
     }
 
+    // Notes a heading of a tagged document, H1 to H6, with its text and the
+    // top of its text, for the bookmarks that the document has when it has
+    // none of its own. A heading inside an artifact, like a running header,
+    // is not noted, nor anything that is not a heading.
+    void noteHeading(StructElem structure, String text, float top) {
+        int level = Heading.levelOf(structure);
+        if (level == 0 || !pdf.isTagged() || artifactDepth != 0 || text == null) {
+            return;
+        }
+        String title = text.trim().replaceAll("\\s+", " ");
+        if (title.isEmpty()) {
+            return;
+        }
+        pdf.headings.add(new Heading(level, title, this, top));
+    }
+
+    // Begins the marked content of a text that is a link, and returns the Link
+    // element its annotation joins, as PDF/UA asks: the Link holds the text
+    // and the annotation both, so that a screen reader reads the text as the
+    // link. The Link is a kid of the element of the text, structure, which it
+    // makes, like the P of a text line, or it is among the words of a
+    // paragraph drawn word by word. It returns null, and begins the marked
+    // content as addBDC does, in a document that is not tagged or inside an
+    // artifact or a figure, where the link stays an element of its own.
+    StructElement addLinkBDC(
+            StructElem structure,
+            String language,
+            String actualText,
+            String altDescription) {
+        if (!pdf.isTagged() || artifactDepth != 0) {
+            addBDC(structure, language, actualText, altDescription, null);
+            return null;
+        }
+        markedContentDepth++;
+        StructElement link = new StructElement();
+        link.structure = StructElem.LINK.type;
+        link.mcid = this.mcid;
+        link.language = language;
+        if (mcidParent != null) {
+            // A word of a paragraph: the Link takes its place among the words
+            StructElement parent = mcidParent;
+            addStructure(link, parent);
+            parent.mcids.add(-link.objNumber);
+        } else if (structure == StructElem.LINK) {
+            link.actualText = actualText;
+            link.altDescription = altDescription;
+            addStructure(link, structParent);
+        } else {
+            StructElement element = addStructElement(structParent, structure, null);
+            element.language = language;
+            element.actualText = actualText;
+            element.altDescription = altDescription;
+            addStructure(link, element);
+        }
+        append("/Link <</MCID ");
+        append(mcid++);
+        append(">>\n");
+        append("BDC\n");
+        return link;
+    }
+
+    // Begins the Link element of content that is a link and is drawn as
+    // elements of its own, like the Figure of an image, which become its
+    // kids; endLink ends it. Returns the Link, which the annotation of the
+    // link joins, or null in a document that is not tagged or inside an
+    // artifact or a figure.
+    StructElement beginLink() {
+        StructElement link = addStructElement(structParent, StructElem.LINK, null);
+        if (link != null) {
+            structElementStack.add(structParent);
+            structParent = link;
+        }
+        return link;
+    }
+
+    // Ends the Link that beginLink began, if it began one.
+    void endLink(StructElement link) {
+        if (link != null) {
+            endStructElement();
+        }
+    }
+
     // Adds a structure element that groups the elements added after it, like
     // a table row, as a kid of the parent, or of the Document element when the
     // parent is null. Returns null when the document is not tagged or the
@@ -2792,7 +2874,15 @@ final public class Page {
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
         if (pdf.isTagged()) {
+            // A link joins the Link element of the content it is drawn on,
+            // which its text stands for; its own description stays in its
+            // Contents.
+            if (annotation.linkElement != null) {
+                annotation.linkElement.annotation = annotation;
+                return;
+            }
             StructElement element = new StructElement();
+            element.mcid = -1;  // It stands for the annotation, not for marked content
             // PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
             element.structure = annotation.annotationType.equals(Annotation.Link) ?
                     StructElem.LINK.type : StructElem.ANNOT.type;

@@ -2190,6 +2190,85 @@ func (page *Page) AddEMC() {
 	page.markedContentDepth--
 }
 
+// noteHeading notes a heading of a tagged document, H1 to H6, with its text
+// and the top of its text, for the bookmarks that the document has when it
+// has none of its own. A heading inside an artifact, like a running header,
+// is not noted, nor anything that is not a heading.
+func (page *Page) noteHeading(structure structelem.StructElem, text string, top float32) {
+	level := headingLevel(structure)
+	if level == 0 || !page.pdf.isTagged() || page.artifactDepth != 0 {
+		return
+	}
+	title := strings.Join(strings.Fields(text), " ")
+	if title == "" {
+		return
+	}
+	page.pdf.headings = append(page.pdf.headings, heading{level: level, title: title, page: page, top: top})
+}
+
+// addLinkBDC begins the marked content of a text that is a link, and returns
+// the Link element its annotation joins, as PDF/UA asks: the Link holds the
+// text and the annotation both, so that a screen reader reads the text as the
+// link. The Link is a kid of the element of the text, structure, which it
+// makes, like the P of a text line, or it is among the words of a paragraph
+// drawn word by word. It returns nil, and begins the marked content as
+// AddBDC does, in a document that is not tagged or inside an artifact or a
+// figure, where the link stays an element of its own.
+func (page *Page) addLinkBDC(
+	structure structelem.StructElem, language, actualText, altDescription string) *structElement {
+	if !page.pdf.isTagged() || page.artifactDepth != 0 {
+		page.addBDC(structure, language, actualText, altDescription, "")
+		return nil
+	}
+	page.markedContentDepth++
+	link := newStructElement()
+	link.structure = string(structelem.Link)
+	link.mcid = page.mcid
+	link.language = language
+	if parent := page.mcidParent; parent != nil {
+		// A word of a paragraph: the Link takes its place among the words
+		page.addStructure(link, parent)
+		parent.mcids = append(parent.mcids, -link.objNumber)
+	} else if structure == structelem.Link {
+		link.actualText = actualText
+		link.altDescription = altDescription
+		page.addStructure(link, page.structParent)
+	} else {
+		element := page.addStructElement(page.structParent, structure, "")
+		element.language = language
+		element.actualText = actualText
+		element.altDescription = altDescription
+		page.addStructure(link, element)
+	}
+	page.appendString("/Link <</MCID ")
+	page.appendInteger(page.mcid)
+	page.mcid++
+	page.appendString(">>\n")
+	page.appendString("BDC\n")
+	return link
+}
+
+// beginLink begins the Link element of content that is a link and is drawn
+// as elements of its own, like the Figure of an image, which become its kids;
+// endLink ends it. It returns the Link, which the annotation of the link
+// joins, or nil in a document that is not tagged or inside an artifact or a
+// figure.
+func (page *Page) beginLink() *structElement {
+	link := page.addStructElement(page.structParent, structelem.Link, "")
+	if link != nil {
+		page.structElementStack = append(page.structElementStack, page.structParent)
+		page.structParent = link
+	}
+	return link
+}
+
+// endLink ends the Link that beginLink began, if it began one.
+func (page *Page) endLink(link *structElement) {
+	if link != nil {
+		page.EndStructElement()
+	}
+}
+
 // addStructElement adds a structure element that groups the elements added
 // after it, like a table row, as a kid of the parent, or of the Document
 // element when the parent is nil. It returns nil when the document is not
@@ -2274,7 +2353,14 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	annotation.y2 = page.height - annotation.y2
 	page.annots = append(page.annots, annotation)
 	if page.pdf.isTagged() {
+		// A link joins the Link element of the content it is drawn on, which
+		// its text stands for; its own description stays in its Contents
+		if link := annotation.linkElement; link != nil {
+			link.annotation = annotation
+			return
+		}
 		element := newStructElement()
+		element.mcid = -1 // It stands for the annotation, not for marked content
 		// PDF/UA puts a link in a Link element, and any other annotation in an Annot element.
 		element.structure = string(structelem.Annot)
 		if annotation.annotationType == annotationLink {

@@ -35,6 +35,10 @@ internal class Annotation {
     internal String actualText = null;
     internal String altDescription = null;
     internal FileAttachment fileAttachment = null;
+    // The Link element of the content the link is drawn on, which the
+    // annotation joins, so that the text of a link and its annotation are one
+    // element, as PDF/UA asks; null for a link over content that is not tagged
+    internal StructElement linkElement = null;
     // Set once the annotation has been written with a /StructParent key.
     internal bool structParentWritten = false;
 

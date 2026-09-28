@@ -78,6 +78,79 @@ import Testing
         #expect(try value("B2a", "/Count") == "")
     }
 
+    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+
+    // A document with the headings, as text lines of their structure types,
+    // H1 on the first page and the others on the second.
+    private func headingsPDF(_ tagged: Bool, _ headings: [(String, String)]) throws -> MemoryPDF {
+        let memory = tagged ? MemoryPDF(Compliance.PDF_UA_1) : MemoryPDF()
+        if tagged {
+            _ = memory.pdf.setTitle("Title")
+        }
+        let font = try Font(memory.pdf, TestSupport.open(BookmarkTests.streamFont))
+        var page: Page?
+        for (i, heading) in headings.enumerated() {
+            if page == nil || heading.0 == "H1" && i > 0 {
+                page = Page(memory.pdf, Letter.PORTRAIT)
+            }
+            TextLine(font, heading.1).setStructureType(StructElem(rawValue: heading.0)!)
+                    .setLocation(70, Float(100 + 40 * i)).drawOn(page)
+        }
+        return memory
+    }
+
+    // A tagged document with headings and no bookmarks of its own has the
+    // bookmarks of its headings, each under the heading of a higher level
+    // before it, and each at the top of its heading on its page, as PAC asks.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aTaggedDocumentHasTheBookmarksOfItsHeadings() throws {
+        let memory = try headingsPDF(true, [("H1", "Intro"), ("H2", "What  it is"), ("H3", "In short"),
+                                            ("H2", "Why"), ("H1", "Use")])
+        try memory.pdf.complete()
+        let objects = try TestSupport.read(memory.bytes)
+        let outlines = try #require(objects.first { $0.getValue("/Type") == "/Outlines" })
+        func number(_ title: String) throws -> String {
+            return String(try item(objects, title).getNumber())
+        }
+        func value(_ title: String, _ key: String) throws -> String {
+            return try item(objects, title).getValue(key)
+        }
+        #expect(try outlines.getValue("/First") == number("Intro"))
+        #expect(try outlines.getValue("/Last") == number("Use"))
+        // The whitespace of a title is collapsed, as addBookmark does
+        #expect(try value("What it is", "/Parent") == number("Intro"))
+        #expect(try value("In short", "/Parent") == number("What it is"))
+        #expect(try value("Why", "/Parent") == number("Intro"))
+        #expect(try value("What it is", "/Next") == number("Why"))
+        // The destination: the page of the heading, and the top of its text
+        let intro = try value("Intro", "/Dest")
+        let use = try value("Use", "/Dest")
+        #expect(intro.contains("/XYZ") && use.contains("/XYZ"))
+        let introPage = intro.split(separator: " ")[1]
+        let usePage = use.split(separator: " ")[1]
+        #expect(introPage != usePage, "Intro and Use, on two pages, go to one: \(intro), \(use)")
+        // 792 - (100 - 12): the top of a line of 12 points at 100
+        #expect(intro.contains("/XYZ 0 704 0"), "Intro goes to \(intro)")
+    }
+
+    // A document that is not tagged has no headings, and one with bookmarks
+    // of its own keeps them.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func ofHeadingsOnlyInATaggedDocumentWithoutBookmarks() throws {
+        let untagged = try headingsPDF(false, [("H1", "Intro")])
+        try untagged.pdf.complete()
+        #expect(!TestSupport.latin1(untagged.bytes).contains("/Outlines"))
+
+        let own = try headingsPDF(true, [("H1", "Intro")])
+        let page = Page(own.pdf, Letter.PORTRAIT)
+        let font = try Font(own.pdf, TestSupport.open(BookmarkTests.streamFont))
+        _ = Bookmark(own.pdf).addBookmark(page, Title(font, "Mine", 10, 10))
+        try own.pdf.complete()
+        let objects = try TestSupport.read(own.bytes)
+        _ = try item(objects, "Mine")
+        #expect(throws: PDFjetError.self) { try item(objects, "Intro") }
+    }
+
     @Test func aTitleIsATextStringThatEveryReaderDecodes() throws {
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)

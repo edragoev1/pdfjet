@@ -681,14 +681,20 @@ public class SVGImage : IDrawable {
         if (page == null) {
             return new float[] {x + w, y + h};  // Measured, not drawn
         }
+        // A linked image is a Figure in the Link its annotation joins
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.BeginLink();
+        }
         page.AddBDC(StructElem.FIGURE, language, actualText, altDescription);
         foreach (SVGPath path in paths) {
             drawPath(path, page);
         }
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
+        page.EndLink(link);
         if (uri != null || key != null) {
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -703,7 +709,9 @@ public class SVGImage : IDrawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
         return new float[] {x + w, y + h};
     }

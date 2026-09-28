@@ -228,6 +228,37 @@ public class Bookmark {
         return this.dest;
     }
 
+    // The bookmarks of the headings of the document, each under the heading
+    // before it of a higher level: an H2 under the H1 before it, and an H1 at
+    // the top. It is called once the pages are written, when the number of
+    // the page of each heading is known.
+    static Bookmark ofHeadings(PDF pdf, List<Heading> headings) {
+        Bookmark root = new Bookmark(pdf);
+        List<Heading> levels = new ArrayList<Heading>();
+        List<Bookmark> open = new ArrayList<Bookmark>();
+        for (Heading h : headings) {
+            while (!levels.isEmpty() && levels.get(levels.size() - 1).level >= h.level) {
+                levels.remove(levels.size() - 1);
+                open.remove(open.size() - 1);
+            }
+            Bookmark parent = open.isEmpty() ? root : open.get(open.size() - 1);
+            Bookmark bookmark = new Bookmark(h.page, h.top, null, h.title);
+            bookmark.parent = parent;
+            bookmark.dest = new Destination(null, 0f, h.page.height - h.top);
+            bookmark.dest.pageObjNumber = h.page.objNumber;
+            if (parent.children == null) {
+                parent.children = new ArrayList<Bookmark>();
+            } else {
+                bookmark.prev = parent.children.get(parent.children.size() - 1);
+                parent.children.get(parent.children.size() - 1).next = bookmark;
+            }
+            parent.children.add(bookmark);
+            levels.add(h);
+            open.add(bookmark);
+        }
+        return root;
+    }
+
     private String nextKey() {
         destNumber++;
         return "dest#" + destNumber;

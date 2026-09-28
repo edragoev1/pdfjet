@@ -233,6 +233,130 @@ import Testing
         #expect(raw.components(separatedBy: "/S /Annot\n").count - 1 == 1)
     }
 
+    // The structure elements of the raw PDF, by their object numbers: the S,
+    // the P and the K of each.
+    private func elements(_ raw: String) throws -> [String: [String]] {
+        let regex = try NSRegularExpression(pattern:
+            "(\\d+) 0 obj\\n<<\\n/Type /StructElem /S /(\\w+)\\n/P (\\d+) 0 R /Pg \\d+ 0 R\\n(?:/K (\\[[^\\n]*\\]|<<[^\\n]*>>|\\d+)\\n)?")
+        let string = raw as NSString
+        var found = [String: [String]]()
+        for match in regex.matches(in: raw, range: NSRange(location: 0, length: string.length)) {
+            let group = { (i: Int) -> String in
+                match.range(at: i).location == NSNotFound ? "" : string.substring(with: match.range(at: i))
+            }
+            found[group(1)] = [group(2), group(3), group(4)]
+        }
+        return found
+    }
+
+    private func links(_ raw: String) throws -> [String: [String]] {
+        return try elements(raw).filter { $0.value[0] == "Link" }
+    }
+
+    private func matchesAll(_ pattern: String, _ text: String) -> Bool {
+        return text.range(of: pattern, options: .regularExpression) != nil
+    }
+
+    // A text line that is a link is the Link of its paragraph, holding its
+    // text and its annotation both, as PDF/UA asks and PAC checks: a Link that
+    // holds only the annotation is read as a link of no text.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aLinkedTextLineIsTheLinkOfItsParagraph() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
+        #expect(TestSupport.content(page).contains("/Link <</MCID 0>>\nBDC\n"))
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try elements(raw)
+        let found = try links(raw)
+        #expect(found.count == 1)
+        for (_, link) in found {
+            #expect(matchesAll("^\\[0 <</Type /OBJR /Obj \\d+ 0 R>>\\]$", link[2]), "the Link holds \(link[2])")
+            #expect(all[link[1]]?[0] == "P", "the Link is in \(String(describing: all[link[1]]))")
+        }
+        // The parent tree gives marked content 0 to the Link
+        #expect(matchesAll("/Nums \\[\\n0 \\[ \\d+ 0 R\\]", raw))
+    }
+
+    // A word of a paragraph that is a link is a Link among the words, in its
+    // place, holding its text and its annotation.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let paragraph = Paragraph()
+        paragraph.add(TextLine(font, "Read").setStructureType(StructElem.SPAN))
+        paragraph.add(TextLine(font, "the site").setURIAction("https://pdfjet.com"))
+        paragraph.add(TextLine(font, "today"))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let frame = TextFrame([paragraph]).setWidth(400)
+        _ = frame.setLocation(70, 80)
+        _ = frame.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try elements(raw)
+        let found = try links(raw)
+        #expect(found.count == 1)
+        for (number, link) in found {
+            #expect(matchesAll("^\\[\\d+ <</Type /OBJR /Obj \\d+ 0 R>>\\]$", link[2]), "the Link holds \(link[2])")
+            let paragraph = all[link[1]] ?? []
+            // The words before it, the Link, and the words after it
+            #expect(paragraph.first == "P" &&
+                    matchesAll("^\\[\\d+( \\d+)* " + number + " 0 R( \\d+)+\\]$", paragraph[2]),
+                    "the paragraph holds \(paragraph)")
+        }
+    }
+
+    // A linked image is the Figure of its Link, which holds its annotation too.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aLinkedImageIsTheFigureOfItsLink() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
+        _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
+        _ = image.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try elements(raw)
+        let found = try links(raw)
+        #expect(found.count == 1)
+        for (number, link) in found {
+            #expect(matchesAll("^\\[\\d+ 0 R <</Type /OBJR /Obj \\d+ 0 R>>\\]$", link[2]), "the Link holds \(link[2])")
+            let figure = link[2].trimmingCharacters(in: CharacterSet(charactersIn: "["))
+                .components(separatedBy: " ")[0]
+            #expect(all[figure]?[0] == "Figure" && all[figure]?[1] == number,
+                    "the Link holds \(String(describing: all[figure]))")
+        }
+    }
+
+    // In a document that is not tagged, a link is drawn as before, and a
+    // linked image leaves the structure elements begun around it as they were.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func aLinkOfADocumentNotTaggedIsNoElement() throws {
+        let memory = MemoryPDF()
+        let pdf = memory.pdf
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        page.beginStructElement(StructElem.L)
+        _ = try Image(pdf, TestSupport.open("images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page)
+        TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
+        page.endStructElement()
+        #expect(page.structElementStack.isEmpty)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(!raw.contains("/StructElem"))
+        #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 2)
+    }
+
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)

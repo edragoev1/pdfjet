@@ -500,6 +500,9 @@ public class TextFrame : Drawable {
                 closeList(page)
             }
             element = page.addStructElement(page.structParent, paragraph.structureType, nil)
+            if element != nil, let first = paragraph.lines.first {
+                page.noteHeading(paragraph.structureType, paragraph.text(), y - first.fontSize)
+            }
         }
         if element == nil {
             return

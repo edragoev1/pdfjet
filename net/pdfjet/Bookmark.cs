@@ -70,6 +70,38 @@ public class Bookmark {
         return bookmark;
     }
 
+    // Returns the bookmarks of the headings of the document, each under the
+    // heading before it of a higher level: an H2 under the H1 before it, and
+    // an H1 at the top. It is called once the pages are written, when the
+    // number of the page of each heading is known.
+    internal static Bookmark OfHeadings(PDF pdf) {
+        Bookmark root = new Bookmark(pdf);
+        List<Bookmark> stack = new List<Bookmark>();
+        List<int> levels = new List<int>();
+        foreach (Heading h in pdf.headings) {
+            while (levels.Count > 0 && levels[levels.Count - 1] >= h.level) {
+                levels.RemoveAt(levels.Count - 1);
+                stack.RemoveAt(stack.Count - 1);
+            }
+            Bookmark parent = (stack.Count > 0) ? stack[stack.Count - 1] : root;
+            Destination dest = new Destination("", 0f, h.page.height - h.top);
+            dest.pageObjNumber = h.page.objNumber;
+            Bookmark bookmark = new Bookmark(h.page, h.top, null, h.title);
+            bookmark.parent = parent;
+            bookmark.dest = dest;
+            if (parent.children == null) {
+                parent.children = new List<Bookmark>();
+            } else if (parent.children.Count > 0) {
+                bookmark.prev = parent.children[parent.children.Count - 1];
+                parent.children[parent.children.Count - 1].next = bookmark;
+            }
+            parent.children.Add(bookmark);
+            stack.Add(bookmark);
+            levels.Add(h.level);
+        }
+        return root;
+    }
+
     /// <summary>Returns the name of the destination of this bookmark.</summary>
     public String GetDestinationName() {
         return this.key;
@@ -166,4 +198,33 @@ public class Bookmark {
         return "dest#" + destNumber.ToString();
     }
 }   // End of Bookmark.cs
+
+// A heading of a tagged document, H1 to H6, as it was drawn.
+internal class Heading {
+    internal int level;
+    internal String title;
+    internal Page page;
+    internal float top;     // The top of its text on the page
+
+    internal Heading(int level, String title, Page page, float top) {
+        this.level = level;
+        this.title = title;
+        this.page = page;
+        this.top = top;
+    }
+
+    // Returns the level of a heading, 1 for H1 to 6 for H6, or 0 for a
+    // structure type that is not a heading.
+    internal static int Level(StructElem structure) {
+        switch (structure) {
+        case StructElem.H1: return 1;
+        case StructElem.H2: return 2;
+        case StructElem.H3: return 3;
+        case StructElem.H4: return 4;
+        case StructElem.H5: return 5;
+        case StructElem.H6: return 6;
+        }
+        return 0;
+    }
+}
 }   // End of namespace PDFjet.NET

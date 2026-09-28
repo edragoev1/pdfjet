@@ -478,7 +478,15 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	if alt == textLine.text {
 		alt = ""
 	}
-	page.AddBDC(textLine.structureType, textLine.language, "", alt)
+	if page.mcidParent == nil {
+		page.noteHeading(textLine.structureType, textLine.text, textLine.destinationY())
+	}
+	var link *structElement
+	if textLine.uri != "" || textLine.key != "" {
+		link = page.addLinkBDC(textLine.structureType, textLine.language, "", alt)
+	} else {
+		page.AddBDC(textLine.structureType, textLine.language, "", alt)
+	}
 	page.drawStringUsingHighlightColors(
 		textLine.font,
 		textLine.fallbackFont,
@@ -548,6 +556,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 			language:       textLine.uriLanguage,
 			actualText:     textLine.uriActualText,
 			altDescription: textLine.uriAltDescription,
+			linkElement:    link,
 		})
 	}
 

@@ -336,4 +336,17 @@ public class Paragraph {
     public float getY2() {
         return y2;
     }
+
+    // The text of the paragraph, its lines one after another, as the title of
+    // its bookmark when it is a heading.
+    String text() {
+        StringBuilder buf = new StringBuilder();
+        for (TextLine line : lines) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+            buf.append(line.text);
+        }
+        return buf.toString();
+    }
 }   // End of Paragraph.java

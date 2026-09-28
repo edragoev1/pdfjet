@@ -393,6 +393,11 @@ final public class Image implements Drawable {
         if (w == 0f || h == 0f) {
             return new float[] {x + w, y + h};  // A zero size image paints nothing.
         }
+        // A linked image is a Figure in the Link its annotation joins.
+        StructElement link = null;
+        if (uri != null || key != null) {
+            link = page.beginLink();
+        }
         page.addBDC(StructElem.FIGURE, language, actualText, altDescription);
         page.saveGraphicsState();
 
@@ -471,8 +476,9 @@ final public class Image implements Drawable {
         }
         page.addEMC();
 
+        page.endLink(link);
         if (uri != null || key != null) {
-            page.addAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
@@ -487,7 +493,9 @@ final public class Image implements Drawable {
                     key,    // The destination name
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.addAnnotation(linkAnnotation);
         }
 
         return new float[] {x + w, y + h};

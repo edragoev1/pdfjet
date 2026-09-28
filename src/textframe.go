@@ -541,6 +541,9 @@ func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph, x, 
 			tf.closeList(page)
 		}
 		tf.element = page.addStructElement(page.structParent, paragraph.structureType, "")
+		if tf.element != nil && len(paragraph.lines) > 0 {
+			page.noteHeading(paragraph.structureType, paragraph.text(), y-paragraph.lines[0].fontSize)
+		}
 	}
 	if tf.element == nil {
 		return func() {}

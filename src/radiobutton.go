@@ -98,7 +98,12 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		return radioButton.corner() // Measured, not drawn
 	}
 
-	page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
+	var link *structElement
+	if radioButton.uri != "" || radioButton.key != "" {
+		link = page.addLinkBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
+	} else {
+		page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
+	}
 
 	yBox := radioButton.y
 	page.SetPenWidth(1.0)
@@ -145,6 +150,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 			language:       radioButton.language,
 			actualText:     radioButton.actualText,
 			altDescription: radioButton.altDescription,
+			linkElement:    link,
 		})
 	}
 

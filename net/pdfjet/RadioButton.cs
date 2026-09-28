@@ -113,7 +113,12 @@ public class RadioButton : IDrawable {
             return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
         }
 
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        StructElement link = null;
+        if (uri != null) {
+            link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else {
+            page.AddBDC(StructElem.P, language, actualText, altDescription);
+        }
 
         float yBox = y;
         page.SetPenWidth(1f);
@@ -135,7 +140,7 @@ public class RadioButton : IDrawable {
         page.AddEMC();
 
         if (uri != null) {
-            page.AddAnnotation(new Annotation(
+            Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3*r1,
                     y,
@@ -150,7 +155,9 @@ public class RadioButton : IDrawable {
                     null,
                     language,
                     actualText,
-                    altDescription));
+                    altDescription);
+            linkAnnotation.linkElement = link;
+            page.AddAnnotation(linkAnnotation);
         }
 
         return new float[] { x + 6*r1 + font.StringWidth(fontSize, label), y + font.GetBodyHeight(fontSize) };
