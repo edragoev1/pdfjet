@@ -429,3 +429,25 @@ func TestMisuseAPdfACannotBeEncrypted(t *testing.T) {
 	NewPage(doc.pdf, letter.Portrait())
 	doc.complete()
 }
+
+// Set after the encryption, a PDF/A compliance is refused for what it is, and
+// another compliance for the order, since the encryption is written for it.
+func TestMisuseTheComplianceIsSetBeforeTheEncryption(t *testing.T) {
+	pdf := testNewPDF()
+	enc, err := NewEncryption(pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	pdf.SetEncryption(enc)
+	pdf.SetCompliance(compliance.PDF_A_2B)
+	testRefused(t, pdf, "A PDF/A document cannot be encrypted.")
+
+	ua := testNewPDF()
+	enc, err = NewEncryption(ua, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ua.SetEncryption(enc)
+	ua.SetCompliance(compliance.PDF_UA_1)
+	testRefused(t, ua, "Set the compliance before the encryption, which is written for it.")
+}

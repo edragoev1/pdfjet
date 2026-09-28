@@ -207,6 +207,15 @@ public sealed class PDF {
     /// image or page is added.
     /// </summary>
     public PDF SetCompliance(Compliance compliance) {
+        // ISO 19005 does not allow a PDF/A document to be encrypted, and the
+        // encryption is written for the compliance: it grants a PDF/UA
+        // document the permission to extract its content for accessibility.
+        if (encryption != null && compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1) {
+            Fail(new InvalidOperationException("A PDF/A document cannot be encrypted."));
+        }
+        if (encryption != null && compliance != this.compliance) {
+            Fail(new InvalidOperationException("Set the compliance before the encryption, which is written for it."));
+        }
         // The fonts and the page content are written for the compliance.
         if (compliance != this.compliance && (GetObjNumber() > 0 || pagesCreated > 0)) {
             Fail(new InvalidOperationException("Set the compliance before adding fonts, images or pages to the PDF."));

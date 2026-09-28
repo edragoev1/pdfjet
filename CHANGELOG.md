@@ -470,6 +470,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A compliance set after the encryption was refused with "Set the compliance
+  before adding fonts, images or pages to the PDF.", in all four ports,
+  which named what had not been added. A PDF/A compliance is refused with
+  "A PDF/A document cannot be encrypted.", as the encryption is when it is
+  set after a PDF/A compliance, and any other with "Set the compliance
+  before the encryption, which is written for it.": the encryption grants a
+  PDF/UA document the permission to extract its content for accessibility.
 - On a page with a link or another annotation, the parent tree of a tagged
   document gave the first marked content of the page to the element of the
   annotation, in all four ports: the element of an annotation has no marked

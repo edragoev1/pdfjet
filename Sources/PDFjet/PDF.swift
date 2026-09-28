@@ -227,6 +227,17 @@ public final class PDF {
     /// Sets the PDF/UA or PDF/A compliance of this document.
     @discardableResult
     public func setCompliance(_ compliance: Compliance) -> PDF {
+        // ISO 19005 does not allow a PDF/A document to be encrypted, and the
+        // encryption is written for the compliance: it grants a PDF/UA
+        // document the permission to extract its content for accessibility.
+        if encryption != nil && compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1 {
+            fail("A PDF/A document cannot be encrypted.")
+            return self
+        }
+        if encryption != nil && compliance != self.compliance {
+            fail("Set the compliance before the encryption, which is written for it.")
+            return self
+        }
         // The fonts and the page content are written for the compliance.
         if compliance != self.compliance && (getObjNumber() > 0 || pagesCreated > 0) {
             fail("Set the compliance before adding fonts, images or pages to the PDF.")

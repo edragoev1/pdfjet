@@ -416,4 +416,23 @@ class MisuseTest {
         PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
         ua.setEncryption(new Encryption(ua, new Passwords(), new Permissions()));
     }
+
+    // Set after the encryption, a PDF/A compliance is refused for what it is,
+    // and another compliance for the order, since the encryption is written
+    // for it.
+    @Test
+    void theComplianceIsSetBeforeTheEncryption() throws Exception {
+        final PDF pdf = new PDF(new ByteArrayOutputStream());
+        pdf.setEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        assertEquals("A PDF/A document cannot be encrypted.", fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf.setCompliance(Compliance.PDF_A_2B); }
+        }));
+
+        final PDF ua = new PDF(new ByteArrayOutputStream());
+        ua.setEncryption(new Encryption(ua, new Passwords(), new Permissions()));
+        assertEquals("Set the compliance before the encryption, which is written for it.",
+                fails(IllegalStateException.class, new Executable() {
+                    public void execute() throws Throwable { ua.setCompliance(Compliance.PDF_UA_1); }
+                }));
+    }
 }

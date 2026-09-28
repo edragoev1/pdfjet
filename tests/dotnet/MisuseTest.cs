@@ -353,5 +353,21 @@ public class MisuseTest {
         PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
         ua.SetEncryption(new Encryption(ua, new Passwords(), new Permissions()));
     }
+
+    // Set after the encryption, a PDF/A compliance is refused for what it is,
+    // and another compliance for the order, since the encryption is written
+    // for it.
+    [Fact]
+    public void TheComplianceIsSetBeforeTheEncryption() {
+        PDF pdf = new PDF(new MemoryStream());
+        pdf.SetEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        Assert.Equal("A PDF/A document cannot be encrypted.",
+                Assert.Throws<InvalidOperationException>(() => pdf.SetCompliance(Compliance.PDF_A_2B)).Message);
+
+        PDF ua = new PDF(new MemoryStream());
+        ua.SetEncryption(new Encryption(ua, new Passwords(), new Permissions()));
+        Assert.Equal("Set the compliance before the encryption, which is written for it.",
+                Assert.Throws<InvalidOperationException>(() => ua.SetCompliance(Compliance.PDF_UA_1)).Message);
+    }
 }
 }

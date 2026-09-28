@@ -367,6 +367,21 @@ import Testing
         #expect(ua.error == nil)
     }
 
+    // Set after the encryption, a PDF/A compliance is refused for what it is,
+    // and another compliance for the order, since the encryption is written
+    // for it.
+    @Test func theComplianceIsSetBeforeTheEncryption() throws {
+        let pdf = TestSupport.newPDF()
+        _ = pdf.setEncryption(Encryption(pdf, Passwords(), Permissions()))
+        _ = pdf.setCompliance(Compliance.PDF_A_2B)
+        #expect(pdf.error == "A PDF/A document cannot be encrypted.")
+
+        let ua = TestSupport.newPDF()
+        _ = ua.setEncryption(Encryption(ua, Passwords(), Permissions()))
+        _ = ua.setCompliance(Compliance.PDF_UA_1)
+        #expect(ua.error == "Set the compliance before the encryption, which is written for it.")
+    }
+
     // Java throws from complete() for a number found while the page tree is
     // written; Swift used to return and leave a broken PDF.
     @Test func aNumberThatIsNotWritableInThePageTreeIsThrownByComplete() {
